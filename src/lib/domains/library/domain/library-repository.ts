@@ -1,6 +1,6 @@
-import type { BookId, ImageIndex } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import type { Result } from '$lib/shared/result';
-import type { Book } from './book';
+import type { Book, BookEdit } from './book';
 
 export type LibraryError =
   | { readonly kind: 'not-found'; readonly id: BookId }
@@ -12,7 +12,7 @@ export interface LibraryRepository {
   get(id: BookId): Promise<Result<Book, LibraryError>>;
   add(book: Book, source: Blob, cover: Blob): Promise<Result<void, LibraryError>>;
   remove(id: BookId): Promise<Result<void, LibraryError>>;
-  savePosition(id: BookId, at: ImageIndex): Promise<Result<void, LibraryError>>;
+  update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>>;
   readSource(id: BookId): Promise<Result<Blob, LibraryError>>;
   readCover(id: BookId): Promise<Result<Blob, LibraryError>>;
 }

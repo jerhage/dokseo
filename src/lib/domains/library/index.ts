@@ -1,5 +1,5 @@
-export type { Book, SourceKind } from './domain/book';
-export { SOURCE_KINDS, isSourceKind, withPosition } from './domain/book';
+export type { Book, BookEdit, SourceKind } from './domain/book';
+export { SOURCE_KINDS, applyEdit, isSourceKind } from './domain/book';
 export type { LibraryError, LibraryRepository } from './domain/library-repository';
 export type { PageSource, PageSourceError } from './domain/page-source';
 export { compareNatural } from './domain/natural-order';
@@ -18,6 +18,8 @@ export type { ReadCoverDeps } from './use-cases/read-cover';
 export { readCover } from './use-cases/read-cover';
 export type { RemoveBookDeps } from './use-cases/remove-book';
 export { removeBook } from './use-cases/remove-book';
+export type { EditBookDeps } from './use-cases/edit-book';
+export { editBook } from './use-cases/edit-book';
 export type { LibraryStatus, StorageUsage } from './ui/library-view.svelte';
 export { LibraryView } from './ui/library-view.svelte';
 export { default as BookCard } from './ui/BookCard.svelte';

@@ -22,6 +22,29 @@ export type Book = {
   readonly position: ImageIndex;
 };
 
-export function withPosition(book: Book, at: ImageIndex): Book {
-  return { ...book, position: at };
+export type BookEdit = {
+  readonly title?: string;
+  readonly language?: Language;
+  readonly layoutKind?: LayoutKind;
+  readonly direction?: ReadingDirection;
+  readonly position?: ImageIndex;
+};
+
+function editedTitle(book: Book, edit: BookEdit): string {
+  if (edit.title === undefined) return book.title;
+  const trimmed = edit.title.trim();
+  return trimmed.length === 0 ? book.title : trimmed;
+}
+
+export function applyEdit(book: Book, edit: BookEdit): Book {
+  const layoutKind = edit.layoutKind ?? book.layoutKind;
+  const direction = layoutKind === 'continuous' ? 'ltr' : (edit.direction ?? book.direction);
+  return {
+    ...book,
+    title: editedTitle(book, edit),
+    language: edit.language ?? book.language,
+    layoutKind,
+    direction,
+    position: edit.position ?? book.position,
+  };
 }

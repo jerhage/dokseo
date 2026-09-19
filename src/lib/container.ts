@@ -3,8 +3,9 @@ import type { BookId } from '$lib/shared/ids';
 import type { Result } from '$lib/shared/result';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
-import type { Book } from './domains/library/domain/book';
+import type { Book, BookEdit } from './domains/library/domain/book';
 import type { LibraryError } from './domains/library/domain/library-repository';
+import { editBook, type EditBookDeps } from './domains/library/use-cases/edit-book';
 import { listBooks, type ListBooksDeps } from './domains/library/use-cases/list-books';
 import {
   openFile,
@@ -20,6 +21,7 @@ export type Container = {
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError>>;
+    readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
   };
 };
 
@@ -37,6 +39,7 @@ export function buildContainer(): Container {
   const listBooksDeps: ListBooksDeps = { repository };
   const readCoverDeps: ReadCoverDeps = { repository };
   const removeBookDeps: RemoveBookDeps = { repository };
+  const editBookDeps: EditBookDeps = { repository };
 
   return {
     library: {
@@ -44,6 +47,7 @@ export function buildContainer(): Container {
       listBooks: () => listBooks(listBooksDeps),
       readCover: (id: BookId) => readCover(readCoverDeps, id),
       removeBook: (id: BookId) => removeBook(removeBookDeps, id),
+      editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
     },
   };
 }

@@ -43,6 +43,7 @@ type Fakes = {
   readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
   readonly opens: Deferred<Result<Book, OpenFileError>>[];
   readonly removes: Deferred<Result<void, LibraryError>>[];
+  readonly edits: Deferred<Result<Book, LibraryError>>[];
   readonly cover: CoverState;
 };
 
@@ -50,6 +51,7 @@ function fakes(): Fakes {
   const lists: Deferred<Result<readonly Book[], LibraryError>>[] = [];
   const opens: Deferred<Result<Book, OpenFileError>>[] = [];
   const removes: Deferred<Result<void, LibraryError>>[] = [];
+  const edits: Deferred<Result<Book, LibraryError>>[] = [];
   const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
 
   const container: Container = {
@@ -70,10 +72,15 @@ function fakes(): Fakes {
         removes.push(next);
         return next.promise;
       },
+      editBook: () => {
+        const next = deferred<Result<Book, LibraryError>>();
+        edits.push(next);
+        return next.promise;
+      },
     },
   };
 
-  return { container, lists, opens, removes, cover };
+  return { container, lists, opens, removes, edits, cover };
 }
 
 function chosen(name: string, path = ''): File {
@@ -430,5 +437,109 @@ describe('LibraryView', () => {
     await uploading;
 
     expect(view.books.map((b) => b.id)).toEqual(['one']);
+  });
+
+  it('edits a book and reloads the list', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const editing = view.edit(bookId('one'), { title: 'Blame! 1' });
+    at(world.edits, 0).settle(ok(book('one', { title: 'Blame! 1' })));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('one', { title: 'Blame! 1' }), book('two')]));
+    await editing;
+
+    expect(view.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
+    expect(view.status).toBe('ready');
+    expect(view.message).toBeNull();
+  });
+
+  it('sets editing while the call runs and clears it afterwards', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const editing = view.edit(bookId('one'), { layoutKind: 'continuous' });
+    expect(view.editing).toBe('one');
+
+    at(world.edits, 0).settle(ok(book('one', { layoutKind: 'continuous', direction: 'ltr' })));
+    await settleMicrotasks();
+    expect(view.editing).toBeNull();
+
+    at(world.lists, 1).settle(ok([book('one'), book('two')]));
+    await editing;
+
+    expect(view.editing).toBeNull();
+  });
+
+  it('clears editing and reports a message when the repository fails', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const editing = view.edit(bookId('one'), { title: 'Blame! 1' });
+    at(world.edits, 0).settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+    await expect(editing).resolves.toBeUndefined();
+
+    expect(view.editing).toBeNull();
+    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+    expect(world.lists).toHaveLength(1);
+  });
+
+  it('ignores an edit while a removal is running', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const removing = view.remove(bookId('one'));
+    await view.edit(bookId('two'), { title: 'Blame! 1' });
+
+    expect(world.edits).toHaveLength(0);
+    expect(view.editing).toBeNull();
+    expect(view.removing).toBe('one');
+
+    at(world.removes, 0).settle(ok(undefined));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('two')]));
+    await removing;
+
+    expect(view.books.map((b) => b.id)).toEqual(['two']);
+  });
+
+  it('ignores a removal while an edit is running', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const editing = view.edit(bookId('one'), { title: 'Blame! 1' });
+    await view.remove(bookId('two'));
+
+    expect(world.removes).toHaveLength(0);
+    expect(view.removing).toBeNull();
+    expect(view.editing).toBe('one');
+
+    at(world.edits, 0).settle(ok(book('one', { title: 'Blame! 1' })));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('one', { title: 'Blame! 1' }), book('two')]));
+    await editing;
+
+    expect(view.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
   });
 });

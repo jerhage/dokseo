@@ -1,7 +1,7 @@
 import type { Container } from '$lib/container';
 import { storageEstimate } from '$lib/platform/storage/persistence';
 import type { BookId } from '$lib/shared/ids';
-import type { Book } from '../domain/book';
+import type { Book, BookEdit } from '../domain/book';
 import type { LibraryError } from '../domain/library-repository';
 import type { SourceBuildError } from '../domain/source-builder';
 import { suggestTitle } from '../domain/title';
@@ -54,6 +54,7 @@ export class LibraryView {
   busy = $state(false);
   pending = $state.raw<string | null>(null);
   removing = $state.raw<BookId | null>(null);
+  editing = $state.raw<BookId | null>(null);
   usage = $state.raw<StorageUsage | null>(null);
 
   #container: Container;
@@ -115,7 +116,7 @@ export class LibraryView {
   }
 
   async remove(id: BookId): Promise<void> {
-    if (this.removing !== null || this.busy) return;
+    if (this.removing !== null || this.editing !== null || this.busy) return;
     this.removing = id;
     this.message = null;
 
@@ -127,6 +128,24 @@ export class LibraryView {
       }
     } finally {
       this.removing = null;
+    }
+
+    await this.load();
+  }
+
+  async edit(id: BookId, edit: BookEdit): Promise<void> {
+    if (this.removing !== null || this.editing !== null || this.busy) return;
+    this.editing = id;
+    this.message = null;
+
+    try {
+      const edited = await this.#container.library.editBook(id, edit);
+      if (!edited.ok) {
+        this.message = describeLibraryError(edited.error);
+        return;
+      }
+    } finally {
+      this.editing = null;
     }
 
     await this.load();

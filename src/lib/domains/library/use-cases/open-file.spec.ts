@@ -38,7 +38,7 @@ function fakeRepository(outcome: Result<void, LibraryError> = ok(undefined)) {
       return Promise.resolve(outcome);
     },
     remove: () => Promise.resolve(ok(undefined)),
-    savePosition: () => Promise.resolve(ok(undefined)),
+    update: (id) => Promise.resolve(notFound(id)),
     readSource: (id) => Promise.resolve(notFound(id)),
     readCover: (id) => Promise.resolve(notFound(id)),
   };

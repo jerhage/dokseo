@@ -7,9 +7,9 @@ import {
 } from '$lib/platform/idb/connection';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { describeCause } from '$lib/shared/cause';
-import type { BookId, ImageIndex } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
-import { withPosition, type Book } from '../domain/book';
+import { applyEdit, type Book, type BookEdit } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 
 const DATABASE_NAME = 'reader';
@@ -143,14 +143,15 @@ export function createLibraryRepository(): LibraryRepository {
       }
     },
 
-    async savePosition(id: BookId, at: ImageIndex): Promise<Result<void, LibraryError>> {
+    async update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>> {
       if (!recordsAvailable()) return unavailable();
       try {
         const db = await database();
         const record = await getRecord<Book>(db, BOOK_STORE, id);
         if (record === undefined) return missing(id);
-        await putRecord(db, BOOK_STORE, withPosition(record, at));
-        return ok(undefined);
+        const updated = applyEdit(record, edit);
+        await putRecord(db, BOOK_STORE, updated);
+        return ok(updated);
       } catch (cause) {
         return failed(cause);
       }
