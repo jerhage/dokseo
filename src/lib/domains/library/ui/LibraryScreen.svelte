@@ -1,5 +1,6 @@
 <script lang="ts">
 	import BookCard from './BookCard.svelte';
+	import PendingCard from './PendingCard.svelte';
 	import UploadTile from './UploadTile.svelte';
 	import type { LibraryView } from './library-view.svelte';
 
@@ -67,7 +68,7 @@
 				<p class="alert" role="alert">{view.message}</p>
 			{/if}
 
-			{#if settling && view.books.length === 0}
+			{#if settling && view.books.length === 0 && view.pending === null}
 				<p class="notice" aria-live="polite">Reading your library…</p>
 			{:else}
 				{#if view.status === 'failed'}
@@ -75,11 +76,16 @@
 						<span>Your library could not be read.</span>
 						<button class="retry" type="button" onclick={() => void view.load()}>Try again</button>
 					</p>
-				{:else if view.books.length === 0}
+				{:else if view.books.length === 0 && view.pending === null}
 					<p class="notice">No uploads yet. Add a folder, a .zip, a .cbz or a .pdf to start.</p>
 				{/if}
 
 				<ul class="grid">
+					{#if view.pending !== null}
+						<li>
+							<PendingCard title={view.pending} />
+						</li>
+					{/if}
 					{#each view.books as book (book.id)}
 						<li>
 							<BookCard {book} cover={view.covers.get(book.id) ?? null} />

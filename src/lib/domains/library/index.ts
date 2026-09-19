@@ -15,5 +15,6 @@ export { openFile } from './use-cases/open-file';
 export type { LibraryStatus, StorageUsage } from './ui/library-view.svelte';
 export { LibraryView } from './ui/library-view.svelte';
 export { default as BookCard } from './ui/BookCard.svelte';
+export { default as PendingCard } from './ui/PendingCard.svelte';
 export { default as UploadTile } from './ui/UploadTile.svelte';
 export { default as LibraryScreen } from './ui/LibraryScreen.svelte';

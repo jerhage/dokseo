@@ -4,6 +4,7 @@ import type { BookId } from '$lib/shared/ids';
 import type { Book } from '../domain/book';
 import type { LibraryError } from '../domain/library-repository';
 import type { SourceBuildError } from '../domain/source-builder';
+import { suggestTitle } from '../domain/title';
 import type { OpenFileError } from '../use-cases/open-file';
 
 export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -51,6 +52,7 @@ export class LibraryView {
 	status = $state<LibraryStatus>('idle');
 	message = $state<string | null>(null);
 	busy = $state(false);
+	pending = $state.raw<string | null>(null);
 	usage = $state.raw<StorageUsage | null>(null);
 
 	#container: Container;
@@ -93,12 +95,19 @@ export class LibraryView {
 		if (files.length === 0) return;
 		this.busy = true;
 		this.message = null;
+		this.pending = suggestTitle(
+			files.map((file) => ({ name: file.name, path: file.webkitRelativePath }))
+		);
 
-		const opened = await this.#container.library.openFile(files);
-		this.busy = false;
-		if (!opened.ok) {
-			this.message = describeOpenFileError(opened.error);
-			return;
+		try {
+			const opened = await this.#container.library.openFile(files);
+			if (!opened.ok) {
+				this.message = describeOpenFileError(opened.error);
+				return;
+			}
+		} finally {
+			this.busy = false;
+			this.pending = null;
 		}
 
 		await this.load();

@@ -47,6 +47,7 @@
 	<button
 		class="target"
 		class:over
+		class:busy
 		type="button"
 		disabled={busy}
 		ondragover={hover}
@@ -56,7 +57,7 @@
 		onclick={choose}
 	>
 		<span class="plus" aria-hidden="true">+</span>
-		<span class="lead">Drop a folder, .zip or .cbz</span>
+		<span class="lead">{busy ? 'Adding…' : 'Drop a folder, .zip or .cbz'}</span>
 		<span class="note">pages stay on your device</span>
 	</button>
 
@@ -121,6 +122,14 @@
 	.target:disabled {
 		cursor: progress;
 		opacity: 0.6;
+	}
+
+	.target.busy {
+		border-style: solid;
+		border-color: var(--c-accent-border-soft);
+		background: var(--c-surface-card-quiet);
+		color: var(--c-text-8);
+		opacity: 0.45;
 	}
 
 	.plus {

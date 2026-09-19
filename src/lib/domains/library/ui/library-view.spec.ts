@@ -77,6 +77,12 @@ function fakes(): Fakes {
 	return { container, lists, opens, cover };
 }
 
+function chosen(name: string, path = ''): File {
+	const file = new File(['x'], name);
+	Object.defineProperty(file, 'webkitRelativePath', { value: path });
+	return file;
+}
+
 async function settleMicrotasks(): Promise<void> {
 	for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
 }
@@ -239,7 +245,7 @@ describe('LibraryView', () => {
 		world.lists[0].settle(ok([book('one')]));
 		await loading;
 
-		const uploading = view.upload([new File(['x'], 'page.png')]);
+		const uploading = view.upload([chosen('page.png')]);
 		expect(view.busy).toBe(true);
 
 		world.opens[0].settle(err({ kind: 'source', error: { kind: 'nothing-usable' } }));
@@ -261,7 +267,7 @@ describe('LibraryView', () => {
 		world.lists[0].settle(ok([book('one')]));
 		await loading;
 
-		const uploading = view.upload([new File(['x'], 'page.png')]);
+		const uploading = view.upload([chosen('page.png')]);
 		world.opens[0].settle(ok(book('two')));
 		await Promise.resolve();
 		await Promise.resolve();
@@ -270,6 +276,49 @@ describe('LibraryView', () => {
 
 		expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
 		expect(view.message).toBeNull();
+	});
+
+	it('sets the pending title while the upload runs and clears it afterwards', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const loading = view.load();
+		world.lists[0].settle(ok([book('one')]));
+		await loading;
+
+		const uploading = view.upload([chosen('001.png', 'Blame/001.png')]);
+		expect(view.pending).toBe('Blame');
+
+		world.opens[0].settle(ok(book('two')));
+		await settleMicrotasks();
+		expect(view.pending).toBeNull();
+
+		world.lists[1].settle(ok([book('one'), book('two')]));
+		await uploading;
+
+		expect(view.pending).toBeNull();
+		expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+	});
+
+	it('clears the pending title when the upload fails', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const uploading = view.upload([chosen('chapter-1.cbz')]);
+		expect(view.pending).toBe('chapter-1');
+
+		world.opens[0].settle(err({ kind: 'source', error: { kind: 'unreadable', cause: 'bad zip' } }));
+		await uploading;
+
+		expect(view.pending).toBeNull();
+		expect(view.message).toBe('That upload could not be read: bad zip');
+	});
+
+	it('reports no pending title before any upload', () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		expect(view.pending).toBeNull();
 	});
 
 	it('ignores an upload with no files', async () => {
