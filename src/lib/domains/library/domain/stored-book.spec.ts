@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
-import type { Book } from './book';
+import { DEFAULT_PAGE_PAIRING, type Book } from './book';
 import { bookFromStored, type StoredBook } from './stored-book';
 
 const legacy: StoredBook = {
@@ -18,7 +18,7 @@ const legacy: StoredBook = {
 
 describe('bookFromStored', () => {
   it('fills the default pairing when the stored record lacks one', () => {
-    expect(bookFromStored(legacy).pagePairing).toBe('single');
+    expect(bookFromStored(legacy).pagePairing).toBe(DEFAULT_PAGE_PAIRING);
   });
 
   it('keeps a stored pairing that is present', () => {
@@ -29,7 +29,7 @@ describe('bookFromStored', () => {
   });
 
   it('leaves every other field exactly as stored', () => {
-    const expected: Book = { ...legacy, pagePairing: 'single' };
+    const expected: Book = { ...legacy, pagePairing: DEFAULT_PAGE_PAIRING };
     expect(bookFromStored(legacy)).toEqual(expected);
   });
 

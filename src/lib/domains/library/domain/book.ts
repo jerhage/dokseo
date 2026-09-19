@@ -17,6 +17,8 @@ export type Book = {
   readonly position: ImageIndex;
 };
 
+export const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
+
 export type BookEdit = {
   readonly title?: string;
   readonly language?: Language;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import type { Book } from '../domain/book';
+import { DEFAULT_PAGE_PAIRING, type Book } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
 import { openFile, type OpenFileDeps } from './open-file';
@@ -104,12 +104,12 @@ describe('openFile', () => {
     expect(result.ok && result.value.title).toBe('Nichijou 3');
   });
 
-  it('defaults a new book to Japanese, paged, right to left, one page, at the first image', async () => {
+  it('defaults a new book to Japanese, paged, right to left, two pages after a cover, at the first image', async () => {
     const result = await openFile(deps(), files);
     expect(result.ok && result.value.language).toBe('ja');
     expect(result.ok && result.value.layoutKind).toBe('paged');
     expect(result.ok && result.value.direction).toBe('rtl');
-    expect(result.ok && result.value.pagePairing).toBe('single');
+    expect(result.ok && result.value.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
     expect(result.ok && result.value.position).toBe(0);
   });
 

@@ -1,6 +1,6 @@
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
-import type { Book } from '../domain/book';
+import { DEFAULT_PAGE_PAIRING, type Book } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 import type { SourceBuildError, SourceBuilder } from '../domain/source-builder';
 
@@ -31,7 +31,7 @@ export async function openFile(
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
-    pagePairing: 'single',
+    pagePairing: DEFAULT_PAGE_PAIRING,
     sourceKind: built.value.sourceKind,
     imageCount: built.value.imageCount,
     addedAt: deps.now(),
