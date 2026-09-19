@@ -69,8 +69,16 @@
 
   const rightToLeft = $derived(book?.direction === 'rtl');
   const forwardKey = $derived(rightToLeft ? 'ArrowLeft' : 'ArrowRight');
-  const backGlyph = $derived(rightToLeft ? '›' : '‹');
-  const forwardGlyph = $derived(rightToLeft ? '‹' : '›');
+  const leftMove = $derived(
+    rightToLeft
+      ? { label: 'Next page', enabled: canNext, go: () => void view.next() }
+      : { label: 'Previous page', enabled: canPrevious, go: () => void view.previous() },
+  );
+  const rightMove = $derived(
+    rightToLeft
+      ? { label: 'Previous page', enabled: canPrevious, go: () => void view.previous() }
+      : { label: 'Next page', enabled: canNext, go: () => void view.next() },
+  );
 
   const fit = $derived(viewer?.activeFit() ?? null);
 
@@ -198,18 +206,13 @@
     <p class="marker">{marker}</p>
 
     <div class="moves">
-      <button
-        class="move"
-        type="button"
-        disabled={!canPrevious}
-        onclick={() => void view.previous()}
-      >
-        <span class="glyph" aria-hidden="true">{backGlyph}</span>
-        <span class="assistive">Previous page</span>
+      <button class="move" type="button" disabled={!leftMove.enabled} onclick={leftMove.go}>
+        <span class="glyph" aria-hidden="true">‹</span>
+        <span class="assistive">{leftMove.label}</span>
       </button>
-      <button class="move" type="button" disabled={!canNext} onclick={() => void view.next()}>
-        <span class="glyph" aria-hidden="true">{forwardGlyph}</span>
-        <span class="assistive">Next page</span>
+      <button class="move" type="button" disabled={!rightMove.enabled} onclick={rightMove.go}>
+        <span class="glyph" aria-hidden="true">›</span>
+        <span class="assistive">{rightMove.label}</span>
       </button>
     </div>
 
