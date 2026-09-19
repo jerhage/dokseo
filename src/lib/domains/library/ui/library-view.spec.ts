@@ -258,9 +258,7 @@ describe('LibraryView', () => {
     await expect(uploading).resolves.toBeUndefined();
 
     expect(view.busy).toBe(false);
-    expect(view.message).toBe(
-      'Nothing readable there. Images, ZIP, CBZ or PDF only.',
-    );
+    expect(view.message).toBe('Nothing readable there. Images, ZIP, CBZ or PDF only.');
     expect(view.books.map((b) => b.id)).toEqual(['one']);
     expect(view.status).toBe('ready');
   });
