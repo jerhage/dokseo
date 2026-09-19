@@ -8,6 +8,7 @@ const book: Book = {
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
+  pagePairing: 'double',
   sourceKind: 'archive',
   imageCount: 182,
   addedAt: 1758240000000,
@@ -57,6 +58,25 @@ describe('applyEdit', () => {
   it('keeps right to left on a paged book', () => {
     expect(applyEdit(book, { direction: 'rtl' }).direction).toBe('rtl');
     expect(applyEdit(book, { layoutKind: 'paged' }).direction).toBe('rtl');
+  });
+
+  it('forces the pairing to single when the edit turns the book continuous', () => {
+    const edited = applyEdit(book, { layoutKind: 'continuous', pagePairing: 'double' });
+    expect(edited.layoutKind).toBe('continuous');
+    expect(edited.pagePairing).toBe('single');
+  });
+
+  it('forces the pairing to single when the book is already continuous', () => {
+    const webtoon: Book = { ...book, layoutKind: 'continuous' };
+    expect(applyEdit(webtoon, { pagePairing: 'double-after-cover' }).pagePairing).toBe('single');
+    expect(applyEdit(webtoon, { title: 'Tower of God' }).pagePairing).toBe('single');
+  });
+
+  it('keeps a chosen pairing on a paged book', () => {
+    expect(applyEdit(book, { pagePairing: 'double-after-cover' }).pagePairing).toBe(
+      'double-after-cover',
+    );
+    expect(applyEdit(book, { layoutKind: 'paged' }).pagePairing).toBe('double');
   });
 
   it('trims a title', () => {

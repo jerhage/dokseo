@@ -117,6 +117,36 @@
       <p class="hint" id="{uid}-downward">A continuous strip always reads downward.</p>
     {/if}
 
+    <fieldset
+      class="group"
+      class:locked={downward}
+      disabled={saving || downward}
+      aria-describedby={downward ? `${uid}-unpaired` : undefined}
+    >
+      <legend class="label">Page pairing</legend>
+      <label class="choice">
+        <input type="radio" name="{uid}-pairing" value="single" bind:group={form.pagePairing} />
+        <span>One page at a time</span>
+      </label>
+      <label class="choice">
+        <input type="radio" name="{uid}-pairing" value="double" bind:group={form.pagePairing} />
+        <span>Two pages side by side</span>
+      </label>
+      <label class="choice">
+        <input
+          type="radio"
+          name="{uid}-pairing"
+          value="double-after-cover"
+          bind:group={form.pagePairing}
+        />
+        <span>Two pages, cover alone</span>
+      </label>
+    </fieldset>
+
+    {#if downward}
+      <p class="hint" id="{uid}-unpaired">A continuous strip has no facing pages.</p>
+    {/if}
+
     <div class="actions">
       <button class="cancel" type="button" disabled={saving} onclick={requestClose}>Cancel</button>
       <button class="save" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>

@@ -25,6 +25,7 @@ function book(id: string, overrides: Partial<Book> = {}): Book {
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
+    pagePairing: 'single',
     sourceKind: 'archive',
     imageCount: 182,
     addedAt: 1758240000000,

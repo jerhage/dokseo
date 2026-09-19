@@ -11,6 +11,7 @@ function book(overrides: Partial<Book> = {}): Book {
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
+    pagePairing: 'double',
     sourceKind: 'archive',
     imageCount: 182,
     addedAt: 1758240000000,
@@ -28,6 +29,7 @@ describe('bookForm', () => {
       language: 'ko',
       layoutKind: 'continuous',
       direction: 'ltr',
+      pagePairing: 'double',
     });
   });
 });
@@ -79,9 +81,42 @@ describe('changedFields', () => {
       language: 'ko',
       layoutKind: 'paged',
       direction: 'ltr',
+      pagePairing: 'double',
     });
 
     expect(edit).toEqual({ title: 'Blame! 1', language: 'ko', direction: 'ltr' });
+  });
+
+  it('sends a pairing the user changed', () => {
+    const subject = book();
+    const edit = changedFields(subject, {
+      ...bookForm(subject),
+      pagePairing: 'double-after-cover',
+    });
+
+    expect(edit).toEqual({ pagePairing: 'double-after-cover' });
+    expect(applyEdit(subject, edit).pagePairing).toBe('double-after-cover');
+  });
+
+  it('omits a pairing the user left alone', () => {
+    const subject = book();
+    const edit = changedFields(subject, { ...bookForm(subject), title: 'Blame! 1' });
+
+    expect(edit).toEqual({ title: 'Blame! 1' });
+    expect('pagePairing' in edit).toBe(false);
+  });
+
+  it('omits the pairing when the layout is continuous', () => {
+    const subject = book();
+    const edit = changedFields(subject, {
+      ...bookForm(subject),
+      layoutKind: 'continuous',
+      pagePairing: 'double-after-cover',
+    });
+
+    expect(edit).toEqual({ layoutKind: 'continuous' });
+    expect('pagePairing' in edit).toBe(false);
+    expect(applyEdit(subject, edit).pagePairing).toBe('single');
   });
 
   it('omits direction when the layout is continuous', () => {

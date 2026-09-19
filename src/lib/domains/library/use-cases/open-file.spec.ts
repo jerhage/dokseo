@@ -104,11 +104,12 @@ describe('openFile', () => {
     expect(result.ok && result.value.title).toBe('Nichijou 3');
   });
 
-  it('defaults a new book to Japanese, paged, right to left, at the first image', async () => {
+  it('defaults a new book to Japanese, paged, right to left, one page, at the first image', async () => {
     const result = await openFile(deps(), files);
     expect(result.ok && result.value.language).toBe('ja');
     expect(result.ok && result.value.layoutKind).toBe('paged');
     expect(result.ok && result.value.direction).toBe('rtl');
+    expect(result.ok && result.value.pagePairing).toBe('single');
     expect(result.ok && result.value.position).toBe(0);
   });
 

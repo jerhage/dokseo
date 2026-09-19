@@ -1,5 +1,7 @@
 export type { Book, BookEdit, SourceKind } from './domain/book';
 export { SOURCE_KINDS, applyEdit, isSourceKind } from './domain/book';
+export type { PageGroup } from './domain/page-pairing';
+export { pairPages, groupContaining } from './domain/page-pairing';
 export type { LibraryError, LibraryRepository } from './domain/library-repository';
 export type { PageSource, PageSourceError } from './domain/page-source';
 export { compareNatural } from './domain/natural-order';

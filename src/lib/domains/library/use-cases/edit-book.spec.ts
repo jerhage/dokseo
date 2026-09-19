@@ -17,6 +17,7 @@ const stored: Book = {
   language: 'ja',
   layoutKind: 'continuous',
   direction: 'ltr',
+  pagePairing: 'single',
   sourceKind: 'archive',
   imageCount: 182,
   addedAt: 1758240000000,

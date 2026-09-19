@@ -1,5 +1,5 @@
 import type { Language } from '$lib/shared/language';
-import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
+import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Book, BookEdit } from '../domain/book';
 
 export type BookForm = {
@@ -7,6 +7,7 @@ export type BookForm = {
   language: Language;
   layoutKind: LayoutKind;
   direction: ReadingDirection;
+  pagePairing: PagePairing;
 };
 
 export function bookForm(book: Book): BookForm {
@@ -15,6 +16,7 @@ export function bookForm(book: Book): BookForm {
     language: book.language,
     layoutKind: book.layoutKind,
     direction: book.direction,
+    pagePairing: book.pagePairing,
   };
 }
 
@@ -24,6 +26,7 @@ export function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
     language?: Language;
     layoutKind?: LayoutKind;
     direction?: ReadingDirection;
+    pagePairing?: PagePairing;
   } = {};
 
   const title = form.title.trim();
@@ -32,6 +35,9 @@ export function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   if (form.layoutKind !== book.layoutKind) edit.layoutKind = form.layoutKind;
   if (form.layoutKind !== 'continuous' && form.direction !== book.direction) {
     edit.direction = form.direction;
+  }
+  if (form.layoutKind !== 'continuous' && form.pagePairing !== book.pagePairing) {
+    edit.pagePairing = form.pagePairing;
   }
 
   return edit;

@@ -31,6 +31,7 @@ export async function openFile(
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
+    pagePairing: 'single',
     sourceKind: built.value.sourceKind,
     imageCount: built.value.imageCount,
     addedAt: deps.now(),
