@@ -9,6 +9,7 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
+  import { handlesOwnKeys } from './keyboard';
   import PagedViewer from './PagedViewer.svelte';
   import type { ReaderView } from './reader-view.svelte';
 
@@ -17,6 +18,8 @@
   let { view }: Props = $props();
 
   const uid = $props.id();
+
+  let viewer = $state<ReturnType<typeof PagedViewer> | null>(null);
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
@@ -69,12 +72,7 @@
   const backGlyph = $derived(rightToLeft ? '›' : '‹');
   const forwardGlyph = $derived(rightToLeft ? '‹' : '›');
 
-  function handlesOwnKeys(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-    if (target.isContentEditable) return true;
-    const tag = target.tagName;
-    return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
-  }
+  const fit = $derived(viewer?.activeFit() ?? null);
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -144,6 +142,28 @@
           {/each}
         </fieldset>
 
+        <div class="group" role="group" aria-labelledby="{uid}-fit">
+          <span class="legend" id="{uid}-fit">Fit</span>
+          <button
+            class="fit"
+            type="button"
+            disabled={viewer === null}
+            aria-pressed={fit === 'height'}
+            onclick={() => viewer?.fitHeight()}
+          >
+            Fit height
+          </button>
+          <button
+            class="fit"
+            type="button"
+            disabled={viewer === null}
+            aria-pressed={fit === 'width'}
+            onclick={() => viewer?.fitWidth()}
+          >
+            Fit width
+          </button>
+        </div>
+
         {#if downward}
           <p class="hint" id="{uid}-unpaired">{CONTINUOUS_HAS_NO_PAIRS}</p>
           <p class="hint" id="{uid}-downward">{CONTINUOUS_READS_DOWNWARD}</p>
@@ -158,6 +178,7 @@
 
   {#if curtain === null && book !== null}
     <PagedViewer
+      bind:this={viewer}
       pages={view.visiblePages}
       direction={book.direction}
       imageAt={(index) => view.imageAt(index)}
@@ -349,6 +370,35 @@
   .pill:has(input:focus-visible) {
     outline: 1px solid var(--c-accent-border-strong);
     outline-offset: 1px;
+  }
+
+  .fit {
+    padding: var(--s-1) var(--s-2);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-family: var(--f-ui);
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .fit:hover:not(:disabled),
+  .fit:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .fit[aria-pressed='true'] {
+    border-color: var(--c-accent-border);
+    background: var(--c-accent-wash-soft);
+    color: var(--c-accent);
+  }
+
+  .fit:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 
   .hint {

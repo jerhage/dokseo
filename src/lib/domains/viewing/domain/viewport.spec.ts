@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Size } from '$lib/shared/geometry';
-import { clampZoom, fitZoom, MAX_ZOOM, MIN_ZOOM, panBy, zoomAt, type Viewport } from './viewport';
+import {
+  centrePan,
+  clampPan,
+  clampZoom,
+  fitZoom,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  panBy,
+  zoomAt,
+  type Viewport,
+} from './viewport';
 
 const identity: Viewport = { zoom: 1, panX: 0, panY: 0 };
 
@@ -179,5 +189,123 @@ describe('fitZoom', () => {
     expect(fitZoom({ width: 10000, height: 10000 }, { width: 10, height: 10 }, 'contain')).toBe(
       MIN_ZOOM,
     );
+  });
+});
+
+describe('clampPan', () => {
+  const frame: Size = { width: 1000, height: 600 };
+
+  it('centres both axes when the scaled content is smaller than the frame', () => {
+    const settled = clampPan({ zoom: 1, panX: 200, panY: -90 }, { width: 400, height: 200 }, frame);
+
+    expect(settled).toEqual({ zoom: 1, panX: 300, panY: 200 });
+  });
+
+  it('keeps a pan already inside the range when the content overflows both axes', () => {
+    const settled = clampPan(
+      { zoom: 1, panX: -300, panY: -100 },
+      { width: 2000, height: 900 },
+      frame,
+    );
+
+    expect(settled).toEqual({ zoom: 1, panX: -300, panY: -100 });
+  });
+
+  it('clamps a pan past the near edge back to zero', () => {
+    const settled = clampPan({ zoom: 1, panX: 250, panY: 80 }, { width: 2000, height: 900 }, frame);
+
+    expect(settled).toEqual({ zoom: 1, panX: 0, panY: 0 });
+  });
+
+  it('clamps a pan past the far edge so the trailing edge meets the frame', () => {
+    const settled = clampPan(
+      { zoom: 1, panX: -5000, panY: -4000 },
+      { width: 2000, height: 900 },
+      frame,
+    );
+
+    expect(settled).toEqual({ zoom: 1, panX: -1000, panY: -300 });
+  });
+
+  it('centres only the axis on which the scaled content fits', () => {
+    const settled = clampPan(
+      { zoom: 1, panX: 400, panY: 400 },
+      { width: 2000, height: 200 },
+      frame,
+    );
+
+    expect(settled).toEqual({ zoom: 1, panX: 0, panY: 200 });
+  });
+
+  it('scales the content by the zoom before deciding whether it fits', () => {
+    const content: Size = { width: 500, height: 300 };
+
+    expect(clampPan({ zoom: 1, panX: 0, panY: 0 }, content, frame)).toEqual({
+      zoom: 1,
+      panX: 250,
+      panY: 150,
+    });
+    expect(clampPan({ zoom: 4, panX: 0, panY: 0 }, content, frame)).toEqual({
+      zoom: 4,
+      panX: 0,
+      panY: 0,
+    });
+  });
+
+  it('leaves the pan untouched for a zero or negative dimension', () => {
+    const pan: Viewport = { zoom: 1, panX: 77, panY: -33 };
+
+    expect(clampPan(pan, { width: 0, height: 0 }, frame)).toEqual(pan);
+    expect(clampPan(pan, { width: -400, height: -200 }, frame)).toEqual(pan);
+    expect(clampPan(pan, { width: 400, height: 200 }, { width: 0, height: 0 })).toEqual(pan);
+  });
+
+  it('leaves the pan untouched for a non-finite dimension', () => {
+    const pan: Viewport = { zoom: 1, panX: 77, panY: -33 };
+
+    expect(clampPan(pan, { width: Number.NaN, height: Number.NaN }, frame)).toEqual(pan);
+    expect(
+      clampPan(pan, { width: 400, height: 200 }, { width: Number.POSITIVE_INFINITY, height: 600 }),
+    ).toEqual({ zoom: 1, panX: 77, panY: 200 });
+  });
+
+  it('returns a new object rather than mutating its argument', () => {
+    const before: Viewport = { zoom: 1, panX: 400, panY: 400 };
+    const after = clampPan(before, { width: 2000, height: 900 }, frame);
+
+    expect(after).not.toBe(before);
+    expect(before).toEqual({ zoom: 1, panX: 400, panY: 400 });
+  });
+});
+
+describe('centrePan', () => {
+  const frame: Size = { width: 1000, height: 600 };
+
+  it('centres content smaller than the frame', () => {
+    expect(centrePan({ zoom: 1, panX: 900, panY: 0 }, { width: 400, height: 200 }, frame)).toEqual({
+      zoom: 1,
+      panX: 300,
+      panY: 200,
+    });
+  });
+
+  it('overhangs the frame evenly for content larger than it', () => {
+    expect(centrePan({ zoom: 1, panX: 0, panY: 0 }, { width: 2000, height: 900 }, frame)).toEqual({
+      zoom: 1,
+      panX: -500,
+      panY: -150,
+    });
+  });
+
+  it('survives a clamp unchanged, whichever side the content falls', () => {
+    const wide = centrePan({ zoom: 2, panX: 0, panY: 0 }, { width: 2000, height: 100 }, frame);
+
+    expect(clampPan(wide, { width: 2000, height: 100 }, frame)).toEqual(wide);
+  });
+
+  it('leaves the pan untouched for a degenerate dimension', () => {
+    const pan: Viewport = { zoom: 1, panX: 77, panY: -33 };
+
+    expect(centrePan(pan, { width: 0, height: Number.NaN }, frame)).toEqual(pan);
   });
 });

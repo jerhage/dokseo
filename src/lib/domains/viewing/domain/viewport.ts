@@ -44,6 +44,49 @@ export function zoomAt(
   };
 }
 
+function centredExtent(frameExtent: number, scaledExtent: number): number {
+  return (frameExtent - scaledExtent) / 2;
+}
+
+function clampExtent(
+  pan: number,
+  contentExtent: number,
+  frameExtent: number,
+  zoom: number,
+): number {
+  const scaled = contentExtent * zoom;
+  if (!isPositiveFinite(scaled) || !isPositiveFinite(frameExtent)) return pan;
+  if (scaled <= frameExtent) return centredExtent(frameExtent, scaled);
+  return Math.min(0, Math.max(frameExtent - scaled, pan));
+}
+
+function centreExtent(
+  pan: number,
+  contentExtent: number,
+  frameExtent: number,
+  zoom: number,
+): number {
+  const scaled = contentExtent * zoom;
+  if (!isPositiveFinite(scaled) || !isPositiveFinite(frameExtent)) return pan;
+  return centredExtent(frameExtent, scaled);
+}
+
+export function clampPan(viewport: Viewport, content: Size, frame: Size): Viewport {
+  return {
+    zoom: viewport.zoom,
+    panX: clampExtent(viewport.panX, content.width, frame.width, viewport.zoom),
+    panY: clampExtent(viewport.panY, content.height, frame.height, viewport.zoom),
+  };
+}
+
+export function centrePan(viewport: Viewport, content: Size, frame: Size): Viewport {
+  return {
+    zoom: viewport.zoom,
+    panX: centreExtent(viewport.panX, content.width, frame.width, viewport.zoom),
+    panY: centreExtent(viewport.panY, content.height, frame.height, viewport.zoom),
+  };
+}
+
 export function fitZoom(content: Size, frame: Size, mode: FitMode): number {
   return match(mode)
     .with('height', () => {
