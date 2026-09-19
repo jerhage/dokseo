@@ -71,6 +71,18 @@ function centreExtent(
   return centredExtent(frameExtent, scaled);
 }
 
+function overflows(contentExtent: number, frameExtent: number, zoom: number): boolean {
+  const scaled = contentExtent * zoom;
+  if (!isPositiveFinite(scaled) || !isPositiveFinite(frameExtent)) return false;
+  return scaled > frameExtent;
+}
+
+export function canPan(content: Size, frame: Size, zoom: number): boolean {
+  return (
+    overflows(content.width, frame.width, zoom) || overflows(content.height, frame.height, zoom)
+  );
+}
+
 export function clampPan(viewport: Viewport, content: Size, frame: Size): Viewport {
   return {
     zoom: viewport.zoom,

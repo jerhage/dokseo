@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Size } from '$lib/shared/geometry';
 import {
+  canPan,
   centrePan,
   clampPan,
   clampZoom,
@@ -307,5 +308,58 @@ describe('centrePan', () => {
     const pan: Viewport = { zoom: 1, panX: 77, panY: -33 };
 
     expect(centrePan(pan, { width: 0, height: Number.NaN }, frame)).toEqual(pan);
+  });
+});
+
+describe('canPan', () => {
+  const frame: Size = { width: 1000, height: 600 };
+
+  it('reports nothing to pan when the content fits on both axes', () => {
+    expect(canPan({ width: 400, height: 200 }, frame, 1)).toBe(false);
+  });
+
+  it('reports nothing to pan when the content matches the frame exactly', () => {
+    expect(canPan({ width: 1000, height: 600 }, frame, 1)).toBe(false);
+  });
+
+  it('reports something to pan when the content is wider than the frame', () => {
+    expect(canPan({ width: 1400, height: 200 }, frame, 1)).toBe(true);
+  });
+
+  it('reports something to pan when the content is taller than the frame', () => {
+    expect(canPan({ width: 400, height: 900 }, frame, 1)).toBe(true);
+  });
+
+  it('reports something to pan when the content overflows on both axes', () => {
+    expect(canPan({ width: 1400, height: 900 }, frame, 1)).toBe(true);
+  });
+
+  it('measures the content at the given zoom rather than at its natural size', () => {
+    const content: Size = { width: 600, height: 400 };
+
+    expect(canPan(content, frame, 1)).toBe(false);
+    expect(canPan(content, frame, 2)).toBe(true);
+    expect(canPan({ width: 1400, height: 900 }, frame, 0.5)).toBe(false);
+  });
+
+  it('reports nothing to pan for a degenerate content size', () => {
+    expect(canPan({ width: 0, height: 0 }, frame, 1)).toBe(false);
+    expect(canPan({ width: -1400, height: -900 }, frame, 1)).toBe(false);
+    expect(canPan({ width: Number.NaN, height: Number.NaN }, frame, 1)).toBe(false);
+  });
+
+  it('reports nothing to pan for a degenerate frame size', () => {
+    const content: Size = { width: 1400, height: 900 };
+
+    expect(canPan(content, { width: 0, height: 0 }, 1)).toBe(false);
+    expect(canPan(content, { width: Number.NaN, height: Number.NaN }, 1)).toBe(false);
+  });
+
+  it('reports nothing to pan for a degenerate zoom', () => {
+    const content: Size = { width: 1400, height: 900 };
+
+    expect(canPan(content, frame, 0)).toBe(false);
+    expect(canPan(content, frame, Number.NaN)).toBe(false);
+    expect(canPan(content, frame, Number.POSITIVE_INFINITY)).toBe(false);
   });
 });

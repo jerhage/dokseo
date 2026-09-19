@@ -4,3 +4,9 @@ export function handlesOwnKeys(target: EventTarget | null): boolean {
   const tag = target.tagName;
   return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
 }
+
+export function handlesOwnSpace(target: EventTarget | null): boolean {
+  if (handlesOwnKeys(target)) return true;
+  if (!(target instanceof HTMLElement)) return false;
+  return target.tagName === 'BUTTON' || target.getAttribute('role') === 'button';
+}

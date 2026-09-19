@@ -8,15 +8,30 @@
   import type { PageGroup } from '../domain/page-pairing';
   import { regionsIn, type PlacedImage } from '../domain/placement';
   import { isUsableSelection, selectionFrom, type Point } from '../domain/selection';
-  import { centrePan, clampPan, fitZoom, panBy, zoomAt, type Viewport } from '../domain/viewport';
-  import { handlesOwnKeys } from './keyboard';
+  import {
+    canPan,
+    centrePan,
+    clampPan,
+    fitZoom,
+    panBy,
+    zoomAt,
+    type Viewport,
+  } from '../domain/viewport';
+  import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import PageCanvas from './PageCanvas.svelte';
 
   type Fit = 'height' | 'width' | 'free';
 
   type Frames = { readonly content: Size; readonly frame: Size };
 
-  type Grab = { readonly id: number; readonly x: number; readonly y: number };
+  type Grab = {
+    readonly id: number;
+    readonly x: number;
+    readonly y: number;
+    readonly bySpace: boolean;
+  };
+
+  type Gesture = { readonly keys: readonly string[]; readonly does: string };
 
   type Props = {
     readonly pages: PageGroup;
@@ -44,6 +59,8 @@
   let held = $state<number | null>(null);
   let committed = $state.raw<ScreenRect | null>(null);
   let captured = $state.raw<Size | null>(null);
+  let spaceHeld = $state(false);
+  let pannable = $state(false);
 
   let shownPages: PageGroup | null = null;
 
@@ -75,6 +92,19 @@
     };
   });
 
+  const gestures = $derived<readonly Gesture[]>(
+    pannable
+      ? [
+          { keys: ['drag'], does: 'select a region' },
+          { keys: ['space', 'drag'], does: 'pan' },
+          { keys: ['middle', 'drag'], does: 'pan' },
+        ]
+      : [
+          { keys: ['drag'], does: 'select a region' },
+          { keys: ['+'], does: 'zoom in to pan' },
+        ],
+  );
+
   const measure = $derived(
     dragged !== null || captured === null ? null : `${captured.width} × ${captured.height}`,
   );
@@ -104,15 +134,20 @@
     };
   }
 
+  function commit(next: Viewport, sizes: Frames | null): void {
+    viewport = next;
+    if (sizes !== null) pannable = canPan(sizes.content, sizes.frame, next.zoom);
+  }
+
   function settle(next: Viewport): void {
     const sizes = framesNow();
-    viewport = sizes === null ? next : clampPan(next, sizes.content, sizes.frame);
+    commit(sizes === null ? next : clampPan(next, sizes.content, sizes.frame), sizes);
   }
 
   function recentre(zoom: number): void {
     const sizes = framesNow();
     const next: Viewport = { zoom, panX: viewport.panX, panY: viewport.panY };
-    viewport = sizes === null ? next : centrePan(next, sizes.content, sizes.frame);
+    commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
   }
 
   export function fitHeight(): void {
@@ -176,6 +211,17 @@
     if (moving === null) return;
     release(moving.id);
     grab = null;
+  }
+
+  function startGrab(element: HTMLElement, event: PointerEvent, bySpace: boolean): void {
+    grab = { id: event.pointerId, x: event.clientX, y: event.clientY, bySpace };
+    element.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  function dropSpace(): void {
+    spaceHeld = false;
+    if (grab !== null && grab.bySpace) stopGrab();
   }
 
   function placementsIn(element: HTMLElement): readonly PlacedImage[] {
@@ -245,13 +291,16 @@
     if (element === null) return;
 
     if (event.button === 1) {
-      grab = { id: event.pointerId, x: event.clientX, y: event.clientY };
-      element.setPointerCapture(event.pointerId);
-      event.preventDefault();
+      startGrab(element, event, false);
       return;
     }
 
     if (!event.isPrimary || event.button !== 0) return;
+
+    if (spaceHeld) {
+      startGrab(element, event, true);
+      return;
+    }
 
     const box = element.getBoundingClientRect();
     origin = { x: box.x, y: box.y };
@@ -267,7 +316,7 @@
   function onpointermove(event: PointerEvent): void {
     const moving = grab;
     if (moving !== null && moving.id === event.pointerId) {
-      grab = { id: moving.id, x: event.clientX, y: event.clientY };
+      grab = { id: moving.id, x: event.clientX, y: event.clientY, bySpace: moving.bySpace };
       settle(panBy(viewport, event.clientX - moving.x, event.clientY - moving.y));
       return;
     }
@@ -325,6 +374,13 @@
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (handlesOwnKeys(event.target)) return;
 
+    if (event.key === ' ') {
+      if (handlesOwnSpace(event.target)) return;
+      event.preventDefault();
+      spaceHeld = true;
+      return;
+    }
+
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
       stepZoom(ZOOM_STEP);
@@ -341,6 +397,15 @@
       event.preventDefault();
       fitHeight();
     }
+  }
+
+  function onkeyup(event: KeyboardEvent): void {
+    if (event.key !== ' ') return;
+    dropSpace();
+  }
+
+  function onblur(): void {
+    dropSpace();
   }
 
   $effect(() => {
@@ -370,11 +435,12 @@
   });
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} {onkeyup} {onblur} />
 
 <div class="viewer">
   <div
     class="frame"
+    class:grabbable={spaceHeld && grab === null && held === null}
     class:grabbing={grab !== null}
     role="group"
     aria-label="Pages in view"
@@ -409,6 +475,18 @@
         {/if}
       </div>
     {/if}
+
+    <p class="hint" aria-hidden="true">
+      {#each gestures as gesture (gesture.keys.join('+'))}
+        <span class="gesture">
+          {#each gesture.keys as key, step (key)}
+            {#if step > 0}<span class="join">+</span>{/if}
+            <span class="cap">{key}</span>
+          {/each}
+          <span class="does">{gesture.does}</span>
+        </span>
+      {/each}
+    </p>
   </div>
 </div>
 
@@ -433,6 +511,10 @@
     overflow: hidden;
     cursor: crosshair;
     touch-action: none;
+  }
+
+  .frame.grabbable {
+    cursor: grab;
   }
 
   .frame.grabbing {
@@ -483,6 +565,46 @@
 
   .east {
     right: -6px;
+  }
+
+  .hint {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: var(--z-chrome);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-1) var(--s-3);
+    margin: 0;
+    color: var(--c-text-10);
+    font-size: 10.5px;
+    pointer-events: none;
+  }
+
+  .gesture {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+  }
+
+  .cap {
+    padding: 0 var(--s-1);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-chip);
+    color: var(--c-text-9);
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    line-height: 15px;
+  }
+
+  .join {
+    color: var(--c-text-11);
+  }
+
+  .does {
+    white-space: nowrap;
   }
 
   .size {
