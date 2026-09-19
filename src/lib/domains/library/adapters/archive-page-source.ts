@@ -49,7 +49,9 @@ export async function openArchivePageSource(
 				return err({ kind: 'out-of-range', index, count });
 			}
 			try {
-				return ok(await decodeImage(await images[index].getData(new BlobWriter())));
+				const entry = await images[index].getData(new BlobWriter());
+				const bitmap = await decodeImage(entry);
+				return ok(bitmap);
 			} catch (cause) {
 				return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
 			}

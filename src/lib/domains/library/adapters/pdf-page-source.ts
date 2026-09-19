@@ -56,7 +56,8 @@ export async function openPdfPageSource(
 				return err({ kind: 'out-of-range', index, count });
 			}
 			try {
-				return ok(await renderToBitmap(pdf, index + 1));
+				const bitmap = await renderToBitmap(pdf, index + 1);
+				return ok(bitmap);
 			} catch (cause) {
 				return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
 			}

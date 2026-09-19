@@ -21,7 +21,8 @@ export async function packImagesIntoArchive(
 		for (const file of images) {
 			await writer.add(entryName(file), new BlobReader(file), { level: 0 });
 		}
-		return ok(await writer.close());
+		const archive = await writer.close();
+		return ok(archive);
 	} catch (cause) {
 		await writer.close().catch(() => undefined);
 		return err({ kind: 'source-unreadable', cause: describeCause(cause) });
