@@ -65,6 +65,15 @@ module.exports = {
     },
 
     {
+      name: 'the-base-layers-know-no-domain',
+      comment:
+        'shared/ is the kernel and platform/ is technical capability with zero domain vocabulary, so neither may import a domain. Breaking this inverts the layering and opens a cycle that nothing else would catch: library -> shared -> recognition makes library depend on recognition transitively, with no rule firing and no module cycle for no-circular to find. If a kernel file needs a domain type, the type belongs in the kernel or the dependency belongs the other way round.',
+      severity: 'error',
+      from: { path: '^src/lib/(shared|platform)/' },
+      to: { path: '^src/lib/domains/' },
+    },
+
+    {
       name: 'routes-are-thin',
       comment:
         'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts and context.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree), the shared kernel, style sheets and static assets, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
