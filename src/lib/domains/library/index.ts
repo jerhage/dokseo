@@ -4,3 +4,9 @@ export type { LibraryError, LibraryRepository } from './domain/library-repositor
 export type { PageSource, PageSourceError } from './domain/page-source';
 export { compareNatural } from './domain/natural-order';
 export { isImageEntry, selectImageEntries } from './domain/image-entries';
+export { detectSourceKind } from './domain/source-detection';
+export type { BuiltSource, SourceBuildError, SourceBuilder } from './domain/source-builder';
+export { createFileSourceBuilder } from './adapters/file-source-builder';
+export { createLibraryRepository } from './adapters/indexeddb-opfs-library.repo';
+export type { OpenFileDeps, OpenFileError } from './use-cases/open-file';
+export { openFile } from './use-cases/open-file';
