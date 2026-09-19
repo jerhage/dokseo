@@ -69,7 +69,7 @@ export class LibraryView {
 		this.status = 'loading';
 		this.message = null;
 
-		const listed = await this.#container.library.repository.list();
+		const listed = await this.#container.library.listBooks();
 		if (generation !== this.#generation) return;
 		if (!listed.ok) {
 			this.status = 'failed';
@@ -120,7 +120,7 @@ export class LibraryView {
 		this.message = null;
 
 		try {
-			const removed = await this.#container.library.repository.remove(id);
+			const removed = await this.#container.library.removeBook(id);
 			if (!removed.ok) {
 				this.message = describeLibraryError(removed.error);
 				return;
@@ -141,7 +141,7 @@ export class LibraryView {
 
 	async #readCovers(books: readonly Book[]): Promise<Map<BookId, string>> {
 		const read = books.map(async (book) => {
-			const cover = await this.#container.library.repository.readCover(book.id);
+			const cover = await this.#container.library.readCover(book.id);
 			return cover.ok ? ([book.id, URL.createObjectURL(cover.value)] as const) : null;
 		});
 		const found = await Promise.all(read);

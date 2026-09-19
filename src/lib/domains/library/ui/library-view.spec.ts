@@ -3,7 +3,7 @@ import type { Container } from '$lib/container';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import type { Book } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import type { LibraryError } from '../domain/library-repository';
 import type { OpenFileError } from '../use-cases/open-file';
 import { LibraryView } from './library-view.svelte';
 
@@ -51,30 +51,22 @@ function fakes(): Fakes {
 	const removes: Deferred<Result<void, LibraryError>>[] = [];
 	const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
 
-	const repository: LibraryRepository = {
-		list: () => {
-			const next = deferred<Result<readonly Book[], LibraryError>>();
-			lists.push(next);
-			return next.promise;
-		},
-		get: (id) => Promise.resolve(err({ kind: 'not-found', id })),
-		add: () => Promise.resolve(ok(undefined)),
-		remove: () => {
-			const next = deferred<Result<void, LibraryError>>();
-			removes.push(next);
-			return next.promise;
-		},
-		savePosition: () => Promise.resolve(ok(undefined)),
-		readSource: () => Promise.resolve(ok(new Blob(['source']))),
-		readCover: () => cover.gate().then(() => cover.outcome)
-	};
-
 	const container: Container = {
 		library: {
-			repository,
 			openFile: () => {
 				const next = deferred<Result<Book, OpenFileError>>();
 				opens.push(next);
+				return next.promise;
+			},
+			listBooks: () => {
+				const next = deferred<Result<readonly Book[], LibraryError>>();
+				lists.push(next);
+				return next.promise;
+			},
+			readCover: () => cover.gate().then(() => cover.outcome),
+			removeBook: () => {
+				const next = deferred<Result<void, LibraryError>>();
+				removes.push(next);
 				return next.promise;
 			}
 		}
