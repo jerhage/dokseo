@@ -1,0 +1,263 @@
+import { describe, expect, it } from 'vitest';
+import type { Container } from '$lib/container';
+import type { Size } from '$lib/shared/geometry';
+import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import type { PageSource } from '$lib/shared/page-source';
+import { err, ok } from '$lib/shared/result';
+import { at } from '$lib/shared/testing/at';
+import { ReaderView, type ReaderBook } from './reader-view.svelte';
+
+const PORTRAIT: Size = { width: 1000, height: 1500 };
+
+const LANDSCAPE: Size = { width: 2400, height: 1600 };
+
+function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
+  return {
+    id: bookId('one'),
+    title: 'Blame!',
+    language: 'ja',
+    layoutKind: 'paged',
+    direction: 'rtl',
+    pagePairing: 'double',
+    sourceKind: 'archive',
+    imageCount: 6,
+    addedAt: 1758240000000,
+    position: imageIndex(0),
+    ...overrides,
+  };
+}
+
+function bitmap(size: Size): ImageBitmap {
+  return { width: size.width, height: size.height, close: () => undefined } as ImageBitmap;
+}
+
+type FakeSource = {
+  readonly source: PageSource;
+  readonly asked: number[];
+  readonly sizes: Map<number, Size>;
+  readonly broken: Set<number>;
+  closed: number;
+};
+
+function fakeSource(count: number): FakeSource {
+  const asked: number[] = [];
+  const sizes = new Map<number, Size>();
+  const broken = new Set<number>();
+
+  const state = {
+    source: {} as PageSource,
+    asked,
+    sizes,
+    broken,
+    closed: 0,
+  };
+
+  state.source = {
+    count,
+    image: (index: ImageIndex) => {
+      asked.push(index);
+      if (broken.has(index)) {
+        return Promise.resolve(err({ kind: 'decode-failed', index, cause: 'torn page' } as const));
+      }
+      return Promise.resolve(ok(bitmap(sizes.get(index) ?? PORTRAIT)));
+    },
+    close: () => {
+      state.closed += 1;
+    },
+    [Symbol.dispose]: () => {
+      state.closed += 1;
+    },
+  };
+
+  return state;
+}
+
+type Edit = { readonly id: BookId; readonly position: number | undefined };
+
+type Fakes = {
+  readonly container: Container;
+  readonly pages: FakeSource;
+  readonly edits: Edit[];
+  opening: ReaderBook | 'unreadable';
+  editing: 'ok' | 'failed';
+};
+
+function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
+  const opened = book(overrides);
+  const pages = fakeSource(opened.imageCount);
+  const edits: Edit[] = [];
+
+  const world = {
+    pages,
+    edits,
+    opening: opened as ReaderBook | 'unreadable',
+    editing: 'ok' as 'ok' | 'failed',
+    container: {} as Container,
+  };
+
+  world.container = {
+    library: {
+      openFile: () => Promise.reject(new Error('not used')),
+      openForReading: () => {
+        if (world.opening === 'unreadable') {
+          return Promise.resolve(
+            err({
+              kind: 'source',
+              error: { kind: 'source-unreadable', cause: 'bad zip' },
+            } as const),
+          );
+        }
+        return Promise.resolve(ok({ book: world.opening, pages: pages.source }));
+      },
+      listBooks: () => Promise.reject(new Error('not used')),
+      readCover: () => Promise.reject(new Error('not used')),
+      removeBook: () => Promise.reject(new Error('not used')),
+      editBook: (id, edit) => {
+        edits.push({ id, position: edit.position });
+        if (world.editing === 'failed') {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+        }
+        return Promise.resolve(ok(book(overrides)));
+      },
+      readStorageUsage: () => Promise.resolve(null),
+    },
+  };
+
+  return world;
+}
+
+describe('ReaderView', () => {
+  it('opens a book and exposes its first group', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    expect(view.status).toBe('idle');
+
+    await view.open(bookId('one'));
+
+    expect(view.status).toBe('ready');
+    expect(view.book?.title).toBe('Blame!');
+    expect(view.groups).toHaveLength(3);
+    expect(view.visiblePages).toEqual([0, 1]);
+    expect(view.message).toBeNull();
+  });
+
+  it('lands a failure in the status without throwing', async () => {
+    const world = fakes();
+    world.opening = 'unreadable';
+    const view = new ReaderView(world.container);
+
+    await expect(view.open(bookId('one'))).resolves.toBeUndefined();
+
+    expect(view.status).toBe('failed');
+    expect(view.message).toBe('That book could not be read: bad zip');
+    expect(view.book).toBeNull();
+    expect(view.groups).toEqual([]);
+  });
+
+  it('moves to the next group and back', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.next();
+    expect(view.group).toBe(1);
+    expect(view.visiblePages).toEqual([2, 3]);
+
+    await view.previous();
+    expect(view.group).toBe(0);
+    expect(view.visiblePages).toEqual([0, 1]);
+  });
+
+  it('refuses to move past either end', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.previous();
+    expect(view.group).toBe(0);
+
+    await view.goToGroup(2);
+    await view.next();
+
+    expect(view.group).toBe(2);
+    expect(view.visiblePages).toEqual([4, 5]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([4]);
+  });
+
+  it('closes the page source on dispose', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(world.pages.closed).toBe(0);
+
+    view.dispose();
+
+    expect(world.pages.closed).toBe(1);
+    expect(view.status).toBe('idle');
+    expect(view.book).toBeNull();
+  });
+
+  it('records a measured size and regroups', async () => {
+    const world = fakes();
+    world.pages.sizes.set(0, LANDSCAPE);
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.groups).toHaveLength(3);
+
+    const drawn = await view.imageAt(imageIndex(0));
+
+    expect(drawn?.width).toBe(2400);
+    expect(at(view.sizes, 0)).toEqual(LANDSCAPE);
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+  });
+
+  it('keeps the reader on the same image when a discovered wide page re-phases the groups', async () => {
+    const world = fakes({ position: imageIndex(3) });
+    world.pages.sizes.set(2, LANDSCAPE);
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.group).toBe(1);
+
+    await view.imageAt(imageIndex(2));
+
+    expect(view.position.index).toBe(3);
+    expect(view.group).toBe(2);
+    expect(view.visiblePages).toEqual([3, 4]);
+  });
+
+  it('persists the position when the group changes', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(world.edits).toHaveLength(0);
+
+    await view.next();
+
+    expect(world.edits).toEqual([{ id: 'one', position: 2 }]);
+  });
+
+  it('reports a page that will not decode without failing the book', async () => {
+    const world = fakes();
+    world.pages.broken.add(1);
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    const drawn = await view.imageAt(imageIndex(1));
+
+    expect(drawn).toBeNull();
+    expect(view.status).toBe('ready');
+    expect(view.message).toBeNull();
+  });
+
+  it('reports a failed save of the reading position', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.next();
+
+    expect(view.group).toBe(1);
+    expect(view.message).toBe('Local storage failed: the disk went away');
+  });
+});
