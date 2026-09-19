@@ -51,7 +51,12 @@
 						placeholder="Search titles or recognized text"
 					/>
 				</label>
-				<button class="upload" type="button" disabled={view.busy} onclick={() => tile?.choose()}>
+				<button
+					class="upload"
+					type="button"
+					disabled={view.busy || tile === null}
+					onclick={() => tile?.choose()}
+				>
 					{view.busy ? 'Adding…' : 'Upload pages'}
 				</button>
 			</div>

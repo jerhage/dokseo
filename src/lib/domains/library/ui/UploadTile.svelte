@@ -17,10 +17,11 @@
 	}
 
 	function take(event: Event & { currentTarget: HTMLInputElement }): void {
-		const chosen = event.currentTarget.files;
-		event.currentTarget.value = '';
-		if (chosen === null || chosen.length === 0) return;
-		onfiles([...chosen]);
+		const input = event.currentTarget;
+		const chosen = input.files === null ? [] : [...input.files];
+		input.value = '';
+		if (chosen.length === 0) return;
+		onfiles(chosen);
 	}
 
 	function hover(event: DragEvent): void {
