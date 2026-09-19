@@ -6,42 +6,13 @@ import type { SourceKind } from '../domain/book';
 import type { PageSource, PageSourceError } from '../domain/page-source';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
 import { detectSourceKind } from '../domain/source-detection';
+import { suggestTitle } from '../domain/title';
 import { packImagesIntoArchive } from './archive-packer';
+import { entryName, titleCandidate } from './file-entry';
 import { openArchivePageSource } from './archive-page-source';
 import { openPdfPageSource } from './pdf-page-source';
 
 const COVER_MAX_WIDTH = 400;
-
-const FALLBACK_TITLE = 'Untitled';
-
-function entryName(file: File): string {
-	return file.webkitRelativePath.length > 0 ? file.webkitRelativePath : file.name;
-}
-
-function basename(name: string): string {
-	const cut = name.lastIndexOf('/');
-	return cut === -1 ? name : name.slice(cut + 1);
-}
-
-function withoutExtension(name: string): string {
-	const dot = name.lastIndexOf('.');
-	return dot < 1 ? name : name.slice(0, dot);
-}
-
-function firstNonEmpty(...candidates: readonly string[]): string {
-	for (const candidate of candidates) {
-		const trimmed = candidate.trim();
-		if (trimmed.length > 0) return trimmed;
-	}
-	return FALLBACK_TITLE;
-}
-
-function suggestTitle(files: readonly File[]): string {
-	const first = files[0];
-	if (first === undefined) return FALLBACK_TITLE;
-	const folder = first.webkitRelativePath.split('/')[0];
-	return firstNonEmpty(folder, withoutExtension(basename(first.name)));
-}
 
 function describePageSourceError(error: PageSourceError): string {
 	if (error.kind === 'out-of-range') {
@@ -95,7 +66,7 @@ async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, So
 		sourceKind,
 		imageCount: pages.count,
 		cover,
-		suggestedTitle: suggestTitle(files)
+		suggestedTitle: suggestTitle(files.map(titleCandidate))
 	});
 }
 

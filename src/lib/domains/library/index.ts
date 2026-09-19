@@ -5,6 +5,8 @@ export type { PageSource, PageSourceError } from './domain/page-source';
 export { compareNatural } from './domain/natural-order';
 export { isImageEntry, selectImageEntries } from './domain/image-entries';
 export { detectSourceKind } from './domain/source-detection';
+export type { TitleCandidate } from './domain/title';
+export { suggestTitle } from './domain/title';
 export type { BuiltSource, SourceBuildError, SourceBuilder } from './domain/source-builder';
 export { createFileSourceBuilder } from './adapters/file-source-builder';
 export { createLibraryRepository } from './adapters/indexeddb-opfs-library.repo';

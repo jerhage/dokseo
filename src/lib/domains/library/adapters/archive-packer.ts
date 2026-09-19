@@ -1,12 +1,9 @@
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js';
 import { err, ok, type Result } from '$lib/shared/result';
 import { isImageEntry } from '../domain/image-entries';
+import { entryName } from './file-entry';
 import type { PageSourceError } from '../domain/page-source';
 import { describeCause } from '$lib/shared/cause';
-
-function entryName(file: File): string {
-	return file.webkitRelativePath.length > 0 ? file.webkitRelativePath : file.name;
-}
 
 export async function packImagesIntoArchive(
 	files: readonly File[]

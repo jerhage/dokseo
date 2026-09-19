@@ -1,19 +1,12 @@
+import { basename, extensionOf } from './entry-path';
 import { compareNatural } from './natural-order';
 
 const IMAGE_EXTENSIONS: readonly string[] = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'avif'];
 
 const JUNK_NAMES: readonly string[] = ['.ds_store', 'thumbs.db'];
 
-function basename(name: string): string {
-	const cut = name.lastIndexOf('/');
-	return cut === -1 ? name : name.slice(cut + 1);
-}
-
 export function isImageEntry(name: string): boolean {
-	const last = basename(name);
-	const dot = last.lastIndexOf('.');
-	if (dot < 1) return false;
-	return IMAGE_EXTENSIONS.includes(last.slice(dot + 1).toLowerCase());
+	return IMAGE_EXTENSIONS.includes(extensionOf(name));
 }
 
 function isJunk(name: string): boolean {
