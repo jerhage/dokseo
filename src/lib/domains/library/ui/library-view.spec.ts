@@ -87,6 +87,9 @@ function fakes(): Fakes {
       },
       readStorageUsage: () => Promise.resolve(usage.estimate),
     },
+    recognition: {
+      recognizeRegion: () => Promise.reject(new Error('not used')),
+    },
   };
 
   return { container, lists, opens, removes, edits, cover, usage };

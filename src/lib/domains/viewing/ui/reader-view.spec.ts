@@ -155,6 +155,9 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       },
       readStorageUsage: () => Promise.resolve(null),
     },
+    recognition: {
+      recognizeRegion: () => Promise.reject(new Error('not used')),
+    },
   };
 
   return world;
