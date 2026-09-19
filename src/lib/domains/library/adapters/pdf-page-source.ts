@@ -41,6 +41,12 @@ export async function openPdfPageSource(
 	const count = pdf.numPages;
 	let closed = false;
 
+	const close = (): void => {
+		if (closed) return;
+		closed = true;
+		void task.destroy().catch(() => undefined);
+	};
+
 	return ok({
 		count,
 
@@ -56,10 +62,7 @@ export async function openPdfPageSource(
 			}
 		},
 
-		close(): void {
-			if (closed) return;
-			closed = true;
-			void task.destroy().catch(() => undefined);
-		}
+		close,
+		[Symbol.dispose]: close
 	});
 }

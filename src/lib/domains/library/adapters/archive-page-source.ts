@@ -34,6 +34,12 @@ export async function openArchivePageSource(
 	const count = images.length;
 	let closed = false;
 
+	const close = (): void => {
+		if (closed) return;
+		closed = true;
+		void reader.close().catch(() => undefined);
+	};
+
 	return ok({
 		count,
 
@@ -49,10 +55,7 @@ export async function openArchivePageSource(
 			}
 		},
 
-		close(): void {
-			if (closed) return;
-			closed = true;
-			void reader.close().catch(() => undefined);
-		}
+		close,
+		[Symbol.dispose]: close
 	});
 }

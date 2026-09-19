@@ -10,4 +10,5 @@ export interface PageSource {
 	readonly count: number;
 	image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>>;
 	close(): void;
+	[Symbol.dispose](): void;
 }
