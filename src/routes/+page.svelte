@@ -1,2 +1,9 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<h1>Manga OCR Reader</h1>
+
+<style>
+	h1 {
+		margin: var(--s-6);
+		color: var(--c-text-2);
+		font-family: var(--f-ui);
+	}
+</style>
