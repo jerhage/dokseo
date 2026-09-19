@@ -38,7 +38,7 @@ function firstNonEmpty(...candidates: readonly string[]): string {
 
 function suggestTitle(files: readonly File[]): string {
 	const first = files[0];
-	if (files.length === 1) return firstNonEmpty(withoutExtension(basename(first.name)));
+	if (first === undefined) return FALLBACK_TITLE;
 	const folder = first.webkitRelativePath.split('/')[0];
 	return firstNonEmpty(folder, withoutExtension(basename(first.name)));
 }
