@@ -11,6 +11,7 @@ import type { BookId } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import { applyEdit, type Book, type BookEdit } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import { bookFromStored, type StoredBook } from '../domain/stored-book';
 
 const DATABASE_NAME = 'reader';
 
@@ -91,8 +92,8 @@ export function createLibraryRepository(): LibraryRepository {
     async list(): Promise<Result<readonly Book[], LibraryError>> {
       if (!recordsAvailable()) return unavailable();
       try {
-        const records = await listRecords<Book>(await database(), BOOK_STORE);
-        return ok(records);
+        const records = await listRecords<StoredBook>(await database(), BOOK_STORE);
+        return ok(records.map(bookFromStored));
       } catch (cause) {
         return failed(cause);
       }
@@ -101,9 +102,9 @@ export function createLibraryRepository(): LibraryRepository {
     async get(id: BookId): Promise<Result<Book, LibraryError>> {
       if (!recordsAvailable()) return unavailable();
       try {
-        const record = await getRecord<Book>(await database(), BOOK_STORE, id);
+        const record = await getRecord<StoredBook>(await database(), BOOK_STORE, id);
         if (record === undefined) return missing(id);
-        return ok(record);
+        return ok(bookFromStored(record));
       } catch (cause) {
         return failed(cause);
       }
@@ -147,9 +148,9 @@ export function createLibraryRepository(): LibraryRepository {
       if (!recordsAvailable()) return unavailable();
       try {
         const db = await database();
-        const record = await getRecord<Book>(db, BOOK_STORE, id);
+        const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
         if (record === undefined) return missing(id);
-        const updated = applyEdit(record, edit);
+        const updated = applyEdit(bookFromStored(record), edit);
         await putRecord(db, BOOK_STORE, updated);
         return ok(updated);
       } catch (cause) {
