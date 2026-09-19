@@ -3,9 +3,11 @@ import type { Container, RecognitionProgress } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
+import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
+import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { RecognizeRegionError } from '../use-cases/recognize-region';
 import { CaptureView } from './capture-view.svelte';
@@ -13,21 +15,39 @@ import { CaptureView } from './capture-view.svelte';
 type Reading = Result<RecognizedText, RecognizeRegionError>;
 
 type Call = {
+  readonly language: Language;
+  readonly regions: readonly ImageRegion[];
   readonly report: RecognitionProgress | undefined;
   readonly settle: (reading: Reading) => void;
+};
+
+type Consent = {
+  readonly granted: Set<Language>;
+  readonly reads: Language[];
+  readonly grants: Language[];
+  readFails: boolean;
+  grantFails: boolean;
 };
 
 type Fakes = {
   readonly container: Container;
   readonly calls: Call[];
+  readonly consent: Consent;
 };
 
 function unused(): never {
   throw new Error('The library is not used by the capture panel');
 }
 
-function fakes(): Fakes {
+function fakes(granted: readonly Language[] = ['ja']): Fakes {
   const calls: Call[] = [];
+  const consent: Consent = {
+    granted: new Set(granted),
+    reads: [],
+    grants: [],
+    readFails: false,
+    grantFails: false,
+  };
 
   const container: Container = {
     library: {
@@ -40,14 +60,29 @@ function fakes(): Fakes {
       readStorageUsage: unused,
     },
     recognition: {
-      recognizeRegion: (_language, _source, _regions, _arrangement, report) =>
+      readModelConsent: (
+        language: Language,
+      ): Promise<Result<ModelConsentDecision, ModelConsentError>> => {
+        consent.reads.push(language);
+        if (consent.readFails) {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the store is blocked' }));
+        }
+        return Promise.resolve(ok(consent.granted.has(language) ? 'granted' : 'undecided'));
+      },
+      grantModelConsent: (language: Language): Promise<Result<void, ModelConsentError>> => {
+        consent.grants.push(language);
+        if (consent.grantFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+        consent.granted.add(language);
+        return Promise.resolve(ok(undefined));
+      },
+      recognizeRegion: (language, _source, taken, _arrangement, report) =>
         new Promise<Reading>((resolve) => {
-          calls.push({ report, settle: resolve });
+          calls.push({ language, regions: taken, report, settle: resolve });
         }),
     },
   };
 
-  return { container, calls };
+  return { container, calls, consent };
 }
 
 const source = {} as PageSource;
@@ -60,16 +95,24 @@ function read(view: CaptureView): Promise<void> {
   return view.recognize(source, 'ja', regions(), 'row');
 }
 
+async function started(world: Fakes, index: number): Promise<Call> {
+  for (let tick = 0; tick < 50 && world.calls.length <= index; tick += 1) {
+    await Promise.resolve();
+  }
+  return at(world.calls, index);
+}
+
 describe('CaptureView', () => {
   it('appends a pending capture and settles it in place', async () => {
     const world = fakes();
     const view = new CaptureView(world.container);
 
     const running = read(view);
+    const call = await started(world, 0);
     expect(view.captures.map((capture) => capture.status)).toEqual(['pending']);
     expect(at(view.captures, 0).regions).toEqual(regions());
 
-    at(world.calls, 0).settle(ok(recognizedText('どうしたんだ')));
+    call.settle(ok(recognizedText('どうしたんだ')));
     await running;
 
     const settled = at(view.captures, 0);
@@ -85,9 +128,9 @@ describe('CaptureView', () => {
     const first = view.recognize(source, 'ja', regions(1), 'row');
     const second = view.recognize(source, 'ja', regions(2), 'row');
 
-    at(world.calls, 1).settle(ok(recognizedText('second')));
+    (await started(world, 1)).settle(ok(recognizedText('second')));
     await second;
-    at(world.calls, 0).settle(ok(recognizedText('first')));
+    (await started(world, 0)).settle(ok(recognizedText('first')));
     await first;
 
     const texts = view.captures.map((capture) =>
@@ -101,8 +144,9 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container);
 
     const running = read(view);
+    const call = await started(world, 0);
     view.clear();
-    at(world.calls, 0).settle(ok(recognizedText('late')));
+    call.settle(ok(recognizedText('late')));
     await running;
 
     expect(view.captures).toEqual([]);
@@ -133,7 +177,7 @@ describe('CaptureView', () => {
 
     for (const [index, [failure, sentence]] of failures.entries()) {
       const running = read(view);
-      at(world.calls, index).settle(err(failure));
+      (await started(world, index)).settle(err(failure));
       await running;
 
       const capture = at(view.captures, index);
@@ -147,7 +191,7 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container);
 
     const running = read(view);
-    at(world.calls, 0).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    (await started(world, 0)).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
     await running;
 
     expect(at(view.captures, 0).status).toBe('empty');
@@ -158,7 +202,7 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container);
 
     const running = read(view);
-    at(world.calls, 0).settle(ok(recognizedText('   ')));
+    (await started(world, 0)).settle(ok(recognizedText('   ')));
     await running;
 
     expect(at(view.captures, 0).status).toBe('empty');
@@ -170,10 +214,11 @@ describe('CaptureView', () => {
     expect(view.progress).toBeNull();
 
     const running = read(view);
-    at(world.calls, 0).report?.(0.42);
+    const call = await started(world, 0);
+    call.report?.(0.42);
     expect(view.progress).toBe(0.42);
 
-    at(world.calls, 0).settle(ok(recognizedText('done')));
+    call.settle(ok(recognizedText('done')));
     await running;
     expect(view.progress).toBeNull();
   });
@@ -184,13 +229,13 @@ describe('CaptureView', () => {
 
     const first = read(view);
     const second = read(view);
-    at(world.calls, 0).report?.(0.5);
+    (await started(world, 0)).report?.(0.5);
 
-    at(world.calls, 0).settle(ok(recognizedText('first')));
+    (await started(world, 0)).settle(ok(recognizedText('first')));
     await first;
     expect(view.progress).toBe(0.5);
 
-    at(world.calls, 1).settle(ok(recognizedText('second')));
+    (await started(world, 1)).settle(ok(recognizedText('second')));
     await second;
     expect(view.progress).toBeNull();
   });
@@ -200,7 +245,7 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container);
 
     const running = read(view);
-    at(world.calls, 0).settle(ok(recognizedText('one')));
+    (await started(world, 0)).settle(ok(recognizedText('one')));
     await running;
     expect(view.count).toBe(1);
 
@@ -224,16 +269,122 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container);
 
     const first = view.recognize(source, 'ja', regions(1), 'row');
-    at(world.calls, 0).settle(ok(recognizedText('older')));
+    (await started(world, 0)).settle(ok(recognizedText('older')));
     await first;
 
     const second = view.recognize(source, 'ja', regions(2), 'row');
-    at(world.calls, 1).settle(ok(recognizedText('newer')));
+    (await started(world, 1)).settle(ok(recognizedText('newer')));
     await second;
 
     const shown = view.newestFirst.map((capture) =>
       capture.status === 'done' ? capture.text.text : capture.status,
     );
     expect(shown).toEqual(['newer', 'older']);
+  });
+
+  it('reads and records no decision before a selection is committed', () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    expect(view.consentRequest).toBeNull();
+    expect(world.consent.reads).toEqual([]);
+    expect(world.consent.grants).toEqual([]);
+  });
+
+  it('starts no recognition for a language the reader has not agreed to', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    await read(view);
+
+    expect(world.calls).toEqual([]);
+    expect(view.captures).toEqual([]);
+    expect(view.consentRequest?.language).toBe('ja');
+    expect(view.consentRequest?.footprint.weightsBytes).toBe(116_595_703);
+  });
+
+  it('recognizes the selection it was holding when the reader agreed', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    await view.recognize(source, 'ja', regions(7), 'row');
+    expect(world.calls).toEqual([]);
+
+    const running = view.agree();
+    const call = await started(world, 0);
+    expect(call.regions).toEqual(regions(7));
+
+    call.settle(ok(recognizedText('held')));
+    await running;
+
+    expect(view.consentRequest).toBeNull();
+    expect(world.consent.grants).toEqual(['ja']);
+    expect(at(view.captures, 0).regions).toEqual(regions(7));
+  });
+
+  it('discards the held selection and asks no second time when the reader declines', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    await read(view);
+    view.decline();
+
+    expect(view.consentRequest).toBeNull();
+    expect(world.calls).toEqual([]);
+    expect(view.captures).toEqual([]);
+    expect(world.consent.grants).toEqual([]);
+
+    await read(view);
+
+    expect(view.consentRequest).toBeNull();
+    expect(world.calls).toEqual([]);
+  });
+
+  it('asks once and recognizes a later selection without asking again', async () => {
+    const world = fakes([]);
+    const asked = new CaptureView(world.container);
+
+    await read(asked);
+    const granting = asked.agree();
+    (await started(world, 0)).settle(ok(recognizedText('first')));
+    await granting;
+
+    const later = new CaptureView(world.container);
+    const running = read(later);
+    (await started(world, 1)).settle(ok(recognizedText('second')));
+    await running;
+
+    expect(later.consentRequest).toBeNull();
+    expect(world.consent.grants).toEqual(['ja']);
+    expect(at(later.captures, 0).status).toBe('done');
+  });
+
+  it('asks the reader and still recognizes when the decision cannot be stored', async () => {
+    const world = fakes([]);
+    world.consent.readFails = true;
+    world.consent.grantFails = true;
+    const view = new CaptureView(world.container);
+
+    await read(view);
+    expect(view.consentRequest?.language).toBe('ja');
+
+    const running = view.agree();
+    (await started(world, 0)).settle(ok(recognizedText('read anyway')));
+    await running;
+
+    expect(at(view.captures, 0).status).toBe('done');
+  });
+
+  it('asks for no agreement for a language whose model has not been chosen', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    const running = view.recognize(source, 'ko', regions(), 'column');
+    (await started(world, 0)).settle(ok(recognizedText('안녕')));
+    await running;
+
+    expect(view.consentRequest).toBeNull();
+    expect(world.consent.reads).toEqual([]);
+    expect(at(view.captures, 0).status).toBe('done');
   });
 });

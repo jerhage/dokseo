@@ -156,6 +156,8 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       readStorageUsage: () => Promise.resolve(null),
     },
     recognition: {
+      readModelConsent: () => Promise.reject(new Error('not used')),
+      grantModelConsent: () => Promise.reject(new Error('not used')),
       recognizeRegion: () => Promise.reject(new Error('not used')),
     },
   };

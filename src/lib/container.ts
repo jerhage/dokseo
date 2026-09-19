@@ -32,8 +32,21 @@ import {
 } from './domains/library/use-cases/read-storage-usage';
 import { removeBook, type RemoveBookDeps } from './domains/library/use-cases/remove-book';
 import { createCanvasCropper } from './domains/recognition/adapters/canvas-cropper';
+import { createModelConsentStore } from './domains/recognition/adapters/indexeddb-model-consent';
+import type {
+  ModelConsentDecision,
+  ModelConsentError,
+} from './domains/recognition/domain/model-consent';
 import type { RecognizedText } from './domains/recognition/domain/recognized-text';
 import type { TextRecognizer } from './domains/recognition/domain/text-recognizer';
+import {
+  grantModelConsent,
+  type GrantModelConsentDeps,
+} from './domains/recognition/use-cases/grant-model-consent';
+import {
+  readModelConsent,
+  type ReadModelConsentDeps,
+} from './domains/recognition/use-cases/read-model-consent';
 import {
   recognizeRegion,
   type RecognizeRegionError,
@@ -97,6 +110,10 @@ export type Container = {
     readonly readStorageUsage: () => Promise<{ usage: number; quota: number } | null>;
   };
   readonly recognition: {
+    readonly readModelConsent: (
+      language: Language,
+    ) => Promise<Result<ModelConsentDecision, ModelConsentError>>;
+    readonly grantModelConsent: (language: Language) => Promise<Result<void, ModelConsentError>>;
     readonly recognizeRegion: (
       language: Language,
       source: PageSource,
@@ -125,6 +142,9 @@ export function buildContainer(): Container {
   const editBookDeps: EditBookDeps = { repository };
   const readStorageUsageDeps: ReadStorageUsageDeps = { estimate: storageEstimate };
   const cropper = createCanvasCropper(beginTrace);
+  const consent = createModelConsentStore();
+  const readModelConsentDeps: ReadModelConsentDeps = { consent };
+  const grantModelConsentDeps: GrantModelConsentDeps = { consent, requestPersistence };
 
   return {
     library: {
@@ -137,6 +157,8 @@ export function buildContainer(): Container {
       readStorageUsage: () => readStorageUsage(readStorageUsageDeps),
     },
     recognition: {
+      readModelConsent: (language: Language) => readModelConsent(readModelConsentDeps, language),
+      grantModelConsent: (language: Language) => grantModelConsent(grantModelConsentDeps, language),
       recognizeRegion: async (
         language: Language,
         source: PageSource,

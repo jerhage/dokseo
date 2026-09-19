@@ -4,6 +4,7 @@
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
   import { NOTHING_READ, type CaptureStatus, type CaptureView } from './capture-view.svelte';
+  import ModelConsentDialog from './ModelConsentDialog.svelte';
 
   type Props = {
     readonly view: CaptureView;
@@ -117,6 +118,14 @@
         </li>
       {/each}
     </ul>
+  {/if}
+
+  {#if view.consentRequest !== null}
+    <ModelConsentDialog
+      request={view.consentRequest}
+      onagree={() => void view.agree()}
+      ondecline={() => view.decline()}
+    />
   {/if}
 </section>
 

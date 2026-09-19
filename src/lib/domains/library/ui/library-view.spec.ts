@@ -88,6 +88,8 @@ function fakes(): Fakes {
       readStorageUsage: () => Promise.resolve(usage.estimate),
     },
     recognition: {
+      readModelConsent: () => Promise.reject(new Error('not used')),
+      grantModelConsent: () => Promise.reject(new Error('not used')),
       recognizeRegion: () => Promise.reject(new Error('not used')),
     },
   };
