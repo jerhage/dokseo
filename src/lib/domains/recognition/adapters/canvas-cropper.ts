@@ -8,13 +8,14 @@ import {
   stitch,
   toGrayscale,
 } from '$lib/platform/image/pixels';
+import { noTrace, type Trace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import { isEmpty, normalize } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
-import { shouldInvert, upscaleFor } from '../domain/preprocess';
+import { LIGHT_ON_DARK_LUMINANCE, shouldInvert, upscaleFor } from '../domain/preprocess';
 import type { CropError, RegionCropper } from '../domain/region-cropper';
 
 function describeSourceError(error: PageSourceError): string {
@@ -40,7 +41,8 @@ async function cropOne(
   return ok(cropped);
 }
 
-async function cropRegions(
+async function cropTraced(
+  trace: Trace,
   source: PageSource,
   regions: readonly ImageRegion[],
   arrangement: Arrangement,
@@ -51,24 +53,75 @@ async function cropRegions(
   try {
     using held = new DisposableStack();
     const parts: ImageBitmap[] = [];
-    for (const region of wanted) {
+    for (const [order, region] of wanted.entries()) {
       const part = await cropOne(source, region);
       if (!part.ok) return part;
-      parts.push(held.use(part.value).bitmap);
+
+      const cropped = held.use(part.value).bitmap;
+      trace.step('region', {
+        order,
+        index: region.index,
+        rect: region.rect,
+        width: cropped.width,
+        height: cropped.height,
+      });
+      parts.push(cropped);
     }
 
     using stitched = stitch(parts, arrangement);
-    using scaled = scaleBy(stitched.bitmap, upscaleFor(stitched.bitmap));
+    trace.step('stitched', {
+      arrangement,
+      parts: parts.length,
+      width: stitched.bitmap.width,
+      height: stitched.bitmap.height,
+    });
+
+    const factor = upscaleFor(stitched.bitmap);
+    using scaled = scaleBy(stitched.bitmap, factor);
+    trace.step('upscaled', {
+      factor,
+      width: scaled.bitmap.width,
+      height: scaled.bitmap.height,
+    });
+
     using grey = toGrayscale(scaled.bitmap);
-    if (!shouldInvert(meanLuminance(grey.bitmap))) return ok(grey.release());
+    const luminance = meanLuminance(grey.bitmap);
+    const inverting = shouldInvert(luminance);
+    trace.step('greyscale', {
+      meanLuminance: luminance,
+      threshold: LIGHT_ON_DARK_LUMINANCE,
+      inverted: inverting,
+    });
+
+    if (!inverting) {
+      trace.image('crop', grey.bitmap);
+      return ok(grey.release());
+    }
 
     using inverted = invert(grey.bitmap);
+    trace.image('crop', inverted.bitmap);
     return ok(inverted.release());
   } catch (cause) {
     return err({ kind: 'unreadable', cause: describeCause(cause) });
   }
 }
 
-export function createCanvasCropper(): RegionCropper {
-  return { crop: cropRegions };
+async function cropRegions(
+  trace: Trace,
+  source: PageSource,
+  regions: readonly ImageRegion[],
+  arrangement: Arrangement,
+): Promise<Result<ImageBitmap, CropError>> {
+  try {
+    return await cropTraced(trace, source, regions, arrangement);
+  } finally {
+    trace.end();
+  }
+}
+
+export function createCanvasCropper(beginTrace: TraceFactory = noTrace): RegionCropper {
+  return {
+    crop: (source, regions, arrangement) =>
+      cropRegions(beginTrace('crop'), source, regions, arrangement),
+  };
 }

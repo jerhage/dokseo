@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import { requestPersistence, storageEstimate } from '$lib/platform/storage/persistence';
+import { beginTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import type { BookId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -84,7 +85,7 @@ export function buildContainer(): Container {
   const removeBookDeps: RemoveBookDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
   const readStorageUsageDeps: ReadStorageUsageDeps = { estimate: storageEstimate };
-  const cropper = createCanvasCropper();
+  const cropper = createCanvasCropper(beginTrace);
 
   return {
     library: {
@@ -104,7 +105,7 @@ export function buildContainer(): Container {
         arrangement: Arrangement,
       ) => {
         const recognizer = await recognizerFor(language);
-        return recognizeRegion({ cropper, recognizer }, source, regions, arrangement);
+        return recognizeRegion({ cropper, recognizer, beginTrace }, source, regions, arrangement);
       },
     },
   };

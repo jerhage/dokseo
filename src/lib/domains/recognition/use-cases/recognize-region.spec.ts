@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex, type ImageIndex } from '$lib/shared/ids';
@@ -74,6 +75,19 @@ function throwingRecognizer(): TextRecognizer {
   };
 }
 
+function stubTrace() {
+  const end = vi.fn();
+  const steps: string[] = [];
+  const trace: Trace = {
+    step: (name: string) => {
+      steps.push(name);
+    },
+    image: () => undefined,
+    end,
+  };
+  return { beginTrace: () => trace, end, steps };
+}
+
 function run(deps: RecognizeRegionDeps) {
   return recognizeRegion(deps, fakePageSource(), REGIONS, ARRANGEMENT);
 }
@@ -147,6 +161,40 @@ describe('recognizeRegion', () => {
       'the model fell over',
     );
     expect(crop.wasClosed()).toBe(true);
+  });
+
+  it('ends the trace after a successful recognition', async () => {
+    const crop = stubBitmap();
+    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { recognizer } = fakeRecognizer();
+    const { beginTrace, end, steps } = stubTrace();
+
+    await run({ cropper, recognizer, beginTrace });
+
+    expect(steps).toEqual(['input', 'recognized']);
+    expect(end).toHaveBeenCalledTimes(1);
+  });
+
+  it('ends the trace after a crop failure', async () => {
+    const { cropper } = fakeCropper(err({ kind: 'nothing-selected' }));
+    const { recognizer } = fakeRecognizer();
+    const { beginTrace, end, steps } = stubTrace();
+
+    await run({ cropper, recognizer, beginTrace });
+
+    expect(steps).toEqual(['crop-failed']);
+    expect(end).toHaveBeenCalledTimes(1);
+  });
+
+  it('ends the trace when the recognizer throws', async () => {
+    const crop = stubBitmap();
+    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { beginTrace, end } = stubTrace();
+
+    await expect(run({ cropper, recognizer: throwingRecognizer(), beginTrace })).rejects.toThrow(
+      'the model fell over',
+    );
+    expect(end).toHaveBeenCalledTimes(1);
   });
 
   it('crops once per call', async () => {
