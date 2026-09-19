@@ -36,7 +36,7 @@ module.exports = {
 		{
 			name: 'routes-are-thin',
 			comment:
-				'A route is a delivery concern at the very end of the DAG. It may import a domain barrel and the shared kernel, and nothing else — no adapter, no platform module, no use case reached past its barrel. Style sheets and static assets under src/lib/styles and src/lib/assets are exempt: they carry no logic. (container.ts will need an exemption here when it arrives in Phase 1.)',
+				'A route is a delivery concern at the very end of the DAG. It may import a domain barrel and the shared kernel, and nothing else — no adapter, no platform module, no use case reached past its barrel. Style sheets and static assets under src/lib/styles and src/lib/assets are exempt: they carry no logic. container.ts and context.ts are the composition root — container.ts assembles the adapters and context.ts hands the assembled container to the tree — and they are the only non-barrel modules a route may reach.',
 			severity: 'error',
 			from: { path: '^src/routes/' },
 			to: {
@@ -45,7 +45,9 @@ module.exports = {
 					'^src/lib/domains/[^/]+/index\\.ts$',
 					'^src/lib/shared/',
 					'^src/lib/styles/',
-					'^src/lib/assets/'
+					'^src/lib/assets/',
+					'^src/lib/container\\.ts$',
+					'^src/lib/context\\.ts$'
 				]
 			}
 		},
