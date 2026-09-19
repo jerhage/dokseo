@@ -9,24 +9,55 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
+  import ContinuousViewer from './ContinuousViewer.svelte';
   import { handlesOwnKeys } from './keyboard';
   import PagedViewer from './PagedViewer.svelte';
   import type { ReaderView } from './reader-view.svelte';
 
   type Props = { readonly view: ReaderView };
 
+  type Move = {
+    readonly label: string;
+    readonly glyph: string;
+    readonly enabled: boolean;
+    readonly go: () => void;
+  };
+
+  type FitChoice = {
+    readonly label: string;
+    readonly ready: boolean;
+    readonly active: boolean;
+    readonly go: () => void;
+  };
+
+  type Place = {
+    readonly marker: string;
+    readonly of: number;
+    readonly at: number;
+  };
+
   let { view }: Props = $props();
 
   const uid = $props.id();
 
-  let viewer = $state<ReturnType<typeof PagedViewer> | null>(null);
+  let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
+  let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
-  const rtl = $derived(book?.direction === 'rtl');
+  const rtl = $derived(book?.direction === 'rtl' && book?.layoutKind !== 'continuous');
   const groupCount = $derived(view.groups.length);
   const group = $derived(view.group);
-  const downward = $derived(book?.layoutKind === 'continuous');
+  const renderer = $derived.by(() => {
+    const kind = book?.layoutKind;
+    if (kind === undefined) return null;
+
+    return match(kind)
+      .with('paged', () => 'paged' as const)
+      .with('continuous', () => 'strip' as const)
+      .exhaustive();
+  });
+  const downward = $derived(renderer === 'strip');
   const pairing = $derived(book?.pagePairing ?? null);
   const direction = $derived(book?.direction ?? null);
 
@@ -57,33 +88,103 @@
     return String(index + 1).padStart(3, '0');
   }
 
-  const marker = $derived(
-    view.visiblePages.length === 0
-      ? `— / ${total}`
-      : `${view.visiblePages.map(page).join('–')} / ${total}`,
-  );
-
-  const progress = $derived(groupCount === 0 ? 0 : ((group + 1) / groupCount) * 100);
   const canPrevious = $derived(stage === 'reading' && group > 0);
   const canNext = $derived(stage === 'reading' && group + 1 < groupCount);
 
-  const rightToLeft = $derived(book?.direction === 'rtl');
+  const rightToLeft = $derived(book?.direction === 'rtl' && !downward);
   const forwardKey = $derived(rightToLeft ? 'ArrowLeft' : 'ArrowRight');
-  const leftMove = $derived(
-    rightToLeft
-      ? { label: 'Next page', enabled: canNext, go: () => void view.next() }
-      : { label: 'Previous page', enabled: canPrevious, go: () => void view.previous() },
-  );
-  const rightMove = $derived(
-    rightToLeft
-      ? { label: 'Previous page', enabled: canPrevious, go: () => void view.previous() }
-      : { label: 'Next page', enabled: canNext, go: () => void view.next() },
-  );
+  const backward = $derived({
+    label: 'Previous page',
+    glyph: '‹',
+    enabled: canPrevious,
+    go: () => void view.previous(),
+  });
+  const forward = $derived({
+    label: 'Next page',
+    glyph: '›',
+    enabled: canNext,
+    go: () => void view.next(),
+  });
 
-  const fit = $derived(viewer?.activeFit() ?? null);
+  const place = $derived.by<Place>(() => {
+    const kind = book?.layoutKind;
+    if (kind === undefined) return { marker: `— / ${total}`, of: 0, at: 0 };
+
+    return match(kind)
+      .with('paged', () => ({
+        marker:
+          view.visiblePages.length === 0
+            ? `— / ${total}`
+            : `${view.visiblePages.map(page).join('–')} / ${total}`,
+        of: groupCount,
+        at: groupCount === 0 ? 0 : group + 1,
+      }))
+      .with('continuous', () => ({
+        marker: total === 0 ? `— / ${total}` : `${page(view.position.index)} / ${total}`,
+        of: total,
+        at: total === 0 ? 0 : view.position.index + 1,
+      }))
+      .exhaustive();
+  });
+
+  const progress = $derived(place.of === 0 ? 0 : (place.at / place.of) * 100);
+
+  const moves = $derived.by<readonly Move[]>(() => {
+    const kind = book?.layoutKind;
+    if (kind === undefined) return [];
+
+    return match(kind)
+      .with('paged', () => (rightToLeft ? [forward, backward] : [backward, forward]))
+      .with('continuous', () => [
+        {
+          label: 'Previous screen',
+          glyph: '↑',
+          enabled: stage === 'reading' && (strip?.canShift(-1) ?? false),
+          go: () => strip?.shift(-1),
+        },
+        {
+          label: 'Next screen',
+          glyph: '↓',
+          enabled: stage === 'reading' && (strip?.canShift(1) ?? false),
+          go: () => strip?.shift(1),
+        },
+      ])
+      .exhaustive();
+  });
+
+  const fits = $derived.by<readonly FitChoice[]>(() => {
+    const kind = book?.layoutKind;
+    if (kind === undefined) return [];
+
+    return match(kind)
+      .with('paged', () => [
+        {
+          label: 'Fit height',
+          ready: paged !== null,
+          active: paged?.activeFit() === 'height',
+          go: () => paged?.fitHeight(),
+        },
+        {
+          label: 'Fit width',
+          ready: paged !== null,
+          active: paged?.activeFit() === 'width',
+          go: () => paged?.fitWidth(),
+        },
+      ])
+      .with('continuous', () => [
+        {
+          label: 'Fit width',
+          ready: strip !== null,
+          active: strip?.atFitWidth() ?? false,
+          go: () => strip?.fitWidth(),
+        },
+      ])
+      .exhaustive();
+  });
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (downward) return;
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     if (handlesOwnKeys(event.target)) return;
 
@@ -152,24 +253,17 @@
 
         <div class="group" role="group" aria-labelledby="{uid}-fit">
           <span class="legend" id="{uid}-fit">Fit</span>
-          <button
-            class="fit"
-            type="button"
-            disabled={viewer === null}
-            aria-pressed={fit === 'height'}
-            onclick={() => viewer?.fitHeight()}
-          >
-            Fit height
-          </button>
-          <button
-            class="fit"
-            type="button"
-            disabled={viewer === null}
-            aria-pressed={fit === 'width'}
-            onclick={() => viewer?.fitWidth()}
-          >
-            Fit width
-          </button>
+          {#each fits as choice (choice.label)}
+            <button
+              class="fit"
+              type="button"
+              disabled={!choice.ready}
+              aria-pressed={choice.active}
+              onclick={choice.go}
+            >
+              {choice.label}
+            </button>
+          {/each}
         </div>
 
         {#if downward}
@@ -184,9 +278,17 @@
     <p class="alert" role="alert">{view.message}</p>
   {/if}
 
-  {#if curtain === null && book !== null}
+  {#if curtain === null && book !== null && renderer === 'strip'}
+    <ContinuousViewer
+      bind:this={strip}
+      sizes={view.sizes}
+      start={view.position}
+      imageAt={(index) => view.imageAt(index)}
+      moveTo={(position) => view.moveTo(position)}
+    />
+  {:else if curtain === null && book !== null}
     <PagedViewer
-      bind:this={viewer}
+      bind:this={paged}
       pages={view.visiblePages}
       direction={book.direction}
       imageAt={(index) => view.imageAt(index)}
@@ -203,17 +305,15 @@
   {/if}
 
   <footer class="bar bottom">
-    <p class="marker">{marker}</p>
+    <p class="marker">{place.marker}</p>
 
     <div class="moves">
-      <button class="move" type="button" disabled={!leftMove.enabled} onclick={leftMove.go}>
-        <span class="glyph" aria-hidden="true">‹</span>
-        <span class="assistive">{leftMove.label}</span>
-      </button>
-      <button class="move" type="button" disabled={!rightMove.enabled} onclick={rightMove.go}>
-        <span class="glyph" aria-hidden="true">›</span>
-        <span class="assistive">{rightMove.label}</span>
-      </button>
+      {#each moves as move (move.label)}
+        <button class="move" type="button" disabled={!move.enabled} onclick={move.go}>
+          <span class="glyph" aria-hidden="true">{move.glyph}</span>
+          <span class="assistive">{move.label}</span>
+        </button>
+      {/each}
     </div>
 
     <div
@@ -222,9 +322,9 @@
       role="progressbar"
       aria-label="Reading progress"
       aria-valuemin={0}
-      aria-valuemax={groupCount}
-      aria-valuenow={groupCount === 0 ? 0 : group + 1}
-      aria-valuetext={marker}
+      aria-valuemax={place.of}
+      aria-valuenow={place.at}
+      aria-valuetext={place.marker}
     >
       <span class="fill" style:width="{progress}%"></span>
     </div>
