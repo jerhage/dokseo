@@ -1,13 +1,12 @@
 import { imageIndex, type ImageIndex } from '$lib/shared/ids';
+import type { Size } from '$lib/shared/geometry';
 import type { PagePairing } from '$lib/shared/layout-kind';
 
 export type PageGroup = readonly ImageIndex[];
 
-export type PageSize = { readonly width: number; readonly height: number };
-
 const WIDE_ASPECT_RATIO = 1;
 
-function isWide(size: PageSize | null | undefined): boolean {
+function isWide(size: Size | null | undefined): boolean {
   if (!size) return false;
   const { width, height } = size;
   if (!Number.isFinite(width) || !Number.isFinite(height)) return false;
@@ -21,7 +20,7 @@ function singles(count: number): readonly PageGroup[] {
   return groups;
 }
 
-function pairsFrom(sizes: readonly (PageSize | null)[], start: number): readonly PageGroup[] {
+function pairsFrom(sizes: readonly (Size | null)[], start: number): readonly PageGroup[] {
   const groups: PageGroup[] = [];
   let index = start;
   while (index < sizes.length) {
@@ -34,7 +33,7 @@ function pairsFrom(sizes: readonly (PageSize | null)[], start: number): readonly
 }
 
 export function pairPages(
-  sizes: readonly (PageSize | null)[],
+  sizes: readonly (Size | null)[],
   pairing: PagePairing,
 ): readonly PageGroup[] {
   if (sizes.length === 0) return [];

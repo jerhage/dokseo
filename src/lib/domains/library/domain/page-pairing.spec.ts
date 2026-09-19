@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
-import { pairPages, groupContaining, type PageSize } from './page-pairing';
+import type { Size } from '$lib/shared/geometry';
+import { pairPages, groupContaining } from './page-pairing';
 
-const portrait: PageSize = { width: 800, height: 1200 };
-const wide: PageSize = { width: 2400, height: 1200 };
-const square: PageSize = { width: 1000, height: 1000 };
+const portrait: Size = { width: 800, height: 1200 };
+const wide: Size = { width: 2400, height: 1200 };
+const square: Size = { width: 1000, height: 1000 };
 
-function portraits(count: number): readonly PageSize[] {
+function portraits(count: number): readonly Size[] {
   return Array.from({ length: count }, () => portrait);
 }
 
@@ -108,7 +109,7 @@ describe('pairPages', () => {
   });
 
   it('treats a zero, negative or non-finite dimension as portrait', () => {
-    const suspect: readonly PageSize[] = [
+    const suspect: readonly Size[] = [
       { width: 0, height: 1200 },
       { width: 2400, height: 0 },
       { width: -2400, height: 1200 },

@@ -1,3 +1,5 @@
+export type Size = { readonly width: number; readonly height: number };
+
 declare const space: unique symbol;
 
 export type Rect<in out S extends string> = {
