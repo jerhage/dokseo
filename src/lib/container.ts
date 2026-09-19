@@ -44,8 +44,29 @@ async function loadFakeRecognizer(): Promise<TextRecognizer> {
   return createFakeRecognizer();
 }
 
-function recognizerFor(language: Language): Promise<TextRecognizer> {
-  return match(language).with('ja', loadFakeRecognizer).with('ko', loadFakeRecognizer).exhaustive();
+async function loadMangaOcrRecognizer(): Promise<TextRecognizer> {
+  const { createMangaOcrRecognizer } =
+    await import('./domains/recognition/adapters/manga-ocr.adapter');
+  return createMangaOcrRecognizer();
+}
+
+const recognizers = new Map<Language, Promise<TextRecognizer>>();
+
+export function recognizerFor(language: Language): Promise<TextRecognizer> {
+  const held = recognizers.get(language);
+  if (held !== undefined) return held;
+
+  const loading = match(language)
+    .with('ja', loadMangaOcrRecognizer)
+    .with('ko', loadFakeRecognizer)
+    .exhaustive()
+    .catch((cause: unknown): never => {
+      recognizers.delete(language);
+      throw cause;
+    });
+
+  recognizers.set(language, loading);
+  return loading;
 }
 
 export type Container = {
