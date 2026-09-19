@@ -20,7 +20,11 @@
   const busy = $derived(removing || editing);
   const total = $derived(Math.max(book.imageCount, 1));
   const page = $derived(Math.min(book.position + 1, total));
-  const resume = $derived(`p.${String(page).padStart(3, '0')} / ${book.imageCount}`);
+  const resume = $derived(
+    book.layoutKind === 'continuous'
+      ? `${page} / ${book.imageCount} images`
+      : `p.${String(page).padStart(3, '0')} / ${book.imageCount}`,
+  );
   const progress = $derived((page / total) * 100);
 
   async function cancel(): Promise<void> {

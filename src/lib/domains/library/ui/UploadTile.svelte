@@ -76,6 +76,8 @@
     type="file"
     multiple
     accept={ACCEPT_ATTRIBUTE}
+    aria-hidden="true"
+    tabindex="-1"
     onchange={take}
   />
   <input
@@ -84,6 +86,8 @@
     type="file"
     multiple
     webkitdirectory
+    aria-hidden="true"
+    tabindex="-1"
     onchange={take}
   />
 </div>

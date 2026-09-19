@@ -1,7 +1,9 @@
 <script lang="ts">
-  type Props = { readonly title: string };
+  import type { Language } from '$lib/shared/language';
 
-  let { title }: Props = $props();
+  type Props = { readonly title: string; readonly language: Language };
+
+  let { title, language }: Props = $props();
 </script>
 
 <article class="card" aria-live="polite">
@@ -9,7 +11,7 @@
     <span class="ring" aria-hidden="true"></span>
     <span class="label">Adding</span>
   </div>
-  <h3 class="title">{title}</h3>
+  <h3 class="title" class:ko={language === 'ko'} lang={language}>{title}</h3>
   <p class="state">reading the file…</p>
 </article>
 
@@ -59,6 +61,10 @@
     font-weight: 400;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .title.ko {
+    font-family: var(--f-ko);
   }
 
   .state {

@@ -91,7 +91,7 @@
         <ul class="grid">
           {#if view.pending !== null}
             <li>
-              <PendingCard title={view.pending} />
+              <PendingCard title={view.pending} language="ja" />
             </li>
           {/if}
           {#each view.books as book (book.id)}

@@ -65,7 +65,9 @@
       <input
         id="{uid}-title"
         class="text"
+        class:ko={form.language === 'ko'}
         type="text"
+        lang={form.language}
         autocomplete="off"
         disabled={saving}
         bind:value={form.title}
@@ -209,8 +211,12 @@
     border-radius: var(--r-md);
     background: var(--c-surface-chip);
     color: var(--c-text-2);
-    font-family: var(--f-ui);
+    font-family: var(--f-ja);
     font-size: 12.5px;
+  }
+
+  .text.ko {
+    font-family: var(--f-ko);
   }
 
   .text:focus-visible {
