@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
 import { imageRect } from '$lib/shared/geometry';
@@ -8,7 +8,8 @@ import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import { ReaderView, type ReaderBook } from './reader-view.svelte';
+import { readingPosition } from '../domain/reading-position';
+import { PLACE_SAVE_DELAY_MS, ReaderView, type ReaderBook } from './reader-view.svelte';
 
 const PORTRAIT: Size = { width: 1000, height: 1500 };
 
@@ -409,5 +410,63 @@ describe('ReaderView', () => {
     view.dispose();
 
     expect(view.regions).toEqual([]);
+  });
+});
+
+describe('the reading place of a continuous strip', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('holds a new place at once without saving it', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(3), 0.5));
+
+    expect(view.position).toEqual({ index: 3, offset: 0.5 });
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves only the last place once the scrolling settles', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(1), 0.25));
+    view.moveTo(readingPosition(imageIndex(2), 0.75));
+    view.moveTo(readingPosition(imageIndex(4), 0));
+
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits.map((edit) => edit.position)).toEqual([4]);
+  });
+
+  it('saves a place still waiting when the reader leaves', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    view.moveTo(readingPosition(imageIndex(5), 0.5));
+    expect(world.edits).toEqual([]);
+
+    view.dispose();
+
+    expect(world.edits.map((edit) => edit.position)).toEqual([5]);
+  });
+
+  it('saves nothing for a move to the place it already holds', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(0), 0));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toEqual([]);
   });
 });

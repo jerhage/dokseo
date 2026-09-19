@@ -31,6 +31,14 @@ export type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed';
 
 const NO_PAGES: PageGroup = [];
 
+export const PLACE_SAVE_DELAY_MS = 500;
+
+type PendingSave = {
+  readonly id: BookId;
+  readonly index: ImageIndex;
+  readonly timer: ReturnType<typeof setTimeout>;
+};
+
 function describeEditFailure(error: EditFailure): string {
   return match(error)
     .with({ kind: 'not-found' }, () => 'That book is no longer in your library.')
@@ -80,6 +88,7 @@ export class ReaderView {
   #container: Container;
   #source: PageSource | null = null;
   #generation = 0;
+  #saving: PendingSave | null = null;
 
   constructor(container: Container) {
     this.#container = container;
@@ -95,6 +104,7 @@ export class ReaderView {
   }
 
   async open(id: BookId): Promise<void> {
+    this.#flushSave();
     const generation = ++this.#generation;
     this.#release();
     this.status = 'loading';
@@ -176,6 +186,17 @@ export class ReaderView {
     await this.#persist(book.id, moved.index);
   }
 
+  moveTo(position: ReadingPosition): void {
+    const book = this.book;
+    if (book === null) return;
+
+    const held = this.position;
+    if (position.index === held.index && position.offset === held.offset) return;
+
+    this.position = position;
+    this.#scheduleSave(book.id, position.index);
+  }
+
   async setPairing(pairing: PagePairing): Promise<void> {
     const book = this.book;
     if (book === null || this.saving || book.pagePairing === pairing) return;
@@ -198,6 +219,7 @@ export class ReaderView {
   }
 
   dispose(): void {
+    this.#flushSave();
     this.#generation += 1;
     this.#release();
     this.book = null;
@@ -246,6 +268,27 @@ export class ReaderView {
   #regroup(book: ReaderBook, sizes: readonly (Size | null)[]): void {
     this.sizes = sizes;
     this.groups = pairPages(sizes, book.pagePairing);
+  }
+
+  #scheduleSave(id: BookId, index: ImageIndex): void {
+    const waiting = this.#saving;
+    if (waiting !== null) clearTimeout(waiting.timer);
+
+    const timer = setTimeout(() => {
+      this.#saving = null;
+      void this.#persist(id, index);
+    }, PLACE_SAVE_DELAY_MS);
+
+    this.#saving = { id, index, timer };
+  }
+
+  #flushSave(): void {
+    const waiting = this.#saving;
+    if (waiting === null) return;
+
+    clearTimeout(waiting.timer);
+    this.#saving = null;
+    void this.#persist(waiting.id, waiting.index);
   }
 
   async #persist(id: BookId, index: ImageIndex): Promise<void> {
