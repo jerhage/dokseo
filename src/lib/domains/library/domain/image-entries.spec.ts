@@ -90,8 +90,8 @@ describe('selectImageEntries', () => {
 	it('gives the same order whichever way the input is arranged', () => {
 		const names = ['vol1/page10.png', 'vol1/page2.PNG', 'A.jpg', 'a.jpg', 'vol1/page2.png'];
 		const forward = selectImageEntries(names);
-		const reversed = selectImageEntries([...names].reverse());
-		const sorted = selectImageEntries([...names].sort());
+		const reversed = selectImageEntries(names.toReversed());
+		const sorted = selectImageEntries(names.toSorted());
 		expect(forward).toEqual(reversed);
 		expect(forward).toEqual(sorted);
 	});

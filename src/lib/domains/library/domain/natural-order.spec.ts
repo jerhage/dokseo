@@ -10,7 +10,7 @@ describe('compareNatural', () => {
 
 	it('sorts a run of entry names the way a reader expects', () => {
 		const names = ['page10', 'page2', 'page1', 'page20', 'page3'];
-		expect([...names].sort(compareNatural)).toEqual([
+		expect(names.toSorted(compareNatural)).toEqual([
 			'page1',
 			'page2',
 			'page3',
@@ -29,7 +29,7 @@ describe('compareNatural', () => {
 		expect(compareNatural('page02', 'page2')).toBeLessThan(0);
 		expect(compareNatural('page2', 'page02')).toBeGreaterThan(0);
 		expect(compareNatural('page002', 'page10')).toBeLessThan(0);
-		expect(['0010.jpg', '009.jpg', '08.jpg'].sort(compareNatural)).toEqual([
+		expect(['0010.jpg', '009.jpg', '08.jpg'].toSorted(compareNatural)).toEqual([
 			'08.jpg',
 			'009.jpg',
 			'0010.jpg'
@@ -52,8 +52,8 @@ describe('compareNatural', () => {
 
 	it('orders every distinct name, so a sort never depends on archive entry order', () => {
 		const names = ['a.jpg', 'A.jpg', 'page2.jpg', 'page02.jpg'];
-		const forward = [...names].sort(compareNatural);
-		const reversed = [...names].reverse().sort(compareNatural);
+		const forward = names.toSorted(compareNatural);
+		const reversed = names.toReversed().toSorted(compareNatural);
 		expect(forward).toEqual(reversed);
 		const adjacent = forward.slice(1).map((name, i) => compareNatural(at(forward, i), name));
 		expect(adjacent.every((c) => c !== 0)).toBe(true);

@@ -43,7 +43,7 @@ function revoke(urls: Iterable<string>): void {
 }
 
 function newestFirst(books: readonly Book[]): readonly Book[] {
-	return [...books].sort((a, b) => b.addedAt - a.addedAt);
+	return books.toSorted((a, b) => b.addedAt - a.addedAt);
 }
 
 export class LibraryView {

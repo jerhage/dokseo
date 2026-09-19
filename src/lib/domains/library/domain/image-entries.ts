@@ -1,18 +1,26 @@
 import { basename, extensionOf } from './entry-path';
 import { compareNatural } from './natural-order';
 
-const IMAGE_EXTENSIONS: readonly string[] = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'avif'];
+const IMAGE_EXTENSIONS: ReadonlySet<string> = new Set([
+	'jpg',
+	'jpeg',
+	'png',
+	'webp',
+	'gif',
+	'bmp',
+	'avif'
+]);
 
-const JUNK_NAMES: readonly string[] = ['.ds_store', 'thumbs.db'];
+const JUNK_NAMES: ReadonlySet<string> = new Set(['.ds_store', 'thumbs.db']);
 
 export function isImageEntry(name: string): boolean {
-	return IMAGE_EXTENSIONS.includes(extensionOf(name));
+	return IMAGE_EXTENSIONS.has(extensionOf(name));
 }
 
 function isJunk(name: string): boolean {
 	if (name.split('/').includes('__MACOSX')) return true;
 	const last = basename(name);
-	return last.startsWith('._') || JUNK_NAMES.includes(last.toLowerCase());
+	return last.startsWith('._') || JUNK_NAMES.has(last.toLowerCase());
 }
 
 function isDirectory(name: string): boolean {
@@ -21,5 +29,5 @@ function isDirectory(name: string): boolean {
 
 export function selectImageEntries(names: readonly string[]): readonly string[] {
 	const images = names.filter((name) => !isDirectory(name) && !isJunk(name) && isImageEntry(name));
-	return images.sort(compareNatural);
+	return images.toSorted(compareNatural);
 }

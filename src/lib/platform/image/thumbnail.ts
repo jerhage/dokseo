@@ -17,7 +17,8 @@ export async function renderThumbnail(bitmap: ImageBitmap, maxWidth: number): Pr
 		return blob;
 	} catch (cause) {
 		throw new Error(
-			`A ${bitmap.width}x${bitmap.height} bitmap could not be scaled to ${width}x${height}: ${describeCause(cause)}`
+			`A ${bitmap.width}x${bitmap.height} bitmap could not be scaled to ${width}x${height}: ${describeCause(cause)}`,
+			{ cause }
 		);
 	}
 }

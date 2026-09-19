@@ -31,7 +31,7 @@ export async function put(key: string, blob: Blob): Promise<void> {
 		await writable.close();
 	} catch (cause) {
 		await writable.abort().catch(() => undefined);
-		throw new Error(`Key "${name}" could not be written: ${describeCause(cause)}`);
+		throw new Error(`Key "${name}" could not be written: ${describeCause(cause)}`, { cause });
 	}
 }
 
@@ -43,7 +43,7 @@ export async function get(key: string): Promise<Blob | null> {
 		return await handle.getFile();
 	} catch (cause) {
 		if (isMissing(cause)) return null;
-		throw new Error(`Key "${name}" could not be read: ${describeCause(cause)}`);
+		throw new Error(`Key "${name}" could not be read: ${describeCause(cause)}`, { cause });
 	}
 }
 
@@ -54,6 +54,6 @@ export async function remove(key: string): Promise<void> {
 		await parent.removeEntry(name);
 	} catch (cause) {
 		if (isMissing(cause)) return;
-		throw new Error(`Key "${name}" could not be removed: ${describeCause(cause)}`);
+		throw new Error(`Key "${name}" could not be removed: ${describeCause(cause)}`, { cause });
 	}
 }
