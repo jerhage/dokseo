@@ -11,7 +11,17 @@ export type SliceLayout = {
 
 export type VisibleRange = { readonly first: number; readonly last: number };
 
+export type PlacedSlice = { readonly index: ImageIndex; readonly height: number };
+
+export type StripSpacers = {
+  readonly before: number;
+  readonly slices: readonly PlacedSlice[];
+  readonly after: number;
+};
+
 export const ASSUMED_ASPECT = 1.5;
+
+export const OVERSCAN_SCREENS = 0.5;
 
 const NOTHING_VISIBLE: VisibleRange = { first: 0, last: -1 };
 
@@ -74,6 +84,37 @@ export function visibleRange(
   }
 
   return first === -1 ? NOTHING_VISIBLE : { first, last };
+}
+
+export function stripOverscan(viewportHeight: number): number {
+  return positiveOrZero(viewportHeight) * OVERSCAN_SCREENS;
+}
+
+export function spacersFor(
+  layout: readonly SliceLayout[],
+  range: VisibleRange,
+  snap: (value: number) => number,
+): StripSpacers {
+  const total = stripHeight(layout);
+  const opening = layout[range.first];
+  if (opening === undefined || range.last < range.first) {
+    return { before: 0, slices: [], after: positiveOrZero(total) };
+  }
+
+  const before = positiveOrZero(snap(opening.top));
+  const slices: PlacedSlice[] = [];
+  let edge = before;
+
+  for (let index = range.first; index <= range.last; index += 1) {
+    const slice = layout[index];
+    if (slice === undefined) break;
+
+    const bottom = positiveOrZero(snap(slice.top + slice.height));
+    slices.push({ index: slice.index, height: positiveOrZero(bottom - edge) });
+    edge = bottom;
+  }
+
+  return { before, slices, after: positiveOrZero(total - edge) };
 }
 
 export function positionAtScroll(

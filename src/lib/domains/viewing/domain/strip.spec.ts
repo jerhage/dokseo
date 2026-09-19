@@ -6,9 +6,12 @@ import { readingPosition, type ReadingPosition } from './reading-position';
 import {
   ASSUMED_ASPECT,
   layOutStrip,
+  OVERSCAN_SCREENS,
   positionAtScroll,
   scrollForPosition,
+  spacersFor,
   stripHeight,
+  stripOverscan,
   visibleRange,
   type SliceLayout,
 } from './strip';
@@ -192,6 +195,104 @@ describe('visibleRange', () => {
 
   it('covers the whole strip for a viewport taller than it', () => {
     expect(visibleRange(layout, 0, stripHeight(layout) * 2, 0)).toEqual({ first: 0, last: 9 });
+  });
+});
+
+describe('stripOverscan', () => {
+  it('reaches beyond the viewport by a fraction of a screen', () => {
+    expect(stripOverscan(1000)).toBeCloseTo(1000 * OVERSCAN_SCREENS);
+  });
+
+  it('keeps the overscan between nothing and a whole screen', () => {
+    expect(OVERSCAN_SCREENS).toBeGreaterThan(0);
+    expect(OVERSCAN_SCREENS).toBeLessThanOrEqual(1);
+  });
+
+  it('reports no overscan for a degenerate viewport', () => {
+    for (const height of [0, -900, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(stripOverscan(height)).toBe(0);
+    }
+  });
+});
+
+describe('spacersFor', () => {
+  const ODD_WIDTH = 333;
+  const layout = layOutStrip(unmeasured(6), ODD_WIDTH);
+
+  function whole(value: number): number {
+    return Math.round(value);
+  }
+
+  function filledBy(slices: readonly { readonly height: number }[]): number {
+    return slices.reduce((sum, slice) => sum + slice.height, 0);
+  }
+
+  it('pads the top by the offset of the first visible slice', () => {
+    expect(spacersFor(layout, { first: 2, last: 3 }, whole).before).toBe(whole(at(layout, 2).top));
+  });
+
+  it('rounds every rendered height with the snap it is given', () => {
+    const spacers = spacersFor(layout, { first: 0, last: 5 }, whole);
+
+    expect(spacers.slices.every((slice) => Number.isInteger(slice.height))).toBe(true);
+  });
+
+  it('makes the bottom of each slice the top of the next one exactly', () => {
+    const spacers = spacersFor(layout, { first: 1, last: 4 }, whole);
+    let edge = spacers.before;
+
+    for (let step = 0; step < spacers.slices.length; step += 1) {
+      edge += at(spacers.slices, step).height;
+
+      expect(edge).toBe(whole(bottomOf(at(layout, step + 1))));
+    }
+  });
+
+  it('accumulates no drift against the layout down a long strip', () => {
+    const long = layOutStrip(unmeasured(200), ODD_WIDTH);
+    const spacers = spacersFor(long, { first: 0, last: 199 }, whole);
+    const spanned = spacers.before + filledBy(spacers.slices);
+
+    expect(spanned).toBe(whole(stripHeight(long)));
+    expect(Math.abs(spanned - stripHeight(long))).toBeLessThanOrEqual(1);
+  });
+
+  it('leaves the total height of the strip unchanged by the rounding', () => {
+    const spacers = spacersFor(layout, { first: 2, last: 3 }, whole);
+
+    expect(spacers.before + filledBy(spacers.slices) + spacers.after).toBeCloseTo(
+      stripHeight(layout),
+    );
+  });
+
+  it('names each visible slice by its image index', () => {
+    const spacers = spacersFor(layout, { first: 1, last: 3 }, whole);
+
+    expect(spacers.slices.map((slice) => slice.index)).toEqual([
+      imageIndex(1),
+      imageIndex(2),
+      imageIndex(3),
+    ]);
+  });
+
+  it('reserves the whole strip and renders nothing for an empty range', () => {
+    const spacers = spacersFor(layout, { first: 0, last: -1 }, whole);
+
+    expect(spacers.slices).toEqual([]);
+    expect(spacers.before).toBe(0);
+    expect(spacers.after).toBeCloseTo(stripHeight(layout));
+  });
+
+  it('reserves nothing at all for an empty layout', () => {
+    expect(spacersFor([], { first: 0, last: -1 }, whole)).toEqual({
+      before: 0,
+      slices: [],
+      after: 0,
+    });
+  });
+
+  it('stops at the last slice when the range runs past the end', () => {
+    expect(spacersFor(layout, { first: 4, last: 99 }, whole).slices).toHaveLength(2);
   });
 });
 

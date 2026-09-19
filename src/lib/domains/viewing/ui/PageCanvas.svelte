@@ -8,9 +8,10 @@
     readonly index: ImageIndex;
     readonly label: string;
     readonly load: (index: ImageIndex) => Promise<ImageBitmap | null>;
+    readonly flush?: boolean;
   };
 
-  let { index, label, load }: Props = $props();
+  let { index, label, load, flush = false }: Props = $props();
 
   let frame = $state<HTMLCanvasElement | null>(null);
   let phase = $state<Phase>('loading');
@@ -72,6 +73,7 @@
 <div
   class="page"
   class:blank={phase !== 'shown'}
+  class:flush
   style:aspect-ratio={ratio}
   role="img"
   aria-label={caption}
@@ -88,6 +90,10 @@
     height: 100%;
     background: var(--c-paper);
     box-shadow: 0 var(--s-3) var(--s-6) var(--c-surface-void);
+  }
+
+  .page.flush {
+    box-shadow: none;
   }
 
   .page.blank {
