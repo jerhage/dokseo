@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
-import { SOURCE_KINDS, applyEdit, isSourceKind, type Book } from './book';
+import { applyEdit, type Book } from './book';
 
 const book: Book = {
   id: bookId('b-1'),
@@ -86,25 +86,5 @@ describe('applyEdit', () => {
   it('keeps the previous title when the edit title trims to empty', () => {
     expect(applyEdit(book, { title: '   ' }).title).toBe('Yotsuba&! 1');
     expect(applyEdit(book, { title: '' }).title).toBe('Yotsuba&! 1');
-  });
-});
-
-describe('isSourceKind', () => {
-  it('accepts every declared source kind', () => {
-    expect(SOURCE_KINDS.every(isSourceKind)).toBe(true);
-    expect(SOURCE_KINDS).toEqual(['images', 'pdf', 'archive']);
-  });
-
-  it('rejects an unknown string', () => {
-    expect(isSourceKind('video')).toBe(false);
-    expect(isSourceKind('')).toBe(false);
-    expect(isSourceKind('Images')).toBe(false);
-  });
-
-  it('rejects a value that is not a string', () => {
-    expect(isSourceKind(undefined)).toBe(false);
-    expect(isSourceKind(null)).toBe(false);
-    expect(isSourceKind(0)).toBe(false);
-    expect(isSourceKind(['pdf'])).toBe(false);
   });
 });

@@ -1,7 +1,4 @@
-function reason(cause: unknown): string {
-  if (cause instanceof Error) return cause.message;
-  return String(cause);
-}
+import { describeCause } from '$lib/shared/cause';
 
 function isSupported(): boolean {
   return typeof indexedDB !== 'undefined';
@@ -26,9 +23,9 @@ export function openDatabase(
       request.onblocked = () =>
         reject(new Error(`Database "${name}" is blocked by another open connection`));
       request.onerror = () =>
-        reject(new Error(`Database "${name}" failed to open: ${reason(request.error)}`));
+        reject(new Error(`Database "${name}" failed to open: ${describeCause(request.error)}`));
     } catch (cause) {
-      reject(new Error(`Database "${name}" failed to open: ${reason(cause)}`));
+      reject(new Error(`Database "${name}" failed to open: ${describeCause(cause)}`));
     }
   });
 }
@@ -47,11 +44,17 @@ function transact<T>(
       const request = run(transaction.objectStore(store));
       transaction.oncomplete = () => resolve(request.result);
       transaction.onabort = () =>
-        reject(new Error(`Store "${store}" aborted the transaction: ${reason(transaction.error)}`));
+        reject(
+          new Error(
+            `Store "${store}" aborted the transaction: ${describeCause(transaction.error)}`,
+          ),
+        );
       transaction.onerror = () =>
-        reject(new Error(`Store "${store}" failed the transaction: ${reason(transaction.error)}`));
+        reject(
+          new Error(`Store "${store}" failed the transaction: ${describeCause(transaction.error)}`),
+        );
     } catch (cause) {
-      reject(new Error(`Store "${store}" is not usable: ${reason(cause)}`));
+      reject(new Error(`Store "${store}" is not usable: ${describeCause(cause)}`));
     }
   });
 }

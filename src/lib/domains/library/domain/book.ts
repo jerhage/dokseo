@@ -4,12 +4,6 @@ import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layo
 
 export type SourceKind = 'images' | 'pdf' | 'archive';
 
-export const SOURCE_KINDS: readonly SourceKind[] = ['images', 'pdf', 'archive'];
-
-export function isSourceKind(v: unknown): v is SourceKind {
-  return typeof v === 'string' && (SOURCE_KINDS as readonly string[]).includes(v);
-}
-
 export type Book = {
   readonly id: BookId;
   readonly title: string;
