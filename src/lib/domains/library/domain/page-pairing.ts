@@ -3,32 +3,49 @@ import type { PagePairing } from '$lib/shared/layout-kind';
 
 export type PageGroup = readonly ImageIndex[];
 
+export type PageSize = { readonly width: number; readonly height: number };
+
+const WIDE_ASPECT_RATIO = 1;
+
+function isWide(size: PageSize | null | undefined): boolean {
+  if (!size) return false;
+  const { width, height } = size;
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return false;
+  if (width <= 0 || height <= 0) return false;
+  return width / height > WIDE_ASPECT_RATIO;
+}
+
 function singles(count: number): readonly PageGroup[] {
   const groups: PageGroup[] = [];
   for (let index = 0; index < count; index += 1) groups.push([imageIndex(index)]);
   return groups;
 }
 
-function pairsFrom(start: number, count: number): readonly PageGroup[] {
+function pairsFrom(sizes: readonly (PageSize | null)[], start: number): readonly PageGroup[] {
   const groups: PageGroup[] = [];
-  for (let index = start; index < count; index += 2) {
+  let index = start;
+  while (index < sizes.length) {
     const next = index + 1;
-    groups.push(next < count ? [imageIndex(index), imageIndex(next)] : [imageIndex(index)]);
+    const pairs = !isWide(sizes[index]) && next < sizes.length && !isWide(sizes[next]);
+    groups.push(pairs ? [imageIndex(index), imageIndex(next)] : [imageIndex(index)]);
+    index += pairs ? 2 : 1;
   }
   return groups;
 }
 
-export function pairPages(count: number, pairing: PagePairing): readonly PageGroup[] {
-  if (!Number.isInteger(count) || count <= 0) return [];
-  if (count === 1) return singles(1);
+export function pairPages(
+  sizes: readonly (PageSize | null)[],
+  pairing: PagePairing,
+): readonly PageGroup[] {
+  if (sizes.length === 0) return [];
 
   switch (pairing) {
     case 'single':
-      return singles(count);
+      return singles(sizes.length);
     case 'double':
-      return pairsFrom(0, count);
+      return pairsFrom(sizes, 0);
     case 'double-after-cover':
-      return [[imageIndex(0)], ...pairsFrom(1, count)];
+      return [[imageIndex(0)], ...pairsFrom(sizes, 1)];
   }
 }
 
