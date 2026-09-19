@@ -39,15 +39,32 @@ import {
   type RecognizeRegionError,
 } from './domains/recognition/use-cases/recognize-region';
 
+export type RecognitionProgress = (fraction: number) => void;
+
+const progressListeners = new Map<Language, Set<RecognitionProgress>>();
+
+function progressFor(language: Language): Set<RecognitionProgress> {
+  const held = progressListeners.get(language);
+  if (held !== undefined) return held;
+
+  const opened = new Set<RecognitionProgress>();
+  progressListeners.set(language, opened);
+  return opened;
+}
+
 async function loadFakeRecognizer(): Promise<TextRecognizer> {
   const { createFakeRecognizer } = await import('./domains/recognition/adapters/fake-recognizer');
   return createFakeRecognizer();
 }
 
-async function loadMangaOcrRecognizer(): Promise<TextRecognizer> {
+async function loadMangaOcrRecognizer(language: Language): Promise<TextRecognizer> {
   const { createMangaOcrRecognizer } =
     await import('./domains/recognition/adapters/manga-ocr.adapter');
-  return createMangaOcrRecognizer();
+  return createMangaOcrRecognizer({
+    onProgress: (fraction) => {
+      for (const report of progressFor(language)) report(fraction);
+    },
+  });
 }
 
 const recognizers = new Map<Language, Promise<TextRecognizer>>();
@@ -85,6 +102,7 @@ export type Container = {
       source: PageSource,
       regions: readonly ImageRegion[],
       arrangement: Arrangement,
+      onProgress?: RecognitionProgress,
     ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
   };
 };
@@ -124,9 +142,23 @@ export function buildContainer(): Container {
         source: PageSource,
         regions: readonly ImageRegion[],
         arrangement: Arrangement,
+        onProgress?: RecognitionProgress,
       ) => {
-        const recognizer = await recognizerFor(language);
-        return recognizeRegion({ cropper, recognizer, beginTrace }, source, regions, arrangement);
+        const listening = progressFor(language);
+        if (onProgress !== undefined) listening.add(onProgress);
+
+        try {
+          const recognizer = await recognizerFor(language);
+          const read = await recognizeRegion(
+            { cropper, recognizer, beginTrace },
+            source,
+            regions,
+            arrangement,
+          );
+          return read;
+        } finally {
+          if (onProgress !== undefined) listening.delete(onProgress);
+        }
       },
     },
   };

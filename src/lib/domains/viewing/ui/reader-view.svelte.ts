@@ -95,6 +95,10 @@ export class ReaderView {
     this.#container = container;
   }
 
+  get source(): PageSource | null {
+    return this.#source;
+  }
+
   get group(): number {
     const found = groupOf(this.groups, this.position);
     return found < 0 ? 0 : found;

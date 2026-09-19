@@ -118,7 +118,6 @@
     </section>
 
     <footer class="foot">
-      <span>OCR engine: local · manga-ocr</span>
       <span class="space">{space}</span>
     </footer>
   </div>

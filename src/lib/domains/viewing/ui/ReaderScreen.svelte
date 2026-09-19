@@ -1,6 +1,9 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
+  import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
+  import type { ImageRegion } from '$lib/shared/image-region';
   import {
     CONTINUOUS_HAS_NO_PAIRS,
     CONTINUOUS_READS_DOWNWARD,
@@ -14,7 +17,11 @@
   import PagedViewer from './PagedViewer.svelte';
   import type { ReaderView } from './reader-view.svelte';
 
-  type Props = { readonly view: ReaderView };
+  type Props = {
+    readonly view: ReaderView;
+    readonly panel?: Snippet;
+    readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
+  };
 
   type Move = {
     readonly label: string;
@@ -36,7 +43,7 @@
     readonly at: number;
   };
 
-  let { view }: Props = $props();
+  let { view, panel, onSelect }: Props = $props();
 
   const uid = $props.id();
 
@@ -83,6 +90,11 @@
   const meta = $derived(
     book === null ? '' : `${total} images · ${book.language === 'ko' ? 'Korean' : 'Japanese'}`,
   );
+
+  function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
+    view.select(regions);
+    onSelect?.(regions, arrangement);
+  }
 
   function page(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
@@ -278,37 +290,43 @@
     <p class="alert" role="alert">{view.message}</p>
   {/if}
 
-  {#if curtain === null && book !== null && renderer === 'strip'}
-    <ContinuousViewer
-      bind:this={strip}
-      sizes={view.sizes}
-      start={view.position}
-      imageAt={(index) => view.imageAt(index)}
-      moveTo={(position) => view.moveTo(position)}
-      select={(regions) => view.select(regions)}
-      clear={() => view.clearSelection()}
-    />
-  {:else if curtain === null && book !== null}
-    {#key book.id}
-      <PagedViewer
-        bind:this={paged}
-        pages={view.visiblePages}
-        direction={book.direction}
-        pageFit={book.pageFit}
+  <div class="body">
+    {#if curtain === null && book !== null && renderer === 'strip'}
+      <ContinuousViewer
+        bind:this={strip}
+        sizes={view.sizes}
+        start={view.position}
         imageAt={(index) => view.imageAt(index)}
-        select={(regions) => view.select(regions)}
+        moveTo={(position) => view.moveTo(position)}
+        select={(regions) => commit(regions, 'column')}
         clear={() => view.clearSelection()}
-        onFit={(fit) => void view.setPageFit(fit)}
       />
-    {/key}
-  {:else}
-    <div class="curtain">
-      <p class="notice" aria-live="polite">{curtain}</p>
-      {#if stage === 'failed'}
-        <a class="escape" href="/">Back to your library</a>
-      {/if}
-    </div>
-  {/if}
+    {:else if curtain === null && book !== null}
+      {#key book.id}
+        <PagedViewer
+          bind:this={paged}
+          pages={view.visiblePages}
+          direction={book.direction}
+          pageFit={book.pageFit}
+          imageAt={(index) => view.imageAt(index)}
+          select={(regions) => commit(regions, 'row')}
+          clear={() => view.clearSelection()}
+          onFit={(fit) => void view.setPageFit(fit)}
+        />
+      {/key}
+    {:else}
+      <div class="curtain">
+        <p class="notice" aria-live="polite">{curtain}</p>
+        {#if stage === 'failed'}
+          <a class="escape" href="/">Back to your library</a>
+        {/if}
+      </div>
+    {/if}
+
+    {#if panel !== undefined}
+      <aside class="dock">{@render panel()}</aside>
+    {/if}
+  </div>
 
   <footer class="bar bottom">
     <p class="marker">{place.marker}</p>
@@ -527,6 +545,21 @@
     font-size: 12px;
   }
 
+  .body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .dock {
+    display: flex;
+    flex: none;
+    width: 320px;
+    min-height: 0;
+    border-left: 1px solid var(--c-border-1);
+    background: var(--c-surface-rail);
+  }
+
   .curtain {
     display: flex;
     flex: 1;
@@ -639,6 +672,10 @@
   @media (max-width: 700px) {
     .bar {
       padding: var(--s-3) var(--s-4);
+    }
+
+    .dock {
+      width: 240px;
     }
   }
 </style>
