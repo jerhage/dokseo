@@ -1,4 +1,4 @@
-import { requestPersistence } from '$lib/platform/storage/persistence';
+import { requestPersistence, storageEstimate } from '$lib/platform/storage/persistence';
 import type { BookId } from '$lib/shared/ids';
 import type { Result } from '$lib/shared/result';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
@@ -13,6 +13,10 @@ import {
   type OpenFileError,
 } from './domains/library/use-cases/open-file';
 import { readCover, type ReadCoverDeps } from './domains/library/use-cases/read-cover';
+import {
+  readStorageUsage,
+  type ReadStorageUsageDeps,
+} from './domains/library/use-cases/read-storage-usage';
 import { removeBook, type RemoveBookDeps } from './domains/library/use-cases/remove-book';
 
 export type Container = {
@@ -22,6 +26,7 @@ export type Container = {
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError>>;
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
+    readonly readStorageUsage: () => Promise<{ usage: number; quota: number } | null>;
   };
 };
 
@@ -40,6 +45,7 @@ export function buildContainer(): Container {
   const readCoverDeps: ReadCoverDeps = { repository };
   const removeBookDeps: RemoveBookDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
+  const readStorageUsageDeps: ReadStorageUsageDeps = { estimate: storageEstimate };
 
   return {
     library: {
@@ -48,6 +54,7 @@ export function buildContainer(): Container {
       readCover: (id: BookId) => readCover(readCoverDeps, id),
       removeBook: (id: BookId) => removeBook(removeBookDeps, id),
       editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
+      readStorageUsage: () => readStorageUsage(readStorageUsageDeps),
     },
   };
 }

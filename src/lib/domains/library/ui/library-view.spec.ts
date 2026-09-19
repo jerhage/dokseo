@@ -39,6 +39,8 @@ type CoverState = {
   gate: () => Promise<void>;
 };
 
+type UsageState = { estimate: { usage: number; quota: number } | null };
+
 type Fakes = {
   readonly container: Container;
   readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
@@ -46,6 +48,7 @@ type Fakes = {
   readonly removes: Deferred<Result<void, LibraryError>>[];
   readonly edits: Deferred<Result<Book, LibraryError>>[];
   readonly cover: CoverState;
+  readonly usage: UsageState;
 };
 
 function fakes(): Fakes {
@@ -54,6 +57,7 @@ function fakes(): Fakes {
   const removes: Deferred<Result<void, LibraryError>>[] = [];
   const edits: Deferred<Result<Book, LibraryError>>[] = [];
   const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
+  const usage: UsageState = { estimate: { usage: 2048, quota: 8192 } };
 
   const container: Container = {
     library: {
@@ -78,10 +82,11 @@ function fakes(): Fakes {
         edits.push(next);
         return next.promise;
       },
+      readStorageUsage: () => Promise.resolve(usage.estimate),
     },
   };
 
-  return { container, lists, opens, removes, edits, cover };
+  return { container, lists, opens, removes, edits, cover, usage };
 }
 
 function chosen(name: string, path = ''): File {
@@ -135,6 +140,31 @@ describe('LibraryView', () => {
     expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(view.covers.size).toBe(2);
     expect(view.message).toBeNull();
+  });
+
+  it('exposes the storage figure once the library has loaded', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+    expect(view.usage).toBeNull();
+
+    const running = view.load();
+    at(world.lists, 0).settle(ok([book('one')]));
+    await running;
+
+    expect(view.usage).toEqual({ usage: 2048, quota: 8192 });
+  });
+
+  it('reports no storage figure when the estimate is null', async () => {
+    const world = fakes();
+    world.usage.estimate = null;
+    const view = new LibraryView(world.container);
+
+    const running = view.load();
+    at(world.lists, 0).settle(ok([book('one')]));
+    await running;
+
+    expect(view.status).toBe('ready');
+    expect(view.usage).toBeNull();
   });
 
   it('orders the newest upload first', async () => {

@@ -1,5 +1,4 @@
 import type { Container } from '$lib/container';
-import { storageEstimate } from '$lib/platform/storage/persistence';
 import type { BookId } from '$lib/shared/ids';
 import type { Book, BookEdit } from '../domain/book';
 import type { LibraryError } from '../domain/library-repository';
@@ -89,7 +88,7 @@ export class LibraryView {
     }
     this.#adopt(covers);
 
-    const estimate = await storageEstimate();
+    const estimate = await this.#container.library.readStorageUsage();
     if (generation !== this.#generation) return;
     this.usage = estimate;
   }
