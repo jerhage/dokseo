@@ -4,6 +4,7 @@ import type { Size } from '$lib/shared/geometry';
 import { imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type { PageFit } from '$lib/shared/page-fit';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { pairPages, type PageGroup } from '../domain/page-pairing';
 import {
@@ -208,6 +209,12 @@ export class ReaderView {
     const book = this.book;
     if (book === null || this.saving || book.direction === direction) return;
     await this.#edit(book.id, { direction });
+  }
+
+  async setPageFit(fit: PageFit): Promise<void> {
+    const book = this.book;
+    if (book === null || book.pageFit === fit) return;
+    await this.#edit(book.id, { pageFit: fit });
   }
 
   select(regions: readonly ImageRegion[]): void {

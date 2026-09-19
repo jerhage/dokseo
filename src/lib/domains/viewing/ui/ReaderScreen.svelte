@@ -289,14 +289,18 @@
       clear={() => view.clearSelection()}
     />
   {:else if curtain === null && book !== null}
-    <PagedViewer
-      bind:this={paged}
-      pages={view.visiblePages}
-      direction={book.direction}
-      imageAt={(index) => view.imageAt(index)}
-      select={(regions) => view.select(regions)}
-      clear={() => view.clearSelection()}
-    />
+    {#key book.id}
+      <PagedViewer
+        bind:this={paged}
+        pages={view.visiblePages}
+        direction={book.direction}
+        pageFit={book.pageFit}
+        imageAt={(index) => view.imageAt(index)}
+        select={(regions) => view.select(regions)}
+        clear={() => view.clearSelection()}
+        onFit={(fit) => void view.setPageFit(fit)}
+      />
+    {/key}
   {:else}
     <div class="curtain">
       <p class="notice" aria-live="polite">{curtain}</p>

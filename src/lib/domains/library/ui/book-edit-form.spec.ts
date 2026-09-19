@@ -12,6 +12,7 @@ function book(overrides: Partial<Book> = {}): Book {
     layoutKind: 'paged',
     direction: 'rtl',
     pagePairing: 'double',
+    pageFit: 'height',
     sourceKind: 'archive',
     imageCount: 182,
     addedAt: 1758240000000,

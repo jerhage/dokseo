@@ -5,6 +5,7 @@
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import type { PageFit } from '$lib/shared/page-fit';
   import type { PageGroup } from '../domain/page-pairing';
   import {
     canPan,
@@ -19,7 +20,7 @@
   import PageCanvas from './PageCanvas.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
 
-  type Fit = 'height' | 'width' | 'free';
+  type Fit = PageFit | 'free';
 
   type Frames = { readonly content: Size; readonly frame: Size };
 
@@ -35,12 +36,14 @@
   type Props = {
     readonly pages: PageGroup;
     readonly direction: ReadingDirection;
+    readonly pageFit: PageFit;
     readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
+    readonly onFit: (fit: PageFit) => void;
   };
 
-  let { pages, direction, imageAt, select, clear }: Props = $props();
+  let { pages, direction, pageFit, imageAt, select, clear, onFit }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -51,7 +54,7 @@
   let strip = $state<HTMLDivElement | null>(null);
   let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
   let viewport = $state.raw<Viewport>({ zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 });
-  let fit = $state.raw<Fit>('height');
+  let fit = $state.raw<Fit>(untrack(() => pageFit));
   let grab = $state.raw<Grab | null>(null);
   let spaceHeld = $state(false);
   let pannable = $state(false);
@@ -112,16 +115,26 @@
     commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
   }
 
-  export function fitHeight(): void {
+  function applyHeight(): void {
     fit = 'height';
     recentre(FIT_HEIGHT_ZOOM);
   }
 
-  export function fitWidth(): void {
+  function applyWidth(): void {
     const sizes = framesNow();
     fit = 'width';
     if (sizes === null) return;
     recentre(fitZoom(sizes.content, sizes.frame, 'width'));
+  }
+
+  export function fitHeight(): void {
+    applyHeight();
+    onFit('height');
+  }
+
+  export function fitWidth(): void {
+    applyWidth();
+    onFit('width');
   }
 
   export function activeFit(): Fit {
@@ -130,8 +143,8 @@
 
   function reapplyFit(): void {
     match(fit)
-      .with('height', () => recentre(FIT_HEIGHT_ZOOM))
-      .with('width', () => fitWidth())
+      .with('height', () => applyHeight())
+      .with('width', () => applyWidth())
       .with('free', () => settle(viewport))
       .exhaustive();
   }

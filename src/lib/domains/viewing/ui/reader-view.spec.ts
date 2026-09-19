@@ -5,6 +5,7 @@ import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type { PageFit } from '$lib/shared/page-fit';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
@@ -23,6 +24,7 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
     layoutKind: 'paged',
     direction: 'rtl',
     pagePairing: 'double',
+    pageFit: 'height',
     sourceKind: 'archive',
     imageCount: 6,
     addedAt: 1758240000000,
@@ -85,6 +87,7 @@ type Edit = {
   readonly position: number | undefined;
   readonly pagePairing: PagePairing | undefined;
   readonly direction: ReadingDirection | undefined;
+  readonly pageFit: PageFit | undefined;
 };
 
 type Fakes = {
@@ -135,6 +138,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           position: edit.position,
           pagePairing: edit.pagePairing,
           direction: edit.direction,
+          pageFit: edit.pageFit,
         });
         if (world.gate !== null) await world.gate;
         if (world.editing === 'failed') {
@@ -144,6 +148,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           ...world.stored,
           pagePairing: edit.pagePairing ?? world.stored.pagePairing,
           direction: edit.direction ?? world.stored.direction,
+          pageFit: edit.pageFit ?? world.stored.pageFit,
           position: edit.position ?? world.stored.position,
         };
         return ok(world.stored);
@@ -318,6 +323,49 @@ describe('ReaderView', () => {
     expect(view.message).toBeNull();
   });
 
+  it('sets the page fit', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.setPageFit('width');
+
+    expect(view.book?.pageFit).toBe('width');
+    expect(at(world.edits, 0).pageFit).toBe('width');
+    expect(view.message).toBeNull();
+  });
+
+  it('keeps the selection when the page fit changes', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    view.select([region(0)]);
+
+    await view.setPageFit('width');
+
+    expect(view.regions).toEqual([region(0)]);
+  });
+
+  it('saves the page fit even while another write is in flight', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    let release = (): void => undefined;
+    world.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const first = view.setPairing('single');
+    const second = view.setPageFit('width');
+
+    release();
+    await Promise.all([first, second]);
+
+    expect(world.edits).toHaveLength(2);
+    expect(at(world.edits, 1).pageFit).toBe('width');
+  });
+
   it('ignores a setting already in force', async () => {
     const world = fakes();
     const view = new ReaderView(world.container);
@@ -325,6 +373,7 @@ describe('ReaderView', () => {
 
     await view.setPairing('double');
     await view.setDirection('rtl');
+    await view.setPageFit('height');
 
     expect(world.edits).toEqual([]);
   });

@@ -1,6 +1,8 @@
+import { match } from 'ts-pattern';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type { PageFit } from '$lib/shared/page-fit';
 
 export type SourceKind = 'images' | 'pdf' | 'archive';
 
@@ -11,6 +13,7 @@ export type Book = {
   readonly layoutKind: LayoutKind;
   readonly direction: ReadingDirection;
   readonly pagePairing: PagePairing;
+  readonly pageFit: PageFit;
   readonly sourceKind: SourceKind;
   readonly imageCount: number;
   readonly addedAt: number;
@@ -19,12 +22,20 @@ export type Book = {
 
 export const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
 
+export function defaultPageFit(layoutKind: LayoutKind): PageFit {
+  return match(layoutKind)
+    .with('continuous', () => 'width' as const)
+    .with('paged', () => 'height' as const)
+    .exhaustive();
+}
+
 export type BookEdit = {
   readonly title?: string;
   readonly language?: Language;
   readonly layoutKind?: LayoutKind;
   readonly direction?: ReadingDirection;
   readonly pagePairing?: PagePairing;
+  readonly pageFit?: PageFit;
   readonly position?: ImageIndex;
 };
 
@@ -39,6 +50,7 @@ export function applyEdit(book: Book, edit: BookEdit): Book {
   const direction = layoutKind === 'continuous' ? 'ltr' : (edit.direction ?? book.direction);
   const pagePairing =
     layoutKind === 'continuous' ? 'single' : (edit.pagePairing ?? book.pagePairing);
+  const pageFit = layoutKind === 'continuous' ? 'width' : (edit.pageFit ?? book.pageFit);
   return {
     ...book,
     title: editedTitle(book, edit),
@@ -46,6 +58,7 @@ export function applyEdit(book: Book, edit: BookEdit): Book {
     layoutKind,
     direction,
     pagePairing,
+    pageFit,
     position: edit.position ?? book.position,
   };
 }

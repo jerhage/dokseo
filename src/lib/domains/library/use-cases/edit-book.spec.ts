@@ -18,6 +18,7 @@ const stored: Book = {
   layoutKind: 'continuous',
   direction: 'ltr',
   pagePairing: 'single',
+  pageFit: 'width',
   sourceKind: 'archive',
   imageCount: 182,
   addedAt: 1758240000000,

@@ -1,6 +1,7 @@
 import { bookId, imageIndex } from '$lib/shared/ids';
+import type { LayoutKind } from '$lib/shared/layout-kind';
 import { err, ok, type Result } from '$lib/shared/result';
-import { DEFAULT_PAGE_PAIRING, type Book } from '../domain/book';
+import { defaultPageFit, DEFAULT_PAGE_PAIRING, type Book } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 import type { SourceBuildError, SourceBuilder } from '../domain/source-builder';
 
@@ -25,13 +26,16 @@ export async function openFile(
   const built = await deps.builder.build(files);
   if (!built.ok) return err({ kind: 'source', error: built.error });
 
+  const layoutKind: LayoutKind = 'paged';
+
   const book: Book = {
     id: bookId(deps.newId()),
     title: built.value.suggestedTitle,
     language: 'ja',
-    layoutKind: 'paged',
+    layoutKind,
     direction: 'rtl',
     pagePairing: DEFAULT_PAGE_PAIRING,
+    pageFit: defaultPageFit(layoutKind),
     sourceKind: built.value.sourceKind,
     imageCount: built.value.imageCount,
     addedAt: deps.now(),
