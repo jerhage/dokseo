@@ -48,6 +48,18 @@ module.exports = {
 					'^src/lib/assets/'
 				]
 			}
+		},
+
+		{
+			name: 'no-unresolvable',
+			comment:
+				"An import that does not resolve is invisible to every rule above, so a broken alias silently disables the architecture checks rather than failing loudly. $app and $env are SvelteKit's own virtual modules and are expected here.",
+			severity: 'error',
+			from: {},
+			to: {
+				couldNotResolve: true,
+				pathNot: '^[$](app|env)/'
+			}
 		}
 	],
 
@@ -55,7 +67,7 @@ module.exports = {
 		doNotFollow: { path: 'node_modules' },
 		exclude: { path: '(\\.svelte-kit|build|node_modules)/' },
 
-		tsConfig: { fileName: 'tsconfig.json' },
+		tsConfig: { fileName: 'tsconfig.depcruise.json' },
 		tsPreCompilationDeps: true,
 
 		enhancedResolveOptions: {
