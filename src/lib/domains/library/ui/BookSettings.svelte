@@ -1,5 +1,13 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import {
+    CONTINUOUS_HAS_NO_PAIRS,
+    CONTINUOUS_READS_DOWNWARD,
+    PAGE_PAIRING_CHOICES,
+    PAGE_PAIRING_LEGEND,
+    READING_DIRECTION_CHOICES,
+    READING_DIRECTION_LEGEND,
+  } from '$lib/shared/layout-choices';
   import type { Book, BookEdit } from '../domain/book';
   import { bookForm, changedFields } from './book-edit-form';
 
@@ -104,19 +112,22 @@
       disabled={saving || downward}
       aria-describedby={downward ? `${uid}-downward` : undefined}
     >
-      <legend class="label">Reading direction</legend>
-      <label class="choice">
-        <input type="radio" name="{uid}-direction" value="rtl" bind:group={form.direction} />
-        <span>Right to left</span>
-      </label>
-      <label class="choice">
-        <input type="radio" name="{uid}-direction" value="ltr" bind:group={form.direction} />
-        <span>Left to right</span>
-      </label>
+      <legend class="label">{READING_DIRECTION_LEGEND}</legend>
+      {#each READING_DIRECTION_CHOICES as choice (choice.value)}
+        <label class="choice">
+          <input
+            type="radio"
+            name="{uid}-direction"
+            value={choice.value}
+            bind:group={form.direction}
+          />
+          <span>{choice.label}</span>
+        </label>
+      {/each}
     </fieldset>
 
     {#if downward}
-      <p class="hint" id="{uid}-downward">A continuous strip always reads downward.</p>
+      <p class="hint" id="{uid}-downward">{CONTINUOUS_READS_DOWNWARD}</p>
     {/if}
 
     <fieldset
@@ -125,28 +136,22 @@
       disabled={saving || downward}
       aria-describedby={downward ? `${uid}-unpaired` : undefined}
     >
-      <legend class="label">Page pairing</legend>
-      <label class="choice">
-        <input type="radio" name="{uid}-pairing" value="single" bind:group={form.pagePairing} />
-        <span>One page at a time</span>
-      </label>
-      <label class="choice">
-        <input type="radio" name="{uid}-pairing" value="double" bind:group={form.pagePairing} />
-        <span>Two pages side by side</span>
-      </label>
-      <label class="choice">
-        <input
-          type="radio"
-          name="{uid}-pairing"
-          value="double-after-cover"
-          bind:group={form.pagePairing}
-        />
-        <span>Two pages, cover alone</span>
-      </label>
+      <legend class="label">{PAGE_PAIRING_LEGEND}</legend>
+      {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
+        <label class="choice">
+          <input
+            type="radio"
+            name="{uid}-pairing"
+            value={choice.value}
+            bind:group={form.pagePairing}
+          />
+          <span>{choice.label}</span>
+        </label>
+      {/each}
     </fieldset>
 
     {#if downward}
-      <p class="hint" id="{uid}-unpaired">A continuous strip has no facing pages.</p>
+      <p class="hint" id="{uid}-unpaired">{CONTINUOUS_HAS_NO_PAIRS}</p>
     {/if}
 
     <div class="actions">

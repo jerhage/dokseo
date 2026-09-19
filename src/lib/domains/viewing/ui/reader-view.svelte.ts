@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { pairPages, type PageGroup } from '../domain/page-pairing';
 import {
@@ -14,6 +15,8 @@ import {
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
 type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
+
+type BookEdit = Parameters<Container['library']['editBook']>[1];
 
 type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
 
@@ -67,6 +70,7 @@ export class ReaderView {
   status = $state<ReaderStatus>('idle');
   message = $state<string | null>(null);
   book = $state.raw<ReaderBook | null>(null);
+  saving = $state(false);
   sizes = $state.raw<readonly (Size | null)[]>([]);
   groups = $state.raw<readonly PageGroup[]>([]);
   position = $state.raw<ReadingPosition>(readingPosition(imageIndex(0), 0));
@@ -121,8 +125,7 @@ export class ReaderView {
     const { book, pages } = opened.value;
     this.#source = pages;
     this.book = book;
-    this.sizes = unmeasured(book.imageCount);
-    this.groups = pairPages(this.sizes, book.pagePairing);
+    this.#regroup(book, unmeasured(book.imageCount));
     this.position = readingPosition(book.position, 0);
     this.status = this.groups.length === 0 ? 'empty' : 'ready';
   }
@@ -169,6 +172,18 @@ export class ReaderView {
     await this.#persist(book.id, moved.index);
   }
 
+  async setPairing(pairing: PagePairing): Promise<void> {
+    const book = this.book;
+    if (book === null || this.saving || book.pagePairing === pairing) return;
+    await this.#edit(book.id, { pagePairing: pairing });
+  }
+
+  async setDirection(direction: ReadingDirection): Promise<void> {
+    const book = this.book;
+    if (book === null || this.saving || book.direction === direction) return;
+    await this.#edit(book.id, { direction });
+  }
+
   dispose(): void {
     this.#generation += 1;
     this.#release();
@@ -177,6 +192,29 @@ export class ReaderView {
     this.groups = [];
     this.status = 'idle';
     this.message = null;
+    this.saving = false;
+  }
+
+  async #edit(id: BookId, edit: BookEdit): Promise<void> {
+    const generation = this.#generation;
+    this.saving = true;
+    this.message = null;
+
+    try {
+      const saved = await this.#container.library.editBook(id, edit);
+      if (generation !== this.#generation) return;
+      if (!saved.ok) {
+        this.message = describeEditFailure(saved.error);
+        return;
+      }
+      this.book = saved.value;
+      this.#regroup(saved.value, this.sizes);
+    } catch (cause) {
+      if (generation !== this.#generation) return;
+      this.message = `That change could not be saved: ${String(cause)}`;
+    } finally {
+      this.saving = false;
+    }
   }
 
   #measure(index: ImageIndex, size: Size): void {
@@ -188,6 +226,10 @@ export class ReaderView {
 
     const sizes = [...this.sizes];
     sizes[index] = size;
+    this.#regroup(book, sizes);
+  }
+
+  #regroup(book: ReaderBook, sizes: readonly (Size | null)[]): void {
     this.sizes = sizes;
     this.groups = pairPages(sizes, book.pagePairing);
   }

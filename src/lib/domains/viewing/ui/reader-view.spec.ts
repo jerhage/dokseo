@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
 import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
@@ -72,7 +73,12 @@ function fakeSource(count: number): FakeSource {
   return state;
 }
 
-type Edit = { readonly id: BookId; readonly position: number | undefined };
+type Edit = {
+  readonly id: BookId;
+  readonly position: number | undefined;
+  readonly pagePairing: PagePairing | undefined;
+  readonly direction: ReadingDirection | undefined;
+};
 
 type Fakes = {
   readonly container: Container;
@@ -80,6 +86,8 @@ type Fakes = {
   readonly edits: Edit[];
   opening: ReaderBook | 'unreadable';
   editing: 'ok' | 'failed';
+  gate: Promise<void> | null;
+  stored: ReaderBook;
 };
 
 function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
@@ -92,6 +100,8 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
     edits,
     opening: opened as ReaderBook | 'unreadable',
     editing: 'ok' as 'ok' | 'failed',
+    gate: null as Promise<void> | null,
+    stored: opened,
     container: {} as Container,
   };
 
@@ -112,12 +122,24 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       listBooks: () => Promise.reject(new Error('not used')),
       readCover: () => Promise.reject(new Error('not used')),
       removeBook: () => Promise.reject(new Error('not used')),
-      editBook: (id, edit) => {
-        edits.push({ id, position: edit.position });
+      editBook: async (id, edit) => {
+        edits.push({
+          id,
+          position: edit.position,
+          pagePairing: edit.pagePairing,
+          direction: edit.direction,
+        });
+        if (world.gate !== null) await world.gate;
         if (world.editing === 'failed') {
-          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+          return err({ kind: 'storage-failed', cause: 'the disk went away' });
         }
-        return Promise.resolve(ok(book(overrides)));
+        world.stored = {
+          ...world.stored,
+          pagePairing: edit.pagePairing ?? world.stored.pagePairing,
+          direction: edit.direction ?? world.stored.direction,
+          position: edit.position ?? world.stored.position,
+        };
+        return ok(world.stored);
       },
       readStorageUsage: () => Promise.resolve(null),
     },
@@ -247,6 +269,93 @@ describe('ReaderView', () => {
     expect(drawn).toBeNull();
     expect(view.status).toBe('ready');
     expect(view.message).toBeNull();
+  });
+
+  it('sets the pairing and rebuilds the groups', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.groups).toHaveLength(3);
+
+    await view.setPairing('single');
+
+    expect(view.book?.pagePairing).toBe('single');
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(at(world.edits, 0).pagePairing).toBe('single');
+    expect(view.saving).toBe(false);
+  });
+
+  it('keeps the reader on the same image when the pairing changes', async () => {
+    const world = fakes({ position: imageIndex(3) });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.group).toBe(1);
+    expect(view.visiblePages).toEqual([2, 3]);
+
+    await view.setPairing('double-after-cover');
+
+    expect(view.position.index).toBe(3);
+    expect(view.group).toBe(2);
+    expect(view.visiblePages).toEqual([3, 4]);
+  });
+
+  it('sets the direction', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.setDirection('ltr');
+
+    expect(view.book?.direction).toBe('ltr');
+    expect(at(world.edits, 0).direction).toBe('ltr');
+    expect(view.message).toBeNull();
+  });
+
+  it('ignores a setting already in force', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.setPairing('double');
+    await view.setDirection('rtl');
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('reports a failed setting and leaves the book unchanged', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await expect(view.setPairing('single')).resolves.toBeUndefined();
+
+    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(view.book?.pagePairing).toBe('double');
+    expect(view.groups).toHaveLength(3);
+    expect(view.saving).toBe(false);
+  });
+
+  it('ignores a second setting while a write is in flight', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    let release = (): void => undefined;
+    world.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const first = view.setPairing('single');
+    await view.setDirection('ltr');
+    expect(world.edits).toHaveLength(1);
+
+    release();
+    await first;
+
+    expect(world.edits).toHaveLength(1);
+    expect(view.book?.pagePairing).toBe('single');
+    expect(view.book?.direction).toBe('rtl');
   });
 
   it('reports a failed save of the reading position', async () => {

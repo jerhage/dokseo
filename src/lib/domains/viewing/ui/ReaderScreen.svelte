@@ -1,6 +1,14 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import type { ImageIndex } from '$lib/shared/ids';
+  import {
+    CONTINUOUS_HAS_NO_PAIRS,
+    CONTINUOUS_READS_DOWNWARD,
+    PAGE_PAIRING_CHOICES,
+    PAGE_PAIRING_LEGEND_BRIEF,
+    READING_DIRECTION_CHOICES,
+    READING_DIRECTION_LEGEND_BRIEF,
+  } from '$lib/shared/layout-choices';
   import PagedViewer from './PagedViewer.svelte';
   import type { ReaderView } from './reader-view.svelte';
 
@@ -8,11 +16,16 @@
 
   let { view }: Props = $props();
 
+  const uid = $props.id();
+
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
   const rtl = $derived(book?.direction === 'rtl');
   const groupCount = $derived(view.groups.length);
   const group = $derived(view.group);
+  const downward = $derived(book?.layoutKind === 'continuous');
+  const pairing = $derived(book?.pagePairing ?? null);
+  const direction = $derived(book?.direction ?? null);
 
   const stage = $derived(
     match(view.status)
@@ -33,27 +46,8 @@
       .exhaustive(),
   );
 
-  const pairing = $derived(
-    book === null
-      ? null
-      : match(book.pagePairing)
-          .with('single', () => 'single pages')
-          .with('double', () => 'two-page spreads')
-          .with('double-after-cover', () => 'two-page spreads after the cover')
-          .exhaustive(),
-  );
-
   const meta = $derived(
-    book === null
-      ? ''
-      : [
-          `${total} images`,
-          pairing,
-          book.direction === 'rtl' ? 'right to left' : 'left to right',
-          book.language === 'ko' ? 'Korean' : 'Japanese',
-        ]
-          .filter((part) => part !== null)
-          .join(' · '),
+    book === null ? '' : `${total} images · ${book.language === 'ko' ? 'Korean' : 'Japanese'}`,
   );
 
   function page(index: ImageIndex): string {
@@ -75,12 +69,17 @@
   const backGlyph = $derived(rightToLeft ? '›' : '‹');
   const forwardGlyph = $derived(rightToLeft ? '‹' : '›');
 
+  function handlesOwnKeys(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
+  }
+
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-
-    const target = event.target;
-    if (target instanceof HTMLElement && target.isContentEditable) return;
+    if (handlesOwnKeys(event.target)) return;
 
     event.preventDefault();
     if (event.key === forwardKey) void view.next();
@@ -102,6 +101,55 @@
       </h1>
       <p class="meta">{meta}</p>
     </div>
+
+    {#if book !== null}
+      <div class="settings">
+        <fieldset
+          class="group"
+          disabled={view.saving || downward}
+          aria-describedby={downward ? `${uid}-unpaired` : undefined}
+        >
+          <legend class="legend">{PAGE_PAIRING_LEGEND_BRIEF}</legend>
+          {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
+            <label class="pill" title={choice.label}>
+              <input
+                type="radio"
+                name="{uid}-pairing"
+                value={choice.value}
+                checked={pairing === choice.value}
+                onchange={() => void view.setPairing(choice.value)}
+              />
+              <span>{choice.brief}</span>
+            </label>
+          {/each}
+        </fieldset>
+
+        <fieldset
+          class="group"
+          disabled={view.saving || downward}
+          aria-describedby={downward ? `${uid}-downward` : undefined}
+        >
+          <legend class="legend">{READING_DIRECTION_LEGEND_BRIEF}</legend>
+          {#each READING_DIRECTION_CHOICES as choice (choice.value)}
+            <label class="pill" title={choice.label}>
+              <input
+                type="radio"
+                name="{uid}-direction"
+                value={choice.value}
+                checked={direction === choice.value}
+                onchange={() => void view.setDirection(choice.value)}
+              />
+              <span>{choice.brief}</span>
+            </label>
+          {/each}
+        </fieldset>
+
+        {#if downward}
+          <p class="hint" id="{uid}-unpaired">{CONTINUOUS_HAS_NO_PAIRS}</p>
+          <p class="hint" id="{uid}-downward">{CONTINUOUS_READS_DOWNWARD}</p>
+        {/if}
+      </div>
+    {/if}
   </header>
 
   {#if view.message !== null && stage === 'reading'}
@@ -228,6 +276,84 @@
     margin: var(--s-1) 0 0;
     color: var(--c-text-8);
     font-size: 11px;
+  }
+
+  .settings {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--s-2) var(--s-4);
+  }
+
+  .group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-1);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .group:disabled {
+    opacity: 0.5;
+  }
+
+  .legend {
+    flex: 1 0 100%;
+    padding: 0;
+    color: var(--c-text-8);
+    font-family: var(--f-ui);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .pill {
+    position: relative;
+    padding: var(--s-1) var(--s-2);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .pill input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .group:not(:disabled) .pill {
+    cursor: pointer;
+  }
+
+  .group:not(:disabled) .pill:hover {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .pill:has(input:checked) {
+    border-color: var(--c-accent-border);
+    background: var(--c-accent-wash-soft);
+    color: var(--c-accent);
+  }
+
+  .pill:has(input:focus-visible) {
+    outline: 1px solid var(--c-accent-border-strong);
+    outline-offset: 1px;
+  }
+
+  .hint {
+    flex: 1 0 100%;
+    margin: 0;
+    color: var(--c-text-9);
+    font-size: 10.5px;
   }
 
   .alert {
