@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { at } from '$lib/shared/testing/at';
 import { filesFromDataTransfer } from './dropped-files';
 
 type Node = { readonly name: string; readonly children?: readonly Node[] };
@@ -42,7 +43,7 @@ describe('filesFromDataTransfer', () => {
 		const files = await filesFromDataTransfer(transferOf([{ name: 'page01.png' }]));
 
 		expect(files.map((f) => f.name)).toEqual(['page01.png']);
-		expect(files[0].webkitRelativePath).toBe('');
+		expect(at(files, 0).webkitRelativePath).toBe('');
 	});
 
 	it('walks a dropped folder and records the path below it', async () => {

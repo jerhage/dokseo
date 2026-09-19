@@ -15,6 +15,6 @@ function firstNonEmpty(...candidates: readonly string[]): string {
 export function suggestTitle(entries: readonly TitleCandidate[]): string {
 	const first = entries[0];
 	if (first === undefined) return FALLBACK_TITLE;
-	const folder = first.path.split('/')[0];
+	const [folder = ''] = first.path.split('/');
 	return firstNonEmpty(folder, withoutExtension(first.name));
 }

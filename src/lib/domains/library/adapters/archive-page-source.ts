@@ -48,8 +48,10 @@ export async function openArchivePageSource(
 			if (!Number.isInteger(index) || index < 0 || index >= count) {
 				return err({ kind: 'out-of-range', index, count });
 			}
+			const image = images[index];
+			if (image === undefined) return err({ kind: 'out-of-range', index, count });
 			try {
-				const entry = await images[index].getData(new BlobWriter());
+				const entry = await image.getData(new BlobWriter());
 				const bitmap = await decodeImage(entry);
 				return ok(bitmap);
 			} catch (cause) {

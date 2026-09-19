@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { at } from '$lib/shared/testing/at';
 import { compareNatural } from './natural-order';
 
 describe('compareNatural', () => {
@@ -54,7 +55,7 @@ describe('compareNatural', () => {
 		const forward = [...names].sort(compareNatural);
 		const reversed = [...names].reverse().sort(compareNatural);
 		expect(forward).toEqual(reversed);
-		const adjacent = forward.slice(1).map((name, i) => compareNatural(forward[i], name));
+		const adjacent = forward.slice(1).map((name, i) => compareNatural(at(forward, i), name));
 		expect(adjacent.every((c) => c !== 0)).toBe(true);
 	});
 

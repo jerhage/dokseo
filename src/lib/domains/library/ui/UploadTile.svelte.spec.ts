@@ -1,5 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
+import { at } from '$lib/shared/testing/at';
 import UploadTile from './UploadTile.svelte';
 
 function filePickerIn(container: HTMLElement): HTMLInputElement {
@@ -25,7 +26,7 @@ test('passes the chosen file to onfiles even though the input is cleared afterwa
 	choose(input, new File(['zip bytes'], 'chapter.cbz', { type: 'application/zip' }));
 
 	expect(onfiles).toHaveBeenCalledTimes(1);
-	const received = onfiles.mock.calls[0][0] as readonly File[];
+	const received = at(onfiles.mock.calls, 0)[0] as readonly File[];
 	expect(received.map((file) => file.name)).toEqual(['chapter.cbz']);
 });
 
@@ -52,7 +53,7 @@ test('delivers several chosen files together', async () => {
 		new File(['b'], 'page002.jpg', { type: 'image/jpeg' })
 	);
 
-	const received = onfiles.mock.calls[0][0] as readonly File[];
+	const received = at(onfiles.mock.calls, 0)[0] as readonly File[];
 	expect(received.map((file) => file.name)).toEqual(['page001.jpg', 'page002.jpg']);
 });
 

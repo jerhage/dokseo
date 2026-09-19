@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
+import { at } from '$lib/shared/testing/at';
 import type { Book } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
@@ -80,7 +81,7 @@ describe('openFile', () => {
 		const repository = fakeRepository();
 		const result = await openFile(deps({ repository: repository.repository }), files);
 		expect(repository.added).toHaveLength(1);
-		expect(result.ok && result.value).toEqual(repository.added[0].book);
+		expect(result.ok && result.value).toEqual(at(repository.added, 0).book);
 	});
 
 	it('stores the source blob and the cover the builder produced', async () => {
@@ -88,8 +89,8 @@ describe('openFile', () => {
 		const repository = fakeRepository();
 		const builder = fakeBuilder(ok(built));
 		await openFile(deps({ repository: repository.repository, builder: builder.builder }), files);
-		expect(repository.added[0].source).toBe(built.blob);
-		expect(repository.added[0].cover).toBe(built.cover);
+		expect(at(repository.added, 0).source).toBe(built.blob);
+		expect(at(repository.added, 0).cover).toBe(built.cover);
 	});
 
 	it('uses the injected id, time and title', async () => {

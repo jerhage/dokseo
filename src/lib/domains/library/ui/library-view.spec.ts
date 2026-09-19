@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
+import { at } from '$lib/shared/testing/at';
 import type { Book } from '../domain/book';
 import type { LibraryError } from '../domain/library-repository';
 import type { OpenFileError } from '../use-cases/open-file';
@@ -119,7 +120,7 @@ describe('LibraryView', () => {
 		const running = view.load();
 		expect(view.status).toBe('loading');
 
-		world.lists[0].settle(ok([book('one'), book('two')]));
+		at(world.lists, 0).settle(ok([book('one'), book('two')]));
 		await running;
 
 		expect(view.status).toBe('ready');
@@ -133,7 +134,7 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const running = view.load();
-		world.lists[0].settle(ok([book('older', { addedAt: 1 }), book('newer', { addedAt: 2 })]));
+		at(world.lists, 0).settle(ok([book('older', { addedAt: 1 }), book('newer', { addedAt: 2 })]));
 		await running;
 
 		expect(view.books.map((b) => b.id)).toEqual(['newer', 'older']);
@@ -144,7 +145,7 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const running = view.load();
-		world.lists[0].settle(err({ kind: 'storage-failed', cause: 'quota exceeded' }));
+		at(world.lists, 0).settle(err({ kind: 'storage-failed', cause: 'quota exceeded' }));
 		await expect(running).resolves.toBeUndefined();
 
 		expect(view.status).toBe('failed');
@@ -158,7 +159,7 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const running = view.load();
-		world.lists[0].settle(ok([book('one')]));
+		at(world.lists, 0).settle(ok([book('one')]));
 		await running;
 
 		expect(view.status).toBe('ready');
@@ -171,7 +172,7 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const running = view.load();
-		world.lists[0].settle(ok([book('one'), book('two')]));
+		at(world.lists, 0).settle(ok([book('one'), book('two')]));
 		await running;
 
 		view.dispose();
@@ -185,11 +186,11 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const first = view.load();
-		world.lists[0].settle(ok([book('one')]));
+		at(world.lists, 0).settle(ok([book('one')]));
 		await first;
 
 		const second = view.load();
-		world.lists[1].settle(ok([book('one')]));
+		at(world.lists, 1).settle(ok([book('one')]));
 		await second;
 
 		expect(revoked).toEqual([created[0]]);
@@ -203,9 +204,9 @@ describe('LibraryView', () => {
 		const first = view.load();
 		const second = view.load();
 
-		world.lists[1].settle(ok([book('late')]));
+		at(world.lists, 1).settle(ok([book('late')]));
 		await second;
-		world.lists[0].settle(ok([book('early')]));
+		at(world.lists, 0).settle(ok([book('early')]));
 		await first;
 
 		expect(view.books.map((b) => b.id)).toEqual(['late']);
@@ -219,12 +220,12 @@ describe('LibraryView', () => {
 		world.cover.gate = () => held.promise;
 
 		const first = view.load();
-		world.lists[0].settle(ok([book('early')]));
+		at(world.lists, 0).settle(ok([book('early')]));
 		await settleMicrotasks();
 
 		world.cover.gate = () => Promise.resolve();
 		const second = view.load();
-		world.lists[1].settle(ok([book('late')]));
+		at(world.lists, 1).settle(ok([book('late')]));
 		await second;
 
 		held.settle();
@@ -240,13 +241,13 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one')]));
+		at(world.lists, 0).settle(ok([book('one')]));
 		await loading;
 
 		const uploading = view.upload([chosen('page.png')]);
 		expect(view.busy).toBe(true);
 
-		world.opens[0].settle(err({ kind: 'source', error: { kind: 'nothing-usable' } }));
+		at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'nothing-usable' } }));
 		await expect(uploading).resolves.toBeUndefined();
 
 		expect(view.busy).toBe(false);
@@ -262,14 +263,14 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one')]));
+		at(world.lists, 0).settle(ok([book('one')]));
 		await loading;
 
 		const uploading = view.upload([chosen('page.png')]);
-		world.opens[0].settle(ok(book('two')));
+		at(world.opens, 0).settle(ok(book('two')));
 		await Promise.resolve();
 		await Promise.resolve();
-		world.lists[1].settle(ok([book('one'), book('two')]));
+		at(world.lists, 1).settle(ok([book('one'), book('two')]));
 		await uploading;
 
 		expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
@@ -281,17 +282,17 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one')]));
+		at(world.lists, 0).settle(ok([book('one')]));
 		await loading;
 
 		const uploading = view.upload([chosen('001.png', 'Blame/001.png')]);
 		expect(view.pending).toBe('Blame');
 
-		world.opens[0].settle(ok(book('two')));
+		at(world.opens, 0).settle(ok(book('two')));
 		await settleMicrotasks();
 		expect(view.pending).toBeNull();
 
-		world.lists[1].settle(ok([book('one'), book('two')]));
+		at(world.lists, 1).settle(ok([book('one'), book('two')]));
 		await uploading;
 
 		expect(view.pending).toBeNull();
@@ -305,7 +306,7 @@ describe('LibraryView', () => {
 		const uploading = view.upload([chosen('chapter-1.cbz')]);
 		expect(view.pending).toBe('chapter-1');
 
-		world.opens[0].settle(err({ kind: 'source', error: { kind: 'unreadable', cause: 'bad zip' } }));
+		at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'unreadable', cause: 'bad zip' } }));
 		await uploading;
 
 		expect(view.pending).toBeNull();
@@ -334,13 +335,13 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one'), book('two')]));
+		at(world.lists, 0).settle(ok([book('one'), book('two')]));
 		await loading;
 
 		const removing = view.remove(bookId('one'));
-		world.removes[0].settle(ok(undefined));
+		at(world.removes, 0).settle(ok(undefined));
 		await settleMicrotasks();
-		world.lists[1].settle(ok([book('two')]));
+		at(world.lists, 1).settle(ok([book('two')]));
 		await removing;
 
 		expect(view.books.map((b) => b.id)).toEqual(['two']);
@@ -353,17 +354,17 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one'), book('two')]));
+		at(world.lists, 0).settle(ok([book('one'), book('two')]));
 		await loading;
 
 		const removing = view.remove(bookId('one'));
 		expect(view.removing).toBe('one');
 
-		world.removes[0].settle(ok(undefined));
+		at(world.removes, 0).settle(ok(undefined));
 		await settleMicrotasks();
 		expect(view.removing).toBeNull();
 
-		world.lists[1].settle(ok([book('two')]));
+		at(world.lists, 1).settle(ok([book('two')]));
 		await removing;
 
 		expect(view.removing).toBeNull();
@@ -374,11 +375,11 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one'), book('two')]));
+		at(world.lists, 0).settle(ok([book('one'), book('two')]));
 		await loading;
 
 		const removing = view.remove(bookId('one'));
-		world.removes[0].settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+		at(world.removes, 0).settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
 		await expect(removing).resolves.toBeUndefined();
 
 		expect(view.removing).toBeNull();
@@ -392,7 +393,7 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one'), book('two')]));
+		at(world.lists, 0).settle(ok([book('one'), book('two')]));
 		await loading;
 
 		const first = view.remove(bookId('one'));
@@ -401,9 +402,9 @@ describe('LibraryView', () => {
 		expect(world.removes).toHaveLength(1);
 		expect(view.removing).toBe('one');
 
-		world.removes[0].settle(ok(undefined));
+		at(world.removes, 0).settle(ok(undefined));
 		await settleMicrotasks();
-		world.lists[1].settle(ok([book('two')]));
+		at(world.lists, 1).settle(ok([book('two')]));
 		await first;
 
 		expect(view.books.map((b) => b.id)).toEqual(['two']);
@@ -414,7 +415,7 @@ describe('LibraryView', () => {
 		const view = new LibraryView(world.container);
 
 		const loading = view.load();
-		world.lists[0].settle(ok([book('one')]));
+		at(world.lists, 0).settle(ok([book('one')]));
 		await loading;
 
 		const uploading = view.upload([chosen('page.png')]);
@@ -423,7 +424,7 @@ describe('LibraryView', () => {
 		expect(world.removes).toHaveLength(0);
 		expect(view.removing).toBeNull();
 
-		world.opens[0].settle(err({ kind: 'source', error: { kind: 'empty' } }));
+		at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
 		await uploading;
 
 		expect(view.books.map((b) => b.id)).toEqual(['one']);

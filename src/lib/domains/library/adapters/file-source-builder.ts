@@ -22,7 +22,11 @@ async function sourceBlobOf(
 	sourceKind: SourceKind,
 	files: readonly File[]
 ): Promise<Result<Blob, SourceBuildError>> {
-	if (sourceKind !== 'images') return ok(files[0]);
+	if (sourceKind !== 'images') {
+		const [container] = files;
+		if (container === undefined) return err({ kind: 'empty' });
+		return ok(container);
+	}
 	const { packImagesIntoArchive } = await import('./archive-packer');
 	const packed = await packImagesIntoArchive(files);
 	if (!packed.ok) return err({ kind: 'unreadable', cause: describePageSourceError(packed.error) });
