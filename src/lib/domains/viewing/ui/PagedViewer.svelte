@@ -1,13 +1,11 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
-  import { isEmpty, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
-  import { imageIndex, type ImageIndex } from '$lib/shared/ids';
+  import type { Size } from '$lib/shared/geometry';
+  import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PageGroup } from '../domain/page-pairing';
-  import { regionsIn, type PlacedImage } from '../domain/placement';
-  import { isUsableSelection, selectionFrom, type Point } from '../domain/selection';
   import {
     canPan,
     centrePan,
@@ -19,6 +17,7 @@
   } from '../domain/viewport';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import PageCanvas from './PageCanvas.svelte';
+  import SelectionLayer from './SelectionLayer.svelte';
 
   type Fit = 'height' | 'width' | 'free';
 
@@ -50,15 +49,10 @@
 
   let frame = $state<HTMLDivElement | null>(null);
   let strip = $state<HTMLDivElement | null>(null);
+  let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
   let viewport = $state.raw<Viewport>({ zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 });
   let fit = $state.raw<Fit>('height');
   let grab = $state.raw<Grab | null>(null);
-  let origin = $state.raw<Point | null>(null);
-  let anchor = $state.raw<Point | null>(null);
-  let pointer = $state.raw<Point | null>(null);
-  let held = $state<number | null>(null);
-  let committed = $state.raw<ScreenRect | null>(null);
-  let captured = $state.raw<Size | null>(null);
   let spaceHeld = $state(false);
   let pannable = $state(false);
 
@@ -67,30 +61,6 @@
   const transform = $derived(
     `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
   );
-
-  const dragged = $derived.by(() => {
-    const from = anchor;
-    const to = pointer;
-    if (from === null || to === null) return null;
-
-    const rect = selectionFrom(from, to);
-    return isEmpty(rect) ? null : rect;
-  });
-
-  const marquee = $derived(dragged ?? committed);
-
-  const overlay = $derived.by(() => {
-    const rect = marquee;
-    const corner = origin;
-    if (rect === null || corner === null) return null;
-
-    return {
-      left: rect.x - corner.x,
-      top: rect.y - corner.y,
-      width: rect.width,
-      height: rect.height,
-    };
-  });
 
   const gestures = $derived<readonly Gesture[]>(
     pannable
@@ -105,16 +75,8 @@
         ],
   );
 
-  const measure = $derived(
-    dragged !== null || captured === null ? null : `${captured.width} × ${captured.height}`,
-  );
-
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
-  }
-
-  function pointAt(event: PointerEvent): Point {
-    return { x: event.clientX, y: event.clientY };
   }
 
   function framesNow(): Frames | null {
@@ -188,22 +150,9 @@
     return delta;
   }
 
-  function forget(): void {
-    committed = null;
-    captured = null;
-  }
-
   function release(id: number): void {
     const element = frame;
     if (element !== null && element.hasPointerCapture(id)) element.releasePointerCapture(id);
-  }
-
-  function stopDrag(): void {
-    const id = held;
-    if (id !== null) release(id);
-    held = null;
-    anchor = null;
-    pointer = null;
   }
 
   function stopGrab(): void {
@@ -222,38 +171,6 @@
   function dropSpace(): void {
     spaceHeld = false;
     if (grab !== null && grab.bySpace) stopGrab();
-  }
-
-  function placementsIn(element: HTMLElement): readonly PlacedImage[] {
-    const placed: PlacedImage[] = [];
-
-    for (const canvas of element.querySelectorAll('canvas[data-image-index]')) {
-      if (!(canvas instanceof HTMLCanvasElement)) continue;
-
-      const index = Number(canvas.dataset.imageIndex);
-      if (!Number.isInteger(index)) continue;
-
-      const box = canvas.getBoundingClientRect();
-      placed.push({
-        index: imageIndex(index),
-        onScreen: screenRect(box.x, box.y, box.width, box.height),
-        natural: { width: canvas.width, height: canvas.height },
-      });
-    }
-
-    return placed;
-  }
-
-  function naturalSize(regions: readonly ImageRegion[]): Size {
-    let width = 0;
-    let height = 0;
-
-    for (const region of regions) {
-      width += region.rect.width;
-      height = Math.max(height, region.rect.height);
-    }
-
-    return { width: Math.round(width), height: Math.round(height) };
   }
 
   function onwheel(event: WheelEvent): void {
@@ -302,15 +219,7 @@
       return;
     }
 
-    const box = element.getBoundingClientRect();
-    origin = { x: box.x, y: box.y };
-    anchor = pointAt(event);
-    pointer = anchor;
-    held = event.pointerId;
-    forget();
-    clear();
-    element.setPointerCapture(event.pointerId);
-    event.preventDefault();
+    selection?.pointerdown(event);
   }
 
   function onpointermove(event: PointerEvent): void {
@@ -321,8 +230,7 @@
       return;
     }
 
-    if (held !== event.pointerId || anchor === null) return;
-    pointer = pointAt(event);
+    selection?.pointermove(event);
   }
 
   function onpointerup(event: PointerEvent): void {
@@ -331,23 +239,7 @@
       return;
     }
 
-    if (held !== event.pointerId) return;
-
-    const element = frame;
-    const from = anchor;
-    const to = pointAt(event);
-    stopDrag();
-    if (element === null || from === null) return;
-
-    const selection = selectionFrom(from, to);
-    if (!isUsableSelection(selection)) return;
-
-    const regions = regionsIn(placementsIn(element), selection);
-    if (regions.length === 0) return;
-
-    committed = selection;
-    captured = naturalSize(regions);
-    select(regions);
+    selection?.pointerup(event);
   }
 
   function onpointercancel(event: PointerEvent): void {
@@ -356,18 +248,14 @@
       return;
     }
 
-    if (held !== event.pointerId) return;
-    stopDrag();
+    selection?.pointercancel(event);
   }
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented) return;
 
     if (event.key === 'Escape') {
-      if (anchor === null && committed === null) return;
-      stopDrag();
-      forget();
-      clear();
+      selection?.dismiss();
       return;
     }
 
@@ -427,9 +315,8 @@
       if (group === shownPages) return;
 
       shownPages = group;
-      stopDrag();
+      selection?.reset();
       stopGrab();
-      forget();
       recentre(viewport.zoom);
     });
   });
@@ -440,7 +327,7 @@
 <div class="viewer">
   <div
     class="frame"
-    class:grabbable={spaceHeld && grab === null && held === null}
+    class:grabbable={spaceHeld && grab === null && !(selection?.dragging() ?? false)}
     class:grabbing={grab !== null}
     role="group"
     aria-label="Pages in view"
@@ -457,24 +344,15 @@
       {/each}
     </div>
 
-    {#if overlay !== null}
-      <div
-        class="marquee"
-        style:left="{overlay.left}px"
-        style:top="{overlay.top}px"
-        style:width="{overlay.width}px"
-        style:height="{overlay.height}px"
-        aria-hidden="true"
-      >
-        <span class="handle north west"></span>
-        <span class="handle north east"></span>
-        <span class="handle south west"></span>
-        <span class="handle south east"></span>
-        {#if measure !== null}
-          <p class="size">{measure}</p>
-        {/if}
-      </div>
-    {/if}
+    <SelectionLayer
+      bind:this={selection}
+      within={frame}
+      arrangement="row"
+      pointerTypes="any"
+      suppressed={spaceHeld}
+      {select}
+      {clear}
+    />
 
     <p class="hint" aria-hidden="true">
       {#each gestures as gesture (gesture.keys.join('+'))}
@@ -534,39 +412,6 @@
     flex-direction: row-reverse;
   }
 
-  .marquee {
-    position: absolute;
-    z-index: var(--z-marquee);
-    border: 2px solid var(--c-accent);
-    background: var(--c-accent-wash);
-    pointer-events: none;
-  }
-
-  .handle {
-    position: absolute;
-    display: block;
-    width: 9px;
-    height: 9px;
-    border: 1px solid var(--c-surface-void);
-    background: var(--c-accent);
-  }
-
-  .north {
-    top: -6px;
-  }
-
-  .south {
-    bottom: -6px;
-  }
-
-  .west {
-    left: -6px;
-  }
-
-  .east {
-    right: -6px;
-  }
-
   .hint {
     position: absolute;
     bottom: 0;
@@ -604,21 +449,6 @@
   }
 
   .does {
-    white-space: nowrap;
-  }
-
-  .size {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    margin: 0 0 var(--s-1);
-    padding: var(--s-1) var(--s-2);
-    border-radius: var(--r-sm);
-    background: var(--c-surface-popover);
-    color: var(--c-accent);
-    font-family: var(--f-mono);
-    font-size: 10.5px;
-    letter-spacing: 0.02em;
     white-space: nowrap;
   }
 </style>

@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
+  import type { ImageRegion } from '$lib/shared/image-region';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     layOutStrip,
@@ -15,6 +16,7 @@
   import { clampZoom } from '../domain/viewport';
   import { handlesOwnKeys } from './keyboard';
   import PageCanvas from './PageCanvas.svelte';
+  import SelectionLayer from './SelectionLayer.svelte';
 
   type Hold = {
     readonly position: ReadingPosition;
@@ -28,9 +30,11 @@
     readonly start: ReadingPosition;
     readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
     readonly moveTo: (position: ReadingPosition) => void;
+    readonly select: (regions: readonly ImageRegion[]) => void;
+    readonly clear: () => void;
   };
 
-  let { sizes, start, imageAt, moveTo }: Props = $props();
+  let { sizes, start, imageAt, moveTo, select, clear }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -38,8 +42,10 @@
   const FIT_WIDTH_ZOOM = 1;
   const SCREEN_OVERLAP = 0.9;
   const SETTLED_PX = 0.5;
+  const DRAG_SELECTS_WITH = ['mouse', 'pen'];
 
   let scroller = $state<HTMLDivElement | null>(null);
+  let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
   let frameWidth = $state(0);
   let frameHeight = $state(0);
   let scrolled = $state(0);
@@ -162,6 +168,7 @@
       return;
     }
 
+    selection?.reset();
     hold = holdAt(top, left);
     moveTo(hold.position);
   }
@@ -169,6 +176,12 @@
   function onwheel(event: WheelEvent): void {
     const element = scroller;
     if (element === null) return;
+
+    if (selection?.dragging() ?? false) {
+      event.preventDefault();
+      return;
+    }
+
     if (!event.ctrlKey && !event.metaKey) return;
 
     event.preventDefault();
@@ -179,7 +192,14 @@
   }
 
   function onkeydown(event: KeyboardEvent): void {
-    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.defaultPrevented) return;
+
+    if (event.key === 'Escape') {
+      selection?.dismiss();
+      return;
+    }
+
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (handlesOwnKeys(event.target)) return;
 
     if (event.key === '+' || event.key === '=') {
@@ -235,6 +255,10 @@
     bind:this={scroller}
     {onscroll}
     {onwheel}
+    onpointerdown={(event) => selection?.pointerdown(event)}
+    onpointermove={(event) => selection?.pointermove(event)}
+    onpointerup={(event) => selection?.pointerup(event)}
+    onpointercancel={(event) => selection?.pointercancel(event)}
   >
     <div class="strip" style:width="{width}px">
       <div class="spacer" style:height="{spacers.before}px" aria-hidden="true"></div>
@@ -246,10 +270,20 @@
       <div class="spacer" style:height="{spacers.after}px" aria-hidden="true"></div>
     </div>
   </div>
+
+  <SelectionLayer
+    bind:this={selection}
+    within={scroller}
+    arrangement="column"
+    pointerTypes={DRAG_SELECTS_WITH}
+    {select}
+    {clear}
+  />
 </div>
 
 <style>
   .viewer {
+    position: relative;
     display: flex;
     flex: 1;
     min-height: 0;
@@ -261,6 +295,7 @@
     min-width: 0;
     min-height: 0;
     overflow: auto;
+    cursor: crosshair;
     overflow-anchor: none;
     scrollbar-gutter: stable;
     overscroll-behavior: contain;

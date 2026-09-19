@@ -285,6 +285,8 @@
       start={view.position}
       imageAt={(index) => view.imageAt(index)}
       moveTo={(position) => view.moveTo(position)}
+      select={(regions) => view.select(regions)}
+      clear={() => view.clearSelection()}
     />
   {:else if curtain === null && book !== null}
     <PagedViewer
