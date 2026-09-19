@@ -15,6 +15,10 @@
 		"lint:deps": "depcruise src --config .dependency-cruiser.cjs",
 		"verify": "npm run check && npm run lint:deps && npm run test"
 	},
+	"dependencies": {
+		"@zip.js/zip.js": "^2.15.0",
+		"pdfjs-dist": "^6.3.289"
+	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.63.0",
