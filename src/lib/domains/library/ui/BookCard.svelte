@@ -36,9 +36,11 @@
 
 <article class="card" class:busy aria-busy={busy}>
   <div class="cover">
-    {#if cover !== null}
-      <img class="art" src={cover} alt="" />
-    {/if}
+    <a class="open" href="/read/{book.id}" aria-label="Read {book.title}">
+      {#if cover !== null}
+        <img class="art" src={cover} alt="" />
+      {/if}
+    </a>
 
     {#if !confirming}
       <div class="tools">
@@ -108,6 +110,18 @@
       var(--c-surface-card-active) 0 7px,
       var(--c-border-6) 7px 14px
     );
+  }
+
+  .open {
+    position: absolute;
+    inset: 0;
+    display: block;
+    border-radius: var(--r-md);
+  }
+
+  .open:focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: -2px;
   }
 
   .art {
@@ -260,6 +274,7 @@
     margin: 0;
     padding: var(--s-2) var(--s-2) var(--s-3);
     background: linear-gradient(to top, var(--c-surface-void), transparent);
+    pointer-events: none;
     color: var(--c-text-5);
     font-family: var(--f-mono);
     font-size: 10px;
@@ -280,6 +295,7 @@
     left: 0;
     height: 3px;
     background: var(--c-border-1);
+    pointer-events: none;
   }
 
   .bar {
