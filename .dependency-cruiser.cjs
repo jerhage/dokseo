@@ -53,6 +53,18 @@ module.exports = {
     },
 
     {
+      name: 'leaf-domains-are-independent',
+      comment:
+        "Domains form a directed acyclic graph, and this rule is what makes the cycle impossible rather than merely discouraged. library, viewing, recognition and lexicon are leaves: each imports no other domain at all. reading is the orchestrator that knows the selection-to-lookup flow, and it may import a leaf's domain/ and use-cases/, so nothing ever points back at it. cross-domain-contract-only is not enough on its own, because it permits library -> recognition and recognition -> library at the same time, and no-circular cannot see that: a cycle between two DOMAINS need not be a cycle between two MODULES, since library/domain/x -> recognition/domain/y and recognition/use-cases/z -> library/domain/w are two acyclic module edges and one cyclic domain relationship. The back-reference exempts a leaf from itself, so a sibling import inside one domain stays legal. When a screen needs two domains, the route composes them and passes a snippet as a prop; a domain never reaches for another domain to render it.",
+      severity: 'error',
+      from: { path: '^src/lib/domains/(library|viewing|recognition|lexicon)/' },
+      to: {
+        path: '^src/lib/domains/',
+        pathNot: '^src/lib/domains/$1/',
+      },
+    },
+
+    {
       name: 'routes-are-thin',
       comment:
         'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts and context.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree), the shared kernel, style sheets and static assets, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
