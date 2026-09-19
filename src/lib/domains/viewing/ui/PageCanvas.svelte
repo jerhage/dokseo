@@ -76,7 +76,7 @@
   role="img"
   aria-label={caption}
 >
-  <canvas bind:this={frame}></canvas>
+  <canvas bind:this={frame} width={0} height={0} data-image-index={index}></canvas>
   {#if notice !== null}
     <p class="notice" aria-hidden="true">{notice}</p>
   {/if}

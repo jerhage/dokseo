@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import type { ImageRegion } from '$lib/shared/image-region';
 import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { pairPages, type PageGroup } from '../domain/page-pairing';
@@ -74,6 +75,7 @@ export class ReaderView {
   sizes = $state.raw<readonly (Size | null)[]>([]);
   groups = $state.raw<readonly PageGroup[]>([]);
   position = $state.raw<ReadingPosition>(readingPosition(imageIndex(0), 0));
+  regions = $state.raw<readonly ImageRegion[]>([]);
 
   #container: Container;
   #source: PageSource | null = null;
@@ -100,6 +102,7 @@ export class ReaderView {
     this.book = null;
     this.sizes = [];
     this.groups = [];
+    this.regions = [];
 
     let opened: OpenOutcome;
     try {
@@ -169,12 +172,14 @@ export class ReaderView {
     if (moved === null) return;
 
     this.position = moved;
+    this.clearSelection();
     await this.#persist(book.id, moved.index);
   }
 
   async setPairing(pairing: PagePairing): Promise<void> {
     const book = this.book;
     if (book === null || this.saving || book.pagePairing === pairing) return;
+    this.clearSelection();
     await this.#edit(book.id, { pagePairing: pairing });
   }
 
@@ -184,12 +189,21 @@ export class ReaderView {
     await this.#edit(book.id, { direction });
   }
 
+  select(regions: readonly ImageRegion[]): void {
+    this.regions = regions;
+  }
+
+  clearSelection(): void {
+    if (this.regions.length > 0) this.regions = [];
+  }
+
   dispose(): void {
     this.#generation += 1;
     this.#release();
     this.book = null;
     this.sizes = [];
     this.groups = [];
+    this.regions = [];
     this.status = 'idle';
     this.message = null;
     this.saving = false;

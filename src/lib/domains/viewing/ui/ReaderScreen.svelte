@@ -161,6 +161,8 @@
       pages={view.visiblePages}
       direction={book.direction}
       imageAt={(index) => view.imageAt(index)}
+      select={(regions) => view.select(regions)}
+      clear={() => view.clearSelection()}
     />
   {:else}
     <div class="curtain">

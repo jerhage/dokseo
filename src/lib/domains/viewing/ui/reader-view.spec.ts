@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
+import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import type { ImageRegion } from '$lib/shared/image-region';
 import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
@@ -26,6 +28,10 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
     position: imageIndex(0),
     ...overrides,
   };
+}
+
+function region(index: number): ImageRegion {
+  return { index: imageIndex(index), rect: imageRect(10, 20, 92, 104) };
 }
 
 function bitmap(size: Size): ImageBitmap {
@@ -368,5 +374,40 @@ describe('ReaderView', () => {
 
     expect(view.group).toBe(1);
     expect(view.message).toBe('Local storage failed: the disk went away');
+  });
+
+  it('holds the regions it is given', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.regions).toEqual([]);
+
+    view.select([region(0), region(1)]);
+
+    expect(view.regions).toEqual([region(0), region(1)]);
+  });
+
+  it('clears the regions when the group changes', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    view.select([region(0)]);
+
+    await view.next();
+
+    expect(view.group).toBe(1);
+    expect(view.regions).toEqual([]);
+  });
+
+  it('clears the regions on dispose', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    view.select([region(0)]);
+    expect(view.regions).toHaveLength(1);
+
+    view.dispose();
+
+    expect(view.regions).toEqual([]);
   });
 });
