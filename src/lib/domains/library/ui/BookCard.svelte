@@ -126,15 +126,32 @@
 		font-family: var(--f-ui);
 		font-size: 13px;
 		line-height: 1;
-		opacity: 0.7;
 		cursor: pointer;
+		transition: opacity 120ms ease;
+	}
+
+	@media (hover: hover) {
+		.remove {
+			opacity: 0;
+		}
+
+		.card:hover .remove,
+		.remove:focus-visible,
+		.remove:disabled {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.remove {
+			transition: none;
+		}
 	}
 
 	.remove:hover:not(:disabled),
 	.remove:focus-visible {
 		border-color: var(--c-warning);
 		color: var(--c-warning);
-		opacity: 1;
 	}
 
 	.remove:disabled {
