@@ -1,5 +1,6 @@
 <script lang="ts">
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
+  import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from './accepted-formats';
 
   type Props = {
     readonly busy: boolean;
@@ -57,13 +58,13 @@
     onclick={choose}
   >
     <span class="plus" aria-hidden="true">+</span>
-    <span class="lead">{busy ? 'Adding…' : 'Drop a folder, .zip or .cbz'}</span>
+    <span class="lead">{busy ? 'Adding…' : DROP_INVITATION}</span>
     <span class="note">pages stay on your device</span>
   </button>
 
   <div class="caption">
     <p class="name">Add upload</p>
-    <p class="hint">JPG, PNG, WebP, PDF</p>
+    <p class="hint">{ACCEPTED_SUMMARY}</p>
     <button class="folder" type="button" disabled={busy} onclick={() => folderPicker?.click()}>
       Choose a folder instead
     </button>
@@ -74,7 +75,7 @@
     class="hidden"
     type="file"
     multiple
-    accept="image/*,.zip,.cbz,.pdf"
+    accept={ACCEPT_ATTRIBUTE}
     onchange={take}
   />
   <input

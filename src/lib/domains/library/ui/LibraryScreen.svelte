@@ -1,6 +1,7 @@
 <script lang="ts">
   import BookCard from './BookCard.svelte';
   import PendingCard from './PendingCard.svelte';
+  import { DROP_INVITATION } from './accepted-formats';
   import UploadTile from './UploadTile.svelte';
   import type { LibraryView } from './library-view.svelte';
 
@@ -73,7 +74,7 @@
             <button class="retry" type="button" onclick={() => void view.load()}>Try again</button>
           </p>
         {:else if view.books.length === 0 && view.pending === null}
-          <p class="notice">No uploads yet. Add a folder, a .zip, a .cbz or a .pdf to start.</p>
+          <p class="notice">No uploads yet. {DROP_INVITATION.toLowerCase()} to start.</p>
         {/if}
 
         <ul class="grid">
