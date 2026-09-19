@@ -12,3 +12,8 @@ export { createFileSourceBuilder } from './adapters/file-source-builder';
 export { createLibraryRepository } from './adapters/indexeddb-opfs-library.repo';
 export type { OpenFileDeps, OpenFileError } from './use-cases/open-file';
 export { openFile } from './use-cases/open-file';
+export type { LibraryStatus, StorageUsage } from './ui/library-view.svelte';
+export { LibraryView } from './ui/library-view.svelte';
+export { default as BookCard } from './ui/BookCard.svelte';
+export { default as UploadTile } from './ui/UploadTile.svelte';
+export { default as LibraryScreen } from './ui/LibraryScreen.svelte';

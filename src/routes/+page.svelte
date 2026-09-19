@@ -1,9 +1,13 @@
-<h1>Manga OCR Reader</h1>
+<script lang="ts">
+	import { useContainer } from '$lib/context';
+	import { LibraryScreen, LibraryView } from '$lib/domains/library';
 
-<style>
-	h1 {
-		margin: var(--s-6);
-		color: var(--c-text-2);
-		font-family: var(--f-ui);
-	}
-</style>
+	const view = new LibraryView(useContainer());
+
+	$effect(() => {
+		void view.load();
+		return () => view.dispose();
+	});
+</script>
+
+<LibraryScreen {view} />
