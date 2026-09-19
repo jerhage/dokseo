@@ -13,6 +13,7 @@
     "npm:playwright@^1.60.0": "1.63.0",
     "npm:svelte-check@^4.6.0": "4.7.6_svelte@5.57.1_typescript@6.0.3",
     "npm:svelte@^5.56.1": "5.57.1_acorn@8.18.0",
+    "npm:ts-pattern@^5.9.0": "5.9.0",
     "npm:typescript@^6.0.3": "6.0.3",
     "npm:vite@^8.0.16": "8.3.0",
     "npm:vitest-browser-svelte@^2.1.1": "2.2.1_svelte@5.57.1_vitest@4.1.11_@vitest+browser-playwright@4.1.11_vite@8.3.0_playwright@1.63.0",
@@ -1140,6 +1141,9 @@
     "totalist@3.0.1": {
       "integrity": "sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ=="
     },
+    "ts-pattern@5.9.0": {
+      "integrity": "sha512-6s5V71mX8qBUmlgbrfL33xDUwO0fq48rxAu2LBE11WBeGdpCPOsXksQbZJHvHwhrd3QjUusd3mAOM5Gg0mFBLg=="
+    },
     "tsconfig-paths-webpack-plugin@4.2.0": {
       "integrity": "sha512-zbem3rfRS8BgeNK50Zz5SIQgXzLafiHjOwUAvk/38/o1jHn/V5QAgVUcz884or7WYcPaH3N2CIfUc2u0ul7UcA==",
       "dependencies": [
@@ -1256,6 +1260,7 @@
         "npm:playwright@^1.60.0",
         "npm:svelte-check@^4.6.0",
         "npm:svelte@^5.56.1",
+        "npm:ts-pattern@^5.9.0",
         "npm:typescript@^6.0.3",
         "npm:vite@^8.0.16",
         "npm:vitest-browser-svelte@^2.1.1",

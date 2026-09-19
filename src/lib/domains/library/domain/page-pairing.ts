@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import { imageIndex, type ImageIndex } from '$lib/shared/ids';
 import type { Size } from '$lib/shared/geometry';
 import type { PagePairing } from '$lib/shared/layout-kind';
@@ -38,14 +39,11 @@ export function pairPages(
 ): readonly PageGroup[] {
   if (sizes.length === 0) return [];
 
-  switch (pairing) {
-    case 'single':
-      return singles(sizes.length);
-    case 'double':
-      return pairsFrom(sizes, 0);
-    case 'double-after-cover':
-      return [[imageIndex(0)], ...pairsFrom(sizes, 1)];
-  }
+  return match(pairing)
+    .with('single', () => singles(sizes.length))
+    .with('double', () => pairsFrom(sizes, 0))
+    .with('double-after-cover', () => [[imageIndex(0)], ...pairsFrom(sizes, 1)])
+    .exhaustive();
 }
 
 export function groupContaining(groups: readonly PageGroup[], index: ImageIndex): number {

@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import { renderThumbnail } from '$lib/platform/image/thumbnail';
 import { describeCause } from '$lib/shared/cause';
 import { imageIndex } from '$lib/shared/ids';
@@ -12,10 +13,14 @@ import { entryName, titleCandidate } from './file-entry';
 const COVER_MAX_WIDTH = 400;
 
 function describePageSourceError(error: PageSourceError): string {
-  if (error.kind === 'out-of-range') {
-    return `Image ${error.index} lies outside a source of ${error.count} images`;
-  }
-  return error.cause;
+  return match(error)
+    .with(
+      { kind: 'out-of-range' },
+      (range) => `Image ${range.index} lies outside a source of ${range.count} images`,
+    )
+    .with({ kind: 'decode-failed' }, (decode) => decode.cause)
+    .with({ kind: 'source-unreadable' }, (unreadable) => unreadable.cause)
+    .exhaustive();
 }
 
 async function sourceBlobOf(
@@ -37,12 +42,16 @@ async function openPages(
   sourceKind: SourceKind,
   blob: Blob,
 ): Promise<Result<PageSource, PageSourceError>> {
-  if (sourceKind === 'pdf') {
-    const { openPdfPageSource } = await import('./pdf-page-source');
-    return openPdfPageSource(blob);
-  }
-  const { openArchivePageSource } = await import('./archive-page-source');
-  return openArchivePageSource(blob);
+  return match(sourceKind)
+    .with('pdf', async () => {
+      const { openPdfPageSource } = await import('./pdf-page-source');
+      return openPdfPageSource(blob);
+    })
+    .with('images', 'archive', async () => {
+      const { openArchivePageSource } = await import('./archive-page-source');
+      return openArchivePageSource(blob);
+    })
+    .exhaustive();
 }
 
 async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, SourceBuildError>> {

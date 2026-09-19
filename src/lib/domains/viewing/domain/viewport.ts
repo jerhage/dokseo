@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { Size } from '$lib/shared/geometry';
 
 export type Viewport = { readonly zoom: number; readonly panX: number; readonly panY: number };
@@ -44,20 +45,20 @@ export function zoomAt(
 }
 
 export function fitZoom(content: Size, frame: Size, mode: FitMode): number {
-  switch (mode) {
-    case 'height': {
+  return match(mode)
+    .with('height', () => {
       const ratio = fitRatio(frame.height, content.height);
       return ratio === null ? MIN_ZOOM : clampZoom(ratio);
-    }
-    case 'width': {
+    })
+    .with('width', () => {
       const ratio = fitRatio(frame.width, content.width);
       return ratio === null ? MIN_ZOOM : clampZoom(ratio);
-    }
-    case 'contain': {
+    })
+    .with('contain', () => {
       const byWidth = fitRatio(frame.width, content.width);
       const byHeight = fitRatio(frame.height, content.height);
       if (byWidth === null || byHeight === null) return MIN_ZOOM;
       return clampZoom(Math.min(byWidth, byHeight));
-    }
-  }
+    })
+    .exhaustive();
 }

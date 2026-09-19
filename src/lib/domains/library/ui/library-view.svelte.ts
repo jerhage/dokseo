@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import type { Book, BookEdit } from '../domain/book';
@@ -12,23 +13,25 @@ export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 export type StorageUsage = { readonly usage: number; readonly quota: number };
 
 function describeLibraryError(error: LibraryError): string {
-  if (error.kind === 'not-found') return 'That upload is no longer in your library.';
-  if (error.kind === 'storage-unavailable') {
-    return 'This browser blocks local storage, so uploads cannot be kept.';
-  }
-  if (error.kind === 'storage-failed') return `Local storage failed: ${error.cause}`;
-  const unhandled: never = error;
-  return unhandled;
+  return match(error)
+    .with({ kind: 'not-found' }, () => 'That upload is no longer in your library.')
+    .with(
+      { kind: 'storage-unavailable' },
+      () => 'This browser blocks local storage, so uploads cannot be kept.',
+    )
+    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
+    .exhaustive();
 }
 
 function describeSourceBuildError(error: SourceBuildError): string {
-  if (error.kind === 'nothing-usable') {
-    return `Nothing readable there. ${ACCEPTED_SUMMARY} only.`;
-  }
-  if (error.kind === 'unreadable') return `That upload could not be read: ${error.cause}`;
-  if (error.kind === 'empty') return 'No files arrived, so there was nothing to add.';
-  const unhandled: never = error;
-  return unhandled;
+  return match(error)
+    .with({ kind: 'nothing-usable' }, () => `Nothing readable there. ${ACCEPTED_SUMMARY} only.`)
+    .with(
+      { kind: 'unreadable' },
+      (unreadable) => `That upload could not be read: ${unreadable.cause}`,
+    )
+    .with({ kind: 'empty' }, () => 'No files arrived, so there was nothing to add.')
+    .exhaustive();
 }
 
 function describeOpenFileError(error: OpenFileError): string {
