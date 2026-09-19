@@ -6,6 +6,7 @@ import type { LibraryError } from '../domain/library-repository';
 import type { SourceBuildError } from '../domain/source-builder';
 import { suggestTitle } from '../domain/title';
 import type { OpenFileError } from '../use-cases/open-file';
+import { ACCEPTED_SUMMARY } from './accepted-formats';
 
 export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
@@ -23,7 +24,7 @@ function describeLibraryError(error: LibraryError): string {
 
 function describeSourceBuildError(error: SourceBuildError): string {
   if (error.kind === 'nothing-usable') {
-    return 'Nothing readable there. Drop images, a folder, a .zip, a .cbz or a .pdf.';
+    return `Nothing readable there. ${ACCEPTED_SUMMARY} only.`;
   }
   if (error.kind === 'unreadable') return `That upload could not be read: ${error.cause}`;
   if (error.kind === 'empty') return 'No files arrived, so there was nothing to add.';
