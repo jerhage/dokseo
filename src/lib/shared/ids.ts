@@ -9,13 +9,13 @@ export type CaptureId = Branded<string, 'CaptureId'>;
 export type ImageIndex = Branded<number, 'ImageIndex'>;
 
 export function bookId(value: string): BookId {
-	return value as BookId;
+  return value as BookId;
 }
 
 export function captureId(value: string): CaptureId {
-	return value as CaptureId;
+  return value as CaptureId;
 }
 
 export function imageIndex(value: number): ImageIndex {
-	return value as ImageIndex;
+  return value as ImageIndex;
 }

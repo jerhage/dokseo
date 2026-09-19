@@ -1,39 +1,41 @@
 {
-	"name": "reader",
-	"private": true,
-	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run",
-		"lint": "oxlint src",
-		"lint:deps": "depcruise src --config .dependency-cruiser.cjs",
-		"verify": "npm run check && npm run lint && npm run lint:deps && npm run test"
-	},
-	"dependencies": {
-		"@zip.js/zip.js": "^2.15.0",
-		"pdfjs-dist": "^6.3.289"
-	},
-	"devDependencies": {
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.63.0",
-		"@sveltejs/vite-plugin-svelte": "^7.1.2",
-		"@vitest/browser-playwright": "^4.1.8",
-		"dependency-cruiser": "^18.3.1",
-		"oxfmt": "0.68.0",
-		"oxlint": "1.83.0",
-		"playwright": "^1.60.0",
-		"svelte": "^5.56.1",
-		"svelte-check": "^4.6.0",
-		"typescript": "^6.0.3",
-		"vite": "^8.0.16",
-		"vitest": "^4.1.8",
-		"vitest-browser-svelte": "^2.1.1"
-	}
+  "name": "reader",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test:unit": "vitest",
+    "test": "npm run test:unit -- --run",
+    "lint": "oxlint src",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint:deps": "depcruise src --config .dependency-cruiser.cjs",
+    "verify": "npm run check && npm run lint && npm run format:check && npm run lint:deps && npm run test"
+  },
+  "dependencies": {
+    "@zip.js/zip.js": "^2.15.0",
+    "pdfjs-dist": "^6.3.289"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.63.0",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@vitest/browser-playwright": "^4.1.8",
+    "dependency-cruiser": "^18.3.1",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "playwright": "^1.60.0",
+    "svelte": "^5.56.1",
+    "svelte-check": "^4.6.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8",
+    "vitest-browser-svelte": "^2.1.1"
+  }
 }
