@@ -1,9 +1,8 @@
+import type { Arrangement } from '$lib/shared/arrangement';
 import { normalize, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 
 export type Point = { readonly x: number; readonly y: number };
-
-export type Arrangement = 'row' | 'column';
 
 export const MIN_SELECTION_PX = 12;
 

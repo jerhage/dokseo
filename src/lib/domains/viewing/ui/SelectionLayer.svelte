@@ -1,15 +1,10 @@
 <script lang="ts">
+  import type { Arrangement } from '$lib/shared/arrangement';
   import { isEmpty, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
   import { imageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import { regionsIn, type PlacedImage } from '../domain/placement';
-  import {
-    isUsableSelection,
-    selectionFrom,
-    selectionSize,
-    type Arrangement,
-    type Point,
-  } from '../domain/selection';
+  import { isUsableSelection, selectionFrom, selectionSize, type Point } from '../domain/selection';
 
   type Props = {
     readonly within: HTMLElement | null;
