@@ -1,5 +1,8 @@
 <script lang="ts">
+  import type { BookId } from '$lib/shared/ids';
+  import type { BookEdit } from '../domain/book';
   import BookCard from './BookCard.svelte';
+  import BookSettings from './BookSettings.svelte';
   import PendingCard from './PendingCard.svelte';
   import { DROP_INVITATION } from './accepted-formats';
   import UploadTile from './UploadTile.svelte';
@@ -10,6 +13,14 @@
   let { view }: Props = $props();
 
   let tile = $state<ReturnType<typeof UploadTile> | null>(null);
+  let openSettingsFor = $state<BookId | null>(null);
+
+  const settingsBook = $derived(view.books.find((book) => book.id === openSettingsFor) ?? null);
+
+  async function save(id: BookId, edit: BookEdit): Promise<void> {
+    await view.edit(id, edit);
+    openSettingsFor = null;
+  }
 
   const UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
@@ -90,6 +101,8 @@
                 cover={view.covers.get(book.id) ?? null}
                 onremove={(id) => void view.remove(id)}
                 removing={view.removing === book.id}
+                onedit={(id) => (openSettingsFor = id)}
+                editing={view.editing === book.id}
               />
             </li>
           {/each}
@@ -110,6 +123,15 @@
     </footer>
   </div>
 </div>
+
+{#if settingsBook !== null}
+  <BookSettings
+    book={settingsBook}
+    saving={view.editing === settingsBook.id}
+    onsave={(edit) => void save(settingsBook.id, edit)}
+    onclose={() => (openSettingsFor = null)}
+  />
+{/if}
 
 <style>
   .screen {

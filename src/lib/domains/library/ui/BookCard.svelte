@@ -8,13 +8,16 @@
     readonly cover: string | null;
     readonly onremove: (id: BookId) => void;
     readonly removing: boolean;
+    readonly onedit: (id: BookId) => void;
+    readonly editing: boolean;
   };
 
-  let { book, cover, onremove, removing }: Props = $props();
+  let { book, cover, onremove, removing, onedit, editing }: Props = $props();
 
   let confirming = $state(false);
   let trigger = $state<HTMLButtonElement | null>(null);
 
+  const busy = $derived(removing || editing);
   const total = $derived(Math.max(book.imageCount, 1));
   const page = $derived(Math.min(book.position + 1, total));
   const resume = $derived(`p.${String(page).padStart(3, '0')} / ${book.imageCount}`);
@@ -27,23 +30,29 @@
   }
 </script>
 
-<article class="card" class:busy={removing} aria-busy={removing}>
+<article class="card" class:busy aria-busy={busy}>
   <div class="cover">
     {#if cover !== null}
       <img class="art" src={cover} alt="" />
     {/if}
 
     {#if !confirming}
-      <button
-        bind:this={trigger}
-        class="remove"
-        type="button"
-        disabled={removing}
-        onclick={() => (confirming = true)}
-      >
-        <span class="glyph" aria-hidden="true">×</span>
-        <span class="assistive">Remove {book.title}</span>
-      </button>
+      <div class="tools">
+        <button class="tool edit" type="button" disabled={busy} onclick={() => onedit(book.id)}>
+          <span class="glyph" aria-hidden="true">✎</span>
+          <span class="assistive">Edit {book.title}</span>
+        </button>
+        <button
+          bind:this={trigger}
+          class="tool remove"
+          type="button"
+          disabled={busy}
+          onclick={() => (confirming = true)}
+        >
+          <span class="glyph" aria-hidden="true">×</span>
+          <span class="assistive">Remove {book.title}</span>
+        </button>
+      </div>
     {/if}
 
     <p class="resume">
@@ -58,15 +67,10 @@
       <div class="confirm">
         <p class="ask">Remove this upload?</p>
         <div class="choices">
-          <button
-            class="discard"
-            type="button"
-            disabled={removing}
-            onclick={() => onremove(book.id)}
-          >
+          <button class="discard" type="button" disabled={busy} onclick={() => onremove(book.id)}>
             {removing ? 'Removing…' : 'Remove'}
           </button>
-          <button class="keep" type="button" disabled={removing} onclick={() => void cancel()}>
+          <button class="keep" type="button" disabled={busy} onclick={() => void cancel()}>
             Cancel
           </button>
         </div>
@@ -109,10 +113,15 @@
     object-fit: cover;
   }
 
-  .remove {
+  .tools {
     position: absolute;
     top: var(--s-2);
     right: var(--s-2);
+    display: flex;
+    gap: var(--s-1);
+  }
+
+  .tool {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -131,21 +140,31 @@
   }
 
   @media (hover: hover) {
-    .remove {
+    .tool {
       opacity: 0;
     }
 
-    .card:hover .remove,
-    .remove:focus-visible,
-    .remove:disabled {
+    .card:hover .tool,
+    .tool:focus-visible,
+    .tool:disabled {
       opacity: 1;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .remove {
+    .tool {
       transition: none;
     }
+  }
+
+  .edit {
+    font-size: 11px;
+  }
+
+  .edit:hover:not(:disabled),
+  .edit:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
   }
 
   .remove:hover:not(:disabled),
@@ -154,7 +173,7 @@
     color: var(--c-warning);
   }
 
-  .remove:disabled {
+  .tool:disabled {
     cursor: progress;
   }
 
