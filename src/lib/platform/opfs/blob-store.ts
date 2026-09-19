@@ -1,3 +1,5 @@
+import { describeCause } from '$lib/shared/cause';
+
 const DIRECTORY = 'blobs';
 
 export function isAvailable(): boolean {
@@ -8,11 +10,6 @@ function flatName(key: string): string {
 	const rejected = key.length === 0 || key.includes('/') || key.includes('\\') || key.includes('..');
 	if (rejected) throw new Error(`Key "${key}" is not a flat name`);
 	return key;
-}
-
-function reason(cause: unknown): string {
-	if (cause instanceof Error) return cause.message;
-	return String(cause);
 }
 
 function isMissing(cause: unknown): boolean {
@@ -34,7 +31,7 @@ export async function put(key: string, blob: Blob): Promise<void> {
 		await writable.close();
 	} catch (cause) {
 		await writable.abort().catch(() => undefined);
-		throw new Error(`Key "${name}" could not be written: ${reason(cause)}`);
+		throw new Error(`Key "${name}" could not be written: ${describeCause(cause)}`);
 	}
 }
 
@@ -46,7 +43,7 @@ export async function get(key: string): Promise<Blob | null> {
 		return await handle.getFile();
 	} catch (cause) {
 		if (isMissing(cause)) return null;
-		throw new Error(`Key "${name}" could not be read: ${reason(cause)}`);
+		throw new Error(`Key "${name}" could not be read: ${describeCause(cause)}`);
 	}
 }
 
@@ -57,6 +54,6 @@ export async function remove(key: string): Promise<void> {
 		await parent.removeEntry(name);
 	} catch (cause) {
 		if (isMissing(cause)) return;
-		throw new Error(`Key "${name}" could not be removed: ${reason(cause)}`);
+		throw new Error(`Key "${name}" could not be removed: ${describeCause(cause)}`);
 	}
 }
