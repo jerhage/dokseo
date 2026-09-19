@@ -1,5 +1,5 @@
-import type { ImageIndex } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
+import type { ImageIndex } from './ids';
+import type { Result } from './result';
 
 export type PageSourceError =
   | { readonly kind: 'out-of-range'; readonly index: number; readonly count: number }

@@ -2,7 +2,7 @@ import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js';
 import { err, ok, type Result } from '$lib/shared/result';
 import { isImageEntry } from '../domain/image-entries';
 import { entryName } from './file-entry';
-import type { PageSourceError } from '../domain/page-source';
+import type { PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 
 export async function packImagesIntoArchive(

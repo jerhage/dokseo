@@ -4,11 +4,12 @@ import { describeCause } from '$lib/shared/cause';
 import { imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book';
-import type { PageSource, PageSourceError } from '../domain/page-source';
+import type { PageSourceError } from '$lib/shared/page-source';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
 import { detectSourceKind } from '../domain/source-detection';
 import { suggestTitle } from '../domain/title';
 import { entryName, titleCandidate } from './file-entry';
+import { openStoredPageSource } from './stored-page-source';
 
 const COVER_MAX_WIDTH = 400;
 
@@ -38,22 +39,6 @@ async function sourceBlobOf(
   return packed;
 }
 
-async function openPages(
-  sourceKind: SourceKind,
-  blob: Blob,
-): Promise<Result<PageSource, PageSourceError>> {
-  return match(sourceKind)
-    .with('pdf', async () => {
-      const { openPdfPageSource } = await import('./pdf-page-source');
-      return openPdfPageSource(blob);
-    })
-    .with('images', 'archive', async () => {
-      const { openArchivePageSource } = await import('./archive-page-source');
-      return openArchivePageSource(blob);
-    })
-    .exhaustive();
-}
-
 async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, SourceBuildError>> {
   const sourceKind = detectSourceKind(files.map(entryName));
   if (sourceKind === null) return err({ kind: 'nothing-usable' });
@@ -61,7 +46,7 @@ async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, So
   const source = await sourceBlobOf(sourceKind, files);
   if (!source.ok) return source;
 
-  const opened = await openPages(sourceKind, source.value);
+  const opened = await openStoredPageSource(sourceKind, source.value);
   if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
 
   using pages = opened.value;

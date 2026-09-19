@@ -2,7 +2,7 @@ import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
-import type { PageSource, PageSourceError } from '../domain/page-source';
+import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 
 const RENDER_SCALE = 2;

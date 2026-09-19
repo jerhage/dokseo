@@ -3,7 +3,7 @@ import { decodeImage } from '$lib/platform/image/decode';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import { selectImageEntries } from '../domain/image-entries';
-import type { PageSource, PageSourceError } from '../domain/page-source';
+import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 
 function orderedImages(entries: readonly Entry[]): FileEntry[] {

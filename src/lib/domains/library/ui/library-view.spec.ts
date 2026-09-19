@@ -66,6 +66,8 @@ function fakes(): Fakes {
         opens.push(next);
         return next.promise;
       },
+      openForReading: (id) =>
+        Promise.resolve(err({ kind: 'library', error: { kind: 'not-found', id } })),
       listBooks: () => {
         const next = deferred<Result<readonly Book[], LibraryError>>();
         lists.push(next);
