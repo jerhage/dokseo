@@ -178,7 +178,7 @@ describe('openFile', () => {
 		});
 	});
 
-	it('never stores anything when the builder fails', async () => {
+	it('stores nothing when the builder fails', async () => {
 		const repository = fakeRepository();
 		const builder = fakeBuilder(err<SourceBuildError>({ kind: 'empty' }));
 		await openFile(deps({ repository: repository.repository, builder: builder.builder }), files);

@@ -132,23 +132,23 @@ describe('clampTo', () => {
 });
 
 describe('isEmpty', () => {
-	it('is false for a rect with both extents positive', () => {
+	it('reports false for a rect with both extents positive', () => {
 		expect(isEmpty(screenRect(0, 0, 1, 1))).toBe(false);
 	});
 
-	it('is true for a zero width', () => {
+	it('reports true for a zero width', () => {
 		expect(isEmpty(screenRect(0, 0, 0, 10))).toBe(true);
 	});
 
-	it('is true for a zero height', () => {
+	it('reports true for a zero height', () => {
 		expect(isEmpty(screenRect(0, 0, 10, 0))).toBe(true);
 	});
 
-	it('is true for a rect with no extent at all', () => {
+	it('reports true for a rect with no extent at all', () => {
 		expect(isEmpty(imageRect(5, 5, 0, 0))).toBe(true);
 	});
 
-	it('is true for a rect that was never normalized', () => {
+	it('reports true for a rect that was never normalized', () => {
 		expect(isEmpty(screenRect(10, 10, -5, 20))).toBe(true);
 	});
 });

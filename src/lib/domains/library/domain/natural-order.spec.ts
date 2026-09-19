@@ -49,7 +49,7 @@ describe('compareNatural', () => {
 		expect(compareNatural('page009', 'page009')).toBe(0);
 	});
 
-	it('is a total order, so a sort never depends on archive entry order', () => {
+	it('orders every distinct name, so a sort never depends on archive entry order', () => {
 		const names = ['a.jpg', 'A.jpg', 'page2.jpg', 'page02.jpg'];
 		const forward = [...names].sort(compareNatural);
 		const reversed = [...names].reverse().sort(compareNatural);
