@@ -7,10 +7,7 @@ import type { PageSource, PageSourceError } from '../domain/page-source';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
 import { detectSourceKind } from '../domain/source-detection';
 import { suggestTitle } from '../domain/title';
-import { packImagesIntoArchive } from './archive-packer';
 import { entryName, titleCandidate } from './file-entry';
-import { openArchivePageSource } from './archive-page-source';
-import { openPdfPageSource } from './pdf-page-source';
 
 const COVER_MAX_WIDTH = 400;
 
@@ -26,16 +23,22 @@ async function sourceBlobOf(
 	files: readonly File[]
 ): Promise<Result<Blob, SourceBuildError>> {
 	if (sourceKind !== 'images') return ok(files[0]);
+	const { packImagesIntoArchive } = await import('./archive-packer');
 	const packed = await packImagesIntoArchive(files);
 	if (!packed.ok) return err({ kind: 'unreadable', cause: describePageSourceError(packed.error) });
 	return packed;
 }
 
-function openPages(
+async function openPages(
 	sourceKind: SourceKind,
 	blob: Blob
 ): Promise<Result<PageSource, PageSourceError>> {
-	return sourceKind === 'pdf' ? openPdfPageSource(blob) : openArchivePageSource(blob);
+	if (sourceKind === 'pdf') {
+		const { openPdfPageSource } = await import('./pdf-page-source');
+		return openPdfPageSource(blob);
+	}
+	const { openArchivePageSource } = await import('./archive-page-source');
+	return openArchivePageSource(blob);
 }
 
 async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, SourceBuildError>> {
