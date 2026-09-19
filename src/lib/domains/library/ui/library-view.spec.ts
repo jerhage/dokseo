@@ -41,12 +41,14 @@ type Fakes = {
 	readonly container: Container;
 	readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
 	readonly opens: Deferred<Result<Book, OpenFileError>>[];
+	readonly removes: Deferred<Result<void, LibraryError>>[];
 	readonly cover: CoverState;
 };
 
 function fakes(): Fakes {
 	const lists: Deferred<Result<readonly Book[], LibraryError>>[] = [];
 	const opens: Deferred<Result<Book, OpenFileError>>[] = [];
+	const removes: Deferred<Result<void, LibraryError>>[] = [];
 	const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
 
 	const repository: LibraryRepository = {
@@ -57,7 +59,11 @@ function fakes(): Fakes {
 		},
 		get: (id) => Promise.resolve(err({ kind: 'not-found', id })),
 		add: () => Promise.resolve(ok(undefined)),
-		remove: () => Promise.resolve(ok(undefined)),
+		remove: () => {
+			const next = deferred<Result<void, LibraryError>>();
+			removes.push(next);
+			return next.promise;
+		},
 		savePosition: () => Promise.resolve(ok(undefined)),
 		readSource: () => Promise.resolve(ok(new Blob(['source']))),
 		readCover: () => cover.gate().then(() => cover.outcome)
@@ -74,7 +80,7 @@ function fakes(): Fakes {
 		}
 	};
 
-	return { container, lists, opens, cover };
+	return { container, lists, opens, removes, cover };
 }
 
 function chosen(name: string, path = ''): File {
@@ -329,5 +335,105 @@ describe('LibraryView', () => {
 
 		expect(world.opens).toHaveLength(0);
 		expect(view.busy).toBe(false);
+	});
+
+	it('removes a book and reloads the list', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const loading = view.load();
+		world.lists[0].settle(ok([book('one'), book('two')]));
+		await loading;
+
+		const removing = view.remove(bookId('one'));
+		world.removes[0].settle(ok(undefined));
+		await settleMicrotasks();
+		world.lists[1].settle(ok([book('two')]));
+		await removing;
+
+		expect(view.books.map((b) => b.id)).toEqual(['two']);
+		expect(view.status).toBe('ready');
+		expect(view.message).toBeNull();
+	});
+
+	it('sets removing while the call runs and clears it afterwards', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const loading = view.load();
+		world.lists[0].settle(ok([book('one'), book('two')]));
+		await loading;
+
+		const removing = view.remove(bookId('one'));
+		expect(view.removing).toBe('one');
+
+		world.removes[0].settle(ok(undefined));
+		await settleMicrotasks();
+		expect(view.removing).toBeNull();
+
+		world.lists[1].settle(ok([book('two')]));
+		await removing;
+
+		expect(view.removing).toBeNull();
+	});
+
+	it('clears removing and reports a message when the repository fails', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const loading = view.load();
+		world.lists[0].settle(ok([book('one'), book('two')]));
+		await loading;
+
+		const removing = view.remove(bookId('one'));
+		world.removes[0].settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+		await expect(removing).resolves.toBeUndefined();
+
+		expect(view.removing).toBeNull();
+		expect(view.message).toBe('Local storage failed: the disk went away');
+		expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+		expect(world.lists).toHaveLength(1);
+	});
+
+	it('ignores a remove while another remove is running', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const loading = view.load();
+		world.lists[0].settle(ok([book('one'), book('two')]));
+		await loading;
+
+		const first = view.remove(bookId('one'));
+		await view.remove(bookId('two'));
+
+		expect(world.removes).toHaveLength(1);
+		expect(view.removing).toBe('one');
+
+		world.removes[0].settle(ok(undefined));
+		await settleMicrotasks();
+		world.lists[1].settle(ok([book('two')]));
+		await first;
+
+		expect(view.books.map((b) => b.id)).toEqual(['two']);
+	});
+
+	it('ignores a remove while an upload is running', async () => {
+		const world = fakes();
+		const view = new LibraryView(world.container);
+
+		const loading = view.load();
+		world.lists[0].settle(ok([book('one')]));
+		await loading;
+
+		const uploading = view.upload([chosen('page.png')]);
+		await view.remove(bookId('one'));
+
+		expect(world.removes).toHaveLength(0);
+		expect(view.removing).toBeNull();
+
+		world.opens[0].settle(err({ kind: 'source', error: { kind: 'empty' } }));
+		await uploading;
+
+		expect(view.books.map((b) => b.id)).toEqual(['one']);
 	});
 });

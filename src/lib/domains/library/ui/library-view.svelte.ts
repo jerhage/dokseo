@@ -53,6 +53,7 @@ export class LibraryView {
 	message = $state<string | null>(null);
 	busy = $state(false);
 	pending = $state.raw<string | null>(null);
+	removing = $state.raw<BookId | null>(null);
 	usage = $state.raw<StorageUsage | null>(null);
 
 	#container: Container;
@@ -108,6 +109,24 @@ export class LibraryView {
 		} finally {
 			this.busy = false;
 			this.pending = null;
+		}
+
+		await this.load();
+	}
+
+	async remove(id: BookId): Promise<void> {
+		if (this.removing !== null || this.busy) return;
+		this.removing = id;
+		this.message = null;
+
+		try {
+			const removed = await this.#container.library.repository.remove(id);
+			if (!removed.ok) {
+				this.message = describeLibraryError(removed.error);
+				return;
+			}
+		} finally {
+			this.removing = null;
 		}
 
 		await this.load();

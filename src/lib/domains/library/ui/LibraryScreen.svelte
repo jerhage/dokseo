@@ -88,7 +88,12 @@
 					{/if}
 					{#each view.books as book (book.id)}
 						<li>
-							<BookCard {book} cover={view.covers.get(book.id) ?? null} />
+							<BookCard
+								{book}
+								cover={view.covers.get(book.id) ?? null}
+								onremove={(id) => void view.remove(id)}
+								removing={view.removing === book.id}
+							/>
 						</li>
 					{/each}
 					<li>
