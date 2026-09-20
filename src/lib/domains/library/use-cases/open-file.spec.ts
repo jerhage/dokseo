@@ -5,6 +5,7 @@ import { at } from '$lib/shared/testing/at';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING, type Book } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
+import type { UploadReport, UploadStage } from '../domain/upload-progress';
 import { openFile, type OpenFileDeps } from './open-file';
 
 const NOW = 1758240000000;
@@ -28,13 +29,17 @@ function builtSource(overrides: Partial<BuiltSource> = {}): BuiltSource {
 
 type AddCall = { readonly book: Book; readonly source: Blob; readonly cover: Blob };
 
-function fakeRepository(outcome: Result<void, LibraryError> = ok(undefined)) {
+function fakeRepository(
+  outcome: Result<void, LibraryError> = ok(undefined),
+  writes: readonly (readonly [number, number])[] = [],
+) {
   const added: AddCall[] = [];
   const repository: LibraryRepository = {
     list: () => Promise.resolve(ok([])),
     get: (id) => Promise.resolve(notFound(id)),
-    add: (book, source, cover) => {
+    add: (book, source, cover, report) => {
       added.push({ book, source, cover });
+      for (const [written, total] of writes) report(written, total);
       return Promise.resolve(outcome);
     },
     remove: () => Promise.resolve(ok(undefined)),
@@ -45,15 +50,33 @@ function fakeRepository(outcome: Result<void, LibraryError> = ok(undefined)) {
   return { repository, added };
 }
 
-function fakeBuilder(outcome: Result<BuiltSource, SourceBuildError>) {
+function fakeBuilder(
+  outcome: Result<BuiltSource, SourceBuildError>,
+  stages: readonly UploadStage[] = [],
+) {
   const calls: (readonly File[])[] = [];
   const builder: SourceBuilder = {
-    build: (files) => {
+    build: (files, report) => {
       calls.push(files);
+      for (const stage of stages) report(stage);
       return Promise.resolve(outcome);
     },
   };
   return { builder, calls };
+}
+
+function clock(times: readonly number[]): () => number {
+  let reading = 0;
+  return () => {
+    const time = times[Math.min(reading, times.length - 1)] ?? 0;
+    reading += 1;
+    return time;
+  };
+}
+
+function collector(): { readonly report: UploadReport; readonly stages: UploadStage[] } {
+  const stages: UploadStage[] = [];
+  return { report: (stage) => stages.push(stage), stages };
 }
 
 function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
@@ -210,5 +233,63 @@ describe('openFile', () => {
     const result = await openFile(deps(), files);
     const position: ImageIndex | undefined = result.ok ? result.value.position : undefined;
     expect(position).toBe(0);
+  });
+
+  it('forwards every stage the builder reported', async () => {
+    const seen = collector();
+    const builder = fakeBuilder(ok(builtSource()), [
+      { kind: 'inspecting' },
+      { kind: 'opening', sourceKind: 'archive' },
+      { kind: 'covering', imageCount: 182 },
+    ]);
+    await openFile(deps({ builder: builder.builder }), files, seen.report);
+    expect(seen.stages).toEqual([
+      { kind: 'inspecting' },
+      { kind: 'opening', sourceKind: 'archive' },
+      { kind: 'covering', imageCount: 182 },
+    ]);
+  });
+
+  it('reports the bytes the repository wrote as a storing stage carrying the image count', async () => {
+    const seen = collector();
+    const repository = fakeRepository(ok(undefined), [
+      [0, 400],
+      [200, 400],
+      [400, 400],
+    ]);
+    await openFile(
+      deps({ repository: repository.repository, now: clock([NOW, 1000, 1500, 3000, 5000]) }),
+      files,
+      seen.report,
+    );
+    expect(seen.stages).toEqual([
+      { kind: 'storing', imageCount: 182, writtenBytes: 0, totalBytes: 400, elapsedMs: 500 },
+      { kind: 'storing', imageCount: 182, writtenBytes: 200, totalBytes: 400, elapsedMs: 2000 },
+      { kind: 'storing', imageCount: 182, writtenBytes: 400, totalBytes: 400, elapsedMs: 4000 },
+    ]);
+  });
+
+  it('measures the storing elapsed time from the injected clock, not from the book time', async () => {
+    const seen = collector();
+    const repository = fakeRepository(ok(undefined), [[64, 128]]);
+    const result = await openFile(
+      deps({ repository: repository.repository, now: clock([7, 100, 900]) }),
+      files,
+      seen.report,
+    );
+    expect(result.ok && result.value.addedAt).toBe(7);
+    expect(at(seen.stages, 0)).toEqual({
+      kind: 'storing',
+      imageCount: 182,
+      writtenBytes: 64,
+      totalBytes: 128,
+      elapsedMs: 800,
+    });
+  });
+
+  it('reports nothing when no reporter is given', async () => {
+    const repository = fakeRepository(ok(undefined), [[1, 2]]);
+    const result = await openFile(deps({ repository: repository.repository }), files);
+    expect(result.ok).toBe(true);
   });
 });

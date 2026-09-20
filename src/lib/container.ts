@@ -17,6 +17,7 @@ import { createLibraryRepository } from './domains/library/adapters/indexeddb-op
 import { openStoredPageSource } from './domains/library/adapters/stored-page-source';
 import type { Book, BookEdit } from './domains/library/domain/book';
 import type { LibraryError } from './domains/library/domain/library-repository';
+import type { UploadReport } from './domains/library/domain/upload-progress';
 import { editBook, type EditBookDeps } from './domains/library/use-cases/edit-book';
 import { listBooks, type ListBooksDeps } from './domains/library/use-cases/list-books';
 import {
@@ -200,7 +201,10 @@ export function recognizerFor(language: Language): Promise<TextRecognizer> {
 export type Container = {
   readonly beginTrace: TraceFactory;
   readonly library: {
-    readonly openFile: (files: readonly File[]) => Promise<Result<Book, OpenFileError>>;
+    readonly openFile: (
+      files: readonly File[],
+      report?: UploadReport,
+    ) => Promise<Result<Book, OpenFileError>>;
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
@@ -298,7 +302,8 @@ export function buildContainer(): Container {
   return {
     beginTrace,
     library: {
-      openFile: (files: readonly File[]) => openFile(openFileDeps, files),
+      openFile: (files: readonly File[], report?: UploadReport) =>
+        openFile(openFileDeps, files, report),
       openForReading: (id: BookId) => openForReading(openForReadingDeps, id),
       listBooks: () => listBooks(listBooksDeps),
       readCover: (id: BookId) => readCover(readCoverDeps, id),

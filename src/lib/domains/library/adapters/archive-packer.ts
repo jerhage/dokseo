@@ -5,8 +5,11 @@ import { entryName } from './file-entry';
 import type { PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 
+export type PackReport = (packed: number, total: number) => void;
+
 export async function packImagesIntoArchive(
   files: readonly File[],
+  report: PackReport = () => undefined,
 ): Promise<Result<Blob, PageSourceError>> {
   const images = files.filter((file) => isImageEntry(entryName(file)));
   if (images.length === 0) {
@@ -15,8 +18,10 @@ export async function packImagesIntoArchive(
 
   const writer = new ZipWriter(new BlobWriter('application/zip'));
   try {
-    for (const file of images) {
+    report(0, images.length);
+    for (const [position, file] of images.entries()) {
       await writer.add(entryName(file), new BlobReader(file), { level: 0 });
+      report(position + 1, images.length);
     }
     const archive = await writer.close();
     return ok(archive);

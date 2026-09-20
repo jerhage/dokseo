@@ -12,6 +12,7 @@ import { err, ok, type Result } from '$lib/shared/result';
 import { applyEdit, type Book, type BookEdit } from '../domain/book';
 import type { LibraryError, LibraryRepository } from '../domain/library-repository';
 import { bookFromStored, type StoredBook } from '../domain/stored-book';
+import type { SourceWriteReport } from '../domain/upload-progress';
 
 const DATABASE_NAME = 'reader';
 
@@ -110,12 +111,17 @@ export function createLibraryRepository(): LibraryRepository {
       }
     },
 
-    async add(book: Book, source: Blob, cover: Blob): Promise<Result<void, LibraryError>> {
+    async add(
+      book: Book,
+      source: Blob,
+      cover: Blob,
+      report: SourceWriteReport = () => undefined,
+    ): Promise<Result<void, LibraryError>> {
       if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
       const keys = blobKeys(book.id);
       if (keys === null) return notFlat(book.id);
       try {
-        await blobs.put(keys.source, source);
+        await blobs.put(keys.source, source, report);
         await blobs.put(keys.cover, cover);
       } catch (cause) {
         await discard(keys);

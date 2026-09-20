@@ -6,6 +6,7 @@ import { err, ok, type Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book';
 import type { PageSourceError } from '$lib/shared/page-source';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
+import { INSPECTING, type UploadReport } from '../domain/upload-progress';
 import { detectSourceKind } from '../domain/source-detection';
 import { suggestTitle } from '../domain/title';
 import { entryName, titleCandidate } from './file-entry';
@@ -27,6 +28,7 @@ function describePageSourceError(error: PageSourceError): string {
 async function sourceBlobOf(
   sourceKind: SourceKind,
   files: readonly File[],
+  report: UploadReport,
 ): Promise<Result<Blob, SourceBuildError>> {
   if (sourceKind !== 'images') {
     const [container] = files;
@@ -34,24 +36,32 @@ async function sourceBlobOf(
     return ok(container);
   }
   const { packImagesIntoArchive } = await import('./archive-packer');
-  const packed = await packImagesIntoArchive(files);
+  const packed = await packImagesIntoArchive(files, (packedCount, total) => {
+    report({ kind: 'packing', packed: packedCount, total });
+  });
   if (!packed.ok) return err({ kind: 'unreadable', cause: describePageSourceError(packed.error) });
   return packed;
 }
 
-async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, SourceBuildError>> {
+async function buildFrom(
+  files: readonly File[],
+  report: UploadReport,
+): Promise<Result<BuiltSource, SourceBuildError>> {
+  report(INSPECTING);
   const sourceKind = detectSourceKind(files.map(entryName));
   if (sourceKind === null) return err({ kind: 'nothing-usable' });
 
-  const source = await sourceBlobOf(sourceKind, files);
+  const source = await sourceBlobOf(sourceKind, files, report);
   if (!source.ok) return source;
 
+  report({ kind: 'opening', sourceKind });
   const opened = await openStoredPageSource(sourceKind, source.value);
   if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
 
   using pages = opened.value;
   if (pages.count === 0) return err({ kind: 'nothing-usable' });
 
+  report({ kind: 'covering', imageCount: pages.count });
   const first = await pages.image(imageIndex(0));
   if (!first.ok) return err({ kind: 'unreadable', cause: describePageSourceError(first.error) });
 
@@ -73,10 +83,13 @@ async function buildFrom(files: readonly File[]): Promise<Result<BuiltSource, So
 
 export function createFileSourceBuilder(): SourceBuilder {
   return {
-    async build(files: readonly File[]): Promise<Result<BuiltSource, SourceBuildError>> {
+    async build(
+      files: readonly File[],
+      report: UploadReport = () => undefined,
+    ): Promise<Result<BuiltSource, SourceBuildError>> {
       if (files.length === 0) return err({ kind: 'empty' });
       try {
-        const built = await buildFrom(files);
+        const built = await buildFrom(files, report);
         return built;
       } catch (cause) {
         return err({ kind: 'unreadable', cause: describeCause(cause) });

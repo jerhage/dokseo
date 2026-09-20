@@ -1,5 +1,6 @@
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from './book';
+import type { UploadReport } from './upload-progress';
 
 export type BuiltSource = {
   readonly blob: Blob;
@@ -15,5 +16,8 @@ export type SourceBuildError =
   | { readonly kind: 'empty' };
 
 export interface SourceBuilder {
-  build(files: readonly File[]): Promise<Result<BuiltSource, SourceBuildError>>;
+  build(
+    files: readonly File[],
+    report: UploadReport,
+  ): Promise<Result<BuiltSource, SourceBuildError>>;
 }
