@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { Language } from '$lib/shared/language';
   import { chosenModel } from '../domain/model-footprint';
   import { engineStatus, NOT_INSTALLED, OCR_ENGINES, type EngineState } from '../domain/ocr-engine';
@@ -13,8 +14,6 @@
 
   const uid = $props.id();
 
-  let open = $state(false);
-  let root = $state<HTMLDivElement | null>(null);
   let trigger = $state<HTMLButtonElement | null>(null);
 
   const session = $derived(engine.session);
@@ -23,49 +22,18 @@
   );
   const status = $derived(engineStatus(engine));
   const device = $derived(session === null ? null : deviceName(session.device));
-
-  function close(): void {
-    if (!open) return;
-    open = false;
-  }
-
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !open) return;
-
-    event.stopPropagation();
-    event.preventDefault();
-    open = false;
-    trigger?.focus();
-  }
-
-  function onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget;
-    if (root !== null && next instanceof Node && root.contains(next)) return;
-    close();
-  }
-
-  function onPointerDown(event: PointerEvent): void {
-    const target = event.target;
-    if (root !== null && target instanceof Node && root.contains(target)) return;
-    close();
-  }
 </script>
 
-<svelte:window onpointerdown={onPointerDown} />
-
 {#if model !== null}
-  <div class="engine" bind:this={root} onfocusout={onFocusOut}>
+  <div class="engine">
     <button
       class="pill"
       class:live={session !== null}
       type="button"
       bind:this={trigger}
-      aria-expanded={open}
       aria-haspopup="dialog"
-      aria-controls="{uid}-sheet"
       title={session?.modelId ?? model.modelId}
-      onclick={() => (open = !open)}
-      onkeydown={onKeydown}
+      popovertarget="{uid}-sheet"
     >
       <span class="dot {status.tone}" aria-hidden="true"></span>
       <span class="name">On-device · {model.engine}</span>
@@ -73,51 +41,46 @@
       <span class="caret" aria-hidden="true">▾</span>
     </button>
 
-    {#if open}
-      <div
-        class="sheet"
-        id="{uid}-sheet"
-        role="dialog"
-        tabindex="-1"
-        aria-label="Engine for new captures"
-        onkeydown={onKeydown}
-      >
-        <p class="caption">Engine for new captures</p>
-        <ul class="list">
-          {#each OCR_ENGINES as offered (offered.id)}
-            <li>
-              <label class="choice" class:on={offered.installed} class:off={!offered.installed}>
-                <input
-                  type="radio"
-                  name="{uid}-engine"
-                  value={offered.id}
-                  checked={offered.installed}
-                  disabled={!offered.installed}
-                />
-                <span class="choice-body">
-                  <span class="choice-name">
-                    {offered.id === 'on-device'
-                      ? `${offered.name} · ${model.engine}`
-                      : offered.name}
-                  </span>
-                  <span class="choice-note">
-                    {offered.installed ? status.label : NOT_INSTALLED.label}
-                  </span>
+    <div
+      class="sheet"
+      id="{uid}-sheet"
+      popover
+      role="dialog"
+      aria-label="Engine for new captures"
+      use:anchoredTo={() => trigger}
+    >
+      <p class="caption">Engine for new captures</p>
+      <ul class="list">
+        {#each OCR_ENGINES as offered (offered.id)}
+          <li>
+            <label class="choice" class:on={offered.installed} class:off={!offered.installed}>
+              <input
+                type="radio"
+                name="{uid}-engine"
+                value={offered.id}
+                checked={offered.installed}
+                disabled={!offered.installed}
+              />
+              <span class="choice-body">
+                <span class="choice-name">
+                  {offered.id === 'on-device' ? `${offered.name} · ${model.engine}` : offered.name}
                 </span>
-              </label>
-            </li>
-          {/each}
-        </ul>
-        <p class="note">{status.note}</p>
-        <a class="more" href="/settings">Engine settings…</a>
-      </div>
-    {/if}
+                <span class="choice-note">
+                  {offered.installed ? status.label : NOT_INSTALLED.label}
+                </span>
+              </span>
+            </label>
+          </li>
+        {/each}
+      </ul>
+      <p class="note">{status.note}</p>
+      <a class="more" href="/settings">Engine settings…</a>
+    </div>
   </div>
 {/if}
 
 <style>
   .engine {
-    position: relative;
     flex: none;
   }
 
@@ -181,16 +144,17 @@
   }
 
   .sheet {
-    position: absolute;
-    top: calc(100% + var(--s-2));
-    right: 0;
-    z-index: var(--z-popover);
+    position: fixed;
+    inset: auto;
     width: 282px;
+    margin: 0;
     padding: var(--s-2);
+    overflow: visible;
     border: 1px solid var(--c-border-6);
     border-radius: var(--r-6);
     background: var(--c-surface-popover);
     box-shadow: 0 22px 46px rgb(0 0 0 / 65%);
+    color: inherit;
   }
 
   .caption {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { ModelFootprint } from '../domain/model-footprint';
   import { tradeAspectName, tradeOffsOf, type OcrEngine } from '../domain/ocr-engine';
 
@@ -13,81 +14,45 @@
 
   const uid = $props.id();
 
-  let open = $state(false);
-  let root = $state<HTMLSpanElement | null>(null);
   let trigger = $state<HTMLButtonElement | null>(null);
-
-  function close(): void {
-    if (!open) return;
-    open = false;
-  }
-
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !open) return;
-
-    event.stopPropagation();
-    event.preventDefault();
-    open = false;
-    trigger?.focus();
-  }
-
-  function onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget;
-    if (root !== null && next instanceof Node && root.contains(next)) return;
-    close();
-  }
-
-  function onPointerDown(event: PointerEvent): void {
-    const target = event.target;
-    if (root !== null && target instanceof Node && root.contains(target)) return;
-    close();
-  }
 </script>
 
-<svelte:window onpointerdown={onPointerDown} />
-
-<span class="trade" bind:this={root} onfocusout={onFocusOut}>
+<span class="trade">
   <button
     class="mark"
     type="button"
     bind:this={trigger}
-    aria-expanded={open}
     aria-haspopup="dialog"
-    aria-controls="{uid}-sheet"
     aria-label="About {engine.about}"
-    onclick={() => (open = !open)}
-    onkeydown={onKeydown}
+    popovertarget="{uid}-sheet"
   >
     i
   </button>
 
-  {#if open}
-    <span
-      class="sheet"
-      id="{uid}-sheet"
-      role="dialog"
-      tabindex="-1"
-      aria-label="About {engine.about}"
-      onkeydown={onKeydown}
-    >
-      <span class="caption">{engine.name}</span>
-      <span class="rows">
-        {#each trades as trade (trade.aspect)}
-          <span class="row">
-            <span class="dot {trade.verdict}" aria-hidden="true"></span>
-            <span class="aspect">{tradeAspectName(trade.aspect)}</span>
-            <span class="value">{trade.value}</span>
-          </span>
-        {/each}
-      </span>
-      <span class="footnote">{engine.footnote}</span>
+  <span
+    class="sheet"
+    id="{uid}-sheet"
+    popover
+    role="dialog"
+    aria-label="About {engine.about}"
+    use:anchoredTo={() => trigger}
+  >
+    <span class="caption">{engine.name}</span>
+    <span class="rows">
+      {#each trades as trade (trade.aspect)}
+        <span class="row">
+          <span class="dot {trade.verdict}" aria-hidden="true"></span>
+          <span class="aspect">{tradeAspectName(trade.aspect)}</span>
+          <span class="value">{trade.value}</span>
+        </span>
+      {/each}
     </span>
-  {/if}
+    <span class="footnote">{engine.footnote}</span>
+  </span>
 </span>
 
 <style>
   .trade {
-    position: relative;
     display: inline-flex;
   }
 
@@ -117,18 +82,22 @@
   }
 
   .sheet {
-    position: absolute;
-    top: calc(100% + var(--s-2));
-    left: 0;
-    z-index: var(--z-popover);
-    display: flex;
-    flex-direction: column;
+    position: fixed;
+    inset: auto;
     width: 294px;
+    margin: 0;
     padding: var(--s-3);
+    overflow: visible;
     border: 1px solid var(--c-border-6);
     border-radius: var(--r-6);
     background: var(--c-surface-popover);
     box-shadow: 0 20px 44px rgb(0 0 0 / 65%);
+    color: inherit;
+  }
+
+  .sheet:popover-open {
+    display: flex;
+    flex-direction: column;
   }
 
   .caption {
