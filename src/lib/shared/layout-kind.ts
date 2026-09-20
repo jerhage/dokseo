@@ -12,3 +12,7 @@ export function effectiveDirection(
 ): ReadingDirection {
   return direction === 'rtl' && layoutKind !== 'continuous' ? 'rtl' : 'ltr';
 }
+
+export function effectivePairing(pairing: PagePairing, layoutKind: LayoutKind): PagePairing {
+  return layoutKind === 'continuous' ? 'single' : pairing;
+}

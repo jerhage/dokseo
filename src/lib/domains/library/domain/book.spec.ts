@@ -44,15 +44,15 @@ describe('applyEdit', () => {
     expect(book.position).toBe(3);
   });
 
-  it('forces the direction to ltr when the edit turns the book continuous', () => {
-    const edited = applyEdit(book, { layoutKind: 'continuous', direction: 'rtl' });
+  it('keeps the direction when the edit turns the book continuous', () => {
+    const edited = applyEdit(book, { layoutKind: 'continuous' });
     expect(edited.layoutKind).toBe('continuous');
-    expect(edited.direction).toBe('ltr');
+    expect(edited.direction).toBe('rtl');
   });
 
-  it('forces the direction to ltr when the book is already continuous', () => {
-    const webtoon: Book = { ...book, layoutKind: 'continuous' };
-    expect(applyEdit(webtoon, { direction: 'rtl' }).direction).toBe('ltr');
+  it('stores a direction chosen for a book that is already continuous', () => {
+    const webtoon: Book = { ...book, layoutKind: 'continuous', direction: 'ltr' };
+    expect(applyEdit(webtoon, { direction: 'rtl' }).direction).toBe('rtl');
     expect(applyEdit(webtoon, { title: 'Tower of God' }).direction).toBe('ltr');
   });
 
@@ -61,16 +61,26 @@ describe('applyEdit', () => {
     expect(applyEdit(book, { layoutKind: 'paged' }).direction).toBe('rtl');
   });
 
-  it('forces the pairing to single when the edit turns the book continuous', () => {
-    const edited = applyEdit(book, { layoutKind: 'continuous', pagePairing: 'double' });
+  it('keeps the pairing when the edit turns the book continuous', () => {
+    const edited = applyEdit(book, { layoutKind: 'continuous' });
     expect(edited.layoutKind).toBe('continuous');
-    expect(edited.pagePairing).toBe('single');
+    expect(edited.pagePairing).toBe('double');
   });
 
-  it('forces the pairing to single when the book is already continuous', () => {
+  it('stores a pairing chosen for a book that is already continuous', () => {
     const webtoon: Book = { ...book, layoutKind: 'continuous' };
-    expect(applyEdit(webtoon, { pagePairing: 'double-after-cover' }).pagePairing).toBe('single');
-    expect(applyEdit(webtoon, { title: 'Tower of God' }).pagePairing).toBe('single');
+    expect(applyEdit(webtoon, { pagePairing: 'double-after-cover' }).pagePairing).toBe(
+      'double-after-cover',
+    );
+    expect(applyEdit(webtoon, { title: 'Tower of God' }).pagePairing).toBe('double');
+  });
+
+  it('returns a right-to-left two-page book unharmed from a trip through continuous', () => {
+    const strip = applyEdit(book, { layoutKind: 'continuous' });
+    const back = applyEdit(strip, { layoutKind: 'paged' });
+
+    expect(back.direction).toBe('rtl');
+    expect(back.pagePairing).toBe('double');
   });
 
   it('keeps a chosen pairing on a paged book', () => {

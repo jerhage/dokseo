@@ -5,6 +5,7 @@ import { imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import {
   effectiveDirection,
+  effectivePairing,
   type PagePairing,
   type ReadingDirection,
 } from '$lib/shared/layout-kind';
@@ -325,7 +326,7 @@ export class ReaderView {
 
   #regroup(book: ReaderBook, sizes: readonly (Size | null)[]): void {
     this.sizes = sizes;
-    this.groups = pairPages(sizes, book.pagePairing);
+    this.groups = pairPages(sizes, effectivePairing(book.pagePairing, book.layoutKind));
   }
 
   #scheduleSave(id: BookId, index: ImageIndex): void {

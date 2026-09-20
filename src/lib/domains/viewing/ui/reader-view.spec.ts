@@ -327,6 +327,17 @@ describe('ReaderView', () => {
     expect(view.saving).toBe(false);
   });
 
+  it('groups a strip one image at a time whatever pairing the book stores', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'double', direction: 'rtl' });
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'));
+
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(view.direction).toBe('ltr');
+    expect(view.book?.pagePairing).toBe('double');
+  });
+
   it('keeps the reader on the same image when the pairing changes', async () => {
     const world = fakes({ position: imageIndex(3) });
     const view = new ReaderView(world.container);

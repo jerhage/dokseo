@@ -47,17 +47,14 @@ function editedTitle(book: Book, edit: BookEdit): string {
 
 export function applyEdit(book: Book, edit: BookEdit): Book {
   const layoutKind = edit.layoutKind ?? book.layoutKind;
-  const direction = layoutKind === 'continuous' ? 'ltr' : (edit.direction ?? book.direction);
-  const pagePairing =
-    layoutKind === 'continuous' ? 'single' : (edit.pagePairing ?? book.pagePairing);
   const pageFit = layoutKind === 'continuous' ? 'width' : (edit.pageFit ?? book.pageFit);
   return {
     ...book,
     title: editedTitle(book, edit),
     language: edit.language ?? book.language,
     layoutKind,
-    direction,
-    pagePairing,
+    direction: edit.direction ?? book.direction,
+    pagePairing: edit.pagePairing ?? book.pagePairing,
     pageFit,
     position: edit.position ?? book.position,
   };

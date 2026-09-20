@@ -33,12 +33,8 @@ export function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   if (title.length > 0 && title !== book.title) edit.title = title;
   if (form.language !== book.language) edit.language = form.language;
   if (form.layoutKind !== book.layoutKind) edit.layoutKind = form.layoutKind;
-  if (form.layoutKind !== 'continuous' && form.direction !== book.direction) {
-    edit.direction = form.direction;
-  }
-  if (form.layoutKind !== 'continuous' && form.pagePairing !== book.pagePairing) {
-    edit.pagePairing = form.pagePairing;
-  }
+  if (form.direction !== book.direction) edit.direction = form.direction;
+  if (form.pagePairing !== book.pagePairing) edit.pagePairing = form.pagePairing;
 
   return edit;
 }

@@ -107,7 +107,7 @@ describe('changedFields', () => {
     expect('pagePairing' in edit).toBe(false);
   });
 
-  it('omits the pairing when the layout is continuous', () => {
+  it('sends a pairing the user changed alongside a turn to continuous', () => {
     const subject = book();
     const edit = changedFields(subject, {
       ...bookForm(subject),
@@ -115,25 +115,39 @@ describe('changedFields', () => {
       pagePairing: 'double-after-cover',
     });
 
-    expect(edit).toEqual({ layoutKind: 'continuous' });
-    expect('pagePairing' in edit).toBe(false);
-    expect(applyEdit(subject, edit).pagePairing).toBe('single');
+    expect(edit).toEqual({ layoutKind: 'continuous', pagePairing: 'double-after-cover' });
+    expect(applyEdit(subject, edit).pagePairing).toBe('double-after-cover');
   });
 
-  it('omits direction when the layout is continuous', () => {
+  it('leaves the direction of a book the user only turned continuous alone', () => {
     const subject = book();
     const edit = changedFields(subject, { ...bookForm(subject), layoutKind: 'continuous' });
 
     expect(edit).toEqual({ layoutKind: 'continuous' });
-    expect('direction' in edit).toBe(false);
-    expect(applyEdit(subject, edit).direction).toBe('ltr');
+    expect(applyEdit(subject, edit).direction).toBe('rtl');
   });
 
-  it('omits direction for a book that is already continuous', () => {
+  it('sends direction for a book that is already continuous', () => {
     const subject = book({ layoutKind: 'continuous', direction: 'ltr' });
     const edit = changedFields(subject, { ...bookForm(subject), direction: 'rtl' });
 
-    expect(edit).toEqual({});
+    expect(edit).toEqual({ direction: 'rtl' });
+    expect(applyEdit(subject, edit).direction).toBe('rtl');
+  });
+
+  it('returns a right-to-left two-page book unharmed from a trip through continuous', () => {
+    const subject = book();
+    const strip = applyEdit(
+      subject,
+      changedFields(subject, { ...bookForm(subject), layoutKind: 'continuous' }),
+    );
+    const back = applyEdit(
+      strip,
+      changedFields(strip, { ...bookForm(strip), layoutKind: 'paged' }),
+    );
+
+    expect(back.direction).toBe('rtl');
+    expect(back.pagePairing).toBe('double');
   });
 
   it('sends direction again when the layout returns to pages', () => {
