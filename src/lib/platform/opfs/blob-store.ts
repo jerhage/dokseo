@@ -1,26 +1,12 @@
 import { describeCause } from '$lib/shared/cause';
+import { directoryNamed, flatName, isMissing } from './directory';
 
 const DIRECTORY = 'blobs';
 
-export function isAvailable(): boolean {
-  return typeof navigator !== 'undefined' && typeof navigator.storage?.getDirectory === 'function';
-}
+export { isAvailable } from './directory';
 
-function flatName(key: string): string {
-  const rejected =
-    key.length === 0 || key.includes('/') || key.includes('\\') || key.includes('..');
-  if (rejected) throw new Error(`Key "${key}" is not a flat name`);
-  return key;
-}
-
-function isMissing(cause: unknown): boolean {
-  return cause instanceof Error && cause.name === 'NotFoundError';
-}
-
-async function directory(): Promise<FileSystemDirectoryHandle> {
-  if (!isAvailable()) throw new Error('The origin private file system is unavailable');
-  const root = await navigator.storage.getDirectory();
-  return root.getDirectoryHandle(DIRECTORY, { create: true });
+function directory(): Promise<FileSystemDirectoryHandle> {
+  return directoryNamed(DIRECTORY);
 }
 
 export async function put(key: string, blob: Blob): Promise<void> {
