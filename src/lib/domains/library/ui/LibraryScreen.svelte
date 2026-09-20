@@ -8,9 +8,9 @@
   import UploadTile from './UploadTile.svelte';
   import type { LibraryView } from './library-view.svelte';
 
-  type Props = { readonly view: LibraryView };
+  type Props = { readonly view: LibraryView; readonly notice?: string | null };
 
-  let { view }: Props = $props();
+  let { view, notice = null }: Props = $props();
 
   let tile = $state<ReturnType<typeof UploadTile> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
@@ -79,6 +79,10 @@
     </header>
 
     <section class="body">
+      {#if notice !== null}
+        <p class="alert" role="alert">{notice}</p>
+      {/if}
+
       {#if view.message !== null}
         <p class="alert" role="alert">{view.message}</p>
       {/if}
