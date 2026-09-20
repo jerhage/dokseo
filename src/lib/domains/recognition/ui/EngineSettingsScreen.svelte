@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { megabytes } from '$lib/shared/bytes';
   import { languageName } from '$lib/shared/language';
   import {
     COMPUTE_CHOICES,
@@ -6,7 +7,6 @@
     computeDetectionNote,
     type ComputeChoice,
   } from '../domain/compute-choice';
-  import { megabytes } from '$lib/shared/bytes';
   import { downloadMb, onDiskMb, runtimeMb, weightsMb } from '../domain/model-footprint';
   import { engineStatus, NOT_INSTALLED, OCR_ENGINES, ON_DEVICE_ENGINE } from '../domain/ocr-engine';
   import { deviceName } from '../domain/recognizer-session';
@@ -42,14 +42,6 @@
   const progress = $derived(download.kind === 'loading' ? download.load : null);
   const percent = $derived(progress === null ? 0 : Math.round(progress.fraction * 100));
 
-  const space = $derived.by(() => {
-    if (storage === null) return null;
-    const { usage, quota } = storage;
-    if (usage === null) return null;
-    const total = quota === null ? '' : ` of about ${megabytes(quota)} MB the browser allows`;
-    return `${megabytes(usage)} MB stored by this app${total}`;
-  });
-
   function weightsOf(offered: { weightsBytes: number }): string {
     return `${megabytes(offered.weightsBytes)} MB of weights`;
   }
@@ -59,321 +51,217 @@
   }
 </script>
 
-<div class="screen">
-  <nav class="rail" aria-label="Settings">
-    <div class="brand">
-      <span class="mark" lang="ja" aria-hidden="true">読</span>
-      <span class="name">Settings</span>
-    </div>
-    <a class="item current" href="/settings" aria-current="page">
-      <span class="dot" aria-hidden="true"></span>
-      OCR engine
-    </a>
-    <div class="spacer"></div>
-    <div class="active">
-      <p class="caption">Active engine</p>
-      <p class="engine">{model === null ? 'None' : `On-device · ${model.engine}`}</p>
-      <p class="device">
-        {session === null ? state.label : `running on the ${deviceName(session.device)}`}
+<header class="head">
+  <h1 class="title">OCR engine</h1>
+  <p class="lead">
+    Pick where recognition runs. Only the on-device engine is built, and it uploads nothing. The
+    other two are listed with what each would cost you, and neither can be picked until it exists.
+  </p>
+</header>
+
+{#if model === null || language === null}
+  <p class="notice">No recognition model has been chosen for any language yet.</p>
+{:else}
+  <section class="card" aria-labelledby="{uid}-engine">
+    <div class="banner">
+      <div class="who">
+        <input
+          class="pick"
+          type="radio"
+          name="{uid}-engine-choice"
+          value={ON_DEVICE_ENGINE.id}
+          checked
+          aria-labelledby="{uid}-engine"
+        />
+        <h2 class="who-name" id="{uid}-engine">On-device</h2>
+        <span class="badge">In use</span>
+        <EngineTrade engine={ON_DEVICE_ENGINE} {model} />
+      </div>
+      <p class="who-note">
+        Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
+        download of about {weightsMb(model)} MB of weights and about {runtimeMb(model)} MB of runtime,
+        about {onDiskMb(model)} MB on disk.
       </p>
-    </div>
-    <a class="back" href="/">Back to your library</a>
-  </nav>
-
-  <main class="main">
-    <header class="head">
-      <h1 class="title">OCR engine</h1>
-      <p class="lead">
-        Pick where recognition runs. Only the on-device engine is built, and it uploads nothing. The
-        other two are listed with what each would cost you, and neither can be picked until it
-        exists.
+      <p class="status {state.tone}">
+        <span class="dot" aria-hidden="true"></span>
+        {state.label}
       </p>
-    </header>
+      <p class="who-note said">{state.note}</p>
+    </div>
 
-    {#if model === null || language === null}
-      <p class="notice">No recognition model has been chosen for any language yet.</p>
-    {:else}
-      <section class="card" aria-labelledby="{uid}-engine">
-        <div class="banner">
-          <div class="who">
-            <input
-              class="pick"
-              type="radio"
-              name="{uid}-engine-choice"
-              value={ON_DEVICE_ENGINE.id}
-              checked
-              aria-labelledby="{uid}-engine"
-            />
-            <h2 class="who-name" id="{uid}-engine">On-device</h2>
-            <span class="badge">In use</span>
-            <EngineTrade engine={ON_DEVICE_ENGINE} {model} />
-          </div>
-          <p class="who-note">
-            Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
-            download of about {weightsMb(model)} MB of weights and about {runtimeMb(model)} MB of runtime,
-            about {onDiskMb(model)} MB on disk.
-          </p>
-          <p class="status {state.tone}">
-            <span class="dot" aria-hidden="true"></span>
-            {state.label}
-          </p>
-          <p class="who-note said">{state.note}</p>
+    {#if loading}
+      <div class="progress">
+        <div class="row">
+          <span class="label">{model.label} weights</span>
+          <span class="figure">{loadFigure(progress)}</span>
         </div>
-
-        {#if loading}
-          <div class="progress">
-            <div class="row">
-              <span class="label">{model.label} weights</span>
-              <span class="figure">{loadFigure(progress)}</span>
-            </div>
-            <div
-              class="track"
-              role="progressbar"
-              aria-label="{state.label} the recognition model"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={percent}
-            >
-              <span class="fill" style:width="{percent}%"></span>
-            </div>
-            <div class="row">
-              <span class="hint">{cancelHint(progress)}</span>
-              <button class="quiet" type="button" onclick={() => void view.pause()}>Pause</button>
-              <button class="quiet" type="button" onclick={() => void view.stop()}>Cancel</button>
-            </div>
-          </div>
-        {/if}
-
-        <div class="grid">
-          <div class="column">
-            <p class="caption" id="{uid}-model">Model</p>
-            <ul class="choices" aria-labelledby="{uid}-model">
-              {#each view.models as offered (offered.modelId)}
-                <li>
-                  <label class="choice" class:on={offered.modelId === model.modelId}>
-                    <input
-                      type="radio"
-                      name="{uid}-model-choice"
-                      value={offered.modelId}
-                      checked={offered.modelId === model.modelId}
-                      onchange={() => void view.chooseModel(offered.modelId)}
-                    />
-                    <span class="choice-name">{offered.label}</span>
-                    <span class="choice-note">{weightsOf(offered)}</span>
-                  </label>
-                  <p class="footnote">
-                    {languageName(offered.language)} · {offered.note}
-                  </p>
-                </li>
-              {/each}
-            </ul>
-          </div>
-
-          <div class="column">
-            <p class="caption" id="{uid}-compute">Compute</p>
-            <div class="segments" role="group" aria-labelledby="{uid}-compute">
-              {#each COMPUTE_CHOICES as choice (choice)}
-                <button
-                  class="segment"
-                  type="button"
-                  aria-pressed={view.compute === choice}
-                  onclick={() => pick(choice)}
-                >
-                  {computeChoiceName(choice)}
-                </button>
-              {/each}
-            </div>
-            <p class="detected">{computeDetectionNote(view.detection)}</p>
-            {#if session !== null}
-              <p class="detected">
-                This session opened on the {deviceName(session.device)}.
-              </p>
-            {/if}
-          </div>
+        <div
+          class="track"
+          role="progressbar"
+          aria-label="{state.label} the recognition model"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+        >
+          <span class="fill" style:width="{percent}%"></span>
         </div>
-
-        <div class="storage">
-          <p class="caption">Stored on this device</p>
-          <p class="measured">
-            {storage === null
-              ? (view.storageMessage ?? 'Reading what is stored…')
-              : storedFigure(storage.report)}
-          </p>
-          {#if partial !== null}
-            <p class="footnote">{partial}</p>
-          {/if}
-          {#if space !== null}
-            <p class="footnote">{space}</p>
-          {/if}
-          {#if storage !== null && !storage.persisted}
-            <p class="footnote">
-              The browser has not granted persistence, so it may reclaim this space on its own.
-            </p>
-          {/if}
-
-          <div class="actions">
-            {#if !loading && !view.stored && view.resumable}
-              <button class="primary" type="button" onclick={() => void view.start()}>
-                {resumeLabel(view.partial)}
-              </button>
-              <button class="quiet" type="button" onclick={() => void view.stop()}>
-                Discard what was fetched
-              </button>
-            {/if}
-            {#if !loading && !view.stored && !view.resumable}
-              <button class="primary" type="button" onclick={() => void view.start()}>
-                Download now
-              </button>
-            {/if}
-            {#if view.stored && !view.confirmingRemoval}
-              <button
-                class="danger"
-                type="button"
-                disabled={view.removing}
-                onclick={() => view.askRemoval()}
-              >
-                {view.removing ? 'Deleting…' : 'Delete the model'}
-              </button>
-            {/if}
-          </div>
-
-          {#if view.confirmingRemoval}
-            <div class="confirm">
-              <p class="warning">
-                Delete about {storage === null
-                  ? downloadMb(model)
-                  : megabytes(storage.report.bytes)}
-                MB of weights? {REMOVAL_WARNING}
-              </p>
-              <div class="actions">
-                <button class="quiet" type="button" onclick={() => view.dismissRemoval()}>
-                  Keep it
-                </button>
-                <button class="danger" type="button" onclick={() => void view.remove()}>
-                  Delete the model
-                </button>
-              </div>
-            </div>
-          {/if}
-
-          {#if failure !== null}
-            <p class="warning" role="alert">The model could not be loaded: {failure}</p>
-          {/if}
-          {#if view.message !== null}
-            <p class="footnote" role="status">{view.message}</p>
-          {/if}
+        <div class="row">
+          <span class="hint">{cancelHint(progress)}</span>
+          <button class="quiet" type="button" onclick={() => void view.pause()}>Pause</button>
+          <button class="quiet" type="button" onclick={() => void view.stop()}>Cancel</button>
         </div>
-      </section>
-
-      {#each absent as offered (offered.id)}
-        <section class="card unbuilt" aria-labelledby="{uid}-{offered.id}">
-          <div class="banner plain">
-            <div class="who">
-              <input
-                class="pick"
-                type="radio"
-                name="{uid}-engine-choice"
-                value={offered.id}
-                disabled
-                aria-labelledby="{uid}-{offered.id}"
-              />
-              <h2 class="who-name" id="{uid}-{offered.id}">{offered.name}</h2>
-              <span class="badge plain">{offered.kind}</span>
-              <EngineTrade engine={offered} {model} />
-            </div>
-            <p class="who-note">{offered.summary}</p>
-            <p class="status quiet">
-              <span class="dot" aria-hidden="true"></span>
-              {NOT_INSTALLED.label}
-            </p>
-            <p class="who-note said">{NOT_INSTALLED.note}</p>
-          </div>
-        </section>
-      {/each}
+      </div>
     {/if}
-  </main>
-</div>
+
+    <div class="grid">
+      <div class="column">
+        <p class="caption" id="{uid}-model">Model</p>
+        <ul class="choices" aria-labelledby="{uid}-model">
+          {#each view.models as offered (offered.modelId)}
+            <li>
+              <label class="choice" class:on={offered.modelId === model.modelId}>
+                <input
+                  type="radio"
+                  name="{uid}-model-choice"
+                  value={offered.modelId}
+                  checked={offered.modelId === model.modelId}
+                  onchange={() => void view.chooseModel(offered.modelId)}
+                />
+                <span class="choice-name">{offered.label}</span>
+                <span class="choice-note">{weightsOf(offered)}</span>
+              </label>
+              <p class="footnote">
+                {languageName(offered.language)} · {offered.note}
+              </p>
+            </li>
+          {/each}
+        </ul>
+      </div>
+
+      <div class="column">
+        <p class="caption" id="{uid}-compute">Compute</p>
+        <div class="segments" role="group" aria-labelledby="{uid}-compute">
+          {#each COMPUTE_CHOICES as choice (choice)}
+            <button
+              class="segment"
+              type="button"
+              aria-pressed={view.compute === choice}
+              onclick={() => pick(choice)}
+            >
+              {computeChoiceName(choice)}
+            </button>
+          {/each}
+        </div>
+        <p class="detected">{computeDetectionNote(view.detection)}</p>
+        {#if session !== null}
+          <p class="detected">
+            This session opened on the {deviceName(session.device)}.
+          </p>
+        {/if}
+      </div>
+    </div>
+
+    <div class="storage">
+      <p class="caption">Stored on this device</p>
+      <p class="measured">
+        {storage === null
+          ? (view.storageMessage ?? 'Reading what is stored…')
+          : storedFigure(storage.report)}
+      </p>
+      {#if partial !== null}
+        <p class="footnote">{partial}</p>
+      {/if}
+      <p class="footnote">
+        This is what the model occupies, not what the app does.
+        <a class="link" href="/settings/storage">Storage</a>
+        accounts for every megabyte on this device.
+      </p>
+      {#if storage !== null && !storage.persisted}
+        <p class="footnote">
+          The browser has not granted persistence, so it may reclaim this space on its own.
+        </p>
+      {/if}
+
+      <div class="actions">
+        {#if !loading && !view.stored && view.resumable}
+          <button class="primary" type="button" onclick={() => void view.start()}>
+            {resumeLabel(view.partial)}
+          </button>
+          <button class="quiet" type="button" onclick={() => void view.stop()}>
+            Discard what was fetched
+          </button>
+        {/if}
+        {#if !loading && !view.stored && !view.resumable}
+          <button class="primary" type="button" onclick={() => void view.start()}>
+            Download now
+          </button>
+        {/if}
+        {#if view.stored && !view.confirmingRemoval}
+          <button
+            class="danger"
+            type="button"
+            disabled={view.removing}
+            onclick={() => view.askRemoval()}
+          >
+            {view.removing ? 'Deleting…' : 'Delete the model'}
+          </button>
+        {/if}
+      </div>
+
+      {#if view.confirmingRemoval}
+        <div class="confirm">
+          <p class="warning">
+            Delete about {storage === null ? downloadMb(model) : megabytes(storage.report.bytes)}
+            MB of weights? {REMOVAL_WARNING}
+          </p>
+          <div class="actions">
+            <button class="quiet" type="button" onclick={() => view.dismissRemoval()}>
+              Keep it
+            </button>
+            <button class="danger" type="button" onclick={() => void view.remove()}>
+              Delete the model
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      {#if failure !== null}
+        <p class="warning" role="alert">The model could not be loaded: {failure}</p>
+      {/if}
+      {#if view.message !== null}
+        <p class="footnote" role="status">{view.message}</p>
+      {/if}
+    </div>
+  </section>
+
+  {#each absent as offered (offered.id)}
+    <section class="card unbuilt" aria-labelledby="{uid}-{offered.id}">
+      <div class="banner plain">
+        <div class="who">
+          <input
+            class="pick"
+            type="radio"
+            name="{uid}-engine-choice"
+            value={offered.id}
+            disabled
+            aria-labelledby="{uid}-{offered.id}"
+          />
+          <h2 class="who-name" id="{uid}-{offered.id}">{offered.name}</h2>
+          <span class="badge plain">{offered.kind}</span>
+          <EngineTrade engine={offered} {model} />
+        </div>
+        <p class="who-note">{offered.summary}</p>
+        <p class="status quiet">
+          <span class="dot" aria-hidden="true"></span>
+          {NOT_INSTALLED.label}
+        </p>
+        <p class="who-note said">{NOT_INSTALLED.note}</p>
+      </div>
+    </section>
+  {/each}
+{/if}
 
 <style>
-  .screen {
-    display: flex;
-    min-height: 100vh;
-    background: var(--c-surface-app);
-    color: var(--c-text-2);
-    font-family: var(--f-ui);
-  }
-
-  .rail {
-    display: flex;
-    flex: none;
-    flex-direction: column;
-    gap: var(--s-1);
-    width: 190px;
-    padding: var(--s-4) var(--s-3);
-    border-right: 1px solid var(--c-border-1);
-    background: var(--c-surface-rail);
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    padding: 0 var(--s-2) var(--s-4);
-  }
-
-  .mark {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: var(--r-3);
-    background: var(--c-accent);
-    color: var(--c-accent-text);
-    font-family: var(--f-ja);
-    font-size: 13px;
-  }
-
-  .name {
-    color: var(--c-text-4);
-    font-size: 12.5px;
-  }
-
-  .item {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    padding: var(--s-2) var(--s-3);
-    border-radius: var(--r-3);
-    color: var(--c-text-7);
-    font-size: 12.5px;
-    text-decoration: none;
-  }
-
-  .item.current {
-    background: var(--c-surface-card-active);
-    color: var(--c-text-1);
-  }
-
-  .item .dot {
-    display: block;
-    width: 5px;
-    height: 5px;
-    border-radius: var(--r-pill);
-    background: var(--c-accent);
-  }
-
-  .spacer {
-    flex: 1 1 auto;
-  }
-
-  .active {
-    padding: var(--s-3);
-    border: 1px solid var(--c-border-2);
-    border-radius: var(--r-4);
-    background: var(--c-surface-chip);
-  }
-
   .caption {
     margin: 0;
     color: var(--c-text-10);
@@ -381,42 +269,6 @@
     font-size: 9.5px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-  }
-
-  .engine {
-    margin: var(--s-2) 0 0;
-    color: var(--c-accent);
-    font-size: 11.5px;
-  }
-
-  .device {
-    margin: var(--s-1) 0 0;
-    color: var(--c-text-9);
-    font-size: 10.5px;
-  }
-
-  .back {
-    margin-top: var(--s-3);
-    padding: var(--s-2) var(--s-3);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-3);
-    color: var(--c-text-5);
-    font-size: 11.5px;
-    text-align: center;
-    text-decoration: none;
-  }
-
-  .back:hover,
-  .back:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .main {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-width: 0;
   }
 
   .head {
@@ -684,6 +536,10 @@
     color: var(--c-text-8);
     font-family: var(--f-mono);
     font-size: 10px;
+  }
+
+  .link {
+    color: var(--c-accent);
   }
 
   .footnote {
