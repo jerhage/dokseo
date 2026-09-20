@@ -7,13 +7,10 @@ import {
 } from '$lib/platform/idb/connection';
 import { describeCause } from '$lib/shared/cause';
 import type { BookId, CaptureId } from '$lib/shared/ids';
-import { err, ok, type Result } from '$lib/shared/result';
-import {
-  captureFromStored,
-  oldestFirst,
-  type Capture,
-  type StoredCapture,
-} from '../../domain/capture/capture';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { captureFromStored, oldestFirst } from '../../domain/capture/capture';
+import type { Capture, StoredCapture } from '../../domain/capture/capture';
 import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
 import {
   CAPTURE_BOOK_INDEX,

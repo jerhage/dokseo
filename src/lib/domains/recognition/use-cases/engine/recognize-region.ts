@@ -1,9 +1,11 @@
 import { own } from '$lib/platform/image/bitmap';
-import { noTrace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import { noTrace } from '$lib/platform/trace/pipeline-trace';
+import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { CropError, RegionCropper } from '../../domain/engine/region-cropper';
 import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';

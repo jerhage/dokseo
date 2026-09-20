@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type {
   ModelConsentDecision,
   ModelConsentError,
   ModelConsentStore,
 } from '../../domain/model/model-consent';
-import { JAPANESE_OCR_MODEL, type ModelFootprint } from '../../domain/model/model-footprint';
+import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
   SetupError,

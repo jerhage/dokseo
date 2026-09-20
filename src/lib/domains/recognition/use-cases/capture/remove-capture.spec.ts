@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { CaptureId } from '$lib/shared/ids';
-import { takenCapture, type Capture } from '../../domain/capture/capture';
+import { takenCapture } from '../../domain/capture/capture';
+import type { Capture } from '../../domain/capture/capture';
 import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
 import { removeCapture } from './remove-capture';
 

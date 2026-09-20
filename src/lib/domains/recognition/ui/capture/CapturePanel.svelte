@@ -7,23 +7,13 @@
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import { readerHref } from '$lib/shared/reader-location';
-  import {
-    segmentsOf,
-    textMatches,
-    type TextMatch,
-    type TextSegment,
-  } from '$lib/shared/text-search';
+  import { segmentsOf, textMatches } from '$lib/shared/text-search';
+  import type { TextMatch, TextSegment } from '$lib/shared/text-search';
   import { inBookOrder } from '../../domain/capture/capture-order';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
   import { firstImage, placeLabel } from './capture-place';
-  import {
-    modelLoadAnnouncement,
-    modelLoadNote,
-    NOTHING_READ,
-    type CaptureStatus,
-    type CaptureView,
-    type PanelCapture,
-  } from './capture-view.svelte';
+  import { modelLoadAnnouncement, modelLoadNote, NOTHING_READ } from './capture-view.svelte';
+  import type { CaptureStatus, CaptureView, PanelCapture } from './capture-view.svelte';
   import ModelConsentDialog from '../engine/ModelConsentDialog.svelte';
 
   type Props = {

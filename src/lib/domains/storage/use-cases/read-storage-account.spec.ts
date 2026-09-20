@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ok } from '$lib/shared/result';
 import type { OriginStores, OriginSurvey } from '../domain/origin-stores';
-import { measuredBytes, type StorageAccount } from '../domain/storage-parts';
+import { measuredBytes } from '../domain/storage-parts';
+import type { StorageAccount } from '../domain/storage-parts';
 import { readStorageAccount } from './read-storage-account';
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';

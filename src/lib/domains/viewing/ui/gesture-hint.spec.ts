@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  hintsToShow,
-  isReaderGesture,
-  pagedHints,
-  type GestureHint,
-  type ReaderGesture,
-} from './gesture-hint';
+import { hintsToShow, isReaderGesture, pagedHints } from './gesture-hint';
+import type { GestureHint, ReaderGesture } from './gesture-hint';
 
 function taught(hints: readonly GestureHint[]): readonly (ReaderGesture | null)[] {
   return hints.map((hint) => hint.teaches);

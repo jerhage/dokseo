@@ -1,5 +1,7 @@
-import { ok, type Result } from '$lib/shared/result';
-import { editedCapture, type Capture } from '../../domain/capture/capture';
+import { ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { editedCapture } from '../../domain/capture/capture';
+import type { Capture } from '../../domain/capture/capture';
 import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
 
 export type EditCaptureTextDeps = {

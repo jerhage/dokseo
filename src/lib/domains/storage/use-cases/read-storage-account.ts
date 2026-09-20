@@ -4,23 +4,16 @@ import {
   reportOf,
 } from '$lib/domains/recognition/domain/model/model-cache';
 import { everyModel } from '$lib/domains/recognition/domain/model/model-footprint';
-import { ok, type Result } from '$lib/shared/result';
+import { ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type {
   CachedFile,
   OriginStores,
   OriginStoresError,
   StoredFile,
 } from '../domain/origin-stores';
-import {
-  accountOf,
-  filesAt,
-  filesElsewhere,
-  tallyDetail,
-  tallyOf,
-  type StorageAccount,
-  type StoragePart,
-  type Tally,
-} from '../domain/storage-parts';
+import { accountOf, filesAt, filesElsewhere, tallyDetail, tallyOf } from '../domain/storage-parts';
+import type { StorageAccount, StoragePart, Tally } from '../domain/storage-parts';
 
 const BOOK_PLACE = 'blobs';
 

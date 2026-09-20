@@ -5,11 +5,13 @@ import {
   NO_PAYLOAD,
   payloadProgress,
   trackedPayload,
-  type PayloadFile,
 } from '$lib/domains/recognition/domain/model/payload-progress';
+import type { PayloadFile } from '$lib/domains/recognition/domain/model/payload-progress';
 import * as parts from '$lib/platform/opfs/partial-store';
-import { asksForOneRange, watchModelLoadSource, type Fetching } from './model-load-source';
-import { fetchResumable, type PartialFiles, type RangedFetch } from './resumable-fetch';
+import { asksForOneRange, watchModelLoadSource } from './model-load-source';
+import type { Fetching } from './model-load-source';
+import { fetchResumable } from './resumable-fetch';
+import type { PartialFiles, RangedFetch } from './resumable-fetch';
 
 export type ModelFetchOptions = {
   readonly modelId: string;

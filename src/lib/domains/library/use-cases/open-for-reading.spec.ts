@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import { bookId, imageIndex } from '$lib/shared/ids';
+import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import type { Book, SourceKind } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
-import { openForReading, type OpenForReadingDeps } from './open-for-reading';
+import { openForReading } from './open-for-reading';
+import type { OpenForReadingDeps } from './open-for-reading';
 
 const ID = bookId('book-7');
 

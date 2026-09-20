@@ -1,6 +1,7 @@
 import type { BookId } from '$lib/shared/ids';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { Book, SourceKind } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 

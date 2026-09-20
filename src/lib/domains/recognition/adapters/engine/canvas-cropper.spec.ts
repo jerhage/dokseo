@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { imageRect } from '$lib/shared/geometry';
-import { imageIndex, type ImageIndex } from '$lib/shared/ids';
+import { imageIndex } from '$lib/shared/ids';
+import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import { createCanvasCropper } from './canvas-cropper';
 
 const REGIONS: readonly ImageRegion[] = [

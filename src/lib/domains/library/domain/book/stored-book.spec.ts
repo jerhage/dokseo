@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING, type Book } from './book';
-import { bookFromStored, type StoredBook } from './stored-book';
+import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
+import type { Book } from './book';
+import { bookFromStored } from './stored-book';
+import type { StoredBook } from './stored-book';
 
 const legacy: StoredBook = {
   id: bookId('b-1'),

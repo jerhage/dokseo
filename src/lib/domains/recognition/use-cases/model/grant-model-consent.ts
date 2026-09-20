@@ -1,7 +1,8 @@
 import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
 import type { ModelConsentError, ModelConsentStore } from '../../domain/model/model-consent';
-import { setupChoice, type RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
+import { setupChoice } from '../../domain/engine/recognizer-setup';
+import type { RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
 
 export type GrantModelConsentDeps = {
   readonly consent: ModelConsentStore;

@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
-import { imageIndex, type ImageIndex } from '$lib/shared/ids';
+import { imageIndex } from '$lib/shared/ids';
+import type { ImageIndex } from '$lib/shared/ids';
 import type { Size } from '$lib/shared/geometry';
 import type { PagePairing } from '$lib/shared/layout-kind';
 

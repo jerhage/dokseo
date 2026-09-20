@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, imageIndex, type BookId } from '$lib/shared/ids';
+import { bookId, imageIndex } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { at } from '$lib/shared/testing/at';
-import { matchesByBook, matchTally, type SearchedBook } from './capture-results';
+import { matchesByBook, matchTally } from './capture-results';
+import type { SearchedBook } from './capture-results';
 
 type Found = {
   readonly name: string;

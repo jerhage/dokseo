@@ -12,7 +12,8 @@
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
-  import { bookId, type ImageIndex } from '$lib/shared/ids';
+  import { bookId } from '$lib/shared/ids';
+  import type { ImageIndex } from '$lib/shared/ids';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     IMAGE_PARAMETER,

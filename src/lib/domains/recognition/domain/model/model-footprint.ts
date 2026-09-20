@@ -6,8 +6,8 @@ import {
   QUANTIZED_ENCODER_ONLY,
   QUANTIZED_THROUGHOUT,
   SINGLE_GRAPH_WEIGHTS,
-  type EncoderDecoderPrecision,
 } from './model-weights';
+import type { EncoderDecoderPrecision } from './model-weights';
 
 export type ModelFootprint = {
   readonly modelId: string;

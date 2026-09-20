@@ -1,5 +1,6 @@
 import type { TextRecognizer } from '../../domain/engine/text-recognizer';
-import { createWorkerRecognizer, type WorkerOcrOptions } from './worker-recognizer';
+import { createWorkerRecognizer } from './worker-recognizer';
+import type { WorkerOcrOptions } from './worker-recognizer';
 
 export type PaddleOcrOptions = WorkerOcrOptions;
 

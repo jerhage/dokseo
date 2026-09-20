@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { imageRect, screenRect, type ScreenRect } from '$lib/shared/geometry';
+import { imageRect, screenRect } from '$lib/shared/geometry';
+import type { ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import {

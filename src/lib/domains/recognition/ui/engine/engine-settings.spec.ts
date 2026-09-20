@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
 import type { Language } from '$lib/shared/language';
-import { ok, type Result } from '$lib/shared/result';
+import { ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
 import type { PartialReport } from '../../domain/model/model-partial';

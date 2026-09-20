@@ -7,8 +7,8 @@
     engineStatus,
     NOT_INSTALLED,
     OCR_ENGINES,
-    type EngineState,
   } from '../../domain/engine/ocr-engine';
+  import type { EngineState } from '../../domain/engine/ocr-engine';
   import { deviceName } from '../../domain/engine/recognizer-session';
 
   type Props = {

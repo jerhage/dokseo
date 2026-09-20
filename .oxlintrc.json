@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc"],
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -10,7 +10,11 @@
     "eslint/no-await-in-loop": "off",
     "unicorn/prefer-add-event-listener": "off",
     "unicorn/require-module-specifiers": "off",
-    "unicorn/consistent-function-scoping": "off"
+    "unicorn/consistent-function-scoping": "off",
+    "import/no-unassigned-import": "off",
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"]
   },
-  "env": { "builtin": true }
+  "env": {
+    "builtin": true
+  }
 }

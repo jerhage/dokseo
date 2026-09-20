@@ -5,7 +5,8 @@ import type {
   ModelConsentError,
   ModelConsentStore,
 } from '../../domain/model/model-consent';
-import { setupChoice, type RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
+import { setupChoice } from '../../domain/engine/recognizer-setup';
+import type { RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
 
 export type ReadModelConsentDeps = {
   readonly consent: ModelConsentStore;

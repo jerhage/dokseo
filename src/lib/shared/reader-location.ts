@@ -1,4 +1,5 @@
-import { captureId, imageIndex, type BookId, type CaptureId, type ImageIndex } from './ids';
+import { captureId, imageIndex } from './ids';
+import type { BookId, CaptureId, ImageIndex } from './ids';
 
 export const IMAGE_PARAMETER = 'image';
 

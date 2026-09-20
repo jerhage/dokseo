@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
-import { applyEdit, defaultPageFit, type Book } from './book';
+import { applyEdit, defaultPageFit } from './book';
+import type { Book } from './book';
 
 const book: Book = {
   id: bookId('b-1'),

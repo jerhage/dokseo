@@ -1,5 +1,6 @@
 import { rememberedSet } from '$lib/platform/storage/remembered-set';
-import { isReaderGesture, type ReaderGesture } from './gesture-hint';
+import { isReaderGesture } from './gesture-hint';
+import type { ReaderGesture } from './gesture-hint';
 
 const remembered = rememberedSet('reader.gestures.learned');
 

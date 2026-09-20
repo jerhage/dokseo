@@ -2,24 +2,23 @@ import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionNotices } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex, type BookId, type CaptureId } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import {
-  editedCapture,
-  takenCapture,
-  type Capture,
-  type CaptureDraft,
-} from '../../domain/capture/capture';
+import { editedCapture, takenCapture } from '../../domain/capture/capture';
+import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
 import type { ModelLoad } from '../../domain/model/model-load';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
-import { recognizedText, type RecognizedText } from '../../domain/engine/recognized-text';
+import { recognizedText } from '../../domain/engine/recognized-text';
+import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
 import {
   CaptureView,

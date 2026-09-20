@@ -3,7 +3,8 @@ import type { Container } from '$lib/container';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Size } from '$lib/shared/geometry';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import { bookId, imageIndex } from '$lib/shared/ids';
+import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
@@ -11,7 +12,8 @@ import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { readingPosition } from '../domain/reading-position';
-import { PLACE_SAVE_DELAY_MS, ReaderView, type ReaderBook } from './reader-view.svelte';
+import { PLACE_SAVE_DELAY_MS, ReaderView } from './reader-view.svelte';
+import type { ReaderBook } from './reader-view.svelte';
 
 const PORTRAIT: Size = { width: 1000, height: 1500 };
 

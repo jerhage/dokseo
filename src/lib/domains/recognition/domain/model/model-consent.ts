@@ -1,6 +1,7 @@
 import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
-import { reads, type ModelFootprint } from './model-footprint';
+import { reads } from './model-footprint';
+import type { ModelFootprint } from './model-footprint';
 
 export type ModelConsentDecision = 'granted' | 'undecided';
 

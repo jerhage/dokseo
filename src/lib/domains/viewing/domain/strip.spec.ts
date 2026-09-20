@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
-import { readingPosition, type ReadingPosition } from './reading-position';
+import { readingPosition } from './reading-position';
+import type { ReadingPosition } from './reading-position';
 import {
   ASSUMED_ASPECT,
   layOutStrip,
@@ -13,8 +14,8 @@ import {
   stripHeight,
   stripOverscan,
   visibleRange,
-  type SliceLayout,
 } from './strip';
+import type { SliceLayout } from './strip';
 
 const WIDTH = 800;
 

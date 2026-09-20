@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
 import { err, ok } from '$lib/shared/result';
-import { accountOf, type StorageAccount, type StoragePart } from '../domain/storage-parts';
+import { accountOf } from '../domain/storage-parts';
+import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 import {
   allowanceNote,
   measuredFigure,

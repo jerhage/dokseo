@@ -3,8 +3,10 @@
   import type { BookId, CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import { readerHref } from '$lib/shared/reader-location';
-  import { segmentsOf, textMatches, type TextSegment } from '$lib/shared/text-search';
-  import { matchesByBook, type SearchedBook } from '../../domain/capture/capture-results';
+  import { segmentsOf, textMatches } from '$lib/shared/text-search';
+  import type { TextSegment } from '$lib/shared/text-search';
+  import { matchesByBook } from '../../domain/capture/capture-results';
+  import type { SearchedBook } from '../../domain/capture/capture-results';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
   import { firstImage, pageLabel } from './capture-place';
   import type { CaptureSearchView } from './capture-search.svelte';

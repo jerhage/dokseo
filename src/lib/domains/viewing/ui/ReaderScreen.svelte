@@ -15,7 +15,8 @@
   } from '$lib/shared/layout-choices';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { handlesOwnKeys } from './keyboard';
-  import { moveOrder, type PageMove } from './page-moves';
+  import { moveOrder } from './page-moves';
+  import type { PageMove } from './page-moves';
   import PagedViewer from './PagedViewer.svelte';
   import { chromeShown } from './reader-chrome';
   import type { ReaderView } from './reader-view.svelte';

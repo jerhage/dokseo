@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { downloadMb, JAPANESE_OCR_MODEL, KOREAN_OCR_MODEL } from '../model/model-footprint';
-import { loadVerb, type ModelLoad } from '../model/model-load';
+import { loadVerb } from '../model/model-load';
+import type { ModelLoad } from '../model/model-load';
 import {
   engineMismatch,
   engineStatus,
@@ -8,8 +9,8 @@ import {
   OCR_ENGINES,
   ON_DEVICE_ENGINE,
   tradeOffsOf,
-  type EngineState,
 } from './ocr-engine';
+import type { EngineState } from './ocr-engine';
 import type { RecognizerSession } from './recognizer-session';
 
 const ON_THE_GPU: RecognizerSession = {

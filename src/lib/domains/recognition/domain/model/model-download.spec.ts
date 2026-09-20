@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { downloadStep, IDLE, isRunning, type DownloadState } from './model-download';
+import { downloadStep, IDLE, isRunning } from './model-download';
+import type { DownloadState } from './model-download';
 import type { ModelLoad } from './model-load';
 import type { RecognizerSession } from '../engine/recognizer-session';
 

@@ -1,15 +1,15 @@
 import { isAvailable } from '$lib/platform/opfs/directory';
 import * as parts from '$lib/platform/opfs/partial-store';
 import { describeCause } from '$lib/shared/cause';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import {
   partialName,
   partialReportOf,
   partialsOfModel,
   urlOfPartial,
-  type PartialFile,
-  type PartialReport,
 } from '../../domain/model/model-partial';
+import type { PartialFile, PartialReport } from '../../domain/model/model-partial';
 import type { PartialDownloads, PartialError } from '../../domain/model/partial-downloads';
 
 function unavailable(): Result<never, PartialError> {

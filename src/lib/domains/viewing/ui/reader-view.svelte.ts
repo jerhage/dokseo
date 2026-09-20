@@ -1,25 +1,18 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
-import { imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
+import { imageIndex } from '$lib/shared/ids';
+import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import {
-  effectiveDirection,
-  effectivePairing,
-  type LayoutKind,
-  type PagePairing,
-  type ReadingDirection,
-} from '$lib/shared/layout-kind';
+import { effectiveDirection, effectivePairing } from '$lib/shared/layout-kind';
+import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
-import { groupContaining, pairPages, type PageGroup } from '../domain/page-pairing';
-import {
-  groupOf,
-  positionOfGroup,
-  readingPosition,
-  type ReadingPosition,
-} from '../domain/reading-position';
+import { groupContaining, pairPages } from '../domain/page-pairing';
+import type { PageGroup } from '../domain/page-pairing';
+import { groupOf, positionOfGroup, readingPosition } from '../domain/reading-position';
+import type { ReadingPosition } from '../domain/reading-position';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 

@@ -1,5 +1,6 @@
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import { isImageEntry } from '../domain/ingest/image-entries';
 import { entryName } from './file-entry';
 import type { PageSourceError } from '$lib/shared/page-source';

@@ -9,8 +9,8 @@ import {
   modelsFor,
   onDiskMb,
   reads,
-  type ModelFootprint,
 } from './model-footprint';
+import type { ModelFootprint } from './model-footprint';
 
 function japanese(): ModelFootprint {
   const footprint = modelFootprint('ja');

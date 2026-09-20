@@ -4,8 +4,8 @@ import {
   uploadCount,
   uploadFraction,
   uploadRemainingSeconds,
-  type UploadStage,
 } from '../domain/ingest/upload-progress';
+import type { UploadStage } from '../domain/ingest/upload-progress';
 
 const MINUTE_SECONDS = 90;
 

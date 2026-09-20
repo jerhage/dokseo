@@ -8,10 +8,13 @@ import {
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
-import { err, ok, type Result } from '$lib/shared/result';
-import { applyEdit, type Book, type BookEdit } from '../domain/book/book';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { applyEdit } from '../domain/book/book';
+import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
-import { bookFromStored, type StoredBook } from '../domain/book/stored-book';
+import { bookFromStored } from '../domain/book/stored-book';
+import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
 const DATABASE_NAME = 'reader';

@@ -1,8 +1,12 @@
 import { match } from 'ts-pattern';
-import { languageName, type Language } from '$lib/shared/language';
-import { loadVerb, type ModelLoad } from '../model/model-load';
-import { downloadMb, knownModel, reads, type ModelFootprint } from '../model/model-footprint';
-import { deviceName, type RecognizerSession } from './recognizer-session';
+import { languageName } from '$lib/shared/language';
+import type { Language } from '$lib/shared/language';
+import { loadVerb } from '../model/model-load';
+import type { ModelLoad } from '../model/model-load';
+import { downloadMb, knownModel, reads } from '../model/model-footprint';
+import type { ModelFootprint } from '../model/model-footprint';
+import { deviceName } from './recognizer-session';
+import type { RecognizerSession } from './recognizer-session';
 
 export type OcrEngineId = 'on-device' | 'ocr-server' | 'openai-endpoint';
 

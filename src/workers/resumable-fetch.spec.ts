@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { partialName } from '$lib/domains/recognition/domain/model/model-partial';
-import { fetchResumable, type PartAppend, type PartialFiles } from './resumable-fetch';
+import { fetchResumable } from './resumable-fetch';
+import type { PartAppend, PartialFiles } from './resumable-fetch';
 
 const URL_OF_WEIGHTS =
   'https://huggingface.co/DigitalLarynx/manga-ocr-onnx/resolve/main/onnx/encoder_model_quantized.onnx';

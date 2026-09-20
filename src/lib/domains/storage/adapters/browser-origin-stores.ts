@@ -2,7 +2,8 @@ import { cachedFiles, isAvailable as cachesAvailable } from '$lib/platform/cache
 import { isAvailable as filesAvailable } from '$lib/platform/opfs/directory';
 import { storedFiles } from '$lib/platform/opfs/usage';
 import { describeCause } from '$lib/shared/cause';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { OriginStores, OriginStoresError, OriginSurvey } from '../domain/origin-stores';
 
 export function createOriginStores(): OriginStores {

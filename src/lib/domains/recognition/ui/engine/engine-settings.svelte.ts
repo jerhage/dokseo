@@ -2,20 +2,20 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
-import { LANGUAGES, type Language } from '$lib/shared/language';
+import { LANGUAGES } from '$lib/shared/language';
+import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
 import type { ComputeChoice, GpuDetection } from '../../domain/engine/compute-choice';
 import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
-import { isPartlyStored, isStored, type ModelStorageReport } from '../../domain/model/model-cache';
-import { isPartlyDownloaded, type PartialReport } from '../../domain/model/model-partial';
-import {
-  downloadStep,
-  IDLE,
-  type DownloadEvent,
-  type DownloadState,
-} from '../../domain/model/model-download';
+import { isPartlyStored, isStored } from '../../domain/model/model-cache';
+import type { ModelStorageReport } from '../../domain/model/model-cache';
+import { isPartlyDownloaded } from '../../domain/model/model-partial';
+import type { PartialReport } from '../../domain/model/model-partial';
+import { downloadStep, IDLE } from '../../domain/model/model-download';
+import type { DownloadEvent, DownloadState } from '../../domain/model/model-download';
 import type { ModelLoad } from '../../domain/model/model-load';
-import { modelsFor, type ModelFootprint } from '../../domain/model/model-footprint';
+import { modelsFor } from '../../domain/model/model-footprint';
+import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type { ModelStorageError } from '../../domain/model/model-storage';
 import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';

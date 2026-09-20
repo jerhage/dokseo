@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,

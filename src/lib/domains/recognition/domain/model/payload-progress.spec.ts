@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  advancedPayload,
-  NO_PAYLOAD,
-  payloadProgress,
-  trackedPayload,
-  type PayloadFile,
-} from './payload-progress';
+import { advancedPayload, NO_PAYLOAD, payloadProgress, trackedPayload } from './payload-progress';
+import type { PayloadFile } from './payload-progress';
 
 const REPO = 'https://huggingface.co/DigitalLarynx/manga-ocr-onnx/resolve/main';
 

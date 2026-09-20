@@ -1,5 +1,6 @@
 import type { ImageIndex } from '$lib/shared/ids';
-import { groupContaining, type PageGroup } from './page-pairing';
+import { groupContaining } from './page-pairing';
+import type { PageGroup } from './page-pairing';
 
 export type ReadingPosition = { readonly index: ImageIndex; readonly offset: number };
 

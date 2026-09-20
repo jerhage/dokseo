@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  INSPECTING,
-  uploadCount,
-  uploadFraction,
-  uploadRemainingSeconds,
-  type UploadStage,
-} from './upload-progress';
+import { INSPECTING, uploadCount, uploadFraction, uploadRemainingSeconds } from './upload-progress';
+import type { UploadStage } from './upload-progress';
 
 function storing(over: Partial<Extract<UploadStage, { kind: 'storing' }>> = {}): UploadStage {
   return {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { accountOf, measuredBytes, tallyDetail, tallyOf, type StoragePart } from './storage-parts';
+import { accountOf, measuredBytes, tallyDetail, tallyOf } from './storage-parts';
+import type { StoragePart } from './storage-parts';
 
 function part(key: string, bytes: number | null): StoragePart {
   return { key, label: key, detail: '1 file', bytes };

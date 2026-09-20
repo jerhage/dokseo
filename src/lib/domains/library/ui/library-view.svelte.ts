@@ -5,7 +5,8 @@ import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError } from '../domain/book/library-repository';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
 import { suggestTitle } from '../domain/book/title';
-import { INSPECTING, type UploadStage } from '../domain/ingest/upload-progress';
+import { INSPECTING } from '../domain/ingest/upload-progress';
+import type { UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 

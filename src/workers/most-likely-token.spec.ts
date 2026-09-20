@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
+import { mostLikelyToken } from './most-likely-token';
+import type { DecoderLogits } from './most-likely-token';
 
 function logitsOf(positions: number[][]): DecoderLogits {
   const vocabulary = positions[0]?.length ?? 0;

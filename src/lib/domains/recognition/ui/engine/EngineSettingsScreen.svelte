@@ -1,12 +1,13 @@
 <script lang="ts">
   import { megabytes } from '$lib/shared/bytes';
-  import { languageName, type Language } from '$lib/shared/language';
+  import { languageName } from '$lib/shared/language';
+  import type { Language } from '$lib/shared/language';
   import {
     COMPUTE_CHOICES,
     computeChoiceName,
     computeDetectionNote,
-    type ComputeChoice,
   } from '../../domain/engine/compute-choice';
+  import type { ComputeChoice } from '../../domain/engine/compute-choice';
   import { downloadMb, onDiskMb, runtimeMb, weightsMb } from '../../domain/model/model-footprint';
   import {
     engineStatus,
@@ -24,8 +25,8 @@
     REMOVAL_WARNING,
     resumeLabel,
     storedFigure,
-    type EngineSettingsView,
   } from './engine-settings.svelte';
+  import type { EngineSettingsView } from './engine-settings.svelte';
 
   type Props = { readonly view: EngineSettingsView };
 

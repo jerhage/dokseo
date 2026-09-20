@@ -2,9 +2,11 @@
   import type { BookId, CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import { readerHref } from '$lib/shared/reader-location';
-  import { segmentsOf, textMatches, type TextSegment } from '$lib/shared/text-search';
+  import { segmentsOf, textMatches } from '$lib/shared/text-search';
+  import type { TextSegment } from '$lib/shared/text-search';
   import type { Capture } from '../../domain/capture/capture';
-  import { matchesByBook, type SearchedBook } from '../../domain/capture/capture-results';
+  import { matchesByBook } from '../../domain/capture/capture-results';
+  import type { SearchedBook } from '../../domain/capture/capture-results';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
   import { capturedLabel, firstImage, pageLabel, placeLabel } from './capture-place';
 

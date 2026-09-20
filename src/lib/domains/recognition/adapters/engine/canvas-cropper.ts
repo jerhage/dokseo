@@ -1,13 +1,16 @@
 import { match } from 'ts-pattern';
-import { own, type OwnedBitmap } from '$lib/platform/image/bitmap';
+import { own } from '$lib/platform/image/bitmap';
+import type { OwnedBitmap } from '$lib/platform/image/bitmap';
 import { cropFrom, downscaleFor, scaleBy, stitch, toGrayscale } from '$lib/platform/image/pixels';
-import { noTrace, type Trace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import { noTrace } from '$lib/platform/trace/pipeline-trace';
+import type { Trace, TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import { isEmpty, normalize } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { CropError, RegionCropper } from '../../domain/engine/region-cropper';
 
 function describeSourceError(error: PageSourceError): string {

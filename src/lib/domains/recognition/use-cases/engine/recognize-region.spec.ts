@@ -2,14 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { imageRect } from '$lib/shared/geometry';
-import { imageIndex, type ImageIndex } from '$lib/shared/ids';
+import { imageIndex } from '$lib/shared/ids';
+import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok, type Result } from '$lib/shared/result';
-import { recognizedText, type RecognizedText } from '../../domain/engine/recognized-text';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { recognizedText } from '../../domain/engine/recognized-text';
+import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { CropError, RegionCropper } from '../../domain/engine/region-cropper';
 import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
-import { recognizeRegion, type RecognizeRegionDeps } from './recognize-region';
+import { recognizeRegion } from './recognize-region';
+import type { RecognizeRegionDeps } from './recognize-region';
 
 const REGIONS: readonly ImageRegion[] = [
   { index: imageIndex(3), rect: imageRect(10, 20, 100, 40) },

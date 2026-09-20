@@ -1,6 +1,8 @@
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { ModelLoadError } from '../../domain/model/model-load';
-import { recognizedText, type RecognizedText } from '../../domain/engine/recognized-text';
+import { recognizedText } from '../../domain/engine/recognized-text';
+import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
 

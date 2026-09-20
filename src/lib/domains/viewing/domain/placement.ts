@@ -1,13 +1,5 @@
-import {
-  clampTo,
-  imageRect,
-  isEmpty,
-  normalize,
-  screenRect,
-  type ImageRect,
-  type ScreenRect,
-  type Size,
-} from '$lib/shared/geometry';
+import { clampTo, imageRect, isEmpty, normalize, screenRect } from '$lib/shared/geometry';
+import type { ImageRect, ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 

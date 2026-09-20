@@ -3,15 +3,8 @@ import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { at } from '$lib/shared/testing/at';
-import {
-  captureFromStored,
-  editedCapture,
-  oldestFirst,
-  takenCapture,
-  type Capture,
-  type CaptureDraft,
-  type StoredCapture,
-} from './capture';
+import { captureFromStored, editedCapture, oldestFirst, takenCapture } from './capture';
+import type { Capture, CaptureDraft, StoredCapture } from './capture';
 
 const BOOK = bookId('book-one');
 

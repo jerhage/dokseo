@@ -1,18 +1,21 @@
 <script lang="ts">
-  import { beginTrace, type Trace } from '$lib/platform/trace/pipeline-trace';
+  import { beginTrace } from '$lib/platform/trace/pipeline-trace';
+  import type { Trace } from '$lib/platform/trace/pipeline-trace';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import { isEmpty, normalize, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
+  import { isEmpty, normalize, screenRect } from '$lib/shared/geometry';
+  import type { ScreenRect, Size } from '$lib/shared/geometry';
   import { imageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
-  import { regionsIn, type PlacedImage } from '../domain/placement';
+  import { regionsIn } from '../domain/placement';
+  import type { PlacedImage } from '../domain/placement';
   import {
     isTap,
     isUsableSelection,
     MIN_SELECTION_PX,
     selectionFrom,
     selectionSize,
-    type Point,
   } from '../domain/selection';
+  import type { Point } from '../domain/selection';
 
   type Watch = {
     readonly id: number;

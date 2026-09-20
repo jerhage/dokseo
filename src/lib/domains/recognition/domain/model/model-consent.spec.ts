@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  consentFromStored,
-  decisionOf,
-  grantedConsent,
-  type ModelConsent,
-  type StoredModelConsent,
-} from './model-consent';
-import { modelFootprint, type ModelFootprint } from './model-footprint';
+import { consentFromStored, decisionOf, grantedConsent } from './model-consent';
+import type { ModelConsent, StoredModelConsent } from './model-consent';
+import { modelFootprint } from './model-footprint';
+import type { ModelFootprint } from './model-footprint';
 
 const GRANTED_AT = 1_758_240_000_000;
 

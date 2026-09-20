@@ -7,16 +7,10 @@
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PageFit } from '$lib/shared/page-fit';
   import type { PageGroup } from '../domain/page-pairing';
-  import {
-    canPan,
-    centrePan,
-    clampPan,
-    fitZoom,
-    panBy,
-    zoomAt,
-    type Viewport,
-  } from '../domain/viewport';
-  import { hintsToShow, pagedHints, type GestureHint } from './gesture-hint';
+  import { canPan, centrePan, clampPan, fitZoom, panBy, zoomAt } from '../domain/viewport';
+  import type { Viewport } from '../domain/viewport';
+  import { hintsToShow, pagedHints } from './gesture-hint';
+  import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnedGestures, learnGesture } from './learned-gestures.svelte';
   import PageCanvas from './PageCanvas.svelte';

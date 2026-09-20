@@ -7,8 +7,8 @@
     persistenceNote,
     unnamedFigure,
     unnamedNote,
-    type StorageSettingsView,
   } from './storage-view.svelte';
+  import type { StorageSettingsView } from './storage-view.svelte';
 
   type Props = { readonly view: StorageSettingsView };
 

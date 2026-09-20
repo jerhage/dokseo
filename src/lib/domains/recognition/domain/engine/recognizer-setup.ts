@@ -1,7 +1,9 @@
 import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
-import { computeChoiceOf, type ComputeChoice } from './compute-choice';
-import { chosenModel, type ModelFootprint } from '../model/model-footprint';
+import { computeChoiceOf } from './compute-choice';
+import type { ComputeChoice } from './compute-choice';
+import { chosenModel } from '../model/model-footprint';
+import type { ModelFootprint } from '../model/model-footprint';
 
 export type RecognizerSetup = {
   readonly modelId: string;

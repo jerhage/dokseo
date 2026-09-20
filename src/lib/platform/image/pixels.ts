@@ -1,6 +1,8 @@
 import type { Arrangement } from '$lib/shared/arrangement';
-import { clampTo, imageRect, normalize, type ImageRect, type Size } from '$lib/shared/geometry';
-import { own, type OwnedBitmap } from './bitmap';
+import { clampTo, imageRect, normalize } from '$lib/shared/geometry';
+import type { ImageRect, Size } from '$lib/shared/geometry';
+import { own } from './bitmap';
+import type { OwnedBitmap } from './bitmap';
 
 const RED_WEIGHT = 0.2126;
 

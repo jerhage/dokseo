@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
-import { captureId, imageIndex, type CaptureId } from '$lib/shared/ids';
+import { captureId, imageIndex } from '$lib/shared/ids';
+import type { CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { arrivalAt, matchesInBookOrder } from './capture-arrival';
 

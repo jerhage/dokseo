@@ -10,8 +10,8 @@ import {
   MIN_ZOOM,
   panBy,
   zoomAt,
-  type Viewport,
 } from './viewport';
+import type { Viewport } from './viewport';
 
 const identity: Viewport = { zoom: 1, panX: 0, panY: 0 };
 

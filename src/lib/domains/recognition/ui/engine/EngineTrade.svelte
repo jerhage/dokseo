@@ -1,7 +1,8 @@
 <script lang="ts">
   import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { ModelFootprint } from '../../domain/model/model-footprint';
-  import { tradeAspectName, tradeOffsOf, type OcrEngine } from '../../domain/engine/ocr-engine';
+  import { tradeAspectName, tradeOffsOf } from '../../domain/engine/ocr-engine';
+  import type { OcrEngine } from '../../domain/engine/ocr-engine';
 
   type Props = {
     readonly engine: OcrEngine;

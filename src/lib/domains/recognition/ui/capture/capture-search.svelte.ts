@@ -1,6 +1,7 @@
 import type { Container } from '$lib/container';
 import type { Capture } from '../../domain/capture/capture';
-import { matchesByBook, matchTally, type SearchedBook } from '../../domain/capture/capture-results';
+import { matchesByBook, matchTally } from '../../domain/capture/capture-results';
+import type { SearchedBook } from '../../domain/capture/capture-results';
 
 export type CaptureSearchStatus = 'idle' | 'loading' | 'ready' | 'failed';
 

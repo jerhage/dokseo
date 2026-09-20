@@ -7,8 +7,8 @@ import {
   reportOf,
   restOfUsage,
   shareOfUsage,
-  type CacheEntry,
 } from './model-cache';
+import type { CacheEntry } from './model-cache';
 import { JAPANESE_OCR_MODEL } from './model-footprint';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;

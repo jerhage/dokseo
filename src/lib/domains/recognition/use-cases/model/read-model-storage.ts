@@ -1,10 +1,9 @@
-import { ok, type Result } from '$lib/shared/result';
-import { isStored, type ModelStorageReport } from '../../domain/model/model-cache';
-import {
-  isPartlyDownloaded,
-  partialReportOf,
-  type PartialReport,
-} from '../../domain/model/model-partial';
+import { ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { isStored } from '../../domain/model/model-cache';
+import type { ModelStorageReport } from '../../domain/model/model-cache';
+import { isPartlyDownloaded, partialReportOf } from '../../domain/model/model-partial';
+import type { PartialReport } from '../../domain/model/model-partial';
 import type { ModelStorage, ModelStorageError } from '../../domain/model/model-storage';
 import type { PartialDownloads } from '../../domain/model/partial-downloads';
 

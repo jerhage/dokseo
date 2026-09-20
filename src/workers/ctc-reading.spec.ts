@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ctcReading, joinedReading, type CtcLogits } from './ctc-reading';
+import { ctcReading, joinedReading } from './ctc-reading';
+import type { CtcLogits } from './ctc-reading';
 
 const LABELS = ['', '가', '나', '다', ' '];
 

@@ -6,8 +6,8 @@ import {
   partialsOfModel,
   resumesModelWeights,
   urlOfPartial,
-  type PartialFile,
 } from './model-partial';
+import type { PartialFile } from './model-partial';
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 

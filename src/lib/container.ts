@@ -5,7 +5,8 @@ import {
   requestPersistence,
   storageEstimate,
 } from '$lib/platform/storage/persistence';
-import { beginTrace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import { beginTrace } from '$lib/platform/trace/pipeline-trace';
+import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -18,25 +19,24 @@ import { openStoredPageSource } from './domains/library/adapters/stored-page-sou
 import type { Book, BookEdit } from './domains/library/domain/book/book';
 import type { LibraryError } from './domains/library/domain/book/library-repository';
 import type { UploadReport } from './domains/library/domain/ingest/upload-progress';
-import { editBook, type EditBookDeps } from './domains/library/use-cases/edit-book';
-import { listBooks, type ListBooksDeps } from './domains/library/use-cases/list-books';
-import {
-  openFile,
-  type OpenFileDeps,
-  type OpenFileError,
-} from './domains/library/use-cases/open-file';
-import {
-  openForReading,
-  type OpenedBook,
-  type OpenForReadingDeps,
-  type OpenForReadingError,
+import { editBook } from './domains/library/use-cases/edit-book';
+import type { EditBookDeps } from './domains/library/use-cases/edit-book';
+import { listBooks } from './domains/library/use-cases/list-books';
+import type { ListBooksDeps } from './domains/library/use-cases/list-books';
+import { openFile } from './domains/library/use-cases/open-file';
+import type { OpenFileDeps, OpenFileError } from './domains/library/use-cases/open-file';
+import { openForReading } from './domains/library/use-cases/open-for-reading';
+import type {
+  OpenedBook,
+  OpenForReadingDeps,
+  OpenForReadingError,
 } from './domains/library/use-cases/open-for-reading';
-import { readCover, type ReadCoverDeps } from './domains/library/use-cases/read-cover';
-import {
-  readLibrarySize,
-  type ReadLibrarySizeDeps,
-} from './domains/library/use-cases/read-library-size';
-import { removeBook, type RemoveBookDeps } from './domains/library/use-cases/remove-book';
+import { readCover } from './domains/library/use-cases/read-cover';
+import type { ReadCoverDeps } from './domains/library/use-cases/read-cover';
+import { readLibrarySize } from './domains/library/use-cases/read-library-size';
+import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
+import { removeBook } from './domains/library/use-cases/remove-book';
+import type { RemoveBookDeps } from './domains/library/use-cases/remove-book';
 import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
 import { createModelStorage } from './domains/recognition/adapters/model/cache-api-model-storage';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
@@ -65,72 +65,44 @@ import type {
 import type { TextRecognizer } from './domains/recognition/domain/engine/text-recognizer';
 import { cancelModelLoad } from './domains/recognition/use-cases/model/cancel-model-load';
 import { closeRecognizer } from './domains/recognition/use-cases/engine/close-recognizer';
-import {
-  clearCaptures,
-  type ClearCapturesDeps,
-} from './domains/recognition/use-cases/capture/clear-captures';
-import {
-  deleteModel,
-  type DeleteModelDeps,
-} from './domains/recognition/use-cases/model/delete-model';
-import {
-  detectCompute,
-  type DetectComputeDeps,
-} from './domains/recognition/use-cases/engine/detect-compute';
-import {
-  editCaptureText,
-  type EditCaptureTextDeps,
-} from './domains/recognition/use-cases/capture/edit-capture-text';
-import {
-  grantModelConsent,
-  type GrantModelConsentDeps,
-} from './domains/recognition/use-cases/model/grant-model-consent';
-import {
-  listCaptures,
-  type ListCapturesDeps,
-} from './domains/recognition/use-cases/capture/list-captures';
-import {
-  listEveryCapture,
-  type ListEveryCaptureDeps,
-} from './domains/recognition/use-cases/capture/list-every-capture';
+import { clearCaptures } from './domains/recognition/use-cases/capture/clear-captures';
+import type { ClearCapturesDeps } from './domains/recognition/use-cases/capture/clear-captures';
+import { deleteModel } from './domains/recognition/use-cases/model/delete-model';
+import type { DeleteModelDeps } from './domains/recognition/use-cases/model/delete-model';
+import { detectCompute } from './domains/recognition/use-cases/engine/detect-compute';
+import type { DetectComputeDeps } from './domains/recognition/use-cases/engine/detect-compute';
+import { editCaptureText } from './domains/recognition/use-cases/capture/edit-capture-text';
+import type { EditCaptureTextDeps } from './domains/recognition/use-cases/capture/edit-capture-text';
+import { grantModelConsent } from './domains/recognition/use-cases/model/grant-model-consent';
+import type { GrantModelConsentDeps } from './domains/recognition/use-cases/model/grant-model-consent';
+import { listCaptures } from './domains/recognition/use-cases/capture/list-captures';
+import type { ListCapturesDeps } from './domains/recognition/use-cases/capture/list-captures';
+import { listEveryCapture } from './domains/recognition/use-cases/capture/list-every-capture';
+import type { ListEveryCaptureDeps } from './domains/recognition/use-cases/capture/list-every-capture';
 import { pauseModelLoad } from './domains/recognition/use-cases/model/pause-model-load';
 import { prepareRecognizer } from './domains/recognition/use-cases/engine/prepare-recognizer';
-import {
-  readModelConsent,
-  type ReadModelConsentDeps,
-} from './domains/recognition/use-cases/model/read-model-consent';
-import {
-  readModelStorage,
-  type ModelStorageSnapshot,
-  type ReadModelStorageDeps,
+import { readModelConsent } from './domains/recognition/use-cases/model/read-model-consent';
+import type { ReadModelConsentDeps } from './domains/recognition/use-cases/model/read-model-consent';
+import { readModelStorage } from './domains/recognition/use-cases/model/read-model-storage';
+import type {
+  ModelStorageSnapshot,
+  ReadModelStorageDeps,
 } from './domains/recognition/use-cases/model/read-model-storage';
-import {
-  readRecognizerSetup,
-  type ReadRecognizerSetupDeps,
-} from './domains/recognition/use-cases/engine/read-recognizer-setup';
-import {
-  recognizeRegion,
-  type RecognizeRegionError,
-} from './domains/recognition/use-cases/engine/recognize-region';
-import {
-  removeCapture,
-  type RemoveCaptureDeps,
-} from './domains/recognition/use-cases/capture/remove-capture';
-import {
-  saveCapture,
-  type SaveCaptureDeps,
-} from './domains/recognition/use-cases/capture/save-capture';
-import {
-  saveRecognizerSetup,
-  type SaveRecognizerSetupDeps,
-} from './domains/recognition/use-cases/engine/save-recognizer-setup';
+import { readRecognizerSetup } from './domains/recognition/use-cases/engine/read-recognizer-setup';
+import type { ReadRecognizerSetupDeps } from './domains/recognition/use-cases/engine/read-recognizer-setup';
+import { recognizeRegion } from './domains/recognition/use-cases/engine/recognize-region';
+import type { RecognizeRegionError } from './domains/recognition/use-cases/engine/recognize-region';
+import { removeCapture } from './domains/recognition/use-cases/capture/remove-capture';
+import type { RemoveCaptureDeps } from './domains/recognition/use-cases/capture/remove-capture';
+import { saveCapture } from './domains/recognition/use-cases/capture/save-capture';
+import type { SaveCaptureDeps } from './domains/recognition/use-cases/capture/save-capture';
+import { saveRecognizerSetup } from './domains/recognition/use-cases/engine/save-recognizer-setup';
+import type { SaveRecognizerSetupDeps } from './domains/recognition/use-cases/engine/save-recognizer-setup';
 import { createOriginStores } from './domains/storage/adapters/browser-origin-stores';
 import type { OriginStoresError } from './domains/storage/domain/origin-stores';
 import type { StorageAccount } from './domains/storage/domain/storage-parts';
-import {
-  readStorageAccount,
-  type ReadStorageAccountDeps,
-} from './domains/storage/use-cases/read-storage-account';
+import { readStorageAccount } from './domains/storage/use-cases/read-storage-account';
+import type { ReadStorageAccountDeps } from './domains/storage/use-cases/read-storage-account';
 
 export type RecognitionProgress = (load: ModelLoad) => void;
 

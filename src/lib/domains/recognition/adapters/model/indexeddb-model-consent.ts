@@ -1,15 +1,14 @@
 import { deleteRecord, getRecord, putRecord } from '$lib/platform/idb/connection';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
-import { err, ok, type Result } from '$lib/shared/result';
-import {
-  consentFromStored,
-  decisionOf,
-  grantedConsent,
-  type ModelConsentDecision,
-  type ModelConsentError,
-  type ModelConsentStore,
-  type StoredModelConsent,
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { consentFromStored, decisionOf, grantedConsent } from '../../domain/model/model-consent';
+import type {
+  ModelConsentDecision,
+  ModelConsentError,
+  ModelConsentStore,
+  StoredModelConsent,
 } from '../../domain/model/model-consent';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import { CONSENT_STORE, recognitionDatabase, recordsAvailable } from '../recognition-database';

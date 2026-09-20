@@ -2,13 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
-import { pairPages, type PageGroup } from './page-pairing';
-import {
-  groupOf,
-  positionOfGroup,
-  readingPosition,
-  type ReadingPosition,
-} from './reading-position';
+import { pairPages } from './page-pairing';
+import type { PageGroup } from './page-pairing';
+import { groupOf, positionOfGroup, readingPosition } from './reading-position';
+import type { ReadingPosition } from './reading-position';
 
 const portrait: Size = { width: 800, height: 1200 };
 const wide: Size = { width: 2400, height: 1200 };

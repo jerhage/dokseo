@@ -1,7 +1,9 @@
 import { cachedFiles, isAvailable, removeCached } from '$lib/platform/cache/usage';
 import { describeCause } from '$lib/shared/cause';
-import { err, ok, type Result } from '$lib/shared/result';
-import { entriesOfModel, reportOf, type ModelStorageReport } from '../../domain/model/model-cache';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { entriesOfModel, reportOf } from '../../domain/model/model-cache';
+import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { ModelStorage, ModelStorageError } from '../../domain/model/model-storage';
 
 function unavailable(): Result<never, ModelStorageError> {

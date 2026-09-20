@@ -1,13 +1,14 @@
 import { getRecord, putRecord } from '$lib/platform/idb/connection';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
-import { err, ok, type Result } from '$lib/shared/result';
-import {
-  storedSetup,
-  type RecognizerSetup,
-  type RecognizerSetupStore,
-  type SetupError,
-  type StoredRecognizerSetup,
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { storedSetup } from '../../domain/engine/recognizer-setup';
+import type {
+  RecognizerSetup,
+  RecognizerSetupStore,
+  SetupError,
+  StoredRecognizerSetup,
 } from '../../domain/engine/recognizer-setup';
 import { recognitionDatabase, recordsAvailable, SETUP_STORE } from '../recognition-database';
 

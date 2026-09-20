@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { imageRect, screenRect, type ImageRect, type ScreenRect } from '$lib/shared/geometry';
+import { imageRect, screenRect } from '$lib/shared/geometry';
+import type { ImageRect, ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
-import {
-  regionsIn,
-  toImageRect,
-  toPageFraction,
-  toScreenRect,
-  type PlacedImage,
-} from './placement';
+import { regionsIn, toImageRect, toPageFraction, toScreenRect } from './placement';
+import type { PlacedImage } from './placement';
 
 const page: PlacedImage = {
   index: imageIndex(0),

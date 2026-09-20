@@ -3,30 +3,27 @@ import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import { captureId, type BookId, type CaptureId } from '$lib/shared/ids';
+import { captureId } from '$lib/shared/ids';
+import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
-import { arrivalAt, type Arrival, type ArrivalCapture } from '../../domain/capture/capture-arrival';
-import {
-  editedText,
-  oldestFirst,
-  type Capture,
-  type CaptureDraft,
-} from '../../domain/capture/capture';
+import { arrivalAt } from '../../domain/capture/capture-arrival';
+import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
+import { editedText, oldestFirst } from '../../domain/capture/capture';
+import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
-import { downloadMb, type ModelFootprint } from '../../domain/model/model-footprint';
-import { loadVerb, type ModelLoad } from '../../domain/model/model-load';
+import { downloadMb } from '../../domain/model/model-footprint';
+import type { ModelFootprint } from '../../domain/model/model-footprint';
+import { loadVerb } from '../../domain/model/model-load';
+import type { ModelLoad } from '../../domain/model/model-load';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { EngineState } from '../../domain/engine/ocr-engine';
-import {
-  hasNoText,
-  recognizedText,
-  type RecognizedText,
-} from '../../domain/engine/recognized-text';
+import { hasNoText, recognizedText } from '../../domain/engine/recognized-text';
+import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';

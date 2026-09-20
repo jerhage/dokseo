@@ -1,5 +1,6 @@
 import type { Arrangement } from '$lib/shared/arrangement';
-import { normalize, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
+import { normalize, screenRect } from '$lib/shared/geometry';
+import type { ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 
 export type Point = { readonly x: number; readonly y: number };

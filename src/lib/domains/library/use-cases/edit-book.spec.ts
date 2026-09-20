@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, imageIndex, type BookId } from '$lib/shared/ids';
-import { err, ok, type Result } from '$lib/shared/result';
+import { bookId, imageIndex } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import { editBook } from './edit-book';

@@ -1,7 +1,9 @@
 import { bookId, imageIndex } from '$lib/shared/ids';
 import type { LayoutKind } from '$lib/shared/layout-kind';
-import { err, ok, type Result } from '$lib/shared/result';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING, type Book } from '../domain/book/book';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
+import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
+import type { Book } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import type { SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import type { UploadReport } from '../domain/ingest/upload-progress';

@@ -1,6 +1,8 @@
 import type { Size } from '$lib/shared/geometry';
-import { imageIndex, type ImageIndex } from '$lib/shared/ids';
-import { readingPosition, type ReadingPosition } from './reading-position';
+import { imageIndex } from '$lib/shared/ids';
+import type { ImageIndex } from '$lib/shared/ids';
+import { readingPosition } from './reading-position';
+import type { ReadingPosition } from './reading-position';
 
 export type SliceLayout = {
   readonly index: ImageIndex;

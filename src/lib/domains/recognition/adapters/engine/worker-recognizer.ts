@@ -1,12 +1,10 @@
 import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
-import { err, ok, type Result } from '$lib/shared/result';
+import { err, ok } from '$lib/shared/result';
+import type { Result } from '$lib/shared/result';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
-import {
-  hasNoText,
-  recognizedText,
-  type RecognizedText,
-} from '../../domain/engine/recognized-text';
+import { hasNoText, recognizedText } from '../../domain/engine/recognized-text';
+import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizerSetup } from '../../domain/engine/recognizer-setup';
 import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
