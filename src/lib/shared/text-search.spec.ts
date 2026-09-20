@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { at } from '$lib/shared/testing/at';
-import { foldForSearch, matchesQuery, segmentsOf, textMatches } from './capture-search';
+import { foldForSearch, matchesQuery, segmentsOf, textMatches } from './text-search';
 
 describe('foldForSearch', () => {
   it('folds a full-width question mark onto the half-width form', () => {
