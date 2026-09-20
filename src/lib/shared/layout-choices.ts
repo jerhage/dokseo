@@ -1,10 +1,17 @@
-import type { PagePairing, ReadingDirection } from './layout-kind';
+import type { LayoutKind, PagePairing, ReadingDirection } from './layout-kind';
 
 export type LayoutChoice<T> = {
   readonly value: T;
   readonly label: string;
   readonly brief: string;
 };
+
+export const LAYOUT_KIND_LEGEND_BRIEF = 'Layout';
+
+export const LAYOUT_KIND_CHOICES: readonly LayoutChoice<LayoutKind>[] = [
+  { value: 'paged', label: 'Pages, turned one group at a time', brief: 'Pages' },
+  { value: 'continuous', label: 'One continuous strip, scrolled', brief: 'Strip' },
+];
 
 export const PAGE_PAIRING_LEGEND = 'Page pairing';
 

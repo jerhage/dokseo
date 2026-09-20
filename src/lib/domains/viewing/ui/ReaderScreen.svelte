@@ -8,6 +8,8 @@
   import {
     CONTINUOUS_HAS_NO_PAIRS,
     CONTINUOUS_READS_DOWNWARD,
+    LAYOUT_KIND_CHOICES,
+    LAYOUT_KIND_LEGEND_BRIEF,
     PAGE_PAIRING_CHOICES,
     PAGE_PAIRING_LEGEND_BRIEF,
     READING_DIRECTION_CHOICES,
@@ -107,6 +109,7 @@
       .exhaustive();
   });
   const downward = $derived(renderer === 'strip');
+  const layout = $derived(book?.layoutKind ?? null);
   const pairing = $derived(book?.pagePairing ?? null);
   const direction = $derived(book?.direction ?? null);
 
@@ -292,6 +295,22 @@
 
     {#if book !== null}
       <div class="settings">
+        <fieldset class="group" disabled={view.saving}>
+          <legend class="legend">{LAYOUT_KIND_LEGEND_BRIEF}</legend>
+          {#each LAYOUT_KIND_CHOICES as choice (choice.value)}
+            <label class="pill" title={choice.label}>
+              <input
+                type="radio"
+                name="{uid}-layout"
+                value={choice.value}
+                checked={layout === choice.value}
+                onchange={() => void view.setLayoutKind(choice.value)}
+              />
+              <span>{choice.brief}</span>
+            </label>
+          {/each}
+        </fieldset>
+
         {#if engine !== undefined}
           <fieldset class="group">
             <legend class="legend">Engine</legend>

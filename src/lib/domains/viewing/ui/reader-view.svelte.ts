@@ -6,6 +6,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import {
   effectiveDirection,
   effectivePairing,
+  type LayoutKind,
   type PagePairing,
   type ReadingDirection,
 } from '$lib/shared/layout-kind';
@@ -247,6 +248,13 @@ export class ReaderView {
 
     this.position = position;
     this.#scheduleSave(book.id, position.index);
+  }
+
+  async setLayoutKind(kind: LayoutKind): Promise<void> {
+    const book = this.book;
+    if (book === null || this.saving || book.layoutKind === kind) return;
+    this.clearSelection();
+    await this.#edit(book.id, { layoutKind: kind });
   }
 
   async setPairing(pairing: PagePairing): Promise<void> {

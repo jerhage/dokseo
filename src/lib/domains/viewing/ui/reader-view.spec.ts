@@ -5,7 +5,7 @@ import type { Size } from '$lib/shared/geometry';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
@@ -86,6 +86,7 @@ function fakeSource(count: number): FakeSource {
 type Edit = {
   readonly id: BookId;
   readonly position: number | undefined;
+  readonly layoutKind: LayoutKind | undefined;
   readonly pagePairing: PagePairing | undefined;
   readonly direction: ReadingDirection | undefined;
   readonly pageFit: PageFit | undefined;
@@ -143,6 +144,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         edits.push({
           id,
           position: edit.position,
+          layoutKind: edit.layoutKind,
           pagePairing: edit.pagePairing,
           direction: edit.direction,
           pageFit: edit.pageFit,
@@ -153,6 +155,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         }
         world.stored = {
           ...world.stored,
+          layoutKind: edit.layoutKind ?? world.stored.layoutKind,
           pagePairing: edit.pagePairing ?? world.stored.pagePairing,
           direction: edit.direction ?? world.stored.direction,
           pageFit: edit.pageFit ?? world.stored.pageFit,
@@ -350,6 +353,89 @@ describe('ReaderView', () => {
     expect(view.position.index).toBe(3);
     expect(view.group).toBe(2);
     expect(view.visiblePages).toEqual([3, 4]);
+  });
+
+  it('sets the layout kind and regroups the strip one image at a time', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.groups).toHaveLength(3);
+
+    await view.setLayoutKind('continuous');
+
+    expect(view.book?.layoutKind).toBe('continuous');
+    expect(view.book?.pagePairing).toBe('double');
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(at(world.edits, 0).layoutKind).toBe('continuous');
+    expect(view.saving).toBe(false);
+  });
+
+  it('keeps the reader on the same image when the layout changes', async () => {
+    const world = fakes({ position: imageIndex(3) });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.group).toBe(1);
+    expect(view.visiblePages).toEqual([2, 3]);
+
+    await view.setLayoutKind('continuous');
+
+    expect(view.position.index).toBe(3);
+    expect(view.group).toBe(3);
+    expect(view.visiblePages).toEqual([3]);
+  });
+
+  it('keeps the reader on the same image when the layout returns to pages', async () => {
+    const world = fakes({ layoutKind: 'continuous', position: imageIndex(3) });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.group).toBe(3);
+
+    await view.setLayoutKind('paged');
+
+    expect(view.position.index).toBe(3);
+    expect(view.group).toBe(1);
+    expect(view.visiblePages).toEqual([2, 3]);
+  });
+
+  it('clears the selection when the layout changes', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    view.select([region(0)]);
+
+    await view.setLayoutKind('continuous');
+
+    expect(view.regions).toEqual([]);
+  });
+
+  it('ignores a layout already in force', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.setLayoutKind('paged');
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('ignores a layout change while a write is in flight', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    let release = (): void => undefined;
+    world.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const first = view.setPairing('single');
+    await view.setLayoutKind('continuous');
+    expect(world.edits).toHaveLength(1);
+
+    release();
+    await first;
+
+    expect(view.book?.layoutKind).toBe('paged');
   });
 
   it('sets the direction', async () => {
