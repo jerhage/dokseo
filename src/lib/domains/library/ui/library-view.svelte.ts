@@ -11,8 +11,6 @@ import { ACCEPTED_SUMMARY } from './accepted-formats';
 
 export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
-export type StorageUsage = { readonly usage: number; readonly quota: number };
-
 function describeLibraryError(error: LibraryError): string {
   return match(error)
     .with({ kind: 'not-found' }, () => 'That upload is no longer in your library.')
@@ -60,7 +58,7 @@ export class LibraryView {
   progress = $state.raw<UploadStage>(INSPECTING);
   removing = $state.raw<BookId | null>(null);
   editing = $state.raw<BookId | null>(null);
-  usage = $state.raw<StorageUsage | null>(null);
+  storedBytes = $state.raw<number | null>(null);
 
   #container: Container;
   #created = new Map<BookId, string>();
@@ -93,9 +91,9 @@ export class LibraryView {
     }
     this.#adopt(covers);
 
-    const estimate = await this.#container.library.readStorageUsage();
+    const size = await this.#container.library.readLibrarySize();
     if (generation !== this.#generation) return;
-    this.usage = estimate;
+    this.storedBytes = size.ok ? size.value : null;
   }
 
   async upload(files: readonly File[]): Promise<void> {

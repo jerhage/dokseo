@@ -171,5 +171,15 @@ export function createLibraryRepository(): LibraryRepository {
     readCover(id: BookId): Promise<Result<Blob, LibraryError>> {
       return readBlob(id, (keys) => keys.cover);
     },
+
+    async storedBytes(): Promise<Result<number, LibraryError>> {
+      if (!blobs.isAvailable()) return unavailable();
+      try {
+        const bytes = await blobs.totalBytes();
+        return ok(bytes);
+      } catch (cause) {
+        return failed(cause);
+      }
+    },
   };
 }

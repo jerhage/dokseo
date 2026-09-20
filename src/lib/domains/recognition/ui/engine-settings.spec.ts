@@ -84,7 +84,7 @@ function world(snapshot: ModelStorageSnapshot): World {
       readCover: unused,
       removeBook: unused,
       editBook: unused,
-      readStorageUsage: unused,
+      readLibrarySize: unused,
     },
     recognition: {
       readModelConsent: unused,

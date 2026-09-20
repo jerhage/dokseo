@@ -38,6 +38,7 @@ function fakeRepository(outcome: Result<Book, LibraryError>) {
     },
     readSource: (id) => Promise.resolve(notFound(id)),
     readCover: (id) => Promise.resolve(notFound(id)),
+    storedBytes: () => Promise.resolve(ok(0)),
   };
   return { repository, updates };
 }

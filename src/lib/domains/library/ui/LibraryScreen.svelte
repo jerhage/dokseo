@@ -36,7 +36,9 @@
 
   const totalImages = $derived(view.books.reduce((sum, book) => sum + book.imageCount, 0));
   const space = $derived(
-    view.usage === null ? 'space unknown' : `${formatBytes(view.usage.usage)} stored locally`,
+    view.storedBytes === null
+      ? 'upload size unknown'
+      : `${formatBytes(view.storedBytes)} of uploads`,
   );
   const summary = $derived(
     `${view.books.length} series · ${totalImages.toLocaleString()} images · ${space}`,
@@ -143,7 +145,7 @@
 <style>
   .screen {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
     background: var(--c-surface-app);
     color: var(--c-text-2);
     font-family: var(--f-ui);
@@ -198,9 +200,10 @@
 
   .main {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
   }
 
   .head {
@@ -292,8 +295,10 @@
   }
 
   .body {
-    flex: 1;
+    position: relative;
+    flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
     padding: var(--s-5) var(--s-6);
   }
 

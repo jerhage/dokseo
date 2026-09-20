@@ -21,4 +21,5 @@ export interface LibraryRepository {
   update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>>;
   readSource(id: BookId): Promise<Result<Blob, LibraryError>>;
   readCover(id: BookId): Promise<Result<Blob, LibraryError>>;
+  storedBytes(): Promise<Result<number, LibraryError>>;
 }

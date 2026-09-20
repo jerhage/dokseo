@@ -33,9 +33,9 @@ import {
 } from './domains/library/use-cases/open-for-reading';
 import { readCover, type ReadCoverDeps } from './domains/library/use-cases/read-cover';
 import {
-  readStorageUsage,
-  type ReadStorageUsageDeps,
-} from './domains/library/use-cases/read-storage-usage';
+  readLibrarySize,
+  type ReadLibrarySizeDeps,
+} from './domains/library/use-cases/read-library-size';
 import { removeBook, type RemoveBookDeps } from './domains/library/use-cases/remove-book';
 import { createCanvasCropper } from './domains/recognition/adapters/canvas-cropper';
 import { createModelStorage } from './domains/recognition/adapters/cache-api-model-storage';
@@ -217,7 +217,7 @@ export type Container = {
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError>>;
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
-    readonly readStorageUsage: () => Promise<{ usage: number; quota: number } | null>;
+    readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
   };
   readonly recognition: {
     readonly readModelConsent: (
@@ -286,7 +286,7 @@ export function buildContainer(): Container {
   const readCoverDeps: ReadCoverDeps = { repository };
   const removeBookDeps: RemoveBookDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
-  const readStorageUsageDeps: ReadStorageUsageDeps = { estimate: storageEstimate };
+  const readLibrarySizeDeps: ReadLibrarySizeDeps = { repository };
   const cropper = createCanvasCropper(beginTrace);
   const consent = createModelConsentStore();
   const readModelConsentDeps: ReadModelConsentDeps = { consent, setups };
@@ -324,7 +324,7 @@ export function buildContainer(): Container {
       readCover: (id: BookId) => readCover(readCoverDeps, id),
       removeBook: (id: BookId) => removeBook(removeBookDeps, id),
       editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
-      readStorageUsage: () => readStorageUsage(readStorageUsageDeps),
+      readLibrarySize: () => readLibrarySize(readLibrarySizeDeps),
     },
     recognition: {
       readModelConsent: (language: Language) => readModelConsent(readModelConsentDeps, language),

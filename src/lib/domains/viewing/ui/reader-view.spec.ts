@@ -160,7 +160,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         };
         return ok(world.stored);
       },
-      readStorageUsage: () => Promise.resolve(null),
+      readLibrarySize: () => Promise.resolve(ok(0)),
     },
     recognition: {
       readModelConsent: () => Promise.reject(new Error('not used')),

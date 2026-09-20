@@ -49,6 +49,15 @@ export async function get(key: string): Promise<Blob | null> {
   }
 }
 
+export async function totalBytes(): Promise<number> {
+  const parent = await directory();
+  let total = 0;
+  for await (const handle of parent.values()) {
+    if (handle.kind === 'file') total += (await handle.getFile()).size;
+  }
+  return total;
+}
+
 export async function remove(key: string): Promise<void> {
   const name = flatName(key);
   const parent = await directory();

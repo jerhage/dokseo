@@ -42,7 +42,7 @@ type CoverState = {
   gate: () => Promise<void>;
 };
 
-type UsageState = { estimate: { usage: number; quota: number } | null };
+type SizeState = { outcome: Result<number, LibraryError> };
 
 type Fakes = {
   readonly container: Container;
@@ -52,7 +52,7 @@ type Fakes = {
   readonly removes: Deferred<Result<void, LibraryError>>[];
   readonly edits: Deferred<Result<Book, LibraryError>>[];
   readonly cover: CoverState;
-  readonly usage: UsageState;
+  readonly size: SizeState;
 };
 
 function fakes(): Fakes {
@@ -62,7 +62,7 @@ function fakes(): Fakes {
   const removes: Deferred<Result<void, LibraryError>>[] = [];
   const edits: Deferred<Result<Book, LibraryError>>[] = [];
   const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
-  const usage: UsageState = { estimate: { usage: 2048, quota: 8192 } };
+  const size: SizeState = { outcome: ok(2048) };
 
   const container: Container = {
     beginTrace: noTrace,
@@ -91,7 +91,7 @@ function fakes(): Fakes {
         edits.push(next);
         return next.promise;
       },
-      readStorageUsage: () => Promise.resolve(usage.estimate),
+      readLibrarySize: () => Promise.resolve(size.outcome),
     },
     recognition: {
       readModelConsent: () => Promise.reject(new Error('not used')),
@@ -117,7 +117,7 @@ function fakes(): Fakes {
     },
   };
 
-  return { container, lists, opens, reports, removes, edits, cover, usage };
+  return { container, lists, opens, reports, removes, edits, cover, size };
 }
 
 function chosen(name: string, path = ''): File {
@@ -173,21 +173,21 @@ describe('LibraryView', () => {
     expect(view.message).toBeNull();
   });
 
-  it('exposes the storage figure once the library has loaded', async () => {
+  it('exposes the bytes the uploads occupy once the library has loaded', async () => {
     const world = fakes();
     const view = new LibraryView(world.container);
-    expect(view.usage).toBeNull();
+    expect(view.storedBytes).toBeNull();
 
     const running = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await running;
 
-    expect(view.usage).toEqual({ usage: 2048, quota: 8192 });
+    expect(view.storedBytes).toBe(2048);
   });
 
-  it('reports no storage figure when the estimate is null', async () => {
+  it('reports no size when the uploads cannot be measured', async () => {
     const world = fakes();
-    world.usage.estimate = null;
+    world.size.outcome = err({ kind: 'storage-unavailable' });
     const view = new LibraryView(world.container);
 
     const running = view.load();
@@ -195,7 +195,7 @@ describe('LibraryView', () => {
     await running;
 
     expect(view.status).toBe('ready');
-    expect(view.usage).toBeNull();
+    expect(view.storedBytes).toBeNull();
   });
 
   it('orders the newest upload first', async () => {

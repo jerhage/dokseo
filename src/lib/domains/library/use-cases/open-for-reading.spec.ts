@@ -59,6 +59,7 @@ function fakeRepository(
     update: (id) => Promise.resolve(notFound(id)),
     readSource: () => Promise.resolve(source),
     readCover: (id) => Promise.resolve(notFound(id)),
+    storedBytes: () => Promise.resolve(ok(0)),
   };
 }
 
