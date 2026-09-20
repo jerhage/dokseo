@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { err, ok, type Result } from '$lib/shared/result';
+import { REQUIRED_WEIGHTS } from '../domain/model-weights';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { PartialReport } from '../domain/model-partial';
 import type { ModelStorage, ModelStorageError } from '../domain/model-storage';
@@ -8,7 +9,13 @@ import { readModelStorage } from './read-model-storage';
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
-const STORED: ModelStorageReport = { modelId: MODEL, files: 9, bytes: 204_413_485, unsized: 0 };
+const STORED: ModelStorageReport = {
+  modelId: MODEL,
+  files: 9,
+  bytes: 204_413_485,
+  unsized: 0,
+  weights: REQUIRED_WEIGHTS,
+};
 
 const NOTHING_PARTIAL: PartialReport = { modelId: MODEL, files: 0, bytes: 0 };
 

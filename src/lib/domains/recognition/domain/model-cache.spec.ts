@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   belongsToModel,
   entriesOfModel,
+  isPartlyStored,
   isStored,
   reportOf,
   restOfUsage,
   shareOfUsage,
   type CacheEntry,
 } from './model-cache';
+import { REQUIRED_WEIGHTS } from './model-weights';
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
@@ -61,7 +63,13 @@ describe('reportOf', () => {
       MODEL,
     );
 
-    expect(report).toEqual({ modelId: MODEL, files: 2, bytes: 204_413_485, unsized: 0 });
+    expect(report).toEqual({
+      modelId: MODEL,
+      files: 2,
+      bytes: 204_413_485,
+      unsized: 0,
+      weights: REQUIRED_WEIGHTS,
+    });
   });
 
   it('counts an entry of unknown size rather than guessing its bytes', () => {
@@ -75,7 +83,7 @@ describe('reportOf', () => {
   it('reports nothing stored when no entry belongs to the model', () => {
     const report = reportOf([{ url: 'https://example.test/other', bytes: 10 }], MODEL);
 
-    expect(report).toEqual({ modelId: MODEL, files: 0, bytes: 0, unsized: 0 });
+    expect(report).toEqual({ modelId: MODEL, files: 0, bytes: 0, unsized: 0, weights: [] });
     expect(isStored(report)).toBe(false);
   });
 });
@@ -106,5 +114,63 @@ describe('restOfUsage', () => {
   it('never reports a negative remainder', () => {
     const report = reportOf([weights('weights.onnx', 500)], MODEL);
     expect(restOfUsage(report, 400)).toBe(0);
+  });
+});
+
+describe('isStored', () => {
+  const configs = [
+    weights('config.json', 1_200),
+    weights('generation_config.json', 300),
+    weights('preprocessor_config.json', 400),
+    weights('tokenizer.json', 380_000),
+    weights('tokenizer_config.json', 500),
+  ];
+
+  it('refuses to call a model stored when only its configuration is cached', () => {
+    const report = reportOf(configs, MODEL);
+
+    expect(isStored(report)).toBe(false);
+    expect(isPartlyStored(report)).toBe(true);
+  });
+
+  it('refuses to call a model stored when one of its two weight files is missing', () => {
+    const report = reportOf(
+      [...configs, weights('onnx/encoder_model_quantized.onnx', 86_967_767)],
+      MODEL,
+    );
+
+    expect(isStored(report)).toBe(false);
+    expect(isPartlyStored(report)).toBe(true);
+  });
+
+  it('calls a model stored once both weight files the engine opens are cached', () => {
+    const report = reportOf(
+      [
+        ...configs,
+        weights('onnx/encoder_model_quantized.onnx', 86_967_767),
+        weights('onnx/decoder_model_merged.onnx', 117_445_718),
+      ],
+      MODEL,
+    );
+
+    expect(isStored(report)).toBe(true);
+    expect(isPartlyStored(report)).toBe(false);
+  });
+
+  it('ignores the unsuffixed encoder the loader probes but never downloads', () => {
+    const report = reportOf(
+      [
+        ...configs,
+        weights('onnx/encoder_model.onnx', 343_400_000),
+        weights('onnx/decoder_model_merged.onnx', 117_445_718),
+      ],
+      MODEL,
+    );
+
+    expect(isStored(report)).toBe(false);
+  });
+
+  it('calls nothing part-stored when the cache holds no file of the model', () => {
+    expect(isPartlyStored(reportOf([], MODEL))).toBe(false);
   });
 });

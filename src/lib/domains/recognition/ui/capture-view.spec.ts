@@ -12,6 +12,7 @@ import { editedCapture, takenCapture, type Capture, type CaptureDraft } from '..
 import type { CaptureError } from '../domain/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
 import { modelFootprint } from '../domain/model-footprint';
+import { REQUIRED_WEIGHTS } from '../domain/model-weights';
 import type { ModelLoad } from '../domain/model-load';
 import type { RecognizerSession } from '../domain/recognizer-session';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
@@ -209,7 +210,13 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       readModelStorage: (modelId: string) =>
         Promise.resolve(
           ok({
-            report: { modelId, files: engine.files, bytes: engine.files * 1_000, unsized: 0 },
+            report: {
+              modelId,
+              files: engine.files,
+              bytes: engine.files * 1_000,
+              unsized: 0,
+              weights: engine.files > 0 ? REQUIRED_WEIGHTS : [],
+            },
             partial: { modelId, files: 0, bytes: 0 },
             usage: null,
             quota: null,

@@ -6,6 +6,7 @@ import type {
   ModelConsentError,
   ModelConsentStore,
 } from '../domain/model-consent';
+import { REQUIRED_WEIGHTS } from '../domain/model-weights';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { PartialReport } from '../domain/model-partial';
 import type { ModelStorage, ModelStorageError } from '../domain/model-storage';
@@ -14,7 +15,13 @@ import { deleteModel } from './delete-model';
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
-const REMOVED: ModelStorageReport = { modelId: MODEL, files: 9, bytes: 204_413_485, unsized: 0 };
+const REMOVED: ModelStorageReport = {
+  modelId: MODEL,
+  files: 9,
+  bytes: 204_413_485,
+  unsized: 0,
+  weights: REQUIRED_WEIGHTS,
+};
 
 function world(options: { readonly removal?: Result<ModelStorageReport, ModelStorageError> } = {}) {
   const steps: string[] = [];

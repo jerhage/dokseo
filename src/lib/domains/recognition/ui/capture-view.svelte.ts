@@ -9,9 +9,10 @@ import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import { editedText, oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
-import { isStored } from '../domain/model-cache';
+import { isPartlyStored, isStored } from '../domain/model-cache';
 import { downloadMb, type ModelFootprint } from '../domain/model-footprint';
 import { loadVerb, type ModelLoad } from '../domain/model-load';
+import { isPartlyDownloaded } from '../domain/model-partial';
 import type { EngineState } from '../domain/ocr-engine';
 import { hasNoText, recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { RecognizerSession } from '../domain/recognizer-session';
@@ -122,6 +123,7 @@ export class CaptureView {
   progress = $state.raw<ModelLoad | null>(null);
   session = $state.raw<RecognizerSession | null>(null);
   downloaded = $state.raw(false);
+  partlyDownloaded = $state.raw(false);
   opening = $state.raw(false);
   engineFailure = $state.raw<string | null>(null);
   consentRequest = $state.raw<ConsentRequest | null>(null);
@@ -154,6 +156,7 @@ export class CaptureView {
       failure: this.engineFailure,
       paused: false,
       cancelled: false,
+      partlyDownloaded: this.partlyDownloaded,
     };
   }
 
@@ -201,7 +204,12 @@ export class CaptureView {
         .catch(() => null);
       if (generation !== this.#generation) return;
 
-      this.downloaded = held !== null && held.ok && isStored(held.value.report);
+      const snapshot = held !== null && held.ok ? held.value : null;
+      this.downloaded = snapshot !== null && isStored(snapshot.report);
+      this.partlyDownloaded =
+        snapshot !== null &&
+        !this.downloaded &&
+        (isPartlyStored(snapshot.report) || isPartlyDownloaded(snapshot.partial));
       if (!this.downloaded) {
         trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
         return;
@@ -244,6 +252,7 @@ export class CaptureView {
       if (opened.ok) {
         this.session = opened.value;
         this.downloaded = true;
+        this.partlyDownloaded = false;
       } else if (opened.error.kind === 'unavailable') {
         this.engineFailure = opened.error.cause;
       }
@@ -445,6 +454,7 @@ export class CaptureView {
     this.session = null;
     this.progress = null;
     this.downloaded = false;
+    this.partlyDownloaded = false;
     this.opening = false;
     this.engineFailure = null;
     this.consentRequest = null;

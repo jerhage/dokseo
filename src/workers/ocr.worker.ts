@@ -1,24 +1,20 @@
-import type { ProgressInfo } from '@huggingface/transformers';
 import { chosenDevice, type ComputeChoice } from '$lib/domains/recognition/domain/compute-choice';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer-setup';
-import type { ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
+import {
+  DECODER_PRECISION,
+  ENCODER_PRECISION,
+} from '$lib/domains/recognition/domain/model-weights';
 import { describeCause } from '$lib/shared/cause';
 import { japaneseOcrText } from './japanese-ocr-text';
 import { installModelFetch } from './model-fetch';
 import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
-const ENCODER_WEIGHTS = 'q8';
-
-const DECODER_WEIGHTS = 'fp32';
-
 const DECODER_START_TOKEN = 2;
 
 const END_OF_TEXT_TOKEN = 3;
 
 const MAX_TOKENS = 300;
-
-const FULL_PERCENT = 100;
 
 type InferenceSession = {
   run(feeds: Record<string, unknown>): Promise<Record<string, unknown>>;
@@ -38,20 +34,6 @@ const scope = self as unknown as WorkerScope;
 const post = scope.postMessage.bind(scope);
 
 let opening: Promise<Session> | null = null;
-
-let loadSource: () => ModelLoadSource = () => 'cache';
-
-function reportProgress(info: ProgressInfo): void {
-  if (info.status !== 'progress_total') return;
-
-  post({
-    kind: 'progress',
-    fraction: Math.min(1, Math.max(0, info.progress / FULL_PERCENT)),
-    loadedBytes: info.loaded,
-    totalBytes: info.total,
-    source: loadSource(),
-  });
-}
 
 async function deviceFor(compute: ComputeChoice): Promise<ReturnType<typeof chosenDevice>> {
   try {
@@ -81,15 +63,19 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
   env.allowLocalModels = false;
 
   const modelId = setup.modelId;
-  loadSource = installModelFetch(env, { modelId });
+  installModelFetch(env, {
+    modelId,
+    onProgress: (load) => {
+      post({ kind: 'progress', ...load });
+    },
+  });
   const device = await deviceFor(setup.compute);
   const [processor, tokenizer, model] = await Promise.all([
     AutoProcessor.from_pretrained(modelId),
     AutoTokenizer.from_pretrained(modelId),
     AutoModel.from_pretrained(modelId, {
       device,
-      dtype: { encoder_model: ENCODER_WEIGHTS, decoder_model_merged: DECODER_WEIGHTS },
-      progress_callback: reportProgress,
+      dtype: { encoder_model: ENCODER_PRECISION, decoder_model_merged: DECODER_PRECISION },
     }),
   ]);
 
