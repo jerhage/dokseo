@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
   import type { ImageRect, Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -45,16 +46,18 @@
       .exhaustive(),
   );
 
+  const asked = $derived(index);
+
   $effect(() => {
     const canvas = frame;
-    const wanted = index;
+    const wanted = asked;
     if (canvas === null) return;
 
     let live = true;
     phase = 'loading';
 
     void (async () => {
-      const bitmap = await load(wanted);
+      const bitmap = await untrack(() => load(wanted));
       if (!live) {
         bitmap?.close();
         return;
