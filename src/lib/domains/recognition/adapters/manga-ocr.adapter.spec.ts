@@ -172,7 +172,7 @@ describe('createMangaOcrRecognizer', () => {
 
     const first = recognizer.recognize(stubBitmap(80, 40).bitmap);
     await openedOver(fake);
-    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'どうしたんだ' });
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'どうしたんだ', confidence: null });
     await first;
 
     void recognizer.recognize(stubBitmap(80, 40).bitmap);
@@ -186,7 +186,12 @@ describe('createMangaOcrRecognizer', () => {
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
     await openedOver(fake);
-    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'ちょっと待って' });
+    fake.reply({
+      kind: 'recognized',
+      id: cropId(fake, 0),
+      text: 'ちょっと待って',
+      confidence: null,
+    });
 
     const result = await recognition;
     if (!result.ok) throw new Error('The recognizer failed');
@@ -203,8 +208,8 @@ describe('createMangaOcrRecognizer', () => {
     const second = recognizer.recognize(stubBitmap(240, 96).bitmap);
     await tick();
 
-    fake.reply({ kind: 'recognized', id: cropId(fake, 1), text: '早く逃げろ' });
-    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'こっちに来て' });
+    fake.reply({ kind: 'recognized', id: cropId(fake, 1), text: '早く逃げろ', confidence: null });
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'こっちに来て', confidence: null });
 
     const [one, two] = await Promise.all([first, second]);
     if (!one.ok || !two.ok) throw new Error('The recognizer failed');
@@ -257,7 +262,7 @@ describe('createMangaOcrRecognizer', () => {
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
     await openedOver(fake);
-    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: '   ' });
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: '   ', confidence: null });
 
     const result = await recognition;
     if (result.ok) throw new Error('The recognizer succeeded');
@@ -336,7 +341,7 @@ describe('createMangaOcrRecognizer', () => {
     expect(sent.request.image).not.toBe(owned.bitmap);
     expect(sent.transfer).toEqual([sent.request.image]);
 
-    fake.reply({ kind: 'recognized', id: sent.request.id, text: 'ありがとう' });
+    fake.reply({ kind: 'recognized', id: sent.request.id, text: 'ありがとう', confidence: null });
     await recognition;
     expect(owned.wasClosed()).toBe(false);
   });

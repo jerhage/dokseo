@@ -9,7 +9,12 @@ export type OcrRequest =
 export type OcrFailure = 'model-unavailable' | 'recognition-failed';
 
 export type OcrReply =
-  | { readonly kind: 'recognized'; readonly id: number; readonly text: string }
+  | {
+      readonly kind: 'recognized';
+      readonly id: number;
+      readonly text: string;
+      readonly confidence: number | null;
+    }
   | {
       readonly kind: 'opened';
       readonly id: number;

@@ -151,7 +151,7 @@ async function recognize(id: number, image: ImageBitmap): Promise<void> {
 
     try {
       const text = await session.read(image);
-      post({ kind: 'recognized', id, text });
+      post({ kind: 'recognized', id, text, confidence: null });
     } catch (cause) {
       post({ kind: 'failed', id, failure: 'recognition-failed', cause: describeCause(cause) });
     }
