@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
+  import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
@@ -193,6 +194,8 @@
       ])
       .exhaustive();
   });
+
+  $effect(() => lockScrolling(document.documentElement));
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
