@@ -93,6 +93,9 @@ function fakes(): Fakes {
       readModelConsent: () => Promise.reject(new Error('not used')),
       grantModelConsent: () => Promise.reject(new Error('not used')),
       recognizeRegion: () => Promise.reject(new Error('not used')),
+      listCaptures: () => Promise.reject(new Error('not used')),
+      saveCapture: () => Promise.reject(new Error('not used')),
+      clearCaptures: () => Promise.reject(new Error('not used')),
     },
   };
 

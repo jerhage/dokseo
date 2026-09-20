@@ -32,7 +32,10 @@ import {
 } from './domains/library/use-cases/read-storage-usage';
 import { removeBook, type RemoveBookDeps } from './domains/library/use-cases/remove-book';
 import { createCanvasCropper } from './domains/recognition/adapters/canvas-cropper';
+import { createCaptureRepository } from './domains/recognition/adapters/indexeddb-captures.repo';
 import { createModelConsentStore } from './domains/recognition/adapters/indexeddb-model-consent';
+import type { Capture, CaptureDraft } from './domains/recognition/domain/capture';
+import type { CaptureError } from './domains/recognition/domain/capture-repository';
 import type {
   ModelConsentDecision,
   ModelConsentError,
@@ -40,9 +43,14 @@ import type {
 import type { RecognizedText } from './domains/recognition/domain/recognized-text';
 import type { TextRecognizer } from './domains/recognition/domain/text-recognizer';
 import {
+  clearCaptures,
+  type ClearCapturesDeps,
+} from './domains/recognition/use-cases/clear-captures';
+import {
   grantModelConsent,
   type GrantModelConsentDeps,
 } from './domains/recognition/use-cases/grant-model-consent';
+import { listCaptures, type ListCapturesDeps } from './domains/recognition/use-cases/list-captures';
 import {
   readModelConsent,
   type ReadModelConsentDeps,
@@ -51,6 +59,7 @@ import {
   recognizeRegion,
   type RecognizeRegionError,
 } from './domains/recognition/use-cases/recognize-region';
+import { saveCapture, type SaveCaptureDeps } from './domains/recognition/use-cases/save-capture';
 
 export type RecognitionProgress = (fraction: number) => void;
 
@@ -122,6 +131,9 @@ export type Container = {
       arrangement: Arrangement,
       onProgress?: RecognitionProgress,
     ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
+    readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
+    readonly saveCapture: (draft: CaptureDraft) => Promise<Result<void, CaptureError>>;
+    readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
   };
 };
 
@@ -146,6 +158,10 @@ export function buildContainer(): Container {
   const consent = createModelConsentStore();
   const readModelConsentDeps: ReadModelConsentDeps = { consent };
   const grantModelConsentDeps: GrantModelConsentDeps = { consent, requestPersistence };
+  const captures = createCaptureRepository();
+  const listCapturesDeps: ListCapturesDeps = { captures };
+  const saveCaptureDeps: SaveCaptureDeps = { captures, now: Date.now };
+  const clearCapturesDeps: ClearCapturesDeps = { captures };
 
   return {
     beginTrace,
@@ -184,6 +200,9 @@ export function buildContainer(): Container {
           if (onProgress !== undefined) listening.delete(onProgress);
         }
       },
+      listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),
+      saveCapture: (draft: CaptureDraft) => saveCapture(saveCaptureDeps, draft),
+      clearCaptures: (book: BookId) => clearCaptures(clearCapturesDeps, book),
     },
   };
 }

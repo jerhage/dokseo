@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionProgress } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
-import { imageIndex } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex, type BookId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
+import { takenCapture, type Capture, type CaptureDraft } from '../domain/capture';
+import type { CaptureError } from '../domain/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
 import { modelFootprint } from '../domain/model-footprint';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
@@ -31,6 +33,19 @@ type Consent = {
   grantFails: boolean;
 };
 
+type Listing = {
+  readonly book: BookId;
+  readonly release: () => void;
+};
+
+type Store = {
+  rows: Capture[];
+  readonly listings: Listing[];
+  defer: boolean;
+  listFails: boolean;
+  saveFails: boolean;
+};
+
 type Step = {
   readonly label: string;
   readonly name: string;
@@ -41,6 +56,7 @@ type Fakes = {
   readonly container: Container;
   readonly calls: Call[];
   readonly consent: Consent;
+  readonly store: Store;
   readonly steps: Step[];
   readonly ended: string[];
 };
@@ -57,6 +73,14 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     grants: [],
     readFails: false,
     grantFails: false,
+  };
+
+  const store: Store = {
+    rows: [],
+    listings: [],
+    defer: false,
+    listFails: false,
+    saveFails: false,
   };
 
   const steps: Step[] = [];
@@ -101,10 +125,52 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         new Promise<Reading>((resolve) => {
           calls.push({ language, regions: taken, report, settle: resolve });
         }),
+      listCaptures: (book: BookId): Promise<Result<readonly Capture[], CaptureError>> => {
+        if (store.listFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+
+        const held = store.rows.filter((row) => row.bookId === book);
+        if (!store.defer) return Promise.resolve(ok(held));
+
+        return new Promise((resolve) => {
+          store.listings.push({ book, release: () => resolve(ok(held)) });
+        });
+      },
+      saveCapture: (draft: CaptureDraft): Promise<Result<void, CaptureError>> => {
+        if (store.saveFails) {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
+        }
+        store.rows = [...store.rows, takenCapture(draft, store.rows.length + 1)];
+        return Promise.resolve(ok(undefined));
+      },
+      clearCaptures: (book: BookId): Promise<Result<void, CaptureError>> => {
+        store.rows = store.rows.filter((row) => row.bookId !== book);
+        return Promise.resolve(ok(undefined));
+      },
     },
   };
 
-  return { container, calls, consent, steps, ended };
+  return { container, calls, consent, store, steps, ended };
+}
+
+const ONE = bookId('book-one');
+
+const TWO = bookId('book-two');
+
+function storedRow(id: string, book: BookId, text: string, createdAt: number): Capture {
+  return {
+    id: captureId(id),
+    bookId: book,
+    regions: regions(4),
+    text,
+    confidence: null,
+    createdAt,
+  };
+}
+
+function panelTexts(view: CaptureView): readonly string[] {
+  return view.captures.map((capture) =>
+    capture.status === 'done' ? capture.text.text : capture.status,
+  );
 }
 
 const source = {} as PageSource;
@@ -466,5 +532,139 @@ describe('CaptureView', () => {
     expect(view.consentRequest).toBeNull();
     expect(world.consent.reads).toEqual([]);
     expect(at(view.captures, 0).status).toBe('done');
+  });
+
+  it('loads the stored captures of the book it opens and no other book', async () => {
+    const world = fakes();
+    world.store.rows = [
+      storedRow('a', ONE, 'from the first book', 1),
+      storedRow('b', TWO, 'from the second book', 2),
+      storedRow('c', ONE, 'also from the first book', 3),
+    ];
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+
+    expect(panelTexts(view)).toEqual(['from the first book', 'also from the first book']);
+    expect(view.newestFirst.map((capture) => capture.id)).toEqual(['c', 'a']);
+  });
+
+  it('shows an empty panel when the stored captures cannot be read', async () => {
+    const world = fakes();
+    world.store.listFails = true;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+
+    expect(view.captures).toEqual([]);
+  });
+
+  it('ignores a stale load that lands after the reader has opened another book', async () => {
+    const world = fakes();
+    world.store.defer = true;
+    world.store.rows = [
+      storedRow('a', ONE, 'from the first book', 1),
+      storedRow('b', TWO, 'newer', 2),
+    ];
+    const view = new CaptureView(world.container);
+
+    const stale = view.open(ONE);
+    const current = view.open(TWO);
+
+    at(world.store.listings, 1).release();
+    await current;
+    at(world.store.listings, 0).release();
+    await stale;
+
+    expect(panelTexts(view)).toEqual(['newer']);
+  });
+
+  it('stores a capture that settled as read', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('これは保存される')));
+    await running;
+
+    expect(world.store.rows.map((row) => row.text)).toEqual(['これは保存される']);
+    expect(at(world.store.rows, 0).bookId).toBe(ONE);
+    expect(at(world.store.rows, 0).regions).toEqual(regions());
+  });
+
+  it('stores nothing for a capture that failed', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(err({ kind: 'crop', error: { kind: 'nothing-selected' } }));
+    await running;
+
+    expect(at(view.captures, 0).status).toBe('failed');
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('stores nothing for a capture that read no text', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    await running;
+
+    expect(at(view.captures, 0).status).toBe('empty');
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('shows a capture for the session even when it cannot be stored', async () => {
+    const world = fakes();
+    world.store.saveFails = true;
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('読めたが保存できない')));
+    await running;
+
+    expect(panelTexts(view)).toEqual(['読めたが保存できない']);
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('empties the list and the store of the open book when it is cleared', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('b', TWO, 'another book', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('一時的')));
+    await running;
+    expect(view.count).toBe(1);
+
+    await view.clear();
+
+    expect(view.captures).toEqual([]);
+    expect(world.store.rows.map((row) => row.text)).toEqual(['another book']);
+  });
+
+  it('keeps a book’s stored captures when the reader leaves it', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('残る')));
+    await running;
+
+    view.close();
+    expect(view.captures).toEqual([]);
+
+    const returning = new CaptureView(world.container);
+    await returning.open(ONE);
+
+    expect(panelTexts(returning)).toEqual(['残る']);
   });
 });

@@ -90,7 +90,12 @@
   <header class="head">
     <h2 class="name">Captures</h2>
     <span class="count">{view.count}</span>
-    <button class="clear" type="button" disabled={view.count === 0} onclick={() => view.clear()}>
+    <button
+      class="clear"
+      type="button"
+      disabled={view.count === 0}
+      onclick={() => void view.clear()}
+    >
       Clear
     </button>
   </header>

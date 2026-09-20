@@ -87,3 +87,27 @@ export async function deleteRecord(
 export function listRecords<T>(db: IDBDatabase, store: string): Promise<T[]> {
   return transact(db, store, 'readonly', (objectStore) => objectStore.getAll());
 }
+
+export function listByIndex<T>(
+  db: IDBDatabase,
+  store: string,
+  index: string,
+  key: IDBValidKey,
+): Promise<T[]> {
+  return transact(db, store, 'readonly', (objectStore) => objectStore.index(index).getAll(key));
+}
+
+export async function deleteByIndex(
+  db: IDBDatabase,
+  store: string,
+  index: string,
+  key: IDBValidKey,
+): Promise<void> {
+  await transact(db, store, 'readwrite', (objectStore) => {
+    const matching = objectStore.index(index).getAllKeys(key);
+    matching.onsuccess = () => {
+      for (const primary of matching.result) objectStore.delete(primary);
+    };
+    return matching;
+  });
+}

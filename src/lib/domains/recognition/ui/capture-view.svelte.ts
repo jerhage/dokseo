@@ -3,13 +3,14 @@ import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import { captureId, type CaptureId } from '$lib/shared/ids';
+import { captureId, type BookId, type CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
+import { oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
 import { downloadMb, modelFootprint, type ModelFootprint } from '../domain/model-footprint';
-import { hasNoText, type RecognizedText } from '../domain/recognized-text';
+import { hasNoText, recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { CropError } from '../domain/region-cropper';
 import type { RecognitionError } from '../domain/text-recognizer';
 import type { RecognizeRegionError } from '../use-cases/recognize-region';
@@ -28,7 +29,7 @@ type Settled =
   | { readonly status: 'empty' }
   | { readonly status: 'failed'; readonly message: string };
 
-export type Capture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
+export type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
 
 export type ConsentRequest = {
   readonly language: Language;
@@ -83,13 +84,23 @@ function settlementOf(read: Result<RecognizedText, RecognizeRegionError>): Settl
   return hasNoText(read.value) ? { status: 'empty' } : { status: 'done', text: read.value };
 }
 
+function cardOf(capture: Capture): PanelCapture {
+  return {
+    id: capture.id,
+    regions: capture.regions,
+    status: 'done',
+    text: recognizedText(capture.text, capture.confidence),
+  };
+}
+
 export class CaptureView {
-  captures = $state.raw<readonly Capture[]>([]);
+  captures = $state.raw<readonly PanelCapture[]>([]);
   progress = $state.raw<number | null>(null);
   consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
-  #taken = 0;
+  #book: BookId | null = null;
+  #generation = 0;
   #running = 0;
   #held: Held | null = null;
   #agreed = new Set<Language>();
@@ -103,8 +114,22 @@ export class CaptureView {
     return this.captures.length;
   }
 
-  get newestFirst(): readonly Capture[] {
+  get newestFirst(): readonly PanelCapture[] {
     return this.captures.toReversed();
+  }
+
+  async open(book: BookId): Promise<void> {
+    const generation = this.#forget();
+    this.#book = book;
+
+    const listed = await this.#container.recognition.listCaptures(book).catch(() => null);
+
+    if (generation !== this.#generation || listed === null || !listed.ok) return;
+    this.captures = oldestFirst(listed.value).map(cardOf);
+  }
+
+  close(): void {
+    this.#forget();
   }
 
   async recognize(
@@ -181,11 +206,12 @@ export class CaptureView {
   }
 
   async #read(held: Held): Promise<void> {
-    this.#taken += 1;
+    const book = this.#book;
     this.#running += 1;
-    const id = captureId(`capture-${this.#taken}`);
+    const id = captureId(crypto.randomUUID());
     this.captures = [...this.captures, { id, regions: held.regions, status: 'pending' }];
 
+    let settled: Settled;
     try {
       const read = await this.#container.recognition.recognizeRegion(
         held.language,
@@ -196,21 +222,49 @@ export class CaptureView {
           this.progress = fraction;
         },
       );
-      this.#settle(id, settlementOf(read));
+      settled = settlementOf(read);
     } catch (cause) {
-      this.#settle(id, {
+      settled = {
         status: 'failed',
         message: `That capture could not be read: ${describeCause(cause)}`,
-      });
+      };
     } finally {
       this.#running -= 1;
       if (this.#running === 0) this.progress = null;
     }
+
+    this.#settle(id, settled);
+    if (book === null || settled.status !== 'done') return;
+
+    await this.#keep({
+      id,
+      bookId: book,
+      regions: held.regions,
+      text: settled.text.text,
+      confidence: settled.text.confidence,
+    });
   }
 
-  clear(): void {
-    if (this.captures.length === 0) return;
+  async clear(): Promise<void> {
+    const book = this.#book;
+    this.#generation += 1;
     this.captures = [];
+    if (book === null) return;
+
+    await this.#container.recognition.clearCaptures(book).catch(() => undefined);
+  }
+
+  async #keep(draft: CaptureDraft): Promise<void> {
+    await this.#container.recognition.saveCapture(draft).catch(() => undefined);
+  }
+
+  #forget(): number {
+    this.#book = null;
+    this.#held = null;
+    this.consentRequest = null;
+    this.captures = [];
+    this.#generation += 1;
+    return this.#generation;
   }
 
   #settle(id: CaptureId, settled: Settled): void {

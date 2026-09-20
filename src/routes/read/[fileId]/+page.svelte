@@ -37,9 +37,10 @@
 
   $effect(() => {
     void view.open(id);
+    void captures.open(id);
     return () => {
       view.dispose();
-      captures.clear();
+      captures.close();
     };
   });
 </script>
