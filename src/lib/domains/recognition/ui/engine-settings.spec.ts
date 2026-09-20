@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { ModelLoad } from '../domain/model-load';
 import {
+  cancelHint,
   engineLanguages,
   loadFigure,
   storageFailureNote,
@@ -33,6 +34,23 @@ describe('loadFigure', () => {
 
   it('reports the percentage alone when no total has been reported yet', () => {
     expect(loadFigure(load({ fraction: 0.05, loadedBytes: 1_000, totalBytes: 0 }))).toBe('5%');
+  });
+});
+
+describe('cancelHint', () => {
+  it('promises nothing on this device is lost when the weights are read from it', () => {
+    const hint = cancelHint(load({ source: 'cache' }));
+
+    expect(hint).toContain('stay on this device');
+    expect(hint).not.toContain('fetched');
+  });
+
+  it('says only the file in flight is lost when bytes are coming over the network', () => {
+    expect(cancelHint(load({ source: 'network' }))).toContain('file in flight');
+  });
+
+  it('says nothing about fetching before a single byte has been reported', () => {
+    expect(cancelHint(null)).toBe(cancelHint(load({ source: 'cache' })));
   });
 });
 

@@ -7,6 +7,10 @@ export type ModelLoad = {
   readonly totalBytes: number;
 };
 
+export function loadVerb(source: ModelLoadSource): string {
+  return source === 'network' ? 'Downloading' : 'Loading';
+}
+
 export type ModelLoadError =
   | { readonly kind: 'cancelled' }
   | { readonly kind: 'unavailable'; readonly cause: string };

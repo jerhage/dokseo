@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { match } from 'ts-pattern';
   import { languageName } from '$lib/shared/language';
   import {
     COMPUTE_CHOICES,
@@ -8,8 +7,11 @@
     type ComputeChoice,
   } from '../domain/compute-choice';
   import { downloadMb, megabytes, onDiskMb } from '../domain/model-footprint';
+  import { engineStatus, NOT_INSTALLED, OCR_ENGINES, ON_DEVICE_ENGINE } from '../domain/ocr-engine';
   import { deviceName } from '../domain/recognizer-session';
+  import EngineTrade from './EngineTrade.svelte';
   import {
+    cancelHint,
     loadFigure,
     REMOVAL_WARNING,
     storedFigure,
@@ -29,19 +31,8 @@
   const storage = $derived(view.storage);
   const session = $derived(view.session);
 
-  const state = $derived.by(() =>
-    match(download)
-      .with({ kind: 'loading' }, () => ({ tone: 'busy' as const, label: 'Downloading' }))
-      .with({ kind: 'ready' }, () => ({ tone: 'ready' as const, label: 'Ready' }))
-      .with({ kind: 'cancelled' }, () => ({ tone: 'quiet' as const, label: 'Cancelled' }))
-      .with({ kind: 'failed' }, () => ({ tone: 'bad' as const, label: 'Not available' }))
-      .with({ kind: 'idle' }, () =>
-        view.stored
-          ? { tone: 'ready' as const, label: 'Stored' }
-          : { tone: 'quiet' as const, label: 'Not downloaded' },
-      )
-      .exhaustive(),
-  );
+  const state = $derived(engineStatus(view.engine));
+  const absent = OCR_ENGINES.filter((offered) => !offered.installed);
 
   const failure = $derived(download.kind === 'failed' ? download.cause : null);
   const progress = $derived(download.kind === 'loading' ? download.load : null);
@@ -79,9 +70,7 @@
       <p class="caption">Active engine</p>
       <p class="engine">{model === null ? 'None' : `On-device · ${model.engine}`}</p>
       <p class="device">
-        {session === null
-          ? 'not loaded in this session'
-          : `running on the ${deviceName(session.device)}`}
+        {session === null ? state.label : `running on the ${deviceName(session.device)}`}
       </p>
     </div>
     <a class="back" href="/">Back to your library</a>
@@ -91,26 +80,10 @@
     <header class="head">
       <h1 class="title">OCR engine</h1>
       <p class="lead">
-        Recognition runs in this app, on this device. No page image and no recognized text is
-        uploaded anywhere.
+        Pick where recognition runs. Only the on-device engine is built, and it uploads nothing. The
+        other two are listed with what each would cost you, and neither can be picked until it
+        exists.
       </p>
-
-      {#if model !== null}
-        <ul class="trade">
-          <li class="fact">
-            <span class="caption">Pages never leave this device</span>
-            <span class="value">On-device only</span>
-          </li>
-          <li class="fact">
-            <span class="caption">Cost</span>
-            <span class="value">Free, no account</span>
-          </li>
-          <li class="fact">
-            <span class="caption">Setup</span>
-            <span class="value">{downloadMb(model)} MB download, once</span>
-          </li>
-        </ul>
-      {/if}
     </header>
 
     {#if model === null || language === null}
@@ -119,8 +92,17 @@
       <section class="card" aria-labelledby="{uid}-engine">
         <div class="banner">
           <div class="who">
+            <input
+              class="pick"
+              type="radio"
+              name="{uid}-engine-choice"
+              value={ON_DEVICE_ENGINE.id}
+              checked
+              aria-labelledby="{uid}-engine"
+            />
             <h2 class="who-name" id="{uid}-engine">On-device</h2>
             <span class="badge">In use</span>
+            <EngineTrade engine={ON_DEVICE_ENGINE} {model} />
           </div>
           <p class="who-note">
             Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
@@ -130,6 +112,7 @@
             <span class="dot" aria-hidden="true"></span>
             {state.label}
           </p>
+          <p class="who-note said">{state.note}</p>
         </div>
 
         {#if loading}
@@ -141,7 +124,7 @@
             <div
               class="track"
               role="progressbar"
-              aria-label="Model download"
+              aria-label="{state.label} the recognition model"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={percent}
@@ -149,9 +132,7 @@
               <span class="fill" style:width="{percent}%"></span>
             </div>
             <div class="row">
-              <span class="hint">
-                Files already downloaded are kept. Cancelling loses only the file in flight.
-              </span>
+              <span class="hint">{cancelHint(progress)}</span>
               <button class="quiet" type="button" onclick={() => void view.stop()}>Cancel</button>
             </div>
           </div>
@@ -266,6 +247,32 @@
           {/if}
         </div>
       </section>
+
+      {#each absent as offered (offered.id)}
+        <section class="card unbuilt" aria-labelledby="{uid}-{offered.id}">
+          <div class="banner plain">
+            <div class="who">
+              <input
+                class="pick"
+                type="radio"
+                name="{uid}-engine-choice"
+                value={offered.id}
+                disabled
+                aria-labelledby="{uid}-{offered.id}"
+              />
+              <h2 class="who-name" id="{uid}-{offered.id}">{offered.name}</h2>
+              <span class="badge plain">{offered.kind}</span>
+              <EngineTrade engine={offered} {model} />
+            </div>
+            <p class="who-note">{offered.summary}</p>
+            <p class="status quiet">
+              <span class="dot" aria-hidden="true"></span>
+              {NOT_INSTALLED.label}
+            </p>
+            <p class="who-note said">{NOT_INSTALLED.note}</p>
+          </div>
+        </section>
+      {/each}
     {/if}
   </main>
 </div>
@@ -417,39 +424,6 @@
     line-height: 1.5;
   }
 
-  .trade {
-    display: flex;
-    margin: var(--s-4) 0 0;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--c-border-3);
-    border-radius: var(--r-4);
-    list-style: none;
-  }
-
-  .fact {
-    display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
-    gap: var(--s-1);
-    padding: var(--s-2) var(--s-3);
-    border-right: 1px solid var(--c-border-3);
-    background: var(--c-surface-card-quiet);
-  }
-
-  .fact:last-child {
-    border-right: 0;
-  }
-
-  .fact .caption {
-    color: var(--c-text-10);
-  }
-
-  .value {
-    color: var(--c-text-4);
-    font-size: 11.5px;
-  }
-
   .notice {
     margin: var(--s-5) var(--s-6);
     color: var(--c-text-7);
@@ -457,11 +431,20 @@
   }
 
   .card {
-    margin: var(--s-4) var(--s-6) var(--s-6);
+    margin: var(--s-4) var(--s-6) 0;
     overflow: hidden;
     border: 1px solid var(--c-border-6);
     border-radius: var(--r-6);
     background: var(--c-surface-card-quiet);
+  }
+
+  .card:last-of-type {
+    margin-bottom: var(--s-6);
+  }
+
+  .card.unbuilt {
+    border-color: var(--c-border-3);
+    background: var(--c-surface-chip);
   }
 
   .banner {
@@ -470,6 +453,23 @@
     gap: var(--s-1) var(--s-3);
     padding: var(--s-3) var(--s-4);
     background: var(--c-accent-wash-faint);
+  }
+
+  .banner.plain {
+    background: transparent;
+  }
+
+  .pick {
+    flex: none;
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: var(--c-accent);
+  }
+
+  .pick:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 
   .who {
@@ -496,6 +496,11 @@
     text-transform: uppercase;
   }
 
+  .badge.plain {
+    background: var(--c-surface-button);
+    color: var(--c-text-7);
+  }
+
   .who-note {
     grid-column: 1;
     margin: 0;
@@ -503,6 +508,12 @@
     color: var(--c-text-7);
     font-size: 12px;
     line-height: 1.5;
+  }
+
+  .who-note.said {
+    grid-column: 1 / -1;
+    color: var(--c-text-9);
+    font-size: 11px;
   }
 
   .status {
@@ -780,15 +791,6 @@
   @media (max-width: 860px) {
     .grid {
       grid-template-columns: 1fr;
-    }
-
-    .trade {
-      flex-direction: column;
-    }
-
-    .fact {
-      border-right: 0;
-      border-bottom: 1px solid var(--c-border-3);
     }
   }
 </style>

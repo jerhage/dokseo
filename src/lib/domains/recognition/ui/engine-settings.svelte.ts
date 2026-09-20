@@ -15,6 +15,7 @@ import {
 import type { ModelLoad } from '../domain/model-load';
 import { megabytes, modelsFor, type ModelFootprint } from '../domain/model-footprint';
 import type { ModelStorageError } from '../domain/model-storage';
+import type { EngineState } from '../domain/ocr-engine';
 import type { RecognizerSession } from '../domain/recognizer-session';
 import type { ModelStorageSnapshot } from '../use-cases/read-model-storage';
 
@@ -40,6 +41,12 @@ export function loadFigure(load: ModelLoad | null): string {
   if (load.totalBytes <= 0) return `${percent}%`;
 
   return `${megabytes(load.loadedBytes)} / ${megabytes(load.totalBytes)} MB · ${percent}%`;
+}
+
+export function cancelHint(load: ModelLoad | null): string {
+  return load?.source === 'network'
+    ? 'Every file already fetched is kept. Cancelling loses only the file in flight.'
+    : 'The weights stay on this device. Cancelling only stops opening them.';
 }
 
 export function storedFigure(report: ModelStorageReport): string {
@@ -83,6 +90,18 @@ export class EngineSettingsView {
   get stored(): boolean {
     const report = this.storage?.report;
     return report !== undefined && isStored(report);
+  }
+
+  get engine(): EngineState {
+    const download = this.download;
+    return {
+      stored: this.stored,
+      opening: download.kind === 'loading',
+      load: download.kind === 'loading' ? download.load : null,
+      session: download.kind === 'ready' ? download.session : this.session,
+      failure: download.kind === 'failed' ? download.cause : null,
+      cancelled: download.kind === 'cancelled',
+    };
   }
 
   async load(): Promise<void> {
