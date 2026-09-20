@@ -1,6 +1,6 @@
 import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
-import { modelFootprint } from './model-footprint';
+import type { ModelFootprint } from './model-footprint';
 
 export type ModelConsentDecision = 'granted' | 'undecided';
 
@@ -30,25 +30,37 @@ export function consentFromStored(stored: StoredModelConsent): ModelConsent {
   };
 }
 
-export function grantedConsent(language: Language, grantedAt: number): StoredModelConsent {
-  const footprint = modelFootprint(language);
+export function grantedConsent(
+  language: Language,
+  grantedAt: number,
+  model: ModelFootprint | null,
+): StoredModelConsent {
   return {
     language,
     grantedAt,
-    modelId: footprint?.modelId ?? null,
-    weightsBytes: footprint?.weightsBytes ?? null,
+    modelId: model?.modelId ?? null,
+    weightsBytes: model?.weightsBytes ?? null,
   };
 }
 
-export function decisionOf(consent: ModelConsent | null, language: Language): ModelConsentDecision {
-  const current = modelFootprint(language);
-  if (consent === null || current === null) return 'undecided';
+export function decisionOf(
+  consent: ModelConsent | null,
+  model: ModelFootprint | null,
+): ModelConsentDecision {
+  if (consent === null || model === null) return 'undecided';
+  if (consent.language !== model.language) return 'undecided';
 
-  return consent.modelId === current.modelId ? 'granted' : 'undecided';
+  return consent.modelId === model.modelId ? 'granted' : 'undecided';
 }
 
 export interface ModelConsentStore {
-  decisionFor(language: Language): Promise<Result<ModelConsentDecision, ModelConsentError>>;
-  recordGrant(language: Language): Promise<Result<void, ModelConsentError>>;
+  decisionFor(
+    language: Language,
+    model: ModelFootprint | null,
+  ): Promise<Result<ModelConsentDecision, ModelConsentError>>;
+  recordGrant(
+    language: Language,
+    model: ModelFootprint | null,
+  ): Promise<Result<void, ModelConsentError>>;
   forgetGrant(language: Language): Promise<Result<void, ModelConsentError>>;
 }

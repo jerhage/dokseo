@@ -53,7 +53,7 @@ describe('deleteModel', () => {
     const { deps, consent } = world();
     await deleteModel(deps, 'ja', MODEL);
 
-    const decision = await consent.decisionFor('ja');
+    const decision = await consent.decisionFor('ja', null);
     if (!decision.ok) throw new Error('The decision could not be read');
     expect(decision.value).toBe('undecided');
   });

@@ -105,6 +105,7 @@ function fakes(): Fakes {
       detectCompute: () => Promise.reject(new Error('not used')),
       prepareRecognizer: () => Promise.reject(new Error('not used')),
       cancelModelLoad: () => Promise.reject(new Error('not used')),
+      closeRecognizer: () => Promise.reject(new Error('not used')),
     },
   };
 

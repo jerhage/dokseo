@@ -13,6 +13,7 @@ import type { CaptureError } from '../domain/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
 import { modelFootprint } from '../domain/model-footprint';
 import type { ModelLoad } from '../domain/model-load';
+import type { RecognizerSession } from '../domain/recognizer-session';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { RecognizeRegionError } from '../use-cases/recognize-region';
 import {
@@ -66,13 +67,26 @@ type Step = {
   readonly detail: Record<string, unknown>;
 };
 
+type Engine = {
+  files: number;
+  readonly prepares: Language[];
+  readonly closes: Language[];
+  failure: string | null;
+};
+
 type Fakes = {
   readonly container: Container;
   readonly calls: Call[];
   readonly consent: Consent;
   readonly store: Store;
+  readonly engine: Engine;
   readonly steps: Step[];
   readonly ended: string[];
+};
+
+const OPENED_SESSION: RecognizerSession = {
+  modelId: 'DigitalLarynx/manga-ocr-onnx',
+  device: 'webgpu',
 };
 
 function unused(): never {
@@ -108,6 +122,8 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       store.writes.push({ release: () => resolve(write()) });
     });
   }
+
+  const engine: Engine = { files: 0, prepares: [], closes: [], failure: null };
 
   const steps: Step[] = [];
   const ended: string[] = [];
@@ -190,17 +206,38 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve(ok(undefined));
       },
-      readModelStorage: unused,
+      readModelStorage: (modelId: string) =>
+        Promise.resolve(
+          ok({
+            report: { modelId, files: engine.files, bytes: engine.files * 1_000, unsized: 0 },
+            usage: null,
+            quota: null,
+            persisted: false,
+          }),
+        ),
       deleteModel: unused,
-      readRecognizerSetup: unused,
+      readRecognizerSetup: (language: Language) =>
+        Promise.resolve(ok({ model: modelFootprint(language), compute: 'auto' as const })),
       saveRecognizerSetup: unused,
       detectCompute: unused,
-      prepareRecognizer: unused,
+      prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {
+        engine.prepares.push(language);
+        if (engine.failure !== null) {
+          return Promise.resolve(err({ kind: 'unavailable' as const, cause: engine.failure }));
+        }
+
+        notices.onSession?.(OPENED_SESSION);
+        return Promise.resolve(ok(OPENED_SESSION));
+      },
       cancelModelLoad: unused,
+      closeRecognizer: (language: Language) => {
+        engine.closes.push(language);
+        return Promise.resolve();
+      },
     },
   };
 
-  return { container, calls, consent, store, steps, ended };
+  return { container, calls, consent, store, engine, steps, ended };
 }
 
 const ONE = bookId('book-one');
@@ -972,5 +1009,124 @@ describe('modelLoadAnnouncement', () => {
 
   it('announces a reading with no load in flight without naming the model', () => {
     expect(modelLoadAnnouncement(null)).toBe(READING_SELECTION);
+  });
+});
+
+describe('CaptureView.warm', () => {
+  it('opens the engine when the book opens and the weights are already here', async () => {
+    const world = fakes();
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(world.engine.prepares).toEqual(['ja']);
+    expect(view.session).toEqual(OPENED_SESSION);
+    expect(view.engine.stored).toBe(true);
+  });
+
+  it('opens nothing when the weights are not on this device', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(world.engine.prepares).toEqual([]);
+    expect(view.session).toBeNull();
+    expect(view.engine.stored).toBe(false);
+  });
+
+  it('opens nothing when the download was never agreed to', async () => {
+    const world = fakes([]);
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(world.engine.prepares).toEqual([]);
+    expect(view.session).toBeNull();
+  });
+
+  it('reports the weights as here even when it opens nothing', async () => {
+    const world = fakes([]);
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(view.engine.stored).toBe(true);
+  });
+
+  it('opens the engine once for one book however often the reader asks', async () => {
+    const world = fakes();
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+    await view.warm(ONE, 'ja');
+
+    expect(world.engine.prepares).toEqual(['ja']);
+  });
+
+  it('names the failure rather than a session when the engine will not open', async () => {
+    const world = fakes();
+    world.engine.files = 9;
+    world.engine.failure = 'the worker died';
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(view.session).toBeNull();
+    expect(view.engineFailure).toBe('the worker died');
+  });
+});
+
+describe('CaptureView.close', () => {
+  it('closes the engine it opened when the reader leaves the book', async () => {
+    const world = fakes();
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+    view.close();
+
+    expect(world.engine.closes).toEqual(['ja']);
+    expect(view.session).toBeNull();
+    expect(view.engine.stored).toBe(false);
+  });
+
+  it('closes nothing when no engine was ever opened', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+    view.close();
+
+    expect(world.engine.closes).toEqual([]);
+  });
+
+  it('opens the engine again for the next book after the previous one closed it', async () => {
+    const world = fakes();
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+    view.close();
+
+    await view.open(TWO);
+    await view.warm(TWO, 'ja');
+
+    expect(world.engine.closes).toEqual(['ja']);
+    expect(world.engine.prepares).toEqual(['ja', 'ja']);
+    expect(view.session).toEqual(OPENED_SESSION);
   });
 });

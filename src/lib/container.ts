@@ -60,6 +60,7 @@ import type {
 } from './domains/recognition/domain/recognizer-setup';
 import type { TextRecognizer } from './domains/recognition/domain/text-recognizer';
 import { cancelModelLoad } from './domains/recognition/use-cases/cancel-model-load';
+import { closeRecognizer } from './domains/recognition/use-cases/close-recognizer';
 import {
   clearCaptures,
   type ClearCapturesDeps,
@@ -243,6 +244,7 @@ export type Container = {
       notices?: RecognitionNotices,
     ) => Promise<Result<RecognizerSession, ModelLoadError>>;
     readonly cancelModelLoad: (language: Language) => Promise<void>;
+    readonly closeRecognizer: (language: Language) => Promise<void>;
   };
 };
 
@@ -265,8 +267,8 @@ export function buildContainer(): Container {
   const readStorageUsageDeps: ReadStorageUsageDeps = { estimate: storageEstimate };
   const cropper = createCanvasCropper(beginTrace);
   const consent = createModelConsentStore();
-  const readModelConsentDeps: ReadModelConsentDeps = { consent };
-  const grantModelConsentDeps: GrantModelConsentDeps = { consent, requestPersistence };
+  const readModelConsentDeps: ReadModelConsentDeps = { consent, setups };
+  const grantModelConsentDeps: GrantModelConsentDeps = { consent, setups, requestPersistence };
   const captures = createCaptureRepository();
   const listCapturesDeps: ListCapturesDeps = { captures };
   const saveCaptureDeps: SaveCaptureDeps = { captures, now: Date.now };
@@ -363,6 +365,15 @@ export function buildContainer(): Container {
         const recognizer = await recognizerFor(language).catch(() => null);
         if (recognizer === null) return;
         cancelModelLoad({ recognizer });
+      },
+      closeRecognizer: async (language: Language) => {
+        openedSessions.delete(language);
+        const held = recognizers.get(language);
+        if (held === undefined) return;
+
+        const recognizer = await held.catch(() => null);
+        if (recognizer === null) return;
+        closeRecognizer({ recognizer });
       },
     },
   };

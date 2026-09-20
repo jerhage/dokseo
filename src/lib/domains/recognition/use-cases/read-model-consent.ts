@@ -5,14 +5,19 @@ import type {
   ModelConsentError,
   ModelConsentStore,
 } from '../domain/model-consent';
+import { setupChoice, type RecognizerSetupStore } from '../domain/recognizer-setup';
 
 export type ReadModelConsentDeps = {
   readonly consent: ModelConsentStore;
+  readonly setups: RecognizerSetupStore;
 };
 
-export function readModelConsent(
+export async function readModelConsent(
   deps: ReadModelConsentDeps,
   language: Language,
 ): Promise<Result<ModelConsentDecision, ModelConsentError>> {
-  return deps.consent.decisionFor(language);
+  const record = await deps.setups.read(language);
+  const chosen = setupChoice(language, record.ok ? record.value : null);
+
+  return await deps.consent.decisionFor(language, chosen.model);
 }

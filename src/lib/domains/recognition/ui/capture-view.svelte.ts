@@ -9,8 +9,10 @@ import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import { editedText, oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
-import { downloadMb, modelFootprint, type ModelFootprint } from '../domain/model-footprint';
-import type { ModelLoad, ModelLoadSource } from '../domain/model-load';
+import { isStored } from '../domain/model-cache';
+import { downloadMb, type ModelFootprint } from '../domain/model-footprint';
+import { loadVerb, type ModelLoad } from '../domain/model-load';
+import type { EngineState } from '../domain/ocr-engine';
 import { hasNoText, recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { RecognizerSession } from '../domain/recognizer-session';
 import type { CropError } from '../domain/region-cropper';
@@ -22,10 +24,6 @@ export const NOTHING_READ = 'Nothing was read in that selection.';
 export const READING_SELECTION = 'Reading the selection.';
 
 const FULL_PERCENT = 100;
-
-function loadVerb(source: ModelLoadSource): string {
-  return source === 'network' ? 'Downloading' : 'Loading';
-}
 
 function loadPercent(load: ModelLoad): number {
   return Math.round(load.fraction * FULL_PERCENT);
@@ -123,12 +121,17 @@ export class CaptureView {
   captures = $state.raw<readonly PanelCapture[]>([]);
   progress = $state.raw<ModelLoad | null>(null);
   session = $state.raw<RecognizerSession | null>(null);
+  downloaded = $state.raw(false);
+  opening = $state.raw(false);
+  engineFailure = $state.raw<string | null>(null);
   consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
   #book: BookId | null = null;
   #generation = 0;
   #running = 0;
+  #warmedAt = -1;
+  #opened: Language | null = null;
   #held: Held | null = null;
   #stored = new Map<CaptureId, Capture>();
   #agreed = new Set<Language>();
@@ -140,6 +143,17 @@ export class CaptureView {
 
   get count(): number {
     return this.captures.length;
+  }
+
+  get engine(): EngineState {
+    return {
+      stored: this.downloaded,
+      opening: this.opening,
+      load: this.progress,
+      session: this.session,
+      failure: this.engineFailure,
+      cancelled: false,
+    };
   }
 
   get newestFirst(): readonly PanelCapture[] {
@@ -160,7 +174,94 @@ export class CaptureView {
   }
 
   close(): void {
+    const opened = this.#opened;
     this.#forget();
+    if (opened === null) return;
+
+    void this.#container.recognition.closeRecognizer(opened);
+  }
+
+  async warm(book: BookId, language: Language): Promise<void> {
+    if (this.#book !== book || this.#warmedAt === this.#generation) return;
+    this.#warmedAt = this.#generation;
+
+    const generation = this.#generation;
+    const trace = this.#container.beginTrace('engine-warm');
+    try {
+      const model = await this.#chosenModel(language);
+      if (generation !== this.#generation) return;
+      if (model === null) {
+        trace.step('stopped', { guard: 'no-model-for-language', language });
+        return;
+      }
+
+      const held = await this.#container.recognition
+        .readModelStorage(model.modelId)
+        .catch(() => null);
+      if (generation !== this.#generation) return;
+
+      this.downloaded = held !== null && held.ok && isStored(held.value.report);
+      if (!this.downloaded) {
+        trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
+        return;
+      }
+
+      const decision = await this.#container.recognition
+        .readModelConsent(language)
+        .catch(() => null);
+      if (generation !== this.#generation) return;
+      if (decision === null || !decision.ok || decision.value !== 'granted') {
+        trace.step('stopped', { guard: 'not-agreed', language, modelId: model.modelId });
+        return;
+      }
+
+      this.#agreed.add(language);
+      trace.step('opening', { language, modelId: model.modelId });
+      await this.#openEngine(language, generation);
+    } finally {
+      trace.end();
+    }
+  }
+
+  async #openEngine(language: Language, generation: number): Promise<void> {
+    this.opening = true;
+    this.engineFailure = null;
+    this.#opened = language;
+
+    try {
+      const opened = await this.#container.recognition.prepareRecognizer(language, {
+        onProgress: (load) => {
+          if (generation === this.#generation) this.progress = load;
+        },
+        onSession: (session) => {
+          if (generation === this.#generation) this.session = session;
+        },
+      });
+
+      if (generation !== this.#generation) return;
+
+      if (opened.ok) {
+        this.session = opened.value;
+        this.downloaded = true;
+      } else if (opened.error.kind === 'unavailable') {
+        this.engineFailure = opened.error.cause;
+      }
+    } catch (cause) {
+      if (generation === this.#generation) this.engineFailure = describeCause(cause);
+    } finally {
+      if (generation === this.#generation) {
+        this.opening = false;
+        if (this.#running === 0) this.progress = null;
+      }
+    }
+  }
+
+  async #chosenModel(language: Language): Promise<ModelFootprint | null> {
+    const choice = await this.#container.recognition
+      .readRecognizerSetup(language)
+      .catch(() => null);
+
+    return choice !== null && choice.ok ? choice.value.model : null;
   }
 
   async recognize(
@@ -184,14 +285,14 @@ export class CaptureView {
       return false;
     }
 
-    const footprint = modelFootprint(language);
-    if (footprint === null) {
-      trace.step('reading', { gate: 'nothing-to-download', language });
+    if (this.#agreed.has(language)) {
+      trace.step('reading', { gate: 'agreed-this-session', language });
       return true;
     }
 
-    if (this.#agreed.has(language)) {
-      trace.step('reading', { gate: 'agreed-this-session', language });
+    const footprint = await this.#chosenModel(language);
+    if (footprint === null) {
+      trace.step('reading', { gate: 'nothing-to-download', language });
       return true;
     }
 
@@ -239,6 +340,7 @@ export class CaptureView {
   async #read(held: Held): Promise<void> {
     const book = this.#book;
     const generation = this.#generation;
+    this.#opened = held.language;
     this.#running += 1;
     const id = captureId(crypto.randomUUID());
     this.captures = [...this.captures, { id, regions: held.regions, status: 'pending' }];
@@ -338,7 +440,12 @@ export class CaptureView {
   #forget(): number {
     this.#book = null;
     this.#held = null;
+    this.#opened = null;
     this.session = null;
+    this.progress = null;
+    this.downloaded = false;
+    this.opening = false;
+    this.engineFailure = null;
     this.consentRequest = null;
     this.captures = [];
     this.#stored = new Map();

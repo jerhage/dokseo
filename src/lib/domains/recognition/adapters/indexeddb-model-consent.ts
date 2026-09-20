@@ -11,6 +11,7 @@ import {
   type ModelConsentStore,
   type StoredModelConsent,
 } from '../domain/model-consent';
+import type { ModelFootprint } from '../domain/model-footprint';
 import { CONSENT_STORE, recognitionDatabase, recordsAvailable } from './recognition-database';
 
 function unavailable(): Result<never, ModelConsentError> {
@@ -25,6 +26,7 @@ export function createModelConsentStore(now: () => number = Date.now): ModelCons
   return {
     async decisionFor(
       language: Language,
+      model: ModelFootprint | null,
     ): Promise<Result<ModelConsentDecision, ModelConsentError>> {
       if (!recordsAvailable()) return unavailable();
       try {
@@ -33,19 +35,22 @@ export function createModelConsentStore(now: () => number = Date.now): ModelCons
           CONSENT_STORE,
           language,
         );
-        return ok(decisionOf(record === undefined ? null : consentFromStored(record), language));
+        return ok(decisionOf(record === undefined ? null : consentFromStored(record), model));
       } catch (cause) {
         return failed(cause);
       }
     },
 
-    async recordGrant(language: Language): Promise<Result<void, ModelConsentError>> {
+    async recordGrant(
+      language: Language,
+      model: ModelFootprint | null,
+    ): Promise<Result<void, ModelConsentError>> {
       if (!recordsAvailable()) return unavailable();
       try {
         await putRecord(
           await recognitionDatabase(),
           CONSENT_STORE,
-          grantedConsent(language, now()),
+          grantedConsent(language, now(), model),
         );
         return ok(undefined);
       } catch (cause) {

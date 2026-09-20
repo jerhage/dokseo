@@ -44,11 +44,16 @@
       captures.close();
     };
   });
+
+  $effect(() => {
+    const chosen = language;
+    if (chosen !== null) void captures.warm(id, chosen);
+  });
 </script>
 
 <ReaderScreen {view} onSelect={capture}>
   {#snippet engine()}
-    <EnginePill session={captures.session} {language} />
+    <EnginePill engine={captures.engine} {language} />
   {/snippet}
   {#snippet panel()}
     <CapturePanel view={captures} {language} />

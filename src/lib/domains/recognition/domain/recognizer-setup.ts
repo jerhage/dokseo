@@ -1,7 +1,7 @@
 import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
-import type { ComputeChoice } from './compute-choice';
-import type { ModelFootprint } from './model-footprint';
+import { computeChoiceOf, type ComputeChoice } from './compute-choice';
+import { chosenModel, type ModelFootprint } from './model-footprint';
 
 export type RecognizerSetup = {
   readonly modelId: string;
@@ -25,6 +25,16 @@ export type StoredRecognizerSetup = {
 
 export function storedSetup(language: Language, setup: RecognizerSetup): StoredRecognizerSetup {
   return { language, modelId: setup.modelId, compute: setup.compute };
+}
+
+export function setupChoice(
+  language: Language,
+  stored: StoredRecognizerSetup | null,
+): RecognizerChoice {
+  return {
+    model: chosenModel(language, stored?.modelId ?? null),
+    compute: computeChoiceOf(stored?.compute),
+  };
 }
 
 export interface RecognizerSetupStore {
