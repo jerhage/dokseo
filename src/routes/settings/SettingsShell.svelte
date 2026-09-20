@@ -95,9 +95,14 @@
     cursor: pointer;
   }
 
-  .mark:hover,
-  .mark:focus-visible {
+  .mark:hover {
     opacity: 0.85;
+  }
+
+  .item:focus-visible,
+  .mark:focus-visible {
+    outline: 1px solid var(--c-accent-border-strong);
+    outline-offset: 1px;
   }
 
   .name {
