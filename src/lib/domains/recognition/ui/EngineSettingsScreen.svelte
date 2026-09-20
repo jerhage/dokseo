@@ -6,7 +6,7 @@
     computeDetectionNote,
     type ComputeChoice,
   } from '../domain/compute-choice';
-  import { downloadMb, megabytes, onDiskMb } from '../domain/model-footprint';
+  import { downloadMb, megabytes, onDiskMb, runtimeMb, weightsMb } from '../domain/model-footprint';
   import { engineStatus, NOT_INSTALLED, OCR_ENGINES, ON_DEVICE_ENGINE } from '../domain/ocr-engine';
   import { deviceName } from '../domain/recognizer-session';
   import EngineTrade from './EngineTrade.svelte';
@@ -15,6 +15,7 @@
     loadFigure,
     partialFigure,
     REMOVAL_WARNING,
+    resumeLabel,
     storedFigure,
     type EngineSettingsView,
   } from './engine-settings.svelte';
@@ -108,7 +109,8 @@
           </div>
           <p class="who-note">
             Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
-            download of about {downloadMb(model)} MB, about {onDiskMb(model)} MB on disk.
+            download of about {weightsMb(model)} MB of weights and about {runtimeMb(model)} MB of runtime,
+            about {onDiskMb(model)} MB on disk.
           </p>
           <p class="status {state.tone}">
             <span class="dot" aria-hidden="true"></span>
@@ -120,7 +122,7 @@
         {#if loading}
           <div class="progress">
             <div class="row">
-              <span class="label">{model.label}</span>
+              <span class="label">{model.label} weights</span>
               <span class="figure">{loadFigure(progress)}</span>
             </div>
             <div
@@ -209,14 +211,17 @@
           {/if}
 
           <div class="actions">
-            {#if !view.stored && !loading}
+            {#if !loading && !view.stored && view.resumable}
               <button class="primary" type="button" onclick={() => void view.start()}>
-                {view.resumable ? 'Resume the download' : 'Download now'}
+                {resumeLabel(view.partial)}
               </button>
-            {/if}
-            {#if view.resumable && !loading}
               <button class="quiet" type="button" onclick={() => void view.stop()}>
                 Discard what was fetched
+              </button>
+            {/if}
+            {#if !loading && !view.stored && !view.resumable}
+              <button class="primary" type="button" onclick={() => void view.start()}>
+                Download now
               </button>
             {/if}
             {#if view.stored && !view.confirmingRemoval}

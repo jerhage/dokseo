@@ -5,7 +5,7 @@ import { LANGUAGES, type Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
 import type { ComputeChoice, GpuDetection } from '../domain/compute-choice';
 import { GPU_UNDETECTED } from '../domain/compute-choice';
-import { isStored, type ModelStorageReport } from '../domain/model-cache';
+import { isPartlyStored, isStored, type ModelStorageReport } from '../domain/model-cache';
 import { isPartlyDownloaded, type PartialReport } from '../domain/model-partial';
 import {
   downloadStep,
@@ -14,7 +14,7 @@ import {
   type DownloadState,
 } from '../domain/model-download';
 import type { ModelLoad } from '../domain/model-load';
-import { megabytes, modelsFor, type ModelFootprint } from '../domain/model-footprint';
+import { megabytes, modelsFor, storedSize, type ModelFootprint } from '../domain/model-footprint';
 import type { ModelStorageError } from '../domain/model-storage';
 import type { EngineState } from '../domain/ocr-engine';
 import type { RecognizerSession } from '../domain/recognizer-session';
@@ -57,13 +57,20 @@ export function partialFigure(partial: PartialReport | null): string | null {
   return `${megabytes(partial.bytes)} MB of ${files} part-downloaded, kept for a resume`;
 }
 
+export function resumeLabel(partial: PartialReport | null): string {
+  return partial !== null && isPartlyDownloaded(partial)
+    ? `Resume the download · ${megabytes(partial.bytes)} MB already here`
+    : 'Resume the download';
+}
+
 export function storedFigure(report: ModelStorageReport): string {
-  if (!isStored(report)) return 'Not downloaded';
+  if (report.files === 0) return 'Not downloaded';
 
   const files = `${report.files} ${report.files === 1 ? 'file' : 'files'}`;
-  return report.unsized > 0
-    ? `${megabytes(report.bytes)} MB in ${files}, ${report.unsized} of unreported size`
-    : `${megabytes(report.bytes)} MB in ${files}`;
+  const unsized = report.unsized > 0 ? `, ${report.unsized} of unreported size` : '';
+  const held = `${storedSize(report.bytes)} in ${files}${unsized}`;
+
+  return isStored(report) ? held : `${held}, but not the weights`;
 }
 
 export function engineLanguages(): readonly Language[] {
@@ -104,8 +111,13 @@ export class EngineSettingsView {
     return this.storage?.partial ?? null;
   }
 
+  get partlyStored(): boolean {
+    const report = this.storage?.report;
+    return report !== undefined && isPartlyStored(report);
+  }
+
   get resumable(): boolean {
-    return !this.stored && isPartlyDownloaded(this.partial);
+    return !this.stored && (this.partlyStored || isPartlyDownloaded(this.partial));
   }
 
   get engine(): EngineState {
@@ -118,6 +130,7 @@ export class EngineSettingsView {
       failure: download.kind === 'failed' ? download.cause : null,
       paused: download.kind === 'paused',
       cancelled: download.kind === 'cancelled',
+      partlyDownloaded: this.resumable,
     };
   }
 
@@ -167,7 +180,7 @@ export class EngineSettingsView {
     const language = this.language;
     if (language === null || this.download.kind === 'loading') return;
 
-    const generation = this.#generation;
+    const generation = this.#bump();
     this.message = null;
     this.#step({ kind: 'started' });
 
@@ -193,7 +206,7 @@ export class EngineSettingsView {
     const language = this.language;
     if (language === null || this.download.kind !== 'loading') return;
 
-    const generation = this.#generation;
+    const generation = this.#bump();
     this.#step({ kind: 'held' });
     this.session = null;
     await this.#container.recognition.pauseModelLoad(language);
@@ -205,7 +218,7 @@ export class EngineSettingsView {
     const model = this.model;
     if (language === null || model === null) return;
 
-    const generation = this.#generation;
+    const generation = this.#bump();
     this.#step({ kind: 'stopped' });
     this.session = null;
     await this.#container.recognition.cancelModelLoad(language, model.modelId);
@@ -227,7 +240,7 @@ export class EngineSettingsView {
     this.confirmingRemoval = false;
     if (language === null || model === null || this.removing) return;
 
-    const generation = this.#generation;
+    const generation = this.#bump();
     this.removing = true;
     this.message = null;
 
@@ -282,7 +295,7 @@ export class EngineSettingsView {
     const model = this.model;
     if (language === null || model === null) return;
 
-    const generation = this.#generation;
+    const generation = this.#bump();
     this.session = null;
     this.download = IDLE;
 

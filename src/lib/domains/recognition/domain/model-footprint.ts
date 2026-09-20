@@ -14,6 +14,8 @@ export type ModelFootprint = {
 
 const BYTES_PER_MB = 1_000_000;
 
+const BYTES_PER_KB = 1_000;
+
 export const JAPANESE_OCR_MODEL: ModelFootprint = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
   engine: 'manga-ocr',
@@ -54,6 +56,20 @@ export function chosenModel(language: Language, modelId: string | null): ModelFo
 export function megabytes(bytes: number, decimals = 0): number {
   const scale = 10 ** decimals;
   return Math.round((bytes / BYTES_PER_MB) * scale) / scale;
+}
+
+export function storedSize(bytes: number): string {
+  return bytes >= BYTES_PER_MB
+    ? `${megabytes(bytes)} MB`
+    : `${Math.round(bytes / BYTES_PER_KB)} kB`;
+}
+
+export function weightsMb(footprint: ModelFootprint): number {
+  return megabytes(footprint.weightsBytes);
+}
+
+export function runtimeMb(footprint: ModelFootprint): number {
+  return megabytes(footprint.runtimeDownloadBytes);
 }
 
 export function downloadMb(footprint: ModelFootprint): number {

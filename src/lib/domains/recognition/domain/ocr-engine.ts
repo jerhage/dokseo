@@ -147,6 +147,7 @@ export type EngineState = {
   readonly failure: string | null;
   readonly paused: boolean;
   readonly cancelled: boolean;
+  readonly partlyDownloaded: boolean;
 };
 
 export const NOT_INSTALLED: EngineStatus = {
@@ -204,6 +205,14 @@ export function engineStatus(state: EngineState): EngineStatus {
       tone: 'quiet',
       label: 'Cancelled',
       note: 'The load was stopped and the part-downloaded file was discarded.',
+    };
+  }
+
+  if (state.partlyDownloaded) {
+    return {
+      tone: 'quiet',
+      label: 'Part-downloaded',
+      note: 'Part of the weights is on this device. Resuming carries on from what is here.',
     };
   }
 

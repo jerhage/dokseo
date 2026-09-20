@@ -34,6 +34,7 @@ function state(over: Partial<EngineState> = {}): EngineState {
     failure: null,
     paused: false,
     cancelled: false,
+    partlyDownloaded: false,
     ...over,
   };
 }
@@ -177,5 +178,20 @@ describe('tradeOffsOf', () => {
         expect(trade.value).not.toMatch(/per bubble/i);
       }
     }
+  });
+});
+
+describe('engineStatus', () => {
+  it('calls a model whose weights are incomplete part-downloaded, not downloaded', () => {
+    const status = engineStatus(state({ stored: false, partlyDownloaded: true }));
+
+    expect(status.label).toBe('Part-downloaded');
+    expect(status.note).toContain('Resuming');
+  });
+
+  it('prefers the paused word over the part-downloaded one, because pausing is the newer fact', () => {
+    const status = engineStatus(state({ paused: true, partlyDownloaded: true }));
+
+    expect(status.label).toBe('Paused');
   });
 });
