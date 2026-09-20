@@ -1,5 +1,12 @@
-import type { ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
+import type { ModelLoad, ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
 import { resumesModelWeights } from '$lib/domains/recognition/domain/model-partial';
+import {
+  advancedPayload,
+  NO_PAYLOAD,
+  payloadProgress,
+  trackedPayload,
+  type PayloadFile,
+} from '$lib/domains/recognition/domain/payload-progress';
 import * as parts from '$lib/platform/opfs/partial-store';
 import { asksForOneRange, watchModelLoadSource, type Fetching } from './model-load-source';
 import { fetchResumable, type PartialFiles, type RangedFetch } from './resumable-fetch';
@@ -9,6 +16,7 @@ export type ModelFetchOptions = {
   readonly store?: PartialFiles | undefined;
   readonly fetch?: RangedFetch | undefined;
   readonly chunkBytes?: number | undefined;
+  readonly onProgress?: ((load: ModelLoad) => void) | undefined;
 };
 
 const opfsParts: PartialFiles = {
@@ -29,7 +37,15 @@ export function installModelFetch(
   const classified = watchModelLoadSource(env);
   const passThrough = env.fetch;
   const store = options.store ?? opfsParts;
+  const report = options.onProgress;
   let transferred = false;
+  let weights: readonly PayloadFile[] = NO_PAYLOAD;
+
+  const sourceNow = (): ModelLoadSource => (transferred ? 'network' : classified());
+
+  function tell(): void {
+    report?.(payloadProgress(weights, sourceNow()));
+  }
 
   env.fetch = (input, init) => {
     const url = String(input);
@@ -44,8 +60,16 @@ export function installModelFetch(
       onTransfer: () => {
         transferred = true;
       },
+      onSpan: (totalBytes, heldBytes) => {
+        weights = trackedPayload(weights, url, totalBytes, heldBytes);
+        tell();
+      },
+      onBytes: (bytes) => {
+        weights = advancedPayload(weights, url, bytes);
+        tell();
+      },
     });
   };
 
-  return () => (transferred ? 'network' : classified());
+  return sourceNow;
 }

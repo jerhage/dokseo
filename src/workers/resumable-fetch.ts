@@ -25,6 +25,8 @@ export type ResumableOptions = {
   readonly store: PartialFiles;
   readonly chunkBytes?: number | undefined;
   readonly onTransfer?: (() => void) | undefined;
+  readonly onSpan?: ((totalBytes: number, heldBytes: number) => void) | undefined;
+  readonly onBytes?: ((bytes: number) => void) | undefined;
 };
 
 export type ByteSpan = {
@@ -157,6 +159,7 @@ function resumingBody(state: Transfer, options: ResumableOptions): ReadableStrea
 
           state.append?.write(value);
           state.offset += value.byteLength;
+          options.onBytes?.(value.byteLength);
           controller.enqueue(value);
           return;
         }
@@ -199,8 +202,11 @@ export async function fetchResumable(url: string, options: ResumableOptions): Pr
     return await options.fetch(url);
   }
 
+  options.onSpan?.(span.total, have);
+
   if (have === 0 && span.total <= chunkBytes) {
     const whole = await opened.arrayBuffer();
+    options.onBytes?.(whole.byteLength);
     return assembled(whole, opened, span.total);
   }
 
