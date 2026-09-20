@@ -1,4 +1,4 @@
-import type { TitleCandidate } from '../domain/title';
+import type { TitleCandidate } from '../domain/book/title';
 
 export function entryName(file: File): string {
   return file.webkitRelativePath.length > 0 ? file.webkitRelativePath : file.name;

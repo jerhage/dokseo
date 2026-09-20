@@ -1,6 +1,6 @@
 import type { Result } from '$lib/shared/result';
-import type { Book } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import type { Book } from '../domain/book/book';
+import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 
 export type ListBooksDeps = {
   readonly repository: LibraryRepository;

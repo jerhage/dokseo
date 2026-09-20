@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING, type Book } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
-import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
-import type { UploadReport, UploadStage } from '../domain/upload-progress';
+import { defaultPageFit, DEFAULT_PAGE_PAIRING, type Book } from '../domain/book/book';
+import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import type { UploadReport, UploadStage } from '../domain/ingest/upload-progress';
 import { openFile, type OpenFileDeps } from './open-file';
 
 const NOW = 1758240000000;

@@ -3,8 +3,8 @@
   import { useContainer } from '$lib/context';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
-  import CaptureResults from '$lib/domains/recognition/ui/CaptureResults.svelte';
-  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture-search.svelte';
+  import CaptureResults from '$lib/domains/recognition/ui/capture/CaptureResults.svelte';
+  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import { MISSING_BOOK_PARAMETER, missingBookNotice } from '$lib/shared/reader-location';
 

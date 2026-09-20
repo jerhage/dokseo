@@ -1,11 +1,11 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
-import type { Book, BookEdit } from '../domain/book';
-import type { LibraryError } from '../domain/library-repository';
-import type { SourceBuildError } from '../domain/source-builder';
-import { suggestTitle } from '../domain/title';
-import { INSPECTING, type UploadStage } from '../domain/upload-progress';
+import type { Book, BookEdit } from '../domain/book/book';
+import type { LibraryError } from '../domain/book/library-repository';
+import type { SourceBuildError } from '../domain/ingest/source-builder';
+import { suggestTitle } from '../domain/book/title';
+import { INSPECTING, type UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 

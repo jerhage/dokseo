@@ -4,9 +4,9 @@ import type { Container } from '$lib/container';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import type { Book } from '../domain/book';
-import type { LibraryError } from '../domain/library-repository';
-import type { UploadReport } from '../domain/upload-progress';
+import type { Book } from '../domain/book/book';
+import type { LibraryError } from '../domain/book/library-repository';
+import type { UploadReport } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { LibraryView } from './library-view.svelte';
 

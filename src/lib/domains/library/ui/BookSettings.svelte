@@ -6,7 +6,7 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND,
   } from '$lib/shared/layout-choices';
-  import type { Book, BookEdit } from '../domain/book';
+  import type { Book, BookEdit } from '../domain/book/book';
   import { bookForm, changedFields } from './book-edit-form';
 
   type Props = {
@@ -104,11 +104,7 @@
       </label>
     </fieldset>
 
-    <fieldset
-      class="group"
-      class:locked={downward}
-      disabled={saving || downward}
-    >
+    <fieldset class="group" class:locked={downward} disabled={saving || downward}>
       <legend class="label">{READING_DIRECTION_LEGEND}</legend>
       {#each READING_DIRECTION_CHOICES as choice (choice.value)}
         <label class="choice">
@@ -123,11 +119,7 @@
       {/each}
     </fieldset>
 
-    <fieldset
-      class="group"
-      class:locked={downward}
-      disabled={saving || downward}
-    >
+    <fieldset class="group" class:locked={downward} disabled={saving || downward}>
       <legend class="label">{PAGE_PAIRING_LEGEND}</legend>
       {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
         <label class="choice">

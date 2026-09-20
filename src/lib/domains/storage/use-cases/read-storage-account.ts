@@ -2,8 +2,8 @@ import {
   belongsToModel,
   isRuntimeAsset,
   reportOf,
-} from '$lib/domains/recognition/domain/model-cache';
-import { everyModel } from '$lib/domains/recognition/domain/model-footprint';
+} from '$lib/domains/recognition/domain/model/model-cache';
+import { everyModel } from '$lib/domains/recognition/domain/model/model-footprint';
 import { ok, type Result } from '$lib/shared/result';
 import type {
   CachedFile,

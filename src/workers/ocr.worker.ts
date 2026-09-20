@@ -1,7 +1,10 @@
-import { chosenDevice, type ComputeChoice } from '$lib/domains/recognition/domain/compute-choice';
-import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer-setup';
-import { knownModel } from '$lib/domains/recognition/domain/model-footprint';
-import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model-weights';
+import {
+  chosenDevice,
+  type ComputeChoice,
+} from '$lib/domains/recognition/domain/engine/compute-choice';
+import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
+import { knownModel } from '$lib/domains/recognition/domain/model/model-footprint';
+import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model/model-weights';
 import { describeCause } from '$lib/shared/cause';
 import { japaneseOcrText } from './japanese-ocr-text';
 import { installModelFetch } from './model-fetch';

@@ -1,6 +1,6 @@
-import type { ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
-import type { RecognizerDevice } from '$lib/domains/recognition/domain/recognizer-session';
-import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer-setup';
+import type { ModelLoadSource } from '$lib/domains/recognition/domain/model/model-load';
+import type { RecognizerDevice } from '$lib/domains/recognition/domain/engine/recognizer-session';
+import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 
 export type OcrRequest =
   | { readonly kind: 'open'; readonly id: number; readonly setup: RecognizerSetup }

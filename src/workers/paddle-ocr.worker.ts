@@ -1,6 +1,9 @@
-import { chosenDevice, type ComputeChoice } from '$lib/domains/recognition/domain/compute-choice';
-import { SINGLE_GRAPH_FILE } from '$lib/domains/recognition/domain/model-weights';
-import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer-setup';
+import {
+  chosenDevice,
+  type ComputeChoice,
+} from '$lib/domains/recognition/domain/engine/compute-choice';
+import { SINGLE_GRAPH_FILE } from '$lib/domains/recognition/domain/model/model-weights';
+import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 import { describeCause } from '$lib/shared/cause';
 import { characterDictionary, ctcLabels } from './character-dictionary';
 import { ctcReading, joinedReading, type CtcLogits, type CtcReading } from './ctc-reading';

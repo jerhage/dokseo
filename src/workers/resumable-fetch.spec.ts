@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { partialName } from '$lib/domains/recognition/domain/model-partial';
+import { partialName } from '$lib/domains/recognition/domain/model/model-partial';
 import { fetchResumable, type PartAppend, type PartialFiles } from './resumable-fetch';
 
 const URL_OF_WEIGHTS =

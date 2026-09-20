@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import type { BookId } from '$lib/shared/ids';
   import { matchesQuery } from '$lib/shared/text-search';
-  import type { BookEdit } from '../domain/book';
+  import type { BookEdit } from '../domain/book/book';
   import BookCard from './BookCard.svelte';
   import BookSettings from './BookSettings.svelte';
   import PendingCard from './PendingCard.svelte';

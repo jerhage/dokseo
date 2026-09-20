@@ -1,8 +1,8 @@
 import type { BookId } from '$lib/shared/ids';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
-import type { Book, SourceKind } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import type { Book, SourceKind } from '../domain/book/book';
+import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 
 export type OpenForReadingDeps = {
   readonly repository: LibraryRepository;

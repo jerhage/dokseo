@@ -1,6 +1,6 @@
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
-import type { Book, BookEdit } from '../domain/book';
+import type { Book, BookEdit } from '../domain/book/book';
 
 export type BookForm = {
   title: string;

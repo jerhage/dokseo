@@ -2,7 +2,7 @@ import { BlobReader, BlobWriter, ZipReader, type Entry, type FileEntry } from '@
 import { decodeImage } from '$lib/platform/image/decode';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
-import { selectImageEntries } from '../domain/image-entries';
+import { selectImageEntries } from '../domain/ingest/image-entries';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 

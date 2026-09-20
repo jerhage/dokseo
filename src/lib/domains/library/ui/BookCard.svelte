@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import type { BookId } from '$lib/shared/ids';
-  import type { Book } from '../domain/book';
+  import type { Book } from '../domain/book/book';
 
   type Props = {
     readonly book: Book;

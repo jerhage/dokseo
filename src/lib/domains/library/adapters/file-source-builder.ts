@@ -3,12 +3,12 @@ import { renderThumbnail } from '$lib/platform/image/thumbnail';
 import { describeCause } from '$lib/shared/cause';
 import { imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
-import type { SourceKind } from '../domain/book';
+import type { SourceKind } from '../domain/book/book';
 import type { PageSourceError } from '$lib/shared/page-source';
-import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/source-builder';
-import { INSPECTING, type UploadReport } from '../domain/upload-progress';
-import { detectSourceKind } from '../domain/source-detection';
-import { suggestTitle } from '../domain/title';
+import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import { INSPECTING, type UploadReport } from '../domain/ingest/upload-progress';
+import { detectSourceKind } from '../domain/ingest/source-detection';
+import { suggestTitle } from '../domain/book/title';
 import { entryName, titleCandidate } from './file-entry';
 import { openStoredPageSource } from './stored-page-source';
 

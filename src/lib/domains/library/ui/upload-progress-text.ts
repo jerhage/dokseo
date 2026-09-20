@@ -1,11 +1,11 @@
 import { match } from 'ts-pattern';
-import type { SourceKind } from '../domain/book';
+import type { SourceKind } from '../domain/book/book';
 import {
   uploadCount,
   uploadFraction,
   uploadRemainingSeconds,
   type UploadStage,
-} from '../domain/upload-progress';
+} from '../domain/ingest/upload-progress';
 
 const MINUTE_SECONDS = 90;
 

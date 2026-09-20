@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
-import type { Book } from '../domain/book';
-import { applyEdit } from '../domain/book';
+import type { Book } from '../domain/book/book';
+import { applyEdit } from '../domain/book/book';
 import { bookForm, changedFields } from './book-edit-form';
 
 function book(overrides: Partial<Book> = {}): Book {

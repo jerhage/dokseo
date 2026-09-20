@@ -1,4 +1,4 @@
-import { partialName } from '$lib/domains/recognition/domain/model-partial';
+import { partialName } from '$lib/domains/recognition/domain/model/model-partial';
 
 const DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024;
 

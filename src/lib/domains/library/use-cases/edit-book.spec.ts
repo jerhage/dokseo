@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex, type BookId } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
-import type { Book, BookEdit } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import type { Book, BookEdit } from '../domain/book/book';
+import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import { editBook } from './edit-book';
 
 type UpdateCall = { readonly id: BookId; readonly edit: BookEdit };

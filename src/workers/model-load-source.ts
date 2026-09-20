@@ -1,7 +1,7 @@
 import {
   downloadsModelPayload,
   type ModelLoadSource,
-} from '$lib/domains/recognition/domain/model-load';
+} from '$lib/domains/recognition/domain/model/model-load';
 
 export type Fetching = (input: string | URL, init?: unknown) => Promise<unknown>;
 

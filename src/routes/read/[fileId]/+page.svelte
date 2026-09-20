@@ -4,12 +4,12 @@
   import { page } from '$app/state';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
-  import ArrivalBar from '$lib/domains/recognition/ui/ArrivalBar.svelte';
-  import CapturePalette from '$lib/domains/recognition/ui/CapturePalette.svelte';
-  import CapturePanel from '$lib/domains/recognition/ui/CapturePanel.svelte';
-  import EnginePill from '$lib/domains/recognition/ui/EnginePill.svelte';
-  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture-search.svelte';
-  import { CaptureView } from '$lib/domains/recognition/ui/capture-view.svelte';
+  import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
+  import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
+  import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
+  import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
+  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
+  import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import { bookId, type ImageIndex } from '$lib/shared/ids';

@@ -1,7 +1,7 @@
 import type { BookId } from '$lib/shared/ids';
 import type { Result } from '$lib/shared/result';
-import type { Book, BookEdit } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import type { Book, BookEdit } from '../domain/book/book';
+import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 
 export type EditBookDeps = {
   readonly repository: LibraryRepository;

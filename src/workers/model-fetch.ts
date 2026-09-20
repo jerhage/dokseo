@@ -1,12 +1,12 @@
-import type { ModelLoad, ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
-import { resumesModelWeights } from '$lib/domains/recognition/domain/model-partial';
+import type { ModelLoad, ModelLoadSource } from '$lib/domains/recognition/domain/model/model-load';
+import { resumesModelWeights } from '$lib/domains/recognition/domain/model/model-partial';
 import {
   advancedPayload,
   NO_PAYLOAD,
   payloadProgress,
   trackedPayload,
   type PayloadFile,
-} from '$lib/domains/recognition/domain/payload-progress';
+} from '$lib/domains/recognition/domain/model/payload-progress';
 import * as parts from '$lib/platform/opfs/partial-store';
 import { asksForOneRange, watchModelLoadSource, type Fetching } from './model-load-source';
 import { fetchResumable, type PartialFiles, type RangedFetch } from './resumable-fetch';

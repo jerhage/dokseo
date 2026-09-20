@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Language } from '$lib/shared/language';
-  import type { UploadStage } from '../domain/upload-progress';
+  import type { UploadStage } from '../domain/ingest/upload-progress';
   import { uploadCountText, uploadStageText } from './upload-progress-text';
 
   type Props = {

@@ -3,8 +3,8 @@ import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/id
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import type { Book, SourceKind } from '../domain/book';
-import type { LibraryError, LibraryRepository } from '../domain/library-repository';
+import type { Book, SourceKind } from '../domain/book/book';
+import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import { openForReading, type OpenForReadingDeps } from './open-for-reading';
 
 const ID = bookId('book-7');

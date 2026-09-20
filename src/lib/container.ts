@@ -15,9 +15,9 @@ import type { Result } from '$lib/shared/result';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { openStoredPageSource } from './domains/library/adapters/stored-page-source';
-import type { Book, BookEdit } from './domains/library/domain/book';
-import type { LibraryError } from './domains/library/domain/library-repository';
-import type { UploadReport } from './domains/library/domain/upload-progress';
+import type { Book, BookEdit } from './domains/library/domain/book/book';
+import type { LibraryError } from './domains/library/domain/book/library-repository';
+import type { UploadReport } from './domains/library/domain/ingest/upload-progress';
 import { editBook, type EditBookDeps } from './domains/library/use-cases/edit-book';
 import { listBooks, type ListBooksDeps } from './domains/library/use-cases/list-books';
 import {
@@ -37,84 +37,93 @@ import {
   type ReadLibrarySizeDeps,
 } from './domains/library/use-cases/read-library-size';
 import { removeBook, type RemoveBookDeps } from './domains/library/use-cases/remove-book';
-import { createCanvasCropper } from './domains/recognition/adapters/canvas-cropper';
-import { createModelStorage } from './domains/recognition/adapters/cache-api-model-storage';
-import { createCaptureRepository } from './domains/recognition/adapters/indexeddb-captures.repo';
-import { createModelConsentStore } from './domains/recognition/adapters/indexeddb-model-consent';
-import { createRecognizerSetupStore } from './domains/recognition/adapters/indexeddb-recognizer-setup';
-import { createPartialDownloads } from './domains/recognition/adapters/opfs-partial-downloads';
-import type { Capture, CaptureDraft } from './domains/recognition/domain/capture';
-import type { CaptureError } from './domains/recognition/domain/capture-repository';
-import type { GpuDetection } from './domains/recognition/domain/compute-choice';
-import type { ModelStorageReport } from './domains/recognition/domain/model-cache';
+import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
+import { createModelStorage } from './domains/recognition/adapters/model/cache-api-model-storage';
+import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
+import { createModelConsentStore } from './domains/recognition/adapters/model/indexeddb-model-consent';
+import { createRecognizerSetupStore } from './domains/recognition/adapters/engine/indexeddb-recognizer-setup';
+import { createPartialDownloads } from './domains/recognition/adapters/model/opfs-partial-downloads';
+import type { Capture, CaptureDraft } from './domains/recognition/domain/capture/capture';
+import type { CaptureError } from './domains/recognition/domain/capture/capture-repository';
+import type { GpuDetection } from './domains/recognition/domain/engine/compute-choice';
+import type { ModelStorageReport } from './domains/recognition/domain/model/model-cache';
 import type {
   ModelConsentDecision,
   ModelConsentError,
-} from './domains/recognition/domain/model-consent';
-import type { ModelLoad, ModelLoadError } from './domains/recognition/domain/model-load';
-import type { PartialReport } from './domains/recognition/domain/model-partial';
-import type { ModelStorageError } from './domains/recognition/domain/model-storage';
-import type { PartialError } from './domains/recognition/domain/partial-downloads';
-import type { RecognizedText } from './domains/recognition/domain/recognized-text';
-import type { RecognizerSession } from './domains/recognition/domain/recognizer-session';
+} from './domains/recognition/domain/model/model-consent';
+import type { ModelLoad, ModelLoadError } from './domains/recognition/domain/model/model-load';
+import type { PartialReport } from './domains/recognition/domain/model/model-partial';
+import type { ModelStorageError } from './domains/recognition/domain/model/model-storage';
+import type { PartialError } from './domains/recognition/domain/model/partial-downloads';
+import type { RecognizedText } from './domains/recognition/domain/engine/recognized-text';
+import type { RecognizerSession } from './domains/recognition/domain/engine/recognizer-session';
 import type {
   RecognizerChoice,
   RecognizerSetup,
   SetupError,
-} from './domains/recognition/domain/recognizer-setup';
-import type { TextRecognizer } from './domains/recognition/domain/text-recognizer';
-import { cancelModelLoad } from './domains/recognition/use-cases/cancel-model-load';
-import { closeRecognizer } from './domains/recognition/use-cases/close-recognizer';
+} from './domains/recognition/domain/engine/recognizer-setup';
+import type { TextRecognizer } from './domains/recognition/domain/engine/text-recognizer';
+import { cancelModelLoad } from './domains/recognition/use-cases/model/cancel-model-load';
+import { closeRecognizer } from './domains/recognition/use-cases/engine/close-recognizer';
 import {
   clearCaptures,
   type ClearCapturesDeps,
-} from './domains/recognition/use-cases/clear-captures';
-import { deleteModel, type DeleteModelDeps } from './domains/recognition/use-cases/delete-model';
+} from './domains/recognition/use-cases/capture/clear-captures';
+import {
+  deleteModel,
+  type DeleteModelDeps,
+} from './domains/recognition/use-cases/model/delete-model';
 import {
   detectCompute,
   type DetectComputeDeps,
-} from './domains/recognition/use-cases/detect-compute';
+} from './domains/recognition/use-cases/engine/detect-compute';
 import {
   editCaptureText,
   type EditCaptureTextDeps,
-} from './domains/recognition/use-cases/edit-capture-text';
+} from './domains/recognition/use-cases/capture/edit-capture-text';
 import {
   grantModelConsent,
   type GrantModelConsentDeps,
-} from './domains/recognition/use-cases/grant-model-consent';
-import { listCaptures, type ListCapturesDeps } from './domains/recognition/use-cases/list-captures';
+} from './domains/recognition/use-cases/model/grant-model-consent';
+import {
+  listCaptures,
+  type ListCapturesDeps,
+} from './domains/recognition/use-cases/capture/list-captures';
 import {
   listEveryCapture,
   type ListEveryCaptureDeps,
-} from './domains/recognition/use-cases/list-every-capture';
-import { pauseModelLoad } from './domains/recognition/use-cases/pause-model-load';
-import { prepareRecognizer } from './domains/recognition/use-cases/prepare-recognizer';
+} from './domains/recognition/use-cases/capture/list-every-capture';
+import { pauseModelLoad } from './domains/recognition/use-cases/model/pause-model-load';
+import { prepareRecognizer } from './domains/recognition/use-cases/engine/prepare-recognizer';
 import {
   readModelConsent,
   type ReadModelConsentDeps,
-} from './domains/recognition/use-cases/read-model-consent';
+} from './domains/recognition/use-cases/model/read-model-consent';
 import {
   readModelStorage,
   type ModelStorageSnapshot,
   type ReadModelStorageDeps,
-} from './domains/recognition/use-cases/read-model-storage';
+} from './domains/recognition/use-cases/model/read-model-storage';
 import {
   readRecognizerSetup,
   type ReadRecognizerSetupDeps,
-} from './domains/recognition/use-cases/read-recognizer-setup';
+} from './domains/recognition/use-cases/engine/read-recognizer-setup';
 import {
   recognizeRegion,
   type RecognizeRegionError,
-} from './domains/recognition/use-cases/recognize-region';
+} from './domains/recognition/use-cases/engine/recognize-region';
 import {
   removeCapture,
   type RemoveCaptureDeps,
-} from './domains/recognition/use-cases/remove-capture';
-import { saveCapture, type SaveCaptureDeps } from './domains/recognition/use-cases/save-capture';
+} from './domains/recognition/use-cases/capture/remove-capture';
+import {
+  saveCapture,
+  type SaveCaptureDeps,
+} from './domains/recognition/use-cases/capture/save-capture';
 import {
   saveRecognizerSetup,
   type SaveRecognizerSetupDeps,
-} from './domains/recognition/use-cases/save-recognizer-setup';
+} from './domains/recognition/use-cases/engine/save-recognizer-setup';
 import { createOriginStores } from './domains/storage/adapters/browser-origin-stores';
 import type { OriginStoresError } from './domains/storage/domain/origin-stores';
 import type { StorageAccount } from './domains/storage/domain/storage-parts';
@@ -189,13 +198,13 @@ function noticesFor(language: Language): {
 
 async function loadMangaOcrRecognizer(language: Language): Promise<TextRecognizer> {
   const { createMangaOcrRecognizer } =
-    await import('./domains/recognition/adapters/manga-ocr.adapter');
+    await import('./domains/recognition/adapters/engine/manga-ocr.adapter');
   return createMangaOcrRecognizer(noticesFor(language));
 }
 
 async function loadPaddleOcrRecognizer(language: Language): Promise<TextRecognizer> {
   const { createPaddleOcrRecognizer } =
-    await import('./domains/recognition/adapters/paddle-ocr.adapter');
+    await import('./domains/recognition/adapters/engine/paddle-ocr.adapter');
   return createPaddleOcrRecognizer(noticesFor(language));
 }
 
