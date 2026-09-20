@@ -1,4 +1,10 @@
-import { deleteByIndex, deleteRecord, listByIndex, putRecord } from '$lib/platform/idb/connection';
+import {
+  deleteByIndex,
+  deleteRecord,
+  listByIndex,
+  listRecords,
+  putRecord,
+} from '$lib/platform/idb/connection';
 import { describeCause } from '$lib/shared/cause';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
@@ -34,6 +40,19 @@ export function createCaptureRepository(): CaptureRepository {
           CAPTURE_STORE,
           CAPTURE_BOOK_INDEX,
           book,
+        );
+        return ok(oldestFirst(records.map(captureFromStored)));
+      } catch (cause) {
+        return failed(cause);
+      }
+    },
+
+    async listEverything(): Promise<Result<readonly Capture[], CaptureError>> {
+      if (!recordsAvailable()) return unavailable();
+      try {
+        const records = await listRecords<StoredCapture>(
+          await recognitionDatabase(),
+          CAPTURE_STORE,
         );
         return ok(oldestFirst(records.map(captureFromStored)));
       } catch (cause) {

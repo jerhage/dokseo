@@ -83,6 +83,10 @@ import {
   type GrantModelConsentDeps,
 } from './domains/recognition/use-cases/grant-model-consent';
 import { listCaptures, type ListCapturesDeps } from './domains/recognition/use-cases/list-captures';
+import {
+  listEveryCapture,
+  type ListEveryCaptureDeps,
+} from './domains/recognition/use-cases/list-every-capture';
 import { pauseModelLoad } from './domains/recognition/use-cases/pause-model-load';
 import { prepareRecognizer } from './domains/recognition/use-cases/prepare-recognizer';
 import {
@@ -232,6 +236,7 @@ export type Container = {
       notices?: RecognitionNotices,
     ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
     readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
+    readonly listEveryCapture: () => Promise<Result<readonly Capture[], CaptureError>>;
     readonly saveCapture: (draft: CaptureDraft) => Promise<Result<Capture, CaptureError>>;
     readonly editCaptureText: (
       capture: Capture,
@@ -293,6 +298,7 @@ export function buildContainer(): Container {
   const grantModelConsentDeps: GrantModelConsentDeps = { consent, setups, requestPersistence };
   const captures = createCaptureRepository();
   const listCapturesDeps: ListCapturesDeps = { captures };
+  const listEveryCaptureDeps: ListEveryCaptureDeps = { captures };
   const saveCaptureDeps: SaveCaptureDeps = { captures, now: Date.now };
   const editCaptureTextDeps: EditCaptureTextDeps = { captures, now: Date.now };
   const removeCaptureDeps: RemoveCaptureDeps = { captures };
@@ -361,6 +367,7 @@ export function buildContainer(): Container {
         }
       },
       listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),
+      listEveryCapture: () => listEveryCapture(listEveryCaptureDeps),
       saveCapture: (draft: CaptureDraft) => saveCapture(saveCaptureDeps, draft),
       editCaptureText: (capture: Capture, text: string) =>
         editCaptureText(editCaptureTextDeps, capture, text),

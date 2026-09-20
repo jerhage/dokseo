@@ -22,6 +22,8 @@ function repository(broken = false) {
   const captures: CaptureRepository = {
     listForBook: (): Promise<Result<readonly Capture[], CaptureError>> =>
       Promise.resolve(ok(saved)),
+    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
+      Promise.resolve(ok(saved)),
     save: (capture: Capture): Promise<Result<void, CaptureError>> => {
       if (broken)
         return Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk is full' }));

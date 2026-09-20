@@ -94,6 +94,7 @@ function world(snapshot: ModelStorageSnapshot): World {
       },
       recognizeRegion: unused,
       listCaptures: unused,
+      listEveryCapture: unused,
       saveCapture: unused,
       editCaptureText: unused,
       removeCapture: unused,

@@ -26,6 +26,8 @@ function repository(broken = false) {
   let rows: Capture[] = [stored('a'), stored('b')];
   const captures: CaptureRepository = {
     listForBook: (): Promise<Result<readonly Capture[], CaptureError>> => Promise.resolve(ok(rows)),
+    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
+      Promise.resolve(ok(rows)),
     save: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
     remove: (capture: CaptureId): Promise<Result<void, CaptureError>> => {
       if (broken) {

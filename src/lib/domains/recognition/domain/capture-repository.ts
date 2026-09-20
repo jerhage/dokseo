@@ -8,6 +8,7 @@ export type CaptureError =
 
 export interface CaptureRepository {
   listForBook(book: BookId): Promise<Result<readonly Capture[], CaptureError>>;
+  listEverything(): Promise<Result<readonly Capture[], CaptureError>>;
   save(capture: Capture): Promise<Result<void, CaptureError>>;
   remove(capture: CaptureId): Promise<Result<void, CaptureError>>;
   clearBook(book: BookId): Promise<Result<void, CaptureError>>;
