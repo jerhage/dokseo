@@ -22,7 +22,13 @@ type World = {
   readonly requestPersistence: () => Promise<boolean>;
 };
 
-function world(options: { readonly persisted?: boolean; readonly failed?: boolean } = {}): World {
+function world(
+  options: {
+    readonly persisted?: boolean;
+    readonly failed?: boolean;
+    readonly stored?: StoredRecognizerSetup;
+  } = {},
+): World {
   const steps: string[] = [];
   const recorded: (ModelFootprint | null)[] = [];
   const granted = new Set<Language>();
@@ -37,7 +43,7 @@ function world(options: { readonly persisted?: boolean; readonly failed?: boolea
     setups: {
       read: (language: Language): Promise<Result<StoredRecognizerSetup | null, SetupError>> => {
         steps.push(`setup ${language}`);
-        return Promise.resolve(ok(null));
+        return Promise.resolve(ok(options.stored ?? null));
       },
       write: () => Promise.resolve(ok(undefined)),
     },
@@ -82,6 +88,14 @@ describe('grantModelConsent', () => {
     await grantModelConsent(fakes, 'ja');
 
     expect(fakes.recorded).toEqual([JAPANESE_OCR_MODEL]);
+  });
+
+  it('names the model the recognizer setup holds, not the language default', async () => {
+    const fakes = world({ stored: { language: 'ja', modelId: JAPANESE_OCR_MODEL.modelId } });
+
+    await grantModelConsent(fakes, 'ja');
+
+    expect(fakes.recorded.map((model) => model?.modelId)).toEqual([JAPANESE_OCR_MODEL.modelId]);
   });
 
   it('records no model for a language that offers none', async () => {

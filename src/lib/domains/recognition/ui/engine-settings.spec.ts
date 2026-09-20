@@ -38,6 +38,7 @@ type World = {
   readonly attempts: Attempt[];
   readonly pauses: Language[];
   readonly cancels: string[];
+  readonly grants: Language[];
   snapshot: ModelStorageSnapshot;
 };
 
@@ -63,12 +64,14 @@ function world(snapshot: ModelStorageSnapshot): World {
   const attempts: Attempt[] = [];
   const pauses: Language[] = [];
   const cancels: string[] = [];
+  const grants: Language[] = [];
 
   const built: World = {
     view: undefined as unknown as EngineSettingsView,
     attempts,
     pauses,
     cancels,
+    grants,
     snapshot,
   };
 
@@ -85,7 +88,10 @@ function world(snapshot: ModelStorageSnapshot): World {
     },
     recognition: {
       readModelConsent: unused,
-      grantModelConsent: unused,
+      grantModelConsent: (language: Language) => {
+        grants.push(language);
+        return Promise.resolve(ok(undefined));
+      },
       recognizeRegion: unused,
       listCaptures: unused,
       saveCapture: unused,
@@ -257,6 +263,37 @@ describe('EngineSettingsView', () => {
 
     expect(built.view.stored).toBe(false);
     expect(built.view.resumable).toBe(true);
+  });
+
+  it('records the grant for the chosen model before the download starts', async () => {
+    const built = world(snapshotOf([], 0, 0));
+    await built.view.load();
+
+    expect(built.grants).toEqual([]);
+
+    void built.view.start();
+    await settled();
+
+    expect(built.grants).toEqual(['ja']);
+    expect(built.view.model?.modelId).toBe(MODEL);
+    expect(built.attempts.length).toBe(1);
+  });
+
+  it('records the grant again for a download resumed from the settings screen', async () => {
+    const built = world(snapshotOf([], 50_000_000, 5));
+    await built.view.load();
+
+    void built.view.start();
+    await settled();
+
+    expect(built.grants).toEqual(['ja']);
+  });
+
+  it('records no grant for merely reporting what the browser holds', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    expect(built.grants).toEqual([]);
   });
 
   it('holds a paused download paused when the abandoned load resolves afterwards', async () => {

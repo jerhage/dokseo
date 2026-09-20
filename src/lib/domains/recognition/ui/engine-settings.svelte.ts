@@ -189,6 +189,9 @@ export class EngineSettingsView {
     this.message = null;
     this.#step({ kind: 'started' });
 
+    await this.#container.recognition.grantModelConsent(language);
+    if (generation !== this.#generation) return;
+
     const opened = await this.#container.recognition.prepareRecognizer(language, {
       onProgress: (load) => {
         if (generation === this.#generation) this.#step({ kind: 'advanced', load });
