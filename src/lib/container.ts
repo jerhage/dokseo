@@ -51,7 +51,9 @@ import type {
   ModelConsentError,
 } from './domains/recognition/domain/model-consent';
 import type { ModelLoad, ModelLoadError } from './domains/recognition/domain/model-load';
+import type { PartialReport } from './domains/recognition/domain/model-partial';
 import type { ModelStorageError } from './domains/recognition/domain/model-storage';
+import type { PartialError } from './domains/recognition/domain/partial-downloads';
 import type { RecognizedText } from './domains/recognition/domain/recognized-text';
 import type { RecognizerSession } from './domains/recognition/domain/recognizer-session';
 import type {
@@ -80,6 +82,7 @@ import {
   type GrantModelConsentDeps,
 } from './domains/recognition/use-cases/grant-model-consent';
 import { listCaptures, type ListCapturesDeps } from './domains/recognition/use-cases/list-captures';
+import { pauseModelLoad } from './domains/recognition/use-cases/pause-model-load';
 import { prepareRecognizer } from './domains/recognition/use-cases/prepare-recognizer';
 import {
   readModelConsent,
@@ -244,7 +247,11 @@ export type Container = {
       language: Language,
       notices?: RecognitionNotices,
     ) => Promise<Result<RecognizerSession, ModelLoadError>>;
-    readonly cancelModelLoad: (language: Language) => Promise<void>;
+    readonly pauseModelLoad: (language: Language) => Promise<void>;
+    readonly cancelModelLoad: (
+      language: Language,
+      modelId: string,
+    ) => Promise<Result<PartialReport, PartialError> | null>;
     readonly closeRecognizer: (language: Language) => Promise<void>;
   };
 };
@@ -363,11 +370,17 @@ export function buildContainer(): Container {
           if (onSession !== undefined) watching.delete(onSession);
         }
       },
-      cancelModelLoad: async (language: Language) => {
+      pauseModelLoad: async (language: Language) => {
         openedSessions.delete(language);
         const recognizer = await recognizerFor(language).catch(() => null);
         if (recognizer === null) return;
-        cancelModelLoad({ recognizer });
+        pauseModelLoad({ recognizer });
+      },
+      cancelModelLoad: async (language: Language, modelId: string) => {
+        openedSessions.delete(language);
+        const recognizer = await recognizerFor(language).catch(() => null);
+        if (recognizer === null) return null;
+        return await cancelModelLoad({ recognizer, partials }, modelId);
       },
       closeRecognizer: async (language: Language) => {
         openedSessions.delete(language);

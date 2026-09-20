@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { ModelLoad } from '../domain/model-load';
+import type { PartialReport } from '../domain/model-partial';
 import {
   cancelHint,
   engineLanguages,
   loadFigure,
+  partialFigure,
   storageFailureNote,
   storedFigure,
 } from './engine-settings.svelte';
@@ -45,12 +47,35 @@ describe('cancelHint', () => {
     expect(hint).not.toContain('fetched');
   });
 
-  it('says only the file in flight is lost when bytes are coming over the network', () => {
-    expect(cancelHint(load({ source: 'network' }))).toContain('file in flight');
+  it('separates pausing from cancelling when bytes are coming over the network', () => {
+    const hint = cancelHint(load({ source: 'network' }));
+
+    expect(hint).toContain('Pausing keeps every byte already fetched');
+    expect(hint).toContain('Cancelling discards');
   });
 
   it('says nothing about fetching before a single byte has been reported', () => {
     expect(cancelHint(null)).toBe(cancelHint(load({ source: 'cache' })));
+  });
+});
+
+describe('partialFigure', () => {
+  function partial(over: Partial<PartialReport> = {}): PartialReport {
+    return { modelId: MODEL, files: 0, bytes: 0, ...over };
+  }
+
+  it('says nothing when no part-downloaded file is held', () => {
+    expect(partialFigure(partial())).toBeNull();
+  });
+
+  it('says nothing when the part-downloads could not be read', () => {
+    expect(partialFigure(null)).toBeNull();
+  });
+
+  it('reports what a part-downloaded file holds and that a resume will use it', () => {
+    expect(partialFigure(partial({ files: 1, bytes: 62_000_000 }))).toBe(
+      '62 MB of 1 file part-downloaded, kept for a resume',
+    );
   });
 });
 

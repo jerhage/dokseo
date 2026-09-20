@@ -1,9 +1,17 @@
+import type { Result } from '$lib/shared/result';
+import type { PartialReport } from '../domain/model-partial';
+import type { PartialDownloads, PartialError } from '../domain/partial-downloads';
 import type { TextRecognizer } from '../domain/text-recognizer';
 
 export type CancelModelLoadDeps = {
   readonly recognizer: TextRecognizer;
+  readonly partials: PartialDownloads;
 };
 
-export function cancelModelLoad(deps: CancelModelLoadDeps): void {
+export async function cancelModelLoad(
+  deps: CancelModelLoadDeps,
+  modelId: string,
+): Promise<Result<PartialReport, PartialError>> {
   deps.recognizer.cancel();
+  return await deps.partials.discard(modelId);
 }

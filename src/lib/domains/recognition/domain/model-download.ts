@@ -5,6 +5,7 @@ import type { RecognizerSession } from './recognizer-session';
 export type DownloadState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'loading'; readonly load: ModelLoad | null }
+  | { readonly kind: 'paused'; readonly load: ModelLoad | null }
   | { readonly kind: 'ready'; readonly session: RecognizerSession }
   | { readonly kind: 'cancelled' }
   | { readonly kind: 'failed'; readonly cause: string };
@@ -13,6 +14,7 @@ export type DownloadEvent =
   | { readonly kind: 'started' }
   | { readonly kind: 'advanced'; readonly load: ModelLoad }
   | { readonly kind: 'opened'; readonly session: RecognizerSession }
+  | { readonly kind: 'held' }
   | { readonly kind: 'stopped' }
   | { readonly kind: 'settled'; readonly error: ModelLoadError };
 
@@ -26,6 +28,9 @@ export function downloadStep(state: DownloadState, event: DownloadEvent): Downlo
     )
     .with({ kind: 'opened' }, (opened): DownloadState =>
       state.kind === 'loading' ? { kind: 'ready', session: opened.session } : state,
+    )
+    .with({ kind: 'held' }, (): DownloadState =>
+      state.kind === 'loading' ? { kind: 'paused', load: state.load } : state,
     )
     .with({ kind: 'stopped' }, (): DownloadState =>
       state.kind === 'loading' ? { kind: 'cancelled' } : state,

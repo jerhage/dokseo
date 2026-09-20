@@ -152,6 +152,7 @@ export class CaptureView {
       load: this.progress,
       session: this.session,
       failure: this.engineFailure,
+      paused: false,
       cancelled: false,
     };
   }

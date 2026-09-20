@@ -230,6 +230,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         notices.onSession?.(OPENED_SESSION);
         return Promise.resolve(ok(OPENED_SESSION));
       },
+      pauseModelLoad: unused,
       cancelModelLoad: unused,
       closeRecognizer: (language: Language) => {
         engine.closes.push(language);

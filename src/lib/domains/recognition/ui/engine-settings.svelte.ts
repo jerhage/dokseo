@@ -6,6 +6,7 @@ import type { Result } from '$lib/shared/result';
 import type { ComputeChoice, GpuDetection } from '../domain/compute-choice';
 import { GPU_UNDETECTED } from '../domain/compute-choice';
 import { isStored, type ModelStorageReport } from '../domain/model-cache';
+import { isPartlyDownloaded, type PartialReport } from '../domain/model-partial';
 import {
   downloadStep,
   IDLE,
@@ -45,8 +46,15 @@ export function loadFigure(load: ModelLoad | null): string {
 
 export function cancelHint(load: ModelLoad | null): string {
   return load?.source === 'network'
-    ? 'Every file already fetched is kept. Cancelling loses only the file in flight.'
+    ? 'Pausing keeps every byte already fetched, even if you close the app. Cancelling discards the part-downloaded file.'
     : 'The weights stay on this device. Cancelling only stops opening them.';
+}
+
+export function partialFigure(partial: PartialReport | null): string | null {
+  if (partial === null || !isPartlyDownloaded(partial)) return null;
+
+  const files = `${partial.files} ${partial.files === 1 ? 'file' : 'files'}`;
+  return `${megabytes(partial.bytes)} MB of ${files} part-downloaded, kept for a resume`;
 }
 
 export function storedFigure(report: ModelStorageReport): string {
@@ -92,6 +100,14 @@ export class EngineSettingsView {
     return report !== undefined && isStored(report);
   }
 
+  get partial(): PartialReport | null {
+    return this.storage?.partial ?? null;
+  }
+
+  get resumable(): boolean {
+    return !this.stored && isPartlyDownloaded(this.partial);
+  }
+
   get engine(): EngineState {
     const download = this.download;
     return {
@@ -100,6 +116,7 @@ export class EngineSettingsView {
       load: download.kind === 'loading' ? download.load : null,
       session: download.kind === 'ready' ? download.session : this.session,
       failure: download.kind === 'failed' ? download.cause : null,
+      paused: download.kind === 'paused',
       cancelled: download.kind === 'cancelled',
     };
   }
@@ -134,15 +151,16 @@ export class EngineSettingsView {
   async chooseModel(modelId: string): Promise<void> {
     if (this.selected === modelId) return;
 
+    const abandoned = this.model;
     this.selected = modelId;
-    await this.#applySetup();
+    await this.#applySetup(abandoned?.modelId ?? null);
   }
 
   async chooseCompute(compute: ComputeChoice): Promise<void> {
     if (this.compute === compute) return;
 
     this.compute = compute;
-    await this.#applySetup();
+    await this.#applySetup(null);
   }
 
   async start(): Promise<void> {
@@ -171,13 +189,27 @@ export class EngineSettingsView {
     await this.measure(generation);
   }
 
+  async pause(): Promise<void> {
+    const language = this.language;
+    if (language === null || this.download.kind !== 'loading') return;
+
+    const generation = this.#generation;
+    this.#step({ kind: 'held' });
+    this.session = null;
+    await this.#container.recognition.pauseModelLoad(language);
+    await this.measure(generation);
+  }
+
   async stop(): Promise<void> {
     const language = this.language;
-    if (language === null) return;
+    const model = this.model;
+    if (language === null || model === null) return;
 
+    const generation = this.#generation;
     this.#step({ kind: 'stopped' });
     this.session = null;
-    await this.#container.recognition.cancelModelLoad(language);
+    await this.#container.recognition.cancelModelLoad(language, model.modelId);
+    await this.measure(generation);
   }
 
   askRemoval(): void {
@@ -200,7 +232,7 @@ export class EngineSettingsView {
     this.message = null;
 
     try {
-      await this.#container.recognition.cancelModelLoad(language);
+      await this.#container.recognition.cancelModelLoad(language, model.modelId);
       const removed = await this.#container.recognition.deleteModel(language, model.modelId);
       if (generation !== this.#generation) return;
 
@@ -245,7 +277,7 @@ export class EngineSettingsView {
     }
   }
 
-  async #applySetup(): Promise<void> {
+  async #applySetup(abandoned: string | null): Promise<void> {
     const language = this.language;
     const model = this.model;
     if (language === null || model === null) return;
@@ -258,7 +290,9 @@ export class EngineSettingsView {
       modelId: model.modelId,
       compute: this.compute,
     });
-    await this.#container.recognition.cancelModelLoad(language);
+
+    if (abandoned === null) await this.#container.recognition.pauseModelLoad(language);
+    else await this.#container.recognition.cancelModelLoad(language, abandoned);
 
     if (generation !== this.#generation) return;
     await this.measure(generation);

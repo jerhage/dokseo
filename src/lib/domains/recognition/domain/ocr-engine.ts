@@ -145,6 +145,7 @@ export type EngineState = {
   readonly load: ModelLoad | null;
   readonly session: RecognizerSession | null;
   readonly failure: string | null;
+  readonly paused: boolean;
   readonly cancelled: boolean;
 };
 
@@ -161,7 +162,7 @@ export function engineStatus(state: EngineState): EngineStatus {
       label: loadVerb(state.load.source),
       note:
         state.load.source === 'network'
-          ? 'Fetching the weights over the network. Every file already fetched is kept.'
+          ? 'Fetching the weights over the network. Pausing keeps every byte already fetched.'
           : 'Reading weights already on this device into memory. Nothing is being fetched.',
     };
   }
@@ -190,11 +191,19 @@ export function engineStatus(state: EngineState): EngineStatus {
     };
   }
 
+  if (state.paused) {
+    return {
+      tone: 'quiet',
+      label: 'Paused',
+      note: 'The bytes already fetched are on this device. Resuming carries on from them.',
+    };
+  }
+
   if (state.cancelled) {
     return {
       tone: 'quiet',
       label: 'Cancelled',
-      note: 'The load was stopped. Every file already fetched is kept.',
+      note: 'The load was stopped and the part-downloaded file was discarded.',
     };
   }
 

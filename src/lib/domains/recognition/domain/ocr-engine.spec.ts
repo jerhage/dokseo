@@ -32,6 +32,7 @@ function state(over: Partial<EngineState> = {}): EngineState {
     load: null,
     session: null,
     failure: null,
+    paused: false,
     cancelled: false,
     ...over,
   };
@@ -91,6 +92,17 @@ describe('engineStatus', () => {
         loadVerb(source),
       );
     }
+  });
+
+  it('reports a paused load as paused, and says the fetched bytes are kept', () => {
+    const status = engineStatus(state({ paused: true }));
+
+    expect(status.label).toBe('Paused');
+    expect(status.note).toContain('Resuming');
+  });
+
+  it('says a cancelled load discarded the part-downloaded file', () => {
+    expect(engineStatus(state({ cancelled: true })).note).toContain('discarded');
   });
 
   it('reports a cancelled load as cancelled rather than as missing weights', () => {

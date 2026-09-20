@@ -40,6 +40,25 @@ describe('downloadStep', () => {
     expect(downloadStep(loading(), { kind: 'stopped' })).toEqual({ kind: 'cancelled' });
   });
 
+  it('holds the last reported load when the reader pauses it', () => {
+    const running = downloadStep(loading(), { kind: 'advanced', load: HALFWAY });
+
+    expect(downloadStep(running, { kind: 'held' })).toEqual({ kind: 'paused', load: HALFWAY });
+  });
+
+  it('ignores progress that arrives after the reader paused', () => {
+    const paused = downloadStep(loading(), { kind: 'held' });
+
+    expect(downloadStep(paused, { kind: 'advanced', load: HALFWAY })).toEqual(paused);
+  });
+
+  it('leaves a paused load paused when the cancelled load finally settles', () => {
+    const paused = downloadStep(loading(), { kind: 'held' });
+    const settled = downloadStep(paused, { kind: 'settled', error: { kind: 'cancelled' } });
+
+    expect(settled).toEqual(paused);
+  });
+
   it('settles as failed and keeps the cause', () => {
     const failed = downloadStep(loading(), {
       kind: 'settled',
