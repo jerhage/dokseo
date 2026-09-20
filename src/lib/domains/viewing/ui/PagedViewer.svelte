@@ -449,7 +449,7 @@
   .cap {
     padding: 0 var(--s-1);
     border: 1px solid var(--c-border-4);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-1);
     background: var(--c-surface-chip);
     color: var(--c-text-9);
     font-family: var(--f-mono);

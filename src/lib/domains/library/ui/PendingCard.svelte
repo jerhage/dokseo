@@ -32,7 +32,7 @@
     aspect-ratio: 2 / 3;
     overflow: hidden;
     border: 1px solid var(--c-accent-border-soft);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-card-quiet);
   }
 

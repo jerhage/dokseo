@@ -107,7 +107,7 @@
     padding: 0;
     overflow: auto;
     border: 1px solid var(--c-border-3);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-7);
     background: var(--c-surface-popover);
     color: var(--c-text-2);
   }
@@ -148,7 +148,7 @@
     flex: 1 1 0;
     padding: var(--s-3);
     border: 1px solid var(--c-border-3);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-chip);
   }
 
@@ -183,7 +183,7 @@
   .decline,
   .agree {
     padding: var(--s-2) var(--s-3);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     font-family: var(--f-ui);
     font-size: 12px;
     cursor: pointer;

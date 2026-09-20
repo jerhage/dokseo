@@ -302,7 +302,7 @@
     left: 0;
     margin: 0 0 var(--s-1);
     padding: var(--s-1) var(--s-2);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-1);
     background: var(--c-surface-popover);
     color: var(--c-accent);
     font-family: var(--f-mono);

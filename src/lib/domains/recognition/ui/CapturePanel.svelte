@@ -375,7 +375,7 @@
   .card {
     padding: var(--s-3);
     border: 1px solid var(--c-border-3);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-card-quiet);
   }
 
@@ -456,7 +456,7 @@
     height: 18px;
     padding: 0;
     border: 1px solid transparent;
-    border-radius: var(--r-sm);
+    border-radius: var(--r-1);
     background: none;
     color: var(--c-text-9);
     font-family: var(--f-ui);
@@ -495,7 +495,7 @@
     width: 100%;
     padding: var(--s-2);
     border: 1px solid var(--c-accent-border);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-chip);
     color: var(--c-text-1);
     font-family: var(--f-ja);
@@ -528,7 +528,7 @@
   .abandon,
   .save {
     padding: var(--s-1) var(--s-3);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     font-family: var(--f-ui);
     font-size: 11px;
     cursor: pointer;

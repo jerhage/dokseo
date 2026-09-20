@@ -109,7 +109,7 @@
     aspect-ratio: 2 / 3;
     padding: var(--s-4);
     border: 1.5px dashed var(--c-border-7);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-chip);
     color: var(--c-text-5);
     font-family: var(--f-ui);
@@ -144,7 +144,7 @@
     width: 30px;
     height: 30px;
     border: 1.5px solid var(--c-accent);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     color: var(--c-accent);
     font-size: 16px;
     line-height: 1;

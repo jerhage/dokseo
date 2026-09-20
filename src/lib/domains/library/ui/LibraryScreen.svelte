@@ -158,7 +158,7 @@
     justify-content: center;
     width: 30px;
     height: 30px;
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-accent);
     color: var(--c-accent-text);
     font-family: var(--f-ja);
@@ -227,7 +227,7 @@
     height: 32px;
     padding: 0 var(--s-3);
     border: 1px solid var(--c-border-3);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-popover);
     color: var(--c-text-3);
     font-family: var(--f-ui);
@@ -246,7 +246,7 @@
   .upload {
     padding: var(--s-2) var(--s-3);
     border: 0;
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-accent);
     color: var(--c-accent-text);
     font-family: var(--f-ui);
@@ -270,7 +270,7 @@
     margin: 0 0 var(--s-4);
     padding: var(--s-2) var(--s-3);
     border: 1px solid var(--c-accent-border-soft);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-accent-wash-faint);
     color: var(--c-text-3);
     font-size: 12px;
@@ -288,7 +288,7 @@
   .retry {
     padding: var(--s-1) var(--s-2);
     border: 1px solid var(--c-border-4);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-1);
     background: var(--c-surface-button);
     color: var(--c-text-5);
     font-family: var(--f-ui);

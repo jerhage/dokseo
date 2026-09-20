@@ -104,7 +104,7 @@
     aspect-ratio: 2 / 3;
     overflow: hidden;
     border: 1px solid var(--c-border-7);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: repeating-linear-gradient(
       135deg,
       var(--c-surface-card-active) 0 7px,
@@ -116,7 +116,7 @@
     position: absolute;
     inset: 0;
     display: block;
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
   }
 
   .open:focus-visible {
@@ -238,7 +238,7 @@
   .discard,
   .keep {
     padding: var(--s-1) var(--s-2);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-1);
     font-family: var(--f-ui);
     font-size: 11.5px;
     cursor: pointer;

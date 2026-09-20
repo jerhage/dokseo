@@ -392,7 +392,7 @@
     gap: var(--s-1);
     padding: var(--s-1) var(--s-2);
     border: 1px solid var(--c-border-4);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-button);
     color: var(--c-text-5);
     font-size: 11.5px;
@@ -584,7 +584,7 @@
 
   .escape {
     padding: var(--s-2) var(--s-3);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-accent);
     color: var(--c-accent-text);
     font-size: 12px;
@@ -615,7 +615,7 @@
     height: 26px;
     padding: 0;
     border: 1px solid var(--c-border-4);
-    border-radius: var(--r-md);
+    border-radius: var(--r-4);
     background: var(--c-surface-button);
     color: var(--c-text-4);
     font-family: var(--f-ui);
