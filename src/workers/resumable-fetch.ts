@@ -125,6 +125,19 @@ async function openNextChunk(state: Transfer, options: ResumableOptions): Promis
   state.append = await options.store.openAppend(state.key, state.offset);
 }
 
+async function finish(
+  state: Transfer,
+  options: ResumableOptions,
+  controller: ReadableStreamDefaultController<Uint8Array>,
+): Promise<void> {
+  closeAppend(state);
+  const reader = state.reader;
+  state.reader = null;
+  await reader?.cancel().catch(() => undefined);
+  controller.close();
+  await options.store.remove(state.key).catch(() => undefined);
+}
+
 function resumingBody(state: Transfer, options: ResumableOptions): ReadableStream<Uint8Array> {
   return new ReadableStream<Uint8Array>({
     async pull(controller): Promise<void> {
@@ -137,8 +150,7 @@ function resumingBody(state: Transfer, options: ResumableOptions): ReadableStrea
           }
 
           if (state.offset >= state.total) {
-            controller.close();
-            await options.store.remove(state.key).catch(() => undefined);
+            await finish(state, options, controller);
             return;
           }
 
@@ -161,6 +173,7 @@ function resumingBody(state: Transfer, options: ResumableOptions): ReadableStrea
           state.offset += value.byteLength;
           options.onBytes?.(value.byteLength);
           controller.enqueue(value);
+          if (state.offset >= state.total) await finish(state, options, controller);
           return;
         }
       } catch (cause) {

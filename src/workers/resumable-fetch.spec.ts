@@ -18,6 +18,7 @@ function fakeStore(held: Uint8Array<ArrayBuffer> | null = null) {
   if (held !== null) files.set(KEY, held);
 
   const closed: number[] = [];
+  const open = new Set<string>();
 
   const store: PartialFiles = {
     sizeOf: (key: string) => Promise.resolve(files.get(key)?.byteLength ?? 0),
@@ -28,6 +29,7 @@ function fakeStore(held: Uint8Array<ArrayBuffer> | null = null) {
     openAppend: (key: string, from: number): Promise<PartAppend> => {
       let kept = (files.get(key) ?? new Uint8Array(0)).slice(0, from);
       files.set(key, kept);
+      open.add(key);
 
       return Promise.resolve({
         write(bytes: Uint8Array): void {
@@ -38,17 +40,22 @@ function fakeStore(held: Uint8Array<ArrayBuffer> | null = null) {
           files.set(key, kept);
         },
         close(): void {
+          open.delete(key);
           closed.push(kept.byteLength);
         },
       });
     },
     remove: (key: string) => {
+      if (open.has(key)) {
+        return Promise.reject(new Error(`Part "${key}" is locked by an open access handle`));
+      }
+
       files.delete(key);
       return Promise.resolve();
     },
   };
 
-  return { store, files, closed };
+  return { store, files, closed, open };
 }
 
 type HostOptions = {
@@ -123,6 +130,52 @@ describe('fetchResumable', () => {
 
     expect(files.has(KEY)).toBe(false);
     await bodyOf(response);
+    expect(files.has(KEY)).toBe(false);
+  });
+
+  it('closes the file it appended to before it asks for that file to be deleted', async () => {
+    const body = weights(10);
+    const served = host(body);
+    const { store, open, closed } = fakeStore();
+
+    const response = await fetchResumable(URL_OF_WEIGHTS, {
+      fetch: served.fetching,
+      store,
+      chunkBytes: CHUNK,
+    });
+    await bodyOf(response);
+
+    expect(open.has(KEY)).toBe(false);
+    expect(closed).toHaveLength(3);
+  });
+
+  it('deletes the part-downloaded file when the last chunk completes the download', async () => {
+    const body = weights(12);
+    const served = host(body);
+    const { store, files } = fakeStore();
+
+    const response = await fetchResumable(URL_OF_WEIGHTS, {
+      fetch: served.fetching,
+      store,
+      chunkBytes: CHUNK,
+    });
+    expect(await bodyOf(response)).toEqual(body);
+
+    expect(files.has(KEY)).toBe(false);
+  });
+
+  it('deletes the part-downloaded file when a resumed download reaches the last byte', async () => {
+    const body = weights(10);
+    const served = host(body);
+    const { store, files } = fakeStore(body.slice(0, 6));
+
+    const response = await fetchResumable(URL_OF_WEIGHTS, {
+      fetch: served.fetching,
+      store,
+      chunkBytes: CHUNK,
+    });
+    expect(await bodyOf(response)).toEqual(body);
+
     expect(files.has(KEY)).toBe(false);
   });
 
