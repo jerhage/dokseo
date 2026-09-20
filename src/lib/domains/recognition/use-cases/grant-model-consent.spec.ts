@@ -36,6 +36,11 @@ function world(options: { readonly persisted?: boolean; readonly failed?: boolea
         granted.add(language);
         return Promise.resolve(ok(undefined));
       },
+      forgetGrant(language: Language): Promise<Result<void, ModelConsentError>> {
+        steps.push(`forget ${language}`);
+        granted.delete(language);
+        return Promise.resolve(ok(undefined));
+      },
     },
   };
 }

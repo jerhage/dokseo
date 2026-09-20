@@ -16,6 +16,9 @@ function storeHolding(granted: readonly Language[]): ModelConsentStore {
     recordGrant(): Promise<Result<void, ModelConsentError>> {
       return Promise.resolve(ok(undefined));
     },
+    forgetGrant(): Promise<Result<void, ModelConsentError>> {
+      return Promise.resolve(ok(undefined));
+    },
   };
 }
 
@@ -24,6 +27,9 @@ const blocked: ModelConsentStore = {
     return Promise.resolve(err({ kind: 'storage-unavailable' }));
   },
   recordGrant(): Promise<Result<void, ModelConsentError>> {
+    return Promise.resolve(err({ kind: 'storage-unavailable' }));
+  },
+  forgetGrant(): Promise<Result<void, ModelConsentError>> {
     return Promise.resolve(err({ kind: 'storage-unavailable' }));
   },
 };

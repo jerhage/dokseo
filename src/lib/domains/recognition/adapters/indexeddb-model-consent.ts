@@ -1,4 +1,4 @@
-import { getRecord, putRecord } from '$lib/platform/idb/connection';
+import { deleteRecord, getRecord, putRecord } from '$lib/platform/idb/connection';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import { err, ok, type Result } from '$lib/shared/result';
@@ -47,6 +47,16 @@ export function createModelConsentStore(now: () => number = Date.now): ModelCons
           CONSENT_STORE,
           grantedConsent(language, now()),
         );
+        return ok(undefined);
+      } catch (cause) {
+        return failed(cause);
+      }
+    },
+
+    async forgetGrant(language: Language): Promise<Result<void, ModelConsentError>> {
+      if (!recordsAvailable()) return unavailable();
+      try {
+        await deleteRecord(await recognitionDatabase(), CONSENT_STORE, language);
         return ok(undefined);
       } catch (cause) {
         return failed(cause);

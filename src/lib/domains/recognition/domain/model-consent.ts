@@ -50,4 +50,5 @@ export function decisionOf(consent: ModelConsent | null, language: Language): Mo
 export interface ModelConsentStore {
   decisionFor(language: Language): Promise<Result<ModelConsentDecision, ModelConsentError>>;
   recordGrant(language: Language): Promise<Result<void, ModelConsentError>>;
+  forgetGrant(language: Language): Promise<Result<void, ModelConsentError>>;
 }
