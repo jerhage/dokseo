@@ -2,13 +2,15 @@ import { openDatabase } from '$lib/platform/idb/connection';
 
 const DATABASE_NAME = 'recognition';
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 export const CONSENT_STORE = 'model-consent';
 
 export const CAPTURE_STORE = 'captures';
 
 export const CAPTURE_BOOK_INDEX = 'bookId';
+
+export const SETUP_STORE = 'recognizer-setup';
 
 function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(CONSENT_STORE)) {
@@ -18,6 +20,10 @@ function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(CAPTURE_STORE)) {
     const captures = db.createObjectStore(CAPTURE_STORE, { keyPath: 'id' });
     captures.createIndex(CAPTURE_BOOK_INDEX, 'bookId', { unique: false });
+  }
+
+  if (!db.objectStoreNames.contains(SETUP_STORE)) {
+    db.createObjectStore(SETUP_STORE, { keyPath: 'language' });
   }
 }
 

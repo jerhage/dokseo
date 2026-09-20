@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  chosenModel,
   downloadMb,
   engineName,
+  knownModel,
   megabytes,
   modelFootprint,
+  modelsFor,
   onDiskMb,
   type ModelFootprint,
 } from './model-footprint';
@@ -35,6 +38,9 @@ describe('modelFootprint', () => {
     const footprint: ModelFootprint = {
       modelId: 'an/exact-rounding-check',
       engine: 'exact-rounding-check',
+      label: 'exact rounding check',
+      language: 'ja',
+      note: 'A fixture, not a model.',
       weightsBytes: 1_600_000,
       runtimeDownloadBytes: 1_600_000,
       runtimeOnDiskBytes: 1_600_000,
@@ -64,5 +70,48 @@ describe('engineName', () => {
     expect(engineName('someone/a-model-we-have-not-measured')).toBe(
       'someone/a-model-we-have-not-measured',
     );
+  });
+});
+
+describe('modelsFor', () => {
+  it('offers the verified Japanese model and nothing unverified beside it', () => {
+    expect(modelsFor('ja').map((model) => model.modelId)).toEqual(['DigitalLarynx/manga-ocr-onnx']);
+  });
+
+  it('offers nothing for a language whose model has not been chosen', () => {
+    expect(modelsFor('ko')).toEqual([]);
+  });
+
+  it('agrees with the footprint about which language each model reads', () => {
+    for (const model of modelsFor('ja')) expect(model.language).toBe('ja');
+    expect(japanese().language).toBe('ja');
+  });
+});
+
+describe('chosenModel', () => {
+  it('returns the model the reader picked', () => {
+    expect(chosenModel('ja', 'DigitalLarynx/manga-ocr-onnx')).toEqual(japanese());
+  });
+
+  it('falls back to the first offered model when nothing was picked', () => {
+    expect(chosenModel('ja', null)).toEqual(japanese());
+  });
+
+  it('falls back rather than honouring a model that is no longer offered', () => {
+    expect(chosenModel('ja', 'dnouv/manga-ocr')).toEqual(japanese());
+  });
+
+  it('returns nothing for a language with no model at all', () => {
+    expect(chosenModel('ko', 'DigitalLarynx/manga-ocr-onnx')).toBeNull();
+  });
+});
+
+describe('knownModel', () => {
+  it('finds a model by its id', () => {
+    expect(knownModel('DigitalLarynx/manga-ocr-onnx')).toEqual(japanese());
+  });
+
+  it('returns nothing for a model nobody measured', () => {
+    expect(knownModel('dnouv/manga-ocr')).toBeNull();
   });
 });
