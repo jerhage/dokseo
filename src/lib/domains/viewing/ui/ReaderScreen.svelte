@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
+  import { idleChrome } from '$lib/platform/dom/idle-chrome';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -51,8 +52,40 @@
 
   const uid = $props.id();
 
+  const CHROME_IDLE_MS = 3000;
+
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
+  let topBar = $state<HTMLElement | null>(null);
+  let bottomBar = $state<HTMLElement | null>(null);
+  let topHeight = $state(0);
+  let bottomHeight = $state(0);
+  let chromeAwake = $state(true);
+
+  function popoverOpen(): boolean {
+    try {
+      return document.querySelector(':popover-open') !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  function chromeHeld(): boolean {
+    if (popoverOpen()) return true;
+
+    const active = document.activeElement;
+    if (active === null) return false;
+
+    return (topBar?.contains(active) ?? false) || (bottomBar?.contains(active) ?? false);
+  }
+
+  const chrome = idleChrome({
+    delay: CHROME_IDLE_MS,
+    held: chromeHeld,
+    changed: (awake) => {
+      chromeAwake = awake;
+    },
+  });
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
@@ -200,7 +233,15 @@
 
   $effect(() => lockScrolling(document.documentElement));
 
+  $effect(() => chrome.stop);
+
+  function stir(): void {
+    chrome.stir();
+  }
+
   function onkeydown(event: KeyboardEvent): void {
+    stir();
+
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (downward) return;
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
@@ -212,10 +253,17 @@
   }
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} onpointermove={stir} onpointerdown={stir} onwheel={stir} />
 
 <div class="screen">
-  <header class="bar top">
+  <header
+    class="bar top"
+    class:hushed={!chromeAwake}
+    inert={!chromeAwake}
+    bind:this={topBar}
+    bind:offsetHeight={topHeight}
+    style:margin-block-start="{chromeAwake ? 0 : -topHeight}px"
+  >
     <a class="back" href="/">
       <span class="glyph" aria-hidden="true">‹</span>
       Library
@@ -347,7 +395,14 @@
     {/if}
   </div>
 
-  <footer class="bar bottom">
+  <footer
+    class="bar bottom"
+    class:hushed={!chromeAwake}
+    inert={!chromeAwake}
+    bind:this={bottomBar}
+    bind:offsetHeight={bottomHeight}
+    style:margin-block-end="{chromeAwake ? 0 : -bottomHeight}px"
+  >
     <p class="marker">{place.marker}</p>
 
     <div class="moves">
@@ -379,6 +434,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow: hidden;
     background: var(--c-surface-app);
     color: var(--c-text-2);
     font-family: var(--f-ui);
@@ -390,7 +446,22 @@
     align-items: center;
     gap: var(--s-4);
     padding: var(--s-3) var(--s-5);
+    opacity: 1;
+    transition:
+      margin 200ms ease,
+      opacity 200ms ease;
     background: var(--c-surface-chrome);
+  }
+
+  .bar.hushed {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar {
+      transition: none;
+    }
   }
 
   .top {
