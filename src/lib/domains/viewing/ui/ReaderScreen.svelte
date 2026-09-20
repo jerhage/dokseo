@@ -225,12 +225,15 @@
       <p class="meta">{meta}</p>
     </div>
 
-    {#if engine !== undefined}
-      {@render engine()}
-    {/if}
-
     {#if book !== null}
       <div class="settings">
+        {#if engine !== undefined}
+          <fieldset class="group">
+            <legend class="legend">Engine</legend>
+            {@render engine()}
+          </fieldset>
+        {/if}
+
         <fieldset
           class="group"
           disabled={view.saving || downward}
