@@ -45,9 +45,14 @@
 </script>
 
 <div class="screen">
-  <div class="rail">
+  <nav class="rail" aria-label="Sections">
     <span class="mark" lang="ja" aria-hidden="true">読</span>
-  </div>
+    <span class="grow"></span>
+    <a class="settings" href="/settings" title="OCR engine settings">
+      <span aria-hidden="true">⚙</span>
+      <span class="assistive">Settings</span>
+    </a>
+  </nav>
 
   <div class="main">
     <header class="head">
@@ -150,6 +155,29 @@
     padding: var(--s-4) 0;
     border-right: 1px solid var(--c-border-1);
     background: var(--c-surface-rail);
+  }
+
+  .grow {
+    flex: 1 1 auto;
+  }
+
+  .settings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-4);
+    color: var(--c-text-7);
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  .settings:hover,
+  .settings:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
   }
 
   .mark {

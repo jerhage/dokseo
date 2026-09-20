@@ -1,0 +1,794 @@
+<script lang="ts">
+  import { match } from 'ts-pattern';
+  import { languageName } from '$lib/shared/language';
+  import {
+    COMPUTE_CHOICES,
+    computeChoiceName,
+    computeDetectionNote,
+    type ComputeChoice,
+  } from '../domain/compute-choice';
+  import { downloadMb, megabytes, onDiskMb } from '../domain/model-footprint';
+  import { deviceName } from '../domain/recognizer-session';
+  import {
+    loadFigure,
+    REMOVAL_WARNING,
+    storedFigure,
+    type EngineSettingsView,
+  } from './engine-settings.svelte';
+
+  type Props = { readonly view: EngineSettingsView };
+
+  let { view }: Props = $props();
+
+  const uid = $props.id();
+
+  const model = $derived(view.model);
+  const language = $derived(view.language);
+  const download = $derived(view.download);
+  const loading = $derived(download.kind === 'loading');
+  const storage = $derived(view.storage);
+  const session = $derived(view.session);
+
+  const state = $derived.by(() =>
+    match(download)
+      .with({ kind: 'loading' }, () => ({ tone: 'busy' as const, label: 'Downloading' }))
+      .with({ kind: 'ready' }, () => ({ tone: 'ready' as const, label: 'Ready' }))
+      .with({ kind: 'cancelled' }, () => ({ tone: 'quiet' as const, label: 'Cancelled' }))
+      .with({ kind: 'failed' }, () => ({ tone: 'bad' as const, label: 'Not available' }))
+      .with({ kind: 'idle' }, () =>
+        view.stored
+          ? { tone: 'ready' as const, label: 'Stored' }
+          : { tone: 'quiet' as const, label: 'Not downloaded' },
+      )
+      .exhaustive(),
+  );
+
+  const failure = $derived(download.kind === 'failed' ? download.cause : null);
+  const progress = $derived(download.kind === 'loading' ? download.load : null);
+  const percent = $derived(progress === null ? 0 : Math.round(progress.fraction * 100));
+
+  const space = $derived.by(() => {
+    if (storage === null) return null;
+    const { usage, quota } = storage;
+    if (usage === null) return null;
+    const total = quota === null ? '' : ` of about ${megabytes(quota)} MB the browser allows`;
+    return `${megabytes(usage)} MB stored by this app${total}`;
+  });
+
+  function weightsOf(offered: { weightsBytes: number }): string {
+    return `${megabytes(offered.weightsBytes)} MB of weights`;
+  }
+
+  function pick(choice: ComputeChoice): void {
+    void view.chooseCompute(choice);
+  }
+</script>
+
+<div class="screen">
+  <nav class="rail" aria-label="Settings">
+    <div class="brand">
+      <span class="mark" lang="ja" aria-hidden="true">読</span>
+      <span class="name">Settings</span>
+    </div>
+    <a class="item current" href="/settings" aria-current="page">
+      <span class="dot" aria-hidden="true"></span>
+      OCR engine
+    </a>
+    <div class="spacer"></div>
+    <div class="active">
+      <p class="caption">Active engine</p>
+      <p class="engine">{model === null ? 'None' : `On-device · ${model.engine}`}</p>
+      <p class="device">
+        {session === null
+          ? 'not loaded in this session'
+          : `running on the ${deviceName(session.device)}`}
+      </p>
+    </div>
+    <a class="back" href="/">Back to your library</a>
+  </nav>
+
+  <main class="main">
+    <header class="head">
+      <h1 class="title">OCR engine</h1>
+      <p class="lead">
+        Recognition runs in this app, on this device. No page image and no recognized text is
+        uploaded anywhere.
+      </p>
+
+      {#if model !== null}
+        <ul class="trade">
+          <li class="fact">
+            <span class="caption">Pages never leave this device</span>
+            <span class="value">On-device only</span>
+          </li>
+          <li class="fact">
+            <span class="caption">Cost</span>
+            <span class="value">Free, no account</span>
+          </li>
+          <li class="fact">
+            <span class="caption">Setup</span>
+            <span class="value">{downloadMb(model)} MB download, once</span>
+          </li>
+        </ul>
+      {/if}
+    </header>
+
+    {#if model === null || language === null}
+      <p class="notice">No recognition model has been chosen for any language yet.</p>
+    {:else}
+      <section class="card" aria-labelledby="{uid}-engine">
+        <div class="banner">
+          <div class="who">
+            <h2 class="who-name" id="{uid}-engine">On-device</h2>
+            <span class="badge">In use</span>
+          </div>
+          <p class="who-note">
+            Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
+            download of about {downloadMb(model)} MB, about {onDiskMb(model)} MB on disk.
+          </p>
+          <p class="status {state.tone}">
+            <span class="dot" aria-hidden="true"></span>
+            {state.label}
+          </p>
+        </div>
+
+        {#if loading}
+          <div class="progress">
+            <div class="row">
+              <span class="label">{model.label}</span>
+              <span class="figure">{loadFigure(progress)}</span>
+            </div>
+            <div
+              class="track"
+              role="progressbar"
+              aria-label="Model download"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percent}
+            >
+              <span class="fill" style:width="{percent}%"></span>
+            </div>
+            <div class="row">
+              <span class="hint">
+                Files already downloaded are kept. Cancelling loses only the file in flight.
+              </span>
+              <button class="quiet" type="button" onclick={() => void view.stop()}>Cancel</button>
+            </div>
+          </div>
+        {/if}
+
+        <div class="grid">
+          <div class="column">
+            <p class="caption" id="{uid}-model">Model</p>
+            <ul class="choices" aria-labelledby="{uid}-model">
+              {#each view.models as offered (offered.modelId)}
+                <li>
+                  <label class="choice" class:on={offered.modelId === model.modelId}>
+                    <input
+                      type="radio"
+                      name="{uid}-model-choice"
+                      value={offered.modelId}
+                      checked={offered.modelId === model.modelId}
+                      onchange={() => void view.chooseModel(offered.modelId)}
+                    />
+                    <span class="choice-name">{offered.label}</span>
+                    <span class="choice-note">{weightsOf(offered)}</span>
+                  </label>
+                  <p class="footnote">
+                    {languageName(offered.language)} · {offered.note}
+                  </p>
+                </li>
+              {/each}
+            </ul>
+          </div>
+
+          <div class="column">
+            <p class="caption" id="{uid}-compute">Compute</p>
+            <div class="segments" role="group" aria-labelledby="{uid}-compute">
+              {#each COMPUTE_CHOICES as choice (choice)}
+                <button
+                  class="segment"
+                  type="button"
+                  aria-pressed={view.compute === choice}
+                  onclick={() => pick(choice)}
+                >
+                  {computeChoiceName(choice)}
+                </button>
+              {/each}
+            </div>
+            <p class="detected">{computeDetectionNote(view.detection)}</p>
+            {#if session !== null}
+              <p class="detected">
+                This session opened on the {deviceName(session.device)}.
+              </p>
+            {/if}
+          </div>
+        </div>
+
+        <div class="storage">
+          <p class="caption">Stored on this device</p>
+          <p class="measured">
+            {storage === null
+              ? (view.storageMessage ?? 'Reading what is stored…')
+              : storedFigure(storage.report)}
+          </p>
+          {#if space !== null}
+            <p class="footnote">{space}</p>
+          {/if}
+          {#if storage !== null && !storage.persisted}
+            <p class="footnote">
+              The browser has not granted persistence, so it may reclaim this space on its own.
+            </p>
+          {/if}
+
+          <div class="actions">
+            {#if !view.stored && !loading}
+              <button class="primary" type="button" onclick={() => void view.start()}>
+                Download now
+              </button>
+            {/if}
+            {#if view.stored && !view.confirmingRemoval}
+              <button
+                class="danger"
+                type="button"
+                disabled={view.removing}
+                onclick={() => view.askRemoval()}
+              >
+                {view.removing ? 'Deleting…' : 'Delete the model'}
+              </button>
+            {/if}
+          </div>
+
+          {#if view.confirmingRemoval}
+            <div class="confirm">
+              <p class="warning">
+                Delete about {storage === null
+                  ? downloadMb(model)
+                  : megabytes(storage.report.bytes)}
+                MB of weights? {REMOVAL_WARNING}
+              </p>
+              <div class="actions">
+                <button class="quiet" type="button" onclick={() => view.dismissRemoval()}>
+                  Keep it
+                </button>
+                <button class="danger" type="button" onclick={() => void view.remove()}>
+                  Delete the model
+                </button>
+              </div>
+            </div>
+          {/if}
+
+          {#if failure !== null}
+            <p class="warning" role="alert">The model could not be loaded: {failure}</p>
+          {/if}
+          {#if view.message !== null}
+            <p class="footnote" role="status">{view.message}</p>
+          {/if}
+        </div>
+      </section>
+    {/if}
+  </main>
+</div>
+
+<style>
+  .screen {
+    display: flex;
+    min-height: 100vh;
+    background: var(--c-surface-app);
+    color: var(--c-text-2);
+    font-family: var(--f-ui);
+  }
+
+  .rail {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: var(--s-1);
+    width: 190px;
+    padding: var(--s-4) var(--s-3);
+    border-right: 1px solid var(--c-border-1);
+    background: var(--c-surface-rail);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0 var(--s-2) var(--s-4);
+  }
+
+  .mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-3);
+    background: var(--c-accent);
+    color: var(--c-accent-text);
+    font-family: var(--f-ja);
+    font-size: 13px;
+  }
+
+  .name {
+    color: var(--c-text-4);
+    font-size: 12.5px;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-3);
+    color: var(--c-text-7);
+    font-size: 12.5px;
+    text-decoration: none;
+  }
+
+  .item.current {
+    background: var(--c-surface-card-active);
+    color: var(--c-text-1);
+  }
+
+  .item .dot {
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: var(--r-pill);
+    background: var(--c-accent);
+  }
+
+  .spacer {
+    flex: 1 1 auto;
+  }
+
+  .active {
+    padding: var(--s-3);
+    border: 1px solid var(--c-border-2);
+    border-radius: var(--r-4);
+    background: var(--c-surface-chip);
+  }
+
+  .caption {
+    margin: 0;
+    color: var(--c-text-10);
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .engine {
+    margin: var(--s-2) 0 0;
+    color: var(--c-accent);
+    font-size: 11.5px;
+  }
+
+  .device {
+    margin: var(--s-1) 0 0;
+    color: var(--c-text-9);
+    font-size: 10.5px;
+  }
+
+  .back {
+    margin-top: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-3);
+    color: var(--c-text-5);
+    font-size: 11.5px;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .back:hover,
+  .back:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .head {
+    flex: none;
+    padding: var(--s-5) var(--s-6) var(--s-4);
+    border-bottom: 1px solid var(--c-border-1);
+  }
+
+  .title {
+    margin: 0;
+    color: var(--c-text-1);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .lead {
+    max-width: 620px;
+    margin: var(--s-1) 0 0;
+    color: var(--c-text-7);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .trade {
+    display: flex;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--c-border-3);
+    border-radius: var(--r-4);
+    list-style: none;
+  }
+
+  .fact {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: var(--s-1);
+    padding: var(--s-2) var(--s-3);
+    border-right: 1px solid var(--c-border-3);
+    background: var(--c-surface-card-quiet);
+  }
+
+  .fact:last-child {
+    border-right: 0;
+  }
+
+  .fact .caption {
+    color: var(--c-text-10);
+  }
+
+  .value {
+    color: var(--c-text-4);
+    font-size: 11.5px;
+  }
+
+  .notice {
+    margin: var(--s-5) var(--s-6);
+    color: var(--c-text-7);
+    font-size: 12.5px;
+  }
+
+  .card {
+    margin: var(--s-4) var(--s-6) var(--s-6);
+    overflow: hidden;
+    border: 1px solid var(--c-border-6);
+    border-radius: var(--r-6);
+    background: var(--c-surface-card-quiet);
+  }
+
+  .banner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-1) var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-accent-wash-faint);
+  }
+
+  .who {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  .who-name {
+    margin: 0;
+    color: var(--c-text-1);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .badge {
+    padding: 2px 7px;
+    border-radius: var(--r-1);
+    background: var(--c-accent-wash-strong);
+    color: var(--c-accent);
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .who-note {
+    grid-column: 1;
+    margin: 0;
+    max-width: 640px;
+    color: var(--c-text-7);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .status {
+    grid-row: 1;
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    margin: 0;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .status .dot {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: currentcolor;
+  }
+
+  .status.ready {
+    color: var(--c-accent);
+  }
+
+  .status.busy {
+    color: var(--c-warning);
+  }
+
+  .status.quiet {
+    color: var(--c-text-8);
+  }
+
+  .status.bad {
+    color: var(--c-error);
+  }
+
+  .progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    border-top: 1px solid var(--c-border-2);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+
+  .label {
+    flex: 1 1 auto;
+    color: var(--c-text-4);
+    font-size: 12px;
+  }
+
+  .figure {
+    flex: none;
+    color: var(--c-text-7);
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+  }
+
+  .track {
+    position: relative;
+    height: 5px;
+    overflow: hidden;
+    border-radius: var(--r-2);
+    background: var(--c-surface-button);
+  }
+
+  .fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    background: var(--c-accent);
+  }
+
+  .hint {
+    flex: 1 1 auto;
+    color: var(--c-text-9);
+    font-size: 11px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-4);
+    padding: var(--s-4);
+    border-top: 1px solid var(--c-border-2);
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-width: 0;
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .choice {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--c-border-3);
+    border-radius: var(--r-3);
+    background: var(--c-surface-chip);
+    cursor: pointer;
+  }
+
+  .choice.on {
+    border-color: var(--c-accent-line);
+    background: var(--c-surface-card-active);
+  }
+
+  .choice input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .choice:has(input:focus-visible) {
+    outline: 1px solid var(--c-accent-border-strong);
+    outline-offset: 1px;
+  }
+
+  .choice-name {
+    flex: 1 1 auto;
+    color: var(--c-text-2);
+    font-size: 12px;
+  }
+
+  .choice-note {
+    flex: none;
+    color: var(--c-text-8);
+    font-family: var(--f-mono);
+    font-size: 10px;
+  }
+
+  .footnote {
+    margin: 0;
+    color: var(--c-text-9);
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+
+  .segments {
+    display: flex;
+    gap: var(--s-1);
+  }
+
+  .segment {
+    flex: 1 1 0;
+    padding: var(--s-2) 0;
+    border: 1px solid var(--c-border-3);
+    border-radius: var(--r-3);
+    background: var(--c-surface-chip);
+    color: var(--c-text-6);
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+
+  .segment:hover,
+  .segment:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .segment[aria-pressed='true'] {
+    border-color: var(--c-accent-line);
+    background: var(--c-surface-card-active);
+    color: var(--c-accent);
+  }
+
+  .detected {
+    margin: 0;
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--c-border-2);
+    border-radius: var(--r-3);
+    background: var(--c-surface-chip);
+    color: var(--c-text-8);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .storage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    border-top: 1px solid var(--c-border-2);
+  }
+
+  .measured {
+    margin: 0;
+    color: var(--c-text-2);
+    font-family: var(--f-mono);
+    font-size: 13px;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--s-2);
+    margin-top: var(--s-1);
+  }
+
+  .primary,
+  .quiet,
+  .danger {
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-2);
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+
+  .primary {
+    border: 1px solid var(--c-accent);
+    background: var(--c-accent);
+    color: var(--c-accent-text);
+    font-weight: 600;
+  }
+
+  .quiet {
+    border: 1px solid var(--c-border-4);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+  }
+
+  .danger {
+    border: 1px solid var(--c-error);
+    background: transparent;
+    color: var(--c-error);
+  }
+
+  .danger:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-3);
+    border: 1px solid var(--c-warning-border);
+    border-radius: var(--r-3);
+    background: var(--c-warning-wash-faint);
+  }
+
+  .warning {
+    margin: 0;
+    color: var(--c-warning-text-soft);
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 860px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+
+    .trade {
+      flex-direction: column;
+    }
+
+    .fact {
+      border-right: 0;
+      border-bottom: 1px solid var(--c-border-3);
+    }
+  }
+</style>
