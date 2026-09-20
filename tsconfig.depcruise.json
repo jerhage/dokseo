@@ -7,7 +7,9 @@
     "baseUrl": ".",
     "paths": {
       "$lib": ["src/lib"],
-      "$lib/*": ["src/lib/*"]
+      "$lib/*": ["src/lib/*"],
+      "$workers": ["src/workers"],
+      "$workers/*": ["src/workers/*"]
     }
   },
   "include": ["src/**/*"]
