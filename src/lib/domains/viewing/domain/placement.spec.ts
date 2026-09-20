@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { imageRect, screenRect, type ImageRect, type ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
-import { regionsIn, toImageRect, toScreenRect, type PlacedImage } from './placement';
+import {
+  regionsIn,
+  toImageRect,
+  toPageFraction,
+  toScreenRect,
+  type PlacedImage,
+} from './placement';
 
 const page: PlacedImage = {
   index: imageIndex(0),
@@ -175,5 +181,44 @@ describe('regionsIn', () => {
 
     expect(regions).toHaveLength(1);
     expect(at(regions, 0).index).toBe(imageIndex(0));
+  });
+});
+
+describe('toPageFraction', () => {
+  const natural = { width: 200, height: 400 };
+
+  it('states a rect as a percentage of the page it sits on', () => {
+    expect(toPageFraction(natural, imageRect(50, 100, 100, 200))).toEqual({
+      left: 25,
+      top: 25,
+      width: 50,
+      height: 50,
+    });
+  });
+
+  it('holds a rect that overruns the page inside it', () => {
+    expect(toPageFraction(natural, imageRect(100, 200, 400, 800))).toEqual({
+      left: 50,
+      top: 50,
+      width: 50,
+      height: 50,
+    });
+  });
+
+  it('turns a rect drawn backwards the right way round', () => {
+    expect(toPageFraction(natural, imageRect(150, 300, -100, -200))).toEqual({
+      left: 25,
+      top: 25,
+      width: 50,
+      height: 50,
+    });
+  });
+
+  it('reports nothing for a page with no measured size', () => {
+    expect(toPageFraction({ width: 0, height: 0 }, imageRect(0, 0, 10, 10))).toBeNull();
+  });
+
+  it('reports nothing for a rect lying off the page', () => {
+    expect(toPageFraction(natural, imageRect(400, 0, 10, 10))).toBeNull();
   });
 });

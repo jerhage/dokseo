@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
-  import type { Size } from '$lib/shared/geometry';
+  import type { ImageRect, Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -38,12 +38,13 @@
     readonly direction: ReadingDirection;
     readonly pageFit: PageFit;
     readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
+    readonly glow?: readonly ImageRegion[];
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
     readonly onFit: (fit: PageFit) => void;
   };
 
-  let { pages, direction, pageFit, imageAt, select, clear, onFit }: Props = $props();
+  let { pages, direction, pageFit, imageAt, glow = [], select, clear, onFit }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -80,6 +81,12 @@
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
+  }
+
+  const GLOW_MARKER = 'FROM SEARCH';
+
+  function glowOn(index: ImageIndex): readonly ImageRect[] {
+    return glow.filter((region) => region.index === index).map((region) => region.rect);
   }
 
   function framesNow(): Frames | null {
@@ -353,7 +360,13 @@
   >
     <div class="strip" class:rtl={direction === 'rtl'} bind:this={strip} style:transform>
       {#each pages as index (index)}
-        <PageCanvas {index} label={label(index)} load={imageAt} />
+        <PageCanvas
+          {index}
+          label={label(index)}
+          load={imageAt}
+          glow={glowOn(index)}
+          marker={GLOW_MARKER}
+        />
       {/each}
     </div>
 

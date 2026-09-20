@@ -11,6 +11,13 @@ import {
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 
+export type PageFraction = {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+};
+
 export type PlacedImage = {
   readonly index: ImageIndex;
   readonly onScreen: ScreenRect;
@@ -65,6 +72,20 @@ export function toScreenRect(placed: PlacedImage, rect: ImageRect): ScreenRect {
     region.width * scaleX,
     region.height * scaleY,
   );
+}
+
+export function toPageFraction(natural: Size, rect: ImageRect): PageFraction | null {
+  if (!isPositiveFinite(natural.width) || !isPositiveFinite(natural.height)) return null;
+
+  const box = clampTo(normalize(rect), imageRect(0, 0, natural.width, natural.height));
+  if (isEmpty(box)) return null;
+
+  return {
+    left: (box.x / natural.width) * 100,
+    top: (box.y / natural.height) * 100,
+    width: (box.width / natural.width) * 100,
+    height: (box.height / natural.height) * 100,
+  };
 }
 
 export function regionsIn(

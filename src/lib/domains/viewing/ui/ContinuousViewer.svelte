@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { Size } from '$lib/shared/geometry';
+  import type { ImageRect, Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { ReadingPosition } from '../domain/reading-position';
@@ -29,12 +29,13 @@
     readonly sizes: readonly (Size | null)[];
     readonly start: ReadingPosition;
     readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
+    readonly glow?: readonly ImageRegion[];
     readonly moveTo: (position: ReadingPosition) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
   };
 
-  let { sizes, start, imageAt, moveTo, select, clear }: Props = $props();
+  let { sizes, start, imageAt, glow = [], moveTo, select, clear }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -73,6 +74,12 @@
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
+  }
+
+  const GLOW_MARKER = 'FROM SEARCH';
+
+  function glowOn(index: ImageIndex): readonly ImageRect[] {
+    return glow.filter((region) => region.index === index).map((region) => region.rect);
   }
 
   function wheelPixels(delta: number, mode: number, extent: number): number {
@@ -277,7 +284,14 @@
       <div class="spacer" style:height="{spacers.before}px" aria-hidden="true"></div>
       {#each spacers.slices as slice (slice.index)}
         <div class="slice" style:height="{slice.height}px">
-          <PageCanvas index={slice.index} label={label(slice.index)} load={imageAt} flush />
+          <PageCanvas
+            index={slice.index}
+            label={label(slice.index)}
+            load={imageAt}
+            glow={glowOn(slice.index)}
+            marker={GLOW_MARKER}
+            flush
+          />
         </div>
       {/each}
       <div class="spacer" style:height="{spacers.after}px" aria-hidden="true"></div>

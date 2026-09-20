@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import ArrivalBar from '$lib/domains/recognition/ui/ArrivalBar.svelte';
   import CapturePalette from '$lib/domains/recognition/ui/CapturePalette.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/EnginePill.svelte';
@@ -16,6 +17,7 @@
   import {
     IMAGE_PARAMETER,
     LIBRARY_AFTER_MISSING_BOOK,
+    readArrival,
     readImageIndex,
     urlWithImageIndex,
   } from '$lib/shared/reader-location';
@@ -33,6 +35,8 @@
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
+  const found = $derived(readArrival(page.url.searchParams));
+  const here = $derived(captures.arrivalFrom(found, view.direction));
   const books = $derived(
     shelf.books.map((held) => ({
       id: held.id,
@@ -69,8 +73,14 @@
 
 <ReaderScreen
   {view}
+  glow={here?.at.regions ?? []}
   onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
 >
+  {#snippet arrival()}
+    {#if here !== null && found !== null}
+      <ArrivalBar book={id} query={found.query} {language} arrival={here} />
+    {/if}
+  {/snippet}
   {#snippet engine()}
     <EnginePill engine={captures.engine} {language} />
   {/snippet}

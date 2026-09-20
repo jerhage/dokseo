@@ -20,8 +20,10 @@
 
   type Props = {
     readonly view: ReaderView;
+    readonly glow?: readonly ImageRegion[];
     readonly panel?: Snippet;
     readonly engine?: Snippet;
+    readonly arrival?: Snippet;
     readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
   };
 
@@ -45,7 +47,7 @@
     readonly at: number;
   };
 
-  let { view, panel, engine, onSelect }: Props = $props();
+  let { view, glow = [], panel, engine, arrival, onSelect }: Props = $props();
 
   const uid = $props.id();
 
@@ -308,6 +310,7 @@
         sizes={view.sizes}
         start={view.position}
         imageAt={(index) => view.imageAt(index)}
+        {glow}
         moveTo={(position) => view.moveTo(position)}
         select={(regions) => commit(regions, 'column')}
         clear={() => view.clearSelection()}
@@ -320,6 +323,7 @@
           direction={book.direction}
           pageFit={book.pageFit}
           imageAt={(index) => view.imageAt(index)}
+          {glow}
           select={(regions) => commit(regions, 'row')}
           clear={() => view.clearSelection()}
           onFit={(fit) => void view.setPageFit(fit)}
@@ -332,6 +336,10 @@
           <a class="escape" href="/">Back to your library</a>
         {/if}
       </div>
+    {/if}
+
+    {#if arrival !== undefined}
+      <div class="arrived">{@render arrival()}</div>
     {/if}
 
     {#if panel !== undefined}
@@ -557,9 +565,17 @@
   }
 
   .body {
+    position: relative;
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
+  }
+
+  .arrived {
+    position: absolute;
+    top: var(--s-4);
+    left: var(--s-5);
+    z-index: var(--z-chrome);
   }
 
   .dock {

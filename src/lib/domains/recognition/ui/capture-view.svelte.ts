@@ -6,8 +6,11 @@ import { describeCause } from '$lib/shared/cause';
 import { captureId, type BookId, type CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
+import type { SearchArrival } from '$lib/shared/reader-location';
+import { arrivalAt, type Arrival, type ArrivalCapture } from '../domain/capture-arrival';
 import { editedText, oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
 import { isPartlyStored, isStored } from '../domain/model-cache';
 import { downloadMb, type ModelFootprint } from '../domain/model-footprint';
@@ -166,6 +169,20 @@ export class CaptureView {
 
   get newestFirst(): readonly PanelCapture[] {
     return this.captures.toReversed();
+  }
+
+  get read(): readonly ArrivalCapture[] {
+    return this.captures
+      .filter((capture) => capture.status === 'done')
+      .map((capture) => ({ id: capture.id, regions: capture.regions, text: capture.text.text }));
+  }
+
+  arrivalFrom(
+    found: SearchArrival | null,
+    direction: ReadingDirection,
+  ): Arrival<ArrivalCapture> | null {
+    if (found === null) return null;
+    return arrivalAt(this.read, found.query, direction, found.capture);
   }
 
   async open(book: BookId): Promise<void> {
