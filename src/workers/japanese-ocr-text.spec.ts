@@ -7,48 +7,26 @@ describe('japaneseOcrText', () => {
     expect(japaneseOcrText('こん\nに\tちは ')).toBe('こんにちは');
   });
 
-  it('spells an ellipsis out as three dots', () => {
-    expect(japaneseOcrText('そんな…')).toBe('そんな．．．');
+  it('leaves an ellipsis as the model wrote it', () => {
+    expect(japaneseOcrText('そんな…')).toBe('そんな…');
   });
 
-  it('turns a run of dots or katakana middle dots into that many dots', () => {
-    expect(japaneseOcrText('あ・・・い')).toBe('あ．．．い');
-    expect(japaneseOcrText('あ・.・い')).toBe('あ．．．い');
+  it('leaves a run of middle dots as the model wrote it', () => {
+    expect(japaneseOcrText('あ・・・い')).toBe('あ・・・い');
   });
 
-  it('leaves a single middle dot alone', () => {
-    expect(japaneseOcrText('ドラゴン・ボール')).toBe('ドラゴン・ボール');
+  it('leaves half-width punctuation as the model wrote it', () => {
+    expect(japaneseOcrText('なに?')).toBe('なに?');
+    expect(japaneseOcrText('やめろ!')).toBe('やめろ!');
   });
 
-  it('widens ascii punctuation to the full-width block', () => {
-    expect(japaneseOcrText('なに?')).toBe('なに？');
-    expect(japaneseOcrText('やめろ!')).toBe('やめろ！');
-    expect(japaneseOcrText('(a~z)')).toBe('（ａ～ｚ）');
+  it('leaves digits as the model wrote them', () => {
+    expect(japaneseOcrText('第3話')).toBe('第3話');
   });
 
-  it('widens digits with the rest of the ascii range', () => {
-    expect(japaneseOcrText('第3話')).toBe('第３話');
-    expect(japaneseOcrText('0123456789')).toBe('０１２３４５６７８９');
-  });
-
-  it('collapses the whitespace before the dot run is measured', () => {
-    expect(japaneseOcrText('あ. .い')).toBe('あ．．い');
-  });
-
-  it('widens after the dot run is measured, never before', () => {
-    expect(japaneseOcrText('・.')).toBe('．．');
-  });
-
-  it('spells the ellipsis before the dot run is measured', () => {
-    expect(japaneseOcrText('あ…・')).toBe('あ．．．．');
-  });
-
-  it('applies every transform to one line', () => {
-    expect(japaneseOcrText('ちょっと 待て…! 第2話?')).toBe('ちょっと待て．．．！第２話？');
-  });
-
-  it('leaves text the reference would not touch unchanged', () => {
+  it('leaves ordinary japanese untouched', () => {
     expect(japaneseOcrText('')).toBe('');
     expect(japaneseOcrText('これは本です')).toBe('これは本です');
+    expect(japaneseOcrText('ドラゴン・ボール')).toBe('ドラゴン・ボール');
   });
 });
