@@ -39,6 +39,7 @@
     readonly pageFit: PageFit;
     readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
     readonly glow?: readonly ImageRegion[];
+    readonly chromeShown: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
     readonly onTap: () => void;
@@ -51,6 +52,7 @@
     pageFit,
     imageAt,
     glow = [],
+    chromeShown,
     select,
     clear,
     onTap,
@@ -79,7 +81,9 @@
     `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
   );
 
-  const pending = $derived(hintsToShow(pagedHints(pannable), learnedGestures(), revealed));
+  const pending = $derived(
+    hintsToShow(chromeShown, pagedHints(pannable), learnedGestures(), revealed),
+  );
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');

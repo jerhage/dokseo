@@ -1,47 +1,17 @@
 import { match } from 'ts-pattern';
 import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
 
-export type MoveIntent = 'advance' | 'retreat';
+export type PageMove = 'decrement' | 'increment';
 
-export type MoveControl = {
-  readonly intent: MoveIntent;
-  readonly label: string;
-  readonly glyph: string;
-};
+const DECREMENT_FIRST: readonly PageMove[] = ['decrement', 'increment'];
+const INCREMENT_FIRST: readonly PageMove[] = ['increment', 'decrement'];
 
-const LEFTWARD = '‹';
-const RIGHTWARD = '›';
-const UPWARD = '↑';
-const DOWNWARD = '↓';
-
-function pagedMoves(direction: ReadingDirection): readonly MoveControl[] {
-  const advance = { intent: 'advance', label: 'Next page' } as const;
-  const retreat = { intent: 'retreat', label: 'Previous page' } as const;
-
-  return direction === 'rtl'
-    ? [
-        { ...advance, glyph: LEFTWARD },
-        { ...retreat, glyph: RIGHTWARD },
-      ]
-    : [
-        { ...retreat, glyph: LEFTWARD },
-        { ...advance, glyph: RIGHTWARD },
-      ];
-}
-
-function continuousMoves(): readonly MoveControl[] {
-  return [
-    { intent: 'retreat', label: 'Previous screen', glyph: UPWARD },
-    { intent: 'advance', label: 'Next screen', glyph: DOWNWARD },
-  ];
-}
-
-export function moveControls(
+export function moveOrder(
   layoutKind: LayoutKind,
   direction: ReadingDirection,
-): readonly MoveControl[] {
+): readonly PageMove[] {
   return match(layoutKind)
-    .with('paged', () => pagedMoves(direction))
-    .with('continuous', () => continuousMoves())
+    .with('paged', () => (direction === 'rtl' ? INCREMENT_FIRST : DECREMENT_FIRST))
+    .with('continuous', () => DECREMENT_FIRST)
     .exhaustive();
 }

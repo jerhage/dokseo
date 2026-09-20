@@ -30,10 +30,12 @@ export function pagedHints(pannable: boolean): readonly GestureHint[] {
 }
 
 export function hintsToShow(
+  chromeShown: boolean,
   hints: readonly GestureHint[],
   learned: readonly ReaderGesture[],
   revealed: boolean,
 ): readonly GestureHint[] {
+  if (!chromeShown) return [];
   if (revealed) return [...hints, RECALL];
 
   const pending = hints.filter((hint) => hint.teaches !== null && !learned.includes(hint.teaches));

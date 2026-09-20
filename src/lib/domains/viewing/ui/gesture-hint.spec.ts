@@ -23,37 +23,45 @@ describe('pagedHints', () => {
 
 describe('hintsToShow', () => {
   it('teaches every gesture to a reader who has performed none', () => {
-    const shown = hintsToShow(pagedHints(true), [], false);
+    const shown = hintsToShow(true, pagedHints(true), [], false);
 
     expect(taught(shown)).toEqual(['select', 'space-pan', 'middle-pan', null]);
   });
 
   it('drops a gesture the reader has already performed', () => {
-    const shown = hintsToShow(pagedHints(true), ['select'], false);
+    const shown = hintsToShow(true, pagedHints(true), ['select'], false);
 
     expect(taught(shown)).toEqual(['space-pan', 'middle-pan', null]);
   });
 
   it('closes with the key that brings it back', () => {
-    const shown = hintsToShow(pagedHints(false), ['select'], false);
+    const shown = hintsToShow(true, pagedHints(false), ['select'], false);
 
     expect(shown.at(-1)).toEqual({ keys: ['?'], does: 'show or hide this', teaches: null });
   });
 
   it('shows nothing once every gesture on offer is learned', () => {
-    expect(hintsToShow(pagedHints(false), ['select', 'zoom-to-pan'], false)).toEqual([]);
+    expect(hintsToShow(true, pagedHints(false), ['select', 'zoom-to-pan'], false)).toEqual([]);
   });
 
   it('keeps teaching a gesture the reader learned in the other state', () => {
-    const shown = hintsToShow(pagedHints(true), ['zoom-to-pan'], false);
+    const shown = hintsToShow(true, pagedHints(true), ['zoom-to-pan'], false);
 
     expect(taught(shown)).toEqual(['select', 'space-pan', 'middle-pan', null]);
   });
 
   it('shows every gesture again when the reader asks for them back', () => {
-    const shown = hintsToShow(pagedHints(true), ['select', 'space-pan', 'middle-pan'], true);
+    const shown = hintsToShow(true, pagedHints(true), ['select', 'space-pan', 'middle-pan'], true);
 
     expect(taught(shown)).toEqual(['select', 'space-pan', 'middle-pan', null]);
+  });
+
+  it('shows nothing while the chrome is hidden, however little the reader has learned', () => {
+    expect(hintsToShow(false, pagedHints(true), [], false)).toEqual([]);
+  });
+
+  it('shows nothing while the chrome is hidden, even once the reader asked them back', () => {
+    expect(hintsToShow(false, pagedHints(true), [], true)).toEqual([]);
   });
 });
 

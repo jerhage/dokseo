@@ -15,7 +15,7 @@
   } from '$lib/shared/layout-choices';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { handlesOwnKeys } from './keyboard';
-  import { moveControls, type MoveIntent } from './page-moves';
+  import { moveOrder, type PageMove } from './page-moves';
   import PagedViewer from './PagedViewer.svelte';
   import { chromeShown } from './reader-chrome';
   import type { ReaderView } from './reader-view.svelte';
@@ -29,14 +29,8 @@
     readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
   };
 
-  type Move = {
+  type Turn = {
     readonly label: string;
-    readonly glyph: string;
-    readonly enabled: boolean;
-    readonly go: () => void;
-  };
-
-  type Step = {
     readonly enabled: boolean;
     readonly go: () => void;
   };
@@ -57,6 +51,9 @@
   let { view, glow = [], panel, engine, arrival, onSelect }: Props = $props();
 
   const uid = $props.id();
+
+  const SIDEWAYS: readonly string[] = ['‹', '›'];
+  const DOWNWARDS: readonly string[] = ['↑', '↓'];
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
@@ -174,40 +171,42 @@
 
   const progress = $derived(place.of === 0 ? 0 : (place.at / place.of) * 100);
 
-  const steps = $derived.by<Record<MoveIntent, Step> | null>(() => {
+  const turns = $derived.by<Record<PageMove, Turn> | null>(() => {
     const kind = book?.layoutKind;
     if (kind === undefined) return null;
 
     return match(kind)
       .with('paged', () => ({
-        advance: { enabled: canNext, go: () => void view.next() },
-        retreat: { enabled: canPrevious, go: () => void view.previous() },
+        decrement: {
+          label: 'Previous page',
+          enabled: canPrevious,
+          go: () => void view.previous(),
+        },
+        increment: { label: 'Next page', enabled: canNext, go: () => void view.next() },
       }))
       .with('continuous', () => ({
-        advance: {
-          enabled: stage === 'reading' && (strip?.canShift(1) ?? false),
-          go: () => strip?.shift(1),
-        },
-        retreat: {
+        decrement: {
+          label: 'Previous screen',
           enabled: stage === 'reading' && (strip?.canShift(-1) ?? false),
           go: () => strip?.shift(-1),
+        },
+        increment: {
+          label: 'Next screen',
+          enabled: stage === 'reading' && (strip?.canShift(1) ?? false),
+          go: () => strip?.shift(1),
         },
       }))
       .exhaustive();
   });
 
-  const moves = $derived.by<readonly Move[]>(() => {
+  const order = $derived.by<readonly PageMove[]>(() => {
     const kind = book?.layoutKind;
-    const stepping = steps;
-    if (kind === undefined || stepping === null) return [];
+    if (kind === undefined) return [];
 
-    return moveControls(kind, view.direction).map((control) => ({
-      label: control.label,
-      glyph: control.glyph,
-      enabled: stepping[control.intent].enabled,
-      go: stepping[control.intent].go,
-    }));
+    return moveOrder(kind, view.direction);
   });
+
+  const glyphs = $derived(downward ? DOWNWARDS : SIDEWAYS);
 
   const fits = $derived.by<readonly FitChoice[]>(() => {
     const kind = book?.layoutKind;
@@ -280,6 +279,10 @@
     bind:offsetHeight={topHeight}
     style:margin-block-start="{chromeAwake ? 0 : -topHeight}px"
   >
+    <a class="back" href="/">
+      <span class="glyph" aria-hidden="true">‹</span>
+      Library
+    </a>
     <div class="heading">
       <h1 class="title" class:ko={book?.language === 'ko'} lang={book?.language ?? 'en'}>
         {book?.title ?? 'Reader'}
@@ -385,6 +388,7 @@
           pageFit={book.pageFit}
           imageAt={(index) => view.imageAt(index)}
           {glow}
+          chromeShown={chromeAwake}
           select={(regions) => commit(regions, 'row')}
           clear={() => view.clearSelection()}
           onTap={toggleChrome}
@@ -407,13 +411,14 @@
           <span class="assistive">Back to your library</span>
         </a>
 
-        {#if moves.length > 0}
+        {#if turns !== null}
           <span class="parting"></span>
 
-          {#each moves as move (move.label)}
-            <button class="key" type="button" disabled={!move.enabled} onclick={move.go}>
-              <span class="glyph" aria-hidden="true">{move.glyph}</span>
-              <span class="assistive">{move.label}</span>
+          {#each order as move, slot (move)}
+            {@const turn = turns[move]}
+            <button class="key" type="button" disabled={!turn.enabled} onclick={turn.go}>
+              <span class="glyph" aria-hidden="true">{glyphs[slot]}</span>
+              <span class="assistive">{turn.label}</span>
             </button>
           {/each}
         {/if}
@@ -497,6 +502,26 @@
 
   .bottom {
     border-top: 1px solid var(--c-border-1);
+  }
+
+  .back {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--s-1);
+    padding: var(--s-1) var(--s-2);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-4);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-size: 11.5px;
+    text-decoration: none;
+  }
+
+  .back:hover,
+  .back:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
   }
 
   .heading {
