@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { imageIndex } from './ids';
+import { bookId, imageIndex } from './ids';
 import {
   IMAGE_PARAMETER,
   MISSING_BOOK_NOTICE,
   missingBookNotice,
   openingPlace,
+  readerHref,
   readImageIndex,
   urlWithImageIndex,
 } from './reader-location';
@@ -87,6 +88,16 @@ describe('urlWithImageIndex', () => {
 
   it('reports nothing when the url already names that index', () => {
     expect(urlWithImageIndex(new URL('https://r.test/read/one?image=5'), imageIndex(5))).toBeNull();
+  });
+});
+
+describe('readerHref', () => {
+  it('names the book and the image index', () => {
+    expect(readerHref(bookId('one'), imageIndex(13))).toBe('/read/one?image=13');
+  });
+
+  it('escapes a book id that would otherwise change the path', () => {
+    expect(readerHref(bookId('a/b?c'), imageIndex(0))).toBe('/read/a%2Fb%3Fc?image=0');
   });
 });
 

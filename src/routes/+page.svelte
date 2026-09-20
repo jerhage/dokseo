@@ -3,15 +3,38 @@
   import { useContainer } from '$lib/context';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import CaptureResults from '$lib/domains/recognition/ui/CaptureResults.svelte';
+  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture-search.svelte';
+  import { effectiveDirection } from '$lib/shared/layout-kind';
   import { MISSING_BOOK_PARAMETER, missingBookNotice } from '$lib/shared/reader-location';
 
-  const view = new LibraryView(useContainer());
+  const container = useContainer();
+  const view = new LibraryView(container);
+  const found = new CaptureSearchView(container);
   const notice = $derived(missingBookNotice(page.url.searchParams.get(MISSING_BOOK_PARAMETER)));
+  const books = $derived(
+    view.books.map((book) => ({
+      id: book.id,
+      title: book.title,
+      language: book.language,
+      direction: effectiveDirection(book.direction, book.layoutKind),
+    })),
+  );
+
+  let query = $state('');
 
   $effect(() => {
     void view.load();
-    return () => view.dispose();
+    void found.load();
+    return () => {
+      view.dispose();
+      found.dispose();
+    };
   });
 </script>
 
-<LibraryScreen {view} {notice} />
+<LibraryScreen {view} {notice} bind:query>
+  {#snippet results()}
+    <CaptureResults captures={found.captures} {books} {query} />
+  {/snippet}
+</LibraryScreen>

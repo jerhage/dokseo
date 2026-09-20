@@ -1,5 +1,7 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import type { BookId } from '$lib/shared/ids';
+  import { matchesQuery } from '$lib/shared/text-search';
   import type { BookEdit } from '../domain/book';
   import BookCard from './BookCard.svelte';
   import BookSettings from './BookSettings.svelte';
@@ -8,9 +10,14 @@
   import UploadTile from './UploadTile.svelte';
   import type { LibraryView } from './library-view.svelte';
 
-  type Props = { readonly view: LibraryView; readonly notice?: string | null };
+  type Props = {
+    readonly view: LibraryView;
+    readonly notice?: string | null;
+    query?: string;
+    readonly results?: Snippet;
+  };
 
-  let { view, notice = null }: Props = $props();
+  let { view, notice = null, query = $bindable(''), results }: Props = $props();
 
   let tile = $state<ReturnType<typeof UploadTile> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
@@ -34,6 +41,10 @@
     return `${size.toFixed(unit > 0 && size < 10 ? 1 : 0)} ${UNITS[unit]}`;
   }
 
+  const searching = $derived(query.trim().length > 0);
+  const titled = $derived(
+    searching ? view.books.filter((book) => matchesQuery(book.title, query)) : view.books,
+  );
   const totalImages = $derived(view.books.reduce((sum, book) => sum + book.imageCount, 0));
   const space = $derived(
     view.storedBytes === null
@@ -41,7 +52,7 @@
       : `${formatBytes(view.storedBytes)} of uploads`,
   );
   const summary = $derived(
-    `${view.books.length} series · ${totalImages.toLocaleString()} images · ${space}`,
+    `${view.books.length} books · ${totalImages.toLocaleString()} images · ${space}`,
   );
   const settling = $derived(view.status !== 'ready' && view.status !== 'failed');
 </script>
@@ -65,7 +76,12 @@
       <div class="tools">
         <label class="search" for="library-search">
           <span class="assistive">Search titles or recognized text</span>
-          <input id="library-search" type="search" placeholder="Search titles or recognized text" />
+          <input
+            id="library-search"
+            type="search"
+            bind:value={query}
+            placeholder="Search titles or recognized text"
+          />
         </label>
         <button
           class="upload"
@@ -99,13 +115,17 @@
           <p class="notice">No uploads yet. {DROP_INVITATION.toLowerCase()} to start.</p>
         {/if}
 
+        {#if searching && titled.length > 0}
+          <h2 class="section">Titles</h2>
+        {/if}
+
         <ul class="grid">
           {#if view.pending !== null}
-            <li>
+            <li hidden={searching}>
               <PendingCard title={view.pending} language="ja" stage={view.progress} />
             </li>
           {/if}
-          {#each view.books as book (book.id)}
+          {#each titled as book (book.id)}
             <li>
               <BookCard
                 {book}
@@ -117,7 +137,7 @@
               />
             </li>
           {/each}
-          <li>
+          <li hidden={searching}>
             <UploadTile
               bind:this={tile}
               busy={view.busy}
@@ -125,6 +145,10 @@
             />
           </li>
         </ul>
+
+        {#if searching && results !== undefined}
+          {@render results()}
+        {/if}
       {/if}
     </section>
 
@@ -334,6 +358,15 @@
     font-family: var(--f-ui);
     font-size: 11.5px;
     cursor: pointer;
+  }
+
+  .section {
+    margin: 0;
+    color: var(--c-text-3);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .grid {

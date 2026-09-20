@@ -1,4 +1,4 @@
-import { imageIndex, type ImageIndex } from './ids';
+import { imageIndex, type BookId, type ImageIndex } from './ids';
 
 export const IMAGE_PARAMETER = 'image';
 
@@ -49,6 +49,10 @@ export function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   const moved = new URL(url);
   moved.searchParams.set(IMAGE_PARAMETER, String(index));
   return moved.href === url.href ? null : moved;
+}
+
+export function readerHref(book: BookId, index: ImageIndex): string {
+  return `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`;
 }
 
 export function missingBookNotice(value: string | null | undefined): string | null {
