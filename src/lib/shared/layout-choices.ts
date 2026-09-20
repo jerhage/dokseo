@@ -31,7 +31,3 @@ export const READING_DIRECTION_CHOICES: readonly LayoutChoice<ReadingDirection>[
   { value: 'rtl', label: 'Right to left', brief: 'Right to left' },
   { value: 'ltr', label: 'Left to right', brief: 'Left to right' },
 ];
-
-export const CONTINUOUS_READS_DOWNWARD = 'A continuous strip always reads downward.';
-
-export const CONTINUOUS_HAS_NO_PAIRS = 'A continuous strip has no facing pages.';

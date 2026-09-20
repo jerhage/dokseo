@@ -1,8 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import {
-    CONTINUOUS_HAS_NO_PAIRS,
-    CONTINUOUS_READS_DOWNWARD,
     PAGE_PAIRING_CHOICES,
     PAGE_PAIRING_LEGEND,
     READING_DIRECTION_CHOICES,
@@ -110,7 +108,6 @@
       class="group"
       class:locked={downward}
       disabled={saving || downward}
-      aria-describedby={downward ? `${uid}-downward` : undefined}
     >
       <legend class="label">{READING_DIRECTION_LEGEND}</legend>
       {#each READING_DIRECTION_CHOICES as choice (choice.value)}
@@ -126,15 +123,10 @@
       {/each}
     </fieldset>
 
-    {#if downward}
-      <p class="hint" id="{uid}-downward">{CONTINUOUS_READS_DOWNWARD}</p>
-    {/if}
-
     <fieldset
       class="group"
       class:locked={downward}
       disabled={saving || downward}
-      aria-describedby={downward ? `${uid}-unpaired` : undefined}
     >
       <legend class="label">{PAGE_PAIRING_LEGEND}</legend>
       {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
@@ -149,10 +141,6 @@
         </label>
       {/each}
     </fieldset>
-
-    {#if downward}
-      <p class="hint" id="{uid}-unpaired">{CONTINUOUS_HAS_NO_PAIRS}</p>
-    {/if}
 
     <div class="actions">
       <button class="cancel" type="button" disabled={saving} onclick={requestClose}>Cancel</button>
@@ -264,12 +252,6 @@
 
   .group:not(:disabled) .choice {
     cursor: pointer;
-  }
-
-  .hint {
-    margin: calc(var(--s-3) * -1) 0 0;
-    color: var(--c-text-8);
-    font-size: 11.5px;
   }
 
   .actions {

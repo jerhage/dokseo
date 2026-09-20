@@ -6,8 +6,6 @@
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import {
-    CONTINUOUS_HAS_NO_PAIRS,
-    CONTINUOUS_READS_DOWNWARD,
     LAYOUT_KIND_CHOICES,
     LAYOUT_KIND_LEGEND_BRIEF,
     PAGE_PAIRING_CHOICES,
@@ -318,11 +316,7 @@
           </fieldset>
         {/if}
 
-        <fieldset
-          class="group"
-          disabled={view.saving || downward}
-          aria-describedby={downward ? `${uid}-unpaired` : undefined}
-        >
+        <fieldset class="group" disabled={view.saving || downward}>
           <legend class="legend">{PAGE_PAIRING_LEGEND_BRIEF}</legend>
           {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
             <label class="pill" title={choice.label}>
@@ -338,11 +332,7 @@
           {/each}
         </fieldset>
 
-        <fieldset
-          class="group"
-          disabled={view.saving || downward}
-          aria-describedby={downward ? `${uid}-downward` : undefined}
-        >
+        <fieldset class="group" disabled={view.saving || downward}>
           <legend class="legend">{READING_DIRECTION_LEGEND_BRIEF}</legend>
           {#each READING_DIRECTION_CHOICES as choice (choice.value)}
             <label class="pill" title={choice.label}>
@@ -372,11 +362,6 @@
             </button>
           {/each}
         </div>
-
-        {#if downward}
-          <p class="hint" id="{uid}-unpaired">{CONTINUOUS_HAS_NO_PAIRS}</p>
-          <p class="hint" id="{uid}-downward">{CONTINUOUS_READS_DOWNWARD}</p>
-        {/if}
       </div>
     {/if}
   </header>
@@ -667,13 +652,6 @@
   .fit:disabled {
     cursor: default;
     opacity: 0.5;
-  }
-
-  .hint {
-    flex: 1 0 100%;
-    margin: 0;
-    color: var(--c-text-9);
-    font-size: 10.5px;
   }
 
   .alert {
