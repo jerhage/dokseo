@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { match } from 'ts-pattern';
   import type { CaptureId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
@@ -18,9 +19,20 @@
     readonly text: string | null;
     readonly note: string | null;
     readonly tone: CaptureStatus;
+    readonly edited: boolean;
+    readonly editable: boolean;
   };
 
   let { view, language }: Props = $props();
+
+  let editing = $state<CaptureId | null>(null);
+  let draft = $state('');
+  let editor = $state<HTMLTextAreaElement | null>(null);
+  let trigger: HTMLButtonElement | null = null;
+
+  $effect(() => {
+    editor?.focus();
+  });
 
   const percent = $derived(view.progress === null ? null : Math.round(view.progress * 100));
 
@@ -56,6 +68,8 @@
           text: null,
           note: percent === null ? null : `Downloading the model · ${percent}%`,
           tone: 'pending' as CaptureStatus,
+          edited: false,
+          editable: false,
         }))
         .with({ status: 'done' }, (read) => ({
           id: read.id,
@@ -64,6 +78,8 @@
           text: read.text.text,
           note: null,
           tone: 'done' as CaptureStatus,
+          edited: read.edited,
+          editable: true,
         }))
         .with({ status: 'empty' }, (blank) => ({
           id: blank.id,
@@ -72,6 +88,8 @@
           text: null,
           note: NOTHING_READ,
           tone: 'empty' as CaptureStatus,
+          edited: false,
+          editable: false,
         }))
         .with({ status: 'failed' }, (broken) => ({
           id: broken.id,
@@ -80,10 +98,53 @@
           text: null,
           note: broken.message,
           tone: 'failed' as CaptureStatus,
+          edited: false,
+          editable: false,
         }))
         .exhaustive(),
     ),
   );
+
+  function begin(card: Card, from: HTMLButtonElement): void {
+    editing = card.id;
+    draft = card.text ?? '';
+    trigger = from;
+  }
+
+  async function abandon(): Promise<void> {
+    editing = null;
+    draft = '';
+    await tick();
+    trigger?.focus();
+    trigger = null;
+  }
+
+  function save(): void {
+    const id = editing;
+    if (id === null) return;
+
+    const text = draft;
+    void abandon();
+    void view.edit(id, text);
+  }
+
+  function commit(event: SubmitEvent): void {
+    event.preventDefault();
+    save();
+  }
+
+  function keys(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      void abandon();
+      return;
+    }
+
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      save();
+    }
+  }
 </script>
 
 <section class="panel" aria-label="Captures">
@@ -111,9 +172,48 @@
           <article class="card {card.tone}">
             <header class="stamp">
               <span class="place">{card.place}</span>
+              {#if card.edited}
+                <span class="mark">Edited</span>
+              {/if}
               <span class="state">{card.state}</span>
+              <span class="tools">
+                {#if card.editable}
+                  <button
+                    class="tool"
+                    type="button"
+                    disabled={editing === card.id}
+                    onclick={(event) => begin(card, event.currentTarget)}
+                  >
+                    <span class="glyph" aria-hidden="true">✎</span>
+                    <span class="assistive">Edit the capture at {card.place}</span>
+                  </button>
+                {/if}
+                <button class="tool drop" type="button" onclick={() => void view.remove(card.id)}>
+                  <span class="glyph" aria-hidden="true">×</span>
+                  <span class="assistive">Remove the capture at {card.place}</span>
+                </button>
+              </span>
             </header>
-            {#if card.text !== null}
+            {#if editing === card.id}
+              <form class="editor" onsubmit={commit}>
+                <textarea
+                  bind:this={editor}
+                  bind:value={draft}
+                  class="field"
+                  class:ko={language === 'ko'}
+                  lang={language}
+                  rows="3"
+                  aria-label="Text of the capture at {card.place}"
+                  onkeydown={keys}></textarea>
+                <p class="hint">Escape abandons · ⌘/Ctrl + Enter saves</p>
+                <div class="choices">
+                  <button class="abandon" type="button" onclick={() => void abandon()}>
+                    Cancel
+                  </button>
+                  <button class="save" type="submit">Save</button>
+                </div>
+              </form>
+            {:else if card.text !== null}
               <p class="text" class:ko={language === 'ko'} lang={language}>{card.text}</p>
             {/if}
             {#if card.note !== null}
@@ -244,19 +344,28 @@
   .stamp {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
     gap: var(--s-2);
     margin-bottom: var(--s-2);
   }
 
   .place {
+    flex: 1 1 auto;
     color: var(--c-text-9);
     font-family: var(--f-mono);
     font-size: 10.5px;
     letter-spacing: 0.02em;
   }
 
+  .mark {
+    flex: none;
+    color: var(--c-text-9);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
   .state {
+    flex: none;
     color: var(--c-text-8);
     font-size: 10px;
     letter-spacing: 0.04em;
@@ -282,6 +391,113 @@
 
   .text.ko {
     font-family: var(--f-ko);
+  }
+
+  .tools {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--s-3);
+    margin-left: var(--s-1);
+  }
+
+  .tool {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    background: none;
+    color: var(--c-text-9);
+    font-family: var(--f-ui);
+    cursor: pointer;
+  }
+
+  .tool:hover:not(:disabled),
+  .tool:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .tool.drop:hover,
+  .tool.drop:focus-visible {
+    border-color: var(--c-warning);
+    color: var(--c-warning);
+  }
+
+  .tool:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  .glyph {
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+
+  .field {
+    width: 100%;
+    padding: var(--s-2);
+    border: 1px solid var(--c-accent-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface-chip);
+    color: var(--c-text-1);
+    font-family: var(--f-ja);
+    font-size: 15px;
+    line-height: 1.6;
+    resize: vertical;
+  }
+
+  .field.ko {
+    font-family: var(--f-ko);
+  }
+
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--c-accent);
+  }
+
+  .hint {
+    margin: 0;
+    color: var(--c-text-9);
+    font-size: 10.5px;
+  }
+
+  .choices {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--s-2);
+  }
+
+  .abandon,
+  .save {
+    padding: var(--s-1) var(--s-3);
+    border-radius: var(--r-md);
+    font-family: var(--f-ui);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .abandon {
+    border: 1px solid var(--c-border-4);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+  }
+
+  .save {
+    border: 1px solid var(--c-accent);
+    background: var(--c-accent);
+    color: var(--c-accent-text);
+    font-weight: 600;
   }
 
   .note {

@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import { requestPersistence, storageEstimate } from '$lib/platform/storage/persistence';
 import { beginTrace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
@@ -47,6 +47,10 @@ import {
   type ClearCapturesDeps,
 } from './domains/recognition/use-cases/clear-captures';
 import {
+  editCaptureText,
+  type EditCaptureTextDeps,
+} from './domains/recognition/use-cases/edit-capture-text';
+import {
   grantModelConsent,
   type GrantModelConsentDeps,
 } from './domains/recognition/use-cases/grant-model-consent';
@@ -59,6 +63,10 @@ import {
   recognizeRegion,
   type RecognizeRegionError,
 } from './domains/recognition/use-cases/recognize-region';
+import {
+  removeCapture,
+  type RemoveCaptureDeps,
+} from './domains/recognition/use-cases/remove-capture';
 import { saveCapture, type SaveCaptureDeps } from './domains/recognition/use-cases/save-capture';
 
 export type RecognitionProgress = (fraction: number) => void;
@@ -132,7 +140,12 @@ export type Container = {
       onProgress?: RecognitionProgress,
     ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
     readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
-    readonly saveCapture: (draft: CaptureDraft) => Promise<Result<void, CaptureError>>;
+    readonly saveCapture: (draft: CaptureDraft) => Promise<Result<Capture, CaptureError>>;
+    readonly editCaptureText: (
+      capture: Capture,
+      text: string,
+    ) => Promise<Result<Capture, CaptureError>>;
+    readonly removeCapture: (capture: CaptureId) => Promise<Result<void, CaptureError>>;
     readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
   };
 };
@@ -161,6 +174,8 @@ export function buildContainer(): Container {
   const captures = createCaptureRepository();
   const listCapturesDeps: ListCapturesDeps = { captures };
   const saveCaptureDeps: SaveCaptureDeps = { captures, now: Date.now };
+  const editCaptureTextDeps: EditCaptureTextDeps = { captures, now: Date.now };
+  const removeCaptureDeps: RemoveCaptureDeps = { captures };
   const clearCapturesDeps: ClearCapturesDeps = { captures };
 
   return {
@@ -202,6 +217,9 @@ export function buildContainer(): Container {
       },
       listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),
       saveCapture: (draft: CaptureDraft) => saveCapture(saveCaptureDeps, draft),
+      editCaptureText: (capture: Capture, text: string) =>
+        editCaptureText(editCaptureTextDeps, capture, text),
+      removeCapture: (capture: CaptureId) => removeCapture(removeCaptureDeps, capture),
       clearCaptures: (book: BookId) => clearCaptures(clearCapturesDeps, book),
     },
   };

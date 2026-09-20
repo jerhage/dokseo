@@ -95,6 +95,8 @@ function fakes(): Fakes {
       recognizeRegion: () => Promise.reject(new Error('not used')),
       listCaptures: () => Promise.reject(new Error('not used')),
       saveCapture: () => Promise.reject(new Error('not used')),
+      editCaptureText: () => Promise.reject(new Error('not used')),
+      removeCapture: () => Promise.reject(new Error('not used')),
       clearCaptures: () => Promise.reject(new Error('not used')),
     },
   };

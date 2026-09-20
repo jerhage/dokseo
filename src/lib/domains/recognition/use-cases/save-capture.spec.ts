@@ -28,6 +28,7 @@ function repository(broken = false) {
       saved.push(capture);
       return Promise.resolve(ok(undefined));
     },
+    remove: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
     clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
   };
 
@@ -40,9 +41,18 @@ describe('saveCapture', () => {
 
     const stored = await saveCapture({ captures, now: () => 1_700_000_000_000 }, DRAFT);
 
-    expect(stored).toEqual(ok(undefined));
+    expect(stored.ok && stored.value.createdAt).toBe(1_700_000_000_000);
     expect(at(saved, 0).createdAt).toBe(1_700_000_000_000);
     expect(at(saved, 0).bookId).toBe(BOOK);
+  });
+
+  it('reports the capture it stored, marked as never edited', async () => {
+    const { captures } = repository();
+
+    const stored = await saveCapture({ captures, now: () => 5 }, DRAFT);
+
+    expect(stored.ok && stored.value.text).toBe('こっちに来て');
+    expect(stored.ok && stored.value.editedAt).toBeNull();
   });
 
   it('reports a storage failure rather than throwing', async () => {

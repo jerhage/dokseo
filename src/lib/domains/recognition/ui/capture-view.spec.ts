@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionProgress } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex, type BookId } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex, type BookId, type CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import { takenCapture, type Capture, type CaptureDraft } from '../domain/capture';
+import { editedCapture, takenCapture, type Capture, type CaptureDraft } from '../domain/capture';
 import type { CaptureError } from '../domain/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
 import { modelFootprint } from '../domain/model-footprint';
@@ -38,12 +38,20 @@ type Listing = {
   readonly release: () => void;
 };
 
+type Write = {
+  readonly release: () => void;
+};
+
 type Store = {
   rows: Capture[];
   readonly listings: Listing[];
+  readonly writes: Write[];
+  readonly edits: string[];
   defer: boolean;
+  deferWrites: boolean;
   listFails: boolean;
   saveFails: boolean;
+  editFails: boolean;
 };
 
 type Step = {
@@ -78,10 +86,22 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
   const store: Store = {
     rows: [],
     listings: [],
+    writes: [],
+    edits: [],
     defer: false,
+    deferWrites: false,
     listFails: false,
     saveFails: false,
+    editFails: false,
   };
+
+  function settled<T>(write: () => Result<T, CaptureError>): Promise<Result<T, CaptureError>> {
+    if (!store.deferWrites) return Promise.resolve(write());
+
+    return new Promise((resolve) => {
+      store.writes.push({ release: () => resolve(write()) });
+    });
+  }
 
   const steps: Step[] = [];
   const ended: string[] = [];
@@ -135,13 +155,31 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
           store.listings.push({ book, release: () => resolve(ok(held)) });
         });
       },
-      saveCapture: (draft: CaptureDraft): Promise<Result<void, CaptureError>> => {
+      saveCapture: (draft: CaptureDraft): Promise<Result<Capture, CaptureError>> => {
         if (store.saveFails) {
           return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
         }
-        store.rows = [...store.rows, takenCapture(draft, store.rows.length + 1)];
-        return Promise.resolve(ok(undefined));
+        const kept = takenCapture(draft, store.rows.length + 1);
+        store.rows = [...store.rows, kept];
+        return Promise.resolve(ok(kept));
       },
+      editCaptureText: (capture: Capture, text: string): Promise<Result<Capture, CaptureError>> => {
+        store.edits.push(text);
+        if (store.editFails) {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
+        }
+
+        const edited = editedCapture(capture, text, 99);
+        return settled(() => {
+          store.rows = store.rows.map((row) => (row.id === edited.id ? edited : row));
+          return ok(edited);
+        });
+      },
+      removeCapture: (capture: CaptureId): Promise<Result<void, CaptureError>> =>
+        settled(() => {
+          store.rows = store.rows.filter((row) => row.id !== capture);
+          return ok(undefined);
+        }),
       clearCaptures: (book: BookId): Promise<Result<void, CaptureError>> => {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve(ok(undefined));
@@ -164,6 +202,7 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
     text,
     confidence: null,
     createdAt,
+    editedAt: null,
   };
 }
 
@@ -171,6 +210,10 @@ function panelTexts(view: CaptureView): readonly string[] {
   return view.captures.map((capture) =>
     capture.status === 'done' ? capture.text.text : capture.status,
   );
+}
+
+function editedFlags(view: CaptureView): readonly boolean[] {
+  return view.captures.map((capture) => capture.status === 'done' && capture.edited);
 }
 
 const source = {} as PageSource;
@@ -648,6 +691,160 @@ describe('CaptureView', () => {
 
     expect(view.captures).toEqual([]);
     expect(world.store.rows.map((row) => row.text)).toEqual(['another book']);
+  });
+
+  it('stores the edited text and shows it in place', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.edit(captureId('a'), 'the reader’s reading');
+
+    expect(panelTexts(view)).toEqual(['the reader’s reading']);
+    expect(world.store.rows.map((row) => row.text)).toEqual(['the reader’s reading']);
+  });
+
+  it('marks a capture the reader has edited', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+    expect(editedFlags(view)).toEqual([false]);
+
+    await view.edit(captureId('a'), 'corrected');
+
+    expect(editedFlags(view)).toEqual([true]);
+    expect(at(world.store.rows, 0).editedAt).toBe(99);
+  });
+
+  it('shows a stored capture that was edited in an earlier session as edited', async () => {
+    const world = fakes();
+    world.store.rows = [{ ...storedRow('a', ONE, 'corrected', 1), editedAt: 42 }];
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+
+    expect(editedFlags(view)).toEqual([true]);
+  });
+
+  it('keeps the previous text and stores nothing for a blank edit', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.edit(captureId('a'), '   \n  ');
+
+    expect(panelTexts(view)).toEqual(['model reading']);
+    expect(editedFlags(view)).toEqual([false]);
+    expect(world.store.edits).toEqual([]);
+  });
+
+  it('stores nothing for an edit that changes no text', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.edit(captureId('a'), '  model reading  ');
+
+    expect(panelTexts(view)).toEqual(['model reading']);
+    expect(editedFlags(view)).toEqual([false]);
+    expect(world.store.edits).toEqual([]);
+  });
+
+  it('edits nothing for a capture that read no text', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    await running;
+
+    await view.edit(at(view.captures, 0).id, 'typed over a blank card');
+
+    expect(at(view.captures, 0).status).toBe('empty');
+    expect(world.store.edits).toEqual([]);
+  });
+
+  it('keeps an edit on screen when the store refuses it', async () => {
+    const world = fakes();
+    world.store.editFails = true;
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.edit(captureId('a'), 'corrected by hand');
+
+    expect(panelTexts(view)).toEqual(['corrected by hand']);
+    expect(editedFlags(view)).toEqual([true]);
+    expect(world.store.rows.map((row) => row.text)).toEqual(['model reading']);
+  });
+
+  it('drops a removed capture from the list and from the store', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'first', 1), storedRow('b', ONE, 'second', 2)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.remove(captureId('a'));
+
+    expect(panelTexts(view)).toEqual(['second']);
+    expect(world.store.rows.map((row) => row.id)).toEqual(['b']);
+  });
+
+  it('drops a capture the store never held from the list', async () => {
+    const world = fakes();
+    world.store.saveFails = true;
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('保存できなかった')));
+    await running;
+
+    await view.remove(at(view.captures, 0).id);
+
+    expect(view.captures).toEqual([]);
+  });
+
+  it('ignores an edit reply that lands after the reader has opened another book', async () => {
+    const world = fakes();
+    world.store.rows = [
+      storedRow('a', ONE, 'from the first book', 1),
+      storedRow('b', TWO, 'from the second book', 2),
+    ];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    world.store.deferWrites = true;
+    const stale = view.edit(captureId('a'), 'edited late');
+    await view.open(TWO);
+    at(world.store.writes, 0).release();
+    await stale;
+
+    expect(panelTexts(view)).toEqual(['from the second book']);
+    expect(editedFlags(view)).toEqual([false]);
+  });
+
+  it('ignores a removal reply that lands after the reader has opened another book', async () => {
+    const world = fakes();
+    world.store.rows = [
+      storedRow('a', ONE, 'from the first book', 1),
+      storedRow('b', TWO, 'from the second book', 2),
+    ];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    world.store.deferWrites = true;
+    const stale = view.remove(captureId('a'));
+    await view.open(TWO);
+    at(world.store.writes, 0).release();
+    await stale;
+
+    expect(panelTexts(view)).toEqual(['from the second book']);
   });
 
   it('keeps a book’s stored captures when the reader leaves it', async () => {

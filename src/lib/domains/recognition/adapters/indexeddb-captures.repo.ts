@@ -1,6 +1,6 @@
-import { deleteByIndex, listByIndex, putRecord } from '$lib/platform/idb/connection';
+import { deleteByIndex, deleteRecord, listByIndex, putRecord } from '$lib/platform/idb/connection';
 import { describeCause } from '$lib/shared/cause';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, CaptureId } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
 import {
   captureFromStored,
@@ -45,6 +45,16 @@ export function createCaptureRepository(): CaptureRepository {
       if (!recordsAvailable()) return unavailable();
       try {
         await putRecord(await recognitionDatabase(), CAPTURE_STORE, capture);
+        return ok(undefined);
+      } catch (cause) {
+        return failed(cause);
+      }
+    },
+
+    async remove(capture: CaptureId): Promise<Result<void, CaptureError>> {
+      if (!recordsAvailable()) return unavailable();
+      try {
+        await deleteRecord(await recognitionDatabase(), CAPTURE_STORE, capture);
         return ok(undefined);
       } catch (cause) {
         return failed(cause);

@@ -5,6 +5,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import { at } from '$lib/shared/testing/at';
 import {
   captureFromStored,
+  editedCapture,
   oldestFirst,
   takenCapture,
   type Capture,
@@ -37,6 +38,7 @@ describe('takenCapture', () => {
       text: 'こっちに来て',
       confidence: 0.8,
       createdAt: 1_700_000_000_000,
+      editedAt: null,
     });
   });
 
@@ -59,7 +61,39 @@ describe('captureFromStored', () => {
       createdAt: 42,
     };
 
-    expect(captureFromStored(stored)).toEqual({ ...stored, confidence: 0.5, createdAt: 42 });
+    expect(captureFromStored(stored)).toEqual({
+      ...stored,
+      confidence: 0.5,
+      createdAt: 42,
+      editedAt: null,
+    });
+  });
+
+  it('reads a record written before an edit was possible as never edited', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).editedAt).toBeNull();
+  });
+
+  it('keeps the moment a stored record was edited', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+      editedAt: 99,
+    };
+
+    expect(captureFromStored(stored).editedAt).toBe(99);
   });
 
   it('fills an absent confidence with nothing rather than leaving the field missing', () => {
@@ -96,6 +130,33 @@ describe('captureFromStored', () => {
     const ordered = oldestFirst([taken('a', 5), undated, taken('b', 1)]);
 
     expect(ordered.map((capture) => capture.id)).toEqual(['old', 'b', 'a']);
+  });
+});
+
+describe('editedCapture', () => {
+  it('replaces the text and stamps the moment it was edited', () => {
+    const edited = editedCapture(taken('a', 1), '  こっちに来い  ', 77);
+
+    expect(edited.text).toBe('こっちに来い');
+    expect(edited.editedAt).toBe(77);
+  });
+
+  it('keeps the previous text when the edit is blank', () => {
+    const edited = editedCapture(taken('a', 1), '   ', 77);
+
+    expect(edited.text).toBe('こっちに来て');
+    expect(edited.editedAt).toBe(77);
+  });
+
+  it('keeps everything the reader did not change', () => {
+    const before = taken('a', 1);
+
+    const edited = editedCapture(before, 'べつのことば', 77);
+
+    expect(edited.id).toBe(before.id);
+    expect(edited.bookId).toBe(before.bookId);
+    expect(edited.regions).toEqual(before.regions);
+    expect(edited.createdAt).toBe(before.createdAt);
   });
 });
 

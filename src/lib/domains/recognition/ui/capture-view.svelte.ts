@@ -8,7 +8,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
-import { oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
+import { editedText, oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
 import { downloadMb, modelFootprint, type ModelFootprint } from '../domain/model-footprint';
 import { hasNoText, recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { CropError } from '../domain/region-cropper';
@@ -25,7 +25,7 @@ type Taken = {
 };
 
 type Settled =
-  | { readonly status: 'done'; readonly text: RecognizedText }
+  | { readonly status: 'done'; readonly text: RecognizedText; readonly edited: boolean }
   | { readonly status: 'empty' }
   | { readonly status: 'failed'; readonly message: string };
 
@@ -81,7 +81,9 @@ function settlementOf(read: Result<RecognizedText, RecognizeRegionError>): Settl
       : { status: 'failed', message: describeRecognizeFailure(read.error) };
   }
 
-  return hasNoText(read.value) ? { status: 'empty' } : { status: 'done', text: read.value };
+  return hasNoText(read.value)
+    ? { status: 'empty' }
+    : { status: 'done', text: read.value, edited: false };
 }
 
 function cardOf(capture: Capture): PanelCapture {
@@ -90,6 +92,7 @@ function cardOf(capture: Capture): PanelCapture {
     regions: capture.regions,
     status: 'done',
     text: recognizedText(capture.text, capture.confidence),
+    edited: capture.editedAt !== null,
   };
 }
 
@@ -103,6 +106,7 @@ export class CaptureView {
   #generation = 0;
   #running = 0;
   #held: Held | null = null;
+  #stored = new Map<CaptureId, Capture>();
   #agreed = new Set<Language>();
   #declined = new Set<Language>();
 
@@ -125,7 +129,10 @@ export class CaptureView {
     const listed = await this.#container.recognition.listCaptures(book).catch(() => null);
 
     if (generation !== this.#generation || listed === null || !listed.ok) return;
-    this.captures = oldestFirst(listed.value).map(cardOf);
+
+    const held = oldestFirst(listed.value);
+    this.#stored = new Map(held.map((capture) => [capture.id, capture]));
+    this.captures = held.map(cardOf);
   }
 
   close(): void {
@@ -207,6 +214,7 @@ export class CaptureView {
 
   async #read(held: Held): Promise<void> {
     const book = this.#book;
+    const generation = this.#generation;
     this.#running += 1;
     const id = captureId(crypto.randomUUID());
     this.captures = [...this.captures, { id, regions: held.regions, status: 'pending' }];
@@ -236,7 +244,7 @@ export class CaptureView {
     this.#settle(id, settled);
     if (book === null || settled.status !== 'done') return;
 
-    await this.#keep({
+    await this.#keep(generation, {
       id,
       bookId: book,
       regions: held.regions,
@@ -245,17 +253,57 @@ export class CaptureView {
     });
   }
 
+  async edit(id: CaptureId, text: string): Promise<void> {
+    const card = this.captures.find((capture) => capture.id === id);
+    if (card === undefined || card.status !== 'done') return;
+
+    const settled = editedText(card.text.text, text);
+    if (settled === card.text.text) return;
+
+    const generation = this.#generation;
+    const stored = this.#stored.get(id);
+    const written =
+      stored === undefined
+        ? null
+        : await this.#container.recognition.editCaptureText(stored, settled).catch(() => null);
+
+    if (generation !== this.#generation) return;
+    if (written !== null && written.ok) this.#stored.set(id, written.value);
+
+    this.captures = this.captures.map((capture) =>
+      capture.id === id && capture.status === 'done'
+        ? { ...capture, text: recognizedText(settled, capture.text.confidence), edited: true }
+        : capture,
+    );
+  }
+
+  async remove(id: CaptureId): Promise<void> {
+    const generation = this.#generation;
+    if (this.#stored.has(id)) {
+      await this.#container.recognition.removeCapture(id).catch(() => undefined);
+    }
+
+    if (generation !== this.#generation) return;
+
+    this.#stored.delete(id);
+    this.captures = this.captures.filter((capture) => capture.id !== id);
+  }
+
   async clear(): Promise<void> {
     const book = this.#book;
     this.#generation += 1;
     this.captures = [];
+    this.#stored = new Map();
     if (book === null) return;
 
     await this.#container.recognition.clearCaptures(book).catch(() => undefined);
   }
 
-  async #keep(draft: CaptureDraft): Promise<void> {
-    await this.#container.recognition.saveCapture(draft).catch(() => undefined);
+  async #keep(generation: number, draft: CaptureDraft): Promise<void> {
+    const kept = await this.#container.recognition.saveCapture(draft).catch(() => null);
+    if (kept === null || !kept.ok || generation !== this.#generation) return;
+
+    this.#stored.set(kept.value.id, kept.value);
   }
 
   #forget(): number {
@@ -263,6 +311,7 @@ export class CaptureView {
     this.#held = null;
     this.consentRequest = null;
     this.captures = [];
+    this.#stored = new Map();
     this.#generation += 1;
     return this.#generation;
   }
