@@ -1,19 +1,24 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ModelLoad } from '../domain/model-load';
 import type { RecognizerSession } from '../domain/recognizer-session';
+import type { RecognizerSetup } from '../domain/recognizer-setup';
 import { createMangaOcrRecognizer } from './manga-ocr.adapter';
 import type { OcrReply, OcrRequest } from '../../../../workers/ocr-worker-protocol';
 
 type StubBitmap = { readonly bitmap: ImageBitmap; wasClosed(): boolean };
 
+type Sent = { request: OcrRequest; transfer: readonly Transferable[] };
+
 type FakeWorker = {
   readonly worker: Worker;
-  readonly sent: { request: OcrRequest; transfer: readonly Transferable[] }[];
+  readonly sent: Sent[];
   reply(reply: OcrReply): void;
   fail(message: string): void;
   breakMessage(): void;
   wasTerminated(): boolean;
 };
+
+const SETUP: RecognizerSetup = { modelId: 'DigitalLarynx/manga-ocr-onnx', compute: 'auto' };
 
 function stubBitmap(width: number, height: number): StubBitmap {
   let closed = false;
@@ -29,7 +34,7 @@ function stubBitmap(width: number, height: number): StubBitmap {
 }
 
 function fakeWorker(): FakeWorker {
-  const sent: { request: OcrRequest; transfer: readonly Transferable[] }[] = [];
+  const sent: Sent[] = [];
   const listeners = new Map<string, ((event: unknown) => void)[]>();
   let terminated = false;
 
@@ -41,7 +46,7 @@ function fakeWorker(): FakeWorker {
     addEventListener(kind: string, listen: (event: unknown) => void): void {
       listeners.set(kind, [...(listeners.get(kind) ?? []), listen]);
     },
-    postMessage(request: OcrRequest, transfer: readonly Transferable[]): void {
+    postMessage(request: OcrRequest, transfer: readonly Transferable[] = []): void {
       sent.push({ request, transfer });
     },
     terminate(): void {
@@ -72,7 +77,45 @@ function stubOffscreenCanvas(): void {
 
 function recognizerOver(fake: FakeWorker): ReturnType<typeof createMangaOcrRecognizer> {
   stubOffscreenCanvas();
-  return createMangaOcrRecognizer({ startWorker: () => fake.worker });
+  return createMangaOcrRecognizer({
+    readSetup: () => Promise.resolve(SETUP),
+    startWorker: () => fake.worker,
+  });
+}
+
+function tick(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
+function requestOf(fake: FakeWorker, at: number): OcrRequest {
+  const sent = fake.sent[at];
+  if (sent === undefined) throw new Error(`Nothing was sent to the worker at ${at}`);
+  return sent.request;
+}
+
+async function openId(fake: FakeWorker): Promise<number> {
+  await tick();
+  const request = requestOf(fake, 0);
+  if (request.kind !== 'open') throw new Error('The first request was not an open');
+  return request.id;
+}
+
+async function openedOver(fake: FakeWorker, device: 'wasm' | 'webgpu' = 'wasm'): Promise<void> {
+  const id = await openId(fake);
+  fake.reply({ kind: 'opened', id, modelId: SETUP.modelId, device });
+  await tick();
+}
+
+function cropsIn(fake: FakeWorker): readonly Sent[] {
+  return fake.sent.filter((one) => one.request.kind === 'recognize');
+}
+
+function cropId(fake: FakeWorker, at: number): number {
+  const sent = cropsIn(fake)[at];
+  if (sent === undefined) throw new Error(`No crop was sent at ${at}`);
+  return sent.request.id;
 }
 
 afterEach(() => {
@@ -81,15 +124,16 @@ afterEach(() => {
 
 describe('createMangaOcrRecognizer', () => {
   it('names itself manga-ocr', () => {
-    expect(createMangaOcrRecognizer().id).toBe('manga-ocr');
+    expect(recognizerOver(fakeWorker()).id).toBe('manga-ocr');
   });
 
-  it('starts no worker until the first recognize', () => {
+  it('starts no worker until the first recognition is asked for', async () => {
     stubOffscreenCanvas();
     const fake = fakeWorker();
     let started = 0;
 
     const recognizer = createMangaOcrRecognizer({
+      readSetup: () => Promise.resolve(SETUP),
       startWorker: () => {
         started += 1;
         return fake.worker;
@@ -98,7 +142,19 @@ describe('createMangaOcrRecognizer', () => {
     expect(started).toBe(0);
 
     void recognizer.recognize(stubBitmap(80, 40).bitmap);
+    await tick();
     expect(started).toBe(1);
+  });
+
+  it('opens the session with the stored setup before it sends a crop', async () => {
+    const fake = fakeWorker();
+    const recognizer = recognizerOver(fake);
+
+    void recognizer.recognize(stubBitmap(80, 40).bitmap);
+    await tick();
+
+    expect(requestOf(fake, 0)).toEqual({ kind: 'open', id: 1, setup: SETUP });
+    expect(cropsIn(fake)).toHaveLength(0);
   });
 
   it('reuses one worker across recognitions', async () => {
@@ -107,6 +163,7 @@ describe('createMangaOcrRecognizer', () => {
 
     stubOffscreenCanvas();
     const recognizer = createMangaOcrRecognizer({
+      readSetup: () => Promise.resolve(SETUP),
       startWorker: () => {
         started += 1;
         return fake.worker;
@@ -114,10 +171,12 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const first = recognizer.recognize(stubBitmap(80, 40).bitmap);
-    fake.reply({ kind: 'recognized', id: 1, text: 'どうしたんだ' });
+    await openedOver(fake);
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'どうしたんだ' });
     await first;
 
     void recognizer.recognize(stubBitmap(80, 40).bitmap);
+    await tick();
     expect(started).toBe(1);
   });
 
@@ -126,8 +185,8 @@ describe('createMangaOcrRecognizer', () => {
     const recognizer = recognizerOver(fake);
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
-    const id = fake.sent[0]?.request.id ?? 0;
-    fake.reply({ kind: 'recognized', id, text: 'ちょっと待って' });
+    await openedOver(fake);
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'ちょっと待って' });
 
     const result = await recognition;
     if (!result.ok) throw new Error('The recognizer failed');
@@ -140,12 +199,12 @@ describe('createMangaOcrRecognizer', () => {
     const recognizer = recognizerOver(fake);
 
     const first = recognizer.recognize(stubBitmap(120, 48).bitmap);
+    await openedOver(fake);
     const second = recognizer.recognize(stubBitmap(240, 96).bitmap);
-    const firstId = fake.sent[0]?.request.id ?? 0;
-    const secondId = fake.sent[1]?.request.id ?? 0;
+    await tick();
 
-    fake.reply({ kind: 'recognized', id: secondId, text: '早く逃げろ' });
-    fake.reply({ kind: 'recognized', id: firstId, text: 'こっちに来て' });
+    fake.reply({ kind: 'recognized', id: cropId(fake, 1), text: '早く逃げろ' });
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'こっちに来て' });
 
     const [one, two] = await Promise.all([first, second]);
     if (!one.ok || !two.ok) throw new Error('The recognizer failed');
@@ -153,14 +212,15 @@ describe('createMangaOcrRecognizer', () => {
     expect(two.value.text).toBe('早く逃げろ');
   });
 
-  it('maps a load failure onto model-unavailable', async () => {
+  it('maps a failure to open the session onto model-unavailable', async () => {
     const fake = fakeWorker();
     const recognizer = recognizerOver(fake);
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
+    const id = await openId(fake);
     fake.reply({
       kind: 'failed',
-      id: fake.sent[0]?.request.id ?? 0,
+      id,
       failure: 'model-unavailable',
       cause: 'the weights did not download',
     });
@@ -178,9 +238,10 @@ describe('createMangaOcrRecognizer', () => {
     const recognizer = recognizerOver(fake);
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
+    await openedOver(fake);
     fake.reply({
       kind: 'failed',
-      id: fake.sent[0]?.request.id ?? 0,
+      id: cropId(fake, 0),
       failure: 'recognition-failed',
       cause: 'the decoder threw',
     });
@@ -195,7 +256,8 @@ describe('createMangaOcrRecognizer', () => {
     const recognizer = recognizerOver(fake);
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
-    fake.reply({ kind: 'recognized', id: fake.sent[0]?.request.id ?? 0, text: '   ' });
+    await openedOver(fake);
+    fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: '   ' });
 
     const result = await recognition;
     if (result.ok) throw new Error('The recognizer succeeded');
@@ -207,7 +269,9 @@ describe('createMangaOcrRecognizer', () => {
     const recognizer = recognizerOver(fake);
 
     const first = recognizer.recognize(stubBitmap(120, 48).bitmap);
+    await openedOver(fake);
     const second = recognizer.recognize(stubBitmap(240, 96).bitmap);
+    await tick();
     fake.fail('the worker died');
 
     const [one, two] = await Promise.all([first, second]);
@@ -222,6 +286,7 @@ describe('createMangaOcrRecognizer', () => {
     const recognizer = recognizerOver(fake);
 
     const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
+    await openedOver(fake);
     fake.breakMessage();
 
     const result = await recognition;
@@ -235,6 +300,7 @@ describe('createMangaOcrRecognizer', () => {
     let started = 0;
 
     const recognizer = createMangaOcrRecognizer({
+      readSetup: () => Promise.resolve(SETUP),
       startWorker: () => {
         const next = workers[started]?.worker;
         started += 1;
@@ -244,10 +310,12 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const first = recognizer.recognize(stubBitmap(120, 48).bitmap);
+    await tick();
     workers[0]?.fail('the worker died');
     await first;
 
     void recognizer.recognize(stubBitmap(120, 48).bitmap);
+    await tick();
     expect(started).toBe(2);
   });
 
@@ -257,8 +325,12 @@ describe('createMangaOcrRecognizer', () => {
     const owned = stubBitmap(120, 48);
 
     const recognition = recognizer.recognize(owned.bitmap);
-    const sent = fake.sent[0];
-    if (sent === undefined) throw new Error('Nothing was sent to the worker');
+    await openedOver(fake);
+
+    const sent = cropsIn(fake)[0];
+    if (sent === undefined || sent.request.kind !== 'recognize') {
+      throw new Error('No crop was sent to the worker');
+    }
 
     expect(owned.wasClosed()).toBe(false);
     expect(sent.request.image).not.toBe(owned.bitmap);
@@ -269,40 +341,100 @@ describe('createMangaOcrRecognizer', () => {
     expect(owned.wasClosed()).toBe(false);
   });
 
-  it('reports load progress as a fraction and the source the bytes came from', () => {
+  it('reports load progress as a fraction, the bytes and the source they came from', async () => {
     stubOffscreenCanvas();
     const fake = fakeWorker();
     const seen: ModelLoad[] = [];
 
     const recognizer = createMangaOcrRecognizer({
+      readSetup: () => Promise.resolve(SETUP),
       startWorker: () => fake.worker,
       onProgress: (load: ModelLoad) => seen.push(load),
     });
 
-    void recognizer.recognize(stubBitmap(120, 48).bitmap);
-    const id = fake.sent[0]?.request.id ?? 0;
-    fake.reply({ kind: 'progress', id, fraction: 0.42, source: 'network' });
-    fake.reply({ kind: 'progress', id, fraction: 0.8, source: 'cache' });
+    void recognizer.prepare();
+    await tick();
+    fake.reply({
+      kind: 'progress',
+      fraction: 0.42,
+      loadedBytes: 88_000_000,
+      totalBytes: 211_000_000,
+      source: 'network',
+    });
+
     expect(seen).toEqual([
-      { fraction: 0.42, source: 'network' },
-      { fraction: 0.8, source: 'cache' },
+      { fraction: 0.42, source: 'network', loadedBytes: 88_000_000, totalBytes: 211_000_000 },
     ]);
   });
 
-  it('reports the model and the device once the worker opens a session', () => {
-    stubOffscreenCanvas();
+  it('resolves prepare with the model and the device the worker chose', async () => {
     const fake = fakeWorker();
+    const recognizer = recognizerOver(fake);
     const seen: RecognizerSession[] = [];
 
+    const opening = recognizer.prepare();
+    const id = await openId(fake);
+    fake.reply({ kind: 'opened', id, modelId: SETUP.modelId, device: 'webgpu' });
+
+    const opened = await opening;
+    if (!opened.ok) throw new Error('The session did not open');
+    expect(opened.value).toEqual({ modelId: SETUP.modelId, device: 'webgpu' });
+    expect(seen).toEqual([]);
+  });
+
+  it('reports no session and no worker when no model is configured', async () => {
+    stubOffscreenCanvas();
+    let started = 0;
+
     const recognizer = createMangaOcrRecognizer({
-      startWorker: () => fake.worker,
-      onSession: (session: RecognizerSession) => seen.push(session),
+      readSetup: () => Promise.resolve(null),
+      startWorker: () => {
+        started += 1;
+        return fakeWorker().worker;
+      },
     });
 
-    void recognizer.recognize(stubBitmap(120, 48).bitmap);
-    expect(seen).toEqual([]);
+    const opened = await recognizer.prepare();
+    if (opened.ok) throw new Error('A session opened without a model');
+    expect(opened.error.kind).toBe('unavailable');
+    expect(started).toBe(0);
+  });
 
-    fake.reply({ kind: 'opened', modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'wasm' });
-    expect(seen).toEqual([{ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'wasm' }]);
+  it('settles a load as cancelled and terminates the worker', async () => {
+    const fake = fakeWorker();
+    const recognizer = recognizerOver(fake);
+
+    const opening = recognizer.prepare();
+    await openId(fake);
+    recognizer.cancel();
+
+    const opened = await opening;
+    if (opened.ok) throw new Error('The cancelled load opened a session');
+    expect(opened.error).toEqual({ kind: 'cancelled' });
+    expect(fake.wasTerminated()).toBe(true);
+  });
+
+  it('opens a fresh worker after a cancelled load', async () => {
+    stubOffscreenCanvas();
+    const workers = [fakeWorker(), fakeWorker()];
+    let started = 0;
+
+    const recognizer = createMangaOcrRecognizer({
+      readSetup: () => Promise.resolve(SETUP),
+      startWorker: () => {
+        const next = workers[started]?.worker;
+        started += 1;
+        if (next === undefined) throw new Error('No worker left');
+        return next;
+      },
+    });
+
+    void recognizer.prepare();
+    await tick();
+    recognizer.cancel();
+
+    void recognizer.prepare();
+    await tick();
+    expect(started).toBe(2);
   });
 });

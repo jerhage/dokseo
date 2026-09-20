@@ -1,5 +1,7 @@
-import { ok, type Result } from '$lib/shared/result';
+import { err, ok, type Result } from '$lib/shared/result';
+import type { ModelLoadError } from '../domain/model-load';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
+import type { RecognizerSession } from '../domain/recognizer-session';
 import type { RecognitionError, TextRecognizer } from '../domain/text-recognizer';
 
 const LINES = [
@@ -25,6 +27,17 @@ function recognizeSize(image: ImageBitmap): Promise<Result<RecognizedText, Recog
   return Promise.resolve(ok(recognizedText(lineFor(image.width, image.height))));
 }
 
+function noSession(): Promise<Result<RecognizerSession, ModelLoadError>> {
+  return Promise.resolve(
+    err({ kind: 'unavailable', cause: 'The fake recognizer opens no session' }),
+  );
+}
+
 export function createFakeRecognizer(): TextRecognizer {
-  return { id: 'fake', recognize: recognizeSize };
+  return {
+    id: 'fake',
+    prepare: noSession,
+    cancel: () => undefined,
+    recognize: recognizeSize,
+  };
 }

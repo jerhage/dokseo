@@ -166,6 +166,13 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       editCaptureText: () => Promise.reject(new Error('not used')),
       removeCapture: () => Promise.reject(new Error('not used')),
       clearCaptures: () => Promise.reject(new Error('not used')),
+      readModelStorage: () => Promise.reject(new Error('not used')),
+      deleteModel: () => Promise.reject(new Error('not used')),
+      readRecognizerSetup: () => Promise.reject(new Error('not used')),
+      saveRecognizerSetup: () => Promise.reject(new Error('not used')),
+      detectCompute: () => Promise.reject(new Error('not used')),
+      prepareRecognizer: () => Promise.reject(new Error('not used')),
+      cancelModelLoad: () => Promise.reject(new Error('not used')),
     },
   };
 

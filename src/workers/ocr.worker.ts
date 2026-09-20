@@ -1,14 +1,12 @@
 import type { ProgressInfo } from '@huggingface/transformers';
-import { JAPANESE_OCR_MODEL } from '$lib/domains/recognition/domain/model-footprint';
+import { chosenDevice, type ComputeChoice } from '$lib/domains/recognition/domain/compute-choice';
+import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer-setup';
 import type { ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
-import type { RecognizerDevice } from '$lib/domains/recognition/domain/recognizer-session';
 import { describeCause } from '$lib/shared/cause';
 import { japaneseOcrText } from './japanese-ocr-text';
 import { watchModelLoadSource } from './model-load-source';
 import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
-
-const MODEL_ID = JAPANESE_OCR_MODEL.modelId;
 
 const ENCODER_WEIGHTS = 'q8';
 
@@ -39,8 +37,6 @@ const scope = self as unknown as WorkerScope;
 
 const post = scope.postMessage.bind(scope);
 
-const inFlight = new Set<number>();
-
 let opening: Promise<Session> | null = null;
 
 let loadSource: () => ModelLoadSource = () => 'cache';
@@ -48,17 +44,21 @@ let loadSource: () => ModelLoadSource = () => 'cache';
 function reportProgress(info: ProgressInfo): void {
   if (info.status !== 'progress_total') return;
 
-  const fraction = Math.min(1, Math.max(0, info.progress / FULL_PERCENT));
-  const source = loadSource();
-  for (const id of inFlight) post({ kind: 'progress', id, fraction, source });
+  post({
+    kind: 'progress',
+    fraction: Math.min(1, Math.max(0, info.progress / FULL_PERCENT)),
+    loadedBytes: info.loaded,
+    totalBytes: info.total,
+    source: loadSource(),
+  });
 }
 
-async function chooseDevice(): Promise<RecognizerDevice> {
+async function deviceFor(compute: ComputeChoice): Promise<ReturnType<typeof chosenDevice>> {
   try {
     const adapter = await navigator.gpu?.requestAdapter();
-    return adapter === null || adapter === undefined ? 'wasm' : 'webgpu';
+    return chosenDevice(compute, adapter !== null && adapter !== undefined);
   } catch {
-    return 'wasm';
+    return chosenDevice(compute, false);
   }
 }
 
@@ -75,17 +75,18 @@ function canvasOf(image: ImageBitmap): OffscreenCanvas {
   return canvas;
 }
 
-async function openSession(): Promise<Session> {
+async function openSession(setup: RecognizerSetup, id: number): Promise<Session> {
   const { AutoModel, AutoProcessor, AutoTokenizer, env, RawImage, Tensor } =
     await import('@huggingface/transformers');
   env.allowLocalModels = false;
   loadSource = watchModelLoadSource(env);
 
-  const device = await chooseDevice();
+  const modelId = setup.modelId;
+  const device = await deviceFor(setup.compute);
   const [processor, tokenizer, model] = await Promise.all([
-    AutoProcessor.from_pretrained(MODEL_ID),
-    AutoTokenizer.from_pretrained(MODEL_ID),
-    AutoModel.from_pretrained(MODEL_ID, {
+    AutoProcessor.from_pretrained(modelId),
+    AutoTokenizer.from_pretrained(modelId),
+    AutoModel.from_pretrained(modelId, {
       device,
       dtype: { encoder_model: ENCODER_WEIGHTS, decoder_model_merged: DECODER_WEIGHTS },
       progress_callback: reportProgress,
@@ -96,10 +97,10 @@ async function openSession(): Promise<Session> {
   const encoder = sessions.model;
   const decoder = sessions.decoder_model_merged;
   if (encoder === undefined || decoder === undefined) {
-    throw new Error(`${MODEL_ID} did not load as an encoder and a decoder session`);
+    throw new Error(`${modelId} did not load as an encoder and a decoder session`);
   }
 
-  post({ kind: 'opened', modelId: MODEL_ID, device });
+  post({ kind: 'opened', id, modelId, device });
 
   return {
     async read(image: ImageBitmap): Promise<string> {
@@ -124,8 +125,8 @@ async function openSession(): Promise<Session> {
   };
 }
 
-function sessionOnce(): Promise<Session> {
-  opening ??= openSession().catch((cause: unknown): never => {
+function sessionOnce(setup: RecognizerSetup, id: number): Promise<Session> {
+  opening ??= openSession(setup, id).catch((cause: unknown): never => {
     opening = null;
     throw cause;
   });
@@ -133,14 +134,30 @@ function sessionOnce(): Promise<Session> {
   return opening;
 }
 
-async function handle(request: OcrRequest): Promise<void> {
-  const { id, image } = request;
-  inFlight.add(id);
-
+async function open(id: number, setup: RecognizerSetup): Promise<void> {
   try {
+    await sessionOnce(setup, id);
+  } catch (cause) {
+    post({ kind: 'failed', id, failure: 'model-unavailable', cause: describeCause(cause) });
+  }
+}
+
+async function recognize(id: number, image: ImageBitmap): Promise<void> {
+  try {
+    const held = opening;
+    if (held === null) {
+      post({
+        kind: 'failed',
+        id,
+        failure: 'model-unavailable',
+        cause: 'The recognition model was not opened before this crop arrived',
+      });
+      return;
+    }
+
     let session: Session;
     try {
-      session = await sessionOnce();
+      session = await held;
     } catch (cause) {
       post({ kind: 'failed', id, failure: 'model-unavailable', cause: describeCause(cause) });
       return;
@@ -153,11 +170,12 @@ async function handle(request: OcrRequest): Promise<void> {
       post({ kind: 'failed', id, failure: 'recognition-failed', cause: describeCause(cause) });
     }
   } finally {
-    inFlight.delete(id);
     image.close();
   }
 }
 
 scope.addEventListener('message', (event: MessageEvent<OcrRequest>) => {
-  void handle(event.data);
+  const request = event.data;
+  if (request.kind === 'open') void open(request.id, request.setup);
+  else void recognize(request.id, request.image);
 });

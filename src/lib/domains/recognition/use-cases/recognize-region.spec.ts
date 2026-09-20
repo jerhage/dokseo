@@ -60,6 +60,8 @@ function fakeRecognizer(
   let calls = 0;
   const recognizer: TextRecognizer = {
     id: 'stub',
+    prepare: () => Promise.resolve(err({ kind: 'unavailable', cause: 'not used' })),
+    cancel: () => undefined,
     recognize: () => {
       calls += 1;
       return Promise.resolve(outcome);
@@ -71,6 +73,8 @@ function fakeRecognizer(
 function throwingRecognizer(): TextRecognizer {
   return {
     id: 'stub',
+    prepare: () => Promise.resolve(err({ kind: 'unavailable', cause: 'not used' })),
+    cancel: () => undefined,
     recognize: () => Promise.reject(new Error('the model fell over')),
   };
 }

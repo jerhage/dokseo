@@ -190,6 +190,13 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve(ok(undefined));
       },
+      readModelStorage: unused,
+      deleteModel: unused,
+      readRecognizerSetup: unused,
+      saveRecognizerSetup: unused,
+      detectCompute: unused,
+      prepareRecognizer: unused,
+      cancelModelLoad: unused,
     },
   };
 
@@ -358,8 +365,13 @@ describe('CaptureView', () => {
 
     const running = read(view);
     const call = await started(world, 0);
-    call.notices.onProgress?.({ fraction: 0.42, source: 'network' });
-    expect(view.progress).toEqual({ fraction: 0.42, source: 'network' });
+    call.notices.onProgress?.({ fraction: 0.42, source: 'network', loadedBytes: 0, totalBytes: 0 });
+    expect(view.progress).toEqual({
+      fraction: 0.42,
+      source: 'network',
+      loadedBytes: 0,
+      totalBytes: 0,
+    });
 
     call.settle(ok(recognizedText('done')));
     await running;
@@ -372,11 +384,21 @@ describe('CaptureView', () => {
 
     const first = read(view);
     const second = read(view);
-    (await started(world, 0)).notices.onProgress?.({ fraction: 0.5, source: 'cache' });
+    (await started(world, 0)).notices.onProgress?.({
+      fraction: 0.5,
+      source: 'cache',
+      loadedBytes: 0,
+      totalBytes: 0,
+    });
 
     (await started(world, 0)).settle(ok(recognizedText('first')));
     await first;
-    expect(view.progress).toEqual({ fraction: 0.5, source: 'cache' });
+    expect(view.progress).toEqual({
+      fraction: 0.5,
+      source: 'cache',
+      loadedBytes: 0,
+      totalBytes: 0,
+    });
 
     (await started(world, 1)).settle(ok(recognizedText('second')));
     await second;
@@ -915,32 +937,32 @@ describe('CaptureView', () => {
 
 describe('modelLoadNote', () => {
   it('calls a load that reported no download a load, not a download', () => {
-    const load: ModelLoad = { fraction: 0.37, source: 'cache' };
+    const load: ModelLoad = { fraction: 0.37, source: 'cache', loadedBytes: 0, totalBytes: 0 };
     expect(modelLoadNote(load)).toBe('Loading the model · 37%');
   });
 
   it('calls a load that reported a download a download', () => {
-    const load: ModelLoad = { fraction: 0.37, source: 'network' };
+    const load: ModelLoad = { fraction: 0.37, source: 'network', loadedBytes: 0, totalBytes: 0 };
     expect(modelLoadNote(load)).toBe('Downloading the model · 37%');
   });
 });
 
 describe('modelLoadAnnouncement', () => {
   it('announces a cached load as loading rather than downloading', () => {
-    expect(modelLoadAnnouncement({ fraction: 0.37, source: 'cache' })).toBe(
-      'Loading the recognition model, 37 percent.',
-    );
+    expect(
+      modelLoadAnnouncement({ fraction: 0.37, source: 'cache', loadedBytes: 0, totalBytes: 0 }),
+    ).toBe('Loading the recognition model, 37 percent.');
   });
 
   it('announces a fetched load as downloading', () => {
-    expect(modelLoadAnnouncement({ fraction: 0.9, source: 'network' })).toBe(
-      'Downloading the recognition model, 90 percent.',
-    );
+    expect(
+      modelLoadAnnouncement({ fraction: 0.9, source: 'network', loadedBytes: 0, totalBytes: 0 }),
+    ).toBe('Downloading the recognition model, 90 percent.');
   });
 
   it('agrees with the card note about whether bytes are being downloaded', () => {
-    const cached: ModelLoad = { fraction: 0.5, source: 'cache' };
-    const fetched: ModelLoad = { fraction: 0.5, source: 'network' };
+    const cached: ModelLoad = { fraction: 0.5, source: 'cache', loadedBytes: 0, totalBytes: 0 };
+    const fetched: ModelLoad = { fraction: 0.5, source: 'network', loadedBytes: 0, totalBytes: 0 };
 
     expect(modelLoadNote(cached).startsWith('Loading')).toBe(true);
     expect(modelLoadAnnouncement(cached).startsWith('Loading')).toBe(true);
