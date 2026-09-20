@@ -6,6 +6,7 @@ import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import type { Book } from '../domain/book';
 import type { LibraryError } from '../domain/library-repository';
+import type { UploadReport } from '../domain/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { LibraryView } from './library-view.svelte';
 
@@ -47,6 +48,7 @@ type Fakes = {
   readonly container: Container;
   readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
   readonly opens: Deferred<Result<Book, OpenFileError>>[];
+  readonly reports: (UploadReport | undefined)[];
   readonly removes: Deferred<Result<void, LibraryError>>[];
   readonly edits: Deferred<Result<Book, LibraryError>>[];
   readonly cover: CoverState;
@@ -56,6 +58,7 @@ type Fakes = {
 function fakes(): Fakes {
   const lists: Deferred<Result<readonly Book[], LibraryError>>[] = [];
   const opens: Deferred<Result<Book, OpenFileError>>[] = [];
+  const reports: (UploadReport | undefined)[] = [];
   const removes: Deferred<Result<void, LibraryError>>[] = [];
   const edits: Deferred<Result<Book, LibraryError>>[] = [];
   const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
@@ -64,9 +67,10 @@ function fakes(): Fakes {
   const container: Container = {
     beginTrace: noTrace,
     library: {
-      openFile: () => {
+      openFile: (_files, report) => {
         const next = deferred<Result<Book, OpenFileError>>();
         opens.push(next);
+        reports.push(report);
         return next.promise;
       },
       openForReading: (id) =>
@@ -110,7 +114,7 @@ function fakes(): Fakes {
     },
   };
 
-  return { container, lists, opens, removes, edits, cover, usage };
+  return { container, lists, opens, reports, removes, edits, cover, usage };
 }
 
 function chosen(name: string, path = ''): File {
@@ -373,6 +377,60 @@ describe('LibraryView', () => {
 
     expect(view.pending).toBeNull();
     expect(view.message).toBe('That upload could not be read: bad zip');
+  });
+
+  it('starts an upload at the inspecting stage', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const uploading = view.upload([chosen('chapter-1.cbz')]);
+    expect(view.progress).toEqual({ kind: 'inspecting' });
+
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
+  });
+
+  it('exposes each stage the upload reports as it arrives', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const uploading = view.upload([chosen('chapter-1.cbz')]);
+    const report = at(world.reports, 0);
+    expect(report).toBeDefined();
+
+    report?.({ kind: 'opening', sourceKind: 'archive' });
+    expect(view.progress).toEqual({ kind: 'opening', sourceKind: 'archive' });
+
+    report?.({
+      kind: 'storing',
+      imageCount: 186,
+      writtenBytes: 20,
+      totalBytes: 100,
+      elapsedMs: 5000,
+    });
+    expect(view.progress).toEqual({
+      kind: 'storing',
+      imageCount: 186,
+      writtenBytes: 20,
+      totalBytes: 100,
+      elapsedMs: 5000,
+    });
+
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
+  });
+
+  it('returns the stage to inspecting once the upload settles', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const uploading = view.upload([chosen('chapter-1.cbz')]);
+    at(world.reports, 0)?.({ kind: 'covering', imageCount: 186 });
+
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
+
+    expect(view.progress).toEqual({ kind: 'inspecting' });
   });
 
   it('reports no pending title before any upload', () => {

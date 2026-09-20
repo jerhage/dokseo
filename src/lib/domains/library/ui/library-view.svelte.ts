@@ -5,6 +5,7 @@ import type { Book, BookEdit } from '../domain/book';
 import type { LibraryError } from '../domain/library-repository';
 import type { SourceBuildError } from '../domain/source-builder';
 import { suggestTitle } from '../domain/title';
+import { INSPECTING, type UploadStage } from '../domain/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 
@@ -56,6 +57,7 @@ export class LibraryView {
   message = $state<string | null>(null);
   busy = $state(false);
   pending = $state.raw<string | null>(null);
+  progress = $state.raw<UploadStage>(INSPECTING);
   removing = $state.raw<BookId | null>(null);
   editing = $state.raw<BookId | null>(null);
   usage = $state.raw<StorageUsage | null>(null);
@@ -103,9 +105,12 @@ export class LibraryView {
     this.pending = suggestTitle(
       files.map((file) => ({ name: file.name, path: file.webkitRelativePath })),
     );
+    this.progress = INSPECTING;
 
     try {
-      const opened = await this.#container.library.openFile(files);
+      const opened = await this.#container.library.openFile(files, (stage) => {
+        this.progress = stage;
+      });
       if (!opened.ok) {
         this.message = describeOpenFileError(opened.error);
         return;
@@ -113,6 +118,7 @@ export class LibraryView {
     } finally {
       this.busy = false;
       this.pending = null;
+      this.progress = INSPECTING;
     }
 
     await this.load();

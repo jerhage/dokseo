@@ -96,7 +96,7 @@
         <ul class="grid">
           {#if view.pending !== null}
             <li>
-              <PendingCard title={view.pending} language="ja" />
+              <PendingCard title={view.pending} language="ja" stage={view.progress} />
             </li>
           {/if}
           {#each view.books as book (book.id)}
@@ -123,6 +123,9 @@
     </section>
 
     <footer class="foot">
+      {#if view.pending !== null}
+        <span class="uploads" aria-live="polite">1 upload in progress</span>
+      {/if}
       <span class="space">{space}</span>
     </footer>
   </div>
@@ -343,6 +346,10 @@
     border-top: 1px solid var(--c-border-1);
     color: var(--c-text-9);
     font-size: 11px;
+  }
+
+  .uploads {
+    color: var(--c-accent);
   }
 
   .space {

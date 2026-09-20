@@ -1,18 +1,31 @@
 <script lang="ts">
   import type { Language } from '$lib/shared/language';
+  import type { UploadStage } from '../domain/upload-progress';
+  import { uploadCountText, uploadStageText } from './upload-progress-text';
 
-  type Props = { readonly title: string; readonly language: Language };
+  type Props = {
+    readonly title: string;
+    readonly language: Language;
+    readonly stage: UploadStage;
+  };
 
-  let { title, language }: Props = $props();
+  let { title, language, stage }: Props = $props();
+
+  const count = $derived(uploadCountText(stage));
+  const detail = $derived(uploadStageText(stage));
 </script>
 
 <article class="card" aria-live="polite">
   <div class="cover">
+    <span class="scrim" aria-hidden="true"></span>
     <span class="ring" aria-hidden="true"></span>
-    <span class="label">Adding</span>
+    <span class="label">
+      Importing
+      {#if count !== null}<span class="count">{count}</span>{/if}
+    </span>
   </div>
   <h3 class="title" class:ko={language === 'ko'} lang={language}>{title}</h3>
-  <p class="state">reading the file…</p>
+  <p class="state">{detail}</p>
 </article>
 
 <style>
@@ -24,6 +37,7 @@
   }
 
   .cover {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -36,7 +50,15 @@
     background: var(--c-surface-card-quiet);
   }
 
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: var(--c-surface-app);
+    opacity: 0.72;
+  }
+
   .ring {
+    position: relative;
     display: block;
     width: 26px;
     height: 26px;
@@ -47,9 +69,25 @@
   }
 
   .label {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-1);
+    padding: 0 var(--s-2);
     color: var(--c-text-5);
     font-family: var(--f-ui);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .count {
+    color: var(--c-text-2);
     font-size: 11.5px;
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .title {
