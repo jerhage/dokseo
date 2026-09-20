@@ -9,7 +9,7 @@ import { readModelStorage } from './read-model-storage';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
-const MODEL = 'DigitalLarynx/manga-ocr-onnx';
+const MODEL = JAPANESE_OCR_MODEL.modelId;
 
 const STORED: ModelStorageReport = {
   modelId: MODEL,

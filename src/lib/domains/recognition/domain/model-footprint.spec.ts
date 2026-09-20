@@ -19,18 +19,18 @@ function japanese(): ModelFootprint {
 }
 
 describe('modelFootprint', () => {
-  it('reports about 211 MB over the wire for Japanese', () => {
-    expect(downloadMb(japanese())).toBe(211);
+  it('reports about 123 MB over the wire for Japanese', () => {
+    expect(downloadMb(japanese())).toBe(123);
   });
 
-  it('reports about 231 MB on disk for Japanese, 20 MB above the download', () => {
-    expect(onDiskMb(japanese())).toBe(231);
-    expect(onDiskMb(japanese()) - downloadMb(japanese())).toBe(20);
+  it('reports about 144 MB on disk for Japanese, 21 MB above the download', () => {
+    expect(onDiskMb(japanese())).toBe(144);
+    expect(onDiskMb(japanese()) - downloadMb(japanese())).toBe(21);
   });
 
   it('charges the weights the same either way and only unpacks the runtime', () => {
     const footprint = japanese();
-    expect(megabytes(footprint.weightsBytes)).toBe(204);
+    expect(megabytes(footprint.weightsBytes)).toBe(117);
     expect(megabytes(footprint.runtimeDownloadBytes, 1)).toBe(6.6);
     expect(megabytes(footprint.runtimeOnDiskBytes)).toBe(27);
   });
@@ -43,6 +43,7 @@ describe('modelFootprint', () => {
       languages: ['ja'],
       note: 'A fixture, not a model.',
       quality: 'A fixture, not a measurement.',
+      precision: null,
       weightFiles: [],
       weightsBytes: 1_600_000,
       runtimeDownloadBytes: 1_600_000,
@@ -56,7 +57,7 @@ describe('modelFootprint', () => {
   });
 
   it('names the model the bytes were measured from, so the two cannot drift apart', () => {
-    expect(japanese().modelId).toBe('DigitalLarynx/manga-ocr-onnx');
+    expect(japanese().modelId).toBe('kimchireader/manga-ocr-onnx-q8');
   });
 
   it('reports the exploratory 13 MB of weights for Korean', () => {
@@ -68,7 +69,7 @@ describe('modelFootprint', () => {
 
 describe('engineName', () => {
   it('names the engine of a model it knows', () => {
-    expect(engineName('DigitalLarynx/manga-ocr-onnx')).toBe('manga-ocr');
+    expect(engineName('kimchireader/manga-ocr-onnx-q8')).toBe('manga-ocr');
   });
 
   it('falls back to the raw model id of a model it does not know', () => {
@@ -79,8 +80,18 @@ describe('engineName', () => {
 });
 
 describe('modelsFor', () => {
-  it('offers the verified Japanese model and nothing unverified beside it', () => {
-    expect(modelsFor('ja').map((model) => model.modelId)).toEqual(['DigitalLarynx/manga-ocr-onnx']);
+  it('offers the quantized Japanese model first and the full-precision one beside it', () => {
+    expect(modelsFor('ja').map((model) => model.modelId)).toEqual([
+      'kimchireader/manga-ocr-onnx-q8',
+      'DigitalLarynx/manga-ocr-onnx',
+    ]);
+  });
+
+  it('asks each Japanese model for the merged decoder its own precision names', () => {
+    expect(modelsFor('ja').map((model) => model.weightFiles)).toEqual([
+      ['onnx/encoder_model_quantized.onnx', 'onnx/decoder_model_merged_quantized.onnx'],
+      ['onnx/encoder_model_quantized.onnx', 'onnx/decoder_model_merged.onnx'],
+    ]);
   });
 
   it('offers a model to each language it declares and to no other', () => {
@@ -103,7 +114,9 @@ describe('modelsFor', () => {
 
 describe('chosenModel', () => {
   it('returns the model the reader picked', () => {
-    expect(chosenModel('ja', 'DigitalLarynx/manga-ocr-onnx')).toEqual(japanese());
+    expect(chosenModel('ja', 'DigitalLarynx/manga-ocr-onnx')?.modelId).toBe(
+      'DigitalLarynx/manga-ocr-onnx',
+    );
   });
 
   it('falls back to the first offered model when nothing was picked', () => {
@@ -114,6 +127,10 @@ describe('chosenModel', () => {
     expect(chosenModel('ja', 'dnouv/manga-ocr')).toEqual(japanese());
   });
 
+  it('defaults Japanese to the quantized model rather than the one it can be compared with', () => {
+    expect(chosenModel('ja', null)?.modelId).toBe('kimchireader/manga-ocr-onnx-q8');
+  });
+
   it('refuses a model that cannot read the language and defaults to one that can', () => {
     expect(chosenModel('ko', 'DigitalLarynx/manga-ocr-onnx')).toEqual(modelFootprint('ko'));
   });
@@ -121,7 +138,13 @@ describe('chosenModel', () => {
 
 describe('knownModel', () => {
   it('finds a model by its id', () => {
-    expect(knownModel('DigitalLarynx/manga-ocr-onnx')).toEqual(japanese());
+    expect(knownModel('kimchireader/manga-ocr-onnx-q8')).toEqual(japanese());
+  });
+
+  it('still knows the full-precision model a reader may have picked', () => {
+    expect(knownModel('DigitalLarynx/manga-ocr-onnx')?.label).toBe(
+      'manga-ocr base, full-precision decoder',
+    );
   });
 
   it('returns nothing for a model nobody measured', () => {

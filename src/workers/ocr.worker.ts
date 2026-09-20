@@ -1,9 +1,7 @@
 import { chosenDevice, type ComputeChoice } from '$lib/domains/recognition/domain/compute-choice';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer-setup';
-import {
-  DECODER_PRECISION,
-  ENCODER_PRECISION,
-} from '$lib/domains/recognition/domain/model-weights';
+import { knownModel } from '$lib/domains/recognition/domain/model-footprint';
+import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model-weights';
 import { describeCause } from '$lib/shared/cause';
 import { japaneseOcrText } from './japanese-ocr-text';
 import { installModelFetch } from './model-fetch';
@@ -69,13 +67,14 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
       post({ kind: 'progress', ...load });
     },
   });
+  const precision = knownModel(modelId)?.precision ?? QUANTIZED_THROUGHOUT;
   const device = await deviceFor(setup.compute);
   const [processor, tokenizer, model] = await Promise.all([
     AutoProcessor.from_pretrained(modelId),
     AutoTokenizer.from_pretrained(modelId),
     AutoModel.from_pretrained(modelId, {
       device,
-      dtype: { encoder_model: ENCODER_PRECISION, decoder_model_merged: DECODER_PRECISION },
+      dtype: { encoder_model: precision.encoder, decoder_model_merged: precision.decoder },
     }),
   ]);
 

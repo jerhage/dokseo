@@ -1,7 +1,13 @@
 import { match } from 'ts-pattern';
 import { megabytes } from '$lib/shared/bytes';
 import type { Language } from '$lib/shared/language';
-import { ENCODER_DECODER_WEIGHTS, SINGLE_GRAPH_WEIGHTS } from './model-weights';
+import {
+  encoderDecoderWeights,
+  QUANTIZED_ENCODER_ONLY,
+  QUANTIZED_THROUGHOUT,
+  SINGLE_GRAPH_WEIGHTS,
+  type EncoderDecoderPrecision,
+} from './model-weights';
 
 export type ModelFootprint = {
   readonly modelId: string;
@@ -10,6 +16,7 @@ export type ModelFootprint = {
   readonly languages: readonly Language[];
   readonly note: string;
   readonly quality: string;
+  readonly precision: EncoderDecoderPrecision | null;
   readonly weightFiles: readonly string[];
   readonly weightsBytes: number;
   readonly runtimeDownloadBytes: number;
@@ -21,13 +28,29 @@ const RUNTIME_DOWNLOAD_BYTES = 6_596_832;
 const RUNTIME_ON_DISK_BYTES = 26_861_777;
 
 export const JAPANESE_OCR_MODEL: ModelFootprint = {
+  modelId: 'kimchireader/manga-ocr-onnx-q8',
+  engine: 'manga-ocr',
+  label: 'manga-ocr base, quantized throughout',
+  languages: ['ja'],
+  note: 'Both halves quantized, 87 MB smaller, and nobody has compared what it reads yet.',
+  quality:
+    'Unverified. The quantized encoder matched full precision token for token; the decoder has never been checked against it.',
+  precision: QUANTIZED_THROUGHOUT,
+  weightFiles: encoderDecoderWeights(QUANTIZED_THROUGHOUT),
+  weightsBytes: 116_650_552,
+  runtimeDownloadBytes: RUNTIME_DOWNLOAD_BYTES,
+  runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
+};
+
+export const JAPANESE_FULL_DECODER_MODEL: ModelFootprint = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
   engine: 'manga-ocr',
-  label: 'manga-ocr base',
+  label: 'manga-ocr base, full-precision decoder',
   languages: ['ja'],
-  note: 'The only export verified to read correctly.',
+  note: 'The larger download whose reading was verified. Pick it to check the quantized one against.',
   quality: 'Verified on printed Japanese. Hand-lettering and sound effects are unmeasured.',
-  weightFiles: ENCODER_DECODER_WEIGHTS,
+  precision: QUANTIZED_ENCODER_ONLY,
+  weightFiles: encoderDecoderWeights(QUANTIZED_ENCODER_ONLY),
   weightsBytes: 204_413_485,
   runtimeDownloadBytes: RUNTIME_DOWNLOAD_BYTES,
   runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
@@ -40,13 +63,18 @@ export const KOREAN_OCR_MODEL: ModelFootprint = {
   languages: ['ko'],
   note: 'Exploratory. Nobody has read a real page with it yet.',
   quality: 'Reads one line at a time, so a bubble is split by eye before it is read.',
+  precision: null,
   weightFiles: SINGLE_GRAPH_WEIGHTS,
   weightsBytes: 13_418_787,
   runtimeDownloadBytes: RUNTIME_DOWNLOAD_BYTES,
   runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
 };
 
-const KNOWN_MODELS: readonly ModelFootprint[] = [JAPANESE_OCR_MODEL, KOREAN_OCR_MODEL];
+const KNOWN_MODELS: readonly ModelFootprint[] = [
+  JAPANESE_OCR_MODEL,
+  JAPANESE_FULL_DECODER_MODEL,
+  KOREAN_OCR_MODEL,
+];
 
 export function everyModel(): readonly ModelFootprint[] {
   return KNOWN_MODELS;

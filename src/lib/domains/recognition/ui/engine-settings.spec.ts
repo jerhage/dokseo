@@ -23,7 +23,7 @@ import {
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
-const MODEL = 'DigitalLarynx/manga-ocr-onnx';
+const MODEL = JAPANESE_OCR_MODEL.modelId;
 
 const OPENED: RecognizerSession = { modelId: MODEL, device: 'webgpu' };
 

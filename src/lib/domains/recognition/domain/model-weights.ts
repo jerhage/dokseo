@@ -5,18 +5,25 @@ const PRECISION_SUFFIX: Record<WeightsPrecision, string> = {
   q8: '_quantized',
 };
 
-export const ENCODER_PRECISION: WeightsPrecision = 'q8';
+export type EncoderDecoderPrecision = {
+  readonly encoder: WeightsPrecision;
+  readonly decoder: WeightsPrecision;
+};
 
-export const DECODER_PRECISION: WeightsPrecision = 'fp32';
+export const QUANTIZED_THROUGHOUT: EncoderDecoderPrecision = { encoder: 'q8', decoder: 'q8' };
+
+export const QUANTIZED_ENCODER_ONLY: EncoderDecoderPrecision = { encoder: 'q8', decoder: 'fp32' };
 
 export function weightsFile(part: string, precision: WeightsPrecision): string {
   return `onnx/${part}${PRECISION_SUFFIX[precision]}.onnx`;
 }
 
-export const ENCODER_DECODER_WEIGHTS: readonly string[] = [
-  weightsFile('encoder_model', ENCODER_PRECISION),
-  weightsFile('decoder_model_merged', DECODER_PRECISION),
-];
+export function encoderDecoderWeights(precision: EncoderDecoderPrecision): readonly string[] {
+  return [
+    weightsFile('encoder_model', precision.encoder),
+    weightsFile('decoder_model_merged', precision.decoder),
+  ];
+}
 
 export const SINGLE_GRAPH_FILE = 'inference';
 

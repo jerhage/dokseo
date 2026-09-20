@@ -13,7 +13,7 @@ import { JAPANESE_OCR_MODEL } from './model-footprint';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
-const MODEL = 'DigitalLarynx/manga-ocr-onnx';
+const MODEL = JAPANESE_OCR_MODEL.modelId;
 
 function weights(file: string, bytes: number | null): CacheEntry {
   return { url: `https://huggingface.co/${MODEL}/resolve/main/${file}`, bytes };
@@ -58,8 +58,8 @@ describe('reportOf', () => {
   it('sums the bytes of every entry the model owns', () => {
     const report = reportOf(
       [
-        weights('onnx/encoder_model_quantized.onnx', 86_967_767),
-        weights('onnx/decoder_model_merged.onnx', 117_445_718),
+        weights('onnx/encoder_model_quantized.onnx', 87_007_436),
+        weights('onnx/decoder_model_merged_quantized.onnx', 29_643_116),
         { url: 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.wasm', bytes: 26_861_777 },
       ],
       MODEL,
@@ -68,7 +68,7 @@ describe('reportOf', () => {
     expect(report).toEqual({
       modelId: MODEL,
       files: 2,
-      bytes: 204_413_485,
+      bytes: 116_650_552,
       unsized: 0,
       required: REQUIRED_WEIGHTS,
       weights: REQUIRED_WEIGHTS,
@@ -157,8 +157,8 @@ describe('isStored', () => {
     const report = reportOf(
       [
         ...configs,
-        weights('onnx/encoder_model_quantized.onnx', 86_967_767),
-        weights('onnx/decoder_model_merged.onnx', 117_445_718),
+        weights('onnx/encoder_model_quantized.onnx', 87_007_436),
+        weights('onnx/decoder_model_merged_quantized.onnx', 29_643_116),
       ],
       MODEL,
     );
@@ -171,13 +171,14 @@ describe('isStored', () => {
     const report = reportOf(
       [
         ...configs,
-        weights('onnx/encoder_model.onnx', 343_400_000),
-        weights('onnx/decoder_model_merged.onnx', 117_445_718),
+        weights('onnx/encoder_model.onnx', 343_377_067),
+        weights('onnx/decoder_model_merged_quantized.onnx', 29_643_116),
       ],
       MODEL,
     );
 
     expect(isStored(report)).toBe(false);
+    expect(report.weights).toEqual(['onnx/decoder_model_merged_quantized.onnx']);
   });
 
   it('calls nothing part-stored when the cache holds no file of the model', () => {
