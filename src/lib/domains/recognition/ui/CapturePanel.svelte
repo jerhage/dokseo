@@ -61,7 +61,6 @@
   let editing = $state<CaptureId | null>(null);
   let draft = $state('');
   let editor = $state<HTMLTextAreaElement | null>(null);
-  let field = $state<HTMLInputElement | null>(null);
   let step = $state.raw<Step | null>(null);
   let trigger: HTMLButtonElement | null = null;
 
@@ -75,10 +74,12 @@
 
   const announcement = $derived(waiting ? modelLoadAnnouncement(load) : '');
 
-  function hrefOf(regions: readonly ImageRegion[]): string | null {
+  function hrefOf(id: CaptureId, regions: readonly ImageRegion[]): string | null {
     const book = view.book;
     const index = firstImage(regions);
-    return book === null || index === null ? null : readerHref(book, index);
+    if (book === null || index === null) return null;
+
+    return readerHref(book, index, searching ? { query: wanted, capture: id } : null);
   }
 
   function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {
@@ -86,7 +87,7 @@
       .with({ status: 'pending' }, (running) => ({
         id: running.id,
         place: placeLabel(running.regions),
-        href: hrefOf(running.regions),
+        href: hrefOf(running.id, running.regions),
         state: 'Reading…',
         text: null,
         segments: null,
@@ -98,7 +99,7 @@
       .with({ status: 'done' }, (read) => ({
         id: read.id,
         place: placeLabel(read.regions),
-        href: hrefOf(read.regions),
+        href: hrefOf(read.id, read.regions),
         state: 'Read',
         text: read.text.text,
         segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
@@ -110,7 +111,7 @@
       .with({ status: 'empty' }, (blank) => ({
         id: blank.id,
         place: placeLabel(blank.regions),
-        href: hrefOf(blank.regions),
+        href: hrefOf(blank.id, blank.regions),
         state: 'No text',
         text: null,
         segments: null,
@@ -122,7 +123,7 @@
       .with({ status: 'failed' }, (broken) => ({
         id: broken.id,
         place: placeLabel(broken.regions),
-        href: hrefOf(broken.regions),
+        href: hrefOf(broken.id, broken.regions),
         state: 'Failed',
         text: null,
         segments: null,
@@ -186,14 +187,6 @@
     jump(card.href, next);
   }
 
-  function shortcuts(event: KeyboardEvent): void {
-    if (event.key !== 'k' || !(event.metaKey || event.ctrlKey)) return;
-
-    event.preventDefault();
-    field?.focus();
-    field?.select();
-  }
-
   function findKeys(event: KeyboardEvent): void {
     if (event.key !== 'Enter') return;
 
@@ -243,12 +236,11 @@
   }
 </script>
 
-<svelte:window onkeydown={shortcuts} />
-
 <section class="panel" aria-label="Captures">
   <header class="head">
     <h2 class="name">Captures</h2>
     <span class="count">{view.count}</span>
+    <kbd class="shortcut" title="Find in captures">⌘K</kbd>
     <button
       class="clear"
       type="button"
@@ -264,11 +256,10 @@
       <label class="search">
         <span class="assistive">Search recognized text</span>
         <input
-          bind:this={field}
           type="search"
           bind:value={query}
           placeholder="Search recognized text…"
-          title="Search recognized text · ⌘K or Ctrl+K · Enter steps to the next match"
+          title="Search this book's recognized text · Enter steps to the next match"
           onkeydown={findKeys}
         />
       </label>
@@ -423,6 +414,17 @@
     color: var(--c-text-8);
     font-family: var(--f-mono);
     font-size: 11px;
+  }
+
+  .shortcut {
+    flex: none;
+    padding: 2px var(--s-1);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-1);
+    background: var(--c-surface-chip);
+    color: var(--c-text-8);
+    font-family: var(--f-mono);
+    font-size: 10px;
   }
 
   .clear {
