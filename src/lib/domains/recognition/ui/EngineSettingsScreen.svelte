@@ -13,6 +13,7 @@
   import {
     cancelHint,
     loadFigure,
+    partialFigure,
     REMOVAL_WARNING,
     storedFigure,
     type EngineSettingsView,
@@ -32,6 +33,7 @@
   const session = $derived(view.session);
 
   const state = $derived(engineStatus(view.engine));
+  const partial = $derived(partialFigure(view.partial));
   const absent = OCR_ENGINES.filter((offered) => !offered.installed);
 
   const failure = $derived(download.kind === 'failed' ? download.cause : null);
@@ -133,6 +135,7 @@
             </div>
             <div class="row">
               <span class="hint">{cancelHint(progress)}</span>
+              <button class="quiet" type="button" onclick={() => void view.pause()}>Pause</button>
               <button class="quiet" type="button" onclick={() => void view.stop()}>Cancel</button>
             </div>
           </div>
@@ -193,6 +196,9 @@
               ? (view.storageMessage ?? 'Reading what is stored…')
               : storedFigure(storage.report)}
           </p>
+          {#if partial !== null}
+            <p class="footnote">{partial}</p>
+          {/if}
           {#if space !== null}
             <p class="footnote">{space}</p>
           {/if}
@@ -205,7 +211,12 @@
           <div class="actions">
             {#if !view.stored && !loading}
               <button class="primary" type="button" onclick={() => void view.start()}>
-                Download now
+                {view.resumable ? 'Resume the download' : 'Download now'}
+              </button>
+            {/if}
+            {#if view.resumable && !loading}
+              <button class="quiet" type="button" onclick={() => void view.stop()}>
+                Discard what was fetched
               </button>
             {/if}
             {#if view.stored && !view.confirmingRemoval}
