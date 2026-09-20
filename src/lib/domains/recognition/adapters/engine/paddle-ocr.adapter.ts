@@ -4,7 +4,7 @@ import { createWorkerRecognizer, type WorkerOcrOptions } from './worker-recogniz
 export type PaddleOcrOptions = WorkerOcrOptions;
 
 function startPaddleOcrWorker(): Worker {
-  return new Worker(new URL('../../../../workers/paddle-ocr.worker.ts', import.meta.url), {
+  return new Worker(new URL('$workers/paddle-ocr.worker.ts', import.meta.url), {
     type: 'module',
   });
 }

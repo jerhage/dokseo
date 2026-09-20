@@ -4,7 +4,7 @@ import { createWorkerRecognizer, type WorkerOcrOptions } from './worker-recogniz
 export type MangaOcrOptions = WorkerOcrOptions;
 
 function startOcrWorker(): Worker {
-  return new Worker(new URL('../../../../workers/ocr.worker.ts', import.meta.url), {
+  return new Worker(new URL('$workers/ocr.worker.ts', import.meta.url), {
     type: 'module',
   });
 }

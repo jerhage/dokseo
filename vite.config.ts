@@ -12,6 +12,7 @@ export default defineConfig({
       },
 
       adapter: adapter({ fallback: 'index.html' }),
+      alias: { $workers: 'src/workers' },
     }),
   ],
   test: {

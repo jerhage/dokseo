@@ -18,7 +18,7 @@
     "lint:deps": "depcruise src --config .dependency-cruiser.cjs",
     "deps:view": "npm run deps:graph && open .local/graphs/architecture.svg",
     "deps:graph": "mkdir -p .local/graphs && depcruise src --config .dependency-cruiser.cjs -T archi | dot -T svg > .local/graphs/architecture.svg && depcruise src --config .dependency-cruiser.cjs -T ddot | dot -T svg > .local/graphs/folders.svg && depcruise src --config .dependency-cruiser.cjs -T dot | dot -T svg > .local/graphs/modules.svg",
-    "verify": "npm run check && npm run lint && npm run format:check && npm run lint:deps && npm run test"
+    "verify": "npm run check && npm run lint && npm run format:check && npm run lint:deps && npm run test && npm run build"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
