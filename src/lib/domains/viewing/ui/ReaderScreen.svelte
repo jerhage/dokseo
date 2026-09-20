@@ -13,6 +13,7 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
+  import { chromeWanted, rememberChrome } from './chrome-preference';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { handlesOwnKeys } from './keyboard';
   import PagedViewer from './PagedViewer.svelte';
@@ -58,7 +59,7 @@
   let bottomBar = $state<HTMLElement | null>(null);
   let topHeight = $state(0);
   let bottomHeight = $state(0);
-  let chromeAsked = $state(true);
+  let chromeAsked = $state(chromeWanted());
   let chromeHeld = $state(false);
 
   function popoverOpen(): boolean {
@@ -69,13 +70,23 @@
     }
   }
 
+  function holdsFocus(bar: HTMLElement | null, active: Element | null): boolean {
+    if (bar === null || bar.inert || active === null) return false;
+
+    return bar.contains(active);
+  }
+
   function heldNow(): boolean {
     if (popoverOpen()) return true;
 
     const active = document.activeElement;
-    if (active === null) return false;
 
-    return (topBar?.contains(active) ?? false) || (bottomBar?.contains(active) ?? false);
+    return holdsFocus(topBar, active) || holdsFocus(bottomBar, active);
+  }
+
+  function askChrome(wanted: boolean): void {
+    chromeAsked = wanted;
+    rememberChrome(wanted);
   }
 
   const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
@@ -394,7 +405,7 @@
         class="key"
         type="button"
         aria-pressed={toggle.pressed}
-        onclick={() => (chromeAsked = !chromeAwake)}
+        onclick={() => askChrome(!chromeAwake)}
       >
         <span class="glyph" aria-hidden="true">{toggle.glyph}</span>
         <span class="assistive">{toggle.label}</span>
