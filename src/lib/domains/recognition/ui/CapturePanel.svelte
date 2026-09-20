@@ -4,8 +4,6 @@
   import type { CaptureId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
-  import { engineName } from '../domain/model-footprint';
-  import { deviceName } from '../domain/recognizer-session';
   import {
     modelLoadAnnouncement,
     modelLoadNote,
@@ -47,17 +45,6 @@
   const waiting = $derived(view.captures.some((capture) => capture.status === 'pending'));
 
   const announcement = $derived(waiting ? modelLoadAnnouncement(load) : '');
-
-  const engine = $derived.by(() => {
-    const opened = view.session;
-    if (opened === null) return null;
-
-    return {
-      modelId: opened.modelId,
-      name: engineName(opened.modelId),
-      device: deviceName(opened.device),
-    };
-  });
 
   function page(region: ImageRegion): string {
     return String(region.index + 1).padStart(3, '0');
@@ -239,13 +226,6 @@
     </ul>
   {/if}
 
-  {#if engine !== null}
-    <footer class="foot">
-      <span class="engine" title={engine.modelId}>{engine.name}</span>
-      <span class="device">{engine.device}</span>
-    </footer>
-  {/if}
-
   {#if view.consentRequest !== null}
     <ModelConsentDialog
       request={view.consentRequest}
@@ -321,32 +301,6 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .foot {
-    display: flex;
-    flex: none;
-    align-items: baseline;
-    gap: var(--s-2);
-    margin-top: auto;
-    padding: var(--s-2) var(--s-4);
-    border-top: 1px solid var(--c-border-1);
-  }
-
-  .engine {
-    flex: 1 1 auto;
-    color: var(--c-text-9);
-    font-family: var(--f-mono);
-    font-size: 10.5px;
-    letter-spacing: 0.02em;
-  }
-
-  .device {
-    flex: none;
-    color: var(--c-text-8);
-    font-size: 10px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
   }
 
   .invitation {

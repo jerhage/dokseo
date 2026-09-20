@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { useContainer } from '$lib/context';
   import CapturePanel from '$lib/domains/recognition/ui/CapturePanel.svelte';
+  import EnginePill from '$lib/domains/recognition/ui/EnginePill.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
@@ -46,6 +47,9 @@
 </script>
 
 <ReaderScreen {view} onSelect={capture}>
+  {#snippet engine()}
+    <EnginePill session={captures.session} {language} />
+  {/snippet}
   {#snippet panel()}
     <CapturePanel view={captures} {language} />
   {/snippet}

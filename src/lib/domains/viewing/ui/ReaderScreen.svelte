@@ -21,6 +21,7 @@
   type Props = {
     readonly view: ReaderView;
     readonly panel?: Snippet;
+    readonly engine?: Snippet;
     readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
   };
 
@@ -44,7 +45,7 @@
     readonly at: number;
   };
 
-  let { view, panel, onSelect }: Props = $props();
+  let { view, panel, engine, onSelect }: Props = $props();
 
   const uid = $props.id();
 
@@ -223,6 +224,10 @@
       </h1>
       <p class="meta">{meta}</p>
     </div>
+
+    {#if engine !== undefined}
+      {@render engine()}
+    {/if}
 
     {#if book !== null}
       <div class="settings">
