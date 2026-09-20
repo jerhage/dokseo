@@ -9,12 +9,16 @@
   import type { Arrangement } from '$lib/shared/arrangement';
   import { bookId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
+  import type { ReadingDirection } from '$lib/shared/layout-kind';
 
   const container = useContainer();
   const view = new ReaderView(container);
   const captures = new CaptureView(container);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
+  const direction = $derived<ReadingDirection>(
+    view.book?.direction === 'rtl' && view.book.layoutKind !== 'continuous' ? 'rtl' : 'ltr',
+  );
 
   function capture(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     const trace = container.beginTrace('capture');
@@ -56,6 +60,6 @@
     <EnginePill engine={captures.engine} {language} />
   {/snippet}
   {#snippet panel()}
-    <CapturePanel view={captures} {language} />
+    <CapturePanel view={captures} {language} {direction} />
   {/snippet}
 </ReaderScreen>

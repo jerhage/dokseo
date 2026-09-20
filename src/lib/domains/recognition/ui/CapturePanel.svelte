@@ -4,18 +4,28 @@
   import type { CaptureId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
+  import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import { inBookOrder } from '../domain/capture-order';
+  import {
+    segmentsOf,
+    textMatches,
+    type TextMatch,
+    type TextSegment,
+  } from '../domain/capture-search';
   import {
     modelLoadAnnouncement,
     modelLoadNote,
     NOTHING_READ,
     type CaptureStatus,
     type CaptureView,
+    type PanelCapture,
   } from './capture-view.svelte';
   import ModelConsentDialog from './ModelConsentDialog.svelte';
 
   type Props = {
     readonly view: CaptureView;
     readonly language: Language | null;
+    readonly direction: ReadingDirection;
   };
 
   type Card = {
@@ -23,14 +33,22 @@
     readonly place: string;
     readonly state: string;
     readonly text: string | null;
+    readonly segments: readonly TextSegment[] | null;
     readonly note: string | null;
     readonly tone: CaptureStatus;
     readonly edited: boolean;
     readonly editable: boolean;
   };
 
-  let { view, language }: Props = $props();
+  type Hit = {
+    readonly capture: Extract<PanelCapture, { status: 'done' }>;
+    readonly regions: readonly ImageRegion[];
+    readonly matches: readonly TextMatch[];
+  };
 
+  let { view, language, direction }: Props = $props();
+
+  let query = $state('');
   let editing = $state<CaptureId | null>(null);
   let draft = $state('');
   let editor = $state<HTMLTextAreaElement | null>(null);
@@ -59,51 +77,80 @@
     return regions.length > 1 ? `${span} · ${regions.length} regions` : span;
   }
 
+  function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {
+    return match(capture)
+      .with({ status: 'pending' }, (running) => ({
+        id: running.id,
+        place: placeOf(running.regions),
+        state: 'Reading…',
+        text: null,
+        segments: null,
+        note: load === null ? null : modelLoadNote(load),
+        tone: 'pending' as CaptureStatus,
+        edited: false,
+        editable: false,
+      }))
+      .with({ status: 'done' }, (read) => ({
+        id: read.id,
+        place: placeOf(read.regions),
+        state: 'Read',
+        text: read.text.text,
+        segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
+        note: null,
+        tone: 'done' as CaptureStatus,
+        edited: read.edited,
+        editable: true,
+      }))
+      .with({ status: 'empty' }, (blank) => ({
+        id: blank.id,
+        place: placeOf(blank.regions),
+        state: 'No text',
+        text: null,
+        segments: null,
+        note: NOTHING_READ,
+        tone: 'empty' as CaptureStatus,
+        edited: false,
+        editable: false,
+      }))
+      .with({ status: 'failed' }, (broken) => ({
+        id: broken.id,
+        place: placeOf(broken.regions),
+        state: 'Failed',
+        text: null,
+        segments: null,
+        note: broken.message,
+        tone: 'failed' as CaptureStatus,
+        edited: false,
+        editable: false,
+      }))
+      .exhaustive();
+  }
+
+  function hitOf(capture: PanelCapture, wanted: string): Hit | null {
+    if (capture.status !== 'done') return null;
+
+    const matches = textMatches(capture.text.text, wanted);
+    return matches.length === 0 ? null : { capture, regions: capture.regions, matches };
+  }
+
+  const wanted = $derived(query.trim());
+
+  const searching = $derived(wanted.length > 0);
+
+  const hits = $derived.by<readonly Hit[] | null>(() => {
+    if (!searching) return null;
+
+    const found = view.captures
+      .map((capture) => hitOf(capture, wanted))
+      .filter((hit) => hit !== null);
+
+    return inBookOrder(found, direction);
+  });
+
   const cards = $derived.by<readonly Card[]>(() =>
-    view.newestFirst.map((capture) =>
-      match(capture)
-        .with({ status: 'pending' }, (running) => ({
-          id: running.id,
-          place: placeOf(running.regions),
-          state: 'Reading…',
-          text: null,
-          note: load === null ? null : modelLoadNote(load),
-          tone: 'pending' as CaptureStatus,
-          edited: false,
-          editable: false,
-        }))
-        .with({ status: 'done' }, (read) => ({
-          id: read.id,
-          place: placeOf(read.regions),
-          state: 'Read',
-          text: read.text.text,
-          note: null,
-          tone: 'done' as CaptureStatus,
-          edited: read.edited,
-          editable: true,
-        }))
-        .with({ status: 'empty' }, (blank) => ({
-          id: blank.id,
-          place: placeOf(blank.regions),
-          state: 'No text',
-          text: null,
-          note: NOTHING_READ,
-          tone: 'empty' as CaptureStatus,
-          edited: false,
-          editable: false,
-        }))
-        .with({ status: 'failed' }, (broken) => ({
-          id: broken.id,
-          place: placeOf(broken.regions),
-          state: 'Failed',
-          text: null,
-          note: broken.message,
-          tone: 'failed' as CaptureStatus,
-          edited: false,
-          editable: false,
-        }))
-        .exhaustive(),
-    ),
+    hits === null
+      ? view.newestFirst.map((capture) => cardOf(capture, []))
+      : hits.map((hit) => cardOf(hit.capture, hit.matches)),
   );
 
   function begin(card: Card, from: HTMLButtonElement): void {
@@ -162,10 +209,26 @@
     </button>
   </header>
 
+  {#if view.count > 0}
+    <div class="find">
+      <label class="search">
+        <span class="assistive">Search recognized text</span>
+        <input type="search" bind:value={query} placeholder="Search recognized text…" />
+      </label>
+      {#if searching}
+        <p class="tally" role="status">{cards.length} of {view.count} matched</p>
+      {/if}
+    </div>
+  {/if}
+
   <p class="assistive" role="status">{announcement}</p>
 
   {#if cards.length === 0}
-    <p class="invitation">Drag a box over a speech bubble and the text arrives here.</p>
+    {#if searching}
+      <p class="invitation">No capture in this book holds that text.</p>
+    {:else}
+      <p class="invitation">Drag a box over a speech bubble and the text arrives here.</p>
+    {/if}
   {:else}
     <ul class="list">
       {#each cards as card (card.id)}
@@ -214,6 +277,12 @@
                   <button class="save" type="submit">Save</button>
                 </div>
               </form>
+            {:else if card.segments !== null}
+              <p class="text" class:ko={language === 'ko'} lang={language}>
+                {#each card.segments as segment, part (part)}{#if segment.matched}<mark class="hit"
+                      >{segment.text}</mark
+                    >{:else}{segment.text}{/if}{/each}
+              </p>
             {:else if card.text !== null}
               <p class="text" class:ko={language === 'ko'} lang={language}>{card.text}</p>
             {/if}
@@ -291,6 +360,56 @@
   .clear:disabled {
     cursor: default;
     opacity: 0.4;
+  }
+
+  .find {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-4);
+    border-bottom: 1px solid var(--c-border-1);
+  }
+
+  .search {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .search input {
+    width: 100%;
+    height: 28px;
+    padding: 0 var(--s-2);
+    border: 1px solid var(--c-border-3);
+    border-radius: var(--r-2);
+    background: var(--c-surface-chip);
+    color: var(--c-text-3);
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+  }
+
+  .search input::placeholder {
+    color: var(--c-text-placeholder);
+  }
+
+  .search input:focus-visible {
+    outline: none;
+    border-color: var(--c-accent-border);
+  }
+
+  .tally {
+    flex: none;
+    margin: 0;
+    color: var(--c-text-8);
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+  }
+
+  .hit {
+    border-radius: var(--r-1);
+    background: var(--c-accent-wash-strong);
+    color: var(--c-text-1);
   }
 
   .assistive {
