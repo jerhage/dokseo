@@ -5,7 +5,7 @@ import { ok, type Result } from '$lib/shared/result';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { ModelLoad, ModelLoadError } from '../domain/model-load';
 import type { PartialReport } from '../domain/model-partial';
-import { REQUIRED_WEIGHTS } from '../domain/model-weights';
+import { JAPANESE_OCR_MODEL } from '../domain/model-footprint';
 import { GPU_UNDETECTED } from '../domain/compute-choice';
 import { setupChoice } from '../domain/recognizer-setup';
 import type { RecognizerSession } from '../domain/recognizer-session';
@@ -21,12 +21,22 @@ import {
   storedFigure,
 } from './engine-settings.svelte';
 
+const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
+
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
 const OPENED: RecognizerSession = { modelId: MODEL, device: 'webgpu' };
 
 function report(over: Partial<ModelStorageReport> = {}): ModelStorageReport {
-  return { modelId: MODEL, files: 0, bytes: 0, unsized: 0, weights: REQUIRED_WEIGHTS, ...over };
+  return {
+    modelId: MODEL,
+    files: 0,
+    bytes: 0,
+    unsized: 0,
+    required: REQUIRED_WEIGHTS,
+    weights: REQUIRED_WEIGHTS,
+    ...over,
+  };
 }
 
 type Attempt = {
@@ -48,7 +58,14 @@ function snapshotOf(
   files: number,
 ): ModelStorageSnapshot {
   return {
-    report: { modelId: MODEL, files, bytes: 400_000, unsized: 0, weights },
+    report: {
+      modelId: MODEL,
+      files,
+      bytes: 400_000,
+      unsized: 0,
+      required: REQUIRED_WEIGHTS,
+      weights,
+    },
     partial: { modelId: MODEL, files: partialBytes > 0 ? 2 : 0, bytes: partialBytes },
     usage: 241_000_000,
     quota: 10_979_000_000,
@@ -358,7 +375,7 @@ describe('storageFailureNote', () => {
 });
 
 describe('engineLanguages', () => {
-  it('offers only the languages a model has been chosen for', () => {
-    expect(engineLanguages()).toEqual(['ja']);
+  it('offers every language a model can read', () => {
+    expect(engineLanguages()).toEqual(['ja', 'ko']);
   });
 });

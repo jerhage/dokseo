@@ -1,6 +1,6 @@
 <script lang="ts">
   import { megabytes } from '$lib/shared/bytes';
-  import { languageName } from '$lib/shared/language';
+  import { languageName, type Language } from '$lib/shared/language';
   import {
     COMPUTE_CHOICES,
     computeChoiceName,
@@ -13,6 +13,7 @@
   import EngineTrade from './EngineTrade.svelte';
   import {
     cancelHint,
+    engineLanguages,
     loadFigure,
     partialFigure,
     REMOVAL_WARNING,
@@ -46,8 +47,14 @@
     return `${megabytes(offered.weightsBytes)} MB of weights`;
   }
 
+  const languages = engineLanguages();
+
   function pick(choice: ComputeChoice): void {
     void view.chooseCompute(choice);
+  }
+
+  function speak(chosen: Language): void {
+    void view.chooseLanguage(chosen);
   }
 </script>
 
@@ -115,6 +122,19 @@
 
     <div class="grid">
       <div class="column">
+        <p class="caption" id="{uid}-language">Language</p>
+        <div class="segments" role="group" aria-labelledby="{uid}-language">
+          {#each languages as offered (offered)}
+            <button
+              class="segment"
+              type="button"
+              aria-pressed={language === offered}
+              onclick={() => speak(offered)}
+            >
+              {languageName(offered)}
+            </button>
+          {/each}
+        </div>
         <p class="caption" id="{uid}-model">Model</p>
         <ul class="choices" aria-labelledby="{uid}-model">
           {#each view.models as offered (offered.modelId)}
@@ -131,7 +151,7 @@
                 <span class="choice-note">{weightsOf(offered)}</span>
               </label>
               <p class="footnote">
-                {languageName(offered.language)} · {offered.note}
+                {offered.languages.map(languageName).join(', ')} · {offered.note}
               </p>
             </li>
           {/each}

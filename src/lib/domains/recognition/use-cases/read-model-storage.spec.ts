@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { err, ok, type Result } from '$lib/shared/result';
-import { REQUIRED_WEIGHTS } from '../domain/model-weights';
+import { JAPANESE_OCR_MODEL } from '../domain/model-footprint';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { PartialReport } from '../domain/model-partial';
 import type { ModelStorage, ModelStorageError } from '../domain/model-storage';
 import type { PartialDownloads, PartialError } from '../domain/partial-downloads';
 import { readModelStorage } from './read-model-storage';
+
+const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
@@ -14,6 +16,7 @@ const STORED: ModelStorageReport = {
   files: 9,
   bytes: 204_413_485,
   unsized: 0,
+  required: REQUIRED_WEIGHTS,
   weights: REQUIRED_WEIGHTS,
 };
 
@@ -24,6 +27,7 @@ const HALF_STORED: ModelStorageReport = {
   files: 6,
   bytes: 86_967_767,
   unsized: 0,
+  required: REQUIRED_WEIGHTS,
   weights: [REQUIRED_WEIGHTS[0] ?? ''],
 };
 

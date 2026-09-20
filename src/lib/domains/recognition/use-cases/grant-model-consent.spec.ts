@@ -98,12 +98,14 @@ describe('grantModelConsent', () => {
     expect(fakes.recorded.map((model) => model?.modelId)).toEqual([JAPANESE_OCR_MODEL.modelId]);
   });
 
-  it('records no model for a language that offers none', async () => {
+  it('records the model that reads the language it was granted for', async () => {
     const fakes = world();
 
     await grantModelConsent(fakes, 'ko');
 
-    expect(fakes.recorded).toEqual([null]);
+    expect(fakes.recorded.map((model) => model?.modelId)).toEqual([
+      'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
+    ]);
   });
 
   it('records the grant for one language and leaves the other undecided', async () => {

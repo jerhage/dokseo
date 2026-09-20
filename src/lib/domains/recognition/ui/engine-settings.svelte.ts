@@ -141,7 +141,7 @@ export class EngineSettingsView {
 
   async load(): Promise<void> {
     const generation = this.#bump();
-    const language = engineLanguages()[0] ?? null;
+    const language = this.language ?? engineLanguages()[0] ?? null;
     this.language = language;
     this.models = language === null ? [] : modelsFor(language);
     if (language === null) return;
@@ -160,6 +160,22 @@ export class EngineSettingsView {
     this.detection = detected;
 
     await this.measure(generation);
+  }
+
+  async chooseLanguage(language: Language): Promise<void> {
+    if (this.language === language) return;
+
+    this.language = language;
+    this.models = modelsFor(language);
+    this.selected = null;
+    this.session = null;
+    this.download = IDLE;
+    this.storage = null;
+    this.storageMessage = null;
+    this.message = null;
+    this.confirmingRemoval = false;
+
+    await this.load();
   }
 
   dispose(): void {

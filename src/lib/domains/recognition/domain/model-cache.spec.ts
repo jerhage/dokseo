@@ -9,7 +9,9 @@ import {
   shareOfUsage,
   type CacheEntry,
 } from './model-cache';
-import { REQUIRED_WEIGHTS } from './model-weights';
+import { JAPANESE_OCR_MODEL } from './model-footprint';
+
+const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
@@ -68,6 +70,7 @@ describe('reportOf', () => {
       files: 2,
       bytes: 204_413_485,
       unsized: 0,
+      required: REQUIRED_WEIGHTS,
       weights: REQUIRED_WEIGHTS,
     });
   });
@@ -83,7 +86,14 @@ describe('reportOf', () => {
   it('reports nothing stored when no entry belongs to the model', () => {
     const report = reportOf([{ url: 'https://example.test/other', bytes: 10 }], MODEL);
 
-    expect(report).toEqual({ modelId: MODEL, files: 0, bytes: 0, unsized: 0, weights: [] });
+    expect(report).toEqual({
+      modelId: MODEL,
+      files: 0,
+      bytes: 0,
+      unsized: 0,
+      required: REQUIRED_WEIGHTS,
+      weights: [],
+    });
     expect(isStored(report)).toBe(false);
   });
 });

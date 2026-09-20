@@ -1,8 +1,14 @@
 <script lang="ts">
   import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { Language } from '$lib/shared/language';
-  import { chosenModel } from '../domain/model-footprint';
-  import { engineStatus, NOT_INSTALLED, OCR_ENGINES, type EngineState } from '../domain/ocr-engine';
+  import { chosenModel, knownModel } from '../domain/model-footprint';
+  import {
+    engineMismatch,
+    engineStatus,
+    NOT_INSTALLED,
+    OCR_ENGINES,
+    type EngineState,
+  } from '../domain/ocr-engine';
   import { deviceName } from '../domain/recognizer-session';
 
   type Props = {
@@ -17,9 +23,9 @@
   let trigger = $state<HTMLButtonElement | null>(null);
 
   const session = $derived(engine.session);
-  const model = $derived(
-    language === null ? null : chosenModel(language, session?.modelId ?? null),
-  );
+  const running = $derived(session === null ? null : knownModel(session.modelId));
+  const model = $derived(running ?? (language === null ? null : chosenModel(language, null)));
+  const mismatch = $derived(engineMismatch(session, language));
   const status = $derived(engineStatus(engine));
   const device = $derived(session === null ? null : deviceName(session.device));
 </script>
@@ -73,6 +79,9 @@
           </li>
         {/each}
       </ul>
+      {#if mismatch !== null}
+        <p class="note warn">{mismatch}</p>
+      {/if}
       <p class="note">{status.note}</p>
       <a class="more" href="/settings">Engine settings…</a>
     </div>
@@ -220,6 +229,10 @@
     color: var(--c-text-8);
     font-family: var(--f-mono);
     font-size: 10px;
+  }
+
+  .warn {
+    color: var(--c-text-4);
   }
 
   .note {

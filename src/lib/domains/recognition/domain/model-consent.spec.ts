@@ -133,7 +133,7 @@ describe('decisionOf', () => {
 
   it('reports a grant for one language as undecided for the other', () => {
     const japaneseGrant = read(grantedConsent('ja', GRANTED_AT, japanese()));
-    const korean: ModelFootprint = { ...japanese(), language: 'ko' };
+    const korean: ModelFootprint = { ...japanese(), languages: ['ko'] };
 
     expect(decisionOf(japaneseGrant, japanese())).toBe('granted');
     expect(decisionOf(japaneseGrant, korean)).toBe('undecided');

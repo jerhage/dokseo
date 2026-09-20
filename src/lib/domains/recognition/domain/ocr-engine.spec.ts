@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { downloadMb, JAPANESE_OCR_MODEL } from './model-footprint';
+import { downloadMb, JAPANESE_OCR_MODEL, KOREAN_OCR_MODEL } from './model-footprint';
 import { loadVerb, type ModelLoad } from './model-load';
 import {
+  engineMismatch,
   engineStatus,
   NOT_INSTALLED,
   OCR_ENGINES,
@@ -193,5 +194,31 @@ describe('engineStatus', () => {
     const status = engineStatus(state({ paused: true, partlyDownloaded: true }));
 
     expect(status.label).toBe('Paused');
+  });
+});
+
+describe('engineMismatch', () => {
+  const japanese: RecognizerSession = { modelId: JAPANESE_OCR_MODEL.modelId, device: 'wasm' };
+
+  it('says so when the running model cannot read the book in front of the reader', () => {
+    expect(engineMismatch(japanese, 'ko')).toContain(JAPANESE_OCR_MODEL.label);
+  });
+
+  it('names the language the model cannot read, not the one it can', () => {
+    expect(engineMismatch(japanese, 'ko')).toContain('Korean');
+  });
+
+  it('says nothing when the running model declares the language of the book', () => {
+    expect(engineMismatch(japanese, 'ja')).toBeNull();
+    expect(engineMismatch({ modelId: KOREAN_OCR_MODEL.modelId, device: 'wasm' }, 'ko')).toBeNull();
+  });
+
+  it('says nothing about a model nobody measured, because nothing declares what it reads', () => {
+    expect(engineMismatch({ modelId: 'someone/unmeasured', device: 'wasm' }, 'ko')).toBeNull();
+  });
+
+  it('says nothing before an engine is running', () => {
+    expect(engineMismatch(null, 'ko')).toBeNull();
+    expect(engineMismatch(japanese, null)).toBeNull();
   });
 });

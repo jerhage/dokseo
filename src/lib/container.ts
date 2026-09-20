@@ -161,11 +161,6 @@ function noteSession(language: Language, session: RecognizerSession): void {
   for (const report of sessionsFor(language)) report(session);
 }
 
-async function loadFakeRecognizer(): Promise<TextRecognizer> {
-  const { createFakeRecognizer } = await import('./domains/recognition/adapters/fake-recognizer');
-  return createFakeRecognizer();
-}
-
 const setups = createRecognizerSetupStore();
 
 const readRecognizerSetupDeps: ReadRecognizerSetupDeps = { setups };
@@ -176,10 +171,12 @@ async function setupFor(language: Language): Promise<RecognizerSetup | null> {
   return { modelId: choice.value.model.modelId, compute: choice.value.compute };
 }
 
-async function loadMangaOcrRecognizer(language: Language): Promise<TextRecognizer> {
-  const { createMangaOcrRecognizer } =
-    await import('./domains/recognition/adapters/manga-ocr.adapter');
-  return createMangaOcrRecognizer({
+function noticesFor(language: Language): {
+  readonly readSetup: () => Promise<RecognizerSetup | null>;
+  readonly onProgress: (load: ModelLoad) => void;
+  readonly onSession: (session: RecognizerSession) => void;
+} {
+  return {
     readSetup: () => setupFor(language),
     onProgress: (load) => {
       for (const report of progressFor(language)) report(load);
@@ -187,7 +184,19 @@ async function loadMangaOcrRecognizer(language: Language): Promise<TextRecognize
     onSession: (session) => {
       noteSession(language, session);
     },
-  });
+  };
+}
+
+async function loadMangaOcrRecognizer(language: Language): Promise<TextRecognizer> {
+  const { createMangaOcrRecognizer } =
+    await import('./domains/recognition/adapters/manga-ocr.adapter');
+  return createMangaOcrRecognizer(noticesFor(language));
+}
+
+async function loadPaddleOcrRecognizer(language: Language): Promise<TextRecognizer> {
+  const { createPaddleOcrRecognizer } =
+    await import('./domains/recognition/adapters/paddle-ocr.adapter');
+  return createPaddleOcrRecognizer(noticesFor(language));
 }
 
 const recognizers = new Map<Language, Promise<TextRecognizer>>();
@@ -198,7 +207,7 @@ export function recognizerFor(language: Language): Promise<TextRecognizer> {
 
   const loading = match(language)
     .with('ja', loadMangaOcrRecognizer)
-    .with('ko', loadFakeRecognizer)
+    .with('ko', loadPaddleOcrRecognizer)
     .exhaustive()
     .catch((cause: unknown): never => {
       recognizers.delete(language);

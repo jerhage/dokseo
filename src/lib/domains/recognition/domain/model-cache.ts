@@ -1,4 +1,5 @@
-import { REQUIRED_WEIGHTS, weightsAmong } from './model-weights';
+import { knownModel } from './model-footprint';
+import { weightsAmong } from './model-weights';
 
 export type CacheEntry = {
   readonly url: string;
@@ -10,6 +11,7 @@ export type ModelStorageReport = {
   readonly files: number;
   readonly bytes: number;
   readonly unsized: number;
+  readonly required: readonly string[];
   readonly weights: readonly string[];
 };
 
@@ -31,19 +33,28 @@ export function entriesOfModel(
   return entries.filter((entry) => belongsToModel(entry.url, modelId));
 }
 
+export function requiredWeights(modelId: string): readonly string[] {
+  return knownModel(modelId)?.weightFiles ?? [];
+}
+
 export function reportOf(entries: readonly CacheEntry[], modelId: string): ModelStorageReport {
   const mine = entriesOfModel(entries, modelId);
+  const required = requiredWeights(modelId);
   return {
     modelId,
     files: mine.length,
     bytes: mine.reduce((total, entry) => total + (entry.bytes ?? 0), 0),
     unsized: mine.filter((entry) => entry.bytes === null).length,
-    weights: weightsAmong(mine.map((entry) => entry.url)),
+    required,
+    weights: weightsAmong(
+      mine.map((entry) => entry.url),
+      required,
+    ),
   };
 }
 
 export function isStored(report: ModelStorageReport): boolean {
-  return report.weights.length === REQUIRED_WEIGHTS.length;
+  return report.required.length > 0 && report.weights.length === report.required.length;
 }
 
 export function isPartlyStored(report: ModelStorageReport): boolean {

@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
+import { languageName, type Language } from '$lib/shared/language';
 import { loadVerb, type ModelLoad } from './model-load';
-import { downloadMb, type ModelFootprint } from './model-footprint';
+import { downloadMb, knownModel, reads, type ModelFootprint } from './model-footprint';
 import { deviceName, type RecognizerSession } from './recognizer-session';
 
 export type OcrEngineId = 'on-device' | 'ocr-server' | 'openai-endpoint';
@@ -81,7 +82,7 @@ function onDeviceTradeOffs(model: ModelFootprint | null): readonly TradeOff[] {
     {
       aspect: 'quality',
       verdict: 'caveat',
-      value: 'Verified on printed Japanese. Hand-lettering and sound effects are unmeasured.',
+      value: model === null ? 'Nothing here has measured it.' : model.quality,
     },
   ];
 }
@@ -129,6 +130,18 @@ export function tradeOffsOf(
     .with('ocr-server', () => SERVER_TRADE_OFFS)
     .with('openai-endpoint', () => ENDPOINT_TRADE_OFFS)
     .exhaustive();
+}
+
+export function engineMismatch(
+  session: RecognizerSession | null,
+  language: Language | null,
+): string | null {
+  if (session === null || language === null) return null;
+
+  const running = knownModel(session.modelId);
+  if (running === null || reads(running, language)) return null;
+
+  return `${running.label} does not read ${languageName(language)}, so what it returns will not be this book's text.`;
 }
 
 export type EngineTone = 'ready' | 'busy' | 'quiet' | 'bad';

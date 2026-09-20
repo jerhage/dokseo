@@ -99,12 +99,14 @@ describe('readModelConsent', () => {
     expect(seen).toEqual([JAPANESE_OCR_MODEL]);
   });
 
-  it('asks about no model for a language that offers none', async () => {
+  it('asks about the model that reads the language it was asked about', async () => {
     const seen: (ModelFootprint | null)[] = [];
 
     await readModelConsent({ consent: storeRecording(seen), setups: setupsHolding(null) }, 'ko');
 
-    expect(seen).toEqual([null]);
+    expect(seen.map((model) => model?.modelId)).toEqual([
+      'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
+    ]);
   });
 
   it('passes a storage failure through rather than guessing a decision', async () => {

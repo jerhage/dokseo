@@ -14,6 +14,7 @@
     type TextSegment,
   } from '$lib/shared/text-search';
   import { inBookOrder } from '../domain/capture-order';
+  import { engineMismatch } from '../domain/ocr-engine';
   import { firstImage, placeLabel } from './capture-place';
   import {
     modelLoadAnnouncement,
@@ -56,6 +57,8 @@
   };
 
   let { view, language, direction }: Props = $props();
+
+  const mismatch = $derived(engineMismatch(view.session, language));
 
   let query = $state('');
   let editing = $state<CaptureId | null>(null);
@@ -290,6 +293,10 @@
 
   <p class="assistive" role="status">{announcement}</p>
 
+  {#if mismatch !== null}
+    <p class="mismatch" role="status">{mismatch}</p>
+  {/if}
+
   {#if cards.length === 0}
     {#if searching}
       <p class="invitation">No capture in this book holds that text.</p>
@@ -508,6 +515,17 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  .mismatch {
+    margin: 0 var(--s-4) var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--c-border-3);
+    border-radius: var(--r-3);
+    background: var(--c-surface-chip);
+    color: var(--c-text-7);
+    font-size: 11.5px;
+    line-height: 1.45;
   }
 
   .invitation {

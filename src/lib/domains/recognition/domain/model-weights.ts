@@ -13,12 +13,19 @@ export function weightsFile(part: string, precision: WeightsPrecision): string {
   return `onnx/${part}${PRECISION_SUFFIX[precision]}.onnx`;
 }
 
-export const REQUIRED_WEIGHTS: readonly string[] = [
+export const ENCODER_DECODER_WEIGHTS: readonly string[] = [
   weightsFile('encoder_model', ENCODER_PRECISION),
   weightsFile('decoder_model_merged', DECODER_PRECISION),
 ];
 
-export function weightsAmong(urls: readonly string[]): readonly string[] {
+export const SINGLE_GRAPH_FILE = 'inference';
+
+export const SINGLE_GRAPH_WEIGHTS: readonly string[] = [`${SINGLE_GRAPH_FILE}.onnx`];
+
+export function weightsAmong(
+  urls: readonly string[],
+  needed: readonly string[],
+): readonly string[] {
   const paths = urls.map((url) => url.split(/[?#]/)[0] ?? '');
-  return REQUIRED_WEIGHTS.filter((needed) => paths.some((path) => path.endsWith(`/${needed}`)));
+  return needed.filter((one) => paths.some((path) => path.endsWith(`/${one}`)));
 }

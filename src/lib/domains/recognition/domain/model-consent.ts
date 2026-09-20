@@ -1,6 +1,6 @@
 import type { Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
-import type { ModelFootprint } from './model-footprint';
+import { reads, type ModelFootprint } from './model-footprint';
 
 export type ModelConsentDecision = 'granted' | 'undecided';
 
@@ -48,7 +48,7 @@ export function decisionOf(
   model: ModelFootprint | null,
 ): ModelConsentDecision {
   if (consent === null || model === null) return 'undecided';
-  if (consent.language !== model.language) return 'undecided';
+  if (!reads(model, consent.language)) return 'undecided';
 
   return consent.modelId === model.modelId ? 'granted' : 'undecided';
 }

@@ -6,12 +6,14 @@ import type {
   ModelConsentError,
   ModelConsentStore,
 } from '../domain/model-consent';
-import { REQUIRED_WEIGHTS } from '../domain/model-weights';
+import { JAPANESE_OCR_MODEL } from '../domain/model-footprint';
 import type { ModelStorageReport } from '../domain/model-cache';
 import type { PartialReport } from '../domain/model-partial';
 import type { ModelStorage, ModelStorageError } from '../domain/model-storage';
 import type { PartialDownloads } from '../domain/partial-downloads';
 import { deleteModel } from './delete-model';
+
+const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
 
@@ -20,6 +22,7 @@ const REMOVED: ModelStorageReport = {
   files: 9,
   bytes: 204_413_485,
   unsized: 0,
+  required: REQUIRED_WEIGHTS,
   weights: REQUIRED_WEIGHTS,
 };
 

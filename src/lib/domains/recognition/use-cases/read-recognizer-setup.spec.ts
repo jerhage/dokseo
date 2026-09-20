@@ -62,9 +62,9 @@ describe('readRecognizerSetup', () => {
     expect(choice.compute).toBe('auto');
   });
 
-  it('offers no model for a language whose model has not been chosen', async () => {
+  it('defaults each language to a model that can read it', async () => {
     const choice = await choiceFrom(null, 'ko');
 
-    expect(choice.model).toBeNull();
+    expect(choice.model?.modelId).toBe('PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx');
   });
 });

@@ -8,6 +8,7 @@ import {
   modelFootprint,
   modelsFor,
   onDiskMb,
+  reads,
   type ModelFootprint,
 } from './model-footprint';
 
@@ -39,8 +40,10 @@ describe('modelFootprint', () => {
       modelId: 'an/exact-rounding-check',
       engine: 'exact-rounding-check',
       label: 'exact rounding check',
-      language: 'ja',
+      languages: ['ja'],
       note: 'A fixture, not a model.',
+      quality: 'A fixture, not a measurement.',
+      weightFiles: [],
       weightsBytes: 1_600_000,
       runtimeDownloadBytes: 1_600_000,
       runtimeOnDiskBytes: 1_600_000,
@@ -56,8 +59,10 @@ describe('modelFootprint', () => {
     expect(japanese().modelId).toBe('DigitalLarynx/manga-ocr-onnx');
   });
 
-  it('reports no footprint for a language whose model has not been chosen', () => {
-    expect(modelFootprint('ko')).toBeNull();
+  it('reports the exploratory 13 MB of weights for Korean', () => {
+    const korean = modelFootprint('ko');
+    expect(korean?.modelId).toBe('PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx');
+    expect(megabytes(korean?.weightsBytes ?? 0)).toBe(13);
   });
 });
 
@@ -78,13 +83,21 @@ describe('modelsFor', () => {
     expect(modelsFor('ja').map((model) => model.modelId)).toEqual(['DigitalLarynx/manga-ocr-onnx']);
   });
 
-  it('offers nothing for a language whose model has not been chosen', () => {
-    expect(modelsFor('ko')).toEqual([]);
+  it('offers a model to each language it declares and to no other', () => {
+    expect(modelsFor('ko').map((model) => model.modelId)).toEqual([
+      'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
+    ]);
+  });
+
+  it('reads a model declaring both languages as an offer to each of them', () => {
+    const both: ModelFootprint = { ...japanese(), languages: ['ja', 'ko'] };
+    expect(reads(both, 'ja')).toBe(true);
+    expect(reads(both, 'ko')).toBe(true);
   });
 
   it('agrees with the footprint about which language each model reads', () => {
-    for (const model of modelsFor('ja')) expect(model.language).toBe('ja');
-    expect(japanese().language).toBe('ja');
+    for (const model of modelsFor('ja')) expect(model.languages).toContain('ja');
+    expect(japanese().languages).toEqual(['ja']);
   });
 });
 
@@ -101,8 +114,8 @@ describe('chosenModel', () => {
     expect(chosenModel('ja', 'dnouv/manga-ocr')).toEqual(japanese());
   });
 
-  it('returns nothing for a language with no model at all', () => {
-    expect(chosenModel('ko', 'DigitalLarynx/manga-ocr-onnx')).toBeNull();
+  it('refuses a model that cannot read the language and defaults to one that can', () => {
+    expect(chosenModel('ko', 'DigitalLarynx/manga-ocr-onnx')).toEqual(modelFootprint('ko'));
   });
 });
 

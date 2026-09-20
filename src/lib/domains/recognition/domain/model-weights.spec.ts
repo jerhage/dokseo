@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DECODER_PRECISION,
   ENCODER_PRECISION,
-  REQUIRED_WEIGHTS,
+  ENCODER_DECODER_WEIGHTS,
   weightsAmong,
   weightsFile,
 } from './model-weights';
@@ -25,20 +25,25 @@ describe('weightsFile', () => {
 
 describe('weightsAmong', () => {
   it('finds both weight files the engine needs to run', () => {
-    const held = weightsAmong([
-      `${REPO}/config.json`,
-      `${REPO}/onnx/encoder_model_quantized.onnx`,
-      `${REPO}/onnx/decoder_model_merged.onnx`,
-    ]);
+    const held = weightsAmong(
+      [
+        `${REPO}/config.json`,
+        `${REPO}/onnx/encoder_model_quantized.onnx`,
+        `${REPO}/onnx/decoder_model_merged.onnx`,
+      ],
+      ENCODER_DECODER_WEIGHTS,
+    );
 
-    expect(held).toEqual(REQUIRED_WEIGHTS);
+    expect(held).toEqual(ENCODER_DECODER_WEIGHTS);
   });
 
   it('ignores the unsuffixed encoder, which is probed for its size and never fetched', () => {
-    expect(weightsAmong([`${REPO}/onnx/encoder_model.onnx`])).toEqual([]);
+    expect(weightsAmong([`${REPO}/onnx/encoder_model.onnx`], ENCODER_DECODER_WEIGHTS)).toEqual([]);
   });
 
   it('finds nothing among the configuration files alone', () => {
-    expect(weightsAmong([`${REPO}/config.json`, `${REPO}/tokenizer.json`])).toEqual([]);
+    expect(
+      weightsAmong([`${REPO}/config.json`, `${REPO}/tokenizer.json`], ENCODER_DECODER_WEIGHTS),
+    ).toEqual([]);
   });
 });

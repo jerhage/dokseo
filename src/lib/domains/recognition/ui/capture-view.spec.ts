@@ -11,8 +11,7 @@ import { at } from '$lib/shared/testing/at';
 import { editedCapture, takenCapture, type Capture, type CaptureDraft } from '../domain/capture';
 import type { CaptureError } from '../domain/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
-import { modelFootprint } from '../domain/model-footprint';
-import { REQUIRED_WEIGHTS } from '../domain/model-weights';
+import { JAPANESE_OCR_MODEL, modelFootprint } from '../domain/model-footprint';
 import type { ModelLoad } from '../domain/model-load';
 import type { RecognizerSession } from '../domain/recognizer-session';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
@@ -23,6 +22,8 @@ import {
   modelLoadNote,
   READING_SELECTION,
 } from './capture-view.svelte';
+
+const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
 type Reading = Result<RecognizedText, RecognizeRegionError>;
 
@@ -73,6 +74,7 @@ type Engine = {
   readonly prepares: Language[];
   readonly closes: Language[];
   failure: string | null;
+  setupFails: boolean;
 };
 
 type Fakes = {
@@ -124,7 +126,13 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     });
   }
 
-  const engine: Engine = { files: 0, prepares: [], closes: [], failure: null };
+  const engine: Engine = {
+    files: 0,
+    prepares: [],
+    closes: [],
+    failure: null,
+    setupFails: false,
+  };
 
   const steps: Step[] = [];
   const ended: string[] = [];
@@ -220,6 +228,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
               files: engine.files,
               bytes: engine.files * 1_000,
               unsized: 0,
+              required: REQUIRED_WEIGHTS,
               weights: engine.files > 0 ? REQUIRED_WEIGHTS : [],
             },
             partial: { modelId, files: 0, bytes: 0 },
@@ -230,7 +239,11 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         ),
       deleteModel: unused,
       readRecognizerSetup: (language: Language) =>
-        Promise.resolve(ok({ model: modelFootprint(language), compute: 'auto' as const })),
+        Promise.resolve(
+          engine.setupFails
+            ? err({ kind: 'storage-unavailable' as const })
+            : ok({ model: modelFootprint(language), compute: 'auto' as const }),
+        ),
       saveRecognizerSetup: unused,
       detectCompute: unused,
       prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {
@@ -660,14 +673,15 @@ describe('CaptureView', () => {
     (await started(stored, 1)).settle(ok(recognizedText('second')));
     await second;
 
-    const unmetered = fakes([]);
-    const korean = new CaptureView(unmetered.container);
-    const running = korean.recognize(source, 'ko', regions(), 'column');
-    (await started(unmetered, 0)).settle(ok(recognizedText('안녕')));
+    const unnamed = fakes([]);
+    unnamed.engine.setupFails = true;
+    const unreadable = new CaptureView(unnamed.container);
+    const running = unreadable.recognize(source, 'ko', regions(), 'column');
+    (await started(unnamed, 0)).settle(ok(recognizedText('안녕')));
     await running;
 
     expect(gates(stored)).toEqual(['reading consent-stored', 'reading agreed-this-session']);
-    expect(gates(unmetered)).toEqual(['reading nothing-to-download']);
+    expect(gates(unnamed)).toEqual(['reading nothing-to-download']);
   });
 
   it('names the guard that stopped each capture', async () => {
@@ -700,17 +714,15 @@ describe('CaptureView', () => {
     await running;
   });
 
-  it('asks for no agreement for a language whose model has not been chosen', async () => {
+  it('asks for agreement to a small model on the same terms as a large one', async () => {
     const world = fakes([]);
     const view = new CaptureView(world.container);
 
-    const running = view.recognize(source, 'ko', regions(), 'column');
-    (await started(world, 0)).settle(ok(recognizedText('안녕')));
-    await running;
+    await view.recognize(source, 'ko', regions(), 'column');
 
-    expect(view.consentRequest).toBeNull();
-    expect(world.consent.reads).toEqual([]);
-    expect(at(view.captures, 0).status).toBe('done');
+    expect(view.consentRequest?.language).toBe('ko');
+    expect(view.consentRequest?.footprint).toEqual(modelFootprint('ko'));
+    expect(world.calls).toEqual([]);
   });
 
   it('loads the stored captures of the book it opens and no other book', async () => {
