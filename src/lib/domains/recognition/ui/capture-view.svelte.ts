@@ -215,15 +215,6 @@ export class CaptureView {
         return;
       }
 
-      const decision = await this.#container.recognition
-        .readModelConsent(language)
-        .catch(() => null);
-      if (generation !== this.#generation) return;
-      if (decision === null || !decision.ok || decision.value !== 'granted') {
-        trace.step('stopped', { guard: 'not-agreed', language, modelId: model.modelId });
-        return;
-      }
-
       this.#agreed.add(language);
       trace.step('opening', { language, modelId: model.modelId });
       await this.#openEngine(language, generation);

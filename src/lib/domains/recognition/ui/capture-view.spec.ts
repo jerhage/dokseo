@@ -558,6 +558,19 @@ describe('CaptureView', () => {
     expect(view.consentRequest?.footprint).toEqual(modelFootprint('ja'));
   });
 
+  it('asks before a selection fetches weights this device does not have', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+    await read(view);
+
+    expect(world.engine.prepares).toEqual([]);
+    expect(world.calls).toEqual([]);
+    expect(view.consentRequest?.language).toBe('ja');
+  });
+
   it('recognizes the selection it was holding when the reader agreed', async () => {
     const world = fakes([]);
     const view = new CaptureView(world.container);
@@ -1050,19 +1063,43 @@ describe('CaptureView.warm', () => {
     expect(view.engine.stored).toBe(false);
   });
 
-  it('opens nothing when the download was never agreed to', async () => {
+  it('opens the engine on weights that are here although no grant was ever recorded', async () => {
     const world = fakes([]);
     world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(world.engine.prepares).toEqual(['ja']);
+    expect(view.session).toEqual(OPENED_SESSION);
+    expect(view.engine.stored).toBe(true);
+  });
+
+  it('reads no consent record on the way to opening weights that are here', async () => {
+    const world = fakes([]);
+    world.engine.files = 9;
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.warm(ONE, 'ja');
+
+    expect(world.consent.reads).toEqual([]);
+    expect(world.consent.grants).toEqual([]);
+  });
+
+  it('reports the weights as absent and opens nothing when only the grant is here', async () => {
+    const world = fakes(['ja']);
     const view = new CaptureView(world.container);
 
     await view.open(ONE);
     await view.warm(ONE, 'ja');
 
     expect(world.engine.prepares).toEqual([]);
-    expect(view.session).toBeNull();
+    expect(view.engine.stored).toBe(false);
   });
 
-  it('reports the weights as here even when it opens nothing', async () => {
+  it('asks for no agreement on a later selection once it has opened the engine', async () => {
     const world = fakes([]);
     world.engine.files = 9;
     const view = new CaptureView(world.container);
@@ -1070,7 +1107,11 @@ describe('CaptureView.warm', () => {
     await view.open(ONE);
     await view.warm(ONE, 'ja');
 
-    expect(view.engine.stored).toBe(true);
+    void view.recognize(source, 'ja', regions(3), 'row');
+    const call = await started(world, 0);
+
+    expect(view.consentRequest).toBeNull();
+    expect(call.regions).toEqual(regions(3));
   });
 
   it('opens the engine once for one book however often the reader asks', async () => {
