@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import { requestPersistence, storageEstimate } from '$lib/platform/storage/persistence';
-import { beginTrace } from '$lib/platform/trace/pipeline-trace';
+import { beginTrace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import type { BookId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -100,6 +100,7 @@ export function recognizerFor(language: Language): Promise<TextRecognizer> {
 }
 
 export type Container = {
+  readonly beginTrace: TraceFactory;
   readonly library: {
     readonly openFile: (files: readonly File[]) => Promise<Result<Book, OpenFileError>>;
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
@@ -147,6 +148,7 @@ export function buildContainer(): Container {
   const grantModelConsentDeps: GrantModelConsentDeps = { consent, requestPersistence };
 
   return {
+    beginTrace,
     library: {
       openFile: (files: readonly File[]) => openFile(openFileDeps, files),
       openForReading: (id: BookId) => openForReading(openForReadingDeps, id),

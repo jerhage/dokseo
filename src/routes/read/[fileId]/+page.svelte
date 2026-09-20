@@ -16,9 +16,23 @@
   const language = $derived(view.book?.language ?? null);
 
   function capture(regions: readonly ImageRegion[], arrangement: Arrangement): void {
-    const source = view.source;
-    if (source === null || language === null) return;
-    void captures.recognize(source, language, regions, arrangement);
+    const trace = container.beginTrace('capture');
+    try {
+      const source = view.source;
+      if (source === null || language === null) {
+        trace.step('stopped', {
+          guard: 'no-open-book',
+          hasSource: source !== null,
+          language,
+        });
+        return;
+      }
+
+      trace.step('dispatched', { language, arrangement, regions: regions.length });
+      void captures.recognize(source, language, regions, arrangement);
+    } finally {
+      trace.end();
+    }
   }
 
   $effect(() => {

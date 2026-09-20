@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { err, ok, type Result } from '$lib/shared/result';
@@ -61,6 +62,7 @@ function fakes(): Fakes {
   const usage: UsageState = { estimate: { usage: 2048, quota: 8192 } };
 
   const container: Container = {
+    beginTrace: noTrace,
     library: {
       openFile: () => {
         const next = deferred<Result<Book, OpenFileError>>();

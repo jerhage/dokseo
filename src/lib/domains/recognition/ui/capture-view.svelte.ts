@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
+import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import { captureId, type CaptureId } from '$lib/shared/ids';
@@ -7,7 +8,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
-import { modelFootprint, type ModelFootprint } from '../domain/model-footprint';
+import { downloadMb, modelFootprint, type ModelFootprint } from '../domain/model-footprint';
 import { hasNoText, type RecognizedText } from '../domain/recognized-text';
 import type { CropError } from '../domain/region-cropper';
 import type { RecognitionError } from '../domain/text-recognizer';
@@ -112,26 +113,48 @@ export class CaptureView {
     regions: readonly ImageRegion[],
     arrangement: Arrangement,
   ): Promise<void> {
-    if (regions.length === 0) return;
-
+    const trace = this.#container.beginTrace('capture-gate');
     const held: Held = { source, language, regions, arrangement };
+
+    const admitted = await this.#admits(trace, held);
+    trace.end();
+    if (admitted) await this.#read(held);
+  }
+
+  async #admits(trace: Trace, held: Held): Promise<boolean> {
+    const language = held.language;
+    if (held.regions.length === 0) {
+      trace.step('stopped', { guard: 'no-regions' });
+      return false;
+    }
+
     const footprint = modelFootprint(language);
-    if (footprint === null || this.#agreed.has(language)) {
-      await this.#read(held);
-      return;
+    if (footprint === null) {
+      trace.step('reading', { gate: 'nothing-to-download', language });
+      return true;
+    }
+
+    if (this.#agreed.has(language)) {
+      trace.step('reading', { gate: 'agreed-this-session', language });
+      return true;
     }
 
     const decision = await this.#container.recognition.readModelConsent(language);
     if (decision.ok && decision.value === 'granted') {
       this.#agreed.add(language);
-      await this.#read(held);
-      return;
+      trace.step('reading', { gate: 'consent-stored', language });
+      return true;
     }
 
-    if (this.#declined.has(language)) return;
+    if (this.#declined.has(language)) {
+      trace.step('stopped', { guard: 'declined-this-session', language });
+      return false;
+    }
 
     this.#held = held;
     this.consentRequest = { language, footprint };
+    trace.step('asking', { gate: 'consent-dialog', language, downloadMb: downloadMb(footprint) });
+    return false;
   }
 
   async agree(): Promise<void> {

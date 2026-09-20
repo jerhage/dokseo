@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
+import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Size } from '$lib/shared/geometry';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
@@ -116,6 +117,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
   };
 
   world.container = {
+    beginTrace: noTrace,
     library: {
       openFile: () => Promise.reject(new Error('not used')),
       openForReading: () => {

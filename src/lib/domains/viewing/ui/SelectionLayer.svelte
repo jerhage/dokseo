@@ -1,10 +1,17 @@
 <script lang="ts">
+  import { beginTrace, type Trace } from '$lib/platform/trace/pipeline-trace';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import { isEmpty, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
+  import { isEmpty, normalize, screenRect, type ScreenRect, type Size } from '$lib/shared/geometry';
   import { imageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import { regionsIn, type PlacedImage } from '../domain/placement';
-  import { isUsableSelection, selectionFrom, selectionSize, type Point } from '../domain/selection';
+  import {
+    isUsableSelection,
+    MIN_SELECTION_PX,
+    selectionFrom,
+    selectionSize,
+    type Point,
+  } from '../domain/selection';
 
   type Props = {
     readonly within: HTMLElement | null;
@@ -71,10 +78,11 @@
     );
   }
 
-  function placementsIn(element: HTMLElement): readonly PlacedImage[] {
+  function placementsIn(element: HTMLElement, trace: Trace): readonly PlacedImage[] {
+    const found = element.querySelectorAll('canvas[data-image-index]');
     const placed: PlacedImage[] = [];
 
-    for (const canvas of element.querySelectorAll('canvas[data-image-index]')) {
+    for (const canvas of found) {
       if (!(canvas instanceof HTMLCanvasElement)) continue;
 
       const index = Number(canvas.dataset.imageIndex);
@@ -85,6 +93,16 @@
         index: imageIndex(index),
         onScreen: screenRect(box.x, box.y, box.width, box.height),
         natural: { width: canvas.width, height: canvas.height },
+      });
+    }
+
+    trace.step('placements', { canvases: found.length, placed: placed.length });
+    for (const image of placed) {
+      trace.step('placement', {
+        index: image.index,
+        naturalWidth: image.natural.width,
+        naturalHeight: image.natural.height,
+        onScreen: image.onScreen,
       });
     }
 
@@ -151,23 +169,62 @@
   }
 
   export function pointerup(event: PointerEvent): void {
-    if (held !== event.pointerId) return;
+    const id = held;
+    if (id === null) return;
 
-    const element = within;
-    const from = anchor;
-    const to = pointAt(event);
-    stopDrag();
-    if (element === null || from === null) return;
+    const trace = beginTrace('selection');
+    try {
+      if (id !== event.pointerId) {
+        trace.step('stopped', { guard: 'pointer-mismatch', held: id, released: event.pointerId });
+        return;
+      }
 
-    const selection = selectionFrom(from, to);
-    if (!isUsableSelection(selection)) return;
+      const element = within;
+      const from = anchor;
+      const to = pointAt(event);
+      stopDrag();
+      if (element === null || from === null) {
+        trace.step('stopped', {
+          guard: 'no-drag-origin',
+          hasWithin: element !== null,
+          hasAnchor: from !== null,
+        });
+        return;
+      }
 
-    const regions = regionsIn(placementsIn(element), selection);
-    if (regions.length === 0) return;
+      const selection = selectionFrom(from, to);
+      trace.step('pointer', { from, to, selection });
 
-    committed = selection;
-    captured = selectionSize(regions, arrangement);
-    select(regions);
+      const measured = normalize(selection);
+      const usable = isUsableSelection(selection);
+      trace.step('usable', {
+        usable,
+        width: measured.width,
+        height: measured.height,
+        minimum: MIN_SELECTION_PX,
+      });
+      if (!usable) {
+        trace.step('stopped', { guard: 'below-minimum' });
+        return;
+      }
+
+      const regions = regionsIn(placementsIn(element, trace), selection);
+      trace.step('regions', { count: regions.length });
+      for (const region of regions) {
+        trace.step('region', { index: region.index, rect: region.rect });
+      }
+      if (regions.length === 0) {
+        trace.step('stopped', { guard: 'no-regions' });
+        return;
+      }
+
+      committed = selection;
+      captured = selectionSize(regions, arrangement);
+      trace.step('selected', { regions: regions.length, size: captured });
+      select(regions);
+    } finally {
+      trace.end();
+    }
   }
 
   export function pointercancel(event: PointerEvent): void {

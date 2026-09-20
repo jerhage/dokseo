@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionProgress } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
@@ -29,10 +30,18 @@ type Consent = {
   grantFails: boolean;
 };
 
+type Step = {
+  readonly label: string;
+  readonly name: string;
+  readonly detail: Record<string, unknown>;
+};
+
 type Fakes = {
   readonly container: Container;
   readonly calls: Call[];
   readonly consent: Consent;
+  readonly steps: Step[];
+  readonly ended: string[];
 };
 
 function unused(): never {
@@ -49,7 +58,19 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     grantFails: false,
   };
 
+  const steps: Step[] = [];
+  const ended: string[] = [];
+
   const container: Container = {
+    beginTrace: (label: string): Trace => ({
+      step: (name: string, detail: Record<string, unknown>): void => {
+        steps.push({ label, name, detail });
+      },
+      image: (): void => undefined,
+      end: (): void => {
+        ended.push(label);
+      },
+    }),
     library: {
       openFile: unused,
       openForReading: unused,
@@ -82,10 +103,16 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     },
   };
 
-  return { container, calls, consent };
+  return { container, calls, consent, steps, ended };
 }
 
 const source = {} as PageSource;
+
+function gates(world: Fakes): readonly string[] {
+  return world.steps
+    .filter((step) => step.label === 'capture-gate')
+    .map((step) => `${step.name} ${String(step.detail.gate ?? step.detail.guard)}`);
+}
 
 function regions(index = 13): readonly ImageRegion[] {
   return [{ index: imageIndex(index), rect: imageRect(0, 0, 40, 20) }];
@@ -373,6 +400,58 @@ describe('CaptureView', () => {
     await running;
 
     expect(at(view.captures, 0).status).toBe('done');
+  });
+
+  it('names the gate that admitted each capture', async () => {
+    const stored = fakes(['ja']);
+    const view = new CaptureView(stored.container);
+
+    const first = read(view);
+    (await started(stored, 0)).settle(ok(recognizedText('first')));
+    await first;
+
+    const second = read(view);
+    (await started(stored, 1)).settle(ok(recognizedText('second')));
+    await second;
+
+    const unmetered = fakes([]);
+    const korean = new CaptureView(unmetered.container);
+    const running = korean.recognize(source, 'ko', regions(), 'column');
+    (await started(unmetered, 0)).settle(ok(recognizedText('안녕')));
+    await running;
+
+    expect(gates(stored)).toEqual(['reading consent-stored', 'reading agreed-this-session']);
+    expect(gates(unmetered)).toEqual(['reading nothing-to-download']);
+  });
+
+  it('names the guard that stopped each capture', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container);
+
+    await view.recognize(source, 'ja', [], 'row');
+    await read(view);
+    view.decline();
+    await read(view);
+
+    expect(gates(world)).toEqual([
+      'stopped no-regions',
+      'asking consent-dialog',
+      'stopped declined-this-session',
+    ]);
+    expect(world.calls).toEqual([]);
+  });
+
+  it('closes the gate trace before the recognition it admits starts', async () => {
+    const world = fakes(['ja']);
+    const view = new CaptureView(world.container);
+
+    const running = read(view);
+    await started(world, 0);
+
+    expect(world.ended).toEqual(['capture-gate']);
+
+    at(world.calls, 0).settle(ok(recognizedText('done')));
+    await running;
   });
 
   it('asks for no agreement for a language whose model has not been chosen', async () => {

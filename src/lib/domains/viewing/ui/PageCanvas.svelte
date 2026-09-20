@@ -59,7 +59,10 @@
         return;
       }
 
-      ratio = bitmap.height > 0 ? bitmap.width / bitmap.height : 2 / 3;
+      const natural = { width: bitmap.width, height: bitmap.height };
+      ratio = natural.height > 0 ? natural.width / natural.height : 2 / 3;
+      canvas.width = natural.width;
+      canvas.height = natural.height;
       context.transferFromImageBitmap(bitmap);
       phase = 'shown';
     })();
