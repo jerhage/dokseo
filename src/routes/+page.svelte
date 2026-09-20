@@ -23,6 +23,8 @@
 
   let query = $state('');
 
+  const captureMatches = $derived(found.matchCount(books, query));
+
   $effect(() => {
     void view.load();
     void found.load();
@@ -33,8 +35,8 @@
   });
 </script>
 
-<LibraryScreen {view} {notice} bind:query>
+<LibraryScreen {view} {notice} {captureMatches} bind:query>
   {#snippet results()}
-    <CaptureResults captures={found.captures} {books} {query} />
+    <CaptureResults captures={found.captures} {books} covers={view.covers} {query} />
   {/snippet}
 </LibraryScreen>

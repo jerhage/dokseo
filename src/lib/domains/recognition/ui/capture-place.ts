@@ -23,3 +23,21 @@ export function placeLabel(regions: readonly ImageRegion[]): string {
 export function firstImage(regions: readonly ImageRegion[]): ImageIndex | null {
   return regions[0]?.index ?? null;
 }
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+export function capturedLabel(createdAt: number, now: number): string | null {
+  if (!Number.isFinite(createdAt) || createdAt <= 0) return null;
+
+  const since = Math.max(0, now - createdAt);
+  if (since < MINUTE) return 'captured just now';
+  if (since < HOUR) return `captured ${Math.floor(since / MINUTE)} min ago`;
+
+  const hours = Math.floor(since / HOUR);
+  if (since < DAY) return `captured ${hours} hour${hours === 1 ? '' : 's'} ago`;
+
+  const days = Math.floor(since / DAY);
+  return `captured ${days} day${days === 1 ? '' : 's'} ago`;
+}

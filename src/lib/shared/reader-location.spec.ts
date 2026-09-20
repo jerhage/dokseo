@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, imageIndex } from './ids';
+import { bookId, captureId, imageIndex } from './ids';
 import {
   IMAGE_PARAMETER,
   MISSING_BOOK_NOTICE,
   missingBookNotice,
   openingPlace,
+  readArrival,
   readerHref,
   readImageIndex,
   urlWithImageIndex,
@@ -98,6 +99,41 @@ describe('readerHref', () => {
 
   it('escapes a book id that would otherwise change the path', () => {
     expect(readerHref(bookId('a/b?c'), imageIndex(0))).toBe('/read/a%2Fb%3Fc?image=0');
+  });
+
+  it('carries the search and the capture that was reached', () => {
+    expect(
+      readerHref(bookId('one'), imageIndex(13), { query: '海が', capture: captureId('c1') }),
+    ).toBe('/read/one?image=13&find=%E6%B5%B7%E3%81%8C&capture=c1');
+  });
+
+  it('leaves out an arrival whose query is only spaces', () => {
+    expect(
+      readerHref(bookId('one'), imageIndex(1), { query: '  ', capture: captureId('c1') }),
+    ).toBe('/read/one?image=1');
+  });
+});
+
+describe('readArrival', () => {
+  it('reads the search and the capture back out of a url', () => {
+    const arrival = readArrival(
+      new URL('https://r.test/read/one?image=1&find=%E6%B5%B7&capture=c1').searchParams,
+    );
+    expect(arrival).toEqual({ query: '海', capture: captureId('c1') });
+  });
+
+  it('reports nothing when only the search is named', () => {
+    expect(readArrival(new URL('https://r.test/read/one?find=%E6%B5%B7').searchParams)).toBeNull();
+  });
+
+  it('reports nothing when only the capture is named', () => {
+    expect(readArrival(new URL('https://r.test/read/one?capture=c1').searchParams)).toBeNull();
+  });
+
+  it('reports nothing for a search of only spaces', () => {
+    expect(
+      readArrival(new URL('https://r.test/read/one?find=%20&capture=c1').searchParams),
+    ).toBeNull();
   });
 });
 

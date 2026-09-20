@@ -1,5 +1,6 @@
 import type { Container } from '$lib/container';
 import type { Capture } from '../domain/capture';
+import { matchesByBook, matchTally, type SearchedBook } from '../domain/capture-results';
 
 export type CaptureSearchStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
@@ -16,6 +17,10 @@ export class CaptureSearchView {
 
   get count(): number {
     return this.captures.length;
+  }
+
+  matchCount(books: readonly SearchedBook[], query: string): number {
+    return matchTally(matchesByBook(this.captures, books, query));
   }
 
   async load(): Promise<void> {

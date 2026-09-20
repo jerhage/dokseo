@@ -7,17 +7,25 @@
   import BookSettings from './BookSettings.svelte';
   import PendingCard from './PendingCard.svelte';
   import { DROP_INVITATION } from './accepted-formats';
+  import LibrarySearch from './LibrarySearch.svelte';
   import UploadTile from './UploadTile.svelte';
   import type { LibraryView } from './library-view.svelte';
 
   type Props = {
     readonly view: LibraryView;
     readonly notice?: string | null;
+    readonly captureMatches?: number | null;
     query?: string;
     readonly results?: Snippet;
   };
 
-  let { view, notice = null, query = $bindable(''), results }: Props = $props();
+  let {
+    view,
+    notice = null,
+    captureMatches = null,
+    query = $bindable(''),
+    results,
+  }: Props = $props();
 
   let tile = $state<ReturnType<typeof UploadTile> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
@@ -55,6 +63,11 @@
     `${view.books.length} books · ${totalImages.toLocaleString()} images · ${space}`,
   );
   const settling = $derived(view.status !== 'ready' && view.status !== 'failed');
+  const matched = $derived(
+    `${titled.length} ${titled.length === 1 ? 'title' : 'titles'} · ${captureMatches ?? 0} ${
+      captureMatches === 1 ? 'capture' : 'captures'
+    }`,
+  );
 </script>
 
 <div class="screen">
@@ -74,15 +87,7 @@
         <p class="summary">{summary}</p>
       </div>
       <div class="tools">
-        <label class="search" for="library-search">
-          <span class="assistive">Search titles or recognized text</span>
-          <input
-            id="library-search"
-            type="search"
-            bind:value={query}
-            placeholder="Search titles or recognized text"
-          />
-        </label>
+        <LibrarySearch bind:query {matched} label="Search titles or recognized text" />
         <button
           class="upload"
           type="button"
@@ -270,10 +275,6 @@
     gap: var(--s-2);
   }
 
-  .search {
-    display: block;
-  }
-
   .assistive {
     position: absolute;
     width: 1px;
@@ -281,28 +282,6 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .search input {
-    width: 230px;
-    max-width: 100%;
-    height: 32px;
-    padding: 0 var(--s-3);
-    border: 1px solid var(--c-border-3);
-    border-radius: var(--r-4);
-    background: var(--c-surface-popover);
-    color: var(--c-text-3);
-    font-family: var(--f-ui);
-    font-size: 11.5px;
-  }
-
-  .search input::placeholder {
-    color: var(--c-text-10);
-  }
-
-  .search input:focus-visible {
-    border-color: var(--c-accent-border);
-    outline: none;
   }
 
   .upload {
@@ -426,10 +405,6 @@
   @media (max-width: 460px) {
     .grid {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .search input {
-      width: 100%;
     }
   }
 </style>

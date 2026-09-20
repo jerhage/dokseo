@@ -1,6 +1,10 @@
-import { imageIndex, type BookId, type ImageIndex } from './ids';
+import { captureId, imageIndex, type BookId, type CaptureId, type ImageIndex } from './ids';
 
 export const IMAGE_PARAMETER = 'image';
+
+export const FIND_PARAMETER = 'find';
+
+export const CAPTURE_PARAMETER = 'capture';
 
 export const MISSING_BOOK_PARAMETER = 'missing';
 
@@ -9,6 +13,11 @@ export const MISSING_BOOK_VALUE = 'book';
 export const MISSING_BOOK_NOTICE = 'That book is no longer in your library.';
 
 export const LIBRARY_AFTER_MISSING_BOOK = `/?${MISSING_BOOK_PARAMETER}=${MISSING_BOOK_VALUE}`;
+
+export type SearchArrival = {
+  readonly query: string;
+  readonly capture: CaptureId;
+};
 
 export type OpeningPlace = {
   readonly index: ImageIndex;
@@ -51,8 +60,25 @@ export function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   return moved.href === url.href ? null : moved;
 }
 
-export function readerHref(book: BookId, index: ImageIndex): string {
-  return `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`;
+export function readerHref(
+  book: BookId,
+  index: ImageIndex,
+  arrival: SearchArrival | null = null,
+): string {
+  const place = `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`;
+  if (arrival === null || arrival.query.trim().length === 0) return place;
+
+  const found = `${FIND_PARAMETER}=${encodeURIComponent(arrival.query)}`;
+  return `${place}&${found}&${CAPTURE_PARAMETER}=${encodeURIComponent(arrival.capture)}`;
+}
+
+export function readArrival(parameters: URLSearchParams): SearchArrival | null {
+  const query = parameters.get(FIND_PARAMETER);
+  const found = parameters.get(CAPTURE_PARAMETER);
+  if (query === null || found === null) return null;
+  if (query.trim().length === 0 || found.length === 0) return null;
+
+  return { query, capture: captureId(found) };
 }
 
 export function missingBookNotice(value: string | null | undefined): string | null {
