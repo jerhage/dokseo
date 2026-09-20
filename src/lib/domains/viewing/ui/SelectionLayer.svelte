@@ -6,12 +6,19 @@
   import type { ImageRegion } from '$lib/shared/image-region';
   import { regionsIn, type PlacedImage } from '../domain/placement';
   import {
+    isTap,
     isUsableSelection,
     MIN_SELECTION_PX,
     selectionFrom,
     selectionSize,
     type Point,
   } from '../domain/selection';
+
+  type Watch = {
+    readonly id: number;
+    readonly from: Point;
+    readonly strayed: boolean;
+  };
 
   type Props = {
     readonly within: HTMLElement | null;
@@ -39,6 +46,7 @@
   let pointer = $state.raw<Point | null>(null);
   let held = $state<number | null>(null);
   let committed = $state.raw<ScreenRect | null>(null);
+  let watch = $state.raw<Watch | null>(null);
   let captured = $state.raw<Size | null>(null);
 
   const dragged = $derived.by(() => {
@@ -143,12 +151,14 @@
   }
 
   export function reset(): void {
+    watch = null;
     if (anchor === null && committed === null) return;
     stopDrag();
     forget();
   }
 
   export function dismiss(): void {
+    watch = null;
     if (anchor === null && committed === null) return;
     stopDrag();
     forget();
@@ -158,10 +168,15 @@
   export function pointerdown(event: PointerEvent): void {
     const element = within;
     const box = host;
+    watch = null;
     if (element === null || box === null || suppressed) return;
     if (!event.isPrimary || event.button !== 0) return;
-    if (!admits(event.pointerType)) return;
     if (!onContent(element, event)) return;
+
+    if (!admits(event.pointerType)) {
+      watch = { id: event.pointerId, from: pointAt(event), strayed: false };
+      return;
+    }
 
     const corner = box.getBoundingClientRect();
     origin = { x: corner.x, y: corner.y };
@@ -175,11 +190,26 @@
   }
 
   export function pointermove(event: PointerEvent): void {
+    const watching = watch;
+    if (watching !== null && watching.id === event.pointerId) {
+      if (!watching.strayed && !isTap(watching.from, pointAt(event))) {
+        watch = { ...watching, strayed: true };
+      }
+      return;
+    }
+
     if (held !== event.pointerId || anchor === null) return;
     pointer = pointAt(event);
   }
 
   export function pointerup(event: PointerEvent): void {
+    const watching = watch;
+    if (watching !== null && watching.id === event.pointerId) {
+      watch = null;
+      if (!watching.strayed && isTap(watching.from, pointAt(event))) tap();
+      return;
+    }
+
     const id = held;
     if (id === null) return;
 
@@ -241,6 +271,11 @@
   }
 
   export function pointercancel(event: PointerEvent): void {
+    if (watch !== null && watch.id === event.pointerId) {
+      watch = null;
+      return;
+    }
+
     if (held !== event.pointerId) return;
     stopDrag();
   }

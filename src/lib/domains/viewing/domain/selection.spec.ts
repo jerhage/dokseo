@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { imageRect, screenRect, type ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import { isUsableSelection, MIN_SELECTION_PX, selectionFrom, selectionSize } from './selection';
+import {
+  isTap,
+  isUsableSelection,
+  MIN_SELECTION_PX,
+  selectionFrom,
+  selectionSize,
+} from './selection';
 
 function region(index: number, width: number, height: number): ImageRegion {
   return { index: imageIndex(index), rect: imageRect(0, 0, width, height) };
@@ -91,6 +97,40 @@ describe('isUsableSelection', () => {
   it('measures a backwards selection by its extents rather than its sign', () => {
     expect(isUsableSelection(screenRect(300, 200, -40, -40))).toBe(true);
     expect(isUsableSelection(screenRect(300, 200, -4, -40))).toBe(false);
+  });
+});
+
+describe('isTap', () => {
+  it('reads a press that released where it began as a tap', () => {
+    expect(isTap({ x: 120, y: 80 }, { x: 120, y: 80 })).toBe(true);
+  });
+
+  it('forgives the wobble of a finger under the minimum', () => {
+    expect(isTap({ x: 120, y: 80 }, { x: 127, y: 73 })).toBe(true);
+  });
+
+  it('rejects a press that travelled the minimum downward', () => {
+    expect(isTap({ x: 120, y: 80 }, { x: 120, y: 80 + MIN_SELECTION_PX })).toBe(false);
+  });
+
+  it('rejects a press that travelled the minimum upward', () => {
+    expect(isTap({ x: 120, y: 80 }, { x: 120, y: 80 - MIN_SELECTION_PX })).toBe(false);
+  });
+
+  it('rejects a press that travelled the minimum sideways', () => {
+    expect(isTap({ x: 120, y: 80 }, { x: 120 + MIN_SELECTION_PX, y: 80 })).toBe(false);
+  });
+
+  it('rejects the flick a strip scrolls with', () => {
+    expect(isTap({ x: 200, y: 600 }, { x: 204, y: 190 })).toBe(false);
+  });
+
+  it('measures travel by the same minimum a selection is held to', () => {
+    const shy = { x: 0, y: MIN_SELECTION_PX - 1 };
+    expect([
+      isTap({ x: 0, y: 0 }, shy),
+      isUsableSelection(selectionFrom({ x: 0, y: 0 }, shy)),
+    ]).toEqual([true, false]);
   });
 });
 

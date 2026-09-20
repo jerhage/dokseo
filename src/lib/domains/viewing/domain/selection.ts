@@ -21,6 +21,11 @@ export function isUsableSelection(selection: ScreenRect): boolean {
   return rect.width >= MIN_SELECTION_PX && rect.height >= MIN_SELECTION_PX;
 }
 
+export function isTap(from: Point, to: Point): boolean {
+  const moved = selectionFrom(from, to);
+  return moved.width < MIN_SELECTION_PX && moved.height < MIN_SELECTION_PX;
+}
+
 export function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement): Size {
   const stacked = arrangement === 'column';
   let width = 0;
