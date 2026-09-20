@@ -118,7 +118,7 @@
     position: relative;
     height: 100%;
     background: var(--c-paper);
-    box-shadow: 0 var(--s-3) var(--s-6) var(--c-surface-void);
+    box-shadow: 0 0 var(--s-6) var(--c-surface-void);
   }
 
   .page.flush {

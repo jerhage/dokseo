@@ -1,0 +1,16 @@
+import { rememberedSet } from '$lib/platform/storage/remembered-set';
+import { isReaderGesture, type ReaderGesture } from './gesture-hint';
+
+const remembered = rememberedSet('reader.gestures.learned');
+
+let learned = $state.raw<readonly ReaderGesture[]>(remembered.values().filter(isReaderGesture));
+
+export function learnedGestures(): readonly ReaderGesture[] {
+  return learned;
+}
+
+export function learnGesture(gesture: ReaderGesture): void {
+  if (learned.includes(gesture)) return;
+
+  learned = remembered.add(gesture).filter(isReaderGesture);
+}

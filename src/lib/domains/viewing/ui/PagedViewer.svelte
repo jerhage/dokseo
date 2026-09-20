@@ -16,7 +16,9 @@
     zoomAt,
     type Viewport,
   } from '../domain/viewport';
+  import { hintsToShow, pagedHints, type GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
+  import { learnedGestures, learnGesture } from './learned-gestures.svelte';
   import PageCanvas from './PageCanvas.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
 
@@ -30,8 +32,6 @@
     readonly y: number;
     readonly bySpace: boolean;
   };
-
-  type Gesture = { readonly keys: readonly string[]; readonly does: string };
 
   type Props = {
     readonly pages: PageGroup;
@@ -59,6 +59,8 @@
   let grab = $state.raw<Grab | null>(null);
   let spaceHeld = $state(false);
   let pannable = $state(false);
+  let revealed = $state(false);
+  let hintLines = $state.raw<readonly GestureHint[]>([]);
 
   let shownPages: PageGroup | null = null;
 
@@ -66,18 +68,7 @@
     `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
   );
 
-  const gestures = $derived<readonly Gesture[]>(
-    pannable
-      ? [
-          { keys: ['drag'], does: 'select a region' },
-          { keys: ['space', 'drag'], does: 'pan' },
-          { keys: ['middle', 'drag'], does: 'pan' },
-        ]
-      : [
-          { keys: ['drag'], does: 'select a region' },
-          { keys: ['+'], does: 'zoom in to pan' },
-        ],
-  );
+  const pending = $derived(hintsToShow(pagedHints(pannable), learnedGestures(), revealed));
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
@@ -87,6 +78,11 @@
 
   function glowOn(index: ImageIndex): readonly ImageRect[] {
     return glow.filter((region) => region.index === index).map((region) => region.rect);
+  }
+
+  function selected(regions: readonly ImageRegion[]): void {
+    learnGesture('select');
+    select(regions);
   }
 
   function framesNow(): Frames | null {
@@ -156,12 +152,17 @@
       .exhaustive();
   }
 
+  function zoomed(next: Viewport): void {
+    fit = 'free';
+    settle(next);
+    if (pannable) learnGesture('zoom-to-pan');
+  }
+
   function stepZoom(factor: number): void {
     const sizes = framesNow();
     if (sizes === null) return;
 
-    fit = 'free';
-    settle(zoomAt(viewport, factor, sizes.frame.width / 2, sizes.frame.height / 2));
+    zoomed(zoomAt(viewport, factor, sizes.frame.width / 2, sizes.frame.height / 2));
   }
 
   function scrolled(delta: number, mode: number, extent: number): number {
@@ -203,8 +204,7 @@
     const dy = scrolled(event.deltaY, event.deltaMode, box.height);
 
     if (event.ctrlKey || event.metaKey) {
-      fit = 'free';
-      settle(
+      zoomed(
         zoomAt(
           viewport,
           Math.exp(-dy / WHEEL_ZOOM_SPAN),
@@ -245,6 +245,7 @@
   function onpointermove(event: PointerEvent): void {
     const moving = grab;
     if (moving !== null && moving.id === event.pointerId) {
+      learnGesture(moving.bySpace ? 'space-pan' : 'middle-pan');
       grab = { id: moving.id, x: event.clientX, y: event.clientY, bySpace: moving.bySpace };
       settle(panBy(viewport, event.clientX - moving.x, event.clientY - moving.y));
       return;
@@ -282,6 +283,12 @@
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (handlesOwnKeys(event.target)) return;
 
+    if (event.key === '?') {
+      event.preventDefault();
+      revealed = !revealed;
+      return;
+    }
+
     if (event.key === ' ') {
       if (handlesOwnSpace(event.target)) return;
       event.preventDefault();
@@ -315,6 +322,11 @@
   function onblur(): void {
     dropSpace();
   }
+
+  $effect(() => {
+    const lines = pending;
+    if (lines.length > 0) hintLines = lines;
+  });
 
   $effect(() => {
     const outer = frame;
@@ -376,18 +388,18 @@
       arrangement="row"
       pointerTypes="any"
       suppressed={spaceHeld}
-      {select}
+      select={selected}
       {clear}
     />
 
-    <p class="hint" aria-hidden="true">
-      {#each gestures as gesture (gesture.keys.join('+'))}
+    <p class="hint" class:hushed={pending.length === 0} aria-hidden="true">
+      {#each hintLines as hint (hint.keys.join('+'))}
         <span class="gesture">
-          {#each gesture.keys as key, step (key)}
+          {#each hint.keys as key, step (key)}
             {#if step > 0}<span class="join">+</span>{/if}
             <span class="cap">{key}</span>
           {/each}
-          <span class="does">{gesture.does}</span>
+          <span class="does">{hint.does}</span>
         </span>
       {/each}
     </p>
@@ -400,7 +412,6 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: var(--s-5);
     background: var(--c-viewer-gradient);
   }
 
@@ -448,9 +459,22 @@
     align-items: center;
     gap: var(--s-1) var(--s-3);
     margin: 0;
+    padding: var(--s-2) var(--s-3);
+    opacity: 1;
+    transition: opacity 240ms ease;
     color: var(--c-text-10);
     font-size: 10.5px;
     pointer-events: none;
+  }
+
+  .hint.hushed {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hint {
+      transition: none;
+    }
   }
 
   .gesture {
