@@ -59,7 +59,10 @@
   });
 
   $effect(() => {
-    if (asked !== null) void view.goToImage(id, asked);
+    const at = asked;
+    const book = id;
+    if (at === null) return;
+    untrack(() => void view.goToImage(book, at));
   });
 
   $effect(() => {
