@@ -83,7 +83,7 @@ async function buildFrom(
   });
 }
 
-export function createFileSourceBuilder(): SourceBuilder {
+function createFileSourceBuilder(): SourceBuilder {
   return {
     async build(
       files: readonly File[],
@@ -99,3 +99,5 @@ export function createFileSourceBuilder(): SourceBuilder {
     },
   };
 }
+
+export { createFileSourceBuilder };

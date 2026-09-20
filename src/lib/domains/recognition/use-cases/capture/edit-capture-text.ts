@@ -4,12 +4,12 @@ import { editedCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
 import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
 
-export type EditCaptureTextDeps = {
+type EditCaptureTextDeps = {
   readonly captures: CaptureRepository;
   readonly now: () => number;
 };
 
-export async function editCaptureText(
+async function editCaptureText(
   deps: EditCaptureTextDeps,
   capture: Capture,
   text: string,
@@ -20,3 +20,6 @@ export async function editCaptureText(
 
   return ok(edited);
 }
+
+export { editCaptureText };
+export type { EditCaptureTextDeps };

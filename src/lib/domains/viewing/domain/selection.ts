@@ -3,31 +3,31 @@ import { normalize, screenRect } from '$lib/shared/geometry';
 import type { ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 
-export type Point = { readonly x: number; readonly y: number };
+type Point = { readonly x: number; readonly y: number };
 
-export const MIN_SELECTION_PX = 12;
+const MIN_SELECTION_PX = 12;
 
 function isFinitePoint(point: Point): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
 
-export function selectionFrom(from: Point, to: Point): ScreenRect {
+function selectionFrom(from: Point, to: Point): ScreenRect {
   if (!isFinitePoint(from) || !isFinitePoint(to)) return screenRect(0, 0, 0, 0);
 
   return normalize(screenRect(from.x, from.y, to.x - from.x, to.y - from.y));
 }
 
-export function isUsableSelection(selection: ScreenRect): boolean {
+function isUsableSelection(selection: ScreenRect): boolean {
   const rect = normalize(selection);
   return rect.width >= MIN_SELECTION_PX && rect.height >= MIN_SELECTION_PX;
 }
 
-export function isTap(from: Point, to: Point): boolean {
+function isTap(from: Point, to: Point): boolean {
   const moved = selectionFrom(from, to);
   return moved.width < MIN_SELECTION_PX && moved.height < MIN_SELECTION_PX;
 }
 
-export function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement): Size {
+function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement): Size {
   const stacked = arrangement === 'column';
   let width = 0;
   let height = 0;
@@ -45,3 +45,6 @@ export function selectionSize(regions: readonly ImageRegion[], arrangement: Arra
 
   return { width, height };
 }
+
+export { MIN_SELECTION_PX, selectionFrom, isUsableSelection, isTap, selectionSize };
+export type { Point };

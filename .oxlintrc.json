@@ -12,9 +12,20 @@
     "unicorn/require-module-specifiers": "off",
     "unicorn/consistent-function-scoping": "off",
     "import/no-unassigned-import": "off",
-    "import/consistent-type-specifier-style": ["error", "prefer-top-level"]
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+    "import/exports-last": "error",
+    "import/group-exports": "error"
   },
   "env": {
     "builtin": true
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.svelte"],
+      "rules": {
+        "import/exports-last": "off",
+        "import/group-exports": "off"
+      }
+    }
+  ]
 }

@@ -3,7 +3,7 @@ import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book/book';
 
-export async function openStoredPageSource(
+async function openStoredPageSource(
   sourceKind: SourceKind,
   blob: Blob,
 ): Promise<Result<PageSource, PageSourceError>> {
@@ -18,3 +18,5 @@ export async function openStoredPageSource(
     })
     .exhaustive();
 }
+
+export { openStoredPageSource };

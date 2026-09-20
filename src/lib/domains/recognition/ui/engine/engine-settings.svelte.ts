@@ -23,10 +23,9 @@ import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-stor
 
 const FULL_PERCENT = 100;
 
-export const REMOVAL_WARNING =
-  'The next selection you read downloads it again. Nothing else is deleted.';
+const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
 
-export function storageFailureNote(error: ModelStorageError): string {
+function storageFailureNote(error: ModelStorageError): string {
   return match(error)
     .with(
       { kind: 'cache-unavailable' },
@@ -36,7 +35,7 @@ export function storageFailureNote(error: ModelStorageError): string {
     .exhaustive();
 }
 
-export function loadFigure(load: ModelLoad | null): string {
+function loadFigure(load: ModelLoad | null): string {
   if (load === null) return 'starting…';
 
   const percent = Math.round(load.fraction * FULL_PERCENT);
@@ -45,13 +44,13 @@ export function loadFigure(load: ModelLoad | null): string {
   return `${megabytes(load.loadedBytes)} / ${megabytes(load.totalBytes)} MB · ${percent}%`;
 }
 
-export function cancelHint(load: ModelLoad | null): string {
+function cancelHint(load: ModelLoad | null): string {
   return load?.source === 'network'
     ? 'Pausing keeps every byte already fetched, even if you close the app. Cancelling discards the part-downloaded file.'
     : 'The weights stay on this device. Cancelling only stops opening them.';
 }
 
-export function partialFigure(partial: PartialReport | null, stored = false): string | null {
+function partialFigure(partial: PartialReport | null, stored = false): string | null {
   if (partial === null || !isPartlyDownloaded(partial)) return null;
 
   const files = `${partial.files} ${partial.files === 1 ? 'file' : 'files'}`;
@@ -62,13 +61,13 @@ export function partialFigure(partial: PartialReport | null, stored = false): st
     : `${held}, kept for a resume`;
 }
 
-export function resumeLabel(partial: PartialReport | null): string {
+function resumeLabel(partial: PartialReport | null): string {
   return partial !== null && isPartlyDownloaded(partial)
     ? `Resume the download · ${megabytes(partial.bytes)} MB already here`
     : 'Resume the download';
 }
 
-export function storedFigure(report: ModelStorageReport): string {
+function storedFigure(report: ModelStorageReport): string {
   if (report.files === 0) return 'Not downloaded';
 
   const files = `${report.files} ${report.files === 1 ? 'file' : 'files'}`;
@@ -78,11 +77,11 @@ export function storedFigure(report: ModelStorageReport): string {
   return isStored(report) ? held : `${held}, but not the weights`;
 }
 
-export function engineLanguages(): readonly Language[] {
+function engineLanguages(): readonly Language[] {
   return LANGUAGES.filter((language) => modelsFor(language).length > 0);
 }
 
-export class EngineSettingsView {
+class EngineSettingsView {
   language = $state.raw<Language | null>(null);
   models = $state.raw<readonly ModelFootprint[]>([]);
   selected = $state.raw<string | null>(null);
@@ -344,3 +343,15 @@ export class EngineSettingsView {
     return this.#generation;
   }
 }
+
+export {
+  REMOVAL_WARNING,
+  storageFailureNote,
+  loadFigure,
+  cancelHint,
+  partialFigure,
+  resumeLabel,
+  storedFigure,
+  engineLanguages,
+  EngineSettingsView,
+};

@@ -6,21 +6,21 @@ const PARTIAL_CONTENT = 206;
 
 const RANGE_NOT_SATISFIABLE = 416;
 
-export type PartAppend = {
+type PartAppend = {
   write(bytes: Uint8Array): void;
   close(): void;
 };
 
-export type PartialFiles = {
+type PartialFiles = {
   sizeOf(key: string): Promise<number>;
   fileOf(key: string): Promise<Blob | null>;
   openAppend(key: string, from: number): Promise<PartAppend>;
   remove(key: string): Promise<void>;
 };
 
-export type RangedFetch = (input: string, init?: RequestInit) => Promise<Response>;
+type RangedFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
-export type ResumableOptions = {
+type ResumableOptions = {
   readonly fetch: RangedFetch;
   readonly store: PartialFiles;
   readonly chunkBytes?: number | undefined;
@@ -29,7 +29,7 @@ export type ResumableOptions = {
   readonly onBytes?: ((bytes: number) => void) | undefined;
 };
 
-export type ByteSpan = {
+type ByteSpan = {
   readonly from: number;
   readonly to: number;
   readonly total: number;
@@ -49,7 +49,7 @@ type Transfer = {
   append: PartAppend | null;
 };
 
-export function contentRange(header: string | null): ByteSpan | null {
+function contentRange(header: string | null): ByteSpan | null {
   if (header === null) return null;
 
   const matched = /^bytes\s+(\d+)-(\d+)\/(\d+)$/.exec(header.trim());
@@ -192,7 +192,7 @@ function resumingBody(state: Transfer, options: ResumableOptions): ReadableStrea
   });
 }
 
-export async function fetchResumable(url: string, options: ResumableOptions): Promise<Response> {
+async function fetchResumable(url: string, options: ResumableOptions): Promise<Response> {
   const chunkBytes = options.chunkBytes ?? DEFAULT_CHUNK_BYTES;
   const key = partialName(url);
   const store = options.store;
@@ -246,3 +246,6 @@ export async function fetchResumable(url: string, options: ResumableOptions): Pr
 
   return assembled(resumingBody(state, options), opened, span.total);
 }
+
+export { contentRange, fetchResumable };
+export type { PartAppend, PartialFiles, RangedFetch, ResumableOptions, ByteSpan };

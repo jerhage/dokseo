@@ -2,7 +2,7 @@ import type { Language } from '$lib/shared/language';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Book, BookEdit } from '../domain/book/book';
 
-export type BookForm = {
+type BookForm = {
   title: string;
   language: Language;
   layoutKind: LayoutKind;
@@ -10,7 +10,7 @@ export type BookForm = {
   pagePairing: PagePairing;
 };
 
-export function bookForm(book: Book): BookForm {
+function bookForm(book: Book): BookForm {
   return {
     title: book.title,
     language: book.language,
@@ -20,7 +20,7 @@ export function bookForm(book: Book): BookForm {
   };
 }
 
-export function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
+function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   const edit: {
     title?: string;
     language?: Language;
@@ -38,3 +38,6 @@ export function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
 
   return edit;
 }
+
+export { bookForm, changedFields };
+export type { BookForm };

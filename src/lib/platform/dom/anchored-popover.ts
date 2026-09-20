@@ -4,7 +4,7 @@ const EDGE = 8;
 
 type Anchor = () => HTMLElement | null;
 
-export function anchoredTo(
+function anchoredTo(
   sheet: HTMLElement,
   anchor: Anchor,
 ): { update(next: Anchor): void; destroy(): void } {
@@ -51,3 +51,5 @@ export function anchoredTo(
     },
   };
 }
+
+export { anchoredTo };

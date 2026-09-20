@@ -10,7 +10,7 @@ import type { RecognizerSetup } from '../../domain/engine/recognizer-setup';
 import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
 import type { OcrFailure, OcrReply, OcrRequest } from '../../../../../workers/ocr-worker-protocol';
 
-export type WorkerOcrOptions = {
+type WorkerOcrOptions = {
   readonly readSetup: () => Promise<RecognizerSetup | null>;
   readonly startWorker?: () => Worker;
   readonly onProgress?: (load: ModelLoad) => void;
@@ -69,7 +69,7 @@ function unreadable(error: ModelLoadError): RecognitionError {
     .exhaustive();
 }
 
-export function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognizer {
+function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognizer {
   const start = options.startWorker;
   const pending = new Map<number, Settle>();
 
@@ -216,3 +216,6 @@ export function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRe
 
   return { id: options.id, prepare, cancel, recognize };
 }
+
+export { createWorkerRecognizer };
+export type { WorkerOcrOptions };

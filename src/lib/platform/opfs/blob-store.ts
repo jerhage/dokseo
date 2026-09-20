@@ -1,19 +1,17 @@
 import { describeCause } from '$lib/shared/cause';
-import { directoryNamed, flatName, isMissing } from './directory';
+import { directoryNamed, flatName, isAvailable, isMissing } from './directory';
 
 const DIRECTORY = 'blobs';
 
 const WRITE_CHUNK_BYTES = 4 * 1024 * 1024;
 
-export type BytesWritten = (written: number, total: number) => void;
-
-export { isAvailable } from './directory';
+type BytesWritten = (written: number, total: number) => void;
 
 function directory(): Promise<FileSystemDirectoryHandle> {
   return directoryNamed(DIRECTORY);
 }
 
-export async function put(
+async function put(
   key: string,
   blob: Blob,
   onWritten: BytesWritten = () => undefined,
@@ -37,7 +35,7 @@ export async function put(
   }
 }
 
-export async function get(key: string): Promise<Blob | null> {
+async function get(key: string): Promise<Blob | null> {
   const name = flatName(key);
   const parent = await directory();
   try {
@@ -49,7 +47,7 @@ export async function get(key: string): Promise<Blob | null> {
   }
 }
 
-export async function totalBytes(): Promise<number> {
+async function totalBytes(): Promise<number> {
   const parent = await directory();
   let total = 0;
   for await (const handle of parent.values()) {
@@ -58,7 +56,7 @@ export async function totalBytes(): Promise<number> {
   return total;
 }
 
-export async function remove(key: string): Promise<void> {
+async function remove(key: string): Promise<void> {
   const name = flatName(key);
   const parent = await directory();
   try {
@@ -68,3 +66,6 @@ export async function remove(key: string): Promise<void> {
     throw new Error(`Key "${name}" could not be removed: ${describeCause(cause)}`, { cause });
   }
 }
+
+export { isAvailable, put, get, totalBytes, remove };
+export type { BytesWritten };

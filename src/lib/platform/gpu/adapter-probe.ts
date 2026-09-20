@@ -1,4 +1,4 @@
-export type GpuReport = {
+type GpuReport = {
   readonly available: boolean;
   readonly description: string | null;
 };
@@ -10,7 +10,7 @@ function describe(info: GPUAdapterInfo | undefined): string | null {
   return parts.length === 0 ? null : parts.join(' ');
 }
 
-export async function probeGpu(): Promise<GpuReport> {
+async function probeGpu(): Promise<GpuReport> {
   try {
     const adapter = await navigator.gpu?.requestAdapter();
     if (adapter === null || adapter === undefined) return { available: false, description: null };
@@ -19,3 +19,6 @@ export async function probeGpu(): Promise<GpuReport> {
     return { available: false, description: null };
   }
 }
+
+export { probeGpu };
+export type { GpuReport };

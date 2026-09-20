@@ -40,7 +40,7 @@ async function collect(entry: FileSystemEntry, prefix: string, into: File[]): Pr
   }
 }
 
-export async function filesFromDataTransfer(transfer: DataTransfer): Promise<readonly File[]> {
+async function filesFromDataTransfer(transfer: DataTransfer): Promise<readonly File[]> {
   const entries = [...transfer.items]
     .filter((item) => item.kind === 'file')
     .map((item) => item.webkitGetAsEntry())
@@ -52,3 +52,5 @@ export async function filesFromDataTransfer(transfer: DataTransfer): Promise<rea
   for (const entry of entries) await collect(entry, '', files);
   return files;
 }
+
+export { filesFromDataTransfer };

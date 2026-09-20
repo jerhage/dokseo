@@ -4,12 +4,12 @@ import { takenCapture } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
 
-export type SaveCaptureDeps = {
+type SaveCaptureDeps = {
   readonly captures: CaptureRepository;
   readonly now: () => number;
 };
 
-export async function saveCapture(
+async function saveCapture(
   deps: SaveCaptureDeps,
   draft: CaptureDraft,
 ): Promise<Result<Capture, CaptureError>> {
@@ -19,3 +19,6 @@ export async function saveCapture(
 
   return ok(capture);
 }
+
+export { saveCapture };
+export type { SaveCaptureDeps };

@@ -8,7 +8,7 @@ function unsupported(): Error {
   return new Error('IndexedDB is unavailable in this environment');
 }
 
-export function openDatabase(
+function openDatabase(
   name: string,
   version: number,
   upgrade: (db: IDBDatabase) => void,
@@ -59,15 +59,11 @@ function transact<T>(
   });
 }
 
-export function getRecord<T>(
-  db: IDBDatabase,
-  store: string,
-  key: IDBValidKey,
-): Promise<T | undefined> {
+function getRecord<T>(db: IDBDatabase, store: string, key: IDBValidKey): Promise<T | undefined> {
   return transact(db, store, 'readonly', (objectStore) => objectStore.get(key));
 }
 
-export async function putRecord<T>(
+async function putRecord<T>(
   db: IDBDatabase,
   store: string,
   value: T,
@@ -76,19 +72,15 @@ export async function putRecord<T>(
   await transact(db, store, 'readwrite', (objectStore) => objectStore.put(value, key));
 }
 
-export async function deleteRecord(
-  db: IDBDatabase,
-  store: string,
-  key: IDBValidKey,
-): Promise<void> {
+async function deleteRecord(db: IDBDatabase, store: string, key: IDBValidKey): Promise<void> {
   await transact(db, store, 'readwrite', (objectStore) => objectStore.delete(key));
 }
 
-export function listRecords<T>(db: IDBDatabase, store: string): Promise<T[]> {
+function listRecords<T>(db: IDBDatabase, store: string): Promise<T[]> {
   return transact(db, store, 'readonly', (objectStore) => objectStore.getAll());
 }
 
-export function listByIndex<T>(
+function listByIndex<T>(
   db: IDBDatabase,
   store: string,
   index: string,
@@ -97,7 +89,7 @@ export function listByIndex<T>(
   return transact(db, store, 'readonly', (objectStore) => objectStore.index(index).getAll(key));
 }
 
-export async function deleteByIndex(
+async function deleteByIndex(
   db: IDBDatabase,
   store: string,
   index: string,
@@ -111,3 +103,13 @@ export async function deleteByIndex(
     return matching;
   });
 }
+
+export {
+  openDatabase,
+  getRecord,
+  putRecord,
+  deleteRecord,
+  listRecords,
+  listByIndex,
+  deleteByIndex,
+};

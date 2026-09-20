@@ -8,11 +8,11 @@ import type { LibraryError, LibraryRepository } from '../domain/book/library-rep
 import type { SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 
-export type OpenFileError =
+type OpenFileError =
   | { readonly kind: 'source'; readonly error: SourceBuildError }
   | { readonly kind: 'storage'; readonly error: LibraryError };
 
-export type OpenFileDeps = {
+type OpenFileDeps = {
   readonly repository: LibraryRepository;
   readonly builder: SourceBuilder;
   readonly requestPersistence: () => Promise<boolean>;
@@ -20,7 +20,7 @@ export type OpenFileDeps = {
   readonly newId: () => string;
 };
 
-export async function openFile(
+async function openFile(
   deps: OpenFileDeps,
   files: readonly File[],
   report: UploadReport = () => undefined,
@@ -65,3 +65,6 @@ export async function openFile(
 
   return ok(book);
 }
+
+export { openFile };
+export type { OpenFileError, OpenFileDeps };

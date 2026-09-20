@@ -4,7 +4,7 @@ import type { ImageIndex } from '$lib/shared/ids';
 import type { Size } from '$lib/shared/geometry';
 import type { PagePairing } from '$lib/shared/layout-kind';
 
-export type PageGroup = readonly ImageIndex[];
+type PageGroup = readonly ImageIndex[];
 
 const WIDE_ASPECT_RATIO = 1;
 
@@ -34,10 +34,7 @@ function pairsFrom(sizes: readonly (Size | null)[], start: number): readonly Pag
   return groups;
 }
 
-export function pairPages(
-  sizes: readonly (Size | null)[],
-  pairing: PagePairing,
-): readonly PageGroup[] {
+function pairPages(sizes: readonly (Size | null)[], pairing: PagePairing): readonly PageGroup[] {
   if (sizes.length === 0) return [];
 
   return match(pairing)
@@ -47,6 +44,9 @@ export function pairPages(
     .exhaustive();
 }
 
-export function groupContaining(groups: readonly PageGroup[], index: ImageIndex): number {
+function groupContaining(groups: readonly PageGroup[], index: ImageIndex): number {
   return groups.findIndex((group) => group.includes(index));
 }
+
+export { pairPages, groupContaining };
+export type { PageGroup };

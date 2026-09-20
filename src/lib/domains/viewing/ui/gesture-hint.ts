@@ -1,6 +1,6 @@
-export type ReaderGesture = 'select' | 'space-pan' | 'middle-pan' | 'zoom-to-pan';
+type ReaderGesture = 'select' | 'space-pan' | 'middle-pan' | 'zoom-to-pan';
 
-export type GestureHint = {
+type GestureHint = {
   readonly keys: readonly string[];
   readonly does: string;
   readonly teaches: ReaderGesture | null;
@@ -21,15 +21,15 @@ const WHEN_FITTED: readonly GestureHint[] = [
   { keys: ['+'], does: 'zoom in to pan', teaches: 'zoom-to-pan' },
 ];
 
-export function isReaderGesture(value: string): value is ReaderGesture {
+function isReaderGesture(value: string): value is ReaderGesture {
   return READER_GESTURES.has(value);
 }
 
-export function pagedHints(pannable: boolean): readonly GestureHint[] {
+function pagedHints(pannable: boolean): readonly GestureHint[] {
   return pannable ? WHEN_PANNABLE : WHEN_FITTED;
 }
 
-export function hintsToShow(
+function hintsToShow(
   chromeShown: boolean,
   hints: readonly GestureHint[],
   learned: readonly ReaderGesture[],
@@ -42,3 +42,6 @@ export function hintsToShow(
 
   return pending.length === 0 ? [] : [...pending, RECALL];
 }
+
+export { isReaderGesture, pagedHints, hintsToShow };
+export type { ReaderGesture, GestureHint };

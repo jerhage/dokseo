@@ -1,6 +1,6 @@
 import { describeCause } from '$lib/shared/cause';
 
-export async function decodeImage(blob: Blob): Promise<ImageBitmap> {
+async function decodeImage(blob: Blob): Promise<ImageBitmap> {
   try {
     return await createImageBitmap(blob);
   } catch (cause) {
@@ -11,3 +11,5 @@ export async function decodeImage(blob: Blob): Promise<ImageBitmap> {
     );
   }
 }
+
+export { decodeImage };

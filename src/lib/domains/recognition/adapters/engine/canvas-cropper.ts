@@ -105,9 +105,11 @@ async function cropRegions(
   }
 }
 
-export function createCanvasCropper(beginTrace: TraceFactory = noTrace): RegionCropper {
+function createCanvasCropper(beginTrace: TraceFactory = noTrace): RegionCropper {
   return {
     crop: (source, regions, arrangement) =>
       cropRegions(beginTrace('crop'), source, regions, arrangement),
   };
 }
+
+export { createCanvasCropper };

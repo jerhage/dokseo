@@ -4,13 +4,13 @@ import type { ModelConsentError, ModelConsentStore } from '../../domain/model/mo
 import { setupChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
 
-export type GrantModelConsentDeps = {
+type GrantModelConsentDeps = {
   readonly consent: ModelConsentStore;
   readonly setups: RecognizerSetupStore;
   readonly requestPersistence: () => Promise<boolean>;
 };
 
-export async function grantModelConsent(
+async function grantModelConsent(
   deps: GrantModelConsentDeps,
   language: Language,
 ): Promise<Result<void, ModelConsentError>> {
@@ -20,3 +20,6 @@ export async function grantModelConsent(
   await deps.requestPersistence();
   return await deps.consent.recordGrant(language, chosen.model);
 }
+
+export { grantModelConsent };
+export type { GrantModelConsentDeps };

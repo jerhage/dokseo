@@ -9,7 +9,7 @@ import {
 } from './model-weights';
 import type { EncoderDecoderPrecision } from './model-weights';
 
-export type ModelFootprint = {
+type ModelFootprint = {
   readonly modelId: string;
   readonly engine: string;
   readonly label: string;
@@ -27,7 +27,7 @@ const RUNTIME_DOWNLOAD_BYTES = 6_596_832;
 
 const RUNTIME_ON_DISK_BYTES = 26_861_777;
 
-export const JAPANESE_OCR_MODEL: ModelFootprint = {
+const JAPANESE_OCR_MODEL: ModelFootprint = {
   modelId: 'kimchireader/manga-ocr-onnx-q8',
   engine: 'manga-ocr',
   label: 'manga-ocr base, quantized throughout',
@@ -42,7 +42,7 @@ export const JAPANESE_OCR_MODEL: ModelFootprint = {
   runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
 };
 
-export const JAPANESE_FULL_DECODER_MODEL: ModelFootprint = {
+const JAPANESE_FULL_DECODER_MODEL: ModelFootprint = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
   engine: 'manga-ocr',
   label: 'manga-ocr base, full-precision decoder',
@@ -56,7 +56,7 @@ export const JAPANESE_FULL_DECODER_MODEL: ModelFootprint = {
   runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
 };
 
-export const KOREAN_OCR_MODEL: ModelFootprint = {
+const KOREAN_OCR_MODEL: ModelFootprint = {
   modelId: 'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
   engine: 'PP-OCRv5',
   label: 'PP-OCRv5 mobile',
@@ -76,50 +76,68 @@ const KNOWN_MODELS: readonly ModelFootprint[] = [
   KOREAN_OCR_MODEL,
 ];
 
-export function everyModel(): readonly ModelFootprint[] {
+function everyModel(): readonly ModelFootprint[] {
   return KNOWN_MODELS;
 }
 
-export function engineName(modelId: string): string {
+function engineName(modelId: string): string {
   return KNOWN_MODELS.find((known) => known.modelId === modelId)?.engine ?? modelId;
 }
 
-export function knownModel(modelId: string): ModelFootprint | null {
+function knownModel(modelId: string): ModelFootprint | null {
   return KNOWN_MODELS.find((known) => known.modelId === modelId) ?? null;
 }
 
-export function reads(footprint: ModelFootprint, language: Language): boolean {
+function reads(footprint: ModelFootprint, language: Language): boolean {
   return footprint.languages.includes(language);
 }
 
-export function modelFootprint(language: Language): ModelFootprint | null {
+function modelFootprint(language: Language): ModelFootprint | null {
   return match(language)
     .with('ja', () => JAPANESE_OCR_MODEL)
     .with('ko', () => KOREAN_OCR_MODEL)
     .exhaustive();
 }
 
-export function modelsFor(language: Language): readonly ModelFootprint[] {
+function modelsFor(language: Language): readonly ModelFootprint[] {
   return KNOWN_MODELS.filter((known) => reads(known, language));
 }
 
-export function chosenModel(language: Language, modelId: string | null): ModelFootprint | null {
+function chosenModel(language: Language, modelId: string | null): ModelFootprint | null {
   const offered = modelsFor(language);
   return offered.find((known) => known.modelId === modelId) ?? offered[0] ?? null;
 }
 
-export function weightsMb(footprint: ModelFootprint): number {
+function weightsMb(footprint: ModelFootprint): number {
   return megabytes(footprint.weightsBytes);
 }
 
-export function runtimeMb(footprint: ModelFootprint): number {
+function runtimeMb(footprint: ModelFootprint): number {
   return megabytes(footprint.runtimeDownloadBytes);
 }
 
-export function downloadMb(footprint: ModelFootprint): number {
+function downloadMb(footprint: ModelFootprint): number {
   return megabytes(footprint.weightsBytes + footprint.runtimeDownloadBytes);
 }
 
-export function onDiskMb(footprint: ModelFootprint): number {
+function onDiskMb(footprint: ModelFootprint): number {
   return megabytes(footprint.weightsBytes + footprint.runtimeOnDiskBytes);
 }
+
+export {
+  JAPANESE_OCR_MODEL,
+  JAPANESE_FULL_DECODER_MODEL,
+  KOREAN_OCR_MODEL,
+  everyModel,
+  engineName,
+  knownModel,
+  reads,
+  modelFootprint,
+  modelsFor,
+  chosenModel,
+  weightsMb,
+  runtimeMb,
+  downloadMb,
+  onDiskMb,
+};
+export type { ModelFootprint };

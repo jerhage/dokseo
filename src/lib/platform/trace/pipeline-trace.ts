@@ -1,22 +1,22 @@
-export type Trace = {
+type Trace = {
   step(name: string, detail: Record<string, unknown>): void;
   image(name: string, bitmap: ImageBitmap): void;
   end(): void;
 };
 
-export type TraceFactory = (label: string) => Trace;
+type TraceFactory = (label: string) => Trace;
 
 const TRACE_IMAGE_EDGE = 320;
 
 const BASE64_CHUNK = 0x8000;
 
-export const NO_TRACE: Trace = {
+const NO_TRACE: Trace = {
   step: (): void => undefined,
   image: (): void => undefined,
   end: (): void => undefined,
 };
 
-export const noTrace: TraceFactory = () => NO_TRACE;
+const noTrace: TraceFactory = () => NO_TRACE;
 
 let opened = 0;
 
@@ -61,7 +61,7 @@ function styleFor(width: number, height: number, url: string): string {
   ].join('; ');
 }
 
-export function beginTrace(label: string): Trace {
+function beginTrace(label: string): Trace {
   if (!import.meta.env.DEV) return NO_TRACE;
 
   opened += 1;
@@ -112,3 +112,6 @@ export function beginTrace(label: string): Trace {
     },
   };
 }
+
+export { NO_TRACE, noTrace, beginTrace };
+export type { Trace, TraceFactory };

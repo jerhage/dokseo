@@ -45,7 +45,7 @@ function describing(what: string, tally: Tally): string {
   return `${what} · ${tallyDetail(tally)}`;
 }
 
-export type ReadStorageAccountDeps = {
+type ReadStorageAccountDeps = {
   readonly stores: OriginStores;
   readonly estimate: () => Promise<{ usage: number; quota: number } | null>;
   readonly persisted: () => Promise<boolean>;
@@ -140,7 +140,7 @@ function storedParts(files: readonly StoredFile[]): readonly StoragePart[] {
   ];
 }
 
-export async function readStorageAccount(
+async function readStorageAccount(
   deps: ReadStorageAccountDeps,
 ): Promise<Result<StorageAccount, OriginStoresError>> {
   const surveyed = await deps.stores.survey();
@@ -156,3 +156,6 @@ export async function readStorageAccount(
   const [space, persisted] = await Promise.all([deps.estimate(), deps.persisted()]);
   return ok(accountOf(parts, space, persisted));
 }
+
+export { readStorageAccount };
+export type { ReadStorageAccountDeps };

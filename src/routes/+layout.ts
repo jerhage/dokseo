@@ -1,2 +1,4 @@
-export const ssr = false;
-export const prerender = false;
+const ssr = false;
+const prerender = false;
+
+export { ssr, prerender };

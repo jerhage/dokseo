@@ -8,12 +8,12 @@ import type {
 import { setupChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
 
-export type ReadModelConsentDeps = {
+type ReadModelConsentDeps = {
   readonly consent: ModelConsentStore;
   readonly setups: RecognizerSetupStore;
 };
 
-export async function readModelConsent(
+async function readModelConsent(
   deps: ReadModelConsentDeps,
   language: Language,
 ): Promise<Result<ModelConsentDecision, ModelConsentError>> {
@@ -22,3 +22,6 @@ export async function readModelConsent(
 
   return await deps.consent.decisionFor(language, chosen.model);
 }
+
+export { readModelConsent };
+export type { ReadModelConsentDeps };

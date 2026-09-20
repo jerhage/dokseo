@@ -32,7 +32,7 @@ function qualified(verb: string, stage: UploadStage): string {
   return `${verb} — ${parts.join(' · ')}`;
 }
 
-export function uploadCountText(stage: UploadStage): string | null {
+function uploadCountText(stage: UploadStage): string | null {
   const count = uploadCount(stage);
   if (count === null) return null;
 
@@ -41,7 +41,7 @@ export function uploadCountText(stage: UploadStage): string | null {
   return `${count.done.toLocaleString()} / ${count.total.toLocaleString()} ${noun}`;
 }
 
-export function uploadStageText(stage: UploadStage): string {
+function uploadStageText(stage: UploadStage): string {
   return match(stage)
     .with({ kind: 'inspecting' }, () => 'Reading the drop')
     .with({ kind: 'packing' }, (packing) => qualified('Packing the images', packing))
@@ -50,3 +50,5 @@ export function uploadStageText(stage: UploadStage): string {
     .with({ kind: 'covering' }, () => 'Rendering the cover')
     .exhaustive();
 }
+
+export { uploadCountText, uploadStageText };

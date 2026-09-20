@@ -29,9 +29,9 @@ import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
 
-export const NOTHING_READ = 'Nothing was read in that selection.';
+const NOTHING_READ = 'Nothing was read in that selection.';
 
-export const READING_SELECTION = 'Reading the selection.';
+const READING_SELECTION = 'Reading the selection.';
 
 const FULL_PERCENT = 100;
 
@@ -39,16 +39,16 @@ function loadPercent(load: ModelLoad): number {
   return Math.round(load.fraction * FULL_PERCENT);
 }
 
-export function modelLoadNote(load: ModelLoad): string {
+function modelLoadNote(load: ModelLoad): string {
   return `${loadVerb(load.source)} the model · ${loadPercent(load)}%`;
 }
 
-export function modelLoadAnnouncement(load: ModelLoad | null): string {
+function modelLoadAnnouncement(load: ModelLoad | null): string {
   if (load === null) return READING_SELECTION;
   return `${loadVerb(load.source)} the recognition model, ${loadPercent(load)} percent.`;
 }
 
-export type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
+type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
 
 type Taken = {
   readonly id: CaptureId;
@@ -60,9 +60,9 @@ type Settled =
   | { readonly status: 'empty' }
   | { readonly status: 'failed'; readonly message: string };
 
-export type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
+type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
 
-export type ConsentRequest = {
+type ConsentRequest = {
   readonly language: Language;
   readonly footprint: ModelFootprint;
 };
@@ -127,7 +127,7 @@ function cardOf(capture: Capture): PanelCapture {
   };
 }
 
-export class CaptureView {
+class CaptureView {
   captures = $state.raw<readonly PanelCapture[]>([]);
   progress = $state.raw<ModelLoad | null>(null);
   session = $state.raw<RecognizerSession | null>(null);
@@ -512,3 +512,6 @@ export class CaptureView {
     );
   }
 }
+
+export { NOTHING_READ, READING_SELECTION, modelLoadNote, modelLoadAnnouncement, CaptureView };
+export type { CaptureStatus, PanelCapture, ConsentRequest };

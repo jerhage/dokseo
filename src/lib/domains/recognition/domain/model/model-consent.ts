@@ -3,27 +3,27 @@ import type { Result } from '$lib/shared/result';
 import { reads } from './model-footprint';
 import type { ModelFootprint } from './model-footprint';
 
-export type ModelConsentDecision = 'granted' | 'undecided';
+type ModelConsentDecision = 'granted' | 'undecided';
 
-export type ModelConsentError =
+type ModelConsentError =
   | { readonly kind: 'storage-unavailable' }
   | { readonly kind: 'storage-failed'; readonly cause: string };
 
-export type StoredModelConsent = {
+type StoredModelConsent = {
   readonly language: Language;
   readonly grantedAt: number;
   readonly modelId?: string | null;
   readonly weightsBytes?: number | null;
 };
 
-export type ModelConsent = {
+type ModelConsent = {
   readonly language: Language;
   readonly grantedAt: number;
   readonly modelId: string | null;
   readonly weightsBytes: number | null;
 };
 
-export function consentFromStored(stored: StoredModelConsent): ModelConsent {
+function consentFromStored(stored: StoredModelConsent): ModelConsent {
   return {
     ...stored,
     modelId: stored.modelId ?? null,
@@ -31,7 +31,7 @@ export function consentFromStored(stored: StoredModelConsent): ModelConsent {
   };
 }
 
-export function grantedConsent(
+function grantedConsent(
   language: Language,
   grantedAt: number,
   model: ModelFootprint | null,
@@ -44,7 +44,7 @@ export function grantedConsent(
   };
 }
 
-export function decisionOf(
+function decisionOf(
   consent: ModelConsent | null,
   model: ModelFootprint | null,
 ): ModelConsentDecision {
@@ -54,7 +54,7 @@ export function decisionOf(
   return consent.modelId === model.modelId ? 'granted' : 'undecided';
 }
 
-export interface ModelConsentStore {
+interface ModelConsentStore {
   decisionFor(
     language: Language,
     model: ModelFootprint | null,
@@ -65,3 +65,12 @@ export interface ModelConsentStore {
   ): Promise<Result<void, ModelConsentError>>;
   forgetGrant(language: Language): Promise<Result<void, ModelConsentError>>;
 }
+
+export { consentFromStored, grantedConsent, decisionOf };
+export type {
+  ModelConsentDecision,
+  ModelConsentError,
+  StoredModelConsent,
+  ModelConsent,
+  ModelConsentStore,
+};

@@ -6,14 +6,17 @@ import type {
   SetupError,
 } from '../../domain/engine/recognizer-setup';
 
-export type SaveRecognizerSetupDeps = {
+type SaveRecognizerSetupDeps = {
   readonly setups: RecognizerSetupStore;
 };
 
-export function saveRecognizerSetup(
+function saveRecognizerSetup(
   deps: SaveRecognizerSetupDeps,
   language: Language,
   setup: RecognizerSetup,
 ): Promise<Result<void, SetupError>> {
   return deps.setups.write(language, setup);
 }
+
+export { saveRecognizerSetup };
+export type { SaveRecognizerSetupDeps };

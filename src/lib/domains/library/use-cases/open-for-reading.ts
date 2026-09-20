@@ -5,7 +5,7 @@ import type { Result } from '$lib/shared/result';
 import type { Book, SourceKind } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 
-export type OpenForReadingDeps = {
+type OpenForReadingDeps = {
   readonly repository: LibraryRepository;
   readonly openPages: (
     sourceKind: SourceKind,
@@ -13,13 +13,13 @@ export type OpenForReadingDeps = {
   ) => Promise<Result<PageSource, PageSourceError>>;
 };
 
-export type OpenedBook = { readonly book: Book; readonly pages: PageSource };
+type OpenedBook = { readonly book: Book; readonly pages: PageSource };
 
-export type OpenForReadingError =
+type OpenForReadingError =
   | { readonly kind: 'library'; readonly error: LibraryError }
   | { readonly kind: 'source'; readonly error: PageSourceError };
 
-export async function openForReading(
+async function openForReading(
   deps: OpenForReadingDeps,
   id: BookId,
 ): Promise<Result<OpenedBook, OpenForReadingError>> {
@@ -34,3 +34,6 @@ export async function openForReading(
 
   return ok({ book: found.value, pages: opened.value });
 }
+
+export { openForReading };
+export type { OpenForReadingDeps, OpenedBook, OpenForReadingError };

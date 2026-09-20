@@ -14,7 +14,7 @@ function failed(cause: unknown): Result<never, ModelStorageError> {
   return err({ kind: 'cache-failed', cause: describeCause(cause) });
 }
 
-export function createModelStorage(): ModelStorage {
+function createModelStorage(): ModelStorage {
   return {
     async measure(modelId: string): Promise<Result<ModelStorageReport, ModelStorageError>> {
       if (!isAvailable()) return unavailable();
@@ -42,3 +42,5 @@ export function createModelStorage(): ModelStorage {
     },
   };
 }
+
+export { createModelStorage };

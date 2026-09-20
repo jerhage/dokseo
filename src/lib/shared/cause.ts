@@ -1,4 +1,6 @@
-export function describeCause(cause: unknown): string {
+function describeCause(cause: unknown): string {
   if (cause instanceof Error) return cause.message;
   return String(cause);
 }
+
+export { describeCause };

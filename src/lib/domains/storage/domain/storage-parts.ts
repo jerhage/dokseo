@@ -1,15 +1,15 @@
 import type { StoredFile } from './origin-stores';
 
-export type StoragePart = {
+type StoragePart = {
   readonly key: string;
   readonly label: string;
   readonly detail: string;
   readonly bytes: number | null;
 };
 
-export type OriginSpace = { readonly usage: number; readonly quota: number } | null;
+type OriginSpace = { readonly usage: number; readonly quota: number } | null;
 
-export type StorageAccount = {
+type StorageAccount = {
   readonly parts: readonly StoragePart[];
   readonly measured: number;
   readonly unmeasured: readonly StoragePart[];
@@ -19,13 +19,13 @@ export type StorageAccount = {
   readonly persisted: boolean;
 };
 
-export type Tally = {
+type Tally = {
   readonly files: number;
   readonly bytes: number;
   readonly unsized: number;
 };
 
-export function tallyOf(held: readonly { readonly bytes: number | null }[]): Tally {
+function tallyOf(held: readonly { readonly bytes: number | null }[]): Tally {
   return {
     files: held.length,
     bytes: held.reduce((total, one) => total + (one.bytes ?? 0), 0),
@@ -33,35 +33,35 @@ export function tallyOf(held: readonly { readonly bytes: number | null }[]): Tal
   };
 }
 
-export function fileCount(files: number): string {
+function fileCount(files: number): string {
   return `${files} ${files === 1 ? 'file' : 'files'}`;
 }
 
-export function tallyDetail(tally: Tally): string {
+function tallyDetail(tally: Tally): string {
   const unsized = tally.unsized > 0 ? `, ${tally.unsized} of unreported size` : '';
   return `${fileCount(tally.files)}${unsized}`;
 }
 
-export function filesAt(files: readonly StoredFile[], place: string): readonly StoredFile[] {
+function filesAt(files: readonly StoredFile[], place: string): readonly StoredFile[] {
   return files.filter((file) => file.place === place);
 }
 
-export function filesElsewhere(
+function filesElsewhere(
   files: readonly StoredFile[],
   places: readonly string[],
 ): readonly StoredFile[] {
   return files.filter((file) => !places.includes(file.place));
 }
 
-export function measuredBytes(parts: readonly StoragePart[]): number {
+function measuredBytes(parts: readonly StoragePart[]): number {
   return parts.reduce((total, part) => total + (part.bytes ?? 0), 0);
 }
 
-export function unmeasuredParts(parts: readonly StoragePart[]): readonly StoragePart[] {
+function unmeasuredParts(parts: readonly StoragePart[]): readonly StoragePart[] {
   return parts.filter((part) => part.bytes === null);
 }
 
-export function accountOf(
+function accountOf(
   parts: readonly StoragePart[],
   space: OriginSpace,
   persisted: boolean,
@@ -78,3 +78,15 @@ export function accountOf(
     persisted,
   };
 }
+
+export {
+  tallyOf,
+  fileCount,
+  tallyDetail,
+  filesAt,
+  filesElsewhere,
+  measuredBytes,
+  unmeasuredParts,
+  accountOf,
+};
+export type { StoragePart, OriginSpace, StorageAccount, Tally };

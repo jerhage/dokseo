@@ -1,9 +1,9 @@
-export type CachedFile = {
+type CachedFile = {
   readonly url: string;
   readonly bytes: number | null;
 };
 
-export function isAvailable(): boolean {
+function isAvailable(): boolean {
   return typeof caches !== 'undefined';
 }
 
@@ -35,13 +35,13 @@ async function filesIn(cache: Cache): Promise<readonly CachedFile[]> {
   );
 }
 
-export async function cachedFiles(): Promise<readonly CachedFile[]> {
+async function cachedFiles(): Promise<readonly CachedFile[]> {
   const names = await caches.keys();
   const perCache = await Promise.all(names.map(async (name) => filesIn(await caches.open(name))));
   return perCache.flat();
 }
 
-export async function removeCached(urls: readonly string[]): Promise<readonly string[]> {
+async function removeCached(urls: readonly string[]): Promise<readonly string[]> {
   const removed: string[] = [];
 
   for (const name of await caches.keys()) {
@@ -53,3 +53,6 @@ export async function removeCached(urls: readonly string[]): Promise<readonly st
 
   return removed;
 }
+
+export { isAvailable, cachedFiles, removeCached };
+export type { CachedFile };

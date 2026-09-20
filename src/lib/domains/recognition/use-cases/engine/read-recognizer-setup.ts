@@ -8,11 +8,11 @@ import type {
   SetupError,
 } from '../../domain/engine/recognizer-setup';
 
-export type ReadRecognizerSetupDeps = {
+type ReadRecognizerSetupDeps = {
   readonly setups: RecognizerSetupStore;
 };
 
-export async function readRecognizerSetup(
+async function readRecognizerSetup(
   deps: ReadRecognizerSetupDeps,
   language: Language,
 ): Promise<Result<RecognizerChoice, SetupError>> {
@@ -21,3 +21,6 @@ export async function readRecognizerSetup(
 
   return ok(setupChoice(language, stored));
 }
+
+export { readRecognizerSetup };
+export type { ReadRecognizerSetupDeps };

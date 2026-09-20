@@ -4,9 +4,9 @@ import type { Language } from '$lib/shared/language';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 
-export type SourceKind = 'images' | 'pdf' | 'archive';
+type SourceKind = 'images' | 'pdf' | 'archive';
 
-export type Book = {
+type Book = {
   readonly id: BookId;
   readonly title: string;
   readonly language: Language;
@@ -20,16 +20,16 @@ export type Book = {
   readonly position: ImageIndex;
 };
 
-export const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
+const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
 
-export function defaultPageFit(layoutKind: LayoutKind): PageFit {
+function defaultPageFit(layoutKind: LayoutKind): PageFit {
   return match(layoutKind)
     .with('continuous', () => 'width' as const)
     .with('paged', () => 'height' as const)
     .exhaustive();
 }
 
-export type BookEdit = {
+type BookEdit = {
   readonly title?: string;
   readonly language?: Language;
   readonly layoutKind?: LayoutKind;
@@ -45,7 +45,7 @@ function editedTitle(book: Book, edit: BookEdit): string {
   return trimmed.length === 0 ? book.title : trimmed;
 }
 
-export function applyEdit(book: Book, edit: BookEdit): Book {
+function applyEdit(book: Book, edit: BookEdit): Book {
   const layoutKind = edit.layoutKind ?? book.layoutKind;
   const pageFit = layoutKind === 'continuous' ? 'width' : (edit.pageFit ?? book.pageFit);
   return {
@@ -59,3 +59,6 @@ export function applyEdit(book: Book, edit: BookEdit): Book {
     position: edit.position ?? book.position,
   };
 }
+
+export { DEFAULT_PAGE_PAIRING, defaultPageFit, applyEdit };
+export type { SourceKind, Book, BookEdit };

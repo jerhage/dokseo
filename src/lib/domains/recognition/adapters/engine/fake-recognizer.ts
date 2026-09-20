@@ -35,7 +35,7 @@ function noSession(): Promise<Result<RecognizerSession, ModelLoadError>> {
   );
 }
 
-export function createFakeRecognizer(): TextRecognizer {
+function createFakeRecognizer(): TextRecognizer {
   return {
     id: 'fake',
     prepare: noSession,
@@ -43,3 +43,5 @@ export function createFakeRecognizer(): TextRecognizer {
     recognize: recognizeSize,
   };
 }
+
+export { createFakeRecognizer };

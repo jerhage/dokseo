@@ -5,13 +5,13 @@ import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { ModelStorage, ModelStorageError } from '../../domain/model/model-storage';
 import type { PartialDownloads } from '../../domain/model/partial-downloads';
 
-export type DeleteModelDeps = {
+type DeleteModelDeps = {
   readonly storage: ModelStorage;
   readonly partials: PartialDownloads;
   readonly consent: ModelConsentStore;
 };
 
-export async function deleteModel(
+async function deleteModel(
   deps: DeleteModelDeps,
   language: Language,
   modelId: string,
@@ -23,3 +23,6 @@ export async function deleteModel(
   await deps.consent.forgetGrant(language);
   return removed;
 }
+
+export { deleteModel };
+export type { DeleteModelDeps };

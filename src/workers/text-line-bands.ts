@@ -1,4 +1,4 @@
-export type TextBand = {
+type TextBand = {
   readonly top: number;
   readonly bottom: number;
 };
@@ -13,11 +13,7 @@ const MIN_BAND_SHARE = 0.02;
 
 const MAX_BANDS = 12;
 
-export function inkPerRow(
-  luma: ArrayLike<number>,
-  width: number,
-  height: number,
-): readonly number[] {
+function inkPerRow(luma: ArrayLike<number>, width: number, height: number): readonly number[] {
   const counts: number[] = Array.from({ length: Math.max(0, height) }, () => 0);
   if (width <= 0 || height <= 0) return counts;
 
@@ -48,7 +44,7 @@ export function inkPerRow(
   return counts;
 }
 
-export function bandsOfInk(counts: readonly number[]): readonly TextBand[] {
+function bandsOfInk(counts: readonly number[]): readonly TextBand[] {
   const height = counts.length;
   const peak = counts.reduce((most, one) => Math.max(most, one), 0);
   if (peak === 0) return [];
@@ -71,7 +67,7 @@ export function bandsOfInk(counts: readonly number[]): readonly TextBand[] {
   return bands;
 }
 
-export function textLineBands(
+function textLineBands(
   luma: ArrayLike<number>,
   width: number,
   height: number,
@@ -84,3 +80,6 @@ export function textLineBands(
 
   return bands;
 }
+
+export { inkPerRow, bandsOfInk, textLineBands };
+export type { TextBand };

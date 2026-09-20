@@ -1,6 +1,6 @@
 import { isAvailable } from './directory';
 
-export type StoredFile = {
+type StoredFile = {
   readonly place: string;
   readonly bytes: number | null;
 };
@@ -29,10 +29,13 @@ async function walk(
   }
 }
 
-export async function storedFiles(): Promise<readonly StoredFile[]> {
+async function storedFiles(): Promise<readonly StoredFile[]> {
   if (!isAvailable()) throw new Error('The origin private file system is unavailable');
 
   const found: StoredFile[] = [];
   await walk(await navigator.storage.getDirectory(), ROOT_PLACE, found);
   return found;
 }
+
+export { storedFiles };
+export type { StoredFile };

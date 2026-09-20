@@ -1,9 +1,9 @@
-export type OwnedBitmap = {
+type OwnedBitmap = {
   readonly bitmap: ImageBitmap;
   release(): ImageBitmap;
 } & Disposable;
 
-export function own(bitmap: ImageBitmap): OwnedBitmap {
+function own(bitmap: ImageBitmap): OwnedBitmap {
   let held = true;
 
   return {
@@ -19,3 +19,6 @@ export function own(bitmap: ImageBitmap): OwnedBitmap {
     },
   };
 }
+
+export { own };
+export type { OwnedBitmap };

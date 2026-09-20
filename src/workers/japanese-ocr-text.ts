@@ -1,3 +1,5 @@
-export function japaneseOcrText(decoded: string): string {
+function japaneseOcrText(decoded: string): string {
   return decoded.replace(/\s+/gu, '');
 }
+
+export { japaneseOcrText };

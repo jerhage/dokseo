@@ -13,7 +13,7 @@ const IMAGE_EXTENSIONS: ReadonlySet<string> = new Set([
 
 const JUNK_NAMES: ReadonlySet<string> = new Set(['.ds_store', 'thumbs.db']);
 
-export function isImageEntry(name: string): boolean {
+function isImageEntry(name: string): boolean {
   return IMAGE_EXTENSIONS.has(extensionOf(name));
 }
 
@@ -27,7 +27,9 @@ function isDirectory(name: string): boolean {
   return name.endsWith('/');
 }
 
-export function selectImageEntries(names: readonly string[]): readonly string[] {
+function selectImageEntries(names: readonly string[]): readonly string[] {
   const images = names.filter((name) => !isDirectory(name) && !isJunk(name) && isImageEntry(name));
   return images.toSorted(compareNatural);
 }
+
+export { isImageEntry, selectImageEntries };

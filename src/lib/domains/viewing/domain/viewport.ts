@@ -1,13 +1,13 @@
 import { match } from 'ts-pattern';
 import type { Size } from '$lib/shared/geometry';
 
-export type Viewport = { readonly zoom: number; readonly panX: number; readonly panY: number };
+type Viewport = { readonly zoom: number; readonly panX: number; readonly panY: number };
 
-export type FitMode = 'height' | 'width' | 'contain';
+type FitMode = 'height' | 'width' | 'contain';
 
-export const MIN_ZOOM = 0.1;
+const MIN_ZOOM = 0.1;
 
-export const MAX_ZOOM = 8;
+const MAX_ZOOM = 8;
 
 function isPositiveFinite(value: number): boolean {
   return Number.isFinite(value) && value > 0;
@@ -18,21 +18,16 @@ function fitRatio(frameExtent: number, contentExtent: number): number | null {
   return frameExtent / contentExtent;
 }
 
-export function clampZoom(zoom: number): number {
+function clampZoom(zoom: number): number {
   if (!isPositiveFinite(zoom)) return MIN_ZOOM;
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
 }
 
-export function panBy(viewport: Viewport, dx: number, dy: number): Viewport {
+function panBy(viewport: Viewport, dx: number, dy: number): Viewport {
   return { zoom: viewport.zoom, panX: viewport.panX + dx, panY: viewport.panY + dy };
 }
 
-export function zoomAt(
-  viewport: Viewport,
-  factor: number,
-  anchorX: number,
-  anchorY: number,
-): Viewport {
+function zoomAt(viewport: Viewport, factor: number, anchorX: number, anchorY: number): Viewport {
   const from = clampZoom(viewport.zoom);
   const zoom = clampZoom(from * factor);
   const applied = zoom / from;
@@ -77,13 +72,13 @@ function overflows(contentExtent: number, frameExtent: number, zoom: number): bo
   return scaled > frameExtent;
 }
 
-export function canPan(content: Size, frame: Size, zoom: number): boolean {
+function canPan(content: Size, frame: Size, zoom: number): boolean {
   return (
     overflows(content.width, frame.width, zoom) || overflows(content.height, frame.height, zoom)
   );
 }
 
-export function clampPan(viewport: Viewport, content: Size, frame: Size): Viewport {
+function clampPan(viewport: Viewport, content: Size, frame: Size): Viewport {
   return {
     zoom: viewport.zoom,
     panX: clampExtent(viewport.panX, content.width, frame.width, viewport.zoom),
@@ -91,7 +86,7 @@ export function clampPan(viewport: Viewport, content: Size, frame: Size): Viewpo
   };
 }
 
-export function centrePan(viewport: Viewport, content: Size, frame: Size): Viewport {
+function centrePan(viewport: Viewport, content: Size, frame: Size): Viewport {
   return {
     zoom: viewport.zoom,
     panX: centreExtent(viewport.panX, content.width, frame.width, viewport.zoom),
@@ -99,7 +94,7 @@ export function centrePan(viewport: Viewport, content: Size, frame: Size): Viewp
   };
 }
 
-export function fitZoom(content: Size, frame: Size, mode: FitMode): number {
+function fitZoom(content: Size, frame: Size, mode: FitMode): number {
   return match(mode)
     .with('height', () => {
       const ratio = fitRatio(frame.height, content.height);
@@ -117,3 +112,6 @@ export function fitZoom(content: Size, frame: Size, mode: FitMode): number {
     })
     .exhaustive();
 }
+
+export { MIN_ZOOM, MAX_ZOOM, clampZoom, panBy, zoomAt, canPan, clampPan, centrePan, fitZoom };
+export type { Viewport, FitMode };

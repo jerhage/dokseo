@@ -5,25 +5,25 @@ import { matchesQuery } from '$lib/shared/text-search';
 import { inBookOrder } from './capture-order';
 import { wrappedIndex } from './match-stepping';
 
-export type ArrivalCapture = {
+type ArrivalCapture = {
   readonly id: CaptureId;
   readonly regions: readonly ImageRegion[];
   readonly text: string;
 };
 
-export type Stepping<T> = {
+type Stepping<T> = {
   readonly ordinal: number;
   readonly total: number;
   readonly previous: T;
   readonly next: T;
 };
 
-export type Arrival<T> = {
+type Arrival<T> = {
   readonly at: T;
   readonly stepping: Stepping<T> | null;
 };
 
-export function matchesInBookOrder<T extends ArrivalCapture>(
+function matchesInBookOrder<T extends ArrivalCapture>(
   captures: readonly T[],
   query: string,
   direction: ReadingDirection,
@@ -34,7 +34,7 @@ export function matchesInBookOrder<T extends ArrivalCapture>(
   );
 }
 
-export function arrivalAt<T extends ArrivalCapture>(
+function arrivalAt<T extends ArrivalCapture>(
   captures: readonly T[],
   query: string | null,
   direction: ReadingDirection,
@@ -64,3 +64,6 @@ export function arrivalAt<T extends ArrivalCapture>(
     },
   };
 }
+
+export { matchesInBookOrder, arrivalAt };
+export type { ArrivalCapture, Stepping, Arrival };

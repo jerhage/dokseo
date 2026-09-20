@@ -1,9 +1,9 @@
-export type DecoderLogits = {
+type DecoderLogits = {
   readonly dims: readonly [number, number, number];
   readonly data: Float32Array;
 };
 
-export function mostLikelyToken(logits: DecoderLogits): number {
+function mostLikelyToken(logits: DecoderLogits): number {
   const [, positions, vocabulary] = logits.dims;
   const lastPosition = logits.data.subarray((positions - 1) * vocabulary, positions * vocabulary);
 
@@ -20,3 +20,6 @@ export function mostLikelyToken(logits: DecoderLogits): number {
 
   return best;
 }
+
+export { mostLikelyToken };
+export type { DecoderLogits };

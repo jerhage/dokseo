@@ -3,12 +3,12 @@ import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from './book';
 import type { SourceWriteReport } from '../ingest/upload-progress';
 
-export type LibraryError =
+type LibraryError =
   | { readonly kind: 'not-found'; readonly id: BookId }
   | { readonly kind: 'storage-unavailable' }
   | { readonly kind: 'storage-failed'; readonly cause: string };
 
-export interface LibraryRepository {
+interface LibraryRepository {
   list(): Promise<Result<readonly Book[], LibraryError>>;
   get(id: BookId): Promise<Result<Book, LibraryError>>;
   add(
@@ -23,3 +23,5 @@ export interface LibraryRepository {
   readCover(id: BookId): Promise<Result<Blob, LibraryError>>;
   storedBytes(): Promise<Result<number, LibraryError>>;
 }
+
+export type { LibraryError, LibraryRepository };

@@ -27,7 +27,7 @@ function failed(cause: unknown): Result<never, CaptureError> {
   return err({ kind: 'storage-failed', cause: describeCause(cause) });
 }
 
-export function createCaptureRepository(): CaptureRepository {
+function createCaptureRepository(): CaptureRepository {
   return {
     async listForBook(book: BookId): Promise<Result<readonly Capture[], CaptureError>> {
       if (!recordsAvailable()) return unavailable();
@@ -88,3 +88,5 @@ export function createCaptureRepository(): CaptureRepository {
     },
   };
 }
+
+export { createCaptureRepository };

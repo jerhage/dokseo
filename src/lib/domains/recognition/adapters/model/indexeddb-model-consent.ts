@@ -21,7 +21,7 @@ function failed(cause: unknown): Result<never, ModelConsentError> {
   return err({ kind: 'storage-failed', cause: describeCause(cause) });
 }
 
-export function createModelConsentStore(now: () => number = Date.now): ModelConsentStore {
+function createModelConsentStore(now: () => number = Date.now): ModelConsentStore {
   return {
     async decisionFor(
       language: Language,
@@ -68,3 +68,5 @@ export function createModelConsentStore(now: () => number = Date.now): ModelCons
     },
   };
 }
+
+export { createModelConsentStore };

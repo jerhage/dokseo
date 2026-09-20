@@ -1,10 +1,13 @@
-export type RecognizerDevice = 'webgpu' | 'wasm';
+type RecognizerDevice = 'webgpu' | 'wasm';
 
-export type RecognizerSession = {
+type RecognizerSession = {
   readonly modelId: string;
   readonly device: RecognizerDevice;
 };
 
-export function deviceName(device: RecognizerDevice): string {
+function deviceName(device: RecognizerDevice): string {
   return device === 'webgpu' ? 'GPU' : 'CPU';
 }
+
+export { deviceName };
+export type { RecognizerDevice, RecognizerSession };

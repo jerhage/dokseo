@@ -1,16 +1,16 @@
-export type CtcLogits = {
+type CtcLogits = {
   readonly dims: readonly [number, number, number];
   readonly data: Float32Array;
 };
 
-export type CtcReading = {
+type CtcReading = {
   readonly text: string;
   readonly confidence: number | null;
 };
 
 const BLANK_INDEX = 0;
 
-export function ctcReading(logits: CtcLogits, labels: readonly string[]): CtcReading {
+function ctcReading(logits: CtcLogits, labels: readonly string[]): CtcReading {
   const [, steps, classes] = logits.dims;
   const emitted: string[] = [];
   const scores: number[] = [];
@@ -43,7 +43,7 @@ export function ctcReading(logits: CtcLogits, labels: readonly string[]): CtcRea
   return { text: emitted.join(''), confidence };
 }
 
-export function joinedReading(readings: readonly CtcReading[]): CtcReading {
+function joinedReading(readings: readonly CtcReading[]): CtcReading {
   const said = readings.filter((reading) => reading.text.length > 0);
   if (said.length === 0) return { text: '', confidence: null };
 
@@ -55,3 +55,6 @@ export function joinedReading(readings: readonly CtcReading[]): CtcReading {
 
   return { text: said.map((reading) => reading.text).join('\n'), confidence };
 }
+
+export { ctcReading, joinedReading };
+export type { CtcLogits, CtcReading };

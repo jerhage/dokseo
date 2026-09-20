@@ -2,7 +2,7 @@ import type { SourceKind } from '../book/book';
 import { extensionOf } from './entry-path';
 import { isImageEntry } from './image-entries';
 
-export function detectSourceKind(names: readonly string[]): SourceKind | null {
+function detectSourceKind(names: readonly string[]): SourceKind | null {
   const [single] = names;
   if (names.length === 1 && single !== undefined) {
     const only = extensionOf(single);
@@ -12,3 +12,5 @@ export function detectSourceKind(names: readonly string[]): SourceKind | null {
   if (names.some(isImageEntry)) return 'images';
   return null;
 }
+
+export { detectSourceKind };

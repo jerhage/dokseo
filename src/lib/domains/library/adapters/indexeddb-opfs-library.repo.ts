@@ -62,7 +62,7 @@ async function discard(keys: BlobKeys): Promise<void> {
   await blobs.remove(keys.cover).catch(() => undefined);
 }
 
-export function createLibraryRepository(): LibraryRepository {
+function createLibraryRepository(): LibraryRepository {
   let connection: Promise<IDBDatabase> | null = null;
 
   const database = (): Promise<IDBDatabase> => {
@@ -186,3 +186,5 @@ export function createLibraryRepository(): LibraryRepository {
     },
   };
 }
+
+export { createLibraryRepository };

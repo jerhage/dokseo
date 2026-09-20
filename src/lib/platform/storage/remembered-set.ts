@@ -1,4 +1,4 @@
-export type RememberedSet = {
+type RememberedSet = {
   readonly values: () => readonly string[];
   readonly add: (value: string) => readonly string[];
 };
@@ -39,7 +39,7 @@ function write(key: string, values: readonly string[]): void {
   }
 }
 
-export function rememberedSet(key: string): RememberedSet {
+function rememberedSet(key: string): RememberedSet {
   let values = read(key);
 
   return {
@@ -53,3 +53,6 @@ export function rememberedSet(key: string): RememberedSet {
     },
   };
 }
+
+export { rememberedSet };
+export type { RememberedSet };

@@ -1,16 +1,16 @@
 import { downloadsModelPayload } from '$lib/domains/recognition/domain/model/model-load';
 import type { ModelLoadSource } from '$lib/domains/recognition/domain/model/model-load';
 
-export type Fetching = (input: string | URL, init?: unknown) => Promise<unknown>;
+type Fetching = (input: string | URL, init?: unknown) => Promise<unknown>;
 
-export function asksForOneRange(init: unknown): boolean {
+function asksForOneRange(init: unknown): boolean {
   if (typeof init !== 'object' || init === null) return false;
 
   const headers = (init as { headers?: unknown }).headers;
   return headers instanceof Headers && headers.has('Range');
 }
 
-export function watchModelLoadSource(env: { fetch: Fetching }): () => ModelLoadSource {
+function watchModelLoadSource(env: { fetch: Fetching }): () => ModelLoadSource {
   const direct = env.fetch;
   let source: ModelLoadSource = 'cache';
 
@@ -24,3 +24,6 @@ export function watchModelLoadSource(env: { fetch: Fetching }): () => ModelLoadS
 
   return () => source;
 }
+
+export { asksForOneRange, watchModelLoadSource };
+export type { Fetching };

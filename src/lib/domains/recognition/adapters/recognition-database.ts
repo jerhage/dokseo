@@ -4,13 +4,13 @@ const DATABASE_NAME = 'recognition';
 
 const DATABASE_VERSION = 3;
 
-export const CONSENT_STORE = 'model-consent';
+const CONSENT_STORE = 'model-consent';
 
-export const CAPTURE_STORE = 'captures';
+const CAPTURE_STORE = 'captures';
 
-export const CAPTURE_BOOK_INDEX = 'bookId';
+const CAPTURE_BOOK_INDEX = 'bookId';
 
-export const SETUP_STORE = 'recognizer-setup';
+const SETUP_STORE = 'recognizer-setup';
 
 function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(CONSENT_STORE)) {
@@ -29,11 +29,11 @@ function upgrade(db: IDBDatabase): void {
 
 let connection: Promise<IDBDatabase> | null = null;
 
-export function recordsAvailable(): boolean {
+function recordsAvailable(): boolean {
   return typeof indexedDB !== 'undefined';
 }
 
-export function recognitionDatabase(): Promise<IDBDatabase> {
+function recognitionDatabase(): Promise<IDBDatabase> {
   if (connection === null) {
     const opening = openDatabase(DATABASE_NAME, DATABASE_VERSION, upgrade);
     opening.catch(() => {
@@ -43,3 +43,12 @@ export function recognitionDatabase(): Promise<IDBDatabase> {
   }
   return connection;
 }
+
+export {
+  CONSENT_STORE,
+  CAPTURE_STORE,
+  CAPTURE_BOOK_INDEX,
+  SETUP_STORE,
+  recordsAvailable,
+  recognitionDatabase,
+};

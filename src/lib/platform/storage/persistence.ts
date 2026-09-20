@@ -3,7 +3,7 @@ function storageManager(): StorageManager | null {
   return navigator.storage ?? null;
 }
 
-export async function requestPersistence(): Promise<boolean> {
+async function requestPersistence(): Promise<boolean> {
   const storage = storageManager();
   if (typeof storage?.persist !== 'function') return false;
   try {
@@ -13,7 +13,7 @@ export async function requestPersistence(): Promise<boolean> {
   }
 }
 
-export async function isPersisted(): Promise<boolean> {
+async function isPersisted(): Promise<boolean> {
   const storage = storageManager();
   if (typeof storage?.persisted !== 'function') return false;
   try {
@@ -23,7 +23,7 @@ export async function isPersisted(): Promise<boolean> {
   }
 }
 
-export async function storageEstimate(): Promise<{ usage: number; quota: number } | null> {
+async function storageEstimate(): Promise<{ usage: number; quota: number } | null> {
   const storage = storageManager();
   if (typeof storage?.estimate !== 'function') return null;
   try {
@@ -34,3 +34,5 @@ export async function storageEstimate(): Promise<{ usage: number; quota: number 
     return null;
   }
 }
+
+export { requestPersistence, isPersisted, storageEstimate };

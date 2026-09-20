@@ -13,7 +13,7 @@ function unquoted(value: string): string {
   return value.slice(1, -1).replaceAll(`${QUOTE}${QUOTE}`, QUOTE);
 }
 
-export function characterDictionary(config: string): readonly string[] {
+function characterDictionary(config: string): readonly string[] {
   const lines = config.split('\n').map((line) => line.replace(/\r$/u, ''));
   const opened = lines.findIndex((line) => line.trim() === DICTIONARY_KEY);
   if (opened < 0) return [];
@@ -27,6 +27,8 @@ export function characterDictionary(config: string): readonly string[] {
   return entries;
 }
 
-export function ctcLabels(entries: readonly string[]): readonly string[] {
+function ctcLabels(entries: readonly string[]): readonly string[] {
   return [BLANK_LABEL, ...entries, SPACE_LABEL];
 }
+
+export { characterDictionary, ctcLabels };

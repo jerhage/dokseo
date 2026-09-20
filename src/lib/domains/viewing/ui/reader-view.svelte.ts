@@ -26,15 +26,15 @@ type OpenFailure = Extract<OpenOutcome, { readonly ok: false }>['error'];
 
 type EditFailure = Extract<EditOutcome, { readonly ok: false }>['error'];
 
-export type ReaderBook = OpenedBook['book'];
+type ReaderBook = OpenedBook['book'];
 
-export type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing';
+type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing';
 
-export type PlaceMirror = (index: ImageIndex) => void;
+type PlaceMirror = (index: ImageIndex) => void;
 
 const NO_PAGES: PageGroup = [];
 
-export const PLACE_SAVE_DELAY_MS = 500;
+const PLACE_SAVE_DELAY_MS = 500;
 
 type PendingSave = {
   readonly id: BookId;
@@ -82,7 +82,7 @@ function unmeasured(count: number): readonly (Size | null)[] {
   return Array.from({ length: Math.max(count, 0) }, () => null);
 }
 
-export class ReaderView {
+class ReaderView {
   status = $state<ReaderStatus>('idle');
   message = $state<string | null>(null);
   book = $state.raw<ReaderBook | null>(null);
@@ -372,3 +372,6 @@ export class ReaderView {
     this.#source = null;
   }
 }
+
+export { PLACE_SAVE_DELAY_MS, ReaderView };
+export type { ReaderBook, ReaderStatus, PlaceMirror };

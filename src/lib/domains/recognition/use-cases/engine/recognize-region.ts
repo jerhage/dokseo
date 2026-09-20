@@ -10,17 +10,17 @@ import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { CropError, RegionCropper } from '../../domain/engine/region-cropper';
 import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
 
-export type RecognizeRegionDeps = {
+type RecognizeRegionDeps = {
   readonly cropper: RegionCropper;
   readonly recognizer: TextRecognizer;
   readonly beginTrace?: TraceFactory;
 };
 
-export type RecognizeRegionError =
+type RecognizeRegionError =
   | { readonly kind: 'crop'; readonly error: CropError }
   | { readonly kind: 'recognition'; readonly error: RecognitionError };
 
-export async function recognizeRegion(
+async function recognizeRegion(
   deps: RecognizeRegionDeps,
   source: PageSource,
   regions: readonly ImageRegion[],
@@ -60,3 +60,6 @@ export async function recognizeRegion(
     trace.end();
   }
 }
+
+export { recognizeRegion };
+export type { RecognizeRegionDeps, RecognizeRegionError };

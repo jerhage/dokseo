@@ -6,30 +6,30 @@ import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 
 const UNMEASURABLE = 'not measurable';
 
-export function failureNote(error: OriginStoresError): string {
+function failureNote(error: OriginStoresError): string {
   return `What this app stores could not be read: ${error.cause}`;
 }
 
-export function partFigure(part: StoragePart): string {
+function partFigure(part: StoragePart): string {
   return part.bytes === null ? UNMEASURABLE : storedSize(part.bytes);
 }
 
-export function measuredFigure(account: StorageAccount): string {
+function measuredFigure(account: StorageAccount): string {
   return storedSize(account.measured);
 }
 
-export function originFigure(account: StorageAccount): string | null {
+function originFigure(account: StorageAccount): string | null {
   return account.usage === null ? null : storedSize(account.usage);
 }
 
-export function unnamedFigure(account: StorageAccount): string | null {
+function unnamedFigure(account: StorageAccount): string | null {
   const remainder = account.remainder;
   if (remainder === null) return null;
 
   return remainder < 0 ? `−${storedSize(-remainder)}` : storedSize(remainder);
 }
 
-export function unnamedNote(account: StorageAccount): string | null {
+function unnamedNote(account: StorageAccount): string | null {
   const remainder = account.remainder;
   if (remainder === null) return null;
 
@@ -45,19 +45,19 @@ export function unnamedNote(account: StorageAccount): string | null {
   return `bytes this app cannot name, including ${parts} above that cannot be measured`;
 }
 
-export function allowanceNote(account: StorageAccount): string | null {
+function allowanceNote(account: StorageAccount): string | null {
   return account.quota === null
     ? null
     : `The browser allows this app about ${megabytes(account.quota)} MB here.`;
 }
 
-export function persistenceNote(account: StorageAccount): string {
+function persistenceNote(account: StorageAccount): string {
   return account.persisted
     ? 'The browser has granted persistence, so it will not reclaim this space on its own.'
     : 'The browser has not granted persistence, so it may reclaim this space on its own.';
 }
 
-export class StorageSettingsView {
+class StorageSettingsView {
   account = $state.raw<StorageAccount | null>(null);
   message = $state.raw<string | null>(null);
 
@@ -98,3 +98,15 @@ export class StorageSettingsView {
     return this.#generation;
   }
 }
+
+export {
+  failureNote,
+  partFigure,
+  measuredFigure,
+  originFigure,
+  unnamedFigure,
+  unnamedNote,
+  allowanceNote,
+  persistenceNote,
+  StorageSettingsView,
+};

@@ -2,13 +2,13 @@ import type { ModelLoadSource } from '$lib/domains/recognition/domain/model/mode
 import type { RecognizerDevice } from '$lib/domains/recognition/domain/engine/recognizer-session';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 
-export type OcrRequest =
+type OcrRequest =
   | { readonly kind: 'open'; readonly id: number; readonly setup: RecognizerSetup }
   | { readonly kind: 'recognize'; readonly id: number; readonly image: ImageBitmap };
 
-export type OcrFailure = 'model-unavailable' | 'recognition-failed';
+type OcrFailure = 'model-unavailable' | 'recognition-failed';
 
-export type OcrReply =
+type OcrReply =
   | {
       readonly kind: 'recognized';
       readonly id: number;
@@ -34,3 +34,5 @@ export type OcrReply =
       readonly failure: OcrFailure;
       readonly cause: string;
     };
+
+export type { OcrRequest, OcrFailure, OcrReply };

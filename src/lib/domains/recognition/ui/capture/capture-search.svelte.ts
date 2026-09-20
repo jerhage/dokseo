@@ -3,9 +3,9 @@ import type { Capture } from '../../domain/capture/capture';
 import { matchesByBook, matchTally } from '../../domain/capture/capture-results';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 
-export type CaptureSearchStatus = 'idle' | 'loading' | 'ready' | 'failed';
+type CaptureSearchStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
-export class CaptureSearchView {
+class CaptureSearchView {
   captures = $state.raw<readonly Capture[]>([]);
   status = $state<CaptureSearchStatus>('idle');
 
@@ -47,3 +47,6 @@ export class CaptureSearchView {
     this.status = 'idle';
   }
 }
+
+export { CaptureSearchView };
+export type { CaptureSearchStatus };

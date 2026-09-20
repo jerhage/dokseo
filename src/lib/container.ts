@@ -104,11 +104,11 @@ import type { StorageAccount } from './domains/storage/domain/storage-parts';
 import { readStorageAccount } from './domains/storage/use-cases/read-storage-account';
 import type { ReadStorageAccountDeps } from './domains/storage/use-cases/read-storage-account';
 
-export type RecognitionProgress = (load: ModelLoad) => void;
+type RecognitionProgress = (load: ModelLoad) => void;
 
-export type RecognitionSessionReport = (session: RecognizerSession) => void;
+type RecognitionSessionReport = (session: RecognizerSession) => void;
 
-export type RecognitionNotices = {
+type RecognitionNotices = {
   readonly onProgress?: RecognitionProgress;
   readonly onSession?: RecognitionSessionReport;
 };
@@ -182,7 +182,7 @@ async function loadPaddleOcrRecognizer(language: Language): Promise<TextRecogniz
 
 const recognizers = new Map<Language, Promise<TextRecognizer>>();
 
-export function recognizerFor(language: Language): Promise<TextRecognizer> {
+function recognizerFor(language: Language): Promise<TextRecognizer> {
   const held = recognizers.get(language);
   if (held !== undefined) return held;
 
@@ -199,7 +199,7 @@ export function recognizerFor(language: Language): Promise<TextRecognizer> {
   return loading;
 }
 
-export type Container = {
+type Container = {
   readonly beginTrace: TraceFactory;
   readonly library: {
     readonly openFile: (
@@ -265,7 +265,7 @@ export type Container = {
   };
 };
 
-export function buildContainer(): Container {
+function buildContainer(): Container {
   const repository = createLibraryRepository();
 
   const openFileDeps: OpenFileDeps = {
@@ -414,3 +414,6 @@ export function buildContainer(): Container {
     },
   };
 }
+
+export { recognizerFor, buildContainer };
+export type { RecognitionProgress, RecognitionSessionReport, RecognitionNotices, Container };

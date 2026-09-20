@@ -5,7 +5,7 @@ import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { matchesQuery } from '$lib/shared/text-search';
 import { inBookOrder } from './capture-order';
 
-export type SearchedBook = {
+type SearchedBook = {
   readonly id: BookId;
   readonly title: string;
   readonly language: Language;
@@ -18,7 +18,7 @@ type Written = {
   readonly text: string;
 };
 
-export type BookMatches<T> = {
+type BookMatches<T> = {
   readonly book: SearchedBook;
   readonly captures: readonly T[];
 };
@@ -35,7 +35,7 @@ function heldByBook<T extends Written>(captures: readonly T[]): ReadonlyMap<Book
   return grouped;
 }
 
-export function matchesByBook<T extends Written>(
+function matchesByBook<T extends Written>(
   captures: readonly T[],
   books: readonly SearchedBook[],
   query: string,
@@ -49,6 +49,9 @@ export function matchesByBook<T extends Written>(
     .filter((matched) => matched.captures.length > 0);
 }
 
-export function matchTally<T>(matched: readonly BookMatches<T>[]): number {
+function matchTally<T>(matched: readonly BookMatches<T>[]): number {
   return matched.reduce((total, book) => total + book.captures.length, 0);
 }
+
+export { matchesByBook, matchTally };
+export type { SearchedBook, BookMatches };

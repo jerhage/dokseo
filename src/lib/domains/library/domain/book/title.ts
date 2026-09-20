@@ -1,6 +1,6 @@
 import { withoutExtension } from '../ingest/entry-path';
 
-export type TitleCandidate = { readonly name: string; readonly path: string };
+type TitleCandidate = { readonly name: string; readonly path: string };
 
 const FALLBACK_TITLE = 'Untitled';
 
@@ -12,9 +12,12 @@ function firstNonEmpty(...candidates: readonly string[]): string {
   return FALLBACK_TITLE;
 }
 
-export function suggestTitle(entries: readonly TitleCandidate[]): string {
+function suggestTitle(entries: readonly TitleCandidate[]): string {
   const first = entries[0];
   if (first === undefined) return FALLBACK_TITLE;
   const [folder = ''] = first.path.split('/');
   return firstNonEmpty(folder, withoutExtension(first.name));
 }
+
+export { suggestTitle };
+export type { TitleCandidate };

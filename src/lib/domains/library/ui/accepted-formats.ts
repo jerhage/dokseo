@@ -1,5 +1,7 @@
-export const ACCEPT_ATTRIBUTE = 'image/*,.zip,.cbz,.pdf';
+const ACCEPT_ATTRIBUTE = 'image/*,.zip,.cbz,.pdf';
 
-export const ACCEPTED_SUMMARY = 'Images, ZIP, CBZ or PDF';
+const ACCEPTED_SUMMARY = 'Images, ZIP, CBZ or PDF';
 
-export const DROP_INVITATION = 'Drop pages, a folder or an archive';
+const DROP_INVITATION = 'Drop pages, a folder or an archive';
+
+export { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION };

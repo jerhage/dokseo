@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import type { ModelLoad, ModelLoadError } from './model-load';
 import type { RecognizerSession } from '../engine/recognizer-session';
 
-export type DownloadState =
+type DownloadState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'loading'; readonly load: ModelLoad | null }
   | { readonly kind: 'paused'; readonly load: ModelLoad | null }
@@ -10,7 +10,7 @@ export type DownloadState =
   | { readonly kind: 'cancelled' }
   | { readonly kind: 'failed'; readonly cause: string };
 
-export type DownloadEvent =
+type DownloadEvent =
   | { readonly kind: 'started' }
   | { readonly kind: 'advanced'; readonly load: ModelLoad }
   | { readonly kind: 'opened'; readonly session: RecognizerSession }
@@ -18,9 +18,9 @@ export type DownloadEvent =
   | { readonly kind: 'stopped' }
   | { readonly kind: 'settled'; readonly error: ModelLoadError };
 
-export const IDLE: DownloadState = { kind: 'idle' };
+const IDLE: DownloadState = { kind: 'idle' };
 
-export function downloadStep(state: DownloadState, event: DownloadEvent): DownloadState {
+function downloadStep(state: DownloadState, event: DownloadEvent): DownloadState {
   return match(event)
     .with({ kind: 'started' }, (): DownloadState => ({ kind: 'loading', load: null }))
     .with({ kind: 'advanced' }, (advanced): DownloadState =>
@@ -48,6 +48,9 @@ export function downloadStep(state: DownloadState, event: DownloadEvent): Downlo
     .exhaustive();
 }
 
-export function isRunning(state: DownloadState): boolean {
+function isRunning(state: DownloadState): boolean {
   return state.kind === 'loading';
 }
+
+export { IDLE, downloadStep, isRunning };
+export type { DownloadState, DownloadEvent };

@@ -63,9 +63,7 @@ async function renderToBitmap(pdf: PDFDocumentProxy, pageNumber: number): Promis
   return canvas.transferToImageBitmap();
 }
 
-export async function openPdfPageSource(
-  source: Blob,
-): Promise<Result<PageSource, PageSourceError>> {
+async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageSourceError>> {
   let task: PDFDocumentLoadingTask | undefined;
   let transport: BlobRangeTransport;
   let pdf: PDFDocumentProxy;
@@ -114,3 +112,5 @@ export async function openPdfPageSource(
     [Symbol.dispose]: close,
   });
 }
+
+export { openPdfPageSource };

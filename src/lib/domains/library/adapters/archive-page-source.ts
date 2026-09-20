@@ -21,9 +21,7 @@ function orderedImages(entries: readonly Entry[]): FileEntry[] {
   return ordered;
 }
 
-export async function openArchivePageSource(
-  source: Blob,
-): Promise<Result<PageSource, PageSourceError>> {
+async function openArchivePageSource(source: Blob): Promise<Result<PageSource, PageSourceError>> {
   const reader = new ZipReader(new BlobReader(source));
   let images: FileEntry[];
   try {
@@ -65,3 +63,5 @@ export async function openArchivePageSource(
     [Symbol.dispose]: close,
   });
 }
+
+export { openArchivePageSource };

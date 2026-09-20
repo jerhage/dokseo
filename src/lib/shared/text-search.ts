@@ -10,11 +10,11 @@ const STANDALONE_MARKS = new Map<string, string>([
   ['゜', SEMI_VOICED],
 ]);
 
-export type FoldedText = { readonly text: string; readonly origins: readonly number[] };
+type FoldedText = { readonly text: string; readonly origins: readonly number[] };
 
-export type TextMatch = { readonly start: number; readonly end: number };
+type TextMatch = { readonly start: number; readonly end: number };
 
-export type TextSegment = { readonly text: string; readonly matched: boolean };
+type TextSegment = { readonly text: string; readonly matched: boolean };
 
 function widthFolded(character: string): string {
   return STANDALONE_MARKS.get(character) ?? character.normalize('NFKC');
@@ -34,7 +34,7 @@ function composedWith(previous: string, mark: string): string {
   return composed.length === 1 ? composed : '';
 }
 
-export function foldForSearch(text: string): FoldedText {
+function foldForSearch(text: string): FoldedText {
   const origins: number[] = [];
   let folded = '';
   let offset = 0;
@@ -59,7 +59,7 @@ export function foldForSearch(text: string): FoldedText {
   return { text: folded, origins };
 }
 
-export function textMatches(text: string, query: string): readonly TextMatch[] {
+function textMatches(text: string, query: string): readonly TextMatch[] {
   const needle = foldForSearch(query.trim()).text;
   if (needle.length === 0) return [];
 
@@ -79,11 +79,11 @@ export function textMatches(text: string, query: string): readonly TextMatch[] {
   }
 }
 
-export function matchesQuery(text: string, query: string): boolean {
+function matchesQuery(text: string, query: string): boolean {
   return textMatches(text, query).length > 0;
 }
 
-export function segmentsOf(text: string, matches: readonly TextMatch[]): readonly TextSegment[] {
+function segmentsOf(text: string, matches: readonly TextMatch[]): readonly TextSegment[] {
   const segments: TextSegment[] = [];
   let cursor = 0;
 
@@ -100,3 +100,6 @@ export function segmentsOf(text: string, matches: readonly TextMatch[]): readonl
   if (cursor < text.length) segments.push({ text: text.slice(cursor), matched: false });
   return segments;
 }
+
+export { foldForSearch, textMatches, matchesQuery, segmentsOf };
+export type { FoldedText, TextMatch, TextSegment };

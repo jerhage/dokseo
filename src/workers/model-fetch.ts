@@ -13,7 +13,7 @@ import type { Fetching } from './model-load-source';
 import { fetchResumable } from './resumable-fetch';
 import type { PartialFiles, RangedFetch } from './resumable-fetch';
 
-export type ModelFetchOptions = {
+type ModelFetchOptions = {
   readonly modelId: string;
   readonly store?: PartialFiles | undefined;
   readonly fetch?: RangedFetch | undefined;
@@ -32,7 +32,7 @@ function overTheWire(input: string, init?: RequestInit): Promise<Response> {
   return fetch(input, init);
 }
 
-export function installModelFetch(
+function installModelFetch(
   env: { fetch: Fetching },
   options: ModelFetchOptions,
 ): () => ModelLoadSource {
@@ -75,3 +75,6 @@ export function installModelFetch(
 
   return sourceNow;
 }
+
+export { installModelFetch };
+export type { ModelFetchOptions };

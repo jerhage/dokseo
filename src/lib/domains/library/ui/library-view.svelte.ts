@@ -10,7 +10,7 @@ import type { UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 
-export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
+type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
 function describeLibraryError(error: LibraryError): string {
   return match(error)
@@ -49,7 +49,7 @@ function newestFirst(books: readonly Book[]): readonly Book[] {
   return books.toSorted((a, b) => b.addedAt - a.addedAt);
 }
 
-export class LibraryView {
+class LibraryView {
   books = $state.raw<readonly Book[]>([]);
   covers = $state.raw<ReadonlyMap<BookId, string>>(new Map());
   status = $state<LibraryStatus>('idle');
@@ -181,3 +181,6 @@ export class LibraryView {
     this.covers = new Map(covers);
   }
 }
+
+export { LibraryView };
+export type { LibraryStatus };

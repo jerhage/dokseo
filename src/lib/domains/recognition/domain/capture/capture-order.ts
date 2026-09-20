@@ -25,9 +25,11 @@ function comparePlaces(earlier: Placed, later: Placed, direction: ReadingDirecti
   return acrossReading(first.rect, direction) - acrossReading(second.rect, direction);
 }
 
-export function inBookOrder<T extends Placed>(
+function inBookOrder<T extends Placed>(
   captures: readonly T[],
   direction: ReadingDirection,
 ): readonly T[] {
   return captures.toSorted((earlier, later) => comparePlaces(earlier, later, direction));
 }
+
+export { inBookOrder };

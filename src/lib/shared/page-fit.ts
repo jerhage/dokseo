@@ -1,1 +1,3 @@
-export type PageFit = 'height' | 'width';
+type PageFit = 'height' | 'width';
+
+export type { PageFit };

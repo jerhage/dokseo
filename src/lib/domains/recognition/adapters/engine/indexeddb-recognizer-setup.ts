@@ -20,7 +20,7 @@ function failed(cause: unknown): Result<never, SetupError> {
   return err({ kind: 'storage-failed', cause: describeCause(cause) });
 }
 
-export function createRecognizerSetupStore(): RecognizerSetupStore {
+function createRecognizerSetupStore(): RecognizerSetupStore {
   return {
     async read(language: Language): Promise<Result<StoredRecognizerSetup | null, SetupError>> {
       if (!recordsAvailable()) return unavailable();
@@ -47,3 +47,5 @@ export function createRecognizerSetupStore(): RecognizerSetupStore {
     },
   };
 }
+
+export { createRecognizerSetupStore };

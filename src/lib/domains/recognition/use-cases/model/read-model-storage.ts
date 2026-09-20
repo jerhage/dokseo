@@ -7,7 +7,7 @@ import type { PartialReport } from '../../domain/model/model-partial';
 import type { ModelStorage, ModelStorageError } from '../../domain/model/model-storage';
 import type { PartialDownloads } from '../../domain/model/partial-downloads';
 
-export type ModelStorageSnapshot = {
+type ModelStorageSnapshot = {
   readonly report: ModelStorageReport;
   readonly partial: PartialReport | null;
   readonly usage: number | null;
@@ -15,7 +15,7 @@ export type ModelStorageSnapshot = {
   readonly persisted: boolean;
 };
 
-export type ReadModelStorageDeps = {
+type ReadModelStorageDeps = {
   readonly storage: ModelStorage;
   readonly partials: PartialDownloads;
   readonly estimate: () => Promise<{ usage: number; quota: number } | null>;
@@ -35,7 +35,7 @@ async function withoutStalePartials(
   return discarded.ok ? partialReportOf([], modelId) : measured.value;
 }
 
-export async function readModelStorage(
+async function readModelStorage(
   deps: ReadModelStorageDeps,
   modelId: string,
 ): Promise<Result<ModelStorageSnapshot, ModelStorageError>> {
@@ -55,3 +55,6 @@ export async function readModelStorage(
 
   return ok(snapshot);
 }
+
+export { readModelStorage };
+export type { ModelStorageSnapshot, ReadModelStorageDeps };

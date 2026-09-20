@@ -1,16 +1,16 @@
-export const LINE_HEIGHT = 48;
+const LINE_HEIGHT = 48;
 
-export const MIN_LINE_WIDTH = 320;
+const MIN_LINE_WIDTH = 320;
 
-export const MAX_LINE_WIDTH = 3200;
+const MAX_LINE_WIDTH = 3200;
 
-export type LineGeometry = {
+type LineGeometry = {
   readonly drawnWidth: number;
   readonly tensorWidth: number;
   readonly height: number;
 };
 
-export function lineGeometry(width: number, height: number): LineGeometry {
+function lineGeometry(width: number, height: number): LineGeometry {
   const ratio = width > 0 && height > 0 ? width / height : 1;
   const drawnWidth = Math.min(MAX_LINE_WIDTH, Math.max(1, Math.ceil(LINE_HEIGHT * ratio)));
 
@@ -20,3 +20,6 @@ export function lineGeometry(width: number, height: number): LineGeometry {
     height: LINE_HEIGHT,
   };
 }
+
+export { LINE_HEIGHT, MIN_LINE_WIDTH, MAX_LINE_WIDTH, lineGeometry };
+export type { LineGeometry };

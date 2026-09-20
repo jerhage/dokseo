@@ -25,7 +25,7 @@ async function everyPart(): Promise<readonly PartialFile[]> {
   return stored.map((part) => ({ url: urlOfPartial(part.key), bytes: part.bytes }));
 }
 
-export function createPartialDownloads(): PartialDownloads {
+function createPartialDownloads(): PartialDownloads {
   return {
     async measure(modelId: string): Promise<Result<PartialReport, PartialError>> {
       if (!isAvailable()) return unavailable();
@@ -49,3 +49,5 @@ export function createPartialDownloads(): PartialDownloads {
     },
   };
 }
+
+export { createPartialDownloads };

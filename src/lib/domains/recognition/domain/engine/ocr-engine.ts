@@ -8,9 +8,9 @@ import type { ModelFootprint } from '../model/model-footprint';
 import { deviceName } from './recognizer-session';
 import type { RecognizerSession } from './recognizer-session';
 
-export type OcrEngineId = 'on-device' | 'ocr-server' | 'openai-endpoint';
+type OcrEngineId = 'on-device' | 'ocr-server' | 'openai-endpoint';
 
-export type OcrEngine = {
+type OcrEngine = {
   readonly id: OcrEngineId;
   readonly name: string;
   readonly about: string;
@@ -20,7 +20,7 @@ export type OcrEngine = {
   readonly footnote: string;
 };
 
-export const ON_DEVICE_ENGINE: OcrEngine = {
+const ON_DEVICE_ENGINE: OcrEngine = {
   id: 'on-device',
   name: 'On-device',
   about: 'the on-device engine',
@@ -31,7 +31,7 @@ export const ON_DEVICE_ENGINE: OcrEngine = {
   footnote: 'Nobody has timed this in a browser yet, so no speed is claimed.',
 };
 
-export const OCR_ENGINES: readonly OcrEngine[] = [
+const OCR_ENGINES: readonly OcrEngine[] = [
   ON_DEVICE_ENGINE,
   {
     id: 'ocr-server',
@@ -55,17 +55,17 @@ export const OCR_ENGINES: readonly OcrEngine[] = [
   },
 ];
 
-export type TradeAspect = 'privacy' | 'cost' | 'setup' | 'quality';
+type TradeAspect = 'privacy' | 'cost' | 'setup' | 'quality';
 
-export type TradeVerdict = 'good' | 'caveat';
+type TradeVerdict = 'good' | 'caveat';
 
-export type TradeOff = {
+type TradeOff = {
   readonly aspect: TradeAspect;
   readonly verdict: TradeVerdict;
   readonly value: string;
 };
 
-export function tradeAspectName(aspect: TradeAspect): string {
+function tradeAspectName(aspect: TradeAspect): string {
   return match(aspect)
     .with('privacy', () => 'Privacy')
     .with('cost', () => 'Cost')
@@ -125,10 +125,7 @@ const ENDPOINT_TRADE_OFFS: readonly TradeOff[] = [
   },
 ];
 
-export function tradeOffsOf(
-  engine: OcrEngineId,
-  model: ModelFootprint | null,
-): readonly TradeOff[] {
+function tradeOffsOf(engine: OcrEngineId, model: ModelFootprint | null): readonly TradeOff[] {
   return match(engine)
     .with('on-device', () => onDeviceTradeOffs(model))
     .with('ocr-server', () => SERVER_TRADE_OFFS)
@@ -136,7 +133,7 @@ export function tradeOffsOf(
     .exhaustive();
 }
 
-export function engineMismatch(
+function engineMismatch(
   session: RecognizerSession | null,
   language: Language | null,
 ): string | null {
@@ -148,15 +145,15 @@ export function engineMismatch(
   return `${running.label} does not read ${languageName(language)}, so what it returns will not be this book's text.`;
 }
 
-export type EngineTone = 'ready' | 'busy' | 'quiet' | 'bad';
+type EngineTone = 'ready' | 'busy' | 'quiet' | 'bad';
 
-export type EngineStatus = {
+type EngineStatus = {
   readonly tone: EngineTone;
   readonly label: string;
   readonly note: string;
 };
 
-export type EngineState = {
+type EngineState = {
   readonly stored: boolean;
   readonly opening: boolean;
   readonly load: ModelLoad | null;
@@ -167,13 +164,13 @@ export type EngineState = {
   readonly partlyDownloaded: boolean;
 };
 
-export const NOT_INSTALLED: EngineStatus = {
+const NOT_INSTALLED: EngineStatus = {
   tone: 'quiet',
   label: 'Not installed',
   note: 'This app cannot talk to one yet, so it cannot be chosen.',
 };
 
-export function engineStatus(state: EngineState): EngineStatus {
+function engineStatus(state: EngineState): EngineStatus {
   if (state.load !== null) {
     return {
       tone: 'busy',
@@ -247,3 +244,23 @@ export function engineStatus(state: EngineState): EngineStatus {
     note: 'The weights are not on this device. Your first capture downloads them, once you agree.',
   };
 }
+
+export {
+  ON_DEVICE_ENGINE,
+  OCR_ENGINES,
+  tradeAspectName,
+  tradeOffsOf,
+  engineMismatch,
+  NOT_INSTALLED,
+  engineStatus,
+};
+export type {
+  OcrEngineId,
+  OcrEngine,
+  TradeAspect,
+  TradeVerdict,
+  TradeOff,
+  EngineTone,
+  EngineStatus,
+  EngineState,
+};

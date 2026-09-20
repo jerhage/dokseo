@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import type { SourceKind } from '../book/book';
 
-export type UploadStage =
+type UploadStage =
   | { readonly kind: 'inspecting' }
   | { readonly kind: 'packing'; readonly packed: number; readonly total: number }
   | { readonly kind: 'opening'; readonly sourceKind: SourceKind }
@@ -14,19 +14,19 @@ export type UploadStage =
       readonly elapsedMs: number;
     };
 
-export type UploadReport = (stage: UploadStage) => void;
+type UploadReport = (stage: UploadStage) => void;
 
-export type SourceWriteReport = (writtenBytes: number, totalBytes: number) => void;
+type SourceWriteReport = (writtenBytes: number, totalBytes: number) => void;
 
-export type UploadCount = { readonly done: number | null; readonly total: number };
+type UploadCount = { readonly done: number | null; readonly total: number };
 
 const ESTIMATE_MIN_ELAPSED_MS = 600;
 
 const ESTIMATE_MIN_FRACTION = 0.02;
 
-export const INSPECTING: UploadStage = { kind: 'inspecting' };
+const INSPECTING: UploadStage = { kind: 'inspecting' };
 
-export function uploadCount(stage: UploadStage): UploadCount | null {
+function uploadCount(stage: UploadStage): UploadCount | null {
   return match(stage)
     .with({ kind: 'inspecting' }, () => null)
     .with({ kind: 'opening' }, () => null)
@@ -41,7 +41,7 @@ function fractionOf(done: number, total: number): number | null {
   return Math.min(1, Math.max(0, done / total));
 }
 
-export function uploadFraction(stage: UploadStage): number | null {
+function uploadFraction(stage: UploadStage): number | null {
   return match(stage)
     .with({ kind: 'inspecting' }, () => null)
     .with({ kind: 'opening' }, () => null)
@@ -51,7 +51,7 @@ export function uploadFraction(stage: UploadStage): number | null {
     .exhaustive();
 }
 
-export function uploadRemainingSeconds(stage: UploadStage): number | null {
+function uploadRemainingSeconds(stage: UploadStage): number | null {
   if (stage.kind !== 'storing') return null;
 
   const { writtenBytes, totalBytes, elapsedMs } = stage;
@@ -62,3 +62,6 @@ export function uploadRemainingSeconds(stage: UploadStage): number | null {
   const remaining = (elapsedMs / writtenBytes) * (totalBytes - writtenBytes);
   return Math.max(1, Math.ceil(remaining / 1000));
 }
+
+export { INSPECTING, uploadCount, uploadFraction, uploadRemainingSeconds };
+export type { UploadStage, UploadReport, SourceWriteReport, UploadCount };

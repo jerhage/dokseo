@@ -12,7 +12,7 @@ const BLUE_WEIGHT = 0.0722;
 
 const GROUND = '#ffffff';
 
-export const MAX_CROP_EDGE = 2048;
+const MAX_CROP_EDGE = 2048;
 
 function surfaceFor(
   width: number,
@@ -45,14 +45,14 @@ function lumaAt(data: Uint8ClampedArray, offset: number): number {
   );
 }
 
-export function downscaleFor(size: Size): number {
+function downscaleFor(size: Size): number {
   const edge = Math.max(size.width, size.height);
   if (!Number.isFinite(edge) || edge <= 0) return 1;
 
   return Math.min(1, MAX_CROP_EDGE / edge);
 }
 
-export function cropFrom(bitmap: ImageBitmap, rect: ImageRect): OwnedBitmap {
+function cropFrom(bitmap: ImageBitmap, rect: ImageRect): OwnedBitmap {
   const bounds = imageRect(0, 0, bitmap.width, bitmap.height);
   const area = wholePixels(clampTo(normalize(rect), bounds));
   if (!usable(area.width) || !usable(area.height)) {
@@ -66,7 +66,7 @@ export function cropFrom(bitmap: ImageBitmap, rect: ImageRect): OwnedBitmap {
   return own(context.canvas.transferToImageBitmap());
 }
 
-export function stitch(parts: readonly ImageBitmap[], arrangement: Arrangement): OwnedBitmap {
+function stitch(parts: readonly ImageBitmap[], arrangement: Arrangement): OwnedBitmap {
   if (parts.length === 0) throw new Error('No parts were given to stitch');
 
   const stacked = arrangement === 'column';
@@ -98,7 +98,7 @@ export function stitch(parts: readonly ImageBitmap[], arrangement: Arrangement):
   return own(context.canvas.transferToImageBitmap());
 }
 
-export function scaleBy(bitmap: ImageBitmap, factor: number): OwnedBitmap {
+function scaleBy(bitmap: ImageBitmap, factor: number): OwnedBitmap {
   if (!Number.isFinite(factor) || factor <= 0) {
     throw new Error(`A scale factor of ${factor} is not usable`);
   }
@@ -112,7 +112,7 @@ export function scaleBy(bitmap: ImageBitmap, factor: number): OwnedBitmap {
   return own(context.canvas.transferToImageBitmap());
 }
 
-export function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
+function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
   const context = surfaceFor(bitmap.width, bitmap.height, true);
   context.drawImage(bitmap, 0, 0);
 
@@ -128,3 +128,5 @@ export function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
 
   return own(context.canvas.transferToImageBitmap());
 }
+
+export { MAX_CROP_EDGE, downscaleFor, cropFrom, stitch, scaleBy, toGrayscale };

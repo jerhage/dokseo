@@ -3,12 +3,12 @@ import { directoryNamed, flatName, isMissing } from './directory';
 
 const DIRECTORY = 'partials';
 
-export type StoredPart = {
+type StoredPart = {
   readonly key: string;
   readonly bytes: number;
 };
 
-export type PartAppend = {
+type PartAppend = {
   write(bytes: Uint8Array): void;
   close(): void;
 };
@@ -28,7 +28,7 @@ function directory(): Promise<FileSystemDirectoryHandle> {
   return directoryNamed(DIRECTORY);
 }
 
-export async function fileOf(key: string): Promise<File | null> {
+async function fileOf(key: string): Promise<File | null> {
   const name = flatName(key);
   const parent = await directory();
   try {
@@ -40,12 +40,12 @@ export async function fileOf(key: string): Promise<File | null> {
   }
 }
 
-export async function sizeOf(key: string): Promise<number> {
+async function sizeOf(key: string): Promise<number> {
   const file = await fileOf(key);
   return file?.size ?? 0;
 }
 
-export async function openAppend(key: string, from: number): Promise<PartAppend> {
+async function openAppend(key: string, from: number): Promise<PartAppend> {
   const name = flatName(key);
   const handle: SyncWritableHandle = await (
     await directory()
@@ -82,7 +82,7 @@ export async function openAppend(key: string, from: number): Promise<PartAppend>
   };
 }
 
-export async function remove(key: string): Promise<void> {
+async function remove(key: string): Promise<void> {
   const name = flatName(key);
   const parent = await directory();
   try {
@@ -102,7 +102,7 @@ async function readableSize(handle: FileSystemFileHandle): Promise<number | null
   }
 }
 
-export async function entries(): Promise<readonly StoredPart[]> {
+async function entries(): Promise<readonly StoredPart[]> {
   const parent = await directory();
   const found: StoredPart[] = [];
 
@@ -114,3 +114,6 @@ export async function entries(): Promise<readonly StoredPart[]> {
 
   return found;
 }
+
+export { fileOf, sizeOf, openAppend, remove, entries };
+export type { StoredPart, PartAppend };

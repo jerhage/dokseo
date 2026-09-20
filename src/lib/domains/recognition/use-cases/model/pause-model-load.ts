@@ -1,9 +1,12 @@
 import type { TextRecognizer } from '../../domain/engine/text-recognizer';
 
-export type PauseModelLoadDeps = {
+type PauseModelLoadDeps = {
   readonly recognizer: TextRecognizer;
 };
 
-export function pauseModelLoad(deps: PauseModelLoadDeps): void {
+function pauseModelLoad(deps: PauseModelLoadDeps): void {
   deps.recognizer.cancel();
 }
+
+export { pauseModelLoad };
+export type { PauseModelLoadDeps };

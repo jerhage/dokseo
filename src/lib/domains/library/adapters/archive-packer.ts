@@ -6,9 +6,9 @@ import { entryName } from './file-entry';
 import type { PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 
-export type PackReport = (packed: number, total: number) => void;
+type PackReport = (packed: number, total: number) => void;
 
-export async function packImagesIntoArchive(
+async function packImagesIntoArchive(
   files: readonly File[],
   report: PackReport = () => undefined,
 ): Promise<Result<Blob, PageSourceError>> {
@@ -31,3 +31,6 @@ export async function packImagesIntoArchive(
     return err({ kind: 'source-unreadable', cause: describeCause(cause) });
   }
 }
+
+export { packImagesIntoArchive };
+export type { PackReport };

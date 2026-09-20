@@ -4,26 +4,26 @@ import type { ImageIndex } from '$lib/shared/ids';
 import { readingPosition } from './reading-position';
 import type { ReadingPosition } from './reading-position';
 
-export type SliceLayout = {
+type SliceLayout = {
   readonly index: ImageIndex;
   readonly top: number;
   readonly height: number;
   readonly measured: boolean;
 };
 
-export type VisibleRange = { readonly first: number; readonly last: number };
+type VisibleRange = { readonly first: number; readonly last: number };
 
-export type PlacedSlice = { readonly index: ImageIndex; readonly height: number };
+type PlacedSlice = { readonly index: ImageIndex; readonly height: number };
 
-export type StripSpacers = {
+type StripSpacers = {
   readonly before: number;
   readonly slices: readonly PlacedSlice[];
   readonly after: number;
 };
 
-export const ASSUMED_ASPECT = 1.5;
+const ASSUMED_ASPECT = 1.5;
 
-export const OVERSCAN_SCREENS = 0.5;
+const OVERSCAN_SCREENS = 0.5;
 
 const NOTHING_VISIBLE: VisibleRange = { first: 0, last: -1 };
 
@@ -37,10 +37,7 @@ function aspectOf(size: Size | null | undefined): number | null {
   return size.height / size.width;
 }
 
-export function layOutStrip(
-  sizes: readonly (Size | null)[],
-  width: number,
-): readonly SliceLayout[] {
+function layOutStrip(sizes: readonly (Size | null)[], width: number): readonly SliceLayout[] {
   const displayWidth = positiveOrZero(width);
   const layout: SliceLayout[] = [];
   let top = 0;
@@ -56,12 +53,12 @@ export function layOutStrip(
   return layout;
 }
 
-export function stripHeight(layout: readonly SliceLayout[]): number {
+function stripHeight(layout: readonly SliceLayout[]): number {
   const last = layout[layout.length - 1];
   return last === undefined ? 0 : last.top + last.height;
 }
 
-export function visibleRange(
+function visibleRange(
   layout: readonly SliceLayout[],
   scrollTop: number,
   viewportHeight: number,
@@ -88,11 +85,11 @@ export function visibleRange(
   return first === -1 ? NOTHING_VISIBLE : { first, last };
 }
 
-export function stripOverscan(viewportHeight: number): number {
+function stripOverscan(viewportHeight: number): number {
   return positiveOrZero(viewportHeight) * OVERSCAN_SCREENS;
 }
 
-export function spacersFor(
+function spacersFor(
   layout: readonly SliceLayout[],
   range: VisibleRange,
   snap: (value: number) => number,
@@ -119,7 +116,7 @@ export function spacersFor(
   return { before, slices, after: positiveOrZero(total - edge) };
 }
 
-export function positionAtScroll(
+function positionAtScroll(
   layout: readonly SliceLayout[],
   scrollTop: number,
 ): ReadingPosition | null {
@@ -137,12 +134,22 @@ export function positionAtScroll(
   return readingPosition(reached.index, fraction);
 }
 
-export function scrollForPosition(
-  layout: readonly SliceLayout[],
-  position: ReadingPosition,
-): number {
+function scrollForPosition(layout: readonly SliceLayout[], position: ReadingPosition): number {
   const slice = layout.find((candidate) => candidate.index === position.index);
   if (slice === undefined) return 0;
 
   return slice.top + slice.height * readingPosition(position.index, position.offset).offset;
 }
+
+export {
+  ASSUMED_ASPECT,
+  OVERSCAN_SCREENS,
+  layOutStrip,
+  stripHeight,
+  visibleRange,
+  stripOverscan,
+  spacersFor,
+  positionAtScroll,
+  scrollForPosition,
+};
+export type { SliceLayout, VisibleRange, PlacedSlice, StripSpacers };

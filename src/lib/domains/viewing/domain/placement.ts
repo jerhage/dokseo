@@ -3,14 +3,14 @@ import type { ImageRect, ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 
-export type PageFraction = {
+type PageFraction = {
   readonly left: number;
   readonly top: number;
   readonly width: number;
   readonly height: number;
 };
 
-export type PlacedImage = {
+type PlacedImage = {
   readonly index: ImageIndex;
   readonly onScreen: ScreenRect;
   readonly natural: Size;
@@ -32,7 +32,7 @@ function frameOf(placed: PlacedImage): ScreenRect | null {
   return frame;
 }
 
-export function toImageRect(placed: PlacedImage, selection: ScreenRect): ImageRect | null {
+function toImageRect(placed: PlacedImage, selection: ScreenRect): ImageRect | null {
   const frame = frameOf(placed);
   if (frame === null) return null;
 
@@ -50,7 +50,7 @@ export function toImageRect(placed: PlacedImage, selection: ScreenRect): ImageRe
   );
 }
 
-export function toScreenRect(placed: PlacedImage, rect: ImageRect): ScreenRect {
+function toScreenRect(placed: PlacedImage, rect: ImageRect): ScreenRect {
   const frame = frameOf(placed);
   if (frame === null) return screenRect(0, 0, 0, 0);
 
@@ -66,7 +66,7 @@ export function toScreenRect(placed: PlacedImage, rect: ImageRect): ScreenRect {
   );
 }
 
-export function toPageFraction(natural: Size, rect: ImageRect): PageFraction | null {
+function toPageFraction(natural: Size, rect: ImageRect): PageFraction | null {
   if (!isPositiveFinite(natural.width) || !isPositiveFinite(natural.height)) return null;
 
   const box = clampTo(normalize(rect), imageRect(0, 0, natural.width, natural.height));
@@ -80,10 +80,7 @@ export function toPageFraction(natural: Size, rect: ImageRect): PageFraction | n
   };
 }
 
-export function regionsIn(
-  placed: readonly PlacedImage[],
-  selection: ScreenRect,
-): readonly ImageRegion[] {
+function regionsIn(placed: readonly PlacedImage[], selection: ScreenRect): readonly ImageRegion[] {
   const regions: ImageRegion[] = [];
 
   for (const image of placed) {
@@ -93,3 +90,6 @@ export function regionsIn(
 
   return regions;
 }
+
+export { toImageRect, toScreenRect, toPageFraction, regionsIn };
+export type { PageFraction, PlacedImage };

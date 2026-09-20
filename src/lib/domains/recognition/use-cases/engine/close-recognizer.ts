@@ -1,9 +1,12 @@
 import type { TextRecognizer } from '../../domain/engine/text-recognizer';
 
-export type CloseRecognizerDeps = {
+type CloseRecognizerDeps = {
   readonly recognizer: TextRecognizer;
 };
 
-export function closeRecognizer(deps: CloseRecognizerDeps): void {
+function closeRecognizer(deps: CloseRecognizerDeps): void {
   deps.recognizer.cancel();
 }
+
+export { closeRecognizer };
+export type { CloseRecognizerDeps };

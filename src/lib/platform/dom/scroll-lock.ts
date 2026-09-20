@@ -4,7 +4,7 @@ type Hold = { previous: string; holders: number };
 
 const holds = new WeakMap<ScrollLockTarget, Hold>();
 
-export function lockScrolling(target: ScrollLockTarget): () => void {
+function lockScrolling(target: ScrollLockTarget): () => void {
   const hold = holds.get(target) ?? { previous: target.style.overflow, holders: 0 };
   hold.holders += 1;
   holds.set(target, hold);
@@ -22,3 +22,5 @@ export function lockScrolling(target: ScrollLockTarget): () => void {
     target.style.overflow = hold.previous;
   };
 }
+
+export { lockScrolling };

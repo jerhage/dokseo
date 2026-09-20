@@ -1,12 +1,12 @@
 import { belongsToModel } from './model-cache';
 import type { ModelFetch } from './model-load';
 
-export type PartialFile = {
+type PartialFile = {
   readonly url: string;
   readonly bytes: number;
 };
 
-export type PartialReport = {
+type PartialReport = {
   readonly modelId: string;
   readonly files: number;
   readonly bytes: number;
@@ -14,11 +14,11 @@ export type PartialReport = {
 
 const WEIGHTS_SUFFIX = '.onnx';
 
-export function partialName(url: string): string {
+function partialName(url: string): string {
   return encodeURIComponent(url);
 }
 
-export function urlOfPartial(name: string): string {
+function urlOfPartial(name: string): string {
   try {
     return decodeURIComponent(name);
   } catch {
@@ -26,21 +26,18 @@ export function urlOfPartial(name: string): string {
   }
 }
 
-export function resumesModelWeights(fetched: ModelFetch, modelId: string): boolean {
+function resumesModelWeights(fetched: ModelFetch, modelId: string): boolean {
   if (fetched.partial) return false;
 
   const path = fetched.url.split(/[?#]/)[0] ?? '';
   return path.endsWith(WEIGHTS_SUFFIX) && belongsToModel(path, modelId);
 }
 
-export function partialsOfModel(
-  files: readonly PartialFile[],
-  modelId: string,
-): readonly PartialFile[] {
+function partialsOfModel(files: readonly PartialFile[], modelId: string): readonly PartialFile[] {
   return files.filter((file) => belongsToModel(file.url, modelId));
 }
 
-export function partialReportOf(files: readonly PartialFile[], modelId: string): PartialReport {
+function partialReportOf(files: readonly PartialFile[], modelId: string): PartialReport {
   const mine = partialsOfModel(files, modelId);
   return {
     modelId,
@@ -49,6 +46,16 @@ export function partialReportOf(files: readonly PartialFile[], modelId: string):
   };
 }
 
-export function isPartlyDownloaded(report: PartialReport | null): boolean {
+function isPartlyDownloaded(report: PartialReport | null): boolean {
   return report !== null && report.bytes > 0;
 }
+
+export {
+  partialName,
+  urlOfPartial,
+  resumesModelWeights,
+  partialsOfModel,
+  partialReportOf,
+  isPartlyDownloaded,
+};
+export type { PartialFile, PartialReport };

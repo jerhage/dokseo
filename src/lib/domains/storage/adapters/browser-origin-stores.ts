@@ -6,7 +6,7 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { OriginStores, OriginStoresError, OriginSurvey } from '../domain/origin-stores';
 
-export function createOriginStores(): OriginStores {
+function createOriginStores(): OriginStores {
   return {
     async survey(): Promise<Result<OriginSurvey, OriginStoresError>> {
       try {
@@ -21,3 +21,5 @@ export function createOriginStores(): OriginStores {
     },
   };
 }
+
+export { createOriginStores };

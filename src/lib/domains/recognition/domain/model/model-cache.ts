@@ -1,12 +1,12 @@
 import { knownModel } from './model-footprint';
 import { weightsAmong } from './model-weights';
 
-export type CacheEntry = {
+type CacheEntry = {
   readonly url: string;
   readonly bytes: number | null;
 };
 
-export type ModelStorageReport = {
+type ModelStorageReport = {
   readonly modelId: string;
   readonly files: number;
   readonly bytes: number;
@@ -17,27 +17,24 @@ export type ModelStorageReport = {
 
 const RUNTIME_SUFFIXES: readonly string[] = ['.wasm', '.mjs'];
 
-export function belongsToModel(url: string, modelId: string): boolean {
+function belongsToModel(url: string, modelId: string): boolean {
   return url.includes(`/${modelId}/`);
 }
 
-export function isRuntimeAsset(url: string): boolean {
+function isRuntimeAsset(url: string): boolean {
   const path = url.split(/[?#]/)[0] ?? '';
   return RUNTIME_SUFFIXES.some((suffix) => path.endsWith(suffix));
 }
 
-export function entriesOfModel(
-  entries: readonly CacheEntry[],
-  modelId: string,
-): readonly CacheEntry[] {
+function entriesOfModel(entries: readonly CacheEntry[], modelId: string): readonly CacheEntry[] {
   return entries.filter((entry) => belongsToModel(entry.url, modelId));
 }
 
-export function requiredWeights(modelId: string): readonly string[] {
+function requiredWeights(modelId: string): readonly string[] {
   return knownModel(modelId)?.weightFiles ?? [];
 }
 
-export function reportOf(entries: readonly CacheEntry[], modelId: string): ModelStorageReport {
+function reportOf(entries: readonly CacheEntry[], modelId: string): ModelStorageReport {
   const mine = entriesOfModel(entries, modelId);
   const required = requiredWeights(modelId);
   return {
@@ -53,19 +50,32 @@ export function reportOf(entries: readonly CacheEntry[], modelId: string): Model
   };
 }
 
-export function isStored(report: ModelStorageReport): boolean {
+function isStored(report: ModelStorageReport): boolean {
   return report.required.length > 0 && report.weights.length === report.required.length;
 }
 
-export function isPartlyStored(report: ModelStorageReport): boolean {
+function isPartlyStored(report: ModelStorageReport): boolean {
   return report.files > 0 && !isStored(report);
 }
 
-export function shareOfUsage(report: ModelStorageReport, usage: number): number {
+function shareOfUsage(report: ModelStorageReport, usage: number): number {
   if (usage <= 0) return 0;
   return Math.min(1, report.bytes / usage);
 }
 
-export function restOfUsage(report: ModelStorageReport, usage: number): number {
+function restOfUsage(report: ModelStorageReport, usage: number): number {
   return Math.max(0, usage - report.bytes);
 }
+
+export {
+  belongsToModel,
+  isRuntimeAsset,
+  entriesOfModel,
+  requiredWeights,
+  reportOf,
+  isStored,
+  isPartlyStored,
+  shareOfUsage,
+  restOfUsage,
+};
+export type { CacheEntry, ModelStorageReport };
