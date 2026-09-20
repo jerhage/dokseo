@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+  import { goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { useContainer } from '$lib/context';
   import CapturePanel from '$lib/domains/recognition/ui/CapturePanel.svelte';
@@ -7,17 +9,28 @@
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import { bookId } from '$lib/shared/ids';
+  import { bookId, type ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
-  import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import { effectiveDirection, type ReadingDirection } from '$lib/shared/layout-kind';
+  import {
+    IMAGE_PARAMETER,
+    LIBRARY_AFTER_MISSING_BOOK,
+    readImageIndex,
+    urlWithImageIndex,
+  } from '$lib/shared/reader-location';
+
+  function mirror(index: ImageIndex): void {
+    const moved = urlWithImageIndex(page.url, index);
+    if (moved !== null) replaceState(moved, page.state);
+  }
 
   const container = useContainer();
-  const view = new ReaderView(container);
+  const view = new ReaderView(container, mirror);
   const captures = new CaptureView(container);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
   const direction = $derived<ReadingDirection>(
-    view.book?.direction === 'rtl' && view.book.layoutKind !== 'continuous' ? 'rtl' : 'ltr',
+    view.book === null ? 'ltr' : effectiveDirection(view.book.direction, view.book.layoutKind),
   );
 
   function capture(regions: readonly ImageRegion[], arrangement: Arrangement): void {
@@ -41,7 +54,8 @@
   }
 
   $effect(() => {
-    void view.open(id);
+    const asked = untrack(() => readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
+    void view.open(id, asked);
     void captures.open(id);
     return () => {
       view.dispose();
@@ -52,6 +66,10 @@
   $effect(() => {
     const chosen = language;
     if (chosen !== null) void captures.warm(id, chosen);
+  });
+
+  $effect(() => {
+    if (view.status === 'missing') void goto(LIBRARY_AFTER_MISSING_BOOK, { replaceState: true });
   });
 </script>
 

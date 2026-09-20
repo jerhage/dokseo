@@ -5,6 +5,7 @@
   import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
+  import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     CONTINUOUS_HAS_NO_PAIRS,
     CONTINUOUS_READS_DOWNWARD,
@@ -54,7 +55,9 @@
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
-  const rtl = $derived(book?.direction === 'rtl' && book?.layoutKind !== 'continuous');
+  const rtl = $derived(
+    book !== null && effectiveDirection(book.direction, book.layoutKind) === 'rtl',
+  );
   const groupCount = $derived(view.groups.length);
   const group = $derived(view.group);
   const renderer = $derived.by(() => {
@@ -74,6 +77,7 @@
     match(view.status)
       .with('idle', () => 'settling' as const)
       .with('loading', () => 'settling' as const)
+      .with('missing', () => 'settling' as const)
       .with('ready', () => 'reading' as const)
       .with('empty', () => 'empty' as const)
       .with('failed', () => 'failed' as const)
@@ -105,8 +109,7 @@
   const canPrevious = $derived(stage === 'reading' && group > 0);
   const canNext = $derived(stage === 'reading' && group + 1 < groupCount);
 
-  const rightToLeft = $derived(book?.direction === 'rtl' && !downward);
-  const forwardKey = $derived(rightToLeft ? 'ArrowLeft' : 'ArrowRight');
+  const forwardKey = $derived(rtl ? 'ArrowLeft' : 'ArrowRight');
   const backward = $derived({
     label: 'Previous page',
     glyph: '‹',
@@ -148,7 +151,7 @@
     if (kind === undefined) return [];
 
     return match(kind)
-      .with('paged', () => (rightToLeft ? [forward, backward] : [backward, forward]))
+      .with('paged', () => (rtl ? [forward, backward] : [backward, forward]))
       .with('continuous', () => [
         {
           label: 'Previous screen',

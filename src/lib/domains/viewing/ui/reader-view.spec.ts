@@ -95,7 +95,7 @@ type Fakes = {
   readonly container: Container;
   readonly pages: FakeSource;
   readonly edits: Edit[];
-  opening: ReaderBook | 'unreadable';
+  opening: ReaderBook | 'unreadable' | 'missing';
   editing: 'ok' | 'failed';
   gate: Promise<void> | null;
   stored: ReaderBook;
@@ -109,7 +109,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
   const world = {
     pages,
     edits,
-    opening: opened as ReaderBook | 'unreadable',
+    opening: opened as ReaderBook | 'unreadable' | 'missing',
     editing: 'ok' as 'ok' | 'failed',
     gate: null as Promise<void> | null,
     stored: opened,
@@ -121,6 +121,11 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
     library: {
       openFile: () => Promise.reject(new Error('not used')),
       openForReading: () => {
+        if (world.opening === 'missing') {
+          return Promise.resolve(
+            err({ kind: 'library', error: { kind: 'not-found', id: bookId('one') } } as const),
+          );
+        }
         if (world.opening === 'unreadable') {
           return Promise.resolve(
             err({
@@ -541,5 +546,90 @@ describe('the reading place of a continuous strip', () => {
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits).toEqual([]);
+  });
+});
+
+describe('the reading place in the url', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('opens at the index the url asked for', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'), imageIndex(4));
+
+    expect(view.position.index).toBe(4);
+    expect(view.visiblePages).toEqual([4, 5]);
+  });
+
+  it('overwrites the saved place with the one the url asked for', async () => {
+    const world = fakes({ position: imageIndex(2) });
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'), imageIndex(4));
+
+    expect(world.edits.map((edit) => edit.position)).toEqual([4]);
+  });
+
+  it('keeps the saved place when the url asks for nothing', async () => {
+    const world = fakes({ position: imageIndex(2) });
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'));
+
+    expect(view.position.index).toBe(2);
+    expect(world.edits).toEqual([]);
+  });
+
+  it('clamps a url index past the end and says what it did', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'), imageIndex(99));
+
+    expect(view.position.index).toBe(5);
+    expect(view.message).toBe('This book holds 6 images, so it opened at the last one.');
+  });
+
+  it('reports the place it opened at to its mirror', async () => {
+    const world = fakes();
+    const mirrored: number[] = [];
+    const view = new ReaderView(world.container, (index) => mirrored.push(index));
+
+    await view.open(bookId('one'), imageIndex(4));
+
+    expect(mirrored).toEqual([4]);
+  });
+
+  it('mirrors a page turn once the turning settles, without saving twice', async () => {
+    const world = fakes();
+    const mirrored: number[] = [];
+    const view = new ReaderView(world.container, (index) => mirrored.push(index));
+    await view.open(bookId('one'));
+    mirrored.length = 0;
+
+    await view.next();
+    await view.next();
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(mirrored).toEqual([4]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([2, 4]);
+  });
+
+  it('reports a book that is no longer in the library as missing', async () => {
+    const world = fakes();
+    world.opening = 'missing';
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'));
+
+    expect(view.status).toBe('missing');
+    expect(view.message).toBe('That book is no longer in your library.');
   });
 });
