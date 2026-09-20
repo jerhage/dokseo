@@ -1,13 +1,6 @@
 import { match } from 'ts-pattern';
 import { own, type OwnedBitmap } from '$lib/platform/image/bitmap';
-import {
-  cropFrom,
-  invert,
-  meanLuminance,
-  scaleBy,
-  stitch,
-  toGrayscale,
-} from '$lib/platform/image/pixels';
+import { cropFrom, downscaleFor, scaleBy, stitch, toGrayscale } from '$lib/platform/image/pixels';
 import { noTrace, type Trace, type TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
@@ -15,7 +8,6 @@ import { isEmpty, normalize } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
-import { LIGHT_ON_DARK_LUMINANCE, shouldInvert, upscaleFor } from '../domain/preprocess';
 import type { CropError, RegionCropper } from '../domain/region-cropper';
 
 function describeSourceError(error: PageSourceError): string {
@@ -76,31 +68,22 @@ async function cropTraced(
       height: stitched.bitmap.height,
     });
 
-    const factor = upscaleFor(stitched.bitmap);
-    using scaled = scaleBy(stitched.bitmap, factor);
-    trace.step('upscaled', {
+    const factor = downscaleFor(stitched.bitmap);
+    using capped = scaleBy(stitched.bitmap, factor);
+    trace.step('capped', {
       factor,
-      width: scaled.bitmap.width,
-      height: scaled.bitmap.height,
+      width: capped.bitmap.width,
+      height: capped.bitmap.height,
     });
 
-    using grey = toGrayscale(scaled.bitmap);
-    const luminance = meanLuminance(grey.bitmap);
-    const inverting = shouldInvert(luminance);
+    using grey = toGrayscale(capped.bitmap);
     trace.step('greyscale', {
-      meanLuminance: luminance,
-      threshold: LIGHT_ON_DARK_LUMINANCE,
-      inverted: inverting,
+      width: grey.bitmap.width,
+      height: grey.bitmap.height,
     });
 
-    if (!inverting) {
-      trace.image('crop', grey.bitmap);
-      return ok(grey.release());
-    }
-
-    using inverted = invert(grey.bitmap);
-    trace.image('crop', inverted.bitmap);
-    return ok(inverted.release());
+    trace.image('crop', grey.bitmap);
+    return ok(grey.release());
   } catch (cause) {
     return err({ kind: 'unreadable', cause: describeCause(cause) });
   }

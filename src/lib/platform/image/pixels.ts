@@ -1,5 +1,5 @@
 import type { Arrangement } from '$lib/shared/arrangement';
-import { clampTo, imageRect, normalize, type ImageRect } from '$lib/shared/geometry';
+import { clampTo, imageRect, normalize, type ImageRect, type Size } from '$lib/shared/geometry';
 import { own, type OwnedBitmap } from './bitmap';
 
 const RED_WEIGHT = 0.2126;
@@ -8,9 +8,9 @@ const GREEN_WEIGHT = 0.7152;
 
 const BLUE_WEIGHT = 0.0722;
 
-const FULL_CHANNEL = 255;
-
 const GROUND = '#ffffff';
+
+export const MAX_CROP_EDGE = 2048;
 
 function surfaceFor(
   width: number,
@@ -41,6 +41,13 @@ function lumaAt(data: Uint8ClampedArray, offset: number): number {
     GREEN_WEIGHT * (data[offset + 1] ?? 0) +
     BLUE_WEIGHT * (data[offset + 2] ?? 0)
   );
+}
+
+export function downscaleFor(size: Size): number {
+  const edge = Math.max(size.width, size.height);
+  if (!Number.isFinite(edge) || edge <= 0) return 1;
+
+  return Math.min(1, MAX_CROP_EDGE / edge);
 }
 
 export function cropFrom(bitmap: ImageBitmap, rect: ImageRect): OwnedBitmap {
@@ -118,33 +125,4 @@ export function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
   context.putImageData(pixels, 0, 0);
 
   return own(context.canvas.transferToImageBitmap());
-}
-
-export function invert(bitmap: ImageBitmap): OwnedBitmap {
-  const context = surfaceFor(bitmap.width, bitmap.height, true);
-  context.drawImage(bitmap, 0, 0);
-
-  const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height);
-  const data = pixels.data;
-  for (let offset = 0; offset < data.length; offset += 4) {
-    data[offset] = FULL_CHANNEL - (data[offset] ?? 0);
-    data[offset + 1] = FULL_CHANNEL - (data[offset + 1] ?? 0);
-    data[offset + 2] = FULL_CHANNEL - (data[offset + 2] ?? 0);
-  }
-  context.putImageData(pixels, 0, 0);
-
-  return own(context.canvas.transferToImageBitmap());
-}
-
-export function meanLuminance(bitmap: ImageBitmap): number {
-  const context = surfaceFor(bitmap.width, bitmap.height, true);
-  context.drawImage(bitmap, 0, 0);
-
-  const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-  if (data.length === 0) return 0;
-
-  let total = 0;
-  for (let offset = 0; offset < data.length; offset += 4) total += lumaAt(data, offset);
-
-  return total / ((data.length / 4) * FULL_CHANNEL);
 }

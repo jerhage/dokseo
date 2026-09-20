@@ -1,6 +1,7 @@
 import type { ProgressInfo } from '@huggingface/transformers';
 import { JAPANESE_OCR_MODEL } from '$lib/domains/recognition/domain/model-footprint';
 import { describeCause } from '$lib/shared/cause';
+import { japaneseOcrText } from './japanese-ocr-text';
 import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
@@ -108,8 +109,8 @@ async function openSession(): Promise<Session> {
         tokens.push(next);
       }
 
-      const text: string = tokenizer.decode(tokens, { skip_special_tokens: true });
-      return text.replace(/\s+/gu, '');
+      const decoded: string = tokenizer.decode(tokens, { skip_special_tokens: true });
+      return japaneseOcrText(decoded);
     },
   };
 }
