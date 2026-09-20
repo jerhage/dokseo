@@ -12,7 +12,7 @@ const BYTES_PER_MB = 1_000_000;
 export function modelFootprint(language: Language): ModelFootprint | null {
   return match(language)
     .with('ja', (): ModelFootprint => ({
-      weightsBytes: 116_595_703,
+      weightsBytes: 204_413_485,
       runtimeDownloadBytes: 6_596_832,
       runtimeOnDiskBytes: 26_861_777,
     }))

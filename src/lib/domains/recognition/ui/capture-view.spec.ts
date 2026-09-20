@@ -9,6 +9,7 @@ import type { PageSource } from '$lib/shared/page-source';
 import { err, ok, type Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
+import { modelFootprint } from '../domain/model-footprint';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { RecognizeRegionError } from '../use-cases/recognize-region';
 import { CaptureView } from './capture-view.svelte';
@@ -327,7 +328,7 @@ describe('CaptureView', () => {
     expect(world.calls).toEqual([]);
     expect(view.captures).toEqual([]);
     expect(view.consentRequest?.language).toBe('ja');
-    expect(view.consentRequest?.footprint.weightsBytes).toBe(116_595_703);
+    expect(view.consentRequest?.footprint).toEqual(modelFootprint('ja'));
   });
 
   it('recognizes the selection it was holding when the reader agreed', async () => {

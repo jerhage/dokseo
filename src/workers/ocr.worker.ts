@@ -1,18 +1,24 @@
 import type { ProgressInfo } from '@huggingface/transformers';
 import { describeCause } from '$lib/shared/cause';
+import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
-const MODEL_ID = 'onnx-community/manga-ocr-base-ONNX';
+const MODEL_ID = 'DigitalLarynx/manga-ocr-onnx';
 
-const WEIGHTS = 'q8';
+const ENCODER_WEIGHTS = 'q8';
+
+const DECODER_WEIGHTS = 'fp32';
+
+const DECODER_START_TOKEN = 2;
+
+const END_OF_TEXT_TOKEN = 3;
+
+const MAX_TOKENS = 300;
 
 const FULL_PERCENT = 100;
 
-const GENERATION = {
-  num_beams: 4,
-  early_stopping: true,
-  max_length: 300,
-  no_repeat_ngram_size: 3,
+type InferenceSession = {
+  run(feeds: Record<string, unknown>): Promise<Record<string, unknown>>;
 };
 
 type Session = {
@@ -62,20 +68,47 @@ function canvasOf(image: ImageBitmap): OffscreenCanvas {
 }
 
 async function openSession(): Promise<Session> {
-  const { env, pipeline, RawImage } = await import('@huggingface/transformers');
+  const { AutoModel, AutoProcessor, AutoTokenizer, env, RawImage, Tensor } =
+    await import('@huggingface/transformers');
   env.allowLocalModels = false;
 
   const device = await chooseDevice();
-  const recognize = await pipeline('image-to-text', MODEL_ID, {
-    device,
-    dtype: { encoder_model: WEIGHTS, decoder_model: WEIGHTS },
-    progress_callback: reportProgress,
-  });
+  const [processor, tokenizer, model] = await Promise.all([
+    AutoProcessor.from_pretrained(MODEL_ID),
+    AutoTokenizer.from_pretrained(MODEL_ID),
+    AutoModel.from_pretrained(MODEL_ID, {
+      device,
+      dtype: { encoder_model: ENCODER_WEIGHTS, decoder_model_merged: DECODER_WEIGHTS },
+      progress_callback: reportProgress,
+    }),
+  ]);
+
+  const sessions = model.sessions as Record<string, InferenceSession | undefined>;
+  const encoder = sessions.model;
+  const decoder = sessions.decoder_model_merged;
+  if (encoder === undefined || decoder === undefined) {
+    throw new Error(`${MODEL_ID} did not load as an encoder and a decoder session`);
+  }
 
   return {
     async read(image: ImageBitmap): Promise<string> {
-      const output = await recognize(RawImage.fromCanvas(canvasOf(image)), GENERATION);
-      return output[0]?.generated_text ?? '';
+      const inputs = await processor(RawImage.fromCanvas(canvasOf(image)));
+      const encoded = await encoder.run({ pixel_values: inputs.pixel_values });
+      const tokens = [DECODER_START_TOKEN];
+
+      while (tokens.length < MAX_TOKENS) {
+        const step = await decoder.run({
+          input_ids: new Tensor('int64', BigInt64Array.from(tokens, BigInt), [1, tokens.length]),
+          encoder_hidden_states: encoded.last_hidden_state,
+        });
+
+        const next = mostLikelyToken(step.logits as DecoderLogits);
+        if (next === END_OF_TEXT_TOKEN) break;
+        tokens.push(next);
+      }
+
+      const text: string = tokenizer.decode(tokens, { skip_special_tokens: true });
+      return text.replace(/\s+/gu, '');
     },
   };
 }
