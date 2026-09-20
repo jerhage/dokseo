@@ -19,12 +19,23 @@ const STORED: ModelStorageReport = {
 
 const NOTHING_PARTIAL: PartialReport = { modelId: MODEL, files: 0, bytes: 0 };
 
+const HALF_STORED: ModelStorageReport = {
+  modelId: MODEL,
+  files: 6,
+  bytes: 86_967_767,
+  unsized: 0,
+  weights: [REQUIRED_WEIGHTS[0] ?? ''],
+};
+
 function deps(options: {
   readonly measured?: Result<ModelStorageReport, ModelStorageError>;
   readonly partial?: Result<PartialReport, PartialError>;
+  readonly discarded?: Result<PartialReport, PartialError>;
   readonly space?: { usage: number; quota: number } | null;
   readonly persisted?: boolean;
 }) {
+  const discards: string[] = [];
+
   const storage: ModelStorage = {
     measure: () => Promise.resolve(options.measured ?? ok(STORED)),
     remove: () => Promise.resolve(ok(STORED)),
@@ -32,12 +43,16 @@ function deps(options: {
 
   const partials: PartialDownloads = {
     measure: () => Promise.resolve(options.partial ?? ok(NOTHING_PARTIAL)),
-    discard: () => Promise.resolve(ok(NOTHING_PARTIAL)),
+    discard: (modelId: string) => {
+      discards.push(modelId);
+      return Promise.resolve(options.discarded ?? ok(NOTHING_PARTIAL));
+    },
   };
 
   return {
     storage,
     partials,
+    discards,
     estimate: () => Promise.resolve(options.space ?? null),
     persisted: () => Promise.resolve(options.persisted ?? false),
   };
@@ -59,10 +74,59 @@ describe('readModelStorage', () => {
 
   it('reports the bytes of a part-downloaded file beside the cached ones', async () => {
     const half: PartialReport = { modelId: MODEL, files: 1, bytes: 62_914_560 };
-    const snapshot = await readModelStorage(deps({ partial: ok(half) }), MODEL);
+    const world = deps({ measured: ok(HALF_STORED), partial: ok(half) });
+    const snapshot = await readModelStorage(world, MODEL);
 
     if (!snapshot.ok) throw new Error('The storage could not be read');
     expect(snapshot.value.partial).toEqual(half);
+    expect(world.discards).toEqual([]);
+  });
+
+  it('discards a part-downloaded file the cache already holds in full', async () => {
+    const stale: PartialReport = { modelId: MODEL, files: 1, bytes: 117_445_718 };
+    const world = deps({ partial: ok(stale) });
+    const snapshot = await readModelStorage(world, MODEL);
+
+    if (!snapshot.ok) throw new Error('The storage could not be read');
+    expect(world.discards).toEqual([MODEL]);
+    expect(snapshot.value.partial).toEqual(NOTHING_PARTIAL);
+  });
+
+  it('keeps reporting a stale part-downloaded file it failed to discard', async () => {
+    const stale: PartialReport = { modelId: MODEL, files: 1, bytes: 117_445_718 };
+    const world = deps({
+      partial: ok(stale),
+      discarded: err({ kind: 'partials-unavailable' as const }),
+    });
+
+    const snapshot = await readModelStorage(world, MODEL);
+
+    if (!snapshot.ok) throw new Error('The storage could not be read');
+    expect(snapshot.value.partial).toEqual(stale);
+  });
+
+  it('measures what the origin holds after the stale part-file was swept, not before', async () => {
+    const stale: PartialReport = { modelId: MODEL, files: 1, bytes: 117_445_718 };
+    const order: string[] = [];
+    const world = deps({ partial: ok(stale) });
+    const watched = {
+      ...world,
+      partials: {
+        measure: world.partials.measure,
+        discard: (modelId: string) => {
+          order.push('discard');
+          return world.partials.discard(modelId);
+        },
+      },
+      estimate: () => {
+        order.push('estimate');
+        return Promise.resolve(null);
+      },
+    };
+
+    await readModelStorage(watched, MODEL);
+
+    expect(order).toEqual(['discard', 'estimate']);
   });
 
   it('reports no figure for part-downloads it could not read, rather than zero', async () => {

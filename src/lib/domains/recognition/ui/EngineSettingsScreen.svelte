@@ -34,7 +34,7 @@
   const session = $derived(view.session);
 
   const state = $derived(engineStatus(view.engine));
-  const partial = $derived(partialFigure(view.partial));
+  const partial = $derived(partialFigure(view.partial, view.stored));
   const absent = OCR_ENGINES.filter((offered) => !offered.installed);
 
   const failure = $derived(download.kind === 'failed' ? download.cause : null);

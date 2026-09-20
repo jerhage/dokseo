@@ -50,11 +50,15 @@ export function cancelHint(load: ModelLoad | null): string {
     : 'The weights stay on this device. Cancelling only stops opening them.';
 }
 
-export function partialFigure(partial: PartialReport | null): string | null {
+export function partialFigure(partial: PartialReport | null, stored = false): string | null {
   if (partial === null || !isPartlyDownloaded(partial)) return null;
 
   const files = `${partial.files} ${partial.files === 1 ? 'file' : 'files'}`;
-  return `${megabytes(partial.bytes)} MB of ${files} part-downloaded, kept for a resume`;
+  const held = `${megabytes(partial.bytes)} MB of ${files} part-downloaded`;
+
+  return stored
+    ? `${held}, left over from an earlier download and no longer needed`
+    : `${held}, kept for a resume`;
 }
 
 export function resumeLabel(partial: PartialReport | null): string {

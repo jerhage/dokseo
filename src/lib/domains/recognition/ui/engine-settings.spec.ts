@@ -180,6 +180,13 @@ describe('partialFigure', () => {
       '62 MB of 1 file part-downloaded, kept for a resume',
     );
   });
+
+  it('promises no resume for a leftover beside a model the cache already holds in full', () => {
+    const figure = partialFigure(partial({ files: 1, bytes: 117_445_718 }), true);
+
+    expect(figure).toContain('no longer needed');
+    expect(figure).not.toContain('resume');
+  });
 });
 
 describe('resumeLabel', () => {
