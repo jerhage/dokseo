@@ -7,7 +7,9 @@ import type {
   ModelConsentStore,
 } from '../domain/model-consent';
 import type { ModelStorageReport } from '../domain/model-cache';
+import type { PartialReport } from '../domain/model-partial';
 import type { ModelStorage, ModelStorageError } from '../domain/model-storage';
+import type { PartialDownloads } from '../domain/partial-downloads';
 import { deleteModel } from './delete-model';
 
 const MODEL = 'DigitalLarynx/manga-ocr-onnx';
@@ -26,6 +28,16 @@ function world(options: { readonly removal?: Result<ModelStorageReport, ModelSto
     },
   };
 
+  const partial: PartialReport = { modelId: MODEL, files: 1, bytes: 62_000_000 };
+
+  const partials: PartialDownloads = {
+    measure: () => Promise.resolve(ok(partial)),
+    discard: (modelId: string) => {
+      steps.push(`discard ${modelId}`);
+      return Promise.resolve(ok(partial));
+    },
+  };
+
   const consent: ModelConsentStore = {
     decisionFor: (language: Language): Promise<Result<ModelConsentDecision, ModelConsentError>> =>
       Promise.resolve(ok(granted.has(language) ? 'granted' : 'undecided')),
@@ -37,7 +49,7 @@ function world(options: { readonly removal?: Result<ModelStorageReport, ModelSto
     },
   };
 
-  return { deps: { storage, consent }, steps, consent, granted };
+  return { deps: { storage, partials, consent }, steps, consent, granted };
 }
 
 describe('deleteModel', () => {
@@ -62,7 +74,14 @@ describe('deleteModel', () => {
     const { deps, steps } = world();
     await deleteModel(deps, 'ja', MODEL);
 
-    expect(steps).toEqual([`remove ${MODEL}`, 'forget ja']);
+    expect(steps).toEqual([`remove ${MODEL}`, `discard ${MODEL}`, 'forget ja']);
+  });
+
+  it('discards the part-downloaded file along with the cached weights', async () => {
+    const { deps, steps } = world();
+    await deleteModel(deps, 'ja', MODEL);
+
+    expect(steps).toContain(`discard ${MODEL}`);
   });
 
   it('keeps the grant when nothing could be removed', async () => {

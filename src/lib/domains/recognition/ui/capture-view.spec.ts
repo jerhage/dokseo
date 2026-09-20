@@ -210,6 +210,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         Promise.resolve(
           ok({
             report: { modelId, files: engine.files, bytes: engine.files * 1_000, unsized: 0 },
+            partial: { modelId, files: 0, bytes: 0 },
             usage: null,
             quota: null,
             persisted: false,

@@ -41,6 +41,7 @@ import { createModelStorage } from './domains/recognition/adapters/cache-api-mod
 import { createCaptureRepository } from './domains/recognition/adapters/indexeddb-captures.repo';
 import { createModelConsentStore } from './domains/recognition/adapters/indexeddb-model-consent';
 import { createRecognizerSetupStore } from './domains/recognition/adapters/indexeddb-recognizer-setup';
+import { createPartialDownloads } from './domains/recognition/adapters/opfs-partial-downloads';
 import type { Capture, CaptureDraft } from './domains/recognition/domain/capture';
 import type { CaptureError } from './domains/recognition/domain/capture-repository';
 import type { GpuDetection } from './domains/recognition/domain/compute-choice';
@@ -276,12 +277,14 @@ export function buildContainer(): Container {
   const removeCaptureDeps: RemoveCaptureDeps = { captures };
   const clearCapturesDeps: ClearCapturesDeps = { captures };
   const storage = createModelStorage();
+  const partials = createPartialDownloads();
   const readModelStorageDeps: ReadModelStorageDeps = {
     storage,
+    partials,
     estimate: storageEstimate,
     persisted: isPersisted,
   };
-  const deleteModelDeps: DeleteModelDeps = { storage, consent };
+  const deleteModelDeps: DeleteModelDeps = { storage, partials, consent };
   const saveRecognizerSetupDeps: SaveRecognizerSetupDeps = { setups };
   const detectComputeDeps: DetectComputeDeps = { probe: probeGpu };
 
