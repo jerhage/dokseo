@@ -37,6 +37,8 @@
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction));
+  const stepping = $derived(here?.stepping ?? null);
+  const finding = $derived(found?.query ?? null);
   const books = $derived(
     shelf.books.map((held) => ({
       id: held.id,
@@ -80,8 +82,8 @@
   onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
 >
   {#snippet arrival()}
-    {#if here !== null && found !== null}
-      <ArrivalBar book={id} query={found.query} {language} arrival={here} />
+    {#if stepping !== null && finding !== null}
+      <ArrivalBar book={id} query={finding} {language} {stepping} />
     {/if}
   {/snippet}
   {#snippet engine()}

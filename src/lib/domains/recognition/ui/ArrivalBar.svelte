@@ -3,7 +3,7 @@
   import type { BookId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import { readerHref } from '$lib/shared/reader-location';
-  import type { Arrival, ArrivalCapture } from '../domain/capture-arrival';
+  import type { ArrivalCapture, Stepping } from '../domain/capture-arrival';
   import { matchOfTotal } from '../domain/match-stepping';
   import { firstImage } from './capture-place';
 
@@ -11,19 +11,19 @@
     readonly book: BookId;
     readonly query: string;
     readonly language: Language | null;
-    readonly arrival: Arrival<ArrivalCapture>;
+    readonly stepping: Stepping<ArrivalCapture>;
   };
 
-  let { book, query, language, arrival }: Props = $props();
+  let { book, query, language, stepping }: Props = $props();
 
   function hrefOf(capture: ArrivalCapture): string | null {
     const index = firstImage(capture.regions);
-    return index === null ? null : readerHref(book, index, { query, capture: capture.id });
+    return index === null ? null : readerHref(book, index, { capture: capture.id, query });
   }
 
-  const previous = $derived(hrefOf(arrival.previous));
-  const next = $derived(hrefOf(arrival.next));
-  const count = $derived(matchOfTotal(arrival.ordinal - 1, arrival.total));
+  const previous = $derived(hrefOf(stepping.previous));
+  const next = $derived(hrefOf(stepping.next));
+  const count = $derived(matchOfTotal(stepping.ordinal - 1, stepping.total));
 
   function follow(event: MouseEvent, href: string): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

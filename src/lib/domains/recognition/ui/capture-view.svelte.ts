@@ -9,7 +9,7 @@ import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
-import type { SearchArrival } from '$lib/shared/reader-location';
+import type { ReaderArrival } from '$lib/shared/reader-location';
 import { arrivalAt, type Arrival, type ArrivalCapture } from '../domain/capture-arrival';
 import { editedText, oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
 import { isPartlyStored, isStored } from '../domain/model-cache';
@@ -178,7 +178,7 @@ export class CaptureView {
   }
 
   arrivalFrom(
-    found: SearchArrival | null,
+    found: ReaderArrival | null,
     direction: ReadingDirection,
   ): Arrival<ArrivalCapture> | null {
     if (found === null) return null;

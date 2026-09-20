@@ -76,7 +76,7 @@
     return String(index + 1).padStart(3, '0');
   }
 
-  const GLOW_MARKER = 'FROM SEARCH';
+  const GLOW_MARKER = 'FROM CAPTURE';
 
   function glowOn(index: ImageIndex): readonly ImageRect[] {
     return glow.filter((region) => region.index === index).map((region) => region.rect);

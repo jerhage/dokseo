@@ -56,7 +56,7 @@
             return {
               id: capture.id,
               order: order++,
-              href: readerHref(matched.book.id, index, { query, capture: capture.id }),
+              href: readerHref(matched.book.id, index, { capture: capture.id, query }),
               page: pageLabel(index),
               place: placeLabel(capture.regions),
               when: capturedLabel(capture.createdAt, Date.now()),

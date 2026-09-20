@@ -14,9 +14,9 @@ export const MISSING_BOOK_NOTICE = 'That book is no longer in your library.';
 
 export const LIBRARY_AFTER_MISSING_BOOK = `/?${MISSING_BOOK_PARAMETER}=${MISSING_BOOK_VALUE}`;
 
-export type SearchArrival = {
-  readonly query: string;
+export type ReaderArrival = {
   readonly capture: CaptureId;
+  readonly query: string | null;
 };
 
 export type OpeningPlace = {
@@ -63,22 +63,26 @@ export function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
 export function readerHref(
   book: BookId,
   index: ImageIndex,
-  arrival: SearchArrival | null = null,
+  arrival: ReaderArrival | null = null,
 ): string {
   const place = `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`;
-  if (arrival === null || arrival.query.trim().length === 0) return place;
+  if (arrival === null || arrival.capture.length === 0) return place;
 
-  const found = `${FIND_PARAMETER}=${encodeURIComponent(arrival.query)}`;
-  return `${place}&${found}&${CAPTURE_PARAMETER}=${encodeURIComponent(arrival.capture)}`;
+  const found = `${CAPTURE_PARAMETER}=${encodeURIComponent(arrival.capture)}`;
+  const query = arrival.query ?? '';
+  if (query.trim().length === 0) return `${place}&${found}`;
+
+  return `${place}&${FIND_PARAMETER}=${encodeURIComponent(query)}&${found}`;
 }
 
-export function readArrival(parameters: URLSearchParams): SearchArrival | null {
-  const query = parameters.get(FIND_PARAMETER);
+export function readArrival(parameters: URLSearchParams): ReaderArrival | null {
   const found = parameters.get(CAPTURE_PARAMETER);
-  if (query === null || found === null) return null;
-  if (query.trim().length === 0 || found.length === 0) return null;
+  if (found === null || found.length === 0) return null;
 
-  return { query, capture: captureId(found) };
+  const query = parameters.get(FIND_PARAMETER);
+  const asked = query === null || query.trim().length === 0 ? null : query;
+
+  return { capture: captureId(found), query: asked };
 }
 
 export function missingBookNotice(value: string | null | undefined): string | null {

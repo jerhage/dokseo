@@ -79,7 +79,7 @@
     const index = firstImage(regions);
     if (book === null || index === null) return null;
 
-    return readerHref(book, index, searching ? { query: wanted, capture: id } : null);
+    return readerHref(book, index, { capture: id, query: searching ? wanted : null });
   }
 
   function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {

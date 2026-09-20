@@ -11,12 +11,16 @@ export type ArrivalCapture = {
   readonly text: string;
 };
 
-export type Arrival<T> = {
-  readonly at: T;
+export type Stepping<T> = {
   readonly ordinal: number;
   readonly total: number;
   readonly previous: T;
   readonly next: T;
+};
+
+export type Arrival<T> = {
+  readonly at: T;
+  readonly stepping: Stepping<T> | null;
 };
 
 export function matchesInBookOrder<T extends ArrivalCapture>(
@@ -32,10 +36,15 @@ export function matchesInBookOrder<T extends ArrivalCapture>(
 
 export function arrivalAt<T extends ArrivalCapture>(
   captures: readonly T[],
-  query: string,
+  query: string | null,
   direction: ReadingDirection,
   wanted: CaptureId,
 ): Arrival<T> | null {
+  if (query === null || query.trim().length === 0) {
+    const only = captures.find((capture) => capture.id === wanted);
+    return only === undefined ? null : { at: only, stepping: null };
+  }
+
   const found = matchesInBookOrder(captures, query, direction);
   const place = found.findIndex((capture) => capture.id === wanted);
   const here = found[place];
@@ -47,9 +56,11 @@ export function arrivalAt<T extends ArrivalCapture>(
 
   return {
     at: here,
-    ordinal: place + 1,
-    total: found.length,
-    previous: before,
-    next: after,
+    stepping: {
+      ordinal: place + 1,
+      total: found.length,
+      previous: before,
+      next: after,
+    },
   };
 }

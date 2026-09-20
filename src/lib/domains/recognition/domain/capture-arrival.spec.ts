@@ -50,29 +50,47 @@ describe('matchesInBookOrder', () => {
 describe('arrivalAt', () => {
   it('counts the arrival among the matches in book order', () => {
     const arrival = arrivalAt(ALL, '海', 'rtl', SECOND.id);
-    expect(arrival?.ordinal).toBe(2);
-    expect(arrival?.total).toBe(3);
+    expect(arrival?.stepping?.ordinal).toBe(2);
+    expect(arrival?.stepping?.total).toBe(3);
   });
 
   it('names the neighbouring matches', () => {
     const arrival = arrivalAt(ALL, '海', 'rtl', SECOND.id);
-    expect(arrival?.previous.id).toBe(FIRST.id);
-    expect(arrival?.next.id).toBe(THIRD.id);
+    expect(arrival?.stepping?.previous.id).toBe(FIRST.id);
+    expect(arrival?.stepping?.next.id).toBe(THIRD.id);
   });
 
   it('wraps from the last match back to the first', () => {
-    expect(arrivalAt(ALL, '海', 'rtl', THIRD.id)?.next.id).toBe(FIRST.id);
+    expect(arrivalAt(ALL, '海', 'rtl', THIRD.id)?.stepping?.next.id).toBe(FIRST.id);
   });
 
   it('wraps from the first match back to the last', () => {
-    expect(arrivalAt(ALL, '海', 'rtl', FIRST.id)?.previous.id).toBe(THIRD.id);
+    expect(arrivalAt(ALL, '海', 'rtl', FIRST.id)?.stepping?.previous.id).toBe(THIRD.id);
   });
 
   it('stands on its own when it is the only match', () => {
     const only = arrivalAt([OTHER], '山', 'rtl', OTHER.id);
-    expect(only?.ordinal).toBe(1);
-    expect(only?.previous.id).toBe(OTHER.id);
-    expect(only?.next.id).toBe(OTHER.id);
+    expect(only?.stepping?.ordinal).toBe(1);
+    expect(only?.stepping?.previous.id).toBe(OTHER.id);
+    expect(only?.stepping?.next.id).toBe(OTHER.id);
+  });
+
+  it('reaches a capture named without a query and offers no stepping', () => {
+    const arrival = arrivalAt(ALL, null, 'rtl', OTHER.id);
+    expect(arrival?.at.id).toBe(OTHER.id);
+    expect(arrival?.stepping).toBeNull();
+  });
+
+  it('treats a query of only spaces as no query at all', () => {
+    expect(arrivalAt(ALL, '  ', 'rtl', SECOND.id)?.stepping).toBeNull();
+  });
+
+  it('reports nothing for a capture this book does not hold', () => {
+    expect(arrivalAt([FIRST, SECOND], null, 'rtl', THIRD.id)).toBeNull();
+  });
+
+  it('reports nothing for an unknown capture named without a query', () => {
+    expect(arrivalAt(ALL, null, 'rtl', captureId('missing'))).toBeNull();
   });
 
   it('reports nothing when the named capture does not match the query', () => {

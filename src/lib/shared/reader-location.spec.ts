@@ -103,14 +103,20 @@ describe('readerHref', () => {
 
   it('carries the search and the capture that was reached', () => {
     expect(
-      readerHref(bookId('one'), imageIndex(13), { query: '海が', capture: captureId('c1') }),
+      readerHref(bookId('one'), imageIndex(13), { capture: captureId('c1'), query: '海が' }),
     ).toBe('/read/one?image=13&find=%E6%B5%B7%E3%81%8C&capture=c1');
   });
 
-  it('leaves out an arrival whose query is only spaces', () => {
+  it('carries a capture reached without a search', () => {
     expect(
-      readerHref(bookId('one'), imageIndex(1), { query: '  ', capture: captureId('c1') }),
-    ).toBe('/read/one?image=1');
+      readerHref(bookId('one'), imageIndex(13), { capture: captureId('c1'), query: null }),
+    ).toBe('/read/one?image=13&capture=c1');
+  });
+
+  it('keeps the capture when the query is only spaces', () => {
+    expect(
+      readerHref(bookId('one'), imageIndex(1), { capture: captureId('c1'), query: '  ' }),
+    ).toBe('/read/one?image=1&capture=c1');
   });
 });
 
@@ -119,20 +125,29 @@ describe('readArrival', () => {
     const arrival = readArrival(
       new URL('https://r.test/read/one?image=1&find=%E6%B5%B7&capture=c1').searchParams,
     );
-    expect(arrival).toEqual({ query: '海', capture: captureId('c1') });
+    expect(arrival).toEqual({ capture: captureId('c1'), query: '海' });
   });
 
   it('reports nothing when only the search is named', () => {
     expect(readArrival(new URL('https://r.test/read/one?find=%E6%B5%B7').searchParams)).toBeNull();
   });
 
-  it('reports nothing when only the capture is named', () => {
-    expect(readArrival(new URL('https://r.test/read/one?capture=c1').searchParams)).toBeNull();
+  it('reads a capture named without a search', () => {
+    expect(readArrival(new URL('https://r.test/read/one?capture=c1').searchParams)).toEqual({
+      capture: captureId('c1'),
+      query: null,
+    });
   });
 
-  it('reports nothing for a search of only spaces', () => {
+  it('drops a search of only spaces and keeps the capture', () => {
     expect(
       readArrival(new URL('https://r.test/read/one?find=%20&capture=c1').searchParams),
+    ).toEqual({ capture: captureId('c1'), query: null });
+  });
+
+  it('reports nothing when the capture is empty', () => {
+    expect(
+      readArrival(new URL('https://r.test/read/one?find=%E6%B5%B7&capture=').searchParams),
     ).toBeNull();
   });
 });
