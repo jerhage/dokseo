@@ -129,7 +129,7 @@ export class CaptureView {
   consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
-  #book: BookId | null = null;
+  #book = $state.raw<BookId | null>(null);
   #generation = 0;
   #running = 0;
   #warmedAt = -1;
@@ -145,6 +145,10 @@ export class CaptureView {
 
   get count(): number {
     return this.captures.length;
+  }
+
+  get book(): BookId | null {
+    return this.#book;
   }
 
   get engine(): EngineState {
@@ -263,6 +267,30 @@ export class CaptureView {
       .catch(() => null);
 
     return choice !== null && choice.ok ? choice.value.model : null;
+  }
+
+  capture(
+    source: PageSource | null,
+    language: Language | null,
+    regions: readonly ImageRegion[],
+    arrangement: Arrangement,
+  ): void {
+    const trace = this.#container.beginTrace('capture');
+    try {
+      if (source === null || language === null) {
+        trace.step('stopped', {
+          guard: 'no-open-book',
+          hasSource: source !== null,
+          language,
+        });
+        return;
+      }
+
+      trace.step('dispatched', { language, arrangement, regions: regions.length });
+      void this.recognize(source, language, regions, arrangement);
+    } finally {
+      trace.end();
+    }
   }
 
   async recognize(

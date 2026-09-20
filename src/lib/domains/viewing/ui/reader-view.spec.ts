@@ -167,6 +167,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       grantModelConsent: () => Promise.reject(new Error('not used')),
       recognizeRegion: () => Promise.reject(new Error('not used')),
       listCaptures: () => Promise.reject(new Error('not used')),
+      listEveryCapture: () => Promise.reject(new Error('not used')),
       saveCapture: () => Promise.reject(new Error('not used')),
       editCaptureText: () => Promise.reject(new Error('not used')),
       removeCapture: () => Promise.reject(new Error('not used')),
@@ -620,6 +621,57 @@ describe('the reading place in the url', () => {
 
     expect(mirrored).toEqual([4]);
     expect(world.edits.map((edit) => edit.position)).toEqual([2, 4]);
+  });
+
+  it('moves to the group holding the image the url asked for', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.goToImage(bookId('one'), imageIndex(4));
+
+    expect(view.position.index).toBe(4);
+    expect(view.visiblePages).toEqual([4, 5]);
+  });
+
+  it('clamps a jump past the end to the last image', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.goToImage(bookId('one'), imageIndex(99));
+
+    expect(view.position.index).toBe(4);
+  });
+
+  it('holds the place a jump asked for in a continuous book', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single' });
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.goToImage(bookId('one'), imageIndex(3));
+
+    expect(view.position.index).toBe(3);
+  });
+
+  it('ignores a jump aimed at a book it is not showing', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.goToImage(bookId('another'), imageIndex(4));
+
+    expect(view.position.index).toBe(0);
+  });
+
+  it('saves nothing for a jump to the place it already holds', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    await view.goToImage(bookId('one'), imageIndex(0));
+
+    expect(world.edits).toEqual([]);
   });
 
   it('reports a book that is no longer in the library as missing', async () => {

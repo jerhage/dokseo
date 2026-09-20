@@ -178,6 +178,11 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
           store.listings.push({ book, release: () => resolve(ok(held)) });
         });
       },
+      listEveryCapture: (): Promise<Result<readonly Capture[], CaptureError>> => {
+        if (store.listFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+
+        return Promise.resolve(ok([...store.rows]));
+      },
       saveCapture: (draft: CaptureDraft): Promise<Result<Capture, CaptureError>> => {
         if (store.saveFails) {
           return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));

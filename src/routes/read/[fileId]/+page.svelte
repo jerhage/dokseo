@@ -8,10 +8,7 @@
   import { CaptureView } from '$lib/domains/recognition/ui/capture-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
-  import type { Arrangement } from '$lib/shared/arrangement';
   import { bookId, type ImageIndex } from '$lib/shared/ids';
-  import type { ImageRegion } from '$lib/shared/image-region';
-  import { effectiveDirection, type ReadingDirection } from '$lib/shared/layout-kind';
   import {
     IMAGE_PARAMETER,
     LIBRARY_AFTER_MISSING_BOOK,
@@ -29,33 +26,11 @@
   const captures = new CaptureView(container);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
-  const direction = $derived<ReadingDirection>(
-    view.book === null ? 'ltr' : effectiveDirection(view.book.direction, view.book.layoutKind),
-  );
-
-  function capture(regions: readonly ImageRegion[], arrangement: Arrangement): void {
-    const trace = container.beginTrace('capture');
-    try {
-      const source = view.source;
-      if (source === null || language === null) {
-        trace.step('stopped', {
-          guard: 'no-open-book',
-          hasSource: source !== null,
-          language,
-        });
-        return;
-      }
-
-      trace.step('dispatched', { language, arrangement, regions: regions.length });
-      void captures.recognize(source, language, regions, arrangement);
-    } finally {
-      trace.end();
-    }
-  }
+  const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
 
   $effect(() => {
-    const asked = untrack(() => readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
-    void view.open(id, asked);
+    const entry = untrack(() => asked);
+    void view.open(id, entry);
     void captures.open(id);
     return () => {
       view.dispose();
@@ -64,8 +39,11 @@
   });
 
   $effect(() => {
-    const chosen = language;
-    if (chosen !== null) void captures.warm(id, chosen);
+    if (asked !== null) void view.goToImage(id, asked);
+  });
+
+  $effect(() => {
+    if (language !== null) void captures.warm(id, language);
   });
 
   $effect(() => {
@@ -73,11 +51,14 @@
   });
 </script>
 
-<ReaderScreen {view} onSelect={capture}>
+<ReaderScreen
+  {view}
+  onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
+>
   {#snippet engine()}
     <EnginePill engine={captures.engine} {language} />
   {/snippet}
   {#snippet panel()}
-    <CapturePanel view={captures} {language} {direction} />
+    <CapturePanel view={captures} {language} direction={view.direction} />
   {/snippet}
 </ReaderScreen>

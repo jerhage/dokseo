@@ -1,17 +1,20 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { match } from 'ts-pattern';
+  import { goto } from '$app/navigation';
   import type { CaptureId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
-  import { inBookOrder } from '../domain/capture-order';
+  import { readerHref } from '$lib/shared/reader-location';
   import {
     segmentsOf,
     textMatches,
     type TextMatch,
     type TextSegment,
-  } from '../domain/capture-search';
+  } from '$lib/shared/text-search';
+  import { inBookOrder } from '../domain/capture-order';
+  import { firstImage, placeLabel } from './capture-place';
   import {
     modelLoadAnnouncement,
     modelLoadNote,
@@ -31,6 +34,7 @@
   type Card = {
     readonly id: CaptureId;
     readonly place: string;
+    readonly href: string | null;
     readonly state: string;
     readonly text: string | null;
     readonly segments: readonly TextSegment[] | null;
@@ -38,6 +42,11 @@
     readonly tone: CaptureStatus;
     readonly edited: boolean;
     readonly editable: boolean;
+  };
+
+  type Step = {
+    readonly query: string;
+    readonly at: number;
   };
 
   type Hit = {
@@ -52,6 +61,8 @@
   let editing = $state<CaptureId | null>(null);
   let draft = $state('');
   let editor = $state<HTMLTextAreaElement | null>(null);
+  let field = $state<HTMLInputElement | null>(null);
+  let step = $state.raw<Step | null>(null);
   let trigger: HTMLButtonElement | null = null;
 
   $effect(() => {
@@ -64,24 +75,18 @@
 
   const announcement = $derived(waiting ? modelLoadAnnouncement(load) : '');
 
-  function page(region: ImageRegion): string {
-    return String(region.index + 1).padStart(3, '0');
-  }
-
-  function placeOf(regions: readonly ImageRegion[]): string {
-    const first = regions[0];
-    const last = regions.at(-1);
-    if (first === undefined || last === undefined) return 'no page';
-
-    const span = first.index === last.index ? `p.${page(first)}` : `p.${page(first)}–${page(last)}`;
-    return regions.length > 1 ? `${span} · ${regions.length} regions` : span;
+  function hrefOf(regions: readonly ImageRegion[]): string | null {
+    const book = view.book;
+    const index = firstImage(regions);
+    return book === null || index === null ? null : readerHref(book, index);
   }
 
   function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {
     return match(capture)
       .with({ status: 'pending' }, (running) => ({
         id: running.id,
-        place: placeOf(running.regions),
+        place: placeLabel(running.regions),
+        href: hrefOf(running.regions),
         state: 'Reading…',
         text: null,
         segments: null,
@@ -92,7 +97,8 @@
       }))
       .with({ status: 'done' }, (read) => ({
         id: read.id,
-        place: placeOf(read.regions),
+        place: placeLabel(read.regions),
+        href: hrefOf(read.regions),
         state: 'Read',
         text: read.text.text,
         segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
@@ -103,7 +109,8 @@
       }))
       .with({ status: 'empty' }, (blank) => ({
         id: blank.id,
-        place: placeOf(blank.regions),
+        place: placeLabel(blank.regions),
+        href: hrefOf(blank.regions),
         state: 'No text',
         text: null,
         segments: null,
@@ -114,7 +121,8 @@
       }))
       .with({ status: 'failed' }, (broken) => ({
         id: broken.id,
-        place: placeOf(broken.regions),
+        place: placeLabel(broken.regions),
+        href: hrefOf(broken.regions),
         state: 'Failed',
         text: null,
         segments: null,
@@ -152,6 +160,46 @@
       ? view.newestFirst.map((capture) => cardOf(capture, []))
       : hits.map((hit) => cardOf(hit.capture, hit.matches)),
   );
+
+  const cursor = $derived(searching && step !== null && step.query === wanted ? step.at : -1);
+
+  function jump(href: string, at: number): void {
+    const replace = cursor >= 0;
+    step = searching ? { query: wanted, at } : null;
+    void goto(href, { replaceState: replace, keepFocus: true, noScroll: true });
+  }
+
+  function follow(event: MouseEvent, card: Card, at: number): void {
+    if (card.href === null || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    event.preventDefault();
+    jump(card.href, at);
+  }
+
+  function stepBy(by: number): void {
+    const next = cursor + by;
+    const card = cards[next];
+    if (card === undefined || card.href === null) return;
+
+    jump(card.href, next);
+  }
+
+  function shortcuts(event: KeyboardEvent): void {
+    if (event.key !== 'k' || !(event.metaKey || event.ctrlKey)) return;
+
+    event.preventDefault();
+    field?.focus();
+    field?.select();
+  }
+
+  function findKeys(event: KeyboardEvent): void {
+    if (event.key !== 'Enter') return;
+
+    event.preventDefault();
+    stepBy(1);
+  }
 
   function begin(card: Card, from: HTMLButtonElement): void {
     editing = card.id;
@@ -195,6 +243,8 @@
   }
 </script>
 
+<svelte:window onkeydown={shortcuts} />
+
 <section class="panel" aria-label="Captures">
   <header class="head">
     <h2 class="name">Captures</h2>
@@ -213,10 +263,36 @@
     <div class="find">
       <label class="search">
         <span class="assistive">Search recognized text</span>
-        <input type="search" bind:value={query} placeholder="Search recognized text…" />
+        <input
+          bind:this={field}
+          type="search"
+          bind:value={query}
+          placeholder="Search recognized text…"
+          title="Search recognized text · ⌘K or Ctrl+K · Enter steps to the next match"
+          onkeydown={findKeys}
+        />
       </label>
       {#if searching}
-        <p class="tally" role="status">{cards.length} of {view.count} matched</p>
+        <p class="tally" role="status">
+          {cursor < 0
+            ? `${cards.length} of ${view.count} matched`
+            : `match ${cursor + 1} of ${cards.length}`}
+        </p>
+        <span class="steps">
+          <button class="tool" type="button" disabled={cursor <= 0} onclick={() => stepBy(-1)}>
+            <span class="glyph" aria-hidden="true">‹</span>
+            <span class="assistive">Previous match</span>
+          </button>
+          <button
+            class="tool"
+            type="button"
+            disabled={cursor + 1 >= cards.length}
+            onclick={() => stepBy(1)}
+          >
+            <span class="glyph" aria-hidden="true">›</span>
+            <span class="assistive">Next match</span>
+          </button>
+        </span>
       {/if}
     </div>
   {/if}
@@ -231,11 +307,21 @@
     {/if}
   {:else}
     <ul class="list">
-      {#each cards as card (card.id)}
+      {#each cards as card, order (card.id)}
         <li class="slot">
-          <article class="card {card.tone}">
+          <article class="card {card.tone}" class:at={searching && order === cursor}>
             <header class="stamp">
-              <span class="place">{card.place}</span>
+              {#if card.href === null}
+                <span class="place">{card.place}</span>
+              {:else}
+                <a
+                  class="place jump"
+                  href={card.href}
+                  onclick={(event) => follow(event, card, order)}
+                >
+                  {card.place}
+                </a>
+              {/if}
               {#if card.edited}
                 <span class="mark">Edited</span>
               {/if}
@@ -474,6 +560,26 @@
     font-family: var(--f-mono);
     font-size: 10.5px;
     letter-spacing: 0.02em;
+  }
+
+  a.jump {
+    text-decoration: none;
+  }
+
+  a.jump:hover,
+  a.jump:focus-visible {
+    color: var(--c-accent);
+  }
+
+  .card.at {
+    border-color: var(--c-accent);
+  }
+
+  .steps {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--s-1);
   }
 
   .mark {

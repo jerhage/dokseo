@@ -3,11 +3,15 @@ import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex, type BookId, type ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import type { PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import {
+  effectiveDirection,
+  type PagePairing,
+  type ReadingDirection,
+} from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
-import { pairPages, type PageGroup } from '../domain/page-pairing';
+import { groupContaining, pairPages, type PageGroup } from '../domain/page-pairing';
 import {
   groupOf,
   positionOfGroup,
@@ -107,6 +111,11 @@ export class ReaderView {
 
   get source(): PageSource | null {
     return this.#source;
+  }
+
+  get direction(): ReadingDirection {
+    const book = this.book;
+    return book === null ? 'ltr' : effectiveDirection(book.direction, book.layoutKind);
   }
 
   get group(): number {
@@ -210,6 +219,22 @@ export class ReaderView {
     this.clearSelection();
     this.#scheduleSave(book.id, moved.index);
     await this.#persist(book.id, moved.index);
+  }
+
+  async goToImage(id: BookId, index: ImageIndex): Promise<void> {
+    const book = this.book;
+    if (book === null || book.id !== id || book.imageCount === 0) return;
+
+    const wanted = imageIndex(Math.min(Math.max(index, 0), book.imageCount - 1));
+    if (wanted === this.position.index) return;
+
+    if (book.layoutKind === 'continuous') {
+      this.moveTo(readingPosition(wanted, 0));
+      return;
+    }
+
+    const group = groupContaining(this.groups, wanted);
+    if (group >= 0) await this.goToGroup(group);
   }
 
   moveTo(position: ReadingPosition): void {

@@ -5,7 +5,6 @@
   import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
-  import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     CONTINUOUS_HAS_NO_PAIRS,
     CONTINUOUS_READS_DOWNWARD,
@@ -55,9 +54,7 @@
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
-  const rtl = $derived(
-    book !== null && effectiveDirection(book.direction, book.layoutKind) === 'rtl',
-  );
+  const rtl = $derived(view.direction === 'rtl');
   const groupCount = $derived(view.groups.length);
   const group = $derived(view.group);
   const renderer = $derived.by(() => {

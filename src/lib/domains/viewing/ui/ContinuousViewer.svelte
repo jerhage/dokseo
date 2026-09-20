@@ -243,6 +243,19 @@
 
     untrack(() => apply(element, hold));
   });
+
+  $effect(() => {
+    const asked = start;
+
+    untrack(() => {
+      const element = scroller;
+      if (element === null || layout.length === 0) return;
+      if (asked.index === hold.position.index) return;
+
+      hold = { position: asked, top: 0, across: hold.across, left: 0 };
+      apply(element, hold);
+    });
+  });
 </script>
 
 <svelte:window {onkeydown} />
