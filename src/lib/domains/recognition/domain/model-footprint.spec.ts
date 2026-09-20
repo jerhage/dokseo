@@ -32,6 +32,7 @@ describe('modelFootprint', () => {
 
   it('rounds once from the exact bytes rather than summing rounded figures', () => {
     const footprint: ModelFootprint = {
+      modelId: 'an/exact-rounding-check',
       weightsBytes: 1_600_000,
       runtimeDownloadBytes: 1_600_000,
       runtimeOnDiskBytes: 1_600_000,
@@ -41,6 +42,10 @@ describe('modelFootprint', () => {
     expect(summed).toBe(4);
     expect(onDiskMb(footprint)).toBe(3);
     expect(downloadMb(footprint)).toBe(3);
+  });
+
+  it('names the model the bytes were measured from, so the two cannot drift apart', () => {
+    expect(japanese().modelId).toBe('DigitalLarynx/manga-ocr-onnx');
   });
 
   it('reports no footprint for a language whose model has not been chosen', () => {

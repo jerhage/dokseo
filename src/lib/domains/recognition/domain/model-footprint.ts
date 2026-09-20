@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { Language } from '$lib/shared/language';
 
 export type ModelFootprint = {
+  readonly modelId: string;
   readonly weightsBytes: number;
   readonly runtimeDownloadBytes: number;
   readonly runtimeOnDiskBytes: number;
@@ -9,13 +10,16 @@ export type ModelFootprint = {
 
 const BYTES_PER_MB = 1_000_000;
 
+export const JAPANESE_OCR_MODEL: ModelFootprint = {
+  modelId: 'DigitalLarynx/manga-ocr-onnx',
+  weightsBytes: 204_413_485,
+  runtimeDownloadBytes: 6_596_832,
+  runtimeOnDiskBytes: 26_861_777,
+};
+
 export function modelFootprint(language: Language): ModelFootprint | null {
   return match(language)
-    .with('ja', (): ModelFootprint => ({
-      weightsBytes: 204_413_485,
-      runtimeDownloadBytes: 6_596_832,
-      runtimeOnDiskBytes: 26_861_777,
-    }))
+    .with('ja', () => JAPANESE_OCR_MODEL)
     .with('ko', () => null)
     .exhaustive();
 }

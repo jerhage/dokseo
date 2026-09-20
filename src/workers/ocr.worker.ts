@@ -1,9 +1,10 @@
 import type { ProgressInfo } from '@huggingface/transformers';
+import { JAPANESE_OCR_MODEL } from '$lib/domains/recognition/domain/model-footprint';
 import { describeCause } from '$lib/shared/cause';
 import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
-const MODEL_ID = 'DigitalLarynx/manga-ocr-onnx';
+const MODEL_ID = JAPANESE_OCR_MODEL.modelId;
 
 const ENCODER_WEIGHTS = 'q8';
 
