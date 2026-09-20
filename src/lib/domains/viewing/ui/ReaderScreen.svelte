@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
-  import { idleChrome } from '$lib/platform/dom/idle-chrome';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -17,6 +16,7 @@
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { handlesOwnKeys } from './keyboard';
   import PagedViewer from './PagedViewer.svelte';
+  import { chromeShown, chromeToggle } from './reader-chrome';
   import type { ReaderView } from './reader-view.svelte';
 
   type Props = {
@@ -52,15 +52,14 @@
 
   const uid = $props.id();
 
-  const CHROME_IDLE_MS = 3000;
-
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
   let topBar = $state<HTMLElement | null>(null);
   let bottomBar = $state<HTMLElement | null>(null);
   let topHeight = $state(0);
   let bottomHeight = $state(0);
-  let chromeAwake = $state(true);
+  let chromeAsked = $state(true);
+  let chromeHeld = $state(false);
 
   function popoverOpen(): boolean {
     try {
@@ -70,7 +69,7 @@
     }
   }
 
-  function chromeHeld(): boolean {
+  function heldNow(): boolean {
     if (popoverOpen()) return true;
 
     const active = document.activeElement;
@@ -79,13 +78,8 @@
     return (topBar?.contains(active) ?? false) || (bottomBar?.contains(active) ?? false);
   }
 
-  const chrome = idleChrome({
-    delay: CHROME_IDLE_MS,
-    held: chromeHeld,
-    changed: (awake) => {
-      chromeAwake = awake;
-    },
-  });
+  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
+  const toggle = $derived(chromeToggle(chromeAwake));
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
@@ -233,15 +227,23 @@
 
   $effect(() => lockScrolling(document.documentElement));
 
-  $effect(() => chrome.stop);
+  $effect(() => {
+    function refresh(): void {
+      chromeHeld = heldNow();
+    }
 
-  function stir(): void {
-    chrome.stir();
-  }
+    window.addEventListener('focusin', refresh);
+    window.addEventListener('focusout', refresh);
+    window.addEventListener('toggle', refresh, true);
+
+    return () => {
+      window.removeEventListener('focusin', refresh);
+      window.removeEventListener('focusout', refresh);
+      window.removeEventListener('toggle', refresh, true);
+    };
+  });
 
   function onkeydown(event: KeyboardEvent): void {
-    stir();
-
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (downward) return;
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
@@ -253,7 +255,7 @@
   }
 </script>
 
-<svelte:window {onkeydown} onpointermove={stir} onpointerdown={stir} onwheel={stir} />
+<svelte:window {onkeydown} />
 
 <div class="screen">
   <header
@@ -264,10 +266,6 @@
     bind:offsetHeight={topHeight}
     style:margin-block-start="{chromeAwake ? 0 : -topHeight}px"
   >
-    <a class="back" href="/">
-      <span class="glyph" aria-hidden="true">‹</span>
-      Library
-    </a>
     <div class="heading">
       <h1 class="title" class:ko={book?.language === 'ko'} lang={book?.language ?? 'en'}>
         {book?.title ?? 'Reader'}
@@ -386,6 +384,34 @@
       </div>
     {/if}
 
+    <div class="rail" role="group" aria-label="Reader controls">
+      <a class="key" href="/">
+        <span class="glyph" aria-hidden="true">⌂</span>
+        <span class="assistive">Back to your library</span>
+      </a>
+
+      <button
+        class="key"
+        type="button"
+        aria-pressed={toggle.pressed}
+        onclick={() => (chromeAsked = !chromeAwake)}
+      >
+        <span class="glyph" aria-hidden="true">{toggle.glyph}</span>
+        <span class="assistive">{toggle.label}</span>
+      </button>
+
+      {#if moves.length > 0}
+        <span class="parting"></span>
+
+        {#each moves as move (move.label)}
+          <button class="key" type="button" disabled={!move.enabled} onclick={move.go}>
+            <span class="glyph" aria-hidden="true">{move.glyph}</span>
+            <span class="assistive">{move.label}</span>
+          </button>
+        {/each}
+      {/if}
+    </div>
+
     {#if arrival !== undefined}
       <div class="arrived">{@render arrival()}</div>
     {/if}
@@ -405,15 +431,6 @@
   >
     <p class="marker">{place.marker}</p>
 
-    <div class="moves">
-      {#each moves as move (move.label)}
-        <button class="move" type="button" disabled={!move.enabled} onclick={move.go}>
-          <span class="glyph" aria-hidden="true">{move.glyph}</span>
-          <span class="assistive">{move.label}</span>
-        </button>
-      {/each}
-    </div>
-
     <div
       class="track"
       class:rtl
@@ -431,6 +448,8 @@
 
 <style>
   .screen {
+    --w-rail: 38px;
+
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -470,26 +489,6 @@
 
   .bottom {
     border-top: 1px solid var(--c-border-1);
-  }
-
-  .back {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--s-1);
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-size: 11.5px;
-    text-decoration: none;
-  }
-
-  .back:hover,
-  .back:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
   }
 
   .heading {
@@ -645,8 +644,66 @@
   .arrived {
     position: absolute;
     top: var(--s-4);
-    left: var(--s-5);
+    left: calc(var(--s-3) * 2 + var(--w-rail));
     z-index: var(--z-chrome);
+  }
+
+  .rail {
+    position: absolute;
+    box-sizing: border-box;
+    top: 50%;
+    left: var(--s-3);
+    z-index: var(--z-chrome);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    width: var(--w-rail);
+    padding: var(--s-1);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-chrome);
+    transform: translateY(-50%);
+  }
+
+  .key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--c-text-5);
+    font-family: var(--f-ui);
+    font-size: 14px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .key:hover:not(:disabled),
+  .key:focus-visible {
+    background: var(--c-surface-button);
+    color: var(--c-accent);
+  }
+
+  .key[aria-pressed='true'] {
+    background: var(--c-accent-wash-soft);
+    color: var(--c-accent);
+  }
+
+  .key:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  .parting {
+    width: 14px;
+    height: 1px;
+    margin: var(--s-1) auto;
+    background: var(--c-border-4);
   }
 
   .dock {
@@ -694,40 +751,6 @@
     font-family: var(--f-mono);
     font-size: 11px;
     letter-spacing: 0.02em;
-  }
-
-  .moves {
-    display: flex;
-    flex: none;
-    gap: var(--s-1);
-  }
-
-  .move {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-4);
-    font-family: var(--f-ui);
-    font-size: 14px;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .move:hover:not(:disabled),
-  .move:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .move:disabled {
-    cursor: default;
-    opacity: 0.4;
   }
 
   .glyph {
