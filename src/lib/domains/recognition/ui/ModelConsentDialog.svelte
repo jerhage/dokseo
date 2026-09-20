@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { megabytes } from '$lib/shared/bytes';
   import { languageName } from '$lib/shared/language';
-  import { downloadMb, megabytes, onDiskMb } from '../domain/model-footprint';
+  import { downloadMb, onDiskMb } from '../domain/model-footprint';
   import type { ConsentRequest } from './capture-view.svelte';
 
   type Props = {

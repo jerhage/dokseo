@@ -244,6 +244,9 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         return Promise.resolve();
       },
     },
+    storage: {
+      readStorageAccount: unused,
+    },
   };
 
   return { container, calls, consent, store, engine, steps, ended };

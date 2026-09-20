@@ -6,7 +6,8 @@
     computeDetectionNote,
     type ComputeChoice,
   } from '../domain/compute-choice';
-  import { downloadMb, megabytes, onDiskMb, runtimeMb, weightsMb } from '../domain/model-footprint';
+  import { megabytes } from '$lib/shared/bytes';
+  import { downloadMb, onDiskMb, runtimeMb, weightsMb } from '../domain/model-footprint';
   import { engineStatus, NOT_INSTALLED, OCR_ENGINES, ON_DEVICE_ENGINE } from '../domain/ocr-engine';
   import { deviceName } from '../domain/recognizer-session';
   import EngineTrade from './EngineTrade.svelte';

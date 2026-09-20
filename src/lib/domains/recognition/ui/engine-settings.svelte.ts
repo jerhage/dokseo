@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
+import { megabytes, storedSize } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
 import { LANGUAGES, type Language } from '$lib/shared/language';
 import type { Result } from '$lib/shared/result';
@@ -14,7 +15,7 @@ import {
   type DownloadState,
 } from '../domain/model-download';
 import type { ModelLoad } from '../domain/model-load';
-import { megabytes, modelsFor, storedSize, type ModelFootprint } from '../domain/model-footprint';
+import { modelsFor, type ModelFootprint } from '../domain/model-footprint';
 import type { ModelStorageError } from '../domain/model-storage';
 import type { EngineState } from '../domain/ocr-engine';
 import type { RecognizerSession } from '../domain/recognizer-session';

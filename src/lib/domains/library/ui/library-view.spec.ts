@@ -112,6 +112,9 @@ function fakes(): Fakes {
       cancelModelLoad: () => Promise.reject(new Error('not used')),
       closeRecognizer: () => Promise.reject(new Error('not used')),
     },
+    storage: {
+      readStorageAccount: () => Promise.reject(new Error('not used')),
+    },
   };
 
   return { container, lists, opens, reports, removes, edits, cover, usage };

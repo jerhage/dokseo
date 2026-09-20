@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { megabytes } from '$lib/shared/bytes';
 import {
   chosenModel,
   downloadMb,
   engineName,
   knownModel,
-  megabytes,
   modelFootprint,
   modelsFor,
   onDiskMb,

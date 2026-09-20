@@ -111,6 +111,13 @@ import {
   saveRecognizerSetup,
   type SaveRecognizerSetupDeps,
 } from './domains/recognition/use-cases/save-recognizer-setup';
+import { createOriginStores } from './domains/storage/adapters/browser-origin-stores';
+import type { OriginStoresError } from './domains/storage/domain/origin-stores';
+import type { StorageAccount } from './domains/storage/domain/storage-parts';
+import {
+  readStorageAccount,
+  type ReadStorageAccountDeps,
+} from './domains/storage/use-cases/read-storage-account';
 
 export type RecognitionProgress = (load: ModelLoad) => void;
 
@@ -258,6 +265,9 @@ export type Container = {
     ) => Promise<Result<PartialReport, PartialError> | null>;
     readonly closeRecognizer: (language: Language) => Promise<void>;
   };
+  readonly storage: {
+    readonly readStorageAccount: () => Promise<Result<StorageAccount, OriginStoresError>>;
+  };
 };
 
 export function buildContainer(): Container {
@@ -297,6 +307,11 @@ export function buildContainer(): Container {
   };
   const deleteModelDeps: DeleteModelDeps = { storage, partials, consent };
   const saveRecognizerSetupDeps: SaveRecognizerSetupDeps = { setups };
+  const readStorageAccountDeps: ReadStorageAccountDeps = {
+    stores: createOriginStores(),
+    estimate: storageEstimate,
+    persisted: isPersisted,
+  };
   const detectComputeDeps: DetectComputeDeps = { probe: probeGpu };
 
   return {
@@ -396,6 +411,9 @@ export function buildContainer(): Container {
         if (recognizer === null) return;
         closeRecognizer({ recognizer });
       },
+    },
+    storage: {
+      readStorageAccount: () => readStorageAccount(readStorageAccountDeps),
     },
   };
 }

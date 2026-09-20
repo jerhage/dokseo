@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { megabytes } from '$lib/shared/bytes';
 import type { Language } from '$lib/shared/language';
 
 export type ModelFootprint = {
@@ -12,10 +13,6 @@ export type ModelFootprint = {
   readonly runtimeOnDiskBytes: number;
 };
 
-const BYTES_PER_MB = 1_000_000;
-
-const BYTES_PER_KB = 1_000;
-
 export const JAPANESE_OCR_MODEL: ModelFootprint = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
   engine: 'manga-ocr',
@@ -28,6 +25,10 @@ export const JAPANESE_OCR_MODEL: ModelFootprint = {
 };
 
 const KNOWN_MODELS: readonly ModelFootprint[] = [JAPANESE_OCR_MODEL];
+
+export function everyModel(): readonly ModelFootprint[] {
+  return KNOWN_MODELS;
+}
 
 export function engineName(modelId: string): string {
   return KNOWN_MODELS.find((known) => known.modelId === modelId)?.engine ?? modelId;
@@ -51,17 +52,6 @@ export function modelsFor(language: Language): readonly ModelFootprint[] {
 export function chosenModel(language: Language, modelId: string | null): ModelFootprint | null {
   const offered = modelsFor(language);
   return offered.find((known) => known.modelId === modelId) ?? offered[0] ?? null;
-}
-
-export function megabytes(bytes: number, decimals = 0): number {
-  const scale = 10 ** decimals;
-  return Math.round((bytes / BYTES_PER_MB) * scale) / scale;
-}
-
-export function storedSize(bytes: number): string {
-  return bytes >= BYTES_PER_MB
-    ? `${megabytes(bytes)} MB`
-    : `${Math.round(bytes / BYTES_PER_KB)} kB`;
 }
 
 export function weightsMb(footprint: ModelFootprint): number {

@@ -13,8 +13,15 @@ export type ModelStorageReport = {
   readonly weights: readonly string[];
 };
 
+const RUNTIME_SUFFIXES: readonly string[] = ['.wasm', '.mjs'];
+
 export function belongsToModel(url: string, modelId: string): boolean {
   return url.includes(`/${modelId}/`);
+}
+
+export function isRuntimeAsset(url: string): boolean {
+  const path = url.split(/[?#]/)[0] ?? '';
+  return RUNTIME_SUFFIXES.some((suffix) => path.endsWith(suffix));
 }
 
 export function entriesOfModel(
