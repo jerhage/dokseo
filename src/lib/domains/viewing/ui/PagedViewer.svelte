@@ -41,10 +41,21 @@
     readonly glow?: readonly ImageRegion[];
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
+    readonly onTap: () => void;
     readonly onFit: (fit: PageFit) => void;
   };
 
-  let { pages, direction, pageFit, imageAt, glow = [], select, clear, onFit }: Props = $props();
+  let {
+    pages,
+    direction,
+    pageFit,
+    imageAt,
+    glow = [],
+    select,
+    clear,
+    onTap,
+    onFit,
+  }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -390,6 +401,7 @@
       suppressed={spaceHeld}
       select={selected}
       {clear}
+      tap={onTap}
     />
 
     <p class="hint" class:hushed={pending.length === 0} aria-hidden="true">

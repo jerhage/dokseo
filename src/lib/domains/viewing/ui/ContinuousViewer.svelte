@@ -33,9 +33,10 @@
     readonly moveTo: (position: ReadingPosition) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
+    readonly onTap: () => void;
   };
 
-  let { sizes, start, imageAt, glow = [], moveTo, select, clear }: Props = $props();
+  let { sizes, start, imageAt, glow = [], moveTo, select, clear, onTap }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -305,6 +306,7 @@
     pointerTypes={DRAG_SELECTS_WITH}
     {select}
     {clear}
+    tap={onTap}
   />
 </div>
 

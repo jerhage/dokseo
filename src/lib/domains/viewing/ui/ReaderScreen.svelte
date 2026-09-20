@@ -13,11 +13,11 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
-  import { chromeWanted, rememberChrome } from './chrome-preference';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { handlesOwnKeys } from './keyboard';
+  import { moveControls, type MoveIntent } from './page-moves';
   import PagedViewer from './PagedViewer.svelte';
-  import { chromeShown, chromeToggle } from './reader-chrome';
+  import { chromeShown } from './reader-chrome';
   import type { ReaderView } from './reader-view.svelte';
 
   type Props = {
@@ -32,6 +32,11 @@
   type Move = {
     readonly label: string;
     readonly glyph: string;
+    readonly enabled: boolean;
+    readonly go: () => void;
+  };
+
+  type Step = {
     readonly enabled: boolean;
     readonly go: () => void;
   };
@@ -59,7 +64,7 @@
   let bottomBar = $state<HTMLElement | null>(null);
   let topHeight = $state(0);
   let bottomHeight = $state(0);
-  let chromeAsked = $state(chromeWanted());
+  let chromeAsked = $state(false);
   let chromeHeld = $state(false);
 
   function popoverOpen(): boolean {
@@ -84,13 +89,11 @@
     return holdsFocus(topBar, active) || holdsFocus(bottomBar, active);
   }
 
-  function askChrome(wanted: boolean): void {
-    chromeAsked = wanted;
-    rememberChrome(wanted);
-  }
-
   const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
-  const toggle = $derived(chromeToggle(chromeAwake));
+
+  function toggleChrome(): void {
+    chromeAsked = !chromeAwake;
+  }
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
@@ -147,18 +150,6 @@
   const canNext = $derived(stage === 'reading' && group + 1 < groupCount);
 
   const forwardKey = $derived(rtl ? 'ArrowLeft' : 'ArrowRight');
-  const backward = $derived({
-    label: 'Previous page',
-    glyph: '‹',
-    enabled: canPrevious,
-    go: () => void view.previous(),
-  });
-  const forward = $derived({
-    label: 'Next page',
-    glyph: '›',
-    enabled: canNext,
-    go: () => void view.next(),
-  });
 
   const place = $derived.by<Place>(() => {
     const kind = book?.layoutKind;
@@ -183,27 +174,39 @@
 
   const progress = $derived(place.of === 0 ? 0 : (place.at / place.of) * 100);
 
-  const moves = $derived.by<readonly Move[]>(() => {
+  const steps = $derived.by<Record<MoveIntent, Step> | null>(() => {
     const kind = book?.layoutKind;
-    if (kind === undefined) return [];
+    if (kind === undefined) return null;
 
     return match(kind)
-      .with('paged', () => (rtl ? [forward, backward] : [backward, forward]))
-      .with('continuous', () => [
-        {
-          label: 'Previous screen',
-          glyph: '↑',
-          enabled: stage === 'reading' && (strip?.canShift(-1) ?? false),
-          go: () => strip?.shift(-1),
-        },
-        {
-          label: 'Next screen',
-          glyph: '↓',
+      .with('paged', () => ({
+        advance: { enabled: canNext, go: () => void view.next() },
+        retreat: { enabled: canPrevious, go: () => void view.previous() },
+      }))
+      .with('continuous', () => ({
+        advance: {
           enabled: stage === 'reading' && (strip?.canShift(1) ?? false),
           go: () => strip?.shift(1),
         },
-      ])
+        retreat: {
+          enabled: stage === 'reading' && (strip?.canShift(-1) ?? false),
+          go: () => strip?.shift(-1),
+        },
+      }))
       .exhaustive();
+  });
+
+  const moves = $derived.by<readonly Move[]>(() => {
+    const kind = book?.layoutKind;
+    const stepping = steps;
+    if (kind === undefined || stepping === null) return [];
+
+    return moveControls(kind, view.direction).map((control) => ({
+      label: control.label,
+      glyph: control.glyph,
+      enabled: stepping[control.intent].enabled,
+      go: stepping[control.intent].go,
+    }));
   });
 
   const fits = $derived.by<readonly FitChoice[]>(() => {
@@ -371,6 +374,7 @@
         moveTo={(position) => view.moveTo(position)}
         select={(regions) => commit(regions, 'column')}
         clear={() => view.clearSelection()}
+        onTap={toggleChrome}
       />
     {:else if curtain === null && book !== null}
       {#key book.id}
@@ -383,6 +387,7 @@
           {glow}
           select={(regions) => commit(regions, 'row')}
           clear={() => view.clearSelection()}
+          onTap={toggleChrome}
           onFit={(fit) => void view.setPageFit(fit)}
         />
       {/key}
@@ -395,33 +400,25 @@
       </div>
     {/if}
 
-    <div class="rail" role="group" aria-label="Reader controls">
-      <a class="key" href="/">
-        <span class="glyph" aria-hidden="true">⌂</span>
-        <span class="assistive">Back to your library</span>
-      </a>
+    {#if chromeAwake}
+      <div class="rail" role="group" aria-label="Reader controls">
+        <a class="key" href="/">
+          <span class="glyph" aria-hidden="true">⌂</span>
+          <span class="assistive">Back to your library</span>
+        </a>
 
-      <button
-        class="key"
-        type="button"
-        aria-pressed={toggle.pressed}
-        onclick={() => askChrome(!chromeAwake)}
-      >
-        <span class="glyph" aria-hidden="true">{toggle.glyph}</span>
-        <span class="assistive">{toggle.label}</span>
-      </button>
+        {#if moves.length > 0}
+          <span class="parting"></span>
 
-      {#if moves.length > 0}
-        <span class="parting"></span>
-
-        {#each moves as move (move.label)}
-          <button class="key" type="button" disabled={!move.enabled} onclick={move.go}>
-            <span class="glyph" aria-hidden="true">{move.glyph}</span>
-            <span class="assistive">{move.label}</span>
-          </button>
-        {/each}
-      {/if}
-    </div>
+          {#each moves as move (move.label)}
+            <button class="key" type="button" disabled={!move.enabled} onclick={move.go}>
+              <span class="glyph" aria-hidden="true">{move.glyph}</span>
+              <span class="assistive">{move.label}</span>
+            </button>
+          {/each}
+        {/if}
+      </div>
+    {/if}
 
     {#if arrival !== undefined}
       <div class="arrived">{@render arrival()}</div>
@@ -697,11 +694,6 @@
   .key:hover:not(:disabled),
   .key:focus-visible {
     background: var(--c-surface-button);
-    color: var(--c-accent);
-  }
-
-  .key[aria-pressed='true'] {
-    background: var(--c-accent-wash-soft);
     color: var(--c-accent);
   }
 

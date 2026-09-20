@@ -20,9 +20,18 @@
     readonly suppressed?: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
+    readonly tap: () => void;
   };
 
-  let { within, arrangement, pointerTypes, suppressed = false, select, clear }: Props = $props();
+  let {
+    within,
+    arrangement,
+    pointerTypes,
+    suppressed = false,
+    select,
+    clear,
+    tap,
+  }: Props = $props();
 
   let host = $state<HTMLDivElement | null>(null);
   let origin = $state.raw<Point | null>(null);
@@ -207,6 +216,7 @@
       });
       if (!usable) {
         trace.step('stopped', { guard: 'below-minimum' });
+        tap();
         return;
       }
 
@@ -217,6 +227,7 @@
       }
       if (regions.length === 0) {
         trace.step('stopped', { guard: 'no-regions' });
+        tap();
         return;
       }
 
