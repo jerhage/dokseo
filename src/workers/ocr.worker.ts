@@ -4,7 +4,7 @@ import type { RecognizerSetup } from '$lib/domains/recognition/domain/recognizer
 import type { ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
 import { describeCause } from '$lib/shared/cause';
 import { japaneseOcrText } from './japanese-ocr-text';
-import { watchModelLoadSource } from './model-load-source';
+import { installModelFetch } from './model-fetch';
 import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
@@ -79,9 +79,9 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
   const { AutoModel, AutoProcessor, AutoTokenizer, env, RawImage, Tensor } =
     await import('@huggingface/transformers');
   env.allowLocalModels = false;
-  loadSource = watchModelLoadSource(env);
 
   const modelId = setup.modelId;
+  loadSource = installModelFetch(env, { modelId });
   const device = await deviceFor(setup.compute);
   const [processor, tokenizer, model] = await Promise.all([
     AutoProcessor.from_pretrained(modelId),

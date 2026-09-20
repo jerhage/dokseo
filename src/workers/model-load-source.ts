@@ -3,9 +3,9 @@ import {
   type ModelLoadSource,
 } from '$lib/domains/recognition/domain/model-load';
 
-type Fetching = (input: string | URL, init?: unknown) => Promise<unknown>;
+export type Fetching = (input: string | URL, init?: unknown) => Promise<unknown>;
 
-function asksForOneRange(init: unknown): boolean {
+export function asksForOneRange(init: unknown): boolean {
   if (typeof init !== 'object' || init === null) return false;
 
   const headers = (init as { headers?: unknown }).headers;
