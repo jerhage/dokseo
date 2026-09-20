@@ -1,7 +1,10 @@
 import type { ProgressInfo } from '@huggingface/transformers';
 import { JAPANESE_OCR_MODEL } from '$lib/domains/recognition/domain/model-footprint';
+import type { ModelLoadSource } from '$lib/domains/recognition/domain/model-load';
+import type { RecognizerDevice } from '$lib/domains/recognition/domain/recognizer-session';
 import { describeCause } from '$lib/shared/cause';
 import { japaneseOcrText } from './japanese-ocr-text';
+import { watchModelLoadSource } from './model-load-source';
 import { mostLikelyToken, type DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
@@ -40,14 +43,17 @@ const inFlight = new Set<number>();
 
 let opening: Promise<Session> | null = null;
 
+let loadSource: () => ModelLoadSource = () => 'cache';
+
 function reportProgress(info: ProgressInfo): void {
   if (info.status !== 'progress_total') return;
 
   const fraction = Math.min(1, Math.max(0, info.progress / FULL_PERCENT));
-  for (const id of inFlight) post({ kind: 'progress', id, fraction });
+  const source = loadSource();
+  for (const id of inFlight) post({ kind: 'progress', id, fraction, source });
 }
 
-async function chooseDevice(): Promise<'webgpu' | 'wasm'> {
+async function chooseDevice(): Promise<RecognizerDevice> {
   try {
     const adapter = await navigator.gpu?.requestAdapter();
     return adapter === null || adapter === undefined ? 'wasm' : 'webgpu';
@@ -73,6 +79,7 @@ async function openSession(): Promise<Session> {
   const { AutoModel, AutoProcessor, AutoTokenizer, env, RawImage, Tensor } =
     await import('@huggingface/transformers');
   env.allowLocalModels = false;
+  loadSource = watchModelLoadSource(env);
 
   const device = await chooseDevice();
   const [processor, tokenizer, model] = await Promise.all([
@@ -91,6 +98,8 @@ async function openSession(): Promise<Session> {
   if (encoder === undefined || decoder === undefined) {
     throw new Error(`${MODEL_ID} did not load as an encoder and a decoder session`);
   }
+
+  post({ kind: 'opened', modelId: MODEL_ID, device });
 
   return {
     async read(image: ImageBitmap): Promise<string> {

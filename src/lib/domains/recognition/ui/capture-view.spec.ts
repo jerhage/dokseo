@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
-import type { Container, RecognitionProgress } from '$lib/container';
+import type { Container, RecognitionNotices } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, type BookId, type CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -12,16 +12,22 @@ import { editedCapture, takenCapture, type Capture, type CaptureDraft } from '..
 import type { CaptureError } from '../domain/capture-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../domain/model-consent';
 import { modelFootprint } from '../domain/model-footprint';
+import type { ModelLoad } from '../domain/model-load';
 import { recognizedText, type RecognizedText } from '../domain/recognized-text';
 import type { RecognizeRegionError } from '../use-cases/recognize-region';
-import { CaptureView } from './capture-view.svelte';
+import {
+  CaptureView,
+  modelLoadAnnouncement,
+  modelLoadNote,
+  READING_SELECTION,
+} from './capture-view.svelte';
 
 type Reading = Result<RecognizedText, RecognizeRegionError>;
 
 type Call = {
   readonly language: Language;
   readonly regions: readonly ImageRegion[];
-  readonly report: RecognitionProgress | undefined;
+  readonly notices: RecognitionNotices;
   readonly settle: (reading: Reading) => void;
 };
 
@@ -141,9 +147,9 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         consent.granted.add(language);
         return Promise.resolve(ok(undefined));
       },
-      recognizeRegion: (language, _source, taken, _arrangement, report) =>
+      recognizeRegion: (language, _source, taken, _arrangement, notices = {}) =>
         new Promise<Reading>((resolve) => {
-          calls.push({ language, regions: taken, report, settle: resolve });
+          calls.push({ language, regions: taken, notices, settle: resolve });
         }),
       listCaptures: (book: BookId): Promise<Result<readonly Capture[], CaptureError>> => {
         if (store.listFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
@@ -345,36 +351,77 @@ describe('CaptureView', () => {
     expect(at(view.captures, 0).status).toBe('empty');
   });
 
-  it('stores the download fraction and clears it when the recognition settles', async () => {
+  it('stores the load progress and clears it when the recognition settles', async () => {
     const world = fakes();
     const view = new CaptureView(world.container);
     expect(view.progress).toBeNull();
 
     const running = read(view);
     const call = await started(world, 0);
-    call.report?.(0.42);
-    expect(view.progress).toBe(0.42);
+    call.notices.onProgress?.({ fraction: 0.42, source: 'network' });
+    expect(view.progress).toEqual({ fraction: 0.42, source: 'network' });
 
     call.settle(ok(recognizedText('done')));
     await running;
     expect(view.progress).toBeNull();
   });
 
-  it('holds the download fraction until the last capture in flight settles', async () => {
+  it('holds the load progress until the last capture in flight settles', async () => {
     const world = fakes();
     const view = new CaptureView(world.container);
 
     const first = read(view);
     const second = read(view);
-    (await started(world, 0)).report?.(0.5);
+    (await started(world, 0)).notices.onProgress?.({ fraction: 0.5, source: 'cache' });
 
     (await started(world, 0)).settle(ok(recognizedText('first')));
     await first;
-    expect(view.progress).toBe(0.5);
+    expect(view.progress).toEqual({ fraction: 0.5, source: 'cache' });
 
     (await started(world, 1)).settle(ok(recognizedText('second')));
     await second;
     expect(view.progress).toBeNull();
+  });
+
+  it('holds no session until the recognizer reports one', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    expect(view.session).toBeNull();
+
+    const running = read(view);
+    const call = await started(world, 0);
+    expect(view.session).toBeNull();
+
+    call.settle(ok(recognizedText('done')));
+    await running;
+    expect(view.session).toBeNull();
+  });
+
+  it('records the model and the device the recognizer opened its session on', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+
+    const running = read(view);
+    const call = await started(world, 0);
+    call.notices.onSession?.({ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'webgpu' });
+
+    call.settle(ok(recognizedText('done')));
+    await running;
+    expect(view.session).toEqual({ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'webgpu' });
+  });
+
+  it('forgets the session when the reader opens another book', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+
+    const running = read(view);
+    const call = await started(world, 0);
+    call.notices.onSession?.({ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'wasm' });
+    call.settle(ok(recognizedText('done')));
+    await running;
+
+    await view.open(TWO);
+    expect(view.session).toBeNull();
   });
 
   it('clears the list', async () => {
@@ -863,5 +910,45 @@ describe('CaptureView', () => {
     await returning.open(ONE);
 
     expect(panelTexts(returning)).toEqual(['残る']);
+  });
+});
+
+describe('modelLoadNote', () => {
+  it('calls a load that reported no download a load, not a download', () => {
+    const load: ModelLoad = { fraction: 0.37, source: 'cache' };
+    expect(modelLoadNote(load)).toBe('Loading the model · 37%');
+  });
+
+  it('calls a load that reported a download a download', () => {
+    const load: ModelLoad = { fraction: 0.37, source: 'network' };
+    expect(modelLoadNote(load)).toBe('Downloading the model · 37%');
+  });
+});
+
+describe('modelLoadAnnouncement', () => {
+  it('announces a cached load as loading rather than downloading', () => {
+    expect(modelLoadAnnouncement({ fraction: 0.37, source: 'cache' })).toBe(
+      'Loading the recognition model, 37 percent.',
+    );
+  });
+
+  it('announces a fetched load as downloading', () => {
+    expect(modelLoadAnnouncement({ fraction: 0.9, source: 'network' })).toBe(
+      'Downloading the recognition model, 90 percent.',
+    );
+  });
+
+  it('agrees with the card note about whether bytes are being downloaded', () => {
+    const cached: ModelLoad = { fraction: 0.5, source: 'cache' };
+    const fetched: ModelLoad = { fraction: 0.5, source: 'network' };
+
+    expect(modelLoadNote(cached).startsWith('Loading')).toBe(true);
+    expect(modelLoadAnnouncement(cached).startsWith('Loading')).toBe(true);
+    expect(modelLoadNote(fetched).startsWith('Downloading')).toBe(true);
+    expect(modelLoadAnnouncement(fetched).startsWith('Downloading')).toBe(true);
+  });
+
+  it('announces a reading with no load in flight without naming the model', () => {
+    expect(modelLoadAnnouncement(null)).toBe(READING_SELECTION);
   });
 });

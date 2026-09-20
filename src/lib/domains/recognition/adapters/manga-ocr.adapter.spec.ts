@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ModelLoad } from '../domain/model-load';
+import type { RecognizerSession } from '../domain/recognizer-session';
 import { createMangaOcrRecognizer } from './manga-ocr.adapter';
 import type { OcrReply, OcrRequest } from '../../../../workers/ocr-worker-protocol';
 
@@ -267,18 +269,40 @@ describe('createMangaOcrRecognizer', () => {
     expect(owned.wasClosed()).toBe(false);
   });
 
-  it('reports download progress as a fraction', () => {
+  it('reports load progress as a fraction and the source the bytes came from', () => {
     stubOffscreenCanvas();
     const fake = fakeWorker();
-    const seen: number[] = [];
+    const seen: ModelLoad[] = [];
 
     const recognizer = createMangaOcrRecognizer({
       startWorker: () => fake.worker,
-      onProgress: (fraction: number) => seen.push(fraction),
+      onProgress: (load: ModelLoad) => seen.push(load),
     });
 
     void recognizer.recognize(stubBitmap(120, 48).bitmap);
-    fake.reply({ kind: 'progress', id: fake.sent[0]?.request.id ?? 0, fraction: 0.42 });
-    expect(seen).toEqual([0.42]);
+    const id = fake.sent[0]?.request.id ?? 0;
+    fake.reply({ kind: 'progress', id, fraction: 0.42, source: 'network' });
+    fake.reply({ kind: 'progress', id, fraction: 0.8, source: 'cache' });
+    expect(seen).toEqual([
+      { fraction: 0.42, source: 'network' },
+      { fraction: 0.8, source: 'cache' },
+    ]);
+  });
+
+  it('reports the model and the device once the worker opens a session', () => {
+    stubOffscreenCanvas();
+    const fake = fakeWorker();
+    const seen: RecognizerSession[] = [];
+
+    const recognizer = createMangaOcrRecognizer({
+      startWorker: () => fake.worker,
+      onSession: (session: RecognizerSession) => seen.push(session),
+    });
+
+    void recognizer.recognize(stubBitmap(120, 48).bitmap);
+    expect(seen).toEqual([]);
+
+    fake.reply({ kind: 'opened', modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'wasm' });
+    expect(seen).toEqual([{ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'wasm' }]);
   });
 });

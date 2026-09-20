@@ -10,12 +10,35 @@ import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import { editedText, oldestFirst, type Capture, type CaptureDraft } from '../domain/capture';
 import { downloadMb, modelFootprint, type ModelFootprint } from '../domain/model-footprint';
+import type { ModelLoad, ModelLoadSource } from '../domain/model-load';
 import { hasNoText, recognizedText, type RecognizedText } from '../domain/recognized-text';
+import type { RecognizerSession } from '../domain/recognizer-session';
 import type { CropError } from '../domain/region-cropper';
 import type { RecognitionError } from '../domain/text-recognizer';
 import type { RecognizeRegionError } from '../use-cases/recognize-region';
 
 export const NOTHING_READ = 'Nothing was read in that selection.';
+
+export const READING_SELECTION = 'Reading the selection.';
+
+const FULL_PERCENT = 100;
+
+function loadVerb(source: ModelLoadSource): string {
+  return source === 'network' ? 'Downloading' : 'Loading';
+}
+
+function loadPercent(load: ModelLoad): number {
+  return Math.round(load.fraction * FULL_PERCENT);
+}
+
+export function modelLoadNote(load: ModelLoad): string {
+  return `${loadVerb(load.source)} the model · ${loadPercent(load)}%`;
+}
+
+export function modelLoadAnnouncement(load: ModelLoad | null): string {
+  if (load === null) return READING_SELECTION;
+  return `${loadVerb(load.source)} the recognition model, ${loadPercent(load)} percent.`;
+}
 
 export type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
 
@@ -98,7 +121,8 @@ function cardOf(capture: Capture): PanelCapture {
 
 export class CaptureView {
   captures = $state.raw<readonly PanelCapture[]>([]);
-  progress = $state.raw<number | null>(null);
+  progress = $state.raw<ModelLoad | null>(null);
+  session = $state.raw<RecognizerSession | null>(null);
   consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
@@ -226,8 +250,13 @@ export class CaptureView {
         held.source,
         held.regions,
         held.arrangement,
-        (fraction) => {
-          this.progress = fraction;
+        {
+          onProgress: (load) => {
+            this.progress = load;
+          },
+          onSession: (opened) => {
+            this.session = opened;
+          },
         },
       );
       settled = settlementOf(read);
@@ -309,6 +338,7 @@ export class CaptureView {
   #forget(): number {
     this.#book = null;
     this.#held = null;
+    this.session = null;
     this.consentRequest = null;
     this.captures = [];
     this.#stored = new Map();

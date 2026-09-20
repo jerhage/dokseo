@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   downloadMb,
+  engineName,
   megabytes,
   modelFootprint,
   onDiskMb,
@@ -33,6 +34,7 @@ describe('modelFootprint', () => {
   it('rounds once from the exact bytes rather than summing rounded figures', () => {
     const footprint: ModelFootprint = {
       modelId: 'an/exact-rounding-check',
+      engine: 'exact-rounding-check',
       weightsBytes: 1_600_000,
       runtimeDownloadBytes: 1_600_000,
       runtimeOnDiskBytes: 1_600_000,
@@ -50,5 +52,17 @@ describe('modelFootprint', () => {
 
   it('reports no footprint for a language whose model has not been chosen', () => {
     expect(modelFootprint('ko')).toBeNull();
+  });
+});
+
+describe('engineName', () => {
+  it('names the engine of a model it knows', () => {
+    expect(engineName('DigitalLarynx/manga-ocr-onnx')).toBe('manga-ocr');
+  });
+
+  it('falls back to the raw model id of a model it does not know', () => {
+    expect(engineName('someone/a-model-we-have-not-measured')).toBe(
+      'someone/a-model-we-have-not-measured',
+    );
   });
 });

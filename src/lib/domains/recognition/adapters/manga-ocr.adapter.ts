@@ -1,13 +1,16 @@
 import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
 import { err, ok, type Result } from '$lib/shared/result';
+import type { ModelLoad } from '../domain/model-load';
 import { hasNoText, recognizedText, type RecognizedText } from '../domain/recognized-text';
+import type { RecognizerSession } from '../domain/recognizer-session';
 import type { RecognitionError, TextRecognizer } from '../domain/text-recognizer';
 import type { OcrFailure, OcrReply, OcrRequest } from '../../../../workers/ocr-worker-protocol';
 
 export type MangaOcrOptions = {
   readonly startWorker?: () => Worker;
-  readonly onProgress?: (fraction: number) => void;
+  readonly onProgress?: (load: ModelLoad) => void;
+  readonly onSession?: (session: RecognizerSession) => void;
 };
 
 type Recognition = Result<RecognizedText, RecognitionError>;
@@ -62,7 +65,10 @@ export function createMangaOcrRecognizer(options: MangaOcrOptions = {}): TextRec
   function receive(reply: OcrReply): void {
     match(reply)
       .with({ kind: 'progress' }, (progress) => {
-        options.onProgress?.(progress.fraction);
+        options.onProgress?.({ fraction: progress.fraction, source: progress.source });
+      })
+      .with({ kind: 'opened' }, (opened) => {
+        options.onSession?.({ modelId: opened.modelId, device: opened.device });
       })
       .with({ kind: 'recognized' }, (recognized) => {
         settle(recognized.id, recognitionOf(recognized.text));

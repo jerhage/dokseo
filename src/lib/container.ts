@@ -40,7 +40,9 @@ import type {
   ModelConsentDecision,
   ModelConsentError,
 } from './domains/recognition/domain/model-consent';
+import type { ModelLoad } from './domains/recognition/domain/model-load';
 import type { RecognizedText } from './domains/recognition/domain/recognized-text';
+import type { RecognizerSession } from './domains/recognition/domain/recognizer-session';
 import type { TextRecognizer } from './domains/recognition/domain/text-recognizer';
 import {
   clearCaptures,
@@ -69,9 +71,20 @@ import {
 } from './domains/recognition/use-cases/remove-capture';
 import { saveCapture, type SaveCaptureDeps } from './domains/recognition/use-cases/save-capture';
 
-export type RecognitionProgress = (fraction: number) => void;
+export type RecognitionProgress = (load: ModelLoad) => void;
+
+export type RecognitionSessionReport = (session: RecognizerSession) => void;
+
+export type RecognitionNotices = {
+  readonly onProgress?: RecognitionProgress;
+  readonly onSession?: RecognitionSessionReport;
+};
 
 const progressListeners = new Map<Language, Set<RecognitionProgress>>();
+
+const sessionListeners = new Map<Language, Set<RecognitionSessionReport>>();
+
+const openedSessions = new Map<Language, RecognizerSession>();
 
 function progressFor(language: Language): Set<RecognitionProgress> {
   const held = progressListeners.get(language);
@@ -80,6 +93,20 @@ function progressFor(language: Language): Set<RecognitionProgress> {
   const opened = new Set<RecognitionProgress>();
   progressListeners.set(language, opened);
   return opened;
+}
+
+function sessionsFor(language: Language): Set<RecognitionSessionReport> {
+  const held = sessionListeners.get(language);
+  if (held !== undefined) return held;
+
+  const opened = new Set<RecognitionSessionReport>();
+  sessionListeners.set(language, opened);
+  return opened;
+}
+
+function noteSession(language: Language, session: RecognizerSession): void {
+  openedSessions.set(language, session);
+  for (const report of sessionsFor(language)) report(session);
 }
 
 async function loadFakeRecognizer(): Promise<TextRecognizer> {
@@ -91,8 +118,11 @@ async function loadMangaOcrRecognizer(language: Language): Promise<TextRecognize
   const { createMangaOcrRecognizer } =
     await import('./domains/recognition/adapters/manga-ocr.adapter');
   return createMangaOcrRecognizer({
-    onProgress: (fraction) => {
-      for (const report of progressFor(language)) report(fraction);
+    onProgress: (load) => {
+      for (const report of progressFor(language)) report(load);
+    },
+    onSession: (session) => {
+      noteSession(language, session);
     },
   });
 }
@@ -137,7 +167,7 @@ export type Container = {
       source: PageSource,
       regions: readonly ImageRegion[],
       arrangement: Arrangement,
-      onProgress?: RecognitionProgress,
+      notices?: RecognitionNotices,
     ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
     readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
     readonly saveCapture: (draft: CaptureDraft) => Promise<Result<Capture, CaptureError>>;
@@ -197,10 +227,17 @@ export function buildContainer(): Container {
         source: PageSource,
         regions: readonly ImageRegion[],
         arrangement: Arrangement,
-        onProgress?: RecognitionProgress,
+        notices: RecognitionNotices = {},
       ) => {
+        const { onProgress, onSession } = notices;
         const listening = progressFor(language);
+        const watching = sessionsFor(language);
         if (onProgress !== undefined) listening.add(onProgress);
+        if (onSession !== undefined) {
+          watching.add(onSession);
+          const opened = openedSessions.get(language);
+          if (opened !== undefined) onSession(opened);
+        }
 
         try {
           const recognizer = await recognizerFor(language);
@@ -213,6 +250,7 @@ export function buildContainer(): Container {
           return read;
         } finally {
           if (onProgress !== undefined) listening.delete(onProgress);
+          if (onSession !== undefined) watching.delete(onSession);
         }
       },
       listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),

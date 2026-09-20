@@ -3,6 +3,7 @@ import type { Language } from '$lib/shared/language';
 
 export type ModelFootprint = {
   readonly modelId: string;
+  readonly engine: string;
   readonly weightsBytes: number;
   readonly runtimeDownloadBytes: number;
   readonly runtimeOnDiskBytes: number;
@@ -12,10 +13,17 @@ const BYTES_PER_MB = 1_000_000;
 
 export const JAPANESE_OCR_MODEL: ModelFootprint = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
+  engine: 'manga-ocr',
   weightsBytes: 204_413_485,
   runtimeDownloadBytes: 6_596_832,
   runtimeOnDiskBytes: 26_861_777,
 };
+
+const KNOWN_MODELS: readonly ModelFootprint[] = [JAPANESE_OCR_MODEL];
+
+export function engineName(modelId: string): string {
+  return KNOWN_MODELS.find((known) => known.modelId === modelId)?.engine ?? modelId;
+}
 
 export function modelFootprint(language: Language): ModelFootprint | null {
   return match(language)
