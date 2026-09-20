@@ -41,7 +41,9 @@
     return isEmpty(rect) ? null : rect;
   });
 
-  const marquee = $derived(dragged ?? committed);
+  // The committed rect is deliberately left unrendered; `committed`, `captured` and the
+  // handles stay because editing a committed selection is planned.
+  const marquee = $derived(dragged);
 
   const overlay = $derived.by(() => {
     const rect = marquee;
