@@ -204,6 +204,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         store.rows = [...store.rows, kept];
         return Promise.resolve(ok(kept));
       },
+      writeNote: unused,
       editCaptureText: (capture: Capture, text: string): Promise<Result<Capture, CaptureError>> => {
         store.edits.push(text);
         if (store.editFails) {
@@ -286,6 +287,7 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
     regions: regions(4),
     text,
     confidence: null,
+    origin: 'recognized',
     createdAt,
     editedAt: null,
   };

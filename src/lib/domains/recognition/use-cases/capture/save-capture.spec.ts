@@ -16,6 +16,7 @@ const DRAFT: CaptureDraft = {
   regions: [{ index: imageIndex(13), rect: imageRect(10, 20, 100, 40) }],
   text: 'こっちに来て',
   confidence: null,
+  origin: 'recognized',
 };
 
 function repository(broken = false) {

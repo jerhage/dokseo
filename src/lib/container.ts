@@ -101,6 +101,8 @@ import { saveCapture } from './domains/recognition/use-cases/capture/save-captur
 import type { SaveCaptureDeps } from './domains/recognition/use-cases/capture/save-capture';
 import { saveRecognizerSetup } from './domains/recognition/use-cases/engine/save-recognizer-setup';
 import type { SaveRecognizerSetupDeps } from './domains/recognition/use-cases/engine/save-recognizer-setup';
+import { writeNote } from './domains/recognition/use-cases/capture/write-note';
+import type { WriteNoteDeps } from './domains/recognition/use-cases/capture/write-note';
 import { createOriginStores } from './domains/storage/adapters/browser-origin-stores';
 import type { OriginStoresError } from './domains/storage/domain/origin-stores';
 import type { StorageAccount } from './domains/storage/domain/storage-parts';
@@ -218,6 +220,11 @@ type Container = {
     readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
     readonly listEveryCapture: () => Promise<Result<readonly Capture[], CaptureError>>;
     readonly saveCapture: (draft: CaptureDraft) => Promise<Result<Capture, CaptureError>>;
+    readonly writeNote: (
+      id: CaptureId,
+      book: BookId,
+      regions: readonly ImageRegion[],
+    ) => Promise<Result<Capture, CaptureError>>;
     readonly editCaptureText: (
       capture: Capture,
       text: string,
@@ -280,6 +287,7 @@ function buildContainer(): Container {
   const listCapturesDeps: ListCapturesDeps = { captures };
   const listEveryCaptureDeps: ListEveryCaptureDeps = { captures };
   const saveCaptureDeps: SaveCaptureDeps = { captures, now: Date.now };
+  const writeNoteDeps: WriteNoteDeps = { captures, now: Date.now };
   const editCaptureTextDeps: EditCaptureTextDeps = { captures, now: Date.now };
   const removeCaptureDeps: RemoveCaptureDeps = { captures };
   const clearCapturesDeps: ClearCapturesDeps = { captures };
@@ -347,6 +355,8 @@ function buildContainer(): Container {
       listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),
       listEveryCapture: () => listEveryCapture(listEveryCaptureDeps),
       saveCapture: (draft: CaptureDraft) => saveCapture(saveCaptureDeps, draft),
+      writeNote: (id: CaptureId, book: BookId, regions: readonly ImageRegion[]) =>
+        writeNote(writeNoteDeps, id, book, regions),
       editCaptureText: (capture: Capture, text: string) =>
         editCaptureText(editCaptureTextDeps, capture, text),
       removeCapture: (capture: CaptureId) => removeCapture(removeCaptureDeps, capture),

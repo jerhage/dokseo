@@ -433,6 +433,7 @@ class CaptureView {
       regions: held.regions,
       text: settled.text.text,
       confidence: settled.text.confidence,
+      origin: 'recognized',
     });
   }
 
@@ -440,7 +441,7 @@ class CaptureView {
     const card = this.captures.find((capture) => capture.id === id);
     if (card === undefined || card.status !== 'done') return;
 
-    const settled = editedText(card.text.text, text);
+    const settled = editedText(card.text.text, text, 'recognized');
     if (settled === card.text.text) return;
 
     const generation = this.#generation;

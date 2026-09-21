@@ -13,7 +13,28 @@ const REGIONS: readonly ImageRegion[] = [
 ];
 
 function draft(id: string, confidence: number | null = null): CaptureDraft {
-  return { id: captureId(id), bookId: BOOK, regions: REGIONS, text: 'こっちに来て', confidence };
+  return {
+    id: captureId(id),
+    bookId: BOOK,
+    regions: REGIONS,
+    text: 'こっちに来て',
+    confidence,
+    origin: 'recognized',
+  };
+}
+
+function note(id: string, text: string): Capture {
+  return takenCapture(
+    {
+      id: captureId(id),
+      bookId: BOOK,
+      regions: REGIONS,
+      text,
+      confidence: null,
+      origin: 'written',
+    },
+    1,
+  );
 }
 
 function taken(id: string, createdAt: number): Capture {
@@ -30,6 +51,7 @@ describe('takenCapture', () => {
       regions: REGIONS,
       text: 'こっちに来て',
       confidence: 0.8,
+      origin: 'recognized',
       createdAt: 1_700_000_000_000,
       editedAt: null,
     });
@@ -59,6 +81,7 @@ describe('captureFromStored', () => {
       confidence: 0.5,
       createdAt: 42,
       editedAt: null,
+      origin: 'recognized',
     });
   });
 
@@ -112,6 +135,33 @@ describe('captureFromStored', () => {
     expect(captureFromStored(stored).createdAt).toBe(0);
   });
 
+  it('reads a record written before notes existed as recognized', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).origin).toBe('recognized');
+  });
+
+  it('keeps the origin a stored record carries', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'my own words',
+      confidence: null,
+      createdAt: 42,
+      origin: 'written',
+    };
+
+    expect(captureFromStored(stored).origin).toBe('written');
+  });
+
   it('sorts a record with no creation time before every dated one', () => {
     const undated = captureFromStored({
       id: captureId('old'),
@@ -138,6 +188,13 @@ describe('editedCapture', () => {
     const edited = editedCapture(taken('a', 1), '   ', 77);
 
     expect(edited.text).toBe('こっちに来て');
+    expect(edited.editedAt).toBe(77);
+  });
+
+  it('empties a written capture when the edit is blank', () => {
+    const edited = editedCapture(note('a', 'my own words'), '   ', 77);
+
+    expect(edited.text).toBe('');
     expect(edited.editedAt).toBe(77);
   });
 
