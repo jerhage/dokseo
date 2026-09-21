@@ -2,6 +2,29 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import type { Plugin, ViteDevServer, PreviewServer } from 'vite';
+
+const CROSS_ORIGIN_ISOLATION: Readonly<Record<string, string>> = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
+};
+
+function isolate(server: ViteDevServer | PreviewServer): void {
+  server.middlewares.use((_request, response, next) => {
+    for (const [header, value] of Object.entries(CROSS_ORIGIN_ISOLATION)) {
+      response.setHeader(header, value);
+    }
+    next();
+  });
+}
+
+function crossOriginIsolation(): Plugin {
+  return {
+    name: 'cross-origin-isolation',
+    configureServer: isolate,
+    configurePreviewServer: isolate,
+  };
+}
 
 export default defineConfig({
   plugins: [
@@ -14,6 +37,7 @@ export default defineConfig({
       adapter: adapter({ fallback: 'index.html' }),
       alias: { $workers: 'src/workers' },
     }),
+    crossOriginIsolation(),
   ],
   test: {
     expect: { requireAssertions: true },
