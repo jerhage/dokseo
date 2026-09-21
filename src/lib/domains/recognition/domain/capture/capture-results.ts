@@ -12,10 +12,13 @@ type SearchedBook = {
   readonly direction: ReadingDirection;
 };
 
-type Written = {
+type SearchedCapture =
+  | { readonly origin: 'recognized'; readonly text: string; readonly note: string | null }
+  | { readonly origin: 'written'; readonly text: string };
+
+type Written = SearchedCapture & {
   readonly bookId: BookId;
   readonly regions: readonly ImageRegion[];
-  readonly text: string;
 };
 
 type Tagged = {
@@ -27,8 +30,11 @@ type BookMatches<T> = {
   readonly captures: readonly T[];
 };
 
-function captureHolds(capture: Pick<Written, 'text'>, query: string): boolean {
-  return matchesQuery(capture.text, query);
+function captureHolds(capture: SearchedCapture, query: string): boolean {
+  if (matchesQuery(capture.text, query)) return true;
+  if (capture.origin === 'written' || capture.note === null) return false;
+
+  return matchesQuery(capture.note, query);
 }
 
 function heldByBook<T extends Written>(captures: readonly T[]): ReadonlyMap<BookId, T[]> {
@@ -82,4 +88,4 @@ function matchTally<T>(matched: readonly BookMatches<T>[]): number {
 }
 
 export { captureHolds, inBooks, matchesByBook, taggedByBook, matchTally };
-export type { SearchedBook, Written, Tagged, BookMatches };
+export type { SearchedBook, SearchedCapture, Written, Tagged, BookMatches };

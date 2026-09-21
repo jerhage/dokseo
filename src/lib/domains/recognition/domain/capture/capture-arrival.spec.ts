@@ -6,6 +6,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import { arrivalAt, matchesInBookOrder } from './capture-arrival';
 
 type Row = {
+  readonly origin: 'written';
   readonly id: CaptureId;
   readonly regions: readonly ImageRegion[];
   readonly text: string;
@@ -16,7 +17,7 @@ function at(index: number, x: number, y: number): readonly ImageRegion[] {
 }
 
 function row(id: string, text: string, regions: readonly ImageRegion[]): Row {
-  return { id: captureId(id), regions, text };
+  return { origin: 'written', id: captureId(id), regions, text };
 }
 
 const FIRST = row('a', '海が見える', at(3, 100, 10));

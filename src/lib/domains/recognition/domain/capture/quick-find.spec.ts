@@ -39,6 +39,7 @@ function tag(id: TagId, name: string): Tag {
 
 function capture(book: SearchedBook, text: string, tags: readonly TagId[], place: Place = FIRST) {
   return {
+    origin: 'written' as const,
     bookId: book.id,
     regions: [{ index: imageIndex(place.index), rect: imageRect(place.x, 0, 100, 60) }],
     text,

@@ -6,13 +6,15 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { at } from '$lib/shared/testing/at';
 import { captureHolds, matchesByBook, matchTally, taggedByBook } from './capture-results';
-import type { SearchedBook } from './capture-results';
+import type { SearchedBook, SearchedCapture } from './capture-results';
 
 type Found = {
   readonly name: string;
+  readonly origin: 'recognized';
   readonly bookId: BookId;
   readonly regions: readonly ImageRegion[];
   readonly text: string;
+  readonly note: string | null;
 };
 
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
@@ -22,10 +24,20 @@ function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
 function capture(name: string, id: string, text: string, index = 0, x = 0, y = 0): Found {
   return {
     name,
+    origin: 'recognized',
     bookId: bookId(id),
     regions: [{ index: imageIndex(index), rect: imageRect(x, y, 100, 60) }],
     text,
+    note: null,
   };
+}
+
+function noted(text: string, note: string | null): SearchedCapture {
+  return { origin: 'recognized', text, note };
+}
+
+function written(text: string): SearchedCapture {
+  return { origin: 'written', text };
 }
 
 function names(matched: readonly { readonly captures: readonly Found[] }[]): readonly string[][] {
@@ -66,6 +78,29 @@ describe('captureHolds', () => {
 
   it('rejects a query that is only spaces', () => {
     expect(captureHolds(capture('only', 'one', '海が見える'), '   ')).toBe(false);
+  });
+
+  it('matches a recognized capture by its note when its text does not hold the query', () => {
+    expect(captureHolds(noted('山の上', '海の音'), '海')).toBe(true);
+  });
+
+  it('rejects a recognized capture whose null note is the only place the query could sit', () => {
+    expect(captureHolds(noted('山の上', null), '海')).toBe(false);
+  });
+
+  it('matches a written capture by its text', () => {
+    expect(captureHolds(written('海が見える'), '海')).toBe(true);
+    expect(captureHolds(written('山の上'), '海')).toBe(false);
+  });
+
+  it('matches a note through the fold, by case and by character width', () => {
+    expect(captureHolds(noted('山の上', 'Coffee'), 'coffee')).toBe(true);
+    expect(captureHolds(noted('山の上', 'ｺｰﾋｰ'), 'コーヒー')).toBe(true);
+  });
+
+  it('rejects a blank query on a capture of either origin', () => {
+    expect(captureHolds(noted('海が見える', '海の音'), '   ')).toBe(false);
+    expect(captureHolds(written('海が見える'), '')).toBe(false);
   });
 });
 
@@ -186,6 +221,15 @@ describe('matchesByBook', () => {
 
     expect(names(matched)).toEqual([['many']]);
     expect(matchTally(matched)).toBe(1);
+  });
+
+  it('counts a capture holding the query in its text and in its note only once', () => {
+    const both = { ...capture('both', 'one', '海から海へ'), note: '海の音' };
+    const only = { ...capture('noted', 'one', '山の上', 1), note: '海の匂い' };
+    const matched = matchesByBook([both, only], [book('one')], '海');
+
+    expect(names(matched)).toEqual([['both', 'noted']]);
+    expect(matchTally(matched)).toBe(2);
   });
 
   it('leaves the captures it was given untouched', () => {

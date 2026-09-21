@@ -16,6 +16,7 @@ const NAMES: TagId = tagId('a-names');
 
 function member(book: string, tags: readonly TagId[], createdAt: number): TagMember {
   return {
+    origin: 'written',
     bookId: bookId(book),
     regions: [{ index: imageIndex(0), rect: imageRect(0, 0, 100, 60) }],
     text: '海',

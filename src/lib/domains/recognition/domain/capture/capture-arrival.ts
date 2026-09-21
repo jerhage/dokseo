@@ -3,12 +3,12 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { inBookOrder } from './capture-order';
 import { captureHolds } from './capture-results';
+import type { SearchedCapture } from './capture-results';
 import { wrappedIndex } from './match-stepping';
 
-type ArrivalCapture = {
+type ArrivalCapture = SearchedCapture & {
   readonly id: CaptureId;
   readonly regions: readonly ImageRegion[];
-  readonly text: string;
 };
 
 type Stepping<T> = {

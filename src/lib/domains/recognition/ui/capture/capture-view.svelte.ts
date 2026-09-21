@@ -70,8 +70,6 @@ type Settled =
 
 type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
 
-type MarkedCapture = ArrivalCapture & { readonly origin: CaptureOrigin };
-
 type ConsentRequest = {
   readonly language: Language;
   readonly footprint: ModelFootprint;
@@ -239,21 +237,28 @@ class CaptureView {
     return this.captures.toReversed();
   }
 
-  get read(): readonly MarkedCapture[] {
+  get read(): readonly ArrivalCapture[] {
     return this.captures
       .filter((capture) => capture.status === 'done')
-      .map((capture) => ({
-        id: capture.id,
-        regions: capture.regions,
-        text: capture.text.text,
-        origin: capture.origin,
-      }));
+      .map((capture) => this.#marked(capture));
+  }
+
+  #marked(card: Taken & { readonly text: RecognizedText }): ArrivalCapture {
+    const held = { id: card.id, regions: card.regions, text: card.text.text };
+    if (card.origin === 'written') return { ...held, origin: 'written' };
+
+    const stored = this.#stored.get(card.id);
+    return {
+      ...held,
+      origin: 'recognized',
+      note: stored?.origin === 'recognized' ? stored.note : null,
+    };
   }
 
   arrivalFrom(
     found: ReaderArrival | null,
     direction: ReadingDirection,
-  ): Arrival<MarkedCapture> | null {
+  ): Arrival<ArrivalCapture> | null {
     if (found === null) return null;
     return arrivalAt(this.read, found.query, direction, found.capture);
   }
@@ -738,4 +743,4 @@ class CaptureView {
 }
 
 export { NOTHING_READ, READING_SELECTION, modelLoadNote, modelLoadAnnouncement, CaptureView };
-export type { CaptureStatus, PanelCapture, MarkedCapture, ConsentRequest };
+export type { CaptureStatus, PanelCapture, ConsentRequest };
