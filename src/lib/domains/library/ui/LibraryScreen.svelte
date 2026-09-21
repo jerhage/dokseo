@@ -399,12 +399,12 @@
   .source {
     display: flex;
     align-items: center;
-    color: var(--c-text-9);
+    color: var(--c-text-3);
   }
 
   .source:hover,
   .source:focus-visible {
-    color: var(--c-accent);
+    color: var(--c-text-1);
   }
 
   .mark {
