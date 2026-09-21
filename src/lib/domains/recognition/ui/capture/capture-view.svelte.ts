@@ -3,7 +3,6 @@ import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import { captureId, tagId } from '$lib/shared/ids';
 import { clearScope } from './clearing';
 import type { ClearScope } from './clearing';
@@ -56,12 +55,15 @@ function modelLoadAnnouncement(load: ModelLoad | null): string {
 
 type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
 
-type Taken = {
+type Recorded = {
   readonly id: CaptureId;
   readonly regions: readonly ImageRegion[];
-  readonly origin: CaptureOrigin;
   readonly tagIds: readonly TagId[];
 };
+
+type Taken =
+  | (Recorded & { readonly origin: 'recognized'; readonly note: string | null })
+  | (Recorded & { readonly origin: 'written' });
 
 type Settled =
   | { readonly status: 'done'; readonly text: RecognizedText; readonly edited: boolean }
@@ -164,15 +166,31 @@ function countsAfter(
 }
 
 function cardOf(capture: Capture): PanelCapture {
-  return {
+  const held = {
     id: capture.id,
     regions: capture.regions,
-    origin: capture.origin,
     tagIds: capture.tagIds,
-    status: 'done',
-    text: recognizedText(capture.text, capture.origin === 'written' ? null : capture.confidence),
+    status: 'done' as const,
     edited: capture.editedAt !== null,
   };
+
+  if (capture.origin === 'written') {
+    return { ...held, origin: 'written', text: recognizedText(capture.text, null) };
+  }
+
+  return {
+    ...held,
+    origin: 'recognized',
+    note: capture.note,
+    text: recognizedText(capture.text, capture.confidence),
+  };
+}
+
+function takenOf(capture: PanelCapture): Taken {
+  const held = { id: capture.id, regions: capture.regions, tagIds: capture.tagIds };
+  if (capture.origin === 'written') return { ...held, origin: 'written' };
+
+  return { ...held, origin: 'recognized', note: capture.note };
 }
 
 class CaptureView {
@@ -526,7 +544,14 @@ class CaptureView {
     const id = captureId(crypto.randomUUID());
     this.captures = [
       ...this.captures,
-      { id, regions: held.regions, origin: 'recognized', tagIds: [], status: 'pending' },
+      {
+        id,
+        regions: held.regions,
+        origin: 'recognized',
+        note: null,
+        tagIds: [],
+        status: 'pending',
+      },
     ];
 
     let settled: Settled;
@@ -590,6 +615,24 @@ class CaptureView {
       capture.id === id && capture.status === 'done'
         ? { ...capture, text: recognizedText(settled, capture.text.confidence), edited: true }
         : capture,
+    );
+  }
+
+  async annotate(id: CaptureId, note: string): Promise<void> {
+    const stored = this.#stored.get(id);
+    if (stored === undefined || stored.origin !== 'recognized') return;
+
+    const generation = this.#generation;
+    const written = await this.#container.recognition
+      .writeCaptureNote(stored, note)
+      .catch(() => null);
+
+    if (generation !== this.#generation || written === null || !written.ok) return;
+
+    this.#stored.set(id, written.value);
+    const kept = written.value.note;
+    this.captures = this.captures.map((capture) =>
+      capture.id === id && capture.origin === 'recognized' ? { ...capture, note: kept } : capture,
     );
   }
 
@@ -729,15 +772,7 @@ class CaptureView {
 
   #settle(id: CaptureId, settled: Settled): void {
     this.captures = this.captures.map((capture) =>
-      capture.id === id
-        ? {
-            id: capture.id,
-            regions: capture.regions,
-            origin: capture.origin,
-            tagIds: capture.tagIds,
-            ...settled,
-          }
-        : capture,
+      capture.id === id ? { ...takenOf(capture), ...settled } : capture,
     );
   }
 }

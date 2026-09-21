@@ -83,9 +83,14 @@ function editedCapture(capture: Capture, text: string, editedAt: number): Captur
   return { ...capture, text: editedText(capture.text, text, capture.origin), editedAt };
 }
 
+function notedCapture(capture: RecognizedCapture, note: string): RecognizedCapture {
+  const written = note.trim();
+  return { ...capture, note: written.length === 0 ? null : written };
+}
+
 function oldestFirst(captures: readonly Capture[]): readonly Capture[] {
   return captures.toSorted((earlier, later) => earlier.createdAt - later.createdAt);
 }
 
-export { takenCapture, captureFromStored, editedText, editedCapture, oldestFirst };
+export { takenCapture, captureFromStored, editedText, editedCapture, notedCapture, oldestFirst };
 export type { CaptureDraft, Capture, RecognizedCapture, WrittenCapture, StoredCapture };

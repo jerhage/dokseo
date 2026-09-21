@@ -40,6 +40,8 @@
     readonly text: string | null;
     readonly segments: readonly TextSegment[] | null;
     readonly note: string | null;
+    readonly annotation: string | null;
+    readonly noteLabel: string | null;
     readonly tags: readonly TagChip[];
     readonly tone: CaptureStatus;
     readonly origin: CaptureOrigin;
@@ -66,6 +68,10 @@
   let editing = $state<CaptureId | null>(null);
   let draft = $state('');
   let editor = $state<HTMLTextAreaElement | null>(null);
+  let noting = $state<CaptureId | null>(null);
+  let noteDraft = $state('');
+  let noteEditor = $state<HTMLTextAreaElement | null>(null);
+  let noteTrigger: HTMLButtonElement | null = null;
   let step = $state.raw<Step | null>(null);
   let trigger: HTMLButtonElement | null = null;
   let tagTrigger = $state<HTMLButtonElement | null>(null);
@@ -75,6 +81,10 @@
 
   $effect(() => {
     editor?.focus();
+  });
+
+  $effect(() => {
+    noteEditor?.focus();
   });
 
   $effect(() => {
@@ -101,6 +111,18 @@
     return readerHref(book, index, { capture: id, query: searching ? wanted : null });
   }
 
+  function annotationOf(capture: PanelCapture): string | null {
+    return capture.origin === 'written' ? null : capture.note;
+  }
+
+  function noteLabelOf(capture: PanelCapture, place: string): string | null {
+    if (capture.origin === 'written') return null;
+
+    return capture.note === null
+      ? `Add a note to the capture at ${place}`
+      : `Edit the note on the capture at ${place}`;
+  }
+
   function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {
     const tags = chipsOf(capture.tagIds, view.tags);
 
@@ -113,6 +135,8 @@
         text: null,
         segments: null,
         note: load === null ? null : modelLoadNote(load),
+        annotation: null,
+        noteLabel: null,
         tags,
         tone: 'pending' as CaptureStatus,
         origin: running.origin,
@@ -127,6 +151,8 @@
         text: read.text.text,
         segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
         note: captureNote(read.origin, read.text.text),
+        annotation: annotationOf(read),
+        noteLabel: noteLabelOf(read, placeLabel(read.regions)),
         tags,
         tone: 'done' as CaptureStatus,
         origin: read.origin,
@@ -141,6 +167,8 @@
         text: null,
         segments: null,
         note: NOTHING_READ,
+        annotation: null,
+        noteLabel: null,
         tags,
         tone: 'empty' as CaptureStatus,
         origin: blank.origin,
@@ -155,6 +183,8 @@
         text: null,
         segments: null,
         note: broken.message,
+        annotation: null,
+        noteLabel: null,
         tags,
         tone: 'failed' as CaptureStatus,
         origin: broken.origin,
@@ -261,6 +291,47 @@
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       save();
+    }
+  }
+
+  function beginNote(card: Card, from: HTMLButtonElement): void {
+    noting = card.id;
+    noteDraft = card.annotation ?? '';
+    noteTrigger = from;
+  }
+
+  async function abandonNote(): Promise<void> {
+    noting = null;
+    noteDraft = '';
+    await tick();
+    noteTrigger?.focus();
+    noteTrigger = null;
+  }
+
+  function saveNote(): void {
+    const id = noting;
+    if (id === null) return;
+
+    const note = noteDraft;
+    void abandonNote();
+    void view.annotate(id, note);
+  }
+
+  function commitNote(event: SubmitEvent): void {
+    event.preventDefault();
+    saveNote();
+  }
+
+  function noteKeys(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      void abandonNote();
+      return;
+    }
+
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      saveNote();
     }
   }
 
@@ -404,6 +475,20 @@
                     <span class="assistive">Edit the capture at {card.place}</span>
                   </button>
                 {/if}
+                {#if card.noteLabel !== null}
+                  <button
+                    class="tool named"
+                    type="button"
+                    disabled={noting === card.id}
+                    onclick={(event) => beginNote(card, event.currentTarget)}
+                  >
+                    <span class="glyph" aria-hidden="true"
+                      >{card.annotation === null ? '+' : '✎'}</span
+                    >
+                    <span class="word" aria-hidden="true">note</span>
+                    <span class="assistive">{card.noteLabel}</span>
+                  </button>
+                {/if}
                 <button class="tool drop" type="button" onclick={() => void view.remove(card.id)}>
                   <span class="glyph" aria-hidden="true">×</span>
                   <span class="assistive">Remove the capture at {card.place}</span>
@@ -437,6 +522,30 @@
               </p>
             {:else if card.text !== null}
               <p class="text" class:ko={language === 'ko'} lang={language}>{card.text}</p>
+            {/if}
+            {#if noting === card.id}
+              <form class="editor annotation" onsubmit={commitNote}>
+                <p class="label">Your note</p>
+                <textarea
+                  bind:this={noteEditor}
+                  bind:value={noteDraft}
+                  class="field plain"
+                  rows="3"
+                  aria-label={card.noteLabel}
+                  onkeydown={noteKeys}></textarea>
+                <p class="hint">Escape abandons · ⌘/Ctrl + Enter saves</p>
+                <div class="choices">
+                  <button class="abandon" type="button" onclick={() => void abandonNote()}>
+                    Cancel
+                  </button>
+                  <button class="save" type="submit">Save</button>
+                </div>
+              </form>
+            {:else if card.annotation !== null}
+              <div class="annotation">
+                <p class="label">Your note</p>
+                <p class="wrote">{card.annotation}</p>
+              </div>
             {/if}
             {#if card.note !== null}
               <p class="note">{card.note}</p>
@@ -912,5 +1021,45 @@
 
   .card.failed .note {
     color: var(--c-text-4);
+  }
+
+  .tool.named {
+    gap: 3px;
+    width: auto;
+    padding: 0 5px;
+  }
+
+  .word {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .annotation {
+    margin-top: var(--s-2);
+    padding-left: var(--s-2);
+    border-left: 3px solid var(--c-note);
+  }
+
+  .label {
+    margin: 0 0 3px;
+    color: var(--c-note);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .wrote {
+    margin: 0;
+    color: var(--c-text-3);
+    font-size: 12.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    user-select: text;
+  }
+
+  .field.plain {
+    font-family: var(--f-ui);
+    font-size: 12.5px;
   }
 </style>

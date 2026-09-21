@@ -103,6 +103,7 @@ function fakes(): Fakes {
       saveCapture: () => Promise.reject(new Error('not used')),
       writeNote: () => Promise.reject(new Error('not used')),
       editCaptureText: () => Promise.reject(new Error('not used')),
+      writeCaptureNote: () => Promise.reject(new Error('not used')),
       removeCapture: () => Promise.reject(new Error('not used')),
       clearCaptures: () => Promise.reject(new Error('not used')),
       listTags: () => Promise.reject(new Error('not used')),

@@ -10,8 +10,8 @@ import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import { editedCapture, takenCapture } from '../../domain/capture/capture';
-import type { Capture, CaptureDraft } from '../../domain/capture/capture';
+import { editedCapture, notedCapture, takenCapture } from '../../domain/capture/capture';
+import type { Capture, CaptureDraft, RecognizedCapture } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
 import { taggedCapture, untaggedCapture } from '../../domain/tag/capture-tags';
 import { namedTag, sameTagName } from '../../domain/tag/tag';
@@ -70,6 +70,7 @@ type Store = {
   listFails: boolean;
   saveFails: boolean;
   editFails: boolean;
+  noteFails: boolean;
 };
 
 type Tags = {
@@ -135,6 +136,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     listFails: false,
     saveFails: false,
     editFails: false,
+    noteFails: false,
   };
 
   function settled<T>(write: () => Result<T, CaptureError>): Promise<Result<T, CaptureError>> {
@@ -263,6 +265,18 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
           return ok(edited);
         });
       },
+      writeCaptureNote: (
+        capture: RecognizedCapture,
+        note: string,
+      ): Promise<Result<RecognizedCapture, CaptureError>> => {
+        if (store.noteFails) {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
+        }
+
+        const noted = notedCapture(capture, note);
+        store.rows = store.rows.map((row) => (row.id === noted.id ? noted : row));
+        return Promise.resolve(ok(noted));
+      },
       removeCapture: (capture: CaptureId): Promise<Result<void, CaptureError>> =>
         settled(() => {
           store.rows = store.rows.filter((row) => row.id !== capture);
@@ -368,6 +382,14 @@ function panelTexts(view: CaptureView): readonly string[] {
   return view.captures.map((capture) =>
     capture.status === 'done' ? capture.text.text : capture.status,
   );
+}
+
+function panelNotes(view: CaptureView): readonly (string | null)[] {
+  return view.captures.map((capture) => (capture.origin === 'written' ? null : capture.note));
+}
+
+function storedNotes(world: Fakes): readonly (string | null)[] {
+  return world.store.rows.map((row) => (row.origin === 'written' ? null : row.note));
 }
 
 function editedFlags(view: CaptureView): readonly boolean[] {
@@ -1019,6 +1041,60 @@ describe('CaptureView', () => {
     expect(panelTexts(view)).toEqual(['corrected by hand']);
     expect(editedFlags(view)).toEqual([true]);
     expect(world.store.rows.map((row) => row.text)).toEqual(['model reading']);
+  });
+
+  it('writes the note onto the card and onto the record it keeps', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.annotate(captureId('a'), '  he is speaking to his sister  ');
+
+    expect(panelNotes(view)).toEqual(['he is speaking to his sister']);
+    expect(storedNotes(world)).toEqual(['he is speaking to his sister']);
+  });
+
+  it('leaves the recognized text and the edited mark alone when a note is written', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.annotate(captureId('a'), 'a thought');
+
+    expect(panelTexts(view)).toEqual(['model reading']);
+    expect(editedFlags(view)).toEqual([false]);
+    expect(at(world.store.rows, 0).editedAt).toBeNull();
+  });
+
+  it('keeps the card as it was when the note cannot be stored', async () => {
+    const world = fakes();
+    world.store.noteFails = true;
+    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.annotate(captureId('a'), 'a thought');
+
+    expect(panelNotes(view)).toEqual([null]);
+    expect(storedNotes(world)).toEqual([null]);
+  });
+
+  it('writes no note for a capture the store never held', async () => {
+    const world = fakes();
+    world.store.saveFails = true;
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('保存できなかった')));
+    await running;
+
+    await view.annotate(at(view.captures, 0).id, 'a thought');
+
+    expect(panelNotes(view)).toEqual([null]);
+    expect(world.store.rows).toEqual([]);
   });
 
   it('drops a removed capture from the list and from the store', async () => {

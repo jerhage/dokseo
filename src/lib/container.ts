@@ -43,7 +43,11 @@ import { createModelConsentStore } from './domains/recognition/adapters/model/in
 import { createRecognizerSetupStore } from './domains/recognition/adapters/engine/indexeddb-recognizer-setup';
 import { createTagRepository } from './domains/recognition/adapters/tag/indexeddb-tags.repo';
 import { createPartialDownloads } from './domains/recognition/adapters/model/opfs-partial-downloads';
-import type { Capture, CaptureDraft } from './domains/recognition/domain/capture/capture';
+import type {
+  Capture,
+  CaptureDraft,
+  RecognizedCapture,
+} from './domains/recognition/domain/capture/capture';
 import type { CaptureError } from './domains/recognition/domain/capture/capture-repository';
 import type { GpuDetection } from './domains/recognition/domain/engine/compute-choice';
 import type { ModelRuntime } from './domains/recognition/domain/engine/model-runtime';
@@ -84,6 +88,8 @@ import { detectCompute } from './domains/recognition/use-cases/engine/detect-com
 import type { DetectComputeDeps } from './domains/recognition/use-cases/engine/detect-compute';
 import { editCaptureText } from './domains/recognition/use-cases/capture/edit-capture-text';
 import type { EditCaptureTextDeps } from './domains/recognition/use-cases/capture/edit-capture-text';
+import { writeCaptureNote } from './domains/recognition/use-cases/capture/write-capture-note';
+import type { WriteCaptureNoteDeps } from './domains/recognition/use-cases/capture/write-capture-note';
 import { grantModelConsent } from './domains/recognition/use-cases/model/grant-model-consent';
 import type { GrantModelConsentDeps } from './domains/recognition/use-cases/model/grant-model-consent';
 import { listCaptures } from './domains/recognition/use-cases/capture/list-captures';
@@ -247,6 +253,10 @@ type Container = {
       capture: Capture,
       text: string,
     ) => Promise<Result<Capture, CaptureError>>;
+    readonly writeCaptureNote: (
+      capture: RecognizedCapture,
+      note: string,
+    ) => Promise<Result<RecognizedCapture, CaptureError>>;
     readonly removeCapture: (capture: CaptureId) => Promise<Result<void, CaptureError>>;
     readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
     readonly listTags: () => Promise<Result<readonly Tag[], TagError>>;
@@ -319,6 +329,7 @@ function buildContainer(): Container {
   const saveCaptureDeps: SaveCaptureDeps = { captures, now: Date.now };
   const writeNoteDeps: WriteNoteDeps = { captures, now: Date.now };
   const editCaptureTextDeps: EditCaptureTextDeps = { captures, now: Date.now };
+  const writeCaptureNoteDeps: WriteCaptureNoteDeps = { captures };
   const removeCaptureDeps: RemoveCaptureDeps = { captures };
   const clearCapturesDeps: ClearCapturesDeps = { captures };
   const removeBookAndCapturesDeps: RemoveBookAndCapturesDeps = {
@@ -401,6 +412,8 @@ function buildContainer(): Container {
         writeNote(writeNoteDeps, id, book, regions),
       editCaptureText: (capture: Capture, text: string) =>
         editCaptureText(editCaptureTextDeps, capture, text),
+      writeCaptureNote: (capture: RecognizedCapture, note: string) =>
+        writeCaptureNote(writeCaptureNoteDeps, capture, note),
       removeCapture: (capture: CaptureId) => removeCapture(removeCaptureDeps, capture),
       clearCaptures: (book: BookId) => clearCaptures(clearCapturesDeps, book),
       listTags: () => listTags(listTagsDeps),

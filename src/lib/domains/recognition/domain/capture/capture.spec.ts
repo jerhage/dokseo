@@ -3,7 +3,13 @@ import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { at } from '$lib/shared/testing/at';
-import { captureFromStored, editedCapture, oldestFirst, takenCapture } from './capture';
+import {
+  captureFromStored,
+  editedCapture,
+  notedCapture,
+  oldestFirst,
+  takenCapture,
+} from './capture';
 import type { Capture, CaptureDraft, RecognizedCapture, StoredCapture } from './capture';
 
 const BOOK = bookId('book-one');
@@ -284,6 +290,40 @@ describe('editedCapture', () => {
     expect(edited.bookId).toBe(before.bookId);
     expect(edited.regions).toEqual(before.regions);
     expect(edited.createdAt).toBe(before.createdAt);
+  });
+});
+
+describe('notedCapture', () => {
+  it('stores the note the reader wrote, without the space around it', () => {
+    const noted = notedCapture(asRecognized(taken('a', 1)), '  he means his sister  ');
+
+    expect(noted.note).toBe('he means his sister');
+  });
+
+  it('stores no note for a blank one, which is how a reader takes a note back', () => {
+    const written = notedCapture(asRecognized(taken('a', 1)), 'he means his sister');
+
+    expect(notedCapture(written, '   \n  ').note).toBeNull();
+  });
+
+  it('leaves the recognized text and the moment it was edited where they were', () => {
+    const before = asRecognized(editedCapture(taken('a', 1), 'べつのことば', 77));
+
+    const noted = notedCapture(before, 'my own words');
+
+    expect(noted.text).toBe('べつのことば');
+    expect(noted.editedAt).toBe(77);
+  });
+
+  it('keeps everything else the capture carried', () => {
+    const before = asRecognized(taken('a', 1));
+
+    const noted = notedCapture(before, 'my own words');
+
+    expect(noted.id).toBe(before.id);
+    expect(noted.createdAt).toBe(before.createdAt);
+    expect(noted.confidence).toBe(before.confidence);
+    expect(noted.tagIds).toEqual(before.tagIds);
   });
 });
 
