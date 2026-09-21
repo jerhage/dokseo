@@ -14,7 +14,7 @@ describe('ensureDisposableStack', () => {
   it('gives the class to an owner that has none, as Safari has none today', () => {
     const owner: StackOwner = {};
 
-    expect(ensureDisposableStack(owner)).toBe(StackShim);
+    expect(ensureDisposableStack(owner, Symbol.dispose)).toBe(StackShim);
     expect(owner.DisposableStack).toBe(StackShim);
   });
 
@@ -22,7 +22,20 @@ describe('ensureDisposableStack', () => {
     const native = (): void => undefined;
     const owner: StackOwner = { DisposableStack: native };
 
-    expect(ensureDisposableStack(owner)).toBe(native);
+    expect(ensureDisposableStack(owner, native as unknown as symbol)).toBe(native);
+  });
+
+  it('attaches the disposer under the symbol it is GIVEN, not one read at load', () => {
+    const late = Symbol('a symbol that did not exist when the class was defined');
+
+    ensureDisposableStack({}, late);
+
+    const closed: string[] = [];
+    const stack = new StackShim();
+    stack.defer(() => closed.push('held'));
+    (stack as unknown as Record<symbol, () => void>)[late]?.();
+
+    expect(closed).toEqual(['held']);
   });
 });
 
@@ -112,11 +125,12 @@ describe('StackShim', () => {
   });
 
   it('disposes through the symbol, which is how using reaches it', () => {
+    ensureDisposableStack({}, Symbol.dispose);
     const closed: string[] = [];
     const stack = new StackShim();
     stack.use(closing(closed, 'held'));
 
-    stack[Symbol.dispose]();
+    (stack as unknown as Disposable)[Symbol.dispose]();
 
     expect(closed).toEqual(['held']);
   });

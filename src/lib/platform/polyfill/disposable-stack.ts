@@ -59,17 +59,18 @@ class StackShim {
     for (let at = held.length - 1; at >= 0; at -= 1) held[at]?.();
   }
 
-  [Symbol.dispose](): void {
-    this.dispose();
-  }
-
   #keep(disposer: Disposer): void {
     if (this.#disposed) throw new ReferenceError('This stack is already disposed.');
     this.#held.push(disposer);
   }
 }
 
-function ensureDisposableStack(owner: StackOwner): unknown {
+function ensureDisposableStack(owner: StackOwner, dispose: symbol): unknown {
+  const prototype = StackShim.prototype as unknown as Record<symbol, unknown>;
+  prototype[dispose] ??= function disposeStack(this: StackShim): void {
+    this.dispose();
+  };
+
   owner.DisposableStack ??= StackShim;
 
   return owner.DisposableStack;
