@@ -4,6 +4,8 @@ import type { ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import {
+  dragEnded,
+  isClick,
   isTap,
   isUsableSelection,
   MIN_SELECTION_PX,
@@ -98,6 +100,70 @@ describe('isUsableSelection', () => {
   it('measures a backwards selection by its extents rather than its sign', () => {
     expect(isUsableSelection(screenRect(300, 200, -40, -40))).toBe(true);
     expect(isUsableSelection(screenRect(300, 200, -4, -40))).toBe(false);
+  });
+});
+
+describe('dragEnded', () => {
+  const from = { x: 100, y: 100 };
+
+  it('calls a still pointer a click, so the chrome still toggles', () => {
+    expect(dragEnded(from, { x: 100, y: 100 })).toEqual({ kind: 'click' });
+  });
+
+  it('forgives the jitter of a hand on a mouse', () => {
+    expect(dragEnded(from, { x: 102, y: 101 }).kind).toBe('click');
+  });
+
+  it('calls a small drag too small, NOT a click, so the chrome stays put', () => {
+    expect(dragEnded(from, { x: 108, y: 104 }).kind).toBe('too-small');
+  });
+
+  it('calls a long thin drag too small, though it can select nothing', () => {
+    expect(dragEnded(from, { x: 300, y: 104 }).kind).toBe('too-small');
+  });
+
+  it('calls a real drag a selection, and carries the rect', () => {
+    expect(dragEnded(from, { x: 300, y: 260 })).toEqual({
+      kind: 'selection',
+      selection: selectionFrom(from, { x: 300, y: 260 }),
+    });
+  });
+
+  it('is stricter than the touch tap, which forgives a moving finger', () => {
+    const drifted = { x: 108, y: 104 };
+
+    expect(dragEnded(from, drifted).kind).toBe('too-small');
+    expect(isTap(from, drifted)).toBe(true);
+  });
+});
+
+describe('isClick', () => {
+  const from = { x: 100, y: 100 };
+
+  it('calls a still pointer a click, so the chrome still toggles', () => {
+    expect(isClick(from, { x: 100, y: 100 })).toBe(true);
+  });
+
+  it('forgives the jitter of a hand on a mouse', () => {
+    expect(isClick(from, { x: 102, y: 101 })).toBe(true);
+  });
+
+  it('calls any real drag a capture attempt, not a click', () => {
+    expect(isClick(from, { x: 108, y: 104 })).toBe(false);
+  });
+
+  it('calls a long thin drag a capture attempt, though it selects nothing', () => {
+    const thin = { x: 300, y: 104 };
+
+    expect(isClick(from, thin)).toBe(false);
+    expect(isUsableSelection(selectionFrom(from, thin))).toBe(false);
+  });
+
+  it('is stricter than the touch tap, which forgives a moving finger', () => {
+    const drifted = { x: 108, y: 104 };
+
+    expect(isClick(from, drifted)).toBe(false);
+    expect(isTap(from, drifted)).toBe(true);
   });
 });
 

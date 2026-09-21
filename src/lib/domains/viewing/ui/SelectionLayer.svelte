@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { match } from 'ts-pattern';
   import { beginTrace } from '$lib/platform/trace/pipeline-trace';
   import type { Trace } from '$lib/platform/trace/pipeline-trace';
   import type { Arrangement } from '$lib/shared/arrangement';
@@ -9,8 +10,8 @@
   import { regionsIn } from '../domain/placement';
   import type { PlacedImage } from '../domain/placement';
   import {
+    dragEnded,
     isTap,
-    isUsableSelection,
     MIN_SELECTION_PX,
     selectionFrom,
     selectionSize,
@@ -227,38 +228,39 @@
         return;
       }
 
-      const selection = selectionFrom(from, to);
-      trace.step('pointer', { from, to, selection });
+      const ended = dragEnded(from, to);
+      trace.step('pointer', { from, to, kind: ended.kind });
 
-      const measured = normalize(selection);
-      const usable = isUsableSelection(selection);
-      trace.step('usable', {
-        usable,
-        width: measured.width,
-        height: measured.height,
-        minimum: MIN_SELECTION_PX,
-      });
-      if (!usable) {
-        trace.step('stopped', { guard: 'below-minimum' });
-        tap();
-        return;
-      }
+      match(ended)
+        .with({ kind: 'click' }, () => {
+          tap();
+        })
+        .with({ kind: 'too-small' }, ({ selection }) => {
+          const measured = normalize(selection);
+          trace.step('stopped', {
+            guard: 'below-minimum',
+            width: measured.width,
+            height: measured.height,
+            minimum: MIN_SELECTION_PX,
+          });
+        })
+        .with({ kind: 'selection' }, ({ selection }) => {
+          const regions = regionsIn(placementsIn(element, trace), selection);
+          trace.step('regions', { count: regions.length });
+          for (const region of regions) {
+            trace.step('region', { index: region.index, rect: region.rect });
+          }
+          if (regions.length === 0) {
+            trace.step('stopped', { guard: 'no-regions' });
+            return;
+          }
 
-      const regions = regionsIn(placementsIn(element, trace), selection);
-      trace.step('regions', { count: regions.length });
-      for (const region of regions) {
-        trace.step('region', { index: region.index, rect: region.rect });
-      }
-      if (regions.length === 0) {
-        trace.step('stopped', { guard: 'no-regions' });
-        tap();
-        return;
-      }
-
-      committed = selection;
-      captured = selectionSize(regions, arrangement);
-      trace.step('selected', { regions: regions.length, size: captured });
-      select(regions);
+          committed = selection;
+          captured = selectionSize(regions, arrangement);
+          trace.step('selected', { regions: regions.length, size: captured });
+          select(regions);
+        })
+        .exhaustive();
     } finally {
       trace.end();
     }

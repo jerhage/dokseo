@@ -7,6 +7,13 @@ type Point = { readonly x: number; readonly y: number };
 
 const MIN_SELECTION_PX = 12;
 
+const CLICK_SLOP_PX = 3;
+
+type DragEnd =
+  | { readonly kind: 'click' }
+  | { readonly kind: 'too-small'; readonly selection: ScreenRect }
+  | { readonly kind: 'selection'; readonly selection: ScreenRect };
+
 function isFinitePoint(point: Point): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
@@ -20,6 +27,19 @@ function selectionFrom(from: Point, to: Point): ScreenRect {
 function isUsableSelection(selection: ScreenRect): boolean {
   const rect = normalize(selection);
   return rect.width >= MIN_SELECTION_PX && rect.height >= MIN_SELECTION_PX;
+}
+
+function isClick(from: Point, to: Point): boolean {
+  const moved = selectionFrom(from, to);
+  return moved.width < CLICK_SLOP_PX && moved.height < CLICK_SLOP_PX;
+}
+
+function dragEnded(from: Point, to: Point): DragEnd {
+  const selection = selectionFrom(from, to);
+  if (isClick(from, to)) return { kind: 'click' };
+  if (!isUsableSelection(selection)) return { kind: 'too-small', selection };
+
+  return { kind: 'selection', selection };
 }
 
 function isTap(from: Point, to: Point): boolean {
@@ -46,5 +66,14 @@ function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement
   return { width, height };
 }
 
-export { MIN_SELECTION_PX, selectionFrom, isUsableSelection, isTap, selectionSize };
-export type { Point };
+export {
+  CLICK_SLOP_PX,
+  MIN_SELECTION_PX,
+  dragEnded,
+  isClick,
+  isTap,
+  isUsableSelection,
+  selectionFrom,
+  selectionSize,
+};
+export type { DragEnd, Point };
