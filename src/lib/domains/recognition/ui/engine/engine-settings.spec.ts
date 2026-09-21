@@ -269,7 +269,7 @@ describe('EngineSettingsView', () => {
     const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
     await built.view.load();
 
-    await built.view.chooseCompute('cpu');
+    await built.view.chooseCompute('gpu');
     await settled();
 
     expect(built.pauses).toEqual(['ja']);

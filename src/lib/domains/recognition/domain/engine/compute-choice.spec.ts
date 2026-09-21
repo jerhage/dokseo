@@ -36,10 +36,16 @@ describe('computeChoiceOf', () => {
     expect(computeChoiceOf('cpu')).toBe('cpu');
   });
 
-  it('treats a missing or unknown choice as automatic', () => {
-    expect(computeChoiceOf(null)).toBe('auto');
-    expect(computeChoiceOf(undefined)).toBe('auto');
-    expect(computeChoiceOf('tpu')).toBe('auto');
+  it('treats a missing or unknown choice as the CPU, the steady one', () => {
+    expect(computeChoiceOf(null)).toBe('cpu');
+    expect(computeChoiceOf(undefined)).toBe('cpu');
+    expect(computeChoiceOf('tpu')).toBe('cpu');
+  });
+
+  it('keeps a choice the reader actually made', () => {
+    expect(computeChoiceOf('gpu')).toBe('gpu');
+    expect(computeChoiceOf('auto')).toBe('auto');
+    expect(computeChoiceOf('cpu')).toBe('cpu');
   });
 });
 
@@ -69,13 +75,25 @@ describe('computeDetectionNote', () => {
 });
 
 describe('computeGpuWarning', () => {
-  it('warns that a browser can offer WebGPU and still refuse a model', () => {
-    expect(computeGpuWarning('auto')).toContain('still fail to run a model');
-    expect(computeGpuWarning('gpu')).toContain('still fail to run a model');
+  it('says the CPU is the steady choice, and the one in use by default', () => {
+    expect(computeGpuWarning('auto')).toContain('steady choice');
+    expect(computeGpuWarning('gpu')).toContain('steady choice');
   });
 
-  it('tells the reader what to do when recognition will not start', () => {
-    expect(computeGpuWarning('auto')).toContain('choose CPU');
+  it('warns that browser support for the GPU is still shaky', () => {
+    expect(computeGpuWarning('gpu')).toContain('still shaky');
+  });
+
+  it('promises the fallback, so a refusal is not a dead end', () => {
+    expect(computeGpuWarning('gpu')).toContain('falls back to the CPU');
+  });
+
+  it('names no browser, because a refusal is found by trying', () => {
+    const warning = computeGpuWarning('auto') ?? '';
+
+    expect(warning).not.toContain('Firefox');
+    expect(warning).not.toContain('Safari');
+    expect(warning).not.toContain('Chrome');
   });
 
   it('says nothing to a reader who already chose the CPU', () => {

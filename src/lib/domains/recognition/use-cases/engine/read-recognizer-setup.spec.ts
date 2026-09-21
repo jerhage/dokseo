@@ -43,11 +43,11 @@ describe('readRecognizerSetup', () => {
     expect(choice.compute).toBe('cpu');
   });
 
-  it('defaults to the offered model and automatic compute when nothing was stored', async () => {
+  it('defaults to the offered model and the CPU when nothing was stored', async () => {
     const choice = await choiceFrom(null);
 
     expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
-    expect(choice.compute).toBe('auto');
+    expect(choice.compute).toBe('cpu');
   });
 
   it('falls back to an offered model rather than a stored id nobody publishes', async () => {
@@ -60,7 +60,7 @@ describe('readRecognizerSetup', () => {
     const choice = await choiceFrom(null, 'ja', { kind: 'storage-unavailable' });
 
     expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
-    expect(choice.compute).toBe('auto');
+    expect(choice.compute).toBe('cpu');
   });
 
   it('defaults each language to a model that can read it', async () => {

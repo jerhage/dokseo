@@ -21,7 +21,7 @@ function chosenDevice(choice: ComputeChoice, gpuAvailable: boolean): RecognizerD
 }
 
 function computeChoiceOf(value: unknown): ComputeChoice {
-  return value === 'gpu' || value === 'cpu' ? value : 'auto';
+  return value === 'gpu' || value === 'auto' ? value : 'cpu';
 }
 
 function computeChoiceName(choice: ComputeChoice): string {
@@ -45,7 +45,7 @@ function computeDetectionNote(detection: GpuDetection): string {
 function computeGpuWarning(choice: ComputeChoice): string | null {
   if (choice === 'cpu') return null;
 
-  return 'The GPU is faster where it works. A browser can offer WebGPU and still fail to run a model — Firefox does this with the Japanese engine today. If recognition will not start, choose CPU.';
+  return 'The CPU is the steady choice, and it is what this app uses unless you say otherwise. The GPU can be faster, but browser support for it is still shaky: if the GPU will not run a model, recognition falls back to the CPU on its own.';
 }
 
 export {
