@@ -2,7 +2,7 @@ import { openDatabase } from '$lib/platform/idb/connection';
 
 const DATABASE_NAME = 'recognition';
 
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 const CONSENT_STORE = 'model-consent';
 
@@ -11,6 +11,8 @@ const CAPTURE_STORE = 'captures';
 const CAPTURE_BOOK_INDEX = 'bookId';
 
 const SETUP_STORE = 'recognizer-setup';
+
+const TAG_STORE = 'tags';
 
 function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(CONSENT_STORE)) {
@@ -24,6 +26,10 @@ function upgrade(db: IDBDatabase): void {
 
   if (!db.objectStoreNames.contains(SETUP_STORE)) {
     db.createObjectStore(SETUP_STORE, { keyPath: 'language' });
+  }
+
+  if (!db.objectStoreNames.contains(TAG_STORE)) {
+    db.createObjectStore(TAG_STORE, { keyPath: 'id' });
   }
 }
 
@@ -49,6 +55,7 @@ export {
   CAPTURE_STORE,
   CAPTURE_BOOK_INDEX,
   SETUP_STORE,
+  TAG_STORE,
   recordsAvailable,
   recognitionDatabase,
 };

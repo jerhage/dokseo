@@ -241,6 +241,10 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve(ok(undefined));
       },
+      listTags: unused,
+      createTag: unused,
+      addTagToCapture: unused,
+      removeTagFromCapture: unused,
       readModelStorage: (modelId: string) =>
         Promise.resolve(
           ok({

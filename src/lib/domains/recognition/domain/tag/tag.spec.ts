@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import { namedTag, sameTagName, tagFromStored, tagName } from './tag';
-import type { StoredTag } from './tag';
+import { namedTag, oldestFirst, sameTagName, tagFromStored, tagName } from './tag';
+import type { StoredTag, Tag } from './tag';
 
 describe('tagName', () => {
   it('composes a decomposed name', () => {
@@ -77,5 +77,30 @@ describe('sameTagName', () => {
 
   it('separates a name that merely contains the other', () => {
     expect(sameTagName('grammar', 'grammar to ask')).toBe(false);
+  });
+});
+
+describe('oldestFirst', () => {
+  const made = (name: string, createdAt: number): Tag =>
+    namedTag(tagId(name), name, 'slate', createdAt);
+
+  it('orders the tags by the moment each was made', () => {
+    const ordered = oldestFirst([made('late', 9), made('early', 2), made('middle', 5)]);
+
+    expect(ordered.map((tag) => tag.name)).toEqual(['early', 'middle', 'late']);
+  });
+
+  it('puts a tag stored before tags carried a moment at the front', () => {
+    const undated = tagFromStored({ id: tagId('undated'), name: 'undated' });
+    const ordered = oldestFirst([made('later', 4), undated, made('earlier', 1)]);
+
+    expect(ordered.map((tag) => tag.name)).toEqual(['undated', 'earlier', 'later']);
+  });
+
+  it('leaves the tags it was given alone', () => {
+    const tags = [made('late', 9), made('early', 2)];
+    oldestFirst(tags);
+
+    expect(tags.map((tag) => tag.name)).toEqual(['late', 'early']);
   });
 });
