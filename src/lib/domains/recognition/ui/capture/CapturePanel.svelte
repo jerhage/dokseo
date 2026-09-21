@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { clearWarning } from './clearing';
   import { tick } from 'svelte';
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
@@ -244,6 +245,8 @@
       save();
     }
   }
+
+  const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
 </script>
 
 <section class="panel" aria-label="Captures">
@@ -251,15 +254,20 @@
     <h2 class="name">Captures</h2>
     <span class="count">{view.count}</span>
     <kbd class="shortcut" title="Find in captures">⌘K</kbd>
-    <button
-      class="clear"
-      type="button"
-      disabled={view.count === 0}
-      onclick={() => void view.clear()}
-    >
+    <button class="clear" type="button" disabled={view.count === 0} onclick={() => view.askClear()}>
       Clear
     </button>
   </header>
+
+  {#if warning !== null}
+    <div class="confirm" role="alertdialog" aria-label="Delete every capture">
+      <p class="warning">{warning}</p>
+      <div class="choices">
+        <button class="keep" type="button" onclick={() => view.dismissClear()}>Keep them</button>
+        <button class="delete" type="button" onclick={() => void view.clear()}>Delete</button>
+      </div>
+    </div>
+  {/if}
 
   {#if view.count > 0}
     <div class="find">
@@ -400,6 +408,49 @@
 </section>
 
 <style>
+  .confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--c-border-1);
+    background: var(--c-accent-wash-faint);
+  }
+
+  .warning {
+    margin: 0;
+    color: var(--c-text-2);
+    font-size: 12px;
+  }
+
+  .choices {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--s-2);
+  }
+
+  .keep,
+  .delete {
+    padding: var(--s-1) var(--s-3);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-family: var(--f-ui);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .delete {
+    border-color: var(--c-warning);
+    color: var(--c-warning);
+  }
+
+  .keep:hover,
+  .delete:hover {
+    border-color: var(--c-accent-border);
+  }
+
   .panel {
     display: flex;
     flex: 1 1 auto;
@@ -741,6 +792,28 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--s-2);
+  }
+
+  .keep,
+  .delete {
+    padding: var(--s-1) var(--s-3);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-family: var(--f-ui);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .delete {
+    border-color: var(--c-warning);
+    color: var(--c-warning);
+  }
+
+  .keep:hover,
+  .delete:hover {
+    border-color: var(--c-accent-border);
   }
 
   .abandon,

@@ -5,6 +5,8 @@ import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import { captureId } from '$lib/shared/ids';
+import { clearScope } from './clearing';
+import type { ClearScope } from './clearing';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
@@ -141,6 +143,7 @@ class CaptureView {
   partlyDownloaded = $state.raw(false);
   opening = $state.raw(false);
   engineFailure = $state.raw<string | null>(null);
+  confirmingClear = $state(false);
   consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
@@ -156,6 +159,10 @@ class CaptureView {
 
   constructor(container: Container) {
     this.#container = container;
+  }
+
+  get clearing(): ClearScope {
+    return clearScope(this.captures);
   }
 
   get count(): number {
@@ -538,8 +545,18 @@ class CaptureView {
     this.captures = this.captures.filter((capture) => capture.id !== id);
   }
 
+  askClear(): void {
+    if (this.captures.length === 0) return;
+    this.confirmingClear = true;
+  }
+
+  dismissClear(): void {
+    this.confirmingClear = false;
+  }
+
   async clear(): Promise<void> {
     const book = this.#book;
+    this.confirmingClear = false;
     this.#generation += 1;
     this.captures = [];
     this.#stored = new Map();
