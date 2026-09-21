@@ -36,8 +36,6 @@ import { readCover } from './domains/library/use-cases/read-cover';
 import type { ReadCoverDeps } from './domains/library/use-cases/read-cover';
 import { readLibrarySize } from './domains/library/use-cases/read-library-size';
 import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
-import { removeBook } from './domains/library/use-cases/remove-book';
-import type { RemoveBookDeps } from './domains/library/use-cases/remove-book';
 import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
 import { createModelStorage } from './domains/recognition/adapters/model/cache-api-model-storage';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
@@ -126,6 +124,8 @@ import type { OriginStoresError } from './domains/storage/domain/origin-stores';
 import type { StorageAccount } from './domains/storage/domain/storage-parts';
 import { readStorageAccount } from './domains/storage/use-cases/read-storage-account';
 import type { ReadStorageAccountDeps } from './domains/storage/use-cases/read-storage-account';
+import { removeBookAndCaptures } from './domains/storage/use-cases/remove-book-and-captures';
+import type { RemoveBookAndCapturesDeps } from './domains/storage/use-cases/remove-book-and-captures';
 
 type RecognitionProgress = (load: ModelLoad) => void;
 
@@ -219,7 +219,7 @@ type Container = {
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
-    readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError>>;
+    readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError | CaptureError>>;
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
     readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
   };
@@ -307,7 +307,6 @@ function buildContainer(): Container {
   const openForReadingDeps: OpenForReadingDeps = { repository, openPages: openStoredPageSource };
   const listBooksDeps: ListBooksDeps = { repository };
   const readCoverDeps: ReadCoverDeps = { repository };
-  const removeBookDeps: RemoveBookDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
   const readLibrarySizeDeps: ReadLibrarySizeDeps = { repository };
   const cropper = createCanvasCropper(beginTrace);
@@ -322,6 +321,10 @@ function buildContainer(): Container {
   const editCaptureTextDeps: EditCaptureTextDeps = { captures, now: Date.now };
   const removeCaptureDeps: RemoveCaptureDeps = { captures };
   const clearCapturesDeps: ClearCapturesDeps = { captures };
+  const removeBookAndCapturesDeps: RemoveBookAndCapturesDeps = {
+    clearing: clearCapturesDeps,
+    removal: { repository },
+  };
   const tags = createTagRepository();
   const listTagsDeps: ListTagsDeps = { tags };
   const createTagDeps: CreateTagDeps = { tags, now: Date.now };
@@ -355,7 +358,7 @@ function buildContainer(): Container {
       openForReading: (id: BookId) => openForReading(openForReadingDeps, id),
       listBooks: () => listBooks(listBooksDeps),
       readCover: (id: BookId) => readCover(readCoverDeps, id),
-      removeBook: (id: BookId) => removeBook(removeBookDeps, id),
+      removeBook: (id: BookId) => removeBookAndCaptures(removeBookAndCapturesDeps, id),
       editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
       readLibrarySize: () => readLibrarySize(readLibrarySizeDeps),
     },
