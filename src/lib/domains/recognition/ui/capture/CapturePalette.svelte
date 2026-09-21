@@ -173,9 +173,9 @@
     at = NO_MATCH;
   }
 
-  function reveal(): void {
+  function reveal(chosen: Scope): void {
     shown = true;
-    at = NO_MATCH;
+    choose(chosen);
     void find.load();
     onopen?.();
   }
@@ -200,10 +200,12 @@
   }
 
   function shortcuts(event: KeyboardEvent): void {
-    if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+    if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      if (shown) hide();
-      else reveal();
+      const chosen: Scope = book === null || event.shiftKey ? 'all' : 'book';
+      if (!shown) reveal(chosen);
+      else if (scope === chosen) hide();
+      else choose(chosen);
       return;
     }
 
