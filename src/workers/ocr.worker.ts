@@ -3,11 +3,12 @@ import type { ComputeChoice } from '$lib/domains/recognition/domain/engine/compu
 import { japaneseOcrText } from '$lib/domains/recognition/domain/engine/japanese-ocr-text';
 import { mostLikelyToken } from '$lib/domains/recognition/domain/engine/most-likely-token';
 import type { DecoderLogits } from '$lib/domains/recognition/domain/engine/most-likely-token';
+import type { RecognizerDevice } from '$lib/domains/recognition/domain/engine/recognizer-session';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 import { knownModel } from '$lib/domains/recognition/domain/model/model-footprint';
 import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model/model-weights';
 import { describeCause } from '$lib/shared/cause';
-import { openOnDevice } from './device-fallback';
+import { guardFirstGpuRun, openOnDevice, reopenOnCpu } from './device-fallback';
 import { installModelFetch } from './model-fetch';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
@@ -22,6 +23,7 @@ type InferenceSession = {
 };
 
 type Session = {
+  readonly device: RecognizerDevice;
   read(image: ImageBitmap): Promise<string>;
 };
 
@@ -35,6 +37,8 @@ const scope = self as unknown as WorkerScope;
 const post = scope.postMessage.bind(scope);
 
 let opening: Promise<Session> | null = null;
+
+let requested: { readonly setup: RecognizerSetup; readonly id: number } | null = null;
 
 async function deviceFor(compute: ComputeChoice): Promise<ReturnType<typeof chosenDevice>> {
   try {
@@ -58,7 +62,11 @@ function canvasOf(image: ImageBitmap): OffscreenCanvas {
   return canvas;
 }
 
-async function openSession(setup: RecognizerSetup, id: number): Promise<Session> {
+async function openSession(
+  setup: RecognizerSetup,
+  id: number,
+  refused: RecognizerDevice | null,
+): Promise<Session> {
   const { AutoModel, AutoProcessor, AutoTokenizer, env, RawImage, Tensor } =
     await import('@huggingface/transformers');
   env.allowLocalModels = false;
@@ -71,16 +79,19 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
     },
   });
   const precision = knownModel(modelId)?.precision ?? QUANTIZED_THROUGHOUT;
-  const asked = await deviceFor(setup.compute);
+  const build = (on: RecognizerDevice) =>
+    AutoModel.from_pretrained(modelId, {
+      device: on,
+      dtype: { encoder_model: precision.encoder, decoder_model_merged: precision.decoder },
+    });
+
+  const model =
+    refused === null ? openOnDevice(await deviceFor(setup.compute), build) : reopenOnCpu(build);
+
   const [processor, tokenizer, running] = await Promise.all([
     AutoProcessor.from_pretrained(modelId),
     AutoTokenizer.from_pretrained(modelId),
-    openOnDevice(asked, (on) =>
-      AutoModel.from_pretrained(modelId, {
-        device: on,
-        dtype: { encoder_model: precision.encoder, decoder_model_merged: precision.decoder },
-      }),
-    ),
+    model,
   ]);
 
   const sessions = running.opened.sessions as Record<string, InferenceSession | undefined>;
@@ -99,6 +110,7 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
   });
 
   return {
+    device: running.device,
     async read(image: ImageBitmap): Promise<string> {
       const inputs = await processor(RawImage.fromCanvas(canvasOf(image)));
       const encoded = await encoder.run({ pixel_values: inputs.pixel_values });
@@ -121,8 +133,12 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
   };
 }
 
-function sessionOnce(setup: RecognizerSetup, id: number): Promise<Session> {
-  opening ??= openSession(setup, id).catch((cause: unknown): never => {
+function sessionOnce(
+  setup: RecognizerSetup,
+  id: number,
+  refused: RecognizerDevice | null,
+): Promise<Session> {
+  opening ??= openSession(setup, id, refused).catch((cause: unknown): never => {
     opening = null;
     throw cause;
   });
@@ -130,9 +146,25 @@ function sessionOnce(setup: RecognizerSetup, id: number): Promise<Session> {
   return opening;
 }
 
+async function reopenAfterRefusal(): Promise<Session> {
+  const first = requested;
+  if (first === null) {
+    throw new Error('The recognition model was not opened before the GPU refused to run a crop');
+  }
+
+  opening = null;
+  return await sessionOnce(first.setup, first.id, 'webgpu');
+}
+
+const readOnAProvenDevice = guardFirstGpuRun<ImageBitmap, string>({
+  fallBack: reopenAfterRefusal,
+});
+
 async function open(id: number, setup: RecognizerSetup): Promise<void> {
+  requested = { setup, id };
+
   try {
-    await sessionOnce(setup, id);
+    await sessionOnce(setup, id, null);
   } catch (cause) {
     post({ kind: 'failed', id, failure: 'model-unavailable', cause: describeCause(cause) });
   }
@@ -160,7 +192,7 @@ async function recognize(id: number, image: ImageBitmap): Promise<void> {
     }
 
     try {
-      const text = await session.read(image);
+      const text = await readOnAProvenDevice(session, image);
       post({ kind: 'recognized', id, text, confidence: null });
     } catch (cause) {
       post({ kind: 'failed', id, failure: 'recognition-failed', cause: describeCause(cause) });
