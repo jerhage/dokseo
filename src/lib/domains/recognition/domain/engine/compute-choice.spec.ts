@@ -9,8 +9,12 @@ import {
 } from './compute-choice';
 
 describe('chosenDevice', () => {
-  it('runs on the GPU when nothing was forced and an adapter answered', () => {
-    expect(chosenDevice('auto', true)).toBe('webgpu');
+  it('runs on the CPU when the reader left the choice to the app', () => {
+    expect(chosenDevice('auto', true)).toBe('wasm');
+  });
+
+  it('leaves the GPU to a reader who asked for it', () => {
+    expect(chosenDevice('gpu', true)).toBe('webgpu');
   });
 
   it('runs on the CPU when nothing was forced and no adapter answered', () => {
@@ -75,9 +79,8 @@ describe('computeDetectionNote', () => {
 });
 
 describe('computeGpuWarning', () => {
-  it('says the CPU is the steady choice, and the one in use by default', () => {
-    expect(computeGpuWarning('auto')).toContain('steady choice');
-    expect(computeGpuWarning('gpu')).toContain('steady choice');
+  it('says nothing to a reader who left the choice to the app', () => {
+    expect(computeGpuWarning('auto')).toBeNull();
   });
 
   it('warns that browser support for the GPU is still shaky', () => {
@@ -89,7 +92,7 @@ describe('computeGpuWarning', () => {
   });
 
   it('names no browser, because a refusal is found by trying', () => {
-    const warning = computeGpuWarning('auto') ?? '';
+    const warning = computeGpuWarning('gpu') ?? '';
 
     expect(warning).not.toContain('Firefox');
     expect(warning).not.toContain('Safari');

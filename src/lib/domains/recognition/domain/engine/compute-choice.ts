@@ -16,7 +16,7 @@ function chosenDevice(choice: ComputeChoice, gpuAvailable: boolean): RecognizerD
   return match(choice)
     .with('cpu', () => 'wasm' as const)
     .with('gpu', () => (gpuAvailable ? ('webgpu' as const) : ('wasm' as const)))
-    .with('auto', () => (gpuAvailable ? ('webgpu' as const) : ('wasm' as const)))
+    .with('auto', () => 'wasm' as const)
     .exhaustive();
 }
 
@@ -43,9 +43,9 @@ function computeDetectionNote(detection: GpuDetection): string {
 }
 
 function computeGpuWarning(choice: ComputeChoice): string | null {
-  if (choice === 'cpu') return null;
+  if (choice !== 'gpu') return null;
 
-  return 'The CPU is the steady choice, and it is what this app uses unless you say otherwise. The GPU can be faster, but browser support for it is still shaky: if the GPU will not run a model, recognition falls back to the CPU on its own.';
+  return 'Browser support for the GPU is still shaky, so this may be unstable. If the GPU will not run a model, recognition falls back to the CPU on its own.';
 }
 
 export {

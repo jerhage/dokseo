@@ -182,7 +182,7 @@
         </div>
         <p class="detected">{computeDetectionNote(view.detection)}</p>
         {#if gpuWarning !== null}
-          <p class="detected">{gpuWarning}</p>
+          <p class="detected shaky" role="alert">{gpuWarning}</p>
         {/if}
         {#if session !== null}
           <p class="detected">
@@ -607,6 +607,12 @@
     border-color: var(--c-accent-line);
     background: var(--c-surface-card-active);
     color: var(--c-accent);
+  }
+
+  .shaky {
+    border-color: var(--c-warning-border);
+    background: var(--c-warning-wash-faint);
+    color: var(--c-warning-text);
   }
 
   .detected {
