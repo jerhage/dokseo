@@ -9,3 +9,7 @@ Results appear in a side panel as pure text.
 Use Yomitan to look up definitions, sentence mine, etc.
 
 Captured text persists for every document.
+
+## License
+
+[MIT](LICENSE) © 2026 Jeremy Hage
