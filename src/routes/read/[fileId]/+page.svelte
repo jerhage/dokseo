@@ -98,4 +98,11 @@
   {/snippet}
 </ReaderScreen>
 
-<CapturePalette book={id} {books} {find} covers={shelf.covers} onopen={() => void shelf.load()} />
+<CapturePalette
+  book={id}
+  {books}
+  {find}
+  tags={captures.tags}
+  covers={shelf.covers}
+  onopen={() => void shelf.load()}
+/>

@@ -5,11 +5,15 @@
   import { readerHref } from '$lib/shared/reader-location';
   import { segmentsOf, textMatches } from '$lib/shared/text-search';
   import type { TextSegment } from '$lib/shared/text-search';
-  import { matchesByBook } from '../../domain/capture/capture-results';
   import type { SearchedBook } from '../../domain/capture/capture-results';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
+  import type { Tag } from '../../domain/tag/tag';
+  import { matchedTagIds, paletteFinds } from '../../domain/tag/tag-find';
+  import type { PaletteFilter } from '../../domain/tag/tag-find';
   import { firstImage, pageLabel } from './capture-place';
   import type { CaptureSearchView } from './capture-search.svelte';
+  import { chipsOf } from './tag-chip';
+  import type { TagChip } from './tag-chip';
 
   type Scope = 'book' | 'all';
 
@@ -17,9 +21,12 @@
     readonly book: BookId;
     readonly books: readonly SearchedBook[];
     readonly covers?: ReadonlyMap<BookId, string>;
+    readonly tags?: readonly Tag[];
     readonly find: CaptureSearchView;
     readonly onopen?: () => void;
   };
+
+  type RowChip = TagChip & { readonly matched: boolean };
 
   type Row = {
     readonly id: CaptureId;
@@ -29,6 +36,7 @@
     readonly language: Language;
     readonly cover: string | null;
     readonly segments: readonly TextSegment[];
+    readonly chips: readonly RowChip[];
   };
 
   const SCOPES: readonly { readonly value: Scope; readonly label: string }[] = [
@@ -36,11 +44,12 @@
     { value: 'all', label: 'All uploads' },
   ];
 
-  let { book, books, covers = new Map(), find, onopen }: Props = $props();
+  let { book, books, covers = new Map(), tags = [], find, onopen }: Props = $props();
 
   let shown = $state(false);
   let query = $state('');
   let scope = $state<Scope>('book');
+  let filter = $state<PaletteFilter>('everything');
   let at = $state(NO_MATCH);
   let field = $state<HTMLInputElement | null>(null);
   let list = $state<(HTMLAnchorElement | null)[]>([]);
@@ -50,11 +59,13 @@
   const rows = $derived.by<readonly Row[]>(() => {
     if (!shown || query.trim().length === 0) return [];
 
-    return matchesByBook(find.captures, wanted, query).flatMap((matched) =>
+    return paletteFinds(find.captures, wanted, tags, query, filter).flatMap((matched) =>
       matched.captures
         .map((capture): Row | null => {
           const index = firstImage(capture.regions);
           if (index === null) return null;
+
+          const lit = new Set(matchedTagIds(capture, tags, query));
 
           return {
             id: capture.id,
@@ -64,6 +75,12 @@
             language: matched.book.language,
             cover: covers.get(matched.book.id) ?? null,
             segments: segmentsOf(capture.text, textMatches(capture.text, query)),
+            chips: chipsOf(capture.tagIds, tags).map((chip) => ({
+              id: chip.id,
+              name: chip.name,
+              colour: chip.colour,
+              matched: lit.has(chip.id),
+            })),
           };
         })
         .filter((row) => row !== null),
@@ -71,6 +88,11 @@
   });
 
   const cursor = $derived(at >= rows.length ? NO_MATCH : at);
+  const invite = $derived(filter === 'tags' ? 'Find a tag' : 'Find in text, tags and notes');
+
+  const nothing = $derived(
+    filter === 'tags' ? 'No capture carries a tag of that name.' : 'No capture holds that text.',
+  );
 
   $effect(() => {
     if (shown) field?.focus();
@@ -149,7 +171,7 @@
           id="capture-palette"
           type="search"
           bind:value={query}
-          placeholder="Find in captures"
+          placeholder={invite}
           oninput={() => (at = NO_MATCH)}
         />
         <span class="chips">
@@ -166,12 +188,24 @@
               {choice.label}
             </button>
           {/each}
+          <span class="divider" aria-hidden="true"></span>
+          <button
+            class="chip"
+            type="button"
+            aria-pressed={filter === 'tags'}
+            onclick={() => {
+              filter = filter === 'tags' ? 'everything' : 'tags';
+              at = NO_MATCH;
+            }}
+          >
+            Tags
+          </button>
         </span>
       </div>
 
       {#if rows.length === 0}
         {#if query.trim().length > 0}
-          <p class="nothing">No capture holds that text.</p>
+          <p class="nothing">{nothing}</p>
         {/if}
       {:else}
         <ul class="rows">
@@ -201,6 +235,20 @@
                   </span>
                   {#if row.title !== null}
                     <span class="from">{row.title}</span>
+                  {/if}
+                  {#if row.chips.length > 0}
+                    <span class="tags">
+                      {#each row.chips as chip (chip.id)}
+                        <span
+                          class="tag"
+                          class:lit={chip.matched}
+                          style="--swatch: var(--c-tag-{chip.colour})"
+                        >
+                          <span class="swatch" aria-hidden="true"></span>
+                          {chip.name}
+                        </span>
+                      {/each}
+                    </span>
                   {/if}
                 </span>
                 <span class="page">p.{row.page}</span>
@@ -312,6 +360,14 @@
     color: var(--c-accent);
   }
 
+  .divider {
+    flex: none;
+    align-self: stretch;
+    width: 1px;
+    margin: var(--s-2) 3px;
+    background: var(--c-border-4);
+  }
+
   .rows {
     display: flex;
     flex: 1 1 auto;
@@ -389,6 +445,41 @@
     margin-top: 3px;
     color: var(--c-text-7);
     font-size: 11px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1);
+    margin-top: 5px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border: 1px solid var(--c-border-8);
+    border-radius: var(--r-8);
+    background: var(--c-surface-tag);
+    color: var(--c-text-tag);
+    font-family: var(--f-ui);
+    font-size: 10.5px;
+    line-height: 1;
+  }
+
+  .tag.lit {
+    border-color: var(--c-text-tag);
+    color: var(--c-text-1);
+    font-weight: 600;
+  }
+
+  .swatch {
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: 1px;
+    background: var(--swatch);
   }
 
   .page {

@@ -39,12 +39,10 @@ function heldByBook<T extends Written>(captures: readonly T[]): ReadonlyMap<Book
   return grouped;
 }
 
-function matchesByBook<T extends Written>(
-  captures: readonly T[],
+function inBooks<T extends Written>(
+  found: readonly T[],
   books: readonly SearchedBook[],
-  query: string,
 ): readonly BookMatches<T>[] {
-  const found = captures.filter((capture) => matchesQuery(capture.text, query));
   if (found.length === 0) return [];
 
   const grouped = heldByBook(found);
@@ -53,23 +51,31 @@ function matchesByBook<T extends Written>(
     .filter((matched) => matched.captures.length > 0);
 }
 
+function matchesByBook<T extends Written>(
+  captures: readonly T[],
+  books: readonly SearchedBook[],
+  query: string,
+): readonly BookMatches<T>[] {
+  return inBooks(
+    captures.filter((capture) => matchesQuery(capture.text, query)),
+    books,
+  );
+}
+
 function taggedByBook<T extends Written & Tagged>(
   captures: readonly T[],
   books: readonly SearchedBook[],
   tag: TagId,
 ): readonly BookMatches<T>[] {
-  const held = captures.filter((capture) => capture.tagIds.includes(tag));
-  if (held.length === 0) return [];
-
-  const grouped = heldByBook(held);
-  return books
-    .map((book) => ({ book, captures: inBookOrder(grouped.get(book.id) ?? [], book.direction) }))
-    .filter((tagged) => tagged.captures.length > 0);
+  return inBooks(
+    captures.filter((capture) => capture.tagIds.includes(tag)),
+    books,
+  );
 }
 
 function matchTally<T>(matched: readonly BookMatches<T>[]): number {
   return matched.reduce((total, book) => total + book.captures.length, 0);
 }
 
-export { matchesByBook, taggedByBook, matchTally };
+export { inBooks, matchesByBook, taggedByBook, matchTally };
 export type { SearchedBook, Written, Tagged, BookMatches };
