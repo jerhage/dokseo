@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { noticeBoard } from '$lib/platform/events/notice-board';
 import { probeGpu } from '$lib/platform/gpu/adapter-probe';
 import {
   isPersisted,
@@ -115,34 +116,9 @@ type RecognitionNotices = {
   readonly onSession?: RecognitionSessionReport;
 };
 
-const progressListeners = new Map<Language, Set<RecognitionProgress>>();
+const progressNotices = noticeBoard<Language, ModelLoad>();
 
-const sessionListeners = new Map<Language, Set<RecognitionSessionReport>>();
-
-const openedSessions = new Map<Language, RecognizerSession>();
-
-function progressFor(language: Language): Set<RecognitionProgress> {
-  const held = progressListeners.get(language);
-  if (held !== undefined) return held;
-
-  const opened = new Set<RecognitionProgress>();
-  progressListeners.set(language, opened);
-  return opened;
-}
-
-function sessionsFor(language: Language): Set<RecognitionSessionReport> {
-  const held = sessionListeners.get(language);
-  if (held !== undefined) return held;
-
-  const opened = new Set<RecognitionSessionReport>();
-  sessionListeners.set(language, opened);
-  return opened;
-}
-
-function noteSession(language: Language, session: RecognizerSession): void {
-  openedSessions.set(language, session);
-  for (const report of sessionsFor(language)) report(session);
-}
+const sessionNotices = noticeBoard<Language, RecognizerSession>();
 
 const setups = createRecognizerSetupStore();
 
@@ -164,10 +140,10 @@ function noticesFor(language: Language): {
     readSetup: () => setupFor(language),
     beginTrace,
     onProgress: (load) => {
-      for (const report of progressFor(language)) report(load);
+      progressNotices.post(language, load);
     },
     onSession: (session) => {
-      noteSession(language, session);
+      sessionNotices.post(language, session);
     },
   };
 }
@@ -347,12 +323,10 @@ function buildContainer(): Container {
         notices: RecognitionNotices = {},
       ) => {
         const { onProgress, onSession } = notices;
-        const listening = progressFor(language);
-        const watching = sessionsFor(language);
-        if (onProgress !== undefined) listening.add(onProgress);
+        if (onProgress !== undefined) progressNotices.watch(language, onProgress);
         if (onSession !== undefined) {
-          watching.add(onSession);
-          const opened = openedSessions.get(language);
+          sessionNotices.watch(language, onSession);
+          const opened = sessionNotices.latest(language);
           if (opened !== undefined) onSession(opened);
         }
 
@@ -366,8 +340,8 @@ function buildContainer(): Container {
           );
           return read;
         } finally {
-          if (onProgress !== undefined) listening.delete(onProgress);
-          if (onSession !== undefined) watching.delete(onSession);
+          if (onProgress !== undefined) progressNotices.stop(language, onProgress);
+          if (onSession !== undefined) sessionNotices.stop(language, onSession);
         }
       },
       listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),
@@ -387,34 +361,32 @@ function buildContainer(): Container {
       detectCompute: () => detectCompute(detectComputeDeps),
       prepareRecognizer: async (language: Language, notices: RecognitionNotices = {}) => {
         const { onProgress, onSession } = notices;
-        const listening = progressFor(language);
-        const watching = sessionsFor(language);
-        if (onProgress !== undefined) listening.add(onProgress);
-        if (onSession !== undefined) watching.add(onSession);
+        if (onProgress !== undefined) progressNotices.watch(language, onProgress);
+        if (onSession !== undefined) sessionNotices.watch(language, onSession);
 
         try {
           const recognizer = await recognizerFor(language);
           const opened = await prepareRecognizer({ recognizer });
           return opened;
         } finally {
-          if (onProgress !== undefined) listening.delete(onProgress);
-          if (onSession !== undefined) watching.delete(onSession);
+          if (onProgress !== undefined) progressNotices.stop(language, onProgress);
+          if (onSession !== undefined) sessionNotices.stop(language, onSession);
         }
       },
       pauseModelLoad: async (language: Language) => {
-        openedSessions.delete(language);
+        sessionNotices.forget(language);
         const recognizer = await recognizerFor(language).catch(() => null);
         if (recognizer === null) return;
         pauseModelLoad({ recognizer });
       },
       cancelModelLoad: async (language: Language, modelId: string) => {
-        openedSessions.delete(language);
+        sessionNotices.forget(language);
         const recognizer = await recognizerFor(language).catch(() => null);
         if (recognizer === null) return null;
         return await cancelModelLoad({ recognizer, partials }, modelId);
       },
       closeRecognizer: async (language: Language) => {
-        openedSessions.delete(language);
+        sessionNotices.forget(language);
         const held = recognizers.get(language);
         recognizers.delete(language);
         if (held === undefined) return;
