@@ -26,6 +26,20 @@ function crossOriginIsolation(): Plugin {
   };
 }
 
+const BUNDLED_RUNTIME = /ort-wasm[^/]*\.wasm$/u;
+
+function runtimeServedFromCdn(): Plugin {
+  return {
+    name: 'onnx-runtime-served-from-cdn',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      for (const name of Object.keys(bundle)) {
+        if (BUNDLED_RUNTIME.test(name)) delete bundle[name];
+      }
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     sveltekit({
@@ -38,6 +52,7 @@ export default defineConfig({
       alias: { $workers: 'src/workers' },
     }),
     crossOriginIsolation(),
+    runtimeServedFromCdn(),
   ],
   test: {
     expect: { requireAssertions: true },
