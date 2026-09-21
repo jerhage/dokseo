@@ -3,7 +3,7 @@ import { imageRect, screenRect } from '$lib/shared/geometry';
 import type { ImageRect, ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
-import { regionsIn, toImageRect, toPageFraction, toScreenRect } from './placement';
+import { regionsIn, toImageRect, toPageFraction } from './placement';
 import type { PlacedImage } from './placement';
 
 const page: PlacedImage = {
@@ -86,39 +86,6 @@ describe('toImageRect', () => {
     const flat: PlacedImage = { ...page, onScreen: screenRect(100, 50, 0, 600) };
 
     expect(toImageRect(flat, screenRect(0, 0, 1000, 1000))).toBeNull();
-  });
-});
-
-describe('toScreenRect', () => {
-  it('places a stored region back onto the screen', () => {
-    expect(plain(toScreenRect(page, imageRect(200, 300, 200, 300)))).toEqual({
-      x: 200,
-      y: 200,
-      width: 100,
-      height: 150,
-    });
-  });
-
-  it('round-trips a rect through the screen and back to within a pixel', () => {
-    const original = imageRect(137, 409, 251, 318);
-
-    const back = mapped(page, toScreenRect(page, original));
-
-    expect(back.x).toBeCloseTo(original.x, 0);
-    expect(back.y).toBeCloseTo(original.y, 0);
-    expect(back.width).toBeCloseTo(original.width, 0);
-    expect(back.height).toBeCloseTo(original.height, 0);
-  });
-
-  it('collapses to an empty rect for an image with a zero natural size', () => {
-    const broken: PlacedImage = { ...page, natural: { width: 0, height: 1200 } };
-
-    expect(plain(toScreenRect(broken, imageRect(0, 0, 10, 10)))).toEqual({
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-    });
   });
 });
 

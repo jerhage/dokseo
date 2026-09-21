@@ -48,9 +48,5 @@ function downloadStep(state: DownloadState, event: DownloadEvent): DownloadState
     .exhaustive();
 }
 
-function isRunning(state: DownloadState): boolean {
-  return state.kind === 'loading';
-}
-
-export { IDLE, downloadStep, isRunning };
+export { IDLE, downloadStep };
 export type { DownloadState, DownloadEvent };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { downloadStep, IDLE, isRunning } from './model-download';
+import { downloadStep, IDLE } from './model-download';
 import type { DownloadState } from './model-download';
 import type { ModelLoad } from './model-load';
 import type { RecognizerSession } from '../engine/recognizer-session';
@@ -20,7 +20,6 @@ function loading(): DownloadState {
 describe('downloadStep', () => {
   it('starts with no progress reported yet, so nothing claims a percentage', () => {
     expect(loading()).toEqual({ kind: 'loading', load: null });
-    expect(isRunning(loading())).toBe(true);
   });
 
   it('records the newest load while the download runs', () => {

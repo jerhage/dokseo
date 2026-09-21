@@ -58,15 +58,6 @@ function isPartlyStored(report: ModelStorageReport): boolean {
   return report.files > 0 && !isStored(report);
 }
 
-function shareOfUsage(report: ModelStorageReport, usage: number): number {
-  if (usage <= 0) return 0;
-  return Math.min(1, report.bytes / usage);
-}
-
-function restOfUsage(report: ModelStorageReport, usage: number): number {
-  return Math.max(0, usage - report.bytes);
-}
-
 export {
   belongsToModel,
   isRuntimeAsset,
@@ -75,7 +66,5 @@ export {
   reportOf,
   isStored,
   isPartlyStored,
-  shareOfUsage,
-  restOfUsage,
 };
 export type { CacheEntry, ModelStorageReport };

@@ -1,4 +1,4 @@
-import { clampTo, imageRect, isEmpty, normalize, screenRect } from '$lib/shared/geometry';
+import { clampTo, imageRect, isEmpty, normalize } from '$lib/shared/geometry';
 import type { ImageRect, ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -50,22 +50,6 @@ function toImageRect(placed: PlacedImage, selection: ScreenRect): ImageRect | nu
   );
 }
 
-function toScreenRect(placed: PlacedImage, rect: ImageRect): ScreenRect {
-  const frame = frameOf(placed);
-  if (frame === null) return screenRect(0, 0, 0, 0);
-
-  const region = normalize(rect);
-  const scaleX = frame.width / placed.natural.width;
-  const scaleY = frame.height / placed.natural.height;
-
-  return screenRect(
-    frame.x + region.x * scaleX,
-    frame.y + region.y * scaleY,
-    region.width * scaleX,
-    region.height * scaleY,
-  );
-}
-
 function toPageFraction(natural: Size, rect: ImageRect): PageFraction | null {
   if (!isPositiveFinite(natural.width) || !isPositiveFinite(natural.height)) return null;
 
@@ -91,5 +75,5 @@ function regionsIn(placed: readonly PlacedImage[], selection: ScreenRect): reado
   return regions;
 }
 
-export { toImageRect, toScreenRect, toPageFraction, regionsIn };
+export { toImageRect, toPageFraction, regionsIn };
 export type { PageFraction, PlacedImage };

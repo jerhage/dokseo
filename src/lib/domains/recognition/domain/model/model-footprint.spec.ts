@@ -3,7 +3,6 @@ import { megabytes } from '$lib/shared/bytes';
 import {
   chosenModel,
   downloadMb,
-  engineName,
   knownModel,
   modelFootprint,
   modelsFor,
@@ -64,18 +63,6 @@ describe('modelFootprint', () => {
     const korean = modelFootprint('ko');
     expect(korean?.modelId).toBe('PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx');
     expect(megabytes(korean?.weightsBytes ?? 0)).toBe(13);
-  });
-});
-
-describe('engineName', () => {
-  it('names the engine of a model it knows', () => {
-    expect(engineName('kimchireader/manga-ocr-onnx-q8')).toBe('manga-ocr');
-  });
-
-  it('falls back to the raw model id of a model it does not know', () => {
-    expect(engineName('someone/a-model-we-have-not-measured')).toBe(
-      'someone/a-model-we-have-not-measured',
-    );
   });
 });
 

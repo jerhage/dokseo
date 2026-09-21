@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  belongsToModel,
-  entriesOfModel,
-  isPartlyStored,
-  isStored,
-  reportOf,
-  restOfUsage,
-  shareOfUsage,
-} from './model-cache';
+import { belongsToModel, entriesOfModel, isPartlyStored, isStored, reportOf } from './model-cache';
 import type { CacheEntry } from './model-cache';
 import { JAPANESE_OCR_MODEL } from './model-footprint';
 
@@ -95,35 +87,6 @@ describe('reportOf', () => {
       weights: [],
     });
     expect(isStored(report)).toBe(false);
-  });
-});
-
-describe('shareOfUsage', () => {
-  it('reports the fraction of the origin usage the model occupies', () => {
-    const report = reportOf([weights('weights.onnx', 100)], MODEL);
-    expect(shareOfUsage(report, 400)).toBe(0.25);
-  });
-
-  it('reports nothing when the browser reports no usage at all', () => {
-    const report = reportOf([weights('weights.onnx', 100)], MODEL);
-    expect(shareOfUsage(report, 0)).toBe(0);
-  });
-
-  it('caps the share at all of it when the model is larger than the reported usage', () => {
-    const report = reportOf([weights('weights.onnx', 500)], MODEL);
-    expect(shareOfUsage(report, 400)).toBe(1);
-  });
-});
-
-describe('restOfUsage', () => {
-  it('reports what the rest of the origin holds', () => {
-    const report = reportOf([weights('weights.onnx', 100)], MODEL);
-    expect(restOfUsage(report, 400)).toBe(300);
-  });
-
-  it('never reports a negative remainder', () => {
-    const report = reportOf([weights('weights.onnx', 500)], MODEL);
-    expect(restOfUsage(report, 400)).toBe(0);
   });
 });
 

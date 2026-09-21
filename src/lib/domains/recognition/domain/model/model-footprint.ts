@@ -80,10 +80,6 @@ function everyModel(): readonly ModelFootprint[] {
   return KNOWN_MODELS;
 }
 
-function engineName(modelId: string): string {
-  return KNOWN_MODELS.find((known) => known.modelId === modelId)?.engine ?? modelId;
-}
-
 function knownModel(modelId: string): ModelFootprint | null {
   return KNOWN_MODELS.find((known) => known.modelId === modelId) ?? null;
 }
@@ -129,7 +125,6 @@ export {
   JAPANESE_FULL_DECODER_MODEL,
   KOREAN_OCR_MODEL,
   everyModel,
-  engineName,
   knownModel,
   reads,
   modelFootprint,
