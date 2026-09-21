@@ -1,4 +1,4 @@
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -16,6 +16,10 @@ type Written = {
   readonly bookId: BookId;
   readonly regions: readonly ImageRegion[];
   readonly text: string;
+};
+
+type Tagged = {
+  readonly tagIds: readonly TagId[];
 };
 
 type BookMatches<T> = {
@@ -49,9 +53,23 @@ function matchesByBook<T extends Written>(
     .filter((matched) => matched.captures.length > 0);
 }
 
+function taggedByBook<T extends Written & Tagged>(
+  captures: readonly T[],
+  books: readonly SearchedBook[],
+  tag: TagId,
+): readonly BookMatches<T>[] {
+  const held = captures.filter((capture) => capture.tagIds.includes(tag));
+  if (held.length === 0) return [];
+
+  const grouped = heldByBook(held);
+  return books
+    .map((book) => ({ book, captures: inBookOrder(grouped.get(book.id) ?? [], book.direction) }))
+    .filter((tagged) => tagged.captures.length > 0);
+}
+
 function matchTally<T>(matched: readonly BookMatches<T>[]): number {
   return matched.reduce((total, book) => total + book.captures.length, 0);
 }
 
-export { matchesByBook, matchTally };
-export type { SearchedBook, BookMatches };
+export { matchesByBook, taggedByBook, matchTally };
+export type { SearchedBook, Written, Tagged, BookMatches };

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, imageIndex } from '$lib/shared/ids';
-import type { BookId } from '$lib/shared/ids';
+import { bookId, imageIndex, tagId } from '$lib/shared/ids';
+import type { BookId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { at } from '$lib/shared/testing/at';
-import { matchesByBook, matchTally } from './capture-results';
+import { matchesByBook, matchTally, taggedByBook } from './capture-results';
 import type { SearchedBook } from './capture-results';
 
 type Found = {
@@ -30,6 +30,20 @@ function capture(name: string, id: string, text: string, index = 0, x = 0, y = 0
 
 function names(matched: readonly { readonly captures: readonly Found[] }[]): readonly string[][] {
   return matched.map((one) => one.captures.map((found) => found.name));
+}
+
+const SFX: TagId = tagId('sfx');
+
+const KEIGO: TagId = tagId('keigo');
+
+type Held = Found & { readonly tagIds: readonly TagId[] };
+
+function held(name: string, id: string, tags: readonly TagId[], index = 0, x = 0, y = 0): Held {
+  return { ...capture(name, id, 'text', index, x, y), tagIds: tags };
+}
+
+function heldNames(tagged: readonly { readonly captures: readonly Held[] }[]): readonly string[][] {
+  return tagged.map((one) => one.captures.map((found) => found.name));
 }
 
 describe('matchesByBook', () => {
@@ -146,6 +160,87 @@ describe('matchesByBook', () => {
   it('leaves the captures it was given untouched', () => {
     const given = [capture('later', 'one', '海', 4), capture('earlier', 'one', '海', 1)];
     matchesByBook(given, [book('one')], '海');
+
+    expect(given.map((one) => one.name)).toEqual(['later', 'earlier']);
+  });
+});
+
+describe('taggedByBook', () => {
+  it('groups the captures carrying the tag under the book each was taken from', () => {
+    const tagged = taggedByBook(
+      [
+        held('first', 'one', [SFX]),
+        held('second', 'two', [SFX]),
+        held('third', 'one', [SFX], 1),
+        held('other', 'one', [KEIGO], 2),
+      ],
+      [book('one'), book('two')],
+      SFX,
+    );
+
+    expect(tagged.map((one) => one.book.id)).toEqual([bookId('one'), bookId('two')]);
+    expect(heldNames(tagged)).toEqual([['first', 'third'], ['second']]);
+  });
+
+  it('orders a right-to-left book from the right of the page', () => {
+    const tagged = taggedByBook(
+      [held('left', 'one', [SFX], 0, 20, 100), held('right', 'one', [SFX], 0, 600, 100)],
+      [book('one', 'rtl')],
+      SFX,
+    );
+
+    expect(heldNames(tagged)).toEqual([['right', 'left']]);
+  });
+
+  it('orders a left-to-right book down the page', () => {
+    const tagged = taggedByBook(
+      [held('bottom', 'one', [SFX], 0, 20, 900), held('top', 'one', [SFX], 0, 600, 100)],
+      [book('one', 'ltr')],
+      SFX,
+    );
+
+    expect(heldNames(tagged)).toEqual([['top', 'bottom']]);
+  });
+
+  it('orders the captures of one book by image index before position on the page', () => {
+    const tagged = taggedByBook(
+      [held('later', 'one', [SFX], 4, 900, 0), held('earlier', 'one', [SFX], 1, 0, 900)],
+      [book('one')],
+      SFX,
+    );
+
+    expect(heldNames(tagged)).toEqual([['earlier', 'later']]);
+  });
+
+  it('leaves out a book whose captures carry no such tag', () => {
+    const tagged = taggedByBook(
+      [held('only', 'one', [SFX]), held('elsewhere', 'two', [KEIGO])],
+      [book('one'), book('two')],
+      SFX,
+    );
+
+    expect(tagged).toHaveLength(1);
+    expect(at(tagged, 0).book.id).toBe(bookId('one'));
+  });
+
+  it('reports nothing for a tag no capture carries', () => {
+    expect(taggedByBook([held('only', 'one', [SFX])], [book('one')], KEIGO)).toEqual([]);
+  });
+
+  it('drops a capture whose book has since been deleted', () => {
+    const tagged = taggedByBook(
+      [held('living', 'one', [SFX]), held('orphan', 'gone', [SFX])],
+      [book('one')],
+      SFX,
+    );
+
+    expect(heldNames(tagged)).toEqual([['living']]);
+    expect(matchTally(tagged)).toBe(1);
+  });
+
+  it('leaves the captures it was given untouched', () => {
+    const given = [held('later', 'one', [SFX], 4), held('earlier', 'one', [SFX], 1)];
+    taggedByBook(given, [book('one')], SFX);
 
     expect(given.map((one) => one.name)).toEqual(['later', 'earlier']);
   });
