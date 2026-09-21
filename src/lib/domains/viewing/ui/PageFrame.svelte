@@ -12,14 +12,22 @@
   type Props = {
     readonly index: ImageIndex;
     readonly label: string;
-    readonly load: (index: ImageIndex) => Promise<PagePicture | null>;
+    readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
     readonly measured?: (index: ImageIndex, size: Size) => void;
     readonly flush?: boolean;
     readonly glow?: readonly ImageRect[];
     readonly marker?: string | null;
   };
 
-  let { index, label, load, measured, flush = false, glow = [], marker = null }: Props = $props();
+  let {
+    index,
+    label,
+    pictureAt,
+    measured,
+    flush = false,
+    glow = [],
+    marker = null,
+  }: Props = $props();
 
   let frame = $state<HTMLCanvasElement | null>(null);
   let picture = $state.raw<PagePicture | null>(null);
@@ -73,7 +81,7 @@
     phase = 'loading';
 
     void (async () => {
-      const got = await untrack(() => load(wanted));
+      const got = await untrack(() => pictureAt(wanted));
       if (!live) {
         if (got !== null) releasePicture(got);
         return;

@@ -387,7 +387,7 @@
         <PageFrame
           {index}
           label={label(index)}
-          load={pictureAt}
+          {pictureAt}
           {measured}
           glow={glowOn(index)}
           marker={GLOW_MARKER}

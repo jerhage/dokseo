@@ -300,7 +300,7 @@
           <PageFrame
             index={slice.index}
             label={label(slice.index)}
-            load={pictureAt}
+            {pictureAt}
             {measured}
             glow={glowOn(slice.index)}
             marker={GLOW_MARKER}
