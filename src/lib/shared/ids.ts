@@ -6,6 +6,8 @@ type BookId = Branded<string, 'BookId'>;
 
 type CaptureId = Branded<string, 'CaptureId'>;
 
+type TagId = Branded<string, 'TagId'>;
+
 type ImageIndex = Branded<number, 'ImageIndex'>;
 
 function bookId(value: string): BookId {
@@ -16,9 +18,13 @@ function captureId(value: string): CaptureId {
   return value as CaptureId;
 }
 
+function tagId(value: string): TagId {
+  return value as TagId;
+}
+
 function imageIndex(value: number): ImageIndex {
   return value as ImageIndex;
 }
 
-export { bookId, captureId, imageIndex };
-export type { BookId, CaptureId, ImageIndex };
+export { bookId, captureId, tagId, imageIndex };
+export type { BookId, CaptureId, TagId, ImageIndex };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { at } from '$lib/shared/testing/at';
 import { captureFromStored, editedCapture, oldestFirst, takenCapture } from './capture';
@@ -54,6 +54,7 @@ describe('takenCapture', () => {
       origin: 'recognized',
       createdAt: 1_700_000_000_000,
       editedAt: null,
+      tagIds: [],
     });
   });
 
@@ -82,6 +83,7 @@ describe('captureFromStored', () => {
       createdAt: 42,
       editedAt: null,
       origin: 'recognized',
+      tagIds: [],
     });
   });
 
@@ -146,6 +148,33 @@ describe('captureFromStored', () => {
     };
 
     expect(captureFromStored(stored).origin).toBe('recognized');
+  });
+
+  it('reads a record written before tags existed as carrying no tag', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).tagIds).toEqual([]);
+  });
+
+  it('keeps the tags a stored record carries', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+      tagIds: [tagId('grammar')],
+    };
+
+    expect(captureFromStored(stored).tagIds).toEqual(['grammar']);
   });
 
   it('keeps the origin a stored record carries', () => {

@@ -18,6 +18,13 @@
   --c-note-halo: rgba(227, 195, 77, 0.18);
   --c-note-halo-strong: rgba(227, 195, 77, 0.25);
 
+  --c-tag-slate: #8fa8b8;
+  --c-tag-clay: #b8a08f;
+  --c-tag-sage: #9ab894;
+  --c-tag-plum: #ab8fb8;
+  --c-tag-rose: #b88f9a;
+  --c-tag-ice: #8fb8b4;
+
   --c-warning: #c8a04a;
   --c-warning-text: #e0c68a;
   --c-warning-text-soft: #cbb88a;

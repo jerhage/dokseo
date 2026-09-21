@@ -305,6 +305,7 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
     origin: 'recognized',
     createdAt,
     editedAt: null,
+    tagIds: [],
   };
 }
 

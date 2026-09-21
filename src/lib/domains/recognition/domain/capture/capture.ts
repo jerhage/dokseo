@@ -1,5 +1,5 @@
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
-import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 
 type CaptureDraft = {
@@ -14,17 +14,22 @@ type CaptureDraft = {
 type Capture = CaptureDraft & {
   readonly createdAt: number;
   readonly editedAt: number | null;
+  readonly tagIds: readonly TagId[];
 };
 
-type StoredCapture = Omit<Capture, 'confidence' | 'createdAt' | 'editedAt' | 'origin'> & {
+type StoredCapture = Omit<
+  Capture,
+  'confidence' | 'createdAt' | 'editedAt' | 'origin' | 'tagIds'
+> & {
   readonly confidence?: number | null;
   readonly createdAt?: number | null;
   readonly editedAt?: number | null;
   readonly origin?: CaptureOrigin;
+  readonly tagIds?: readonly TagId[];
 };
 
 function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
-  return { ...draft, createdAt, editedAt: null };
+  return { ...draft, createdAt, editedAt: null, tagIds: [] };
 }
 
 function captureFromStored(stored: StoredCapture): Capture {
@@ -34,6 +39,7 @@ function captureFromStored(stored: StoredCapture): Capture {
     createdAt: stored.createdAt ?? 0,
     editedAt: stored.editedAt ?? null,
     origin: stored.origin ?? 'recognized',
+    tagIds: stored.tagIds ?? [],
   };
 }
 
