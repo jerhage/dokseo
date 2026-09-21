@@ -3,7 +3,7 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { glowRegions } from '$lib/shared/image-region';
 import type { GlowRegion } from '$lib/shared/image-region';
-import { glowOn } from './page-glow';
+import { glowMarker, glowOn, NOTE_MARKER, READING_MARKER } from './page-glow';
 
 function region(index: number, x: number): GlowRegion {
   return { index: imageIndex(index), rect: imageRect(x, 0, 10, 10), origin: 'recognized' };
@@ -30,5 +30,25 @@ describe('glowOn', () => {
 
   it('finds nothing on a page no region touches', () => {
     expect(glowOn([region(1, 0)], imageIndex(7))).toEqual([]);
+  });
+});
+
+describe('glowMarker', () => {
+  it('says nothing when no box is drawn on the page', () => {
+    expect(glowMarker([])).toBeNull();
+  });
+
+  it('names a note, so a reader knows the yellow box is their own writing', () => {
+    const written = glowRegions(
+      [{ index: imageIndex(0), rect: imageRect(0, 0, 10, 10) }],
+      'written',
+    );
+
+    expect(glowMarker(written)).toBe(NOTE_MARKER);
+    expect(NOTE_MARKER).toBe('NOTE');
+  });
+
+  it('keeps the old wording for a reading', () => {
+    expect(glowMarker([region(0, 0)])).toBe(READING_MARKER);
   });
 });

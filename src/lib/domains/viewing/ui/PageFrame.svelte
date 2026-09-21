@@ -7,6 +7,7 @@
   import type { GlowRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
   import { toPageFraction } from '../domain/placement';
+  import { glowMarker } from './page-glow';
 
   type Phase = 'loading' | 'shown' | 'failed';
 
@@ -17,18 +18,11 @@
     readonly measured?: (index: ImageIndex, size: Size) => void;
     readonly flush?: boolean;
     readonly glow?: readonly GlowRegion[];
-    readonly marker?: string | null;
   };
 
-  let {
-    index,
-    label,
-    pictureAt,
-    measured,
-    flush = false,
-    glow = [],
-    marker = null,
-  }: Props = $props();
+  let { index, label, pictureAt, measured, flush = false, glow = [] }: Props = $props();
+
+  const marker = $derived(glowMarker(glow));
 
   let frame = $state<HTMLCanvasElement | null>(null);
   let picture = $state.raw<PagePicture | null>(null);

@@ -93,8 +93,6 @@
     return String(index + 1).padStart(3, '0');
   }
 
-  const GLOW_MARKER = 'FROM CAPTURE';
-
   function wheelPixels(delta: number, mode: number, extent: number): number {
     if (mode === WheelEvent.DOM_DELTA_LINE) return delta * WHEEL_LINE_PX;
     if (mode === WheelEvent.DOM_DELTA_PAGE) return delta * extent;
@@ -303,7 +301,6 @@
             {pictureAt}
             {measured}
             glow={glowOn(glow, slice.index)}
-            marker={GLOW_MARKER}
             flush
           />
         </div>

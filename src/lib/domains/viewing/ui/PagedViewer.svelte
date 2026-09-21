@@ -90,8 +90,6 @@
     return String(index + 1).padStart(3, '0');
   }
 
-  const GLOW_MARKER = 'FROM CAPTURE';
-
   function selected(regions: readonly ImageRegion[]): void {
     learnGesture('select');
     select(regions);
@@ -384,14 +382,7 @@
   >
     <div class="strip" class:rtl={direction === 'rtl'} bind:this={strip} style:transform>
       {#each pages as index (index)}
-        <PageFrame
-          {index}
-          label={label(index)}
-          {pictureAt}
-          {measured}
-          glow={glowOn(glow, index)}
-          marker={GLOW_MARKER}
-        />
+        <PageFrame {index} label={label(index)} {pictureAt} {measured} glow={glowOn(glow, index)} />
       {/each}
     </div>
 
