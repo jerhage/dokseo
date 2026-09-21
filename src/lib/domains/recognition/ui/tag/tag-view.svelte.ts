@@ -5,6 +5,7 @@ import type { Capture } from '../../domain/capture/capture';
 import { taggedByBook } from '../../domain/capture/capture-results';
 import type { BookMatches, SearchedBook } from '../../domain/capture/capture-results';
 import { tagCounts } from '../../domain/tag/capture-tags';
+import { sameTagName } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import { tagOptions } from '../../domain/tag/tag-match';
 import type { TagOption } from '../../domain/tag/tag-match';
@@ -16,7 +17,7 @@ type TagViewStatus = 'idle' | 'loading' | 'ready' | 'failed';
 class TagView {
   tags = $state.raw<readonly Tag[]>([]);
   captures = $state.raw<readonly Capture[]>([]);
-  chosen = $state.raw<TagId | null>(null);
+  wanted = $state.raw<string | null>(null);
   books = $state.raw<readonly SearchedBook[]>([]);
   filter = $state('');
   status = $state<TagViewStatus>('idle');
@@ -26,6 +27,13 @@ class TagView {
 
   constructor(container: Container) {
     this.#container = container;
+  }
+
+  get chosen(): TagId | null {
+    const wanted = this.wanted;
+    if (wanted === null) return null;
+
+    return this.tags.find((tag) => sameTagName(tag.name, wanted))?.id ?? null;
   }
 
   get known(): readonly Capture[] {
@@ -62,10 +70,6 @@ class TagView {
     if (chosen === null) return [];
 
     return alsoTagged(this.known, chosen);
-  }
-
-  choose(tag: TagId | null): void {
-    this.chosen = tag;
   }
 
   get groups(): readonly BookMatches<Capture>[] {

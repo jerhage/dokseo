@@ -89,6 +89,10 @@
   <nav class="rail" aria-label="Sections">
     <span class="mark" lang="ja" aria-hidden="true">読</span>
     <span class="grow"></span>
+    <a class="settings tags" href="/tags" title="Tags across your documents">
+      <span aria-hidden="true">#</span>
+      <span class="assistive">Tags</span>
+    </a>
     <a class="settings" href="/settings" title="OCR engine settings">
       <span aria-hidden="true">⚙</span>
       <span class="assistive">Settings</span>
@@ -235,6 +239,10 @@
   .settings:focus-visible {
     border-color: var(--c-accent-border);
     color: var(--c-accent);
+  }
+
+  .tags {
+    margin-bottom: var(--s-2);
   }
 
   .mark {

@@ -135,7 +135,7 @@ describe('TagView', () => {
       capture('second', 'two', [SFX.id], 0, 0, 40),
       capture('third', 'two', [KEIGO.id], 0, 0, 90),
     ]);
-    view.choose(SFX.id);
+    view.wanted = SFX.name;
 
     expect(view.summary).toEqual({ captures: 2, documents: 2, lastAdded: 40 });
   });
@@ -149,7 +149,7 @@ describe('TagView', () => {
 
   it('reports the tags sharing a capture with the chosen one', async () => {
     const { view } = await loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
-    view.choose(SFX.id);
+    view.wanted = SFX.name;
 
     expect(view.also).toEqual([{ id: KEIGO.id, count: 1 }]);
   });
@@ -160,7 +160,7 @@ describe('TagView', () => {
       capture('right', 'one', [SFX.id], 0, 600),
       capture('elsewhere', 'two', [KEIGO.id]),
     ]);
-    view.choose(SFX.id);
+    view.wanted = SFX.name;
 
     const grouped = view.groups;
     expect(grouped).toHaveLength(1);
@@ -175,8 +175,8 @@ describe('TagView', () => {
 
   it('groups nothing again once the chosen tag is cleared', async () => {
     const { view } = await loaded([capture('first', 'one', [SFX.id])]);
-    view.choose(SFX.id);
-    view.choose(null);
+    view.wanted = SFX.name;
+    view.wanted = null;
 
     expect(view.groups).toEqual([]);
     expect(view.summary).toBeNull();
@@ -219,7 +219,7 @@ describe('TagView and a book the library no longer holds', () => {
       capture('orphan', 'gone', [SFX.id]),
     ]);
     view.books = [book('one')];
-    view.choose(SFX.id);
+    view.wanted = SFX.name;
 
     expect(view.counts.get(SFX.id)).toBe(1);
   });
@@ -230,7 +230,7 @@ describe('TagView and a book the library no longer holds', () => {
       capture('orphan', 'gone', [SFX.id]),
     ]);
     view.books = [book('one')];
-    view.choose(SFX.id);
+    view.wanted = SFX.name;
 
     expect(view.summary?.documents).toBe(view.groups.length);
     expect(view.summary?.captures).toBe(1);
@@ -242,8 +242,54 @@ describe('TagView and a book the library no longer holds', () => {
       capture('orphan', 'gone', [SFX.id, KEIGO.id]),
     ]);
     view.books = [book('one')];
-    view.choose(SFX.id);
+    view.wanted = SFX.name;
 
     expect(view.also).toEqual([]);
+  });
+});
+
+describe('TagView chosen by name', () => {
+  it('resolves a wanted name to its tag', async () => {
+    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+    view.wanted = SFX.name;
+
+    expect(view.chosen).toBe(SFX.id);
+  });
+
+  it('resolves a name the reader spelled in another case', async () => {
+    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+    view.wanted = SFX.name.toUpperCase();
+
+    expect(view.chosen).toBe(SFX.id);
+  });
+
+  it('resolves a name the reader spelled full width', async () => {
+    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+    view.wanted = 'ｓｆｘ';
+
+    expect(view.chosen).toBe(SFX.id);
+  });
+
+  it('chooses nothing while the tags are still to arrive', () => {
+    const { view } = world([], LIBRARY);
+    view.wanted = SFX.name;
+
+    expect(view.chosen).toBeNull();
+  });
+
+  it('chooses the tag as soon as the tags arrive, without being asked again', async () => {
+    const made = world([capture('first', 'one', [SFX.id])], LIBRARY);
+    made.view.wanted = SFX.name;
+    made.view.books = [book('one')];
+    await made.view.load();
+
+    expect(made.view.chosen).toBe(SFX.id);
+  });
+
+  it('chooses nothing for a name no tag answers to', async () => {
+    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+    view.wanted = 'a name nobody made';
+
+    expect(view.chosen).toBeNull();
   });
 });
