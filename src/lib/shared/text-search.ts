@@ -16,6 +16,12 @@ type TextMatch = { readonly start: number; readonly end: number };
 
 type TextSegment = { readonly text: string; readonly matched: boolean };
 
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+function clustersOf(text: string): readonly string[] {
+  return [...GRAPHEMES.segment(text)].map((found) => found.segment);
+}
+
 function widthFolded(character: string): string {
   return STANDALONE_MARKS.get(character) ?? character.normalize('NFKC');
 }
@@ -39,7 +45,7 @@ function foldForSearch(text: string): FoldedText {
   let folded = '';
   let offset = 0;
 
-  for (const character of text) {
+  for (const character of clustersOf(text)) {
     for (const part of widthFolded(character).toLowerCase()) {
       const shifted = kanaFolded(part);
       const composed = composedWith(folded.slice(-1), shifted);

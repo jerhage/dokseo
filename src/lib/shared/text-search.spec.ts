@@ -58,6 +58,33 @@ describe('foldForSearch', () => {
   });
 });
 
+describe('decomposed Hangul', () => {
+  const TITLE = '나 혼자만 레벨업 1권';
+
+  it('finds a syllable in a title macOS stored decomposed', () => {
+    expect(matchesQuery(TITLE.normalize('NFD'), '나')).toBe(true);
+  });
+
+  it('finds a composed syllable from a decomposed query, both ways round', () => {
+    expect(matchesQuery(TITLE, '나'.normalize('NFD'))).toBe(true);
+  });
+
+  it('highlights the whole syllable, not half of its jamo', () => {
+    const decomposed = TITLE.normalize('NFD');
+
+    expect(textMatches(decomposed, '나')).toEqual([{ start: 0, end: 2 }]);
+    expect(decomposed.slice(0, 2).normalize('NFC')).toBe('나');
+  });
+
+  it('matches a word inside the title, not only at the start', () => {
+    expect(matchesQuery(TITLE.normalize('NFD'), '레벨업')).toBe(true);
+  });
+
+  it('still refuses a syllable the title does not hold', () => {
+    expect(matchesQuery(TITLE.normalize('NFD'), '용')).toBe(false);
+  });
+});
+
 describe('textMatches', () => {
   it('matches katakana text with a hiragana query', () => {
     expect(matchesQuery('コーヒー', 'こーひー')).toBe(true);
