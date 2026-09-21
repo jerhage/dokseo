@@ -3,7 +3,7 @@ import { describeCause } from '$lib/shared/cause';
 import type { TagId } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
-import { oldestFirst, tagFromStored } from '../../domain/tag/tag';
+import { byName, tagFromStored } from '../../domain/tag/tag';
 import type { StoredTag, Tag } from '../../domain/tag/tag';
 import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
 import { TAG_STORE, recognitionDatabase, recordsAvailable } from '../recognition-database';
@@ -22,7 +22,7 @@ function createTagRepository(): TagRepository {
       if (!recordsAvailable()) return unavailable();
       try {
         const records = await listRecords<StoredTag>(await recognitionDatabase(), TAG_STORE);
-        return ok(oldestFirst(records.map(tagFromStored)));
+        return ok(byName(records.map(tagFromStored)));
       } catch (cause) {
         return failed(cause);
       }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import { namedTag, oldestFirst, sameTagName, tagFromStored, tagName } from './tag';
+import { byName, namedTag, sameTagName, tagFromStored, tagName } from './tag';
 import type { StoredTag, Tag } from './tag';
 
 describe('tagName', () => {
@@ -80,27 +80,32 @@ describe('sameTagName', () => {
   });
 });
 
-describe('oldestFirst', () => {
+describe('byName', () => {
   const made = (name: string, createdAt: number): Tag =>
     namedTag(tagId(name), name, 'slate', createdAt);
 
-  it('orders the tags by the moment each was made', () => {
-    const ordered = oldestFirst([made('late', 9), made('early', 2), made('middle', 5)]);
+  it('orders the tags by name rather than by the moment each was made', () => {
+    const ordered = byName([made('sfx', 1), made('keigo', 2), made('conditional', 3)]);
 
-    expect(ordered.map((tag) => tag.name)).toEqual(['early', 'middle', 'late']);
+    expect(ordered.map((tag) => tag.name)).toEqual(['conditional', 'keigo', 'sfx']);
   });
 
-  it('puts a tag stored before tags carried a moment at the front', () => {
-    const undated = tagFromStored({ id: tagId('undated'), name: 'undated' });
-    const ordered = oldestFirst([made('later', 4), undated, made('earlier', 1)]);
+  it('orders two names of differing case together rather than apart', () => {
+    const ordered = byName([made('Sfx', 1), made('keigo', 2), made('sage', 3)]);
 
-    expect(ordered.map((tag) => tag.name)).toEqual(['undated', 'earlier', 'later']);
+    expect(ordered.map((tag) => tag.name)).toEqual(['keigo', 'sage', 'Sfx']);
+  });
+
+  it('orders a Japanese name against a Latin one without failing', () => {
+    const ordered = byName([made('sfx', 1), made('文法', 2)]);
+
+    expect(ordered).toHaveLength(2);
   });
 
   it('leaves the tags it was given alone', () => {
-    const tags = [made('late', 9), made('early', 2)];
-    oldestFirst(tags);
+    const tags = [made('sfx', 1), made('keigo', 2)];
+    byName(tags);
 
-    expect(tags.map((tag) => tag.name)).toEqual(['late', 'early']);
+    expect(tags.map((tag) => tag.name)).toEqual(['sfx', 'keigo']);
   });
 });

@@ -33,13 +33,13 @@ function tagFromStored(stored: StoredTag): Tag {
   };
 }
 
-function oldestFirst(tags: readonly Tag[]): readonly Tag[] {
-  return tags.toSorted((earlier, later) => earlier.createdAt - later.createdAt);
+function byName(tags: readonly Tag[]): readonly Tag[] {
+  return tags.toSorted((earlier, later) => earlier.name.localeCompare(later.name));
 }
 
 function sameTagName(left: string, right: string): boolean {
   return foldForSearch(tagName(left)).text === foldForSearch(tagName(right)).text;
 }
 
-export { tagName, namedTag, tagFromStored, oldestFirst, sameTagName };
+export { tagName, namedTag, tagFromStored, byName, sameTagName };
 export type { Tag, StoredTag };
