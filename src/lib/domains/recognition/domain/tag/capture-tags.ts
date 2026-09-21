@@ -1,11 +1,13 @@
 import type { TagId } from '$lib/shared/ids';
 import type { Capture } from '../capture/capture';
 
-function tagCounts(captures: readonly Capture[]): ReadonlyMap<TagId, number> {
+type TaggedRecord = { readonly tagIds: readonly TagId[] };
+
+function tagCounts(records: readonly TaggedRecord[]): ReadonlyMap<TagId, number> {
   const counts = new Map<TagId, number>();
 
-  for (const capture of captures) {
-    for (const tag of capture.tagIds) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  for (const record of records) {
+    for (const tag of record.tagIds) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   }
 
   return counts;
@@ -22,3 +24,4 @@ function untaggedCapture(capture: Capture, tag: TagId): Capture {
 }
 
 export { tagCounts, taggedCapture, untaggedCapture };
+export type { TaggedRecord };

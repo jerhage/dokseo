@@ -4,10 +4,10 @@ import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
-import { captureId } from '$lib/shared/ids';
+import { captureId, tagId } from '$lib/shared/ids';
 import { clearScope } from './clearing';
 import type { ClearScope } from './clearing';
-import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -18,6 +18,8 @@ import { arrivalAt } from '../../domain/capture/capture-arrival';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
 import { editedText, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
+import { tagCounts } from '../../domain/tag/capture-tags';
+import type { Tag } from '../../domain/tag/tag';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
 import { downloadMb } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
@@ -31,6 +33,7 @@ import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import type { CreateTagError } from '../../use-cases/tag/create-tag';
 
 const NOTHING_READ = 'Nothing was read in that selection.';
 
@@ -57,6 +60,7 @@ type Taken = {
   readonly id: CaptureId;
   readonly regions: readonly ImageRegion[];
   readonly origin: CaptureOrigin;
+  readonly tagIds: readonly TagId[];
 };
 
 type Settled =
@@ -123,11 +127,50 @@ function settlementOf(read: Result<RecognizedText, RecognizeRegionError>): Settl
     : { status: 'done', text: read.value, edited: false };
 }
 
+type TagOutcome =
+  | { readonly kind: 'created'; readonly tag: Tag }
+  | { readonly kind: 'existing'; readonly tag: Tag }
+  | { readonly kind: 'unavailable' };
+
+const UNAVAILABLE = { kind: 'unavailable' } as const;
+
+function tagOutcome(created: Result<Tag, CreateTagError> | null): TagOutcome {
+  if (created === null) return UNAVAILABLE;
+  if (created.ok) return { kind: 'created', tag: created.value };
+
+  return match(created.error)
+    .with({ kind: 'name-taken' }, (taken) => ({ kind: 'existing', tag: taken.tag }) as const)
+    .with({ kind: 'storage-unavailable' }, { kind: 'storage-failed' }, () => UNAVAILABLE)
+    .exhaustive();
+}
+
+function withTag(tags: readonly Tag[], tag: Tag): readonly Tag[] {
+  return tags.some((held) => held.id === tag.id) ? tags : [...tags, tag];
+}
+
+function countsAfter(
+  counts: ReadonlyMap<TagId, number>,
+  before: readonly TagId[],
+  after: readonly TagId[],
+): ReadonlyMap<TagId, number> {
+  const moved = new Map(counts);
+
+  for (const tag of before) {
+    if (!after.includes(tag)) moved.set(tag, Math.max((moved.get(tag) ?? 0) - 1, 0));
+  }
+  for (const tag of after) {
+    if (!before.includes(tag)) moved.set(tag, (moved.get(tag) ?? 0) + 1);
+  }
+
+  return moved;
+}
+
 function cardOf(capture: Capture): PanelCapture {
   return {
     id: capture.id,
     regions: capture.regions,
     origin: capture.origin,
+    tagIds: capture.tagIds,
     status: 'done',
     text: recognizedText(capture.text, capture.confidence),
     edited: capture.editedAt !== null,
@@ -145,6 +188,8 @@ class CaptureView {
   engineFailure = $state.raw<string | null>(null);
   confirmingClear = $state(false);
   consentRequest = $state.raw<ConsentRequest | null>(null);
+  tags = $state.raw<readonly Tag[]>([]);
+  libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
 
   #container: Container;
   #book = $state.raw<BookId | null>(null);
@@ -171,6 +216,10 @@ class CaptureView {
 
   get book(): BookId | null {
     return this.#book;
+  }
+
+  get bookCounts(): ReadonlyMap<TagId, number> {
+    return tagCounts(this.captures);
   }
 
   get engine(): EngineState {
@@ -364,6 +413,7 @@ class CaptureView {
         id,
         regions,
         origin: 'written',
+        tagIds: [],
         status: 'done',
         text: recognizedText('', null),
         edited: false,
@@ -466,7 +516,7 @@ class CaptureView {
     const id = captureId(crypto.randomUUID());
     this.captures = [
       ...this.captures,
-      { id, regions: held.regions, origin: 'recognized', status: 'pending' },
+      { id, regions: held.regions, origin: 'recognized', tagIds: [], status: 'pending' },
     ];
 
     let settled: Settled;
@@ -545,6 +595,79 @@ class CaptureView {
     this.captures = this.captures.filter((capture) => capture.id !== id);
   }
 
+  async loadTags(): Promise<void> {
+    const generation = this.#generation;
+    const [listed, everywhere] = await Promise.all([
+      this.#container.recognition.listTags().catch(() => null),
+      this.#container.recognition.listEveryCapture().catch(() => null),
+    ]);
+
+    if (generation !== this.#generation) return;
+    if (listed === null || !listed.ok || everywhere === null || !everywhere.ok) return;
+
+    this.tags = listed.value;
+    this.libraryCounts = tagCounts(everywhere.value);
+  }
+
+  async addTag(id: CaptureId, tag: TagId): Promise<void> {
+    const stored = this.#stored.get(id);
+    if (stored === undefined) return;
+
+    const generation = this.#generation;
+    const written = await this.#container.recognition
+      .addTagToCapture(stored, tag)
+      .catch(() => null);
+
+    if (generation !== this.#generation || written === null || !written.ok) return;
+
+    this.#stored.set(id, written.value);
+    this.#retag(id, stored.tagIds, written.value.tagIds);
+  }
+
+  async removeTag(id: CaptureId, tag: TagId): Promise<void> {
+    const stored = this.#stored.get(id);
+    if (stored === undefined) return;
+
+    const generation = this.#generation;
+    const written = await this.#container.recognition
+      .removeTagFromCapture(stored, tag)
+      .catch(() => null);
+
+    if (generation !== this.#generation || written === null || !written.ok) return;
+
+    this.#stored.set(id, written.value);
+    this.#retag(id, stored.tagIds, written.value.tagIds);
+  }
+
+  async createTag(id: CaptureId, name: string): Promise<void> {
+    if (!this.#stored.has(id)) return;
+
+    const generation = this.#generation;
+    const created = await this.#container.recognition
+      .createTag(tagId(crypto.randomUUID()), name)
+      .catch(() => null);
+
+    if (generation !== this.#generation) return;
+
+    const minted = match(tagOutcome(created))
+      .with({ kind: 'created' }, (made) => made.tag)
+      .with({ kind: 'existing' }, (found) => found.tag)
+      .with({ kind: 'unavailable' }, () => null)
+      .exhaustive();
+
+    if (minted === null) return;
+
+    this.tags = withTag(this.tags, minted);
+    await this.addTag(id, minted.id);
+  }
+
+  #retag(id: CaptureId, before: readonly TagId[], after: readonly TagId[]): void {
+    this.libraryCounts = countsAfter(this.libraryCounts, before, after);
+    this.captures = this.captures.map((capture) =>
+      capture.id === id ? { ...capture, tagIds: after } : capture,
+    );
+  }
+
   askClear(): void {
     if (this.captures.length === 0) return;
     this.confirmingClear = true;
@@ -593,7 +716,13 @@ class CaptureView {
   #settle(id: CaptureId, settled: Settled): void {
     this.captures = this.captures.map((capture) =>
       capture.id === id
-        ? { id: capture.id, regions: capture.regions, origin: capture.origin, ...settled }
+        ? {
+            id: capture.id,
+            regions: capture.regions,
+            origin: capture.origin,
+            tagIds: capture.tagIds,
+            ...settled,
+          }
         : capture,
     );
   }

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionNotices } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
-import type { BookId, CaptureId } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
+import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
@@ -13,6 +13,11 @@ import { at } from '$lib/shared/testing/at';
 import { editedCapture, takenCapture } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
+import { taggedCapture, untaggedCapture } from '../../domain/tag/capture-tags';
+import { namedTag, sameTagName } from '../../domain/tag/tag';
+import type { Tag } from '../../domain/tag/tag';
+import type { TagError } from '../../domain/tag/tag-repository';
+import type { CreateTagError } from '../../use-cases/tag/create-tag';
 import type { ModelConsentDecision, ModelConsentError } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
 import type { ModelLoad } from '../../domain/model/model-load';
@@ -67,6 +72,14 @@ type Store = {
   editFails: boolean;
 };
 
+type Tags = {
+  rows: readonly Tag[];
+  readonly created: Tag[];
+  listFails: boolean;
+  createFails: boolean;
+  attachFails: boolean;
+};
+
 type Step = {
   readonly label: string;
   readonly name: string;
@@ -86,6 +99,7 @@ type Fakes = {
   readonly calls: Call[];
   readonly consent: Consent;
   readonly store: Store;
+  readonly tags: Tags;
   readonly engine: Engine;
   readonly steps: Step[];
   readonly ended: string[];
@@ -129,6 +143,23 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     return new Promise((resolve) => {
       store.writes.push({ release: () => resolve(write()) });
     });
+  }
+
+  const tags: Tags = {
+    rows: [],
+    created: [],
+    listFails: false,
+    createFails: false,
+    attachFails: false,
+  };
+
+  function attached(capture: Capture): Promise<Result<Capture, CaptureError>> {
+    if (tags.attachFails) {
+      return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
+    }
+
+    store.rows = store.rows.map((row) => (row.id === capture.id ? capture : row));
+    return Promise.resolve(ok(capture));
   }
 
   const engine: Engine = {
@@ -241,10 +272,26 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve(ok(undefined));
       },
-      listTags: unused,
-      createTag: unused,
-      addTagToCapture: unused,
-      removeTagFromCapture: unused,
+      listTags: (): Promise<Result<readonly Tag[], TagError>> => {
+        if (tags.listFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+
+        return Promise.resolve(ok(tags.rows));
+      },
+      createTag: (id: TagId, name: string): Promise<Result<Tag, CreateTagError>> => {
+        const taken = tags.rows.find((tag) => sameTagName(tag.name, name));
+        if (taken !== undefined) return Promise.resolve(err({ kind: 'name-taken', tag: taken }));
+        if (tags.createFails) {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
+        }
+
+        const made = namedTag(id, name, 'slate', tags.rows.length + 1);
+        tags.rows = [...tags.rows, made];
+        tags.created.push(made);
+        return Promise.resolve(ok(made));
+      },
+      addTagToCapture: (capture: Capture, tag: TagId) => attached(taggedCapture(capture, tag)),
+      removeTagFromCapture: (capture: Capture, tag: TagId) =>
+        attached(untaggedCapture(capture, tag)),
       readModelStorage: (modelId: string) =>
         Promise.resolve(
           ok({
@@ -292,7 +339,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     },
   };
 
-  return { container, calls, consent, store, engine, steps, ended };
+  return { container, calls, consent, store, tags, engine, steps, ended };
 }
 
 const ONE = bookId('book-one');
@@ -1318,5 +1365,196 @@ describe('CaptureView notes', () => {
     await view.write(ONE, regions(2));
 
     expect(view.read.map((capture) => capture.origin)).toEqual(['recognized', 'written']);
+  });
+});
+
+const SFX = tagId('tag-sfx');
+
+const KEIGO = tagId('tag-keigo');
+
+function taggedRow(id: string, book: BookId, carried: readonly TagId[]): Capture {
+  return { ...storedRow(id, book, 'こっちに来て', 1), tagIds: carried };
+}
+
+function sfxTag(): Tag {
+  return namedTag(SFX, 'sfx', 'slate', 1);
+}
+
+async function tagging(world: Fakes, carried: readonly TagId[] = []): Promise<CaptureView> {
+  world.store.rows = [taggedRow('a', ONE, carried)];
+  const view = new CaptureView(world.container);
+  await view.open(ONE);
+  await view.loadTags();
+
+  return view;
+}
+
+function carriedBy(view: CaptureView): readonly TagId[] {
+  return at(view.captures, 0).tagIds;
+}
+
+describe('CaptureView tags', () => {
+  it('lists every tag and how often the whole library carries each one', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    world.store.rows = [taggedRow('a', ONE, [SFX]), taggedRow('b', TWO, [SFX])];
+    const view = new CaptureView(world.container);
+
+    await view.loadTags();
+
+    expect(view.tags.map((tag) => tag.name)).toEqual(['sfx']);
+    expect(view.libraryCounts.get(SFX)).toBe(2);
+  });
+
+  it('keeps the tags it holds when the listing fails', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    world.store.rows = [taggedRow('a', ONE, [SFX])];
+    const view = new CaptureView(world.container);
+    await view.loadTags();
+
+    world.tags.listFails = true;
+    world.tags.rows = [];
+    await view.loadTags();
+
+    expect(view.tags.map((tag) => tag.name)).toEqual(['sfx']);
+    expect(view.libraryCounts.get(SFX)).toBe(1);
+  });
+
+  it('keeps the counts it holds when the capture listing fails', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    world.store.rows = [taggedRow('a', ONE, [SFX])];
+    const view = new CaptureView(world.container);
+    await view.loadTags();
+
+    world.store.listFails = true;
+    await view.loadTags();
+
+    expect(view.libraryCounts.get(SFX)).toBe(1);
+  });
+
+  it('puts a tag on the capture, on its card and in the counts', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world);
+
+    await view.addTag(captureId('a'), SFX);
+
+    expect(carriedBy(view)).toEqual([SFX]);
+    expect(at(world.store.rows, 0).tagIds).toEqual([SFX]);
+    expect(view.libraryCounts.get(SFX)).toBe(1);
+  });
+
+  it('takes a tag off the capture, off its card and out of the counts', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world, [SFX]);
+
+    await view.removeTag(captureId('a'), SFX);
+
+    expect(carriedBy(view)).toEqual([]);
+    expect(at(world.store.rows, 0).tagIds).toEqual([]);
+    expect(view.libraryCounts.get(SFX)).toBe(0);
+  });
+
+  it('keeps the moment the reader last edited the text when a tag arrives', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world);
+
+    await view.addTag(captureId('a'), SFX);
+
+    expect(at(world.store.rows, 0).editedAt).toBeNull();
+    expect(world.store.edits).toEqual([]);
+  });
+
+  it('mints a tag and puts it straight on the capture', async () => {
+    const world = fakes();
+    const view = await tagging(world);
+
+    await view.createTag(captureId('a'), 'grammar  to ask');
+
+    const made = at(world.tags.created, 0);
+    expect(made.name).toBe('grammar to ask');
+    expect(carriedBy(view)).toEqual([made.id]);
+    expect(view.tags.map((tag) => tag.id)).toEqual([made.id]);
+    expect(view.libraryCounts.get(made.id)).toBe(1);
+  });
+
+  it('adds the tag a taken name already belongs to and mints nothing', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world);
+
+    await view.createTag(captureId('a'), 'SFX');
+
+    expect(carriedBy(view)).toEqual([SFX]);
+    expect(world.tags.created).toEqual([]);
+    expect(world.tags.rows).toHaveLength(1);
+  });
+
+  it('leaves the card alone when storing an added tag fails', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world);
+    world.tags.attachFails = true;
+
+    await view.addTag(captureId('a'), SFX);
+
+    expect(carriedBy(view)).toEqual([]);
+    expect(view.libraryCounts.get(SFX)).toBeUndefined();
+  });
+
+  it('leaves the card alone when storing a removed tag fails', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world, [SFX]);
+    world.tags.attachFails = true;
+
+    await view.removeTag(captureId('a'), SFX);
+
+    expect(carriedBy(view)).toEqual([SFX]);
+    expect(view.libraryCounts.get(SFX)).toBe(1);
+  });
+
+  it('leaves the card alone when minting a tag fails', async () => {
+    const world = fakes();
+    const view = await tagging(world);
+    world.tags.createFails = true;
+
+    await view.createTag(captureId('a'), 'grammar');
+
+    expect(carriedBy(view)).toEqual([]);
+    expect(view.tags).toEqual([]);
+  });
+
+  it('tags nothing when the capture was never stored', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    const view = await tagging(world);
+
+    await view.addTag(captureId('never-saved'), SFX);
+
+    expect(at(world.store.rows, 0).tagIds).toEqual([]);
+    expect(carriedBy(view)).toEqual([]);
+  });
+
+  it('counts only the tags the open book carries', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag(), namedTag(KEIGO, 'keigo', 'clay', 2)];
+    world.store.rows = [
+      taggedRow('a', ONE, [SFX]),
+      taggedRow('b', ONE, [SFX, KEIGO]),
+      taggedRow('c', TWO, [SFX]),
+    ];
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+    await view.loadTags();
+
+    expect(view.bookCounts.get(SFX)).toBe(2);
+    expect(view.bookCounts.get(KEIGO)).toBe(1);
+    expect(view.libraryCounts.get(SFX)).toBe(3);
   });
 });
