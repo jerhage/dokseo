@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MAX_CROP_EDGE } from '$lib/platform/image/pixels';
+import { MAX_MODEL_INPUT_EDGE } from '../../domain/engine/model-input';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { imageRect } from '$lib/shared/geometry';
@@ -138,7 +138,7 @@ describe('createCanvasCropper', () => {
     if (!result.ok) throw new Error('The crop failed');
     expect(result.value.width).toBe(6000);
     expect(result.value.height).toBe(900);
-    expect(result.value.width).toBeGreaterThan(MAX_CROP_EDGE);
+    expect(result.value.width).toBeGreaterThan(MAX_MODEL_INPUT_EDGE);
   });
 
   it('crops without a trace factory', async () => {

@@ -1,6 +1,6 @@
 import type { Arrangement } from '$lib/shared/arrangement';
 import { clampTo, imageRect, normalize } from '$lib/shared/geometry';
-import type { ImageRect, Size } from '$lib/shared/geometry';
+import type { ImageRect } from '$lib/shared/geometry';
 import { own } from './bitmap';
 import type { OwnedBitmap } from './bitmap';
 
@@ -11,8 +11,6 @@ const GREEN_WEIGHT = 0.7152;
 const BLUE_WEIGHT = 0.0722;
 
 const GROUND = '#ffffff';
-
-const MAX_CROP_EDGE = 2048;
 
 function surfaceFor(
   width: number,
@@ -43,13 +41,6 @@ function lumaAt(data: Uint8ClampedArray, offset: number): number {
     GREEN_WEIGHT * (data[offset + 1] ?? 0) +
     BLUE_WEIGHT * (data[offset + 2] ?? 0)
   );
-}
-
-function downscaleFor(size: Size): number {
-  const edge = Math.max(size.width, size.height);
-  if (!Number.isFinite(edge) || edge <= 0) return 1;
-
-  return Math.min(1, MAX_CROP_EDGE / edge);
 }
 
 async function cropFrom(bitmap: ImageBitmap, rect: ImageRect): Promise<OwnedBitmap> {
@@ -128,4 +119,4 @@ function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
   return own(context.canvas.transferToImageBitmap());
 }
 
-export { MAX_CROP_EDGE, downscaleFor, cropFrom, stitch, scaleBy, toGrayscale };
+export { cropFrom, stitch, scaleBy, toGrayscale };

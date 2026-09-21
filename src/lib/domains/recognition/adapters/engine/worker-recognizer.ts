@@ -1,10 +1,11 @@
 import { match } from 'ts-pattern';
 import { own } from '$lib/platform/image/bitmap';
 import type { OwnedBitmap } from '$lib/platform/image/bitmap';
-import { downscaleFor, scaleBy, toGrayscale } from '$lib/platform/image/pixels';
+import { scaleBy, toGrayscale } from '$lib/platform/image/pixels';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import { describeCause } from '$lib/shared/cause';
+import { downscaleFor } from '../../domain/engine/model-input';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';

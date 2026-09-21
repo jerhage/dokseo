@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MAX_CROP_EDGE } from '$lib/platform/image/pixels';
+import { MAX_MODEL_INPUT_EDGE } from '../../domain/engine/model-input';
 import type { Trace, TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { RecognizerSetup } from '../../domain/engine/recognizer-setup';
 import type { TextRecognizer } from '../../domain/engine/text-recognizer';
@@ -165,8 +165,8 @@ describe('createWorkerRecognizer', () => {
     await openedOver(fake);
 
     const crop = cropSent(fake);
-    expect(crop.image.width).toBe(MAX_CROP_EDGE);
-    expect(crop.image.height).toBe(Math.round((900 * MAX_CROP_EDGE) / 6000));
+    expect(crop.image.width).toBe(MAX_MODEL_INPUT_EDGE);
+    expect(crop.image.height).toBe(Math.round((900 * MAX_MODEL_INPUT_EDGE) / 6000));
   });
 
   it('leaves the bitmap it was handed alone', async () => {
@@ -212,9 +212,9 @@ describe('createWorkerRecognizer', () => {
     expect(trace.labels).toEqual(['prepare-input']);
     expect(trace.steps.map(([name]) => name)).toEqual(['capped', 'greyscale']);
     expect(trace.steps[0]?.[1]).toEqual({
-      factor: MAX_CROP_EDGE / 6000,
-      width: MAX_CROP_EDGE,
-      height: Math.round((900 * MAX_CROP_EDGE) / 6000),
+      factor: MAX_MODEL_INPUT_EDGE / 6000,
+      width: MAX_MODEL_INPUT_EDGE,
+      height: Math.round((900 * MAX_MODEL_INPUT_EDGE) / 6000),
     });
     expect(trace.images).toEqual([['input', crop.image]]);
     expect(trace.ends()).toBe(1);
