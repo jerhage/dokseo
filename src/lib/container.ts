@@ -416,6 +416,7 @@ function buildContainer(): Container {
       closeRecognizer: async (language: Language) => {
         openedSessions.delete(language);
         const held = recognizers.get(language);
+        recognizers.delete(language);
         if (held === undefined) return;
 
         const recognizer = await held.catch(() => null);

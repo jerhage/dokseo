@@ -330,6 +330,8 @@ class EngineSettingsView {
     if (abandoned === null) await this.#container.recognition.pauseModelLoad(language);
     else await this.#container.recognition.cancelModelLoad(language, abandoned);
 
+    await this.#container.recognition.closeRecognizer(language);
+
     if (generation !== this.#generation) return;
     await this.measure(generation);
   }

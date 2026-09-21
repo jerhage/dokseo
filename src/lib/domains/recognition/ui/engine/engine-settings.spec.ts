@@ -50,6 +50,7 @@ type World = {
   readonly pauses: Language[];
   readonly cancels: string[];
   readonly grants: Language[];
+  readonly closes: Language[];
   snapshot: ModelStorageSnapshot;
 };
 
@@ -83,6 +84,7 @@ function world(snapshot: ModelStorageSnapshot): World {
   const pauses: Language[] = [];
   const cancels: string[] = [];
   const grants: Language[] = [];
+  const closes: Language[] = [];
 
   const built: World = {
     view: undefined as unknown as EngineSettingsView,
@@ -90,6 +92,7 @@ function world(snapshot: ModelStorageSnapshot): World {
     pauses,
     cancels,
     grants,
+    closes,
     snapshot,
   };
 
@@ -134,7 +137,10 @@ function world(snapshot: ModelStorageSnapshot): World {
         cancels.push(modelId);
         return Promise.resolve(null);
       },
-      closeRecognizer: unused,
+      closeRecognizer: (language: Language) => {
+        closes.push(language);
+        return Promise.resolve();
+      },
     },
   } as unknown as Container;
 
@@ -259,6 +265,17 @@ describe('storedFigure', () => {
 });
 
 describe('EngineSettingsView', () => {
+  it('drops the cached recognizer when the compute choice changes', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    await built.view.chooseCompute('cpu');
+    await settled();
+
+    expect(built.pauses).toEqual(['ja']);
+    expect(built.closes).toEqual(['ja']);
+  });
+
   it('offers a resume when the configuration is cached and the weights are not', async () => {
     const built = world(snapshotOf([], 50_000_000, 5));
     await built.view.load();
