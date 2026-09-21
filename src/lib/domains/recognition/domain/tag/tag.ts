@@ -25,6 +25,14 @@ function namedTag(id: TagId, name: string, colour: TagColour, createdAt: number)
   return { id, name: tagName(name), colour, createdAt };
 }
 
+function renamedTag(tag: Tag, name: string): Tag {
+  return { ...tag, name: tagName(name) };
+}
+
+function recolouredTag(tag: Tag, colour: TagColour): Tag {
+  return { ...tag, colour };
+}
+
 function tagFromStored(stored: StoredTag): Tag {
   return {
     ...stored,
@@ -41,5 +49,5 @@ function sameTagName(left: string, right: string): boolean {
   return foldForSearch(tagName(left)).text === foldForSearch(tagName(right)).text;
 }
 
-export { tagName, namedTag, tagFromStored, byName, sameTagName };
+export { tagName, namedTag, renamedTag, recolouredTag, tagFromStored, byName, sameTagName };
 export type { Tag, StoredTag };

@@ -292,6 +292,9 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       addTagToCapture: (capture: Capture, tag: TagId) => attached(taggedCapture(capture, tag)),
       removeTagFromCapture: (capture: Capture, tag: TagId) =>
         attached(untaggedCapture(capture, tag)),
+      renameTag: () => Promise.reject(new Error('not used')),
+      recolourTag: () => Promise.reject(new Error('not used')),
+      deleteTag: () => Promise.reject(new Error('not used')),
       readModelStorage: (modelId: string) =>
         Promise.resolve(
           ok({

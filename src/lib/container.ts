@@ -68,6 +68,7 @@ import type {
 } from './domains/recognition/domain/engine/recognizer-setup';
 import type { TextRecognizer } from './domains/recognition/domain/engine/text-recognizer';
 import type { Tag } from './domains/recognition/domain/tag/tag';
+import type { TagColour } from './domains/recognition/domain/tag/tag-colour';
 import type { TagError } from './domains/recognition/domain/tag/tag-repository';
 import { addTagToCapture } from './domains/recognition/use-cases/tag/add-tag-to-capture';
 import type { AddTagToCaptureDeps } from './domains/recognition/use-cases/tag/add-tag-to-capture';
@@ -77,6 +78,8 @@ import { clearCaptures } from './domains/recognition/use-cases/capture/clear-cap
 import type { ClearCapturesDeps } from './domains/recognition/use-cases/capture/clear-captures';
 import { createTag } from './domains/recognition/use-cases/tag/create-tag';
 import type { CreateTagDeps, CreateTagError } from './domains/recognition/use-cases/tag/create-tag';
+import { deleteTag } from './domains/recognition/use-cases/tag/delete-tag';
+import type { DeleteTagDeps } from './domains/recognition/use-cases/tag/delete-tag';
 import { deleteModel } from './domains/recognition/use-cases/model/delete-model';
 import type { DeleteModelDeps } from './domains/recognition/use-cases/model/delete-model';
 import { detectCompute } from './domains/recognition/use-cases/engine/detect-compute';
@@ -106,8 +109,12 @@ import { recognizeRegion } from './domains/recognition/use-cases/engine/recogniz
 import type { RecognizeRegionError } from './domains/recognition/use-cases/engine/recognize-region';
 import { removeCapture } from './domains/recognition/use-cases/capture/remove-capture';
 import type { RemoveCaptureDeps } from './domains/recognition/use-cases/capture/remove-capture';
+import { recolourTag } from './domains/recognition/use-cases/tag/recolour-tag';
+import type { RecolourTagDeps } from './domains/recognition/use-cases/tag/recolour-tag';
 import { removeTagFromCapture } from './domains/recognition/use-cases/tag/remove-tag-from-capture';
 import type { RemoveTagFromCaptureDeps } from './domains/recognition/use-cases/tag/remove-tag-from-capture';
+import { renameTag } from './domains/recognition/use-cases/tag/rename-tag';
+import type { RenameTagDeps, RenameTagError } from './domains/recognition/use-cases/tag/rename-tag';
 import { saveCapture } from './domains/recognition/use-cases/capture/save-capture';
 import type { SaveCaptureDeps } from './domains/recognition/use-cases/capture/save-capture';
 import { saveRecognizerSetup } from './domains/recognition/use-cases/engine/save-recognizer-setup';
@@ -252,6 +259,9 @@ type Container = {
       capture: Capture,
       tag: TagId,
     ) => Promise<Result<Capture, CaptureError>>;
+    readonly renameTag: (tag: Tag, name: string) => Promise<Result<Tag, RenameTagError>>;
+    readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<Result<Tag, TagError>>;
+    readonly deleteTag: (tag: TagId) => Promise<Result<number, TagError | CaptureError>>;
     readonly readModelStorage: (
       modelId: string,
     ) => Promise<Result<ModelStorageSnapshot, ModelStorageError>>;
@@ -317,6 +327,9 @@ function buildContainer(): Container {
   const createTagDeps: CreateTagDeps = { tags, now: Date.now };
   const addTagToCaptureDeps: AddTagToCaptureDeps = { captures };
   const removeTagFromCaptureDeps: RemoveTagFromCaptureDeps = { captures };
+  const renameTagDeps: RenameTagDeps = { tags };
+  const recolourTagDeps: RecolourTagDeps = { tags };
+  const deleteTagDeps: DeleteTagDeps = { tags, captures };
   const storage = createModelStorage();
   const partials = createPartialDownloads();
   const readModelStorageDeps: ReadModelStorageDeps = {
@@ -393,6 +406,9 @@ function buildContainer(): Container {
         addTagToCapture(addTagToCaptureDeps, capture, tag),
       removeTagFromCapture: (capture: Capture, tag: TagId) =>
         removeTagFromCapture(removeTagFromCaptureDeps, capture, tag),
+      renameTag: (tag: Tag, name: string) => renameTag(renameTagDeps, tag, name),
+      recolourTag: (tag: Tag, colour: TagColour) => recolourTag(recolourTagDeps, tag, colour),
+      deleteTag: (tag: TagId) => deleteTag(deleteTagDeps, tag),
       readModelStorage: (modelId: string) => readModelStorage(readModelStorageDeps, modelId),
       deleteModel: (language: Language, modelId: string) =>
         deleteModel(deleteModelDeps, language, modelId),
