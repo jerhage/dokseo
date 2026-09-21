@@ -19,7 +19,7 @@
   type Scope = 'book' | 'all';
 
   type Props = {
-    readonly book: BookId;
+    readonly book: BookId | null;
     readonly books: readonly SearchedBook[];
     readonly covers?: ReadonlyMap<BookId, string>;
     readonly counts?: ReadonlyMap<BookId, number>;
@@ -85,7 +85,9 @@
   let field = $state<HTMLInputElement | null>(null);
   let list = $state<(HTMLAnchorElement | null)[]>([]);
 
-  const wanted = $derived(books.filter((shelf) => scope === 'all' || shelf.id === book));
+  const scoped = $derived<Scope>(book === null ? 'all' : scope);
+
+  const wanted = $derived(books.filter((shelf) => scoped === 'all' || shelf.id === book));
 
   const found = $derived(
     shown && query.trim().length > 0
@@ -93,8 +95,10 @@
       : NOTHING,
   );
 
+  const titled = $derived(scoped === 'book' ? [] : found.books);
+
   const bookRows = $derived.by<readonly BookRow[]>(() =>
-    found.books.map((shelf) => ({
+    titled.map((shelf) => ({
       kind: 'book',
       key: shelf.id,
       href: `/read/${shelf.id}`,
@@ -146,19 +150,28 @@
 
   const cursor = $derived(at >= rows.length ? NO_MATCH : at);
 
-  const invite = $derived(
-    filter === 'tags' ? 'Find a tag' : 'Find in titles, text, tags and notes',
-  );
+  const titling = $derived(filter !== 'tags' && scoped === 'all');
 
-  const nothing = $derived(
-    filter === 'tags'
-      ? 'No capture carries a tag of that name.'
-      : 'No title or capture holds that text.',
-  );
+  const invite = $derived.by(() => {
+    if (filter === 'tags') return 'Find a tag';
+
+    return titling ? 'Find in titles, text, tags and notes' : 'Find in text, tags and notes';
+  });
+
+  const nothing = $derived.by(() => {
+    if (filter === 'tags') return 'No capture carries a tag of that name.';
+
+    return titling ? 'No title or capture holds that text.' : 'No capture holds that text.';
+  });
 
   $effect(() => {
     if (shown) field?.focus();
   });
+
+  function choose(chosen: Scope): void {
+    scope = chosen;
+    at = NO_MATCH;
+  }
 
   function reveal(): void {
     shown = true;
@@ -237,20 +250,19 @@
           oninput={() => (at = NO_MATCH)}
         />
         <span class="chips">
-          {#each SCOPES as choice (choice.value)}
-            <button
-              class="chip"
-              type="button"
-              aria-pressed={scope === choice.value}
-              onclick={() => {
-                scope = choice.value;
-                at = NO_MATCH;
-              }}
-            >
-              {choice.label}
-            </button>
-          {/each}
-          <span class="divider" aria-hidden="true"></span>
+          {#if book !== null}
+            {#each SCOPES as choice (choice.value)}
+              <button
+                class="chip"
+                type="button"
+                aria-pressed={scope === choice.value}
+                onclick={() => choose(choice.value)}
+              >
+                {choice.label}
+              </button>
+            {/each}
+            <span class="divider" aria-hidden="true"></span>
+          {/if}
           <button
             class="chip"
             type="button"

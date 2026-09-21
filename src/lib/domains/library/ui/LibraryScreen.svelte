@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import type { BookId } from '$lib/shared/ids';
   import { matchesQuery } from '$lib/shared/text-search';
   import type { BookEdit } from '../domain/book/book';
@@ -14,18 +13,10 @@
   type Props = {
     readonly view: LibraryView;
     readonly notice?: string | null;
-    readonly captureMatches?: number | null;
     query?: string;
-    readonly results?: Snippet;
   };
 
-  let {
-    view,
-    notice = null,
-    captureMatches = null,
-    query = $bindable(''),
-    results,
-  }: Props = $props();
+  let { view, notice = null, query = $bindable('') }: Props = $props();
 
   let tile = $state<ReturnType<typeof UploadTile> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
@@ -78,11 +69,7 @@
     `${view.books.length} books · ${totalImages.toLocaleString()} images · ${space}`,
   );
   const settling = $derived(view.status !== 'ready' && view.status !== 'failed');
-  const matched = $derived(
-    `${titled.length} ${titled.length === 1 ? 'title' : 'titles'} · ${captureMatches ?? 0} ${
-      captureMatches === 1 ? 'capture' : 'captures'
-    }`,
-  );
+  const matched = $derived(`${titled.length} ${titled.length === 1 ? 'title' : 'titles'}`);
 </script>
 
 <div class="screen">
@@ -106,7 +93,8 @@
         <p class="summary">{summary}</p>
       </div>
       <div class="tools">
-        <LibrarySearch bind:query {matched} label="Search titles or recognized text" />
+        <LibrarySearch bind:query {matched} label="Filter these titles" />
+        <span class="quick">⌘K to search everything</span>
         <button
           class="upload"
           type="button"
@@ -139,10 +127,6 @@
           <p class="notice">No uploads yet. {DROP_INVITATION.toLowerCase()} to start.</p>
         {/if}
 
-        {#if searching && titled.length > 0}
-          <h2 class="section">Titles</h2>
-        {/if}
-
         <ul class="grid">
           {#if view.pending !== null}
             <li hidden={searching}>
@@ -169,10 +153,6 @@
             />
           </li>
         </ul>
-
-        {#if searching && results !== undefined}
-          {@render results()}
-        {/if}
       {/if}
     </section>
 
@@ -300,6 +280,13 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--s-2);
+  }
+
+  .quick {
+    color: var(--c-text-10);
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    white-space: nowrap;
   }
 
   .assistive {
