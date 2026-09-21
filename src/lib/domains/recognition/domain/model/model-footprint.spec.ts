@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { megabytes } from '$lib/shared/bytes';
+import { MODEL_RUNTIMES } from '../engine/model-runtime';
 import {
   chosenModel,
   downloadMb,
+  everyModel,
   knownModel,
   modelFootprint,
   modelsFor,
@@ -38,6 +40,7 @@ describe('modelFootprint', () => {
     const footprint: ModelFootprint = {
       modelId: 'an/exact-rounding-check',
       engine: 'exact-rounding-check',
+      runtime: 'manga-ocr',
       label: 'exact rounding check',
       languages: ['ja'],
       note: 'A fixture, not a model.',
@@ -136,5 +139,21 @@ describe('knownModel', () => {
 
   it('returns nothing for a model nobody measured', () => {
     expect(knownModel('dnouv/manga-ocr')).toBeNull();
+  });
+});
+
+describe('runtime', () => {
+  it('names a runtime the union knows for every measured model', () => {
+    for (const model of everyModel()) expect(MODEL_RUNTIMES).toContain(model.runtime);
+  });
+
+  it('runs every Japanese model on manga-ocr and the Korean one on Paddle', () => {
+    expect(modelsFor('ja').map((model) => model.runtime)).toEqual(['manga-ocr', 'manga-ocr']);
+    expect(modelsFor('ko').map((model) => model.runtime)).toEqual(['paddle-ocr']);
+  });
+
+  it('keeps the runtime apart from the display label the settings screen shows', () => {
+    expect(modelFootprint('ko')?.engine).toBe('PP-OCRv5');
+    expect(modelFootprint('ko')?.runtime).toBe('paddle-ocr');
   });
 });

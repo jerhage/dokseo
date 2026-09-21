@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import { megabytes } from '$lib/shared/bytes';
 import type { Language } from '$lib/shared/language';
+import type { ModelRuntime } from '../engine/model-runtime';
 import {
   encoderDecoderWeights,
   QUANTIZED_ENCODER_ONLY,
@@ -12,6 +13,7 @@ import type { EncoderDecoderPrecision } from './model-weights';
 type ModelFootprint = {
   readonly modelId: string;
   readonly engine: string;
+  readonly runtime: ModelRuntime;
   readonly label: string;
   readonly languages: readonly Language[];
   readonly note: string;
@@ -30,6 +32,7 @@ const RUNTIME_ON_DISK_BYTES = 26_861_777;
 const JAPANESE_OCR_MODEL: ModelFootprint = {
   modelId: 'kimchireader/manga-ocr-onnx-q8',
   engine: 'manga-ocr',
+  runtime: 'manga-ocr',
   label: 'manga-ocr base, quantized throughout',
   languages: ['ja'],
   note: 'Both halves quantized, 87 MB smaller, and nobody has compared what it reads yet.',
@@ -45,6 +48,7 @@ const JAPANESE_OCR_MODEL: ModelFootprint = {
 const JAPANESE_FULL_DECODER_MODEL: ModelFootprint = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
   engine: 'manga-ocr',
+  runtime: 'manga-ocr',
   label: 'manga-ocr base, full-precision decoder',
   languages: ['ja'],
   note: 'The larger download whose reading was verified. Pick it to check the quantized one against.',
@@ -59,6 +63,7 @@ const JAPANESE_FULL_DECODER_MODEL: ModelFootprint = {
 const KOREAN_OCR_MODEL: ModelFootprint = {
   modelId: 'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
   engine: 'PP-OCRv5',
+  runtime: 'paddle-ocr',
   label: 'PP-OCRv5 mobile',
   languages: ['ko'],
   note: 'Exploratory. Nobody has read a real page with it yet.',

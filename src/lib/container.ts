@@ -46,6 +46,8 @@ import { createPartialDownloads } from './domains/recognition/adapters/model/opf
 import type { Capture, CaptureDraft } from './domains/recognition/domain/capture/capture';
 import type { CaptureError } from './domains/recognition/domain/capture/capture-repository';
 import type { GpuDetection } from './domains/recognition/domain/engine/compute-choice';
+import type { ModelRuntime } from './domains/recognition/domain/engine/model-runtime';
+import { chosenModel } from './domains/recognition/domain/model/model-footprint';
 import type { ModelStorageReport } from './domains/recognition/domain/model/model-cache';
 import type {
   ModelConsentDecision,
@@ -184,14 +186,24 @@ async function loadPaddleOcrRecognizer(language: Language): Promise<TextRecogniz
 
 const recognizers = new Map<Language, Promise<TextRecognizer>>();
 
+async function runtimeFor(language: Language): Promise<ModelRuntime> {
+  const setup = await setupFor(language);
+  const model = chosenModel(language, setup?.modelId ?? null);
+  if (model === null) throw new Error(`No recognition model is known for ${language}.`);
+  return model.runtime;
+}
+
 function recognizerFor(language: Language): Promise<TextRecognizer> {
   const held = recognizers.get(language);
   if (held !== undefined) return held;
 
-  const loading = match(language)
-    .with('ja', loadMangaOcrRecognizer)
-    .with('ko', loadPaddleOcrRecognizer)
-    .exhaustive()
+  const loading = runtimeFor(language)
+    .then((runtime) =>
+      match(runtime)
+        .with('manga-ocr', () => loadMangaOcrRecognizer(language))
+        .with('paddle-ocr', () => loadPaddleOcrRecognizer(language))
+        .exhaustive(),
+    )
     .catch((cause: unknown): never => {
       recognizers.delete(language);
       throw cause;
