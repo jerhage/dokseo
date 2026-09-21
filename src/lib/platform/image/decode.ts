@@ -2,7 +2,7 @@ import { describeCause } from '$lib/shared/cause';
 
 async function decodeImage(blob: Blob): Promise<ImageBitmap> {
   try {
-    return await createImageBitmap(blob);
+    return await createImageBitmap(blob, { imageOrientation: 'from-image' });
   } catch (cause) {
     const kind = blob.type.length > 0 ? blob.type : 'unknown type';
     throw new Error(
