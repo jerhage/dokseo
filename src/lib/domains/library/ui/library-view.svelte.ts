@@ -69,6 +69,10 @@ class LibraryView {
     this.#container = container;
   }
 
+  get imageCounts(): ReadonlyMap<BookId, number> {
+    return new Map(this.books.map((held) => [held.id, held.imageCount]));
+  }
+
   async load(): Promise<void> {
     const generation = ++this.#generation;
     this.status = 'loading';

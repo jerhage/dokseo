@@ -5,11 +5,12 @@
   import { readerHref } from '$lib/shared/reader-location';
   import { segmentsOf, textMatches } from '$lib/shared/text-search';
   import type { TextSegment } from '$lib/shared/text-search';
+  import type { Capture } from '../../domain/capture/capture';
   import type { SearchedBook } from '../../domain/capture/capture-results';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
+  import { matchedTagIds, quickFinds } from '../../domain/capture/quick-find';
+  import type { PaletteFilter, QuickFinds } from '../../domain/capture/quick-find';
   import type { Tag } from '../../domain/tag/tag';
-  import { matchedTagIds, paletteFinds } from '../../domain/tag/tag-find';
-  import type { PaletteFilter } from '../../domain/tag/tag-find';
   import { firstImage, pageLabel } from './capture-place';
   import type { CaptureSearchView } from './capture-search.svelte';
   import { chipsOf } from './tag-chip';
@@ -21,6 +22,7 @@
     readonly book: BookId;
     readonly books: readonly SearchedBook[];
     readonly covers?: ReadonlyMap<BookId, string>;
+    readonly counts?: ReadonlyMap<BookId, number>;
     readonly tags?: readonly Tag[];
     readonly find: CaptureSearchView;
     readonly onopen?: () => void;
@@ -28,8 +30,19 @@
 
   type RowChip = TagChip & { readonly matched: boolean };
 
-  type Row = {
-    readonly id: CaptureId;
+  type BookRow = {
+    readonly kind: 'book';
+    readonly key: string;
+    readonly href: string;
+    readonly language: Language;
+    readonly cover: string | null;
+    readonly segments: readonly TextSegment[];
+    readonly images: number | null;
+  };
+
+  type CaptureRow = {
+    readonly kind: 'capture';
+    readonly key: CaptureId;
     readonly href: string;
     readonly page: string;
     readonly title: string | null;
@@ -39,12 +52,30 @@
     readonly chips: readonly RowChip[];
   };
 
+  type Row = BookRow | CaptureRow;
+
+  type Section = {
+    readonly label: string;
+    readonly from: number;
+    readonly rows: readonly Row[];
+  };
+
   const SCOPES: readonly { readonly value: Scope; readonly label: string }[] = [
     { value: 'book', label: 'This book' },
     { value: 'all', label: 'All uploads' },
   ];
 
-  let { book, books, covers = new Map(), tags = [], find, onopen }: Props = $props();
+  const NOTHING: QuickFinds<Capture> = { books: [], captures: [] };
+
+  let {
+    book,
+    books,
+    covers = new Map(),
+    counts = new Map(),
+    tags = [],
+    find,
+    onopen,
+  }: Props = $props();
 
   let shown = $state(false);
   let query = $state('');
@@ -56,19 +87,36 @@
 
   const wanted = $derived(books.filter((shelf) => scope === 'all' || shelf.id === book));
 
-  const rows = $derived.by<readonly Row[]>(() => {
-    if (!shown || query.trim().length === 0) return [];
+  const found = $derived(
+    shown && query.trim().length > 0
+      ? quickFinds(find.captures, wanted, tags, query, filter)
+      : NOTHING,
+  );
 
-    return paletteFinds(find.captures, wanted, tags, query, filter).flatMap((matched) =>
+  const bookRows = $derived.by<readonly BookRow[]>(() =>
+    found.books.map((shelf) => ({
+      kind: 'book',
+      key: shelf.id,
+      href: `/read/${shelf.id}`,
+      language: shelf.language,
+      cover: covers.get(shelf.id) ?? null,
+      segments: segmentsOf(shelf.title, textMatches(shelf.title, query)),
+      images: counts.get(shelf.id) ?? null,
+    })),
+  );
+
+  const captureRows = $derived.by<readonly CaptureRow[]>(() =>
+    found.captures.flatMap((matched) =>
       matched.captures
-        .map((capture): Row | null => {
+        .map((capture): CaptureRow | null => {
           const index = firstImage(capture.regions);
           if (index === null) return null;
 
           const lit = new Set(matchedTagIds(capture, tags, query));
 
           return {
-            id: capture.id,
+            kind: 'capture',
+            key: capture.id,
             href: readerHref(matched.book.id, index, { capture: capture.id, query }),
             page: pageLabel(index),
             title: matched.book.id === book ? null : matched.book.title,
@@ -84,14 +132,28 @@
           };
         })
         .filter((row) => row !== null),
-    );
-  });
+    ),
+  );
+
+  const rows = $derived.by<readonly Row[]>(() => [...bookRows, ...captureRows]);
+
+  const sections = $derived.by<readonly Section[]>(() =>
+    [
+      { label: 'Books', from: 0, rows: bookRows },
+      { label: 'Captures', from: bookRows.length, rows: captureRows },
+    ].filter((group) => group.rows.length > 0),
+  );
 
   const cursor = $derived(at >= rows.length ? NO_MATCH : at);
-  const invite = $derived(filter === 'tags' ? 'Find a tag' : 'Find in text, tags and notes');
+
+  const invite = $derived(
+    filter === 'tags' ? 'Find a tag' : 'Find in titles, text, tags and notes',
+  );
 
   const nothing = $derived(
-    filter === 'tags' ? 'No capture carries a tag of that name.' : 'No capture holds that text.',
+    filter === 'tags'
+      ? 'No capture carries a tag of that name.'
+      : 'No title or capture holds that text.',
   );
 
   $effect(() => {
@@ -208,59 +270,79 @@
           <p class="nothing">{nothing}</p>
         {/if}
       {:else}
-        <ul class="rows">
-          {#each rows as row, order (row.id)}
-            <li>
-              <a
-                bind:this={list[order]}
-                class="row"
-                class:at={order === cursor}
-                href={row.href}
-                onclick={(event) => {
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  event.preventDefault();
-                  open(row, false);
-                }}
-              >
-                <span class="thumb">
-                  {#if row.cover !== null}
-                    <img src={row.cover} alt="" />
-                  {/if}
-                </span>
-                <span class="body">
-                  <span class="text" class:ko={row.language === 'ko'} lang={row.language}>
-                    {#each row.segments as segment, part (part)}{#if segment.matched}<mark
-                          class="wash">{segment.text}</mark
-                        >{:else}{segment.text}{/if}{/each}
-                  </span>
-                  {#if row.title !== null}
-                    <span class="from">{row.title}</span>
-                  {/if}
-                  {#if row.chips.length > 0}
-                    <span class="tags">
-                      {#each row.chips as chip (chip.id)}
-                        <span
-                          class="tag"
-                          class:lit={chip.matched}
-                          style="--swatch: var(--c-tag-{chip.colour})"
-                        >
-                          <span class="swatch" aria-hidden="true"></span>
-                          {chip.name}
+        <div class="found">
+          {#each sections as group (group.label)}
+            <div class="group">
+              <p class="caption">
+                {group.label}<span class="rule" aria-hidden="true"></span>
+              </p>
+              <ul class="rows">
+                {#each group.rows as row, order (row.key)}
+                  {@const place = group.from + order}
+                  <li>
+                    <a
+                      bind:this={list[place]}
+                      class="row"
+                      class:at={place === cursor}
+                      href={row.href}
+                      onclick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                          return;
+                        }
+                        event.preventDefault();
+                        open(row, false);
+                      }}
+                    >
+                      <span class="thumb">
+                        {#if row.cover !== null}
+                          <img src={row.cover} alt="" />
+                        {/if}
+                      </span>
+                      <span class="body">
+                        <span class="text" class:ko={row.language === 'ko'} lang={row.language}>
+                          {#each row.segments as segment, part (part)}{#if segment.matched}<mark
+                                class="wash">{segment.text}</mark
+                              >{:else}{segment.text}{/if}{/each}
                         </span>
-                      {/each}
-                    </span>
-                  {/if}
-                </span>
-                <span class="page">p.{row.page}</span>
-              </a>
-            </li>
+                        {#if row.kind === 'book'}
+                          {#if row.images !== null}
+                            <span class="from">{row.images} images</span>
+                          {/if}
+                        {:else}
+                          {#if row.title !== null}
+                            <span class="from">{row.title}</span>
+                          {/if}
+                          {#if row.chips.length > 0}
+                            <span class="tags">
+                              {#each row.chips as chip (chip.id)}
+                                <span
+                                  class="tag"
+                                  class:lit={chip.matched}
+                                  style="--swatch: var(--c-tag-{chip.colour})"
+                                >
+                                  <span class="swatch" aria-hidden="true"></span>
+                                  {chip.name}
+                                </span>
+                              {/each}
+                            </span>
+                          {/if}
+                        {/if}
+                      </span>
+                      {#if row.kind === 'capture'}
+                        <span class="page">p.{row.page}</span>
+                      {/if}
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            </div>
           {/each}
-        </ul>
+        </div>
       {/if}
 
       <div class="foot">
-        <span>{rows.length} {rows.length === 1 ? 'capture' : 'captures'}</span>
-        <span class="keys">↑↓ move · ↵ jump to page · ⌘↵ new tab · esc close</span>
+        <span>{rows.length} {rows.length === 1 ? 'result' : 'results'}</span>
+        <span class="keys">↑↓ move · ↵ jump to result · ⌘↵ new tab · esc close</span>
       </div>
     </div>
   </div>
@@ -368,14 +450,46 @@
     background: var(--c-border-4);
   }
 
-  .rows {
+  .found {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: 3px;
-    margin: 0;
+    gap: var(--s-3);
     padding: var(--s-2);
     overflow-y: auto;
+  }
+
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .caption {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin: 0;
+    padding: 0 var(--s-3) var(--s-1);
+    color: var(--c-text-10);
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .rule {
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--c-border-2);
+  }
+
+  .rows {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
     list-style: none;
   }
 

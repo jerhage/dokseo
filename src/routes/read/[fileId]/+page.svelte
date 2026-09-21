@@ -104,5 +104,6 @@
   {find}
   tags={captures.tags}
   covers={shelf.covers}
+  counts={shelf.imageCounts}
   onopen={() => void shelf.load()}
 />
