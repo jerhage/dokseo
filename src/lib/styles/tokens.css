@@ -10,6 +10,14 @@
   --c-accent-border-soft: rgba(79, 178, 134, 0.3);
   --c-accent-line: #3a4a43;
 
+  --c-note: #e3c34d;
+  --c-note-text: #1b1607;
+  --c-note-wash-strong: rgba(227, 195, 77, 0.16);
+  --c-note-wash: rgba(227, 195, 77, 0.14);
+  --c-note-border: rgba(227, 195, 77, 0.4);
+  --c-note-halo: rgba(227, 195, 77, 0.18);
+  --c-note-halo-strong: rgba(227, 195, 77, 0.25);
+
   --c-warning: #c8a04a;
   --c-warning-text: #e0c68a;
   --c-warning-text-soft: #cbb88a;

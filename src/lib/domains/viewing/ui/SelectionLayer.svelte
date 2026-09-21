@@ -2,6 +2,7 @@
   import { beginTrace } from '$lib/platform/trace/pipeline-trace';
   import type { Trace } from '$lib/platform/trace/pipeline-trace';
   import type { Arrangement } from '$lib/shared/arrangement';
+  import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import { isEmpty, normalize } from '$lib/shared/geometry';
   import type { ScreenRect, Size } from '$lib/shared/geometry';
   import type { ImageRegion } from '$lib/shared/image-region';
@@ -27,6 +28,7 @@
     readonly within: HTMLElement | null;
     readonly arrangement: Arrangement;
     readonly pointerTypes: 'any' | readonly string[];
+    readonly makes?: CaptureOrigin;
     readonly suppressed?: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
@@ -37,6 +39,7 @@
     within,
     arrangement,
     pointerTypes,
+    makes = 'recognized',
     suppressed = false,
     select,
     clear,
@@ -44,7 +47,7 @@
   }: Props = $props();
 
   let host = $state<HTMLDivElement | null>(null);
-  let origin = $state.raw<Point | null>(null);
+  let corner = $state.raw<Point | null>(null);
   let anchor = $state.raw<Point | null>(null);
   let pointer = $state.raw<Point | null>(null);
   let held = $state<number | null>(null);
@@ -65,14 +68,16 @@
   // handles stay because editing a committed selection is planned.
   const marquee = $derived(dragged);
 
+  const noting = $derived(makes === 'written');
+
   const overlay = $derived.by(() => {
     const rect = marquee;
-    const corner = origin;
-    if (rect === null || corner === null) return null;
+    const from = corner;
+    if (rect === null || from === null) return null;
 
     return {
-      left: rect.x - corner.x,
-      top: rect.y - corner.y,
+      left: rect.x - from.x,
+      top: rect.y - from.y,
       width: rect.width,
       height: rect.height,
     };
@@ -167,8 +172,8 @@
       return;
     }
 
-    const corner = box.getBoundingClientRect();
-    origin = { x: corner.x, y: corner.y };
+    const placed = box.getBoundingClientRect();
+    corner = { x: placed.x, y: placed.y };
     anchor = pointAt(event);
     pointer = anchor;
     held = event.pointerId;
@@ -274,6 +279,7 @@
   {#if overlay !== null}
     <div
       class="marquee"
+      class:noting
       style:left="{overlay.left}px"
       style:top="{overlay.top}px"
       style:width="{overlay.width}px"
@@ -304,6 +310,19 @@
     border: 2px solid var(--c-accent);
     background: var(--c-accent-wash);
     pointer-events: none;
+  }
+
+  .marquee.noting {
+    border-color: var(--c-note);
+    background: var(--c-note-wash);
+  }
+
+  .marquee.noting .handle {
+    background: var(--c-note);
+  }
+
+  .marquee.noting .size {
+    color: var(--c-note);
   }
 
   .handle {

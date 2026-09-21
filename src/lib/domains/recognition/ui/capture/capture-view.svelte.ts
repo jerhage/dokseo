@@ -3,6 +3,7 @@ import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
+import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import { captureId } from '$lib/shared/ids';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -53,6 +54,7 @@ type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
 type Taken = {
   readonly id: CaptureId;
   readonly regions: readonly ImageRegion[];
+  readonly origin: CaptureOrigin;
 };
 
 type Settled =
@@ -61,6 +63,8 @@ type Settled =
   | { readonly status: 'failed'; readonly message: string };
 
 type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
+
+type MarkedCapture = ArrivalCapture & { readonly origin: CaptureOrigin };
 
 type ConsentRequest = {
   readonly language: Language;
@@ -121,6 +125,7 @@ function cardOf(capture: Capture): PanelCapture {
   return {
     id: capture.id,
     regions: capture.regions,
+    origin: capture.origin,
     status: 'done',
     text: recognizedText(capture.text, capture.confidence),
     edited: capture.editedAt !== null,
@@ -129,6 +134,7 @@ function cardOf(capture: Capture): PanelCapture {
 
 class CaptureView {
   captures = $state.raw<readonly PanelCapture[]>([]);
+  writing = $state.raw<CaptureId | null>(null);
   progress = $state.raw<ModelLoad | null>(null);
   session = $state.raw<RecognizerSession | null>(null);
   downloaded = $state.raw(false);
@@ -177,16 +183,21 @@ class CaptureView {
     return this.captures.toReversed();
   }
 
-  get read(): readonly ArrivalCapture[] {
+  get read(): readonly MarkedCapture[] {
     return this.captures
       .filter((capture) => capture.status === 'done')
-      .map((capture) => ({ id: capture.id, regions: capture.regions, text: capture.text.text }));
+      .map((capture) => ({
+        id: capture.id,
+        regions: capture.regions,
+        text: capture.text.text,
+        origin: capture.origin,
+      }));
   }
 
   arrivalFrom(
     found: ReaderArrival | null,
     direction: ReadingDirection,
-  ): Arrival<ArrivalCapture> | null {
+  ): Arrival<MarkedCapture> | null {
     if (found === null) return null;
     return arrivalAt(this.read, found.query, direction, found.capture);
   }
@@ -316,6 +327,57 @@ class CaptureView {
     }
   }
 
+  note(regions: readonly ImageRegion[]): void {
+    const book = this.#book;
+    const trace = this.#container.beginTrace('note');
+    try {
+      if (regions.length === 0) {
+        trace.step('stopped', { guard: 'no-regions' });
+        return;
+      }
+
+      if (book === null) {
+        trace.step('stopped', { guard: 'no-open-book' });
+        return;
+      }
+
+      trace.step('dispatched', { regions: regions.length });
+      void this.write(book, regions);
+    } finally {
+      trace.end();
+    }
+  }
+
+  async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
+    const generation = this.#generation;
+    const id = captureId(crypto.randomUUID());
+    this.captures = [
+      ...this.captures,
+      {
+        id,
+        regions,
+        origin: 'written',
+        status: 'done',
+        text: recognizedText('', null),
+        edited: false,
+      },
+    ];
+    this.writing = id;
+
+    const written = await this.#container.recognition
+      .writeNote(id, book, regions)
+      .catch(() => null);
+    if (written === null || !written.ok || generation !== this.#generation) return;
+
+    this.#stored.set(written.value.id, written.value);
+  }
+
+  takeWriting(): CaptureId | null {
+    const fresh = this.writing;
+    this.writing = null;
+    return fresh;
+  }
+
   async recognize(
     source: PageSource,
     language: Language,
@@ -395,7 +457,10 @@ class CaptureView {
     this.#opened = held.language;
     this.#running += 1;
     const id = captureId(crypto.randomUUID());
-    this.captures = [...this.captures, { id, regions: held.regions, status: 'pending' }];
+    this.captures = [
+      ...this.captures,
+      { id, regions: held.regions, origin: 'recognized', status: 'pending' },
+    ];
 
     let settled: Settled;
     try {
@@ -441,7 +506,7 @@ class CaptureView {
     const card = this.captures.find((capture) => capture.id === id);
     if (card === undefined || card.status !== 'done') return;
 
-    const settled = editedText(card.text.text, text, 'recognized');
+    const settled = editedText(card.text.text, text, card.origin);
     if (settled === card.text.text) return;
 
     const generation = this.#generation;
@@ -502,6 +567,7 @@ class CaptureView {
     this.engineFailure = null;
     this.consentRequest = null;
     this.captures = [];
+    this.writing = null;
     this.#stored = new Map();
     this.#generation += 1;
     return this.#generation;
@@ -509,10 +575,12 @@ class CaptureView {
 
   #settle(id: CaptureId, settled: Settled): void {
     this.captures = this.captures.map((capture) =>
-      capture.id === id ? { id: capture.id, regions: capture.regions, ...settled } : capture,
+      capture.id === id
+        ? { id: capture.id, regions: capture.regions, origin: capture.origin, ...settled }
+        : capture,
     );
   }
 }
 
 export { NOTHING_READ, READING_SELECTION, modelLoadNote, modelLoadAnnouncement, CaptureView };
-export type { CaptureStatus, PanelCapture, ConsentRequest };
+export type { CaptureStatus, PanelCapture, MarkedCapture, ConsentRequest };

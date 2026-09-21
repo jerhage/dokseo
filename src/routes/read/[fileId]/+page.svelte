@@ -14,6 +14,7 @@
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import { bookId } from '$lib/shared/ids';
   import type { ImageIndex } from '$lib/shared/ids';
+  import { glowRegions } from '$lib/shared/image-region';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     IMAGE_PARAMETER,
@@ -38,6 +39,7 @@
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction));
+  const glow = $derived(here === null ? [] : glowRegions(here.at.regions, here.at.origin));
   const stepping = $derived(here?.stepping ?? null);
   const finding = $derived(found?.query ?? null);
   const books = $derived(
@@ -79,8 +81,9 @@
 
 <ReaderScreen
   {view}
-  glow={here?.at.regions ?? []}
+  {glow}
   onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
+  onNote={(regions) => captures.note(regions)}
 >
   {#snippet arrival()}
     {#if stepping !== null && finding !== null}

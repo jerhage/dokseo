@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
+  import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { CaptureId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
@@ -11,6 +12,7 @@
   import type { TextMatch, TextSegment } from '$lib/shared/text-search';
   import { inBookOrder } from '../../domain/capture/capture-order';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
+  import { captureNote, captureState } from './capture-card';
   import { firstImage, placeLabel } from './capture-place';
   import { modelLoadAnnouncement, modelLoadNote, NOTHING_READ } from './capture-view.svelte';
   import type { CaptureStatus, CaptureView, PanelCapture } from './capture-view.svelte';
@@ -31,6 +33,7 @@
     readonly segments: readonly TextSegment[] | null;
     readonly note: string | null;
     readonly tone: CaptureStatus;
+    readonly origin: CaptureOrigin;
     readonly edited: boolean;
     readonly editable: boolean;
   };
@@ -61,6 +64,16 @@
     editor?.focus();
   });
 
+  $effect(() => {
+    const fresh = view.writing;
+    if (fresh === null) return;
+
+    view.takeWriting();
+    editing = fresh;
+    draft = '';
+    trigger = null;
+  });
+
   const load = $derived(view.progress);
 
   const waiting = $derived(view.captures.some((capture) => capture.status === 'pending'));
@@ -86,6 +99,7 @@
         segments: null,
         note: load === null ? null : modelLoadNote(load),
         tone: 'pending' as CaptureStatus,
+        origin: running.origin,
         edited: false,
         editable: false,
       }))
@@ -93,11 +107,12 @@
         id: read.id,
         place: placeLabel(read.regions),
         href: hrefOf(read.id, read.regions),
-        state: 'Read',
+        state: captureState(read.origin),
         text: read.text.text,
         segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
-        note: null,
+        note: captureNote(read.origin, read.text.text),
         tone: 'done' as CaptureStatus,
+        origin: read.origin,
         edited: read.edited,
         editable: true,
       }))
@@ -110,6 +125,7 @@
         segments: null,
         note: NOTHING_READ,
         tone: 'empty' as CaptureStatus,
+        origin: blank.origin,
         edited: false,
         editable: false,
       }))
@@ -122,6 +138,7 @@
         segments: null,
         note: broken.message,
         tone: 'failed' as CaptureStatus,
+        origin: broken.origin,
         edited: false,
         editable: false,
       }))
@@ -297,7 +314,11 @@
     <ul class="list">
       {#each cards as card, order (card.id)}
         <li class="slot">
-          <article class="card {card.tone}" class:at={searching && order === cursor}>
+          <article
+            class="card {card.tone}"
+            class:written={card.origin === 'written'}
+            class:at={searching && order === cursor}
+          >
             <header class="stamp">
               {#if card.href === null}
                 <span class="place">{card.place}</span>
@@ -557,6 +578,10 @@
     border-color: var(--c-warning);
   }
 
+  .card.written {
+    border-color: var(--c-note-border);
+  }
+
   .stamp {
     display: flex;
     align-items: baseline;
@@ -614,6 +639,10 @@
 
   .card.failed .state {
     color: var(--c-warning);
+  }
+
+  .card.written .state {
+    color: var(--c-note);
   }
 
   .text {

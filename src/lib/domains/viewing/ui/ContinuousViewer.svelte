@@ -1,8 +1,9 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { ImageRect, Size } from '$lib/shared/geometry';
+  import type { CaptureOrigin } from '$lib/shared/capture-origin';
+  import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
-  import type { ImageRegion } from '$lib/shared/image-region';
+  import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
@@ -16,6 +17,7 @@
   } from '../domain/strip';
   import { clampZoom } from '../domain/viewport';
   import { handlesOwnKeys } from './keyboard';
+  import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
 
@@ -31,7 +33,8 @@
     readonly start: ReadingPosition;
     readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
     readonly measured: (index: ImageIndex, size: Size) => void;
-    readonly glow?: readonly ImageRegion[];
+    readonly glow?: readonly GlowRegion[];
+    readonly makes?: CaptureOrigin;
     readonly moveTo: (position: ReadingPosition) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
@@ -44,6 +47,7 @@
     pictureAt,
     measured,
     glow = [],
+    makes = 'recognized',
     moveTo,
     select,
     clear,
@@ -90,10 +94,6 @@
   }
 
   const GLOW_MARKER = 'FROM CAPTURE';
-
-  function glowOn(index: ImageIndex): readonly ImageRect[] {
-    return glow.filter((region) => region.index === index).map((region) => region.rect);
-  }
 
   function wheelPixels(delta: number, mode: number, extent: number): number {
     if (mode === WheelEvent.DOM_DELTA_LINE) return delta * WHEEL_LINE_PX;
@@ -302,7 +302,7 @@
             label={label(slice.index)}
             {pictureAt}
             {measured}
-            glow={glowOn(slice.index)}
+            glow={glowOn(glow, slice.index)}
             marker={GLOW_MARKER}
             flush
           />
@@ -317,6 +317,7 @@
     within={scroller}
     arrangement="column"
     pointerTypes={DRAG_SELECTS_WITH}
+    {makes}
     {select}
     {clear}
     tap={onTap}

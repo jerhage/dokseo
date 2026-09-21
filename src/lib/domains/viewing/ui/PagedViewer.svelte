@@ -1,9 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
-  import type { ImageRect, Size } from '$lib/shared/geometry';
+  import type { CaptureOrigin } from '$lib/shared/capture-origin';
+  import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
-  import type { ImageRegion } from '$lib/shared/image-region';
+  import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PagePicture } from '$lib/shared/page-source';
   import type { PageFit } from '$lib/shared/page-fit';
@@ -14,6 +15,7 @@
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnedGestures, learnGesture } from './learned-gestures.svelte';
+  import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
 
@@ -34,7 +36,8 @@
     readonly pageFit: PageFit;
     readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
     readonly measured: (index: ImageIndex, size: Size) => void;
-    readonly glow?: readonly ImageRegion[];
+    readonly glow?: readonly GlowRegion[];
+    readonly makes?: CaptureOrigin;
     readonly chromeShown: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
@@ -49,6 +52,7 @@
     pictureAt,
     measured,
     glow = [],
+    makes = 'recognized',
     chromeShown,
     select,
     clear,
@@ -87,10 +91,6 @@
   }
 
   const GLOW_MARKER = 'FROM CAPTURE';
-
-  function glowOn(index: ImageIndex): readonly ImageRect[] {
-    return glow.filter((region) => region.index === index).map((region) => region.rect);
-  }
 
   function selected(regions: readonly ImageRegion[]): void {
     learnGesture('select');
@@ -389,7 +389,7 @@
           label={label(index)}
           {pictureAt}
           {measured}
-          glow={glowOn(index)}
+          glow={glowOn(glow, index)}
           marker={GLOW_MARKER}
         />
       {/each}
@@ -400,6 +400,7 @@
       within={frame}
       arrangement="row"
       pointerTypes="any"
+      {makes}
       suppressed={spaceHeld}
       select={selected}
       {clear}

@@ -2,8 +2,9 @@
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
   import { releasePicture } from '$lib/platform/image/bitmap';
-  import type { ImageRect, Size } from '$lib/shared/geometry';
+  import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
+  import type { GlowRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
   import { toPageFraction } from '../domain/placement';
 
@@ -15,7 +16,7 @@
     readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
     readonly measured?: (index: ImageIndex, size: Size) => void;
     readonly flush?: boolean;
-    readonly glow?: readonly ImageRect[];
+    readonly glow?: readonly GlowRegion[];
     readonly marker?: string | null;
   };
 
@@ -39,7 +40,10 @@
     const size = natural;
     if (size === null || phase !== 'shown') return [];
 
-    return glow.map((rect) => toPageFraction(size, rect)).filter((box) => box !== null);
+    return glow.flatMap((region) => {
+      const box = toPageFraction(size, region.rect);
+      return box === null ? [] : [{ box, origin: region.origin }];
+    });
   });
 
   const caption = $derived(
@@ -141,13 +145,14 @@
   {:else}
     <canvas bind:this={frame} width={0} height={0} data-image-index={index}></canvas>
   {/if}
-  {#each boxes as box, order (order)}
+  {#each boxes as drawn, order (order)}
     <span
       class="glow"
-      style:left="{box.left}%"
-      style:top="{box.top}%"
-      style:width="{box.width}%"
-      style:height="{box.height}%"
+      class:noting={drawn.origin === 'written'}
+      style:left="{drawn.box.left}%"
+      style:top="{drawn.box.top}%"
+      style:width="{drawn.box.width}%"
+      style:height="{drawn.box.height}%"
     >
       {#if marker !== null && order === 0}
         <span class="marker">{marker}</span>
@@ -191,6 +196,19 @@
       0 0 0 4px rgb(79 178 134 / 18%),
       0 0 34px rgb(79 178 134 / 25%);
     pointer-events: none;
+  }
+
+  .glow.noting {
+    border-color: var(--c-note);
+    background: var(--c-note-wash-strong);
+    box-shadow:
+      0 0 0 4px var(--c-note-halo),
+      0 0 34px var(--c-note-halo-strong);
+  }
+
+  .glow.noting .marker {
+    background: var(--c-note);
+    color: var(--c-note-text);
   }
 
   .marker {

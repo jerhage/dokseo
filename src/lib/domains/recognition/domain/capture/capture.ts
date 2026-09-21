@@ -1,7 +1,6 @@
+import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-
-type CaptureOrigin = 'recognized' | 'written';
 
 type CaptureDraft = {
   readonly id: CaptureId;
@@ -54,4 +53,4 @@ function oldestFirst(captures: readonly Capture[]): readonly Capture[] {
 }
 
 export { takenCapture, captureFromStored, editedText, editedCapture, oldestFirst };
-export type { CaptureDraft, Capture, CaptureOrigin, StoredCapture };
+export type { CaptureDraft, Capture, StoredCapture };

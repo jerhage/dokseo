@@ -204,7 +204,22 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         store.rows = [...store.rows, kept];
         return Promise.resolve(ok(kept));
       },
-      writeNote: unused,
+      writeNote: (
+        id: CaptureId,
+        book: BookId,
+        taken: readonly ImageRegion[],
+      ): Promise<Result<Capture, CaptureError>> => {
+        if (store.saveFails) {
+          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
+        }
+
+        const note = takenCapture(
+          { id, bookId: book, regions: taken, text: '', confidence: null, origin: 'written' },
+          store.rows.length + 1,
+        );
+        store.rows = [...store.rows, note];
+        return Promise.resolve(ok(note));
+      },
       editCaptureText: (capture: Capture, text: string): Promise<Result<Capture, CaptureError>> => {
         store.edits.push(text);
         if (store.editFails) {
@@ -1217,5 +1232,86 @@ describe('CaptureView.close', () => {
     expect(world.engine.closes).toEqual(['ja']);
     expect(world.engine.prepares).toEqual(['ja', 'ja']);
     expect(view.session).toEqual(OPENED_SESSION);
+  });
+});
+
+describe('CaptureView notes', () => {
+  it('puts an empty written note in the panel and in the store', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.write(ONE, regions(5));
+
+    const card = at(view.captures, 0);
+    expect(card.origin).toBe('written');
+    expect(card.status === 'done' ? card.text.text : null).toBe('');
+    expect(card.regions).toEqual(regions(5));
+
+    const row = at(world.store.rows, 0);
+    expect(row.origin).toBe('written');
+    expect(row.text).toBe('');
+    expect(row.bookId).toBe(ONE);
+    expect(row.regions).toEqual(regions(5));
+  });
+
+  it('stores nothing when no book is open', () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+
+    view.note(regions());
+
+    expect(view.captures).toEqual([]);
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('stores nothing when the drag covered no page', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    view.note([]);
+
+    expect(view.captures).toEqual([]);
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('offers the new note for editing exactly once', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.write(ONE, regions());
+
+    expect(view.writing).toBe(at(view.captures, 0).id);
+    expect(view.takeWriting()).toBe(at(view.captures, 0).id);
+    expect(view.takeWriting()).toBeNull();
+  });
+
+  it('empties a note whose text is taken away again', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+    await view.write(ONE, regions());
+    const written = at(view.captures, 0).id;
+
+    await view.edit(written, 'ひとこと');
+    await view.edit(written, '   ');
+
+    expect(panelTexts(view)).toEqual(['']);
+    expect(at(world.store.rows, 0).text).toBe('');
+  });
+
+  it('keeps a note and a recognized capture apart in the glow', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    const running = read(view);
+    (await started(world, 0)).settle(ok(recognizedText('どうしたんだ')));
+    await running;
+    await view.write(ONE, regions(2));
+
+    expect(view.read.map((capture) => capture.origin)).toEqual(['recognized', 'written']);
   });
 });

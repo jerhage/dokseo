@@ -4,7 +4,7 @@
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import type { Arrangement } from '$lib/shared/arrangement';
   import type { ImageIndex } from '$lib/shared/ids';
-  import type { ImageRegion } from '$lib/shared/image-region';
+  import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import {
     LAYOUT_KIND_CHOICES,
     LAYOUT_KIND_LEGEND_BRIEF,
@@ -14,6 +14,7 @@
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
   import ContinuousViewer from './ContinuousViewer.svelte';
+  import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
@@ -23,11 +24,12 @@
 
   type Props = {
     readonly view: ReaderView;
-    readonly glow?: readonly ImageRegion[];
+    readonly glow?: readonly GlowRegion[];
     readonly panel?: Snippet;
     readonly engine?: Snippet;
     readonly arrival?: Snippet;
     readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
+    readonly onNote?: (regions: readonly ImageRegion[]) => void;
   };
 
   type Turn = {
@@ -49,7 +51,7 @@
     readonly at: number;
   };
 
-  let { view, glow = [], panel, engine, arrival, onSelect }: Props = $props();
+  let { view, glow = [], panel, engine, arrival, onSelect, onNote }: Props = $props();
 
   const uid = $props.id();
 
@@ -64,6 +66,9 @@
   let bottomHeight = $state(0);
   let chromeAsked = $state(false);
   let chromeHeld = $state(false);
+  let noting = $state(false);
+
+  const makes = $derived(dragOrigin(noting));
 
   function popoverOpen(): boolean {
     try {
@@ -138,7 +143,8 @@
 
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     view.select(regions);
-    onSelect?.(regions, arrangement);
+    if (makes === 'written') onNote?.(regions);
+    else onSelect?.(regions, arrangement);
   }
 
   function page(index: ImageIndex): string {
@@ -380,6 +386,7 @@
         pictureAt={(index) => view.pictureAt(index)}
         measured={(index, size) => view.measure(index, size)}
         {glow}
+        {makes}
         moveTo={(position) => view.moveTo(position)}
         select={(regions) => commit(regions, 'column')}
         clear={() => view.clearSelection()}
@@ -395,6 +402,7 @@
           pictureAt={(index) => view.pictureAt(index)}
           measured={(index, size) => view.measure(index, size)}
           {glow}
+          {makes}
           chromeShown={chromeAwake}
           select={(regions) => commit(regions, 'row')}
           clear={() => view.clearSelection()}
@@ -428,6 +436,19 @@
               <span class="assistive">{turn.label}</span>
             </button>
           {/each}
+
+          <span class="parting"></span>
+
+          <button
+            class="key"
+            type="button"
+            aria-pressed={noting}
+            title={NOTE_MODE_LABEL}
+            onclick={() => (noting = !noting)}
+          >
+            <span class="glyph" aria-hidden="true">{NOTE_GLYPH}</span>
+            <span class="assistive">{NOTE_MODE_LABEL}</span>
+          </button>
         {/if}
       </div>
     {/if}
@@ -720,6 +741,13 @@
   .key:focus-visible {
     background: var(--c-surface-button);
     color: var(--c-accent);
+  }
+
+  .key[aria-pressed='true'],
+  .key[aria-pressed='true']:hover,
+  .key[aria-pressed='true']:focus-visible {
+    background: var(--c-note-wash);
+    color: var(--c-note);
   }
 
   .key:disabled {
