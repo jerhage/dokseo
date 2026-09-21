@@ -140,6 +140,30 @@ describe('openFile', () => {
     expect(result.ok && result.value.position).toBe(0);
   });
 
+  it('reads Korean from a hangul title, so the reader does not have to say so', async () => {
+    const builder = fakeBuilder(ok(builtSource({ suggestedTitle: '나 혼자만 레벨업' }))).builder;
+
+    const result = await openFile(deps({ builder }), files);
+
+    expect(result.ok && result.value.language).toBe('ko');
+  });
+
+  it('reads Japanese from a kana title', async () => {
+    const builder = fakeBuilder(ok(builtSource({ suggestedTitle: 'よつばと！' }))).builder;
+
+    const result = await openFile(deps({ builder }), files);
+
+    expect(result.ok && result.value.language).toBe('ja');
+  });
+
+  it('falls back to Japanese when the title says nothing', async () => {
+    const builder = fakeBuilder(ok(builtSource({ suggestedTitle: 'One Piece v01' }))).builder;
+
+    const result = await openFile(deps({ builder }), files);
+
+    expect(result.ok && result.value.language).toBe('ja');
+  });
+
   it('defaults a new book to the fit its layout kind asks for', async () => {
     const result = await openFile(deps(), files);
     expect(result.ok && result.value.pageFit).toBe(defaultPageFit('paged'));

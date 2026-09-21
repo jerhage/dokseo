@@ -1,4 +1,5 @@
 import { bookId, imageIndex } from '$lib/shared/ids';
+import type { Language } from '$lib/shared/language';
 import type { LayoutKind } from '$lib/shared/layout-kind';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -6,6 +7,7 @@ import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import type { SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import { languageOfTitle } from '../domain/ingest/title-language';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 
 type OpenFileError =
@@ -20,6 +22,8 @@ type OpenFileDeps = {
   readonly newId: () => string;
 };
 
+const DEFAULT_LANGUAGE: Language = 'ja';
+
 async function openFile(
   deps: OpenFileDeps,
   files: readonly File[],
@@ -32,10 +36,12 @@ async function openFile(
 
   const layoutKind: LayoutKind = 'paged';
 
+  const title = built.value.suggestedTitle;
+
   const book: Book = {
     id: bookId(deps.newId()),
-    title: built.value.suggestedTitle,
-    language: 'ja',
+    title,
+    language: languageOfTitle(title) ?? DEFAULT_LANGUAGE,
     layoutKind,
     direction: 'rtl',
     pagePairing: DEFAULT_PAGE_PAIRING,
