@@ -353,15 +353,6 @@
     cursor: pointer;
   }
 
-  .section {
-    margin: 0;
-    color: var(--c-text-3);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
   .grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

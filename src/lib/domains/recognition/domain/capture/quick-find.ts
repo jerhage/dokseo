@@ -1,6 +1,6 @@
 import type { TagId } from '$lib/shared/ids';
 import { matchesQuery } from '$lib/shared/text-search';
-import { inBooks } from './capture-results';
+import { captureHolds, inBooks } from './capture-results';
 import type { BookMatches, SearchedBook, Tagged, Written } from './capture-results';
 import type { Tag } from '../tag/tag';
 
@@ -45,7 +45,7 @@ function quickFinds<T extends Written & Tagged>(
   const found = captures.filter(
     (capture) =>
       capture.tagIds.some((id) => named.has(id)) ||
-      (filter === 'everything' && matchesQuery(capture.text, query)),
+      (filter === 'everything' && captureHolds(capture, query)),
   );
 
   return { books: titledBooks(books, query, filter), captures: inBooks(found, books) };

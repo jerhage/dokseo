@@ -5,7 +5,7 @@ import type { BookId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { at } from '$lib/shared/testing/at';
-import { matchesByBook, matchTally, taggedByBook } from './capture-results';
+import { captureHolds, matchesByBook, matchTally, taggedByBook } from './capture-results';
 import type { SearchedBook } from './capture-results';
 
 type Found = {
@@ -45,6 +45,29 @@ function held(name: string, id: string, tags: readonly TagId[], index = 0, x = 0
 function heldNames(tagged: readonly { readonly captures: readonly Held[] }[]): readonly string[][] {
   return tagged.map((one) => one.captures.map((found) => found.name));
 }
+
+describe('captureHolds', () => {
+  it('matches a capture whose text holds the query', () => {
+    expect(captureHolds(capture('only', 'one', '海が見える'), '海')).toBe(true);
+  });
+
+  it('rejects a capture whose text does not hold the query', () => {
+    expect(captureHolds(capture('only', 'one', '海が見える'), 'ラーメン')).toBe(false);
+  });
+
+  it('matches through the fold, by case and by character width', () => {
+    expect(captureHolds(capture('cased', 'one', 'Coffee'), 'coffee')).toBe(true);
+    expect(captureHolds(capture('narrow', 'one', 'ｺｰﾋｰ'), 'コーヒー')).toBe(true);
+  });
+
+  it('rejects a blank query', () => {
+    expect(captureHolds(capture('only', 'one', '海が見える'), '')).toBe(false);
+  });
+
+  it('rejects a query that is only spaces', () => {
+    expect(captureHolds(capture('only', 'one', '海が見える'), '   ')).toBe(false);
+  });
+});
 
 describe('matchesByBook', () => {
   it('groups the captures that match under the book each was taken from', () => {
@@ -155,6 +178,14 @@ describe('matchesByBook', () => {
     );
 
     expect(matchTally(matched)).toBe(3);
+  });
+
+  it('counts a capture once however many ways it holds the query', () => {
+    const many = { ...capture('many', 'one', '海から海へ'), note: '海の音' };
+    const matched = matchesByBook([many], [book('one')], '海');
+
+    expect(names(matched)).toEqual([['many']]);
+    expect(matchTally(matched)).toBe(1);
   });
 
   it('leaves the captures it was given untouched', () => {

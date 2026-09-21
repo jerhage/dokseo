@@ -27,6 +27,10 @@ type BookMatches<T> = {
   readonly captures: readonly T[];
 };
 
+function captureHolds(capture: Pick<Written, 'text'>, query: string): boolean {
+  return matchesQuery(capture.text, query);
+}
+
 function heldByBook<T extends Written>(captures: readonly T[]): ReadonlyMap<BookId, T[]> {
   const grouped = new Map<BookId, T[]>();
 
@@ -57,7 +61,7 @@ function matchesByBook<T extends Written>(
   query: string,
 ): readonly BookMatches<T>[] {
   return inBooks(
-    captures.filter((capture) => matchesQuery(capture.text, query)),
+    captures.filter((capture) => captureHolds(capture, query)),
     books,
   );
 }
@@ -77,5 +81,5 @@ function matchTally<T>(matched: readonly BookMatches<T>[]): number {
   return matched.reduce((total, book) => total + book.captures.length, 0);
 }
 
-export { inBooks, matchesByBook, taggedByBook, matchTally };
+export { captureHolds, inBooks, matchesByBook, taggedByBook, matchTally };
 export type { SearchedBook, Written, Tagged, BookMatches };

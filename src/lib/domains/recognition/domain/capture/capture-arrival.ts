@@ -1,8 +1,8 @@
 import type { CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import { matchesQuery } from '$lib/shared/text-search';
 import { inBookOrder } from './capture-order';
+import { captureHolds } from './capture-results';
 import { wrappedIndex } from './match-stepping';
 
 type ArrivalCapture = {
@@ -29,7 +29,7 @@ function matchesInBookOrder<T extends ArrivalCapture>(
   direction: ReadingDirection,
 ): readonly T[] {
   return inBookOrder(
-    captures.filter((capture) => matchesQuery(capture.text, query)),
+    captures.filter((capture) => captureHolds(capture, query)),
     direction,
   );
 }
