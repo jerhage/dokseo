@@ -245,7 +245,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         }
 
         const note = takenCapture(
-          { id, bookId: book, regions: taken, text: '', confidence: null, origin: 'written' },
+          { id, bookId: book, regions: taken, text: '', origin: 'written' },
           store.rows.length + 1,
         );
         store.rows = [...store.rows, note];
@@ -355,6 +355,7 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
     bookId: book,
     regions: regions(4),
     text,
+    note: null,
     confidence: null,
     origin: 'recognized',
     createdAt,

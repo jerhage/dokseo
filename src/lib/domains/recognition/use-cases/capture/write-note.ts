@@ -17,10 +17,7 @@ async function writeNote(
   book: BookId,
   regions: readonly ImageRegion[],
 ): Promise<Result<Capture, CaptureError>> {
-  const note = takenCapture(
-    { id, bookId: book, regions, text: '', confidence: null, origin: 'written' },
-    deps.now(),
-  );
+  const note = takenCapture({ id, bookId: book, regions, text: '', origin: 'written' }, deps.now());
   const stored = await deps.captures.save(note);
   if (!stored.ok) return stored;
 

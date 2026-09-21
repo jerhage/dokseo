@@ -4,7 +4,7 @@ import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { at } from '$lib/shared/testing/at';
 import { captureFromStored, editedCapture, oldestFirst, takenCapture } from './capture';
-import type { Capture, CaptureDraft, StoredCapture } from './capture';
+import type { Capture, CaptureDraft, RecognizedCapture, StoredCapture } from './capture';
 
 const BOOK = bookId('book-one');
 
@@ -30,7 +30,6 @@ function note(id: string, text: string): Capture {
       bookId: BOOK,
       regions: REGIONS,
       text,
-      confidence: null,
       origin: 'written',
     },
     1,
@@ -39,6 +38,11 @@ function note(id: string, text: string): Capture {
 
 function taken(id: string, createdAt: number): Capture {
   return takenCapture(draft(id), createdAt);
+}
+
+function asRecognized(capture: Capture): RecognizedCapture {
+  if (capture.origin !== 'recognized') throw new Error('That capture was not recognized');
+  return capture;
 }
 
 describe('takenCapture', () => {
@@ -50,9 +54,25 @@ describe('takenCapture', () => {
       bookId: BOOK,
       regions: REGIONS,
       text: 'こっちに来て',
+      note: null,
       confidence: 0.8,
       origin: 'recognized',
       createdAt: 1_700_000_000_000,
+      editedAt: null,
+      tagIds: [],
+    });
+  });
+
+  it('builds a written capture with no confidence and no note to carry', () => {
+    const capture = note('a', 'my own words');
+
+    expect(capture).toEqual({
+      id: 'a',
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'my own words',
+      origin: 'written',
+      createdAt: 1,
       editedAt: null,
       tagIds: [],
     });
@@ -79,6 +99,7 @@ describe('captureFromStored', () => {
 
     expect(captureFromStored(stored)).toEqual({
       ...stored,
+      note: null,
       confidence: 0.5,
       createdAt: 42,
       editedAt: null,
@@ -123,7 +144,20 @@ describe('captureFromStored', () => {
       createdAt: 42,
     };
 
-    expect(captureFromStored(stored).confidence).toBeNull();
+    expect(asRecognized(captureFromStored(stored)).confidence).toBeNull();
+  });
+
+  it('reads a record written before a note was possible as carrying none', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+    };
+
+    expect(asRecognized(captureFromStored(stored)).note).toBeNull();
   });
 
   it('dates a record written before the creation time existed to the beginning', () => {
@@ -189,6 +223,20 @@ describe('captureFromStored', () => {
     };
 
     expect(captureFromStored(stored).origin).toBe('written');
+  });
+
+  it('drops a confidence a stored written record happens to carry', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'my own words',
+      confidence: 0.5,
+      createdAt: 42,
+      origin: 'written',
+    };
+
+    expect('confidence' in captureFromStored(stored)).toBe(false);
   });
 
   it('sorts a record with no creation time before every dated one', () => {

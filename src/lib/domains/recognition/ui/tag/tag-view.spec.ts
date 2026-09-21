@@ -47,6 +47,7 @@ function capture(
     bookId: bookId(id),
     regions: [{ index: imageIndex(index), rect: imageRect(x, 0, 100, 60) }],
     text: name,
+    note: null,
     confidence: null,
     origin: 'recognized',
     createdAt,

@@ -172,7 +172,7 @@ function cardOf(capture: Capture): PanelCapture {
     origin: capture.origin,
     tagIds: capture.tagIds,
     status: 'done',
-    text: recognizedText(capture.text, capture.confidence),
+    text: recognizedText(capture.text, capture.origin === 'written' ? null : capture.confidence),
     edited: capture.editedAt !== null,
   };
 }

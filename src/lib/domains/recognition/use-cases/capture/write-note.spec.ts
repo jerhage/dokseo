@@ -52,7 +52,7 @@ describe('writeNote', () => {
     const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, REGIONS);
 
     expect(written.ok && written.value.text).toBe('');
-    expect(written.ok && written.value.confidence).toBeNull();
+    expect(written.ok && 'confidence' in written.value).toBe(false);
   });
 
   it('keeps the book, the id and the regions it was given', async () => {

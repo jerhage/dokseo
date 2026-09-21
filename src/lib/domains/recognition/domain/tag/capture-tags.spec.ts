@@ -22,6 +22,7 @@ function capture(id: string, tags: readonly TagId[]): Capture {
     bookId: BOOK,
     regions: REGIONS,
     text: 'こっちに来て',
+    note: null,
     confidence: null,
     origin: 'recognized',
     createdAt: 1,
