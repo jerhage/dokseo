@@ -61,17 +61,23 @@ async function openArchivePageSource(source: Blob): Promise<Result<PageSource, P
         const url = URL.createObjectURL(entry);
         return ok({ kind: 'encoded', url });
       } catch (cause) {
-        return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
+        return err({ kind: 'page-unreadable', index, cause: describeCause(cause) });
       }
     },
 
     async image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> {
       const found = entryAt(index);
       if (!found.ok) return found;
+
+      let entry: Blob;
       try {
-        const entry = await found.value.getData(new BlobWriter());
-        const bitmap = await decodeImage(entry);
-        return ok(bitmap);
+        entry = await found.value.getData(new BlobWriter());
+      } catch (cause) {
+        return err({ kind: 'page-unreadable', index, cause: describeCause(cause) });
+      }
+
+      try {
+        return ok(await decodeImage(entry));
       } catch (cause) {
         return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
       }

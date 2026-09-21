@@ -101,7 +101,7 @@ async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageS
       const bitmap = await Promise.race([renderToBitmap(pdf, index + 1), transport.failure]);
       return ok(bitmap);
     } catch (cause) {
-      return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
+      return err({ kind: 'render-failed', index, cause: describeCause(cause) });
     }
   };
 

@@ -19,7 +19,9 @@ function describeSourceError(error: PageSourceError): string {
       { kind: 'out-of-range' },
       (e) => `Image ${e.index} is outside a source of ${e.count} images`,
     )
+    .with({ kind: 'page-unreadable' }, (e) => `Image ${e.index} could not be read: ${e.cause}`)
     .with({ kind: 'decode-failed' }, (e) => `Image ${e.index} did not decode: ${e.cause}`)
+    .with({ kind: 'render-failed' }, (e) => `Image ${e.index} did not render: ${e.cause}`)
     .with({ kind: 'source-unreadable' }, (e) => `The source could not be read: ${e.cause}`)
     .exhaustive();
 }

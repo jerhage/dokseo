@@ -6,6 +6,7 @@ const document = vi.hoisted(() => ({
   pages: 3,
   size: { width: 612.5, height: 792 },
   rendered: [] as number[],
+  failRender: false,
 }));
 
 vi.mock('pdfjs-dist', () => {
@@ -27,7 +28,11 @@ vi.mock('pdfjs-dist', () => {
     getViewport: () => document.size,
     render: () => {
       document.rendered.push(number);
-      return { promise: Promise.resolve() };
+      return {
+        promise: document.failRender
+          ? Promise.reject(new Error('the page is damaged'))
+          : Promise.resolve(),
+      };
     },
   });
 
@@ -113,6 +118,22 @@ describe('openPdfPageSource', () => {
     expect(picture).toEqual({
       ok: false,
       error: { kind: 'source-unreadable', cause: 'The document is closed' },
+    });
+  });
+
+  it('reports a render failure, not a decode failure, when a page will not draw', async () => {
+    document.failRender = true;
+    using source = await opened();
+
+    const picture = await source.picture(imageIndex(0));
+
+    expect(picture).toEqual({
+      ok: false,
+      error: {
+        kind: 'render-failed',
+        index: 0,
+        cause: expect.stringContaining('the page is damaged'),
+      },
     });
   });
 });

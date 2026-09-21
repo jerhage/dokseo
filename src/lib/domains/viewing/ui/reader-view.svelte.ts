@@ -60,7 +60,12 @@ function describeSourceFailure(error: PageSourceError): string {
       { kind: 'out-of-range' },
       (range) => `This book holds ${range.count} images, so page ${range.index + 1} is not there.`,
     )
+    .with(
+      { kind: 'page-unreadable' },
+      (failed) => `A page could not be read from that book: ${failed.cause}`,
+    )
     .with({ kind: 'decode-failed' }, (failed) => `A page could not be decoded: ${failed.cause}`)
+    .with({ kind: 'render-failed' }, (failed) => `A page could not be rendered: ${failed.cause}`)
     .with(
       { kind: 'source-unreadable' },
       (unreadable) => `That book could not be read: ${unreadable.cause}`,

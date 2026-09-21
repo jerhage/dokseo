@@ -22,7 +22,9 @@ function describePageSourceError(error: PageSourceError): string {
       { kind: 'out-of-range' },
       (range) => `Image ${range.index} lies outside a source of ${range.count} images`,
     )
+    .with({ kind: 'page-unreadable' }, (unread) => unread.cause)
     .with({ kind: 'decode-failed' }, (decode) => decode.cause)
+    .with({ kind: 'render-failed' }, (render) => render.cause)
     .with({ kind: 'source-unreadable' }, (unreadable) => unreadable.cause)
     .exhaustive();
 }

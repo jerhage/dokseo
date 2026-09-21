@@ -3,7 +3,9 @@ import type { Result } from './result';
 
 type PageSourceError =
   | { readonly kind: 'out-of-range'; readonly index: number; readonly count: number }
+  | { readonly kind: 'page-unreadable'; readonly index: number; readonly cause: string }
   | { readonly kind: 'decode-failed'; readonly index: number; readonly cause: string }
+  | { readonly kind: 'render-failed'; readonly index: number; readonly cause: string }
   | { readonly kind: 'source-unreadable'; readonly cause: string };
 
 type PagePicture =
