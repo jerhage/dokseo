@@ -9,11 +9,13 @@
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import { readerHref } from '$lib/shared/reader-location';
-  import { segmentsOf, textMatches } from '$lib/shared/text-search';
-  import type { TextMatch, TextSegment } from '$lib/shared/text-search';
+  import type { TextSegment } from '$lib/shared/text-search';
   import { inBookOrder } from '../../domain/capture/capture-order';
+  import type { SearchedCapture } from '../../domain/capture/capture-results';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
   import { captureNote, captureState } from './capture-card';
+  import { markedLines } from './capture-lines';
+  import type { MarkedLines } from './capture-lines';
   import { firstImage, placeLabel } from './capture-place';
   import { modelLoadAnnouncement, modelLoadNote, NOTHING_READ } from './capture-view.svelte';
   import type { CaptureStatus, CaptureView, PanelCapture } from './capture-view.svelte';
@@ -41,6 +43,7 @@
     readonly segments: readonly TextSegment[] | null;
     readonly note: string | null;
     readonly annotation: string | null;
+    readonly annotationSegments: readonly TextSegment[] | null;
     readonly noteLabel: string | null;
     readonly tags: readonly TagChip[];
     readonly tone: CaptureStatus;
@@ -54,10 +57,12 @@
     readonly at: number;
   };
 
+  type Done = Extract<PanelCapture, { status: 'done' }>;
+
   type Hit = {
-    readonly capture: Extract<PanelCapture, { status: 'done' }>;
+    readonly capture: Done;
     readonly regions: readonly ImageRegion[];
-    readonly matches: readonly TextMatch[];
+    readonly lines: MarkedLines;
   };
 
   let { view, language, direction }: Props = $props();
@@ -123,7 +128,13 @@
       : `Edit the note on the capture at ${place}`;
   }
 
-  function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {
+  function searchedOf(capture: Done): SearchedCapture {
+    return capture.origin === 'written'
+      ? { origin: 'written', text: capture.text.text }
+      : { origin: 'recognized', text: capture.text.text, note: capture.note };
+  }
+
+  function cardOf(capture: PanelCapture, lines: MarkedLines | null): Card {
     const tags = chipsOf(capture.tagIds, view.tags);
 
     return match(capture)
@@ -136,6 +147,7 @@
         segments: null,
         note: load === null ? null : modelLoadNote(load),
         annotation: null,
+        annotationSegments: null,
         noteLabel: null,
         tags,
         tone: 'pending' as CaptureStatus,
@@ -149,9 +161,10 @@
         href: hrefOf(read.id, read.regions),
         state: captureState(read.origin),
         text: read.text.text,
-        segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
+        segments: lines === null ? null : lines.text,
         note: captureNote(read.origin, read.text.text),
         annotation: annotationOf(read),
+        annotationSegments: lines === null ? null : lines.note,
         noteLabel: noteLabelOf(read, placeLabel(read.regions)),
         tags,
         tone: 'done' as CaptureStatus,
@@ -168,6 +181,7 @@
         segments: null,
         note: NOTHING_READ,
         annotation: null,
+        annotationSegments: null,
         noteLabel: null,
         tags,
         tone: 'empty' as CaptureStatus,
@@ -184,6 +198,7 @@
         segments: null,
         note: broken.message,
         annotation: null,
+        annotationSegments: null,
         noteLabel: null,
         tags,
         tone: 'failed' as CaptureStatus,
@@ -197,8 +212,8 @@
   function hitOf(capture: PanelCapture, wanted: string): Hit | null {
     if (capture.status !== 'done') return null;
 
-    const matches = textMatches(capture.text.text, wanted);
-    return matches.length === 0 ? null : { capture, regions: capture.regions, matches };
+    const lines = markedLines(searchedOf(capture), wanted);
+    return lines.matched ? { capture, regions: capture.regions, lines } : null;
   }
 
   const wanted = $derived(query.trim());
@@ -217,8 +232,8 @@
 
   const cards = $derived.by<readonly Card[]>(() =>
     hits === null
-      ? view.newestFirst.map((capture) => cardOf(capture, []))
-      : hits.map((hit) => cardOf(hit.capture, hit.matches)),
+      ? view.newestFirst.map((capture) => cardOf(capture, null))
+      : hits.map((hit) => cardOf(hit.capture, hit.lines)),
   );
 
   const cursor = $derived(searching && step !== null && step.query === wanted ? step.at : -1);
@@ -392,12 +407,12 @@
   {#if view.count > 0}
     <div class="find">
       <label class="search">
-        <span class="assistive">Search recognized text</span>
+        <span class="assistive">Search this book's captures and notes</span>
         <input
           type="search"
           bind:value={query}
-          placeholder="Search recognized text…"
-          title="Search this book's recognized text · Enter steps to the next match"
+          placeholder="Search captures and notes…"
+          title="Search this book's captures and notes · Enter steps to the next match"
           onkeydown={findKeys}
         />
       </label>
@@ -434,7 +449,7 @@
 
   {#if cards.length === 0}
     {#if searching}
-      <p class="invitation">No capture in this book holds that text.</p>
+      <p class="invitation">No capture or note in this book holds that text.</p>
     {:else}
       <p class="invitation">Drag a box over a speech bubble and the text arrives here.</p>
     {/if}
@@ -544,7 +559,15 @@
             {:else if card.annotation !== null}
               <div class="annotation">
                 <p class="label">Your note</p>
-                <p class="wrote">{card.annotation}</p>
+                {#if card.annotationSegments === null}
+                  <p class="wrote">{card.annotation}</p>
+                {:else}
+                  <p class="wrote">
+                    {#each card.annotationSegments as segment, part (part)}{#if segment.matched}<mark
+                          class="hit">{segment.text}</mark
+                        >{:else}{segment.text}{/if}{/each}
+                  </p>
+                {/if}
               </div>
             {/if}
             {#if card.note !== null}

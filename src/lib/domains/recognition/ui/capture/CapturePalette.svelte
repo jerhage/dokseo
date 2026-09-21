@@ -11,6 +11,7 @@
   import { matchedTagIds, quickFinds } from '../../domain/capture/quick-find';
   import type { PaletteFilter, QuickFinds } from '../../domain/capture/quick-find';
   import type { Tag } from '../../domain/tag/tag';
+  import { markedLines } from './capture-lines';
   import { firstImage, pageLabel } from './capture-place';
   import type { CaptureSearchView } from './capture-search.svelte';
   import { chipsOf } from './tag-chip';
@@ -49,6 +50,7 @@
     readonly language: Language;
     readonly cover: string | null;
     readonly segments: readonly TextSegment[];
+    readonly note: readonly TextSegment[] | null;
     readonly chips: readonly RowChip[];
   };
 
@@ -117,6 +119,7 @@
           if (index === null) return null;
 
           const lit = new Set(matchedTagIds(capture, tags, query));
+          const lines = markedLines(capture, query);
 
           return {
             kind: 'capture',
@@ -126,7 +129,8 @@
             title: matched.book.id === book ? null : matched.book.title,
             language: matched.book.language,
             cover: covers.get(matched.book.id) ?? null,
-            segments: segmentsOf(capture.text, textMatches(capture.text, query)),
+            segments: lines.text,
+            note: lines.note,
             chips: chipsOf(capture.tagIds, tags).map((chip) => ({
               id: chip.id,
               name: chip.name,
@@ -323,6 +327,13 @@
                             <span class="from">{row.images} images</span>
                           {/if}
                         {:else}
+                          {#if row.note !== null}
+                            <span class="note"
+                              >{#each row.note as segment, part (part)}{#if segment.matched}<mark
+                                    class="wash">{segment.text}</mark
+                                  >{:else}{segment.text}{/if}{/each}</span
+                            >
+                          {/if}
                           {#if row.title !== null}
                             <span class="from">{row.title}</span>
                           {/if}
@@ -566,6 +577,19 @@
 
   .row.at .text {
     color: var(--c-text-1);
+  }
+
+  .note {
+    display: block;
+    margin-top: 4px;
+    padding-left: 6px;
+    overflow: hidden;
+    border-left: 3px solid var(--c-note);
+    color: var(--c-text-6);
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .from {
