@@ -52,7 +52,7 @@ function downscaleFor(size: Size): number {
   return Math.min(1, MAX_CROP_EDGE / edge);
 }
 
-function cropFrom(bitmap: ImageBitmap, rect: ImageRect): OwnedBitmap {
+async function cropFrom(bitmap: ImageBitmap, rect: ImageRect): Promise<OwnedBitmap> {
   const bounds = imageRect(0, 0, bitmap.width, bitmap.height);
   const area = wholePixels(clampTo(normalize(rect), bounds));
   if (!usable(area.width) || !usable(area.height)) {
@@ -61,9 +61,8 @@ function cropFrom(bitmap: ImageBitmap, rect: ImageRect): OwnedBitmap {
     );
   }
 
-  const context = surfaceFor(area.width, area.height, false);
-  context.drawImage(bitmap, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height);
-  return own(context.canvas.transferToImageBitmap());
+  const cropped = await createImageBitmap(bitmap, area.x, area.y, area.width, area.height);
+  return own(cropped);
 }
 
 function stitch(parts: readonly ImageBitmap[], arrangement: Arrangement): OwnedBitmap {

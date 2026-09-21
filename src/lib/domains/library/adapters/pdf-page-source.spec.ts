@@ -2,9 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
 import type { PageSource } from '$lib/shared/page-source';
 
+const PORTRAIT = { width: 306.25, height: 396 };
+
+const LANDSCAPE_SPREAD = { width: 841.89, height: 297.64 };
+
+const RENDER_SCALE = 2;
+
 const document = vi.hoisted(() => ({
   pages: 3,
-  size: { width: 612.5, height: 792 },
+  size: { width: 306.25, height: 396 },
   rendered: [] as number[],
   failRender: false,
 }));
@@ -25,7 +31,10 @@ vi.mock('pdfjs-dist', () => {
   }
 
   const page = (number: number) => ({
-    getViewport: () => document.size,
+    getViewport: ({ scale }: { scale: number }) => ({
+      width: document.size.width * scale,
+      height: document.size.height * scale,
+    }),
     render: () => {
       document.rendered.push(number);
       return {
@@ -80,6 +89,8 @@ async function opened(): Promise<PageSource> {
 
 beforeEach(() => {
   document.rendered = [];
+  document.size = PORTRAIT;
+  document.failRender = false;
   vi.stubGlobal('OffscreenCanvas', FakeOffscreenCanvas);
 });
 
@@ -135,5 +146,30 @@ describe('openPdfPageSource', () => {
         cause: expect.stringContaining('the page is damaged'),
       },
     });
+  });
+
+  const geometries = [
+    { shape: 'portrait page', size: PORTRAIT },
+    { shape: 'landscape spread', size: LANDSCAPE_SPREAD },
+  ];
+
+  it.each(geometries)('renders a $shape at one size for a picture and a crop', async ({ size }) => {
+    document.size = size;
+    using source = await opened();
+
+    const picture = await source.picture(imageIndex(0));
+    const image = await source.image(imageIndex(0));
+
+    if (!picture.ok) throw new Error('the page did not draw');
+    if (picture.value.kind !== 'drawn') throw new Error('the picture was not drawn');
+    if (!image.ok) throw new Error('the page did not render');
+    const expected = {
+      width: Math.ceil(size.width * RENDER_SCALE),
+      height: Math.ceil(size.height * RENDER_SCALE),
+    };
+    expect({ width: picture.value.bitmap.width, height: picture.value.bitmap.height }).toEqual(
+      expected,
+    );
+    expect({ width: image.value.width, height: image.value.height }).toEqual(expected);
   });
 });

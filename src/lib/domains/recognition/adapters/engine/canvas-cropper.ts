@@ -34,7 +34,7 @@ async function cropOne(
   if (!image.ok) return err({ kind: 'unreadable', cause: describeSourceError(image.error) });
 
   using page = own(image.value);
-  const cropped = cropFrom(page.bitmap, region.rect);
+  const cropped = await cropFrom(page.bitmap, region.rect);
   return ok(cropped);
 }
 
