@@ -214,6 +214,7 @@
         </li>
       {/each}
     </ul>
+    <a class="manage" href="/tags/manage">Manage tags</a>
   </aside>
 
   <main class="main">
@@ -504,6 +505,21 @@
     color: var(--c-text-9);
     font-family: var(--f-mono);
     font-size: 10px;
+  }
+
+  .manage {
+    flex: none;
+    padding: var(--s-2);
+    border-top: 1px solid var(--c-border-1);
+    color: var(--c-text-8);
+    font-size: 11.5px;
+    text-decoration: none;
+  }
+
+  .manage:hover,
+  .manage:focus-visible {
+    color: var(--c-text-3);
+    outline: none;
   }
 
   .main {
