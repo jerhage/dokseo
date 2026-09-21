@@ -19,7 +19,7 @@
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
   import PagedViewer from './PagedViewer.svelte';
-  import { chromeShown } from './reader-chrome';
+  import { chromeHolds, chromeShown } from './reader-chrome';
   import type { ReaderView } from './reader-view.svelte';
 
   type Props = {
@@ -70,26 +70,16 @@
 
   const makes = $derived(dragOrigin(noting));
 
-  function popoverOpen(): boolean {
+  function openPopovers(): readonly Element[] {
     try {
-      return document.querySelector(':popover-open') !== null;
+      return [...document.querySelectorAll(':popover-open')];
     } catch {
-      return false;
+      return [];
     }
   }
 
-  function holdsFocus(bar: HTMLElement | null, active: Element | null): boolean {
-    if (bar === null || bar.inert || active === null) return false;
-
-    return bar.contains(active);
-  }
-
   function heldNow(): boolean {
-    if (popoverOpen()) return true;
-
-    const active = document.activeElement;
-
-    return holdsFocus(topBar, active) || holdsFocus(bottomBar, active);
+    return chromeHolds([topBar, bottomBar], [document.activeElement, ...openPopovers()]);
   }
 
   const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
