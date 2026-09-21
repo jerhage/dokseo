@@ -1,11 +1,17 @@
 import { describeCause } from '$lib/shared/cause';
 import { directoryNamed, flatName, isAvailable, isMissing } from './directory';
+import { createBlobWriter } from './worker-blob-writer';
+import type { BytesWritten } from './worker-blob-writer';
 
 const DIRECTORY = 'blobs';
 
-const WRITE_CHUNK_BYTES = 4 * 1024 * 1024;
+function startWriterWorker(): Worker {
+  return new Worker(new URL('$workers/opfs-writer.worker.ts', import.meta.url), {
+    type: 'module',
+  });
+}
 
-type BytesWritten = (written: number, total: number) => void;
+const writeBlob = createBlobWriter({ directory: DIRECTORY, startWorker: startWriterWorker });
 
 function directory(): Promise<FileSystemDirectoryHandle> {
   return directoryNamed(DIRECTORY);
@@ -16,23 +22,7 @@ async function put(
   blob: Blob,
   onWritten: BytesWritten = () => undefined,
 ): Promise<void> {
-  const name = flatName(key);
-  const handle = await (await directory()).getFileHandle(name, { create: true });
-  const writable = await handle.createWritable();
-  try {
-    let written = 0;
-    onWritten(written, blob.size);
-    while (written < blob.size) {
-      const end = Math.min(written + WRITE_CHUNK_BYTES, blob.size);
-      await writable.write(blob.slice(written, end));
-      written = end;
-      onWritten(written, blob.size);
-    }
-    await writable.close();
-  } catch (cause) {
-    await writable.abort().catch(() => undefined);
-    throw new Error(`Key "${name}" could not be written: ${describeCause(cause)}`, { cause });
-  }
+  await writeBlob(flatName(key), blob, onWritten);
 }
 
 async function get(key: string): Promise<Blob | null> {
