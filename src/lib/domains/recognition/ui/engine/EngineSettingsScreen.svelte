@@ -180,7 +180,7 @@
             </button>
           {/each}
         </div>
-        <p class="detected">{computeDetectionNote(view.detection)}</p>
+        <p class="detected">{computeDetectionNote(view.detection, view.compute)}</p>
         {#if gpuWarning !== null}
           <p class="detected shaky" role="alert">{gpuWarning}</p>
         {/if}

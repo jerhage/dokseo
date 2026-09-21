@@ -62,18 +62,29 @@ describe('computeChoiceName', () => {
 });
 
 describe('computeDetectionNote', () => {
-  it('says the CPU will run it when no adapter was found', () => {
-    expect(computeDetectionNote(GPU_UNDETECTED)).toContain('no WebGPU adapter');
+  const found = { available: true, description: null };
+
+  it('says the CPU is in use even where a GPU was found, when the app chose', () => {
+    expect(computeDetectionNote(found, 'auto')).toBe('Using: CPU. Detected: WebGPU available.');
+  });
+
+  it('says the GPU is in use when the reader asked for it', () => {
+    expect(computeDetectionNote(found, 'gpu')).toBe('Using: GPU. Detected: WebGPU available.');
+  });
+
+  it('says the CPU is in use when the reader asked for it', () => {
+    expect(computeDetectionNote(found, 'cpu')).toBe('Using: CPU. Detected: WebGPU available.');
+  });
+
+  it('says the CPU is in use when no adapter was found, whatever was asked', () => {
+    expect(computeDetectionNote(GPU_UNDETECTED, 'gpu')).toBe(
+      'Using: CPU. Detected: no WebGPU adapter.',
+    );
   });
 
   it('names the adapter when the browser described one', () => {
-    const note = computeDetectionNote({ available: true, description: 'apple m2' });
-    expect(note).toBe('Detected: apple m2, WebGPU available.');
-  });
-
-  it('reports availability alone when the browser described nothing', () => {
-    expect(computeDetectionNote({ available: true, description: null })).toBe(
-      'Detected: WebGPU available.',
+    expect(computeDetectionNote({ available: true, description: 'apple m2' }, 'gpu')).toBe(
+      'Using: GPU. Detected: apple m2, WebGPU available.',
     );
   });
 });

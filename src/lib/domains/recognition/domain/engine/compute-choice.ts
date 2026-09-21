@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { deviceName } from './recognizer-session';
 import type { RecognizerDevice } from './recognizer-session';
 
 type ComputeChoice = 'auto' | 'gpu' | 'cpu';
@@ -32,14 +33,17 @@ function computeChoiceName(choice: ComputeChoice): string {
     .exhaustive();
 }
 
-function computeDetectionNote(detection: GpuDetection): string {
-  if (!detection.available) {
-    return 'Detected: no WebGPU adapter. Recognition runs on the CPU.';
-  }
+function detectionOf(detection: GpuDetection): string {
+  if (!detection.available) return 'no WebGPU adapter';
+  if (detection.description === null) return 'WebGPU available';
 
-  return detection.description === null
-    ? 'Detected: WebGPU available.'
-    : `Detected: ${detection.description}, WebGPU available.`;
+  return `${detection.description}, WebGPU available`;
+}
+
+function computeDetectionNote(detection: GpuDetection, choice: ComputeChoice): string {
+  const using = deviceName(chosenDevice(choice, detection.available));
+
+  return `Using: ${using}. Detected: ${detectionOf(detection)}.`;
 }
 
 function computeGpuWarning(choice: ComputeChoice): string | null {
