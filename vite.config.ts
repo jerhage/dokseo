@@ -4,6 +4,14 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import type { Plugin, ViteDevServer, PreviewServer } from 'vite';
 
+// To reproduce Safari here, add `oxc: { target: 'es2022' }` below. Vite 8
+// transforms with oxc, not esbuild, so `esbuild.target` is silently ignored.
+// The production build already lowers `using` for every browser; the dev
+// server does not, so Safari cannot PARSE the app and shows a blank error
+// page instead of the unsupported banner. Setting the target makes dev match
+// the build, which is the only way to see what a Safari visitor sees.
+// Safari support itself lives on the experiment/safari-support branch.
+
 const CROSS_ORIGIN_ISOLATION: Readonly<Record<string, string>> = {
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Cross-Origin-Embedder-Policy': 'require-corp',
