@@ -377,7 +377,8 @@
         bind:this={strip}
         sizes={view.sizes}
         start={view.position}
-        imageAt={(index) => view.imageAt(index)}
+        pictureAt={(index) => view.pictureAt(index)}
+        measured={(index, size) => view.measure(index, size)}
         {glow}
         moveTo={(position) => view.moveTo(position)}
         select={(regions) => commit(regions, 'column')}
@@ -391,7 +392,8 @@
           pages={view.visiblePages}
           direction={book.direction}
           pageFit={book.pageFit}
-          imageAt={(index) => view.imageAt(index)}
+          pictureAt={(index) => view.pictureAt(index)}
+          measured={(index, size) => view.measure(index, size)}
           {glow}
           chromeShown={chromeAwake}
           select={(regions) => commit(regions, 'row')}

@@ -3,7 +3,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 import { RANGE_CHUNK_BYTES, clampRange, initialChunkSize } from './pdf-ranges';
 
@@ -92,21 +92,29 @@ async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageS
     void loading.destroy().catch(() => undefined);
   };
 
+  const render = async (index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> => {
+    if (closed) return err({ kind: 'source-unreadable', cause: 'The document is closed' });
+    if (!Number.isInteger(index) || index < 0 || index >= count) {
+      return err({ kind: 'out-of-range', index, count });
+    }
+    try {
+      const bitmap = await Promise.race([renderToBitmap(pdf, index + 1), transport.failure]);
+      return ok(bitmap);
+    } catch (cause) {
+      return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
+    }
+  };
+
   return ok({
     count,
 
-    async image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> {
-      if (closed) return err({ kind: 'source-unreadable', cause: 'The document is closed' });
-      if (!Number.isInteger(index) || index < 0 || index >= count) {
-        return err({ kind: 'out-of-range', index, count });
-      }
-      try {
-        const bitmap = await Promise.race([renderToBitmap(pdf, index + 1), transport.failure]);
-        return ok(bitmap);
-      } catch (cause) {
-        return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
-      }
+    async picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>> {
+      const drawn = await render(index);
+      if (!drawn.ok) return drawn;
+      return ok({ kind: 'drawn', bitmap: drawn.value });
     },
+
+    image: render,
 
     close,
     [Symbol.dispose]: close,

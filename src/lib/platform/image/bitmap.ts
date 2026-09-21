@@ -1,3 +1,5 @@
+import type { PagePicture } from '$lib/shared/page-source';
+
 type OwnedBitmap = {
   readonly bitmap: ImageBitmap;
   release(): ImageBitmap;
@@ -20,5 +22,14 @@ function own(bitmap: ImageBitmap): OwnedBitmap {
   };
 }
 
-export { own };
+function releasePicture(picture: PagePicture): void {
+  if (picture.kind === 'encoded') {
+    URL.revokeObjectURL(picture.url);
+    return;
+  }
+
+  picture.bitmap.close();
+}
+
+export { own, releasePicture };
 export type { OwnedBitmap };

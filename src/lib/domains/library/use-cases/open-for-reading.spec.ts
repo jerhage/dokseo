@@ -35,16 +35,19 @@ function book(overrides: Partial<Book> = {}): Book {
 
 function fakePageSource(): PageSource {
   const close = (): void => undefined;
+  const missing = (index: ImageIndex) =>
+    Promise.resolve(
+      err<PageSourceError>({
+        kind: 'out-of-range',
+        index,
+        count: 182,
+      }),
+    );
+
   return {
     count: 182,
-    image: (index: ImageIndex) =>
-      Promise.resolve(
-        err<PageSourceError>({
-          kind: 'out-of-range',
-          index,
-          count: 182,
-        }),
-      ),
+    picture: missing,
+    image: missing,
     close,
     [Symbol.dispose]: close,
   };

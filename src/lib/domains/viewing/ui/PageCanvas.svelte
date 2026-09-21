@@ -1,8 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
+  import { releasePicture } from '$lib/platform/image/bitmap';
   import type { ImageRect, Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
+  import type { PagePicture } from '$lib/shared/page-source';
   import { toPageFraction } from '../domain/placement';
 
   type Phase = 'loading' | 'shown' | 'failed';
@@ -10,15 +12,17 @@
   type Props = {
     readonly index: ImageIndex;
     readonly label: string;
-    readonly load: (index: ImageIndex) => Promise<ImageBitmap | null>;
+    readonly load: (index: ImageIndex) => Promise<PagePicture | null>;
+    readonly measured?: (index: ImageIndex, size: Size) => void;
     readonly flush?: boolean;
     readonly glow?: readonly ImageRect[];
     readonly marker?: string | null;
   };
 
-  let { index, label, load, flush = false, glow = [], marker = null }: Props = $props();
+  let { index, label, load, measured, flush = false, glow = [], marker = null }: Props = $props();
 
   let frame = $state<HTMLCanvasElement | null>(null);
+  let picture = $state.raw<PagePicture | null>(null);
   let phase = $state<Phase>('loading');
   let ratio = $state(2 / 3);
   let natural = $state.raw<Size | null>(null);
@@ -48,44 +52,64 @@
 
   const asked = $derived(index);
 
+  function show(size: Size): void {
+    natural = size;
+    ratio = size.height > 0 ? size.width / size.height : 2 / 3;
+    phase = 'shown';
+    untrack(() => measured?.(asked, size));
+  }
+
+  function shown(event: Event): void {
+    const image = event.currentTarget;
+    if (!(image instanceof HTMLImageElement)) return;
+    show({ width: image.naturalWidth, height: image.naturalHeight });
+  }
+
   $effect(() => {
-    const canvas = frame;
     const wanted = asked;
-    if (canvas === null) return;
 
     let live = true;
+    let held: PagePicture | null = null;
     phase = 'loading';
 
     void (async () => {
-      const bitmap = await untrack(() => load(wanted));
+      const got = await untrack(() => load(wanted));
       if (!live) {
-        bitmap?.close();
+        if (got !== null) releasePicture(got);
         return;
       }
-      if (bitmap === null) {
+      if (got === null) {
         phase = 'failed';
         return;
       }
 
-      const context = canvas.getContext('bitmaprenderer');
-      if (context === null) {
-        bitmap.close();
-        phase = 'failed';
-        return;
-      }
-
-      const measured = { width: bitmap.width, height: bitmap.height };
-      natural = measured;
-      ratio = measured.height > 0 ? measured.width / measured.height : 2 / 3;
-      canvas.width = measured.width;
-      canvas.height = measured.height;
-      context.transferFromImageBitmap(bitmap);
-      phase = 'shown';
+      held = got;
+      picture = got;
     })();
 
     return () => {
       live = false;
+      picture = null;
+      if (held !== null) releasePicture(held);
     };
+  });
+
+  $effect(() => {
+    const canvas = frame;
+    const drawn = picture;
+    if (canvas === null || drawn === null || drawn.kind !== 'drawn') return;
+
+    const context = canvas.getContext('bitmaprenderer');
+    if (context === null) {
+      phase = 'failed';
+      return;
+    }
+
+    const size = { width: drawn.bitmap.width, height: drawn.bitmap.height };
+    canvas.width = size.width;
+    canvas.height = size.height;
+    context.transferFromImageBitmap(drawn.bitmap);
+    show(size);
   });
 </script>
 
@@ -97,7 +121,18 @@
   role="img"
   aria-label={caption}
 >
-  <canvas bind:this={frame} width={0} height={0} data-image-index={index}></canvas>
+  {#if picture !== null && picture.kind === 'encoded'}
+    <img
+      src={picture.url}
+      alt=""
+      decoding="async"
+      data-image-index={index}
+      onload={shown}
+      onerror={() => (phase = 'failed')}
+    />
+  {:else}
+    <canvas bind:this={frame} width={0} height={0} data-image-index={index}></canvas>
+  {/if}
   {#each boxes as box, order (order)}
     <span
       class="glow"
@@ -132,7 +167,8 @@
     background: var(--c-surface-card-quiet);
   }
 
-  canvas {
+  canvas,
+  img {
     display: block;
     width: 100%;
     height: 100%;

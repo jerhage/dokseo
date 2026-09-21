@@ -3,6 +3,7 @@
   import type { ImageRect, Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
+  import type { PagePicture } from '$lib/shared/page-source';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     layOutStrip,
@@ -28,7 +29,8 @@
   type Props = {
     readonly sizes: readonly (Size | null)[];
     readonly start: ReadingPosition;
-    readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
+    readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
+    readonly measured: (index: ImageIndex, size: Size) => void;
     readonly glow?: readonly ImageRegion[];
     readonly moveTo: (position: ReadingPosition) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
@@ -36,7 +38,17 @@
     readonly onTap: () => void;
   };
 
-  let { sizes, start, imageAt, glow = [], moveTo, select, clear, onTap }: Props = $props();
+  let {
+    sizes,
+    start,
+    pictureAt,
+    measured,
+    glow = [],
+    moveTo,
+    select,
+    clear,
+    onTap,
+  }: Props = $props();
 
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
@@ -288,7 +300,8 @@
           <PageCanvas
             index={slice.index}
             label={label(slice.index)}
-            load={imageAt}
+            load={pictureAt}
+            {measured}
             glow={glowOn(slice.index)}
             marker={GLOW_MARKER}
             flush

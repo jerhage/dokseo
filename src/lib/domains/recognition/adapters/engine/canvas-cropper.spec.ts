@@ -31,6 +31,8 @@ function pageSource(answer: () => Result<ImageBitmap, PageSourceError>): PageSou
   const close = (): void => undefined;
   return {
     count: 1,
+    picture: (_index: ImageIndex) =>
+      Promise.resolve(err<PageSourceError>({ kind: 'source-unreadable', cause: 'not asked for' })),
     image: (_index: ImageIndex) => Promise.resolve(answer()),
     close,
     [Symbol.dispose]: close,

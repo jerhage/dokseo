@@ -38,10 +38,13 @@ function stubBitmap(): StubBitmap {
 
 function fakePageSource(): PageSource {
   const close = (): void => undefined;
+  const missing = (index: ImageIndex) =>
+    Promise.resolve(err<PageSourceError>({ kind: 'out-of-range', index, count: 1 }));
+
   return {
     count: 1,
-    image: (index: ImageIndex) =>
-      Promise.resolve(err<PageSourceError>({ kind: 'out-of-range', index, count: 1 })),
+    picture: missing,
+    image: missing,
     close,
     [Symbol.dispose]: close,
   };

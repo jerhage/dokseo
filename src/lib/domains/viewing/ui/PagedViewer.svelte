@@ -5,6 +5,7 @@
   import type { ImageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import type { PagePicture } from '$lib/shared/page-source';
   import type { PageFit } from '$lib/shared/page-fit';
   import type { PageGroup } from '../domain/page-pairing';
   import { canPan, centrePan, clampPan, fitZoom, panBy, zoomAt } from '../domain/viewport';
@@ -31,7 +32,8 @@
     readonly pages: PageGroup;
     readonly direction: ReadingDirection;
     readonly pageFit: PageFit;
-    readonly imageAt: (index: ImageIndex) => Promise<ImageBitmap | null>;
+    readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
+    readonly measured: (index: ImageIndex, size: Size) => void;
     readonly glow?: readonly ImageRegion[];
     readonly chromeShown: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
@@ -44,7 +46,8 @@
     pages,
     direction,
     pageFit,
-    imageAt,
+    pictureAt,
+    measured,
     glow = [],
     chromeShown,
     select,
@@ -384,7 +387,8 @@
         <PageCanvas
           {index}
           label={label(index)}
-          load={imageAt}
+          load={pictureAt}
+          {measured}
           glow={glowOn(index)}
           marker={GLOW_MARKER}
         />

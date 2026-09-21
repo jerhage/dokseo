@@ -2,9 +2,8 @@
   import { beginTrace } from '$lib/platform/trace/pipeline-trace';
   import type { Trace } from '$lib/platform/trace/pipeline-trace';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import { isEmpty, normalize, screenRect } from '$lib/shared/geometry';
+  import { isEmpty, normalize } from '$lib/shared/geometry';
   import type { ScreenRect, Size } from '$lib/shared/geometry';
-  import { imageIndex } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import { regionsIn } from '../domain/placement';
   import type { PlacedImage } from '../domain/placement';
@@ -16,6 +15,7 @@
     selectionSize,
   } from '../domain/selection';
   import type { Point } from '../domain/selection';
+  import { placedImages } from './page-placements';
 
   type Watch = {
     readonly id: number;
@@ -101,24 +101,10 @@
   }
 
   function placementsIn(element: HTMLElement, trace: Trace): readonly PlacedImage[] {
-    const found = element.querySelectorAll('canvas[data-image-index]');
-    const placed: PlacedImage[] = [];
+    const found = element.querySelectorAll('[data-image-index]');
+    const placed = placedImages(found);
 
-    for (const canvas of found) {
-      if (!(canvas instanceof HTMLCanvasElement)) continue;
-
-      const index = Number(canvas.dataset.imageIndex);
-      if (!Number.isInteger(index)) continue;
-
-      const box = canvas.getBoundingClientRect();
-      placed.push({
-        index: imageIndex(index),
-        onScreen: screenRect(box.x, box.y, box.width, box.height),
-        natural: { width: canvas.width, height: canvas.height },
-      });
-    }
-
-    trace.step('placements', { canvases: found.length, placed: placed.length });
+    trace.step('placements', { elements: found.length, placed: placed.length });
     for (const image of placed) {
       trace.step('placement', {
         index: image.index,

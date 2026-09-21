@@ -5,7 +5,7 @@ import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { selectImageEntries } from '../domain/ingest/image-entries';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 
 function orderedImages(entries: readonly Entry[]): FileEntry[] {
@@ -40,18 +40,36 @@ async function openArchivePageSource(source: Blob): Promise<Result<PageSource, P
     void reader.close().catch(() => undefined);
   };
 
+  const entryAt = (index: ImageIndex): Result<FileEntry, PageSourceError> => {
+    if (closed) return err({ kind: 'source-unreadable', cause: 'The archive is closed' });
+    if (!Number.isInteger(index) || index < 0 || index >= count) {
+      return err({ kind: 'out-of-range', index, count });
+    }
+    const image = images[index];
+    if (image === undefined) return err({ kind: 'out-of-range', index, count });
+    return ok(image);
+  };
+
   return ok({
     count,
 
-    async image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> {
-      if (closed) return err({ kind: 'source-unreadable', cause: 'The archive is closed' });
-      if (!Number.isInteger(index) || index < 0 || index >= count) {
-        return err({ kind: 'out-of-range', index, count });
-      }
-      const image = images[index];
-      if (image === undefined) return err({ kind: 'out-of-range', index, count });
+    async picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>> {
+      const found = entryAt(index);
+      if (!found.ok) return found;
       try {
-        const entry = await image.getData(new BlobWriter());
+        const entry = await found.value.getData(new BlobWriter());
+        const url = URL.createObjectURL(entry);
+        return ok({ kind: 'encoded', url });
+      } catch (cause) {
+        return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
+      }
+    },
+
+    async image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> {
+      const found = entryAt(index);
+      if (!found.ok) return found;
+      try {
+        const entry = await found.value.getData(new BlobWriter());
         const bitmap = await decodeImage(entry);
         return ok(bitmap);
       } catch (cause) {

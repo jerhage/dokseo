@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
+import { releasePicture } from '$lib/platform/image/bitmap';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
@@ -7,7 +8,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import { effectiveDirection, effectivePairing } from '$lib/shared/layout-kind';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
 import { groupContaining, pairPages } from '../domain/page-pairing';
 import type { PageGroup } from '../domain/page-pairing';
@@ -172,27 +173,30 @@ class ReaderView {
     this.#mirror?.(place.index);
   }
 
-  async imageAt(index: ImageIndex): Promise<ImageBitmap | null> {
+  async pictureAt(index: ImageIndex): Promise<PagePicture | null> {
     const source = this.#source;
     if (source === null) return null;
     const generation = this.#generation;
 
-    let got: Awaited<ReturnType<PageSource['image']>>;
+    let got: Awaited<ReturnType<PageSource['picture']>>;
     try {
-      got = await source.image(index);
+      got = await source.picture(index);
     } catch {
       return null;
     }
 
     if (generation !== this.#generation) {
-      if (got.ok) got.value.close();
+      if (got.ok) releasePicture(got.value);
       return null;
     }
 
     if (!got.ok) return null;
 
-    this.#measure(index, { width: got.value.width, height: got.value.height });
-    return got.value;
+    const picture = got.value;
+    if (picture.kind === 'drawn') {
+      this.measure(index, { width: picture.bitmap.width, height: picture.bitmap.height });
+    }
+    return picture;
   }
 
   next(): Promise<void> {
@@ -313,7 +317,7 @@ class ReaderView {
     }
   }
 
-  #measure(index: ImageIndex, size: Size): void {
+  measure(index: ImageIndex, size: Size): void {
     const book = this.book;
     if (book === null || index < 0 || index >= this.sizes.length) return;
 

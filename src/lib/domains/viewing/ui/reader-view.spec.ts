@@ -8,7 +8,7 @@ import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
-import type { PageSource } from '$lib/shared/page-source';
+import type { PagePicture, PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { readingPosition } from '../domain/reading-position';
@@ -36,6 +36,10 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
   };
 }
 
+function drawnWidth(picture: PagePicture | null): number | null {
+  return picture !== null && picture.kind === 'drawn' ? picture.bitmap.width : null;
+}
+
 function region(index: number): ImageRegion {
   return { index: imageIndex(index), rect: imageRect(10, 20, 92, 104) };
 }
@@ -49,6 +53,8 @@ type FakeSource = {
   readonly asked: number[];
   readonly sizes: Map<number, Size>;
   readonly broken: Set<number>;
+  kind: 'drawn' | 'encoded';
+  held: Promise<void> | null;
   closed: number;
 };
 
@@ -62,11 +68,23 @@ function fakeSource(count: number): FakeSource {
     asked,
     sizes,
     broken,
+    kind: 'drawn' as 'drawn' | 'encoded',
+    held: null as Promise<void> | null,
     closed: 0,
   };
 
   state.source = {
     count,
+    picture: async (index: ImageIndex) => {
+      asked.push(index);
+      await state.held;
+      if (broken.has(index)) {
+        return err({ kind: 'decode-failed', index, cause: 'torn page' } as const);
+      }
+      if (state.kind === 'encoded')
+        return ok({ kind: 'encoded', url: `blob:page-${index}` } as const);
+      return ok({ kind: 'drawn', bitmap: bitmap(sizes.get(index) ?? PORTRAIT) } as const);
+    },
     image: (index: ImageIndex) => {
       asked.push(index);
       if (broken.has(index)) {
@@ -273,9 +291,9 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     expect(view.groups).toHaveLength(3);
 
-    const drawn = await view.imageAt(imageIndex(0));
+    const drawn = await view.pictureAt(imageIndex(0));
 
-    expect(drawn?.width).toBe(2400);
+    expect(drawnWidth(drawn)).toBe(2400);
     expect(at(view.sizes, 0)).toEqual(LANDSCAPE);
     expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
   });
@@ -287,7 +305,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     expect(view.group).toBe(1);
 
-    await view.imageAt(imageIndex(2));
+    await view.pictureAt(imageIndex(2));
 
     expect(view.position.index).toBe(3);
     expect(view.group).toBe(2);
@@ -311,11 +329,59 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container);
     await view.open(bookId('one'));
 
-    const drawn = await view.imageAt(imageIndex(1));
+    const drawn = await view.pictureAt(imageIndex(1));
 
     expect(drawn).toBeNull();
     expect(view.status).toBe('ready');
     expect(view.message).toBeNull();
+  });
+
+  it('hands the display an encoded picture and measures nothing', async () => {
+    const world = fakes();
+    world.pages.kind = 'encoded';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    const shown = await view.pictureAt(imageIndex(0));
+
+    expect(shown).toEqual({ kind: 'encoded', url: 'blob:page-0' });
+    expect(at(view.sizes, 0)).toBeNull();
+  });
+
+  it('releases an encoded picture that arrives after the reader has moved on', async () => {
+    const revoked: string[] = [];
+    const revoke = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation((url: string) => void revoked.push(url));
+    const world = fakes();
+    world.pages.kind = 'encoded';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    let arrive = (): void => undefined;
+    world.pages.held = new Promise<void>((resolve) => {
+      arrive = resolve;
+    });
+    const pending = view.pictureAt(imageIndex(0));
+    view.dispose();
+    arrive();
+
+    await expect(pending).resolves.toBeNull();
+    expect(revoked).toEqual(['blob:page-0']);
+    revoke.mockRestore();
+  });
+
+  it('records a size the display measured and regroups', async () => {
+    const world = fakes();
+    world.pages.kind = 'encoded';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+    expect(view.groups).toHaveLength(3);
+
+    view.measure(imageIndex(0), LANDSCAPE);
+
+    expect(at(view.sizes, 0)).toEqual(LANDSCAPE);
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
   });
 
   it('sets the pairing and rebuilds the groups', async () => {
