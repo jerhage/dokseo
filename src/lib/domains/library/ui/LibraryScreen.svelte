@@ -178,7 +178,7 @@
       {/if}
       <span class="space">{space}</span>
       <a class="source" href={SOURCE_URL} target="_blank" rel="noreferrer" title={SOURCE_LABEL}>
-        <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d={GITHUB_MARK} /></svg>
+        <svg class="octocat" viewBox="0 0 24 24" aria-hidden="true"><path d={GITHUB_MARK} /></svg>
         <span class="assistive">{SOURCE_LABEL}</span>
       </a>
     </footer>
@@ -407,7 +407,7 @@
     color: var(--c-text-1);
   }
 
-  .mark {
+  .octocat {
     width: 15px;
     height: 15px;
     fill: currentcolor;
