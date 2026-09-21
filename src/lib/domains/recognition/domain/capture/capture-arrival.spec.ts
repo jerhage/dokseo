@@ -94,11 +94,28 @@ describe('arrivalAt', () => {
     expect(arrivalAt(ALL, null, 'rtl', captureId('missing'))).toBeNull();
   });
 
-  it('reports nothing when the named capture does not match the query', () => {
-    expect(arrivalAt(ALL, '海', 'rtl', OTHER.id)).toBeNull();
+  it('arrives at the named capture even when the query never matched it', () => {
+    expect(arrivalAt(ALL, '海', 'rtl', OTHER.id)?.at.id).toBe(OTHER.id);
   });
 
   it('reports nothing when the named capture is gone', () => {
     expect(arrivalAt(ALL, '海', 'rtl', captureId('missing'))).toBeNull();
+  });
+});
+
+describe('arrivalAt for a capture the query never matched', () => {
+  const wanted = row('tagged', 'この坂を上れば', at(0, 10, 10));
+  const other = row('other', '海が見える', at(1, 10, 10));
+
+  it('arrives at a capture whose text holds none of the query, so the box is drawn', () => {
+    expect(arrivalAt([other, wanted], '海', 'rtl', wanted.id)?.at.id).toBe(wanted.id);
+  });
+
+  it('offers no stepping there, because it is not one of the query matches', () => {
+    expect(arrivalAt([other, wanted], '海', 'rtl', wanted.id)?.stepping).toBeNull();
+  });
+
+  it('finds nothing for a capture that is not there at all', () => {
+    expect(arrivalAt([other], '海', 'rtl', captureId('missing'))).toBeNull();
   });
 });

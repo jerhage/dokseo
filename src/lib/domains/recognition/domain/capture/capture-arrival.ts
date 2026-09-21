@@ -34,21 +34,26 @@ function matchesInBookOrder<T extends ArrivalCapture>(
   );
 }
 
+function alone<T extends ArrivalCapture>(
+  captures: readonly T[],
+  wanted: CaptureId,
+): Arrival<T> | null {
+  const only = captures.find((capture) => capture.id === wanted);
+  return only === undefined ? null : { at: only, stepping: null };
+}
+
 function arrivalAt<T extends ArrivalCapture>(
   captures: readonly T[],
   query: string | null,
   direction: ReadingDirection,
   wanted: CaptureId,
 ): Arrival<T> | null {
-  if (query === null || query.trim().length === 0) {
-    const only = captures.find((capture) => capture.id === wanted);
-    return only === undefined ? null : { at: only, stepping: null };
-  }
+  if (query === null || query.trim().length === 0) return alone(captures, wanted);
 
   const found = matchesInBookOrder(captures, query, direction);
   const place = found.findIndex((capture) => capture.id === wanted);
   const here = found[place];
-  if (here === undefined) return null;
+  if (here === undefined) return alone(captures, wanted);
 
   const before = found[wrappedIndex(place, -1, found.length)];
   const after = found[wrappedIndex(place, 1, found.length)];
