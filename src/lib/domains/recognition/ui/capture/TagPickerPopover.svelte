@@ -42,7 +42,9 @@
 
   function take(row: PickerRow | null): void {
     if (row === null) return;
+
     onchoose(row);
+    field?.focus();
   }
 
   function keys(event: KeyboardEvent): void {
@@ -142,7 +144,7 @@
     {/each}
   </ul>
 
-  <p class="hint">↵ add</p>
+  <p class="hint">↵ add · esc done</p>
 </div>
 
 <style>

@@ -285,14 +285,14 @@
     tagTrigger = null;
   }
 
-  function choose(row: PickerRow): void {
+  async function choose(row: PickerRow): Promise<void> {
     const id = picker.capture;
     if (id === null) return;
 
-    if (row.kind === 'create') void view.createTag(id, row.name);
-    else void view.addTag(id, row.tag.id);
+    if (row.kind === 'create') await view.createTag(id, row.name);
+    else await view.addTag(id, row.tag.id);
 
-    void closePicker();
+    if (picker.capture === id) picker.open(id, carriedBy(id));
   }
 
   const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
@@ -451,7 +451,7 @@
               <TagPickerPopover
                 {picker}
                 anchor={tagTrigger}
-                onchoose={choose}
+                onchoose={(row) => void choose(row)}
                 onclose={() => void closePicker()}
               />
             {/if}
