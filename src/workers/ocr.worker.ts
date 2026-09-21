@@ -1,13 +1,13 @@
 import { chosenDevice } from '$lib/domains/recognition/domain/engine/compute-choice';
 import type { ComputeChoice } from '$lib/domains/recognition/domain/engine/compute-choice';
+import { japaneseOcrText } from '$lib/domains/recognition/domain/engine/japanese-ocr-text';
+import { mostLikelyToken } from '$lib/domains/recognition/domain/engine/most-likely-token';
+import type { DecoderLogits } from '$lib/domains/recognition/domain/engine/most-likely-token';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 import { knownModel } from '$lib/domains/recognition/domain/model/model-footprint';
 import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model/model-weights';
 import { describeCause } from '$lib/shared/cause';
-import { japaneseOcrText } from './japanese-ocr-text';
 import { installModelFetch } from './model-fetch';
-import { mostLikelyToken } from './most-likely-token';
-import type { DecoderLogits } from './most-likely-token';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
 const DECODER_START_TOKEN = 2;

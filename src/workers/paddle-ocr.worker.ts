@@ -1,16 +1,19 @@
+import {
+  characterDictionary,
+  ctcLabels,
+} from '$lib/domains/recognition/domain/engine/character-dictionary';
 import { chosenDevice } from '$lib/domains/recognition/domain/engine/compute-choice';
 import type { ComputeChoice } from '$lib/domains/recognition/domain/engine/compute-choice';
+import { ctcReading, joinedReading } from '$lib/domains/recognition/domain/engine/ctc-reading';
+import type { CtcLogits, CtcReading } from '$lib/domains/recognition/domain/engine/ctc-reading';
+import { lineGeometry } from '$lib/domains/recognition/domain/engine/line-geometry';
 import { SINGLE_GRAPH_FILE } from '$lib/domains/recognition/domain/model/model-weights';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
+import { textLineBands } from '$lib/domains/recognition/domain/engine/text-line-bands';
+import type { TextBand } from '$lib/domains/recognition/domain/engine/text-line-bands';
 import { describeCause } from '$lib/shared/cause';
-import { characterDictionary, ctcLabels } from './character-dictionary';
-import { ctcReading, joinedReading } from './ctc-reading';
-import type { CtcLogits, CtcReading } from './ctc-reading';
-import { lineGeometry } from './line-geometry';
 import { installModelFetch } from './model-fetch';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
-import { textLineBands } from './text-line-bands';
-import type { TextBand } from './text-line-bands';
 
 const DICTIONARY_FILE = 'inference.yml';
 
