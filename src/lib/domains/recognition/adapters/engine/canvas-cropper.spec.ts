@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MAX_CROP_EDGE } from '$lib/platform/image/pixels';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { imageRect } from '$lib/shared/geometry';
@@ -15,6 +16,41 @@ const REGIONS: readonly ImageRegion[] = [
 ];
 
 const ARRANGEMENT: Arrangement = 'row';
+
+const WIDE_REGIONS: readonly ImageRegion[] = [
+  { index: imageIndex(0), rect: imageRect(0, 0, 6000, 900) },
+];
+
+function stubBitmap(width: number, height: number): ImageBitmap {
+  return { width, height, close: () => undefined } as unknown as ImageBitmap;
+}
+
+function stubPixelWork(): void {
+  function FakeCanvas(this: unknown, width: number, height: number): unknown {
+    const canvas = {
+      getContext: () => context,
+      transferToImageBitmap: () => stubBitmap(width, height),
+    };
+    const context = {
+      canvas,
+      fillStyle: '',
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low',
+      fillRect: (): void => undefined,
+      drawImage: (): void => undefined,
+      getImageData: () => ({ data: new Uint8ClampedArray(4) }),
+      putImageData: (): void => undefined,
+    };
+    return canvas;
+  }
+
+  vi.stubGlobal('OffscreenCanvas', FakeCanvas);
+  vi.stubGlobal(
+    'createImageBitmap',
+    (_source: ImageBitmap, _x: number, _y: number, width: number, height: number) =>
+      Promise.resolve(stubBitmap(width, height)),
+  );
+}
 
 function stubTrace() {
   const end = vi.fn();
@@ -44,9 +80,16 @@ function unreadableSource(): PageSource {
 }
 
 function decodedSource(): PageSource {
-  const bitmap = { width: 200, height: 80, close: () => undefined } as unknown as ImageBitmap;
-  return pageSource(() => ok(bitmap));
+  return pageSource(() => ok(stubBitmap(200, 80)));
 }
+
+function wideSource(): PageSource {
+  return pageSource(() => ok(stubBitmap(6000, 900)));
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('createCanvasCropper', () => {
   it('ends the trace when nothing is selected', async () => {
@@ -84,6 +127,18 @@ describe('createCanvasCropper', () => {
     await cropper.crop(unreadableSource(), [], ARRANGEMENT);
 
     expect(labels).toEqual(['crop', 'crop']);
+  });
+
+  it('answers the stitched crop at its own size, past the model input limit', async () => {
+    stubPixelWork();
+    const { begin } = stubTrace();
+
+    const result = await createCanvasCropper(begin).crop(wideSource(), WIDE_REGIONS, ARRANGEMENT);
+
+    if (!result.ok) throw new Error('The crop failed');
+    expect(result.value.width).toBe(6000);
+    expect(result.value.height).toBe(900);
+    expect(result.value.width).toBeGreaterThan(MAX_CROP_EDGE);
   });
 
   it('crops without a trace factory', async () => {

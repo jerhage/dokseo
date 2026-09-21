@@ -66,10 +66,19 @@ function fakeWorker(): FakeWorker {
 
 function stubOffscreenCanvas(): void {
   function FakeCanvas(this: unknown, width: number, height: number): unknown {
-    return {
-      getContext: () => ({ drawImage: (): void => undefined }),
+    const canvas = {
+      getContext: () => context,
       transferToImageBitmap: () => stubBitmap(width, height).bitmap,
     };
+    const context = {
+      canvas,
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low',
+      drawImage: (): void => undefined,
+      getImageData: () => ({ data: new Uint8ClampedArray(4) }),
+      putImageData: (): void => undefined,
+    };
+    return canvas;
   }
 
   vi.stubGlobal('OffscreenCanvas', FakeCanvas);

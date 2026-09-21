@@ -1,4 +1,9 @@
 import { match } from 'ts-pattern';
+import { own } from '$lib/platform/image/bitmap';
+import type { OwnedBitmap } from '$lib/platform/image/bitmap';
+import { downscaleFor, scaleBy, toGrayscale } from '$lib/platform/image/pixels';
+import { noTrace } from '$lib/platform/trace/pipeline-trace';
+import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import { describeCause } from '$lib/shared/cause';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -15,6 +20,7 @@ type WorkerOcrOptions = {
   readonly startWorker?: () => Worker;
   readonly onProgress?: (load: ModelLoad) => void;
   readonly onSession?: (session: RecognizerSession) => void;
+  readonly beginTrace?: TraceFactory;
 };
 
 type WorkerRecognizerOptions = WorkerOcrOptions & {
@@ -32,17 +38,29 @@ const NOT_CONFIGURED = 'No recognition model is configured for this language';
 
 const CANCELLED = 'The recognition model load was cancelled';
 
-function copyOf(image: ImageBitmap): ImageBitmap {
-  const canvas = new OffscreenCanvas(image.width, image.height);
-  const context = canvas.getContext('2d');
-  if (context === null) {
-    throw new Error(
-      `A 2D drawing context was unavailable for a ${image.width}x${image.height} crop`,
-    );
-  }
+function preparedFor(begin: TraceFactory, image: ImageBitmap): OwnedBitmap {
+  const trace = begin('prepare-input');
 
-  context.drawImage(image, 0, 0);
-  return canvas.transferToImageBitmap();
+  try {
+    const factor = downscaleFor(image);
+    using capped = scaleBy(image, factor);
+    trace.step('capped', {
+      factor,
+      width: capped.bitmap.width,
+      height: capped.bitmap.height,
+    });
+
+    using grey = toGrayscale(capped.bitmap);
+    trace.step('greyscale', {
+      width: grey.bitmap.width,
+      height: grey.bitmap.height,
+    });
+
+    trace.image('input', grey.bitmap);
+    return own(grey.release());
+  } finally {
+    trace.end();
+  }
 }
 
 function errorFor(failure: OcrFailure, cause: string): RecognitionError {
@@ -71,6 +89,7 @@ function unreadable(error: ModelLoadError): RecognitionError {
 
 function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognizer {
   const start = options.startWorker;
+  const beginTrace = options.beginTrace ?? noTrace;
   const pending = new Map<number, Settle>();
 
   let worker: Worker | null = null;
@@ -196,22 +215,22 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
     const target = worker;
     if (target === null) return err({ kind: 'model-unavailable', cause: CANCELLED });
 
-    let sent: ImageBitmap;
     try {
-      sent = copyOf(image);
+      using prepared = preparedFor(beginTrace, image);
+
+      lastId += 1;
+      const id = lastId;
+      const sent = prepared.bitmap;
+      const request: OcrRequest = { kind: 'recognize', id, image: sent };
+      target.postMessage(request, [sent]);
+      prepared.release();
+
+      return await new Promise<Recognition>((resolve) => {
+        pending.set(id, resolve);
+      });
     } catch (cause) {
       return err({ kind: 'recognition-failed', cause: describeCause(cause) });
     }
-
-    lastId += 1;
-    const id = lastId;
-    const reply = new Promise<Recognition>((resolve) => {
-      pending.set(id, resolve);
-    });
-
-    const request: OcrRequest = { kind: 'recognize', id, image: sent };
-    target.postMessage(request, [sent]);
-    return await reply;
   }
 
   return { id: options.id, prepare, cancel, recognize };

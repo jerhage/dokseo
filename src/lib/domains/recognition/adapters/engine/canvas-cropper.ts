@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import { own } from '$lib/platform/image/bitmap';
 import type { OwnedBitmap } from '$lib/platform/image/bitmap';
-import { cropFrom, downscaleFor, scaleBy, stitch, toGrayscale } from '$lib/platform/image/pixels';
+import { cropFrom, stitch } from '$lib/platform/image/pixels';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Trace, TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
@@ -73,22 +73,8 @@ async function cropTraced(
       height: stitched.bitmap.height,
     });
 
-    const factor = downscaleFor(stitched.bitmap);
-    using capped = scaleBy(stitched.bitmap, factor);
-    trace.step('capped', {
-      factor,
-      width: capped.bitmap.width,
-      height: capped.bitmap.height,
-    });
-
-    using grey = toGrayscale(capped.bitmap);
-    trace.step('greyscale', {
-      width: grey.bitmap.width,
-      height: grey.bitmap.height,
-    });
-
-    trace.image('crop', grey.bitmap);
-    return ok(grey.release());
+    trace.image('crop', stitched.bitmap);
+    return ok(stitched.release());
   } catch (cause) {
     return err({ kind: 'unreadable', cause: describeCause(cause) });
   }

@@ -156,9 +156,11 @@ function noticesFor(language: Language): {
   readonly readSetup: () => Promise<RecognizerSetup | null>;
   readonly onProgress: (load: ModelLoad) => void;
   readonly onSession: (session: RecognizerSession) => void;
+  readonly beginTrace: TraceFactory;
 } {
   return {
     readSetup: () => setupFor(language),
+    beginTrace,
     onProgress: (load) => {
       for (const report of progressFor(language)) report(load);
     },
