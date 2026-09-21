@@ -3,11 +3,13 @@ import { canRunHere, featuresOf, SUPPORT_TABLE_URL, UNSUPPORTED_NOTICE } from '.
 
 describe('canRunHere', () => {
   it('runs where both features are present, as Chrome and Firefox are', () => {
-    expect(canRunHere({ dispose: Symbol('dispose'), disposableStack: class {} })).toBe(true);
+    expect(canRunHere({ dispose: Symbol('dispose'), disposableStack: (): void => undefined })).toBe(
+      true,
+    );
   });
 
   it('refuses a browser with no Symbol.dispose, as Safari has none', () => {
-    expect(canRunHere({ dispose: undefined, disposableStack: class {} })).toBe(false);
+    expect(canRunHere({ dispose: undefined, disposableStack: (): void => undefined })).toBe(false);
   });
 
   it('refuses a browser with no DisposableStack, as Safari has none', () => {
