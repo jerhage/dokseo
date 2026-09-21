@@ -262,9 +262,14 @@ class CaptureView {
     const generation = this.#forget();
     this.#book = book;
 
-    const listed = await this.#container.recognition.listCaptures(book).catch(() => null);
+    const [listed, named] = await Promise.all([
+      this.#container.recognition.listCaptures(book).catch(() => null),
+      this.#container.recognition.listTags().catch(() => null),
+    ]);
 
-    if (generation !== this.#generation || listed === null || !listed.ok) return;
+    if (generation !== this.#generation) return;
+    if (named !== null && named.ok) this.tags = named.value;
+    if (listed === null || !listed.ok) return;
 
     const held = oldestFirst(listed.value);
     this.#stored = new Map(held.map((capture) => [capture.id, capture]));
@@ -597,15 +602,19 @@ class CaptureView {
 
   async loadTags(): Promise<void> {
     const generation = this.#generation;
-    const [listed, everywhere] = await Promise.all([
-      this.#container.recognition.listTags().catch(() => null),
-      this.#container.recognition.listEveryCapture().catch(() => null),
-    ]);
+    const named = await this.#container.recognition.listTags().catch(() => null);
 
-    if (generation !== this.#generation) return;
-    if (listed === null || !listed.ok || everywhere === null || !everywhere.ok) return;
+    if (generation !== this.#generation || named === null || !named.ok) return;
 
-    this.tags = listed.value;
+    this.tags = named.value;
+  }
+
+  async loadTagCounts(): Promise<void> {
+    const generation = this.#generation;
+    const everywhere = await this.#container.recognition.listEveryCapture().catch(() => null);
+
+    if (generation !== this.#generation || everywhere === null || !everywhere.ok) return;
+
     this.libraryCounts = tagCounts(everywhere.value);
   }
 

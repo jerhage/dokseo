@@ -1384,7 +1384,7 @@ async function tagging(world: Fakes, carried: readonly TagId[] = []): Promise<Ca
   world.store.rows = [taggedRow('a', ONE, carried)];
   const view = new CaptureView(world.container);
   await view.open(ONE);
-  await view.loadTags();
+  await view.loadTagCounts();
 
   return view;
 }
@@ -1394,22 +1394,52 @@ function carriedBy(view: CaptureView): readonly TagId[] {
 }
 
 describe('CaptureView tags', () => {
-  it('lists every tag and how often the whole library carries each one', async () => {
+  it('lists every tag', async () => {
     const world = fakes();
     world.tags.rows = [sfxTag()];
-    world.store.rows = [taggedRow('a', ONE, [SFX]), taggedRow('b', TWO, [SFX])];
     const view = new CaptureView(world.container);
 
     await view.loadTags();
 
     expect(view.tags.map((tag) => tag.name)).toEqual(['sfx']);
+  });
+
+  it('holds the tags as soon as the book opens, so a tagged card shows its chips', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    world.store.rows = [taggedRow('a', ONE, [SFX])];
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+
+    expect(view.tags.map((tag) => tag.name)).toEqual(['sfx']);
+  });
+
+  it('reads no library-wide count until one is asked for', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    world.store.rows = [taggedRow('a', ONE, [SFX]), taggedRow('b', TWO, [SFX])];
+    const view = new CaptureView(world.container);
+
+    await view.open(ONE);
+
+    expect(view.libraryCounts.size).toBe(0);
+  });
+
+  it('counts how often the whole library carries each tag when asked', async () => {
+    const world = fakes();
+    world.tags.rows = [sfxTag()];
+    world.store.rows = [taggedRow('a', ONE, [SFX]), taggedRow('b', TWO, [SFX])];
+    const view = new CaptureView(world.container);
+
+    await view.loadTagCounts();
+
     expect(view.libraryCounts.get(SFX)).toBe(2);
   });
 
   it('keeps the tags it holds when the listing fails', async () => {
     const world = fakes();
     world.tags.rows = [sfxTag()];
-    world.store.rows = [taggedRow('a', ONE, [SFX])];
     const view = new CaptureView(world.container);
     await view.loadTags();
 
@@ -1418,7 +1448,6 @@ describe('CaptureView tags', () => {
     await view.loadTags();
 
     expect(view.tags.map((tag) => tag.name)).toEqual(['sfx']);
-    expect(view.libraryCounts.get(SFX)).toBe(1);
   });
 
   it('keeps the counts it holds when the capture listing fails', async () => {
@@ -1426,10 +1455,10 @@ describe('CaptureView tags', () => {
     world.tags.rows = [sfxTag()];
     world.store.rows = [taggedRow('a', ONE, [SFX])];
     const view = new CaptureView(world.container);
-    await view.loadTags();
+    await view.loadTagCounts();
 
     world.store.listFails = true;
-    await view.loadTags();
+    await view.loadTagCounts();
 
     expect(view.libraryCounts.get(SFX)).toBe(1);
   });
@@ -1551,7 +1580,7 @@ describe('CaptureView tags', () => {
     const view = new CaptureView(world.container);
 
     await view.open(ONE);
-    await view.loadTags();
+    await view.loadTagCounts();
 
     expect(view.bookCounts.get(SFX)).toBe(2);
     expect(view.bookCounts.get(KEIGO)).toBe(1);

@@ -4,7 +4,7 @@
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
-  import type { CaptureId } from '$lib/shared/ids';
+  import type { CaptureId, TagId } from '$lib/shared/ids';
   import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -17,6 +17,13 @@
   import { firstImage, placeLabel } from './capture-place';
   import { modelLoadAnnouncement, modelLoadNote, NOTHING_READ } from './capture-view.svelte';
   import type { CaptureStatus, CaptureView, PanelCapture } from './capture-view.svelte';
+  import { chipsOf } from './tag-chip';
+  import type { TagChip } from './tag-chip';
+  import { TagPicker } from './tag-picker.svelte';
+  import type { PickerRow } from './tag-picker.svelte';
+  import CaptureTags from './CaptureTags.svelte';
+  import DocumentTags from './DocumentTags.svelte';
+  import TagPickerPopover from './TagPickerPopover.svelte';
   import ModelConsentDialog from '../engine/ModelConsentDialog.svelte';
 
   type Props = {
@@ -33,6 +40,7 @@
     readonly text: string | null;
     readonly segments: readonly TextSegment[] | null;
     readonly note: string | null;
+    readonly tags: readonly TagChip[];
     readonly tone: CaptureStatus;
     readonly origin: CaptureOrigin;
     readonly edited: boolean;
@@ -60,6 +68,10 @@
   let editor = $state<HTMLTextAreaElement | null>(null);
   let step = $state.raw<Step | null>(null);
   let trigger: HTMLButtonElement | null = null;
+  let tagTrigger = $state<HTMLButtonElement | null>(null);
+  let countsAsked = false;
+
+  const picker = new TagPicker(() => ({ tags: view.tags, counts: view.libraryCounts }));
 
   $effect(() => {
     editor?.focus();
@@ -90,6 +102,8 @@
   }
 
   function cardOf(capture: PanelCapture, matches: readonly TextMatch[]): Card {
+    const tags = chipsOf(capture.tagIds, view.tags);
+
     return match(capture)
       .with({ status: 'pending' }, (running) => ({
         id: running.id,
@@ -99,6 +113,7 @@
         text: null,
         segments: null,
         note: load === null ? null : modelLoadNote(load),
+        tags,
         tone: 'pending' as CaptureStatus,
         origin: running.origin,
         edited: false,
@@ -112,6 +127,7 @@
         text: read.text.text,
         segments: matches.length === 0 ? null : segmentsOf(read.text.text, matches),
         note: captureNote(read.origin, read.text.text),
+        tags,
         tone: 'done' as CaptureStatus,
         origin: read.origin,
         edited: read.edited,
@@ -125,6 +141,7 @@
         text: null,
         segments: null,
         note: NOTHING_READ,
+        tags,
         tone: 'empty' as CaptureStatus,
         origin: blank.origin,
         edited: false,
@@ -138,6 +155,7 @@
         text: null,
         segments: null,
         note: broken.message,
+        tags,
         tone: 'failed' as CaptureStatus,
         origin: broken.origin,
         edited: false,
@@ -244,6 +262,37 @@
       event.preventDefault();
       save();
     }
+  }
+
+  function carriedBy(id: CaptureId): readonly TagId[] {
+    return view.captures.find((capture) => capture.id === id)?.tagIds ?? [];
+  }
+
+  function openPicker(id: CaptureId, from: HTMLButtonElement): void {
+    if (!countsAsked) {
+      countsAsked = true;
+      void view.loadTagCounts();
+    }
+
+    tagTrigger = from;
+    picker.open(id, carriedBy(id));
+  }
+
+  async function closePicker(): Promise<void> {
+    picker.close();
+    await tick();
+    tagTrigger?.focus();
+    tagTrigger = null;
+  }
+
+  function choose(row: PickerRow): void {
+    const id = picker.capture;
+    if (id === null) return;
+
+    if (row.kind === 'create') void view.createTag(id, row.name);
+    else void view.addTag(id, row.tag.id);
+
+    void closePicker();
   }
 
   const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
@@ -392,11 +441,27 @@
             {#if card.note !== null}
               <p class="note">{card.note}</p>
             {/if}
+            <CaptureTags
+              chips={card.tags}
+              place={card.place}
+              onremove={(tag) => void view.removeTag(card.id, tag)}
+              onadd={(from) => openPicker(card.id, from)}
+            />
+            {#if picker.capture === card.id}
+              <TagPickerPopover
+                {picker}
+                anchor={tagTrigger}
+                onchoose={choose}
+                onclose={() => void closePicker()}
+              />
+            {/if}
           </article>
         </li>
       {/each}
     </ul>
   {/if}
+
+  <DocumentTags tags={view.tags} counts={view.bookCounts} />
 
   {#if view.consentRequest !== null}
     <ModelConsentDialog
