@@ -16,7 +16,7 @@
   } from '../domain/strip';
   import { clampZoom } from '../domain/viewport';
   import { handlesOwnKeys } from './keyboard';
-  import PageCanvas from './PageCanvas.svelte';
+  import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
 
   type Hold = {
@@ -297,7 +297,7 @@
       <div class="spacer" style:height="{spacers.before}px" aria-hidden="true"></div>
       {#each spacers.slices as slice (slice.index)}
         <div class="slice" style:height="{slice.height}px">
-          <PageCanvas
+          <PageFrame
             index={slice.index}
             label={label(slice.index)}
             load={pictureAt}

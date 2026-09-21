@@ -14,7 +14,7 @@
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnedGestures, learnGesture } from './learned-gestures.svelte';
-  import PageCanvas from './PageCanvas.svelte';
+  import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
 
   type Fit = PageFit | 'free';
@@ -384,7 +384,7 @@
   >
     <div class="strip" class:rtl={direction === 'rtl'} bind:this={strip} style:transform>
       {#each pages as index (index)}
-        <PageCanvas
+        <PageFrame
           {index}
           label={label(index)}
           load={pictureAt}
