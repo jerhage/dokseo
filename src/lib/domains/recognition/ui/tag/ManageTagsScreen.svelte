@@ -387,7 +387,9 @@
 
   .palette {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    max-width: 156px;
     gap: 5px;
     padding: 3px 5px;
     border: 1px solid var(--c-border-2);
