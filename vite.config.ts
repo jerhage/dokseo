@@ -34,6 +34,8 @@ function crossOriginIsolation(): Plugin {
   };
 }
 
+const LOWERS_EXPLICIT_RESOURCE_MANAGEMENT = 'es2022';
+
 const BUNDLED_RUNTIME = /ort-wasm[^/]*\.wasm$/u;
 
 function runtimeServedFromCdn(): Plugin {
@@ -49,6 +51,7 @@ function runtimeServedFromCdn(): Plugin {
 }
 
 export default defineConfig({
+  oxc: { target: LOWERS_EXPLICIT_RESOURCE_MANAGEMENT },
   plugins: [
     sveltekit({
       compilerOptions: {
