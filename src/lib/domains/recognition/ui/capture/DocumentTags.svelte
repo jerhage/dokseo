@@ -59,11 +59,16 @@
   }
 
   .chips {
+    --chip-row: 21px;
+
     display: flex;
     flex-wrap: wrap;
     gap: var(--s-1);
+    max-height: calc(var(--chip-row) * 2 + var(--s-1));
     margin: 0;
     padding: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     list-style: none;
   }
 
