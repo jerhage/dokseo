@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   chosenDevice,
+  COMPUTE_CHOICES,
   computeChoiceName,
+  computeCpuNote,
   computeChoiceOf,
   computeDetectionNote,
   computeGpuWarning,
@@ -86,6 +88,30 @@ describe('computeDetectionNote', () => {
     expect(computeDetectionNote({ available: true, description: 'apple m2' }, 'gpu')).toBe(
       'Using: GPU. Detected: apple m2, WebGPU available.',
     );
+  });
+});
+
+describe('computeCpuNote', () => {
+  it('reassures a reader on the CPU that it is enough for a modern device', () => {
+    const note = computeCpuNote('cpu') ?? '';
+
+    expect(note).toContain('stable choice');
+    expect(note).toContain('fast enough');
+  });
+
+  it('says the same when the app made the choice, because the app chose the CPU', () => {
+    expect(computeCpuNote('auto')).toBe(computeCpuNote('cpu'));
+  });
+
+  it('says nothing to a reader who asked for the GPU', () => {
+    expect(computeCpuNote('gpu')).toBeNull();
+  });
+
+  it('never appears beside the GPU warning, because one choice is in force', () => {
+    for (const choice of COMPUTE_CHOICES) {
+      const both = computeCpuNote(choice) !== null && computeGpuWarning(choice) !== null;
+      expect(both).toBe(false);
+    }
   });
 });
 

@@ -5,6 +5,7 @@
   import {
     COMPUTE_CHOICES,
     computeChoiceName,
+    computeCpuNote,
     computeDetectionNote,
     computeGpuWarning,
   } from '../../domain/engine/compute-choice';
@@ -42,6 +43,7 @@
   const storage = $derived(view.storage);
   const session = $derived(view.session);
   const gpuWarning = $derived(computeGpuWarning(view.compute));
+  const cpuNote = $derived(computeCpuNote(view.compute));
 
   const state = $derived(engineStatus(view.engine));
   const partial = $derived(partialFigure(view.partial, view.stored));
@@ -181,6 +183,9 @@
           {/each}
         </div>
         <p class="detected">{computeDetectionNote(view.detection, view.compute)}</p>
+        {#if cpuNote !== null}
+          <p class="detected">{cpuNote}</p>
+        {/if}
         {#if gpuWarning !== null}
           <p class="detected shaky" role="alert">{gpuWarning}</p>
         {/if}

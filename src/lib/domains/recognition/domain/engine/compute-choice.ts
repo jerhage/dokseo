@@ -46,6 +46,12 @@ function computeDetectionNote(detection: GpuDetection, choice: ComputeChoice): s
   return `Using: ${using}. Detected: ${detectionOf(detection)}.`;
 }
 
+function computeCpuNote(choice: ComputeChoice): string | null {
+  if (choice === 'gpu') return null;
+
+  return 'The CPU is the stable choice, and on a modern device it is usually fast enough. Reach for the GPU only if recognition feels slow.';
+}
+
 function computeGpuWarning(choice: ComputeChoice): string | null {
   if (choice !== 'gpu') return null;
 
@@ -58,6 +64,7 @@ export {
   chosenDevice,
   computeChoiceOf,
   computeChoiceName,
+  computeCpuNote,
   computeDetectionNote,
   computeGpuWarning,
 };
