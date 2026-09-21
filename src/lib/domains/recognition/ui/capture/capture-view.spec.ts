@@ -94,6 +94,7 @@ type Fakes = {
 const OPENED_SESSION: RecognizerSession = {
   modelId: 'DigitalLarynx/manga-ocr-onnx',
   device: 'webgpu',
+  fellBackFrom: null,
 };
 
 function unused(): never {
@@ -496,11 +497,19 @@ describe('CaptureView', () => {
 
     const running = read(view);
     const call = await started(world, 0);
-    call.notices.onSession?.({ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'webgpu' });
+    call.notices.onSession?.({
+      modelId: 'DigitalLarynx/manga-ocr-onnx',
+      device: 'webgpu',
+      fellBackFrom: null,
+    });
 
     call.settle(ok(recognizedText('done')));
     await running;
-    expect(view.session).toEqual({ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'webgpu' });
+    expect(view.session).toEqual({
+      modelId: 'DigitalLarynx/manga-ocr-onnx',
+      device: 'webgpu',
+      fellBackFrom: null,
+    });
   });
 
   it('forgets the session when the reader opens another book', async () => {
@@ -509,7 +518,11 @@ describe('CaptureView', () => {
 
     const running = read(view);
     const call = await started(world, 0);
-    call.notices.onSession?.({ modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'wasm' });
+    call.notices.onSession?.({
+      modelId: 'DigitalLarynx/manga-ocr-onnx',
+      device: 'wasm',
+      fellBackFrom: null,
+    });
     call.settle(ok(recognizedText('done')));
     await running;
 

@@ -7,6 +7,7 @@ import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/rec
 import { knownModel } from '$lib/domains/recognition/domain/model/model-footprint';
 import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model/model-weights';
 import { describeCause } from '$lib/shared/cause';
+import { openOnDevice } from './device-fallback';
 import { installModelFetch } from './model-fetch';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
@@ -70,24 +71,32 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
     },
   });
   const precision = knownModel(modelId)?.precision ?? QUANTIZED_THROUGHOUT;
-  const device = await deviceFor(setup.compute);
-  const [processor, tokenizer, model] = await Promise.all([
+  const asked = await deviceFor(setup.compute);
+  const [processor, tokenizer, running] = await Promise.all([
     AutoProcessor.from_pretrained(modelId),
     AutoTokenizer.from_pretrained(modelId),
-    AutoModel.from_pretrained(modelId, {
-      device,
-      dtype: { encoder_model: precision.encoder, decoder_model_merged: precision.decoder },
-    }),
+    openOnDevice(asked, (on) =>
+      AutoModel.from_pretrained(modelId, {
+        device: on,
+        dtype: { encoder_model: precision.encoder, decoder_model_merged: precision.decoder },
+      }),
+    ),
   ]);
 
-  const sessions = model.sessions as Record<string, InferenceSession | undefined>;
+  const sessions = running.opened.sessions as Record<string, InferenceSession | undefined>;
   const encoder = sessions.model;
   const decoder = sessions.decoder_model_merged;
   if (encoder === undefined || decoder === undefined) {
     throw new Error(`${modelId} did not load as an encoder and a decoder session`);
   }
 
-  post({ kind: 'opened', id, modelId, device });
+  post({
+    kind: 'opened',
+    id,
+    modelId,
+    device: running.device,
+    fellBackFrom: running.fellBackFrom,
+  });
 
   return {
     async read(image: ImageBitmap): Promise<string> {

@@ -42,6 +42,12 @@ function computeDetectionNote(detection: GpuDetection): string {
     : `Detected: ${detection.description}, WebGPU available.`;
 }
 
+function computeGpuWarning(choice: ComputeChoice): string | null {
+  if (choice === 'cpu') return null;
+
+  return 'The GPU is faster where it works. A browser can offer WebGPU and still fail to run a model — Firefox does this with the Japanese engine today. If recognition will not start, choose CPU.';
+}
+
 export {
   COMPUTE_CHOICES,
   GPU_UNDETECTED,
@@ -49,5 +55,6 @@ export {
   computeChoiceOf,
   computeChoiceName,
   computeDetectionNote,
+  computeGpuWarning,
 };
 export type { ComputeChoice, GpuDetection };

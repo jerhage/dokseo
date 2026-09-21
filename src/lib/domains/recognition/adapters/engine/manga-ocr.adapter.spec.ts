@@ -113,7 +113,7 @@ async function openId(fake: FakeWorker): Promise<number> {
 
 async function openedOver(fake: FakeWorker, device: 'wasm' | 'webgpu' = 'wasm'): Promise<void> {
   const id = await openId(fake);
-  fake.reply({ kind: 'opened', id, modelId: SETUP.modelId, device });
+  fake.reply({ kind: 'opened', id, modelId: SETUP.modelId, device, fellBackFrom: null });
   await tick();
 }
 
@@ -388,11 +388,21 @@ describe('createMangaOcrRecognizer', () => {
 
     const opening = recognizer.prepare();
     const id = await openId(fake);
-    fake.reply({ kind: 'opened', id, modelId: SETUP.modelId, device: 'webgpu' });
+    fake.reply({
+      kind: 'opened',
+      id,
+      modelId: SETUP.modelId,
+      device: 'webgpu',
+      fellBackFrom: null,
+    });
 
     const opened = await opening;
     if (!opened.ok) throw new Error('The session did not open');
-    expect(opened.value).toEqual({ modelId: SETUP.modelId, device: 'webgpu' });
+    expect(opened.value).toEqual({
+      modelId: SETUP.modelId,
+      device: 'webgpu',
+      fellBackFrom: null,
+    });
     expect(seen).toEqual([]);
   });
 

@@ -12,6 +12,7 @@ import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/rec
 import { textLineBands } from '$lib/domains/recognition/domain/engine/text-line-bands';
 import type { TextBand } from '$lib/domains/recognition/domain/engine/text-line-bands';
 import { describeCause } from '$lib/shared/cause';
+import { openOnDevice } from './device-fallback';
 import { installModelFetch } from './model-fetch';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
@@ -130,17 +131,19 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
     },
   });
 
-  const device = await deviceFor(setup.compute);
+  const asked = await deviceFor(setup.compute);
   const url = dictionaryUrl(env.remoteHost, env.remotePathTemplate, modelId);
-  const [config, model] = await Promise.all([
+  const [config, running] = await Promise.all([
     env.fetch(url, { cache: 'force-cache' }).then((answer: Response) => answer.text()),
-    PreTrainedModel.from_pretrained(modelId, {
-      config: new PretrainedConfig({ model_type: 'custom' }),
-      model_file_name: SINGLE_GRAPH_FILE,
-      subfolder: '',
-      device,
-      dtype: 'fp32',
-    }),
+    openOnDevice(asked, (on) =>
+      PreTrainedModel.from_pretrained(modelId, {
+        config: new PretrainedConfig({ model_type: 'custom' }),
+        model_file_name: SINGLE_GRAPH_FILE,
+        subfolder: '',
+        device: on,
+        dtype: 'fp32',
+      }),
+    ),
   ]);
 
   const labels = ctcLabels(characterDictionary(config));
@@ -148,13 +151,19 @@ async function openSession(setup: RecognizerSetup, id: number): Promise<Session>
     throw new Error(`${modelId} published no character dictionary in ${DICTIONARY_FILE}`);
   }
 
-  const session = model.sessions.model as InferenceSession | undefined;
+  const session = running.opened.sessions.model as InferenceSession | undefined;
   if (session === undefined) throw new Error(`${modelId} did not load as a recognition session`);
 
   const output = session.outputNames[0];
   if (output === undefined) throw new Error(`${modelId} declares no output to read`);
 
-  post({ kind: 'opened', id, modelId, device });
+  post({
+    kind: 'opened',
+    id,
+    modelId,
+    device: running.device,
+    fellBackFrom: running.fellBackFrom,
+  });
 
   const tensorOf = Tensor as unknown as TensorOf;
 

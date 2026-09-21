@@ -4,6 +4,7 @@ import {
   computeChoiceName,
   computeChoiceOf,
   computeDetectionNote,
+  computeGpuWarning,
   GPU_UNDETECTED,
 } from './compute-choice';
 
@@ -64,5 +65,20 @@ describe('computeDetectionNote', () => {
     expect(computeDetectionNote({ available: true, description: null })).toBe(
       'Detected: WebGPU available.',
     );
+  });
+});
+
+describe('computeGpuWarning', () => {
+  it('warns that a browser can offer WebGPU and still refuse a model', () => {
+    expect(computeGpuWarning('auto')).toContain('still fail to run a model');
+    expect(computeGpuWarning('gpu')).toContain('still fail to run a model');
+  });
+
+  it('tells the reader what to do when recognition will not start', () => {
+    expect(computeGpuWarning('auto')).toContain('choose CPU');
+  });
+
+  it('says nothing to a reader who already chose the CPU', () => {
+    expect(computeGpuWarning('cpu')).toBeNull();
   });
 });

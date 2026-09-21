@@ -26,7 +26,7 @@ const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
 const MODEL = JAPANESE_OCR_MODEL.modelId;
 
-const OPENED: RecognizerSession = { modelId: MODEL, device: 'webgpu' };
+const OPENED: RecognizerSession = { modelId: MODEL, device: 'webgpu', fellBackFrom: null };
 
 function report(over: Partial<ModelStorageReport> = {}): ModelStorageReport {
   return {

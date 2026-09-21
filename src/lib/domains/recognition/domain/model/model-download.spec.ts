@@ -4,7 +4,11 @@ import type { DownloadState } from './model-download';
 import type { ModelLoad } from './model-load';
 import type { RecognizerSession } from '../engine/recognizer-session';
 
-const SESSION: RecognizerSession = { modelId: 'DigitalLarynx/manga-ocr-onnx', device: 'webgpu' };
+const SESSION: RecognizerSession = {
+  modelId: 'DigitalLarynx/manga-ocr-onnx',
+  device: 'webgpu',
+  fellBackFrom: null,
+};
 
 const HALFWAY: ModelLoad = {
   fraction: 0.5,

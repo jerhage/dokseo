@@ -3,6 +3,7 @@
   import type { Language } from '$lib/shared/language';
   import { chosenModel, knownModel } from '../../domain/model/model-footprint';
   import {
+    engineFellBack,
     engineMismatch,
     engineStatus,
     NOT_INSTALLED,
@@ -26,6 +27,7 @@
   const running = $derived(session === null ? null : knownModel(session.modelId));
   const model = $derived(running ?? (language === null ? null : chosenModel(language, null)));
   const mismatch = $derived(engineMismatch(session, language));
+  const fellBack = $derived(engineFellBack(session));
   const status = $derived(engineStatus(engine));
   const device = $derived(session === null ? null : deviceName(session.device));
 </script>
@@ -81,6 +83,9 @@
       </ul>
       {#if mismatch !== null}
         <p class="note warn">{mismatch}</p>
+      {/if}
+      {#if fellBack !== null}
+        <p class="note warn">{fellBack}</p>
       {/if}
       <p class="note">{status.note}</p>
       <a class="more" href="/settings">Engine settings…</a>

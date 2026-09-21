@@ -3,6 +3,7 @@ import { downloadMb, JAPANESE_OCR_MODEL, KOREAN_OCR_MODEL } from '../model/model
 import { loadVerb } from '../model/model-load';
 import type { ModelLoad } from '../model/model-load';
 import {
+  engineFellBack,
   engineMismatch,
   engineStatus,
   NOT_INSTALLED,
@@ -16,11 +17,13 @@ import type { RecognizerSession } from './recognizer-session';
 const ON_THE_GPU: RecognizerSession = {
   modelId: JAPANESE_OCR_MODEL.modelId,
   device: 'webgpu',
+  fellBackFrom: null,
 };
 
 const ON_THE_CPU: RecognizerSession = {
   modelId: JAPANESE_OCR_MODEL.modelId,
   device: 'wasm',
+  fellBackFrom: null,
 };
 
 function load(over: Partial<ModelLoad> = {}): ModelLoad {
@@ -199,7 +202,11 @@ describe('engineStatus', () => {
 });
 
 describe('engineMismatch', () => {
-  const japanese: RecognizerSession = { modelId: JAPANESE_OCR_MODEL.modelId, device: 'wasm' };
+  const japanese: RecognizerSession = {
+    modelId: JAPANESE_OCR_MODEL.modelId,
+    device: 'wasm',
+    fellBackFrom: null,
+  };
 
   it('says so when the running model cannot read the book in front of the reader', () => {
     expect(engineMismatch(japanese, 'ko')).toContain(JAPANESE_OCR_MODEL.label);
@@ -211,15 +218,45 @@ describe('engineMismatch', () => {
 
   it('says nothing when the running model declares the language of the book', () => {
     expect(engineMismatch(japanese, 'ja')).toBeNull();
-    expect(engineMismatch({ modelId: KOREAN_OCR_MODEL.modelId, device: 'wasm' }, 'ko')).toBeNull();
+    expect(
+      engineMismatch(
+        { modelId: KOREAN_OCR_MODEL.modelId, device: 'wasm', fellBackFrom: null },
+        'ko',
+      ),
+    ).toBeNull();
   });
 
   it('says nothing about a model nobody measured, because nothing declares what it reads', () => {
-    expect(engineMismatch({ modelId: 'someone/unmeasured', device: 'wasm' }, 'ko')).toBeNull();
+    expect(
+      engineMismatch({ modelId: 'someone/unmeasured', device: 'wasm', fellBackFrom: null }, 'ko'),
+    ).toBeNull();
   });
 
   it('says nothing before an engine is running', () => {
     expect(engineMismatch(null, 'ko')).toBeNull();
     expect(engineMismatch(japanese, null)).toBeNull();
+  });
+});
+
+describe('engineFellBack', () => {
+  const fellBack: RecognizerSession = {
+    modelId: JAPANESE_OCR_MODEL.modelId,
+    device: 'wasm',
+    fellBackFrom: 'webgpu',
+  };
+
+  it('says the GPU refused this model and the CPU took the work', () => {
+    expect(engineFellBack(fellBack)).toBe(
+      'The GPU would not run this model, so the CPU is doing the work.',
+    );
+  });
+
+  it('says nothing when the device asked for is the device running', () => {
+    expect(engineFellBack(ON_THE_GPU)).toBeNull();
+    expect(engineFellBack(ON_THE_CPU)).toBeNull();
+  });
+
+  it('says nothing before an engine is running', () => {
+    expect(engineFellBack(null)).toBeNull();
   });
 });

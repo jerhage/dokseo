@@ -6,6 +6,7 @@
     COMPUTE_CHOICES,
     computeChoiceName,
     computeDetectionNote,
+    computeGpuWarning,
   } from '../../domain/engine/compute-choice';
   import type { ComputeChoice } from '../../domain/engine/compute-choice';
   import { downloadMb, onDiskMb, runtimeMb, weightsMb } from '../../domain/model/model-footprint';
@@ -40,6 +41,7 @@
   const loading = $derived(download.kind === 'loading');
   const storage = $derived(view.storage);
   const session = $derived(view.session);
+  const gpuWarning = $derived(computeGpuWarning(view.compute));
 
   const state = $derived(engineStatus(view.engine));
   const partial = $derived(partialFigure(view.partial, view.stored));
@@ -179,6 +181,9 @@
           {/each}
         </div>
         <p class="detected">{computeDetectionNote(view.detection)}</p>
+        {#if gpuWarning !== null}
+          <p class="detected">{gpuWarning}</p>
+        {/if}
         {#if session !== null}
           <p class="detected">
             This session opened on the {deviceName(session.device)}.

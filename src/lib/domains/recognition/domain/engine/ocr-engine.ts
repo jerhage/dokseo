@@ -145,6 +145,12 @@ function engineMismatch(
   return `${running.label} does not read ${languageName(language)}, so what it returns will not be this book's text.`;
 }
 
+function engineFellBack(session: RecognizerSession | null): string | null {
+  if (session === null || session.fellBackFrom === null) return null;
+
+  return `The ${deviceName(session.fellBackFrom)} would not run this model, so the ${deviceName(session.device)} is doing the work.`;
+}
+
 type EngineTone = 'ready' | 'busy' | 'quiet' | 'bad';
 
 type EngineStatus = {
@@ -251,6 +257,7 @@ export {
   tradeAspectName,
   tradeOffsOf,
   engineMismatch,
+  engineFellBack,
   NOT_INSTALLED,
   engineStatus,
 };

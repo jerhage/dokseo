@@ -20,6 +20,7 @@ type OcrReply =
       readonly id: number;
       readonly modelId: string;
       readonly device: RecognizerDevice;
+      readonly fellBackFrom: RecognizerDevice | null;
     }
   | {
       readonly kind: 'progress';

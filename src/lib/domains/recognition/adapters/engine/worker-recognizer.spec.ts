@@ -138,7 +138,13 @@ async function openedOver(fake: FakeWorker): Promise<void> {
     throw new Error('No open request was sent to the worker');
   }
 
-  fake.reply({ kind: 'opened', id: opening.request.id, modelId: SETUP.modelId, device: 'wasm' });
+  fake.reply({
+    kind: 'opened',
+    id: opening.request.id,
+    modelId: SETUP.modelId,
+    device: 'wasm',
+    fellBackFrom: null,
+  });
   await tick();
 }
 

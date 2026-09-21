@@ -118,7 +118,11 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
         });
       })
       .with({ kind: 'opened' }, (opened) => {
-        const session: RecognizerSession = { modelId: opened.modelId, device: opened.device };
+        const session: RecognizerSession = {
+          modelId: opened.modelId,
+          device: opened.device,
+          fellBackFrom: opened.fellBackFrom,
+        };
         options.onSession?.(session);
         if (opened.id === openId) finishOpening(ok(session));
       })
