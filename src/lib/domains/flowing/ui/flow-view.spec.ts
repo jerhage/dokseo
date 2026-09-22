@@ -122,6 +122,7 @@ type Shown = {
   readonly jumped: string[];
   readonly restyled: ReadingSettings[];
   toc: readonly TocItem[] | null;
+  ticks: readonly number[];
   gate: Promise<void> | null;
   failure: string | null;
   direction: ReadingDirection;
@@ -143,6 +144,7 @@ function shows(): Shown {
     jumped,
     restyled,
     toc: null as readonly TocItem[] | null,
+    ticks: [] as readonly number[],
     gate: null as Promise<void> | null,
     failure: null as string | null,
     direction: 'ltr' as ReadingDirection,
@@ -163,6 +165,7 @@ function shows(): Shown {
         next: () => turned.push('next'),
       },
       toc: world.toc,
+      ticks: world.ticks,
       seek: (fraction: number) => {
         sought.push(fraction);
       },
@@ -217,6 +220,37 @@ describe('FlowView direction', () => {
     view.close();
 
     expect(view.direction).toBe('ltr');
+  });
+});
+
+describe('FlowView ticks', () => {
+  it('marks the chapter boundaries the opened book reports', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.ticks = [Number.EPSILON, 0.5, 0.25];
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(view.ticks).toEqual([0.25, 0.5]);
+  });
+
+  it('marks nothing before a book has opened', () => {
+    const view = new FlowView(shelf().container);
+
+    expect(view.ticks).toEqual([]);
+  });
+
+  it('forgets the chapter boundaries of a book the viewer closed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.ticks = [0.25, 0.5];
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.close();
+
+    expect(view.ticks).toEqual([]);
   });
 });
 

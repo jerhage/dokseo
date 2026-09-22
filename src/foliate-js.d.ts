@@ -47,6 +47,7 @@ declare module 'foliate-js/view.js' {
     goRight(): Promise<void>;
     prev(distance?: number): Promise<void>;
     next(distance?: number): Promise<void>;
+    getSectionFractions(): number[];
     close(): void;
     readonly renderer: { setStyles(styles: string | readonly [string, string]): void };
     addEventListener<K extends keyof ViewEventMap>(

@@ -8,6 +8,7 @@ type FlowSurface = {
   readonly pages: PageTurner;
   readonly direction: ReadingDirection;
   readonly toc: readonly TocItem[] | null;
+  readonly ticks: readonly number[];
   seek(fraction: number): void;
   jump(href: string): void;
   restyle(settings: ReadingSettings): void;
@@ -85,6 +86,7 @@ async function openFlowSurface(
     pages: view,
     direction: bookDirection(book),
     toc: book.toc ?? null,
+    ticks: view.getSectionFractions(),
     seek: (fraction: number) => {
       void view.goTo({ fraction });
     },

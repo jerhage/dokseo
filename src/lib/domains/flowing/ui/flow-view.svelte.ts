@@ -8,7 +8,13 @@ import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
-import { flowLocation, flowProgress, scrubbedFraction } from './flow-progress';
+import {
+  chapterTicks,
+  flowLocation,
+  flowProgress,
+  NO_CHAPTER_TICKS,
+  scrubbedFraction,
+} from './flow-progress';
 import type { FlowLocation, FlowProgress } from './flow-progress';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { moveForTurn, turnPage } from './flow-turn';
@@ -83,6 +89,7 @@ class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
   location = $state.raw<FlowLocation | null>(null);
   contents = $state.raw<FlowContents>(NO_CONTENTS);
+  ticks = $state.raw<readonly number[]>(NO_CHAPTER_TICKS);
   direction = $state.raw<ReadingDirection>(BEFORE_THE_BOOK_SAYS);
   reported = $state.raw<TocItem | null>(null);
   settings = $state.raw<ReadingSettings>(DEFAULT_READING_SETTINGS);
@@ -121,6 +128,7 @@ class FlowView {
     this.#placed = null;
     this.location = null;
     this.contents = NO_CONTENTS;
+    this.ticks = NO_CHAPTER_TICKS;
     this.direction = BEFORE_THE_BOOK_SAYS;
     this.reported = null;
 
@@ -174,6 +182,7 @@ class FlowView {
 
     this.#surface = surface;
     this.contents = flowContents(surface.toc);
+    this.ticks = chapterTicks(surface.ticks);
     this.direction = surface.direction;
     this.state = SHOWING_THE_BOOK;
   }
@@ -185,6 +194,7 @@ class FlowView {
     this.state = NOT_OPENED;
     this.location = null;
     this.contents = NO_CONTENTS;
+    this.ticks = NO_CHAPTER_TICKS;
     this.direction = BEFORE_THE_BOOK_SAYS;
     this.reported = null;
   }

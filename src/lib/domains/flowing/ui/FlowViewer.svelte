@@ -8,7 +8,7 @@
   import FlowContentsDialog from './FlowContentsDialog.svelte';
   import FlowSettingsDialog from './FlowSettingsDialog.svelte';
   import { FlowGestures } from './flow-gestures';
-  import { flowMeta, progressLabel, SCRUB_STEP } from './flow-progress';
+  import { flowMeta, progressLabel, SCRUB_STEP, tickOffsets } from './flow-progress';
   import { openFlowSurface } from './flow-surface';
   import { isTyping, turnOrder } from './flow-turn';
   import type { FlowAction, FlowTurn, PageTurner, TypingTarget } from './flow-turn';
@@ -51,6 +51,7 @@
   const turning = $derived(view.direction);
   const rtl = $derived(turning === 'rtl');
   const order = $derived(turnOrder(turning));
+  const marks = $derived(tickOffsets(view.ticks, turning));
 
   function toggleChrome(): void {
     chromeAsked = !chromeAwake;
@@ -237,19 +238,24 @@
     <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
 
     {#if progress.kind === 'known'}
-      <input
-        class="scrub"
-        class:rtl
-        type="range"
-        min={0}
-        max={1}
-        step={SCRUB_STEP}
-        value={progress.fraction}
-        style:--fill="{progress.percent}%"
-        aria-label="Reading progress"
-        aria-valuetext={marker}
-        onchange={(event) => scrubbed(event.currentTarget.value)}
-      />
+      <div class="gauge">
+        <input
+          class="scrub"
+          class:rtl
+          type="range"
+          min={0}
+          max={1}
+          step={SCRUB_STEP}
+          value={progress.fraction}
+          style:--fill="{progress.percent}%"
+          aria-label="Reading progress"
+          aria-valuetext={marker}
+          onchange={(event) => scrubbed(event.currentTarget.value)}
+        />
+        {#each marks as offset, slot (slot)}
+          <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
+        {/each}
+      </div>
     {/if}
   </footer>
 
@@ -477,10 +483,27 @@
     font-family: var(--f-ui);
   }
 
-  .scrub {
+  .gauge {
+    position: relative;
     flex: 1 1 auto;
-    height: 3px;
     min-width: 0;
+  }
+
+  .tick {
+    position: absolute;
+    inset-block: 0;
+    left: var(--at);
+    width: 1px;
+    background: var(--c-text-10);
+    transform: translateX(-0.5px);
+    pointer-events: none;
+  }
+
+  .scrub {
+    display: block;
+    width: 100%;
+    height: 3px;
+    margin: 0;
     padding: 0;
     border-radius: var(--r-pill);
     background: linear-gradient(

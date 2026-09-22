@@ -1,12 +1,16 @@
 import type { Relocation } from 'foliate-js/view.js';
 import { describe, expect, it } from 'vitest';
 import {
+  chapterTicks,
   flowLocation,
   flowMeta,
   flowProgress,
+  MAX_CHAPTER_TICKS,
   progressLabel,
   PROGRESS_UNKNOWN_LABEL,
   scrubbedFraction,
+  TICK_EDGE_MARGIN,
+  tickOffsets,
 } from './flow-progress';
 import type { FlowLocation } from './flow-progress';
 
@@ -18,6 +22,10 @@ function at(relocation: Partial<Relocation> = {}): Relocation {
 
 function located(location: Partial<FlowLocation> = {}): FlowLocation {
   return { cfi: SOMEWHERE, fraction: null, chapter: null, ...location };
+}
+
+function spread(count: number): readonly number[] {
+  return Array.from({ length: count }, (_, index) => (index + 1) / (count + 1));
 }
 
 describe('flowLocation', () => {
@@ -111,6 +119,72 @@ describe('scrubbedFraction', () => {
 
   it('refuses a scrub that is not a number at all', () => {
     expect(scrubbedFraction(flowProgress(located({ fraction: 0.1 })), Number.NaN)).toBeNull();
+  });
+});
+
+describe('chapterTicks', () => {
+  it('marks every boundary a book reports between its chapters', () => {
+    expect(chapterTicks([0.25, 0.5, 0.75])).toEqual([0.25, 0.5, 0.75]);
+  });
+
+  it('marks nothing for a book that lists no sections at all', () => {
+    expect(chapterTicks(null)).toEqual([]);
+    expect(chapterTicks(undefined)).toEqual([]);
+    expect(chapterTicks([])).toEqual([]);
+  });
+
+  it('drops a boundary that is not a number the bar can place', () => {
+    expect(chapterTicks([0.4, Number.NaN, Number.POSITIVE_INFINITY])).toEqual([0.4]);
+  });
+
+  it('drops a boundary that falls outside the bar', () => {
+    expect(chapterTicks([-0.2, 0.4, 1.4])).toEqual([0.4]);
+  });
+
+  it('drops the boundary at the very start and the one at the very end', () => {
+    const margin = TICK_EDGE_MARGIN;
+
+    expect(chapterTicks([0, Number.EPSILON, margin, 0.4, 1 - margin, 1])).toEqual([0.4]);
+  });
+
+  it('marks a repeated boundary once', () => {
+    expect(chapterTicks([0.4, 0.4, 0.6])).toEqual([0.4, 0.6]);
+  });
+
+  it('orders the boundaries along the bar', () => {
+    expect(chapterTicks([0.75, 0.25, 0.5])).toEqual([0.25, 0.5, 0.75]);
+  });
+
+  it('marks nothing for a novel that arrives as a single file', () => {
+    expect(chapterTicks([Number.EPSILON])).toEqual([]);
+  });
+
+  it('marks nothing for a book with more boundaries than the bar can separate', () => {
+    expect(chapterTicks(spread(MAX_CHAPTER_TICKS))).toHaveLength(MAX_CHAPTER_TICKS);
+    expect(chapterTicks(spread(MAX_CHAPTER_TICKS + 1))).toEqual([]);
+  });
+
+  it('counts only the boundaries it would draw against that limit', () => {
+    expect(chapterTicks([0, 1, ...spread(MAX_CHAPTER_TICKS)])).toHaveLength(MAX_CHAPTER_TICKS);
+  });
+});
+
+describe('tickOffsets', () => {
+  it('places a boundary that far along a left-to-right bar', () => {
+    expect(tickOffsets([0.25, 0.5], 'ltr')).toEqual([25, 50]);
+  });
+
+  it('places a boundary that far from the right-hand end of a right-to-left bar', () => {
+    expect(tickOffsets([0.25, 0.5], 'rtl')).toEqual([75, 50]);
+  });
+
+  it('places a boundary a third of the way along without a trail of digits', () => {
+    expect(tickOffsets([1 / 3], 'ltr')).toEqual([33.33]);
+    expect(tickOffsets([1 / 3], 'rtl')).toEqual([66.67]);
+  });
+
+  it('places nothing for a book with no boundaries to mark', () => {
+    expect(tickOffsets([], 'rtl')).toEqual([]);
   });
 });
 
