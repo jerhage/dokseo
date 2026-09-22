@@ -9,7 +9,11 @@ type ResourceTreatment =
 
 type Transformable = Pick<FoliateBook, 'transformTarget'>;
 
-const CHAPTER_MARKUP: readonly ChapterMarkup[] = ['application/xhtml+xml', 'text/html'];
+const CHAPTER_MARKUP: readonly ChapterMarkup[] = [
+  'application/xhtml+xml',
+  'text/html',
+  'image/svg+xml',
+];
 
 function treatmentOf(mediaType: string): ResourceTreatment {
   const markup = CHAPTER_MARKUP.find((known) => known === mediaType);

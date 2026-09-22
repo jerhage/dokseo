@@ -6,6 +6,8 @@ const XHTML: ChapterMarkup = 'application/xhtml+xml';
 
 const HTML: ChapterMarkup = 'text/html';
 
+const SVG: ChapterMarkup = 'image/svg+xml';
+
 const A_STYLESHEET_FOLIATE_REWROTE = 'blob:http://localhost/2f1c-sheet';
 
 const A_PICTURE_FOLIATE_REWROTE = 'blob:http://localhost/2f1c-picture';
@@ -16,6 +18,10 @@ const A_COVER_FOLIATE_REWROTE = 'blob:http://localhost/2f1c-cover';
 
 function chapter(head: string, body: string): string {
   return `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="ja"><head>${head}</head><body>${body}</body></html>`;
+}
+
+function spineSvg(root: string, drawing: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ${root}>${drawing}</svg>`;
 }
 
 function rendered(markup: string, mediaType: ChapterMarkup = XHTML): Document {
@@ -149,5 +155,68 @@ describe('sanitiseChapter', () => {
     expect(
       clean.documentElement.getAttributeNS('http://www.w3.org/XML/1998/namespace', 'lang'),
     ).toBe('ja');
+  });
+
+  it('removes an inline script from a standalone svg spine item', () => {
+    const clean = rendered(
+      spineSvg('', '<script>window.stolen = 1;</script><rect width="600" height="800" />'),
+      SVG,
+    );
+
+    expect(clean.querySelector('script')).toBeNull();
+    expect(clean.querySelector('rect')).not.toBeNull();
+  });
+
+  it('strips the handler a standalone svg spine item would run on its own root', () => {
+    const clean = rendered(
+      spineSvg('onload="window.stolen = 1;"', '<rect width="600" height="800" />'),
+      SVG,
+    );
+
+    expect(clean.documentElement.hasAttribute('onload')).toBe(false);
+    expect(clean.querySelector('rect')).not.toBeNull();
+  });
+
+  it('keeps both blob urls foliate minted inside a standalone svg spine item', () => {
+    const clean = rendered(
+      spineSvg(
+        '',
+        `<image width="600" height="800" xlink:href="${A_COVER_FOLIATE_REWROTE}" /><image width="600" height="800" href="${A_PICTURE_FOLIATE_REWROTE}" />`,
+      ),
+      SVG,
+    );
+    const [linked, plain] = clean.querySelectorAll('image');
+
+    expect(linked?.getAttributeNS('http://www.w3.org/1999/xlink', 'href')).toBe(
+      A_COVER_FOLIATE_REWROTE,
+    );
+    expect(plain?.getAttribute('href')).toBe(A_PICTURE_FOLIATE_REWROTE);
+  });
+
+  it('keeps the scaling a standalone svg spine item is drawn by', () => {
+    const clean = rendered(
+      spineSvg(
+        'viewBox="0 0 600 800" preserveAspectRatio="xMidYMid meet"',
+        '<rect width="600" height="800" />',
+      ),
+      SVG,
+    );
+
+    expect(clean.documentElement.getAttribute('viewBox')).toBe('0 0 600 800');
+    expect(clean.documentElement.getAttribute('preserveAspectRatio')).toBe('xMidYMid meet');
+  });
+
+  it('keeps the camel-cased elements a standalone svg spine item paints with', () => {
+    const clean = rendered(
+      spineSvg(
+        '',
+        '<defs><linearGradient id="g"><stop offset="0" /></linearGradient><clipPath id="c"><rect width="5" height="5" /></clipPath><filter id="f"><feGaussianBlur stdDeviation="2" /></filter></defs><rect width="600" height="800" clip-path="url(#c)" fill="url(#g)" filter="url(#f)" />',
+      ),
+      SVG,
+    );
+
+    expect(clean.querySelector('linearGradient')).not.toBeNull();
+    expect(clean.querySelector('clipPath')).not.toBeNull();
+    expect(clean.querySelector('feGaussianBlur')?.getAttribute('stdDeviation')).toBe('2');
   });
 });

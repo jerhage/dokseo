@@ -7,9 +7,13 @@ const XHTML = 'application/xhtml+xml';
 
 const HTML = 'text/html';
 
+const SVG = 'image/svg+xml';
+
 const CSS = 'text/css';
 
 const CHAPTER = '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>ページ</p></body></html>';
+
+const COVER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800"/>';
 
 function resource(type: string, data: ResourceDetail['data']): ResourceDetail {
   return { data, type, name: 'OEBPS/chapter-1.xhtml' };
@@ -54,8 +58,12 @@ describe('treatmentOf', () => {
     expect(treatmentOf(HTML)).toEqual({ kind: 'markup', mediaType: HTML });
   });
 
-  it('leaves a stylesheet, an image, a font and an svg opaque', () => {
-    for (const type of [CSS, 'image/jpeg', 'font/woff2', 'image/svg+xml', '']) {
+  it('names a standalone svg spine item as markup to sanitise', () => {
+    expect(treatmentOf(SVG)).toEqual({ kind: 'markup', mediaType: SVG });
+  });
+
+  it('leaves a stylesheet, an image and a font opaque', () => {
+    for (const type of [CSS, 'image/jpeg', 'image/png', 'font/woff2', '']) {
       expect(treatmentOf(type)).toEqual({ kind: 'opaque' });
     }
   });
@@ -68,6 +76,14 @@ describe('sanitiseResource', () => {
     sanitiseResource(detail, cleaned('clean:'));
 
     await expect(detail.data).resolves.toBe(`clean:${CHAPTER}`);
+  });
+
+  it('replaces a standalone svg spine item with its sanitised markup', async () => {
+    const detail = resource(SVG, COVER);
+
+    sanitiseResource(detail, cleaned('clean:'));
+
+    await expect(detail.data).resolves.toBe(`clean:${COVER}`);
   });
 
   it('tells the sanitiser which markup type foliate settled on', async () => {
@@ -93,6 +109,17 @@ describe('sanitiseResource', () => {
   it('hands an image back as the very promise foliate is loading', () => {
     const loading = Promise.resolve(new Blob(['cover']));
     const detail = resource('image/jpeg', loading);
+    const sanitise = vi.fn(() => '');
+
+    sanitiseResource(detail, sanitise);
+
+    expect(detail.data).toBe(loading);
+    expect(sanitise).not.toHaveBeenCalled();
+  });
+
+  it('hands a font back as the very promise foliate is loading', () => {
+    const loading = Promise.resolve(new Blob(['mincho']));
+    const detail = resource('font/woff2', loading);
     const sanitise = vi.fn(() => '');
 
     sanitiseResource(detail, sanitise);
