@@ -8,6 +8,8 @@
     "npm:@vitest/browser-playwright@^4.1.8": "4.1.11_playwright@1.63.0_vitest@4.1.11_vite@8.3.0",
     "npm:@zip.js/zip.js@^2.15.0": "2.15.0",
     "npm:dependency-cruiser@^18.3.1": "18.3.1",
+    "npm:dompurify@3.4.15": "3.4.15",
+    "npm:foliate-js@^1.0.1": "1.0.1",
     "npm:oxfmt@0.68.0": "0.68.0_svelte@5.57.1",
     "npm:oxlint@1.83.0": "1.83.0",
     "npm:pdfjs-dist@^6.3.289": "6.3.289",
@@ -698,6 +700,9 @@
         "undici-types"
       ]
     },
+    "@types/trusted-types@2.0.7": {
+      "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="
+    },
     "@vitest/browser-playwright@4.1.11_playwright@1.63.0_vitest@4.1.11_vite@8.3.0": {
       "integrity": "sha512-riLBxPqwnJ0lWs2DN2WeUfYeKLoAjbP2Xx8cLQdSddzMi20sksIa6K2mPz79DyMZKKVKH2ksOC2yJvtNcZg8cg==",
       "dependencies": [
@@ -855,6 +860,9 @@
     "commander@15.0.0": {
       "integrity": "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg=="
     },
+    "construct-style-sheets-polyfill@3.1.0": {
+      "integrity": "sha512-HBLKP0chz8BAY6rBdzda11c3wAZeCZ+kIG4weVC2NM3AXzxx09nhe8t0SQNdloAvg5GLuHwq/0SPOOSPvtCcKw=="
+    },
     "convert-source-map@2.0.0": {
       "integrity": "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="
     },
@@ -910,6 +918,12 @@
     "devalue@5.9.4": {
       "integrity": "sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg=="
     },
+    "dompurify@3.4.15": {
+      "integrity": "sha512-EUBjM+B+lkDE41iE82DDSCfkoPGfXx8IxFxPMjNzm/Uk4xDet77rTN9wqlxlVg71kK7XGuUMv6wUxJUwwv+Xyw==",
+      "optionalDependencies": [
+        "@types/trusted-types"
+      ]
+    },
     "enhanced-resolve@5.25.1": {
       "integrity": "sha512-nGXts5znJzmWPu+mIE9izCOzdg63oJca2mDzGWWTth7sr4aCToKcoyFVBQwN75Ij5Pf6p510EwkTqViTRzDV+w==",
       "dependencies": [
@@ -958,6 +972,12 @@
     },
     "flatbuffers@25.9.23": {
       "integrity": "sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ=="
+    },
+    "foliate-js@1.0.1": {
+      "integrity": "sha512-Cj4h2ub5aVA+yUgbhvVhCyxwi0GPF4pyNBa6Lw9+6WKY1ReBxipItn2kEBO6u7Vu/xYXjK711R74+t+yW/0u5w==",
+      "dependencies": [
+        "construct-style-sheets-polyfill"
+      ]
     },
     "fsevents@2.3.3": {
       "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
@@ -1647,6 +1667,8 @@
         "npm:@vitest/browser-playwright@^4.1.8",
         "npm:@zip.js/zip.js@^2.15.0",
         "npm:dependency-cruiser@^18.3.1",
+        "npm:dompurify@3.4.15",
+        "npm:foliate-js@^1.0.1",
         "npm:oxfmt@0.68.0",
         "npm:oxlint@1.83.0",
         "npm:pdfjs-dist@^6.3.289",

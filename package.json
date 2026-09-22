@@ -26,6 +26,8 @@
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
     "@zip.js/zip.js": "^2.15.0",
+    "dompurify": "3.4.15",
+    "foliate-js": "^1.0.1",
     "pdfjs-dist": "^6.3.289",
     "ts-pattern": "^5.9.0"
   },
