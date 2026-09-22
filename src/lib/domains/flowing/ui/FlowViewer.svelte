@@ -1,6 +1,9 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import { chromeHolds, chromeShown } from '$lib/shared/reader-chrome';
+  import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
+  import type { ContentsEntry } from './flow-contents';
+  import FlowContentsDialog from './FlowContentsDialog.svelte';
   import { FlowGestures } from './flow-gestures';
   import { flowMeta, progressLabel, SCRUB_STEP } from './flow-progress';
   import { openFlowSurface } from './flow-surface';
@@ -27,13 +30,15 @@
   let bottomBar = $state<HTMLElement | null>(null);
   let chromeAsked = $state(true);
   let chromeHeld = $state(false);
+  let contentsOpen = $state(false);
   let gestures: FlowGestures | null = null;
   const chapters = new Set<Document>();
 
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
-  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
+  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld || contentsOpen));
   const reading = $derived(view.state.kind === 'ready');
+  const contents = $derived(view.contents);
   const progress = $derived(view.progress);
   const marker = $derived(progressLabel(progress));
   const meta = $derived(flowMeta(view.chapter, book.language));
@@ -70,8 +75,12 @@
     return false;
   }
 
+  function pickEntry(entry: ContentsEntry): void {
+    view.jumpTo(entry);
+  }
+
   function onkey(event: KeyboardEvent): void {
-    if (event.defaultPrevented || gestures === null) return;
+    if (event.defaultPrevented || contentsOpen || gestures === null) return;
 
     const move = gestures.keyed({
       key: event.key,
@@ -169,6 +178,7 @@
       host.removeEventListener('pointercancel', cancel);
       view.close();
       gestures = null;
+      contentsOpen = false;
       chapters.clear();
     };
   });
@@ -188,6 +198,15 @@
       <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
       <p class="meta">{meta}</p>
     </div>
+    {#if reading}
+      {#if contents.kind === 'listed'}
+        <button class="contents" type="button" onclick={() => (contentsOpen = true)}>
+          {CONTENTS_LABEL}
+        </button>
+      {:else}
+        <p class="bare">{NO_CONTENTS_LABEL}</p>
+      {/if}
+    {/if}
   </header>
 
   <footer class="bar bottom" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={bottomBar}>
@@ -218,6 +237,15 @@
       />
     {/if}
   </footer>
+
+  {#if contentsOpen && contents.kind === 'listed'}
+    <FlowContentsDialog
+      entries={contents.entries}
+      currentKey={view.currentKey}
+      onpick={pickEntry}
+      onclose={() => (contentsOpen = false)}
+    />
+  {/if}
 
   {#if curtain.kind === 'opening'}
     <div class="curtain">
@@ -304,6 +332,31 @@
   .back:focus-visible {
     border-color: var(--c-accent-border);
     color: var(--c-accent);
+  }
+
+  .contents {
+    flex: none;
+    padding: var(--s-1) var(--s-2);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-4);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-family: var(--f-ui);
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+
+  .contents:hover,
+  .contents:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .bare {
+    flex: none;
+    margin: 0;
+    color: var(--c-text-8);
+    font-size: 11px;
   }
 
   .heading {

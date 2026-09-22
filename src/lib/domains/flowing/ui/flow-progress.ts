@@ -24,8 +24,8 @@ function reportedFraction(fraction: number | undefined): number | null {
   return Math.min(1, Math.max(0, fraction));
 }
 
-function reportedChapter(label: string | undefined): string | null {
-  if (label === undefined) return null;
+function reportedChapter(label: string | null | undefined): string | null {
+  if (label === undefined || label === null) return null;
 
   const named = label.replace(/\s+/gu, ' ').trim();
   return named.length === 0 ? null : named;
@@ -67,6 +67,7 @@ export {
   flowMeta,
   flowProgress,
   progressLabel,
+  reportedChapter,
   PROGRESS_UNKNOWN_LABEL,
   SCRUB_STEP,
   scrubbedFraction,

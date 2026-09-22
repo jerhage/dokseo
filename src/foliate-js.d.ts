@@ -9,6 +9,7 @@
 
 declare module 'foliate-js/view.js' {
   interface FoliateBook {
+    toc?: TocItem[] | null;
     destroy(): void;
   }
 
@@ -18,7 +19,9 @@ declare module 'foliate-js/view.js' {
   }
 
   interface TocItem {
-    label?: string;
+    label?: string | null;
+    href?: string | null;
+    subitems?: TocItem[] | null;
   }
 
   interface Relocation {

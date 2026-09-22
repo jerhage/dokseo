@@ -1,4 +1,4 @@
-import type { Relocation } from 'foliate-js/view.js';
+import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import { bookId, contentHash } from '$lib/shared/ids';
@@ -6,6 +6,7 @@ import type { BookId } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
+import type { ContentsEntry } from './flow-contents';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
@@ -100,6 +101,8 @@ type Shown = {
   readonly destroyed: number[];
   readonly turned: string[];
   readonly sought: number[];
+  readonly jumped: string[];
+  toc: readonly TocItem[] | null;
   gate: Promise<void> | null;
   failure: string | null;
 };
@@ -109,12 +112,15 @@ function shows(): Shown {
   const destroyed: number[] = [];
   const turned: string[] = [];
   const sought: number[] = [];
+  const jumped: string[] = [];
 
   const world = {
     openings,
     destroyed,
     turned,
     sought,
+    jumped,
+    toc: null as readonly TocItem[] | null,
     gate: null as Promise<void> | null,
     failure: null as string | null,
     show: (() => Promise.reject(new Error('not built'))) as ShowFlowBook,
@@ -132,8 +138,12 @@ function shows(): Shown {
         prev: () => turned.push('prev'),
         next: () => turned.push('next'),
       },
+      toc: world.toc,
       seek: (fraction: number) => {
         sought.push(fraction);
+      },
+      jump: (href: string) => {
+        jumped.push(href);
       },
       destroy: () => {
         destroyed.push(which);
@@ -561,5 +571,91 @@ describe('the controls a flow book offers', () => {
     view.seek(Number.NaN);
 
     expect(surfaces.sought).toEqual([]);
+  });
+});
+
+describe('the contents a flow book offers', () => {
+  const CHAPTER_ONE: TocItem = { label: 'Chapter One', href: 'ch1.xhtml' };
+
+  const CHAPTER_TWO: TocItem = { label: 'Chapter One', href: 'ch2.xhtml' };
+
+  function entries(view: FlowView): readonly ContentsEntry[] {
+    const contents = view.contents;
+    return contents.kind === 'listed' ? contents.entries : [];
+  }
+
+  it('lists the navigation the surface read out of the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.toc = [CHAPTER_ONE, CHAPTER_TWO];
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(entries(view).map((entry) => (entry.kind === 'link' ? entry.href : null))).toEqual([
+      'ch1.xhtml',
+      'ch2.xhtml',
+    ]);
+  });
+
+  it('lists nothing for a book that carries no navigation', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(view.contents).toEqual({ kind: 'absent' });
+    expect(view.currentKey).toBeNull();
+  });
+
+  it('marks the entry the book reports, and not the one that shares its name', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.toc = [CHAPTER_ONE, CHAPTER_TWO];
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { tocItem: CHAPTER_TWO }));
+
+    expect(view.currentKey).toBe('1');
+  });
+
+  it('jumps to the target of an entry the reader picked', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.toc = [CHAPTER_ONE];
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    const [entry] = entries(view);
+    if (entry !== undefined) view.jumpTo(entry);
+
+    expect(surfaces.jumped).toEqual(['ch1.xhtml']);
+  });
+
+  it('jumps nowhere for an entry that names a part but goes to none', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.toc = [{ label: 'Part One' }];
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    const [entry] = entries(view);
+    if (entry !== undefined) view.jumpTo(entry);
+
+    expect(surfaces.jumped).toEqual([]);
+  });
+
+  it('forgets the contents when the reader leaves the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.toc = [CHAPTER_ONE];
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.close();
+
+    expect(view.contents).toEqual({ kind: 'absent' });
   });
 });

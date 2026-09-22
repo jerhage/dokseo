@@ -1,10 +1,12 @@
-import type { FoliateBook, Relocation, View } from 'foliate-js/view.js';
+import type { FoliateBook, Relocation, TocItem, View } from 'foliate-js/view.js';
 import { flowStyles } from './flow-styles';
 import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
   readonly pages: PageTurner;
+  readonly toc: readonly TocItem[] | null;
   seek(fraction: number): void;
+  jump(href: string): void;
   destroy(): void;
 };
 
@@ -70,8 +72,12 @@ async function openFlowSurface(
 
   return {
     pages: view,
+    toc: book.toc ?? null,
     seek: (fraction: number) => {
       void view.goTo({ fraction });
+    },
+    jump: (href: string) => {
+      void view.goTo(href);
     },
     destroy: () => {
       tearDown(view, book);

@@ -1,8 +1,10 @@
-import type { Relocation } from 'foliate-js/view.js';
+import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
+import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
+import type { ContentsEntry, FlowContents } from './flow-contents';
 import { flowLocation, flowProgress, scrubbedFraction } from './flow-progress';
 import type { FlowLocation, FlowProgress } from './flow-progress';
 import type { FlowOpening, FlowSurface } from './flow-surface';
@@ -75,6 +77,8 @@ function curtainFor(state: FlowState): FlowCurtain {
 class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
   location = $state.raw<FlowLocation | null>(null);
+  contents = $state.raw<FlowContents>(NO_CONTENTS);
+  reported = $state.raw<TocItem | null>(null);
 
   #container: Container;
   #generation = 0;
@@ -98,6 +102,10 @@ class FlowView {
     return this.location?.chapter ?? null;
   }
 
+  get currentKey(): string | null {
+    return currentEntryKey(this.contents, this.reported);
+  }
+
   async open(book: FlowBook, show: ShowFlowBook): Promise<void> {
     this.#flushSave();
     const generation = ++this.#generation;
@@ -105,6 +113,8 @@ class FlowView {
     this.state = OPENING;
     this.#placed = null;
     this.location = null;
+    this.contents = NO_CONTENTS;
+    this.reported = null;
 
     let stored: SourceOutcome;
     try {
@@ -149,6 +159,7 @@ class FlowView {
     }
 
     this.#surface = surface;
+    this.contents = flowContents(surface.toc);
     this.state = SHOWING_THE_BOOK;
   }
 
@@ -158,6 +169,8 @@ class FlowView {
     this.#release();
     this.state = NOT_OPENED;
     this.location = null;
+    this.contents = NO_CONTENTS;
+    this.reported = null;
   }
 
   turn(turn: FlowTurn): void {
@@ -165,6 +178,12 @@ class FlowView {
     if (surface === null) return;
 
     turnPage(surface.pages, moveForTurn(turn));
+  }
+
+  jumpTo(entry: ContentsEntry): void {
+    if (entry.kind === 'heading') return;
+
+    this.#surface?.jump(entry.href);
   }
 
   seek(asked: number): void {
@@ -179,6 +198,7 @@ class FlowView {
 
     const here = flowLocation(relocation);
     this.location = here;
+    this.reported = relocation.tocItem ?? null;
     const cfi = here.cfi;
 
     const waiting = this.#saving;
