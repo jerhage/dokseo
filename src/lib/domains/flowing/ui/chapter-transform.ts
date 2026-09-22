@@ -13,10 +13,19 @@ const CHAPTER_MARKUP: readonly ChapterMarkup[] = [
   'application/xhtml+xml',
   'text/html',
   'image/svg+xml',
+  'application/xml',
+  'text/xml',
 ];
 
+function essenceOf(mediaType: string): string {
+  const parametersAt = mediaType.indexOf(';');
+  const essence = parametersAt === -1 ? mediaType : mediaType.slice(0, parametersAt);
+  return essence.trim().toLowerCase();
+}
+
 function treatmentOf(mediaType: string): ResourceTreatment {
-  const markup = CHAPTER_MARKUP.find((known) => known === mediaType);
+  const declared = essenceOf(mediaType);
+  const markup = CHAPTER_MARKUP.find((known) => known === declared);
   if (markup === undefined) return { kind: 'opaque' };
   return { kind: 'markup', mediaType: markup };
 }
@@ -26,9 +35,10 @@ function sanitiseResource(detail: ResourceDetail, sanitise: SanitiseChapter): vo
   if (treatment.kind === 'opaque') return;
 
   const loading = Promise.resolve(detail.data);
-  detail.data = loading.then((loaded) =>
-    typeof loaded === 'string' ? sanitise(loaded, treatment.mediaType) : loaded,
-  );
+  detail.data = loading.then(async (loaded) => {
+    const markup = typeof loaded === 'string' ? loaded : await loaded.text();
+    return sanitise(markup, treatment.mediaType);
+  });
 }
 
 function sanitiseChapters(book: Transformable, sanitise: SanitiseChapter): void {

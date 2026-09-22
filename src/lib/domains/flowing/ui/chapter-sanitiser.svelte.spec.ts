@@ -8,6 +8,8 @@ const HTML: ChapterMarkup = 'text/html';
 
 const SVG: ChapterMarkup = 'image/svg+xml';
 
+const XML: ChapterMarkup = 'application/xml';
+
 const A_STYLESHEET_FOLIATE_REWROTE = 'blob:http://localhost/2f1c-sheet';
 
 const A_PICTURE_FOLIATE_REWROTE = 'blob:http://localhost/2f1c-picture';
@@ -204,6 +206,35 @@ describe('sanitiseChapter', () => {
 
     expect(clean.documentElement.getAttribute('viewBox')).toBe('0 0 600 800');
     expect(clean.documentElement.getAttribute('preserveAspectRatio')).toBe('xMidYMid meet');
+  });
+
+  it('removes the inline script from a spine item served as generic xml', () => {
+    const clean = rendered(chapter('', '<p>一</p><script>window.stolen = 1;</script>'), XML);
+
+    expect(clean.querySelector('script')).toBeNull();
+    expect(clean.documentElement.textContent).toBe('一');
+  });
+
+  it('removes the inline script from an svg spine item served as generic xml', () => {
+    const clean = rendered(
+      spineSvg('viewBox="0 0 10 10"', '<script>window.stolen = 1;</script><rect width="4" />'),
+      XML,
+    );
+
+    expect(clean.querySelector('script')).toBeNull();
+    expect(clean.documentElement.getAttribute('viewBox')).toBe('0 0 10 10');
+  });
+
+  it('empties a spine item whose root sits in a namespace the policy does not allow', () => {
+    expect(sanitiseChapter('<data xmlns="http://example.com/ns"><item>一</item></data>', XML)).toBe(
+      '',
+    );
+  });
+
+  it('refuses a spine item whose root is not an element the policy knows', () => {
+    expect(() => sanitiseChapter('<root><item>一</item></root>', XML)).toThrow(
+      'root node is forbidden',
+    );
   });
 
   it('keeps the camel-cased elements a standalone svg spine item paints with', () => {

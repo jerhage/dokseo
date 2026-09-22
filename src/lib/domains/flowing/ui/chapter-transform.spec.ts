@@ -9,7 +9,17 @@ const HTML = 'text/html';
 
 const SVG = 'image/svg+xml';
 
+const XML = 'application/xml';
+
+const TEXT_XML = 'text/xml';
+
 const CSS = 'text/css';
+
+const DECLARED_XHTML = 'Application/XHTML+XML';
+
+const DECLARED_HTML = 'Text/HTML';
+
+const DECLARED_SVG = 'Image/SVG+XML';
 
 const CHAPTER = '<html xmlns="http://www.w3.org/1999/xhtml"><body><p>ページ</p></body></html>';
 
@@ -64,6 +74,66 @@ describe('treatmentOf', () => {
 
   it('leaves a stylesheet, an image and a font opaque', () => {
     for (const type of [CSS, 'image/jpeg', 'image/png', 'font/woff2', '']) {
+      expect(treatmentOf(type)).toEqual({ kind: 'opaque' });
+    }
+  });
+
+  it('names a chapter a book declared in mixed case as markup to sanitise', () => {
+    expect(treatmentOf(DECLARED_XHTML)).toEqual({ kind: 'markup', mediaType: XHTML });
+    expect(treatmentOf(DECLARED_HTML)).toEqual({ kind: 'markup', mediaType: HTML });
+    expect(treatmentOf(DECLARED_SVG)).toEqual({ kind: 'markup', mediaType: SVG });
+  });
+
+  it('answers with the media type a parser accepts, not the one the book spelled', () => {
+    const treatment = treatmentOf('APPLICATION/XHTML+XML');
+
+    expect(treatment).toEqual({ kind: 'markup', mediaType: XHTML });
+  });
+
+  it('leaves a stylesheet, an image and a font opaque in mixed case too', () => {
+    for (const type of ['Text/CSS', 'Image/JPEG', 'IMAGE/PNG', 'Font/WOFF2']) {
+      expect(treatmentOf(type)).toEqual({ kind: 'opaque' });
+    }
+  });
+
+  it('names a chapter whose media type carries a charset as markup to sanitise', () => {
+    expect(treatmentOf('application/xhtml+xml; charset=utf-8')).toEqual({
+      kind: 'markup',
+      mediaType: XHTML,
+    });
+    expect(treatmentOf('text/html;charset=UTF-8')).toEqual({ kind: 'markup', mediaType: HTML });
+    expect(treatmentOf('image/svg+xml ;charset=utf-8')).toEqual({ kind: 'markup', mediaType: SVG });
+  });
+
+  it('names a media type padded with whitespace as markup to sanitise', () => {
+    expect(treatmentOf(' application/xhtml+xml ')).toEqual({ kind: 'markup', mediaType: XHTML });
+    expect(treatmentOf('\ttext/html\n')).toEqual({ kind: 'markup', mediaType: HTML });
+  });
+
+  it('names a media type mis-cased, padded and parameterised at once as markup', () => {
+    expect(treatmentOf(' Application/XHTML+XML ; charset=UTF-8 ')).toEqual({
+      kind: 'markup',
+      mediaType: XHTML,
+    });
+  });
+
+  it('names an xml spine item as markup to sanitise', () => {
+    expect(treatmentOf(XML)).toEqual({ kind: 'markup', mediaType: XML });
+    expect(treatmentOf(TEXT_XML)).toEqual({ kind: 'markup', mediaType: TEXT_XML });
+    expect(treatmentOf('Application/XML; charset=utf-8')).toEqual({
+      kind: 'markup',
+      mediaType: XML,
+    });
+  });
+
+  it('leaves the navigation and media overlay types a book declares opaque', () => {
+    for (const type of ['application/x-dtbncx+xml', 'application/smil+xml', 'text/xsl']) {
+      expect(treatmentOf(type)).toEqual({ kind: 'opaque' });
+    }
+  });
+
+  it('leaves a media type a browser renders as something other than markup opaque', () => {
+    for (const type of ['text/plain; charset=utf-8', 'application/octet-stream']) {
       expect(treatmentOf(type)).toEqual({ kind: 'opaque' });
     }
   });
@@ -128,15 +198,80 @@ describe('sanitiseResource', () => {
     expect(sanitise).not.toHaveBeenCalled();
   });
 
-  it('leaves a chapter that arrives as a blob alone', async () => {
-    const cover = new Blob(['cover']);
-    const detail = resource(XHTML, Promise.resolve(cover));
-    const sanitise = vi.fn(() => '');
+  it('replaces a chapter that arrives as a blob with its sanitised markup', async () => {
+    const detail = resource(XHTML, Promise.resolve(new Blob([CHAPTER])));
+
+    sanitiseResource(detail, cleaned('clean:'));
+
+    await expect(detail.data).resolves.toBe(`clean:${CHAPTER}`);
+  });
+
+  it('reads a chapter foliate never rewrote out of its blob and sanitises it', async () => {
+    const detail = resource(DECLARED_XHTML, Promise.resolve(new Blob([CHAPTER])));
+    const sanitise = vi.fn(() => 'clean');
 
     sanitiseResource(detail, sanitise);
 
-    await expect(detail.data).resolves.toBe(cover);
+    await expect(detail.data).resolves.toBe('clean');
+    expect(sanitise).toHaveBeenCalledWith(CHAPTER, XHTML);
+  });
+
+  it('hands foliate back a string it can put in a blob of its own', async () => {
+    const detail = resource(DECLARED_SVG, Promise.resolve(new Blob([COVER])));
+
+    sanitiseResource(detail, cleaned('clean:'));
+
+    expect(typeof (await detail.data)).toBe('string');
+  });
+
+  it('replaces a chapter a book declared in mixed case with its sanitised markup', async () => {
+    const detail = resource(DECLARED_HTML, CHAPTER);
+
+    sanitiseResource(detail, cleaned('clean:'));
+
+    await expect(detail.data).resolves.toBe(`clean:${CHAPTER}`);
+  });
+
+  it('hands a mis-cased stylesheet, image and font back untouched', () => {
+    const sheet = 'body { font-family: "Hiragino Mincho"; }';
+    const picture = Promise.resolve(new Blob(['cover']));
+    const font = Promise.resolve(new Blob(['mincho']));
+    const sanitise = vi.fn(() => '');
+    const styled = resource('Text/CSS', sheet);
+    const pictured = resource('Image/PNG', picture);
+    const lettered = resource('Font/WOFF2', font);
+
+    sanitiseResource(styled, sanitise);
+    sanitiseResource(pictured, sanitise);
+    sanitiseResource(lettered, sanitise);
+
+    expect(styled.data).toBe(sheet);
+    expect(pictured.data).toBe(picture);
+    expect(lettered.data).toBe(font);
     expect(sanitise).not.toHaveBeenCalled();
+  });
+
+  it('reads a chapter whose media type carries a charset out of its blob', async () => {
+    const detail = resource(
+      'application/xhtml+xml; charset=utf-8',
+      Promise.resolve(new Blob([CHAPTER])),
+    );
+    const sanitise = vi.fn(() => 'clean');
+
+    sanitiseResource(detail, sanitise);
+
+    await expect(detail.data).resolves.toBe('clean');
+    expect(sanitise).toHaveBeenCalledWith(CHAPTER, XHTML);
+  });
+
+  it('reads an xml spine item out of its blob and sanitises it', async () => {
+    const detail = resource(XML, Promise.resolve(new Blob([CHAPTER])));
+    const sanitise = vi.fn(() => 'clean');
+
+    sanitiseResource(detail, sanitise);
+
+    await expect(detail.data).resolves.toBe('clean');
+    expect(sanitise).toHaveBeenCalledWith(CHAPTER, XML);
   });
 
   it('passes on the failure of a chapter foliate could not read', async () => {

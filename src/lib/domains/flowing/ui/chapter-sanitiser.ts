@@ -1,7 +1,12 @@
 import DOMPurify from 'dompurify';
 import type { Config } from 'dompurify';
 
-type ChapterMarkup = 'application/xhtml+xml' | 'text/html' | 'image/svg+xml';
+type ChapterMarkup =
+  | 'application/xhtml+xml'
+  | 'text/html'
+  | 'image/svg+xml'
+  | 'application/xml'
+  | 'text/xml';
 
 const ADMITS_A_BLOB_URL =
   /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|blob):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i;
