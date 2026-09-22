@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { BookId } from '$lib/shared/ids';
+  import { FlowGestures } from './flow-gestures';
   import { openFlowSurface } from './flow-surface';
+  import { isTyping } from './flow-turn';
+  import type { PageTurner, TypingTarget } from './flow-turn';
   import type { FlowView } from './flow-view.svelte';
 
   type Props = {
@@ -11,24 +14,122 @@
   const { view, book }: Props = $props();
 
   let stage = $state<HTMLElement | null>(null);
+  let gestures: FlowGestures | null = null;
+  const chapters = new Set<Document>();
 
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
+
+  function isEditable(target: EventTarget): boolean {
+    if (!('isContentEditable' in target)) return false;
+
+    const editable = target.isContentEditable;
+    return typeof editable === 'boolean' && editable;
+  }
+
+  function typingTarget(target: EventTarget | null): TypingTarget | null {
+    if (target === null) return null;
+    if (!('tagName' in target)) return null;
+
+    const tagName = target.tagName;
+    if (typeof tagName !== 'string') return null;
+
+    return { tagName, editable: isEditable(target) };
+  }
+
+  function textSelected(): boolean {
+    for (const doc of [document, ...chapters]) {
+      const selection = doc.getSelection();
+      if (selection !== null && selection.rangeCount > 0 && !selection.isCollapsed) return true;
+    }
+
+    return false;
+  }
+
+  function onkey(event: KeyboardEvent): void {
+    if (event.defaultPrevented || gestures === null) return;
+
+    const move = gestures.keyed({
+      key: event.key,
+      altKey: event.altKey,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      shiftKey: event.shiftKey,
+      typing: isTyping(typingTarget(event.target)),
+    });
+    if (move.kind !== 'stay') event.preventDefault();
+  }
+
+  function press(event: PointerEvent, x: number): void {
+    gestures?.pressed({
+      pointerId: event.pointerId,
+      at: { x, y: event.clientY },
+    });
+  }
+
+  function release(event: PointerEvent, x: number, width: number): void {
+    gestures?.released({
+      pointerId: event.pointerId,
+      at: { x, y: event.clientY },
+      width,
+      textSelected: textSelected(),
+    });
+  }
+
+  function cancel(event: PointerEvent): void {
+    gestures?.cancelled(event.pointerId);
+  }
+
+  function withinStage(event: PointerEvent, box: HTMLElement): number {
+    return event.clientX - box.getBoundingClientRect().left;
+  }
+
+  function bind(doc: Document, pages: PageTurner): void {
+    gestures ??= new FlowGestures(pages);
+    chapters.add(doc);
+
+    doc.addEventListener('keydown', onkey);
+    doc.addEventListener('pointerdown', (event) => press(event, event.clientX));
+    doc.addEventListener('pointerup', (event) =>
+      release(event, event.clientX, doc.defaultView?.innerWidth ?? 0),
+    );
+    doc.addEventListener('pointercancel', cancel);
+  }
 
   $effect(() => {
     const host = stage;
     const id = book;
     if (host === null) return;
 
-    void view.open(id, (source) => openFlowSurface(host, source));
+    const began = (event: PointerEvent): void => press(event, withinStage(event, host));
+    const ended = (event: PointerEvent): void =>
+      release(event, withinStage(event, host), host.clientWidth);
+
+    host.addEventListener('pointerdown', began);
+    host.addEventListener('pointerup', ended);
+    host.addEventListener('pointercancel', cancel);
+
+    void view.open(id, (source) => openFlowSurface(host, source, bind));
     return () => {
+      host.removeEventListener('pointerdown', began);
+      host.removeEventListener('pointerup', ended);
+      host.removeEventListener('pointercancel', cancel);
       view.close();
+      gestures = null;
+      chapters.clear();
     };
   });
 </script>
 
+<svelte:window onkeydown={onkey} />
+
 <div class="screen">
   <div class="stage" bind:this={stage}></div>
+
+  <a class="exit" href="/">
+    <span class="glyph" aria-hidden="true">‹</span>
+    Library
+  </a>
 
   {#if curtain.kind === 'opening'}
     <div class="curtain">
@@ -59,6 +160,33 @@
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  .exit {
+    position: absolute;
+    inset-block-start: var(--s-2);
+    inset-inline-start: var(--s-2);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    padding: var(--s-1) var(--s-2);
+    border-radius: var(--r-4);
+    opacity: 0.35;
+    color: var(--c-text-7);
+    font-size: 11px;
+    text-decoration: none;
+    transition: opacity 120ms ease;
+  }
+
+  .exit:hover,
+  .exit:focus-visible {
+    background: var(--c-surface-chrome);
+    opacity: 1;
+  }
+
+  .glyph {
+    font-size: 13px;
+    line-height: 1;
   }
 
   .curtain {

@@ -12,14 +12,37 @@ declare module 'foliate-js/view.js' {
     destroy(): void;
   }
 
+  interface ChapterLoad {
+    doc: Document;
+    index: number;
+  }
+
+  interface ViewEventMap {
+    load: CustomEvent<ChapterLoad>;
+  }
+
   class View extends HTMLElement {
     open(book: FoliateBook): Promise<void>;
     goTo(target: number): Promise<unknown>;
+    goLeft(): Promise<void>;
+    goRight(): Promise<void>;
+    prev(distance?: number): Promise<void>;
+    next(distance?: number): Promise<void>;
     close(): void;
+    addEventListener<K extends keyof ViewEventMap>(
+      type: K,
+      listener: (this: View, event: ViewEventMap[K]) => void,
+      options?: boolean | AddEventListenerOptions,
+    ): void;
+    addEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ): void;
   }
 
   function makeBook(file: File): Promise<FoliateBook>;
 
   export { View, makeBook };
-  export type { FoliateBook };
+  export type { ChapterLoad, FoliateBook, ViewEventMap };
 }

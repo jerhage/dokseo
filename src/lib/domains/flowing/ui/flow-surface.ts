@@ -1,8 +1,11 @@
 import type { FoliateBook, View } from 'foliate-js/view.js';
+import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
   destroy(): void;
 };
+
+type BindChapter = (doc: Document, pages: PageTurner) => void;
 
 const EPUB_MEDIA_TYPE = 'application/epub+zip';
 
@@ -16,10 +19,17 @@ function tearDown(view: View, book: FoliateBook): void {
   view.remove();
 }
 
-async function openFlowSurface(host: HTMLElement, source: Blob): Promise<FlowSurface> {
+async function openFlowSurface(
+  host: HTMLElement,
+  source: Blob,
+  bind: BindChapter,
+): Promise<FlowSurface> {
   const { View: FoliateView, makeBook } = await import('foliate-js/view.js');
   const book = await makeBook(new File([source], SOURCE_FILE_NAME, { type: EPUB_MEDIA_TYPE }));
   const view = new FoliateView();
+  view.addEventListener('load', (loaded) => {
+    bind(loaded.detail.doc, view);
+  });
   host.append(view);
 
   try {
@@ -39,4 +49,4 @@ async function openFlowSurface(host: HTMLElement, source: Blob): Promise<FlowSur
 }
 
 export { openFlowSurface };
-export type { FlowSurface };
+export type { BindChapter, FlowSurface };
