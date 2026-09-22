@@ -42,8 +42,9 @@
   const progress = $derived(view.progress);
   const marker = $derived(progressLabel(progress));
   const meta = $derived(flowMeta(view.chapter, book.language));
-  const rtl = $derived(book.direction === 'rtl');
-  const order = $derived(turnOrder(book.direction));
+  const turning = $derived(view.direction);
+  const rtl = $derived(turning === 'rtl');
+  const order = $derived(turnOrder(turning));
 
   function toggleChrome(): void {
     chromeAsked = !chromeAwake;

@@ -2,6 +2,7 @@ import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import { bookId, contentHash } from '$lib/shared/ids';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
@@ -105,6 +106,7 @@ type Shown = {
   toc: readonly TocItem[] | null;
   gate: Promise<void> | null;
   failure: string | null;
+  direction: ReadingDirection;
 };
 
 function shows(): Shown {
@@ -123,6 +125,7 @@ function shows(): Shown {
     toc: null as readonly TocItem[] | null,
     gate: null as Promise<void> | null,
     failure: null as string | null,
+    direction: 'ltr' as ReadingDirection,
     show: (() => Promise.reject(new Error('not built'))) as ShowFlowBook,
   };
 
@@ -132,6 +135,7 @@ function shows(): Shown {
     if (world.gate !== null) await world.gate;
     if (world.failure !== null) throw new Error(world.failure);
     return {
+      direction: world.direction,
       pages: {
         goLeft: () => turned.push('goLeft'),
         goRight: () => turned.push('goRight'),
@@ -161,6 +165,37 @@ function relocated(cfi: string, at: Partial<Relocation> = {}): Relocation {
 function places(edits: readonly BookEdit[]): readonly (ReadingPlace | undefined)[] {
   return edits.map((edit) => edit.position);
 }
+
+describe('FlowView direction', () => {
+  it('takes the direction the opened book reports, not the one the record holds', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.direction = 'rtl';
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(view.direction).toBe('rtl');
+  });
+
+  it('reads left to right before a book has opened', () => {
+    const view = new FlowView(shelf().container);
+
+    expect(view.direction).toBe('ltr');
+  });
+
+  it('forgets the direction of a book the viewer closed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.direction = 'rtl';
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.close();
+
+    expect(view.direction).toBe('ltr');
+  });
+});
 
 describe('FlowView', () => {
   it('reads the stored source and hands it to the surface', async () => {

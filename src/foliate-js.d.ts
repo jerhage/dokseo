@@ -10,6 +10,7 @@
 declare module 'foliate-js/view.js' {
   interface FoliateBook {
     toc?: TocItem[] | null;
+    dir?: string | null;
     destroy(): void;
   }
 

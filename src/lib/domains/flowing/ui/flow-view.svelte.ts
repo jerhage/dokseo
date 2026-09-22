@@ -3,6 +3,7 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
 import { flowLocation, flowProgress, scrubbedFraction } from './flow-progress';
@@ -74,10 +75,13 @@ function curtainFor(state: FlowState): FlowCurtain {
     .exhaustive();
 }
 
+const BEFORE_THE_BOOK_SAYS: ReadingDirection = 'ltr';
+
 class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
   location = $state.raw<FlowLocation | null>(null);
   contents = $state.raw<FlowContents>(NO_CONTENTS);
+  direction = $state.raw<ReadingDirection>(BEFORE_THE_BOOK_SAYS);
   reported = $state.raw<TocItem | null>(null);
 
   #container: Container;
@@ -114,6 +118,7 @@ class FlowView {
     this.#placed = null;
     this.location = null;
     this.contents = NO_CONTENTS;
+    this.direction = BEFORE_THE_BOOK_SAYS;
     this.reported = null;
 
     let stored: SourceOutcome;
@@ -160,6 +165,7 @@ class FlowView {
 
     this.#surface = surface;
     this.contents = flowContents(surface.toc);
+    this.direction = surface.direction;
     this.state = SHOWING_THE_BOOK;
   }
 
@@ -170,6 +176,7 @@ class FlowView {
     this.state = NOT_OPENED;
     this.location = null;
     this.contents = NO_CONTENTS;
+    this.direction = BEFORE_THE_BOOK_SAYS;
     this.reported = null;
   }
 

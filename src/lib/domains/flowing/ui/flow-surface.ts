@@ -1,9 +1,11 @@
 import type { FoliateBook, Relocation, TocItem, View } from 'foliate-js/view.js';
 import { flowStyles } from './flow-styles';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
   readonly pages: PageTurner;
+  readonly direction: ReadingDirection;
   readonly toc: readonly TocItem[] | null;
   seek(fraction: number): void;
   jump(href: string): void;
@@ -25,6 +27,12 @@ const EPUB_MEDIA_TYPE = 'application/epub+zip';
 const SOURCE_FILE_NAME = 'book.epub';
 
 const OPENS_AT_THE_FIRST_SECTION = 0;
+
+const SPINE_SAYS_RIGHT_TO_LEFT = 'rtl';
+
+function bookDirection(book: FoliateBook): ReadingDirection {
+  return book.dir === SPINE_SAYS_RIGHT_TO_LEFT ? 'rtl' : 'ltr';
+}
 
 function tearDown(view: View, book: FoliateBook): void {
   view.close();
@@ -72,6 +80,7 @@ async function openFlowSurface(
 
   return {
     pages: view,
+    direction: bookDirection(book),
     toc: book.toc ?? null,
     seek: (fraction: number) => {
       void view.goTo({ fraction });
