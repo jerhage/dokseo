@@ -55,9 +55,9 @@ describe('FlowGestures', () => {
     const gestures = new FlowGestures(reader.pages);
 
     gestures.pressed(pressAt(760));
-    const move = gestures.released(releaseAt(761));
+    const action = gestures.released(releaseAt(761));
 
-    expect(move).toEqual({ kind: 'rightward' });
+    expect(action).toEqual({ kind: 'turn', move: { kind: 'rightward' } });
     expect(reader.calls).toEqual(['next']);
   });
 
@@ -66,9 +66,9 @@ describe('FlowGestures', () => {
     const gestures = new FlowGestures(reader.pages);
 
     gestures.pressed(pressAt(760));
-    const move = gestures.released(releaseAt(760, { textSelected: true }));
+    const action = gestures.released(releaseAt(760, { textSelected: true }));
 
-    expect(move).toEqual({ kind: 'stay' });
+    expect(action).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
   });
 
@@ -77,20 +77,42 @@ describe('FlowGestures', () => {
     const gestures = new FlowGestures(reader.pages);
 
     gestures.pressed(pressAt(40));
-    const move = gestures.released(releaseAt(760));
+    const action = gestures.released(releaseAt(760));
 
-    expect(move).toEqual({ kind: 'stay' });
+    expect(action).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
   });
 
-  it('turns nothing in the middle of the page', () => {
+  it('asks for the chrome in the middle of the page instead of turning', () => {
     const reader = foliateLike('ltr');
     const gestures = new FlowGestures(reader.pages);
 
     gestures.pressed(pressAt(400));
-    const move = gestures.released(releaseAt(400));
+    const action = gestures.released(releaseAt(400));
 
-    expect(move).toEqual({ kind: 'stay' });
+    expect(action).toEqual({ kind: 'chrome' });
+    expect(reader.calls).toEqual([]);
+  });
+
+  it('asks for nothing in the middle of the page when the release ended a selection', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(400));
+    const action = gestures.released(releaseAt(400, { textSelected: true }));
+
+    expect(action).toEqual({ kind: 'nothing' });
+    expect(reader.calls).toEqual([]);
+  });
+
+  it('asks for nothing in the middle of the page when the pointer travelled', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(380));
+    const action = gestures.released(releaseAt(400));
+
+    expect(action).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
   });
 
@@ -99,9 +121,9 @@ describe('FlowGestures', () => {
     const gestures = new FlowGestures(reader.pages);
 
     gestures.pressed(pressAt(760));
-    const move = gestures.released(releaseAt(760, { pointerId: 2 }));
+    const action = gestures.released(releaseAt(760, { pointerId: 2 }));
 
-    expect(move).toEqual({ kind: 'stay' });
+    expect(action).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
   });
 
@@ -109,7 +131,7 @@ describe('FlowGestures', () => {
     const reader = foliateLike('ltr');
     const gestures = new FlowGestures(reader.pages);
 
-    expect(gestures.released(releaseAt(760))).toEqual({ kind: 'stay' });
+    expect(gestures.released(releaseAt(760))).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
   });
 
@@ -119,9 +141,9 @@ describe('FlowGestures', () => {
 
     gestures.pressed(pressAt(760));
     gestures.cancelled(ONE_POINTER);
-    const move = gestures.released(releaseAt(760));
+    const action = gestures.released(releaseAt(760));
 
-    expect(move).toEqual({ kind: 'stay' });
+    expect(action).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
   });
 
@@ -132,7 +154,10 @@ describe('FlowGestures', () => {
     gestures.pressed(pressAt(760));
     gestures.cancelled(9);
 
-    expect(gestures.released(releaseAt(760))).toEqual({ kind: 'rightward' });
+    expect(gestures.released(releaseAt(760))).toEqual({
+      kind: 'turn',
+      move: { kind: 'rightward' },
+    });
     expect(reader.calls).toEqual(['next']);
   });
 

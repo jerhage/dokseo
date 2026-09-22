@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { match } from 'ts-pattern';
+  import { chromeHolds, chromeShown } from '$lib/shared/reader-chrome';
   import { FlowGestures } from './flow-gestures';
+  import { flowMeta, progressLabel, SCRUB_STEP } from './flow-progress';
   import { openFlowSurface } from './flow-surface';
-  import { isTyping } from './flow-turn';
-  import type { PageTurner, TypingTarget } from './flow-turn';
+  import { isTyping, turnOrder } from './flow-turn';
+  import type { FlowAction, FlowTurn, PageTurner, TypingTarget } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
 
   type Props = {
@@ -12,12 +15,34 @@
 
   const { view, book }: Props = $props();
 
+  const GLYPHS: readonly string[] = ['‹', '›'];
+
+  const TURN_LABELS: Readonly<Record<FlowTurn, string>> = {
+    previous: 'Previous page',
+    next: 'Next page',
+  };
+
   let stage = $state<HTMLElement | null>(null);
+  let topBar = $state<HTMLElement | null>(null);
+  let bottomBar = $state<HTMLElement | null>(null);
+  let chromeAsked = $state(true);
+  let chromeHeld = $state(false);
   let gestures: FlowGestures | null = null;
   const chapters = new Set<Document>();
 
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
+  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
+  const reading = $derived(view.state.kind === 'ready');
+  const progress = $derived(view.progress);
+  const marker = $derived(progressLabel(progress));
+  const meta = $derived(flowMeta(view.chapter, book.language));
+  const rtl = $derived(book.direction === 'rtl');
+  const order = $derived(turnOrder(book.direction));
+
+  function toggleChrome(): void {
+    chromeAsked = !chromeAwake;
+  }
 
   function isEditable(target: EventTarget): boolean {
     if (!('isContentEditable' in target)) return false;
@@ -59,6 +84,16 @@
     if (move.kind !== 'stay') event.preventDefault();
   }
 
+  function apply(action: FlowAction): void {
+    match(action)
+      .with({ kind: 'nothing' }, () => undefined)
+      .with({ kind: 'turn' }, () => undefined)
+      .with({ kind: 'chrome' }, () => {
+        toggleChrome();
+      })
+      .exhaustive();
+  }
+
   function press(event: PointerEvent, x: number): void {
     gestures?.pressed({
       pointerId: event.pointerId,
@@ -67,12 +102,13 @@
   }
 
   function release(event: PointerEvent, x: number, width: number): void {
-    gestures?.released({
+    const action = gestures?.released({
       pointerId: event.pointerId,
       at: { x, y: event.clientY },
       width,
       textSelected: textSelected(),
     });
+    if (action !== undefined) apply(action);
   }
 
   function cancel(event: PointerEvent): void {
@@ -81,6 +117,10 @@
 
   function withinStage(event: PointerEvent, box: HTMLElement): number {
     return event.clientX - box.getBoundingClientRect().left;
+  }
+
+  function scrubbed(asked: string): void {
+    view.seek(Number(asked));
   }
 
   function bind(doc: Document, pages: PageTurner): void {
@@ -94,6 +134,20 @@
     );
     doc.addEventListener('pointercancel', cancel);
   }
+
+  $effect(() => {
+    function refresh(): void {
+      chromeHeld = chromeHolds([topBar, bottomBar], [document.activeElement]);
+    }
+
+    window.addEventListener('focusin', refresh);
+    window.addEventListener('focusout', refresh);
+
+    return () => {
+      window.removeEventListener('focusin', refresh);
+      window.removeEventListener('focusout', refresh);
+    };
+  });
 
   $effect(() => {
     const host = stage;
@@ -125,10 +179,45 @@
 <div class="screen">
   <div class="stage" bind:this={stage}></div>
 
-  <a class="exit" href="/">
-    <span class="glyph" aria-hidden="true">‹</span>
-    Library
-  </a>
+  <header class="bar top" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={topBar}>
+    <a class="back" href="/">
+      <span class="glyph" aria-hidden="true">‹</span>
+      Library
+    </a>
+    <div class="heading">
+      <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
+      <p class="meta">{meta}</p>
+    </div>
+  </header>
+
+  <footer class="bar bottom" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={bottomBar}>
+    <div class="turns" role="group" aria-label="Turn the page">
+      {#each order as turn, slot (turn)}
+        <button class="key" type="button" disabled={!reading} onclick={() => view.turn(turn)}>
+          <span class="glyph" aria-hidden="true">{GLYPHS[slot]}</span>
+          <span class="assistive">{TURN_LABELS[turn]}</span>
+        </button>
+      {/each}
+    </div>
+
+    <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
+
+    {#if progress.kind === 'known'}
+      <input
+        class="scrub"
+        class:rtl
+        type="range"
+        min={0}
+        max={1}
+        step={SCRUB_STEP}
+        value={progress.fraction}
+        style:--fill="{progress.percent}%"
+        aria-label="Reading progress"
+        aria-valuetext={marker}
+        onchange={(event) => scrubbed(event.currentTarget.value)}
+      />
+    {/if}
+  </footer>
 
   {#if curtain.kind === 'opening'}
     <div class="curtain">
@@ -146,6 +235,7 @@
   .screen {
     position: relative;
     height: 100vh;
+    overflow: hidden;
     background: var(--c-surface-void);
     color: var(--c-text-2);
     font-family: var(--f-ui);
@@ -161,36 +251,206 @@
     height: 100%;
   }
 
-  .exit {
+  .bar {
     position: absolute;
-    inset-block-start: var(--s-2);
-    inset-inline-start: var(--s-2);
-    display: inline-flex;
+    box-sizing: border-box;
+    inset-inline: 0;
+    z-index: var(--z-chrome);
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-4);
+    background: var(--c-surface-chrome);
+    opacity: 1;
+    transition: opacity 200ms ease;
+  }
+
+  .bar.hushed {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar {
+      transition: none;
+    }
+  }
+
+  .top {
+    inset-block-start: 0;
+    border-bottom: 1px solid var(--c-border-1);
+  }
+
+  .bottom {
+    inset-block-end: 0;
+    border-top: 1px solid var(--c-border-1);
+  }
+
+  .back {
+    display: flex;
+    flex: none;
     align-items: center;
     gap: var(--s-1);
     padding: var(--s-1) var(--s-2);
+    border: 1px solid var(--c-border-4);
     border-radius: var(--r-4);
-    opacity: 0.35;
-    color: var(--c-text-7);
-    font-size: 11px;
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-size: 11.5px;
     text-decoration: none;
-    transition: opacity 120ms ease;
   }
 
-  .exit:hover,
-  .exit:focus-visible {
-    background: var(--c-surface-chrome);
-    opacity: 1;
+  .back:hover,
+  .back:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .heading {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: baseline;
+    gap: var(--s-2);
+    min-width: 0;
+  }
+
+  .title {
+    flex: 0 1 auto;
+    margin: 0;
+    overflow: hidden;
+    color: var(--c-text-1);
+    font-family: var(--f-ja);
+    font-size: 13.5px;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .title.ko {
+    font-family: var(--f-ko);
+  }
+
+  .meta {
+    flex: 0 1 auto;
+    margin: 0;
+    overflow: hidden;
+    color: var(--c-text-8);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .turns {
+    display: flex;
+    flex: none;
+    gap: var(--s-1);
+  }
+
+  .key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-button);
+    color: var(--c-text-5);
+    font-family: var(--f-ui);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .key:hover:not(:disabled),
+  .key:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
+  }
+
+  .key:disabled {
+    cursor: default;
+    opacity: 0.4;
   }
 
   .glyph {
-    font-size: 13px;
-    line-height: 1;
+    display: block;
+  }
+
+  .assistive {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .marker {
+    flex: none;
+    margin: 0;
+    color: var(--c-text-5);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+
+  .marker.quiet {
+    color: var(--c-text-8);
+    font-family: var(--f-ui);
+  }
+
+  .scrub {
+    flex: 1 1 auto;
+    height: 3px;
+    min-width: 0;
+    padding: 0;
+    border-radius: var(--r-pill);
+    background: linear-gradient(
+      to right,
+      var(--c-accent) var(--fill),
+      var(--c-border-2) var(--fill)
+    );
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .scrub.rtl {
+    direction: rtl;
+    background: linear-gradient(
+      to left,
+      var(--c-accent) var(--fill),
+      var(--c-border-2) var(--fill)
+    );
+  }
+
+  .scrub::-webkit-slider-thumb {
+    width: 11px;
+    height: 11px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--c-accent);
+    appearance: none;
+  }
+
+  .scrub::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--c-accent);
+  }
+
+  .scrub:focus-visible {
+    outline: 1px solid var(--c-accent-border-strong);
+    outline-offset: 4px;
   }
 
   .curtain {
     position: absolute;
     inset: 0;
+    z-index: calc(var(--z-chrome) + 1);
     display: flex;
     flex-direction: column;
     align-items: center;

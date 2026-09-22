@@ -1,8 +1,13 @@
+import type { Relocation } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
+import { flowLocation, flowProgress, scrubbedFraction } from './flow-progress';
+import type { FlowLocation, FlowProgress } from './flow-progress';
 import type { FlowOpening, FlowSurface } from './flow-surface';
+import { moveForTurn, turnPage } from './flow-turn';
+import type { FlowTurn } from './flow-turn';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
@@ -69,6 +74,7 @@ function curtainFor(state: FlowState): FlowCurtain {
 
 class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
+  location = $state.raw<FlowLocation | null>(null);
 
   #container: Container;
   #generation = 0;
@@ -84,12 +90,21 @@ class FlowView {
     return curtainFor(this.state);
   }
 
+  get progress(): FlowProgress {
+    return flowProgress(this.location);
+  }
+
+  get chapter(): string | null {
+    return this.location?.chapter ?? null;
+  }
+
   async open(book: FlowBook, show: ShowFlowBook): Promise<void> {
     this.#flushSave();
     const generation = ++this.#generation;
     this.#release();
     this.state = OPENING;
     this.#placed = null;
+    this.location = null;
 
     let stored: SourceOutcome;
     try {
@@ -115,8 +130,8 @@ class FlowView {
       surface = await show({
         source: stored.value,
         at,
-        moved: (cfi) => {
-          this.#moved(generation, book.id, cfi);
+        moved: (relocation) => {
+          this.#moved(generation, book.id, relocation);
         },
       });
     } catch (cause) {
@@ -142,10 +157,29 @@ class FlowView {
     this.#generation += 1;
     this.#release();
     this.state = NOT_OPENED;
+    this.location = null;
   }
 
-  #moved(generation: number, id: BookId, cfi: string): void {
+  turn(turn: FlowTurn): void {
+    const surface = this.#surface;
+    if (surface === null) return;
+
+    turnPage(surface.pages, moveForTurn(turn));
+  }
+
+  seek(asked: number): void {
+    const target = scrubbedFraction(this.progress, asked);
+    if (target === null) return;
+
+    this.#surface?.seek(target);
+  }
+
+  #moved(generation: number, id: BookId, relocation: Relocation): void {
     if (generation !== this.#generation) return;
+
+    const here = flowLocation(relocation);
+    this.location = here;
+    const cfi = here.cfi;
 
     const waiting = this.#saving;
     if (waiting !== null) clearTimeout(waiting.timer);

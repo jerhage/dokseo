@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { isTyping, keyMove, moveForEnd, pointerEnded, regionAt, turnPage } from './flow-turn';
+import {
+  isTyping,
+  keyMove,
+  moveForEnd,
+  moveForTurn,
+  pointerEnded,
+  regionAt,
+  releaseAction,
+  turnOrder,
+  turnPage,
+} from './flow-turn';
 import type { FlowMove, KeyPress, PageTurner, Point, PointerRelease } from './flow-turn';
 
 const STAY: FlowMove = { kind: 'stay' };
@@ -275,5 +285,58 @@ describe('turnPage', () => {
 
     expect(western.calls).toEqual([]);
     expect(japanese.calls).toEqual([]);
+  });
+});
+
+describe('releaseAction', () => {
+  it('turns the page for a click on either edge', () => {
+    expect(releaseAction(pointerEnded(releasing({ to: { x: 4, y: 9 } })))).toEqual({
+      kind: 'turn',
+      move: { kind: 'leftward' },
+    });
+    expect(releaseAction(pointerEnded(releasing({ to: { x: 780, y: 9 } })))).toEqual({
+      kind: 'turn',
+      move: { kind: 'rightward' },
+    });
+  });
+
+  it('wakes the chrome for a click between the edges', () => {
+    expect(releaseAction(pointerEnded(releasing()))).toEqual({ kind: 'chrome' });
+  });
+
+  it('does nothing at all for a release that ended a selection', () => {
+    expect(releaseAction(pointerEnded(releasing({ textSelected: true })))).toEqual({
+      kind: 'nothing',
+    });
+    expect(
+      releaseAction(pointerEnded(releasing({ to: { x: 4, y: 9 }, textSelected: true }))),
+    ).toEqual({ kind: 'nothing' });
+  });
+
+  it('does nothing at all for a release the pointer travelled away from', () => {
+    expect(
+      releaseAction(pointerEnded(releasing({ from: ORIGIN, to: { x: 440, y: 100 } }))),
+    ).toEqual({ kind: 'nothing' });
+  });
+});
+
+describe('turnOrder', () => {
+  it('puts the previous page on the left of a left-to-right book', () => {
+    expect(turnOrder('ltr')).toEqual(['previous', 'next']);
+  });
+
+  it('puts the next page on the left of a right-to-left book', () => {
+    expect(turnOrder('rtl')).toEqual(['next', 'previous']);
+  });
+});
+
+describe('moveForTurn', () => {
+  it('turns in reading order, leaving the sides to the edges and the arrows', () => {
+    const japanese = foliateLike('rtl');
+
+    turnPage(japanese.pages, moveForTurn('previous'));
+    turnPage(japanese.pages, moveForTurn('next'));
+
+    expect(japanese.calls).toEqual(['prev', 'next']);
   });
 });

@@ -1,15 +1,17 @@
-import type { FoliateBook, View } from 'foliate-js/view.js';
+import type { FoliateBook, Relocation, View } from 'foliate-js/view.js';
 import { flowStyles } from './flow-styles';
 import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
+  readonly pages: PageTurner;
+  seek(fraction: number): void;
   destroy(): void;
 };
 
 type FlowOpening = {
   readonly source: Blob;
   readonly at: string | null;
-  readonly moved: (cfi: string) => void;
+  readonly moved: (at: Relocation) => void;
 };
 
 type BindChapter = (doc: Document, pages: PageTurner) => void;
@@ -52,7 +54,7 @@ async function openFlowSurface(
     bind(loaded.detail.doc, view);
   });
   view.addEventListener('relocate', (moved) => {
-    opening.moved(moved.detail.cfi);
+    opening.moved(moved.detail);
   });
   host.append(view);
 
@@ -67,6 +69,10 @@ async function openFlowSurface(
   }
 
   return {
+    pages: view,
+    seek: (fraction: number) => {
+      void view.goTo({ fraction });
+    },
     destroy: () => {
       tearDown(view, book);
     },

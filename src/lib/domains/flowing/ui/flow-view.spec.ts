@@ -1,3 +1,4 @@
+import type { Relocation } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import { bookId, contentHash } from '$lib/shared/ids';
@@ -97,6 +98,8 @@ type Shown = {
   readonly show: ShowFlowBook;
   readonly openings: FlowOpening[];
   readonly destroyed: number[];
+  readonly turned: string[];
+  readonly sought: number[];
   gate: Promise<void> | null;
   failure: string | null;
 };
@@ -104,10 +107,14 @@ type Shown = {
 function shows(): Shown {
   const openings: FlowOpening[] = [];
   const destroyed: number[] = [];
+  const turned: string[] = [];
+  const sought: number[] = [];
 
   const world = {
     openings,
     destroyed,
+    turned,
+    sought,
     gate: null as Promise<void> | null,
     failure: null as string | null,
     show: (() => Promise.reject(new Error('not built'))) as ShowFlowBook,
@@ -119,6 +126,15 @@ function shows(): Shown {
     if (world.gate !== null) await world.gate;
     if (world.failure !== null) throw new Error(world.failure);
     return {
+      pages: {
+        goLeft: () => turned.push('goLeft'),
+        goRight: () => turned.push('goRight'),
+        prev: () => turned.push('prev'),
+        next: () => turned.push('next'),
+      },
+      seek: (fraction: number) => {
+        sought.push(fraction);
+      },
       destroy: () => {
         destroyed.push(which);
       },
@@ -126,6 +142,10 @@ function shows(): Shown {
   };
 
   return world;
+}
+
+function relocated(cfi: string, at: Partial<Relocation> = {}): Relocation {
+  return { cfi, ...at };
 }
 
 function places(edits: readonly BookEdit[]): readonly (ReadingPlace | undefined)[] {
@@ -318,9 +338,9 @@ describe('the place a flow book keeps', () => {
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
-    moved?.(SOMEWHERE);
-    moved?.(FURTHER_ON);
-    moved?.(LATER_STILL);
+    moved?.(relocated(SOMEWHERE));
+    moved?.(relocated(FURTHER_ON));
+    moved?.(relocated(LATER_STILL));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(places(world.edits)).toEqual([textPlace(LATER_STILL)]);
@@ -332,7 +352,7 @@ describe('the place a flow book keeps', () => {
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
-    surfaces.openings[0]?.moved(SOMEWHERE);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS - 1);
 
     expect(world.edits).toEqual([]);
@@ -343,7 +363,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
-    surfaces.openings[0]?.moved(SOMEWHERE);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     expect(world.edits).toEqual([]);
 
     view.close();
@@ -358,7 +378,7 @@ describe('the place a flow book keeps', () => {
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
-    surfaces.openings[0]?.moved(SOMEWHERE);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits).toEqual([]);
@@ -372,7 +392,7 @@ describe('the place a flow book keeps', () => {
     const moved = surfaces.openings[0]?.moved;
 
     view.close();
-    moved?.(SOMEWHERE);
+    moved?.(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits).toEqual([]);
@@ -386,7 +406,7 @@ describe('the place a flow book keeps', () => {
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
-    surfaces.openings[0]?.moved(SOMEWHERE);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(view.state).toEqual({ kind: 'ready' });
@@ -401,11 +421,145 @@ describe('the place a flow book keeps', () => {
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
-    moved?.(SOMEWHERE);
+    moved?.(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-    moved?.(SOMEWHERE);
+    moved?.(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(places(world.edits)).toEqual([textPlace(SOMEWHERE), textPlace(SOMEWHERE)]);
+  });
+});
+
+describe('the progress a flow book reports', () => {
+  it('reports nothing until the book has said where it is', async () => {
+    const world = shelf();
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), shows().show);
+
+    expect(view.progress).toEqual({ kind: 'unknown' });
+    expect(view.chapter).toBeNull();
+  });
+
+  it('reports how far through the book the reader is', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(
+      relocated(SOMEWHERE, { fraction: 0.375, tocItem: { label: ' Chapter Two ' } }),
+    );
+
+    expect(view.progress).toEqual({ kind: 'known', fraction: 0.375, percent: 38 });
+    expect(view.chapter).toBe('Chapter Two');
+  });
+
+  it('reports nothing for a book that cannot say how far through it is', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+
+    expect(view.progress).toEqual({ kind: 'unknown' });
+  });
+
+  it('forgets where it was when the reader leaves the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.5 }));
+
+    view.close();
+
+    expect(view.progress).toEqual({ kind: 'unknown' });
+  });
+
+  it('ignores a move that arrives after the viewer closed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    const moved = surfaces.openings[0]?.moved;
+
+    view.close();
+    moved?.(relocated(SOMEWHERE, { fraction: 0.5 }));
+
+    expect(view.progress).toEqual({ kind: 'unknown' });
+  });
+});
+
+describe('the controls a flow book offers', () => {
+  it('turns the page in reading order, whichever way the book runs', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.turn('previous');
+    view.turn('next');
+
+    expect(surfaces.turned).toEqual(['prev', 'next']);
+  });
+
+  it('turns nothing before a book is open', () => {
+    const world = shelf();
+    const view = new FlowView(world.container);
+
+    view.turn('next');
+
+    expect(view.state).toEqual({ kind: 'idle' });
+  });
+
+  it('sends the scrubbed fraction to the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
+
+    view.seek(0.6);
+
+    expect(surfaces.sought).toEqual([0.6]);
+  });
+
+  it('holds a scrub inside the book it can reach', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
+
+    view.seek(4);
+    view.seek(-4);
+
+    expect(surfaces.sought).toEqual([1, 0]);
+  });
+
+  it('refuses a scrub on a book that cannot say how far through it is', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+
+    view.seek(0.6);
+
+    expect(surfaces.sought).toEqual([]);
+  });
+
+  it('refuses a scrub that is not a number at all', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
+
+    view.seek(Number.NaN);
+
+    expect(surfaces.sought).toEqual([]);
   });
 });

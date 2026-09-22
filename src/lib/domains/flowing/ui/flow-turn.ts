@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 
 type Point = { readonly x: number; readonly y: number };
 
@@ -29,6 +30,13 @@ type FlowMove =
   | { readonly kind: 'rightward' }
   | { readonly kind: 'backward' }
   | { readonly kind: 'forward' };
+
+type FlowTurn = 'previous' | 'next';
+
+type FlowAction =
+  | { readonly kind: 'nothing' }
+  | { readonly kind: 'turn'; readonly move: FlowMove }
+  | { readonly kind: 'chrome' };
 
 type ClickRegion =
   | { readonly kind: 'left-edge' }
@@ -66,6 +74,10 @@ const LEFT_EDGE: ClickRegion = { kind: 'left-edge' };
 const MIDDLE: ClickRegion = { kind: 'middle' };
 
 const RIGHT_EDGE: ClickRegion = { kind: 'right-edge' };
+
+const DOES_NOTHING: FlowAction = { kind: 'nothing' };
+
+const TOGGLES_THE_CHROME: FlowAction = { kind: 'chrome' };
 
 const SELECTING: PointerEnd = { kind: 'selecting' };
 
@@ -135,6 +147,23 @@ function moveForEnd(end: PointerEnd): FlowMove {
     .exhaustive();
 }
 
+function releaseAction(end: PointerEnd): FlowAction {
+  return match(end)
+    .with({ kind: 'selecting' }, () => DOES_NOTHING)
+    .with({ kind: 'dragged' }, () => DOES_NOTHING)
+    .with({ kind: 'click', region: { kind: 'middle' } }, () => TOGGLES_THE_CHROME)
+    .with({ kind: 'click' }, (hit) => ({ kind: 'turn' as const, move: moveForRegion(hit.region) }))
+    .exhaustive();
+}
+
+function turnOrder(direction: ReadingDirection): readonly FlowTurn[] {
+  return direction === 'rtl' ? ['next', 'previous'] : ['previous', 'next'];
+}
+
+function moveForTurn(turn: FlowTurn): FlowMove {
+  return turn === 'previous' ? BACKWARD : FORWARD;
+}
+
 function turnPage(pages: PageTurner, move: FlowMove): void {
   match(move)
     .with({ kind: 'stay' }, () => undefined)
@@ -160,13 +189,18 @@ export {
   keyMove,
   moveForEnd,
   moveForRegion,
+  moveForTurn,
   pointerEnded,
   regionAt,
+  releaseAction,
+  turnOrder,
   turnPage,
 };
 export type {
   ClickRegion,
+  FlowAction,
   FlowMove,
+  FlowTurn,
   KeyPress,
   PageTurner,
   Point,

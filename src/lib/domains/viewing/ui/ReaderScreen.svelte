@@ -13,6 +13,7 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
+  import { chromeHolds, chromeShown } from '$lib/shared/reader-chrome';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
@@ -20,7 +21,6 @@
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
   import PagedViewer from './PagedViewer.svelte';
-  import { chromeHolds, chromeShown } from './reader-chrome';
   import type { ReaderView } from './reader-view.svelte';
 
   type Props = {

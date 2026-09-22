@@ -1,5 +1,6 @@
-import { keyMove, moveForEnd, pointerEnded, turnPage } from './flow-turn';
-import type { FlowMove, KeyPress, PageTurner, Point } from './flow-turn';
+import { match } from 'ts-pattern';
+import { keyMove, pointerEnded, releaseAction, turnPage } from './flow-turn';
+import type { FlowAction, FlowMove, KeyPress, PageTurner, Point } from './flow-turn';
 
 type Press = {
   readonly pointerId: number;
@@ -13,7 +14,7 @@ type Release = {
   readonly textSelected: boolean;
 };
 
-const STAYED: FlowMove = { kind: 'stay' };
+const DID_NOTHING: FlowAction = { kind: 'nothing' };
 
 class FlowGestures {
   #pages: PageTurner;
@@ -27,12 +28,12 @@ class FlowGestures {
     this.#press = press;
   }
 
-  released(release: Release): FlowMove {
+  released(release: Release): FlowAction {
     const began = this.#press;
     this.#press = null;
-    if (began === null || began.pointerId !== release.pointerId) return STAYED;
+    if (began === null || began.pointerId !== release.pointerId) return DID_NOTHING;
 
-    const move = moveForEnd(
+    const action = releaseAction(
       pointerEnded({
         from: began.at,
         to: release.at,
@@ -40,9 +41,16 @@ class FlowGestures {
         textSelected: release.textSelected,
       }),
     );
-    turnPage(this.#pages, move);
 
-    return move;
+    match(action)
+      .with({ kind: 'nothing' }, () => undefined)
+      .with({ kind: 'chrome' }, () => undefined)
+      .with({ kind: 'turn' }, (turning) => {
+        turnPage(this.#pages, turning.move);
+      })
+      .exhaustive();
+
+    return action;
   }
 
   cancelled(pointerId: number): void {

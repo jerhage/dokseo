@@ -17,8 +17,18 @@ declare module 'foliate-js/view.js' {
     index: number;
   }
 
+  interface TocItem {
+    label?: string;
+  }
+
   interface Relocation {
     cfi: string;
+    fraction?: number;
+    tocItem?: TocItem | null;
+  }
+
+  interface FractionTarget {
+    fraction: number;
   }
 
   interface ViewEventMap {
@@ -28,7 +38,7 @@ declare module 'foliate-js/view.js' {
 
   class View extends HTMLElement {
     open(book: FoliateBook): Promise<void>;
-    goTo(target: number | string): Promise<unknown>;
+    goTo(target: number | string | FractionTarget): Promise<unknown>;
     goLeft(): Promise<void>;
     goRight(): Promise<void>;
     prev(distance?: number): Promise<void>;
@@ -50,5 +60,5 @@ declare module 'foliate-js/view.js' {
   function makeBook(file: File): Promise<FoliateBook>;
 
   export { View, makeBook };
-  export type { ChapterLoad, FoliateBook, Relocation, ViewEventMap };
+  export type { ChapterLoad, FoliateBook, FractionTarget, Relocation, TocItem, ViewEventMap };
 }
