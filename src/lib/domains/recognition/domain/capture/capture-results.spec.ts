@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, TagId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { at } from '$lib/shared/testing/at';
 import { captureHolds, matchesByBook, matchTally, taggedByBook } from './capture-results';
@@ -12,7 +13,7 @@ type Found = {
   readonly name: string;
   readonly origin: 'recognized';
   readonly bookId: BookId;
-  readonly regions: readonly ImageRegion[];
+  readonly anchor: Anchor;
   readonly text: string;
   readonly note: string | null;
 };
@@ -26,7 +27,7 @@ function capture(name: string, id: string, text: string, index = 0, x = 0, y = 0
     name,
     origin: 'recognized',
     bookId: bookId(id),
-    regions: [{ index: imageIndex(index), rect: imageRect(x, y, 100, 60) }],
+    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(x, y, 100, 60) }]),
     text,
     note: null,
   };

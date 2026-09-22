@@ -115,7 +115,7 @@
     found.captures.flatMap((matched) =>
       matched.captures
         .map((capture): CaptureRow | null => {
-          const index = firstImage(capture.regions);
+          const index = firstImage(capture.anchor);
           if (index === null) return null;
 
           const lit = new Set(matchedTagIds(capture, tags, query));

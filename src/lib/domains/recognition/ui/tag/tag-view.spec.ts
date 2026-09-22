@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
+import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
@@ -45,7 +46,7 @@ function capture(
   return {
     id: captureId(name),
     bookId: bookId(id),
-    regions: [{ index: imageIndex(index), rect: imageRect(x, 0, 100, 60) }],
+    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(x, 0, 100, 60) }]),
     text: name,
     note: null,
     confidence: null,

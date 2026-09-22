@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import type { Capture } from '../capture/capture';
 import { tagCounts, taggedCapture, untaggedCapture } from './capture-tags';
 
 const BOOK = bookId('book-one');
 
-const REGIONS: readonly ImageRegion[] = [{ index: imageIndex(3), rect: imageRect(0, 0, 10, 10) }];
+const ANCHOR: Anchor = regionAnchor([{ index: imageIndex(3), rect: imageRect(0, 0, 10, 10) }]);
 
 const GRAMMAR = tagId('grammar');
 
@@ -20,7 +21,7 @@ function capture(id: string, tags: readonly TagId[]): Capture {
   return {
     id: captureId(id),
     bookId: BOOK,
-    regions: REGIONS,
+    anchor: ANCHOR,
     text: 'こっちに来て',
     note: null,
     confidence: null,

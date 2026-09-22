@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
@@ -20,7 +21,7 @@ const TAGGED: Capture = {
     {
       id: captureId('a'),
       bookId: BOOK,
-      regions: [{ index: imageIndex(13), rect: imageRect(10, 20, 100, 40) }],
+      anchor: regionAnchor([{ index: imageIndex(13), rect: imageRect(10, 20, 100, 40) }]),
       text: 'こっちに来て',
       confidence: null,
       origin: 'recognized',

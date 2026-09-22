@@ -8,6 +8,7 @@ import {
 } from '$lib/platform/storage/persistence';
 import { beginTrace } from '$lib/platform/trace/pipeline-trace';
 import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import type { Anchor } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -247,7 +248,7 @@ type Container = {
     readonly writeNote: (
       id: CaptureId,
       book: BookId,
-      regions: readonly ImageRegion[],
+      anchor: Anchor,
     ) => Promise<Result<Capture, CaptureError>>;
     readonly editCaptureText: (
       capture: Capture,
@@ -408,8 +409,8 @@ function buildContainer(): Container {
       listCaptures: (book: BookId) => listCaptures(listCapturesDeps, book),
       listEveryCapture: () => listEveryCapture(listEveryCaptureDeps),
       saveCapture: (draft: CaptureDraft) => saveCapture(saveCaptureDeps, draft),
-      writeNote: (id: CaptureId, book: BookId, regions: readonly ImageRegion[]) =>
-        writeNote(writeNoteDeps, id, book, regions),
+      writeNote: (id: CaptureId, book: BookId, anchor: Anchor) =>
+        writeNote(writeNoteDeps, id, book, anchor),
       editCaptureText: (capture: Capture, text: string) =>
         editCaptureText(editCaptureTextDeps, capture, text),
       writeCaptureNote: (capture: RecognizedCapture, note: string) =>

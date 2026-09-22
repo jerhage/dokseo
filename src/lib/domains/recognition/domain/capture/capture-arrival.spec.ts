@@ -1,23 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import { arrivalAt, matchesInBookOrder } from './capture-arrival';
 
 type Row = {
   readonly origin: 'written';
   readonly id: CaptureId;
-  readonly regions: readonly ImageRegion[];
+  readonly anchor: Anchor;
   readonly text: string;
 };
 
-function at(index: number, x: number, y: number): readonly ImageRegion[] {
-  return [{ index: imageIndex(index), rect: imageRect(x, y, 10, 10) }];
+function at(index: number, x: number, y: number): Anchor {
+  return regionAnchor([{ index: imageIndex(index), rect: imageRect(x, y, 10, 10) }]);
 }
 
-function row(id: string, text: string, regions: readonly ImageRegion[]): Row {
-  return { origin: 'written', id: captureId(id), regions, text };
+function row(id: string, text: string, anchor: Anchor): Row {
+  return { origin: 'written', id: captureId(id), anchor, text };
 }
 
 const FIRST = row('a', '海が見える', at(3, 100, 10));

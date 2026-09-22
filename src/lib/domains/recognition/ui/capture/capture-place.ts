@@ -1,5 +1,5 @@
+import type { Anchor } from '$lib/shared/anchor';
 import type { ImageIndex } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 
 const NO_PLACE = 'no page';
 
@@ -7,7 +7,10 @@ function pageLabel(index: ImageIndex): string {
   return String(index + 1).padStart(3, '0');
 }
 
-function placeLabel(regions: readonly ImageRegion[]): string {
+function placeLabel(anchor: Anchor): string {
+  if (anchor.kind === 'text') return NO_PLACE;
+
+  const regions = anchor.regions;
   const first = regions[0];
   const last = regions.at(-1);
   if (first === undefined || last === undefined) return NO_PLACE;
@@ -20,8 +23,10 @@ function placeLabel(regions: readonly ImageRegion[]): string {
   return regions.length > 1 ? `${span} · ${regions.length} regions` : span;
 }
 
-function firstImage(regions: readonly ImageRegion[]): ImageIndex | null {
-  return regions[0]?.index ?? null;
+function firstImage(anchor: Anchor): ImageIndex | null {
+  if (anchor.kind === 'text') return null;
+
+  return anchor.regions[0]?.index ?? null;
 }
 
 const MINUTE = 60_000;

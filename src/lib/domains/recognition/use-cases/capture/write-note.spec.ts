@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -16,6 +18,8 @@ const NOTE = captureId('a');
 const REGIONS: readonly ImageRegion[] = [
   { index: imageIndex(13), rect: imageRect(10, 20, 100, 40) },
 ];
+
+const ANCHOR: Anchor = regionAnchor(REGIONS);
 
 function repository(broken = false) {
   const saved: Capture[] = [];
@@ -40,7 +44,7 @@ describe('writeNote', () => {
   it('marks the capture as written rather than recognized', async () => {
     const { captures, saved } = repository();
 
-    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, REGIONS);
+    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
     expect(written.ok && written.value.origin).toBe('written');
     expect(at(saved, 0).origin).toBe('written');
@@ -49,31 +53,26 @@ describe('writeNote', () => {
   it('starts the note empty, with no confidence to report', async () => {
     const { captures } = repository();
 
-    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, REGIONS);
+    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
     expect(written.ok && written.value.text).toBe('');
     expect(written.ok && 'confidence' in written.value).toBe(false);
   });
 
-  it('keeps the book, the id and the regions it was given', async () => {
+  it('keeps the book, the id and the anchor it was given', async () => {
     const { captures, saved } = repository();
 
-    await writeNote({ captures, now: () => 5 }, NOTE, BOOK, REGIONS);
+    await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
     expect(at(saved, 0).id).toBe(NOTE);
     expect(at(saved, 0).bookId).toBe(BOOK);
-    expect(at(saved, 0).regions).toEqual(REGIONS);
+    expect(at(saved, 0).anchor).toEqual(ANCHOR);
   });
 
   it('stamps the note with the clock it was given, unedited', async () => {
     const { captures, saved } = repository();
 
-    const written = await writeNote(
-      { captures, now: () => 1_700_000_000_000 },
-      NOTE,
-      BOOK,
-      REGIONS,
-    );
+    const written = await writeNote({ captures, now: () => 1_700_000_000_000 }, NOTE, BOOK, ANCHOR);
 
     expect(written.ok && written.value.createdAt).toBe(1_700_000_000_000);
     expect(at(saved, 0).editedAt).toBeNull();
@@ -82,7 +81,7 @@ describe('writeNote', () => {
   it('reports a storage failure rather than throwing', async () => {
     const { captures } = repository(true);
 
-    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, REGIONS);
+    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
     expect(written).toEqual(err({ kind: 'storage-unavailable' }));
   });

@@ -1,5 +1,5 @@
+import type { Anchor } from '$lib/shared/anchor';
 import type { CaptureId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { inBookOrder } from './capture-order';
 import { captureHolds } from './capture-results';
@@ -8,7 +8,7 @@ import { wrappedIndex } from './match-stepping';
 
 type ArrivalCapture = SearchedCapture & {
   readonly id: CaptureId;
-  readonly regions: readonly ImageRegion[];
+  readonly anchor: Anchor;
 };
 
 type Stepping<T> = {

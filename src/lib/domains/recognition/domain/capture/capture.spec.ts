@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -18,11 +20,19 @@ const REGIONS: readonly ImageRegion[] = [
   { index: imageIndex(13), rect: imageRect(10, 20, 100, 40) },
 ];
 
+const ANCHOR: Anchor = regionAnchor(REGIONS);
+
+const QUOTED: Anchor = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', {
+  exact: 'こっちに来て',
+  prefix: 'そして',
+  suffix: 'と言った',
+});
+
 function draft(id: string, confidence: number | null = null): CaptureDraft {
   return {
     id: captureId(id),
     bookId: BOOK,
-    regions: REGIONS,
+    anchor: ANCHOR,
     text: 'こっちに来て',
     confidence,
     origin: 'recognized',
@@ -34,7 +44,7 @@ function note(id: string, text: string): Capture {
     {
       id: captureId(id),
       bookId: BOOK,
-      regions: REGIONS,
+      anchor: ANCHOR,
       text,
       origin: 'written',
     },
@@ -51,6 +61,11 @@ function asRecognized(capture: Capture): RecognizedCapture {
   return capture;
 }
 
+function asRegions(anchor: Anchor): readonly ImageRegion[] {
+  if (anchor.kind !== 'region') throw new Error('That capture was not anchored to a region');
+  return anchor.regions;
+}
+
 describe('takenCapture', () => {
   it('stamps the draft with the moment it was taken', () => {
     const capture = takenCapture(draft('a', 0.8), 1_700_000_000_000);
@@ -58,7 +73,7 @@ describe('takenCapture', () => {
     expect(capture).toEqual({
       id: 'a',
       bookId: BOOK,
-      regions: REGIONS,
+      anchor: ANCHOR,
       text: 'こっちに来て',
       note: null,
       confidence: 0.8,
@@ -75,7 +90,7 @@ describe('takenCapture', () => {
     expect(capture).toEqual({
       id: 'a',
       bookId: BOOK,
-      regions: REGIONS,
+      anchor: ANCHOR,
       text: 'my own words',
       origin: 'written',
       createdAt: 1,
@@ -87,13 +102,14 @@ describe('takenCapture', () => {
   it('keeps the image index and the rect rather than a page number', () => {
     const capture = takenCapture(draft('a'), 1);
 
-    expect(at(capture.regions, 0).index).toBe(13);
-    expect(at(capture.regions, 0).rect).toEqual(imageRect(10, 20, 100, 40));
+    expect(capture.anchor.kind).toBe('region');
+    expect(at(asRegions(capture.anchor), 0).index).toBe(13);
+    expect(at(asRegions(capture.anchor), 0).rect).toEqual(imageRect(10, 20, 100, 40));
   });
 });
 
 describe('captureFromStored', () => {
-  it('reads a record written today unchanged', () => {
+  it('reads a record holding every field it knows, keeping each one', () => {
     const stored: StoredCapture = {
       id: captureId('a'),
       bookId: BOOK,
@@ -104,7 +120,10 @@ describe('captureFromStored', () => {
     };
 
     expect(captureFromStored(stored)).toEqual({
-      ...stored,
+      id: 'a',
+      bookId: BOOK,
+      anchor: ANCHOR,
+      text: 'こっちに来て',
       note: null,
       confidence: 0.5,
       createdAt: 42,
@@ -112,6 +131,55 @@ describe('captureFromStored', () => {
       origin: 'recognized',
       tagIds: [],
     });
+  });
+
+  it('anchors a record holding regions and no anchor to those regions', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).anchor).toEqual(regionAnchor(REGIONS));
+  });
+
+  it('anchors a record holding neither an anchor nor regions nowhere', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      text: 'こっちに来て',
+    };
+
+    expect(captureFromStored(stored).anchor).toEqual(regionAnchor([]));
+  });
+
+  it('reads a stored text anchor back whole', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: QUOTED,
+      text: 'こっちに来て',
+      confidence: null,
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).anchor).toEqual(QUOTED);
+  });
+
+  it('prefers the anchor a record carries over the regions beside it', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: QUOTED,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).anchor).toEqual(QUOTED);
   });
 
   it('reads a record written before an edit was possible as never edited', () => {
@@ -288,7 +356,7 @@ describe('editedCapture', () => {
 
     expect(edited.id).toBe(before.id);
     expect(edited.bookId).toBe(before.bookId);
-    expect(edited.regions).toEqual(before.regions);
+    expect(edited.anchor).toEqual(before.anchor);
     expect(edited.createdAt).toBe(before.createdAt);
   });
 });

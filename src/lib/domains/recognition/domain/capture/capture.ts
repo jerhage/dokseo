@@ -1,3 +1,5 @@
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -5,7 +7,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 type CaptureContent = {
   readonly id: CaptureId;
   readonly bookId: BookId;
-  readonly regions: readonly ImageRegion[];
+  readonly anchor: Anchor;
   readonly text: string;
 };
 
@@ -35,7 +37,12 @@ type WrittenCapture = WrittenDraft & CaptureHistory;
 
 type Capture = RecognizedCapture | WrittenCapture;
 
-type StoredCapture = CaptureContent & {
+type StoredCapture = {
+  readonly id: CaptureId;
+  readonly bookId: BookId;
+  readonly text: string;
+  readonly anchor?: Anchor;
+  readonly regions?: readonly ImageRegion[];
   readonly note?: string | null;
   readonly confidence?: number | null;
   readonly createdAt?: number | null;
@@ -51,11 +58,15 @@ function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
   return { ...draft, ...history, note: null };
 }
 
+function storedAnchor(stored: StoredCapture): Anchor {
+  return stored.anchor ?? regionAnchor(stored.regions ?? []);
+}
+
 function captureFromStored(stored: StoredCapture): Capture {
   const held = {
     id: stored.id,
     bookId: stored.bookId,
-    regions: stored.regions,
+    anchor: storedAnchor(stored),
     text: stored.text,
     createdAt: stored.createdAt ?? 0,
     editedAt: stored.editedAt ?? null,

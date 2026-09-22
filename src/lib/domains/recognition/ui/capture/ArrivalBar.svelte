@@ -17,7 +17,7 @@
   let { book, query, language, stepping }: Props = $props();
 
   function hrefOf(capture: ArrivalCapture): string | null {
-    const index = firstImage(capture.regions);
+    const index = firstImage(capture.anchor);
     return index === null ? null : readerHref(book, index, { capture: capture.id, query });
   }
 

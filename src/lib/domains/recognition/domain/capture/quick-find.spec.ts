@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
@@ -41,7 +42,9 @@ function capture(book: SearchedBook, text: string, tags: readonly TagId[], place
   return {
     origin: 'written' as const,
     bookId: book.id,
-    regions: [{ index: imageIndex(place.index), rect: imageRect(place.x, 0, 100, 60) }],
+    anchor: regionAnchor([
+      { index: imageIndex(place.index), rect: imageRect(place.x, 0, 100, 60) },
+    ]),
     text,
     tagIds: tags,
     createdAt: 0,

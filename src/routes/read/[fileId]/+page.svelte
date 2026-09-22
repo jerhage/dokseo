@@ -15,6 +15,7 @@
   import { bookId } from '$lib/shared/ids';
   import type { ImageIndex } from '$lib/shared/ids';
   import { glowRegions } from '$lib/shared/image-region';
+  import type { GlowRegion } from '$lib/shared/image-region';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     IMAGE_PARAMETER,
@@ -23,6 +24,8 @@
     readImageIndex,
     urlWithImageIndex,
   } from '$lib/shared/reader-location';
+
+  const NOTHING_TO_GLOW: readonly GlowRegion[] = [];
 
   function mirror(index: ImageIndex): void {
     const moved = urlWithImageIndex(page.url, index);
@@ -39,7 +42,14 @@
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction));
-  const glow = $derived(here === null ? [] : glowRegions(here.at.regions, here.at.origin));
+  const glow = $derived.by<readonly GlowRegion[]>(() => {
+    if (here === null) return NOTHING_TO_GLOW;
+
+    const anchor = here.at.anchor;
+    if (anchor.kind === 'text') return NOTHING_TO_GLOW;
+
+    return glowRegions(anchor.regions, here.at.origin);
+  });
   const stepping = $derived(here?.stepping ?? null);
   const finding = $derived(found?.query ?? null);
   const books = $derived(

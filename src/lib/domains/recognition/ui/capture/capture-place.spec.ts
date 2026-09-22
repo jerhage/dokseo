@@ -1,7 +1,53 @@
 import { describe, expect, it } from 'vitest';
-import { capturedLabel } from './capture-place';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
+import { imageRect } from '$lib/shared/geometry';
+import { imageIndex } from '$lib/shared/ids';
+import { capturedLabel, firstImage, NO_PLACE, placeLabel } from './capture-place';
 
 const NOW = 1_700_000_000_000;
+
+const QUOTED: Anchor = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', {
+  exact: 'こっちに来て',
+  prefix: 'そして',
+  suffix: 'と言った',
+});
+
+function on(index: number) {
+  return { index: imageIndex(index), rect: imageRect(0, 0, 100, 60) };
+}
+
+describe('placeLabel', () => {
+  it('names the page a single region sits on', () => {
+    expect(placeLabel(regionAnchor([on(13)]))).toBe('p.014');
+  });
+
+  it('counts the regions of a capture spanning a spread', () => {
+    expect(placeLabel(regionAnchor([on(13), on(14)]))).toBe('p.014–015 · 2 regions');
+  });
+
+  it('reports no page for a capture anchored to text', () => {
+    expect(placeLabel(QUOTED)).toBe(NO_PLACE);
+  });
+
+  it('reports no page for a capture anchored to no region at all', () => {
+    expect(placeLabel(regionAnchor([]))).toBe(NO_PLACE);
+  });
+});
+
+describe('firstImage', () => {
+  it('names the image the first region sits on', () => {
+    expect(firstImage(regionAnchor([on(4), on(5)]))).toBe(4);
+  });
+
+  it('names no image for a capture anchored to text', () => {
+    expect(firstImage(QUOTED)).toBeNull();
+  });
+
+  it('names no image for a capture anchored to no region at all', () => {
+    expect(firstImage(regionAnchor([]))).toBeNull();
+  });
+});
 
 describe('capturedLabel', () => {
   it('says nothing for a capture stored before a time was kept', () => {

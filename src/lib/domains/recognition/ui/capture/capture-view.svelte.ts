@@ -1,6 +1,8 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import { captureId, tagId } from '$lib/shared/ids';
@@ -57,7 +59,7 @@ type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
 
 type Recorded = {
   readonly id: CaptureId;
-  readonly regions: readonly ImageRegion[];
+  readonly anchor: Anchor;
   readonly tagIds: readonly TagId[];
 };
 
@@ -168,7 +170,7 @@ function countsAfter(
 function cardOf(capture: Capture): PanelCapture {
   const held = {
     id: capture.id,
-    regions: capture.regions,
+    anchor: capture.anchor,
     tagIds: capture.tagIds,
     status: 'done' as const,
     edited: capture.editedAt !== null,
@@ -187,7 +189,7 @@ function cardOf(capture: Capture): PanelCapture {
 }
 
 function takenOf(capture: PanelCapture): Taken {
-  const held = { id: capture.id, regions: capture.regions, tagIds: capture.tagIds };
+  const held = { id: capture.id, anchor: capture.anchor, tagIds: capture.tagIds };
   if (capture.origin === 'written') return { ...held, origin: 'written' };
 
   return { ...held, origin: 'recognized', note: capture.note };
@@ -262,7 +264,7 @@ class CaptureView {
   }
 
   #marked(card: Taken & { readonly text: RecognizedText }): ArrivalCapture {
-    const held = { id: card.id, regions: card.regions, text: card.text.text };
+    const held = { id: card.id, anchor: card.anchor, text: card.text.text };
     if (card.origin === 'written') return { ...held, origin: 'written' };
 
     const stored = this.#stored.get(card.id);
@@ -435,11 +437,12 @@ class CaptureView {
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
     const generation = this.#generation;
     const id = captureId(crypto.randomUUID());
+    const anchor = regionAnchor(regions);
     this.captures = [
       ...this.captures,
       {
         id,
-        regions,
+        anchor,
         origin: 'written',
         tagIds: [],
         status: 'done',
@@ -449,9 +452,7 @@ class CaptureView {
     ];
     this.writing = id;
 
-    const written = await this.#container.recognition
-      .writeNote(id, book, regions)
-      .catch(() => null);
+    const written = await this.#container.recognition.writeNote(id, book, anchor).catch(() => null);
     if (written === null || !written.ok || generation !== this.#generation) return;
 
     this.#stored.set(written.value.id, written.value);
@@ -546,7 +547,7 @@ class CaptureView {
       ...this.captures,
       {
         id,
-        regions: held.regions,
+        anchor: regionAnchor(held.regions),
         origin: 'recognized',
         note: null,
         tagIds: [],
@@ -587,7 +588,7 @@ class CaptureView {
     await this.#keep(generation, {
       id,
       bookId: book,
-      regions: held.regions,
+      anchor: regionAnchor(held.regions),
       text: settled.text.text,
       confidence: settled.text.confidence,
       origin: 'recognized',

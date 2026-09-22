@@ -87,7 +87,7 @@
         cover: covers.get(group.book.id) ?? null,
         rows: group.captures
           .map((capture): Row | null => {
-            const index = firstImage(capture.regions);
+            const index = firstImage(capture.anchor);
             if (index === null) return null;
 
             return {
@@ -95,7 +95,7 @@
               order: order++,
               href: readerHref(group.book.id, index, { capture: capture.id, query: null }),
               page: pageLabel(index),
-              place: placeLabel(capture.regions),
+              place: placeLabel(capture.anchor),
               when: capturedLabel(capture.createdAt, Date.now()),
               text: capture.text,
               chips: chipsOf(

@@ -4,8 +4,8 @@
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
+  import type { Anchor } from '$lib/shared/anchor';
   import type { CaptureId, TagId } from '$lib/shared/ids';
-  import type { ImageRegion } from '$lib/shared/image-region';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import { readerHref } from '$lib/shared/reader-location';
@@ -61,7 +61,7 @@
 
   type Hit = {
     readonly capture: Done;
-    readonly regions: readonly ImageRegion[];
+    readonly anchor: Anchor;
     readonly lines: MarkedLines;
   };
 
@@ -108,9 +108,9 @@
 
   const announcement = $derived(waiting ? modelLoadAnnouncement(load) : '');
 
-  function hrefOf(id: CaptureId, regions: readonly ImageRegion[]): string | null {
+  function hrefOf(id: CaptureId, anchor: Anchor): string | null {
     const book = view.book;
-    const index = firstImage(regions);
+    const index = firstImage(anchor);
     if (book === null || index === null) return null;
 
     return readerHref(book, index, { capture: id, query: searching ? wanted : null });
@@ -140,8 +140,8 @@
     return match(capture)
       .with({ status: 'pending' }, (running) => ({
         id: running.id,
-        place: placeLabel(running.regions),
-        href: hrefOf(running.id, running.regions),
+        place: placeLabel(running.anchor),
+        href: hrefOf(running.id, running.anchor),
         state: 'Reading…',
         text: null,
         segments: null,
@@ -157,15 +157,15 @@
       }))
       .with({ status: 'done' }, (read) => ({
         id: read.id,
-        place: placeLabel(read.regions),
-        href: hrefOf(read.id, read.regions),
+        place: placeLabel(read.anchor),
+        href: hrefOf(read.id, read.anchor),
         state: captureState(read.origin),
         text: read.text.text,
         segments: lines === null ? null : lines.text,
         note: captureNote(read.origin, read.text.text),
         annotation: annotationOf(read),
         annotationSegments: lines === null ? null : lines.note,
-        noteLabel: noteLabelOf(read, placeLabel(read.regions)),
+        noteLabel: noteLabelOf(read, placeLabel(read.anchor)),
         tags,
         tone: 'done' as CaptureStatus,
         origin: read.origin,
@@ -174,8 +174,8 @@
       }))
       .with({ status: 'empty' }, (blank) => ({
         id: blank.id,
-        place: placeLabel(blank.regions),
-        href: hrefOf(blank.id, blank.regions),
+        place: placeLabel(blank.anchor),
+        href: hrefOf(blank.id, blank.anchor),
         state: 'No text',
         text: null,
         segments: null,
@@ -191,8 +191,8 @@
       }))
       .with({ status: 'failed' }, (broken) => ({
         id: broken.id,
-        place: placeLabel(broken.regions),
-        href: hrefOf(broken.id, broken.regions),
+        place: placeLabel(broken.anchor),
+        href: hrefOf(broken.id, broken.anchor),
         state: 'Failed',
         text: null,
         segments: null,
@@ -213,7 +213,7 @@
     if (capture.status !== 'done') return null;
 
     const lines = markedLines(searchedOf(capture), wanted);
-    return lines.matched ? { capture, regions: capture.regions, lines } : null;
+    return lines.matched ? { capture, anchor: capture.anchor, lines } : null;
   }
 
   const wanted = $derived(query.trim());

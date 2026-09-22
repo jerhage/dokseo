@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionNotices } from '$lib/container';
+import { regionAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
@@ -240,14 +242,14 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       writeNote: (
         id: CaptureId,
         book: BookId,
-        taken: readonly ImageRegion[],
+        taken: Anchor,
       ): Promise<Result<Capture, CaptureError>> => {
         if (store.saveFails) {
           return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
         }
 
         const note = takenCapture(
-          { id, bookId: book, regions: taken, text: '', origin: 'written' },
+          { id, bookId: book, anchor: taken, text: '', origin: 'written' },
           store.rows.length + 1,
         );
         store.rows = [...store.rows, note];
@@ -367,7 +369,7 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
   return {
     id: captureId(id),
     bookId: book,
-    regions: regions(4),
+    anchor: regionAnchor(regions(4)),
     text,
     note: null,
     confidence: null,
@@ -427,7 +429,7 @@ describe('CaptureView', () => {
     const running = read(view);
     const call = await started(world, 0);
     expect(view.captures.map((capture) => capture.status)).toEqual(['pending']);
-    expect(at(view.captures, 0).regions).toEqual(regions());
+    expect(at(view.captures, 0).anchor).toEqual(regionAnchor(regions()));
 
     call.settle(ok(recognizedText('どうしたんだ')));
     await running;
@@ -717,7 +719,7 @@ describe('CaptureView', () => {
 
     expect(view.consentRequest).toBeNull();
     expect(world.consent.grants).toEqual(['ja']);
-    expect(at(view.captures, 0).regions).toEqual(regions(7));
+    expect(at(view.captures, 0).anchor).toEqual(regionAnchor(regions(7)));
   });
 
   it('discards the held selection and asks no second time when the reader declines', async () => {
@@ -893,7 +895,7 @@ describe('CaptureView', () => {
 
     expect(world.store.rows.map((row) => row.text)).toEqual(['これは保存される']);
     expect(at(world.store.rows, 0).bookId).toBe(ONE);
-    expect(at(world.store.rows, 0).regions).toEqual(regions());
+    expect(at(world.store.rows, 0).anchor).toEqual(regionAnchor(regions()));
   });
 
   it('stores nothing for a capture that failed', async () => {
@@ -1378,13 +1380,13 @@ describe('CaptureView notes', () => {
     const card = at(view.captures, 0);
     expect(card.origin).toBe('written');
     expect(card.status === 'done' ? card.text.text : null).toBe('');
-    expect(card.regions).toEqual(regions(5));
+    expect(card.anchor).toEqual(regionAnchor(regions(5)));
 
     const row = at(world.store.rows, 0);
     expect(row.origin).toBe('written');
     expect(row.text).toBe('');
     expect(row.bookId).toBe(ONE);
-    expect(row.regions).toEqual(regions(5));
+    expect(row.anchor).toEqual(regionAnchor(regions(5)));
   });
 
   it('stores nothing when no book is open', () => {

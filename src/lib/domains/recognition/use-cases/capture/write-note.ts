@@ -1,5 +1,5 @@
+import type { Anchor } from '$lib/shared/anchor';
 import type { BookId, CaptureId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import { ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { takenCapture } from '../../domain/capture/capture';
@@ -15,9 +15,9 @@ async function writeNote(
   deps: WriteNoteDeps,
   id: CaptureId,
   book: BookId,
-  regions: readonly ImageRegion[],
+  anchor: Anchor,
 ): Promise<Result<Capture, CaptureError>> {
-  const note = takenCapture({ id, bookId: book, regions, text: '', origin: 'written' }, deps.now());
+  const note = takenCapture({ id, bookId: book, anchor, text: '', origin: 'written' }, deps.now());
   const stored = await deps.captures.save(note);
   if (!stored.ok) return stored;
 

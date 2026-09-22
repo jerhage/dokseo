@@ -1,5 +1,5 @@
+import type { Anchor } from '$lib/shared/anchor';
 import type { BookId, TagId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { matchesQuery } from '$lib/shared/text-search';
@@ -18,7 +18,7 @@ type SearchedCapture =
 
 type Written = SearchedCapture & {
   readonly bookId: BookId;
-  readonly regions: readonly ImageRegion[];
+  readonly anchor: Anchor;
 };
 
 type Tagged = {
