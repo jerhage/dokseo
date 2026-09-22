@@ -1,5 +1,6 @@
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../book/book';
+import type { PageObstacle } from './epub-pages';
 import type { UploadReport } from './upload-progress';
 
 type BuiltSource = {
@@ -13,7 +14,8 @@ type BuiltSource = {
 type SourceBuildError =
   | { readonly kind: 'nothing-usable' }
   | { readonly kind: 'unreadable'; readonly cause: string }
-  | { readonly kind: 'empty' };
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle };
 
 interface SourceBuilder {
   build(

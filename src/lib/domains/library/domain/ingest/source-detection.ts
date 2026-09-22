@@ -8,6 +8,7 @@ function detectSourceKind(names: readonly string[]): SourceKind | null {
     const only = extensionOf(single);
     if (only === 'pdf') return 'pdf';
     if (only === 'zip' || only === 'cbz') return 'archive';
+    if (only === 'epub') return 'epub';
   }
   if (names.some(isImageEntry)) return 'images';
   return null;

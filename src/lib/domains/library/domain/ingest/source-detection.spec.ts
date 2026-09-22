@@ -14,7 +14,12 @@ describe('detectSourceKind', () => {
     expect(detectSourceKind(['chapter.cbz'])).toBe('archive');
   });
 
+  it('detects a single epub', () => {
+    expect(detectSourceKind(['volume-1.epub'])).toBe('epub');
+  });
+
   it('ignores the case of the container extension', () => {
+    expect(detectSourceKind(['chapter.EPUB'])).toBe('epub');
     expect(detectSourceKind(['chapter.PDF'])).toBe('pdf');
     expect(detectSourceKind(['chapter.ZiP'])).toBe('archive');
     expect(detectSourceKind(['chapter.CBZ'])).toBe('archive');
