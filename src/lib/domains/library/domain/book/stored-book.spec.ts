@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
-import { bookFromStored } from './stored-book';
+import { bookFromStored, NO_CONTENT_HASH } from './stored-book';
 import type { StoredBook } from './stored-book';
 
 const legacy: StoredBook = {
@@ -67,12 +67,27 @@ describe('bookFromStored', () => {
     });
   });
 
+  it('reads a record written before fingerprints as holding no content hash', () => {
+    expect(bookFromStored(legacy).contentHash).toBe(NO_CONTENT_HASH);
+  });
+
+  it('gives a record written before fingerprints a hash no file can be given', () => {
+    expect(NO_CONTENT_HASH).toBe('');
+  });
+
+  it('keeps a stored content hash that is present', () => {
+    const stored: StoredBook = { ...legacy, contentHash: contentHash('9f86d081') };
+
+    expect(bookFromStored(stored).contentHash).toBe('9f86d081');
+  });
+
   it('leaves every other field exactly as stored', () => {
     const expected: Book = {
       ...legacy,
       pagePairing: DEFAULT_PAGE_PAIRING,
       pageFit: defaultPageFit(legacy.layoutKind),
       position: imagePlace(imageIndex(3)),
+      contentHash: NO_CONTENT_HASH,
     };
     expect(bookFromStored(legacy)).toEqual(expected);
   });

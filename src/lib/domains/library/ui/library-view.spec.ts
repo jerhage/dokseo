@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
-import { bookId, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -32,6 +32,7 @@ function book(id: string, overrides: Partial<Book> = {}): Book {
     pagePairing: 'single',
     pageFit: 'height',
     sourceKind: 'archive',
+    contentHash: contentHash('a1'),
     imageCount: 182,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(13)),

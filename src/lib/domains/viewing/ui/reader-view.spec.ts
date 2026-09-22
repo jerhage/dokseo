@@ -3,7 +3,7 @@ import type { Container } from '$lib/container';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Size } from '$lib/shared/geometry';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
@@ -31,6 +31,7 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
     pagePairing: 'double',
     pageFit: 'height',
     sourceKind: 'archive',
+    contentHash: contentHash('a1'),
     imageCount: 6,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(0)),

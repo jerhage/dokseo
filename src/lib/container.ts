@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { fingerprintOf } from '$lib/platform/crypto/fingerprint';
 import { noticeBoard } from '$lib/platform/events/notice-board';
 import { probeGpu } from '$lib/platform/gpu/adapter-probe';
 import {
@@ -310,6 +311,7 @@ function buildContainer(): Container {
   const openFileDeps: OpenFileDeps = {
     repository,
     builder: createFileSourceBuilder(),
+    fingerprint: fingerprintOf,
     requestPersistence,
     now: Date.now,
     newId: () => crypto.randomUUID(),

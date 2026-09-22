@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { BookId } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
@@ -16,6 +16,7 @@ type Book = {
   readonly pagePairing: PagePairing;
   readonly pageFit: PageFit;
   readonly sourceKind: SourceKind;
+  readonly contentHash: ContentHash;
   readonly imageCount: number;
   readonly addedAt: number;
   readonly position: ReadingPlace;

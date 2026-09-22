@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { imagePlace } from '$lib/shared/reading-place';
@@ -27,6 +27,7 @@ function book(overrides: Partial<Book> = {}): Book {
     pagePairing: 'single',
     pageFit: 'height',
     sourceKind: 'archive',
+    contentHash: contentHash('a1'),
     imageCount: 182,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(0)),

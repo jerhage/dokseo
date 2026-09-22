@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { BookId } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
+import { imagePlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -7,7 +9,9 @@ import { at } from '$lib/shared/testing/at';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import { NO_CONTENT_HASH } from '../domain/book/stored-book';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import { uploadManifest } from '../domain/ingest/upload-manifest';
 import type { UploadReport, UploadStage } from '../domain/ingest/upload-progress';
 import { openFile } from './open-file';
 import type { OpenFileDeps } from './open-file';
@@ -15,6 +19,8 @@ import type { OpenFileDeps } from './open-file';
 const NOW = 1758240000000;
 
 const NEW_ID = 'book-7';
+
+const DIGEST = 'f0e1d2c3';
 
 function notFound(id: BookId): Result<never, LibraryError> {
   return err({ kind: 'not-found', id });
@@ -33,13 +39,31 @@ function builtSource(overrides: Partial<BuiltSource> = {}): BuiltSource {
 
 type AddCall = { readonly book: Book; readonly source: Blob; readonly cover: Blob };
 
+function heldBook(hash: ContentHash): Book {
+  return {
+    id: bookId('book-1'),
+    title: 'Yotsuba&! 1',
+    language: 'ja',
+    layoutKind: 'paged',
+    direction: 'rtl',
+    pagePairing: DEFAULT_PAGE_PAIRING,
+    pageFit: defaultPageFit('paged'),
+    sourceKind: 'archive',
+    contentHash: hash,
+    imageCount: 182,
+    addedAt: 1758240000000,
+    position: imagePlace(imageIndex(9)),
+  };
+}
+
 function fakeRepository(
   outcome: Result<void, LibraryError> = ok(undefined),
   writes: readonly (readonly [number, number])[] = [],
+  held: Result<readonly Book[], LibraryError> = ok([]),
 ) {
   const added: AddCall[] = [];
   const repository: LibraryRepository = {
-    list: () => Promise.resolve(ok([])),
+    list: () => Promise.resolve(held),
     get: (id) => Promise.resolve(notFound(id)),
     add: (book, source, cover, report) => {
       added.push({ book, source, cover });
@@ -88,6 +112,7 @@ function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
   return {
     repository: fakeRepository().repository,
     builder: fakeBuilder(ok(builtSource())).builder,
+    fingerprint: () => Promise.resolve(DIGEST),
     requestPersistence: () => Promise.resolve(true),
     now: () => NOW,
     newId: () => NEW_ID,
@@ -95,7 +120,23 @@ function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
   };
 }
 
+function fakeFingerprint(digest: string = DIGEST) {
+  const hashed: Blob[] = [];
+  return {
+    hashed,
+    fingerprint: (blob: Blob) => {
+      hashed.push(blob);
+      return Promise.resolve(digest);
+    },
+  };
+}
+
 const files: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.cbz')];
+
+const folder: readonly File[] = [
+  new File(['0123456789'], '002.png'),
+  new File(['01234'], '001.png'),
+];
 
 describe('openFile', () => {
   it('returns the stored book on the happy path', async () => {
@@ -313,6 +354,96 @@ describe('openFile', () => {
       writtenBytes: 64,
       totalBytes: 128,
       elapsedMs: 800,
+    });
+  });
+
+  it('fingerprints the one file it was handed', async () => {
+    const hashing = fakeFingerprint();
+
+    await openFile(deps({ fingerprint: hashing.fingerprint }), files);
+
+    expect(hashing.hashed).toEqual([at(files, 0)]);
+  });
+
+  it('fingerprints the sorted names and sizes of a folder of images', async () => {
+    const hashing = fakeFingerprint();
+
+    await openFile(deps({ fingerprint: hashing.fingerprint }), folder);
+
+    expect(await at(hashing.hashed, 0).text()).toBe(uploadManifest(folder));
+  });
+
+  it('reads the same manifest whichever order a folder arrives in', async () => {
+    const one = fakeFingerprint();
+    const other = fakeFingerprint();
+
+    await openFile(deps({ fingerprint: one.fingerprint }), folder);
+    await openFile(deps({ fingerprint: other.fingerprint }), folder.toReversed());
+
+    expect(await at(one.hashed, 0).text()).toBe(await at(other.hashed, 0).text());
+  });
+
+  it('stores the fingerprint on the new book', async () => {
+    const repository = fakeRepository();
+
+    const result = await openFile(
+      deps({ repository: repository.repository, fingerprint: () => Promise.resolve('beef01') }),
+      files,
+    );
+
+    expect(result.ok && result.value.contentHash).toBe('beef01');
+    expect(at(repository.added, 0).book.contentHash).toBe('beef01');
+  });
+
+  it('returns the book it already holds when the fingerprint matches', async () => {
+    const known = heldBook(contentHash(DIGEST));
+    const repository = fakeRepository(ok(undefined), [], ok([known]));
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result).toEqual(ok(known));
+  });
+
+  it('stores nothing and builds nothing when the fingerprint matches', async () => {
+    const repository = fakeRepository(ok(undefined), [], ok([heldBook(contentHash(DIGEST))]));
+    const builder = fakeBuilder(ok(builtSource()));
+
+    await openFile(deps({ repository: repository.repository, builder: builder.builder }), files);
+
+    expect(repository.added).toEqual([]);
+    expect(builder.calls).toEqual([]);
+  });
+
+  it('imports a file no held book carries the fingerprint of', async () => {
+    const repository = fakeRepository(ok(undefined), [], ok([heldBook(contentHash('other'))]));
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(repository.added).toHaveLength(1);
+    expect(result.ok && result.value.id).toBe(NEW_ID);
+  });
+
+  it('imports a file although a book stored before fingerprints carries none', async () => {
+    const repository = fakeRepository(ok(undefined), [], ok([heldBook(NO_CONTENT_HASH)]));
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(repository.added).toHaveLength(1);
+    expect(result.ok && result.value.id).toBe(NEW_ID);
+  });
+
+  it('reports a failure to read the library as a storage error', async () => {
+    const repository = fakeRepository(
+      ok(undefined),
+      [],
+      err<LibraryError>({ kind: 'storage-unavailable' }),
+    );
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'storage', error: { kind: 'storage-unavailable' } },
     });
   });
 

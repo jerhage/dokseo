@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { applyEdit, defaultPageFit } from './book';
 import type { Book } from './book';
@@ -13,6 +13,7 @@ const book: Book = {
   pagePairing: 'double',
   pageFit: 'height',
   sourceKind: 'archive',
+  contentHash: contentHash('a1'),
   imageCount: 182,
   addedAt: 1758240000000,
   position: imagePlace(imageIndex(3)),

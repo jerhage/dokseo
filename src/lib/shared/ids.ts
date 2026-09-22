@@ -10,6 +10,8 @@ type TagId = Branded<string, 'TagId'>;
 
 type ImageIndex = Branded<number, 'ImageIndex'>;
 
+type ContentHash = Branded<string, 'ContentHash'>;
+
 function bookId(value: string): BookId {
   return value as BookId;
 }
@@ -26,5 +28,9 @@ function imageIndex(value: number): ImageIndex {
   return value as ImageIndex;
 }
 
-export { bookId, captureId, tagId, imageIndex };
-export type { BookId, CaptureId, TagId, ImageIndex };
+function contentHash(value: string): ContentHash {
+  return value as ContentHash;
+}
+
+export { bookId, captureId, tagId, imageIndex, contentHash };
+export type { BookId, CaptureId, TagId, ImageIndex, ContentHash };
