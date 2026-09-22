@@ -26,11 +26,15 @@ type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
 
 type OpenedImages = Extract<OpenedBook, { readonly kind: 'images' }>;
 
+type OpenedFlow = Extract<OpenedBook, { readonly kind: 'flow' }>;
+
 type OpenFailure = Extract<OpenOutcome, { readonly ok: false }>['error'];
 
 type EditFailure = Extract<EditOutcome, { readonly ok: false }>['error'];
 
 type ReaderBook = OpenedImages['book'];
+
+type FlowBook = OpenedFlow['book'];
 
 type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing' | 'flow';
 
@@ -99,6 +103,7 @@ class ReaderView {
   status = $state<ReaderStatus>('idle');
   message = $state<string | null>(null);
   book = $state.raw<ReaderBook | null>(null);
+  flowBook = $state.raw<FlowBook | null>(null);
   saving = $state(false);
   sizes = $state.raw<readonly (Size | null)[]>([]);
   groups = $state.raw<readonly PageGroup[]>([]);
@@ -147,6 +152,7 @@ class ReaderView {
     this.status = 'loading';
     this.message = null;
     this.book = null;
+    this.flowBook = null;
     this.sizes = [];
     this.groups = [];
     this.regions = [];
@@ -175,6 +181,7 @@ class ReaderView {
     }
 
     if (opened.value.kind === 'flow') {
+      this.flowBook = opened.value.book;
       this.status = 'flow';
       return;
     }
@@ -312,6 +319,7 @@ class ReaderView {
     this.#generation += 1;
     this.#release();
     this.book = null;
+    this.flowBook = null;
     this.sizes = [];
     this.groups = [];
     this.regions = [];

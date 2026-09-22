@@ -908,6 +908,29 @@ describe('the reading place in the url', () => {
     expect(world.pages.asked).toEqual([]);
   });
 
+  it('keeps the flow book that opened, for the screen that can show one', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'));
+
+    expect(view.flowBook).toEqual(book({ layoutKind: 'flow', imageCount: 0 }));
+  });
+
+  it('forgets the flow book when a book of images opens next', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    world.opening = world.stored;
+    await view.open(bookId('one'));
+
+    expect(view.flowBook).toBeNull();
+    expect(view.status).toBe('ready');
+  });
+
   it('reports a book that is no longer in the library as missing', async () => {
     const world = fakes();
     world.opening = 'missing';

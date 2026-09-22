@@ -4,7 +4,11 @@ import type { BookId } from '$lib/shared/ids';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 
-type BookOutcome = Awaited<ReturnType<Container['library']['readBook']>>;
+type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
+
+type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
+
+type FlowBook = Extract<OpenedBook, { readonly kind: 'flow' }>['book'];
 
 type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
 
@@ -80,32 +84,16 @@ class FlowView {
     return curtainFor(this.state);
   }
 
-  async open(id: BookId, show: ShowFlowBook): Promise<void> {
+  async open(book: FlowBook, show: ShowFlowBook): Promise<void> {
     this.#flushSave();
     const generation = ++this.#generation;
     this.#release();
     this.state = OPENING;
     this.#placed = null;
 
-    let held: BookOutcome;
-    try {
-      held = await this.#container.library.readBook(id);
-    } catch (cause) {
-      if (generation !== this.#generation) return;
-      this.state = { kind: 'failed', message: `That book could not be read: ${String(cause)}` };
-      return;
-    }
-
-    if (generation !== this.#generation) return;
-
-    if (!held.ok) {
-      this.state = { kind: 'failed', message: describeLibraryFailure(held.error) };
-      return;
-    }
-
     let stored: SourceOutcome;
     try {
-      stored = await this.#container.library.readSource(id);
+      stored = await this.#container.library.readSource(book.id);
     } catch (cause) {
       if (generation !== this.#generation) return;
       this.state = { kind: 'failed', message: `That book could not be read: ${String(cause)}` };
@@ -119,7 +107,7 @@ class FlowView {
       return;
     }
 
-    const at = resumedCfi(held.value.position);
+    const at = resumedCfi(book.position);
     this.#placed = at;
 
     let surface: FlowSurface;
@@ -128,7 +116,7 @@ class FlowView {
         source: stored.value,
         at,
         moved: (cfi) => {
-          this.#moved(generation, id, cfi);
+          this.#moved(generation, book.id, cfi);
         },
       });
     } catch (cause) {
@@ -205,4 +193,4 @@ class FlowView {
 }
 
 export { FlowView, PLACE_SAVE_DELAY_MS };
-export type { FlowCurtain, FlowState, ShowFlowBook };
+export type { FlowBook, FlowCurtain, FlowState, ShowFlowBook };

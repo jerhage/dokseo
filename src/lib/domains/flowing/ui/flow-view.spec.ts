@@ -7,7 +7,7 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
-import type { ShowFlowBook } from './flow-view.svelte';
+import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
 
 const NOVEL: BookId = bookId('one');
 
@@ -19,19 +19,15 @@ const FURTHER_ON = 'epubcfi(/6/16!/4/2/2/1:0)';
 
 const LATER_STILL = 'epubcfi(/6/18!/4/2/8/1:0)';
 
-type Holds = Awaited<ReturnType<Container['library']['readBook']>>;
-
 type Reads = Awaited<ReturnType<Container['library']['readSource']>>;
 
 type Edits = Awaited<ReturnType<Container['library']['editBook']>>;
 
 type BookEdit = Parameters<Container['library']['editBook']>[1];
 
-type StoredBook = Extract<Holds, { readonly ok: true }>['value'];
-
 type LibraryFailure = Extract<Reads, { readonly ok: false }>['error'];
 
-function novel(position: ReadingPlace): StoredBook {
+function novel(position: ReadingPlace): FlowBook {
   return {
     id: NOVEL,
     title: 'Kokoro',
@@ -51,10 +47,8 @@ function novel(position: ReadingPlace): StoredBook {
 type Shelf = {
   container: Container;
   readonly edits: BookEdit[];
-  readonly asked: BookId[];
   readonly reads: BookId[];
   place: ReadingPlace;
-  held: () => Promise<Holds>;
   read: () => Promise<Reads>;
   save: () => Promise<Edits>;
 };
@@ -65,20 +59,14 @@ function shelf(): Shelf {
   const world: Shelf = {
     container: NO_CONTAINER,
     edits: [],
-    asked: [],
     reads: [],
     place: START_OF_THE_TEXT,
-    held: () => Promise.resolve(ok(novel(world.place))),
     read: () => Promise.resolve(ok(SOURCE)),
     save: () => Promise.resolve(ok(novel(world.place))),
   };
 
   world.container = {
     library: {
-      readBook: (id: BookId) => {
-        world.asked.push(id);
-        return world.held();
-      },
       readSource: (id: BookId) => {
         world.reads.push(id);
         return world.read();
@@ -150,9 +138,9 @@ describe('FlowView', () => {
     const surfaces = shows();
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
-    expect(world.asked).toEqual([NOVEL]);
+    expect(world.reads).toEqual([NOVEL]);
     expect(surfaces.openings.map((opening) => opening.source)).toEqual([SOURCE]);
     expect(view.state).toEqual({ kind: 'ready' });
     expect(view.curtain).toEqual({ kind: 'none' });
@@ -165,7 +153,7 @@ describe('FlowView', () => {
     surfaces.gate = gate.promise;
     const view = new FlowView(world.container);
 
-    const opening = view.open(NOVEL, surfaces.show);
+    const opening = view.open(novel(world.place), surfaces.show);
     await Promise.resolve();
     await Promise.resolve();
     expect(view.curtain).toEqual({ kind: 'opening' });
@@ -175,29 +163,13 @@ describe('FlowView', () => {
     expect(view.curtain).toEqual({ kind: 'none' });
   });
 
-  it('reports a book whose record is gone without reading a source', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    world.held = () => Promise.resolve(err<LibraryFailure>({ kind: 'not-found', id: NOVEL }));
-    const view = new FlowView(world.container);
-
-    await view.open(NOVEL, surfaces.show);
-
-    expect(world.reads).toEqual([]);
-    expect(surfaces.openings).toEqual([]);
-    expect(view.curtain).toEqual({
-      kind: 'notice',
-      message: 'That book is no longer stored on this device.',
-    });
-  });
-
   it('reports a source that is no longer stored', async () => {
     const world = shelf();
     const surfaces = shows();
     world.read = () => Promise.resolve(err<LibraryFailure>({ kind: 'not-found', id: NOVEL }));
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     expect(surfaces.openings).toEqual([]);
     expect(view.curtain).toEqual({
@@ -211,7 +183,7 @@ describe('FlowView', () => {
     world.read = () => Promise.resolve(err<LibraryFailure>({ kind: 'storage-unavailable' }));
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, shows().show);
+    await view.open(novel(world.place), shows().show);
 
     expect(view.curtain).toEqual({
       kind: 'notice',
@@ -224,7 +196,7 @@ describe('FlowView', () => {
     world.read = () => Promise.reject(new Error('disk gone'));
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, shows().show);
+    await view.open(novel(world.place), shows().show);
 
     expect(view.curtain).toEqual({
       kind: 'notice',
@@ -238,7 +210,7 @@ describe('FlowView', () => {
     surfaces.failure = 'not a zip';
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     expect(view.state).toEqual({
       kind: 'failed',
@@ -251,7 +223,7 @@ describe('FlowView', () => {
     const surfaces = shows();
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
     view.close();
 
     expect(surfaces.destroyed).toEqual([0]);
@@ -263,8 +235,8 @@ describe('FlowView', () => {
     const surfaces = shows();
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
-    await view.open(bookId('two'), surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
+    await view.open({ ...novel(world.place), id: bookId('two') }, surfaces.show);
 
     expect(surfaces.destroyed).toEqual([0]);
     expect(view.state).toEqual({ kind: 'ready' });
@@ -277,7 +249,7 @@ describe('FlowView', () => {
     surfaces.gate = gate.promise;
     const view = new FlowView(world.container);
 
-    const opening = view.open(NOVEL, surfaces.show);
+    const opening = view.open(novel(world.place), surfaces.show);
     await settled();
     expect(surfaces.openings).toHaveLength(1);
 
@@ -298,7 +270,7 @@ describe('FlowView', () => {
     };
     const view = new FlowView(world.container);
 
-    const opening = view.open(NOVEL, shows().show);
+    const opening = view.open(novel(world.place), shows().show);
     view.close();
     gate.release();
     await opening;
@@ -314,7 +286,7 @@ describe('the place a flow book opens at', () => {
     world.place = textPlace(SOMEWHERE);
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.at)).toEqual([SOMEWHERE]);
   });
@@ -324,7 +296,7 @@ describe('the place a flow book opens at', () => {
     const surfaces = shows();
     const view = new FlowView(world.container);
 
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.at)).toEqual([null]);
   });
@@ -343,7 +315,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     moved?.(SOMEWHERE);
@@ -358,7 +330,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(SOMEWHERE);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS - 1);
@@ -370,7 +342,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(SOMEWHERE);
     expect(world.edits).toEqual([]);
 
@@ -384,7 +356,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE);
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(SOMEWHERE);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -396,7 +368,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     view.close();
@@ -412,7 +384,7 @@ describe('the place a flow book keeps', () => {
     world.save = () =>
       Promise.resolve(err<LibraryFailure>({ kind: 'storage-failed', cause: 'io' }));
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(SOMEWHERE);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -426,7 +398,7 @@ describe('the place a flow book keeps', () => {
     world.save = () =>
       Promise.resolve(err<LibraryFailure>({ kind: 'storage-failed', cause: 'io' }));
     const view = new FlowView(world.container);
-    await view.open(NOVEL, surfaces.show);
+    await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     moved?.(SOMEWHERE);

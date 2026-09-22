@@ -1,14 +1,13 @@
 <script lang="ts">
-  import type { BookId } from '$lib/shared/ids';
   import { FlowGestures } from './flow-gestures';
   import { openFlowSurface } from './flow-surface';
   import { isTyping } from './flow-turn';
   import type { PageTurner, TypingTarget } from './flow-turn';
-  import type { FlowView } from './flow-view.svelte';
+  import type { FlowBook, FlowView } from './flow-view.svelte';
 
   type Props = {
     readonly view: FlowView;
-    readonly book: BookId;
+    readonly book: FlowBook;
   };
 
   const { view, book }: Props = $props();
@@ -98,7 +97,7 @@
 
   $effect(() => {
     const host = stage;
-    const id = book;
+    const held = book;
     if (host === null) return;
 
     const began = (event: PointerEvent): void => press(event, withinStage(event, host));
@@ -109,7 +108,7 @@
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    void view.open(id, (opening) => openFlowSurface(host, opening, bind));
+    void view.open(held, (opening) => openFlowSurface(host, opening, bind));
     return () => {
       host.removeEventListener('pointerdown', began);
       host.removeEventListener('pointerup', ended);

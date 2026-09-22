@@ -42,6 +42,7 @@
   const flow = new FlowView(container);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
+  const flowBook = $derived(view.flowBook);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction));
@@ -92,8 +93,8 @@
   });
 </script>
 
-{#if view.status === 'flow'}
-  <FlowViewer view={flow} book={id} />
+{#if flowBook !== null}
+  <FlowViewer view={flow} book={flowBook} />
 {:else}
   <ReaderScreen
     {view}
