@@ -64,6 +64,13 @@
     return typeof editable === 'boolean' && editable;
   }
 
+  function controlType(target: EventTarget): string | null {
+    if (!('type' in target)) return null;
+
+    const kind = target.type;
+    return typeof kind === 'string' ? kind : null;
+  }
+
   function typingTarget(target: EventTarget | null): TypingTarget | null {
     if (target === null) return null;
     if (!('tagName' in target)) return null;
@@ -71,7 +78,7 @@
     const tagName = target.tagName;
     if (typeof tagName !== 'string') return null;
 
-    return { tagName, editable: isEditable(target) };
+    return { tagName, type: controlType(target), editable: isEditable(target) };
   }
 
   function textSelected(): boolean {

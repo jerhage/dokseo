@@ -21,6 +21,7 @@ type PointerRelease = {
 
 type TypingTarget = {
   readonly tagName: string;
+  readonly type: string | null;
   readonly editable: boolean;
 };
 
@@ -85,9 +86,12 @@ const DRAGGED: PointerEnd = { kind: 'dragged' };
 
 const TYPED_INTO = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
 
+const STEPPED_INSTEAD = new Set(['range']);
+
 function isTyping(target: TypingTarget | null): boolean {
   if (target === null) return false;
   if (target.editable) return true;
+  if (target.type !== null && STEPPED_INSTEAD.has(target.type.toLowerCase())) return false;
 
   return TYPED_INTO.has(target.tagName.toUpperCase());
 }

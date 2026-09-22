@@ -10,7 +10,14 @@ import {
   turnOrder,
   turnPage,
 } from './flow-turn';
-import type { FlowMove, KeyPress, PageTurner, Point, PointerRelease } from './flow-turn';
+import type {
+  FlowMove,
+  KeyPress,
+  PageTurner,
+  Point,
+  PointerRelease,
+  TypingTarget,
+} from './flow-turn';
 
 const STAY: FlowMove = { kind: 'stay' };
 
@@ -118,21 +125,65 @@ describe('keyMove', () => {
 describe('isTyping', () => {
   it('reports an input, a select and a text area as typing', () => {
     for (const tagName of ['INPUT', 'SELECT', 'TEXTAREA', 'input', 'textarea']) {
-      expect(isTyping({ tagName, editable: false })).toBe(true);
+      expect(isTyping({ tagName, type: null, editable: false })).toBe(true);
     }
   });
 
+  it('reports a text field as typing whatever it calls its type', () => {
+    for (const type of ['text', 'search', 'email', 'number', 'password']) {
+      expect(isTyping({ tagName: 'INPUT', type, editable: false })).toBe(true);
+    }
+  });
+
+  it('reports a select and a text area as typing, types and all', () => {
+    expect(isTyping({ tagName: 'SELECT', type: 'select-one', editable: false })).toBe(true);
+    expect(isTyping({ tagName: 'TEXTAREA', type: 'textarea', editable: false })).toBe(true);
+  });
+
+  it('reports a range slider as not typing, however it is cased', () => {
+    expect(isTyping({ tagName: 'INPUT', type: 'range', editable: false })).toBe(false);
+    expect(isTyping({ tagName: 'input', type: 'Range', editable: false })).toBe(false);
+  });
+
   it('reports an editable element as typing whatever its tag', () => {
-    expect(isTyping({ tagName: 'DIV', editable: true })).toBe(true);
+    expect(isTyping({ tagName: 'DIV', type: null, editable: true })).toBe(true);
   });
 
   it('reports an ordinary element as not typing', () => {
-    expect(isTyping({ tagName: 'P', editable: false })).toBe(false);
-    expect(isTyping({ tagName: 'BUTTON', editable: false })).toBe(false);
+    expect(isTyping({ tagName: 'P', type: null, editable: false })).toBe(false);
+    expect(isTyping({ tagName: 'BUTTON', type: 'button', editable: false })).toBe(false);
   });
 
   it('reports nothing as not typing', () => {
     expect(isTyping(null)).toBe(false);
+  });
+});
+
+describe('the keys over a focused progress slider', () => {
+  const SCRUB: TypingTarget = { tagName: 'INPUT', type: 'range', editable: false };
+
+  const FIELD: TypingTarget = { tagName: 'INPUT', type: 'text', editable: false };
+
+  const TURNING_KEYS = [
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'PageUp',
+    'PageDown',
+    ' ',
+  ];
+
+  it('turns the page on every key that moves a reader through a book', () => {
+    for (const key of TURNING_KEYS) {
+      expect(keyMove(pressing(key, { typing: isTyping(SCRUB) }))).not.toEqual(STAY);
+    }
+  });
+
+  it('leaves those same keys to a text field', () => {
+    for (const key of TURNING_KEYS) {
+      expect(keyMove(pressing(key, { typing: isTyping(FIELD) }))).toEqual(STAY);
+    }
   });
 });
 
