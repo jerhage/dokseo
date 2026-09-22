@@ -10,8 +10,8 @@
   import { FlowGestures } from './flow-gestures';
   import { flowMeta, progressLabel, SCRUB_STEP, tickOffsets } from './flow-progress';
   import { openFlowSurface } from './flow-surface';
-  import { isTyping, turnOrder } from './flow-turn';
-  import type { FlowAction, FlowTurn, PageTurner, TypingTarget } from './flow-turn';
+  import { isTyping, pressesOnSpace, turnOrder } from './flow-turn';
+  import type { FlowAction, FlowTurn, KeyTarget, PageTurner } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
 
   type Props = {
@@ -71,14 +71,26 @@
     return typeof kind === 'string' ? kind : null;
   }
 
-  function typingTarget(target: EventTarget | null): TypingTarget | null {
+  function controlRole(target: EventTarget): string | null {
+    if (!('role' in target)) return null;
+
+    const named = target.role;
+    return typeof named === 'string' ? named : null;
+  }
+
+  function keyTarget(target: EventTarget | null): KeyTarget | null {
     if (target === null) return null;
     if (!('tagName' in target)) return null;
 
     const tagName = target.tagName;
     if (typeof tagName !== 'string') return null;
 
-    return { tagName, type: controlType(target), editable: isEditable(target) };
+    return {
+      tagName,
+      type: controlType(target),
+      role: controlRole(target),
+      editable: isEditable(target),
+    };
   }
 
   function textSelected(): boolean {
@@ -101,13 +113,15 @@
   function onkey(event: KeyboardEvent): void {
     if (event.defaultPrevented || panelOpen || gestures === null) return;
 
+    const pressed = keyTarget(event.target);
     const move = gestures.keyed({
       key: event.key,
       altKey: event.altKey,
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,
       shiftKey: event.shiftKey,
-      typing: isTyping(typingTarget(event.target)),
+      typing: isTyping(pressed),
+      pressesOnSpace: pressesOnSpace(pressed),
     });
     if (move.kind !== 'stay') event.preventDefault();
   }

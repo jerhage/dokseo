@@ -5,19 +5,13 @@ import {
   moveForEnd,
   moveForTurn,
   pointerEnded,
+  pressesOnSpace,
   regionAt,
   releaseAction,
   turnOrder,
   turnPage,
 } from './flow-turn';
-import type {
-  FlowMove,
-  KeyPress,
-  PageTurner,
-  Point,
-  PointerRelease,
-  TypingTarget,
-} from './flow-turn';
+import type { FlowMove, KeyPress, KeyTarget, PageTurner, Point, PointerRelease } from './flow-turn';
 
 const STAY: FlowMove = { kind: 'stay' };
 
@@ -41,9 +35,38 @@ function pressing(key: string, held: Partial<Omit<KeyPress, 'key'>> = {}): KeyPr
     metaKey: false,
     shiftKey: false,
     typing: false,
+    pressesOnSpace: false,
     ...held,
   };
 }
+
+function targeting(tagName: string, carried: Partial<Omit<KeyTarget, 'tagName'>> = {}): KeyTarget {
+  return { tagName, type: null, role: null, editable: false, ...carried };
+}
+
+function over(
+  key: string,
+  target: KeyTarget | null,
+  held: Partial<Omit<KeyPress, 'key'>> = {},
+): KeyPress {
+  return pressing(key, {
+    typing: isTyping(target),
+    pressesOnSpace: pressesOnSpace(target),
+    ...held,
+  });
+}
+
+const SCRUB: KeyTarget = targeting('INPUT', { type: 'range' });
+
+const FIELD: KeyTarget = targeting('INPUT', { type: 'text' });
+
+const TOOL: KeyTarget = targeting('BUTTON', { type: 'button' });
+
+const WIDGET: KeyTarget = targeting('DIV', { role: 'button' });
+
+const BACK_LINK: KeyTarget = targeting('A');
+
+const TURNING_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' '];
 
 function releasing(release: Partial<PointerRelease> = {}): PointerRelease {
   const landed = release.to ?? ORIGIN;
@@ -125,33 +148,33 @@ describe('keyMove', () => {
 describe('isTyping', () => {
   it('reports an input, a select and a text area as typing', () => {
     for (const tagName of ['INPUT', 'SELECT', 'TEXTAREA', 'input', 'textarea']) {
-      expect(isTyping({ tagName, type: null, editable: false })).toBe(true);
+      expect(isTyping(targeting(tagName))).toBe(true);
     }
   });
 
   it('reports a text field as typing whatever it calls its type', () => {
     for (const type of ['text', 'search', 'email', 'number', 'password']) {
-      expect(isTyping({ tagName: 'INPUT', type, editable: false })).toBe(true);
+      expect(isTyping(targeting('INPUT', { type }))).toBe(true);
     }
   });
 
   it('reports a select and a text area as typing, types and all', () => {
-    expect(isTyping({ tagName: 'SELECT', type: 'select-one', editable: false })).toBe(true);
-    expect(isTyping({ tagName: 'TEXTAREA', type: 'textarea', editable: false })).toBe(true);
+    expect(isTyping(targeting('SELECT', { type: 'select-one' }))).toBe(true);
+    expect(isTyping(targeting('TEXTAREA', { type: 'textarea' }))).toBe(true);
   });
 
   it('reports a range slider as not typing, however it is cased', () => {
-    expect(isTyping({ tagName: 'INPUT', type: 'range', editable: false })).toBe(false);
-    expect(isTyping({ tagName: 'input', type: 'Range', editable: false })).toBe(false);
+    expect(isTyping(targeting('INPUT', { type: 'range' }))).toBe(false);
+    expect(isTyping(targeting('input', { type: 'Range' }))).toBe(false);
   });
 
   it('reports an editable element as typing whatever its tag', () => {
-    expect(isTyping({ tagName: 'DIV', type: null, editable: true })).toBe(true);
+    expect(isTyping(targeting('DIV', { editable: true }))).toBe(true);
   });
 
   it('reports an ordinary element as not typing', () => {
-    expect(isTyping({ tagName: 'P', type: null, editable: false })).toBe(false);
-    expect(isTyping({ tagName: 'BUTTON', type: 'button', editable: false })).toBe(false);
+    expect(isTyping(targeting('P'))).toBe(false);
+    expect(isTyping(targeting('BUTTON', { type: 'button' }))).toBe(false);
   });
 
   it('reports nothing as not typing', () => {
@@ -159,31 +182,82 @@ describe('isTyping', () => {
   });
 });
 
+describe('pressesOnSpace', () => {
+  it('reports a button as pressed, however its tag is cased', () => {
+    expect(pressesOnSpace(targeting('BUTTON', { type: 'button' }))).toBe(true);
+    expect(pressesOnSpace(targeting('button'))).toBe(true);
+  });
+
+  it('reports an element that calls itself a button as pressed', () => {
+    expect(pressesOnSpace(targeting('DIV', { role: 'button' }))).toBe(true);
+    expect(pressesOnSpace(targeting('SPAN', { role: 'Button' }))).toBe(true);
+  });
+
+  it('reports a link as not pressed, whatever the browser scrolls instead', () => {
+    expect(pressesOnSpace(targeting('A'))).toBe(false);
+  });
+
+  it('reports an element wearing another role as not pressed', () => {
+    expect(pressesOnSpace(targeting('DIV', { role: 'group' }))).toBe(false);
+    expect(pressesOnSpace(targeting('SUMMARY'))).toBe(false);
+  });
+
+  it('reports the progress slider and an ordinary element as not pressed', () => {
+    expect(pressesOnSpace(targeting('INPUT', { type: 'range' }))).toBe(false);
+    expect(pressesOnSpace(targeting('P'))).toBe(false);
+  });
+
+  it('reports nothing as not pressed', () => {
+    expect(pressesOnSpace(null)).toBe(false);
+  });
+});
+
 describe('the keys over a focused progress slider', () => {
-  const SCRUB: TypingTarget = { tagName: 'INPUT', type: 'range', editable: false };
-
-  const FIELD: TypingTarget = { tagName: 'INPUT', type: 'text', editable: false };
-
-  const TURNING_KEYS = [
-    'ArrowLeft',
-    'ArrowRight',
-    'ArrowUp',
-    'ArrowDown',
-    'PageUp',
-    'PageDown',
-    ' ',
-  ];
-
   it('turns the page on every key that moves a reader through a book', () => {
     for (const key of TURNING_KEYS) {
-      expect(keyMove(pressing(key, { typing: isTyping(SCRUB) }))).not.toEqual(STAY);
+      expect(keyMove(over(key, SCRUB))).not.toEqual(STAY);
     }
   });
 
   it('leaves those same keys to a text field', () => {
     for (const key of TURNING_KEYS) {
-      expect(keyMove(pressing(key, { typing: isTyping(FIELD) }))).toEqual(STAY);
+      expect(keyMove(over(key, FIELD))).toEqual(STAY);
     }
+  });
+});
+
+describe('the space bar over a focused chrome control', () => {
+  it('leaves Space to a button and to anything wearing its role', () => {
+    expect(keyMove(over(' ', TOOL))).toEqual(STAY);
+    expect(keyMove(over(' ', WIDGET))).toEqual(STAY);
+  });
+
+  it('leaves Shift with Space to those same controls, which a browser presses too', () => {
+    expect(keyMove(over(' ', TOOL, { shiftKey: true }))).toEqual(STAY);
+    expect(keyMove(over(' ', WIDGET, { shiftKey: true }))).toEqual(STAY);
+  });
+
+  it('turns the page on every other key over a focused button', () => {
+    for (const key of TURNING_KEYS.filter((turning) => turning !== ' ')) {
+      expect(keyMove(over(key, TOOL))).not.toEqual(STAY);
+    }
+  });
+
+  it('advances the book on Space over the back link, the slider and the page itself', () => {
+    expect(keyMove(over(' ', BACK_LINK))).toEqual(FORWARD);
+    expect(keyMove(over(' ', SCRUB))).toEqual(FORWARD);
+    expect(keyMove(over(' ', targeting('P')))).toEqual(FORWARD);
+    expect(keyMove(over(' ', null))).toEqual(FORWARD);
+  });
+
+  it('retreats on Shift with Space over the back link and the slider', () => {
+    expect(keyMove(over(' ', BACK_LINK, { shiftKey: true }))).toEqual(BACKWARD);
+    expect(keyMove(over(' ', SCRUB, { shiftKey: true }))).toEqual(BACKWARD);
+  });
+
+  it('stays put on Space over a text field, which is typed into, not pressed', () => {
+    expect(keyMove(over(' ', FIELD))).toEqual(STAY);
+    expect(keyMove(over(' ', targeting('DIV', { editable: true })))).toEqual(STAY);
   });
 });
 

@@ -10,6 +10,7 @@ type KeyPress = {
   readonly metaKey: boolean;
   readonly shiftKey: boolean;
   readonly typing: boolean;
+  readonly pressesOnSpace: boolean;
 };
 
 type PointerRelease = {
@@ -19,9 +20,10 @@ type PointerRelease = {
   readonly textSelected: boolean;
 };
 
-type TypingTarget = {
+type KeyTarget = {
   readonly tagName: string;
   readonly type: string | null;
+  readonly role: string | null;
   readonly editable: boolean;
 };
 
@@ -88,7 +90,11 @@ const TYPED_INTO = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
 
 const STEPPED_INSTEAD = new Set(['range']);
 
-function isTyping(target: TypingTarget | null): boolean {
+const PRESSED_ON_SPACE = new Set(['BUTTON']);
+
+const BUTTON_ROLE = 'button';
+
+function isTyping(target: KeyTarget | null): boolean {
   if (target === null) return false;
   if (target.editable) return true;
   if (target.type !== null && STEPPED_INSTEAD.has(target.type.toLowerCase())) return false;
@@ -96,10 +102,21 @@ function isTyping(target: TypingTarget | null): boolean {
   return TYPED_INTO.has(target.tagName.toUpperCase());
 }
 
+function pressesOnSpace(target: KeyTarget | null): boolean {
+  if (target === null) return false;
+  if (target.role !== null && target.role.toLowerCase() === BUTTON_ROLE) return true;
+
+  return PRESSED_ON_SPACE.has(target.tagName.toUpperCase());
+}
+
 function keyMove(press: KeyPress): FlowMove {
   if (press.typing) return STAY;
   if (press.altKey || press.ctrlKey || press.metaKey) return STAY;
-  if (press.key === ' ') return press.shiftKey ? BACKWARD : FORWARD;
+  if (press.key === ' ') {
+    if (press.pressesOnSpace) return STAY;
+
+    return press.shiftKey ? BACKWARD : FORWARD;
+  }
   if (press.shiftKey) return STAY;
 
   return match(press.key)
@@ -195,6 +212,7 @@ export {
   moveForRegion,
   moveForTurn,
   pointerEnded,
+  pressesOnSpace,
   regionAt,
   releaseAction,
   turnOrder,
@@ -206,9 +224,9 @@ export type {
   FlowMove,
   FlowTurn,
   KeyPress,
+  KeyTarget,
   PageTurner,
   Point,
   PointerEnd,
   PointerRelease,
-  TypingTarget,
 };

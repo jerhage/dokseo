@@ -45,6 +45,7 @@ function pressing(key: string, held: Partial<Omit<KeyPress, 'key'>> = {}): KeyPr
     metaKey: false,
     shiftKey: false,
     typing: false,
+    pressesOnSpace: false,
     ...held,
   };
 }
