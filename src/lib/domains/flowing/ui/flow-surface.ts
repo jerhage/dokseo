@@ -6,7 +6,15 @@ type FlowSurface = {
   destroy(): void;
 };
 
+type FlowOpening = {
+  readonly source: Blob;
+  readonly at: string | null;
+  readonly moved: (cfi: string) => void;
+};
+
 type BindChapter = (doc: Document, pages: PageTurner) => void;
+
+type Navigable = Pick<View, 'goTo'>;
 
 const EPUB_MEDIA_TYPE = 'application/epub+zip';
 
@@ -20,24 +28,39 @@ function tearDown(view: View, book: FoliateBook): void {
   view.remove();
 }
 
+async function openAt(view: Navigable, at: string | null): Promise<boolean> {
+  if (at !== null) {
+    const resumed = await view.goTo(at);
+    if (resumed !== undefined) return true;
+  }
+
+  const started = await view.goTo(OPENS_AT_THE_FIRST_SECTION);
+  return started !== undefined;
+}
+
 async function openFlowSurface(
   host: HTMLElement,
-  source: Blob,
+  opening: FlowOpening,
   bind: BindChapter,
 ): Promise<FlowSurface> {
   const { View: FoliateView, makeBook } = await import('foliate-js/view.js');
-  const book = await makeBook(new File([source], SOURCE_FILE_NAME, { type: EPUB_MEDIA_TYPE }));
+  const book = await makeBook(
+    new File([opening.source], SOURCE_FILE_NAME, { type: EPUB_MEDIA_TYPE }),
+  );
   const view = new FoliateView();
   view.addEventListener('load', (loaded) => {
     bind(loaded.detail.doc, view);
+  });
+  view.addEventListener('relocate', (moved) => {
+    opening.moved(moved.detail.cfi);
   });
   host.append(view);
 
   try {
     await view.open(book);
     view.renderer.setStyles(flowStyles());
-    const arrived = await view.goTo(OPENS_AT_THE_FIRST_SECTION);
-    if (arrived === undefined) throw new Error('its first section could not be laid out');
+    const laidOut = await openAt(view, opening.at);
+    if (!laidOut) throw new Error('its first section could not be laid out');
   } catch (cause) {
     tearDown(view, book);
     throw cause;
@@ -50,5 +73,5 @@ async function openFlowSurface(
   };
 }
 
-export { openFlowSurface };
-export type { BindChapter, FlowSurface };
+export { openAt, openFlowSurface };
+export type { BindChapter, FlowOpening, FlowSurface };

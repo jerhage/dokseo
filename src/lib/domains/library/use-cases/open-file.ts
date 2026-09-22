@@ -2,7 +2,7 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
-import { imagePlace, textPlace } from '$lib/shared/reading-place';
+import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -89,13 +89,11 @@ const NO_IMAGES = 0;
 
 const NO_COVER = null;
 
-const START_OF_A_FLOW_BOOK: ReadingPlace = textPlace('');
-
 const FLOW_CONTENT: BookContent = {
   layoutKind: 'flow',
   imageCount: NO_IMAGES,
   cover: NO_COVER,
-  position: START_OF_A_FLOW_BOOK,
+  position: START_OF_THE_TEXT,
 };
 
 function declaresReflowing(inspection: UploadInspection): boolean {

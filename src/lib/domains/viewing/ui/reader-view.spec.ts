@@ -166,6 +166,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         return Promise.resolve(ok({ kind: 'images', book: world.opening, pages: pages.source }));
       },
       listBooks: () => Promise.reject(new Error('not used')),
+      readBook: () => Promise.reject(new Error('not used')),
       readCover: () => Promise.reject(new Error('not used')),
       readSource: () => Promise.reject(new Error('not used')),
       removeBook: () => Promise.reject(new Error('not used')),

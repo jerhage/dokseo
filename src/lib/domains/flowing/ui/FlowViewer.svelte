@@ -109,7 +109,7 @@
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    void view.open(id, (source) => openFlowSurface(host, source, bind));
+    void view.open(id, (opening) => openFlowSurface(host, opening, bind));
     return () => {
       host.removeEventListener('pointerdown', began);
       host.removeEventListener('pointerup', ended);

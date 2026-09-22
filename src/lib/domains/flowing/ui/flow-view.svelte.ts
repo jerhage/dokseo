@@ -1,13 +1,18 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
-import type { FlowSurface } from './flow-surface';
+import { resumedCfi, textPlace } from '$lib/shared/reading-place';
+import type { FlowOpening, FlowSurface } from './flow-surface';
+
+type BookOutcome = Awaited<ReturnType<Container['library']['readBook']>>;
 
 type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
 
-type SourceFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
+type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
 
-type ShowFlowBook = (source: Blob) => Promise<FlowSurface>;
+type LibraryFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
+
+type ShowFlowBook = (opening: FlowOpening) => Promise<FlowSurface>;
 
 type FlowState =
   | { readonly kind: 'idle' }
@@ -20,6 +25,12 @@ type FlowCurtain =
   | { readonly kind: 'opening' }
   | { readonly kind: 'notice'; readonly message: string };
 
+type PendingSave = {
+  readonly id: BookId;
+  readonly cfi: string;
+  readonly timer: ReturnType<typeof setTimeout>;
+};
+
 const NOT_OPENED: FlowState = { kind: 'idle' };
 
 const OPENING: FlowState = { kind: 'opening' };
@@ -30,7 +41,9 @@ const NOTHING_OVER_THE_BOOK: FlowCurtain = { kind: 'none' };
 
 const WAITING_FOR_THE_BOOK: FlowCurtain = { kind: 'opening' };
 
-function describeSourceFailure(error: SourceFailure): string {
+const PLACE_SAVE_DELAY_MS = 500;
+
+function describeLibraryFailure(error: LibraryFailure): string {
   return match(error)
     .with({ kind: 'not-found' }, () => 'That book is no longer stored on this device.')
     .with(
@@ -56,6 +69,8 @@ class FlowView {
   #container: Container;
   #generation = 0;
   #surface: FlowSurface | null = null;
+  #saving: PendingSave | null = null;
+  #placed: string | null = null;
 
   constructor(container: Container) {
     this.#container = container;
@@ -66,9 +81,27 @@ class FlowView {
   }
 
   async open(id: BookId, show: ShowFlowBook): Promise<void> {
+    this.#flushSave();
     const generation = ++this.#generation;
     this.#release();
     this.state = OPENING;
+    this.#placed = null;
+
+    let held: BookOutcome;
+    try {
+      held = await this.#container.library.readBook(id);
+    } catch (cause) {
+      if (generation !== this.#generation) return;
+      this.state = { kind: 'failed', message: `That book could not be read: ${String(cause)}` };
+      return;
+    }
+
+    if (generation !== this.#generation) return;
+
+    if (!held.ok) {
+      this.state = { kind: 'failed', message: describeLibraryFailure(held.error) };
+      return;
+    }
 
     let stored: SourceOutcome;
     try {
@@ -82,13 +115,22 @@ class FlowView {
     if (generation !== this.#generation) return;
 
     if (!stored.ok) {
-      this.state = { kind: 'failed', message: describeSourceFailure(stored.error) };
+      this.state = { kind: 'failed', message: describeLibraryFailure(stored.error) };
       return;
     }
 
+    const at = resumedCfi(held.value.position);
+    this.#placed = at;
+
     let surface: FlowSurface;
     try {
-      surface = await show(stored.value);
+      surface = await show({
+        source: stored.value,
+        at,
+        moved: (cfi) => {
+          this.#moved(generation, id, cfi);
+        },
+      });
     } catch (cause) {
       if (generation !== this.#generation) return;
       this.state = {
@@ -108,9 +150,52 @@ class FlowView {
   }
 
   close(): void {
+    this.#flushSave();
     this.#generation += 1;
     this.#release();
     this.state = NOT_OPENED;
+  }
+
+  #moved(generation: number, id: BookId, cfi: string): void {
+    if (generation !== this.#generation) return;
+
+    const waiting = this.#saving;
+    if (waiting !== null) clearTimeout(waiting.timer);
+
+    const timer = setTimeout(() => {
+      this.#saving = null;
+      if (cfi !== this.#placed) void this.#persist(id, cfi);
+    }, PLACE_SAVE_DELAY_MS);
+
+    this.#saving = { id, cfi, timer };
+  }
+
+  #flushSave(): void {
+    const waiting = this.#saving;
+    if (waiting === null) return;
+
+    clearTimeout(waiting.timer);
+    this.#saving = null;
+    if (waiting.cfi === this.#placed) return;
+    void this.#persist(waiting.id, waiting.cfi);
+  }
+
+  async #persist(id: BookId, cfi: string): Promise<void> {
+    this.#placed = cfi;
+
+    let saved: EditOutcome;
+    try {
+      saved = await this.#container.library.editBook(id, { position: textPlace(cfi) });
+    } catch {
+      this.#forget(cfi);
+      return;
+    }
+
+    if (!saved.ok) this.#forget(cfi);
+  }
+
+  #forget(cfi: string): void {
+    if (this.#placed === cfi) this.#placed = null;
   }
 
   #release(): void {
@@ -119,5 +204,5 @@ class FlowView {
   }
 }
 
-export { FlowView };
+export { FlowView, PLACE_SAVE_DELAY_MS };
 export type { FlowCurtain, FlowState, ShowFlowBook };

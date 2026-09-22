@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { imageIndex } from './ids';
-import { imagePlace, textPlace } from './reading-place';
+import { imagePlace, resumedCfi, START_OF_THE_TEXT, textPlace } from './reading-place';
 
 describe('imagePlace', () => {
   it('holds the image index it was given', () => {
@@ -22,5 +22,25 @@ describe('textPlace', () => {
 
   it('carries no quote, because a place is not an anchor', () => {
     expect(Object.keys(textPlace('epubcfi(/6/4!/2)'))).toEqual(['kind', 'cfi']);
+  });
+});
+
+describe('START_OF_THE_TEXT', () => {
+  it('names the empty cfi a flow book is stored with', () => {
+    expect(START_OF_THE_TEXT).toEqual({ kind: 'text', cfi: '' });
+  });
+});
+
+describe('resumedCfi', () => {
+  it('answers the cfi a text place holds', () => {
+    expect(resumedCfi(textPlace('epubcfi(/6/14!/4/2/14/1:0)'))).toBe('epubcfi(/6/14!/4/2/14/1:0)');
+  });
+
+  it('answers nothing for a book still at the start of its text', () => {
+    expect(resumedCfi(START_OF_THE_TEXT)).toBeNull();
+  });
+
+  it('answers nothing for an image place, which names no cfi', () => {
+    expect(resumedCfi(imagePlace(imageIndex(3)))).toBeNull();
   });
 });

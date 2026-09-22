@@ -83,6 +83,7 @@ function fakes(): Fakes {
         lists.push(next);
         return next.promise;
       },
+      readBook: () => Promise.reject(new Error('not used')),
       readCover: () => cover.gate().then(() => cover.outcome),
       readSource: () => Promise.reject(new Error('not used')),
       removeBook: () => {

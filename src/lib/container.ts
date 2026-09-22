@@ -34,6 +34,8 @@ import type {
   OpenForReadingDeps,
   OpenForReadingError,
 } from './domains/library/use-cases/open-for-reading';
+import { readBook } from './domains/library/use-cases/read-book';
+import type { ReadBookDeps } from './domains/library/use-cases/read-book';
 import { readCover } from './domains/library/use-cases/read-cover';
 import type { ReadCoverDeps } from './domains/library/use-cases/read-cover';
 import { readLibrarySize } from './domains/library/use-cases/read-library-size';
@@ -228,6 +230,7 @@ type Container = {
     ) => Promise<Result<Book, OpenFileError>>;
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
+    readonly readBook: (id: BookId) => Promise<Result<Book, LibraryError>>;
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly readSource: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError | CaptureError>>;
@@ -326,6 +329,7 @@ function buildContainer(): Container {
 
   const openForReadingDeps: OpenForReadingDeps = { repository, openPages: openStoredPageSource };
   const listBooksDeps: ListBooksDeps = { repository };
+  const readBookDeps: ReadBookDeps = { repository };
   const readCoverDeps: ReadCoverDeps = { repository };
   const readSourceDeps: ReadSourceDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
@@ -379,6 +383,7 @@ function buildContainer(): Container {
         openFile(openFileDeps, files, report),
       openForReading: (id: BookId) => openForReading(openForReadingDeps, id),
       listBooks: () => listBooks(listBooksDeps),
+      readBook: (id: BookId) => readBook(readBookDeps, id),
       readCover: (id: BookId) => readCover(readCoverDeps, id),
       readSource: (id: BookId) => readSource(readSourceDeps, id),
       removeBook: (id: BookId) => removeBookAndCaptures(removeBookAndCapturesDeps, id),

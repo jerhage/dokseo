@@ -1,22 +1,100 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
-import { bookId } from '$lib/shared/ids';
+import { bookId, contentHash } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
+import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
-import type { FlowSurface } from './flow-surface';
-import { FlowView } from './flow-view.svelte';
+import type { FlowOpening, FlowSurface } from './flow-surface';
+import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
 import type { ShowFlowBook } from './flow-view.svelte';
 
 const NOVEL: BookId = bookId('one');
 
 const SOURCE = new Blob(['PK'], { type: 'application/epub+zip' });
 
+const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
+
+const FURTHER_ON = 'epubcfi(/6/16!/4/2/2/1:0)';
+
+const LATER_STILL = 'epubcfi(/6/18!/4/2/8/1:0)';
+
+type Holds = Awaited<ReturnType<Container['library']['readBook']>>;
+
 type Reads = Awaited<ReturnType<Container['library']['readSource']>>;
 
-type SourceFailure = Extract<Reads, { readonly ok: false }>['error'];
+type Edits = Awaited<ReturnType<Container['library']['editBook']>>;
 
-function containerReading(read: () => Promise<Reads>): Container {
-  return { library: { readSource: read } } as unknown as Container;
+type BookEdit = Parameters<Container['library']['editBook']>[1];
+
+type StoredBook = Extract<Holds, { readonly ok: true }>['value'];
+
+type LibraryFailure = Extract<Reads, { readonly ok: false }>['error'];
+
+function novel(position: ReadingPlace): StoredBook {
+  return {
+    id: NOVEL,
+    title: 'Kokoro',
+    language: 'ja',
+    layoutKind: 'flow',
+    direction: 'rtl',
+    pagePairing: 'double-after-cover',
+    pageFit: 'width',
+    sourceKind: 'epub',
+    contentHash: contentHash('a1'),
+    imageCount: 0,
+    addedAt: 1758240000000,
+    position,
+  };
+}
+
+type Shelf = {
+  container: Container;
+  readonly edits: BookEdit[];
+  readonly asked: BookId[];
+  readonly reads: BookId[];
+  place: ReadingPlace;
+  held: () => Promise<Holds>;
+  read: () => Promise<Reads>;
+  save: () => Promise<Edits>;
+};
+
+const NO_CONTAINER = {} as unknown as Container;
+
+function shelf(): Shelf {
+  const world: Shelf = {
+    container: NO_CONTAINER,
+    edits: [],
+    asked: [],
+    reads: [],
+    place: START_OF_THE_TEXT,
+    held: () => Promise.resolve(ok(novel(world.place))),
+    read: () => Promise.resolve(ok(SOURCE)),
+    save: () => Promise.resolve(ok(novel(world.place))),
+  };
+
+  world.container = {
+    library: {
+      readBook: (id: BookId) => {
+        world.asked.push(id);
+        return world.held();
+      },
+      readSource: (id: BookId) => {
+        world.reads.push(id);
+        return world.read();
+      },
+      editBook: (_id: BookId, edit: BookEdit) => {
+        world.edits.push(edit);
+        return world.save();
+      },
+    },
+  } as unknown as Container;
+
+  return world;
+}
+
+async function settled(): Promise<void> {
+  for (let tick = 0; tick < 8; tick += 1) await Promise.resolve();
 }
 
 function held(): { readonly promise: Promise<void>; readonly release: () => void } {
@@ -29,27 +107,27 @@ function held(): { readonly promise: Promise<void>; readonly release: () => void
 
 type Shown = {
   readonly show: ShowFlowBook;
-  readonly sources: Blob[];
+  readonly openings: FlowOpening[];
   readonly destroyed: number[];
   gate: Promise<void> | null;
   failure: string | null;
 };
 
 function shows(): Shown {
-  const sources: Blob[] = [];
+  const openings: FlowOpening[] = [];
   const destroyed: number[] = [];
 
   const world = {
-    sources,
+    openings,
     destroyed,
     gate: null as Promise<void> | null,
     failure: null as string | null,
     show: (() => Promise.reject(new Error('not built'))) as ShowFlowBook,
   };
 
-  world.show = async (source: Blob): Promise<FlowSurface> => {
-    sources.push(source);
-    const which = sources.length - 1;
+  world.show = async (opening: FlowOpening): Promise<FlowSurface> => {
+    openings.push(opening);
+    const which = openings.length - 1;
     if (world.gate !== null) await world.gate;
     if (world.failure !== null) throw new Error(world.failure);
     return {
@@ -62,30 +140,30 @@ function shows(): Shown {
   return world;
 }
 
+function places(edits: readonly BookEdit[]): readonly (ReadingPlace | undefined)[] {
+  return edits.map((edit) => edit.position);
+}
+
 describe('FlowView', () => {
   it('reads the stored source and hands it to the surface', async () => {
-    const asked: BookId[] = [];
+    const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(
-      containerReading(() => {
-        asked.push(NOVEL);
-        return Promise.resolve(ok(SOURCE));
-      }),
-    );
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, surfaces.show);
 
-    expect(asked).toEqual([NOVEL]);
-    expect(surfaces.sources).toEqual([SOURCE]);
+    expect(world.asked).toEqual([NOVEL]);
+    expect(surfaces.openings.map((opening) => opening.source)).toEqual([SOURCE]);
     expect(view.state).toEqual({ kind: 'ready' });
     expect(view.curtain).toEqual({ kind: 'none' });
   });
 
   it('waits behind an opening curtain while the book is opened', async () => {
+    const world = shelf();
     const surfaces = shows();
     const gate = held();
     surfaces.gate = gate.promise;
-    const view = new FlowView(containerReading(() => Promise.resolve(ok(SOURCE))));
+    const view = new FlowView(world.container);
 
     const opening = view.open(NOVEL, surfaces.show);
     await Promise.resolve();
@@ -97,15 +175,31 @@ describe('FlowView', () => {
     expect(view.curtain).toEqual({ kind: 'none' });
   });
 
-  it('reports a source that is no longer stored', async () => {
+  it('reports a book whose record is gone without reading a source', async () => {
+    const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(
-      containerReading(() => Promise.resolve(err<SourceFailure>({ kind: 'not-found', id: NOVEL }))),
-    );
+    world.held = () => Promise.resolve(err<LibraryFailure>({ kind: 'not-found', id: NOVEL }));
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, surfaces.show);
 
-    expect(surfaces.sources).toEqual([]);
+    expect(world.reads).toEqual([]);
+    expect(surfaces.openings).toEqual([]);
+    expect(view.curtain).toEqual({
+      kind: 'notice',
+      message: 'That book is no longer stored on this device.',
+    });
+  });
+
+  it('reports a source that is no longer stored', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.read = () => Promise.resolve(err<LibraryFailure>({ kind: 'not-found', id: NOVEL }));
+    const view = new FlowView(world.container);
+
+    await view.open(NOVEL, surfaces.show);
+
+    expect(surfaces.openings).toEqual([]);
     expect(view.curtain).toEqual({
       kind: 'notice',
       message: 'That book is no longer stored on this device.',
@@ -113,9 +207,9 @@ describe('FlowView', () => {
   });
 
   it('reports storage that the browser refuses', async () => {
-    const view = new FlowView(
-      containerReading(() => Promise.resolve(err<SourceFailure>({ kind: 'storage-unavailable' }))),
-    );
+    const world = shelf();
+    world.read = () => Promise.resolve(err<LibraryFailure>({ kind: 'storage-unavailable' }));
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, shows().show);
 
@@ -126,7 +220,9 @@ describe('FlowView', () => {
   });
 
   it('reports the cause when a read throws', async () => {
-    const view = new FlowView(containerReading(() => Promise.reject(new Error('disk gone'))));
+    const world = shelf();
+    world.read = () => Promise.reject(new Error('disk gone'));
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, shows().show);
 
@@ -137,9 +233,10 @@ describe('FlowView', () => {
   });
 
   it('reports a book the renderer refuses rather than showing a blank page', async () => {
+    const world = shelf();
     const surfaces = shows();
     surfaces.failure = 'not a zip';
-    const view = new FlowView(containerReading(() => Promise.resolve(ok(SOURCE))));
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, surfaces.show);
 
@@ -150,8 +247,9 @@ describe('FlowView', () => {
   });
 
   it('destroys the open surface when the viewer closes', async () => {
+    const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(containerReading(() => Promise.resolve(ok(SOURCE))));
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, surfaces.show);
     view.close();
@@ -161,8 +259,9 @@ describe('FlowView', () => {
   });
 
   it('destroys the open surface before opening another book', async () => {
+    const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(containerReading(() => Promise.resolve(ok(SOURCE))));
+    const view = new FlowView(world.container);
 
     await view.open(NOVEL, surfaces.show);
     await view.open(bookId('two'), surfaces.show);
@@ -172,13 +271,16 @@ describe('FlowView', () => {
   });
 
   it('destroys a surface that arrives after the viewer closed', async () => {
+    const world = shelf();
     const surfaces = shows();
     const gate = held();
     surfaces.gate = gate.promise;
-    const view = new FlowView(containerReading(() => Promise.resolve(ok(SOURCE))));
+    const view = new FlowView(world.container);
 
     const opening = view.open(NOVEL, surfaces.show);
-    await Promise.resolve();
+    await settled();
+    expect(surfaces.openings).toHaveLength(1);
+
     view.close();
     gate.release();
     await opening;
@@ -188,13 +290,13 @@ describe('FlowView', () => {
   });
 
   it('leaves a closed viewer silent when a late read fails', async () => {
+    const world = shelf();
     const gate = held();
-    const view = new FlowView(
-      containerReading(async () => {
-        await gate.promise;
-        return err<SourceFailure>({ kind: 'storage-failed', cause: 'quota' });
-      }),
-    );
+    world.read = async () => {
+      await gate.promise;
+      return err<LibraryFailure>({ kind: 'storage-failed', cause: 'quota' });
+    };
+    const view = new FlowView(world.container);
 
     const opening = view.open(NOVEL, shows().show);
     view.close();
@@ -202,5 +304,136 @@ describe('FlowView', () => {
     await opening;
 
     expect(view.state).toEqual({ kind: 'idle' });
+  });
+});
+
+describe('the place a flow book opens at', () => {
+  it('opens at the cfi the reader stopped at', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.place = textPlace(SOMEWHERE);
+    const view = new FlowView(world.container);
+
+    await view.open(NOVEL, surfaces.show);
+
+    expect(surfaces.openings.map((opening) => opening.at)).toEqual([SOMEWHERE]);
+  });
+
+  it('opens at the start when the book is still at the start of its text', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    await view.open(NOVEL, surfaces.show);
+
+    expect(surfaces.openings.map((opening) => opening.at)).toEqual([null]);
+  });
+});
+
+describe('the place a flow book keeps', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('saves only the last place once the page turning settles', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+    const moved = surfaces.openings[0]?.moved;
+
+    moved?.(SOMEWHERE);
+    moved?.(FURTHER_ON);
+    moved?.(LATER_STILL);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(places(world.edits)).toEqual([textPlace(LATER_STILL)]);
+  });
+
+  it('saves nothing while the pages are still turning', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+
+    surfaces.openings[0]?.moved(SOMEWHERE);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS - 1);
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves a place still waiting when the reader leaves the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+    surfaces.openings[0]?.moved(SOMEWHERE);
+    expect(world.edits).toEqual([]);
+
+    view.close();
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE)]);
+  });
+
+  it('saves nothing for the cfi the book is already stored at', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.place = textPlace(SOMEWHERE);
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+
+    surfaces.openings[0]?.moved(SOMEWHERE);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves nothing for a move that arrives after the viewer closed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+    const moved = surfaces.openings[0]?.moved;
+
+    view.close();
+    moved?.(SOMEWHERE);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('keeps showing the book when a place cannot be saved', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.save = () =>
+      Promise.resolve(err<LibraryFailure>({ kind: 'storage-failed', cause: 'io' }));
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+
+    surfaces.openings[0]?.moved(SOMEWHERE);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(view.state).toEqual({ kind: 'ready' });
+  });
+
+  it('saves the same place again at the next turn after a save failed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.save = () =>
+      Promise.resolve(err<LibraryFailure>({ kind: 'storage-failed', cause: 'io' }));
+    const view = new FlowView(world.container);
+    await view.open(NOVEL, surfaces.show);
+    const moved = surfaces.openings[0]?.moved;
+
+    moved?.(SOMEWHERE);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+    moved?.(SOMEWHERE);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE), textPlace(SOMEWHERE)]);
   });
 });

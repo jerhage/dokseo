@@ -17,13 +17,18 @@ declare module 'foliate-js/view.js' {
     index: number;
   }
 
+  interface Relocation {
+    cfi: string;
+  }
+
   interface ViewEventMap {
     load: CustomEvent<ChapterLoad>;
+    relocate: CustomEvent<Relocation>;
   }
 
   class View extends HTMLElement {
     open(book: FoliateBook): Promise<void>;
-    goTo(target: number): Promise<unknown>;
+    goTo(target: number | string): Promise<unknown>;
     goLeft(): Promise<void>;
     goRight(): Promise<void>;
     prev(distance?: number): Promise<void>;
@@ -45,5 +50,5 @@ declare module 'foliate-js/view.js' {
   function makeBook(file: File): Promise<FoliateBook>;
 
   export { View, makeBook };
-  export type { ChapterLoad, FoliateBook, ViewEventMap };
+  export type { ChapterLoad, FoliateBook, Relocation, ViewEventMap };
 }
