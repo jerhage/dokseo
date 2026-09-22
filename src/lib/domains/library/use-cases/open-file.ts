@@ -10,6 +10,7 @@ import type { Book } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
+import type { PageObstacle } from '../domain/ingest/epub-pages';
 import { detectSourceKind } from '../domain/ingest/source-detection';
 import type { SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { languageDeclared } from '../domain/ingest/declared-language';
@@ -18,7 +19,9 @@ import { languageOfTitle } from '../domain/ingest/title-language';
 import { uploadManifest } from '../domain/ingest/upload-manifest';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 
-type EpubRefusal = EpubInspectionError | { readonly kind: 'reflowable' };
+type EpubRefusal =
+  | EpubInspectionError
+  | { readonly kind: 'reflowable'; readonly obstacle: PageObstacle };
 
 type OpenFileError =
   | { readonly kind: 'source'; readonly error: SourceBuildError }
@@ -58,7 +61,7 @@ function epubUpload(files: readonly File[]): File | null {
 
 type UploadInspection =
   | { readonly kind: 'not-an-epub' }
-  | { readonly kind: 'refused'; readonly refusal: EpubRefusal }
+  | { readonly kind: 'refused'; readonly refusal: EpubInspectionError }
   | { readonly kind: 'epub'; readonly packageDocument: EpubPackage };
 
 const NOT_AN_EPUB: UploadInspection = { kind: 'not-an-epub' };
@@ -74,12 +77,15 @@ async function inspectUpload(
   if (!inspected.ok) return { kind: 'refused', refusal: inspected.error };
   if (inspected.value.kind === 'not-an-epub') return NOT_AN_EPUB;
 
-  const packageDocument = inspected.value.packageDocument;
-  if (packageDocument.layout === 'reflowable') {
-    return { kind: 'refused', refusal: { kind: 'reflowable' } };
-  }
+  return { kind: 'epub', packageDocument: inspected.value.packageDocument };
+}
 
-  return { kind: 'epub', packageDocument };
+function refusalFor(inspection: UploadInspection, error: SourceBuildError): OpenFileError {
+  const flowing = inspection.kind === 'epub' && inspection.packageDocument.layout === 'reflowable';
+  if (flowing && error.kind === 'not-paged') {
+    return { kind: 'epub', error: { kind: 'reflowable', obstacle: error.obstacle } };
+  }
+  return { kind: 'source', error };
 }
 
 function declaredLanguage(inspection: UploadInspection): Language | null {
@@ -113,7 +119,7 @@ async function openFile(
   if (inspection.kind === 'refused') return err({ kind: 'epub', error: inspection.refusal });
 
   const built = await deps.builder.build(files, report);
-  if (!built.ok) return err({ kind: 'source', error: built.error });
+  if (!built.ok) return err(refusalFor(inspection, built.error));
 
   const layoutKind: LayoutKind = 'paged';
 

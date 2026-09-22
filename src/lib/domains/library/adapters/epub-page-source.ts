@@ -8,7 +8,7 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { CONTAINER_ENTRY, packagePathFromContainer } from '../domain/ingest/epub-container';
 import { resolveEpubPages } from '../domain/ingest/epub-pages';
-import type { PageImage, PageObstacle } from '../domain/ingest/epub-pages';
+import type { PageDocumentReader, PageImage, PageObstacle } from '../domain/ingest/epub-pages';
 import { readEpubSpine } from '../domain/ingest/epub-spine';
 import type { EpubSpine } from '../domain/ingest/epub-spine';
 
@@ -60,19 +60,12 @@ async function spineOf(
   return ok(spine);
 }
 
-async function spineDocuments(
-  files: ReadonlyMap<string, FileEntry>,
-  spine: EpubSpine,
-): Promise<ReadonlyMap<string, string>> {
-  const documents = new Map<string, string>();
-  if (spine.kind !== 'spine') return documents;
-
-  for (const path of new Set(spine.paths)) {
+function spineDocuments(files: ReadonlyMap<string, FileEntry>): PageDocumentReader {
+  return async (path: string): Promise<string | null> => {
     const entry = fileNamed(files, path);
-    if (entry === null) continue;
-    documents.set(path, await textOf(entry));
-  }
-  return documents;
+    if (entry === null) return null;
+    return await textOf(entry);
+  };
 }
 
 function imageEntries(
@@ -154,7 +147,7 @@ async function readEpub(reader: ZipReader<Blob>): Promise<Result<OpenedEpub, Pag
   const spine = await spineOf(files);
   if (!spine.ok) return spine;
 
-  const pages = resolveEpubPages(spine.value, await spineDocuments(files, spine.value));
+  const pages = await resolveEpubPages(spine.value, spineDocuments(files));
   if (pages.kind === 'not-paged') return ok({ kind: 'not-paged', obstacle: pages.obstacle });
 
   const entries = imageEntries(files, pages.images);

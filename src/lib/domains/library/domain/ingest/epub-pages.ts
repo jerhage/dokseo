@@ -15,6 +15,8 @@ type PageObstacle =
 
 type PageImage = { readonly page: string; readonly image: string };
 
+type PageDocumentReader = (path: string) => Promise<string | null>;
+
 type EpubPages =
   | { readonly kind: 'images'; readonly images: readonly PageImage[] }
   | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle };
@@ -40,11 +42,14 @@ function contentObstacle(page: string, content: PageContent): PageObstacle | nul
     .exhaustive();
 }
 
-function imagesOf(paths: readonly string[], documents: ReadonlyMap<string, string>): EpubPages {
+async function imagesOf(
+  paths: readonly string[],
+  readDocument: PageDocumentReader,
+): Promise<EpubPages> {
   const images: PageImage[] = [];
   for (const page of paths) {
-    const xml = documents.get(page);
-    if (xml === undefined) return notPaged({ kind: 'page-missing', path: page });
+    const xml = await readDocument(page);
+    if (xml === null) return notPaged({ kind: 'page-missing', path: page });
 
     const content = readPageContent(xml, page);
     const obstacle = contentObstacle(page, content);
@@ -54,14 +59,18 @@ function imagesOf(paths: readonly string[], documents: ReadonlyMap<string, strin
   return { kind: 'images', images };
 }
 
-function resolveEpubPages(spine: EpubSpine, documents: ReadonlyMap<string, string>): EpubPages {
-  return match(spine)
+async function resolveEpubPages(
+  spine: EpubSpine,
+  readDocument: PageDocumentReader,
+): Promise<EpubPages> {
+  const pages = await match(spine)
     .with({ kind: 'unreadable' }, () => notPaged({ kind: 'spine-unreadable' }))
     .with({ kind: 'empty' }, () => notPaged({ kind: 'spine-empty' }))
     .with({ kind: 'unmanifested' }, (bad) => notPaged({ kind: 'unmanifested', idref: bad.idref }))
-    .with({ kind: 'spine' }, (found) => imagesOf(found.paths, documents))
+    .with({ kind: 'spine' }, (found) => imagesOf(found.paths, readDocument))
     .exhaustive();
+  return pages;
 }
 
 export { resolveEpubPages };
-export type { EpubPages, PageImage, PageObstacle };
+export type { EpubPages, PageDocumentReader, PageImage, PageObstacle };

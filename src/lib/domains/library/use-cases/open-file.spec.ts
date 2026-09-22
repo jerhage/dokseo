@@ -572,7 +572,7 @@ describe('openFile', () => {
     expect(repository.added).toHaveLength(1);
   });
 
-  it('refuses a reflowable EPUB and stores nothing', async () => {
+  it('stores an EPUB declaring reflowable whose every page is one image', async () => {
     const repository = fakeRepository();
     const builder = fakeBuilder(ok(builtSource({ sourceKind: 'epub' })));
 
@@ -585,8 +585,29 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result).toEqual({ ok: false, error: { kind: 'epub', error: { kind: 'reflowable' } } });
-    expect(builder.calls).toEqual([]);
+    expect(builder.calls).toEqual([epub]);
+    expect(result.ok && result.value.sourceKind).toBe('epub');
+    expect(repository.added).toHaveLength(1);
+  });
+
+  it('refuses an EPUB declaring reflowable whose pages are not images, and stores nothing', async () => {
+    const repository = fakeRepository();
+    const obstacle: PageObstacle = { kind: 'no-image', path: 'OEBPS/ch01.xhtml' };
+    const builder = fakeBuilder(err<SourceBuildError>({ kind: 'not-paged', obstacle }));
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        builder: builder.builder,
+        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
+      }),
+      epub,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'epub', error: { kind: 'reflowable', obstacle } },
+    });
     expect(repository.added).toEqual([]);
   });
 

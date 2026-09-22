@@ -23,8 +23,8 @@ function describeEpubRefusal(refusal: EpubRefusal): string {
     .with({ kind: 'protected' }, (locked) => describeProtection(locked.protection))
     .with(
       { kind: 'reflowable' },
-      () =>
-        'This EPUB reflows its text, and reading those is not built yet. Fixed-layout EPUBs, the kind manga uses, open today.',
+      (flowing) =>
+        `This EPUB reflows its text, and reading that is not built yet. ${describePageObstacle(flowing.obstacle)}`,
     )
     .with(
       { kind: 'container-unreadable' },
