@@ -1,6 +1,6 @@
-const ACCEPT_ATTRIBUTE = 'image/*,.zip,.cbz,.pdf';
+const ACCEPT_ATTRIBUTE = 'image/*,.zip,.cbz,.pdf,.epub';
 
-const ACCEPTED_SUMMARY = 'Images, ZIP, CBZ or PDF';
+const ACCEPTED_SUMMARY = 'Images, ZIP, CBZ, PDF or EPUB';
 
 const DROP_INVITATION = 'Drop pages, a folder or an archive';
 

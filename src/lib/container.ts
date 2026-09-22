@@ -311,6 +311,10 @@ function buildContainer(): Container {
   const openFileDeps: OpenFileDeps = {
     repository,
     builder: createFileSourceBuilder(),
+    inspectEpub: async (source: Blob) => {
+      const { inspectEpubArchive } = await import('./domains/library/adapters/zip-epub-inspector');
+      return await inspectEpubArchive(source);
+    },
     fingerprint: fingerprintOf,
     requestPersistence,
     now: Date.now,

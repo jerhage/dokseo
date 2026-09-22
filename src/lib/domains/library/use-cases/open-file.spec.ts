@@ -10,6 +10,11 @@ import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import { NO_CONTENT_HASH } from '../domain/book/stored-book';
+import type { EpubInspection, EpubInspectionError } from '../domain/ingest/epub-inspection';
+import type { EpubInspector } from '../domain/ingest/epub-inspector';
+import type { EpubLayout, EpubPackage, SpineDirection } from '../domain/ingest/epub-package';
+import type { PageObstacle } from '../domain/ingest/epub-pages';
+import type { BookProtection } from '../domain/ingest/epub-protection';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { uploadManifest } from '../domain/ingest/upload-manifest';
 import type { UploadReport, UploadStage } from '../domain/ingest/upload-progress';
@@ -21,6 +26,8 @@ const NOW = 1758240000000;
 const NEW_ID = 'book-7';
 
 const DIGEST = 'f0e1d2c3';
+
+const NOT_AN_EPUB: EpubInspection = { kind: 'not-an-epub' };
 
 function notFound(id: BookId): Result<never, LibraryError> {
   return err({ kind: 'not-found', id });
@@ -108,10 +115,40 @@ function collector(): { readonly report: UploadReport; readonly stages: UploadSt
   return { report: (stage) => stages.push(stage), stages };
 }
 
+function fakeInspector(outcome: Result<EpubInspection, EpubInspectionError> = ok(NOT_AN_EPUB)): {
+  readonly inspector: EpubInspector;
+  readonly inspected: Blob[];
+} {
+  const inspected: Blob[] = [];
+  return {
+    inspected,
+    inspector: (source: Blob) => {
+      inspected.push(source);
+      return Promise.resolve(outcome);
+    },
+  };
+}
+
+function epubPackage(layout: EpubLayout, direction: SpineDirection = 'rtl'): EpubPackage {
+  return { layout, direction, title: 'Yotsuba&! 1', language: 'ja' };
+}
+
+function inspectedEpub(
+  layout: EpubLayout,
+  direction: SpineDirection = 'rtl',
+): Result<EpubInspection, EpubInspectionError> {
+  return ok({
+    kind: 'epub',
+    packagePath: 'OEBPS/content.opf',
+    packageDocument: epubPackage(layout, direction),
+  });
+}
+
 function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
   return {
     repository: fakeRepository().repository,
     builder: fakeBuilder(ok(builtSource())).builder,
+    inspectEpub: fakeInspector().inspector,
     fingerprint: () => Promise.resolve(DIGEST),
     requestPersistence: () => Promise.resolve(true),
     now: () => NOW,
@@ -132,6 +169,8 @@ function fakeFingerprint(digest: string = DIGEST) {
 }
 
 const files: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.cbz')];
+
+const epub: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.epub')];
 
 const folder: readonly File[] = [
   new File(['0123456789'], '002.png'),
@@ -445,6 +484,128 @@ describe('openFile', () => {
       ok: false,
       error: { kind: 'storage', error: { kind: 'storage-unavailable' } },
     });
+  });
+
+  it('inspects an uploaded EPUB before it builds a source from it', async () => {
+    const inspector = fakeInspector(inspectedEpub('pre-paginated'));
+    const builder = fakeBuilder(ok(builtSource({ sourceKind: 'epub' })));
+
+    const result = await openFile(
+      deps({ inspectEpub: inspector.inspector, builder: builder.builder }),
+      epub,
+    );
+
+    expect(inspector.inspected).toEqual([at(epub, 0)]);
+    expect(result.ok).toBe(true);
+  });
+
+  it('takes the reading direction the EPUB itself declares', async () => {
+    const repository = fakeRepository();
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'ltr')).inspector,
+        builder: fakeBuilder(ok(builtSource({ sourceKind: 'epub' }))).builder,
+      }),
+      epub,
+    );
+
+    expect(result.ok && result.value.direction).toBe('ltr');
+  });
+
+  it('keeps the reader\u2019s usual direction when the EPUB declares none', async () => {
+    const result = await openFile(
+      deps({
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'default')).inspector,
+        builder: fakeBuilder(ok(builtSource({ sourceKind: 'epub' }))).builder,
+      }),
+      epub,
+    );
+
+    expect(result.ok && result.value.direction).toBe('rtl');
+  });
+
+  it('imports a fixed-layout EPUB', async () => {
+    const repository = fakeRepository();
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated')).inspector,
+        builder: fakeBuilder(ok(builtSource({ sourceKind: 'epub' }))).builder,
+      }),
+      epub,
+    );
+
+    expect(result.ok && result.value.sourceKind).toBe('epub');
+    expect(repository.added).toHaveLength(1);
+  });
+
+  it('refuses a reflowable EPUB and stores nothing', async () => {
+    const repository = fakeRepository();
+    const builder = fakeBuilder(ok(builtSource({ sourceKind: 'epub' })));
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        builder: builder.builder,
+        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
+      }),
+      epub,
+    );
+
+    expect(result).toEqual({ ok: false, error: { kind: 'epub', error: { kind: 'reflowable' } } });
+    expect(builder.calls).toEqual([]);
+    expect(repository.added).toEqual([]);
+  });
+
+  it('carries the protection of a locked EPUB out to its caller', async () => {
+    const protection: BookProtection = { kind: 'rights-managed' };
+    const inspector = fakeInspector(
+      err<EpubInspectionError>({ kind: 'protected', protection }),
+    ).inspector;
+
+    const result = await openFile(deps({ inspectEpub: inspector }), epub);
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'epub', error: { kind: 'protected', protection } },
+    });
+  });
+
+  it('reports an ineligible fixed-layout EPUB as the obstacle the builder named', async () => {
+    const obstacle: PageObstacle = { kind: 'many-images', path: 'OEBPS/p3.xhtml', count: 2 };
+    const builder = fakeBuilder(err<SourceBuildError>({ kind: 'not-paged', obstacle }));
+
+    const result = await openFile(
+      deps({
+        builder: builder.builder,
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated')).inspector,
+      }),
+      epub,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'source', error: { kind: 'not-paged', obstacle } },
+    });
+  });
+
+  it('inspects no EPUB when the upload is an archive', async () => {
+    const inspector = fakeInspector();
+
+    await openFile(deps({ inspectEpub: inspector.inspector }), files);
+
+    expect(inspector.inspected).toEqual([]);
+  });
+
+  it('builds a source from a .epub the inspection calls no EPUB at all', async () => {
+    const builder = fakeBuilder(ok(builtSource({ sourceKind: 'epub' })));
+
+    const result = await openFile(deps({ builder: builder.builder }), epub);
+
+    expect(builder.calls).toEqual([epub]);
+    expect(result.ok).toBe(true);
   });
 
   it('reports nothing when no reporter is given', async () => {

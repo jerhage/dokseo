@@ -5,7 +5,7 @@ import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layo
 import type { PageFit } from '$lib/shared/page-fit';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 
-type SourceKind = 'images' | 'pdf' | 'archive';
+type SourceKind = 'images' | 'pdf' | 'archive' | 'epub';
 
 type Book = {
   readonly id: BookId;

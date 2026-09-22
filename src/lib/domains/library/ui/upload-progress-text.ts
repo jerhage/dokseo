@@ -14,6 +14,7 @@ function sourceNoun(sourceKind: SourceKind): string {
     .with('pdf', () => 'the PDF')
     .with('archive', () => 'the archive')
     .with('images', () => 'the packed images')
+    .with('epub', () => 'the EPUB')
     .exhaustive();
 }
 

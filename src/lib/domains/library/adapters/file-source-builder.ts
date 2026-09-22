@@ -5,7 +5,7 @@ import { imageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book/book';
-import type { PageSourceError } from '$lib/shared/page-source';
+import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadReport } from '../domain/ingest/upload-progress';
@@ -47,6 +47,29 @@ async function sourceBlobOf(
   return packed;
 }
 
+async function epubPages(blob: Blob): Promise<Result<PageSource, SourceBuildError>> {
+  const { openEpubBook } = await import('./epub-page-source');
+  const opened = await openEpubBook(blob);
+  if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
+  if (opened.value.kind === 'not-paged') {
+    return err({ kind: 'not-paged', obstacle: opened.value.obstacle });
+  }
+  return ok(opened.value.source);
+}
+
+async function pagesOf(
+  sourceKind: SourceKind,
+  blob: Blob,
+): Promise<Result<PageSource, SourceBuildError>> {
+  if (sourceKind === 'epub') {
+    const epub = await epubPages(blob);
+    return epub;
+  }
+  const opened = await openStoredPageSource(sourceKind, blob);
+  if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
+  return ok(opened.value);
+}
+
 async function buildFrom(
   files: readonly File[],
   report: UploadReport,
@@ -59,8 +82,8 @@ async function buildFrom(
   if (!source.ok) return source;
 
   report({ kind: 'opening', sourceKind });
-  const opened = await openStoredPageSource(sourceKind, source.value);
-  if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
+  const opened = await pagesOf(sourceKind, source.value);
+  if (!opened.ok) return opened;
 
   using pages = opened.value;
   if (pages.count === 0) return err({ kind: 'nothing-usable' });

@@ -16,6 +16,10 @@ async function openStoredPageSource(
       const { openArchivePageSource } = await import('./archive-page-source');
       return openArchivePageSource(blob);
     })
+    .with('epub', async () => {
+      const { openEpubPageSource } = await import('./epub-page-source');
+      return openEpubPageSource(blob);
+    })
     .exhaustive();
 }
 
