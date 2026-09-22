@@ -1,7 +1,6 @@
 import { match } from 'ts-pattern';
-import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
+import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { BookProtection } from '../domain/ingest/epub-protection';
-import type { EpubRefusal } from '../use-cases/open-file';
 
 function describeProtection(protection: BookProtection): string {
   return match(protection)
@@ -16,14 +15,9 @@ function describeProtection(protection: BookProtection): string {
     .exhaustive();
 }
 
-function describeEpubRefusal(refusal: EpubRefusal): string {
+function describeEpubRefusal(refusal: EpubInspectionError): string {
   return match(refusal)
     .with({ kind: 'protected' }, (locked) => describeProtection(locked.protection))
-    .with(
-      { kind: 'reflowable' },
-      (flowing) =>
-        `This EPUB reflows its text, and reading that is not built yet. ${describePageObstacle(flowing.obstacle)}`,
-    )
     .with(
       { kind: 'container-unreadable' },
       () => 'This EPUB names no package document, so its pages could not be found.',

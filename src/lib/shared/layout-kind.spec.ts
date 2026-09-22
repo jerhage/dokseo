@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveDirection, effectivePairing } from './layout-kind';
+import { effectiveDirection, effectivePairing, imageLayoutKind } from './layout-kind';
+
+describe('imageLayoutKind', () => {
+  it('answers with the layout kind of a book made of images', () => {
+    expect(imageLayoutKind('paged')).toBe('paged');
+    expect(imageLayoutKind('continuous')).toBe('continuous');
+  });
+
+  it('answers nothing for a book that reflows its text', () => {
+    expect(imageLayoutKind('flow')).toBeNull();
+  });
+});
 
 describe('effectiveDirection', () => {
   it('reads a paged right-to-left book right to left', () => {
@@ -13,6 +24,11 @@ describe('effectiveDirection', () => {
 
   it('reads a paged left-to-right book left to right', () => {
     expect(effectiveDirection('ltr', 'paged')).toBe('ltr');
+  });
+
+  it('keeps the direction a flow book declares, because its text runs that way', () => {
+    expect(effectiveDirection('rtl', 'flow')).toBe('rtl');
+    expect(effectiveDirection('ltr', 'flow')).toBe('ltr');
   });
 });
 

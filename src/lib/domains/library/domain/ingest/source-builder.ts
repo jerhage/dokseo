@@ -3,19 +3,21 @@ import type { SourceKind } from '../book/book';
 import type { PageObstacle } from './epub-pages';
 import type { UploadReport } from './upload-progress';
 
+type BuiltPages =
+  | { readonly kind: 'images'; readonly imageCount: number; readonly cover: Blob }
+  | { readonly kind: 'unpaged'; readonly obstacle: PageObstacle };
+
 type BuiltSource = {
   readonly blob: Blob;
   readonly sourceKind: SourceKind;
-  readonly imageCount: number;
-  readonly cover: Blob;
   readonly suggestedTitle: string;
+  readonly pages: BuiltPages;
 };
 
 type SourceBuildError =
   | { readonly kind: 'nothing-usable' }
   | { readonly kind: 'unreadable'; readonly cause: string }
-  | { readonly kind: 'empty' }
-  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle };
+  | { readonly kind: 'empty' };
 
 interface SourceBuilder {
   build(
@@ -24,4 +26,4 @@ interface SourceBuilder {
   ): Promise<Result<BuiltSource, SourceBuildError>>;
 }
 
-export type { BuiltSource, SourceBuildError, SourceBuilder };
+export type { BuiltPages, BuiltSource, SourceBuildError, SourceBuilder };

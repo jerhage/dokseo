@@ -37,7 +37,33 @@ describe('bookForm', () => {
   });
 });
 
+describe('bookForm, for a flow book', () => {
+  it('offers no layout, because neither choice describes flowing text', () => {
+    expect(bookForm(book({ layoutKind: 'flow' })).layoutKind).toBeNull();
+  });
+
+  it('seeds the other fields from the book as usual', () => {
+    const subject = book({ layoutKind: 'flow', direction: 'ltr' });
+
+    expect(bookForm(subject)).toEqual({
+      title: '月光食堂',
+      language: 'ja',
+      layoutKind: null,
+      direction: 'ltr',
+      pagePairing: 'double',
+    });
+  });
+});
+
 describe('changedFields', () => {
+  it('leaves a flow book its layout when the form offers none', () => {
+    const subject = book({ layoutKind: 'flow' });
+    const edit = changedFields(subject, bookForm(subject));
+
+    expect('layoutKind' in edit).toBe(false);
+    expect(applyEdit(subject, edit).layoutKind).toBe('flow');
+  });
+
   it('returns an empty edit when nothing moved', () => {
     const subject = book();
 

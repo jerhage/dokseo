@@ -1,7 +1,12 @@
 import { match } from 'ts-pattern';
 import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
-import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type {
+  ImageLayoutKind,
+  LayoutKind,
+  PagePairing,
+  ReadingDirection,
+} from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 
@@ -24,17 +29,20 @@ type Book = {
 
 const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
 
+const PAGE_FIT_A_FLOW_BOOK_NEVER_READS: PageFit = 'width';
+
 function defaultPageFit(layoutKind: LayoutKind): PageFit {
   return match(layoutKind)
     .with('continuous', () => 'width' as const)
     .with('paged', () => 'height' as const)
+    .with('flow', () => PAGE_FIT_A_FLOW_BOOK_NEVER_READS)
     .exhaustive();
 }
 
 type BookEdit = {
   readonly title?: string;
   readonly language?: Language;
-  readonly layoutKind?: LayoutKind;
+  readonly layoutKind?: ImageLayoutKind;
   readonly direction?: ReadingDirection;
   readonly pagePairing?: PagePairing;
   readonly pageFit?: PageFit;

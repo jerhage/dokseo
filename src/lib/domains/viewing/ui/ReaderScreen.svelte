@@ -15,6 +15,7 @@
   } from '$lib/shared/layout-choices';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
+  import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
@@ -94,8 +95,8 @@
   const groupCount = $derived(view.groups.length);
   const group = $derived(view.group);
   const renderer = $derived.by(() => {
-    const kind = book?.layoutKind;
-    if (kind === undefined) return null;
+    const kind = view.layout;
+    if (kind === null) return null;
 
     return match(kind)
       .with('paged', () => 'paged' as const)
@@ -103,7 +104,7 @@
       .exhaustive();
   });
   const downward = $derived(renderer === 'strip');
-  const layout = $derived(book?.layoutKind ?? null);
+  const layout = $derived(view.layout);
   const pairing = $derived(book?.pagePairing ?? null);
   const direction = $derived(book?.direction ?? null);
 
@@ -115,6 +116,7 @@
       .with('ready', () => 'reading' as const)
       .with('empty', () => 'empty' as const)
       .with('failed', () => 'failed' as const)
+      .with('flow', () => 'flowing' as const)
       .exhaustive(),
   );
 
@@ -124,6 +126,7 @@
       .with('reading', () => null)
       .with('empty', () => 'This book holds no pages to show.')
       .with('failed', () => view.message ?? 'This book could not be opened.')
+      .with('flowing', () => FLOWING_TEXT_NOTICE)
       .exhaustive(),
   );
 
@@ -147,8 +150,8 @@
   const forwardKey = $derived(rtl ? 'ArrowLeft' : 'ArrowRight');
 
   const place = $derived.by<Place>(() => {
-    const kind = book?.layoutKind;
-    if (kind === undefined) return { marker: `— / ${total}`, of: 0, at: 0 };
+    const kind = view.layout;
+    if (kind === null) return { marker: `— / ${total}`, of: 0, at: 0 };
 
     return match(kind)
       .with('paged', () => ({
@@ -170,8 +173,8 @@
   const progress = $derived(place.of === 0 ? 0 : (place.at / place.of) * 100);
 
   const turns = $derived.by<Record<PageMove, Turn> | null>(() => {
-    const kind = book?.layoutKind;
-    if (kind === undefined) return null;
+    const kind = view.layout;
+    if (kind === null) return null;
 
     return match(kind)
       .with('paged', () => ({
@@ -198,8 +201,8 @@
   });
 
   const order = $derived.by<readonly PageMove[]>(() => {
-    const kind = book?.layoutKind;
-    if (kind === undefined) return [];
+    const kind = view.layout;
+    if (kind === null) return [];
 
     return moveOrder(kind, view.direction);
   });
@@ -207,8 +210,8 @@
   const glyphs = $derived(downward ? DOWNWARDS : SIDEWAYS);
 
   const fits = $derived.by<readonly FitChoice[]>(() => {
-    const kind = book?.layoutKind;
-    if (kind === undefined) return [];
+    const kind = view.layout;
+    if (kind === null) return [];
 
     return match(kind)
       .with('paged', () => [

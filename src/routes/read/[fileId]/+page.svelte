@@ -10,6 +10,7 @@
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
+  import FlowNotice from '$lib/domains/viewing/ui/FlowNotice.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import { bookId } from '$lib/shared/ids';
@@ -89,24 +90,28 @@
   });
 </script>
 
-<ReaderScreen
-  {view}
-  {glow}
-  onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
-  onNote={(regions) => captures.note(regions)}
->
-  {#snippet arrival()}
-    {#if stepping !== null && finding !== null}
-      <ArrivalBar book={id} query={finding} {language} {stepping} />
-    {/if}
-  {/snippet}
-  {#snippet engine()}
-    <EnginePill engine={captures.engine} {language} />
-  {/snippet}
-  {#snippet panel()}
-    <CapturePanel view={captures} {language} direction={view.direction} />
-  {/snippet}
-</ReaderScreen>
+{#if view.status === 'flow'}
+  <FlowNotice />
+{:else}
+  <ReaderScreen
+    {view}
+    {glow}
+    onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
+    onNote={(regions) => captures.note(regions)}
+  >
+    {#snippet arrival()}
+      {#if stepping !== null && finding !== null}
+        <ArrivalBar book={id} query={finding} {language} {stepping} />
+      {/if}
+    {/snippet}
+    {#snippet engine()}
+      <EnginePill engine={captures.engine} {language} />
+    {/snippet}
+    {#snippet panel()}
+      <CapturePanel view={captures} {language} direction={view.direction} />
+    {/snippet}
+  </ReaderScreen>
+{/if}
 
 <CapturePalette
   book={id}

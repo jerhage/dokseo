@@ -1,4 +1,5 @@
 import type { BookId } from '$lib/shared/ids';
+import { imageLayoutKind } from '$lib/shared/layout-kind';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -13,7 +14,9 @@ type OpenForReadingDeps = {
   ) => Promise<Result<PageSource, PageSourceError>>;
 };
 
-type OpenedBook = { readonly book: Book; readonly pages: PageSource };
+type OpenedBook =
+  | { readonly kind: 'images'; readonly book: Book; readonly pages: PageSource }
+  | { readonly kind: 'flow'; readonly book: Book };
 
 type OpenForReadingError =
   | { readonly kind: 'library'; readonly error: LibraryError }
@@ -26,13 +29,16 @@ async function openForReading(
   const found = await deps.repository.get(id);
   if (!found.ok) return err({ kind: 'library', error: found.error });
 
+  const book = found.value;
+  if (imageLayoutKind(book.layoutKind) === null) return ok({ kind: 'flow', book });
+
   const source = await deps.repository.readSource(id);
   if (!source.ok) return err({ kind: 'library', error: source.error });
 
-  const opened = await deps.openPages(found.value.sourceKind, source.value);
+  const opened = await deps.openPages(book.sourceKind, source.value);
   if (!opened.ok) return err({ kind: 'source', error: opened.error });
 
-  return ok({ book: found.value, pages: opened.value });
+  return ok({ kind: 'images', book, pages: opened.value });
 }
 
 export { openForReading };

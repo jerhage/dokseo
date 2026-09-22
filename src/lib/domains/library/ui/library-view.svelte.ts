@@ -33,7 +33,6 @@ function describeSourceBuildError(error: SourceBuildError): string {
       (unreadable) => `That upload could not be read: ${unreadable.cause}`,
     )
     .with({ kind: 'empty' }, () => 'No files arrived, so there was nothing to add.')
-    .with({ kind: 'not-paged' }, (blocked) => describePageObstacle(blocked.obstacle))
     .exhaustive();
 }
 
@@ -42,6 +41,7 @@ function describeOpenFileError(error: OpenFileError): string {
     .with({ kind: 'source' }, (source) => describeSourceBuildError(source.error))
     .with({ kind: 'storage' }, (storage) => describeLibraryError(storage.error))
     .with({ kind: 'epub' }, (epub) => describeEpubRefusal(epub.error))
+    .with({ kind: 'not-paged' }, (blocked) => describePageObstacle(blocked.obstacle))
     .exhaustive();
 }
 

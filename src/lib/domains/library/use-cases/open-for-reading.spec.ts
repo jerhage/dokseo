@@ -98,8 +98,9 @@ describe('openForReading', () => {
       deps({ repository: fakeRepository(ok(stored)), openPages: fakeOpener(ok(pages)).openPages }),
       ID,
     );
+    expect(result.ok && result.value.kind).toBe('images');
     expect(result.ok && result.value.book).toBe(stored);
-    expect(result.ok && result.value.pages).toBe(pages);
+    expect(result.ok && result.value.kind === 'images' && result.value.pages).toBe(pages);
   });
 
   it('reports a library error when the record is missing', async () => {
@@ -144,6 +145,35 @@ describe('openForReading', () => {
       ID,
     );
     expect(opener.calls).toEqual([]);
+  });
+
+  it('opens a flow book without asking for a page source', async () => {
+    const opener = fakeOpener();
+    const flowing = book({ layoutKind: 'flow', imageCount: 0 });
+
+    const result = await openForReading(
+      deps({ repository: fakeRepository(ok(flowing)), openPages: opener.openPages }),
+      ID,
+    );
+
+    expect(result).toEqual(ok({ kind: 'flow', book: flowing }));
+    expect(opener.calls).toEqual([]);
+  });
+
+  it('reads no source blob for a flow book', async () => {
+    let read = 0;
+    const repository = fakeRepository(ok(book({ layoutKind: 'flow', imageCount: 0 })));
+    const counting: LibraryRepository = {
+      ...repository,
+      readSource: () => {
+        read += 1;
+        return Promise.resolve(ok(new Blob(['source bytes'])));
+      },
+    };
+
+    await openForReading(deps({ repository: counting }), ID);
+
+    expect(read).toBe(0);
   });
 
   it("passes the book's own source kind and the blob it read to the opener", async () => {

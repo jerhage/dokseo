@@ -92,17 +92,19 @@
       </label>
     </fieldset>
 
-    <fieldset class="group" disabled={saving}>
-      <legend class="label">Layout</legend>
-      <label class="choice">
-        <input type="radio" name="{uid}-layout" value="paged" bind:group={form.layoutKind} />
-        <span>Pages</span>
-      </label>
-      <label class="choice">
-        <input type="radio" name="{uid}-layout" value="continuous" bind:group={form.layoutKind} />
-        <span>Continuous strip</span>
-      </label>
-    </fieldset>
+    {#if form.layoutKind !== null}
+      <fieldset class="group" disabled={saving}>
+        <legend class="label">Layout</legend>
+        <label class="choice">
+          <input type="radio" name="{uid}-layout" value="paged" bind:group={form.layoutKind} />
+          <span>Pages</span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="{uid}-layout" value="continuous" bind:group={form.layoutKind} />
+          <span>Continuous strip</span>
+        </label>
+      </fieldset>
+    {/if}
 
     <fieldset class="group" class:locked={downward} disabled={saving || downward}>
       <legend class="label">{READING_DIRECTION_LEGEND}</legend>

@@ -1,4 +1,4 @@
-import type { LayoutKind, PagePairing, ReadingDirection } from './layout-kind';
+import type { ImageLayoutKind, PagePairing, ReadingDirection } from './layout-kind';
 
 type LayoutChoice<T> = {
   readonly value: T;
@@ -8,7 +8,7 @@ type LayoutChoice<T> = {
 
 const LAYOUT_KIND_LEGEND_BRIEF = 'Layout';
 
-const LAYOUT_KIND_CHOICES: readonly LayoutChoice<LayoutKind>[] = [
+const LAYOUT_KIND_CHOICES: readonly LayoutChoice<ImageLayoutKind>[] = [
   { value: 'paged', label: 'Pages, turned one group at a time', brief: 'Pages' },
   { value: 'continuous', label: 'One continuous strip, scrolled', brief: 'Strip' },
 ];

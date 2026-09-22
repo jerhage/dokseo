@@ -117,7 +117,7 @@ function createLibraryRepository(): LibraryRepository {
     async add(
       book: Book,
       source: Blob,
-      cover: Blob,
+      cover: Blob | null,
       report: SourceWriteReport = () => undefined,
     ): Promise<Result<void, LibraryError>> {
       if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
@@ -125,7 +125,7 @@ function createLibraryRepository(): LibraryRepository {
       if (keys === null) return notFlat(book.id);
       try {
         await blobs.put(keys.source, source, report);
-        await blobs.put(keys.cover, cover);
+        if (cover !== null) await blobs.put(keys.cover, cover);
       } catch (cause) {
         await discard(keys);
         return failed(cause);

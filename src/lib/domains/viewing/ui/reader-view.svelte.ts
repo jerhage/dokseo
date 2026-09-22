@@ -5,8 +5,8 @@ import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import { effectiveDirection, effectivePairing } from '$lib/shared/layout-kind';
-import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import { effectiveDirection, effectivePairing, imageLayoutKind } from '$lib/shared/layout-kind';
+import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
@@ -24,17 +24,21 @@ type BookEdit = Parameters<Container['library']['editBook']>[1];
 
 type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
 
+type OpenedImages = Extract<OpenedBook, { readonly kind: 'images' }>;
+
 type OpenFailure = Extract<OpenOutcome, { readonly ok: false }>['error'];
 
 type EditFailure = Extract<EditOutcome, { readonly ok: false }>['error'];
 
-type ReaderBook = OpenedBook['book'];
+type ReaderBook = OpenedImages['book'];
 
-type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing';
+type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing' | 'flow';
 
 type PlaceMirror = (index: ImageIndex) => void;
 
 const NO_PAGES: PageGroup = [];
+
+const NO_GROUPS: readonly PageGroup[] = [];
 
 const AT_THE_FIRST_IMAGE: ReadingPosition = readingPosition(imageIndex(0), 0);
 
@@ -122,6 +126,11 @@ class ReaderView {
     return book === null ? 'ltr' : effectiveDirection(book.direction, book.layoutKind);
   }
 
+  get layout(): ImageLayoutKind | null {
+    const book = this.book;
+    return book === null ? null : imageLayoutKind(book.layoutKind);
+  }
+
   get group(): number {
     const found = groupOf(this.groups, this.position);
     return found < 0 ? 0 : found;
@@ -155,13 +164,18 @@ class ReaderView {
     }
 
     if (generation !== this.#generation) {
-      if (opened.ok) opened.value.pages.close();
+      if (opened.ok && opened.value.kind === 'images') opened.value.pages.close();
       return;
     }
 
     if (!opened.ok) {
       this.status = lostBook(opened.error) ? 'missing' : 'failed';
       this.message = describeOpenFailure(opened.error);
+      return;
+    }
+
+    if (opened.value.kind === 'flow') {
+      this.status = 'flow';
       return;
     }
 
@@ -259,7 +273,7 @@ class ReaderView {
     this.#scheduleSave(book.id, position.index);
   }
 
-  async setLayoutKind(kind: LayoutKind): Promise<void> {
+  async setLayoutKind(kind: ImageLayoutKind): Promise<void> {
     const book = this.book;
     if (book === null || this.saving || book.layoutKind === kind) return;
     this.clearSelection();
@@ -343,7 +357,9 @@ class ReaderView {
 
   #regroup(book: ReaderBook, sizes: readonly (Size | null)[]): void {
     this.sizes = sizes;
-    this.groups = pairPages(sizes, effectivePairing(book.pagePairing, book.layoutKind));
+    const layout = imageLayoutKind(book.layoutKind);
+    this.groups =
+      layout === null ? NO_GROUPS : pairPages(sizes, effectivePairing(book.pagePairing, layout));
   }
 
   #scheduleSave(id: BookId, index: ImageIndex): void {

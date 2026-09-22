@@ -119,7 +119,7 @@ type Fakes = {
   readonly container: Container;
   readonly pages: FakeSource;
   readonly edits: Edit[];
-  opening: ReaderBook | 'unreadable' | 'missing';
+  opening: ReaderBook | 'unreadable' | 'missing' | 'flow';
   editing: 'ok' | 'failed';
   gate: Promise<void> | null;
   stored: ReaderBook;
@@ -133,7 +133,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
   const world = {
     pages,
     edits,
-    opening: opened as ReaderBook | 'unreadable' | 'missing',
+    opening: opened as ReaderBook | 'unreadable' | 'missing' | 'flow',
     editing: 'ok' as 'ok' | 'failed',
     gate: null as Promise<void> | null,
     stored: opened,
@@ -158,7 +158,12 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
             } as const),
           );
         }
-        return Promise.resolve(ok({ book: world.opening, pages: pages.source }));
+        if (world.opening === 'flow') {
+          return Promise.resolve(
+            ok({ kind: 'flow', book: book({ layoutKind: 'flow', imageCount: 0 }) } as const),
+          );
+        }
+        return Promise.resolve(ok({ kind: 'images', book: world.opening, pages: pages.source }));
       },
       listBooks: () => Promise.reject(new Error('not used')),
       readCover: () => Promise.reject(new Error('not used')),
@@ -874,6 +879,31 @@ describe('the reading place in the url', () => {
     await view.goToImage(bookId('one'), imageIndex(0));
 
     expect(world.edits).toEqual([]);
+  });
+
+  it('names a flow book as its own state, holding no book and no page source', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'));
+
+    expect(view.status).toBe('flow');
+    expect(view.book).toBeNull();
+    expect(view.source).toBeNull();
+    expect(view.layout).toBeNull();
+  });
+
+  it('asks a flow book for no picture', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    const view = new ReaderView(world.container);
+    await view.open(bookId('one'));
+
+    const picture = await view.pictureAt(imageIndex(0));
+
+    expect(picture).toBeNull();
+    expect(world.pages.asked).toEqual([]);
   });
 
   it('reports a book that is no longer in the library as missing', async () => {

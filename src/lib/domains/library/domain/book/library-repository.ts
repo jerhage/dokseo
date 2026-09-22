@@ -14,7 +14,7 @@ interface LibraryRepository {
   add(
     book: Book,
     source: Blob,
-    cover: Blob,
+    cover: Blob | null,
     report: SourceWriteReport,
   ): Promise<Result<void, LibraryError>>;
   remove(id: BookId): Promise<Result<void, LibraryError>>;

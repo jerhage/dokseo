@@ -144,4 +144,8 @@ describe('defaultPageFit', () => {
   it('fits a continuous book to its width', () => {
     expect(defaultPageFit('continuous')).toBe('width');
   });
+
+  it('answers for a flow book, which stores the fit and never reads it', () => {
+    expect(defaultPageFit('flow')).toBe('width');
+  });
 });

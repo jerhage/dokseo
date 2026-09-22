@@ -2,7 +2,8 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
-import { imagePlace } from '$lib/shared/reading-place';
+import { imagePlace, textPlace } from '$lib/shared/reading-place';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
@@ -12,21 +13,18 @@ import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
 import type { PageObstacle } from '../domain/ingest/epub-pages';
 import { detectSourceKind } from '../domain/ingest/source-detection';
-import type { SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import type { BuiltPages, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { languageDeclared } from '../domain/ingest/declared-language';
 import type { EpubPackage } from '../domain/ingest/epub-package';
 import { languageOfTitle } from '../domain/ingest/title-language';
 import { uploadManifest } from '../domain/ingest/upload-manifest';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 
-type EpubRefusal =
-  | EpubInspectionError
-  | { readonly kind: 'reflowable'; readonly obstacle: PageObstacle };
-
 type OpenFileError =
   | { readonly kind: 'source'; readonly error: SourceBuildError }
   | { readonly kind: 'storage'; readonly error: LibraryError }
-  | { readonly kind: 'epub'; readonly error: EpubRefusal };
+  | { readonly kind: 'epub'; readonly error: EpubInspectionError }
+  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle };
 
 type OpenFileDeps = {
   readonly repository: LibraryRepository;
@@ -80,12 +78,45 @@ async function inspectUpload(
   return { kind: 'epub', packageDocument: inspected.value.packageDocument };
 }
 
-function refusalFor(inspection: UploadInspection, error: SourceBuildError): OpenFileError {
-  const flowing = inspection.kind === 'epub' && inspection.packageDocument.layout === 'reflowable';
-  if (flowing && error.kind === 'not-paged') {
-    return { kind: 'epub', error: { kind: 'reflowable', obstacle: error.obstacle } };
+type BookContent = {
+  readonly layoutKind: LayoutKind;
+  readonly imageCount: number;
+  readonly cover: Blob | null;
+  readonly position: ReadingPlace;
+};
+
+const NO_IMAGES = 0;
+
+const NO_COVER = null;
+
+const START_OF_A_FLOW_BOOK: ReadingPlace = textPlace('');
+
+const FLOW_CONTENT: BookContent = {
+  layoutKind: 'flow',
+  imageCount: NO_IMAGES,
+  cover: NO_COVER,
+  position: START_OF_A_FLOW_BOOK,
+};
+
+function declaresReflowing(inspection: UploadInspection): boolean {
+  return inspection.kind === 'epub' && inspection.packageDocument.layout === 'reflowable';
+}
+
+function contentOf(
+  inspection: UploadInspection,
+  pages: BuiltPages,
+): Result<BookContent, OpenFileError> {
+  if (pages.kind === 'images') {
+    return ok({
+      layoutKind: 'paged',
+      imageCount: pages.imageCount,
+      cover: pages.cover,
+      position: imagePlace(imageIndex(0)),
+    });
   }
-  return { kind: 'source', error };
+  if (!declaresReflowing(inspection)) return err({ kind: 'not-paged', obstacle: pages.obstacle });
+
+  return ok(FLOW_CONTENT);
 }
 
 function declaredLanguage(inspection: UploadInspection): Language | null {
@@ -119,9 +150,12 @@ async function openFile(
   if (inspection.kind === 'refused') return err({ kind: 'epub', error: inspection.refusal });
 
   const built = await deps.builder.build(files, report);
-  if (!built.ok) return err(refusalFor(inspection, built.error));
+  if (!built.ok) return err({ kind: 'source', error: built.error });
 
-  const layoutKind: LayoutKind = 'paged';
+  const content = contentOf(inspection, built.value.pages);
+  if (!content.ok) return content;
+
+  const layoutKind = content.value.layoutKind;
 
   const title = built.value.suggestedTitle;
 
@@ -135,20 +169,20 @@ async function openFile(
     pageFit: defaultPageFit(layoutKind),
     sourceKind: built.value.sourceKind,
     contentHash: hash,
-    imageCount: built.value.imageCount,
+    imageCount: content.value.imageCount,
     addedAt: deps.now(),
-    position: imagePlace(imageIndex(0)),
+    position: content.value.position,
   };
 
   const startedAt = deps.now();
   const stored = await deps.repository.add(
     book,
     built.value.blob,
-    built.value.cover,
+    content.value.cover,
     (writtenBytes, totalBytes) => {
       report({
         kind: 'storing',
-        imageCount: built.value.imageCount,
+        imageCount: content.value.imageCount,
         writtenBytes,
         totalBytes,
         elapsedMs: deps.now() - startedAt,
@@ -161,4 +195,4 @@ async function openFile(
 }
 
 export { openFile };
-export type { EpubRefusal, OpenFileError, OpenFileDeps };
+export type { OpenFileError, OpenFileDeps };

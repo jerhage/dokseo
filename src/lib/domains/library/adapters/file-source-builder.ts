@@ -6,6 +6,7 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book/book';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PageObstacle } from '../domain/ingest/epub-pages';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadReport } from '../domain/ingest/upload-progress';
@@ -47,27 +48,31 @@ async function sourceBlobOf(
   return packed;
 }
 
-async function epubPages(blob: Blob): Promise<Result<PageSource, SourceBuildError>> {
+type OpenedPages =
+  | { readonly kind: 'source'; readonly source: PageSource }
+  | { readonly kind: 'unpaged'; readonly obstacle: PageObstacle };
+
+async function epubPages(blob: Blob): Promise<Result<OpenedPages, SourceBuildError>> {
   const { openEpubBook } = await import('./epub-page-source');
   const opened = await openEpubBook(blob);
   if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
   if (opened.value.kind === 'not-paged') {
-    return err({ kind: 'not-paged', obstacle: opened.value.obstacle });
+    return ok({ kind: 'unpaged', obstacle: opened.value.obstacle });
   }
-  return ok(opened.value.source);
+  return ok({ kind: 'source', source: opened.value.source });
 }
 
 async function pagesOf(
   sourceKind: SourceKind,
   blob: Blob,
-): Promise<Result<PageSource, SourceBuildError>> {
+): Promise<Result<OpenedPages, SourceBuildError>> {
   if (sourceKind === 'epub') {
     const epub = await epubPages(blob);
     return epub;
   }
   const opened = await openStoredPageSource(sourceKind, blob);
   if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
-  return ok(opened.value);
+  return ok({ kind: 'source', source: opened.value });
 }
 
 async function buildFrom(
@@ -85,7 +90,17 @@ async function buildFrom(
   const opened = await pagesOf(sourceKind, source.value);
   if (!opened.ok) return opened;
 
-  using pages = opened.value;
+  const suggestedTitle = suggestTitle(files.map(titleCandidate));
+  if (opened.value.kind === 'unpaged') {
+    return ok({
+      blob: source.value,
+      sourceKind,
+      suggestedTitle,
+      pages: { kind: 'unpaged', obstacle: opened.value.obstacle },
+    });
+  }
+
+  using pages = opened.value.source;
   if (pages.count === 0) return err({ kind: 'nothing-usable' });
 
   report({ kind: 'covering', imageCount: pages.count });
@@ -102,9 +117,8 @@ async function buildFrom(
   return ok({
     blob: source.value,
     sourceKind,
-    imageCount: pages.count,
-    cover,
-    suggestedTitle: suggestTitle(files.map(titleCandidate)),
+    suggestedTitle,
+    pages: { kind: 'images', imageCount: pages.count, cover },
   });
 }
 
