@@ -123,9 +123,13 @@ function declaredLanguage(inspection: UploadInspection): Language | null {
   return languageDeclared(inspection.packageDocument.language);
 }
 
+const EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE: ReadingDirection = 'ltr';
+
 function declaredDirection(inspection: UploadInspection): ReadingDirection {
   if (inspection.kind !== 'epub') return DEFAULT_DIRECTION;
-  if (inspection.packageDocument.direction === 'default') return DEFAULT_DIRECTION;
+  if (inspection.packageDocument.direction === 'default') {
+    return EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE;
+  }
 
   return inspection.packageDocument.direction;
 }

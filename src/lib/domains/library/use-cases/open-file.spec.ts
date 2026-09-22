@@ -563,7 +563,7 @@ describe('openFile', () => {
     expect(result.ok && result.value.direction).toBe('ltr');
   });
 
-  it('keeps the reader\u2019s usual direction when the EPUB declares none', async () => {
+  it('reads an EPUB that declares no direction left to right, as the format says', async () => {
     const result = await openFile(
       deps({
         inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'default')).inspector,
@@ -571,6 +571,12 @@ describe('openFile', () => {
       }),
       epub,
     );
+
+    expect(result.ok && result.value.direction).toBe('ltr');
+  });
+
+  it('keeps the manga default for an upload that is no EPUB at all', async () => {
+    const result = await openFile(deps(), files);
 
     expect(result.ok && result.value.direction).toBe('rtl');
   });
