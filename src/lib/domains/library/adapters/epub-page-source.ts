@@ -7,6 +7,7 @@ import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { CONTAINER_ENTRY, packagePathFromContainer } from '../domain/ingest/epub-container';
+import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { resolveEpubPages } from '../domain/ingest/epub-pages';
 import type { PageDocumentReader, PageImage, PageObstacle } from '../domain/ingest/epub-pages';
 import { readEpubSpine } from '../domain/ingest/epub-spine';
@@ -177,9 +178,7 @@ async function openEpubPageSource(source: Blob): Promise<Result<PageSource, Page
   const opened = await openEpubBook(source);
   if (!opened.ok) return opened;
   if (opened.value.kind === 'not-paged') {
-    return unreadable(
-      `The EPUB does not read as one image per page: ${opened.value.obstacle.kind}`,
-    );
+    return unreadable(describePageObstacle(opened.value.obstacle));
   }
   return ok(opened.value.source);
 }

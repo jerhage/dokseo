@@ -9,7 +9,8 @@ import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
-import { describeEpubRefusal, describePageObstacle } from './epub-refusal-text';
+import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
+import { describeEpubRefusal } from './epub-refusal-text';
 
 type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
