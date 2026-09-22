@@ -192,6 +192,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       openForReading: unused,
       listBooks: unused,
       readCover: unused,
+      readSource: unused,
       removeBook: unused,
       editBook: unused,
       readLibrarySize: unused,

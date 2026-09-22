@@ -84,6 +84,7 @@ function fakes(): Fakes {
         return next.promise;
       },
       readCover: () => cover.gate().then(() => cover.outcome),
+      readSource: () => Promise.reject(new Error('not used')),
       removeBook: () => {
         const next = deferred<Result<void, LibraryError>>();
         removes.push(next);

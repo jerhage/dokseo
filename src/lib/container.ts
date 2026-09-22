@@ -38,6 +38,8 @@ import { readCover } from './domains/library/use-cases/read-cover';
 import type { ReadCoverDeps } from './domains/library/use-cases/read-cover';
 import { readLibrarySize } from './domains/library/use-cases/read-library-size';
 import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
+import { readSource } from './domains/library/use-cases/read-source';
+import type { ReadSourceDeps } from './domains/library/use-cases/read-source';
 import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
 import { createModelStorage } from './domains/recognition/adapters/model/cache-api-model-storage';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
@@ -227,6 +229,7 @@ type Container = {
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
     readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
+    readonly readSource: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError | CaptureError>>;
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
     readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
@@ -324,6 +327,7 @@ function buildContainer(): Container {
   const openForReadingDeps: OpenForReadingDeps = { repository, openPages: openStoredPageSource };
   const listBooksDeps: ListBooksDeps = { repository };
   const readCoverDeps: ReadCoverDeps = { repository };
+  const readSourceDeps: ReadSourceDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
   const readLibrarySizeDeps: ReadLibrarySizeDeps = { repository };
   const cropper = createCanvasCropper(beginTrace);
@@ -376,6 +380,7 @@ function buildContainer(): Container {
       openForReading: (id: BookId) => openForReading(openForReadingDeps, id),
       listBooks: () => listBooks(listBooksDeps),
       readCover: (id: BookId) => readCover(readCoverDeps, id),
+      readSource: (id: BookId) => readSource(readSourceDeps, id),
       removeBook: (id: BookId) => removeBookAndCaptures(removeBookAndCapturesDeps, id),
       editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
       readLibrarySize: () => readLibrarySize(readLibrarySizeDeps),

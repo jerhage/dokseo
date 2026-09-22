@@ -167,6 +167,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       },
       listBooks: () => Promise.reject(new Error('not used')),
       readCover: () => Promise.reject(new Error('not used')),
+      readSource: () => Promise.reject(new Error('not used')),
       removeBook: () => Promise.reject(new Error('not used')),
       editBook: async (id, edit) => {
         edits.push({

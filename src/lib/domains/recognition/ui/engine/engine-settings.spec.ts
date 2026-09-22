@@ -103,6 +103,7 @@ function world(snapshot: ModelStorageSnapshot): World {
       openForReading: unused,
       listBooks: unused,
       readCover: unused,
+      readSource: unused,
       removeBook: unused,
       editBook: unused,
       readLibrarySize: unused,

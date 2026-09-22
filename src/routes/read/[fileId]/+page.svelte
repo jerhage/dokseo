@@ -10,7 +10,8 @@
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
-  import FlowNotice from '$lib/domains/viewing/ui/FlowNotice.svelte';
+  import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
+  import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import { bookId } from '$lib/shared/ids';
@@ -38,6 +39,7 @@
   const captures = new CaptureView(container);
   const shelf = new LibraryView(container);
   const find = new CaptureSearchView(container);
+  const flow = new FlowView(container);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
@@ -91,7 +93,7 @@
 </script>
 
 {#if view.status === 'flow'}
-  <FlowNotice />
+  <FlowViewer view={flow} book={id} />
 {:else}
   <ReaderScreen
     {view}
