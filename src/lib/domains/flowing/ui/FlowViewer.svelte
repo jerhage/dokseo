@@ -1,9 +1,12 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import { chromeHolds, chromeShown } from '$lib/shared/reader-chrome';
+  import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
+  import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';
   import FlowContentsDialog from './FlowContentsDialog.svelte';
+  import FlowSettingsDialog from './FlowSettingsDialog.svelte';
   import { FlowGestures } from './flow-gestures';
   import { flowMeta, progressLabel, SCRUB_STEP } from './flow-progress';
   import { openFlowSurface } from './flow-surface';
@@ -31,14 +34,17 @@
   let chromeAsked = $state(true);
   let chromeHeld = $state(false);
   let contentsOpen = $state(false);
+  let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
   const chapters = new Set<Document>();
 
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
-  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld || contentsOpen));
+  const panelOpen = $derived(contentsOpen || settingsOpen);
+  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld || panelOpen));
   const reading = $derived(view.state.kind === 'ready');
   const contents = $derived(view.contents);
+  const settings = $derived(view.settings);
   const progress = $derived(view.progress);
   const marker = $derived(progressLabel(progress));
   const meta = $derived(flowMeta(view.chapter, book.language));
@@ -80,8 +86,12 @@
     view.jumpTo(entry);
   }
 
+  function chooseSettings(chosen: ReadingSettings): void {
+    view.restyle(chosen);
+  }
+
   function onkey(event: KeyboardEvent): void {
-    if (event.defaultPrevented || contentsOpen || gestures === null) return;
+    if (event.defaultPrevented || panelOpen || gestures === null) return;
 
     const move = gestures.keyed({
       key: event.key,
@@ -180,6 +190,7 @@
       view.close();
       gestures = null;
       contentsOpen = false;
+      settingsOpen = false;
       chapters.clear();
     };
   });
@@ -201,12 +212,15 @@
     </div>
     {#if reading}
       {#if contents.kind === 'listed'}
-        <button class="contents" type="button" onclick={() => (contentsOpen = true)}>
+        <button class="tool" type="button" onclick={() => (contentsOpen = true)}>
           {CONTENTS_LABEL}
         </button>
       {:else}
         <p class="bare">{NO_CONTENTS_LABEL}</p>
       {/if}
+      <button class="tool" type="button" onclick={() => (settingsOpen = true)}>
+        {TEXT_SETTINGS_LABEL}
+      </button>
     {/if}
   </header>
 
@@ -245,6 +259,14 @@
       currentKey={view.currentKey}
       onpick={pickEntry}
       onclose={() => (contentsOpen = false)}
+    />
+  {/if}
+
+  {#if settingsOpen}
+    <FlowSettingsDialog
+      {settings}
+      onchoose={chooseSettings}
+      onclose={() => (settingsOpen = false)}
     />
   {/if}
 
@@ -335,7 +357,7 @@
     color: var(--c-accent);
   }
 
-  .contents {
+  .tool {
     flex: none;
     padding: var(--s-1) var(--s-2);
     border: 1px solid var(--c-border-4);
@@ -347,8 +369,8 @@
     cursor: pointer;
   }
 
-  .contents:hover,
-  .contents:focus-visible {
+  .tool:hover,
+  .tool:focus-visible {
     border-color: var(--c-accent-border);
     color: var(--c-accent);
   }

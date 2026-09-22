@@ -355,6 +355,10 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         return Promise.resolve();
       },
     },
+    flowing: {
+      readReadingSettings: unused,
+      saveReadingSettings: unused,
+    },
     storage: {
       readStorageAccount: unused,
     },

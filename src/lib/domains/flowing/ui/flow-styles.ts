@@ -1,3 +1,6 @@
+import { lineSpacingHeight, textSizePercent } from '../domain/reading-settings';
+import type { ReadingSettings } from '../domain/reading-settings';
+
 const READABLE_ON_A_DARK_PAGE = `
   @namespace epub "http://www.idpf.org/2007/ops";
 
@@ -29,8 +32,23 @@ const OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK = `
   }
 `;
 
-function flowStyles(): readonly [string, string] {
-  return [READABLE_ON_A_DARK_PAGE, OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK];
+function sizedForTheReader(settings: ReadingSettings): string {
+  return `
+  html {
+    font-size: ${textSizePercent(settings.textSize)}% !important;
+  }
+
+  p, li, dd, blockquote {
+    line-height: ${lineSpacingHeight(settings.lineSpacing)} !important;
+  }
+`;
+}
+
+function flowStyles(settings: ReadingSettings): readonly [string, string] {
+  return [
+    READABLE_ON_A_DARK_PAGE,
+    `${OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK}${sizedForTheReader(settings)}`,
+  ];
 }
 
 export { flowStyles };

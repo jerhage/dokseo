@@ -16,6 +16,15 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
+import { createReadingSettingsStore } from './domains/flowing/adapters/indexeddb-reading-settings';
+import type {
+  ReadingSettings,
+  ReadingSettingsError,
+} from './domains/flowing/domain/reading-settings';
+import { readReadingSettings } from './domains/flowing/use-cases/read-reading-settings';
+import type { ReadReadingSettingsDeps } from './domains/flowing/use-cases/read-reading-settings';
+import { saveReadingSettings } from './domains/flowing/use-cases/save-reading-settings';
+import type { SaveReadingSettingsDeps } from './domains/flowing/use-cases/save-reading-settings';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { openStoredPageSource } from './domains/library/adapters/stored-page-source';
@@ -237,6 +246,12 @@ type Container = {
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
     readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
   };
+  readonly flowing: {
+    readonly readReadingSettings: () => Promise<ReadingSettings>;
+    readonly saveReadingSettings: (
+      settings: ReadingSettings,
+    ) => Promise<Result<void, ReadingSettingsError>>;
+  };
   readonly recognition: {
     readonly readModelConsent: (
       language: Language,
@@ -334,6 +349,9 @@ function buildContainer(): Container {
   const readSourceDeps: ReadSourceDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
   const readLibrarySizeDeps: ReadLibrarySizeDeps = { repository };
+  const readingSettings = createReadingSettingsStore();
+  const readReadingSettingsDeps: ReadReadingSettingsDeps = { settings: readingSettings };
+  const saveReadingSettingsDeps: SaveReadingSettingsDeps = { settings: readingSettings };
   const cropper = createCanvasCropper(beginTrace);
   const consent = createModelConsentStore();
   const readModelConsentDeps: ReadModelConsentDeps = { consent, setups };
@@ -389,6 +407,11 @@ function buildContainer(): Container {
       removeBook: (id: BookId) => removeBookAndCaptures(removeBookAndCapturesDeps, id),
       editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
       readLibrarySize: () => readLibrarySize(readLibrarySizeDeps),
+    },
+    flowing: {
+      readReadingSettings: () => readReadingSettings(readReadingSettingsDeps),
+      saveReadingSettings: (settings: ReadingSettings) =>
+        saveReadingSettings(saveReadingSettingsDeps, settings),
     },
     recognition: {
       readModelConsent: (language: Language) => readModelConsent(readModelConsentDeps, language),

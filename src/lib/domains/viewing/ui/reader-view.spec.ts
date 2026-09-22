@@ -224,6 +224,10 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       cancelModelLoad: () => Promise.reject(new Error('not used')),
       closeRecognizer: () => Promise.reject(new Error('not used')),
     },
+    flowing: {
+      readReadingSettings: () => Promise.reject(new Error('not used')),
+      saveReadingSettings: () => Promise.reject(new Error('not used')),
+    },
     storage: {
       readStorageAccount: () => Promise.reject(new Error('not used')),
     },

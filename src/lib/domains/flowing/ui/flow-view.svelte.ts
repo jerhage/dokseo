@@ -4,6 +4,8 @@ import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
+import type { ReadingSettings } from '../domain/reading-settings';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
 import { flowLocation, flowProgress, scrubbedFraction } from './flow-progress';
@@ -83,6 +85,7 @@ class FlowView {
   contents = $state.raw<FlowContents>(NO_CONTENTS);
   direction = $state.raw<ReadingDirection>(BEFORE_THE_BOOK_SAYS);
   reported = $state.raw<TocItem | null>(null);
+  settings = $state.raw<ReadingSettings>(DEFAULT_READING_SETTINGS);
 
   #container: Container;
   #generation = 0;
@@ -140,11 +143,17 @@ class FlowView {
     const at = resumedCfi(book.position);
     this.#placed = at;
 
+    const chosen = await this.#container.flowing.readReadingSettings();
+    if (generation !== this.#generation) return;
+
+    this.settings = chosen;
+
     let surface: FlowSurface;
     try {
       surface = await show({
         source: stored.value,
         at,
+        settings: chosen,
         moved: (relocation) => {
           this.#moved(generation, book.id, relocation);
         },
@@ -193,6 +202,12 @@ class FlowView {
     this.#surface?.jump(entry.href);
   }
 
+  restyle(settings: ReadingSettings): void {
+    this.settings = settings;
+    this.#surface?.restyle(settings);
+    void this.#remember(settings);
+  }
+
   seek(asked: number): void {
     const target = scrubbedFraction(this.progress, asked);
     if (target === null) return;
@@ -217,6 +232,14 @@ class FlowView {
     }, PLACE_SAVE_DELAY_MS);
 
     this.#saving = { id, cfi, timer };
+  }
+
+  async #remember(settings: ReadingSettings): Promise<void> {
+    try {
+      await this.#container.flowing.saveReadingSettings(settings);
+    } catch {
+      return;
+    }
   }
 
   #flushSave(): void {

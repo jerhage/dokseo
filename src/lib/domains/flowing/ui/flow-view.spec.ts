@@ -7,6 +7,8 @@ import type { BookId } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
+import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
+import type { ReadingSettings } from '../domain/reading-settings';
 import type { ContentsEntry } from './flow-contents';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
@@ -25,6 +27,8 @@ const LATER_STILL = 'epubcfi(/6/18!/4/2/8/1:0)';
 type Reads = Awaited<ReturnType<Container['library']['readSource']>>;
 
 type Edits = Awaited<ReturnType<Container['library']['editBook']>>;
+
+type Keeps = Awaited<ReturnType<Container['flowing']['saveReadingSettings']>>;
 
 type BookEdit = Parameters<Container['library']['editBook']>[1];
 
@@ -51,7 +55,10 @@ type Shelf = {
   container: Container;
   readonly edits: BookEdit[];
   readonly reads: BookId[];
+  readonly chosen: ReadingSettings[];
   place: ReadingPlace;
+  stored: ReadingSettings;
+  keep: () => Promise<Keeps>;
   read: () => Promise<Reads>;
   save: () => Promise<Edits>;
 };
@@ -63,12 +70,22 @@ function shelf(): Shelf {
     container: NO_CONTAINER,
     edits: [],
     reads: [],
+    chosen: [],
     place: START_OF_THE_TEXT,
+    stored: DEFAULT_READING_SETTINGS,
+    keep: () => Promise.resolve(ok(undefined)),
     read: () => Promise.resolve(ok(SOURCE)),
     save: () => Promise.resolve(ok(novel(world.place))),
   };
 
   world.container = {
+    flowing: {
+      readReadingSettings: () => Promise.resolve(world.stored),
+      saveReadingSettings: (settings: ReadingSettings) => {
+        world.chosen.push(settings);
+        return world.keep();
+      },
+    },
     library: {
       readSource: (id: BookId) => {
         world.reads.push(id);
@@ -103,6 +120,7 @@ type Shown = {
   readonly turned: string[];
   readonly sought: number[];
   readonly jumped: string[];
+  readonly restyled: ReadingSettings[];
   toc: readonly TocItem[] | null;
   gate: Promise<void> | null;
   failure: string | null;
@@ -115,6 +133,7 @@ function shows(): Shown {
   const turned: string[] = [];
   const sought: number[] = [];
   const jumped: string[] = [];
+  const restyled: ReadingSettings[] = [];
 
   const world = {
     openings,
@@ -122,6 +141,7 @@ function shows(): Shown {
     turned,
     sought,
     jumped,
+    restyled,
     toc: null as readonly TocItem[] | null,
     gate: null as Promise<void> | null,
     failure: null as string | null,
@@ -148,6 +168,9 @@ function shows(): Shown {
       },
       jump: (href: string) => {
         jumped.push(href);
+      },
+      restyle: (settings: ReadingSettings) => {
+        restyled.push(settings);
       },
       destroy: () => {
         destroyed.push(which);
@@ -692,5 +715,89 @@ describe('the contents a flow book offers', () => {
     view.close();
 
     expect(view.contents).toEqual({ kind: 'absent' });
+  });
+});
+
+describe('FlowView reading settings', () => {
+  it('opens the book at the size and spacing the reader stored', async () => {
+    const world = shelf();
+    world.stored = { textSize: 'largest', lineSpacing: 'loose' };
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(surfaces.openings.map((opening) => opening.settings)).toEqual([world.stored]);
+    expect(view.settings).toEqual(world.stored);
+  });
+
+  it('reads the defaults for a reader who has chosen nothing', async () => {
+    const view = new FlowView(shelf().container);
+
+    expect(view.settings).toEqual(DEFAULT_READING_SETTINGS);
+  });
+
+  it('restyles the chapter already on screen rather than opening the book again', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.restyle({ textSize: 'large', lineSpacing: 'tight' });
+
+    expect(surfaces.restyled).toEqual([{ textSize: 'large', lineSpacing: 'tight' }]);
+    expect(surfaces.openings).toHaveLength(1);
+    expect(surfaces.destroyed).toEqual([]);
+  });
+
+  it('turns no page and seeks nowhere when the reader resizes the text', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.restyle({ textSize: 'smallest', lineSpacing: 'loose' });
+
+    expect(surfaces.turned).toEqual([]);
+    expect(surfaces.sought).toEqual([]);
+    expect(surfaces.jumped).toEqual([]);
+  });
+
+  it('remembers a chosen size for the reader, not for the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.restyle({ textSize: 'small', lineSpacing: 'relaxed' });
+    await settled();
+
+    expect(world.chosen).toEqual([{ textSize: 'small', lineSpacing: 'relaxed' }]);
+    expect(places(world.edits)).toEqual([]);
+  });
+
+  it('holds a choice made before a book is open, and touches no surface', () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    view.restyle({ textSize: 'large', lineSpacing: 'loose' });
+
+    expect(view.settings).toEqual({ textSize: 'large', lineSpacing: 'loose' });
+    expect(surfaces.restyled).toEqual([]);
+  });
+
+  it('keeps reading when storage refuses to remember a choice', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    world.keep = () => Promise.reject(new Error('storage gone'));
+
+    view.restyle({ textSize: 'largest', lineSpacing: 'tight' });
+    await settled();
+
+    expect(view.settings).toEqual({ textSize: 'largest', lineSpacing: 'tight' });
+    expect(surfaces.restyled).toEqual([{ textSize: 'largest', lineSpacing: 'tight' }]);
   });
 });

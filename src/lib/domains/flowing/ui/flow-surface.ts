@@ -1,5 +1,6 @@
 import type { FoliateBook, Relocation, TocItem, View } from 'foliate-js/view.js';
 import { flowStyles } from './flow-styles';
+import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageTurner } from './flow-turn';
 
@@ -9,12 +10,14 @@ type FlowSurface = {
   readonly toc: readonly TocItem[] | null;
   seek(fraction: number): void;
   jump(href: string): void;
+  restyle(settings: ReadingSettings): void;
   destroy(): void;
 };
 
 type FlowOpening = {
   readonly source: Blob;
   readonly at: string | null;
+  readonly settings: ReadingSettings;
   readonly moved: (at: Relocation) => void;
 };
 
@@ -70,7 +73,7 @@ async function openFlowSurface(
 
   try {
     await view.open(book);
-    view.renderer.setStyles(flowStyles());
+    view.renderer.setStyles(flowStyles(opening.settings));
     const laidOut = await openAt(view, opening.at);
     if (!laidOut) throw new Error('its first section could not be laid out');
   } catch (cause) {
@@ -87,6 +90,9 @@ async function openFlowSurface(
     },
     jump: (href: string) => {
       void view.goTo(href);
+    },
+    restyle: (settings: ReadingSettings) => {
+      view.renderer.setStyles(flowStyles(settings));
     },
     destroy: () => {
       tearDown(view, book);
