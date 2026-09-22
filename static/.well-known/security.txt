@@ -1,0 +1,4 @@
+Contact: https://github.com/jerhage/dokseo/security/advisories/new
+Expires: 2027-09-22T00:00:00Z
+Preferred-Languages: en
+Canonical: https://reader.naruhodo.me/.well-known/security.txt
