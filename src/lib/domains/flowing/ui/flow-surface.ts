@@ -1,4 +1,6 @@
 import type { FoliateBook, Relocation, TocItem, View } from 'foliate-js/view.js';
+import { sanitiseChapter } from './chapter-sanitiser';
+import { sanitiseChapters } from './chapter-transform';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -63,6 +65,8 @@ async function openFlowSurface(
   const book = await makeBook(
     new File([opening.source], SOURCE_FILE_NAME, { type: EPUB_MEDIA_TYPE }),
   );
+  sanitiseChapters(book, sanitiseChapter);
+
   const view = new FoliateView();
   view.addEventListener('load', (loaded) => {
     bind(loaded.detail.doc, view);

@@ -8,9 +8,24 @@
 // in .local/epub.md, under "The ambient declarations, and why they exist".
 
 declare module 'foliate-js/view.js' {
+  interface ResourceDetail {
+    data: string | Promise<string | Blob>;
+    readonly type: string;
+    readonly name: string;
+  }
+
+  interface ResourceEvent {
+    readonly detail: ResourceDetail;
+  }
+
+  interface TransformTarget {
+    addEventListener(type: 'data', listener: (event: ResourceEvent) => void): void;
+  }
+
   interface FoliateBook {
     toc?: TocItem[] | null;
     dir?: string | null;
+    transformTarget: TransformTarget;
     destroy(): void;
   }
 
@@ -65,5 +80,15 @@ declare module 'foliate-js/view.js' {
   function makeBook(file: File): Promise<FoliateBook>;
 
   export { View, makeBook };
-  export type { ChapterLoad, FoliateBook, FractionTarget, Relocation, TocItem, ViewEventMap };
+  export type {
+    ChapterLoad,
+    FoliateBook,
+    FractionTarget,
+    Relocation,
+    ResourceDetail,
+    ResourceEvent,
+    TocItem,
+    TransformTarget,
+    ViewEventMap,
+  };
 }
