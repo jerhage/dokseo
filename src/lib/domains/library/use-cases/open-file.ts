@@ -12,6 +12,7 @@ import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
 import { detectSourceKind } from '../domain/ingest/source-detection';
 import type { SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import { languageDeclared } from '../domain/ingest/declared-language';
 import type { EpubPackage } from '../domain/ingest/epub-package';
 import { languageOfTitle } from '../domain/ingest/title-language';
 import { uploadManifest } from '../domain/ingest/upload-manifest';
@@ -81,6 +82,12 @@ async function inspectUpload(
   return { kind: 'epub', packageDocument };
 }
 
+function declaredLanguage(inspection: UploadInspection): Language | null {
+  if (inspection.kind !== 'epub') return null;
+
+  return languageDeclared(inspection.packageDocument.language);
+}
+
 function declaredDirection(inspection: UploadInspection): ReadingDirection {
   if (inspection.kind !== 'epub') return DEFAULT_DIRECTION;
   if (inspection.packageDocument.direction === 'default') return DEFAULT_DIRECTION;
@@ -115,7 +122,7 @@ async function openFile(
   const book: Book = {
     id: bookId(deps.newId()),
     title,
-    language: languageOfTitle(title) ?? DEFAULT_LANGUAGE,
+    language: declaredLanguage(inspection) ?? languageOfTitle(title) ?? DEFAULT_LANGUAGE,
     layoutKind,
     direction: declaredDirection(inspection),
     pagePairing: DEFAULT_PAGE_PAIRING,

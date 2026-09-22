@@ -129,18 +129,23 @@ function fakeInspector(outcome: Result<EpubInspection, EpubInspectionError> = ok
   };
 }
 
-function epubPackage(layout: EpubLayout, direction: SpineDirection = 'rtl'): EpubPackage {
-  return { layout, direction, title: 'Yotsuba&! 1', language: 'ja' };
+function epubPackage(
+  layout: EpubLayout,
+  direction: SpineDirection = 'rtl',
+  language: string | null = 'ja',
+): EpubPackage {
+  return { layout, direction, title: 'Yotsuba&! 1', language };
 }
 
 function inspectedEpub(
   layout: EpubLayout,
   direction: SpineDirection = 'rtl',
+  language: string | null = 'ja',
 ): Result<EpubInspection, EpubInspectionError> {
   return ok({
     kind: 'epub',
     packagePath: 'OEBPS/content.opf',
-    packageDocument: epubPackage(layout, direction),
+    packageDocument: epubPackage(layout, direction, language),
   });
 }
 
@@ -497,6 +502,32 @@ describe('openFile', () => {
 
     expect(inspector.inspected).toEqual([at(epub, 0)]);
     expect(result.ok).toBe(true);
+  });
+
+  it('takes the language the EPUB itself declares, not one guessed from a title', async () => {
+    const result = await openFile(
+      deps({
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'ko-KR')).inspector,
+        builder: fakeBuilder(ok(builtSource({ sourceKind: 'epub' }))).builder,
+      }),
+      epub,
+    );
+
+    expect(result.ok && result.value.language).toBe('ko');
+  });
+
+  it('falls back to the title when the EPUB declares a language this app cannot read', async () => {
+    const result = await openFile(
+      deps({
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'en-GB')).inspector,
+        builder: fakeBuilder(
+          ok(builtSource({ sourceKind: 'epub', suggestedTitle: '\uB098 \uD63C\uC790\uB9CC' })),
+        ).builder,
+      }),
+      epub,
+    );
+
+    expect(result.ok && result.value.language).toBe('ko');
   });
 
   it('takes the reading direction the EPUB itself declares', async () => {
