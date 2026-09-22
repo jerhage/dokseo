@@ -20,4 +20,8 @@
     margin: 0;
     background: var(--c-surface-app);
   }
+
+  :global(input, textarea, select) {
+    box-sizing: border-box;
+  }
 </style>

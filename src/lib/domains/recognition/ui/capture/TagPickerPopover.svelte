@@ -196,6 +196,7 @@
 
   .row {
     display: flex;
+    box-sizing: border-box;
     align-items: center;
     gap: var(--s-2);
     width: 100%;
