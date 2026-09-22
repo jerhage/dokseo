@@ -29,6 +29,7 @@ declare module 'foliate-js/view.js' {
     prev(distance?: number): Promise<void>;
     next(distance?: number): Promise<void>;
     close(): void;
+    readonly renderer: { setStyles(styles: string | readonly [string, string]): void };
     addEventListener<K extends keyof ViewEventMap>(
       type: K,
       listener: (this: View, event: ViewEventMap[K]) => void,

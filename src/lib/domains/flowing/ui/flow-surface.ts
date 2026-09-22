@@ -1,4 +1,5 @@
 import type { FoliateBook, View } from 'foliate-js/view.js';
+import { flowStyles } from './flow-styles';
 import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
@@ -34,6 +35,7 @@ async function openFlowSurface(
 
   try {
     await view.open(book);
+    view.renderer.setStyles(flowStyles());
     const arrived = await view.goTo(OPENS_AT_THE_FIRST_SECTION);
     if (arrived === undefined) throw new Error('its first section could not be laid out');
   } catch (cause) {
