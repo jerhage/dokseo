@@ -10,6 +10,7 @@ import {
   readImageIndex,
   urlWithImageIndex,
 } from './reader-location';
+import { imagePlace, textPlace } from './reading-place';
 
 describe('readImageIndex', () => {
   it('reads a whole number as an image index', () => {
@@ -42,7 +43,7 @@ describe('readImageIndex', () => {
 
 describe('openingPlace', () => {
   it('opens at the saved place when the url asks for nothing', () => {
-    expect(openingPlace(null, imageIndex(12), 40)).toEqual({
+    expect(openingPlace(null, imagePlace(imageIndex(12)), 40)).toEqual({
       index: 12,
       asked: false,
       clamped: false,
@@ -50,7 +51,7 @@ describe('openingPlace', () => {
   });
 
   it('prefers the url over the saved place', () => {
-    expect(openingPlace(imageIndex(3), imageIndex(12), 40)).toEqual({
+    expect(openingPlace(imageIndex(3), imagePlace(imageIndex(12)), 40)).toEqual({
       index: 3,
       asked: true,
       clamped: false,
@@ -58,7 +59,7 @@ describe('openingPlace', () => {
   });
 
   it('clamps an index past the end to the last image', () => {
-    expect(openingPlace(imageIndex(99), imageIndex(12), 40)).toEqual({
+    expect(openingPlace(imageIndex(99), imagePlace(imageIndex(12)), 40)).toEqual({
       index: 39,
       asked: true,
       clamped: true,
@@ -66,7 +67,7 @@ describe('openingPlace', () => {
   });
 
   it('clamps a saved place past the end without calling it a url clamp', () => {
-    expect(openingPlace(null, imageIndex(99), 40)).toEqual({
+    expect(openingPlace(null, imagePlace(imageIndex(99)), 40)).toEqual({
       index: 39,
       asked: false,
       clamped: false,
@@ -74,7 +75,19 @@ describe('openingPlace', () => {
   });
 
   it('reports no place for a book holding no images', () => {
-    expect(openingPlace(imageIndex(2), imageIndex(0), 0)).toBeNull();
+    expect(openingPlace(imageIndex(2), imagePlace(imageIndex(0)), 0)).toBeNull();
+  });
+
+  it('reports no place when the book stopped at a text place and the url asks for nothing', () => {
+    expect(openingPlace(null, textPlace('epubcfi(/6/14!/4/2/14/1:0)'), 40)).toBeNull();
+  });
+
+  it('opens at the url when the book stopped at a text place', () => {
+    expect(openingPlace(imageIndex(3), textPlace('epubcfi(/6/14!/4/2/14/1:0)'), 40)).toEqual({
+      index: 3,
+      asked: true,
+      clamped: false,
+    });
   });
 });
 

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
 import { bookId, imageIndex } from '$lib/shared/ids';
+import { imagePlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
@@ -33,7 +34,7 @@ function book(id: string, overrides: Partial<Book> = {}): Book {
     sourceKind: 'archive',
     imageCount: 182,
     addedAt: 1758240000000,
-    position: imageIndex(13),
+    position: imagePlace(imageIndex(13)),
     ...overrides,
   };
 }

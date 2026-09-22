@@ -9,6 +9,8 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource } from '$lib/shared/page-source';
+import { imagePlace, textPlace } from '$lib/shared/reading-place';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { readingPosition } from '../domain/reading-position';
@@ -31,7 +33,7 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
     sourceKind: 'archive',
     imageCount: 6,
     addedAt: 1758240000000,
-    position: imageIndex(0),
+    position: imagePlace(imageIndex(0)),
     ...overrides,
   };
 }
@@ -105,7 +107,7 @@ function fakeSource(count: number): FakeSource {
 
 type Edit = {
   readonly id: BookId;
-  readonly position: number | undefined;
+  readonly position: ReadingPlace | undefined;
   readonly layoutKind: LayoutKind | undefined;
   readonly pagePairing: PagePairing | undefined;
   readonly direction: ReadingDirection | undefined;
@@ -277,7 +279,7 @@ describe('ReaderView', () => {
 
     expect(view.group).toBe(2);
     expect(view.visiblePages).toEqual([4, 5]);
-    expect(world.edits.map((edit) => edit.position)).toEqual([4]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(4))]);
   });
 
   it('closes the page source on dispose', async () => {
@@ -308,7 +310,7 @@ describe('ReaderView', () => {
   });
 
   it('keeps the reader on the same image when a discovered wide page re-phases the groups', async () => {
-    const world = fakes({ position: imageIndex(3) });
+    const world = fakes({ position: imagePlace(imageIndex(3)) });
     world.pages.sizes.set(2, LANDSCAPE);
     const view = new ReaderView(world.container);
     await view.open(bookId('one'));
@@ -329,7 +331,7 @@ describe('ReaderView', () => {
 
     await view.next();
 
-    expect(world.edits).toEqual([{ id: 'one', position: 2 }]);
+    expect(world.edits).toEqual([{ id: 'one', position: imagePlace(imageIndex(2)) }]);
   });
 
   it('reports a page that will not decode without failing the book', async () => {
@@ -419,7 +421,7 @@ describe('ReaderView', () => {
   });
 
   it('keeps the reader on the same image when the pairing changes', async () => {
-    const world = fakes({ position: imageIndex(3) });
+    const world = fakes({ position: imagePlace(imageIndex(3)) });
     const view = new ReaderView(world.container);
     await view.open(bookId('one'));
     expect(view.group).toBe(1);
@@ -448,7 +450,7 @@ describe('ReaderView', () => {
   });
 
   it('keeps the reader on the same image when the layout changes', async () => {
-    const world = fakes({ position: imageIndex(3) });
+    const world = fakes({ position: imagePlace(imageIndex(3)) });
     const view = new ReaderView(world.container);
     await view.open(bookId('one'));
     expect(view.group).toBe(1);
@@ -462,7 +464,7 @@ describe('ReaderView', () => {
   });
 
   it('keeps the reader on the same image when the layout returns to pages', async () => {
-    const world = fakes({ layoutKind: 'continuous', position: imageIndex(3) });
+    const world = fakes({ layoutKind: 'continuous', position: imagePlace(imageIndex(3)) });
     const view = new ReaderView(world.container);
     await view.open(bookId('one'));
     expect(view.group).toBe(3);
@@ -697,7 +699,7 @@ describe('the reading place of a continuous strip', () => {
 
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(world.edits.map((edit) => edit.position)).toEqual([4]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(4))]);
   });
 
   it('saves a place still waiting when the reader leaves', async () => {
@@ -709,7 +711,7 @@ describe('the reading place of a continuous strip', () => {
 
     view.dispose();
 
-    expect(world.edits.map((edit) => edit.position)).toEqual([5]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(5))]);
   });
 
   it('saves nothing for a move to the place it already holds', async () => {
@@ -744,16 +746,38 @@ describe('the reading place in the url', () => {
   });
 
   it('overwrites the saved place with the one the url asked for', async () => {
-    const world = fakes({ position: imageIndex(2) });
+    const world = fakes({ position: imagePlace(imageIndex(2)) });
     const view = new ReaderView(world.container);
 
     await view.open(bookId('one'), imageIndex(4));
 
-    expect(world.edits.map((edit) => edit.position)).toEqual([4]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(4))]);
+  });
+
+  it('keeps a saved text place when the url asks for an image', async () => {
+    const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') });
+    const view = new ReaderView(world.container);
+
+    await view.open(bookId('one'), imageIndex(4));
+
+    expect(view.position.index).toBe(4);
+    expect(world.edits).toEqual([]);
+  });
+
+  it('mirrors no image and saves nothing when the book stopped at a text place', async () => {
+    const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') });
+    const mirrored: number[] = [];
+    const view = new ReaderView(world.container, (index) => mirrored.push(index));
+
+    await view.open(bookId('one'));
+
+    expect(mirrored).toEqual([]);
+    expect(world.edits).toEqual([]);
+    expect(view.message).toBeNull();
   });
 
   it('keeps the saved place when the url asks for nothing', async () => {
-    const world = fakes({ position: imageIndex(2) });
+    const world = fakes({ position: imagePlace(imageIndex(2)) });
     const view = new ReaderView(world.container);
 
     await view.open(bookId('one'));
@@ -794,7 +818,10 @@ describe('the reading place in the url', () => {
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(mirrored).toEqual([4]);
-    expect(world.edits.map((edit) => edit.position)).toEqual([2, 4]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([
+      imagePlace(imageIndex(2)),
+      imagePlace(imageIndex(4)),
+    ]);
   });
 
   it('moves to the group holding the image the url asked for', async () => {

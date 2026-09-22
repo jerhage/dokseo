@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import { imagePlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
@@ -28,7 +29,7 @@ function book(overrides: Partial<Book> = {}): Book {
     sourceKind: 'archive',
     imageCount: 182,
     addedAt: 1758240000000,
-    position: imageIndex(0),
+    position: imagePlace(imageIndex(0)),
     ...overrides,
   };
 }

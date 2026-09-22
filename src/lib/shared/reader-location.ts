@@ -1,5 +1,6 @@
 import { captureId, imageIndex } from './ids';
 import type { BookId, CaptureId, ImageIndex } from './ids';
+import type { ReadingPlace } from './reading-place';
 
 const IMAGE_PARAMETER = 'image';
 
@@ -40,13 +41,14 @@ function readImageIndex(value: string | null | undefined): ImageIndex | null {
 
 function openingPlace(
   asked: ImageIndex | null,
-  saved: ImageIndex,
+  saved: ReadingPlace,
   imageCount: number,
 ): OpeningPlace | null {
   if (imageCount <= 0) return null;
 
   const last = imageCount - 1;
-  const wanted = asked ?? saved;
+  const wanted = asked ?? (saved.kind === 'image' ? saved.index : null);
+  if (wanted === null) return null;
 
   return {
     index: imageIndex(Math.min(Math.max(wanted, 0), last)),

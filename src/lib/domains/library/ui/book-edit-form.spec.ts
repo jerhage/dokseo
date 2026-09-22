@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
+import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import { applyEdit } from '../domain/book/book';
 import { bookForm, changedFields } from './book-edit-form';
@@ -16,7 +17,7 @@ function book(overrides: Partial<Book> = {}): Book {
     sourceKind: 'archive',
     imageCount: 182,
     addedAt: 1758240000000,
-    position: imageIndex(13),
+    position: imagePlace(imageIndex(13)),
     ...overrides,
   };
 }

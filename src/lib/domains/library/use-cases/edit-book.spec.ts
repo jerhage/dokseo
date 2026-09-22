@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
+import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
@@ -24,7 +25,7 @@ const stored: Book = {
   sourceKind: 'archive',
   imageCount: 182,
   addedAt: 1758240000000,
-  position: imageIndex(3),
+  position: imagePlace(imageIndex(3)),
 };
 
 function fakeRepository(outcome: Result<Book, LibraryError>) {
@@ -53,5 +54,14 @@ describe('editBook', () => {
     const result = await editBook({ repository: repository.repository }, bookId('book-7'), edit);
     expect(repository.updates).toEqual([{ id: 'book-7', edit }]);
     expect(result).toEqual(outcome);
+  });
+
+  it('passes a text place to the repository unchanged', async () => {
+    const repository = fakeRepository(ok(stored));
+    const edit: BookEdit = { position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') };
+    await editBook({ repository: repository.repository }, bookId('book-7'), edit);
+    expect(repository.updates).toEqual([
+      { id: 'book-7', edit: { position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' } } },
+    ]);
   });
 });

@@ -10,6 +10,7 @@ import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layo
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
+import { imagePlace } from '$lib/shared/reading-place';
 import { groupContaining, pairPages } from '../domain/page-pairing';
 import type { PageGroup } from '../domain/page-pairing';
 import { groupOf, positionOfGroup, readingPosition } from '../domain/reading-position';
@@ -34,6 +35,8 @@ type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing
 type PlaceMirror = (index: ImageIndex) => void;
 
 const NO_PAGES: PageGroup = [];
+
+const AT_THE_FIRST_IMAGE: ReadingPosition = readingPosition(imageIndex(0), 0);
 
 const PLACE_SAVE_DELAY_MS = 500;
 
@@ -95,7 +98,7 @@ class ReaderView {
   saving = $state(false);
   sizes = $state.raw<readonly (Size | null)[]>([]);
   groups = $state.raw<readonly PageGroup[]>([]);
-  position = $state.raw<ReadingPosition>(readingPosition(imageIndex(0), 0));
+  position = $state.raw<ReadingPosition>(AT_THE_FIRST_IMAGE);
   regions = $state.raw<readonly ImageRegion[]>([]);
 
   #container: Container;
@@ -138,6 +141,7 @@ class ReaderView {
     this.sizes = [];
     this.groups = [];
     this.regions = [];
+    this.position = AT_THE_FIRST_IMAGE;
     this.#placed = null;
 
     let opened: OpenOutcome;
@@ -165,16 +169,19 @@ class ReaderView {
     this.#source = pages;
     this.book = book;
     this.#regroup(book, unmeasured(book.imageCount));
-    const place = openingPlace(at, book.position, book.imageCount);
-    this.position = readingPosition(place?.index ?? book.position, 0);
+    const saved = book.position;
+    const place = openingPlace(at, saved, book.imageCount);
     this.status = this.groups.length === 0 ? 'empty' : 'ready';
     if (place === null) return;
 
+    this.position = readingPosition(place.index, 0);
     this.#placed = place.index;
     if (place.clamped) {
       this.message = `This book holds ${book.imageCount} images, so it opened at the last one.`;
     }
-    if (place.asked && place.index !== book.position) void this.#persist(book.id, place.index);
+    if (place.asked && saved.kind === 'image' && place.index !== saved.index) {
+      void this.#persist(book.id, place.index);
+    }
     this.#mirror?.(place.index);
   }
 
@@ -367,7 +374,7 @@ class ReaderView {
     this.#placed = index;
 
     try {
-      const saved = await this.#container.library.editBook(id, { position: index });
+      const saved = await this.#container.library.editBook(id, { position: imagePlace(index) });
       if (generation !== this.#generation) return;
       if (!saved.ok) this.message = describeEditFailure(saved.error);
     } catch (cause) {

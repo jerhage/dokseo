@@ -1,6 +1,7 @@
 import { bookId, imageIndex } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind } from '$lib/shared/layout-kind';
+import { imagePlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
@@ -49,7 +50,7 @@ async function openFile(
     sourceKind: built.value.sourceKind,
     imageCount: built.value.imageCount,
     addedAt: deps.now(),
-    position: imageIndex(0),
+    position: imagePlace(imageIndex(0)),
   };
 
   const startedAt = deps.now();

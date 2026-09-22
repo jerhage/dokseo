@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, imageIndex } from '$lib/shared/ids';
+import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { applyEdit, defaultPageFit } from './book';
 import type { Book } from './book';
 
@@ -14,20 +15,36 @@ const book: Book = {
   sourceKind: 'archive',
   imageCount: 182,
   addedAt: 1758240000000,
-  position: imageIndex(3),
+  position: imagePlace(imageIndex(3)),
 };
 
 describe('applyEdit', () => {
   it('moves the position to the given index', () => {
-    expect(applyEdit(book, { position: imageIndex(7) }).position).toBe(7);
+    expect(applyEdit(book, { position: imagePlace(imageIndex(7)) }).position).toEqual({
+      kind: 'image',
+      index: 7,
+    });
   });
 
   it('accepts the first index', () => {
-    expect(applyEdit(book, { position: imageIndex(0) }).position).toBe(0);
+    expect(applyEdit(book, { position: imagePlace(imageIndex(0)) }).position).toEqual({
+      kind: 'image',
+      index: 0,
+    });
+  });
+
+  it('moves the position to a text place', () => {
+    expect(applyEdit(book, { position: textPlace('epubcfi(/6/14!/4/2/1:0)') }).position).toEqual({
+      kind: 'text',
+      cfi: 'epubcfi(/6/14!/4/2/1:0)',
+    });
   });
 
   it('preserves every other field when it moves the position', () => {
-    expect(applyEdit(book, { position: imageIndex(7) })).toEqual({ ...book, position: 7 });
+    expect(applyEdit(book, { position: imagePlace(imageIndex(7)) })).toEqual({
+      ...book,
+      position: imagePlace(imageIndex(7)),
+    });
   });
 
   it('replaces only the named fields and leaves the rest alone', () => {
@@ -39,10 +56,10 @@ describe('applyEdit', () => {
   });
 
   it('returns a new object and leaves the original untouched', () => {
-    const edited = applyEdit(book, { title: 'Blame! 1', position: imageIndex(7) });
+    const edited = applyEdit(book, { title: 'Blame! 1', position: imagePlace(imageIndex(7)) });
     expect(edited).not.toBe(book);
     expect(book.title).toBe('Yotsuba&! 1');
-    expect(book.position).toBe(3);
+    expect(book.position).toEqual({ kind: 'image', index: 3 });
   });
 
   it('keeps the direction when the edit turns the book continuous', () => {

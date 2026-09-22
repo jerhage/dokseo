@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { BookId, ImageIndex } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
@@ -137,7 +138,7 @@ describe('openFile', () => {
     expect(result.ok && result.value.layoutKind).toBe('paged');
     expect(result.ok && result.value.direction).toBe('rtl');
     expect(result.ok && result.value.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
-    expect(result.ok && result.value.position).toBe(0);
+    expect(result.ok && result.value.position).toEqual({ kind: 'image', index: 0 });
   });
 
   it('reads Korean from a hangul title, so the reader does not have to say so', async () => {
@@ -257,10 +258,10 @@ describe('openFile', () => {
     });
   });
 
-  it('leaves the reading position typed as an image index', async () => {
+  it('leaves the reading position typed as a reading place', async () => {
     const result = await openFile(deps(), files);
-    const position: ImageIndex | undefined = result.ok ? result.value.position : undefined;
-    expect(position).toBe(0);
+    const position: ReadingPlace | undefined = result.ok ? result.value.position : undefined;
+    expect(position).toEqual({ kind: 'image', index: 0 });
   });
 
   it('forwards every stage the builder reported', async () => {
