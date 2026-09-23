@@ -3,31 +3,20 @@
   import { tick } from 'svelte';
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
-  import type { CaptureOrigin } from '$lib/shared/capture-origin';
-  import type { Anchor, TextAnchor } from '$lib/shared/anchor';
-  import type { CaptureId, TagId } from '$lib/shared/ids';
+  import type { TextAnchor } from '$lib/shared/anchor';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
-  import { readerHref } from '$lib/shared/reader-location';
-  import type { TextSegment } from '$lib/shared/text-search';
-  import { inBookOrder } from '../../domain/capture/capture-order';
-  import type { SearchedCapture } from '../../domain/capture/capture-results';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
-  import { captureNote, captureState } from './capture-card';
-  import { markedLines } from './capture-lines';
-  import type { MarkedLines } from './capture-lines';
-  import { firstImage, placeLabel } from './capture-place';
-  import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
-  import { NOTHING_READ } from './capture-view.svelte';
+  import { CardEditing } from './card-editing.svelte';
+  import type { FocusTarget } from './card-editing.svelte';
+  import { CaptureCards } from './capture-cards.svelte';
+  import type { CardJump } from './capture-cards.svelte';
   import type { CaptureView } from './capture-view.svelte';
-  import { modelLoadAnnouncement, modelLoadNote } from '../engine/recognizer-view.svelte';
-  import { chipsOf } from './tag-chip';
-  import type { TagChip } from './tag-chip';
-  import { TagPicker } from './tag-picker.svelte';
-  import type { PickerRow } from './tag-picker.svelte';
-  import CaptureTags from './CaptureTags.svelte';
+  import { TagSelection } from './tag-selection.svelte';
+  import { modelLoadAnnouncement } from '../engine/recognizer-view.svelte';
+  import CardEditor from './CardEditor.svelte';
+  import CaptureTagging from './CaptureTagging.svelte';
   import DocumentTags from './DocumentTags.svelte';
-  import TagPickerPopover from './TagPickerPopover.svelte';
   import ModelConsentDialog from '../engine/ModelConsentDialog.svelte';
 
   type Props = {
@@ -37,379 +26,115 @@
     readonly onSeek?: (passage: TextAnchor) => void;
   };
 
-  type Card = {
-    readonly id: CaptureId;
-    readonly place: string;
-    readonly href: string | null;
-    readonly passage: TextAnchor | null;
-    readonly state: string;
-    readonly text: string | null;
-    readonly segments: readonly TextSegment[] | null;
-    readonly note: string | null;
-    readonly annotation: string | null;
-    readonly annotationSegments: readonly TextSegment[] | null;
-    readonly noteLabel: string | null;
-    readonly tags: readonly TagChip[];
-    readonly tone: CaptureStatus;
-    readonly origin: CaptureOrigin;
-    readonly edited: boolean;
-    readonly editable: boolean;
-  };
-
-  type Step = {
-    readonly query: string;
-    readonly at: number;
-  };
-
-  type Done = Extract<PanelCapture, { status: 'done' }>;
-
-  type Hit = {
-    readonly capture: Done;
-    readonly anchor: Anchor;
-    readonly lines: MarkedLines;
-  };
-
   let { view, language, direction, onSeek }: Props = $props();
 
   const mismatch = $derived(engineMismatch(view.session, language));
 
-  let query = $state('');
-  let editing = $state<CaptureId | null>(null);
-  let draft = $state('');
-  let editor = $state<HTMLTextAreaElement | null>(null);
-  let noting = $state<CaptureId | null>(null);
-  let noteDraft = $state('');
-  let noteEditor = $state<HTMLTextAreaElement | null>(null);
-  let noteTrigger: HTMLButtonElement | null = null;
-  let step = $state.raw<Step | null>(null);
-  let trigger: HTMLButtonElement | null = null;
-  let tagTrigger = $state<HTMLButtonElement | null>(null);
-  let countsAsked = false;
+  const panel = new CaptureCards(() => ({
+    captures: view.captures,
+    newestFirst: view.newestFirst,
+    tags: view.tags,
+    book: view.book,
+    progress: view.progress,
+    direction,
+    seekable: onSeek !== undefined,
+  }));
 
-  const picker = new TagPicker(() => ({ tags: view.tags, counts: view.libraryCounts }));
+  const editingText = new CardEditing();
 
-  $effect(() => {
-    editor?.focus();
-  });
+  const editingNote = new CardEditing();
 
-  $effect(() => {
-    noteEditor?.focus();
-  });
+  const selection = new TagSelection(
+    {
+      tagsOn: (id) => view.captures.find((capture) => capture.id === id)?.tagIds ?? [],
+      loadCounts: () => view.loadTagCounts(),
+      add: (id, tag) => view.addTag(id, tag),
+      remove: (id, tag) => view.removeTag(id, tag),
+      create: (id, name) => view.createTag(id, name),
+    },
+    () => ({ tags: view.tags, counts: view.libraryCounts }),
+  );
 
   $effect(() => {
     const fresh = view.writing;
     if (fresh === null) return;
 
     view.takeWriting();
-    editing = fresh;
-    draft = '';
-    trigger = null;
+    editingText.begin(fresh, '', null);
   });
-
-  const load = $derived(view.progress);
 
   const waiting = $derived(view.captures.some((capture) => capture.status === 'pending'));
 
-  const announcement = $derived(waiting ? modelLoadAnnouncement(load) : '');
+  const announcement = $derived(waiting ? modelLoadAnnouncement(view.progress) : '');
 
-  function hrefOf(id: CaptureId, anchor: Anchor): string | null {
-    const book = view.book;
-    const index = firstImage(anchor);
-    if (book === null || index === null) return null;
+  const cards = $derived(panel.cards);
 
-    return readerHref(book, index, { capture: id, query: searching ? wanted : null });
-  }
+  const cursor = $derived(panel.cursor);
 
-  function passageOf(anchor: Anchor): TextAnchor | null {
-    if (onSeek === undefined || anchor.kind !== 'text') return null;
+  const searching = $derived(panel.searching);
 
-    return anchor;
-  }
-
-  function annotationOf(capture: PanelCapture): string | null {
-    return match(capture)
-      .with({ origin: 'written' }, () => null)
-      .with({ origin: 'recognized' }, (read) => read.note)
-      .with({ origin: 'lifted' }, (lifted) => lifted.note)
-      .exhaustive();
-  }
-
-  function noteLabelOf(capture: PanelCapture, place: string): string | null {
-    if (capture.origin === 'written') return null;
-
-    return annotationOf(capture) === null
-      ? `Add a note to the capture at ${place}`
-      : `Edit the note on the capture at ${place}`;
-  }
-
-  function searchedOf(capture: Done): SearchedCapture {
-    return match(capture)
-      .with({ origin: 'written' }, (note) => ({
-        origin: 'written' as const,
-        text: note.text.text,
-      }))
-      .with({ origin: 'recognized' }, (read) => ({
-        origin: 'recognized' as const,
-        text: read.text.text,
-        note: read.note,
-      }))
-      .with({ origin: 'lifted' }, (lifted) => ({
-        origin: 'lifted' as const,
-        text: lifted.text.text,
-        note: lifted.note,
-      }))
-      .exhaustive();
-  }
-
-  function cardOf(capture: PanelCapture, lines: MarkedLines | null): Card {
-    const tags = chipsOf(capture.tagIds, view.tags);
-
-    return match(capture)
-      .with({ status: 'pending' }, (running) => ({
-        id: running.id,
-        place: placeLabel(running.anchor),
-        href: hrefOf(running.id, running.anchor),
-        passage: passageOf(running.anchor),
-        state: 'Reading…',
-        text: null,
-        segments: null,
-        note: load === null ? null : modelLoadNote(load),
-        annotation: null,
-        annotationSegments: null,
-        noteLabel: null,
-        tags,
-        tone: 'pending' as CaptureStatus,
-        origin: running.origin,
-        edited: false,
-        editable: false,
-      }))
-      .with({ status: 'done' }, (read) => ({
-        id: read.id,
-        place: placeLabel(read.anchor),
-        href: hrefOf(read.id, read.anchor),
-        passage: passageOf(read.anchor),
-        state: captureState(read.origin),
-        text: read.text.text,
-        segments: lines === null ? null : lines.text,
-        note: captureNote(read.origin, read.text.text),
-        annotation: annotationOf(read),
-        annotationSegments: lines === null ? null : lines.note,
-        noteLabel: noteLabelOf(read, placeLabel(read.anchor)),
-        tags,
-        tone: 'done' as CaptureStatus,
-        origin: read.origin,
-        edited: read.edited,
-        editable: true,
-      }))
-      .with({ status: 'empty' }, (blank) => ({
-        id: blank.id,
-        place: placeLabel(blank.anchor),
-        href: hrefOf(blank.id, blank.anchor),
-        passage: passageOf(blank.anchor),
-        state: 'No text',
-        text: null,
-        segments: null,
-        note: NOTHING_READ,
-        annotation: null,
-        annotationSegments: null,
-        noteLabel: null,
-        tags,
-        tone: 'empty' as CaptureStatus,
-        origin: blank.origin,
-        edited: false,
-        editable: false,
-      }))
-      .with({ status: 'failed' }, (broken) => ({
-        id: broken.id,
-        place: placeLabel(broken.anchor),
-        href: hrefOf(broken.id, broken.anchor),
-        passage: passageOf(broken.anchor),
-        state: 'Failed',
-        text: null,
-        segments: null,
-        note: broken.message,
-        annotation: null,
-        annotationSegments: null,
-        noteLabel: null,
-        tags,
-        tone: 'failed' as CaptureStatus,
-        origin: broken.origin,
-        edited: false,
-        editable: false,
-      }))
-      .exhaustive();
-  }
-
-  function hitOf(capture: PanelCapture, wanted: string): Hit | null {
-    if (capture.status !== 'done') return null;
-
-    const lines = markedLines(searchedOf(capture), wanted);
-    return lines.matched ? { capture, anchor: capture.anchor, lines } : null;
-  }
-
-  const wanted = $derived(query.trim());
-
-  const searching = $derived(wanted.length > 0);
-
-  const hits = $derived.by<readonly Hit[] | null>(() => {
-    if (!searching) return null;
-
-    const found = view.captures
-      .map((capture) => hitOf(capture, wanted))
-      .filter((hit) => hit !== null);
-
-    return inBookOrder(found, direction);
-  });
-
-  const cards = $derived.by<readonly Card[]>(() =>
-    hits === null
-      ? view.newestFirst.map((capture) => cardOf(capture, null))
-      : hits.map((hit) => cardOf(hit.capture, hit.lines)),
-  );
-
-  const cursor = $derived(searching && step !== null && step.query === wanted ? step.at : -1);
-
-  function jump(href: string, at: number): void {
-    const replace = cursor >= 0;
-    step = searching ? { query: wanted, at } : null;
+  function openHref(href: string, replace: boolean): void {
     void goto(href, { replaceState: replace, keepFocus: true, noScroll: true });
   }
 
-  function follow(event: MouseEvent, card: Card, at: number): void {
-    if (card.href === null || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
+  function navigate(jump: CardJump): void {
+    match(jump)
+      .with({ kind: 'nowhere' }, () => undefined)
+      .with({ kind: 'fresh' }, (fresh) => openHref(fresh.href, false))
+      .with({ kind: 'replacing' }, (again) => openHref(again.href, true))
+      .exhaustive();
+  }
+
+  function follow(event: MouseEvent, at: number): void {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const jump = panel.jumpTo(at);
+    if (jump.kind === 'nowhere') return;
 
     event.preventDefault();
-    jump(card.href, at);
+    navigate(jump);
   }
 
   function stepBy(by: number): void {
-    const next = cursor + by;
-    const card = cards[next];
-    if (card === undefined || card.href === null) return;
-
-    jump(card.href, next);
+    navigate(panel.jumpTo(panel.cursor + by));
   }
 
-  function findKeys(event: KeyboardEvent): void {
+  function stepOnEnter(event: KeyboardEvent): void {
     if (event.key !== 'Enter') return;
 
     event.preventDefault();
     stepBy(1);
   }
 
-  function begin(card: Card, from: HTMLButtonElement): void {
-    editing = card.id;
-    draft = card.text ?? '';
-    trigger = from;
-  }
-
-  async function abandon(): Promise<void> {
-    editing = null;
-    draft = '';
+  async function restore(from: FocusTarget | null): Promise<void> {
     await tick();
-    trigger?.focus();
-    trigger = null;
+    from?.focus();
   }
 
-  function save(): void {
-    const id = editing;
+  function abandonText(): void {
+    void restore(editingText.abandon());
+  }
+
+  function saveText(): void {
+    const id = editingText.capture;
     if (id === null) return;
 
-    const text = draft;
-    void abandon();
-    void view.edit(id, text);
+    const written = editingText.draft;
+    abandonText();
+    void view.edit(id, written);
   }
 
-  function commit(event: SubmitEvent): void {
-    event.preventDefault();
-    save();
-  }
-
-  function keys(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      void abandon();
-      return;
-    }
-
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      save();
-    }
-  }
-
-  function beginNote(card: Card, from: HTMLButtonElement): void {
-    noting = card.id;
-    noteDraft = card.annotation ?? '';
-    noteTrigger = from;
-  }
-
-  async function abandonNote(): Promise<void> {
-    noting = null;
-    noteDraft = '';
-    await tick();
-    noteTrigger?.focus();
-    noteTrigger = null;
+  function abandonNote(): void {
+    void restore(editingNote.abandon());
   }
 
   function saveNote(): void {
-    const id = noting;
+    const id = editingNote.capture;
     if (id === null) return;
 
-    const note = noteDraft;
-    void abandonNote();
-    void view.annotate(id, note);
-  }
-
-  function commitNote(event: SubmitEvent): void {
-    event.preventDefault();
-    saveNote();
-  }
-
-  function noteKeys(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      void abandonNote();
-      return;
-    }
-
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      saveNote();
-    }
-  }
-
-  function carriedBy(id: CaptureId): readonly TagId[] {
-    return view.captures.find((capture) => capture.id === id)?.tagIds ?? [];
-  }
-
-  function openPicker(id: CaptureId, from: HTMLButtonElement): void {
-    if (!countsAsked) {
-      countsAsked = true;
-      void view.loadTagCounts();
-    }
-
-    tagTrigger = from;
-    picker.open(id, carriedBy(id));
-  }
-
-  async function closePicker(): Promise<void> {
-    picker.close();
-    await tick();
-    tagTrigger?.focus();
-    tagTrigger = null;
-  }
-
-  async function choose(row: PickerRow): Promise<void> {
-    const id = picker.capture;
-    if (id === null) return;
-
-    if (row.kind === 'create') await view.createTag(id, row.name);
-    else await view.addTag(id, row.tag.id);
-
-    if (picker.capture === id) picker.open(id, carriedBy(id));
+    const written = editingNote.draft;
+    abandonNote();
+    void view.annotate(id, written);
   }
 
   const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
@@ -441,10 +166,10 @@
         <span class="assistive">Search this book's captures and notes</span>
         <input
           type="search"
-          bind:value={query}
+          bind:value={panel.query}
           placeholder="Search captures and notes…"
           title="Search this book's captures and notes · Enter steps to the next match"
-          onkeydown={findKeys}
+          onkeydown={stepOnEnter}
         />
       </label>
       {#if searching}
@@ -503,25 +228,22 @@
               {:else if card.href === null}
                 <span class="place">{card.place}</span>
               {:else}
-                <a
-                  class="place jump"
-                  href={card.href}
-                  onclick={(event) => follow(event, card, order)}
-                >
+                <a class="place jump" href={card.href} onclick={(event) => follow(event, order)}>
                   {card.place}
                 </a>
               {/if}
               {#if card.edited}
                 <span class="mark">Edited</span>
               {/if}
-              <span class="state">{card.state}</span>
+              <span class="state">{card.stateLabel}</span>
               <span class="tools">
                 {#if card.editable}
                   <button
                     class="tool"
                     type="button"
-                    disabled={editing === card.id}
-                    onclick={(event) => begin(card, event.currentTarget)}
+                    disabled={editingText.holds(card.id)}
+                    onclick={(event) =>
+                      editingText.begin(card.id, card.text ?? '', event.currentTarget)}
                   >
                     <span class="glyph" aria-hidden="true">✎</span>
                     <span class="assistive">Edit the capture at {card.place}</span>
@@ -531,8 +253,9 @@
                   <button
                     class="tool named"
                     type="button"
-                    disabled={noting === card.id}
-                    onclick={(event) => beginNote(card, event.currentTarget)}
+                    disabled={editingNote.holds(card.id)}
+                    onclick={(event) =>
+                      editingNote.begin(card.id, card.annotation ?? '', event.currentTarget)}
                   >
                     <span class="glyph" aria-hidden="true"
                       >{card.annotation === null ? '+' : '✎'}</span
@@ -547,25 +270,14 @@
                 </button>
               </span>
             </header>
-            {#if editing === card.id}
-              <form class="editor" onsubmit={commit}>
-                <textarea
-                  bind:this={editor}
-                  bind:value={draft}
-                  class="field"
-                  class:ko={language === 'ko'}
-                  lang={language}
-                  rows="3"
-                  aria-label="Text of the capture at {card.place}"
-                  onkeydown={keys}></textarea>
-                <p class="hint">Escape abandons · ⌘/Ctrl + Enter saves</p>
-                <div class="choices">
-                  <button class="abandon" type="button" onclick={() => void abandon()}>
-                    Cancel
-                  </button>
-                  <button class="save" type="submit">Save</button>
-                </div>
-              </form>
+            {#if editingText.holds(card.id)}
+              <CardEditor
+                editing={editingText}
+                label="Text of the capture at {card.place}"
+                field={{ kind: 'capture', language }}
+                onsave={saveText}
+                onabandon={abandonText}
+              />
             {:else if card.segments !== null}
               <p class="text" class:ko={language === 'ko'} lang={language}>
                 {#each card.segments as segment, part (part)}{#if segment.matched}<mark class="hit"
@@ -575,24 +287,14 @@
             {:else if card.text !== null}
               <p class="text" class:ko={language === 'ko'} lang={language}>{card.text}</p>
             {/if}
-            {#if noting === card.id}
-              <form class="editor annotation" onsubmit={commitNote}>
-                <p class="label">Your note</p>
-                <textarea
-                  bind:this={noteEditor}
-                  bind:value={noteDraft}
-                  class="field plain"
-                  rows="3"
-                  aria-label={card.noteLabel}
-                  onkeydown={noteKeys}></textarea>
-                <p class="hint">Escape abandons · ⌘/Ctrl + Enter saves</p>
-                <div class="choices">
-                  <button class="abandon" type="button" onclick={() => void abandonNote()}>
-                    Cancel
-                  </button>
-                  <button class="save" type="submit">Save</button>
-                </div>
-              </form>
+            {#if editingNote.holds(card.id)}
+              <CardEditor
+                editing={editingNote}
+                label={card.noteLabel}
+                field={{ kind: 'note' }}
+                onsave={saveNote}
+                onabandon={abandonNote}
+              />
             {:else if card.annotation !== null}
               <div class="annotation">
                 <p class="label">Your note</p>
@@ -610,20 +312,7 @@
             {#if card.note !== null}
               <p class="note">{card.note}</p>
             {/if}
-            <CaptureTags
-              chips={card.tags}
-              place={card.place}
-              onremove={(tag) => void view.removeTag(card.id, tag)}
-              onadd={(from) => openPicker(card.id, from)}
-            />
-            {#if picker.capture === card.id}
-              <TagPickerPopover
-                {picker}
-                anchor={tagTrigger}
-                onchoose={(row) => void choose(row)}
-                onclose={() => void closePicker()}
-              />
-            {/if}
+            <CaptureTagging {selection} capture={card.id} chips={card.tags} place={card.place} />
           </article>
         </li>
       {/each}
@@ -996,90 +685,6 @@
     line-height: 1;
   }
 
-  .editor {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-  }
-
-  .field {
-    width: 100%;
-    padding: var(--s-2);
-    border: 1px solid var(--c-accent-border);
-    border-radius: var(--r-4);
-    background: var(--c-surface-chip);
-    color: var(--c-text-1);
-    font-family: var(--f-ja);
-    font-size: 15px;
-    line-height: 1.6;
-    resize: vertical;
-  }
-
-  .field.ko {
-    font-family: var(--f-ko);
-  }
-
-  .field:focus-visible {
-    outline: none;
-    border-color: var(--c-accent);
-  }
-
-  .hint {
-    margin: 0;
-    color: var(--c-text-9);
-    font-size: 10.5px;
-  }
-
-  .choices {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--s-2);
-  }
-
-  .keep,
-  .delete {
-    padding: var(--s-1) var(--s-3);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-family: var(--f-ui);
-    font-size: 11px;
-    cursor: pointer;
-  }
-
-  .delete {
-    border-color: var(--c-warning);
-    color: var(--c-warning);
-  }
-
-  .keep:hover,
-  .delete:hover {
-    border-color: var(--c-accent-border);
-  }
-
-  .abandon,
-  .save {
-    padding: var(--s-1) var(--s-3);
-    border-radius: var(--r-4);
-    font-family: var(--f-ui);
-    font-size: 11px;
-    cursor: pointer;
-  }
-
-  .abandon {
-    border: 1px solid var(--c-border-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-  }
-
-  .save {
-    border: 1px solid var(--c-accent);
-    background: var(--c-accent);
-    color: var(--c-accent-text);
-    font-weight: 600;
-  }
-
   .note {
     margin: 0;
     color: var(--c-text-7);
@@ -1124,10 +729,5 @@
     line-height: 1.55;
     white-space: pre-wrap;
     user-select: text;
-  }
-
-  .field.plain {
-    font-family: var(--f-ui);
-    font-size: 12.5px;
   }
 </style>
