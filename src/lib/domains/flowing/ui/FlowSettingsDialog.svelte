@@ -6,6 +6,7 @@
     TEXT_SIZE_CHOICES,
     TEXT_SIZE_LEGEND,
     withLineSpacing,
+    withPhoneticReadings,
     withTextSize,
   } from '../domain/reading-settings';
   import type { LineSpacing, ReadingSettings, TextSize } from '../domain/reading-settings';
@@ -47,6 +48,10 @@
   function chooseSpacing(spacing: LineSpacing): void {
     onchoose(withLineSpacing(settings, spacing));
   }
+
+  function chooseReadings(shown: boolean): void {
+    onchoose(withPhoneticReadings(settings, shown));
+  }
 </script>
 
 <dialog bind:this={dialog} aria-labelledby="{uid}-heading" onclick={backdrop} onclose={dismiss}>
@@ -86,6 +91,18 @@
           <span>{choice.label}</span>
         </label>
       {/each}
+    </fieldset>
+
+    <fieldset class="group">
+      <legend class="label">Furigana</legend>
+      <label class="choice">
+        <input
+          type="checkbox"
+          checked={settings.showPhoneticReadings}
+          onchange={(event) => chooseReadings(event.currentTarget.checked)}
+        />
+        <span>Show</span>
+      </label>
     </fieldset>
   </div>
 </dialog>

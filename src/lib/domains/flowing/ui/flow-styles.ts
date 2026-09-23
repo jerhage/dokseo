@@ -39,6 +39,12 @@ const A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS = `
   }
 `;
 
+const THE_READINGS_ARE_PUT_AWAY = `
+  rt, rp {
+    display: none !important;
+  }
+`;
+
 function sizedForTheReader(settings: ReadingSettings): string {
   return `
   html {
@@ -52,9 +58,11 @@ function sizedForTheReader(settings: ReadingSettings): string {
 }
 
 function flowStyles(settings: ReadingSettings): readonly [string, string] {
+  const readings = settings.showPhoneticReadings ? '' : THE_READINGS_ARE_PUT_AWAY;
+
   return [
     READABLE_ON_A_DARK_PAGE,
-    `${OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK}${A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS}${sizedForTheReader(settings)}`,
+    `${OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK}${A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS}${sizedForTheReader(settings)}${readings}`,
   ];
 }
 

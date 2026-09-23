@@ -755,7 +755,7 @@ describe('the contents a flow book offers', () => {
 describe('FlowView reading settings', () => {
   it('opens the book at the size and spacing the reader stored', async () => {
     const world = shelf();
-    world.stored = { textSize: 'largest', lineSpacing: 'loose' };
+    world.stored = { textSize: 'largest', lineSpacing: 'loose', showPhoneticReadings: true };
     const surfaces = shows();
     const view = new FlowView(world.container);
 
@@ -777,9 +777,11 @@ describe('FlowView reading settings', () => {
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
-    view.restyle({ textSize: 'large', lineSpacing: 'tight' });
+    view.restyle({ textSize: 'large', lineSpacing: 'tight', showPhoneticReadings: true });
 
-    expect(surfaces.restyled).toEqual([{ textSize: 'large', lineSpacing: 'tight' }]);
+    expect(surfaces.restyled).toEqual([
+      { textSize: 'large', lineSpacing: 'tight', showPhoneticReadings: true },
+    ]);
     expect(surfaces.openings).toHaveLength(1);
     expect(surfaces.destroyed).toEqual([]);
   });
@@ -790,7 +792,7 @@ describe('FlowView reading settings', () => {
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
-    view.restyle({ textSize: 'smallest', lineSpacing: 'loose' });
+    view.restyle({ textSize: 'smallest', lineSpacing: 'loose', showPhoneticReadings: true });
 
     expect(surfaces.turned).toEqual([]);
     expect(surfaces.sought).toEqual([]);
@@ -803,10 +805,12 @@ describe('FlowView reading settings', () => {
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
-    view.restyle({ textSize: 'small', lineSpacing: 'relaxed' });
+    view.restyle({ textSize: 'small', lineSpacing: 'relaxed', showPhoneticReadings: true });
     await settled();
 
-    expect(world.chosen).toEqual([{ textSize: 'small', lineSpacing: 'relaxed' }]);
+    expect(world.chosen).toEqual([
+      { textSize: 'small', lineSpacing: 'relaxed', showPhoneticReadings: true },
+    ]);
     expect(places(world.edits)).toEqual([]);
   });
 
@@ -815,10 +819,30 @@ describe('FlowView reading settings', () => {
     const surfaces = shows();
     const view = new FlowView(world.container);
 
-    view.restyle({ textSize: 'large', lineSpacing: 'loose' });
+    view.restyle({ textSize: 'large', lineSpacing: 'loose', showPhoneticReadings: true });
 
-    expect(view.settings).toEqual({ textSize: 'large', lineSpacing: 'loose' });
+    expect(view.settings).toEqual({
+      textSize: 'large',
+      lineSpacing: 'loose',
+      showPhoneticReadings: true,
+    });
     expect(surfaces.restyled).toEqual([]);
+  });
+
+  it('hides the readings in the chapter already on screen and remembers the choice', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.restyle({ ...view.settings, showPhoneticReadings: false });
+    await settled();
+
+    expect(surfaces.restyled).toEqual([
+      { ...DEFAULT_READING_SETTINGS, showPhoneticReadings: false },
+    ]);
+    expect(world.chosen).toEqual([{ ...DEFAULT_READING_SETTINGS, showPhoneticReadings: false }]);
+    expect(surfaces.openings).toHaveLength(1);
   });
 
   it('keeps reading when storage refuses to remember a choice', async () => {
@@ -828,10 +852,16 @@ describe('FlowView reading settings', () => {
     await view.open(novel(world.place), surfaces.show);
     world.keep = () => Promise.reject(new Error('storage gone'));
 
-    view.restyle({ textSize: 'largest', lineSpacing: 'tight' });
+    view.restyle({ textSize: 'largest', lineSpacing: 'tight', showPhoneticReadings: true });
     await settled();
 
-    expect(view.settings).toEqual({ textSize: 'largest', lineSpacing: 'tight' });
-    expect(surfaces.restyled).toEqual([{ textSize: 'largest', lineSpacing: 'tight' }]);
+    expect(view.settings).toEqual({
+      textSize: 'largest',
+      lineSpacing: 'tight',
+      showPhoneticReadings: true,
+    });
+    expect(surfaces.restyled).toEqual([
+      { textSize: 'largest', lineSpacing: 'tight', showPhoneticReadings: true },
+    ]);
   });
 });

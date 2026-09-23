@@ -21,12 +21,33 @@ function storeHolding(
 }
 
 describe('readReadingSettings', () => {
-  it('returns the size and the spacing the reader stored', async () => {
+  it('returns every choice the reader stored', async () => {
+    const settings = await readReadingSettings({
+      settings: storeHolding({
+        reader: ONE_READER,
+        textSize: 'large',
+        lineSpacing: 'loose',
+        showPhoneticReadings: false,
+      }),
+    });
+
+    expect(settings).toEqual({
+      textSize: 'large',
+      lineSpacing: 'loose',
+      showPhoneticReadings: false,
+    });
+  });
+
+  it('returns the readings shown for a record written before the choice existed', async () => {
     const settings = await readReadingSettings({
       settings: storeHolding({ reader: ONE_READER, textSize: 'large', lineSpacing: 'loose' }),
     });
 
-    expect(settings).toEqual({ textSize: 'large', lineSpacing: 'loose' });
+    expect(settings).toEqual({
+      textSize: 'large',
+      lineSpacing: 'loose',
+      showPhoneticReadings: true,
+    });
   });
 
   it('returns the defaults for a reader who has never chosen', async () => {

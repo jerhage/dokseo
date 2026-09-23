@@ -7,7 +7,11 @@ import type {
 } from '../domain/reading-settings';
 import { saveReadingSettings } from './save-reading-settings';
 
-const CHOSEN: ReadingSettings = { textSize: 'large', lineSpacing: 'relaxed' };
+const CHOSEN: ReadingSettings = {
+  textSize: 'large',
+  lineSpacing: 'relaxed',
+  showPhoneticReadings: false,
+};
 
 function recordingStore(failure: ReadingSettingsError | null = null): {
   readonly store: ReadingSettingsStore;

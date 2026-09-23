@@ -3,9 +3,19 @@ import { lineSpacingHeight, textSizePercent } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 import { flowStyles } from './flow-styles';
 
-const SMALL_AND_TIGHT: ReadingSettings = { textSize: 'smallest', lineSpacing: 'tight' };
+const SMALL_AND_TIGHT: ReadingSettings = {
+  textSize: 'smallest',
+  lineSpacing: 'tight',
+  showPhoneticReadings: true,
+};
 
-const BIG_AND_LOOSE: ReadingSettings = { textSize: 'largest', lineSpacing: 'loose' };
+const BIG_AND_LOOSE: ReadingSettings = {
+  textSize: 'largest',
+  lineSpacing: 'loose',
+  showPhoneticReadings: true,
+};
+
+const READINGS_HIDDEN: ReadingSettings = { ...BIG_AND_LOOSE, showPhoneticReadings: false };
 
 function injected(settings: ReadingSettings): string {
   return flowStyles(settings)[1];
@@ -63,10 +73,44 @@ describe('flowStyles', () => {
     const sheets = new Set([
       injected(SMALL_AND_TIGHT),
       injected(BIG_AND_LOOSE),
-      injected({ textSize: 'smallest', lineSpacing: 'loose' }),
-      injected({ textSize: 'largest', lineSpacing: 'tight' }),
+      injected({ ...SMALL_AND_TIGHT, lineSpacing: 'loose' }),
+      injected({ ...BIG_AND_LOOSE, lineSpacing: 'tight' }),
     ]);
 
     expect(sheets.size).toBe(4);
+  });
+
+  it('takes the readings and their parentheses out of the line when they are turned off', () => {
+    const rule = /(^|\})\s*rt,\s*rp\s*\{([^}]*)\}/u.exec(injected(READINGS_HIDDEN))?.[2] ?? '';
+
+    expect(rule).toMatch(/display:\s*none/u);
+  });
+
+  it('leaves the readings in the book for a reader who has not turned them off', () => {
+    expect(injected(BIG_AND_LOOSE)).not.toContain('display: none');
+  });
+
+  it('outranks a book that styles its own readings', () => {
+    const rule = /(^|\})\s*rt,\s*rp\s*\{([^}]*)\}/u.exec(injected(READINGS_HIDDEN))?.[2] ?? '';
+
+    expect(rule).toMatch(/display:[^;]+!important/u);
+  });
+
+  it('carries the hiding rule on the sheet appended after the book', () => {
+    const [prepended, appended] = flowStyles(READINGS_HIDDEN);
+
+    expect(appended).toMatch(/rt,\s*rp/u);
+    expect(prepended).not.toContain('display: none');
+  });
+
+  it('keeps sizing the readings the book does print', () => {
+    const [prepended] = flowStyles(BIG_AND_LOOSE);
+
+    expect(prepended).toContain('rt {');
+    expect(prepended).toContain('font-size: 0.6em');
+  });
+
+  it('answers a different sheet whether the readings are shown or hidden', () => {
+    expect(injected(READINGS_HIDDEN)).not.toBe(injected(BIG_AND_LOOSE));
   });
 });

@@ -8,6 +8,7 @@ type LineSpacing = 'tight' | 'normal' | 'relaxed' | 'loose';
 type ReadingSettings = {
   readonly textSize: TextSize;
   readonly lineSpacing: LineSpacing;
+  readonly showPhoneticReadings: boolean;
 };
 
 type ReadingChoice<T> = {
@@ -23,6 +24,7 @@ type StoredReadingSettings = {
   readonly reader: string;
   readonly textSize?: string | null;
   readonly lineSpacing?: string | null;
+  readonly showPhoneticReadings?: boolean | null;
 };
 
 const TEXT_SETTINGS_LABEL = 'Text';
@@ -51,6 +53,7 @@ const LINE_SPACING_CHOICES: readonly ReadingChoice<LineSpacing>[] = [
 const DEFAULT_READING_SETTINGS: ReadingSettings = {
   textSize: 'regular',
   lineSpacing: 'normal',
+  showPhoneticReadings: true,
 };
 
 const ONE_READER = 'reader';
@@ -88,10 +91,15 @@ function lineSpacingOf(value: unknown): LineSpacing {
   return named === undefined ? DEFAULT_READING_SETTINGS.lineSpacing : named.value;
 }
 
+function phoneticReadingsOf(value: unknown): boolean {
+  return typeof value === 'boolean' ? value : DEFAULT_READING_SETTINGS.showPhoneticReadings;
+}
+
 function readingSettingsOf(stored: StoredReadingSettings | null): ReadingSettings {
   return {
     textSize: textSizeOf(stored?.textSize),
     lineSpacing: lineSpacingOf(stored?.lineSpacing),
+    showPhoneticReadings: phoneticReadingsOf(stored?.showPhoneticReadings),
   };
 }
 
@@ -100,15 +108,23 @@ function storedReadingSettings(settings: ReadingSettings): StoredReadingSettings
     reader: ONE_READER,
     textSize: settings.textSize,
     lineSpacing: settings.lineSpacing,
+    showPhoneticReadings: settings.showPhoneticReadings,
   };
 }
 
 function withTextSize(settings: ReadingSettings, textSize: TextSize): ReadingSettings {
-  return { textSize, lineSpacing: settings.lineSpacing };
+  return { ...settings, textSize };
 }
 
 function withLineSpacing(settings: ReadingSettings, lineSpacing: LineSpacing): ReadingSettings {
-  return { textSize: settings.textSize, lineSpacing };
+  return { ...settings, lineSpacing };
+}
+
+function withPhoneticReadings(
+  settings: ReadingSettings,
+  showPhoneticReadings: boolean,
+): ReadingSettings {
+  return { ...settings, showPhoneticReadings };
 }
 
 interface ReadingSettingsStore {
@@ -123,6 +139,7 @@ export {
   lineSpacingHeight,
   lineSpacingOf,
   ONE_READER,
+  phoneticReadingsOf,
   readingSettingsOf,
   storedReadingSettings,
   TEXT_SETTINGS_HEADING,
@@ -132,6 +149,7 @@ export {
   textSizeOf,
   textSizePercent,
   withLineSpacing,
+  withPhoneticReadings,
   withTextSize,
 };
 export type {
