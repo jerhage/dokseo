@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
+  import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
@@ -258,6 +259,7 @@
     chapters.add(doc);
 
     doc.addEventListener('keydown', onkey);
+    relayKeydownsTo(window, doc);
     doc.addEventListener('pointerdown', (event) =>
       press(event, spotOn(host, event, frameOrigin(doc))),
     );

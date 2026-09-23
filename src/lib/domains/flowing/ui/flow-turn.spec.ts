@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { relaysToHost } from '$lib/platform/dom/key-relay';
 import {
   FRAME_NOWHERE_ON_THE_STAGE,
   HOST_VIEWPORT_ORIGIN,
@@ -78,6 +79,34 @@ const WIDGET: KeyTarget = targeting('DIV', { role: 'button' });
 const BACK_LINK: KeyTarget = targeting('A');
 
 const TURNING_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' '];
+
+const EVERY_TARGET: readonly (KeyTarget | null)[] = [
+  null,
+  SCRUB,
+  FIELD,
+  TOOL,
+  WIDGET,
+  BACK_LINK,
+  targeting('P'),
+];
+
+const HELD_DOWN: readonly Partial<Omit<KeyPress, 'key'>>[] = [
+  {},
+  { shiftKey: true },
+  { altKey: true },
+  { ctrlKey: true },
+  { metaKey: true },
+];
+
+function relaying(key: string, held: Partial<Omit<KeyPress, 'key'>>): boolean {
+  return relaysToHost({
+    key,
+    ctrlKey: held.ctrlKey ?? false,
+    metaKey: held.metaKey ?? false,
+    defaultPrevented: false,
+    relayed: false,
+  });
+}
 
 function releasing(release: Partial<PointerRelease> = {}): PointerRelease {
   const landed = release.to ?? ORIGIN;
@@ -269,6 +298,24 @@ describe('the space bar over a focused chrome control', () => {
   it('stays put on Space over a text field, which is typed into, not pressed', () => {
     expect(keyMove(over(' ', FIELD))).toEqual(STAY);
     expect(keyMove(over(' ', targeting('DIV', { editable: true })))).toEqual(STAY);
+  });
+});
+
+describe('the keys a chapter relays out to the host window', () => {
+  it('keeps every key that turns a page inside the chapter it was pressed in', () => {
+    for (const key of TURNING_KEYS) {
+      expect(relaying(key, {})).toBe(false);
+    }
+  });
+
+  it('leaves every relayed press alone, whatever the host says it landed on', () => {
+    for (const key of [...TURNING_KEYS, 'Escape', 'Home', 'End', 'k', 'K']) {
+      for (const held of HELD_DOWN.filter((down) => relaying(key, down))) {
+        for (const target of EVERY_TARGET) {
+          expect(keyMove(over(key, target, held))).toEqual(STAY);
+        }
+      }
+    }
   });
 });
 
