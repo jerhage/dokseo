@@ -13,7 +13,8 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
-  import { chromeHolds, chromeShown } from '$lib/shared/reader-chrome';
+  import { chromeShown } from '$lib/shared/reader-chrome';
+  import { ChromeFocus } from './chrome-focus.svelte';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
@@ -66,7 +67,6 @@
   let topHeight = $state(0);
   let bottomHeight = $state(0);
   let chromeAsked = $state(false);
-  let chromeHeld = $state(false);
   let noting = $state(false);
 
   const makes = $derived(dragOrigin(noting));
@@ -79,11 +79,12 @@
     }
   }
 
-  function heldNow(): boolean {
-    return chromeHolds([topBar, bottomBar], [document.activeElement, ...openPopovers()]);
-  }
+  const chrome = new ChromeFocus(
+    () => [topBar, bottomBar],
+    () => [document.activeElement, ...openPopovers()],
+  );
 
-  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld));
+  const chromeAwake = $derived(chromeShown(chromeAsked, chrome.held));
 
   function toggleChrome(): void {
     chromeAsked = !chromeAwake;
@@ -243,7 +244,7 @@
 
   $effect(() => {
     function refresh(): void {
-      chromeHeld = heldNow();
+      chrome.refresh();
     }
 
     window.addEventListener('focusin', refresh);
