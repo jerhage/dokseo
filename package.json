@@ -23,7 +23,10 @@
     "verify": "npm run verify:tests && npm run build",
     "verify:ci": "npm run verify:static && npm run test:ci && npm run build",
     "deps:graph": "mkdir -p .local/graphs && depcruise src --config .dependency-cruiser.cjs -T archi | dot -T svg > .local/graphs/architecture.svg && depcruise src --config .dependency-cruiser.cjs -T ddot | dot -T svg > .local/graphs/folders.svg && depcruise src --config .dependency-cruiser.cjs -T dot | dot -T svg > .local/graphs/modules.svg",
-    "deps:view": "npm run deps:graph && open .local/graphs/architecture.svg"
+    "deps:view": "npm run deps:graph && open .local/graphs/architecture.svg",
+    "wrangler": "wrangler",
+    "deploy": "wrangler deploy",
+    "deploy:preview": "wrangler versions upload"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
