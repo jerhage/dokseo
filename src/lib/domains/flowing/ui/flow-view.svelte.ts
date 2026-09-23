@@ -251,8 +251,20 @@ class FlowView {
     this.#surface?.mark(passages, this.#marked);
   }
 
+  get arrivalStanding(): boolean {
+    return this.notice !== null || this.#marked.kind === 'arrived';
+  }
+
   dismissNotice(): void {
     this.notice = null;
+  }
+
+  dismissArrival(): void {
+    this.notice = null;
+    if (this.#marked.kind === 'none') return;
+
+    this.#marked = NOTHING_ARRIVED_AT;
+    this.#surface?.mark(this.#passages, NOTHING_ARRIVED_AT);
   }
 
   restyle(settings: ReadingSettings): void {

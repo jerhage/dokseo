@@ -26,6 +26,7 @@
   import { openFlowSurface } from './flow-surface';
   import type { ChapterView } from './flow-surface';
   import {
+    dismissesTheArrival,
     FRAME_NOWHERE_ON_THE_STAGE,
     HOST_VIEWPORT_ORIGIN,
     isTyping,
@@ -162,6 +163,12 @@
       return;
     }
 
+    if (event.key === 'Escape' && view.arrivalStanding) {
+      view.dismissArrival();
+      event.preventDefault();
+      return;
+    }
+
     const pressed = keyTarget(event.target);
     const move = gestures.keyed({
       key: event.key,
@@ -176,6 +183,8 @@
   }
 
   function apply(action: FlowAction): void {
+    if (dismissesTheArrival(action)) view.dismissArrival();
+
     match(action)
       .with({ kind: 'nothing' }, () => undefined)
       .with({ kind: 'turn' }, () => undefined)

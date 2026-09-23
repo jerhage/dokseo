@@ -1,7 +1,9 @@
 import type {
   Annotation,
+  DrawnAnnotation,
   FoliateBook,
   FractionTarget,
+  HighlightStyle,
   Relocation,
   TocItem,
   View,
@@ -11,7 +13,12 @@ import { sanitiseChapters, sanitisedDocument, treatmentOf } from './chapter-tran
 import type { SanitiseChapter } from './chapter-transform';
 import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-spine';
 import type { Spine } from './flow-spine';
-import { highlightChange, PASSAGE_HIGHLIGHT_COLOUR } from './flow-highlight';
+import {
+  ARRIVED_BORDER_WIDTH,
+  highlightChange,
+  joinedLines,
+  passageColour,
+} from './flow-highlight';
 import type { PassageMark, PassageWeight } from './flow-highlight';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
@@ -64,6 +71,8 @@ type FindPassage = (quote: TextQuote) => Promise<string | null>;
 type Closable = Pick<View, 'close' | 'remove'>;
 
 type Destroyable = Pick<FoliateBook, 'destroy'>;
+
+type Drawable = Pick<DrawnAnnotation, 'annotation' | 'draw'>;
 
 type FlowTarget = number | string | FractionTarget;
 
@@ -155,6 +164,25 @@ function drawn(view: Annotatable, annotation: Annotation): void {
   void view.addAnnotation(annotation).catch(() => undefined);
 }
 
+function drawPassage(
+  shown: ReadonlyMap<string, PassageWeight>,
+  drawing: Drawable,
+  wash: HighlightStyle,
+  ring: HighlightStyle,
+): void {
+  const weight = shown.get(drawing.annotation.value);
+  const colour = passageColour(weight);
+  if (weight === 'arrived') {
+    drawing.draw((rects, options) => ring(joinedLines(rects), options), {
+      color: colour,
+      width: ARRIVED_BORDER_WIDTH,
+    });
+    return;
+  }
+
+  drawing.draw(wash, { color: colour });
+}
+
 function markPassages(
   view: Annotatable,
   shown: Map<string, PassageWeight>,
@@ -206,9 +234,7 @@ async function openFlowSurface(
   const view = new FoliateView();
   const shown = new Map<string, PassageWeight>();
   view.addEventListener('draw-annotation', (drawing) => {
-    const weight = shown.get(drawing.detail.annotation.value);
-    const style = weight === 'arrived' ? Overlayer.outline : Overlayer.highlight;
-    drawing.detail.draw(style, { color: PASSAGE_HIGHLIGHT_COLOUR });
+    drawPassage(shown, drawing.detail, Overlayer.highlight, Overlayer.outline);
   });
   view.addEventListener('create-overlay', () => {
     queueMicrotask(() => {
@@ -259,6 +285,7 @@ async function openFlowSurface(
 }
 
 export {
+  drawPassage,
   goToPassage,
   markPassages,
   navigate,
@@ -274,6 +301,7 @@ export type {
   ChapterView,
   Closable,
   Destroyable,
+  Drawable,
   FlowOpening,
   FindPassage,
   FlowSurface,

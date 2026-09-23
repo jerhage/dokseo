@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TextQuote } from '$lib/shared/anchor';
 import {
+  drawPassage,
   goToPassage,
   markPassages,
   navigate,
@@ -8,10 +9,12 @@ import {
   redrawPassages,
   tearDown,
 } from './flow-surface';
-import type { FlowTarget } from './flow-surface';
+import type { Drawable, FlowTarget } from './flow-surface';
 import type { Spine } from './flow-spine';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
-import { NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
+import { Overlayer } from 'foliate-js/overlayer.js';
+import type { HighlightOptions } from 'foliate-js/overlayer.js';
+import { NOTHING_ARRIVED_AT, PASSAGE_HIGHLIGHT_COLOUR, passageMark } from './flow-highlight';
 import type { PassageWeight } from './flow-highlight';
 
 const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
@@ -55,6 +58,48 @@ function stage(options: StageOptions = {}): Stage {
     },
   };
 }
+
+type Wash = { readonly wash: boolean; readonly options: HighlightOptions };
+
+function handed(shown: Readonly<Record<string, PassageWeight>>, cfi: string): Wash | null {
+  let given: Wash | null = null;
+  const drawing: Drawable = {
+    annotation: { value: cfi },
+    draw: (style, options) => {
+      given = { wash: style === Overlayer.highlight, options };
+    },
+  };
+  drawPassage(new Map(Object.entries(shown)), drawing, Overlayer.highlight, Overlayer.outline);
+
+  return given;
+}
+
+describe('drawPassage', () => {
+  it('washes the passage the reader jumped to in the capture yellow too', () => {
+    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE)?.options.color).toBe(
+      PASSAGE_HIGHLIGHT_COLOUR,
+    );
+  });
+
+  it('washes every other lifted passage in the capture yellow', () => {
+    expect(handed({ [SOMEWHERE]: 'ordinary' }, SOMEWHERE)?.options.color).toBe(
+      PASSAGE_HIGHLIGHT_COLOUR,
+    );
+  });
+
+  it('washes a passage it is not tracking in the capture yellow', () => {
+    expect(handed({}, SOMEWHERE)?.options.color).toBe(PASSAGE_HIGHLIGHT_COLOUR);
+  });
+
+  it('rings the passage jumped to, and washes every other one', () => {
+    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE)?.wash).toBe(false);
+    expect(handed({ [SOMEWHERE]: 'ordinary' }, SOMEWHERE)?.wash).toBe(true);
+  });
+
+  it('rings it thinly, so two lines of one passage stay apart', () => {
+    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE)?.options.width).toBe(1);
+  });
+});
 
 describe('openAt', () => {
   it('lays the book out at the cfi the reader stopped at', async () => {

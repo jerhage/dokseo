@@ -133,6 +133,7 @@ declare module 'foliate-js/view.js' {
     DrawnAnnotation,
     FoliateBook,
     FractionTarget,
+    HighlightStyle,
     ManifestItem,
     OverlayCreation,
     Relocation,

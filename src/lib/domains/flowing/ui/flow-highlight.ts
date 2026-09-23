@@ -20,6 +20,8 @@ type HighlightChange = {
 
 const PASSAGE_HIGHLIGHT_COLOUR = '#e3c34d';
 
+const ARRIVED_BORDER_WIDTH = 1;
+
 const NO_PASSAGES: readonly string[] = [];
 
 const NO_ANCHORS: readonly Anchor[] = [];
@@ -60,6 +62,67 @@ function passageWeight(cfi: string, mark: PassageMark): PassageWeight {
   return mark.kind === 'arrived' && mark.cfi === cfi ? 'arrived' : 'ordinary';
 }
 
+type LineRect = {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly width: number;
+  readonly height: number;
+};
+
+const SAME_LINE_TOLERANCE_PX = 2;
+
+function near(one: number, other: number): boolean {
+  return Math.abs(one - other) <= SAME_LINE_TOLERANCE_PX;
+}
+
+function sharesALine(one: LineRect, other: LineRect): boolean {
+  const column = near(one.left, other.left) && near(one.width, other.width);
+  const row = near(one.top, other.top) && near(one.height, other.height);
+
+  return column || row;
+}
+
+function touches(one: LineRect, other: LineRect): boolean {
+  const apart = Math.max(
+    one.left - other.right,
+    other.left - one.right,
+    one.top - other.bottom,
+    other.top - one.bottom,
+  );
+
+  return apart <= SAME_LINE_TOLERANCE_PX;
+}
+
+function union(one: LineRect, other: LineRect): LineRect {
+  const left = Math.min(one.left, other.left);
+  const top = Math.min(one.top, other.top);
+  const right = Math.max(one.right, other.right);
+  const bottom = Math.max(one.bottom, other.bottom);
+
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+
+function joinedLines(rects: readonly LineRect[]): readonly LineRect[] {
+  const joined: LineRect[] = [];
+  for (const rect of rects) {
+    const mate = joined.find((held) => sharesALine(held, rect) && touches(held, rect));
+    if (mate === undefined) joined.push(rect);
+    else joined[joined.indexOf(mate)] = union(mate, rect);
+  }
+
+  return joined;
+}
+
+function passageColour(weight: PassageWeight | undefined): string {
+  return match(weight)
+    .with('arrived', () => PASSAGE_HIGHLIGHT_COLOUR)
+    .with('ordinary', () => PASSAGE_HIGHLIGHT_COLOUR)
+    .with(undefined, () => PASSAGE_HIGHLIGHT_COLOUR)
+    .exhaustive();
+}
+
 function wantedPassages(
   asked: readonly string[],
   mark: PassageMark,
@@ -86,6 +149,8 @@ function highlightChange(
 }
 
 export {
+  ARRIVED_BORDER_WIDTH,
+  joinedLines,
   NO_ANCHORS,
   NO_PASSAGES,
   NOTHING_ARRIVED_AT,
@@ -93,8 +158,9 @@ export {
   highlightChange,
   markAfterMove,
   passageCfis,
+  passageColour,
   passageMark,
   passageWeight,
   wantedPassages,
 };
-export type { DrawnPassage, HighlightChange, PassageMark, PassageWeight };
+export type { DrawnPassage, HighlightChange, LineRect, PassageMark, PassageWeight };

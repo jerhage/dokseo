@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { relaysToHost } from '$lib/platform/dom/key-relay';
 import {
+  dismissesTheArrival,
   FRAME_NOWHERE_ON_THE_STAGE,
   HOST_VIEWPORT_ORIGIN,
   isTyping,
@@ -136,6 +137,20 @@ function foliateLike(dir: 'ltr' | 'rtl'): { readonly pages: PageTurner; readonly
 
   return { pages, calls };
 }
+
+describe('dismissesTheArrival', () => {
+  it('dismisses the mark when a tap turns the page', () => {
+    expect(dismissesTheArrival({ kind: 'turn', move: { kind: 'forward' } })).toBe(true);
+  });
+
+  it('dismisses the mark when a tap in the middle asks for the bars', () => {
+    expect(dismissesTheArrival({ kind: 'chrome' })).toBe(true);
+  });
+
+  it('leaves the mark alone when a drag ends in nothing', () => {
+    expect(dismissesTheArrival({ kind: 'nothing' })).toBe(false);
+  });
+});
 
 describe('keyMove', () => {
   it('sends ArrowLeft leftward and ArrowRight rightward, leaving the flip to the book', () => {

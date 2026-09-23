@@ -10,6 +10,7 @@ declare module 'foliate-js/overlayer.js' {
 
   interface HighlightOptions {
     readonly color: string;
+    readonly width?: number;
   }
 
   const Overlayer: {

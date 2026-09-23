@@ -4,13 +4,18 @@ import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import {
+  ARRIVED_BORDER_WIDTH,
+  joinedLines,
   highlightChange,
   markAfterMove,
   NOTHING_ARRIVED_AT,
+  PASSAGE_HIGHLIGHT_COLOUR,
   passageCfis,
+  passageColour,
   passageMark,
   passageWeight,
 } from './flow-highlight';
+import type { LineRect } from './flow-highlight';
 import type { PassageMark, PassageWeight } from './flow-highlight';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 
@@ -78,6 +83,24 @@ describe('passageWeight', () => {
 
   it('weights every passage the same while the reader has jumped nowhere', () => {
     expect(passageWeight(FIRST, NOTHING_ARRIVED_AT)).toBe('ordinary');
+  });
+});
+
+describe('passageColour', () => {
+  it('washes the passage the reader jumped to in the capture yellow too', () => {
+    expect(passageColour('arrived')).toBe(PASSAGE_HIGHLIGHT_COLOUR);
+  });
+
+  it('answers the capture yellow for every other passage', () => {
+    expect(passageColour('ordinary')).toBe(PASSAGE_HIGHLIGHT_COLOUR);
+  });
+
+  it('answers the capture yellow for a passage it is not tracking', () => {
+    expect(passageColour(undefined)).toBe(PASSAGE_HIGHLIGHT_COLOUR);
+  });
+
+  it('draws the border thin enough that two lines of one passage stay apart', () => {
+    expect(ARRIVED_BORDER_WIDTH).toBeLessThan(3);
   });
 });
 
@@ -195,5 +218,30 @@ describe('highlightChange', () => {
       added: [],
       removed: [],
     });
+  });
+});
+
+describe('joinedLines', () => {
+  const column = (top: number, height: number): LineRect => ({
+    left: 40,
+    top,
+    right: 70,
+    bottom: top + height,
+    width: 30,
+    height,
+  });
+
+  it('joins the pieces a ruby splits one line into', () => {
+    expect(joinedLines([column(10, 20), column(30, 12), column(42, 18)])).toEqual([column(10, 50)]);
+  });
+
+  it('leaves two separate lines separate', () => {
+    const far = { ...column(10, 20), left: 100, right: 130 };
+
+    expect(joinedLines([column(10, 20), far])).toHaveLength(2);
+  });
+
+  it('answers nothing for nothing', () => {
+    expect(joinedLines([])).toEqual([]);
   });
 });

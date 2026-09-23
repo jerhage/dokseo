@@ -190,6 +190,14 @@ function moveForEnd(end: PointerEnd): FlowMove {
     .exhaustive();
 }
 
+function dismissesTheArrival(action: FlowAction): boolean {
+  return match(action)
+    .with({ kind: 'nothing' }, () => false)
+    .with({ kind: 'turn' }, () => true)
+    .with({ kind: 'chrome' }, () => true)
+    .exhaustive();
+}
+
 function releaseAction(end: PointerEnd): FlowAction {
   return match(end)
     .with({ kind: 'selecting' }, () => DOES_NOTHING)
@@ -237,6 +245,7 @@ export {
   moveForTurn,
   pointerEnded,
   pressesOnSpace,
+  dismissesTheArrival,
   regionAt,
   releaseAction,
   tapOnStage,

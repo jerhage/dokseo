@@ -1113,6 +1113,68 @@ describe('FlowView jumpToPassage', () => {
     expect(surfaces.arrivals.length).toBe(drawn);
   });
 
+  it('takes the mark and the notice away when the reader dismisses the arrival', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    view.dismissArrival();
+
+    expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
+    expect(view.notice).toBeNull();
+  });
+
+  it('redraws nothing when the reader dismisses an arrival that is already gone', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+    view.dismissArrival();
+    const drawn = surfaces.arrivals.length;
+
+    view.dismissArrival();
+
+    expect(surfaces.arrivals.length).toBe(drawn);
+  });
+
+  it('reports an arrival is standing while the reader has not moved off it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(view.arrivalStanding).toBe(true);
+  });
+
+  it('reports no arrival is standing once it has been dismissed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    view.dismissArrival();
+
+    expect(view.arrivalStanding).toBe(false);
+  });
+
+  it('reports no arrival is standing before the reader has jumped anywhere', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(view.arrivalStanding).toBe(false);
+  });
+
   it('keeps the marked passage drawn when the reader deletes its capture', async () => {
     const world = shelf();
     const surfaces = shows();
