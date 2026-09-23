@@ -36,6 +36,29 @@ describe('flowStyles', () => {
     expect(second).toContain('color: #d9d6d0');
   });
 
+  it('paints a selection in the accent wash so it reads on the dark page', () => {
+    const styles = injected(SMALL_AND_TIGHT);
+
+    expect(styles).toContain('::selection');
+    expect(styles).toMatch(/::selection\s*\{[^}]*background:\s*rgba\(79, 178, 134, 0\.35\)/u);
+    expect(styles).toMatch(/::selection\s*\{[^}]*color:\s*#f2efe9/u);
+  });
+
+  it('outranks a book that colours its own selection', () => {
+    const styles = injected(BIG_AND_LOOSE);
+    const rule = /::selection\s*\{([^}]*)\}/u.exec(styles)?.[1] ?? '';
+
+    expect(rule).toMatch(/background:[^;]+!important/u);
+    expect(rule).toMatch(/color:[^;]+!important/u);
+  });
+
+  it('carries the selection rule on the sheet appended after the book', () => {
+    const [prepended, appended] = flowStyles(SMALL_AND_TIGHT);
+
+    expect(appended).toContain('::selection');
+    expect(prepended).not.toContain('::selection');
+  });
+
   it('answers a different sheet for every choice on the two scales', () => {
     const sheets = new Set([
       injected(SMALL_AND_TIGHT),

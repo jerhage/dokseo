@@ -32,6 +32,13 @@ const OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK = `
   }
 `;
 
+const A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS = `
+  ::selection {
+    background: rgba(79, 178, 134, 0.35) !important;
+    color: #f2efe9 !important;
+  }
+`;
+
 function sizedForTheReader(settings: ReadingSettings): string {
   return `
   html {
@@ -47,7 +54,7 @@ function sizedForTheReader(settings: ReadingSettings): string {
 function flowStyles(settings: ReadingSettings): readonly [string, string] {
   return [
     READABLE_ON_A_DARK_PAGE,
-    `${OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK}${sizedForTheReader(settings)}`,
+    `${OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK}${A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS}${sizedForTheReader(settings)}`,
   ];
 }
 
