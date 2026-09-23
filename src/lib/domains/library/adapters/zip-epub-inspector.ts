@@ -7,6 +7,7 @@ import { CONTAINER_ENTRY, packagePathFromContainer } from '../domain/ingest/epub
 import type { EpubInspection, EpubInspectionError } from '../domain/ingest/epub-inspection';
 import { readEpubPackage } from '../domain/ingest/epub-package';
 import { blocksReading, bookProtection, ENCRYPTION_ENTRY } from '../domain/ingest/epub-protection';
+import { archiveBreach } from '../domain/ingest/ingest-limits';
 
 const NOT_AN_EPUB: EpubInspection = { kind: 'not-an-epub' };
 
@@ -68,6 +69,9 @@ async function inspectEpubArchive(
     } catch {
       return ok(NOT_AN_EPUB);
     }
+    const breach = archiveBreach(entries);
+    if (breach !== null) return err({ kind: 'too-large', limit: breach });
+
     const inspected = await readInspection(filesByName(entries));
     return inspected;
   } catch (cause) {

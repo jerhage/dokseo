@@ -5,6 +5,7 @@ import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError } from '../domain/book/library-repository';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
 import { suggestTitle } from '../domain/book/title';
+import { describeIngestLimit } from '../domain/ingest/ingest-limits';
 import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
@@ -33,6 +34,7 @@ function describeSourceBuildError(error: SourceBuildError): string {
       (unreadable) => `That upload could not be read: ${unreadable.cause}`,
     )
     .with({ kind: 'empty' }, () => 'No files arrived, so there was nothing to add.')
+    .with({ kind: 'refused' }, (refused) => describeIngestLimit(refused.limit))
     .exhaustive();
 }
 

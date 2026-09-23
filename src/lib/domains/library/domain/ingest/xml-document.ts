@@ -1,3 +1,5 @@
+import { MAX_MARKUP_BYTES } from './ingest-limits';
+
 type XmlElement = {
   readonly name: string;
   readonly localName: string;
@@ -181,6 +183,7 @@ function sealed(draft: Draft): XmlElement {
 }
 
 function parseXml(source: string): XmlElement | null {
+  if (source.length > MAX_MARKUP_BYTES) return null;
   const open: Draft[] = [];
   let root: XmlElement | null = null;
   let at = 0;

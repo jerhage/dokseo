@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_MARKUP_BYTES } from './ingest-limits';
 import { attributeOf, descendantsNamed, firstNamed, parseXml } from './xml-document';
 import type { XmlElement } from './xml-document';
 
@@ -94,5 +95,21 @@ describe('descendantsNamed against a deeply nested document', () => {
 
     expect(document).not.toBeNull();
     expect(document === null ? 0 : descendantsNamed(document, 'needle').length).toBe(1);
+  });
+});
+
+describe('parseXml against a document longer than the markup limit', () => {
+  it('reads a document whose length sits exactly on the limit', () => {
+    const padding = '\u3042'.repeat(MAX_MARKUP_BYTES - '<p></p>'.length);
+    const source = `<p>${padding}</p>`;
+
+    expect(source.length).toBe(MAX_MARKUP_BYTES);
+    expect(parseXml(source)?.localName).toBe('p');
+  });
+
+  it('refuses a document one character over the limit, before scanning it', () => {
+    const padding = '\u3042'.repeat(MAX_MARKUP_BYTES - '<p></p>'.length + 1);
+
+    expect(parseXml(`<p>${padding}</p>`)).toBeNull();
   });
 });

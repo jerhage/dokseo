@@ -7,6 +7,7 @@ import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book/book';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { PageObstacle } from '../domain/ingest/epub-pages';
+import { uploadBreach } from '../domain/ingest/ingest-limits';
 import type { BuiltSource, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadReport } from '../domain/ingest/upload-progress';
@@ -90,6 +91,12 @@ async function buildFrom(
   const source = await sourceBlobOf(sourceKind, files, report);
   if (!source.ok) return source;
 
+  if (sourceKind !== 'pdf') {
+    const { archiveLimitBreach } = await import('./archive-census');
+    const breach = await archiveLimitBreach(source.value);
+    if (breach !== null) return err({ kind: 'refused', limit: breach });
+  }
+
   report({ kind: 'opening', sourceKind });
   const opened = await pagesOf(sourceKind, source.value);
   if (!opened.ok) return opened;
@@ -133,6 +140,8 @@ function createFileSourceBuilder(): SourceBuilder {
       report: UploadReport = () => undefined,
     ): Promise<Result<BuiltSource, SourceBuildError>> {
       if (files.length === 0) return err({ kind: 'empty' });
+      const breach = uploadBreach(files);
+      if (breach !== null) return err({ kind: 'refused', limit: breach });
       try {
         const built = await buildFrom(files, report);
         return built;

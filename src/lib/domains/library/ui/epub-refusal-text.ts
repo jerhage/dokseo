@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { BookProtection } from '../domain/ingest/epub-protection';
+import { describeIngestLimit } from '../domain/ingest/ingest-limits';
 
 function describeProtection(protection: BookProtection): string {
   return match(protection)
@@ -34,6 +35,7 @@ function describeEpubRefusal(refusal: EpubInspectionError): string {
       { kind: 'archive-unreadable' },
       (broken) => `This EPUB could not be opened: ${broken.cause}`,
     )
+    .with({ kind: 'too-large' }, (over) => describeIngestLimit(over.limit))
     .exhaustive();
 }
 
