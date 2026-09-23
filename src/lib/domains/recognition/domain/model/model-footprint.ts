@@ -75,10 +75,26 @@ const KOREAN_OCR_MODEL: ModelFootprint = {
   runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
 };
 
+const ENGLISH_OCR_MODEL: ModelFootprint = {
+  modelId: 'PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx',
+  engine: 'PP-OCRv5',
+  runtime: 'paddle-ocr',
+  label: 'PP-OCRv5 mobile',
+  languages: ['en'],
+  note: 'Exploratory. Nobody has read a real page with it yet.',
+  quality: 'Reads one line at a time, so a bubble is split by eye before it is read.',
+  precision: null,
+  weightFiles: SINGLE_GRAPH_WEIGHTS,
+  weightsBytes: 7_848_423,
+  runtimeDownloadBytes: RUNTIME_DOWNLOAD_BYTES,
+  runtimeOnDiskBytes: RUNTIME_ON_DISK_BYTES,
+};
+
 const KNOWN_MODELS: readonly ModelFootprint[] = [
   JAPANESE_OCR_MODEL,
   JAPANESE_FULL_DECODER_MODEL,
   KOREAN_OCR_MODEL,
+  ENGLISH_OCR_MODEL,
 ];
 
 function everyModel(): readonly ModelFootprint[] {
@@ -97,6 +113,7 @@ function modelFootprint(language: Language): ModelFootprint | null {
   return match(language)
     .with('ja', () => JAPANESE_OCR_MODEL)
     .with('ko', () => KOREAN_OCR_MODEL)
+    .with('en', () => ENGLISH_OCR_MODEL)
     .exhaustive();
 }
 
@@ -129,6 +146,7 @@ export {
   JAPANESE_OCR_MODEL,
   JAPANESE_FULL_DECODER_MODEL,
   KOREAN_OCR_MODEL,
+  ENGLISH_OCR_MODEL,
   everyModel,
   knownModel,
   reads,

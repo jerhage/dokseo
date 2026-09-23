@@ -67,6 +67,12 @@ describe('modelFootprint', () => {
     expect(korean?.modelId).toBe('PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx');
     expect(megabytes(korean?.weightsBytes ?? 0)).toBe(13);
   });
+
+  it('reports the exploratory 8 MB of weights for English', () => {
+    const english = modelFootprint('en');
+    expect(english?.modelId).toBe('PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx');
+    expect(megabytes(english?.weightsBytes ?? 0)).toBe(8);
+  });
 });
 
 describe('modelsFor', () => {
@@ -87,6 +93,12 @@ describe('modelsFor', () => {
   it('offers a model to each language it declares and to no other', () => {
     expect(modelsFor('ko').map((model) => model.modelId)).toEqual([
       'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
+    ]);
+  });
+
+  it('offers English the Latin PaddleOCR model alone, never a Japanese or Korean one', () => {
+    expect(modelsFor('en').map((model) => model.modelId)).toEqual([
+      'PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx',
     ]);
   });
 
@@ -147,12 +159,14 @@ describe('runtime', () => {
     for (const model of everyModel()) expect(MODEL_RUNTIMES).toContain(model.runtime);
   });
 
-  it('runs every Japanese model on manga-ocr and the Korean one on Paddle', () => {
+  it('runs every Japanese model on manga-ocr and the Korean and English ones on Paddle', () => {
     expect(modelsFor('ja').map((model) => model.runtime)).toEqual(['manga-ocr', 'manga-ocr']);
     expect(modelsFor('ko').map((model) => model.runtime)).toEqual(['paddle-ocr']);
+    expect(modelsFor('en').map((model) => model.runtime)).toEqual(['paddle-ocr']);
   });
 
   it('keeps the runtime apart from the display label the settings screen shows', () => {
+    expect(modelFootprint('en')?.engine).toBe('PP-OCRv5');
     expect(modelFootprint('ko')?.engine).toBe('PP-OCRv5');
     expect(modelFootprint('ko')?.runtime).toBe('paddle-ocr');
   });

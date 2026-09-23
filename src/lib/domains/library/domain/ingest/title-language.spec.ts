@@ -26,6 +26,10 @@ describe('languageOfTitle', () => {
     expect(languageOfTitle('One Piece v01')).toBeNull();
   });
 
+  it('says nothing about a romanised Japanese title, which Latin letters cannot tell from English', () => {
+    expect(languageOfTitle('Yotsuba&! 1')).toBeNull();
+  });
+
   it('says nothing about an empty title', () => {
     expect(languageOfTitle('')).toBeNull();
   });

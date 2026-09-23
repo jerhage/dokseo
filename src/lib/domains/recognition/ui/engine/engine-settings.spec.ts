@@ -395,6 +395,6 @@ describe('storageFailureNote', () => {
 
 describe('engineLanguages', () => {
   it('offers every language a model can read', () => {
-    expect(engineLanguages()).toEqual(['ja', 'ko']);
+    expect(engineLanguages()).toEqual(['ja', 'ko', 'en']);
   });
 });

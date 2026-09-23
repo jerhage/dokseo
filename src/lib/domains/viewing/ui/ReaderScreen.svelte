@@ -6,6 +6,7 @@
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
+  import { languageName } from '$lib/shared/language';
   import {
     LAYOUT_KIND_CHOICES,
     LAYOUT_KIND_LEGEND_BRIEF,
@@ -131,9 +132,7 @@
       .exhaustive(),
   );
 
-  const meta = $derived(
-    book === null ? '' : `${total} images · ${book.language === 'ko' ? 'Korean' : 'Japanese'}`,
-  );
+  const meta = $derived(book === null ? '' : `${total} images · ${languageName(book.language)}`);
 
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     view.select(regions);

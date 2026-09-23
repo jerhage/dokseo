@@ -90,6 +90,10 @@
         <input type="radio" name="{uid}-language" value="ko" bind:group={form.language} />
         <span>Korean</span>
       </label>
+      <label class="choice">
+        <input type="radio" name="{uid}-language" value="en" bind:group={form.language} />
+        <span>English</span>
+      </label>
     </fieldset>
 
     {#if form.layoutKind !== null}

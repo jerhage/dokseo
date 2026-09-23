@@ -534,10 +534,23 @@ describe('openFile', () => {
     expect(result.ok && result.value.language).toBe('ko');
   });
 
-  it('falls back to the title when the EPUB declares a language this app cannot read', async () => {
+  it('opens an EPUB declaring English as English, whatever its Latin title looks like', async () => {
     const result = await openFile(
       deps({
         inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'en-GB')).inspector,
+        builder: fakeBuilder(ok(builtSource({ sourceKind: 'epub', suggestedTitle: 'Watchmen' })))
+          .builder,
+      }),
+      epub,
+    );
+
+    expect(result.ok && result.value.language).toBe('en');
+  });
+
+  it('falls back to the title when the EPUB declares a language this app cannot read', async () => {
+    const result = await openFile(
+      deps({
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'zh-Hans')).inspector,
         builder: fakeBuilder(
           ok(builtSource({ sourceKind: 'epub', suggestedTitle: '\uB098 \uD63C\uC790\uB9CC' })),
         ).builder,
