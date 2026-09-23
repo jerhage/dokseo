@@ -1,6 +1,7 @@
 import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
+import type { TextQuote } from '$lib/shared/anchor';
 import type { BookId } from '$lib/shared/ids';
 import { resumedCfi, samePlace, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
@@ -17,6 +18,8 @@ import {
   scrubbedFraction,
 } from './flow-progress';
 import type { FlowLocation, FlowProgress } from './flow-progress';
+import { passageNotice } from './flow-quote';
+import type { PassageArrival } from './flow-quote';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { moveForTurn, turnPage } from './flow-turn';
 import type { FlowTurn } from './flow-turn';
@@ -94,6 +97,7 @@ class FlowView {
   direction = $state.raw<ReadingDirection>(BEFORE_THE_BOOK_SAYS);
   reported = $state.raw<TocItem | null>(null);
   settings = $state.raw<ReadingSettings>(DEFAULT_READING_SETTINGS);
+  notice = $state.raw<string | null>(null);
 
   #container: Container;
   #generation = 0;
@@ -132,6 +136,7 @@ class FlowView {
     this.ticks = NO_CHAPTER_TICKS;
     this.direction = BEFORE_THE_BOOK_SAYS;
     this.reported = null;
+    this.notice = null;
 
     let stored: SourceOutcome;
     try {
@@ -198,6 +203,7 @@ class FlowView {
     this.ticks = NO_CHAPTER_TICKS;
     this.direction = BEFORE_THE_BOOK_SAYS;
     this.reported = null;
+    this.notice = null;
   }
 
   turn(turn: FlowTurn): void {
@@ -211,6 +217,28 @@ class FlowView {
     if (entry.kind === 'heading') return;
 
     this.#surface?.jump(entry.href);
+  }
+
+  async jumpToPassage(cfi: string, quote: TextQuote): Promise<void> {
+    const surface = this.#surface;
+    if (surface === null) return;
+
+    this.notice = null;
+
+    let arrival: PassageArrival;
+    try {
+      arrival = await surface.goToPassage({ cfi, quote });
+    } catch {
+      return;
+    }
+
+    if (surface !== this.#surface) return;
+
+    this.notice = passageNotice(arrival);
+  }
+
+  dismissNotice(): void {
+    this.notice = null;
   }
 
   restyle(settings: ReadingSettings): void {

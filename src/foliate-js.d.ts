@@ -33,6 +33,7 @@ declare module 'foliate-js/view.js' {
   interface BookSection {
     id: string;
     linear?: string | null;
+    createDocument?: () => Promise<Document>;
   }
 
   interface FoliateBook {

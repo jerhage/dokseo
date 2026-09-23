@@ -1,6 +1,7 @@
 import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
+import type { TextQuote } from '$lib/shared/anchor';
 import { bookId, contentHash } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
@@ -10,6 +11,15 @@ import { err, ok } from '$lib/shared/result';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ContentsEntry } from './flow-contents';
+import type { LiftedPassage } from './flow-lift';
+import {
+  ARRIVED_AT_THE_CFI,
+  FOUND_BY_ITS_TEXT,
+  MOVED_SINCE_IT_WAS_CAPTURED,
+  NOT_IN_THE_BOOK_ANY_MORE,
+  THE_PASSAGE_IS_LOST,
+} from './flow-quote';
+import type { PassageArrival } from './flow-quote';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
@@ -121,6 +131,8 @@ type Shown = {
   readonly sought: number[];
   readonly jumped: string[];
   readonly restyled: ReadingSettings[];
+  readonly passages: LiftedPassage[];
+  arrival: PassageArrival;
   toc: readonly TocItem[] | null;
   ticks: readonly number[];
   gate: Promise<void> | null;
@@ -135,6 +147,7 @@ function shows(): Shown {
   const sought: number[] = [];
   const jumped: string[] = [];
   const restyled: ReadingSettings[] = [];
+  const passages: LiftedPassage[] = [];
 
   const world = {
     openings,
@@ -143,6 +156,8 @@ function shows(): Shown {
     sought,
     jumped,
     restyled,
+    passages,
+    arrival: ARRIVED_AT_THE_CFI as PassageArrival,
     toc: null as readonly TocItem[] | null,
     ticks: [] as readonly number[],
     gate: null as Promise<void> | null,
@@ -171,6 +186,10 @@ function shows(): Shown {
       },
       jump: (href: string) => {
         jumped.push(href);
+      },
+      goToPassage: (passage: LiftedPassage) => {
+        passages.push(passage);
+        return Promise.resolve(world.arrival);
       },
       restyle: (settings: ReadingSettings) => {
         restyled.push(settings);
@@ -938,5 +957,72 @@ describe('FlowView reading settings', () => {
     expect(surfaces.restyled).toEqual([
       { textSize: 'largest', lineSpacing: 'tight', showPhoneticReadings: true },
     ]);
+  });
+});
+
+describe('FlowView jumpToPassage', () => {
+  const QUOTE: TextQuote = {
+    exact: '厳重に鍵',
+    prefix: 'その病室は、外から',
+    suffix: 'がかけられて',
+  };
+
+  it('takes the book to the stored passage and says nothing about it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(surfaces.passages).toEqual([{ cfi: SOMEWHERE, quote: QUOTE }]);
+    expect(view.notice).toBeNull();
+  });
+
+  it('tells the reader the passage moved when its text found it instead', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = FOUND_BY_ITS_TEXT;
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(view.notice).toBe(MOVED_SINCE_IT_WAS_CAPTURED);
+  });
+
+  it('tells the reader the passage is gone when neither the cfi nor the text found it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = THE_PASSAGE_IS_LOST;
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(view.notice).toBe(NOT_IN_THE_BOOK_ANY_MORE);
+  });
+
+  it('takes its message away when the reader hides it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = THE_PASSAGE_IS_LOST;
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    view.dismissNotice();
+
+    expect(view.notice).toBeNull();
+  });
+
+  it('asks nothing of a viewer with no book open', async () => {
+    const surfaces = shows();
+    const view = new FlowView(shelf().container);
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(surfaces.passages).toEqual([]);
+    expect(view.notice).toBeNull();
   });
 });

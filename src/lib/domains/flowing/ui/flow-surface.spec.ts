@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { navigate, openAt, tearDown } from './flow-surface';
+import type { TextQuote } from '$lib/shared/anchor';
+import { goToPassage, navigate, openAt, tearDown } from './flow-surface';
 import type { FlowTarget } from './flow-surface';
 import type { Spine } from './flow-spine';
+import { ARRIVED_AT_THE_CFI, FOUND_BY_ITS_TEXT, THE_PASSAGE_IS_LOST } from './flow-quote';
 
 const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
 
@@ -197,5 +199,79 @@ describe('tearDown', () => {
     tearDown(view, book);
 
     expect(done).toEqual(['close', 'destroy', 'remove']);
+  });
+});
+
+describe('goToPassage', () => {
+  const QUOTE: TextQuote = {
+    exact: '厳重に鍵',
+    prefix: 'その病室は、外から',
+    suffix: 'がかけられて',
+  };
+
+  const REFOUND = 'epubcfi(/6/14!/4/2/16/1:4)';
+
+  function passage(): { cfi: string; quote: TextQuote } {
+    return { cfi: SOMEWHERE, quote: QUOTE };
+  }
+
+  function never(): Promise<string | null> {
+    throw new Error('the quote was asked for although the cfi resolved');
+  }
+
+  it('goes to the stored cfi while it still resolves', async () => {
+    const view = stage();
+
+    await expect(goToPassage(view, everySectionHasABody(3), never, passage())).resolves.toEqual(
+      ARRIVED_AT_THE_CFI,
+    );
+    expect(view.targets).toEqual([SOMEWHERE]);
+  });
+
+  it('re-finds the passage by its text when the stored cfi no longer resolves', async () => {
+    const view = stage({ refuses: [SOMEWHERE] });
+    const asked: TextQuote[] = [];
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      (quote) => {
+        asked.push(quote);
+        return Promise.resolve(REFOUND);
+      },
+      passage(),
+    );
+
+    expect(arrival).toEqual(FOUND_BY_ITS_TEXT);
+    expect(asked).toEqual([QUOTE]);
+    expect(view.targets).toEqual([SOMEWHERE, REFOUND]);
+  });
+
+  it('reports the passage lost when its text is nowhere in the book', async () => {
+    const view = stage({ refuses: [SOMEWHERE] });
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      () => Promise.resolve(null),
+      passage(),
+    );
+
+    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
+    expect(view.targets).toEqual([SOMEWHERE]);
+  });
+
+  it('reports the passage lost when the re-found cfi will not lay out either', async () => {
+    const view = stage({ refuses: [SOMEWHERE, REFOUND] });
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      () => Promise.resolve(REFOUND),
+      passage(),
+    );
+
+    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
+    expect(view.targets).toEqual([SOMEWHERE, REFOUND]);
   });
 });

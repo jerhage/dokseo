@@ -6,9 +6,13 @@ type TextQuote = {
   readonly suffix: string;
 };
 
-type Anchor =
-  | { readonly kind: 'region'; readonly regions: readonly ImageRegion[] }
-  | { readonly kind: 'text'; readonly cfi: string; readonly quote: TextQuote };
+type TextAnchor = {
+  readonly kind: 'text';
+  readonly cfi: string;
+  readonly quote: TextQuote;
+};
+
+type Anchor = { readonly kind: 'region'; readonly regions: readonly ImageRegion[] } | TextAnchor;
 
 function regionAnchor(regions: readonly ImageRegion[]): Anchor {
   return { kind: 'region', regions };
@@ -23,4 +27,4 @@ function sameAnchorKind(left: Anchor, right: Anchor): boolean {
 }
 
 export { regionAnchor, sameAnchorKind, textAnchor };
-export type { Anchor, TextQuote };
+export type { Anchor, TextAnchor, TextQuote };

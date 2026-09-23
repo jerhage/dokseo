@@ -4,7 +4,7 @@
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
-  import type { Anchor } from '$lib/shared/anchor';
+  import type { Anchor, TextAnchor } from '$lib/shared/anchor';
   import type { CaptureId, TagId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -32,12 +32,14 @@
     readonly view: CaptureView;
     readonly language: Language | null;
     readonly direction: ReadingDirection;
+    readonly onSeek?: (passage: TextAnchor) => void;
   };
 
   type Card = {
     readonly id: CaptureId;
     readonly place: string;
     readonly href: string | null;
+    readonly passage: TextAnchor | null;
     readonly state: string;
     readonly text: string | null;
     readonly segments: readonly TextSegment[] | null;
@@ -65,7 +67,7 @@
     readonly lines: MarkedLines;
   };
 
-  let { view, language, direction }: Props = $props();
+  let { view, language, direction, onSeek }: Props = $props();
 
   const mismatch = $derived(engineMismatch(view.session, language));
 
@@ -116,6 +118,12 @@
     return readerHref(book, index, { capture: id, query: searching ? wanted : null });
   }
 
+  function passageOf(anchor: Anchor): TextAnchor | null {
+    if (onSeek === undefined || anchor.kind !== 'text') return null;
+
+    return anchor;
+  }
+
   function annotationOf(capture: PanelCapture): string | null {
     return match(capture)
       .with({ origin: 'written' }, () => null)
@@ -159,6 +167,7 @@
         id: running.id,
         place: placeLabel(running.anchor),
         href: hrefOf(running.id, running.anchor),
+        passage: passageOf(running.anchor),
         state: 'Reading…',
         text: null,
         segments: null,
@@ -176,6 +185,7 @@
         id: read.id,
         place: placeLabel(read.anchor),
         href: hrefOf(read.id, read.anchor),
+        passage: passageOf(read.anchor),
         state: captureState(read.origin),
         text: read.text.text,
         segments: lines === null ? null : lines.text,
@@ -193,6 +203,7 @@
         id: blank.id,
         place: placeLabel(blank.anchor),
         href: hrefOf(blank.id, blank.anchor),
+        passage: passageOf(blank.anchor),
         state: 'No text',
         text: null,
         segments: null,
@@ -210,6 +221,7 @@
         id: broken.id,
         place: placeLabel(broken.anchor),
         href: hrefOf(broken.id, broken.anchor),
+        passage: passageOf(broken.anchor),
         state: 'Failed',
         text: null,
         segments: null,
@@ -480,7 +492,13 @@
             class:at={searching && order === cursor}
           >
             <header class="stamp">
-              {#if card.href === null}
+              {#if card.passage !== null}
+                {@const passage = card.passage}
+                <button class="place jump" type="button" onclick={() => onSeek?.(passage)}>
+                  {card.place}
+                  <span class="assistive">Open the book at this passage</span>
+                </button>
+              {:else if card.href === null}
                 <span class="place">{card.place}</span>
               {:else}
                 <a
@@ -862,12 +880,20 @@
     letter-spacing: 0.02em;
   }
 
-  a.jump {
+  .jump {
     text-decoration: none;
   }
 
-  a.jump:hover,
-  a.jump:focus-visible {
+  button.place {
+    padding: 0;
+    border: none;
+    background: none;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .jump:hover,
+  .jump:focus-visible {
     color: var(--c-accent);
   }
 

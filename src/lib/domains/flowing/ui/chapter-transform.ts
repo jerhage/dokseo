@@ -41,11 +41,21 @@ function sanitiseResource(detail: ResourceDetail, sanitise: SanitiseChapter): vo
   });
 }
 
+function sanitisedDocument(
+  doc: Document,
+  mediaType: ChapterMarkup,
+  sanitise: SanitiseChapter,
+): Document {
+  const markup = new XMLSerializer().serializeToString(doc);
+
+  return new DOMParser().parseFromString(sanitise(markup, mediaType), mediaType);
+}
+
 function sanitiseChapters(book: Transformable, sanitise: SanitiseChapter): void {
   book.transformTarget.addEventListener('data', (resource) => {
     sanitiseResource(resource.detail, sanitise);
   });
 }
 
-export { essenceOf, sanitiseChapters, sanitiseResource, treatmentOf };
+export { essenceOf, sanitiseChapters, sanitiseResource, sanitisedDocument, treatmentOf };
 export type { ResourceTreatment, SanitiseChapter, Transformable };

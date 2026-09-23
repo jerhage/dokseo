@@ -100,7 +100,12 @@
     onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
   >
     {#snippet panel()}
-      <CapturePanel view={captures} {language} direction={flow.direction} />
+      <CapturePanel
+        view={captures}
+        {language}
+        direction={flow.direction}
+        onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
+      />
     {/snippet}
   </FlowViewer>
 {:else}

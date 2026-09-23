@@ -1,12 +1,17 @@
 import type { TextQuote } from '$lib/shared/anchor';
 import { liftsAnything, passageQuote } from './flow-lift';
 import type { LiftRect, LiftedPassage } from './flow-lift';
+import { locateQuote, pointIn } from './flow-quote';
 
 type ChapterCfis = {
   getCFI(index: number, range: Range): string;
 };
 
 const RUBY_READINGS = 'rt, rp';
+
+const OUT_OF_THE_READING = new Set(['rt', 'rp', 'script', 'style']);
+
+const AN_ELEMENT = 1;
 
 const NOTHING_IS_SELECTED: readonly LiftRect[] = [];
 
@@ -62,9 +67,52 @@ function selectedPassage(doc: Document, index: number, cfis: ChapterCfis): Lifte
   }
 }
 
+function readableParts(doc: Document, body: HTMLElement): readonly Node[] {
+  const walker = doc.createTreeWalker(body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      if (node.nodeType !== AN_ELEMENT) return NodeFilter.FILTER_ACCEPT;
+
+      return OUT_OF_THE_READING.has(node.nodeName.toLowerCase())
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_SKIP;
+    },
+  });
+
+  const parts: Node[] = [];
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    if ((node.nodeValue ?? '').length > 0) parts.push(node);
+  }
+
+  return parts;
+}
+
+function quoteRange(doc: Document, quote: TextQuote): Range | null {
+  const body = doc.body;
+  if (body === null) return null;
+
+  const parts = readableParts(doc, body);
+  const lengths = parts.map((part) => (part.nodeValue ?? '').length);
+  const hit = locateQuote(parts.map((part) => part.nodeValue ?? '').join(''), quote);
+  if (hit === null) return null;
+
+  const from = pointIn(lengths, hit.start);
+  const to = pointIn(lengths, hit.end);
+  if (from === null || to === null) return null;
+
+  const start = parts[from.part];
+  const end = parts[to.part];
+  if (start === undefined || end === undefined) return null;
+
+  const range = doc.createRange();
+  range.setStart(start, from.offset);
+  range.setEnd(end, to.offset);
+
+  return range;
+}
+
 function forgetSelection(doc: Document): void {
   doc.getSelection()?.removeAllRanges();
 }
 
-export { NOTHING_IS_SELECTED, forgetSelection, selectedPassage, shownSelection };
+export { NOTHING_IS_SELECTED, forgetSelection, quoteRange, selectedPassage, shownSelection };
 export type { ChapterCfis };

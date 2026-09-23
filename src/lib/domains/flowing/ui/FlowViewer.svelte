@@ -463,6 +463,16 @@
       />
     {/if}
 
+    {#if view.notice !== null}
+      <div class="told" role="status">
+        <p class="said">{view.notice}</p>
+        <button class="dismiss" type="button" onclick={() => view.dismissNotice()}>
+          <span class="glyph" aria-hidden="true">×</span>
+          <span class="assistive">Hide this message</span>
+        </button>
+      </div>
+    {/if}
+
     {#if curtain.kind === 'opening'}
       <div class="curtain">
         <p class="notice" aria-live="polite">Opening this book…</p>
@@ -785,6 +795,51 @@
   .scrub:focus-visible {
     outline: 1px solid var(--c-accent-border-strong);
     outline-offset: 4px;
+  }
+
+  .told {
+    position: absolute;
+    top: var(--s-3);
+    left: 50%;
+    z-index: calc(var(--z-chrome) + 1);
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    max-width: min(48ch, calc(100% - var(--s-5)));
+    padding: var(--s-2) var(--s-3);
+    transform: translateX(-50%);
+    border: 1px solid var(--c-border-4);
+    border-radius: var(--r-pill);
+    background: var(--c-surface-card-active);
+  }
+
+  .said {
+    margin: 0;
+    color: var(--c-text-3);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .dismiss {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--r-1);
+    background: none;
+    color: var(--c-text-8);
+    font-family: var(--f-ui);
+    cursor: pointer;
+  }
+
+  .dismiss:hover,
+  .dismiss:focus-visible {
+    border-color: var(--c-accent-border);
+    color: var(--c-accent);
   }
 
   .curtain {

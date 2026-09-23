@@ -1,12 +1,18 @@
 import type { FoliateBook, FractionTarget, Relocation, TocItem, View } from 'foliate-js/view.js';
 import { sanitiseChapter } from './chapter-sanitiser';
-import { sanitiseChapters } from './chapter-transform';
+import { sanitiseChapters, sanitisedDocument, treatmentOf } from './chapter-transform';
+import type { SanitiseChapter } from './chapter-transform';
 import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-spine';
 import type { Spine } from './flow-spine';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import type { TextQuote } from '$lib/shared/anchor';
+import type { LiftedPassage } from './flow-lift';
+import { quoteRange } from './flow-passage';
 import type { ChapterCfis } from './flow-passage';
+import { ARRIVED_AT_THE_CFI, FOUND_BY_ITS_TEXT, THE_PASSAGE_IS_LOST } from './flow-quote';
+import type { PassageArrival } from './flow-quote';
 import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
@@ -16,6 +22,7 @@ type FlowSurface = {
   readonly ticks: readonly number[];
   seek(fraction: number): void;
   jump(href: string): void;
+  goToPassage(passage: LiftedPassage): Promise<PassageArrival>;
   restyle(settings: ReadingSettings): void;
   destroy(): void;
 };
@@ -37,6 +44,10 @@ type ChapterView = {
 type BindChapter = (chapter: ChapterView) => void;
 
 type Navigable = Pick<View, 'goTo' | 'resolveNavigation'>;
+
+type Searchable = Pick<FoliateBook, 'sections' | 'resources'>;
+
+type FindPassage = (quote: TextQuote) => Promise<string | null>;
 
 type Closable = Pick<View, 'close' | 'remove'>;
 
@@ -85,6 +96,47 @@ async function navigate(view: Navigable, spine: Spine, target: FlowTarget): Prom
   if (paged === resolved.index) return view.goTo(target);
 
   return view.goTo(paged);
+}
+
+async function passageCfi(
+  book: Searchable,
+  cfis: ChapterCfis,
+  sanitise: SanitiseChapter,
+  quote: TextQuote,
+): Promise<string | null> {
+  for (const [index, section] of book.sections.entries()) {
+    const open = section.createDocument;
+    if (open === undefined) continue;
+
+    const treatment = treatmentOf(book.resources.getItemByHref(section.id)?.mediaType ?? '');
+    if (treatment.kind === 'opaque') continue;
+
+    try {
+      const loaded = await open();
+      const range = quoteRange(sanitisedDocument(loaded, treatment.mediaType, sanitise), quote);
+      if (range !== null) return cfis.getCFI(index, range);
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+async function goToPassage(
+  view: Navigable,
+  spine: Spine,
+  find: FindPassage,
+  passage: LiftedPassage,
+): Promise<PassageArrival> {
+  const stored = await navigate(view, spine, passage.cfi);
+  if (stored !== undefined) return ARRIVED_AT_THE_CFI;
+
+  const fresh = await find(passage.quote);
+  if (fresh === null) return THE_PASSAGE_IS_LOST;
+
+  const refound = await navigate(view, spine, fresh);
+  return refound === undefined ? THE_PASSAGE_IS_LOST : FOUND_BY_ITS_TEXT;
 }
 
 async function openAt(view: Navigable, spine: Spine, at: string | null): Promise<boolean> {
@@ -141,6 +193,8 @@ async function openFlowSurface(
     jump: (href: string) => {
       void navigate(view, spine, href);
     },
+    goToPassage: (passage: LiftedPassage) =>
+      goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),
     restyle: (settings: ReadingSettings) => {
       view.renderer.setStyles(flowStyles(settings));
     },
@@ -150,14 +204,16 @@ async function openFlowSurface(
   };
 }
 
-export { navigate, openAt, openFlowSurface, tearDown };
+export { goToPassage, navigate, openAt, openFlowSurface, passageCfi, tearDown };
 export type {
   BindChapter,
   ChapterView,
   Closable,
   Destroyable,
   FlowOpening,
+  FindPassage,
   FlowSurface,
   FlowTarget,
   Navigable,
+  Searchable,
 };
