@@ -405,7 +405,7 @@ describe('the place a flow book opens at', () => {
   it('opens at the cfi the reader stopped at', async () => {
     const world = shelf();
     const surfaces = shows();
-    world.place = textPlace(SOMEWHERE);
+    world.place = textPlace(SOMEWHERE, null);
     const view = new FlowView(world.container);
 
     await view.open(novel(world.place), surfaces.show);
@@ -445,7 +445,7 @@ describe('the place a flow book keeps', () => {
     moved?.(relocated(LATER_STILL));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(places(world.edits)).toEqual([textPlace(LATER_STILL)]);
+    expect(places(world.edits)).toEqual([textPlace(LATER_STILL, null)]);
   });
 
   it('saves nothing while the pages are still turning', async () => {
@@ -470,13 +470,13 @@ describe('the place a flow book keeps', () => {
 
     view.close();
 
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE)]);
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null)]);
   });
 
   it('saves nothing for the cfi the book is already stored at', async () => {
     const world = shelf();
     const surfaces = shows();
-    world.place = textPlace(SOMEWHERE);
+    world.place = textPlace(SOMEWHERE, null);
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
@@ -484,6 +484,81 @@ describe('the place a flow book keeps', () => {
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits).toEqual([]);
+  });
+
+  it('saves the fraction the book reported beside the cfi it stopped at', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
+  });
+
+  it('saves no fraction for a book that cannot measure one', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: Number.NaN }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null)]);
+  });
+
+  it('saves the fraction a record stored without one gains at the same cfi', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.place = textPlace(SOMEWHERE, null);
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
+  });
+
+  it('saves nothing for the place the book is already stored at, fraction and all', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.place = textPlace(SOMEWHERE, 0.37);
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves a place whose fraction moved although its cfi did not', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.place = textPlace(SOMEWHERE, 0.37);
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.41 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.41)]);
+  });
+
+  it('saves the fraction of a place still waiting when the reader leaves the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
+
+    view.close();
+
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
   });
 
   it('saves nothing for a move that arrives after the viewer closed', async () => {
@@ -528,7 +603,7 @@ describe('the place a flow book keeps', () => {
     moved?.(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE), textPlace(SOMEWHERE)]);
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null), textPlace(SOMEWHERE, null)]);
   });
 });
 

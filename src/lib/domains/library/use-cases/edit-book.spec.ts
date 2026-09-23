@@ -59,10 +59,13 @@ describe('editBook', () => {
 
   it('passes a text place to the repository unchanged', async () => {
     const repository = fakeRepository(ok(stored));
-    const edit: BookEdit = { position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') };
+    const edit: BookEdit = { position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) };
     await editBook({ repository: repository.repository }, bookId('book-7'), edit);
     expect(repository.updates).toEqual([
-      { id: 'book-7', edit: { position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' } } },
+      {
+        id: 'book-7',
+        edit: { position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: null } },
+      },
     ]);
   });
 });

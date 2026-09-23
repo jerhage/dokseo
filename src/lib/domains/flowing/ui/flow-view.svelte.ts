@@ -2,7 +2,8 @@ import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
-import { resumedCfi, textPlace } from '$lib/shared/reading-place';
+import { resumedCfi, samePlace, textPlace } from '$lib/shared/reading-place';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
@@ -47,7 +48,7 @@ type FlowCurtain =
 
 type PendingSave = {
   readonly id: BookId;
-  readonly cfi: string;
+  readonly place: ReadingPlace;
   readonly timer: ReturnType<typeof setTimeout>;
 };
 
@@ -98,7 +99,7 @@ class FlowView {
   #generation = 0;
   #surface: FlowSurface | null = null;
   #saving: PendingSave | null = null;
-  #placed: string | null = null;
+  #placed: ReadingPlace | null = null;
 
   constructor(container: Container) {
     this.#container = container;
@@ -149,7 +150,7 @@ class FlowView {
     }
 
     const at = resumedCfi(book.position);
-    this.#placed = at;
+    this.#placed = book.position;
 
     const chosen = await this.#container.flowing.readReadingSettings();
     if (generation !== this.#generation) return;
@@ -231,17 +232,22 @@ class FlowView {
     const here = flowLocation(relocation);
     this.location = here;
     this.reported = relocation.tocItem ?? null;
-    const cfi = here.cfi;
+    const place = textPlace(here.cfi, here.fraction);
 
     const waiting = this.#saving;
     if (waiting !== null) clearTimeout(waiting.timer);
 
     const timer = setTimeout(() => {
       this.#saving = null;
-      if (cfi !== this.#placed) void this.#persist(id, cfi);
+      if (!this.#alreadyStored(place)) void this.#persist(id, place);
     }, PLACE_SAVE_DELAY_MS);
 
-    this.#saving = { id, cfi, timer };
+    this.#saving = { id, place, timer };
+  }
+
+  #alreadyStored(place: ReadingPlace): boolean {
+    const placed = this.#placed;
+    return placed !== null && samePlace(placed, place);
   }
 
   async #remember(settings: ReadingSettings): Promise<void> {
@@ -258,26 +264,26 @@ class FlowView {
 
     clearTimeout(waiting.timer);
     this.#saving = null;
-    if (waiting.cfi === this.#placed) return;
-    void this.#persist(waiting.id, waiting.cfi);
+    if (this.#alreadyStored(waiting.place)) return;
+    void this.#persist(waiting.id, waiting.place);
   }
 
-  async #persist(id: BookId, cfi: string): Promise<void> {
-    this.#placed = cfi;
+  async #persist(id: BookId, place: ReadingPlace): Promise<void> {
+    this.#placed = place;
 
     let saved: EditOutcome;
     try {
-      saved = await this.#container.library.editBook(id, { position: textPlace(cfi) });
+      saved = await this.#container.library.editBook(id, { position: place });
     } catch {
-      this.#forget(cfi);
+      this.#forget(place);
       return;
     }
 
-    if (!saved.ok) this.#forget(cfi);
+    if (!saved.ok) this.#forget(place);
   }
 
-  #forget(cfi: string): void {
-    if (this.#placed === cfi) this.#placed = null;
+  #forget(place: ReadingPlace): void {
+    if (this.#alreadyStored(place)) this.#placed = null;
   }
 
   #release(): void {

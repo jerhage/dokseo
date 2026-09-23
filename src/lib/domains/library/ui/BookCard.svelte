@@ -3,6 +3,7 @@
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import { bookContents, describeBookContents } from '../domain/book/book-contents';
+  import { bookProgress } from '../domain/book/book-progress';
 
   type Props = {
     readonly book: Book;
@@ -19,16 +20,7 @@
   let trigger = $state<HTMLButtonElement | null>(null);
 
   const busy = $derived(removing || editing);
-  const total = $derived(Math.max(book.imageCount, 1));
-  const place = $derived(book.position);
-  const page = $derived(place.kind === 'image' ? Math.min(place.index + 1, total) : null);
-  const resume = $derived.by(() => {
-    if (page === null) return null;
-    return book.layoutKind === 'continuous'
-      ? `${page} / ${book.imageCount} images`
-      : `p.${String(page).padStart(3, '0')} / ${book.imageCount}`;
-  });
-  const progress = $derived(page === null ? null : (page / total) * 100);
+  const progress = $derived(bookProgress(book));
   const contents = $derived(describeBookContents(bookContents(book)));
 
   async function cancel(): Promise<void> {
@@ -65,13 +57,13 @@
       </div>
     {/if}
 
-    {#if resume !== null && progress !== null}
+    {#if progress.kind === 'known'}
       <p class="resume">
         <span class="dot" aria-hidden="true"></span>
-        {resume}
+        {progress.label}
       </p>
       <div class="track">
-        <span class="bar" style:width="{progress}%"></span>
+        <span class="bar" style:width="{progress.filled}%"></span>
       </div>
     {/if}
 

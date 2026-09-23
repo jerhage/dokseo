@@ -767,7 +767,7 @@ describe('the reading place in the url', () => {
   });
 
   it('keeps a saved text place when the url asks for an image', async () => {
-    const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') });
+    const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) });
     const view = new ReaderView(world.container);
 
     await view.open(bookId('one'), imageIndex(4));
@@ -777,7 +777,7 @@ describe('the reading place in the url', () => {
   });
 
   it('mirrors no image and saves nothing when the book stopped at a text place', async () => {
-    const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') });
+    const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) });
     const mirrored: number[] = [];
     const view = new ReaderView(world.container, (index) => mirrored.push(index));
 

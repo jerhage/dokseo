@@ -649,7 +649,11 @@ describe('openFile', () => {
     );
 
     expect(result.ok && result.value.imageCount).toBe(0);
-    expect(result.ok && result.value.position).toEqual({ kind: 'text', cfi: '' });
+    expect(result.ok && result.value.position).toEqual({
+      kind: 'text',
+      cfi: '',
+      fraction: null,
+    });
     expect(at(repository.added, 0).cover).toBe(COVER);
   });
 

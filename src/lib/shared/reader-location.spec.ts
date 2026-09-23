@@ -79,11 +79,11 @@ describe('openingPlace', () => {
   });
 
   it('reports no place when the book stopped at a text place and the url asks for nothing', () => {
-    expect(openingPlace(null, textPlace('epubcfi(/6/14!/4/2/14/1:0)'), 40)).toBeNull();
+    expect(openingPlace(null, textPlace('epubcfi(/6/14!/4/2/14/1:0)', null), 40)).toBeNull();
   });
 
   it('opens at the url when the book stopped at a text place', () => {
-    expect(openingPlace(imageIndex(3), textPlace('epubcfi(/6/14!/4/2/14/1:0)'), 40)).toEqual({
+    expect(openingPlace(imageIndex(3), textPlace('epubcfi(/6/14!/4/2/14/1:0)', null), 40)).toEqual({
       index: 3,
       asked: true,
       clamped: false,

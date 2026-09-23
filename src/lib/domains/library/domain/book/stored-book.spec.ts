@@ -53,10 +53,56 @@ describe('bookFromStored', () => {
   });
 
   it('reads a stored text place back whole', () => {
-    const stored: StoredBook = { ...legacy, position: textPlace('epubcfi(/6/14!/4/2/14/1:0)') };
+    const stored: StoredBook = {
+      ...legacy,
+      position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null),
+    };
     expect(bookFromStored(stored).position).toEqual({
       kind: 'text',
       cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
+      fraction: null,
+    });
+  });
+
+  it('reads a text place written before fractions as holding no fraction', () => {
+    const stored: StoredBook = {
+      ...legacy,
+      layoutKind: 'flow',
+      sourceKind: 'epub',
+      imageCount: 0,
+      position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' },
+    };
+
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'text',
+      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
+      fraction: null,
+    });
+  });
+
+  it('keeps a stored fraction that is present', () => {
+    const stored: StoredBook = {
+      ...legacy,
+      position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: 0.37 },
+    };
+
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'text',
+      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
+      fraction: 0.37,
+    });
+  });
+
+  it('reads a stored fraction the book could never have reached as no fraction', () => {
+    const stored: StoredBook = {
+      ...legacy,
+      position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: Number.NaN },
+    };
+
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'text',
+      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
+      fraction: null,
     });
   });
 

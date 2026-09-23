@@ -35,9 +35,12 @@ describe('applyEdit', () => {
   });
 
   it('moves the position to a text place', () => {
-    expect(applyEdit(book, { position: textPlace('epubcfi(/6/14!/4/2/1:0)') }).position).toEqual({
+    expect(
+      applyEdit(book, { position: textPlace('epubcfi(/6/14!/4/2/1:0)', null) }).position,
+    ).toEqual({
       kind: 'text',
       cfi: 'epubcfi(/6/14!/4/2/1:0)',
+      fraction: null,
     });
   });
 
