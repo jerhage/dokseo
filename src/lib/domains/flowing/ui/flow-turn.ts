@@ -71,7 +71,7 @@ type PageTurner = {
 
 const CLICK_SLOP_PX = 3;
 
-const EDGE_SHARE = 0.25;
+const EDGE_SHARE = 0.1;
 
 const HOST_VIEWPORT_ORIGIN: Point = { x: 0, y: 0 };
 

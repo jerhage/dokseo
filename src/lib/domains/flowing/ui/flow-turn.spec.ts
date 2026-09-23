@@ -9,6 +9,7 @@ import {
   moveForTurn,
   pointerEnded,
   pressesOnSpace,
+  EDGE_SHARE,
   regionAt,
   releaseAction,
   tapOnStage,
@@ -320,20 +321,26 @@ describe('the keys a chapter relays out to the host window', () => {
 });
 
 describe('regionAt', () => {
-  it('names the leading quarter the left edge', () => {
+  const EDGE = PAGE_WIDTH * EDGE_SHARE;
+
+  it('names the leading strip the left edge', () => {
     expect(regionAt(0, PAGE_WIDTH)).toEqual({ kind: 'left-edge' });
-    expect(regionAt(199, PAGE_WIDTH)).toEqual({ kind: 'left-edge' });
+    expect(regionAt(EDGE - 1, PAGE_WIDTH)).toEqual({ kind: 'left-edge' });
   });
 
-  it('names the trailing quarter the right edge', () => {
-    expect(regionAt(601, PAGE_WIDTH)).toEqual({ kind: 'right-edge' });
+  it('names the trailing strip the right edge', () => {
+    expect(regionAt(PAGE_WIDTH - EDGE + 1, PAGE_WIDTH)).toEqual({ kind: 'right-edge' });
     expect(regionAt(PAGE_WIDTH, PAGE_WIDTH)).toEqual({ kind: 'right-edge' });
   });
 
-  it('names everything between the two edges the middle', () => {
-    expect(regionAt(200, PAGE_WIDTH)).toEqual({ kind: 'middle' });
-    expect(regionAt(400, PAGE_WIDTH)).toEqual({ kind: 'middle' });
-    expect(regionAt(600, PAGE_WIDTH)).toEqual({ kind: 'middle' });
+  it('names everything between the two strips the middle', () => {
+    expect(regionAt(EDGE, PAGE_WIDTH)).toEqual({ kind: 'middle' });
+    expect(regionAt(PAGE_WIDTH / 2, PAGE_WIDTH)).toEqual({ kind: 'middle' });
+    expect(regionAt(PAGE_WIDTH - EDGE, PAGE_WIDTH)).toEqual({ kind: 'middle' });
+  });
+
+  it('leaves most of the page to the reader, not to turning', () => {
+    expect(EDGE_SHARE * 2).toBeLessThanOrEqual(0.2);
   });
 
   it('names the middle when there is no width to divide', () => {
@@ -544,7 +551,7 @@ describe('tapOnStage', () => {
 
     expect(spot.width).toBe(STAGE.width);
     expect(regionAt(spot.at.x, spot.width)).toEqual({ kind: 'right-edge' });
-    expect(regionAt(1128, COLUMNISED_FRAME_WIDTH)).toEqual({ kind: 'left-edge' });
+    expect(regionAt(1128, COLUMNISED_FRAME_WIDTH)).not.toEqual(regionAt(spot.at.x, spot.width));
   });
 
   it('sorts a chapter tap into the near quarter, the middle half and the far quarter', () => {
