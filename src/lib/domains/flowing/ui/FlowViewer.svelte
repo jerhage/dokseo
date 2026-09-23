@@ -11,8 +11,15 @@
   import { FlowGestures } from './flow-gestures';
   import { flowMeta, progressLabel, SCRUB_STEP, tickOffsets } from './flow-progress';
   import { openFlowSurface } from './flow-surface';
-  import { isTyping, pressesOnSpace, turnOrder } from './flow-turn';
-  import type { FlowAction, FlowTurn, KeyTarget, PageTurner } from './flow-turn';
+  import {
+    FRAME_NOWHERE_ON_THE_STAGE,
+    HOST_VIEWPORT_ORIGIN,
+    isTyping,
+    pressesOnSpace,
+    tapOnStage,
+    turnOrder,
+  } from './flow-turn';
+  import type { FlowAction, FlowTurn, KeyTarget, PageTurner, Point, StageTap } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
 
   type Props = {
@@ -141,18 +148,18 @@
       .exhaustive();
   }
 
-  function press(event: PointerEvent, x: number): void {
+  function press(event: PointerEvent, spot: StageTap): void {
     gestures?.pressed({
       pointerId: event.pointerId,
-      at: { x, y: event.clientY },
+      at: spot.at,
     });
   }
 
-  function release(event: PointerEvent, x: number, width: number): void {
+  function release(event: PointerEvent, spot: StageTap): void {
     const action = gestures?.released({
       pointerId: event.pointerId,
-      at: { x, y: event.clientY },
-      width,
+      at: spot.at,
+      width: spot.width,
       textSelected: textSelected(),
     });
     if (action !== undefined) apply(action);
@@ -162,22 +169,37 @@
     gestures?.cancelled(event.pointerId);
   }
 
-  function withinStage(event: PointerEvent, box: HTMLElement): number {
-    return event.clientX - box.getBoundingClientRect().left;
+  function frameOrigin(doc: Document): Point {
+    const frame = doc.defaultView?.frameElement;
+    if (frame === null || frame === undefined) return FRAME_NOWHERE_ON_THE_STAGE;
+
+    const box = frame.getBoundingClientRect();
+    return { x: box.left, y: box.top };
+  }
+
+  function spotOn(host: HTMLElement, event: PointerEvent, origin: Point): StageTap {
+    const box = host.getBoundingClientRect();
+    return tapOnStage({ x: event.clientX, y: event.clientY }, origin, {
+      left: box.left,
+      top: box.top,
+      width: box.width,
+    });
   }
 
   function scrubbed(asked: string): void {
     view.seek(Number(asked));
   }
 
-  function bind(doc: Document, pages: PageTurner): void {
+  function bind(host: HTMLElement, doc: Document, pages: PageTurner): void {
     gestures ??= new FlowGestures(pages);
     chapters.add(doc);
 
     doc.addEventListener('keydown', onkey);
-    doc.addEventListener('pointerdown', (event) => press(event, event.clientX));
+    doc.addEventListener('pointerdown', (event) =>
+      press(event, spotOn(host, event, frameOrigin(doc))),
+    );
     doc.addEventListener('pointerup', (event) =>
-      release(event, event.clientX, doc.defaultView?.innerWidth ?? 0),
+      release(event, spotOn(host, event, frameOrigin(doc))),
     );
     doc.addEventListener('pointercancel', cancel);
   }
@@ -201,15 +223,18 @@
     const held = book;
     if (host === null) return;
 
-    const began = (event: PointerEvent): void => press(event, withinStage(event, host));
+    const began = (event: PointerEvent): void =>
+      press(event, spotOn(host, event, HOST_VIEWPORT_ORIGIN));
     const ended = (event: PointerEvent): void =>
-      release(event, withinStage(event, host), host.clientWidth);
+      release(event, spotOn(host, event, HOST_VIEWPORT_ORIGIN));
 
     host.addEventListener('pointerdown', began);
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    void view.open(held, (opening) => openFlowSurface(host, opening, bind));
+    void view.open(held, (opening) =>
+      openFlowSurface(host, opening, (doc, pages) => bind(host, doc, pages)),
+    );
     return () => {
       host.removeEventListener('pointerdown', began);
       host.removeEventListener('pointerup', ended);

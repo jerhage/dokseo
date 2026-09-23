@@ -20,6 +20,17 @@ type PointerRelease = {
   readonly textSelected: boolean;
 };
 
+type StageBox = {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+};
+
+type StageTap = {
+  readonly at: Point;
+  readonly width: number;
+};
+
 type KeyTarget = {
   readonly tagName: string;
   readonly type: string | null;
@@ -61,6 +72,10 @@ type PageTurner = {
 const CLICK_SLOP_PX = 3;
 
 const EDGE_SHARE = 0.25;
+
+const HOST_VIEWPORT_ORIGIN: Point = { x: 0, y: 0 };
+
+const FRAME_NOWHERE_ON_THE_STAGE: Point = { x: Number.NaN, y: Number.NaN };
 
 const STAY: FlowMove = { kind: 'stay' };
 
@@ -125,6 +140,13 @@ function keyMove(press: KeyPress): FlowMove {
     .with('ArrowUp', 'PageUp', () => BACKWARD)
     .with('ArrowDown', 'PageDown', () => FORWARD)
     .otherwise(() => STAY);
+}
+
+function tapOnStage(at: Point, origin: Point, stage: StageBox): StageTap {
+  return {
+    at: { x: at.x + origin.x - stage.left, y: at.y + origin.y - stage.top },
+    width: stage.width,
+  };
 }
 
 function regionAt(x: number, width: number): ClickRegion {
@@ -206,6 +228,8 @@ function turnPage(pages: PageTurner, move: FlowMove): void {
 export {
   CLICK_SLOP_PX,
   EDGE_SHARE,
+  FRAME_NOWHERE_ON_THE_STAGE,
+  HOST_VIEWPORT_ORIGIN,
   isTyping,
   keyMove,
   moveForEnd,
@@ -215,6 +239,7 @@ export {
   pressesOnSpace,
   regionAt,
   releaseAction,
+  tapOnStage,
   turnOrder,
   turnPage,
 };
@@ -229,4 +254,6 @@ export type {
   Point,
   PointerEnd,
   PointerRelease,
+  StageBox,
+  StageTap,
 };

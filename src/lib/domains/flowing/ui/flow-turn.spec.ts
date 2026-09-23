@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FRAME_NOWHERE_ON_THE_STAGE,
+  HOST_VIEWPORT_ORIGIN,
   isTyping,
   keyMove,
   moveForEnd,
@@ -8,10 +10,19 @@ import {
   pressesOnSpace,
   regionAt,
   releaseAction,
+  tapOnStage,
   turnOrder,
   turnPage,
 } from './flow-turn';
-import type { FlowMove, KeyPress, KeyTarget, PageTurner, Point, PointerRelease } from './flow-turn';
+import type {
+  FlowMove,
+  KeyPress,
+  KeyTarget,
+  PageTurner,
+  Point,
+  PointerRelease,
+  StageBox,
+} from './flow-turn';
 
 const STAY: FlowMove = { kind: 'stay' };
 
@@ -463,5 +474,57 @@ describe('moveForTurn', () => {
     turnPage(japanese.pages, moveForTurn('next'));
 
     expect(japanese.calls).toEqual(['prev', 'next']);
+  });
+});
+
+const STAGE: StageBox = { left: 0, top: 0, width: 414 };
+
+const COLUMNISED_FRAME_WIDTH = 8471;
+
+const FRAME_AT_THE_FIRST_PAGE: Point = { x: 15, y: 48 };
+
+const FRAME_TWO_PAGES_IN: Point = { x: -755, y: 48 };
+
+describe('tapOnStage', () => {
+  it('places a chapter tap where the reader saw it, not where the frame counts from', () => {
+    const spot = tapOnStage({ x: 1128, y: 448 }, FRAME_TWO_PAGES_IN, STAGE);
+
+    expect(spot).toEqual({ at: { x: 373, y: 496 }, width: 414 });
+  });
+
+  it('measures against the stage, so the columnised frame width never reaches a region', () => {
+    const spot = tapOnStage({ x: 1128, y: 448 }, FRAME_TWO_PAGES_IN, STAGE);
+
+    expect(spot.width).toBe(STAGE.width);
+    expect(regionAt(spot.at.x, spot.width)).toEqual({ kind: 'right-edge' });
+    expect(regionAt(1128, COLUMNISED_FRAME_WIDTH)).toEqual({ kind: 'left-edge' });
+  });
+
+  it('sorts a chapter tap into the near quarter, the middle half and the far quarter', () => {
+    const regions = [26, 192, 358].map((x) => {
+      const spot = tapOnStage({ x, y: 448 }, FRAME_AT_THE_FIRST_PAGE, STAGE);
+      return regionAt(spot.at.x, spot.width).kind;
+    });
+
+    expect(regions).toEqual(['left-edge', 'middle', 'right-edge']);
+  });
+
+  it('leaves a tap on the stage itself where it landed', () => {
+    const inset: StageBox = { left: 20, top: 40, width: 414 };
+
+    expect(tapOnStage({ x: 61, y: 448 }, HOST_VIEWPORT_ORIGIN, inset)).toEqual({
+      at: { x: 41, y: 408 },
+      width: 414,
+    });
+  });
+
+  it('decides nothing for a tap whose frame is nowhere on the stage', () => {
+    const spot = tapOnStage({ x: 358, y: 448 }, FRAME_NOWHERE_ON_THE_STAGE, STAGE);
+
+    expect(
+      releaseAction(
+        pointerEnded({ from: spot.at, to: spot.at, width: spot.width, textSelected: false }),
+      ),
+    ).toEqual({ kind: 'nothing' });
   });
 });
