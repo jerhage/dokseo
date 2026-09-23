@@ -3,6 +3,7 @@ import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import type { Plugin, ViteDevServer, PreviewServer } from 'vite';
+import { CONTENT_SECURITY_POLICY } from './src/lib/platform/security/content-security-policy.ts';
 
 // The oxc target below lowers `using` in dev, as the production build
 // already does for every browser. Without it the dev server ships the raw
@@ -62,6 +63,7 @@ export default defineConfig({
 
       adapter: adapter({ fallback: 'index.html' }),
       alias: { $workers: 'src/workers' },
+      csp: { mode: 'hash', directives: CONTENT_SECURITY_POLICY },
     }),
     crossOriginIsolation(),
     runtimeServedFromCdn(),
