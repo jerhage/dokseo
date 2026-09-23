@@ -94,7 +94,15 @@
 </script>
 
 {#if flowBook !== null}
-  <FlowViewer view={flow} book={flowBook} />
+  <FlowViewer
+    view={flow}
+    book={flowBook}
+    onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
+  >
+    {#snippet panel()}
+      <CapturePanel view={captures} {language} direction={flow.direction} />
+    {/snippet}
+  </FlowViewer>
 {:else}
   <ReaderScreen
     {view}

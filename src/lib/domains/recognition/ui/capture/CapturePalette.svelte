@@ -12,7 +12,7 @@
   import type { PaletteFilter, QuickFinds } from '../../domain/capture/quick-find';
   import type { Tag } from '../../domain/tag/tag';
   import { markedLines } from './capture-lines';
-  import { firstImage, pageLabel } from './capture-place';
+  import { firstImage, NO_PLACE, pageLabel } from './capture-place';
   import type { CaptureSearchView } from './capture-search.svelte';
   import { chipsOf } from './tag-chip';
   import type { TagChip } from './tag-chip';
@@ -45,7 +45,7 @@
     readonly kind: 'capture';
     readonly key: CaptureId;
     readonly href: string;
-    readonly page: string;
+    readonly place: string;
     readonly title: string | null;
     readonly language: Language;
     readonly cover: string | null;
@@ -68,6 +68,10 @@
   ];
 
   const NOTHING: QuickFinds<Capture> = { books: [], captures: [] };
+
+  function bookHref(id: BookId): string {
+    return `/read/${encodeURIComponent(id)}`;
+  }
 
   let {
     book,
@@ -103,7 +107,7 @@
     titled.map((shelf) => ({
       kind: 'book',
       key: shelf.id,
-      href: `/read/${shelf.id}`,
+      href: bookHref(shelf.id),
       language: shelf.language,
       cover: covers.get(shelf.id) ?? null,
       segments: segmentsOf(shelf.title, textMatches(shelf.title, query)),
@@ -113,33 +117,32 @@
 
   const captureRows = $derived.by<readonly CaptureRow[]>(() =>
     found.captures.flatMap((matched) =>
-      matched.captures
-        .map((capture): CaptureRow | null => {
-          const index = firstImage(capture.anchor);
-          if (index === null) return null;
+      matched.captures.map((capture): CaptureRow => {
+        const index = firstImage(capture.anchor);
+        const lit = new Set(matchedTagIds(capture, tags, query));
+        const lines = markedLines(capture, query);
 
-          const lit = new Set(matchedTagIds(capture, tags, query));
-          const lines = markedLines(capture, query);
-
-          return {
-            kind: 'capture',
-            key: capture.id,
-            href: readerHref(matched.book.id, index, { capture: capture.id, query }),
-            page: pageLabel(index),
-            title: matched.book.id === book ? null : matched.book.title,
-            language: matched.book.language,
-            cover: covers.get(matched.book.id) ?? null,
-            segments: lines.text,
-            note: lines.note,
-            chips: chipsOf(capture.tagIds, tags).map((chip) => ({
-              id: chip.id,
-              name: chip.name,
-              colour: chip.colour,
-              matched: lit.has(chip.id),
-            })),
-          };
-        })
-        .filter((row) => row !== null),
+        return {
+          kind: 'capture',
+          key: capture.id,
+          href:
+            index === null
+              ? bookHref(matched.book.id)
+              : readerHref(matched.book.id, index, { capture: capture.id, query }),
+          place: index === null ? NO_PLACE : `p.${pageLabel(index)}`,
+          title: matched.book.id === book ? null : matched.book.title,
+          language: matched.book.language,
+          cover: covers.get(matched.book.id) ?? null,
+          segments: lines.text,
+          note: lines.note,
+          chips: chipsOf(capture.tagIds, tags).map((chip) => ({
+            id: chip.id,
+            name: chip.name,
+            colour: chip.colour,
+            matched: lit.has(chip.id),
+          })),
+        };
+      }),
     ),
   );
 
@@ -354,7 +357,7 @@
                         {/if}
                       </span>
                       {#if row.kind === 'capture'}
-                        <span class="page">p.{row.page}</span>
+                        <span class="page">{row.place}</span>
                       {/if}
                     </a>
                   </li>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
@@ -10,7 +11,16 @@
   import FlowSettingsDialog from './FlowSettingsDialog.svelte';
   import { FlowGestures } from './flow-gestures';
   import { flowMeta, progressLabel, SCRUB_STEP, tickOffsets } from './flow-progress';
+  import {
+    LIFT_BUTTON_HEIGHT_PX,
+    LIFT_BUTTON_WIDTH_PX,
+    liftPlacement,
+    rectOnStage,
+  } from './flow-lift';
+  import type { LiftPlacement, LiftedPassage } from './flow-lift';
+  import { forgetSelection, selectedPassage } from './flow-passage';
   import { openFlowSurface } from './flow-surface';
+  import type { ChapterView } from './flow-surface';
   import {
     FRAME_NOWHERE_ON_THE_STAGE,
     HOST_VIEWPORT_ORIGIN,
@@ -19,15 +29,25 @@
     tapOnStage,
     turnOrder,
   } from './flow-turn';
-  import type { FlowAction, FlowTurn, KeyTarget, PageTurner, Point, StageTap } from './flow-turn';
+  import type { FlowAction, FlowTurn, KeyTarget, Point, StageTap } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
 
   type Props = {
     readonly view: FlowView;
     readonly book: FlowBook;
+    readonly panel?: Snippet;
+    readonly onLift?: (passage: LiftedPassage) => void;
   };
 
-  const { view, book }: Props = $props();
+  type LiftOffer = {
+    readonly passage: LiftedPassage;
+    readonly left: number;
+    readonly top: number;
+  };
+
+  const { view, book, panel, onLift }: Props = $props();
+
+  const LIFT_LABEL = 'Save this passage as a capture';
 
   const GLYPHS: readonly string[] = ['‹', '›'];
 
@@ -43,6 +63,7 @@
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
+  let offer = $state.raw<LiftOffer | null>(null);
   const chapters = new Set<Document>();
 
   const chrome = new ChromeFocus(
@@ -64,6 +85,7 @@
   const rtl = $derived(turning === 'rtl');
   const order = $derived(turnOrder(turning));
   const marks = $derived(tickOffsets(view.ticks, turning));
+  const reported = $derived(view.location);
 
   function toggleChrome(): void {
     chromeAsked = !chromeAwake;
@@ -125,6 +147,12 @@
   function onkey(event: KeyboardEvent): void {
     if (event.defaultPrevented || panelOpen || gestures === null) return;
 
+    if (event.key === 'Escape' && offer !== null) {
+      offer = null;
+      event.preventDefault();
+      return;
+    }
+
     const pressed = keyTarget(event.target);
     const move = gestures.keyed({
       key: event.key,
@@ -149,6 +177,7 @@
   }
 
   function press(event: PointerEvent, spot: StageTap): void {
+    offer = null;
     gestures?.pressed({
       pointerId: event.pointerId,
       at: spot.at,
@@ -186,23 +215,62 @@
     });
   }
 
+  function spotOfferedAt(placement: LiftPlacement): Omit<LiftOffer, 'passage'> | null {
+    return match(placement)
+      .with({ kind: 'nowhere' }, () => null)
+      .with({ kind: 'above' }, (above) => ({ left: above.left, top: above.top }))
+      .with({ kind: 'below' }, (below) => ({ left: below.left, top: below.top }))
+      .exhaustive();
+  }
+
+  function offerLift(host: HTMLElement, chapter: ChapterView): void {
+    const found = selectedPassage(chapter.doc, chapter.index, chapter.cfis);
+    if (found === null) {
+      offer = null;
+      return;
+    }
+
+    const box = host.getBoundingClientRect();
+    const origin = frameOrigin(chapter.doc);
+    const onScreen = { left: box.left, top: box.top, width: box.width };
+    const rects = found.rects.map((rect) => rectOnStage(rect, origin, onScreen));
+    const spot = spotOfferedAt(liftPlacement(rects, { width: box.width, height: box.height }));
+
+    offer = spot === null ? null : { passage: found.passage, ...spot };
+  }
+
+  function takeLift(): void {
+    const held = offer;
+    offer = null;
+    if (held === null) return;
+
+    for (const doc of chapters) forgetSelection(doc);
+    onLift?.(held.passage);
+  }
+
   function scrubbed(asked: string): void {
     view.seek(Number(asked));
   }
 
-  function bind(host: HTMLElement, doc: Document, pages: PageTurner): void {
-    gestures ??= new FlowGestures(pages);
+  function bind(host: HTMLElement, chapter: ChapterView): void {
+    const doc = chapter.doc;
+    gestures ??= new FlowGestures(chapter.pages);
     chapters.add(doc);
 
     doc.addEventListener('keydown', onkey);
     doc.addEventListener('pointerdown', (event) =>
       press(event, spotOn(host, event, frameOrigin(doc))),
     );
-    doc.addEventListener('pointerup', (event) =>
-      release(event, spotOn(host, event, frameOrigin(doc))),
-    );
+    doc.addEventListener('pointerup', (event) => {
+      release(event, spotOn(host, event, frameOrigin(doc)));
+      offerLift(host, chapter);
+    });
     doc.addEventListener('pointercancel', cancel);
   }
+
+  $effect(() => {
+    if (reported !== null) offer = null;
+  });
 
   $effect(() => {
     function refresh(): void {
@@ -233,7 +301,7 @@
     host.addEventListener('pointercancel', cancel);
 
     void view.open(held, (opening) =>
-      openFlowSurface(host, opening, (doc, pages) => bind(host, doc, pages)),
+      openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
     );
     return () => {
       host.removeEventListener('pointerdown', began);
@@ -241,6 +309,7 @@
       host.removeEventListener('pointercancel', cancel);
       view.close();
       gestures = null;
+      offer = null;
       contentsOpen = false;
       settingsOpen = false;
       chapters.clear();
@@ -251,97 +320,123 @@
 <svelte:window onkeydown={onkey} />
 
 <div class="screen">
-  <div class="stage" bind:this={stage}></div>
+  <div class="reading">
+    <div class="stage" bind:this={stage}></div>
 
-  <header class="bar top" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={topBar}>
-    <a class="back" href="/">
-      <span class="glyph" aria-hidden="true">‹</span>
-      Library
-    </a>
-    <div class="heading">
-      <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
-      <p class="meta">{meta}</p>
-    </div>
-    {#if reading}
-      {#if contents.kind === 'listed'}
-        <button class="tool" type="button" onclick={() => (contentsOpen = true)}>
-          {CONTENTS_LABEL}
-        </button>
-      {:else}
-        <p class="bare">{NO_CONTENTS_LABEL}</p>
-      {/if}
-      <button class="tool" type="button" onclick={() => (settingsOpen = true)}>
-        {TEXT_SETTINGS_LABEL}
+    {#if offer !== null}
+      <button
+        class="lift"
+        type="button"
+        style:--lift-left="{offer.left}px"
+        style:--lift-top="{offer.top}px"
+        style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
+        style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
+        onclick={takeLift}
+      >
+        <span class="glyph" aria-hidden="true">✎</span>
+        <span class="assistive">{LIFT_LABEL}</span>
       </button>
     {/if}
-  </header>
 
-  <footer class="bar bottom" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={bottomBar}>
-    <div class="turns" role="group" aria-label="Turn the page">
-      {#each order as turn, slot (turn)}
-        <button class="key" type="button" disabled={!reading} onclick={() => view.turn(turn)}>
-          <span class="glyph" aria-hidden="true">{GLYPHS[slot]}</span>
-          <span class="assistive">{TURN_LABELS[turn]}</span>
+    <header class="bar top" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={topBar}>
+      <a class="back" href="/">
+        <span class="glyph" aria-hidden="true">‹</span>
+        Library
+      </a>
+      <div class="heading">
+        <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
+        <p class="meta">{meta}</p>
+      </div>
+      {#if reading}
+        {#if contents.kind === 'listed'}
+          <button class="tool" type="button" onclick={() => (contentsOpen = true)}>
+            {CONTENTS_LABEL}
+          </button>
+        {:else}
+          <p class="bare">{NO_CONTENTS_LABEL}</p>
+        {/if}
+        <button class="tool" type="button" onclick={() => (settingsOpen = true)}>
+          {TEXT_SETTINGS_LABEL}
         </button>
-      {/each}
-    </div>
+      {/if}
+    </header>
 
-    <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
-
-    {#if progress.kind === 'known'}
-      <div class="gauge">
-        <input
-          class="scrub"
-          class:rtl
-          type="range"
-          min={0}
-          max={1}
-          step={SCRUB_STEP}
-          value={progress.fraction}
-          style:--fill="{progress.percent}%"
-          aria-label="Reading progress"
-          aria-valuetext={marker}
-          onchange={(event) => scrubbed(event.currentTarget.value)}
-        />
-        {#each marks as offset, slot (slot)}
-          <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
+    <footer
+      class="bar bottom"
+      class:hushed={!chromeAwake}
+      inert={!chromeAwake}
+      bind:this={bottomBar}
+    >
+      <div class="turns" role="group" aria-label="Turn the page">
+        {#each order as turn, slot (turn)}
+          <button class="key" type="button" disabled={!reading} onclick={() => view.turn(turn)}>
+            <span class="glyph" aria-hidden="true">{GLYPHS[slot]}</span>
+            <span class="assistive">{TURN_LABELS[turn]}</span>
+          </button>
         {/each}
       </div>
+
+      <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
+
+      {#if progress.kind === 'known'}
+        <div class="gauge">
+          <input
+            class="scrub"
+            class:rtl
+            type="range"
+            min={0}
+            max={1}
+            step={SCRUB_STEP}
+            value={progress.fraction}
+            style:--fill="{progress.percent}%"
+            aria-label="Reading progress"
+            aria-valuetext={marker}
+            onchange={(event) => scrubbed(event.currentTarget.value)}
+          />
+          {#each marks as offset, slot (slot)}
+            <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
+          {/each}
+        </div>
+      {/if}
+    </footer>
+
+    {#if contentsOpen && contents.kind === 'listed'}
+      <FlowContentsDialog
+        entries={contents.entries}
+        currentKey={view.currentKey}
+        onpick={pickEntry}
+        onclose={() => (contentsOpen = false)}
+      />
     {/if}
-  </footer>
 
-  {#if contentsOpen && contents.kind === 'listed'}
-    <FlowContentsDialog
-      entries={contents.entries}
-      currentKey={view.currentKey}
-      onpick={pickEntry}
-      onclose={() => (contentsOpen = false)}
-    />
-  {/if}
+    {#if settingsOpen}
+      <FlowSettingsDialog
+        {settings}
+        onchoose={chooseSettings}
+        onclose={() => (settingsOpen = false)}
+      />
+    {/if}
 
-  {#if settingsOpen}
-    <FlowSettingsDialog
-      {settings}
-      onchoose={chooseSettings}
-      onclose={() => (settingsOpen = false)}
-    />
-  {/if}
+    {#if curtain.kind === 'opening'}
+      <div class="curtain">
+        <p class="notice" aria-live="polite">Opening this book…</p>
+      </div>
+    {:else if message !== null}
+      <div class="curtain">
+        <p class="notice" aria-live="polite">{message}</p>
+        <a class="escape" href="/">Back to your library</a>
+      </div>
+    {/if}
+  </div>
 
-  {#if curtain.kind === 'opening'}
-    <div class="curtain">
-      <p class="notice" aria-live="polite">Opening this book…</p>
-    </div>
-  {:else if message !== null}
-    <div class="curtain">
-      <p class="notice" aria-live="polite">{message}</p>
-      <a class="escape" href="/">Back to your library</a>
-    </div>
+  {#if panel !== undefined}
+    <aside class="dock">{@render panel()}</aside>
   {/if}
 </div>
 
 <style>
   .screen {
-    position: relative;
+    display: flex;
     height: 100vh;
     overflow: hidden;
     background: var(--c-surface-void);
@@ -349,8 +444,57 @@
     font-family: var(--f-ui);
   }
 
+  .reading {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .dock {
+    display: flex;
+    flex: none;
+    width: 320px;
+    min-height: 0;
+    border-left: 1px solid var(--c-border-1);
+    background: var(--c-surface-rail);
+  }
+
+  @media (max-width: 900px) {
+    .dock {
+      width: 240px;
+    }
+  }
+
   .stage {
     height: 100%;
+  }
+
+  .lift {
+    position: absolute;
+    z-index: calc(var(--z-chrome) + 1);
+    left: var(--lift-left);
+    top: var(--lift-top);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--lift-width);
+    height: var(--lift-height);
+    padding: 0;
+    border: 1px solid var(--c-accent-border);
+    border-radius: var(--r-pill);
+    background: var(--c-accent);
+    color: var(--c-accent-text);
+    font-family: var(--f-ui);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .lift:hover,
+  .lift:focus-visible {
+    outline: 1px solid var(--c-accent-border-strong);
+    outline-offset: 2px;
   }
 
   .stage :global(foliate-view) {

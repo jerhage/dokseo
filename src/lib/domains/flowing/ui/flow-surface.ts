@@ -6,6 +6,7 @@ import type { Spine } from './flow-spine';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import type { ChapterCfis } from './flow-passage';
 import type { PageTurner } from './flow-turn';
 
 type FlowSurface = {
@@ -26,7 +27,14 @@ type FlowOpening = {
   readonly moved: (at: Relocation) => void;
 };
 
-type BindChapter = (doc: Document, pages: PageTurner) => void;
+type ChapterView = {
+  readonly doc: Document;
+  readonly index: number;
+  readonly pages: PageTurner;
+  readonly cfis: ChapterCfis;
+};
+
+type BindChapter = (chapter: ChapterView) => void;
 
 type Navigable = Pick<View, 'goTo' | 'resolveNavigation'>;
 
@@ -105,7 +113,7 @@ async function openFlowSurface(
 
   const view = new FoliateView();
   view.addEventListener('load', (loaded) => {
-    bind(loaded.detail.doc, view);
+    bind({ doc: loaded.detail.doc, index: loaded.detail.index, pages: view, cfis: view });
   });
   view.addEventListener('relocate', (moved) => {
     opening.moved(moved.detail);
@@ -143,4 +151,13 @@ async function openFlowSurface(
 }
 
 export { navigate, openAt, openFlowSurface, tearDown };
-export type { BindChapter, Closable, Destroyable, FlowOpening, FlowSurface, FlowTarget, Navigable };
+export type {
+  BindChapter,
+  ChapterView,
+  Closable,
+  Destroyable,
+  FlowOpening,
+  FlowSurface,
+  FlowTarget,
+  Navigable,
+};
