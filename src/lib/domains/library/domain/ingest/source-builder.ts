@@ -5,7 +5,11 @@ import type { UploadReport } from './upload-progress';
 
 type BuiltPages =
   | { readonly kind: 'images'; readonly imageCount: number; readonly cover: Blob }
-  | { readonly kind: 'unpaged'; readonly obstacle: PageObstacle };
+  | {
+      readonly kind: 'unpaged';
+      readonly obstacle: PageObstacle;
+      readonly cover: Blob | null;
+    };
 
 type BuiltSource = {
   readonly blob: Blob;

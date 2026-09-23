@@ -50,14 +50,18 @@ async function sourceBlobOf(
 
 type OpenedPages =
   | { readonly kind: 'source'; readonly source: PageSource }
-  | { readonly kind: 'unpaged'; readonly obstacle: PageObstacle };
+  | {
+      readonly kind: 'unpaged';
+      readonly obstacle: PageObstacle;
+      readonly cover: Blob | null;
+    };
 
 async function epubPages(blob: Blob): Promise<Result<OpenedPages, SourceBuildError>> {
   const { openEpubBook } = await import('./epub-page-source');
   const opened = await openEpubBook(blob);
   if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
   if (opened.value.kind === 'not-paged') {
-    return ok({ kind: 'unpaged', obstacle: opened.value.obstacle });
+    return ok({ kind: 'unpaged', obstacle: opened.value.obstacle, cover: opened.value.cover });
   }
   return ok({ kind: 'source', source: opened.value.source });
 }
@@ -96,7 +100,7 @@ async function buildFrom(
       blob: source.value,
       sourceKind,
       suggestedTitle,
-      pages: { kind: 'unpaged', obstacle: opened.value.obstacle },
+      pages: { kind: 'unpaged', obstacle: opened.value.obstacle, cover: opened.value.cover },
     });
   }
 

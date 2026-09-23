@@ -2,6 +2,7 @@
   import type { BookId } from '$lib/shared/ids';
   import { matchesQuery } from '$lib/shared/text-search';
   import type { BookEdit } from '../domain/book/book';
+  import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';
   import BookCard from './BookCard.svelte';
   import BookSettings from './BookSettings.svelte';
   import PendingCard from './PendingCard.svelte';
@@ -59,15 +60,13 @@
   const titled = $derived(
     searching ? view.books.filter((book) => matchesQuery(book.title, query)) : view.books,
   );
-  const totalImages = $derived(view.books.reduce((sum, book) => sum + book.imageCount, 0));
   const space = $derived(
     view.storedBytes === null
       ? 'upload size unknown'
       : `${formatBytes(view.storedBytes)} of uploads`,
   );
-  const summary = $derived(
-    `${view.books.length} books · ${totalImages.toLocaleString()} images · ${space}`,
-  );
+  const contents = $derived(describeLibraryContents(libraryContents(view.books)));
+  const summary = $derived(`${contents} · ${space}`);
   const settling = $derived(view.status !== 'ready' && view.status !== 'failed');
   const matched = $derived(`${titled.length} ${titled.length === 1 ? 'title' : 'titles'}`);
 </script>

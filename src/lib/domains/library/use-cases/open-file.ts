@@ -87,14 +87,14 @@ type BookContent = {
 
 const NO_IMAGES = 0;
 
-const NO_COVER = null;
-
-const FLOW_CONTENT: BookContent = {
-  layoutKind: 'flow',
-  imageCount: NO_IMAGES,
-  cover: NO_COVER,
-  position: START_OF_THE_TEXT,
-};
+function flowContent(cover: Blob | null): BookContent {
+  return {
+    layoutKind: 'flow',
+    imageCount: NO_IMAGES,
+    cover,
+    position: START_OF_THE_TEXT,
+  };
+}
 
 function declaresReflowing(inspection: UploadInspection): boolean {
   return inspection.kind === 'epub' && inspection.packageDocument.layout === 'reflowable';
@@ -114,7 +114,7 @@ function contentOf(
   }
   if (!declaresReflowing(inspection)) return err({ kind: 'not-paged', obstacle: pages.obstacle });
 
-  return ok(FLOW_CONTENT);
+  return ok(flowContent(pages.cover));
 }
 
 function declaredLanguage(inspection: UploadInspection): Language | null {

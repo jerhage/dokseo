@@ -11,11 +11,18 @@ import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { resolveEpubPages } from '../domain/ingest/epub-pages';
 import type { PageDocumentReader, PageImage, PageObstacle } from '../domain/ingest/epub-pages';
 import { readEpubSpine } from '../domain/ingest/epub-spine';
-import type { EpubSpine } from '../domain/ingest/epub-spine';
+import { epubCoverImage } from './epub-cover-image';
+import type { CoverEntry } from './epub-cover-image';
 
 type OpenedEpub =
   | { readonly kind: 'paged'; readonly source: PageSource }
-  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle };
+  | {
+      readonly kind: 'not-paged';
+      readonly obstacle: PageObstacle;
+      readonly cover: Blob | null;
+    };
+
+type PackageDocument = { readonly path: string; readonly xml: string };
 
 function filesByName(entries: readonly Entry[]): ReadonlyMap<string, FileEntry> {
   const files = new Map<string, FileEntry>();
@@ -43,22 +50,32 @@ function unreadable(cause: string): Result<never, PageSourceError> {
   return err({ kind: 'source-unreadable', cause });
 }
 
-async function spineOf(
+async function packageOf(
   files: ReadonlyMap<string, FileEntry>,
-): Promise<Result<EpubSpine, PageSourceError>> {
+): Promise<Result<PackageDocument, PageSourceError>> {
   const container = fileNamed(files, CONTAINER_ENTRY);
   if (container === null) return unreadable('That file is not an EPUB');
 
-  const packagePath = packagePathFromContainer(await textOf(container));
-  if (packagePath === null) return unreadable('The EPUB names no package document');
+  const path = packagePathFromContainer(await textOf(container));
+  if (path === null) return unreadable('The EPUB names no package document');
 
-  const packageEntry = fileNamed(files, packagePath);
+  const packageEntry = fileNamed(files, path);
   if (packageEntry === null) {
-    return unreadable(`The EPUB has no package document at ${packagePath}`);
+    return unreadable(`The EPUB has no package document at ${path}`);
   }
 
-  const spine = readEpubSpine(await textOf(packageEntry), packagePath);
-  return ok(spine);
+  return ok({ path, xml: await textOf(packageEntry) });
+}
+
+function coverEntries(files: ReadonlyMap<string, FileEntry>): (path: string) => CoverEntry | null {
+  return (path: string): CoverEntry | null => {
+    const entry = fileNamed(files, path);
+    if (entry === null) return null;
+    return {
+      bytes: entry.uncompressedSize,
+      read: (mediaType: string) => entry.getData(new BlobWriter(mediaType)),
+    };
+  };
 }
 
 function spineDocuments(files: ReadonlyMap<string, FileEntry>): PageDocumentReader {
@@ -145,14 +162,27 @@ function pageSourceOver(reader: ZipReader<Blob>, images: readonly FileEntry[]): 
 async function readEpub(reader: ZipReader<Blob>): Promise<Result<OpenedEpub, PageSourceError>> {
   const files = filesByName(await reader.getEntries());
 
-  const spine = await spineOf(files);
-  if (!spine.ok) return spine;
+  const packaged = await packageOf(files);
+  if (!packaged.ok) return packaged;
 
-  const pages = await resolveEpubPages(spine.value, spineDocuments(files));
-  if (pages.kind === 'not-paged') return ok({ kind: 'not-paged', obstacle: pages.obstacle });
+  const notPaged = async (obstacle: PageObstacle): Promise<Result<OpenedEpub, PageSourceError>> => {
+    const { xml, path } = packaged.value;
+    const cover = await epubCoverImage(xml, path, coverEntries(files));
+    return ok({ kind: 'not-paged', obstacle, cover });
+  };
+
+  const spine = readEpubSpine(packaged.value.xml, packaged.value.path);
+  const pages = await resolveEpubPages(spine, spineDocuments(files));
+  if (pages.kind === 'not-paged') {
+    const unpaged = await notPaged(pages.obstacle);
+    return unpaged;
+  }
 
   const entries = imageEntries(files, pages.images);
-  if (!entries.ok) return ok({ kind: 'not-paged', obstacle: entries.error });
+  if (!entries.ok) {
+    const unpaged = await notPaged(entries.error);
+    return unpaged;
+  }
 
   return ok({ kind: 'paged', source: pageSourceOver(reader, entries.value) });
 }

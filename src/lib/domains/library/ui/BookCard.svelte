@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
+  import { bookContents, describeBookContents } from '../domain/book/book-contents';
 
   type Props = {
     readonly book: Book;
@@ -28,6 +29,7 @@
       : `p.${String(page).padStart(3, '0')} / ${book.imageCount}`;
   });
   const progress = $derived(page === null ? null : (page / total) * 100);
+  const contents = $derived(describeBookContents(bookContents(book)));
 
   async function cancel(): Promise<void> {
     confirming = false;
@@ -88,7 +90,7 @@
     {/if}
   </div>
   <h3 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h3>
-  <p class="count">{book.imageCount} images</p>
+  <p class="count">{contents}</p>
 </article>
 
 <style>

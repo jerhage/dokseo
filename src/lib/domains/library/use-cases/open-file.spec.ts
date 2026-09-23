@@ -56,8 +56,8 @@ function builtSource(overrides: Partial<BuiltSource> = {}): BuiltSource {
   };
 }
 
-function builtFlow(obstacle: PageObstacle): BuiltSource {
-  return builtSource({ sourceKind: 'epub', pages: { kind: 'unpaged', obstacle } });
+function builtFlow(obstacle: PageObstacle, cover: Blob | null = null): BuiltSource {
+  return builtSource({ sourceKind: 'epub', pages: { kind: 'unpaged', obstacle, cover } });
 }
 
 type AddCall = { readonly book: Book; readonly source: Blob; readonly cover: Blob | null };
@@ -633,9 +633,11 @@ describe('openFile', () => {
     expect(repository.added).toHaveLength(1);
   });
 
-  it('stores a flow book with no images, no cover and a place in its text', async () => {
+  it('stores a flow book with no images, a place in its text and the cover the builder lifted', async () => {
     const repository = fakeRepository();
-    const builder = fakeBuilder(ok(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })));
+    const builder = fakeBuilder(
+      ok(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' }, COVER)),
+    );
 
     const result = await openFile(
       deps({
@@ -648,6 +650,22 @@ describe('openFile', () => {
 
     expect(result.ok && result.value.imageCount).toBe(0);
     expect(result.ok && result.value.position).toEqual({ kind: 'text', cfi: '' });
+    expect(at(repository.added, 0).cover).toBe(COVER);
+  });
+
+  it('stores a flow book whose EPUB names no cover with none', async () => {
+    const repository = fakeRepository();
+    const builder = fakeBuilder(ok(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })));
+
+    await openFile(
+      deps({
+        repository: repository.repository,
+        builder: builder.builder,
+        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
+      }),
+      epub,
+    );
+
     expect(at(repository.added, 0).cover).toBeNull();
   });
 
