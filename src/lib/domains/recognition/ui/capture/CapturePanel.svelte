@@ -17,8 +17,10 @@
   import { markedLines } from './capture-lines';
   import type { MarkedLines } from './capture-lines';
   import { firstImage, placeLabel } from './capture-place';
-  import { modelLoadAnnouncement, modelLoadNote, NOTHING_READ } from './capture-view.svelte';
-  import type { CaptureStatus, CaptureView, PanelCapture } from './capture-view.svelte';
+  import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
+  import { NOTHING_READ } from './capture-view.svelte';
+  import type { CaptureView } from './capture-view.svelte';
+  import { modelLoadAnnouncement, modelLoadNote } from '../engine/recognizer-view.svelte';
   import { chipsOf } from './tag-chip';
   import type { TagChip } from './tag-chip';
   import { TagPicker } from './tag-picker.svelte';

@@ -1,12 +1,8 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import type { Trace } from '$lib/platform/trace/pipeline-trace';
-import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import { captureId, tagId } from '$lib/shared/ids';
-import { clearScope } from './clearing';
 import type { ClearScope } from './clearing';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -15,77 +11,22 @@ import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
-import { arrivalAt } from '../../domain/capture/capture-arrival';
+import { CaptureCollection } from './capture-collection.svelte';
+import type { PanelCapture, Settled } from './capture-collection.svelte';
+import { RecognizerView } from '../engine/recognizer-view.svelte';
+import type { ConsentRequest, PendingRecognition } from '../engine/recognizer-view.svelte';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
-import { editedText, oldestFirst } from '../../domain/capture/capture';
-import type { Capture, CaptureDraft } from '../../domain/capture/capture';
-import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
-import { isPartlyStored, isStored } from '../../domain/model/model-cache';
-import { downloadMb } from '../../domain/model/model-footprint';
-import type { ModelFootprint } from '../../domain/model/model-footprint';
-import { loadVerb } from '../../domain/model/model-load';
 import type { ModelLoad } from '../../domain/model/model-load';
-import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { EngineState } from '../../domain/engine/ocr-engine';
-import { hasNoText, recognizedText } from '../../domain/engine/recognized-text';
+import { hasNoText } from '../../domain/engine/recognized-text';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
-import type { CreateTagError } from '../../use-cases/tag/create-tag';
 
 const NOTHING_READ = 'Nothing was read in that selection.';
-
-const READING_SELECTION = 'Reading the selection.';
-
-const FULL_PERCENT = 100;
-
-function loadPercent(load: ModelLoad): number {
-  return Math.round(load.fraction * FULL_PERCENT);
-}
-
-function modelLoadNote(load: ModelLoad): string {
-  return `${loadVerb(load.source)} the model · ${loadPercent(load)}%`;
-}
-
-function modelLoadAnnouncement(load: ModelLoad | null): string {
-  if (load === null) return READING_SELECTION;
-  return `${loadVerb(load.source)} the recognition model, ${loadPercent(load)} percent.`;
-}
-
-type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
-
-type Recorded = {
-  readonly id: CaptureId;
-  readonly anchor: Anchor;
-  readonly tagIds: readonly TagId[];
-};
-
-type Taken =
-  | (Recorded & { readonly origin: 'recognized'; readonly note: string | null })
-  | (Recorded & { readonly origin: 'lifted'; readonly note: string | null })
-  | (Recorded & { readonly origin: 'written' });
-
-type Settled =
-  | { readonly status: 'done'; readonly text: RecognizedText; readonly edited: boolean }
-  | { readonly status: 'empty' }
-  | { readonly status: 'failed'; readonly message: string };
-
-type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
-
-type ConsentRequest = {
-  readonly language: Language;
-  readonly footprint: ModelFootprint;
-};
-
-type Held = {
-  readonly source: PageSource;
-  readonly language: Language;
-  readonly regions: readonly ImageRegion[];
-  readonly arrangement: Arrangement;
-};
 
 function describeCropFailure(error: CropError): string {
   return match(error)
@@ -130,299 +71,118 @@ function settlementOf(read: Result<RecognizedText, RecognizeRegionError>): Settl
     : { status: 'done', text: read.value, edited: false };
 }
 
-type TagOutcome =
-  | { readonly kind: 'created'; readonly tag: Tag }
-  | { readonly kind: 'existing'; readonly tag: Tag }
-  | { readonly kind: 'unavailable' };
-
-const UNAVAILABLE = { kind: 'unavailable' } as const;
-
-function tagOutcome(created: Result<Tag, CreateTagError> | null): TagOutcome {
-  if (created === null) return UNAVAILABLE;
-  if (created.ok) return { kind: 'created', tag: created.value };
-
-  return match(created.error)
-    .with({ kind: 'name-taken' }, (taken) => ({ kind: 'existing', tag: taken.tag }) as const)
-    .with({ kind: 'storage-unavailable' }, { kind: 'storage-failed' }, () => UNAVAILABLE)
-    .exhaustive();
-}
-
-function withTag(tags: readonly Tag[], tag: Tag): readonly Tag[] {
-  return tags.some((held) => held.id === tag.id) ? tags : [...tags, tag];
-}
-
-function countsAfter(
-  counts: ReadonlyMap<TagId, number>,
-  before: readonly TagId[],
-  after: readonly TagId[],
-): ReadonlyMap<TagId, number> {
-  const moved = new Map(counts);
-
-  for (const tag of before) {
-    if (!after.includes(tag)) moved.set(tag, Math.max((moved.get(tag) ?? 0) - 1, 0));
-  }
-  for (const tag of after) {
-    if (!before.includes(tag)) moved.set(tag, (moved.get(tag) ?? 0) + 1);
-  }
-
-  return moved;
-}
-
-function cardOf(capture: Capture): PanelCapture {
-  const held = {
-    id: capture.id,
-    anchor: capture.anchor,
-    tagIds: capture.tagIds,
-    status: 'done' as const,
-    edited: capture.editedAt !== null,
-  };
-
-  return match(capture)
-    .with({ origin: 'written' }, (note) => ({
-      ...held,
-      origin: 'written' as const,
-      text: recognizedText(note.text, null),
-    }))
-    .with({ origin: 'lifted' }, (lifted) => ({
-      ...held,
-      origin: 'lifted' as const,
-      note: lifted.note,
-      text: recognizedText(lifted.text, null),
-    }))
-    .with({ origin: 'recognized' }, (read) => ({
-      ...held,
-      origin: 'recognized' as const,
-      note: read.note,
-      text: recognizedText(read.text, read.confidence),
-    }))
-    .exhaustive();
-}
-
-function takenOf(capture: PanelCapture): Taken {
-  const held = { id: capture.id, anchor: capture.anchor, tagIds: capture.tagIds };
-
-  return match(capture)
-    .with({ origin: 'written' }, () => ({ ...held, origin: 'written' as const }))
-    .with({ origin: 'lifted' }, (lifted) => ({
-      ...held,
-      origin: 'lifted' as const,
-      note: lifted.note,
-    }))
-    .with({ origin: 'recognized' }, (read) => ({
-      ...held,
-      origin: 'recognized' as const,
-      note: read.note,
-    }))
-    .exhaustive();
-}
-
 class CaptureView {
-  captures = $state.raw<readonly PanelCapture[]>([]);
-  writing = $state.raw<CaptureId | null>(null);
-  progress = $state.raw<ModelLoad | null>(null);
-  session = $state.raw<RecognizerSession | null>(null);
-  downloaded = $state.raw(false);
-  partlyDownloaded = $state.raw(false);
-  opening = $state.raw(false);
-  engineFailure = $state.raw<string | null>(null);
-  confirmingClear = $state(false);
-  consentRequest = $state.raw<ConsentRequest | null>(null);
-  tags = $state.raw<readonly Tag[]>([]);
-  libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
-
   #container: Container;
-  #book = $state.raw<BookId | null>(null);
-  #generation = 0;
-  #running = 0;
-  #warmedAt = -1;
-  #opened: Language | null = null;
-  #held: Held | null = null;
-  #stored = new Map<CaptureId, Capture>();
-  #agreed = new Set<Language>();
-  #declined = new Set<Language>();
+  #collection: CaptureCollection;
+  #recognizer: RecognizerView;
 
   constructor(container: Container) {
     this.#container = container;
+    this.#collection = new CaptureCollection(container);
+    this.#recognizer = new RecognizerView(container, () => this.#collection.generation);
   }
 
-  get clearing(): ClearScope {
-    return clearScope(this.captures);
+  get captures(): readonly PanelCapture[] {
+    return this.#collection.captures;
   }
 
-  get count(): number {
-    return this.captures.length;
+  get writing(): CaptureId | null {
+    return this.#collection.writing;
   }
 
-  get book(): BookId | null {
-    return this.#book;
+  get confirmingClear(): boolean {
+    return this.#collection.confirmingClear;
   }
 
-  get bookCounts(): ReadonlyMap<TagId, number> {
-    return tagCounts(this.captures);
+  get tags(): readonly Tag[] {
+    return this.#collection.tags;
+  }
+
+  get libraryCounts(): ReadonlyMap<TagId, number> {
+    return this.#collection.libraryCounts;
+  }
+
+  get progress(): ModelLoad | null {
+    return this.#recognizer.progress;
+  }
+
+  get session(): RecognizerSession | null {
+    return this.#recognizer.session;
+  }
+
+  get downloaded(): boolean {
+    return this.#recognizer.downloaded;
+  }
+
+  get partlyDownloaded(): boolean {
+    return this.#recognizer.partlyDownloaded;
+  }
+
+  get opening(): boolean {
+    return this.#recognizer.opening;
+  }
+
+  get engineFailure(): string | null {
+    return this.#recognizer.engineFailure;
+  }
+
+  get consentRequest(): ConsentRequest | null {
+    return this.#recognizer.consentRequest;
   }
 
   get engine(): EngineState {
-    return {
-      stored: this.downloaded,
-      opening: this.opening,
-      load: this.progress,
-      session: this.session,
-      failure: this.engineFailure,
-      paused: false,
-      cancelled: false,
-      partlyDownloaded: this.partlyDownloaded,
-    };
+    return this.#recognizer.engine;
+  }
+
+  get clearing(): ClearScope {
+    return this.#collection.clearing;
+  }
+
+  get count(): number {
+    return this.#collection.count;
+  }
+
+  get book(): BookId | null {
+    return this.#collection.book;
+  }
+
+  get bookCounts(): ReadonlyMap<TagId, number> {
+    return this.#collection.bookCounts;
   }
 
   get anchors(): readonly Anchor[] {
-    return this.captures.map((capture) => capture.anchor);
+    return this.#collection.anchors;
   }
 
   get newestFirst(): readonly PanelCapture[] {
-    return this.captures.toReversed();
+    return this.#collection.newestFirst;
   }
 
   get read(): readonly ArrivalCapture[] {
-    return this.captures
-      .filter((capture) => capture.status === 'done')
-      .map((capture) => this.#marked(capture));
-  }
-
-  #marked(card: Taken & { readonly text: RecognizedText }): ArrivalCapture {
-    const held = { id: card.id, anchor: card.anchor, text: card.text.text };
-
-    return match(card)
-      .with({ origin: 'written' }, () => ({ ...held, origin: 'written' as const }))
-      .with({ origin: 'lifted' }, () => ({
-        ...held,
-        origin: 'lifted' as const,
-        note: this.#noteKept(card.id, 'lifted'),
-      }))
-      .with({ origin: 'recognized' }, () => ({
-        ...held,
-        origin: 'recognized' as const,
-        note: this.#noteKept(card.id, 'recognized'),
-      }))
-      .exhaustive();
-  }
-
-  #noteKept(id: CaptureId, origin: 'recognized' | 'lifted'): string | null {
-    const stored = this.#stored.get(id);
-    return stored?.origin === origin ? stored.note : null;
+    return this.#collection.read;
   }
 
   arrivalFrom(
     found: ReaderArrival | null,
     direction: ReadingDirection,
   ): Arrival<ArrivalCapture> | null {
-    if (found === null) return null;
-    return arrivalAt(this.read, found.query, direction, found.capture);
+    return this.#collection.arrivalFrom(found, direction);
   }
 
   async open(book: BookId): Promise<void> {
-    const generation = this.#forget();
-    this.#book = book;
-
-    const [listed, named] = await Promise.all([
-      this.#container.recognition.listCaptures(book).catch(() => null),
-      this.#container.recognition.listTags().catch(() => null),
-    ]);
-
-    if (generation !== this.#generation) return;
-    if (named !== null && named.ok) this.tags = named.value;
-    if (listed === null || !listed.ok) return;
-
-    const held = oldestFirst(listed.value);
-    this.#stored = new Map(held.map((capture) => [capture.id, capture]));
-    this.captures = held.map(cardOf);
+    this.#recognizer.forget();
+    await this.#collection.open(book);
   }
 
   close(): void {
-    const opened = this.#opened;
-    this.#forget();
-    if (opened === null) return;
-
-    void this.#container.recognition.closeRecognizer(opened);
+    this.#collection.forget();
+    this.#recognizer.close();
   }
 
   async warm(book: BookId, language: Language): Promise<void> {
-    if (this.#book !== book || this.#warmedAt === this.#generation) return;
-    this.#warmedAt = this.#generation;
+    if (this.#collection.book !== book) return;
 
-    const generation = this.#generation;
-    const trace = this.#container.beginTrace('engine-warm');
-    try {
-      const model = await this.#chosenModel(language);
-      if (generation !== this.#generation) return;
-      if (model === null) {
-        trace.step('stopped', { guard: 'no-model-for-language', language });
-        return;
-      }
-
-      const held = await this.#container.recognition
-        .readModelStorage(model.modelId)
-        .catch(() => null);
-      if (generation !== this.#generation) return;
-
-      const snapshot = held !== null && held.ok ? held.value : null;
-      this.downloaded = snapshot !== null && isStored(snapshot.report);
-      this.partlyDownloaded =
-        snapshot !== null &&
-        !this.downloaded &&
-        (isPartlyStored(snapshot.report) || isPartlyDownloaded(snapshot.partial));
-      if (!this.downloaded) {
-        trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
-        return;
-      }
-
-      this.#agreed.add(language);
-      trace.step('opening', { language, modelId: model.modelId });
-      await this.#openEngine(language, generation);
-    } finally {
-      trace.end();
-    }
-  }
-
-  async #openEngine(language: Language, generation: number): Promise<void> {
-    this.opening = true;
-    this.engineFailure = null;
-    this.#opened = language;
-
-    try {
-      const opened = await this.#container.recognition.prepareRecognizer(language, {
-        onProgress: (load) => {
-          if (generation === this.#generation) this.progress = load;
-        },
-        onSession: (session) => {
-          if (generation === this.#generation) this.session = session;
-        },
-      });
-
-      if (generation !== this.#generation) return;
-
-      if (opened.ok) {
-        this.session = opened.value;
-        this.downloaded = true;
-        this.partlyDownloaded = false;
-      } else if (opened.error.kind === 'unavailable') {
-        this.engineFailure = opened.error.cause;
-      }
-    } catch (cause) {
-      if (generation === this.#generation) this.engineFailure = describeCause(cause);
-    } finally {
-      if (generation === this.#generation) {
-        this.opening = false;
-        if (this.#running === 0) this.progress = null;
-      }
-    }
-  }
-
-  async #chosenModel(language: Language): Promise<ModelFootprint | null> {
-    const choice = await this.#container.recognition
-      .readRecognizerSetup(language)
-      .catch(() => null);
-
-    return choice !== null && choice.ok ? choice.value.model : null;
+    await this.#recognizer.warm(language);
   }
 
   capture(
@@ -450,103 +210,23 @@ class CaptureView {
   }
 
   note(regions: readonly ImageRegion[]): void {
-    const book = this.#book;
-    const trace = this.#container.beginTrace('note');
-    try {
-      if (regions.length === 0) {
-        trace.step('stopped', { guard: 'no-regions' });
-        return;
-      }
-
-      if (book === null) {
-        trace.step('stopped', { guard: 'no-open-book' });
-        return;
-      }
-
-      trace.step('dispatched', { regions: regions.length });
-      void this.write(book, regions);
-    } finally {
-      trace.end();
-    }
+    this.#collection.note(regions);
   }
 
   lift(cfi: string, quote: TextQuote): void {
-    const book = this.#book;
-    const trace = this.#container.beginTrace('lift');
-    try {
-      if (quote.exact.trim().length === 0) {
-        trace.step('stopped', { guard: 'nothing-selected' });
-        return;
-      }
-
-      if (book === null) {
-        trace.step('stopped', { guard: 'no-open-book' });
-        return;
-      }
-
-      trace.step('dispatched', { characters: quote.exact.length });
-      void this.keepLifted(book, cfi, quote);
-    } finally {
-      trace.end();
-    }
+    this.#collection.lift(cfi, quote);
   }
 
   async keepLifted(book: BookId, cfi: string, quote: TextQuote): Promise<void> {
-    const generation = this.#generation;
-    const id = captureId(crypto.randomUUID());
-    const anchor = textAnchor(cfi, quote);
-    const text = recognizedText(quote.exact, null);
-    this.captures = [
-      ...this.captures,
-      {
-        id,
-        anchor,
-        origin: 'lifted',
-        note: null,
-        tagIds: [],
-        status: 'done',
-        text,
-        edited: false,
-      },
-    ];
-
-    await this.#keep(generation, {
-      id,
-      bookId: book,
-      anchor,
-      text: text.text,
-      origin: 'lifted',
-    });
+    await this.#collection.keepLifted(book, cfi, quote);
   }
 
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
-    const generation = this.#generation;
-    const id = captureId(crypto.randomUUID());
-    const anchor = regionAnchor(regions);
-    this.captures = [
-      ...this.captures,
-      {
-        id,
-        anchor,
-        origin: 'written',
-        tagIds: [],
-        status: 'done',
-        text: recognizedText('', null),
-        edited: false,
-      },
-    ];
-    this.writing = id;
-
-    const written = await this.#container.recognition.writeNote(id, book, anchor).catch(() => null);
-    if (written === null || !written.ok || generation !== this.#generation) return;
-
-    this.#stored.set(written.value.id, written.value);
+    await this.#collection.write(book, regions);
   }
 
   takeWriting(): CaptureId | null {
-    const fresh = this.writing;
-    this.writing = null;
-    return fresh;
+    return this.#collection.takeWriting();
   }
 
   async recognize(
@@ -555,313 +235,81 @@ class CaptureView {
     regions: readonly ImageRegion[],
     arrangement: Arrangement,
   ): Promise<void> {
-    const trace = this.#container.beginTrace('capture-gate');
-    const held: Held = { source, language, regions, arrangement };
+    const held: PendingRecognition = { source, language, regions, arrangement };
 
-    const admitted = await this.#admits(trace, held);
-    trace.end();
+    const admitted = await this.#recognizer.admits(held);
     if (admitted) await this.#read(held);
   }
 
-  async #admits(trace: Trace, held: Held): Promise<boolean> {
-    const language = held.language;
-    if (held.regions.length === 0) {
-      trace.step('stopped', { guard: 'no-regions' });
-      return false;
-    }
-
-    if (this.#agreed.has(language)) {
-      trace.step('reading', { gate: 'agreed-this-session', language });
-      return true;
-    }
-
-    const footprint = await this.#chosenModel(language);
-    if (footprint === null) {
-      trace.step('reading', { gate: 'nothing-to-download', language });
-      return true;
-    }
-
-    const decision = await this.#container.recognition.readModelConsent(language);
-    if (decision.ok && decision.value === 'granted') {
-      this.#agreed.add(language);
-      trace.step('reading', { gate: 'consent-stored', language });
-      return true;
-    }
-
-    if (this.#declined.has(language)) {
-      trace.step('stopped', { guard: 'declined-this-session', language });
-      return false;
-    }
-
-    this.#held = held;
-    this.consentRequest = { language, footprint };
-    trace.step('asking', { gate: 'consent-dialog', language, downloadMb: downloadMb(footprint) });
-    return false;
-  }
-
   async agree(): Promise<void> {
-    const held = this.#takeHeld();
+    const held = await this.#recognizer.agree();
     if (held === null) return;
 
-    this.#agreed.add(held.language);
-    await this.#container.recognition.grantModelConsent(held.language);
     await this.#read(held);
   }
 
   decline(): void {
-    const held = this.#takeHeld();
-    if (held === null) return;
-
-    this.#declined.add(held.language);
+    this.#recognizer.decline();
   }
 
-  #takeHeld(): Held | null {
-    const held = this.#held;
-    this.#held = null;
-    this.consentRequest = null;
-    return held;
+  async #read(held: PendingRecognition): Promise<void> {
+    await this.#collection.recognizing(held.regions, () => this.#settlement(held));
   }
 
-  async #read(held: Held): Promise<void> {
-    const book = this.#book;
-    const generation = this.#generation;
-    this.#opened = held.language;
-    this.#running += 1;
-    const id = captureId(crypto.randomUUID());
-    this.captures = [
-      ...this.captures,
-      {
-        id,
-        anchor: regionAnchor(held.regions),
-        origin: 'recognized',
-        note: null,
-        tagIds: [],
-        status: 'pending',
-      },
-    ];
-
-    let settled: Settled;
+  async #settlement(held: PendingRecognition): Promise<Settled> {
     try {
-      const read = await this.#container.recognition.recognizeRegion(
-        held.language,
-        held.source,
-        held.regions,
-        held.arrangement,
-        {
-          onProgress: (load) => {
-            this.progress = load;
-          },
-          onSession: (opened) => {
-            this.session = opened;
-          },
-        },
-      );
-      settled = settlementOf(read);
+      return settlementOf(await this.#recognizer.read(held));
     } catch (cause) {
-      settled = {
+      return {
         status: 'failed',
         message: `That capture could not be read: ${describeCause(cause)}`,
       };
-    } finally {
-      this.#running -= 1;
-      if (this.#running === 0) this.progress = null;
     }
-
-    this.#settle(id, settled);
-    if (book === null || settled.status !== 'done') return;
-
-    await this.#keep(generation, {
-      id,
-      bookId: book,
-      anchor: regionAnchor(held.regions),
-      text: settled.text.text,
-      confidence: settled.text.confidence,
-      origin: 'recognized',
-    });
   }
 
   async edit(id: CaptureId, text: string): Promise<void> {
-    const card = this.captures.find((capture) => capture.id === id);
-    if (card === undefined || card.status !== 'done') return;
-
-    const settled = editedText(card.text.text, text, card.origin);
-    if (settled === card.text.text) return;
-
-    const generation = this.#generation;
-    const stored = this.#stored.get(id);
-    const written =
-      stored === undefined
-        ? null
-        : await this.#container.recognition.editCaptureText(stored, settled).catch(() => null);
-
-    if (generation !== this.#generation) return;
-    if (written !== null && written.ok) this.#stored.set(id, written.value);
-
-    this.captures = this.captures.map((capture) =>
-      capture.id === id && capture.status === 'done'
-        ? { ...capture, text: recognizedText(settled, capture.text.confidence), edited: true }
-        : capture,
-    );
+    await this.#collection.edit(id, text);
   }
 
   async annotate(id: CaptureId, note: string): Promise<void> {
-    const stored = this.#stored.get(id);
-    if (stored === undefined || stored.origin === 'written') return;
-
-    const generation = this.#generation;
-    const written = await this.#container.recognition
-      .writeCaptureNote(stored, note)
-      .catch(() => null);
-
-    if (generation !== this.#generation || written === null || !written.ok) return;
-
-    this.#stored.set(id, written.value);
-    const kept = written.value.note;
-    this.captures = this.captures.map((capture) =>
-      capture.id === id && capture.origin !== 'written' ? { ...capture, note: kept } : capture,
-    );
+    await this.#collection.annotate(id, note);
   }
 
   async remove(id: CaptureId): Promise<void> {
-    const generation = this.#generation;
-    if (this.#stored.has(id)) {
-      await this.#container.recognition.removeCapture(id).catch(() => undefined);
-    }
-
-    if (generation !== this.#generation) return;
-
-    this.#stored.delete(id);
-    this.captures = this.captures.filter((capture) => capture.id !== id);
+    await this.#collection.remove(id);
   }
 
   async loadTags(): Promise<void> {
-    const generation = this.#generation;
-    const named = await this.#container.recognition.listTags().catch(() => null);
-
-    if (generation !== this.#generation || named === null || !named.ok) return;
-
-    this.tags = named.value;
+    await this.#collection.loadTags();
   }
 
   async loadTagCounts(): Promise<void> {
-    const generation = this.#generation;
-    const everywhere = await this.#container.recognition.listEveryCapture().catch(() => null);
-
-    if (generation !== this.#generation || everywhere === null || !everywhere.ok) return;
-
-    this.libraryCounts = tagCounts(everywhere.value);
+    await this.#collection.loadTagCounts();
   }
 
   async addTag(id: CaptureId, tag: TagId): Promise<void> {
-    const stored = this.#stored.get(id);
-    if (stored === undefined) return;
-
-    const generation = this.#generation;
-    const written = await this.#container.recognition
-      .addTagToCapture(stored, tag)
-      .catch(() => null);
-
-    if (generation !== this.#generation || written === null || !written.ok) return;
-
-    this.#stored.set(id, written.value);
-    this.#retag(id, stored.tagIds, written.value.tagIds);
+    await this.#collection.addTag(id, tag);
   }
 
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
-    const stored = this.#stored.get(id);
-    if (stored === undefined) return;
-
-    const generation = this.#generation;
-    const written = await this.#container.recognition
-      .removeTagFromCapture(stored, tag)
-      .catch(() => null);
-
-    if (generation !== this.#generation || written === null || !written.ok) return;
-
-    this.#stored.set(id, written.value);
-    this.#retag(id, stored.tagIds, written.value.tagIds);
+    await this.#collection.removeTag(id, tag);
   }
 
   async createTag(id: CaptureId, name: string): Promise<void> {
-    if (!this.#stored.has(id)) return;
-
-    const generation = this.#generation;
-    const created = await this.#container.recognition
-      .createTag(tagId(crypto.randomUUID()), name)
-      .catch(() => null);
-
-    if (generation !== this.#generation) return;
-
-    const minted = match(tagOutcome(created))
-      .with({ kind: 'created' }, (made) => made.tag)
-      .with({ kind: 'existing' }, (found) => found.tag)
-      .with({ kind: 'unavailable' }, () => null)
-      .exhaustive();
-
-    if (minted === null) return;
-
-    this.tags = withTag(this.tags, minted);
-    await this.addTag(id, minted.id);
-  }
-
-  #retag(id: CaptureId, before: readonly TagId[], after: readonly TagId[]): void {
-    this.libraryCounts = countsAfter(this.libraryCounts, before, after);
-    this.captures = this.captures.map((capture) =>
-      capture.id === id ? { ...capture, tagIds: after } : capture,
-    );
+    await this.#collection.createTag(id, name);
   }
 
   askClear(): void {
-    if (this.captures.length === 0) return;
-    this.confirmingClear = true;
+    this.#collection.askClear();
   }
 
   dismissClear(): void {
-    this.confirmingClear = false;
+    this.#collection.dismissClear();
   }
 
   async clear(): Promise<void> {
-    const book = this.#book;
-    this.confirmingClear = false;
-    this.#generation += 1;
-    this.captures = [];
-    this.#stored = new Map();
-    if (book === null) return;
-
-    await this.#container.recognition.clearCaptures(book).catch(() => undefined);
-  }
-
-  async #keep(generation: number, draft: CaptureDraft): Promise<void> {
-    const kept = await this.#container.recognition.saveCapture(draft).catch(() => null);
-    if (kept === null || !kept.ok || generation !== this.#generation) return;
-
-    this.#stored.set(kept.value.id, kept.value);
-  }
-
-  #forget(): number {
-    this.#book = null;
-    this.#held = null;
-    this.#opened = null;
-    this.session = null;
-    this.progress = null;
-    this.downloaded = false;
-    this.partlyDownloaded = false;
-    this.opening = false;
-    this.engineFailure = null;
-    this.consentRequest = null;
-    this.captures = [];
-    this.writing = null;
-    this.#stored = new Map();
-    this.#generation += 1;
-    return this.#generation;
-  }
-
-  #settle(id: CaptureId, settled: Settled): void {
-    this.captures = this.captures.map((capture) =>
-      capture.id === id ? { ...takenOf(capture), ...settled } : capture,
-    );
+    await this.#collection.clear();
   }
 }
 
-export { NOTHING_READ, READING_SELECTION, modelLoadNote, modelLoadAnnouncement, CaptureView };
-export type { CaptureStatus, PanelCapture, ConsentRequest };
+export { NOTHING_READ, CaptureView };
