@@ -274,6 +274,10 @@ class CaptureView {
     };
   }
 
+  get anchors(): readonly Anchor[] {
+    return this.captures.map((capture) => capture.anchor);
+  }
+
   get newestFirst(): readonly PanelCapture[] {
     return this.captures.toReversed();
   }

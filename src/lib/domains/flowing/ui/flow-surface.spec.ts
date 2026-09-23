@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { TextQuote } from '$lib/shared/anchor';
-import { goToPassage, navigate, openAt, tearDown } from './flow-surface';
+import {
+  goToPassage,
+  markPassages,
+  navigate,
+  openAt,
+  redrawPassages,
+  tearDown,
+} from './flow-surface';
 import type { FlowTarget } from './flow-surface';
 import type { Spine } from './flow-spine';
 import { ARRIVED_AT_THE_CFI, FOUND_BY_ITS_TEXT, THE_PASSAGE_IS_LOST } from './flow-quote';
@@ -273,5 +280,87 @@ describe('goToPassage', () => {
 
     expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
     expect(view.targets).toEqual([SOMEWHERE, REFOUND]);
+  });
+});
+
+type Drawn = {
+  readonly added: string[];
+  readonly deleted: string[];
+  readonly addAnnotation: (annotation: { readonly value: string }) => Promise<unknown>;
+  readonly deleteAnnotation: (annotation: { readonly value: string }) => Promise<unknown>;
+};
+
+function overlay(refuses: readonly string[] = []): Drawn {
+  const added: string[] = [];
+  const deleted: string[] = [];
+
+  return {
+    added,
+    deleted,
+    addAnnotation: (annotation) => {
+      added.push(annotation.value);
+      return refuses.includes(annotation.value)
+        ? Promise.reject(new Error('that cfi no longer resolves'))
+        : Promise.resolve({ index: 0, label: '' });
+    },
+    deleteAnnotation: (annotation) => {
+      deleted.push(annotation.value);
+      return Promise.resolve(undefined);
+    },
+  };
+}
+
+const ANOTHER_PASSAGE = 'epubcfi(/6/18!/4/2/8/1:30)';
+
+describe('markPassages', () => {
+  it('draws a passage the reader has just captured', () => {
+    const view = overlay();
+    const shown = new Set<string>();
+
+    markPassages(view, shown, [SOMEWHERE]);
+
+    expect(view.added).toEqual([SOMEWHERE]);
+    expect(shown).toEqual(new Set([SOMEWHERE]));
+  });
+
+  it('draws nothing twice when the captures have not changed', () => {
+    const view = overlay();
+    const shown = new Set<string>();
+
+    markPassages(view, shown, [SOMEWHERE]);
+    markPassages(view, shown, [SOMEWHERE]);
+
+    expect(view.added).toEqual([SOMEWHERE]);
+  });
+
+  it('takes the highlight away when its capture is deleted', () => {
+    const view = overlay();
+    const shown = new Set([SOMEWHERE]);
+
+    markPassages(view, shown, []);
+
+    expect(view.deleted).toEqual([SOMEWHERE]);
+    expect(shown).toEqual(new Set());
+  });
+
+  it('keeps a passage whose cfi refuses to resolve, and reports nothing', async () => {
+    const view = overlay([SOMEWHERE]);
+    const shown = new Set<string>();
+
+    markPassages(view, shown, [SOMEWHERE]);
+    await new Promise((settled) => setTimeout(settled, 0));
+
+    expect(view.added).toEqual([SOMEWHERE]);
+    expect(shown).toEqual(new Set([SOMEWHERE]));
+  });
+});
+
+describe('redrawPassages', () => {
+  it('draws every highlight again when a chapter is laid out afresh', () => {
+    const view = overlay();
+
+    redrawPassages(view, new Set([SOMEWHERE, ANOTHER_PASSAGE]));
+
+    expect(view.added).toEqual([SOMEWHERE, ANOTHER_PASSAGE]);
   });
 });

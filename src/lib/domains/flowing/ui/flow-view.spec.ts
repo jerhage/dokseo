@@ -132,6 +132,7 @@ type Shown = {
   readonly jumped: string[];
   readonly restyled: ReadingSettings[];
   readonly passages: LiftedPassage[];
+  readonly marked: (readonly string[])[];
   arrival: PassageArrival;
   toc: readonly TocItem[] | null;
   ticks: readonly number[];
@@ -148,6 +149,7 @@ function shows(): Shown {
   const jumped: string[] = [];
   const restyled: ReadingSettings[] = [];
   const passages: LiftedPassage[] = [];
+  const marked: (readonly string[])[] = [];
 
   const world = {
     openings,
@@ -157,6 +159,7 @@ function shows(): Shown {
     jumped,
     restyled,
     passages,
+    marked,
     arrival: ARRIVED_AT_THE_CFI as PassageArrival,
     toc: null as readonly TocItem[] | null,
     ticks: [] as readonly number[],
@@ -186,6 +189,9 @@ function shows(): Shown {
       },
       jump: (href: string) => {
         jumped.push(href);
+      },
+      mark: (asked: readonly string[]) => {
+        marked.push(asked);
       },
       goToPassage: (passage: LiftedPassage) => {
         passages.push(passage);
@@ -1024,5 +1030,41 @@ describe('FlowView jumpToPassage', () => {
 
     expect(surfaces.passages).toEqual([]);
     expect(view.notice).toBeNull();
+  });
+});
+
+describe('FlowView markPassages', () => {
+  const ANOTHER = 'epubcfi(/6/18!/4/2/8/1:30)';
+
+  it('draws the captures the reader already had when the book opens', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    view.markPassages([SOMEWHERE]);
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(surfaces.marked).toEqual([[SOMEWHERE]]);
+  });
+
+  it('draws a capture taken while the book is open', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.markPassages([SOMEWHERE, ANOTHER]);
+
+    expect(surfaces.marked).toEqual([[], [SOMEWHERE, ANOTHER]]);
+  });
+
+  it('draws nothing for a viewer with no book open', () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    view.markPassages([SOMEWHERE]);
+
+    expect(surfaces.marked).toEqual([]);
   });
 });

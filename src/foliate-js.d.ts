@@ -45,6 +45,25 @@ declare module 'foliate-js/view.js' {
     destroy(): void;
   }
 
+  interface Annotation {
+    readonly value: string;
+  }
+
+  type HighlightStyle = typeof import('foliate-js/overlayer.js').Overlayer.highlight;
+
+  type HighlightOptions = import('foliate-js/overlayer.js').HighlightOptions;
+
+  interface DrawnAnnotation {
+    draw(style: HighlightStyle, options: HighlightOptions): void;
+    readonly annotation: Annotation;
+    readonly doc: Document;
+    readonly range: Range;
+  }
+
+  interface OverlayCreation {
+    readonly index: number;
+  }
+
   interface ChapterLoad {
     doc: Document;
     index: number;
@@ -73,6 +92,8 @@ declare module 'foliate-js/view.js' {
   interface ViewEventMap {
     load: CustomEvent<ChapterLoad>;
     relocate: CustomEvent<Relocation>;
+    'create-overlay': CustomEvent<OverlayCreation>;
+    'draw-annotation': CustomEvent<DrawnAnnotation>;
   }
 
   class View extends HTMLElement {
@@ -85,6 +106,8 @@ declare module 'foliate-js/view.js' {
     prev(distance?: number): Promise<void>;
     next(distance?: number): Promise<void>;
     getSectionFractions(): number[];
+    addAnnotation(annotation: Annotation): Promise<unknown>;
+    deleteAnnotation(annotation: Annotation): Promise<unknown>;
     close(): void;
     readonly renderer: { setStyles(styles: string | readonly [string, string]): void };
     addEventListener<K extends keyof ViewEventMap>(
@@ -103,12 +126,15 @@ declare module 'foliate-js/view.js' {
 
   export { View, makeBook };
   export type {
+    Annotation,
     BookResources,
     BookSection,
     ChapterLoad,
+    DrawnAnnotation,
     FoliateBook,
     FractionTarget,
     ManifestItem,
+    OverlayCreation,
     Relocation,
     ResolvedTarget,
     ResourceDetail,

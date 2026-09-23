@@ -1,9 +1,17 @@
-import type { FoliateBook, FractionTarget, Relocation, TocItem, View } from 'foliate-js/view.js';
+import type {
+  Annotation,
+  FoliateBook,
+  FractionTarget,
+  Relocation,
+  TocItem,
+  View,
+} from 'foliate-js/view.js';
 import { sanitiseChapter } from './chapter-sanitiser';
 import { sanitiseChapters, sanitisedDocument, treatmentOf } from './chapter-transform';
 import type { SanitiseChapter } from './chapter-transform';
 import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-spine';
 import type { Spine } from './flow-spine';
+import { highlightChange, PASSAGE_HIGHLIGHT_COLOUR } from './flow-highlight';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -23,6 +31,7 @@ type FlowSurface = {
   seek(fraction: number): void;
   jump(href: string): void;
   goToPassage(passage: LiftedPassage): Promise<PassageArrival>;
+  mark(passages: readonly string[]): void;
   restyle(settings: ReadingSettings): void;
   destroy(): void;
 };
@@ -44,6 +53,8 @@ type ChapterView = {
 type BindChapter = (chapter: ChapterView) => void;
 
 type Navigable = Pick<View, 'goTo' | 'resolveNavigation'>;
+
+type Annotatable = Pick<View, 'addAnnotation' | 'deleteAnnotation'>;
 
 type Searchable = Pick<FoliateBook, 'sections' | 'resources'>;
 
@@ -139,6 +150,28 @@ async function goToPassage(
   return refound === undefined ? THE_PASSAGE_IS_LOST : FOUND_BY_ITS_TEXT;
 }
 
+function drawn(view: Annotatable, annotation: Annotation): void {
+  void view.addAnnotation(annotation).catch(() => undefined);
+}
+
+function markPassages(view: Annotatable, shown: Set<string>, asked: readonly string[]): void {
+  const change = highlightChange(shown, asked);
+
+  for (const cfi of change.removed) {
+    shown.delete(cfi);
+    void view.deleteAnnotation({ value: cfi }).catch(() => undefined);
+  }
+
+  for (const cfi of change.added) {
+    shown.add(cfi);
+    drawn(view, { value: cfi });
+  }
+}
+
+function redrawPassages(view: Annotatable, shown: ReadonlySet<string>): void {
+  for (const cfi of shown) drawn(view, { value: cfi });
+}
+
 async function openAt(view: Navigable, spine: Spine, at: string | null): Promise<boolean> {
   if (at !== null) {
     const resumed = await navigate(view, spine, at);
@@ -155,6 +188,7 @@ async function openFlowSurface(
   bind: BindChapter,
 ): Promise<FlowSurface> {
   const { View: FoliateView, makeBook } = await import('foliate-js/view.js');
+  const { Overlayer } = await import('foliate-js/overlayer.js');
   const book = await makeBook(
     new File([opening.source], SOURCE_FILE_NAME, { type: EPUB_MEDIA_TYPE }),
   );
@@ -164,6 +198,15 @@ async function openFlowSurface(
   leaveOutSectionsWithNoBody(book, spine);
 
   const view = new FoliateView();
+  const shown = new Set<string>();
+  view.addEventListener('draw-annotation', (drawing) => {
+    drawing.detail.draw(Overlayer.highlight, { color: PASSAGE_HIGHLIGHT_COLOUR });
+  });
+  view.addEventListener('create-overlay', () => {
+    queueMicrotask(() => {
+      redrawPassages(view, shown);
+    });
+  });
   view.addEventListener('load', (loaded) => {
     bind({ doc: loaded.detail.doc, index: loaded.detail.index, pages: view, cfis: view });
   });
@@ -193,6 +236,9 @@ async function openFlowSurface(
     jump: (href: string) => {
       void navigate(view, spine, href);
     },
+    mark: (passages: readonly string[]) => {
+      markPassages(view, shown, passages);
+    },
     goToPassage: (passage: LiftedPassage) =>
       goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),
     restyle: (settings: ReadingSettings) => {
@@ -204,8 +250,18 @@ async function openFlowSurface(
   };
 }
 
-export { goToPassage, navigate, openAt, openFlowSurface, passageCfi, tearDown };
+export {
+  goToPassage,
+  markPassages,
+  navigate,
+  openAt,
+  openFlowSurface,
+  passageCfi,
+  redrawPassages,
+  tearDown,
+};
 export type {
+  Annotatable,
   BindChapter,
   ChapterView,
   Closable,

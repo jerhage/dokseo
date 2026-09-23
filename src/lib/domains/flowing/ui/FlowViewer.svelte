@@ -2,12 +2,14 @@
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
+  import type { Anchor } from '$lib/shared/anchor';
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';
+  import { NO_ANCHORS, passageCfis } from './flow-highlight';
   import FlowContentsDialog from './FlowContentsDialog.svelte';
   import FlowSettingsDialog from './FlowSettingsDialog.svelte';
   import { FlowGestures } from './flow-gestures';
@@ -38,6 +40,7 @@
     readonly view: FlowView;
     readonly book: FlowBook;
     readonly panel?: Snippet;
+    readonly anchors?: readonly Anchor[];
     readonly onLift?: (passage: LiftedPassage) => void;
   };
 
@@ -47,7 +50,7 @@
     readonly top: number;
   };
 
-  const { view, book, panel, onLift }: Props = $props();
+  const { view, book, panel, anchors = NO_ANCHORS, onLift }: Props = $props();
 
   const LIFT_LABEL = 'Save this passage as a capture';
 
@@ -91,6 +94,7 @@
   const order = $derived(turnOrder(turning));
   const marks = $derived(tickOffsets(view.ticks, turning));
   const reported = $derived(view.location);
+  const passages = $derived(passageCfis(anchors));
 
   function toggleChrome(): void {
     chromeAsked = !chromeAwake;
@@ -309,6 +313,10 @@
     );
     doc.addEventListener('pointercancel', cancel);
   }
+
+  $effect(() => {
+    view.markPassages(passages);
+  });
 
   $effect(() => {
     if (reported !== null) askAboutTheOffer();

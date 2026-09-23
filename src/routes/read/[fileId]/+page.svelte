@@ -97,6 +97,7 @@
   <FlowViewer
     view={flow}
     book={flowBook}
+    anchors={captures.anchors}
     onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
   >
     {#snippet panel()}

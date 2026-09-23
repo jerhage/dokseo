@@ -10,6 +10,7 @@ import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
+import { NO_PASSAGES } from './flow-highlight';
 import {
   chapterTicks,
   flowLocation,
@@ -104,6 +105,7 @@ class FlowView {
   #surface: FlowSurface | null = null;
   #saving: PendingSave | null = null;
   #placed: ReadingPlace | null = null;
+  #passages: readonly string[] = NO_PASSAGES;
 
   constructor(container: Container) {
     this.#container = container;
@@ -187,6 +189,7 @@ class FlowView {
     }
 
     this.#surface = surface;
+    surface.mark(this.#passages);
     this.contents = flowContents(surface.toc);
     this.ticks = chapterTicks(surface.ticks);
     this.direction = surface.direction;
@@ -235,6 +238,11 @@ class FlowView {
     if (surface !== this.#surface) return;
 
     this.notice = passageNotice(arrival);
+  }
+
+  markPassages(passages: readonly string[]): void {
+    this.#passages = passages;
+    this.#surface?.mark(passages);
   }
 
   dismissNotice(): void {
