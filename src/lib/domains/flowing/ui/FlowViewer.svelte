@@ -3,8 +3,7 @@
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import type { Anchor } from '$lib/shared/anchor';
-  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
-  import { chromeShown } from '$lib/shared/reader-chrome';
+  import ReaderBars from '$lib/shared/ReaderBars.svelte';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
@@ -63,9 +62,7 @@
   };
 
   let stage = $state<HTMLElement | null>(null);
-  let topBar = $state<HTMLElement | null>(null);
-  let bottomBar = $state<HTMLElement | null>(null);
-  let chromeAsked = $state(true);
+  let bars = $state<ReturnType<typeof ReaderBars> | null>(null);
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
@@ -75,15 +72,9 @@
   let queued: number | null = null;
   const chapters = new Set<Document>();
 
-  const chrome = new ChromeFocus(
-    () => [topBar, bottomBar],
-    () => [document.activeElement],
-  );
-
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
   const panelOpen = $derived(contentsOpen || settingsOpen);
-  const chromeAwake = $derived(chromeShown(chromeAsked, chrome.held || panelOpen));
   const reading = $derived(view.state.kind === 'ready');
   const contents = $derived(view.contents);
   const settings = $derived(view.settings);
@@ -97,8 +88,8 @@
   const reported = $derived(view.location);
   const passages = $derived(passageCfis(anchors));
 
-  function toggleChrome(): void {
-    chromeAsked = !chromeAwake;
+  function toggleBars(): void {
+    bars?.toggle();
   }
 
   function isEditable(target: EventTarget): boolean {
@@ -189,7 +180,7 @@
       .with({ kind: 'nothing' }, () => undefined)
       .with({ kind: 'turn' }, () => undefined)
       .with({ kind: 'chrome' }, () => {
-        toggleChrome();
+        toggleBars();
       })
       .exhaustive();
   }
@@ -332,20 +323,6 @@
   });
 
   $effect(() => {
-    function refresh(): void {
-      chrome.refresh();
-    }
-
-    window.addEventListener('focusin', refresh);
-    window.addEventListener('focusout', refresh);
-
-    return () => {
-      window.removeEventListener('focusin', refresh);
-      window.removeEventListener('focusout', refresh);
-    };
-  });
-
-  $effect(() => {
     const host = stage;
     const held = book;
     if (host === null) return;
@@ -401,67 +378,60 @@
       </button>
     {/if}
 
-    <header class="bar top" class:hushed={!chromeAwake} inert={!chromeAwake} bind:this={topBar}>
-      <a class="back" href="/">
-        <span class="glyph" aria-hidden="true">‹</span>
-        Library
-      </a>
-      <div class="heading">
-        <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
-        <p class="meta">{meta}</p>
-      </div>
-      {#if reading}
-        {#if contents.kind === 'listed'}
-          <button class="tool" type="button" onclick={() => (contentsOpen = true)}>
-            {CONTENTS_LABEL}
+    <ReaderBars bind:this={bars} placement="floating" startShown={true} heldOpen={panelOpen}>
+      {#snippet header()}
+        <div class="heading">
+          <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
+          <p class="meta">{meta}</p>
+        </div>
+        {#if reading}
+          {#if contents.kind === 'listed'}
+            <button class="tool" type="button" onclick={() => (contentsOpen = true)}>
+              {CONTENTS_LABEL}
+            </button>
+          {:else}
+            <p class="bare">{NO_CONTENTS_LABEL}</p>
+          {/if}
+          <button class="tool" type="button" onclick={() => (settingsOpen = true)}>
+            {TEXT_SETTINGS_LABEL}
           </button>
-        {:else}
-          <p class="bare">{NO_CONTENTS_LABEL}</p>
         {/if}
-        <button class="tool" type="button" onclick={() => (settingsOpen = true)}>
-          {TEXT_SETTINGS_LABEL}
-        </button>
-      {/if}
-    </header>
+      {/snippet}
 
-    <footer
-      class="bar bottom"
-      class:hushed={!chromeAwake}
-      inert={!chromeAwake}
-      bind:this={bottomBar}
-    >
-      <div class="turns" role="group" aria-label="Turn the page">
-        {#each order as turn, slot (turn)}
-          <button class="key" type="button" disabled={!reading} onclick={() => view.turn(turn)}>
-            <span class="glyph" aria-hidden="true">{GLYPHS[slot]}</span>
-            <span class="assistive">{TURN_LABELS[turn]}</span>
-          </button>
-        {/each}
-      </div>
-
-      <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
-
-      {#if progress.kind === 'known'}
-        <div class="gauge">
-          <input
-            class="scrub"
-            class:rtl
-            type="range"
-            min={0}
-            max={1}
-            step={SCRUB_STEP}
-            value={progress.fraction}
-            style:--fill="{progress.percent}%"
-            aria-label="Reading progress"
-            aria-valuetext={marker}
-            onchange={(event) => scrubbed(event.currentTarget.value)}
-          />
-          {#each marks as offset, slot (slot)}
-            <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
+      {#snippet footer()}
+        <div class="turns" role="group" aria-label="Turn the page">
+          {#each order as turn, slot (turn)}
+            <button class="key" type="button" disabled={!reading} onclick={() => view.turn(turn)}>
+              <span class="glyph" aria-hidden="true">{GLYPHS[slot]}</span>
+              <span class="assistive">{TURN_LABELS[turn]}</span>
+            </button>
           {/each}
         </div>
-      {/if}
-    </footer>
+
+        <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
+
+        {#if progress.kind === 'known'}
+          <div class="gauge">
+            <input
+              class="scrub"
+              class:rtl
+              type="range"
+              min={0}
+              max={1}
+              step={SCRUB_STEP}
+              value={progress.fraction}
+              style:--fill="{progress.percent}%"
+              aria-label="Reading progress"
+              aria-valuetext={marker}
+              onchange={(event) => scrubbed(event.currentTarget.value)}
+            />
+            {#each marks as offset, slot (slot)}
+              <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
+            {/each}
+          </div>
+        {/if}
+      {/snippet}
+    </ReaderBars>
 
     {#if contentsOpen && contents.kind === 'listed'}
       <FlowContentsDialog
@@ -574,61 +544,6 @@
     display: block;
     width: 100%;
     height: 100%;
-  }
-
-  .bar {
-    position: absolute;
-    box-sizing: border-box;
-    inset-inline: 0;
-    z-index: var(--z-chrome);
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-    padding: var(--s-2) var(--s-4);
-    background: var(--c-surface-chrome);
-    opacity: 1;
-    transition: opacity 200ms ease;
-  }
-
-  .bar.hushed {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bar {
-      transition: none;
-    }
-  }
-
-  .top {
-    inset-block-start: 0;
-    border-bottom: 1px solid var(--c-border-1);
-  }
-
-  .bottom {
-    inset-block-end: 0;
-    border-top: 1px solid var(--c-border-1);
-  }
-
-  .back {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--s-1);
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-size: 11.5px;
-    text-decoration: none;
-  }
-
-  .back:hover,
-  .back:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
   }
 
   .tool {

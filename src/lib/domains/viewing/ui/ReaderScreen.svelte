@@ -3,7 +3,6 @@
   import { match } from 'ts-pattern';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
@@ -15,7 +14,7 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
-  import { chromeShown } from '$lib/shared/reader-chrome';
+  import ReaderBars from '$lib/shared/ReaderBars.svelte';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
@@ -63,32 +62,15 @@
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
-  let topBar = $state<HTMLElement | null>(null);
-  let bottomBar = $state<HTMLElement | null>(null);
-  let topHeight = $state(0);
-  let bottomHeight = $state(0);
-  let chromeAsked = $state(false);
+  let bars = $state<ReturnType<typeof ReaderBars> | null>(null);
   let noting = $state(false);
 
   const makes = $derived(dragOrigin(noting));
 
-  function openPopovers(): readonly Element[] {
-    try {
-      return [...document.querySelectorAll(':popover-open')];
-    } catch {
-      return [];
-    }
-  }
+  const barsShown = $derived(bars?.shown() ?? false);
 
-  const chrome = new ChromeFocus(
-    () => [topBar, bottomBar],
-    () => [document.activeElement, ...openPopovers()],
-  );
-
-  const chromeAwake = $derived(chromeShown(chromeAsked, chrome.held));
-
-  function toggleChrome(): void {
-    chromeAsked = !chromeAwake;
+  function toggleBars(): void {
+    bars?.toggle();
   }
 
   const book = $derived(view.book);
@@ -241,22 +223,6 @@
 
   $effect(() => lockScrolling(document.documentElement));
 
-  $effect(() => {
-    function refresh(): void {
-      chrome.refresh();
-    }
-
-    window.addEventListener('focusin', refresh);
-    window.addEventListener('focusout', refresh);
-    window.addEventListener('toggle', refresh, true);
-
-    return () => {
-      window.removeEventListener('focusin', refresh);
-      window.removeEventListener('focusout', refresh);
-      window.removeEventListener('toggle', refresh, true);
-    };
-  });
-
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (downward) return;
@@ -272,212 +238,198 @@
 <svelte:window {onkeydown} />
 
 <div class="screen">
-  <header
-    class="bar top"
-    class:hushed={!chromeAwake}
-    inert={!chromeAwake}
-    bind:this={topBar}
-    bind:offsetHeight={topHeight}
-    style:margin-block-start="{chromeAwake ? 0 : -topHeight}px"
-  >
-    <a class="back" href="/">
-      <span class="glyph" aria-hidden="true">‹</span>
-      Library
-    </a>
-    <div class="heading">
-      <h1 class="title" class:ko={book?.language === 'ko'} lang={book?.language ?? 'en'}>
-        {book?.title ?? 'Reader'}
-      </h1>
-      <p class="meta">{meta}</p>
-    </div>
+  <ReaderBars bind:this={bars} placement="stacked" startShown={false}>
+    {#snippet header()}
+      <div class="heading">
+        <h1 class="title" class:ko={book?.language === 'ko'} lang={book?.language ?? 'en'}>
+          {book?.title ?? 'Reader'}
+        </h1>
+        <p class="meta">{meta}</p>
+      </div>
 
-    {#if book !== null}
-      <div class="settings">
-        <fieldset class="group" disabled={view.saving}>
-          <legend class="legend">{LAYOUT_KIND_LEGEND_BRIEF}</legend>
-          {#each LAYOUT_KIND_CHOICES as choice (choice.value)}
-            <label class="pill" title={choice.label}>
-              <input
-                type="radio"
-                name="{uid}-layout"
-                value={choice.value}
-                checked={layout === choice.value}
-                onchange={() => void view.setLayoutKind(choice.value)}
-              />
-              <span>{choice.brief}</span>
-            </label>
-          {/each}
-        </fieldset>
-
-        {#if engine !== undefined}
-          <fieldset class="group">
-            <legend class="legend">Engine</legend>
-            {@render engine()}
+      {#if book !== null}
+        <div class="settings">
+          <fieldset class="group" disabled={view.saving}>
+            <legend class="legend">{LAYOUT_KIND_LEGEND_BRIEF}</legend>
+            {#each LAYOUT_KIND_CHOICES as choice (choice.value)}
+              <label class="pill" title={choice.label}>
+                <input
+                  type="radio"
+                  name="{uid}-layout"
+                  value={choice.value}
+                  checked={layout === choice.value}
+                  onchange={() => void view.setLayoutKind(choice.value)}
+                />
+                <span>{choice.brief}</span>
+              </label>
+            {/each}
           </fieldset>
-        {/if}
 
-        <fieldset class="group" disabled={view.saving || downward}>
-          <legend class="legend">{PAGE_PAIRING_LEGEND_BRIEF}</legend>
-          {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
-            <label class="pill" title={choice.label}>
-              <input
-                type="radio"
-                name="{uid}-pairing"
-                value={choice.value}
-                checked={pairing === choice.value}
-                onchange={() => void view.setPairing(choice.value)}
-              />
-              <span>{choice.brief}</span>
-            </label>
-          {/each}
-        </fieldset>
+          {#if engine !== undefined}
+            <fieldset class="group">
+              <legend class="legend">Engine</legend>
+              {@render engine()}
+            </fieldset>
+          {/if}
 
-        <fieldset class="group" disabled={view.saving || downward}>
-          <legend class="legend">{READING_DIRECTION_LEGEND_BRIEF}</legend>
-          {#each READING_DIRECTION_CHOICES as choice (choice.value)}
-            <label class="pill" title={choice.label}>
-              <input
-                type="radio"
-                name="{uid}-direction"
-                value={choice.value}
-                checked={direction === choice.value}
-                onchange={() => void view.setDirection(choice.value)}
-              />
-              <span>{choice.brief}</span>
-            </label>
-          {/each}
-        </fieldset>
+          <fieldset class="group" disabled={view.saving || downward}>
+            <legend class="legend">{PAGE_PAIRING_LEGEND_BRIEF}</legend>
+            {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
+              <label class="pill" title={choice.label}>
+                <input
+                  type="radio"
+                  name="{uid}-pairing"
+                  value={choice.value}
+                  checked={pairing === choice.value}
+                  onchange={() => void view.setPairing(choice.value)}
+                />
+                <span>{choice.brief}</span>
+              </label>
+            {/each}
+          </fieldset>
 
-        <div class="group" role="group" aria-labelledby="{uid}-fit">
-          <span class="legend" id="{uid}-fit">Fit</span>
-          {#each fits as choice (choice.label)}
-            <button
-              class="fit"
-              type="button"
-              disabled={!choice.ready}
-              aria-pressed={choice.active}
-              onclick={choice.go}
-            >
-              {choice.label}
-            </button>
-          {/each}
+          <fieldset class="group" disabled={view.saving || downward}>
+            <legend class="legend">{READING_DIRECTION_LEGEND_BRIEF}</legend>
+            {#each READING_DIRECTION_CHOICES as choice (choice.value)}
+              <label class="pill" title={choice.label}>
+                <input
+                  type="radio"
+                  name="{uid}-direction"
+                  value={choice.value}
+                  checked={direction === choice.value}
+                  onchange={() => void view.setDirection(choice.value)}
+                />
+                <span>{choice.brief}</span>
+              </label>
+            {/each}
+          </fieldset>
+
+          <div class="group" role="group" aria-labelledby="{uid}-fit">
+            <span class="legend" id="{uid}-fit">Fit</span>
+            {#each fits as choice (choice.label)}
+              <button
+                class="fit"
+                type="button"
+                disabled={!choice.ready}
+                aria-pressed={choice.active}
+                onclick={choice.go}
+              >
+                {choice.label}
+              </button>
+            {/each}
+          </div>
         </div>
-      </div>
-    {/if}
-  </header>
+      {/if}
+    {/snippet}
 
-  {#if view.message !== null && stage === 'reading'}
-    <p class="alert" role="alert">{view.message}</p>
-  {/if}
+    {#snippet between()}
+      {#if view.message !== null && stage === 'reading'}
+        <p class="alert" role="alert">{view.message}</p>
+      {/if}
 
-  <div class="body">
-    {#if curtain === null && book !== null && renderer === 'strip'}
-      <ContinuousViewer
-        bind:this={strip}
-        sizes={view.sizes}
-        start={view.position}
-        pictureAt={(index) => view.pictureAt(index)}
-        measured={(index, size) => view.measure(index, size)}
-        {glow}
-        {makes}
-        moveTo={(position) => view.moveTo(position)}
-        select={(regions) => commit(regions, 'column')}
-        clear={() => view.clearSelection()}
-        onTap={toggleChrome}
-      />
-    {:else if curtain === null && book !== null}
-      {#key book.id}
-        <PagedViewer
-          bind:this={paged}
-          pages={view.visiblePages}
-          direction={book.direction}
-          pageFit={book.pageFit}
-          pictureAt={(index) => view.pictureAt(index)}
-          measured={(index, size) => view.measure(index, size)}
-          {glow}
-          {makes}
-          chromeShown={chromeAwake}
-          select={(regions) => commit(regions, 'row')}
-          clear={() => view.clearSelection()}
-          onTap={toggleChrome}
-          onFit={(fit) => void view.setPageFit(fit)}
-        />
-      {/key}
-    {:else}
-      <div class="curtain">
-        <p class="notice" aria-live="polite">{curtain}</p>
-        {#if stage === 'failed'}
-          <a class="escape" href="/">Back to your library</a>
+      <div class="body">
+        {#if curtain === null && book !== null && renderer === 'strip'}
+          <ContinuousViewer
+            bind:this={strip}
+            sizes={view.sizes}
+            start={view.position}
+            pictureAt={(index) => view.pictureAt(index)}
+            measured={(index, size) => view.measure(index, size)}
+            {glow}
+            {makes}
+            moveTo={(position) => view.moveTo(position)}
+            select={(regions) => commit(regions, 'column')}
+            clear={() => view.clearSelection()}
+            onTap={toggleBars}
+          />
+        {:else if curtain === null && book !== null}
+          {#key book.id}
+            <PagedViewer
+              bind:this={paged}
+              pages={view.visiblePages}
+              direction={book.direction}
+              pageFit={book.pageFit}
+              pictureAt={(index) => view.pictureAt(index)}
+              measured={(index, size) => view.measure(index, size)}
+              {glow}
+              {makes}
+              chromeShown={barsShown}
+              select={(regions) => commit(regions, 'row')}
+              clear={() => view.clearSelection()}
+              onTap={toggleBars}
+              onFit={(fit) => void view.setPageFit(fit)}
+            />
+          {/key}
+        {:else}
+          <div class="curtain">
+            <p class="notice" aria-live="polite">{curtain}</p>
+            {#if stage === 'failed'}
+              <a class="escape" href="/">Back to your library</a>
+            {/if}
+          </div>
+        {/if}
+
+        {#if barsShown}
+          <div class="rail" role="group" aria-label="Reader controls">
+            <a class="key" href="/">
+              <span class="glyph" aria-hidden="true">⌂</span>
+              <span class="assistive">Back to your library</span>
+            </a>
+
+            {#if turns !== null}
+              <span class="parting"></span>
+
+              {#each order as move, slot (move)}
+                {@const turn = turns[move]}
+                <button class="key" type="button" disabled={!turn.enabled} onclick={turn.go}>
+                  <span class="glyph" aria-hidden="true">{glyphs[slot]}</span>
+                  <span class="assistive">{turn.label}</span>
+                </button>
+              {/each}
+
+              <span class="parting"></span>
+
+              <button
+                class="key"
+                type="button"
+                aria-pressed={noting}
+                title={NOTE_MODE_LABEL}
+                onclick={() => (noting = !noting)}
+              >
+                <span class="glyph" aria-hidden="true">{NOTE_GLYPH}</span>
+                <span class="assistive">{NOTE_MODE_LABEL}</span>
+              </button>
+            {/if}
+          </div>
+        {/if}
+
+        {#if arrival !== undefined}
+          <div class="arrived">{@render arrival()}</div>
+        {/if}
+
+        {#if panel !== undefined}
+          <aside class="dock">{@render panel()}</aside>
         {/if}
       </div>
-    {/if}
+    {/snippet}
 
-    {#if chromeAwake}
-      <div class="rail" role="group" aria-label="Reader controls">
-        <a class="key" href="/">
-          <span class="glyph" aria-hidden="true">⌂</span>
-          <span class="assistive">Back to your library</span>
-        </a>
+    {#snippet footer()}
+      <p class="marker">{place.marker}</p>
 
-        {#if turns !== null}
-          <span class="parting"></span>
-
-          {#each order as move, slot (move)}
-            {@const turn = turns[move]}
-            <button class="key" type="button" disabled={!turn.enabled} onclick={turn.go}>
-              <span class="glyph" aria-hidden="true">{glyphs[slot]}</span>
-              <span class="assistive">{turn.label}</span>
-            </button>
-          {/each}
-
-          <span class="parting"></span>
-
-          <button
-            class="key"
-            type="button"
-            aria-pressed={noting}
-            title={NOTE_MODE_LABEL}
-            onclick={() => (noting = !noting)}
-          >
-            <span class="glyph" aria-hidden="true">{NOTE_GLYPH}</span>
-            <span class="assistive">{NOTE_MODE_LABEL}</span>
-          </button>
-        {/if}
+      <div
+        class="track"
+        class:rtl
+        role="progressbar"
+        aria-label="Reading progress"
+        aria-valuemin={0}
+        aria-valuemax={place.of}
+        aria-valuenow={place.at}
+        aria-valuetext={place.marker}
+      >
+        <span class="fill" style:width="{progress}%"></span>
       </div>
-    {/if}
-
-    {#if arrival !== undefined}
-      <div class="arrived">{@render arrival()}</div>
-    {/if}
-
-    {#if panel !== undefined}
-      <aside class="dock">{@render panel()}</aside>
-    {/if}
-  </div>
-
-  <footer
-    class="bar bottom"
-    class:hushed={!chromeAwake}
-    inert={!chromeAwake}
-    bind:this={bottomBar}
-    bind:offsetHeight={bottomHeight}
-    style:margin-block-end="{chromeAwake ? 0 : -bottomHeight}px"
-  >
-    <p class="marker">{place.marker}</p>
-
-    <div
-      class="track"
-      class:rtl
-      role="progressbar"
-      aria-label="Reading progress"
-      aria-valuemin={0}
-      aria-valuemax={place.of}
-      aria-valuenow={place.at}
-      aria-valuetext={place.marker}
-    >
-      <span class="fill" style:width="{progress}%"></span>
-    </div>
-  </footer>
+    {/snippet}
+  </ReaderBars>
 </div>
 
 <style>
@@ -491,58 +443,6 @@
     background: var(--c-surface-app);
     color: var(--c-text-2);
     font-family: var(--f-ui);
-  }
-
-  .bar {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--s-4);
-    padding: var(--s-3) var(--s-5);
-    opacity: 1;
-    transition:
-      margin 200ms ease,
-      opacity 200ms ease;
-    background: var(--c-surface-chrome);
-  }
-
-  .bar.hushed {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bar {
-      transition: none;
-    }
-  }
-
-  .top {
-    border-bottom: 1px solid var(--c-border-1);
-  }
-
-  .bottom {
-    border-top: 1px solid var(--c-border-1);
-  }
-
-  .back {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--s-1);
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-size: 11.5px;
-    text-decoration: none;
-  }
-
-  .back:hover,
-  .back:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
   }
 
   .heading {
@@ -840,10 +740,6 @@
   }
 
   @media (max-width: 700px) {
-    .bar {
-      padding: var(--s-3) var(--s-4);
-    }
-
     .dock {
       width: 240px;
     }
