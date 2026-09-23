@@ -3,7 +3,7 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { glowRegions } from '$lib/shared/image-region';
 import type { GlowRegion } from '$lib/shared/image-region';
-import { glowMarker, glowOn, NOTE_MARKER, READING_MARKER } from './page-glow';
+import { glowMarker, glowOn, LIFTED_MARKER, NOTE_MARKER, READING_MARKER } from './page-glow';
 
 function region(index: number, x: number): GlowRegion {
   return { index: imageIndex(index), rect: imageRect(x, 0, 10, 10), origin: 'recognized' };
@@ -50,5 +50,9 @@ describe('glowMarker', () => {
 
   it('keeps the old wording for a reading', () => {
     expect(glowMarker([region(0, 0)])).toBe(READING_MARKER);
+  });
+
+  it('names a lifted passage as its own kind', () => {
+    expect(glowMarker([{ ...region(0, 0), origin: 'lifted' }])).toBe(LIFTED_MARKER);
   });
 });

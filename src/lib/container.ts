@@ -61,7 +61,7 @@ import { createPartialDownloads } from './domains/recognition/adapters/model/opf
 import type {
   Capture,
   CaptureDraft,
-  RecognizedCapture,
+  NotableCapture,
 } from './domains/recognition/domain/capture/capture';
 import type { CaptureError } from './domains/recognition/domain/capture/capture-repository';
 import type { GpuDetection } from './domains/recognition/domain/engine/compute-choice';
@@ -276,10 +276,10 @@ type Container = {
       capture: Capture,
       text: string,
     ) => Promise<Result<Capture, CaptureError>>;
-    readonly writeCaptureNote: (
-      capture: RecognizedCapture,
+    readonly writeCaptureNote: <T extends NotableCapture>(
+      capture: T,
       note: string,
-    ) => Promise<Result<RecognizedCapture, CaptureError>>;
+    ) => Promise<Result<T, CaptureError>>;
     readonly removeCapture: (capture: CaptureId) => Promise<Result<void, CaptureError>>;
     readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
     readonly listTags: () => Promise<Result<readonly Tag[], TagError>>;
@@ -452,7 +452,7 @@ function buildContainer(): Container {
         writeNote(writeNoteDeps, id, book, anchor),
       editCaptureText: (capture: Capture, text: string) =>
         editCaptureText(editCaptureTextDeps, capture, text),
-      writeCaptureNote: (capture: RecognizedCapture, note: string) =>
+      writeCaptureNote: <T extends NotableCapture>(capture: T, note: string) =>
         writeCaptureNote(writeCaptureNoteDeps, capture, note),
       removeCapture: (capture: CaptureId) => removeCapture(removeCaptureDeps, capture),
       clearCaptures: (book: BookId) => clearCaptures(clearCapturesDeps, book),

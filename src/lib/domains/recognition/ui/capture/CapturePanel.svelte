@@ -117,21 +117,38 @@
   }
 
   function annotationOf(capture: PanelCapture): string | null {
-    return capture.origin === 'written' ? null : capture.note;
+    return match(capture)
+      .with({ origin: 'written' }, () => null)
+      .with({ origin: 'recognized' }, (read) => read.note)
+      .with({ origin: 'lifted' }, (lifted) => lifted.note)
+      .exhaustive();
   }
 
   function noteLabelOf(capture: PanelCapture, place: string): string | null {
     if (capture.origin === 'written') return null;
 
-    return capture.note === null
+    return annotationOf(capture) === null
       ? `Add a note to the capture at ${place}`
       : `Edit the note on the capture at ${place}`;
   }
 
   function searchedOf(capture: Done): SearchedCapture {
-    return capture.origin === 'written'
-      ? { origin: 'written', text: capture.text.text }
-      : { origin: 'recognized', text: capture.text.text, note: capture.note };
+    return match(capture)
+      .with({ origin: 'written' }, (note) => ({
+        origin: 'written' as const,
+        text: note.text.text,
+      }))
+      .with({ origin: 'recognized' }, (read) => ({
+        origin: 'recognized' as const,
+        text: read.text.text,
+        note: read.note,
+      }))
+      .with({ origin: 'lifted' }, (lifted) => ({
+        origin: 'lifted' as const,
+        text: lifted.text.text,
+        note: lifted.note,
+      }))
+      .exhaustive();
   }
 
   function cardOf(capture: PanelCapture, lines: MarkedLines | null): Card {

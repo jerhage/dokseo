@@ -1,3 +1,3 @@
-type CaptureOrigin = 'recognized' | 'written';
+type CaptureOrigin = 'recognized' | 'written' | 'lifted';
 
 export type { CaptureOrigin };

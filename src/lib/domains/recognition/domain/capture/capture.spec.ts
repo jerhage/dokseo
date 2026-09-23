@@ -12,7 +12,13 @@ import {
   oldestFirst,
   takenCapture,
 } from './capture';
-import type { Capture, CaptureDraft, RecognizedCapture, StoredCapture } from './capture';
+import type {
+  Capture,
+  CaptureDraft,
+  LiftedCapture,
+  RecognizedCapture,
+  StoredCapture,
+} from './capture';
 
 const BOOK = bookId('book-one');
 
@@ -56,8 +62,26 @@ function taken(id: string, createdAt: number): Capture {
   return takenCapture(draft(id), createdAt);
 }
 
+function lifted(id: string, text: string): Capture {
+  return takenCapture(
+    {
+      id: captureId(id),
+      bookId: BOOK,
+      anchor: QUOTED,
+      text,
+      origin: 'lifted',
+    },
+    1,
+  );
+}
+
 function asRecognized(capture: Capture): RecognizedCapture {
   if (capture.origin !== 'recognized') throw new Error('That capture was not recognized');
+  return capture;
+}
+
+function asLifted(capture: Capture): LiftedCapture {
+  if (capture.origin !== 'lifted') throw new Error('That capture was not lifted');
   return capture;
 }
 
@@ -93,6 +117,22 @@ describe('takenCapture', () => {
       anchor: ANCHOR,
       text: 'my own words',
       origin: 'written',
+      createdAt: 1,
+      editedAt: null,
+      tagIds: [],
+    });
+  });
+
+  it('builds a lifted capture with no confidence and a note it can hold', () => {
+    const capture = lifted('a', 'こっちに来て');
+
+    expect(capture).toEqual({
+      id: 'a',
+      bookId: BOOK,
+      anchor: QUOTED,
+      text: 'こっちに来て',
+      note: null,
+      origin: 'lifted',
       createdAt: 1,
       editedAt: null,
       tagIds: [],
@@ -299,6 +339,44 @@ describe('captureFromStored', () => {
     expect(captureFromStored(stored).origin).toBe('written');
   });
 
+  it('reads a stored lifted record back as lifted, carrying its note', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: QUOTED,
+      text: 'こっちに来て',
+      createdAt: 42,
+      origin: 'lifted',
+      note: 'he means his sister',
+    };
+
+    expect(captureFromStored(stored)).toEqual({
+      id: 'a',
+      bookId: BOOK,
+      anchor: QUOTED,
+      text: 'こっちに来て',
+      note: 'he means his sister',
+      origin: 'lifted',
+      createdAt: 42,
+      editedAt: null,
+      tagIds: [],
+    });
+  });
+
+  it('drops a confidence a stored lifted record happens to carry', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: QUOTED,
+      text: 'こっちに来て',
+      confidence: 0.5,
+      createdAt: 42,
+      origin: 'lifted',
+    };
+
+    expect('confidence' in captureFromStored(stored)).toBe(false);
+  });
+
   it('drops a confidence a stored written record happens to carry', () => {
     const stored: StoredCapture = {
       id: captureId('a'),
@@ -342,6 +420,13 @@ describe('editedCapture', () => {
     expect(edited.editedAt).toBe(77);
   });
 
+  it('keeps the lifted text when the edit is blank, because the book still holds it', () => {
+    const edited = editedCapture(lifted('a', 'こっちに来て'), '   ', 77);
+
+    expect(edited.text).toBe('こっちに来て');
+    expect(edited.editedAt).toBe(77);
+  });
+
   it('empties a written capture when the edit is blank', () => {
     const edited = editedCapture(note('a', 'my own words'), '   ', 77);
 
@@ -362,6 +447,12 @@ describe('editedCapture', () => {
 });
 
 describe('notedCapture', () => {
+  it('stores a note on a lifted capture and leaves it lifted', () => {
+    const noted = notedCapture(asLifted(lifted('a', 'こっちに来て')), '  he means his sister  ');
+
+    expect([noted.origin, noted.note]).toEqual(['lifted', 'he means his sister']);
+  });
+
   it('stores the note the reader wrote, without the space around it', () => {
     const noted = notedCapture(asRecognized(taken('a', 1)), '  he means his sister  ');
 

@@ -13,8 +13,16 @@ function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
 }
 
+function cannotBeTakenAgain(origin: CaptureOrigin): boolean {
+  return match(origin)
+    .with('written', () => true)
+    .with('recognized', () => false)
+    .with('lifted', () => false)
+    .exhaustive();
+}
+
 function clearScope(captures: readonly Counted[]): ClearScope {
-  const notes = captures.filter((capture) => capture.origin === 'written').length;
+  const notes = captures.filter((capture) => cannotBeTakenAgain(capture.origin)).length;
   const readings = captures.length - notes;
 
   if (readings > 0 && notes > 0) return { kind: 'both', readings, notes };

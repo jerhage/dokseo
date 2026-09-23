@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionNotices } from '$lib/container';
-import { regionAnchor } from '$lib/shared/anchor';
-import type { Anchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
+import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
@@ -13,8 +13,9 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { editedCapture, notedCapture, takenCapture } from '../../domain/capture/capture';
-import type { Capture, CaptureDraft, RecognizedCapture } from '../../domain/capture/capture';
+import type { Capture, CaptureDraft, NotableCapture } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
+import { captureHolds } from '../../domain/capture/capture-results';
 import { taggedCapture, untaggedCapture } from '../../domain/tag/capture-tags';
 import { namedTag, sameTagName } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
@@ -269,10 +270,10 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
           return ok(edited);
         });
       },
-      writeCaptureNote: (
-        capture: RecognizedCapture,
+      writeCaptureNote: <T extends NotableCapture>(
+        capture: T,
         note: string,
-      ): Promise<Result<RecognizedCapture, CaptureError>> => {
+      ): Promise<Result<T, CaptureError>> => {
         if (store.noteFails) {
           return Promise.resolve(err({ kind: 'storage-failed', cause: 'the quota is spent' }));
         }
@@ -1480,6 +1481,82 @@ async function tagging(world: Fakes, carried: readonly TagId[] = []): Promise<Ca
 function carriedBy(view: CaptureView): readonly TagId[] {
   return at(view.captures, 0).tagIds;
 }
+
+describe('CaptureView lifted passages', () => {
+  const CFI = 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)';
+
+  const QUOTE: TextQuote = {
+    exact: 'こっちに来て',
+    prefix: 'そして彼は',
+    suffix: 'と言った',
+  };
+
+  it('puts a lifted passage in the panel and in the store, anchored to its cfi', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    await view.keepLifted(ONE, CFI, QUOTE);
+
+    const card = at(view.captures, 0);
+    expect(card.origin).toBe('lifted');
+    expect(card.status === 'done' ? card.text.text : null).toBe('こっちに来て');
+    expect(card.anchor).toEqual(textAnchor(CFI, QUOTE));
+
+    const row = at(world.store.rows, 0);
+    expect(row.origin).toBe('lifted');
+    expect(row.text).toBe('こっちに来て');
+    expect(row.bookId).toBe(ONE);
+    expect(row.anchor).toEqual(textAnchor(CFI, QUOTE));
+  });
+
+  it('stores nothing when no book is open', () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+
+    view.lift(CFI, QUOTE);
+
+    expect(view.captures).toEqual([]);
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('stores nothing for a selection that is only space', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+
+    view.lift(CFI, { exact: '  \n ', prefix: '', suffix: '' });
+
+    expect(view.captures).toEqual([]);
+    expect(world.store.rows).toEqual([]);
+  });
+
+  it('carries a note written onto a lifted passage into the store', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+    await view.keepLifted(ONE, CFI, QUOTE);
+    const lifted = at(view.captures, 0).id;
+
+    await view.annotate(lifted, 'he means his sister');
+
+    const card = at(view.captures, 0);
+    expect(card.origin === 'lifted' ? card.note : null).toBe('he means his sister');
+    const row = at(world.store.rows, 0);
+    expect(row.origin === 'lifted' ? row.note : null).toBe('he means his sister');
+  });
+
+  it('finds a lifted passage by the note written on it', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container);
+    await view.open(ONE);
+    await view.keepLifted(ONE, CFI, QUOTE);
+    const lifted = at(view.captures, 0).id;
+    await view.annotate(lifted, '海の音');
+
+    expect(view.read.map((found) => captureHolds(found, '海'))).toEqual([true]);
+  });
+});
 
 describe('CaptureView tags', () => {
   it('lists every tag', async () => {

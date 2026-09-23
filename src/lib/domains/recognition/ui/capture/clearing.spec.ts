@@ -10,6 +10,10 @@ function wrote(): Counted {
   return { origin: 'written' };
 }
 
+function tookFromTheBook(): Counted {
+  return { origin: 'lifted' };
+}
+
 describe('clearScope', () => {
   it('finds nothing to delete in an empty panel', () => {
     expect(clearScope([])).toEqual({ kind: 'nothing' });
@@ -17,6 +21,10 @@ describe('clearScope', () => {
 
   it('counts readings alone', () => {
     expect(clearScope([read(), read()])).toEqual({ kind: 'readings', readings: 2 });
+  });
+
+  it('counts a lifted passage with the readings, because the book still holds it', () => {
+    expect(clearScope([read(), tookFromTheBook()])).toEqual({ kind: 'readings', readings: 2 });
   });
 
   it('counts notes alone', () => {

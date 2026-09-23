@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { regionAnchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
@@ -41,7 +41,26 @@ function written(text: string): SearchedCapture {
   return { origin: 'written', text };
 }
 
-function names(matched: readonly { readonly captures: readonly Found[] }[]): readonly string[][] {
+function liftedFrom(text: string, note: string | null): SearchedCapture {
+  return { origin: 'lifted', text, note };
+}
+
+type Lifted = Omit<Found, 'origin'> & { readonly origin: 'lifted' };
+
+function liftedCapture(name: string, id: string, text: string, note: string | null): Lifted {
+  return {
+    name,
+    origin: 'lifted',
+    bookId: bookId(id),
+    anchor: textAnchor(`epubcfi(/6/14!/4/2/${name}:0)`, { exact: text, prefix: '', suffix: '' }),
+    text,
+    note,
+  };
+}
+
+function names(
+  matched: readonly { readonly captures: readonly { readonly name: string }[] }[],
+): readonly string[][] {
   return matched.map((one) => one.captures.map((found) => found.name));
 }
 
@@ -102,6 +121,19 @@ describe('captureHolds', () => {
   it('rejects a blank query on a capture of either origin', () => {
     expect(captureHolds(noted('海が見える', '海の音'), '   ')).toBe(false);
     expect(captureHolds(written('海が見える'), '')).toBe(false);
+  });
+
+  it('matches a lifted capture by its text', () => {
+    expect(captureHolds(liftedFrom('海が見える', null), '海')).toBe(true);
+    expect(captureHolds(liftedFrom('山の上', null), '海')).toBe(false);
+  });
+
+  it('matches a lifted capture by its note when its text does not hold the query', () => {
+    expect(captureHolds(liftedFrom('山の上', '海の音'), '海')).toBe(true);
+  });
+
+  it('rejects a lifted capture whose null note is the only place the query could sit', () => {
+    expect(captureHolds(liftedFrom('山の上', null), '海')).toBe(false);
   });
 });
 
@@ -231,6 +263,14 @@ describe('matchesByBook', () => {
 
     expect(names(matched)).toEqual([['both', 'noted']]);
     expect(matchTally(matched)).toBe(2);
+  });
+
+  it('counts a lifted capture holding the query in its text and in its note only once', () => {
+    const both = liftedCapture('passage', 'one', '海から海へ', '海の音');
+    const matched = matchesByBook([both], [book('one')], '海');
+
+    expect(names(matched)).toEqual([['passage']]);
+    expect(matchTally(matched)).toBe(1);
   });
 
   it('leaves the captures it was given untouched', () => {

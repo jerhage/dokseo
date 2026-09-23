@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import { regionAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
@@ -26,7 +27,11 @@ type WrittenDraft = CaptureContent & {
   readonly origin: 'written';
 };
 
-type CaptureDraft = RecognizedDraft | WrittenDraft;
+type LiftedDraft = CaptureContent & {
+  readonly origin: 'lifted';
+};
+
+type CaptureDraft = RecognizedDraft | WrittenDraft | LiftedDraft;
 
 type RecognizedCapture = RecognizedDraft &
   CaptureHistory & {
@@ -35,7 +40,14 @@ type RecognizedCapture = RecognizedDraft &
 
 type WrittenCapture = WrittenDraft & CaptureHistory;
 
-type Capture = RecognizedCapture | WrittenCapture;
+type LiftedCapture = LiftedDraft &
+  CaptureHistory & {
+    readonly note: string | null;
+  };
+
+type Capture = RecognizedCapture | WrittenCapture | LiftedCapture;
+
+type NotableCapture = RecognizedCapture | LiftedCapture;
 
 type StoredCapture = {
   readonly id: CaptureId;
@@ -53,13 +65,20 @@ type StoredCapture = {
 
 function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
   const history: CaptureHistory = { createdAt, editedAt: null, tagIds: [] };
-  if (draft.origin === 'written') return { ...draft, ...history };
 
-  return { ...draft, ...history, note: null };
+  return match(draft)
+    .with({ origin: 'written' }, (note) => ({ ...note, ...history }))
+    .with({ origin: 'recognized' }, (read) => ({ ...read, ...history, note: null }))
+    .with({ origin: 'lifted' }, (lifted) => ({ ...lifted, ...history, note: null }))
+    .exhaustive();
 }
 
 function storedAnchor(stored: StoredCapture): Anchor {
   return stored.anchor ?? regionAnchor(stored.regions ?? []);
+}
+
+function storedOrigin(stored: StoredCapture): CaptureOrigin {
+  return stored.origin ?? 'recognized';
 }
 
 function captureFromStored(stored: StoredCapture): Capture {
@@ -73,28 +92,34 @@ function captureFromStored(stored: StoredCapture): Capture {
     tagIds: stored.tagIds ?? [],
   };
 
-  if (stored.origin === 'written') return { ...held, origin: 'written' };
-
-  return {
-    ...held,
-    origin: 'recognized',
-    note: stored.note ?? null,
-    confidence: stored.confidence ?? null,
-  };
+  return match(storedOrigin(stored))
+    .with('written', () => ({ ...held, origin: 'written' as const }))
+    .with('lifted', () => ({ ...held, origin: 'lifted' as const, note: stored.note ?? null }))
+    .with('recognized', () => ({
+      ...held,
+      origin: 'recognized' as const,
+      note: stored.note ?? null,
+      confidence: stored.confidence ?? null,
+    }))
+    .exhaustive();
 }
 
 function editedText(previous: string, text: string, origin: CaptureOrigin): string {
   const trimmed = text.trim();
   if (trimmed.length > 0) return trimmed;
 
-  return origin === 'written' ? trimmed : previous;
+  return match(origin)
+    .with('written', () => trimmed)
+    .with('recognized', () => previous)
+    .with('lifted', () => previous)
+    .exhaustive();
 }
 
 function editedCapture(capture: Capture, text: string, editedAt: number): Capture {
   return { ...capture, text: editedText(capture.text, text, capture.origin), editedAt };
 }
 
-function notedCapture(capture: RecognizedCapture, note: string): RecognizedCapture {
+function notedCapture<T extends NotableCapture>(capture: T, note: string): T {
   const written = note.trim();
   return { ...capture, note: written.length === 0 ? null : written };
 }
@@ -103,5 +128,21 @@ function oldestFirst(captures: readonly Capture[]): readonly Capture[] {
   return captures.toSorted((earlier, later) => earlier.createdAt - later.createdAt);
 }
 
-export { takenCapture, captureFromStored, editedText, editedCapture, notedCapture, oldestFirst };
-export type { CaptureDraft, Capture, RecognizedCapture, WrittenCapture, StoredCapture };
+export {
+  takenCapture,
+  captureFromStored,
+  editedText,
+  editedCapture,
+  notedCapture,
+  oldestFirst,
+  storedOrigin,
+};
+export type {
+  CaptureDraft,
+  Capture,
+  LiftedCapture,
+  NotableCapture,
+  RecognizedCapture,
+  WrittenCapture,
+  StoredCapture,
+};

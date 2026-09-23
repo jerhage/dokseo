@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { Anchor } from '$lib/shared/anchor';
 import type { BookId, TagId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
@@ -14,6 +15,7 @@ type SearchedBook = {
 
 type SearchedCapture =
   | { readonly origin: 'recognized'; readonly text: string; readonly note: string | null }
+  | { readonly origin: 'lifted'; readonly text: string; readonly note: string | null }
   | { readonly origin: 'written'; readonly text: string };
 
 type Written = SearchedCapture & {
@@ -30,11 +32,21 @@ type BookMatches<T> = {
   readonly captures: readonly T[];
 };
 
+function noteOn(capture: SearchedCapture): string | null {
+  return match(capture)
+    .with({ origin: 'written' }, () => null)
+    .with({ origin: 'recognized' }, (read) => read.note)
+    .with({ origin: 'lifted' }, (lifted) => lifted.note)
+    .exhaustive();
+}
+
 function captureHolds(capture: SearchedCapture, query: string): boolean {
   if (matchesQuery(capture.text, query)) return true;
-  if (capture.origin === 'written' || capture.note === null) return false;
 
-  return matchesQuery(capture.note, query);
+  const note = noteOn(capture);
+  if (note === null) return false;
+
+  return matchesQuery(note, query);
 }
 
 function heldByBook<T extends Written>(captures: readonly T[]): ReadonlyMap<BookId, T[]> {
@@ -87,5 +99,5 @@ function matchTally<T>(matched: readonly BookMatches<T>[]): number {
   return matched.reduce((total, book) => total + book.captures.length, 0);
 }
 
-export { captureHolds, inBooks, matchesByBook, taggedByBook, matchTally };
+export { captureHolds, inBooks, matchesByBook, noteOn, taggedByBook, matchTally };
 export type { SearchedBook, SearchedCapture, Written, Tagged, BookMatches };

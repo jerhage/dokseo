@@ -1,8 +1,8 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
-import { regionAnchor } from '$lib/shared/anchor';
-import type { Anchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
+import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import { captureId, tagId } from '$lib/shared/ids';
@@ -65,6 +65,7 @@ type Recorded = {
 
 type Taken =
   | (Recorded & { readonly origin: 'recognized'; readonly note: string | null })
+  | (Recorded & { readonly origin: 'lifted'; readonly note: string | null })
   | (Recorded & { readonly origin: 'written' });
 
 type Settled =
@@ -176,23 +177,43 @@ function cardOf(capture: Capture): PanelCapture {
     edited: capture.editedAt !== null,
   };
 
-  if (capture.origin === 'written') {
-    return { ...held, origin: 'written', text: recognizedText(capture.text, null) };
-  }
-
-  return {
-    ...held,
-    origin: 'recognized',
-    note: capture.note,
-    text: recognizedText(capture.text, capture.confidence),
-  };
+  return match(capture)
+    .with({ origin: 'written' }, (note) => ({
+      ...held,
+      origin: 'written' as const,
+      text: recognizedText(note.text, null),
+    }))
+    .with({ origin: 'lifted' }, (lifted) => ({
+      ...held,
+      origin: 'lifted' as const,
+      note: lifted.note,
+      text: recognizedText(lifted.text, null),
+    }))
+    .with({ origin: 'recognized' }, (read) => ({
+      ...held,
+      origin: 'recognized' as const,
+      note: read.note,
+      text: recognizedText(read.text, read.confidence),
+    }))
+    .exhaustive();
 }
 
 function takenOf(capture: PanelCapture): Taken {
   const held = { id: capture.id, anchor: capture.anchor, tagIds: capture.tagIds };
-  if (capture.origin === 'written') return { ...held, origin: 'written' };
 
-  return { ...held, origin: 'recognized', note: capture.note };
+  return match(capture)
+    .with({ origin: 'written' }, () => ({ ...held, origin: 'written' as const }))
+    .with({ origin: 'lifted' }, (lifted) => ({
+      ...held,
+      origin: 'lifted' as const,
+      note: lifted.note,
+    }))
+    .with({ origin: 'recognized' }, (read) => ({
+      ...held,
+      origin: 'recognized' as const,
+      note: read.note,
+    }))
+    .exhaustive();
 }
 
 class CaptureView {
@@ -265,14 +286,25 @@ class CaptureView {
 
   #marked(card: Taken & { readonly text: RecognizedText }): ArrivalCapture {
     const held = { id: card.id, anchor: card.anchor, text: card.text.text };
-    if (card.origin === 'written') return { ...held, origin: 'written' };
 
-    const stored = this.#stored.get(card.id);
-    return {
-      ...held,
-      origin: 'recognized',
-      note: stored?.origin === 'recognized' ? stored.note : null,
-    };
+    return match(card)
+      .with({ origin: 'written' }, () => ({ ...held, origin: 'written' as const }))
+      .with({ origin: 'lifted' }, () => ({
+        ...held,
+        origin: 'lifted' as const,
+        note: this.#noteKept(card.id, 'lifted'),
+      }))
+      .with({ origin: 'recognized' }, () => ({
+        ...held,
+        origin: 'recognized' as const,
+        note: this.#noteKept(card.id, 'recognized'),
+      }))
+      .exhaustive();
+  }
+
+  #noteKept(id: CaptureId, origin: 'recognized' | 'lifted'): string | null {
+    const stored = this.#stored.get(id);
+    return stored?.origin === origin ? stored.note : null;
   }
 
   arrivalFrom(
@@ -432,6 +464,55 @@ class CaptureView {
     } finally {
       trace.end();
     }
+  }
+
+  lift(cfi: string, quote: TextQuote): void {
+    const book = this.#book;
+    const trace = this.#container.beginTrace('lift');
+    try {
+      if (quote.exact.trim().length === 0) {
+        trace.step('stopped', { guard: 'nothing-selected' });
+        return;
+      }
+
+      if (book === null) {
+        trace.step('stopped', { guard: 'no-open-book' });
+        return;
+      }
+
+      trace.step('dispatched', { characters: quote.exact.length });
+      void this.keepLifted(book, cfi, quote);
+    } finally {
+      trace.end();
+    }
+  }
+
+  async keepLifted(book: BookId, cfi: string, quote: TextQuote): Promise<void> {
+    const generation = this.#generation;
+    const id = captureId(crypto.randomUUID());
+    const anchor = textAnchor(cfi, quote);
+    const text = recognizedText(quote.exact, null);
+    this.captures = [
+      ...this.captures,
+      {
+        id,
+        anchor,
+        origin: 'lifted',
+        note: null,
+        tagIds: [],
+        status: 'done',
+        text,
+        edited: false,
+      },
+    ];
+
+    await this.#keep(generation, {
+      id,
+      bookId: book,
+      anchor,
+      text: text.text,
+      origin: 'lifted',
+    });
   }
 
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
@@ -621,7 +702,7 @@ class CaptureView {
 
   async annotate(id: CaptureId, note: string): Promise<void> {
     const stored = this.#stored.get(id);
-    if (stored === undefined || stored.origin !== 'recognized') return;
+    if (stored === undefined || stored.origin === 'written') return;
 
     const generation = this.#generation;
     const written = await this.#container.recognition
@@ -633,7 +714,7 @@ class CaptureView {
     this.#stored.set(id, written.value);
     const kept = written.value.note;
     this.captures = this.captures.map((capture) =>
-      capture.id === id && capture.origin === 'recognized' ? { ...capture, note: kept } : capture,
+      capture.id === id && capture.origin !== 'written' ? { ...capture, note: kept } : capture,
     );
   }
 
