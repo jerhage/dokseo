@@ -13,12 +13,14 @@ import type { ReadingSettings } from '../domain/reading-settings';
 import type { ContentsEntry } from './flow-contents';
 import type { LiftedPassage } from './flow-lift';
 import {
-  ARRIVED_AT_THE_CFI,
-  FOUND_BY_ITS_TEXT,
+  arrivedAtTheCfi,
+  foundByItsText,
   MOVED_SINCE_IT_WAS_CAPTURED,
   NOT_IN_THE_BOOK_ANY_MORE,
   THE_PASSAGE_IS_LOST,
 } from './flow-quote';
+import { NOTHING_ARRIVED_AT } from './flow-highlight';
+import type { PassageMark } from './flow-highlight';
 import type { PassageArrival } from './flow-quote';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
@@ -133,6 +135,7 @@ type Shown = {
   readonly restyled: ReadingSettings[];
   readonly passages: LiftedPassage[];
   readonly marked: (readonly string[])[];
+  readonly arrivals: PassageMark[];
   arrival: PassageArrival;
   toc: readonly TocItem[] | null;
   ticks: readonly number[];
@@ -150,6 +153,7 @@ function shows(): Shown {
   const restyled: ReadingSettings[] = [];
   const passages: LiftedPassage[] = [];
   const marked: (readonly string[])[] = [];
+  const arrivals: PassageMark[] = [];
 
   const world = {
     openings,
@@ -160,7 +164,8 @@ function shows(): Shown {
     restyled,
     passages,
     marked,
-    arrival: ARRIVED_AT_THE_CFI as PassageArrival,
+    arrivals,
+    arrival: arrivedAtTheCfi(SOMEWHERE) as PassageArrival,
     toc: null as readonly TocItem[] | null,
     ticks: [] as readonly number[],
     gate: null as Promise<void> | null,
@@ -190,8 +195,9 @@ function shows(): Shown {
       jump: (href: string) => {
         jumped.push(href);
       },
-      mark: (asked: readonly string[]) => {
+      mark: (asked: readonly string[], arrived: PassageMark) => {
         marked.push(asked);
+        arrivals.push(arrived);
       },
       goToPassage: (passage: LiftedPassage) => {
         passages.push(passage);
@@ -985,10 +991,16 @@ describe('FlowView jumpToPassage', () => {
     expect(view.notice).toBeNull();
   });
 
+  const REFOUND = 'epubcfi(/6/14!/4/2/16/1:4)';
+
+  const A_PAGE = 'epubcfi(/6/14!/4/2/10,/1:0,/1:14)';
+
+  const ANOTHER_PAGE = 'epubcfi(/6/14!/4/2/22,/1:0,/1:9)';
+
   it('tells the reader the passage moved when its text found it instead', async () => {
     const world = shelf();
     const surfaces = shows();
-    surfaces.arrival = FOUND_BY_ITS_TEXT;
+    surfaces.arrival = foundByItsText(REFOUND);
     const view = new FlowView(world.container);
     await view.open(novel(world.place), surfaces.show);
 
@@ -1030,6 +1042,93 @@ describe('FlowView jumpToPassage', () => {
 
     expect(surfaces.passages).toEqual([]);
     expect(view.notice).toBeNull();
+  });
+
+  it('marks the passage it arrived at, on the page it landed on', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(surfaces.arrivals.at(-1)).toEqual({
+      kind: 'arrived',
+      cfi: SOMEWHERE,
+      place: A_PAGE,
+    });
+  });
+
+  it('marks the passage its text found, not the cfi that was stored', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = foundByItsText(REFOUND);
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(surfaces.arrivals.at(-1)).toEqual({ kind: 'arrived', cfi: REFOUND, place: A_PAGE });
+  });
+
+  it('marks nothing when neither the cfi nor the text found the passage', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = THE_PASSAGE_IS_LOST;
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
+  });
+
+  it('takes the mark away when the reader turns the page', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    surfaces.openings[0]?.moved(relocated(ANOTHER_PAGE));
+
+    expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
+  });
+
+  it('keeps the mark while the reader stays on the page it landed on', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+    const drawn = surfaces.arrivals.length;
+
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+
+    expect(surfaces.arrivals.length).toBe(drawn);
+  });
+
+  it('keeps the marked passage drawn when the reader deletes its capture', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    view.markPassages([SOMEWHERE]);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    view.markPassages([]);
+
+    expect(surfaces.arrivals.at(-1)).toEqual({
+      kind: 'arrived',
+      cfi: SOMEWHERE,
+      place: A_PAGE,
+    });
   });
 });
 

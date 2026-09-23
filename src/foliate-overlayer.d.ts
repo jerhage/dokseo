@@ -14,6 +14,7 @@ declare module 'foliate-js/overlayer.js' {
 
   const Overlayer: {
     highlight(rects: readonly HighlightRect[], options: HighlightOptions): SVGElement;
+    outline(rects: readonly HighlightRect[], options: HighlightOptions): SVGElement;
   };
 
   export { Overlayer };

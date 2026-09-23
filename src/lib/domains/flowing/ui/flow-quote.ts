@@ -12,13 +12,9 @@ type QuotePoint = {
 };
 
 type PassageArrival =
-  | { readonly kind: 'cfi' }
-  | { readonly kind: 'quote' }
+  | { readonly kind: 'cfi'; readonly cfi: string }
+  | { readonly kind: 'quote'; readonly cfi: string }
   | { readonly kind: 'lost' };
-
-const ARRIVED_AT_THE_CFI: PassageArrival = { kind: 'cfi' };
-
-const FOUND_BY_ITS_TEXT: PassageArrival = { kind: 'quote' };
 
 const THE_PASSAGE_IS_LOST: PassageArrival = { kind: 'lost' };
 
@@ -26,6 +22,14 @@ const MOVED_SINCE_IT_WAS_CAPTURED =
   'This passage moved since it was captured, so it was found by its text.';
 
 const NOT_IN_THE_BOOK_ANY_MORE = 'This passage is no longer anywhere in this book.';
+
+function arrivedAtTheCfi(cfi: string): PassageArrival {
+  return { kind: 'cfi', cfi };
+}
+
+function foundByItsText(cfi: string): PassageArrival {
+  return { kind: 'quote', cfi };
+}
 
 function commonPrefix(left: string, right: string): number {
   const shortest = Math.min(left.length, right.length);
@@ -92,13 +96,13 @@ function passageNotice(arrival: PassageArrival): string | null {
 }
 
 export {
-  ARRIVED_AT_THE_CFI,
-  FOUND_BY_ITS_TEXT,
   MOVED_SINCE_IT_WAS_CAPTURED,
   NOT_IN_THE_BOOK_ANY_MORE,
   THE_PASSAGE_IS_LOST,
+  arrivedAtTheCfi,
   commonPrefix,
   commonSuffix,
+  foundByItsText,
   locateQuote,
   passageNotice,
   pointIn,

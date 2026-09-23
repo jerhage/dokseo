@@ -12,6 +12,7 @@ import type { SanitiseChapter } from './chapter-transform';
 import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-spine';
 import type { Spine } from './flow-spine';
 import { highlightChange, PASSAGE_HIGHLIGHT_COLOUR } from './flow-highlight';
+import type { PassageMark, PassageWeight } from './flow-highlight';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -19,7 +20,7 @@ import type { TextQuote } from '$lib/shared/anchor';
 import type { LiftedPassage } from './flow-lift';
 import { quoteRange } from './flow-passage';
 import type { ChapterCfis } from './flow-passage';
-import { ARRIVED_AT_THE_CFI, FOUND_BY_ITS_TEXT, THE_PASSAGE_IS_LOST } from './flow-quote';
+import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 import type { PassageArrival } from './flow-quote';
 import type { PageTurner } from './flow-turn';
 
@@ -31,7 +32,7 @@ type FlowSurface = {
   seek(fraction: number): void;
   jump(href: string): void;
   goToPassage(passage: LiftedPassage): Promise<PassageArrival>;
-  mark(passages: readonly string[]): void;
+  mark(passages: readonly string[], arrived: PassageMark): void;
   restyle(settings: ReadingSettings): void;
   destroy(): void;
 };
@@ -141,35 +142,40 @@ async function goToPassage(
   passage: LiftedPassage,
 ): Promise<PassageArrival> {
   const stored = await navigate(view, spine, passage.cfi);
-  if (stored !== undefined) return ARRIVED_AT_THE_CFI;
+  if (stored !== undefined) return arrivedAtTheCfi(passage.cfi);
 
   const fresh = await find(passage.quote);
   if (fresh === null) return THE_PASSAGE_IS_LOST;
 
   const refound = await navigate(view, spine, fresh);
-  return refound === undefined ? THE_PASSAGE_IS_LOST : FOUND_BY_ITS_TEXT;
+  return refound === undefined ? THE_PASSAGE_IS_LOST : foundByItsText(fresh);
 }
 
 function drawn(view: Annotatable, annotation: Annotation): void {
   void view.addAnnotation(annotation).catch(() => undefined);
 }
 
-function markPassages(view: Annotatable, shown: Set<string>, asked: readonly string[]): void {
-  const change = highlightChange(shown, asked);
+function markPassages(
+  view: Annotatable,
+  shown: Map<string, PassageWeight>,
+  asked: readonly string[],
+  mark: PassageMark,
+): void {
+  const change = highlightChange(shown, asked, mark);
 
   for (const cfi of change.removed) {
     shown.delete(cfi);
     void view.deleteAnnotation({ value: cfi }).catch(() => undefined);
   }
 
-  for (const cfi of change.added) {
-    shown.add(cfi);
-    drawn(view, { value: cfi });
+  for (const passage of change.added) {
+    shown.set(passage.cfi, passage.weight);
+    drawn(view, { value: passage.cfi });
   }
 }
 
-function redrawPassages(view: Annotatable, shown: ReadonlySet<string>): void {
-  for (const cfi of shown) drawn(view, { value: cfi });
+function redrawPassages(view: Annotatable, shown: ReadonlyMap<string, PassageWeight>): void {
+  for (const cfi of shown.keys()) drawn(view, { value: cfi });
 }
 
 async function openAt(view: Navigable, spine: Spine, at: string | null): Promise<boolean> {
@@ -198,9 +204,11 @@ async function openFlowSurface(
   leaveOutSectionsWithNoBody(book, spine);
 
   const view = new FoliateView();
-  const shown = new Set<string>();
+  const shown = new Map<string, PassageWeight>();
   view.addEventListener('draw-annotation', (drawing) => {
-    drawing.detail.draw(Overlayer.highlight, { color: PASSAGE_HIGHLIGHT_COLOUR });
+    const weight = shown.get(drawing.detail.annotation.value);
+    const style = weight === 'arrived' ? Overlayer.outline : Overlayer.highlight;
+    drawing.detail.draw(style, { color: PASSAGE_HIGHLIGHT_COLOUR });
   });
   view.addEventListener('create-overlay', () => {
     queueMicrotask(() => {
@@ -236,8 +244,8 @@ async function openFlowSurface(
     jump: (href: string) => {
       void navigate(view, spine, href);
     },
-    mark: (passages: readonly string[]) => {
-      markPassages(view, shown, passages);
+    mark: (passages: readonly string[], arrived: PassageMark) => {
+      markPassages(view, shown, passages, arrived);
     },
     goToPassage: (passage: LiftedPassage) =>
       goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),

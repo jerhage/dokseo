@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { TextQuote } from '$lib/shared/anchor';
 import {
-  ARRIVED_AT_THE_CFI,
-  FOUND_BY_ITS_TEXT,
+  arrivedAtTheCfi,
+  foundByItsText,
   MOVED_SINCE_IT_WAS_CAPTURED,
   NOT_IN_THE_BOOK_ANY_MORE,
   THE_PASSAGE_IS_LOST,
@@ -10,6 +10,8 @@ import {
   passageNotice,
   pointIn,
 } from './flow-quote';
+
+const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
 
 const CHAPTER = 'その病室は、外から厳重に鍵がかけられていた。「はい」と答えた。';
 
@@ -100,11 +102,11 @@ describe('pointIn', () => {
 
 describe('passageNotice', () => {
   it('says nothing when the stored cfi took the reader there', () => {
-    expect(passageNotice(ARRIVED_AT_THE_CFI)).toBeNull();
+    expect(passageNotice(arrivedAtTheCfi(SOMEWHERE))).toBeNull();
   });
 
   it('says the passage moved when its text found it instead', () => {
-    expect(passageNotice(FOUND_BY_ITS_TEXT)).toBe(MOVED_SINCE_IT_WAS_CAPTURED);
+    expect(passageNotice(foundByItsText(SOMEWHERE))).toBe(MOVED_SINCE_IT_WAS_CAPTURED);
   });
 
   it('says the passage is gone when neither found it', () => {

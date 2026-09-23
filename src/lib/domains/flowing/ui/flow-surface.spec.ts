@@ -10,7 +10,9 @@ import {
 } from './flow-surface';
 import type { FlowTarget } from './flow-surface';
 import type { Spine } from './flow-spine';
-import { ARRIVED_AT_THE_CFI, FOUND_BY_ITS_TEXT, THE_PASSAGE_IS_LOST } from './flow-quote';
+import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
+import { NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
+import type { PassageWeight } from './flow-highlight';
 
 const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
 
@@ -230,7 +232,7 @@ describe('goToPassage', () => {
     const view = stage();
 
     await expect(goToPassage(view, everySectionHasABody(3), never, passage())).resolves.toEqual(
-      ARRIVED_AT_THE_CFI,
+      arrivedAtTheCfi(SOMEWHERE),
     );
     expect(view.targets).toEqual([SOMEWHERE]);
   });
@@ -249,7 +251,7 @@ describe('goToPassage', () => {
       passage(),
     );
 
-    expect(arrival).toEqual(FOUND_BY_ITS_TEXT);
+    expect(arrival).toEqual(foundByItsText(REFOUND));
     expect(asked).toEqual([QUOTE]);
     expect(view.targets).toEqual([SOMEWHERE, REFOUND]);
   });
@@ -312,46 +314,84 @@ function overlay(refuses: readonly string[] = []): Drawn {
 
 const ANOTHER_PASSAGE = 'epubcfi(/6/18!/4/2/8/1:30)';
 
+const A_PAGE = 'epubcfi(/6/14!/4/2/10,/1:0,/1:14)';
+
+function nothingDrawn(): Map<string, PassageWeight> {
+  return new Map<string, PassageWeight>();
+}
+
 describe('markPassages', () => {
   it('draws a passage the reader has just captured', () => {
     const view = overlay();
-    const shown = new Set<string>();
+    const shown = nothingDrawn();
 
-    markPassages(view, shown, [SOMEWHERE]);
+    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
 
     expect(view.added).toEqual([SOMEWHERE]);
-    expect(shown).toEqual(new Set([SOMEWHERE]));
+    expect(shown).toEqual(new Map([[SOMEWHERE, 'ordinary']]));
   });
 
   it('draws nothing twice when the captures have not changed', () => {
     const view = overlay();
-    const shown = new Set<string>();
+    const shown = nothingDrawn();
 
-    markPassages(view, shown, [SOMEWHERE]);
-    markPassages(view, shown, [SOMEWHERE]);
+    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
+    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
 
     expect(view.added).toEqual([SOMEWHERE]);
   });
 
   it('takes the highlight away when its capture is deleted', () => {
     const view = overlay();
-    const shown = new Set([SOMEWHERE]);
+    const shown = new Map<string, PassageWeight>([[SOMEWHERE, 'ordinary']]);
 
-    markPassages(view, shown, []);
+    markPassages(view, shown, [], NOTHING_ARRIVED_AT);
 
     expect(view.deleted).toEqual([SOMEWHERE]);
-    expect(shown).toEqual(new Set());
+    expect(shown).toEqual(nothingDrawn());
   });
 
   it('keeps a passage whose cfi refuses to resolve, and reports nothing', async () => {
     const view = overlay([SOMEWHERE]);
-    const shown = new Set<string>();
+    const shown = nothingDrawn();
 
-    markPassages(view, shown, [SOMEWHERE]);
+    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
     await new Promise((settled) => setTimeout(settled, 0));
 
     expect(view.added).toEqual([SOMEWHERE]);
-    expect(shown).toEqual(new Set([SOMEWHERE]));
+    expect(shown).toEqual(new Map([[SOMEWHERE, 'ordinary']]));
+  });
+
+  it('draws the passage the reader jumped to apart from the others', () => {
+    const view = overlay();
+    const shown = nothingDrawn();
+
+    markPassages(
+      view,
+      shown,
+      [SOMEWHERE, ANOTHER_PASSAGE],
+      passageMark(arrivedAtTheCfi(ANOTHER_PASSAGE), A_PAGE),
+    );
+
+    expect(shown).toEqual(
+      new Map([
+        [SOMEWHERE, 'ordinary'],
+        [ANOTHER_PASSAGE, 'arrived'],
+      ]),
+    );
+  });
+
+  it('draws the passage again, unmarked, once the reader has moved on', () => {
+    const view = overlay();
+    const shown = nothingDrawn();
+    const arrived = passageMark(arrivedAtTheCfi(SOMEWHERE), A_PAGE);
+
+    markPassages(view, shown, [SOMEWHERE], arrived);
+    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
+
+    expect(view.added).toEqual([SOMEWHERE, SOMEWHERE]);
+    expect(view.deleted).toEqual([]);
+    expect(shown).toEqual(new Map([[SOMEWHERE, 'ordinary']]));
   });
 });
 
@@ -359,7 +399,13 @@ describe('redrawPassages', () => {
   it('draws every highlight again when a chapter is laid out afresh', () => {
     const view = overlay();
 
-    redrawPassages(view, new Set([SOMEWHERE, ANOTHER_PASSAGE]));
+    redrawPassages(
+      view,
+      new Map<string, PassageWeight>([
+        [SOMEWHERE, 'ordinary'],
+        [ANOTHER_PASSAGE, 'arrived'],
+      ]),
+    );
 
     expect(view.added).toEqual([SOMEWHERE, ANOTHER_PASSAGE]);
   });

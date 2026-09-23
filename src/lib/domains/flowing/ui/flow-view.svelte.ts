@@ -10,7 +10,8 @@ import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
-import { NO_PASSAGES } from './flow-highlight';
+import { markAfterMove, NO_PASSAGES, NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
+import type { PassageMark } from './flow-highlight';
 import {
   chapterTicks,
   flowLocation,
@@ -106,6 +107,7 @@ class FlowView {
   #saving: PendingSave | null = null;
   #placed: ReadingPlace | null = null;
   #passages: readonly string[] = NO_PASSAGES;
+  #marked: PassageMark = NOTHING_ARRIVED_AT;
 
   constructor(container: Container) {
     this.#container = container;
@@ -132,6 +134,7 @@ class FlowView {
     const generation = ++this.#generation;
     this.#release();
     this.state = OPENING;
+    this.#marked = NOTHING_ARRIVED_AT;
     this.#placed = null;
     this.location = null;
     this.contents = NO_CONTENTS;
@@ -189,7 +192,7 @@ class FlowView {
     }
 
     this.#surface = surface;
-    surface.mark(this.#passages);
+    surface.mark(this.#passages, this.#marked);
     this.contents = flowContents(surface.toc);
     this.ticks = chapterTicks(surface.ticks);
     this.direction = surface.direction;
@@ -200,6 +203,7 @@ class FlowView {
     this.#flushSave();
     this.#generation += 1;
     this.#release();
+    this.#marked = NOTHING_ARRIVED_AT;
     this.state = NOT_OPENED;
     this.location = null;
     this.contents = NO_CONTENTS;
@@ -238,11 +242,13 @@ class FlowView {
     if (surface !== this.#surface) return;
 
     this.notice = passageNotice(arrival);
+    this.#marked = passageMark(arrival, this.location?.cfi ?? null);
+    surface.mark(this.#passages, this.#marked);
   }
 
   markPassages(passages: readonly string[]): void {
     this.#passages = passages;
-    this.#surface?.mark(passages);
+    this.#surface?.mark(passages, this.#marked);
   }
 
   dismissNotice(): void {
@@ -268,6 +274,7 @@ class FlowView {
     const here = flowLocation(relocation);
     this.location = here;
     this.reported = relocation.tocItem ?? null;
+    this.#forgetArrival(here.cfi);
     const place = textPlace(here.cfi, here.fraction);
 
     const waiting = this.#saving;
@@ -279,6 +286,14 @@ class FlowView {
     }, PLACE_SAVE_DELAY_MS);
 
     this.#saving = { id, place, timer };
+  }
+
+  #forgetArrival(place: string): void {
+    const marked = markAfterMove(this.#marked, place);
+    if (marked === this.#marked) return;
+
+    this.#marked = marked;
+    this.#surface?.mark(this.#passages, marked);
   }
 
   #alreadyStored(place: ReadingPlace): boolean {
