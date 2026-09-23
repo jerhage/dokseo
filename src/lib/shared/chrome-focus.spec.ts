@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ChromeFocus } from './chrome-focus.svelte';
-import type { ChromeBar } from '$lib/shared/reader-chrome';
+import type { ChromeBar } from './reader-chrome';
 
 const PILL = {} as Element;
 
@@ -129,6 +129,20 @@ describe('ChromeFocus', () => {
     await Promise.resolve();
 
     expect(focus.held).toBe(true);
+  });
+
+  it('answers for its own bars alone, so two readers never share one answer', () => {
+    const one = new Harness();
+    const other = new Harness();
+    one.looking(PILL);
+    other.looking(ELSEWHERE);
+
+    one.focus.refresh();
+    other.focus.refresh();
+    one.settle();
+    other.settle();
+
+    expect([one.focus.held, other.focus.held]).toStrictEqual([true, false]);
   });
 
   it('answers with the bars standing when the turn runs, not the ones standing when it was asked', () => {

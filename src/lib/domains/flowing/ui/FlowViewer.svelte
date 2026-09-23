@@ -1,6 +1,7 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import { chromeHolds, chromeShown } from '$lib/shared/reader-chrome';
+  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
+  import { chromeShown } from '$lib/shared/reader-chrome';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
@@ -32,16 +33,20 @@
   let topBar = $state<HTMLElement | null>(null);
   let bottomBar = $state<HTMLElement | null>(null);
   let chromeAsked = $state(true);
-  let chromeHeld = $state(false);
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
   const chapters = new Set<Document>();
 
+  const chrome = new ChromeFocus(
+    () => [topBar, bottomBar],
+    () => [document.activeElement],
+  );
+
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
   const panelOpen = $derived(contentsOpen || settingsOpen);
-  const chromeAwake = $derived(chromeShown(chromeAsked, chromeHeld || panelOpen));
+  const chromeAwake = $derived(chromeShown(chromeAsked, chrome.held || panelOpen));
   const reading = $derived(view.state.kind === 'ready');
   const contents = $derived(view.contents);
   const settings = $derived(view.settings);
@@ -179,7 +184,7 @@
 
   $effect(() => {
     function refresh(): void {
-      chromeHeld = chromeHolds([topBar, bottomBar], [document.activeElement]);
+      chrome.refresh();
     }
 
     window.addEventListener('focusin', refresh);

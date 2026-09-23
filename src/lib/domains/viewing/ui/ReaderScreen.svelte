@@ -3,6 +3,7 @@
   import { match } from 'ts-pattern';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import type { Arrangement } from '$lib/shared/arrangement';
+  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import {
@@ -14,7 +15,6 @@
     READING_DIRECTION_LEGEND_BRIEF,
   } from '$lib/shared/layout-choices';
   import { chromeShown } from '$lib/shared/reader-chrome';
-  import { ChromeFocus } from './chrome-focus.svelte';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';

@@ -1,5 +1,5 @@
-import { chromeHolds } from '$lib/shared/reader-chrome';
-import type { ChromeBar } from '$lib/shared/reader-chrome';
+import { chromeHolds } from './reader-chrome';
+import type { ChromeBar } from './reader-chrome';
 
 type ChromeBars = () => readonly (ChromeBar | null)[];
 
