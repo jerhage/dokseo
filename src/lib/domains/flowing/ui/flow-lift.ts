@@ -24,6 +24,16 @@ type LiftedPassage = {
   readonly quote: TextQuote;
 };
 
+type SelectionSeen = {
+  readonly selected: boolean;
+  readonly pointerHeld: boolean;
+};
+
+type OfferMove =
+  | { readonly kind: 'keep' }
+  | { readonly kind: 'clear' }
+  | { readonly kind: 'place' };
+
 const QUOTE_CONTEXT_CHARS = 32;
 
 const LIFT_BUTTON_WIDTH_PX = 44;
@@ -33,6 +43,19 @@ const LIFT_BUTTON_HEIGHT_PX = 44;
 const LIFT_BUTTON_GAP_PX = 8;
 
 const NOWHERE_TO_OFFER: LiftPlacement = { kind: 'nowhere' };
+
+const LEAVE_THE_OFFER_ALONE: OfferMove = { kind: 'keep' };
+
+const TAKE_THE_OFFER_AWAY: OfferMove = { kind: 'clear' };
+
+const STAND_THE_OFFER_OVER_IT: OfferMove = { kind: 'place' };
+
+function offerMove(seen: SelectionSeen): OfferMove {
+  if (!seen.selected) return TAKE_THE_OFFER_AWAY;
+  if (seen.pointerHeld) return LEAVE_THE_OFFER_ALONE;
+
+  return STAND_THE_OFFER_OVER_IT;
+}
 
 function keptBefore(text: string): string {
   const runes = Array.from(text);
@@ -108,14 +131,18 @@ function liftPlacement(rects: readonly LiftRect[], stage: StageSize): LiftPlacem
 }
 
 export {
+  LEAVE_THE_OFFER_ALONE,
   LIFT_BUTTON_GAP_PX,
   LIFT_BUTTON_HEIGHT_PX,
   LIFT_BUTTON_WIDTH_PX,
   NOWHERE_TO_OFFER,
   QUOTE_CONTEXT_CHARS,
+  STAND_THE_OFFER_OVER_IT,
+  TAKE_THE_OFFER_AWAY,
   liftPlacement,
   liftsAnything,
+  offerMove,
   passageQuote,
   rectOnStage,
 };
-export type { LiftPlacement, LiftRect, LiftedPassage, StageSize };
+export type { LiftPlacement, LiftRect, LiftedPassage, OfferMove, SelectionSeen, StageSize };

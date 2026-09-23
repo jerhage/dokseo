@@ -6,6 +6,7 @@ import {
   QUOTE_CONTEXT_CHARS,
   liftPlacement,
   liftsAnything,
+  offerMove,
   passageQuote,
   rectOnStage,
 } from './flow-lift';
@@ -221,5 +222,23 @@ describe('liftPlacement', () => {
     expect(liftPlacement([rect(100, 300, 260, 330)], { width: Number.NaN, height: 896 }).kind).toBe(
       'nowhere',
     );
+  });
+});
+
+describe('offerMove', () => {
+  it('places the offer over a selection nobody is holding a pointer on', () => {
+    expect(offerMove({ selected: true, pointerHeld: false })).toEqual({ kind: 'place' });
+  });
+
+  it('takes the offer away the moment the selection collapses', () => {
+    expect(offerMove({ selected: false, pointerHeld: false })).toEqual({ kind: 'clear' });
+  });
+
+  it('takes the offer away for a collapsed selection even under a held pointer', () => {
+    expect(offerMove({ selected: false, pointerHeld: true })).toEqual({ kind: 'clear' });
+  });
+
+  it('leaves the offer where it is while a pointer is still down', () => {
+    expect(offerMove({ selected: true, pointerHeld: true })).toEqual({ kind: 'keep' });
   });
 });

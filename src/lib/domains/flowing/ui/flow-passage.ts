@@ -6,12 +6,9 @@ type ChapterCfis = {
   getCFI(index: number, range: Range): string;
 };
 
-type SelectedPassage = {
-  readonly passage: LiftedPassage;
-  readonly rects: readonly LiftRect[];
-};
-
 const RUBY_READINGS = 'rt, rp';
+
+const NOTHING_IS_SELECTED: readonly LiftRect[] = [];
 
 function withoutReadings(fragment: DocumentFragment): string {
   for (const reading of fragment.querySelectorAll(RUBY_READINGS)) reading.remove();
@@ -43,7 +40,15 @@ function quoteAround(doc: Document, range: Range): TextQuote {
   return passageQuote(textIn(range), textIn(before), textIn(after));
 }
 
-function selectedPassage(doc: Document, index: number, cfis: ChapterCfis): SelectedPassage | null {
+function shownSelection(doc: Document): readonly LiftRect[] {
+  const range = selectedRange(doc);
+  if (range === null) return NOTHING_IS_SELECTED;
+  if (!liftsAnything(textIn(range))) return NOTHING_IS_SELECTED;
+
+  return [...range.getClientRects()];
+}
+
+function selectedPassage(doc: Document, index: number, cfis: ChapterCfis): LiftedPassage | null {
   const range = selectedRange(doc);
   if (range === null) return null;
 
@@ -51,10 +56,7 @@ function selectedPassage(doc: Document, index: number, cfis: ChapterCfis): Selec
     const quote = quoteAround(doc, range);
     if (!liftsAnything(quote.exact)) return null;
 
-    return {
-      passage: { cfi: cfis.getCFI(index, range), quote },
-      rects: [...range.getClientRects()],
-    };
+    return { cfi: cfis.getCFI(index, range), quote };
   } catch {
     return null;
   }
@@ -64,5 +66,5 @@ function forgetSelection(doc: Document): void {
   doc.getSelection()?.removeAllRanges();
 }
 
-export { forgetSelection, selectedPassage };
-export type { ChapterCfis, SelectedPassage };
+export { NOTHING_IS_SELECTED, forgetSelection, selectedPassage, shownSelection };
+export type { ChapterCfis };

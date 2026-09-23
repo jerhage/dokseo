@@ -16,10 +16,11 @@
     LIFT_BUTTON_HEIGHT_PX,
     LIFT_BUTTON_WIDTH_PX,
     liftPlacement,
+    offerMove,
     rectOnStage,
   } from './flow-lift';
-  import type { LiftPlacement, LiftedPassage } from './flow-lift';
-  import { forgetSelection, selectedPassage } from './flow-passage';
+  import type { LiftPlacement, LiftRect, LiftedPassage } from './flow-lift';
+  import { forgetSelection, selectedPassage, shownSelection } from './flow-passage';
   import { openFlowSurface } from './flow-surface';
   import type { ChapterView } from './flow-surface';
   import {
@@ -41,7 +42,7 @@
   };
 
   type LiftOffer = {
-    readonly passage: LiftedPassage;
+    readonly chapter: ChapterView;
     readonly left: number;
     readonly top: number;
   };
@@ -65,6 +66,9 @@
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
   let offer = $state.raw<LiftOffer | null>(null);
+  let showing: ChapterView | null = null;
+  let pointerHeld = false;
+  let queued: number | null = null;
   const chapters = new Set<Document>();
 
   const chrome = new ChromeFocus(
@@ -179,6 +183,7 @@
 
   function press(event: PointerEvent, spot: StageTap): void {
     offer = null;
+    pointerHeld = true;
     gestures?.pressed({
       pointerId: event.pointerId,
       at: spot.at,
@@ -192,11 +197,15 @@
       width: spot.width,
       textSelected: textSelected(),
     });
+    pointerHeld = false;
+    askAboutTheOffer();
     if (action !== undefined) apply(action);
   }
 
   function cancel(event: PointerEvent): void {
     gestures?.cancelled(event.pointerId);
+    pointerHeld = false;
+    askAboutTheOffer();
   }
 
   function frameOrigin(doc: Document): Point {
@@ -216,7 +225,7 @@
     });
   }
 
-  function spotOfferedAt(placement: LiftPlacement): Omit<LiftOffer, 'passage'> | null {
+  function spotOfferedAt(placement: LiftPlacement): Omit<LiftOffer, 'chapter'> | null {
     return match(placement)
       .with({ kind: 'nowhere' }, () => null)
       .with({ kind: 'above' }, (above) => ({ left: above.left, top: above.top }))
@@ -224,20 +233,47 @@
       .exhaustive();
   }
 
-  function offerLift(host: HTMLElement, chapter: ChapterView): void {
-    const found = selectedPassage(chapter.doc, chapter.index, chapter.cfis);
-    if (found === null) {
+  function placedOffer(
+    host: HTMLElement,
+    chapter: ChapterView,
+    rects: readonly LiftRect[],
+  ): LiftOffer | null {
+    const box = host.getBoundingClientRect();
+    const origin = frameOrigin(chapter.doc);
+    const onScreen = { left: box.left, top: box.top, width: box.width };
+    const placed = rects.map((rect) => rectOnStage(rect, origin, onScreen));
+    const spot = spotOfferedAt(liftPlacement(placed, { width: box.width, height: box.height }));
+
+    return spot === null ? null : { chapter, ...spot };
+  }
+
+  function followTheSelection(): void {
+    const host = stage;
+    const chapter = showing;
+    if (host === null || chapter === null) {
       offer = null;
       return;
     }
 
-    const box = host.getBoundingClientRect();
-    const origin = frameOrigin(chapter.doc);
-    const onScreen = { left: box.left, top: box.top, width: box.width };
-    const rects = found.rects.map((rect) => rectOnStage(rect, origin, onScreen));
-    const spot = spotOfferedAt(liftPlacement(rects, { width: box.width, height: box.height }));
+    const rects = shownSelection(chapter.doc);
+    match(offerMove({ selected: rects.length > 0, pointerHeld }))
+      .with({ kind: 'keep' }, () => undefined)
+      .with({ kind: 'clear' }, () => {
+        offer = null;
+      })
+      .with({ kind: 'place' }, () => {
+        offer = placedOffer(host, chapter, rects);
+      })
+      .exhaustive();
+  }
 
-    offer = spot === null ? null : { passage: found.passage, ...spot };
+  function askAboutTheOffer(): void {
+    if (queued !== null) return;
+
+    queued = requestAnimationFrame(() => {
+      queued = null;
+      followTheSelection();
+    });
   }
 
   function takeLift(): void {
@@ -245,8 +281,11 @@
     offer = null;
     if (held === null) return;
 
+    const passage = selectedPassage(held.chapter.doc, held.chapter.index, held.chapter.cfis);
     for (const doc of chapters) forgetSelection(doc);
-    onLift?.(held.passage);
+    if (passage === null) return;
+
+    onLift?.(passage);
   }
 
   function scrubbed(asked: string): void {
@@ -257,21 +296,22 @@
     const doc = chapter.doc;
     gestures ??= new FlowGestures(chapter.pages);
     chapters.add(doc);
+    showing = chapter;
 
     doc.addEventListener('keydown', onkey);
     relayKeydownsTo(window, doc);
+    doc.addEventListener('selectionchange', askAboutTheOffer);
     doc.addEventListener('pointerdown', (event) =>
       press(event, spotOn(host, event, frameOrigin(doc))),
     );
-    doc.addEventListener('pointerup', (event) => {
-      release(event, spotOn(host, event, frameOrigin(doc)));
-      offerLift(host, chapter);
-    });
+    doc.addEventListener('pointerup', (event) =>
+      release(event, spotOn(host, event, frameOrigin(doc))),
+    );
     doc.addEventListener('pointercancel', cancel);
   }
 
   $effect(() => {
-    if (reported !== null) offer = null;
+    if (reported !== null) askAboutTheOffer();
   });
 
   $effect(() => {
@@ -310,7 +350,11 @@
       host.removeEventListener('pointerup', ended);
       host.removeEventListener('pointercancel', cancel);
       view.close();
+      if (queued !== null) cancelAnimationFrame(queued);
+      queued = null;
       gestures = null;
+      showing = null;
+      pointerHeld = false;
       offer = null;
       contentsOpen = false;
       settingsOpen = false;

@@ -205,6 +205,15 @@ function acrossTwoParagraphs(doc: Document): Range {
   return range;
 }
 
+function forgets(doc: Document): void {
+  doc.getSelection()?.removeAllRanges();
+}
+
+function buttonLeft(): number | null {
+  const box = liftButton()?.getBoundingClientRect();
+  return box === undefined ? null : Math.round(box.left);
+}
+
 async function releasesOver(doc: Document, range: Range): Promise<void> {
   doc.body.dispatchEvent(pointer('pointerdown', 40, 1));
   selects(doc, range);
@@ -343,6 +352,96 @@ describe('a selection in a flow chapter', () => {
     await rests();
 
     expect([liftButton(), lifted.length]).toEqual([null, 0]);
+  });
+
+  it('offers the button for a selection nobody dragged, with no pointer released', async () => {
+    const doc = await opened();
+
+    selects(doc, overOneWord(doc));
+    await rests();
+
+    expect(liftButton()).not.toBeNull();
+  });
+
+  it('follows the selection as it grows, without waiting for a pointer', async () => {
+    const doc = await opened();
+
+    selects(doc, overOneWord(doc));
+    await rests();
+    const word = buttonLeft();
+
+    selects(doc, acrossTwoParagraphs(doc));
+    await rests();
+    const paragraphs = buttonLeft();
+
+    expect([word, paragraphs].every((at) => at !== null)).toBe(true);
+    expect(word).not.toBe(paragraphs);
+  });
+
+  it('lifts the passage the selection grew into, not the one it started as', async () => {
+    const doc = await opened();
+
+    selects(doc, overOneWord(doc));
+    await rests();
+    selects(doc, acrossTwoParagraphs(doc));
+    await rests();
+
+    liftButton()?.click();
+    await rests();
+
+    expect(lifted[0]?.quote.exact).toContain('海が見える。');
+  });
+
+  it('takes the button away when the selection collapses under it', async () => {
+    const doc = await opened();
+    await releasesOver(doc, overOneWord(doc));
+    expect(liftButton()).not.toBeNull();
+
+    forgets(doc);
+    await rests();
+
+    expect(liftButton()).toBeNull();
+  });
+
+  it('lifts nothing when the selection has gone before the button is pressed', async () => {
+    const doc = await opened();
+    await releasesOver(doc, overOneWord(doc));
+    const standing = liftButton();
+
+    forgets(doc);
+    standing?.click();
+    await rests();
+
+    expect([lifted.length, liftButton()]).toEqual([0, null]);
+  });
+
+  it('stands no button up while the pointer is still drawing the selection out', async () => {
+    const doc = await opened();
+
+    doc.body.dispatchEvent(pointer('pointerdown', 40, 1));
+    selects(doc, overOneWord(doc));
+    await rests();
+    const dragging = liftButton();
+
+    doc.body.dispatchEvent(pointer('pointerup', 40, 0));
+    await rests();
+
+    expect([dragging, liftButton() !== null]).toEqual([null, true]);
+  });
+
+  it('offers the button again for a selection the reader extends with the keyboard', async () => {
+    const doc = await opened();
+    await tap(0.5);
+    selects(doc, overOneWord(doc));
+    await rests();
+    const word = doc.getSelection()?.toString() ?? '';
+
+    await userEvent.keyboard('{Shift>}{ArrowRight}{ArrowRight}{/Shift}');
+    await rests();
+
+    const grown = doc.getSelection()?.toString() ?? '';
+    expect(grown.length).toBeGreaterThan(word.length);
+    expect(liftButton()).not.toBeNull();
   });
 
   it('offers nothing for a release that left no selection behind', async () => {
