@@ -1,6 +1,8 @@
-import type { FoliateBook, Relocation, TocItem, View } from 'foliate-js/view.js';
+import type { FoliateBook, FractionTarget, Relocation, TocItem, View } from 'foliate-js/view.js';
 import { sanitiseChapter } from './chapter-sanitiser';
 import { sanitiseChapters } from './chapter-transform';
+import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-spine';
+import type { Spine } from './flow-spine';
 import { flowStyles } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -26,7 +28,13 @@ type FlowOpening = {
 
 type BindChapter = (doc: Document, pages: PageTurner) => void;
 
-type Navigable = Pick<View, 'goTo'>;
+type Navigable = Pick<View, 'goTo' | 'resolveNavigation'>;
+
+type Closable = Pick<View, 'close' | 'remove'>;
+
+type Destroyable = Pick<FoliateBook, 'destroy'>;
+
+type FlowTarget = number | string | FractionTarget;
 
 const EPUB_MEDIA_TYPE = 'application/epub+zip';
 
@@ -40,19 +48,44 @@ function bookDirection(book: FoliateBook): ReadingDirection {
   return book.dir === SPINE_SAYS_RIGHT_TO_LEFT ? 'rtl' : 'ltr';
 }
 
-function tearDown(view: View, book: FoliateBook): void {
-  view.close();
-  book.destroy();
-  view.remove();
+function attempt(step: () => void): void {
+  try {
+    step();
+  } catch {
+    return;
+  }
 }
 
-async function openAt(view: Navigable, at: string | null): Promise<boolean> {
+function tearDown(view: Closable, book: Destroyable): void {
+  attempt(() => {
+    view.close();
+  });
+  attempt(() => {
+    book.destroy();
+  });
+  attempt(() => {
+    view.remove();
+  });
+}
+
+async function navigate(view: Navigable, spine: Spine, target: FlowTarget): Promise<unknown> {
+  const resolved = view.resolveNavigation(target);
+  if (resolved === undefined) return view.goTo(target);
+
+  const paged = sectionWithABody(spine, resolved.index);
+  if (paged === null) return undefined;
+  if (paged === resolved.index) return view.goTo(target);
+
+  return view.goTo(paged);
+}
+
+async function openAt(view: Navigable, spine: Spine, at: string | null): Promise<boolean> {
   if (at !== null) {
-    const resumed = await view.goTo(at);
+    const resumed = await navigate(view, spine, at);
     if (resumed !== undefined) return true;
   }
 
-  const started = await view.goTo(OPENS_AT_THE_FIRST_SECTION);
+  const started = await navigate(view, spine, OPENS_AT_THE_FIRST_SECTION);
   return started !== undefined;
 }
 
@@ -67,6 +100,9 @@ async function openFlowSurface(
   );
   sanitiseChapters(book, sanitiseChapter);
 
+  const spine = spineOf(book);
+  leaveOutSectionsWithNoBody(book, spine);
+
   const view = new FoliateView();
   view.addEventListener('load', (loaded) => {
     bind(loaded.detail.doc, view);
@@ -79,7 +115,7 @@ async function openFlowSurface(
   try {
     await view.open(book);
     view.renderer.setStyles(flowStyles(opening.settings));
-    const laidOut = await openAt(view, opening.at);
+    const laidOut = await openAt(view, spine, opening.at);
     if (!laidOut) throw new Error('its first section could not be laid out');
   } catch (cause) {
     tearDown(view, book);
@@ -92,10 +128,10 @@ async function openFlowSurface(
     toc: book.toc ?? null,
     ticks: view.getSectionFractions(),
     seek: (fraction: number) => {
-      void view.goTo({ fraction });
+      void navigate(view, spine, { fraction });
     },
     jump: (href: string) => {
-      void view.goTo(href);
+      void navigate(view, spine, href);
     },
     restyle: (settings: ReadingSettings) => {
       view.renderer.setStyles(flowStyles(settings));
@@ -106,5 +142,5 @@ async function openFlowSurface(
   };
 }
 
-export { openAt, openFlowSurface };
-export type { BindChapter, FlowOpening, FlowSurface };
+export { navigate, openAt, openFlowSurface, tearDown };
+export type { BindChapter, Closable, Destroyable, FlowOpening, FlowSurface, FlowTarget, Navigable };

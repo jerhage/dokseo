@@ -47,5 +47,5 @@ function sanitiseChapters(book: Transformable, sanitise: SanitiseChapter): void 
   });
 }
 
-export { sanitiseChapters, sanitiseResource, treatmentOf };
+export { essenceOf, sanitiseChapters, sanitiseResource, treatmentOf };
 export type { ResourceTreatment, SanitiseChapter, Transformable };

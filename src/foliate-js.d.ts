@@ -22,9 +22,24 @@ declare module 'foliate-js/view.js' {
     addEventListener(type: 'data', listener: (event: ResourceEvent) => void): void;
   }
 
+  interface ManifestItem {
+    mediaType?: string | null;
+  }
+
+  interface BookResources {
+    getItemByHref(href: string): ManifestItem | undefined;
+  }
+
+  interface BookSection {
+    id: string;
+    linear?: string | null;
+  }
+
   interface FoliateBook {
     toc?: TocItem[] | null;
     dir?: string | null;
+    sections: BookSection[];
+    resources: BookResources;
     transformTarget: TransformTarget;
     destroy(): void;
   }
@@ -50,6 +65,10 @@ declare module 'foliate-js/view.js' {
     fraction: number;
   }
 
+  interface ResolvedTarget {
+    index: number;
+  }
+
   interface ViewEventMap {
     load: CustomEvent<ChapterLoad>;
     relocate: CustomEvent<Relocation>;
@@ -58,6 +77,7 @@ declare module 'foliate-js/view.js' {
   class View extends HTMLElement {
     open(book: FoliateBook): Promise<void>;
     goTo(target: number | string | FractionTarget): Promise<unknown>;
+    resolveNavigation(target: number | string | FractionTarget): ResolvedTarget | undefined;
     goLeft(): Promise<void>;
     goRight(): Promise<void>;
     prev(distance?: number): Promise<void>;
@@ -81,10 +101,14 @@ declare module 'foliate-js/view.js' {
 
   export { View, makeBook };
   export type {
+    BookResources,
+    BookSection,
     ChapterLoad,
     FoliateBook,
     FractionTarget,
+    ManifestItem,
     Relocation,
+    ResolvedTarget,
     ResourceDetail,
     ResourceEvent,
     TocItem,
