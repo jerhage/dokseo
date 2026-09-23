@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
+import { PRIVATE_WINDOW } from './directory';
 import type { OpfsWriteReply, OpfsWriteRequest } from '$workers/opfs-writer-protocol';
 
 const UNREADABLE_REPLY = 'The storage worker sent a reply that could not be read';
@@ -21,6 +22,8 @@ type Waiting = {
 };
 
 function unwritten(name: string, cause: string): Error {
+  if (cause.includes(PRIVATE_WINDOW)) return new Error(PRIVATE_WINDOW, { cause });
+
   return new Error(`Key "${name}" could not be written: ${cause}`, { cause });
 }
 

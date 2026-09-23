@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { OpfsWriteReply, OpfsWriteRequest } from '$workers/opfs-writer-protocol';
+import { PRIVATE_WINDOW } from './directory';
 import { createBlobWriter } from './worker-blob-writer';
 import type { BlobWrite } from './worker-blob-writer';
 
@@ -227,5 +228,18 @@ describe('createBlobWriter', () => {
       settled: true,
       cause: 'Key "book.src" could not be written: No worker was left to start',
     });
+  });
+});
+
+describe('a private window that refuses the file system', () => {
+  it('says so plainly, without the key nobody asked about', async () => {
+    const worker = fakeWorker();
+    const { write } = writerOn([worker]);
+
+    const writing = write('7ccc3a16.src', new Blob(['x']), () => undefined);
+    worker.reply({ kind: 'failed', id: worker.sent[0]!.id, cause: PRIVATE_WINDOW });
+
+    await expect(writing).rejects.toThrow(PRIVATE_WINDOW);
+    await expect(writing).rejects.not.toThrow('could not be written');
   });
 });
