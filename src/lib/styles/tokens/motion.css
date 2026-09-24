@@ -1,7 +1,7 @@
 :root {
   --dur-instant: var(--ds-dur-instant);
   --dur-flash: var(--ds-dur-flash);
-  --dur-quick: var(--ds-dur-quick);
+  --dur-quick: var(--ds-duration-quick);
   --dur-moderate: var(--ds-dur-moderate);
   --dur-slow: var(--ds-dur-slow);
   --dur-crawl: var(--ds-dur-crawl);
@@ -21,7 +21,7 @@
 
   --transition-ui: var(--ds-dur-flash) var(--ds-ease-smooth);
   --transition-spring: var(--ds-dur-spring) var(--ds-easing-spring);
-  --transition-enter: var(--ds-dur-quick) var(--ds-ease-out);
+  --transition-enter: var(--ds-duration-quick) var(--ds-ease-out);
   --transition-exit: var(--ds-dur-flash) var(--ds-ease-in);
   --transition-bounce: var(--ds-dur-moderate) var(--ds-ease-bounce);
   --transition-elastic: var(--ds-dur-slow) var(--ds-ease-elastic);

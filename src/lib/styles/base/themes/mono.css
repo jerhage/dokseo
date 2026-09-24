@@ -76,7 +76,10 @@
   --ds-font-body: 'Archivo', system-ui, sans-serif;
   --ds-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --ds-weight-strong: var(--ds-fw-9);
+  --ds-weight-semibold: var(--ds-fw-semibold);
   --ds-tracking-tight: var(--ds-ls-normal);
+  --ds-tracking-wider: var(--ds-ls-wider);
+  --ds-tracking-widest: var(--ds-ls-widest);
 
   --ds-corner-xs: var(--ds-radius-none);
   --ds-corner-sm: var(--ds-radius-none);
@@ -93,6 +96,7 @@
 
   --ds-shadow-inset: 0 0 0 transparent;
 
+  --ds-duration-quick: var(--ds-dur-quick);
   --ds-dur-spring: var(--ds-dur-quick);
   --ds-easing-spring: var(--ds-ease-crisp);
 }

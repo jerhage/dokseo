@@ -21,7 +21,7 @@
   --weight-light: var(--ds-fw-light);
   --weight-normal: var(--ds-fw-normal);
   --weight-medium: var(--ds-fw-5);
-  --weight-semibold: var(--ds-fw-semibold);
+  --weight-semibold: var(--ds-weight-semibold);
   --weight-bold: var(--ds-weight-strong);
   --weight-extrabold: var(--ds-fw-extrabold);
   --weight-black: var(--ds-fw-black);
@@ -29,8 +29,8 @@
   --ls-tight: var(--ds-tracking-tight);
   --ls-normal: var(--ds-ls-normal);
   --ls-wide: var(--ds-ls-wide);
-  --ls-wider: var(--ds-ls-wider);
-  --ls-widest: var(--ds-ls-widest);
+  --ls-wider: var(--ds-tracking-wider);
+  --ls-widest: var(--ds-tracking-widest);
 
   --lh-none: var(--ds-lh-none);
   --lh-tight: var(--ds-lh-tight);
