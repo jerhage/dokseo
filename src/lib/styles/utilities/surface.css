@@ -24,6 +24,10 @@
 .bordered-strong {
   border: var(--border-width) solid var(--border-color-strong);
 }
+.accent-start {
+  padding-inline-start: var(--sp-2);
+  border-inline-start: var(--border-width-strong) solid var(--color-accent-mid);
+}
 .rounded-control {
   border-radius: var(--radius-control);
 }

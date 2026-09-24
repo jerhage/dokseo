@@ -926,6 +926,46 @@ describe('the design system stylesheets', () => {
     }
   });
 
+  it('highlights a mark with the soft primary fill and keeps the text colour around it', () => {
+    expect(declarations(ruleBody(style('base/elements.css'), 'mark'))).toEqual([
+      'color: inherit',
+      'background-color: var(--color-primary-soft)',
+      'border-radius: var(--radius-xs)',
+    ]);
+  });
+
+  it('sizes each width utility to the spacing step its name says', () => {
+    const layout = style('utilities/layout.css');
+
+    for (const step of WIDTH_STEPS) {
+      const selector = `.w-${step}`;
+
+      expect({ selector, body: declarations(ruleBody(layout, selector)) }).toEqual({
+        selector,
+        body: [`inline-size: var(--sp-${step})`],
+      });
+    }
+  });
+
+  it('keeps a shrink-0 item at its own size in a flex row', () => {
+    expect(declarations(ruleBody(style('utilities/flex.css'), '.shrink-0'))).toEqual([
+      'flex-shrink: 0',
+    ]);
+  });
+
+  it('clears the bullets and the indent of a reset list', () => {
+    expect(declarations(ruleBody(style('utilities/layout.css'), '.list-reset')).toSorted()).toEqual(
+      ['list-style: none', 'padding: 0'],
+    );
+  });
+
+  it('draws the start accent on the inline-start side in the accent colour', () => {
+    expect(declarations(ruleBody(style('utilities/surface.css'), '.accent-start'))).toEqual([
+      'padding-inline-start: var(--sp-2)',
+      'border-inline-start: var(--border-width-strong) solid var(--color-accent-mid)',
+    ]);
+  });
+
   it('anchors a top-placed modal to the top and keeps it inside the viewport', () => {
     const top = declarations(ruleBody(style('components/modal/modal.css'), '.modal-top'));
 
@@ -955,6 +995,20 @@ describe('the design system stylesheets', () => {
     ]);
     expect(declarations(ruleBody(modal, '.modal-footer-info'))).toEqual(
       expect.arrayContaining(['flex-wrap: wrap', 'justify-content: space-between']),
+    );
+  });
+
+  it('styles a command item on its own, outside any dropdown', () => {
+    const command = style('components/command.css');
+    const selectors = rules(command).flatMap((rule) => rule.selectors);
+
+    expect(selectors.filter((selector) => !selector.startsWith('.command-item'))).toEqual([]);
+    expect(declarations(ruleBody(command, '.command-item'))).toContain('display: flex');
+    expect(declarations(ruleBody(command, '.command-item.is-selected'))).toContain(
+      'background-color: var(--color-selected)',
+    );
+    expect(declarations(ruleBody(command, '.command-item-hint'))).toContain(
+      'margin-inline-start: auto',
     );
   });
 

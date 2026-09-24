@@ -72,6 +72,12 @@ kbd {
   border: var(--border-width) solid var(--border-color);
 }
 
+mark {
+  color: inherit;
+  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-xs);
+}
+
 ::selection {
   background-color: var(--color-primary-soft);
   color: var(--color-text);

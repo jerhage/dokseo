@@ -13,6 +13,7 @@
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
+  import CommandSection from './CommandSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import FileUploadSection from './FileUploadSection.svelte';
@@ -49,6 +50,7 @@
     TableSection,
     ModalToastSection,
     DropdownSection,
+    CommandSection,
     NavigationSection,
     AvatarSection,
     ProgressSection,

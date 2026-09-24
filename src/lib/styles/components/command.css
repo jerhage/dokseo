@@ -1,0 +1,45 @@
+.command-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  inline-size: 100%;
+  min-block-size: var(--control-h-sm);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  text-align: start;
+  text-decoration: none;
+  color: var(--color-text);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-ui);
+}
+.command-item:hover {
+  color: var(--color-text);
+  background-color: var(--color-hover);
+}
+.command-item:focus-visible {
+  outline: none;
+  background-color: var(--color-selected);
+}
+.command-item.is-selected {
+  color: var(--color-brand-text);
+  background-color: var(--color-selected);
+}
+.command-item:disabled,
+.command-item[aria-disabled='true'] {
+  color: var(--color-disabled);
+  background-color: transparent;
+  cursor: not-allowed;
+}
+.command-item-hint {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding-inline-start: var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  color: var(--color-text-faint);
+}

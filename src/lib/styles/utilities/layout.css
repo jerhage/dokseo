@@ -11,6 +11,15 @@
 .w-full {
   inline-size: 100%;
 }
+.w-6 {
+  inline-size: var(--sp-6);
+}
+.w-8 {
+  inline-size: var(--sp-8);
+}
+.w-10 {
+  inline-size: var(--sp-10);
+}
 .min-h-screen {
   min-block-size: 100dvh;
 }
@@ -31,6 +40,10 @@
 }
 .overflow-hidden {
   overflow: hidden;
+}
+.list-reset {
+  padding: 0;
+  list-style: none;
 }
 .layout-app-shell {
   container: app-shell / inline-size;
