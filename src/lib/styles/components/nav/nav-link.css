@@ -1,0 +1,25 @@
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-block-size: var(--control-h-sm);
+  padding-inline: var(--sp-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-control);
+  transition:
+    background-color var(--transition-ui),
+    color var(--transition-ui);
+}
+.nav-link:hover {
+  color: var(--color-text);
+  background-color: var(--color-hover);
+}
+.nav-link.is-active,
+.nav-link[aria-current='page'] {
+  color: var(--color-brand-text);
+  background-color: var(--color-selected);
+}

@@ -177,6 +177,71 @@ const LOCKED_Z_SCALE: Readonly<Record<string, string>> = {
   '--ds-z-tooltip': '600',
 };
 
+const CONTRACT_CLASSES: Readonly<Record<string, readonly string[]>> = {
+  btn: ['btn-primary', 'btn-ghost', 'btn-danger', 'btn-loading', 'btn-sm', 'btn-lg'],
+  badge: [
+    'badge-success',
+    'badge-warning',
+    'badge-danger',
+    'badge-info',
+    'badge-brand',
+    'badge-accent',
+    'badge-neutral',
+  ],
+  tag: ['is-active', 'tag-remove'],
+  field: ['field-label', 'field-control', 'field-hint', 'field-error'],
+  input: [],
+  select: [],
+  textarea: [],
+  'checkbox-wrapper': ['checkbox-input'],
+  'radio-wrapper': ['radio-input'],
+  toggle: ['toggle-input'],
+  card: [
+    'card-body',
+    'card-eyebrow',
+    'card-title',
+    'card-description',
+    'card-footer',
+    'card-feature',
+  ],
+  alert: ['alert-success', 'alert-warning', 'alert-danger', 'alert-info', 'alert-close'],
+  tabs: ['tab-list', 'tab', 'tab-panel', 'is-active'],
+  accordion: ['accordion-item', 'accordion-trigger', 'accordion-body'],
+  table: [],
+  modal: ['modal-backdrop', 'modal-header', 'modal-body', 'modal-footer', 'modal-close'],
+  toast: ['toast-success', 'toast-warning', 'toast-danger', 'toast-info'],
+  dropdown: ['dropdown-menu', 'dropdown-item', 'dropdown-separator', 'is-open'],
+  breadcrumb: ['breadcrumb-item', 'breadcrumb-separator'],
+  pagination: ['pagination-item', 'is-active', 'is-disabled'],
+  avatar: ['avatar-sm', 'avatar-lg', 'avatar-stack'],
+  'progress-track': ['progress-fill', 'progress-success'],
+  skeleton: [],
+  divider: ['divider-labeled'],
+};
+
+const RUNTIME_INPUTS = ['--progress', '--toast-timeout'];
+
+const ANIMATION_KEYWORDS = new Set([
+  'none',
+  'linear',
+  'infinite',
+  'both',
+  'forwards',
+  'backwards',
+  'normal',
+  'reverse',
+  'alternate',
+  'alternate-reverse',
+  'running',
+  'paused',
+  'ease',
+  'ease-in',
+  'ease-out',
+  'ease-in-out',
+  'step-start',
+  'step-end',
+]);
+
 function read(url: URL): string {
   return readFileSync(url, 'utf8');
 }
@@ -253,6 +318,35 @@ function ruleBody(css: string, selector: string): string {
   return ruleFor(css, selector).body;
 }
 
+function styled(folders: readonly string[]): readonly string[] {
+  return importedFiles().filter((path) => folders.includes(path.split('/')[0] ?? ''));
+}
+
+function withoutRuntimeInputs(css: string): string {
+  return RUNTIME_INPUTS.reduce(
+    (text, name) => text.replaceAll(new RegExp(`var\\(${name},`, 'gu'), 'var(,'),
+    css,
+  );
+}
+
+function keyframesIn(css: string): readonly string[] {
+  return Array.from(css.matchAll(/@keyframes\s+([\w-]+)/gu), (found) => group(found, 1));
+}
+
+function animationNames(css: string): readonly string[] {
+  return Array.from(css.matchAll(/animation(?:-name)?\s*:([^;}]*)/gu), (found) =>
+    group(found, 1)
+      .replaceAll(/var\([^()]*(?:\([^()]*\)[^()]*)*\)/gu, ' ')
+      .split(/[\s,]+/u)
+      .filter((word) => /^[a-z][\w-]*$/iu.test(word))
+      .filter((word) => !ANIMATION_KEYWORDS.has(word)),
+  ).flat();
+}
+
+function definesClass(css: string, name: string): boolean {
+  return new RegExp(`\\.${name}(?![\\w-])[^{}]*\\{`, 'u').test(css);
+}
+
 function expectedLayer(path: string): string {
   const first = path.split('/')[0] ?? '';
   return first.endsWith('.css') ? first.slice(0, -'.css'.length) : first;
@@ -291,6 +385,20 @@ describe('the design system stylesheets', () => {
 
     expect(imports.map((entry) => entry.path).toSorted()).toEqual(importedFiles());
     for (const entry of imports) expect(entry.layer).toBe(expectedLayer(entry.path));
+  });
+
+  it('imports the layers in the order the statement declares them', () => {
+    const order = (orderStatement(style('index.css')) ?? '')
+      .replace(/^@layer /u, '')
+      .replace(/;$/u, '')
+      .split(', ');
+    const positions = Array.from(
+      style('index.css').matchAll(/@import\s+'[^']+'\s+layer\(([\w-]+)\);/gu),
+      (found) => order.indexOf(group(found, 1)),
+    );
+
+    expect(positions).not.toContain(-1);
+    expect(positions).toEqual(positions.toSorted((left, right) => left - right));
   });
 
   it('keeps every --ds- name inside base and tokens', () => {
@@ -356,6 +464,64 @@ describe('the design system stylesheets', () => {
 
     expect(elements).not.toMatch(/--ds-/u);
     expect(unresolved).toEqual([]);
+  });
+
+  it('resolves every custom property a component, utility or override reads', () => {
+    const tokens = definedAcross('tokens');
+
+    for (const path of styled(['components', 'utilities', 'overrides'])) {
+      const css = style(path);
+      const local = new Set(definitions(css).filter((name) => name.startsWith('--_')));
+      const unresolved = references(withoutRuntimeInputs(css), '--').filter(
+        (name) => !tokens.has(name) && !local.has(name),
+      );
+
+      expect({ path, unresolved }).toEqual({ path, unresolved: [] });
+    }
+  });
+
+  it('reads every runtime input with a fallback', () => {
+    const css = styled(['components', 'utilities', 'overrides'])
+      .map((path) => style(path))
+      .join('\n');
+
+    for (const name of RUNTIME_INPUTS) {
+      const reads = css.split(`var(${name}`).length - 1;
+      const withFallback = css.split(`var(${name},`).length - 1;
+
+      expect({ name, reads }).not.toEqual({ name, reads: 0 });
+      expect({ name, withFallback }).toEqual({ name, withFallback: reads });
+    }
+  });
+
+  it('declares every @keyframes in utilities/animation.css', () => {
+    const elsewhere = designSystemFiles()
+      .filter((path) => path !== 'utilities/animation.css')
+      .filter((path) => keyframesIn(style(path)).length > 0);
+
+    expect(elsewhere).toEqual([]);
+    expect(keyframesIn(style('utilities/animation.css')).length).toBeGreaterThan(0);
+  });
+
+  it('animates only with keyframes that exist', () => {
+    const declared = new Set(keyframesIn(style('utilities/animation.css')));
+
+    for (const path of styled(['components', 'utilities', 'overrides'])) {
+      const missing = animationNames(style(path)).filter((name) => !declared.has(name));
+
+      expect({ path, missing }).toEqual({ path, missing: [] });
+    }
+  });
+
+  it('defines every contract component class and its parts in components', () => {
+    const css = styled(['components'])
+      .map((path) => style(path))
+      .join('\n');
+    const missing = Object.entries(CONTRACT_CLASSES)
+      .flatMap(([base, parts]) => [base].concat(parts))
+      .filter((name) => !definesClass(css, name));
+
+    expect(missing).toEqual([]);
   });
 
   it('holds the z-index scale the contract locks', () => {

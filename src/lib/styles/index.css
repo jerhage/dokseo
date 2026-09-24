@@ -42,6 +42,9 @@
 @import 'components/modal/modal-transitions.css' layer(components);
 @import 'components/toast.css' layer(components);
 @import 'components/dropdown.css' layer(components);
+@import 'components/nav/nav-link.css' layer(components);
+@import 'components/nav/breadcrumb.css' layer(components);
+@import 'components/nav/pagination.css' layer(components);
 @import 'components/avatar.css' layer(components);
 @import 'components/progress.css' layer(components);
 @import 'components/skeleton.css' layer(components);
