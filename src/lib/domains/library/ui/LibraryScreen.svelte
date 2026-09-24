@@ -3,6 +3,8 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import Button from '$lib/components/Button.svelte';
   import NavLink from '$lib/components/NavLink.svelte';
+  import WindowDropzone from '$lib/components/WindowDropzone.svelte';
+  import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
@@ -196,6 +198,14 @@
     </footer>
   </main>
 </div>
+
+<WindowDropzone
+  disabled={view.busy || settingsBook !== null || removeBook !== null}
+  readDrop={filesFromDataTransfer}
+  onfiles={(files) => void view.upload(files)}
+>
+  Drop to add to your library
+</WindowDropzone>
 
 {#if settingsBook !== null}
   <BookSettings
