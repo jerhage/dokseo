@@ -52,5 +52,8 @@
 @import 'components/codeblock.css' layer(components);
 @import 'components/stat.css' layer(components);
 
+@import 'utilities/layout.css' layer(utilities);
+@import 'utilities/flex.css' layer(utilities);
+@import 'utilities/spacing.css' layer(utilities);
 @import 'utilities/animation.css' layer(utilities);
 

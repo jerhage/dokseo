@@ -1,0 +1,31 @@
+.row {
+  display: flex;
+  gap: var(--sp-3);
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.wrap {
+  flex-wrap: wrap;
+}
+.items-start {
+  align-items: flex-start;
+}
+.items-center {
+  align-items: center;
+}
+.items-end {
+  align-items: flex-end;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.justify-end {
+  justify-content: flex-end;
+}
+.flex-1 {
+  flex: 1;
+  min-inline-size: 0;
+}

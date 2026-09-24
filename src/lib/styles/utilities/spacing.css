@@ -1,0 +1,43 @@
+.gap-1 {
+  --_gap: var(--sp-1);
+  gap: var(--_gap);
+}
+.gap-2 {
+  --_gap: var(--sp-2);
+  gap: var(--_gap);
+}
+.gap-3 {
+  --_gap: var(--sp-3);
+  gap: var(--_gap);
+}
+.gap-4 {
+  --_gap: var(--sp-4);
+  gap: var(--_gap);
+}
+.gap-5 {
+  --_gap: var(--sp-5);
+  gap: var(--_gap);
+}
+.gap-6 {
+  --_gap: var(--sp-6);
+  gap: var(--_gap);
+}
+.gap-8 {
+  --_gap: var(--sp-8);
+  gap: var(--_gap);
+}
+.stack-sm,
+.stack-md,
+.stack-lg {
+  display: flex;
+  flex-direction: column;
+}
+.stack-sm {
+  gap: var(--sp-2);
+}
+.stack-md {
+  gap: var(--sp-4);
+}
+.stack-lg {
+  gap: var(--sp-7);
+}
