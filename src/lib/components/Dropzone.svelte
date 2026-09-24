@@ -20,6 +20,7 @@
     compact?: boolean;
     invalid?: boolean;
     readDrop?: DropReader<DataTransfer, File> | undefined;
+    ref?: HTMLInputElement | undefined;
     onfiles: (selection: FileSelection<File>) => void;
   };
 
@@ -33,6 +34,7 @@
     compact = false,
     invalid = false,
     readDrop,
+    ref = $bindable(),
     onfiles,
     class: className,
     ...rest
@@ -89,6 +91,7 @@
 >
   <input
     {...rest}
+    bind:this={ref}
     aria-invalid={invalid ? 'true' : rest['aria-invalid']}
     type="file"
     class="dropzone-input"

@@ -10,10 +10,11 @@
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     tabs: readonly TabItem[];
     label: string;
-    selected?: string;
+    selected?: string | undefined;
     variant?: TabsVariant;
-    onselect?: (id: string) => void;
+    onselectedchange?: (id: string) => void;
     panel: Snippet<[TabItem]>;
+    tools?: Snippet;
   };
 
   let {
@@ -21,8 +22,9 @@
     label,
     selected = $bindable(),
     variant = 'underline',
-    onselect,
+    onselectedchange,
     panel,
+    tools,
     class: className,
     ...rest
   }: Props = $props();
@@ -35,7 +37,7 @@
   function select(id: string): void {
     if (id === shown) return;
     selected = id;
-    onselect?.(id);
+    onselectedchange?.(id);
   }
 
   function keydown(event: KeyboardEvent): void {
@@ -56,7 +58,7 @@
   }
 </script>
 
-<div {...rest} class={['tabs', TABS_VARIANTS[variant], className]}>
+{#snippet tabList()}
   <div bind:this={list} class="tab-list" role="tablist" aria-label={label}>
     {#each tabs as tab, index (tab.id)}
       <button
@@ -74,6 +76,17 @@
       >
     {/each}
   </div>
+{/snippet}
+
+<div {...rest} class={['tabs', TABS_VARIANTS[variant], className]}>
+  {#if tools}
+    <div class="tabs-header">
+      {@render tabList()}
+      <div class="tabs-tools">{@render tools()}</div>
+    </div>
+  {:else}
+    {@render tabList()}
+  {/if}
   {#each tabs as tab, index (tab.id)}
     <div
       class="tab-panel"

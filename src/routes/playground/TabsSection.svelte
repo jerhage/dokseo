@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
   import Tabs from '$lib/components/Tabs.svelte';
   import type { TabItem } from '$lib/components/tabs';
@@ -27,13 +28,18 @@
   };
 
   let project = $state('overview');
+  let changes = $state(0);
 </script>
 
 {#snippet panel(tab: TabItem)}
   <p>{PANELS[tab.id] ?? tab.label}</p>
 {/snippet}
 
-<DemoSection id="tabs" title="Tabs" classes={['tabs', 'tabs-pill', 'tab-list', 'tab', 'tab-panel']}>
+<DemoSection
+  id="tabs"
+  title="Tabs"
+  classes={['tabs', 'tabs-pill', 'tab-list', 'tab', 'tab-panel', 'tabs-header', 'tabs-tools']}
+>
   <div class="grid-3">
     <Card>
       <Tabs tabs={PROJECT} label="Project" bind:selected={project} {panel} />
@@ -47,6 +53,20 @@
         <span class="text-xs text-faint">dir="rtl": the arrow keys follow the text direction</span>
         <Tabs tabs={RANGE} label="Range, right to left" {panel} />
       </div>
+    </Card>
+    <Card>
+      <Tabs
+        tabs={RANGE}
+        label="Range with tools"
+        variant="pill"
+        onselectedchange={() => (changes += 1)}
+        {panel}
+      >
+        {#snippet tools()}
+          <Button size="sm" variant="ghost">Export</Button>
+        {/snippet}
+      </Tabs>
+      <p class="text-xs text-faint">tools beside the list · onselectedchange ran {changes} times</p>
     </Card>
   </div>
 </DemoSection>

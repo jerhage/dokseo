@@ -7,7 +7,7 @@
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
     variant?: StatusVariant;
-    title?: string;
+    title?: string | undefined;
     actions?: Snippet;
     ondismiss?: () => void;
     dismissLabel?: string;

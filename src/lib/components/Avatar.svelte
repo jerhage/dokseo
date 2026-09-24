@@ -7,7 +7,7 @@
     size?: ControlSize;
     shape?: AvatarShape;
     variant?: AvatarVariant;
-    src?: string;
+    src?: string | undefined;
     alt?: string;
   };
 

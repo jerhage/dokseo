@@ -9,6 +9,7 @@ import {
   BUTTON_SIZES,
   BUTTON_VARIANTS,
   CARD_VARIANTS,
+  MEDIA_RATIOS,
   MENU_ALIGNS,
   MODAL_SIZES,
   PROGRESS_SIZES,
@@ -41,6 +42,7 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
   BUTTON_SIZES,
   BUTTON_VARIANTS,
   CARD_VARIANTS,
+  MEDIA_RATIOS,
   MENU_ALIGNS,
   MODAL_SIZES,
   PROGRESS_SIZES,
@@ -60,6 +62,7 @@ function cssFiles(folder: URL): readonly string[] {
 function definedClasses(): ReadonlySet<string> {
   const css = [
     ...cssFiles(new URL('components/', STYLES)),
+    ...cssFiles(new URL('utilities/', STYLES)),
     ...cssFiles(new URL('overrides/', STYLES)),
   ].join('\n');
   return new Set([...css.matchAll(/\.([a-z][a-z0-9-]*)/gu)].map((found) => found[1] ?? ''));

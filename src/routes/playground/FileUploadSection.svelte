@@ -13,6 +13,7 @@
 
   let nextId = 0;
   let attachments = $state<readonly FileItemData[]>([]);
+  let arrival = $state<readonly string[]>([]);
   let avatar = $state<readonly FileItemData[]>([
     { id: 'profile-photo', name: 'profile-photo.jpg', size: 422_707, state: 'complete' },
     {
@@ -48,6 +49,7 @@
   $effect(() => () => uploads.cancelAll());
 
   function addAttachments(selection: FileSelection<File>): void {
+    arrival = selection.arrived.map(({ file, verdict }) => `${file.name} (${verdict.kind})`);
     const added = itemsFrom(selection);
     attachments = [...attachments, ...added];
     for (const item of added) if (item.state === 'pending') uploads.start(item.id);
@@ -84,6 +86,9 @@
               hint="PNG, JPG, PDF or EPUB · up to 50 MB each"
               onfiles={addAttachments}
             />
+            {#if arrival.length > 0}
+              <p class="text-xs text-faint">Arrival order: {arrival.join(', ')}</p>
+            {/if}
             <FileList items={attachments} onremove={removeAttachment} />
           </div>
         {/snippet}

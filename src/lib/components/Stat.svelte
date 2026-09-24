@@ -6,7 +6,7 @@
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     label: string;
     value: string;
-    delta?: string;
+    delta?: string | undefined;
     trend?: StatTrend;
   };
 

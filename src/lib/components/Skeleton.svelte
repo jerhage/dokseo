@@ -5,7 +5,7 @@
 
   type Props = Omit<HTMLAttributes<HTMLSpanElement>, 'children'> & {
     shape?: SkeletonShape;
-    width?: string;
+    width?: string | undefined;
   };
 
   let { shape = 'default', width, class: className, ...rest }: Props = $props();

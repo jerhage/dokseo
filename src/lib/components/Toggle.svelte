@@ -4,13 +4,27 @@
 
   type Props = Omit<HTMLInputAttributes, 'type' | 'role' | 'class' | 'children'> & {
     class?: ClassValue;
+    ref?: HTMLInputElement | undefined;
     children: Snippet;
   };
 
-  let { checked = $bindable(false), class: className, children, ...rest }: Props = $props();
+  let {
+    checked = $bindable(false),
+    ref = $bindable(),
+    class: className,
+    children,
+    ...rest
+  }: Props = $props();
 </script>
 
 <label class={['toggle', className]}>
-  <input {...rest} type="checkbox" role="switch" class="toggle-input" bind:checked />
+  <input
+    {...rest}
+    bind:this={ref}
+    type="checkbox"
+    role="switch"
+    class="toggle-input"
+    bind:checked
+  />
   <span>{@render children()}</span>
 </label>

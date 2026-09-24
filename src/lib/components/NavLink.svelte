@@ -6,13 +6,23 @@
     href: string;
     current?: boolean;
     icon?: Snippet;
+    ref?: HTMLAnchorElement | undefined;
   };
 
-  let { href, current = false, icon, class: className, children, ...rest }: Props = $props();
+  let {
+    href,
+    current = false,
+    icon,
+    ref = $bindable(),
+    class: className,
+    children,
+    ...rest
+  }: Props = $props();
 </script>
 
 <a
   {...rest}
+  bind:this={ref}
   {href}
   aria-current={current ? 'page' : undefined}
   class={['nav-link', { 'is-active': current }, className]}

@@ -44,6 +44,16 @@
       {#snippet title()}A media slot{/snippet}
       {#snippet description()}The media area keeps a 16 by 9 frame.{/snippet}
     </Card>
+    <Card mediaRatio="square">
+      {#snippet media()}{/snippet}
+      {#snippet title()}Square media{/snippet}
+      {#snippet description()}mediaRatio="square" maps to .aspect-square.{/snippet}
+    </Card>
+    <Card mediaRatio="portrait">
+      {#snippet media()}{/snippet}
+      {#snippet title()}Portrait media{/snippet}
+      {#snippet description()}mediaRatio="portrait" maps to .aspect-portrait.{/snippet}
+    </Card>
     <Card heading="h4">
       {#snippet title()}Body only{/snippet}
       <p class="text-sm">Free content goes in the body after the title.</p>

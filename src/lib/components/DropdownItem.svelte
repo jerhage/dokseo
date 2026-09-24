@@ -4,8 +4,8 @@
 
   type Props = Omit<HTMLButtonAttributes, 'type' | 'role'> & {
     danger?: boolean;
-    selected?: boolean;
-    shortcut?: string;
+    selected?: boolean | undefined;
+    shortcut?: string | undefined;
   };
 
   let {

@@ -1,14 +1,15 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
-  import { CARD_VARIANTS } from './classes';
-  import type { CardVariant } from './classes';
+  import { CARD_VARIANTS, MEDIA_RATIOS } from './classes';
+  import type { CardVariant, MediaRatio } from './classes';
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'title'> & {
     variant?: CardVariant;
-    href?: string;
+    href?: string | undefined;
     heading?: 'h2' | 'h3' | 'h4';
     media?: Snippet;
+    mediaRatio?: MediaRatio;
     eyebrow?: Snippet;
     title?: Snippet;
     description?: Snippet;
@@ -20,6 +21,7 @@
     href,
     heading = 'h3',
     media,
+    mediaRatio = 'video',
     eyebrow,
     title,
     description,
@@ -37,7 +39,7 @@
   class={['card', CARD_VARIANTS[variant], { 'card-interactive': href !== undefined }, className]}
 >
   {#if media}
-    <div class="card-media">{@render media()}</div>
+    <div class={['card-media', MEDIA_RATIOS[mediaRatio]]}>{@render media()}</div>
   {/if}
   <div class="card-body">
     {#if eyebrow}

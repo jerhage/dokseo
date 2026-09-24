@@ -16,6 +16,8 @@ type FileVerdict =
   | { readonly kind: 'accepted' }
   | Exclude<Rejection, { readonly kind: 'too-many' }>;
 
+type ArrivalVerdict = { readonly kind: 'accepted' } | Rejection;
+
 type SelectionPolicy = {
   readonly rules: readonly AcceptRule[];
   readonly maxSize: number | undefined;
@@ -24,9 +26,12 @@ type SelectionPolicy = {
 
 type RejectedFile<F extends FileLike> = { readonly file: F; readonly reason: Rejection };
 
+type ArrivedFile<F extends FileLike> = { readonly file: F; readonly verdict: ArrivalVerdict };
+
 type FileSelection<F extends FileLike> = {
   readonly accepted: readonly F[];
   readonly rejected: readonly RejectedFile<F>[];
+  readonly arrived: readonly ArrivedFile<F>[];
 };
 
 const KILOBYTE = 1024;
@@ -66,20 +71,32 @@ function fileVerdict(file: FileLike, policy: SelectionPolicy): FileVerdict {
   return { kind: 'accepted' };
 }
 
+function arrivalVerdict(
+  file: FileLike,
+  policy: SelectionPolicy,
+  acceptedSoFar: number,
+): ArrivalVerdict {
+  const verdict = fileVerdict(file, policy);
+  if (verdict.kind === 'accepted' && !policy.multiple && acceptedSoFar > 0) {
+    return { kind: 'too-many' };
+  }
+  return verdict;
+}
+
 function selectFiles<F extends FileLike>(
   files: readonly F[],
   policy: SelectionPolicy,
 ): FileSelection<F> {
   const accepted: F[] = [];
   const rejected: RejectedFile<F>[] = [];
+  const arrived: ArrivedFile<F>[] = [];
   for (const file of files) {
-    const verdict = fileVerdict(file, policy);
-    if (verdict.kind !== 'accepted') rejected.push({ file, reason: verdict });
-    else if (!policy.multiple && accepted.length > 0) {
-      rejected.push({ file, reason: { kind: 'too-many' } });
-    } else accepted.push(file);
+    const verdict = arrivalVerdict(file, policy, accepted.length);
+    arrived.push({ file, verdict });
+    if (verdict.kind === 'accepted') accepted.push(file);
+    else rejected.push({ file, reason: verdict });
   }
-  return { accepted, rejected };
+  return { accepted, rejected, arrived };
 }
 
 function formatFileSize(bytes: number): string {
@@ -100,6 +117,8 @@ function describeRejection(reason: Rejection): string {
 export { acceptRules, describeRejection, fileVerdict, formatFileSize, selectFiles };
 export type {
   AcceptRule,
+  ArrivalVerdict,
+  ArrivedFile,
   FileLike,
   FileSelection,
   FileVerdict,

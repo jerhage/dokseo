@@ -11,6 +11,7 @@
     pill?: boolean;
     loading?: boolean;
     active?: boolean;
+    ref?: HTMLButtonElement | undefined;
   };
 
   let {
@@ -22,6 +23,7 @@
     loading = false,
     active = false,
     type = 'button',
+    ref = $bindable(),
     class: className,
     children,
     ...rest
@@ -30,6 +32,7 @@
 
 <button
   {...rest}
+  bind:this={ref}
   {type}
   aria-busy={loading || undefined}
   class={[

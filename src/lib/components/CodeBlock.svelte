@@ -2,8 +2,8 @@
   import type { HTMLAttributes } from 'svelte/elements';
 
   type Props = HTMLAttributes<HTMLPreElement> & {
-    code?: string;
-    label?: string;
+    code?: string | undefined;
+    label?: string | undefined;
   };
 
   let { code, label, class: className, children, ...rest }: Props = $props();

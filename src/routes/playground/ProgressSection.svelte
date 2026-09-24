@@ -17,6 +17,7 @@
   const SIZES: readonly ControlSize[] = ['sm', 'md', 'lg'];
 
   let value = $state(64);
+  let known = $state(true);
 </script>
 
 <DemoSection
@@ -33,6 +34,10 @@
         <Progress label="{size} progress" {size} value={38} />
       {/each}
       <Progress label="Loading" />
+      <Progress label="Known or not" value={known ? value : undefined} />
+      <Button size="sm" onclick={() => (known = !known)}>
+        value={known ? value : 'undefined'}
+      </Button>
       <div class="row items-center gap-2">
         <Button size="sm" onclick={() => (value = Math.max(0, value - 10))}>−10</Button>
         <Button size="sm" onclick={() => (value = Math.min(100, value + 10))}>+10</Button>

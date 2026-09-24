@@ -17,6 +17,8 @@ type CardVariant = 'default' | 'elevated' | 'feature';
 
 type TabsVariant = 'underline' | 'pill';
 
+type MediaRatio = 'video' | 'square' | 'portrait';
+
 type ModalSize = 'sm' | 'md' | 'lg';
 
 type MenuAlign = 'start' | 'end';
@@ -77,6 +79,12 @@ const CARD_VARIANTS: Readonly<Record<CardVariant, ClassList>> = {
   default: [],
   elevated: ['card-elevated'],
   feature: ['card-feature'],
+};
+
+const MEDIA_RATIOS: Readonly<Record<MediaRatio, ClassList>> = {
+  video: [],
+  square: ['aspect-square'],
+  portrait: ['aspect-portrait'],
 };
 
 const TABS_VARIANTS: Readonly<Record<TabsVariant, ClassList>> = {
@@ -148,6 +156,7 @@ export {
   BUTTON_SIZES,
   BUTTON_VARIANTS,
   CARD_VARIANTS,
+  MEDIA_RATIOS,
   MENU_ALIGNS,
   MODAL_SIZES,
   PROGRESS_SIZES,
@@ -165,6 +174,7 @@ export type {
   CardVariant,
   ClassList,
   ControlSize,
+  MediaRatio,
   MenuAlign,
   ModalSize,
   ProgressVariant,

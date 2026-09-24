@@ -5,12 +5,14 @@
   type Props = Omit<HTMLInputAttributes, 'type' | 'class' | 'children'> & {
     class?: ClassValue;
     hint?: string | undefined;
+    ref?: HTMLInputElement | undefined;
     children: Snippet;
   };
 
   let {
     checked = $bindable(false),
     indeterminate = $bindable(false),
+    ref = $bindable(),
     hint,
     class: className,
     children,
@@ -19,7 +21,14 @@
 </script>
 
 <label class={['checkbox-wrapper', className]}>
-  <input {...rest} type="checkbox" class="checkbox-input" bind:checked bind:indeterminate />
+  <input
+    {...rest}
+    bind:this={ref}
+    type="checkbox"
+    class="checkbox-input"
+    bind:checked
+    bind:indeterminate
+  />
   <span class="checkbox-label">
     {@render children()}
     {#if hint !== undefined}

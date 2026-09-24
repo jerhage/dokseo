@@ -128,6 +128,12 @@ describe('selectFiles', () => {
         { file: archive, reason: { kind: 'wrong-type' } },
         { file: poster, reason: { kind: 'too-large', limit: MB } },
       ],
+      arrived: [
+        { file: archive, verdict: { kind: 'wrong-type' } },
+        { file: photo, verdict: { kind: 'accepted' } },
+        { file: poster, verdict: { kind: 'too-large', limit: MB } },
+        { file: scan, verdict: { kind: 'accepted' } },
+      ],
     });
   });
 
@@ -152,6 +158,13 @@ describe('selectFiles', () => {
         { file: poster, reason: { kind: 'too-large', limit: MB } },
         { file: selfie, reason: { kind: 'too-many' } },
       ],
+      arrived: [
+        { file: archive, verdict: { kind: 'wrong-type' } },
+        { file: photo, verdict: { kind: 'accepted' } },
+        { file: scan, verdict: { kind: 'too-many' } },
+        { file: poster, verdict: { kind: 'too-large', limit: MB } },
+        { file: selfie, verdict: { kind: 'too-many' } },
+      ],
     });
   });
 
@@ -159,10 +172,17 @@ describe('selectFiles', () => {
     const selection = selectFiles([photo], policy());
 
     expect(selection.accepted[0]).toBe(photo);
+    expect(selection.arrived[0]?.file).toBe(photo);
+  });
+
+  it('lists every file in the order it arrived, whatever its verdict', () => {
+    const selection = selectFiles([scan, archive, photo], policy({ rules }));
+
+    expect(selection.arrived.map((arrived) => arrived.file)).toEqual([scan, archive, photo]);
   });
 
   it('returns empty lists for an empty batch', () => {
-    expect(selectFiles([], policy())).toEqual({ accepted: [], rejected: [] });
+    expect(selectFiles([], policy())).toEqual({ accepted: [], rejected: [], arrived: [] });
   });
 });
 

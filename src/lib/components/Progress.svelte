@@ -6,7 +6,7 @@
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     label: string;
-    value?: number;
+    value?: number | undefined;
     max?: number;
     variant?: ProgressVariant;
     size?: ControlSize;

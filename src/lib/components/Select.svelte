@@ -1,11 +1,19 @@
 <script lang="ts">
   import type { HTMLSelectAttributes } from 'svelte/elements';
 
-  type Props = HTMLSelectAttributes;
+  type Props = HTMLSelectAttributes & {
+    ref?: HTMLSelectElement | undefined;
+  };
 
-  let { value = $bindable(), class: className, children, ...rest }: Props = $props();
+  let {
+    value = $bindable(),
+    ref = $bindable(),
+    class: className,
+    children,
+    ...rest
+  }: Props = $props();
 </script>
 
-<select {...rest} bind:value class={['select', className]}>
+<select {...rest} bind:this={ref} bind:value class={['select', className]}>
   {@render children?.()}
 </select>

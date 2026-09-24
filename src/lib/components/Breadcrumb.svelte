@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
 
-  type Crumb = { readonly label: string; readonly href?: string };
+  type Crumb = { readonly label: string; readonly href?: string | undefined };
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
     items: readonly Crumb[];
