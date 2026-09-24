@@ -3,6 +3,7 @@
   import { buildContainer } from '$lib/container';
   import { provideContainer } from '$lib/context';
   import '$lib/styles/tokens.css';
+  import '$lib/styles/index.css';
 
   let { children } = $props();
 
