@@ -14,6 +14,7 @@ import {
   PROGRESS_SIZES,
   PROGRESS_VARIANTS,
   SKELETON_SHAPES,
+  STAT_TRENDS,
   TABS_VARIANTS,
   TOAST_VARIANTS,
 } from './classes';
@@ -36,6 +37,7 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
   PROGRESS_SIZES,
   PROGRESS_VARIANTS,
   SKELETON_SHAPES,
+  STAT_TRENDS,
   TABS_VARIANTS,
   TOAST_VARIANTS,
 };

@@ -29,6 +29,8 @@ type ProgressVariant = 'primary' | 'success' | 'warning' | 'danger' | 'accent';
 
 type SkeletonShape = 'default' | 'text' | 'title' | 'circle' | 'block';
 
+type StatTrend = 'flat' | 'up' | 'down';
+
 type ClassList = readonly string[];
 
 const BUTTON_VARIANTS: Readonly<Record<ButtonVariant, ClassList>> = {
@@ -131,6 +133,12 @@ const SKELETON_SHAPES: Readonly<Record<SkeletonShape, ClassList>> = {
   block: ['skeleton-block'],
 };
 
+const STAT_TRENDS: Readonly<Record<StatTrend, ClassList>> = {
+  flat: [],
+  up: ['stat-delta-up'],
+  down: ['stat-delta-down'],
+};
+
 export {
   ALERT_VARIANTS,
   AVATAR_SHAPES,
@@ -145,6 +153,7 @@ export {
   PROGRESS_SIZES,
   PROGRESS_VARIANTS,
   SKELETON_SHAPES,
+  STAT_TRENDS,
   TABS_VARIANTS,
   TOAST_VARIANTS,
 };
@@ -160,6 +169,7 @@ export type {
   ModalSize,
   ProgressVariant,
   SkeletonShape,
+  StatTrend,
   StatusVariant,
   TabsVariant,
 };
