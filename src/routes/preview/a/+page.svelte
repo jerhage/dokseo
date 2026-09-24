@@ -3,7 +3,7 @@
   import { useContainer } from '$lib/context';
   import LibraryScreen from '$lib/domains/library/ui/redesign/a/LibraryScreen.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
-  import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
+  import CapturePalette from '$lib/domains/recognition/ui/redesign/CapturePalette.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import { MISSING_BOOK_PARAMETER, missingBookNotice } from '$lib/shared/reader-location';
