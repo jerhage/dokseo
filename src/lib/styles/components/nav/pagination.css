@@ -34,6 +34,7 @@
   background-color: var(--color-primary);
 }
 .pagination-item.is-disabled,
+.pagination-item:disabled,
 .pagination-item[aria-disabled='true'] {
   color: var(--color-disabled);
   background-color: transparent;
