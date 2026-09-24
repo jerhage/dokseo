@@ -1,0 +1,14 @@
+@layer features {
+  @scope (.pending-card) {
+    .cover {
+      aspect-ratio: 2 / 3;
+    }
+    .title {
+      font-family: var(--font-ja);
+      font-weight: var(--weight-normal);
+    }
+    .title:lang(ko) {
+      font-family: var(--font-ko);
+    }
+  }
+}
