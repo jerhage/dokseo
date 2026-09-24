@@ -13,13 +13,11 @@
 
   let { busy, compact, onfiles }: Props = $props();
 
-  const uid = $props.id();
-  const pickerId = `${uid}-files`;
-
+  let filePicker = $state<HTMLInputElement>();
   let folderPicker = $state<HTMLInputElement | null>(null);
 
   export function choose(): void {
-    document.getElementById(pickerId)?.click();
+    filePicker?.click();
   }
 
   function deliver(files: readonly File[]): void {
@@ -30,7 +28,7 @@
 
 <section class="col gap-2" aria-label="Add to your library">
   <Dropzone
-    id={pickerId}
+    bind:ref={filePicker}
     multiple
     {compact}
     accept={ACCEPT_ATTRIBUTE}

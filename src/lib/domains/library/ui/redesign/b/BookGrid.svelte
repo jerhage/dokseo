@@ -5,7 +5,6 @@
   import { bookProgress } from '../../../domain/book/book-progress';
   import BookActions from './BookActions.svelte';
   import { bookFacts } from './library-shelves';
-  import './book-grid.css';
 
   type Props = {
     readonly books: readonly Book[];
@@ -18,19 +17,19 @@
   let { books, covers, busy, onedit, onremove }: Props = $props();
 </script>
 
-<ul class="book-grid grid-auto p-0" aria-label="Books">
+<ul class="grid-auto grid-auto-sm p-0" aria-label="Books">
   {#each books as book (book.id)}
     {@const progress = bookProgress(book)}
     {@const cover = covers.get(book.id) ?? null}
-    <li class="col gap-2" aria-busy={busy(book.id)}>
+    <li class={['col gap-2', { 'is-busy': busy(book.id) }]} aria-busy={busy(book.id)}>
       <a
-        class="cover surface-sunken bordered rounded-container"
+        class="aspect-portrait overflow-hidden surface-sunken bordered rounded-container"
         href="/read/{book.id}"
         aria-label="Read {book.title}"
         title={bookFacts(book)}
       >
         {#if cover !== null}
-          <img class="art" src={cover} alt="" />
+          <img class="object-cover" src={cover} alt="" />
         {/if}
       </a>
       {#if progress.kind === 'known'}
@@ -38,7 +37,7 @@
       {/if}
       <div class="row items-start gap-1">
         <div class="col gap-1 flex-1">
-          <h3 class="title text-sm truncate" lang={book.language}>{book.title}</h3>
+          <h3 class="text-sm weight-medium truncate" lang={book.language}>{book.title}</h3>
           <p class="text-xs text-muted truncate">
             {progress.kind === 'known' ? progress.label : bookFacts(book)}
           </p>

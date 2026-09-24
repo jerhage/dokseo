@@ -19,20 +19,20 @@
 
 <section class="continue-reading col gap-3" aria-labelledby={headingId}>
   <h2 id={headingId} class="text-xs uppercase tracking-wide text-muted">Continue reading</h2>
-  <ul class="grid-auto p-0">
+  <ul class="scroll-strip">
     {#each books as book (book.id)}
       {@const progress = bookProgress(book)}
       {@const cover = covers.get(book.id) ?? null}
       <li>
         <Card href="/read/{book.id}" variant="elevated">
           <div class="row items-center gap-4">
-            <span class="thumb surface-sunken rounded-control">
+            <span class="thumb aspect-portrait overflow-hidden surface-sunken rounded-control">
               {#if cover !== null}
-                <img class="art" src={cover} alt="" />
+                <img class="object-cover" src={cover} alt="" />
               {/if}
             </span>
             <span class="col gap-2 flex-1">
-              <span class="title text-base weight-semibold truncate" lang={book.language}>
+              <span class="text-base weight-semibold truncate" lang={book.language}>
                 {book.title}
               </span>
               {#if progress.kind === 'known'}

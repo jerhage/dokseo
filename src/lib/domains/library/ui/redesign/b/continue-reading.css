@@ -3,19 +3,6 @@
     .thumb {
       flex: none;
       inline-size: var(--sp-10);
-      aspect-ratio: 2 / 3;
-      overflow: hidden;
-    }
-    .art {
-      inline-size: 100%;
-      block-size: 100%;
-      object-fit: cover;
-    }
-    .title:lang(ja) {
-      font-family: var(--font-ja);
-    }
-    .title:lang(ko) {
-      font-family: var(--font-ko);
     }
   }
 }

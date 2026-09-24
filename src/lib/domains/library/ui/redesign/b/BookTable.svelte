@@ -29,7 +29,7 @@
   <tbody>
     {#each books as book (book.id)}
       {@const progress = bookProgress(book)}
-      <tr aria-busy={busy(book.id)}>
+      <tr class={{ 'is-busy': busy(book.id) }} aria-busy={busy(book.id)}>
         <td>
           <a class="weight-medium" href="/read/{book.id}" lang={book.language}>{book.title}</a>
         </td>

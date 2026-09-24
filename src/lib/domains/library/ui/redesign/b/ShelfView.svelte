@@ -39,44 +39,43 @@
   const tabs = $derived(shelfTabs(books));
 </script>
 
-<section class="col gap-3" aria-label="Your books">
-  <div class="row wrap items-center justify-end gap-2">
-    <Dropdown size="sm" variant="ghost" align="end">
-      {#snippet trigger()}Sort: {sortName(order)}{/snippet}
-      {#each SORT_ORDERS as choice (choice)}
-        <DropdownItem selected={order === choice} onclick={() => (order = choice)}>
-          {sortName(choice)}
-        </DropdownItem>
-      {/each}
-    </Dropdown>
-    <div class="row gap-1" role="group" aria-label="Show books as">
-      <Button
-        size="sm"
-        variant="ghost"
-        active={layout === 'grid'}
-        aria-pressed={layout === 'grid'}
-        onclick={() => (layout = 'grid')}
-      >
-        Covers
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        active={layout === 'list'}
-        aria-pressed={layout === 'list'}
-        onclick={() => (layout = 'list')}
-      >
-        List
-      </Button>
-    </div>
-  </div>
-
+<section aria-label="Your books">
   <Tabs
     {tabs}
     label="Shelves"
     variant="pill"
     bind:selected={() => shelf, (id) => (shelf = toShelf(id))}
   >
+    {#snippet tools()}
+      <Dropdown size="sm" variant="ghost" align="end">
+        {#snippet trigger()}Sort: {sortName(order)}{/snippet}
+        {#each SORT_ORDERS as choice (choice)}
+          <DropdownItem selected={order === choice} onclick={() => (order = choice)}>
+            {sortName(choice)}
+          </DropdownItem>
+        {/each}
+      </Dropdown>
+      <div class="row gap-1" role="group" aria-label="Show books as">
+        <Button
+          size="sm"
+          variant="ghost"
+          active={layout === 'grid'}
+          aria-pressed={layout === 'grid'}
+          onclick={() => (layout = 'grid')}
+        >
+          Covers
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          active={layout === 'list'}
+          aria-pressed={layout === 'list'}
+          onclick={() => (layout = 'list')}
+        >
+          List
+        </Button>
+      </div>
+    {/snippet}
     {#snippet panel()}
       {#if shown.length === 0}
         <p class="text-sm text-muted py-4">{emptyShelfText(shelf, searching)}</p>

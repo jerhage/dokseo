@@ -29,10 +29,10 @@
     <span class="flex-1 text-sm weight-medium truncate" lang={language}>{title}</span>
     {#if count !== null}<span class="text-xs mono text-muted">{count}</span>{/if}
   </div>
-  {#if fraction === null}
-    <Progress label="Importing {title}" size="sm" />
-  {:else}
-    <Progress label="Importing {title}" value={fraction * 100} size="sm" />
-  {/if}
+  <Progress
+    label="Importing {title}"
+    value={fraction === null ? undefined : fraction * 100}
+    size="sm"
+  />
   <p class="text-xs text-muted">{detail}</p>
 </section>

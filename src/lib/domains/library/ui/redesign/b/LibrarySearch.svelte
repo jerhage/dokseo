@@ -14,11 +14,13 @@
   const fieldId = `${uid}-search`;
   const LABEL = 'Filter these titles';
 
+  let field = $state<HTMLInputElement>();
+
   const active = $derived(isSearching(query));
 
   function abandon(): void {
     query = '';
-    document.getElementById(fieldId)?.focus();
+    field?.focus();
   }
 
   function keys(event: KeyboardEvent): void {
@@ -31,6 +33,7 @@
 <div class="row items-center gap-2 flex-1" role="search">
   <label class="visually-hidden" for={fieldId}>{LABEL}</label>
   <Input
+    bind:ref={field}
     id={fieldId}
     class="flex-1"
     type="search"
