@@ -1,0 +1,198 @@
+.layout-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--stat-min-width)), 1fr));
+  gap: var(--border-width);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+}
+.layout-stats-grid > * {
+  box-shadow: 0 0 0 var(--border-width) var(--border-color);
+}
+.layout-z-pattern {
+  container: z-pattern / inline-size;
+  display: grid;
+  gap: var(--sp-10);
+}
+.layout-z-pattern > * {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--sp-8);
+}
+.layout-z-pattern > :nth-child(even) > :first-child {
+  order: 1;
+}
+@container z-pattern (max-width: 40rem) {
+  .layout-z-pattern > * {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-5);
+  }
+  .layout-z-pattern > :nth-child(even) > :first-child {
+    order: 0;
+  }
+}
+.layout-overlay {
+  display: grid;
+  isolation: isolate;
+  min-block-size: var(--layout-row-height);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+}
+.layout-overlay > * {
+  grid-area: 1 / 1;
+}
+.layout-overlay-media {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  background-color: var(--color-surface-sunken);
+}
+.layout-overlay-scrim {
+  background-image: linear-gradient(to top, var(--color-scrim), transparent);
+}
+.layout-overlay-content {
+  z-index: var(--z-raised);
+  align-self: end;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-6);
+  color: var(--color-text-on-scrim);
+}
+.layout-overlay-content :is(h1, h2, h3, h4, h5, h6, p) {
+  color: inherit;
+}
+.layout-overlay-center .layout-overlay-content {
+  align-self: center;
+  justify-self: center;
+  text-align: center;
+}
+.layout-overlay-center .layout-overlay-scrim {
+  background-image: none;
+  background-color: var(--color-overlay);
+}
+.grid-bento,
+.layout-bento {
+  container: bento / inline-size;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--layout-row-height), auto);
+  grid-auto-flow: dense;
+  gap: var(--sp-4);
+}
+.layout-bento > :first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.bento-col-2 {
+  grid-column: span 2;
+}
+.bento-col-3 {
+  grid-column: span 3;
+}
+.bento-row-2 {
+  grid-row: span 2;
+}
+.tile-sm {
+  grid-column: span 1;
+}
+.tile-md {
+  grid-column: span 2;
+}
+.tile-lg {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.tile-hero {
+  grid-column: 1 / -1;
+  grid-row: span 2;
+}
+.tile-wide {
+  grid-column: 1 / -1;
+}
+.tile-tall,
+.tile-span-2-row {
+  grid-row: span 2;
+}
+@container bento (max-width: 40rem) {
+  .grid-bento > *,
+  .layout-bento > * {
+    grid-column: span 2;
+  }
+  .bento-col-2,
+  .bento-col-3,
+  .tile-md,
+  .tile-lg,
+  .tile-wide,
+  .tile-hero,
+  .layout-bento > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+@container bento (max-width: 24rem) {
+  .grid-bento > *,
+  .layout-bento > *,
+  .layout-bento > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+.layout-mosaic {
+  container: mosaic / inline-size;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(3, var(--layout-row-height));
+  grid-template-areas:
+    'lead lead lead lead tr tr'
+    'lead lead lead lead mr mr'
+    'bl bl bm bm . .';
+  grid-auto-rows: var(--layout-row-height);
+  grid-auto-flow: dense;
+  gap: var(--sp-4);
+}
+.mosaic-lead {
+  grid-area: lead;
+}
+.mosaic-top-right {
+  grid-area: tr;
+}
+.mosaic-mid-right {
+  grid-area: mr;
+}
+.mosaic-btm-left {
+  grid-area: bl;
+}
+.mosaic-btm-mid {
+  grid-area: bm;
+}
+.mosaic-wide {
+  grid-column: span 4;
+}
+.mosaic-mid {
+  grid-column: span 3;
+}
+.mosaic-narrow {
+  grid-column: span 2;
+}
+.mosaic-tall {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+@container mosaic (max-width: 44rem) {
+  .layout-mosaic > * {
+    grid-area: auto;
+    grid-column: span 3;
+  }
+  .mosaic-lead,
+  .mosaic-wide {
+    grid-column: 1 / -1;
+  }
+  .mosaic-tall {
+    grid-row: span 2;
+  }
+}
+@container mosaic (max-width: 26rem) {
+  .layout-mosaic > * {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,52 @@
+.prose {
+  max-inline-size: var(--container-prose);
+}
+.uppercase {
+  text-transform: uppercase;
+}
+.mono {
+  font-family: var(--font-mono);
+}
+.display {
+  font-family: var(--font-display);
+}
+.text-xs {
+  font-size: var(--text-xs);
+}
+.text-sm {
+  font-size: var(--text-sm);
+}
+.text-base {
+  font-size: var(--text-base);
+}
+.text-lg {
+  font-size: var(--text-lg);
+}
+.text-muted {
+  color: var(--color-text-muted);
+}
+.text-faint {
+  color: var(--color-text-faint);
+}
+.weight-medium {
+  font-weight: var(--weight-medium);
+}
+.weight-semibold {
+  font-weight: var(--weight-semibold);
+}
+.tracking-wide {
+  letter-spacing: var(--ls-wider);
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
