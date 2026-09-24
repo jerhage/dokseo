@@ -1,0 +1,20 @@
+@layer features {
+  @scope (.library-screen) {
+    :scope {
+      display: flex;
+      block-size: 100dvh;
+    }
+    .main {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-inline-size: 0;
+      min-block-size: 0;
+    }
+    .body {
+      flex: 1;
+      min-block-size: 0;
+      overflow-y: auto;
+    }
+  }
+}
