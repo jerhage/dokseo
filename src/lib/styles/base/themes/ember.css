@@ -12,6 +12,7 @@
   --ds-sand-tint-3: light-dark(oklch(0.3 0.03 50 / 0.035), oklch(0.98 0.01 70 / 0.03));
   --ds-sand-tint-5: light-dark(oklch(0.3 0.03 50 / 0.055), oklch(0.98 0.01 70 / 0.06));
   --ds-sand-tint-9: light-dark(oklch(0.3 0.03 50 / 0.1), oklch(0.98 0.01 70 / 0.1));
+  --ds-sand-tint-15: light-dark(oklch(0.3 0.03 50 / 0.15), oklch(0.98 0.01 70 / 0.18));
 
   --ds-ember-50: light-dark(oklch(0.97 0.02 50), oklch(0.26 0.04 40));
   --ds-ember-100: light-dark(oklch(0.94 0.04 50), oklch(0.3 0.05 40));
@@ -75,6 +76,7 @@
   --ds-disabled: var(--ds-sand-400);
   --ds-disabled-bg: var(--ds-sand-100);
 
+  --ds-spinner-track: var(--ds-sand-tint-15);
   --ds-table-stripe: var(--ds-sand-tint-3);
   --ds-table-row-hover: var(--ds-sand-tint-5);
   --ds-skeleton-base: var(--ds-sand-100);

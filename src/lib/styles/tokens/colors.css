@@ -75,5 +75,5 @@
   --color-overlay: var(--ds-shade-45);
   --color-overlay-heavy: var(--ds-shade-70);
   --color-scrim: var(--ds-shade-70);
-  --color-spinner-track: var(--ds-slate-tint-15);
+  --color-spinner-track: var(--ds-spinner-track);
 }

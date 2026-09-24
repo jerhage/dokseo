@@ -78,6 +78,7 @@
   --ds-disabled: var(--ds-slate-400);
   --ds-disabled-bg: var(--ds-slate-100);
 
+  --ds-spinner-track: var(--ds-slate-tint-15);
   --ds-table-stripe: var(--ds-slate-tint-3);
   --ds-table-row-hover: var(--ds-slate-tint-5);
   --ds-skeleton-base: var(--ds-slate-100);

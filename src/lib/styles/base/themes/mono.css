@@ -13,6 +13,7 @@
   --ds-mono-signal-ink: oklch(0.14 0 0);
   --ds-mono-tint-5: light-dark(oklch(0.14 0 0 / 0.06), oklch(0.96 0 0 / 0.07));
   --ds-mono-tint-9: light-dark(oklch(0.14 0 0 / 0.12), oklch(0.96 0 0 / 0.13));
+  --ds-mono-tint-15: light-dark(oklch(0.14 0 0 / 0.18), oklch(0.96 0 0 / 0.2));
 }
 
 :root[data-theme='mono'] {
@@ -57,6 +58,7 @@
   --ds-disabled: var(--ds-mono-gray-faint);
   --ds-disabled-bg: var(--ds-mono-well);
 
+  --ds-spinner-track: var(--ds-mono-tint-15);
   --ds-table-stripe: var(--ds-mono-tint-5);
   --ds-table-row-hover: var(--ds-mono-tint-9);
   --ds-skeleton-base: var(--ds-mono-well);
