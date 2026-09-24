@@ -1,0 +1,110 @@
+.dropzone {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-7) var(--sp-5);
+  text-align: center;
+  font-size: var(--text-sm);
+  line-height: var(--lh-snug);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-sunken);
+  border: var(--border-width-strong) dashed var(--border-color-strong);
+  border-radius: var(--radius-container);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-ui),
+    border-color var(--transition-ui),
+    color var(--transition-ui);
+}
+.dropzone:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+.dropzone:has(.dropzone-input:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+.dropzone.is-dragover {
+  color: var(--color-brand-text);
+  background-color: var(--color-selected);
+  border-style: solid;
+  border-color: var(--color-primary);
+}
+.dropzone.is-invalid,
+.dropzone:has(.dropzone-input[aria-invalid='true']),
+.field.is-invalid .dropzone {
+  border-color: var(--color-danger);
+}
+.dropzone:has(.dropzone-input:disabled) {
+  color: var(--color-disabled);
+  background-color: var(--color-disabled-bg);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+}
+.dropzone-input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.dropzone-icon {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-h-lg);
+  block-size: var(--control-h-lg);
+  margin-block-end: var(--sp-1);
+  color: var(--color-primary);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-spring);
+}
+.dropzone-icon::before {
+  content: '';
+  inline-size: var(--sp-5);
+  block-size: var(--sp-5);
+  background-color: currentColor;
+  mask: var(--icon-upload) center / contain no-repeat;
+}
+.dropzone.is-dragover .dropzone-icon {
+  transform: translateY(calc(var(--sp-1) * -1));
+}
+.dropzone:has(.dropzone-input:disabled) .dropzone-icon {
+  color: var(--color-disabled);
+  box-shadow: none;
+}
+.dropzone-title {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.dropzone:has(.dropzone-input:disabled) .dropzone-title {
+  color: var(--color-disabled);
+}
+.dropzone-browse {
+  color: var(--color-text-link);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-1);
+}
+.dropzone-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+.dropzone-compact {
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: start;
+  column-gap: var(--sp-3);
+  row-gap: 0;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: start;
+}
+.dropzone-compact .dropzone-icon {
+  grid-row: span 2;
+  inline-size: var(--control-h-md);
+  block-size: var(--control-h-md);
+  margin: 0;
+}

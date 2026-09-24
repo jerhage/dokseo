@@ -36,6 +36,7 @@
 @import 'components/forms/checkbox.css' layer(components);
 @import 'components/forms/radio.css' layer(components);
 @import 'components/forms/toggle.css' layer(components);
+@import 'components/forms/dropzone.css' layer(components);
 @import 'components/card.css' layer(components);
 @import 'components/close.css' layer(components);
 @import 'components/alert.css' layer(components);
@@ -51,6 +52,7 @@
 @import 'components/nav/pagination.css' layer(components);
 @import 'components/avatar.css' layer(components);
 @import 'components/progress.css' layer(components);
+@import 'components/file-list.css' layer(components);
 @import 'components/skeleton.css' layer(components);
 @import 'components/divider.css' layer(components);
 @import 'components/codeblock.css' layer(components);

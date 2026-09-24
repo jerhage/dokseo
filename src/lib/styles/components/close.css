@@ -1,6 +1,7 @@
 .alert-close,
 .modal-close,
-.toast-close {
+.toast-close,
+.file-item-remove {
   display: inline-grid;
   place-items: center;
   flex: none;
@@ -19,7 +20,8 @@
 }
 .alert-close::before,
 .modal-close::before,
-.toast-close::before {
+.toast-close::before,
+.file-item-remove::before {
   content: '';
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
@@ -28,7 +30,8 @@
 }
 .alert-close:hover,
 .modal-close:hover,
-.toast-close:hover {
+.toast-close:hover,
+.file-item-remove:hover {
   color: var(--color-text);
   background-color: var(--color-hover);
 }

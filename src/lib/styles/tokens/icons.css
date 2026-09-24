@@ -8,4 +8,6 @@
   --icon-success: var(--ds-icon-success);
   --icon-warning: var(--ds-icon-warning);
   --icon-danger: var(--ds-icon-danger);
+  --icon-upload: var(--ds-icon-upload);
+  --icon-file: var(--ds-icon-file);
 }
