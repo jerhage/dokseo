@@ -2,9 +2,9 @@
   import Badge from '$lib/components/Badge.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import type { Language } from '$lib/shared/language';
-  import { uploadFraction } from '../../../domain/ingest/upload-progress';
-  import type { UploadStage } from '../../../domain/ingest/upload-progress';
-  import { uploadCountText, uploadStageText } from '../../upload-progress-text';
+  import { uploadFraction } from '../domain/ingest/upload-progress';
+  import type { UploadStage } from '../domain/ingest/upload-progress';
+  import { uploadCountText, uploadStageText } from './upload-progress-text';
 
   type Props = {
     readonly title: string;

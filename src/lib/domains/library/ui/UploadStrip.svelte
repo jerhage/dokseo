@@ -2,15 +2,16 @@
   import Button from '$lib/components/Button.svelte';
   import Dropzone from '$lib/components/Dropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
-  import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from '../../accepted-formats';
-  import { arrivedFiles, takeChosen } from '../chosen-files';
+  import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from './accepted-formats';
+  import { arrivedFiles, takeChosen } from './chosen-files';
 
   type Props = {
     readonly busy: boolean;
+    readonly compact: boolean;
     readonly onfiles: (files: readonly File[]) => void;
   };
 
-  let { busy, onfiles }: Props = $props();
+  let { busy, compact, onfiles }: Props = $props();
 
   let filePicker = $state<HTMLInputElement>();
   let folderPicker = $state<HTMLInputElement | null>(null);
@@ -25,11 +26,11 @@
   }
 </script>
 
-<div class="col gap-2">
+<section class="col gap-2" aria-label="Add to your library">
   <Dropzone
     bind:ref={filePicker}
-    class="aspect-portrait"
     multiple
+    {compact}
     accept={ACCEPT_ATTRIBUTE}
     readDrop={filesFromDataTransfer}
     disabled={busy}
@@ -38,8 +39,7 @@
     onfiles={(selection) => deliver(arrivedFiles(selection))}
   />
 
-  <div class="col items-start gap-1">
-    <p class="text-sm">Add upload</p>
+  <div class="row wrap items-center justify-between gap-2">
     <p class="text-xs text-faint">{ACCEPTED_SUMMARY}</p>
     <Button size="sm" variant="ghost" disabled={busy} onclick={() => folderPicker?.click()}>
       Choose a folder instead
@@ -56,4 +56,4 @@
     tabindex="-1"
     onchange={(event) => deliver(takeChosen(event.currentTarget))}
   />
-</div>
+</section>

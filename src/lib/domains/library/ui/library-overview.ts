@@ -1,7 +1,7 @@
 import { matchesQuery } from '$lib/shared/text-search';
-import type { Book } from '../../domain/book/book';
-import { describeLibraryContents, libraryContents } from '../../domain/book/book-contents';
-import type { LibraryStatus } from '../library-view.svelte';
+import type { Book } from '../domain/book/book';
+import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';
+import type { LibraryStatus } from './library-view.svelte';
 
 type LibraryBody = 'reading' | 'failed' | 'empty' | 'listed';
 

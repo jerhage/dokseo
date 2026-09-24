@@ -4,7 +4,7 @@
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import Tabs from '$lib/components/Tabs.svelte';
   import type { BookId } from '$lib/shared/ids';
-  import type { Book } from '../../../domain/book/book';
+  import type { Book } from '../domain/book/book';
   import BookGrid from './BookGrid.svelte';
   import BookTable from './BookTable.svelte';
   import { SORT_ORDERS, emptyShelfText, shelfTabs, sortName, toShelf } from './library-shelves';

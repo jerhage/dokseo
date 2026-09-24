@@ -2,8 +2,8 @@
   import Progress from '$lib/components/Progress.svelte';
   import Table from '$lib/components/Table.svelte';
   import type { BookId } from '$lib/shared/ids';
-  import type { Book } from '../../../domain/book/book';
-  import { bookProgress } from '../../../domain/book/book-progress';
+  import type { Book } from '../domain/book/book';
+  import { bookProgress } from '../domain/book/book-progress';
   import BookActions from './BookActions.svelte';
   import { bookFacts } from './library-shelves';
 

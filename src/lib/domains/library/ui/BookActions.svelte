@@ -1,7 +1,7 @@
 <script lang="ts">
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import type { Book } from '../../../domain/book/book';
+  import type { Book } from '../domain/book/book';
 
   type Props = {
     readonly book: Book;

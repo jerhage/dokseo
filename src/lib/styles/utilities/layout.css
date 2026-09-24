@@ -43,6 +43,9 @@
 .layout-app-shell-embedded {
   min-block-size: 0;
 }
+:root:has(.layout-app-shell:not(.layout-app-shell-embedded)) {
+  background-color: var(--color-bg);
+}
 .layout-app-shell-header {
   grid-column: 1 / -1;
   grid-row: 1;

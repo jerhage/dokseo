@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, imagePlace, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import type { Book } from '../../../domain/book/book';
+import type { Book } from '../domain/book/book';
 import {
   CONTINUE_LIMIT,
   bookFacts,
