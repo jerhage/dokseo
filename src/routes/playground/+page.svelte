@@ -6,6 +6,7 @@
   import { createToaster } from '$lib/components/toaster.svelte';
   import AccordionSection from './AccordionSection.svelte';
   import AlertSection from './AlertSection.svelte';
+  import AppShellSection from './AppShellSection.svelte';
   import AvatarSection from './AvatarSection.svelte';
   import BadgesSection from './BadgesSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
@@ -14,11 +15,16 @@
   import DividerSection from './DividerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import FormSection from './FormSection.svelte';
+  import HeroSection from './HeroSection.svelte';
+  import LayoutsIntro from './LayoutsIntro.svelte';
   import ModalToastSection from './ModalToastSection.svelte';
   import NavigationSection from './NavigationSection.svelte';
+  import PageWrapSection from './PageWrapSection.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
   import ProgressSection from './ProgressSection.svelte';
+  import SidebarSection from './SidebarSection.svelte';
+  import SplitSection from './SplitSection.svelte';
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
   import TokensSection from './TokensSection.svelte';
@@ -40,6 +46,12 @@
     AvatarSection,
     ProgressSection,
     DividerSection,
+    LayoutsIntro,
+    PageWrapSection,
+    AppShellSection,
+    SidebarSection,
+    HeroSection,
+    SplitSection,
   ];
 
   setToaster(createToaster());
