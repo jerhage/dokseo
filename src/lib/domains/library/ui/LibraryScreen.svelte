@@ -3,6 +3,7 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import Button from '$lib/components/Button.svelte';
   import NavLink from '$lib/components/NavLink.svelte';
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
   import { DROP_INVITATION } from './accepted-formats';
@@ -82,6 +83,7 @@
       >
         {view.busy ? 'Adding…' : 'Upload'}
       </Button>
+      <AppearanceSwitcher />
     </div>
   </header>
 
