@@ -8,6 +8,7 @@
   import type { ModalSize } from './classes';
   import { modalStep } from './modal-phase';
   import type { ModalEvent, ModalPhase } from './modal-phase';
+  import { showsScrollbar } from './scrollbar';
 
   type Props = Omit<HTMLDialogAttributes, 'title' | 'open'> & {
     open?: boolean;
@@ -56,6 +57,10 @@
     match(next.effect)
       .with('none', () => {})
       .with('show-modal', () => {
+        dialog?.toggleAttribute(
+          'data-page-scrollbar',
+          showsScrollbar(window, document.documentElement),
+        );
         dialog?.showModal();
         focusFirst();
       })

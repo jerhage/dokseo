@@ -8,6 +8,9 @@ html:has(.modal-backdrop[open]),
 html:has(.modal-backdrop.is-open) {
   overflow: hidden;
 }
+html:has(.modal-backdrop[open][data-page-scrollbar]) {
+  scrollbar-gutter: stable;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

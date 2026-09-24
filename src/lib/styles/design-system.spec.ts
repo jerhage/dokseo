@@ -787,6 +787,17 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('keeps the scrollbar gutter while a modal covers a page that showed a scrollbar', () => {
+    const overrides = style('overrides/overrides.css');
+
+    expect(declarations(ruleBody(overrides, 'html:has(.modal-backdrop[open])'))).toContain(
+      'overflow: hidden',
+    );
+    expect(
+      declarations(ruleBody(overrides, 'html:has(.modal-backdrop[open][data-page-scrollbar])')),
+    ).toContain('scrollbar-gutter: stable');
+  });
+
   it('holds the z-index scale the contract locks', () => {
     const primitives = style('base/primitives.css');
 
