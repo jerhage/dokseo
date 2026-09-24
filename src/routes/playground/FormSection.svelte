@@ -9,8 +9,8 @@
   let email = $state('ada@');
   let role = $state('design');
 
-  const emailFeedback = $derived(
-    /^[^@\s]+@[^@\s]+\.[^@\s]+$/u.test(email) ? {} : { error: 'Enter a complete email address.' },
+  const emailError = $derived(
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/u.test(email) ? undefined : 'Enter a complete email address.',
   );
 </script>
 
@@ -26,7 +26,7 @@
           <Input {...control} placeholder="e.g. Northwind" />
         {/snippet}
       </Field>
-      <Field label="Email" hint="A complete address clears the error." {...emailFeedback}>
+      <Field label="Email" hint="A complete address clears the error." error={emailError}>
         {#snippet children(control)}
           <Input {...control} type="email" bind:value={email} />
         {/snippet}
