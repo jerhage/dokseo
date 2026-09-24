@@ -19,7 +19,6 @@ import {
   TOAST_VARIANTS,
 } from './classes';
 import type { ClassList } from './classes';
-
 const STYLES = new URL('../styles/', import.meta.url);
 const COMPONENTS = new URL('./', import.meta.url);
 
@@ -61,12 +60,16 @@ function literalClasses(): readonly (readonly [string, string])[] {
     .filter((path) => path.endsWith('.svelte'))
     .flatMap((path) => {
       const source = readFileSync(new URL(path, COMPONENTS), 'utf8');
-      return [...source.matchAll(/class="([^"{]*)"|class=\{\[\s*'([^']+)'/gu)].flatMap((found) =>
-        `${found[1] ?? ''} ${found[2] ?? ''}`
-          .split(/\s+/u)
-          .filter((name) => name !== '')
-          .map((name) => [path, name] as const),
+      const attributes = [...source.matchAll(/class="([^"{]*)"/gu)].map((found) => found[1] ?? '');
+      const arrays = [...source.matchAll(/class=\{\[([\s\S]*?)\]\}/gu)].flatMap((found) =>
+        [...(found[1] ?? '').matchAll(/'([a-z][a-z0-9-]*)'(?=\s*[:,\]])/gu)].map(
+          (literal) => literal[1] ?? '',
+        ),
       );
+      return [...attributes, ...arrays]
+        .flatMap((names) => names.split(/\s+/u))
+        .filter((name) => name !== '')
+        .map((name) => [path, name] as const);
     });
 }
 
