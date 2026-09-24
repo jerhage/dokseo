@@ -1,0 +1,32 @@
+@layer features {
+  @scope (.tokens-section) {
+    .sample-grid {
+      --grid-min-col: calc(var(--sp-10) * 2);
+    }
+    .swatch {
+      block-size: var(--sp-9);
+      background-color: var(--swatch, transparent);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+    .type-sample {
+      font-size: var(--sample-size, var(--text-base));
+      font-family: var(--sample-family, var(--font-body));
+      line-height: var(--lh-tight);
+    }
+    .space-sample {
+      inline-size: var(--sample-space, 0);
+      block-size: var(--sp-3);
+      background-color: var(--color-primary);
+      border-radius: var(--radius-xs);
+    }
+    .shape-sample {
+      inline-size: var(--sp-9);
+      block-size: var(--sp-9);
+      background-color: var(--color-surface-raised);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--sample-radius, var(--radius-control));
+      box-shadow: var(--sample-shadow, none);
+    }
+  }
+}

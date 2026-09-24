@@ -6,8 +6,9 @@
   import { createToaster } from '$lib/components/toaster.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
+  import TokensSection from './TokensSection.svelte';
 
-  const SECTIONS: readonly Component[] = [];
+  const SECTIONS: readonly Component[] = [TokensSection];
 
   setToaster(createToaster());
 </script>
