@@ -21,3 +21,8 @@
 @import 'tokens/motion.css' layer(tokens);
 @import 'tokens/elevation.css' layer(tokens);
 @import 'tokens/icons.css' layer(tokens);
+
+@import 'components/btn.css' layer(components);
+
+@import 'utilities/animation.css' layer(utilities);
+

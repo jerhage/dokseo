@@ -1,0 +1,114 @@
+@keyframes kFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes kFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes kSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-3));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes kShimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@keyframes kModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-4)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kModalOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--sp-2)) scale(0.98);
+  }
+}
+@keyframes kToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-4)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kToastOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(var(--sp-6));
+  }
+}
+@keyframes kToastTimer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes kDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--sp-1) * -1)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kIndeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.a-fade-in {
+  animation: kFadeIn var(--dur-moderate) var(--ease-smooth) both;
+}
+.a-slide-up {
+  animation: kSlideUp var(--dur-moderate) var(--ease-out) both;
+}
+.a-spin {
+  animation: kSpin var(--dur-crawl) linear infinite;
+}
