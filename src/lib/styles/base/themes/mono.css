@@ -1,0 +1,96 @@
+:root {
+  --ds-mono-paper: light-dark(oklch(0.965 0 0), oklch(0.12 0 0));
+  --ds-mono-sheet: light-dark(oklch(1 0 0), oklch(0.16 0 0));
+  --ds-mono-well: light-dark(oklch(0.935 0 0), oklch(0.09 0 0));
+  --ds-mono-ink: light-dark(oklch(0.14 0 0), oklch(0.96 0 0));
+  --ds-mono-ink-2: light-dark(oklch(0.32 0 0), oklch(0.82 0 0));
+  --ds-mono-gray: light-dark(oklch(0.42 0 0), oklch(0.76 0 0));
+  --ds-mono-gray-faint: light-dark(oklch(0.56 0 0), oklch(0.6 0 0));
+  --ds-mono-line-soft: light-dark(oklch(0.82 0 0), oklch(0.35 0 0));
+  --ds-mono-signal: oklch(0.9 0.19 105);
+  --ds-mono-signal-soft: light-dark(oklch(0.96 0.09 105), oklch(0.3 0.06 105));
+  --ds-mono-signal-deep: light-dark(oklch(0.42 0.09 105), oklch(0.9 0.17 105));
+  --ds-mono-signal-ink: oklch(0.14 0 0);
+  --ds-mono-tint-5: light-dark(oklch(0.14 0 0 / 0.06), oklch(0.96 0 0 / 0.07));
+  --ds-mono-tint-9: light-dark(oklch(0.14 0 0 / 0.12), oklch(0.96 0 0 / 0.13));
+}
+
+:root[data-theme='mono'] {
+  --ds-bg: var(--ds-mono-paper);
+  --ds-bg-raised: var(--ds-mono-well);
+  --ds-surface: var(--ds-mono-sheet);
+  --ds-surface-raised: var(--ds-mono-sheet);
+  --ds-surface-bright: var(--ds-mono-sheet);
+  --ds-surface-sunken: var(--ds-mono-well);
+
+  --ds-primary: var(--ds-mono-ink);
+  --ds-primary-hover: var(--ds-mono-ink-2);
+  --ds-primary-subtle: var(--ds-mono-signal-soft);
+  --ds-primary-soft: var(--ds-mono-signal-soft);
+  --ds-primary-muted: var(--ds-mono-gray-faint);
+  --ds-primary-glow: var(--ds-mono-tint-9);
+  --ds-brand-tint: var(--ds-mono-signal-soft);
+  --ds-brand-border: var(--ds-mono-ink);
+  --ds-brand-border-mid: var(--ds-mono-ink);
+  --ds-brand-text: var(--ds-mono-ink);
+
+  --ds-accent: var(--ds-mono-signal);
+  --ds-accent-hover: var(--ds-mono-signal);
+  --ds-accent-surface: var(--ds-mono-signal-soft);
+  --ds-accent-border: var(--ds-mono-ink);
+  --ds-accent-mid: var(--ds-mono-signal);
+  --ds-accent-text: var(--ds-mono-signal-deep);
+  --ds-accent-glow: var(--ds-mono-tint-9);
+
+  --ds-text: var(--ds-mono-ink);
+  --ds-text-muted: var(--ds-mono-gray);
+  --ds-text-faint: var(--ds-mono-gray-faint);
+  --ds-text-inverse: var(--ds-mono-sheet);
+  --ds-text-on-primary: var(--ds-mono-sheet);
+  --ds-text-on-accent: var(--ds-mono-signal-ink);
+  --ds-text-link: var(--ds-mono-ink);
+  --ds-text-link-hover: var(--ds-mono-gray);
+
+  --ds-hover: var(--ds-mono-tint-5);
+  --ds-active: var(--ds-mono-tint-9);
+  --ds-selected: var(--ds-mono-signal-soft);
+  --ds-disabled: var(--ds-mono-gray-faint);
+  --ds-disabled-bg: var(--ds-mono-well);
+
+  --ds-table-stripe: var(--ds-mono-tint-5);
+  --ds-table-row-hover: var(--ds-mono-tint-9);
+  --ds-skeleton-base: var(--ds-mono-well);
+  --ds-skeleton-shine: var(--ds-mono-sheet);
+  --ds-code-bg: var(--ds-mono-well);
+  --ds-code-text: var(--ds-mono-ink);
+
+  --ds-border: var(--ds-mono-ink);
+  --ds-border-strong: var(--ds-mono-ink);
+  --ds-border-focus: var(--ds-mono-ink);
+  --ds-border-width: var(--ds-border-2);
+  --ds-border-width-strong: 3px;
+
+  --ds-font-display: 'Archivo', system-ui, sans-serif;
+  --ds-font-body: 'Archivo', system-ui, sans-serif;
+  --ds-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-9);
+  --ds-tracking-tight: var(--ds-ls-normal);
+
+  --ds-corner-xs: var(--ds-radius-none);
+  --ds-corner-sm: var(--ds-radius-none);
+  --ds-corner-md: var(--ds-radius-none);
+  --ds-corner-lg: var(--ds-radius-none);
+  --ds-radius-control: var(--ds-radius-none);
+  --ds-radius-container: var(--ds-radius-none);
+  --ds-radius-overlay: var(--ds-radius-none);
+
+  --ds-shadow-1: 2px 2px 0 var(--ds-mono-ink);
+  --ds-shadow-2: 4px 4px 0 var(--ds-mono-ink);
+  --ds-shadow-3: 8px 8px 0 var(--ds-mono-ink);
+  --ds-shadow-4: 8px 8px 0 var(--ds-mono-ink);
+
+  --ds-shadow-inset: 0 0 0 transparent;
+
+  --ds-dur-spring: var(--ds-dur-quick);
+  --ds-easing-spring: var(--ds-ease-crisp);
+}

@@ -5,7 +5,11 @@
   import { COLOR_SCHEMES, THEMES, applyAppearance, readAppearance } from './appearance';
   import type { Appearance, ColorScheme, Theme } from './appearance';
 
-  const THEME_LABELS: Readonly<Record<Theme, string>> = { base: 'Base', ember: 'Ember' };
+  const THEME_LABELS: Readonly<Record<Theme, string>> = {
+    base: 'Base',
+    ember: 'Ember',
+    mono: 'Mono',
+  };
 
   const SCHEME_LABELS: Readonly<Record<ColorScheme, string>> = {
     automatic: 'Automatic',

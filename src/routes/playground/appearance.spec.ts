@@ -68,7 +68,7 @@ describe('readAppearance', () => {
   });
 
   it('falls back to base and automatic for values it does not know', () => {
-    const root = new FakeRoot({ 'data-theme': 'mono', 'data-color-scheme': 'auto' });
+    const root = new FakeRoot({ 'data-theme': 'neon', 'data-color-scheme': 'auto' });
 
     expect(readAppearance(root)).toEqual({ theme: 'base', colorScheme: 'automatic' });
   });
