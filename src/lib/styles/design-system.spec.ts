@@ -219,7 +219,7 @@ const CONTRACT_CLASSES: Readonly<Record<string, readonly string[]>> = {
   divider: ['divider-labeled'],
 };
 
-const RUNTIME_INPUTS = ['--progress', '--toast-timeout'];
+const RUNTIME_INPUTS = ['--progress', '--skeleton-width', '--toast-timeout'];
 
 const ANIMATION_KEYWORDS = new Set([
   'none',

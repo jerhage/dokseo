@@ -5,9 +5,15 @@
 
   type Props = Omit<HTMLAttributes<HTMLSpanElement>, 'children'> & {
     shape?: SkeletonShape;
+    width?: string;
   };
 
-  let { shape = 'default', class: className, ...rest }: Props = $props();
+  let { shape = 'default', width, class: className, ...rest }: Props = $props();
 </script>
 
-<span {...rest} aria-hidden="true" class={['skeleton', SKELETON_SHAPES[shape], className]}></span>
+<span
+  {...rest}
+  aria-hidden="true"
+  style:--skeleton-width={width}
+  class={['skeleton', SKELETON_SHAPES[shape], className]}
+></span>

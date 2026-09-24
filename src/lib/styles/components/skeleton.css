@@ -1,5 +1,6 @@
 .skeleton {
   display: block;
+  inline-size: var(--skeleton-width, auto);
   block-size: var(--sp-4);
   background-color: var(--color-skeleton-base);
   background-image: linear-gradient(
@@ -19,7 +20,7 @@
 }
 .skeleton-title {
   block-size: var(--sp-5);
-  inline-size: 60%;
+  inline-size: var(--skeleton-width, 60%);
 }
 .skeleton-circle {
   inline-size: var(--control-h-md);
