@@ -1,0 +1,141 @@
+:root {
+  --ds-font-ja: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --ds-font-ko: 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif;
+
+  --ds-fz-xxs: 0.5625rem;
+  --ds-fz-2xs: 0.6rem;
+  --ds-fz-xs: 0.6875rem;
+  --ds-fz-sm: 0.8125rem;
+  --ds-fz-base: 1rem;
+  --ds-fz-md: 1.125rem;
+  --ds-fz-lg: 1.25rem;
+  --ds-fz-xl: 1.5625rem;
+  --ds-fz-2xl: 1.875rem;
+  --ds-fz-3xl: 2.25rem;
+  --ds-fz-4xl: 3rem;
+  --ds-fz-5xl: 3.75rem;
+
+  --ds-fw-1: 100;
+  --ds-fw-2: 200;
+  --ds-fw-3: 300;
+  --ds-fw-4: 400;
+  --ds-fw-5: 500;
+  --ds-fw-6: 600;
+  --ds-fw-7: 700;
+  --ds-fw-8: 800;
+  --ds-fw-9: 900;
+  --ds-fw-light: var(--ds-fw-3);
+  --ds-fw-normal: var(--ds-fw-4);
+  --ds-fw-semibold: var(--ds-fw-6);
+  --ds-fw-bold: var(--ds-fw-7);
+  --ds-fw-extrabold: var(--ds-fw-8);
+  --ds-fw-black: var(--ds-fw-9);
+
+  --ds-ls-tight: -0.025em;
+  --ds-ls-normal: 0;
+  --ds-ls-wide: 0.04em;
+  --ds-ls-wider: 0.08em;
+  --ds-ls-widest: 0.16em;
+
+  --ds-lh-none: 1;
+  --ds-lh-tight: 1.15;
+  --ds-lh-snug: 1.35;
+  --ds-lh-normal: 1.5;
+  --ds-lh-relaxed: 1.7;
+  --ds-lh-loose: 1.85;
+
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.25rem;
+  --ds-space-6: 1.5rem;
+  --ds-space-7: 2rem;
+  --ds-space-8: 2.5rem;
+  --ds-space-9: 3rem;
+  --ds-space-10: 4rem;
+  --ds-space-12: 6rem;
+  --ds-space-16: 8rem;
+
+  --ds-radius-none: 0;
+  --ds-radius-xs: 3px;
+  --ds-radius-sm: 5px;
+  --ds-radius-md: 8px;
+  --ds-radius-lg: 12px;
+  --ds-radius-xl: 16px;
+  --ds-radius-2xl: 18px;
+  --ds-radius-full: 999px;
+
+  --ds-border-1: 1px;
+  --ds-border-2: 2px;
+  --ds-focus-offset: 2px;
+
+  --ds-container-prose: 68ch;
+  --ds-container-wide: 1280px;
+  --ds-layout-hero-height: 32rem;
+  --ds-layout-row-height: 12rem;
+  --ds-size-dialog-sm: 24rem;
+  --ds-size-dialog-md: 32rem;
+  --ds-size-dialog-lg: 48rem;
+  --ds-size-toast: 22rem;
+  --ds-size-menu: 12rem;
+  --ds-size-grid-min: 16rem;
+  --ds-size-sidebar: 15rem;
+  --ds-size-list: 18rem;
+  --ds-size-stat: 11rem;
+
+  --ds-dur-instant: 40ms;
+  --ds-dur-flash: 90ms;
+  --ds-dur-quick: 180ms;
+  --ds-dur-moderate: 300ms;
+  --ds-dur-slow: 480ms;
+  --ds-dur-crawl: 720ms;
+  --ds-dur-long: 1100ms;
+  --ds-dur-toast: 5000ms;
+
+  --ds-ease-smooth: cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ds-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ds-ease-crisp: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-ease-in-out-sharp: cubic-bezier(0.7, 0, 0.3, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ds-ease-spring-gentle: cubic-bezier(0.34, 1.26, 0.64, 1);
+  --ds-ease-bounce: linear(0, 0.063, 0.25 18.2%, 1 36.4%, 0.813, 0.75, 0.813, 1, 0.938, 1, 1);
+  --ds-ease-elastic: linear(
+    0,
+    0.22 2%,
+    1.11 8.5%,
+    1.3 10.7%,
+    1.37 12.9%,
+    1.36 14.5%,
+    1.03 21.8%,
+    0.87 27.8%,
+    0.88 30.7%,
+    1.01 38.3%,
+    1.05 42.7%,
+    1 53.3%,
+    0.985 60.7%,
+    1.005 72%,
+    1
+  );
+
+  --ds-z-base: 0;
+  --ds-z-raised: 1;
+  --ds-z-dropdown: 100;
+  --ds-z-sticky: 200;
+  --ds-z-overlay: 300;
+  --ds-z-modal: 400;
+  --ds-z-toast: 500;
+  --ds-z-tooltip: 600;
+
+  --ds-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --ds-icon-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+  --ds-icon-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E");
+  --ds-icon-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --ds-icon-chevron-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E");
+  --ds-icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E");
+  --ds-icon-success: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='m8.5 12 2.5 2.5 5-5'/%3E%3C/svg%3E");
+  --ds-icon-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z'/%3E%3Cpath d='M12 9v4M12 17h.01'/%3E%3C/svg%3E");
+  --ds-icon-danger: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M15 9l-6 6M9 9l6 6'/%3E%3C/svg%3E");
+}
