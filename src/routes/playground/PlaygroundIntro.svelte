@@ -1,4 +1,6 @@
 <script lang="ts">
+  import CodeBlock from '$lib/components/CodeBlock.svelte';
+
   const SECTIONS = [
     { id: 'tokens', label: 'Tokens' },
     { id: 'button', label: 'Button' },
@@ -28,8 +30,10 @@
       Every base component and utility, in each variant, size and state. Switch the theme and the
       scheme above; no component changes.
     </p>
-    <pre
-      class="codeblock">@layer open-props, reset, base, tokens, components, features, utilities, overrides;</pre>
+    <CodeBlock
+      label="Layer order"
+      code="@layer open-props, reset, base, tokens, components, features, utilities, overrides;"
+    />
     <nav class="row wrap gap-2" aria-label="Sections">
       {#each SECTIONS as section (section.id)}
         <a class="tag" href="#{section.id}">{section.label}</a>

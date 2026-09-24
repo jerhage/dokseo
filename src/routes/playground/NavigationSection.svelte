@@ -2,6 +2,7 @@
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Card from '$lib/components/Card.svelte';
   import Divider from '$lib/components/Divider.svelte';
+  import NavLink from '$lib/components/NavLink.svelte';
   import Pagination from '$lib/components/Pagination.svelte';
   import DemoSection from './DemoSection.svelte';
 
@@ -37,9 +38,9 @@
     <Pagination total={3} bind:page={short} label="Three pages" />
     <Divider />
     <nav class="row wrap gap-1" aria-label="Nav links">
-      <a class="nav-link is-active" href="#navigation">Overview</a>
-      <a class="nav-link" href="#navigation">Projects</a>
-      <a class="nav-link" href="#navigation">Reports</a>
+      <NavLink href="#navigation" current>Overview</NavLink>
+      <NavLink href="#navigation">Projects</NavLink>
+      <NavLink href="#navigation">Reports</NavLink>
     </nav>
   </Card>
 </DemoSection>

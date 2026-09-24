@@ -1,7 +1,7 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
+  import NavLink from '$lib/components/NavLink.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
   import DemoSection from './DemoSection.svelte';
 
@@ -20,7 +20,7 @@
   title="Split and split view"
   classes={['layout-split', 'split-pane', 'split-left', 'split-right', 'layout-split-view']}
 >
-  <Card>
+  <div class="surface bordered rounded-container p-5">
     <div class="layout-split">
       <div class="split-pane split-right">
         <span class="card-eyebrow">.split-right, first in the DOM</span>
@@ -34,16 +34,13 @@
         <Skeleton shape="block" />
       </div>
     </div>
-  </Card>
+  </div>
   <div class="layout-split-view">
     <div class="split-pane">
       <span class="dropdown-label">Inbox</span>
       {#each THREADS as name (name)}
-        <a
-          class="nav-link"
-          href="#l-split"
-          aria-current={thread === name ? 'page' : undefined}
-          onclick={() => (thread = name)}>{name}</a
+        <NavLink href="#l-split" current={thread === name} onclick={() => (thread = name)}
+          >{name}</NavLink
         >
       {/each}
     </div>

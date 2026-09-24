@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
   import Field from '$lib/components/Field.svelte';
   import Input from '$lib/components/Input.svelte';
+  import NavLink from '$lib/components/NavLink.svelte';
   import DemoSection from './DemoSection.svelte';
   import Tile from './Tile.svelte';
 
@@ -15,15 +15,12 @@
   title="Sidebar"
   classes={['layout-sidebar', 'layout-sidebar-end', 'grid-sidebar']}
 >
-  <Card>
+  <div class="surface bordered rounded-container p-5">
     <div class="layout-sidebar">
       <nav class="layout-sidebar-aside" aria-label="Settings">
         {#each LINKS as link (link)}
-          <a
-            class="nav-link"
-            href="#l-sidebar"
-            aria-current={current === link ? 'page' : undefined}
-            onclick={() => (current = link)}>{link}</a
+          <NavLink href="#l-sidebar" current={current === link} onclick={() => (current = link)}
+            >{link}</NavLink
           >
         {/each}
       </nav>
@@ -48,13 +45,13 @@
         </div>
       </div>
     </div>
-  </Card>
-  <Card>
+  </div>
+  <div class="surface bordered rounded-container p-5">
     <div class="layout-sidebar layout-sidebar-end">
       <Tile label="content first" />
       <Tile variant="feature" label=".layout-sidebar-end aside" />
     </div>
-  </Card>
+  </div>
   <div class="grid-sidebar">
     <Tile variant="feature" label=".grid-sidebar > :first-child" />
     <Tile label=":last-child wraps intrinsically, no query" />
