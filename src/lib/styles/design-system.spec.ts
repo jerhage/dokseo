@@ -350,6 +350,12 @@ function ruleFor(css: string, selector: string): Rule {
   return found;
 }
 
+function themeRules(css: string): readonly Rule[] {
+  return rules(css).filter((rule) =>
+    rule.selectors.some((selector) => /^:root\[data-theme=(['"])[\w-]+\1\]$/u.test(selector)),
+  );
+}
+
 function ruleBody(css: string, selector: string): string {
   return ruleFor(css, selector).body;
 }
@@ -452,13 +458,19 @@ describe('the design system stylesheets', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('has both themes assign exactly the same custom properties', () => {
-    const theme = style('base/theme.css');
-    const base = definitions(ruleBody(theme, ":root[data-theme='base']")).toSorted();
-    const ember = definitions(ruleBody(theme, ":root[data-theme='ember']")).toSorted();
+  it('has every theme assign exactly the custom properties the default theme assigns', () => {
+    const themed = themeRules(style('base/theme.css'));
+    const [defaults, ...others] = themed.filter((rule) => rule.selectors.includes(':root'));
+    const expected = definitions(defaults?.body ?? '').toSorted();
+    const assigned = themed.map((rule) => ({
+      theme: rule.selectors.filter((selector) => selector !== ':root').join(', '),
+      names: definitions(rule.body).toSorted(),
+    }));
 
-    expect(base.length).toBeGreaterThan(0);
-    expect(ember).toEqual(base);
+    expect(others).toEqual([]);
+    expect(expected.length).toBeGreaterThan(0);
+    expect(themed.length).toBeGreaterThan(1);
+    expect(assigned).toEqual(assigned.map(({ theme }) => ({ theme, names: expected })));
   });
 
   it('lets a bare root render the default theme', () => {
