@@ -14,25 +14,36 @@
   transform: rotate(180deg);
 }
 .dropdown-menu {
-  position: absolute;
-  inset-block-start: calc(100% + var(--sp-1));
-  inset-inline-start: 0;
-  z-index: var(--z-dropdown);
+  position: fixed;
+  inset: auto;
+  top: var(--menu-top, auto);
+  bottom: var(--menu-bottom, auto);
+  left: var(--menu-left, auto);
   display: none;
   gap: 0;
-  min-inline-size: max(100%, var(--menu-min-width));
+  min-inline-size: max(var(--menu-anchor-width, 0px), var(--menu-min-width));
+  margin: var(--sp-1) 0;
   padding: var(--sp-1);
+  color: var(--color-text);
   background-color: var(--color-surface-raised);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-container);
   box-shadow: var(--shadow-md);
   transform-origin: top;
 }
-.dropdown-menu-end {
-  inset-inline-start: auto;
-  inset-inline-end: 0;
+.dropdown-menu:dir(rtl) {
+  left: auto;
+  right: var(--menu-right, auto);
 }
-.dropdown.is-open .dropdown-menu {
+.dropdown-menu-end {
+  left: auto;
+  right: var(--menu-right, auto);
+}
+.dropdown-menu-end:dir(rtl) {
+  right: auto;
+  left: var(--menu-left, auto);
+}
+.dropdown-menu:popover-open {
   display: grid;
   animation: kDropIn var(--transition-enter) both;
 }

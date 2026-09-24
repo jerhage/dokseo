@@ -246,7 +246,16 @@ const TOKEN_UTILITIES: Readonly<Record<string, readonly [string, string, string]
   'utilities/surface.css': ['rounded', 'border-radius', 'radius'],
 };
 
-const RUNTIME_INPUTS = ['--progress', '--skeleton-width', '--toast-timeout'];
+const RUNTIME_INPUTS = [
+  '--menu-anchor-width',
+  '--menu-bottom',
+  '--menu-left',
+  '--menu-right',
+  '--menu-top',
+  '--progress',
+  '--skeleton-width',
+  '--toast-timeout',
+];
 
 const ANIMATION_KEYWORDS = new Set([
   'none',

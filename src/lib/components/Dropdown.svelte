@@ -5,6 +5,8 @@
   import { BUTTON_SIZES, BUTTON_VARIANTS, MENU_ALIGNS } from './classes';
   import type { ButtonVariant, ControlSize, MenuAlign } from './classes';
   import { menuOpening, provideMenu } from './menu';
+  import { menuInset, menuPlacement } from './menu-placement';
+  import type { MenuPlacement } from './menu-placement';
   import { landOn, menuMove } from './roving';
   import type { Move } from './roving';
 
@@ -32,6 +34,8 @@
   let root = $state<HTMLDivElement>();
   let button = $state<HTMLButtonElement>();
   let menu = $state<HTMLDivElement>();
+  let placement = $state<MenuPlacement>();
+  const inset = $derived(menuInset(placement));
 
   provideMenu({ close: () => close(true) });
 
@@ -84,6 +88,30 @@
     if (next instanceof Node && root !== undefined && !root.contains(next)) open = false;
   }
 
+  function place(): void {
+    if (button === undefined || menu === undefined) return;
+    const viewport = document.documentElement;
+    placement = menuPlacement(
+      button.getBoundingClientRect(),
+      { width: viewport.clientWidth, height: viewport.clientHeight },
+      menu.offsetHeight,
+    );
+  }
+
+  $effect(() => {
+    const shown = menu;
+    if (!open || shown === undefined) return;
+    shown.showPopover();
+    place();
+    window.addEventListener('scroll', place, { capture: true, passive: true });
+    window.addEventListener('resize', place, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', place, { capture: true });
+      window.removeEventListener('resize', place);
+      if (shown.matches(':popover-open')) shown.hidePopover();
+    };
+  });
+
   $effect(() => {
     if (!open) return;
     const outside = (event: PointerEvent): void => {
@@ -120,7 +148,13 @@
     id="{uid}-menu"
     role="menu"
     aria-labelledby="{uid}-trigger"
+    popover="manual"
     class={['dropdown-menu', MENU_ALIGNS[align]]}
+    style:--menu-top={inset.top}
+    style:--menu-bottom={inset.bottom}
+    style:--menu-left={inset.left}
+    style:--menu-right={inset.right}
+    style:--menu-anchor-width={inset.anchorWidth}
   >
     {@render children()}
   </div>
