@@ -69,7 +69,7 @@
   classes={['dropzone', 'dropzone-compact', 'file-list', 'file-item']}
 >
   <p class="text-sm text-muted">
-    Drag files onto a zone or click to browse. Files over 5 MB or of the wrong type show as errors.
+    Drag files onto a zone or click to browse. Files over 50 MB or of the wrong type show as errors.
   </p>
   <Card>
     <div class="grid-2 gap-5">
@@ -79,9 +79,9 @@
             <Dropzone
               {...control}
               multiple
-              accept="image/*,.pdf"
-              maxSize={5 * MEGABYTE}
-              hint="PNG, JPG or PDF · up to 5 MB each"
+              accept="image/*,.pdf,.epub"
+              maxSize={50 * MEGABYTE}
+              hint="PNG, JPG, PDF or EPUB · up to 50 MB each"
               onfiles={addAttachments}
             />
             <FileList items={attachments} onremove={removeAttachment} />
