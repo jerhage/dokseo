@@ -3,7 +3,7 @@
   import Dropzone from '$lib/components/Dropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from '../../accepted-formats';
-  import { arrivedFiles, takeChosen } from './chosen-files';
+  import { arrivedFiles, takeChosen } from '../chosen-files';
   import './upload-tile.css';
 
   type Props = {

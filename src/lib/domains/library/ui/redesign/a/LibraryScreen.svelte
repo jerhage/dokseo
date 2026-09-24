@@ -23,7 +23,7 @@
     matchedText,
     storageText,
     titledBooks,
-  } from './library-overview';
+  } from '../library-overview';
   import './library-screen.css';
 
   type Props = {

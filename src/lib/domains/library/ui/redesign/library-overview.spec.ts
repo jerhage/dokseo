@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
-import type { Book } from '../../../domain/book/book';
+import type { Book } from '../../domain/book/book';
 import {
   clearsSearch,
   formatBytes,

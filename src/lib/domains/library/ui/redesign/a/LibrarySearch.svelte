@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import Input from '$lib/components/Input.svelte';
-  import { clearsSearch, isSearching } from './library-overview';
+  import { clearsSearch, isSearching } from '../library-overview';
 
   type Props = {
     query?: string;
