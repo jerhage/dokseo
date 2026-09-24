@@ -76,7 +76,7 @@ module.exports = {
     {
       name: 'routes-are-thin',
       comment:
-        'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts and context.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree), the shared kernel, style sheets and static assets, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
+        'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts and context.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree), the shared kernel, style sheets and static assets, a base component from src/lib/components/, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
       severity: 'error',
       from: { path: '^src/routes/' },
       to: {
@@ -87,8 +87,21 @@ module.exports = {
           '^src/lib/shared/',
           '^src/lib/styles/',
           '^src/lib/assets/',
+          '^src/lib/components/',
           '^src/lib/domains/[^/]+/ui/',
         ],
+      },
+    },
+
+    {
+      name: 'base-components-know-no-app',
+      comment:
+        "src/lib/components/ is the base UI library: domain-free atoms that a route or a domain ui/ module composes into a screen. It may import the shared kernel, static assets, its own siblings and npm packages, and nothing else under src/lib. A base component that reached a domain, container.ts, context.ts or platform/ would carry that knowledge into every screen that renders it, and would turn the library's place at the bottom of the UI into a cycle the moment that domain's ui/ composed it. Behaviour a base component needs arrives as a prop, a snippet or a callback; the caller decides what it means.",
+      severity: 'error',
+      from: { path: '^src/lib/components/' },
+      to: {
+        path: '^src/lib/',
+        pathNot: ['^src/lib/components/', '^src/lib/shared/', '^src/lib/assets/'],
       },
     },
 
