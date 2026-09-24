@@ -52,8 +52,11 @@ function runtimeServedFromCdn(): Plugin {
   };
 }
 
+const SUPPORTS_LIGHT_DARK = ['chrome123', 'firefox120', 'safari17.5'];
+
 export default defineConfig({
   oxc: { target: LOWERS_EXPLICIT_RESOURCE_MANAGEMENT },
+  build: { cssTarget: SUPPORTS_LIGHT_DARK },
   plugins: [
     sveltekit({
       compilerOptions: {
