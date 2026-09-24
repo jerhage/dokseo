@@ -503,6 +503,23 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('declares each palette name in the palette of one theme file only', () => {
+    const owners = themeFiles().flatMap((path) =>
+      rules(style(path))
+        .filter((rule) => rule.selectors.length === 1 && rule.selectors[0] === ':root')
+        .flatMap((rule) => definitions(rule.body).map((name) => ({ name, path }))),
+    );
+    const shared = unique(owners.map(({ name }) => name))
+      .map((name) => ({
+        name,
+        paths: unique(owners.filter((owner) => owner.name === name).map(({ path }) => path)),
+      }))
+      .filter(({ paths }) => paths.length > 1);
+
+    expect(owners.length).toBeGreaterThan(0);
+    expect(shared).toEqual([]);
+  });
+
   it('lets a bare root render the default theme', () => {
     expect(ruleFor(themeSheets(), ":root[data-theme='base']").selectors).toContain(':root');
   });
