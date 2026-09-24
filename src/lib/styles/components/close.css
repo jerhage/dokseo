@@ -1,0 +1,34 @@
+.alert-close,
+.modal-close,
+.toast-close {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: var(--control-h-sm);
+  block-size: var(--control-h-sm);
+  margin: calc(var(--sp-1) * -1);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-ui),
+    color var(--transition-ui);
+}
+.alert-close::before,
+.modal-close::before,
+.toast-close::before {
+  content: '';
+  inline-size: var(--sp-4);
+  block-size: var(--sp-4);
+  background-color: currentColor;
+  mask: var(--icon-close) center / contain no-repeat;
+}
+.alert-close:hover,
+.modal-close:hover,
+.toast-close:hover {
+  color: var(--color-text);
+  background-color: var(--color-hover);
+}

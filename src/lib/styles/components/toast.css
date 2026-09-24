@@ -1,0 +1,83 @@
+.toast-region {
+  position: fixed;
+  inset-block-end: var(--sp-5);
+  inset-inline-end: var(--sp-5);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  inline-size: min(100% - 2 * var(--sp-5), var(--toast-width));
+  pointer-events: none;
+}
+.toast {
+  --_toast-fg: var(--color-text-muted);
+  --_toast-icon: var(--icon-info);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: kToastIn var(--dur-moderate) var(--ease-spring) both;
+}
+.toast::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--border-width-strong);
+  background-color: var(--_toast-fg);
+  transform-origin: left;
+  animation: kToastTimer var(--toast-timeout, var(--toast-duration)) linear forwards;
+}
+.toast:hover::after,
+.toast:focus-within::after {
+  animation-play-state: paused;
+}
+.toast-persistent::after {
+  display: none;
+}
+.toast.is-leaving {
+  animation: kToastOut var(--transition-exit) forwards;
+}
+.toast-success {
+  --_toast-fg: var(--color-success);
+  --_toast-icon: var(--icon-success);
+}
+.toast-warning {
+  --_toast-fg: var(--color-warning);
+  --_toast-icon: var(--icon-warning);
+}
+.toast-danger {
+  --_toast-fg: var(--color-danger);
+  --_toast-icon: var(--icon-danger);
+}
+.toast-info {
+  --_toast-fg: var(--color-info);
+  --_toast-icon: var(--icon-info);
+}
+.toast-icon {
+  inline-size: var(--sp-5);
+  block-size: var(--sp-5);
+  background-color: var(--_toast-fg);
+  mask: var(--_toast-icon) center / contain no-repeat;
+}
+.toast-content {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+}
+.toast-title {
+  font-weight: var(--weight-semibold);
+}
+.toast-description {
+  color: var(--color-text-muted);
+}

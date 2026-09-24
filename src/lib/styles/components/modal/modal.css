@@ -1,0 +1,83 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: none;
+  place-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  padding: var(--sp-4);
+  color: inherit;
+  background-color: var(--color-overlay);
+  border: none;
+}
+.modal-backdrop::backdrop {
+  background: transparent;
+}
+.modal-backdrop[open],
+.modal-backdrop.is-open {
+  display: grid;
+}
+.modal {
+  container-type: inline-size;
+  position: relative;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: var(--modal-width-md);
+  max-block-size: calc(100dvh - 2 * var(--sp-4));
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-overlay);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.modal-sm {
+  max-inline-size: var(--modal-width-sm);
+}
+.modal-lg {
+  max-inline-size: var(--modal-width-lg);
+}
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-5) var(--sp-2);
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+}
+.modal-body {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-5) var(--sp-5);
+  overflow-y: auto;
+  font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--color-text-muted);
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  background-color: var(--color-surface-sunken);
+  border-block-start: var(--border-width) solid var(--border-color);
+}
+@container (max-width: 26rem) {
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+  .modal-footer > .btn {
+    inline-size: 100%;
+  }
+}

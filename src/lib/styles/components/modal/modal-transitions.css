@@ -1,0 +1,14 @@
+.modal-backdrop[open],
+.modal-backdrop.is-open {
+  animation: kFadeIn var(--transition-enter) both;
+}
+.modal-backdrop[open] .modal,
+.modal-backdrop.is-open .modal {
+  animation: kModalIn var(--dur-moderate) var(--ease-spring) both;
+}
+.modal-backdrop.is-leaving {
+  animation: kFadeOut var(--transition-exit) both;
+}
+.modal-backdrop.is-leaving .modal {
+  animation: kModalOut var(--transition-exit) both;
+}
