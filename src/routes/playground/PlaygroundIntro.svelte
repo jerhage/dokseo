@@ -6,6 +6,7 @@
     { id: 'button', label: 'Button' },
     { id: 'badge', label: 'Badge and tag' },
     { id: 'form', label: 'Form field' },
+    { id: 'upload', label: 'File upload' },
     { id: 'choice', label: 'Choices' },
     { id: 'card', label: 'Card' },
     { id: 'alert', label: 'Alert' },

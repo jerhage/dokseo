@@ -15,6 +15,7 @@
   import ChoicesSection from './ChoicesSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
+  import FileUploadSection from './FileUploadSection.svelte';
   import FormSection from './FormSection.svelte';
   import GridSection from './GridSection.svelte';
   import HeroSection from './HeroSection.svelte';
@@ -39,6 +40,7 @@
     ButtonsSection,
     BadgesSection,
     FormSection,
+    FileUploadSection,
     ChoicesSection,
     CardSection,
     AlertSection,
