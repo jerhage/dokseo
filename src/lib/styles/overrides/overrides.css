@@ -1,0 +1,55 @@
+[hidden]:not([hidden='until-found']) {
+  display: none;
+}
+.btn.btn-pill {
+  border-radius: var(--radius-full);
+}
+html:has(.modal-backdrop[open]),
+html:has(.modal-backdrop.is-open) {
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: var(--dur-instant);
+    scroll-behavior: auto;
+  }
+  .a-fade-in,
+  .a-slide-up,
+  .toast,
+  .toast.is-leaving,
+  .modal-backdrop[open],
+  .modal-backdrop[open] .modal,
+  .modal-backdrop.is-open,
+  .modal-backdrop.is-open .modal,
+  .modal-backdrop.is-leaving,
+  .modal-backdrop.is-leaving .modal,
+  .dropdown.is-open .dropdown-menu,
+  .skeleton {
+    animation: none;
+  }
+  .toast::after {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .checkbox-input:checked,
+  .checkbox-input:indeterminate,
+  .radio-input:checked,
+  .toggle-input:checked,
+  .progress-fill,
+  .pagination-item.is-active {
+    background-color: Highlight;
+  }
+  .toggle-input,
+  .progress-track {
+    border: var(--border-width) solid CanvasText;
+  }
+  .toggle-input::before {
+    background-color: CanvasText;
+  }
+  .tab.is-active::after {
+    background-color: Highlight;
+  }
+}
