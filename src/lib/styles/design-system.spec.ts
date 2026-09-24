@@ -806,6 +806,13 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('stacks the tab header above the panel in a flex column, so a wide tab row cannot widen the panel', () => {
+    const tabs = declarations(ruleBody(style('components/tabs.css'), '.tabs'));
+
+    expect(tabs).toEqual(expect.arrayContaining(['display: flex', 'flex-direction: column']));
+    expect(tabs).not.toContain('display: grid');
+  });
+
   it('keeps the scrollbar gutter while a modal covers a page that showed a scrollbar', () => {
     const overrides = style('overrides/overrides.css');
 
