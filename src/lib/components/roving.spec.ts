@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { landOn, menuMove, tabMove } from './roving';
+import { landOn, menuMove, tabMove, textDirection } from './roving';
 
 const ALL = [true, true, true, true];
 
 const SECOND_OFF = [true, false, true, true];
 
+const TAB_KEYS = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+
 describe('tabMove', () => {
-  it('maps the horizontal arrows, Home and End', () => {
-    expect(['ArrowRight', 'ArrowLeft', 'Home', 'End'].map(tabMove)).toEqual([
+  it('maps the horizontal arrows, Home and End left to right', () => {
+    expect(TAB_KEYS.map((key) => tabMove(key, 'ltr'))).toEqual([
       'next',
       'previous',
       'first',
@@ -15,12 +17,43 @@ describe('tabMove', () => {
     ]);
   });
 
-  it('ignores the vertical arrows', () => {
-    expect([tabMove('ArrowDown'), tabMove('ArrowUp')]).toEqual([undefined, undefined]);
+  it('swaps the horizontal arrows right to left and keeps Home and End', () => {
+    expect(TAB_KEYS.map((key) => tabMove(key, 'rtl'))).toEqual([
+      'previous',
+      'next',
+      'first',
+      'last',
+    ]);
+  });
+
+  it('ignores the vertical arrows in either direction', () => {
+    expect([
+      tabMove('ArrowDown', 'ltr'),
+      tabMove('ArrowUp', 'ltr'),
+      tabMove('ArrowDown', 'rtl'),
+      tabMove('ArrowUp', 'rtl'),
+    ]).toEqual([undefined, undefined, undefined, undefined]);
   });
 
   it('ignores a key named after an object property', () => {
-    expect(tabMove('toString')).toBeUndefined();
+    expect([tabMove('toString', 'ltr'), tabMove('toString', 'rtl')]).toEqual([
+      undefined,
+      undefined,
+    ]);
+  });
+});
+
+describe('textDirection', () => {
+  it('reads a computed rtl as right to left', () => {
+    expect(textDirection('rtl')).toBe('rtl');
+  });
+
+  it('reads ltr, an empty value and anything unknown as left to right', () => {
+    expect([textDirection('ltr'), textDirection(''), textDirection('auto')]).toEqual([
+      'ltr',
+      'ltr',
+      'ltr',
+    ]);
   });
 });
 

@@ -524,6 +524,13 @@ describe('the design system stylesheets', () => {
     expect(missing).toEqual([]);
   });
 
+  it('shrinks the toast timer toward the inline start in both directions', () => {
+    const toast = style('components/toast.css');
+
+    expect(ruleBody(toast, '.toast::after')).toMatch(/transform-origin:\s*left;/u);
+    expect(ruleBody(toast, '.toast:dir(rtl)::after')).toMatch(/transform-origin:\s*right;/u);
+  });
+
   it('holds the z-index scale the contract locks', () => {
     const primitives = style('base/primitives.css');
 

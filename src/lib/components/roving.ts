@@ -2,11 +2,21 @@ import { match } from 'ts-pattern';
 
 type Move = 'next' | 'previous' | 'first' | 'last';
 
-const TAB_KEYS: Readonly<Record<string, Move>> = {
-  ArrowRight: 'next',
-  ArrowLeft: 'previous',
-  Home: 'first',
-  End: 'last',
+type TextDirection = 'ltr' | 'rtl';
+
+const TAB_KEYS: Readonly<Record<TextDirection, Readonly<Record<string, Move>>>> = {
+  ltr: {
+    ArrowRight: 'next',
+    ArrowLeft: 'previous',
+    Home: 'first',
+    End: 'last',
+  },
+  rtl: {
+    ArrowRight: 'previous',
+    ArrowLeft: 'next',
+    Home: 'first',
+    End: 'last',
+  },
 };
 
 const MENU_KEYS: Readonly<Record<string, Move>> = {
@@ -16,8 +26,13 @@ const MENU_KEYS: Readonly<Record<string, Move>> = {
   End: 'last',
 };
 
-function tabMove(key: string): Move | undefined {
-  return Object.hasOwn(TAB_KEYS, key) ? TAB_KEYS[key] : undefined;
+function textDirection(computed: string): TextDirection {
+  return computed === 'rtl' ? 'rtl' : 'ltr';
+}
+
+function tabMove(key: string, direction: TextDirection): Move | undefined {
+  const keys = TAB_KEYS[direction];
+  return Object.hasOwn(keys, key) ? keys[key] : undefined;
 }
 
 function menuMove(key: string): Move | undefined {
@@ -37,5 +52,5 @@ function landOn(move: Move, current: number, enabled: readonly boolean[]): numbe
     .exhaustive();
 }
 
-export { landOn, menuMove, tabMove };
-export type { Move };
+export { landOn, menuMove, tabMove, textDirection };
+export type { Move, TextDirection };

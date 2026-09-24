@@ -37,6 +37,9 @@
   transform-origin: left;
   animation: kToastTimer var(--toast-timeout, var(--toast-duration)) linear forwards;
 }
+.toast:dir(rtl)::after {
+  transform-origin: right;
+}
 .toast:hover::after,
 .toast:focus-within::after {
   animation-play-state: paused;

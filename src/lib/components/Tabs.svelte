@@ -3,7 +3,7 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import { TABS_VARIANTS } from './classes';
   import type { TabsVariant } from './classes';
-  import { landOn, tabMove } from './roving';
+  import { landOn, tabMove, textDirection } from './roving';
   import { shownTab } from './tabs';
   import type { TabItem } from './tabs';
 
@@ -30,6 +30,7 @@
   const uid = $props.id();
   const shown = $derived(shownTab(tabs, selected));
   const buttons: HTMLButtonElement[] = $state([]);
+  let list = $state<HTMLDivElement>();
 
   function select(id: string): void {
     if (id === shown) return;
@@ -38,7 +39,8 @@
   }
 
   function keydown(event: KeyboardEvent): void {
-    const move = tabMove(event.key);
+    const direction = textDirection(list === undefined ? '' : getComputedStyle(list).direction);
+    const move = tabMove(event.key, direction);
     if (move === undefined) return;
     const current = tabs.findIndex((tab) => tab.id === shown);
     const target = landOn(
@@ -55,7 +57,7 @@
 </script>
 
 <div {...rest} class={['tabs', TABS_VARIANTS[variant], className]}>
-  <div class="tab-list" role="tablist" aria-label={label}>
+  <div bind:this={list} class="tab-list" role="tablist" aria-label={label}>
     {#each tabs as tab, index (tab.id)}
       <button
         bind:this={buttons[index]}
