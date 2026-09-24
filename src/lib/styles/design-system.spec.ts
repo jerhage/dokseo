@@ -605,6 +605,24 @@ describe('the design system stylesheets', () => {
     }
   });
 
+  it('clears the user agent box of a fieldset and the padding of its legend', () => {
+    const fieldset = style('components/forms/fieldset.css');
+
+    expect(declarations(ruleBody(fieldset, '.fieldset'))).toEqual(
+      expect.arrayContaining(['min-inline-size: 0', 'margin: 0', 'padding: 0', 'border: none']),
+    );
+    expect(declarations(ruleBody(fieldset, '.fieldset-legend'))).toContain('padding: 0');
+  });
+
+  it('sets a fieldset legend in the type and colour of a field label', () => {
+    const legend = declarations(
+      ruleBody(style('components/forms/fieldset.css'), '.fieldset-legend'),
+    );
+    const label = declarations(ruleBody(style('components/forms/field.css'), '.field-label'));
+
+    expect(legend.filter((part) => !/^(margin|padding)/u.test(part))).toEqual(label);
+  });
+
   it('reads the token each shadow and radius utility names', () => {
     for (const [path, [prefix, property, tokenPrefix]] of Object.entries(TOKEN_UTILITIES)) {
       const found = rules(style(path)).filter((rule) =>

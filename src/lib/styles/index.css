@@ -26,6 +26,7 @@
 @import 'components/badge.css' layer(components);
 @import 'components/tag.css' layer(components);
 @import 'components/forms/field.css' layer(components);
+@import 'components/forms/fieldset.css' layer(components);
 @import 'components/forms/control.css' layer(components);
 @import 'components/forms/select.css' layer(components);
 @import 'components/forms/textarea.css' layer(components);
