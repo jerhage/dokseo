@@ -1,0 +1,128 @@
+:root {
+  --ds-crayon-canvas: light-dark(oklch(0.975 0.018 85), oklch(0.16 0.05 285));
+  --ds-crayon-paper: light-dark(oklch(0.995 0.006 85), oklch(0.2 0.06 285));
+  --ds-crayon-raised: light-dark(oklch(1 0 0), oklch(0.24 0.07 285));
+  --ds-crayon-sunken: light-dark(oklch(0.955 0.025 355), oklch(0.13 0.04 285));
+  --ds-crayon-ink: light-dark(oklch(0.2 0.035 285), oklch(0.96 0.012 320));
+  --ds-crayon-ink-fixed: oklch(0.2 0.035 285);
+  --ds-crayon-text-muted: light-dark(oklch(0.45 0.045 300), oklch(0.76 0.05 310));
+  --ds-crayon-text-faint: light-dark(oklch(0.6 0.04 300), oklch(0.6 0.05 305));
+  --ds-crayon-line: light-dark(oklch(0.2 0.035 285), oklch(0.48 0.13 320));
+  --ds-crayon-on-primary: light-dark(oklch(1 0 0), oklch(0.16 0.05 285));
+  --ds-crayon-tint-5: light-dark(oklch(0.6 0.23 355 / 0.07), oklch(0.75 0.2 355 / 0.08));
+  --ds-crayon-tint-9: light-dark(oklch(0.6 0.23 355 / 0.13), oklch(0.75 0.2 355 / 0.15));
+  --ds-crayon-tint-15: light-dark(oklch(0.6 0.23 355 / 0.2), oklch(0.75 0.2 355 / 0.22));
+  --ds-crayon-disabled-bg: light-dark(oklch(0.93 0.015 300), oklch(0.26 0.04 290));
+  --ds-crayon-offset: light-dark(oklch(0.2 0.035 285), transparent);
+  --ds-crayon-halo-pink: light-dark(transparent, oklch(0.74 0.2 355 / 0.35));
+  --ds-crayon-glow-pink: light-dark(transparent, oklch(0.74 0.2 355 / 0.3));
+  --ds-crayon-halo-cyan: light-dark(transparent, oklch(0.84 0.13 205 / 0.4));
+
+  --ds-pink-50: light-dark(oklch(0.97 0.025 355), oklch(0.25 0.07 350));
+  --ds-pink-100: light-dark(oklch(0.93 0.06 355), oklch(0.31 0.1 352));
+  --ds-pink-300: light-dark(oklch(0.82 0.11 355), oklch(0.5 0.16 355));
+  --ds-pink-500: light-dark(oklch(0.6 0.23 355), oklch(0.74 0.2 355));
+  --ds-pink-600: light-dark(oklch(0.54 0.22 355), oklch(0.8 0.17 355));
+  --ds-pink-700: light-dark(oklch(0.47 0.19 355), oklch(0.86 0.12 355));
+  --ds-pink-a14: light-dark(oklch(0.6 0.23 355 / 0.14), oklch(0.74 0.2 355 / 0.18));
+  --ds-pink-glow: light-dark(oklch(0.6 0.23 355 / 0.3), oklch(0.74 0.2 355 / 0.4));
+
+  --ds-cyan-50: light-dark(oklch(0.965 0.035 205), oklch(0.25 0.05 215));
+  --ds-cyan-200: light-dark(oklch(0.88 0.08 205), oklch(0.4 0.08 215));
+  --ds-cyan-400: light-dark(oklch(0.8 0.13 210), oklch(0.7 0.13 210));
+  --ds-cyan-500: light-dark(oklch(0.8 0.13 210), oklch(0.84 0.13 205));
+  --ds-cyan-600: light-dark(oklch(0.74 0.14 215), oklch(0.9 0.1 200));
+  --ds-cyan-700: light-dark(oklch(0.45 0.1 225), oklch(0.88 0.1 205));
+  --ds-cyan-glow: light-dark(oklch(0.8 0.13 210 / 0.35), oklch(0.84 0.13 205 / 0.4));
+}
+
+:root[data-theme='crayon'] {
+  --ds-bg: var(--ds-crayon-canvas);
+  --ds-bg-raised: var(--ds-crayon-paper);
+  --ds-surface: var(--ds-crayon-paper);
+  --ds-surface-raised: var(--ds-crayon-raised);
+  --ds-surface-bright: var(--ds-crayon-raised);
+  --ds-surface-sunken: var(--ds-crayon-sunken);
+
+  --ds-primary: var(--ds-pink-500);
+  --ds-primary-hover: var(--ds-pink-600);
+  --ds-primary-subtle: var(--ds-pink-50);
+  --ds-primary-soft: var(--ds-pink-100);
+  --ds-primary-muted: var(--ds-pink-300);
+  --ds-primary-glow: var(--ds-pink-glow);
+  --ds-brand-tint: var(--ds-pink-50);
+  --ds-brand-border: var(--ds-crayon-line);
+  --ds-brand-border-mid: var(--ds-crayon-line);
+  --ds-brand-text: var(--ds-pink-700);
+
+  --ds-accent: var(--ds-cyan-500);
+  --ds-accent-hover: var(--ds-cyan-600);
+  --ds-accent-surface: var(--ds-cyan-50);
+  --ds-accent-border: var(--ds-crayon-line);
+  --ds-accent-mid: var(--ds-cyan-400);
+  --ds-accent-text: var(--ds-cyan-700);
+  --ds-accent-glow: var(--ds-cyan-glow);
+
+  --ds-text: var(--ds-crayon-ink);
+  --ds-text-muted: var(--ds-crayon-text-muted);
+  --ds-text-faint: var(--ds-crayon-text-faint);
+  --ds-text-inverse: var(--ds-crayon-on-primary);
+  --ds-text-on-primary: var(--ds-crayon-on-primary);
+  --ds-text-on-accent: var(--ds-crayon-ink-fixed);
+  --ds-text-link: var(--ds-pink-600);
+  --ds-text-link-hover: var(--ds-pink-700);
+
+  --ds-hover: var(--ds-crayon-tint-5);
+  --ds-active: var(--ds-crayon-tint-9);
+  --ds-selected: var(--ds-pink-a14);
+  --ds-disabled: var(--ds-crayon-text-faint);
+  --ds-disabled-bg: var(--ds-crayon-disabled-bg);
+
+  --ds-spinner-track: var(--ds-crayon-tint-15);
+  --ds-table-stripe: var(--ds-crayon-tint-5);
+  --ds-table-row-hover: var(--ds-crayon-tint-9);
+  --ds-skeleton-base: var(--ds-crayon-sunken);
+  --ds-skeleton-shine: var(--ds-crayon-raised);
+  --ds-code-bg: var(--ds-crayon-sunken);
+  --ds-code-text: var(--ds-pink-700);
+
+  --ds-border: var(--ds-crayon-line);
+  --ds-border-strong: var(--ds-crayon-line);
+  --ds-border-focus: var(--ds-cyan-500);
+  --ds-border-width: var(--ds-border-2);
+  --ds-border-width-strong: 3px;
+
+  --ds-font-display: 'Zen Maru Gothic', 'M PLUS Rounded 1c', system-ui, sans-serif;
+  --ds-font-body: 'M PLUS Rounded 1c', system-ui, sans-serif;
+  --ds-font-mono: 'M PLUS 1 Code', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-9);
+  --ds-weight-semibold: var(--ds-fw-7);
+  --ds-tracking-tight: var(--ds-ls-normal);
+  --ds-tracking-wider: var(--ds-ls-wider);
+  --ds-tracking-widest: var(--ds-ls-widest);
+
+  --ds-corner-xs: 6px;
+  --ds-corner-sm: 10px;
+  --ds-corner-md: 18px;
+  --ds-corner-lg: 26px;
+  --ds-radius-control: var(--ds-radius-full);
+  --ds-radius-container: 18px;
+  --ds-radius-overlay: 26px;
+
+  --ds-shadow-1: 2px 2px 0 var(--ds-crayon-offset), 0 0 10px var(--ds-crayon-halo-pink);
+  --ds-shadow-2:
+    4px 4px 0 var(--ds-crayon-offset), 0 0 0 1px var(--ds-crayon-halo-pink),
+    0 0 24px var(--ds-crayon-glow-pink);
+  --ds-shadow-3:
+    7px 7px 0 var(--ds-crayon-offset), 0 0 0 1px var(--ds-crayon-halo-cyan),
+    0 0 48px var(--ds-crayon-halo-pink);
+  --ds-shadow-4:
+    7px 7px 0 var(--ds-crayon-offset), 0 0 0 1px var(--ds-crayon-halo-cyan),
+    0 0 48px var(--ds-crayon-halo-pink);
+
+  --ds-shadow-inset: 0 0 0 transparent;
+
+  --ds-duration-quick: var(--ds-dur-quick);
+  --ds-dur-spring: var(--ds-dur-moderate);
+  --ds-easing-spring: cubic-bezier(0.34, 1.8, 0.5, 1);
+}

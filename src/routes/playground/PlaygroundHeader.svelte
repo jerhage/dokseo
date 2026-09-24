@@ -10,6 +10,7 @@
     ember: 'Ember',
     mono: 'Mono',
     forge: 'Forge',
+    crayon: 'Crayon',
   };
 
   const SCHEME_LABELS: Readonly<Record<ColorScheme, string>> = {

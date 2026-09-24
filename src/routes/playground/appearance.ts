@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 
-type Theme = 'base' | 'ember' | 'mono' | 'forge';
+type Theme = 'base' | 'ember' | 'mono' | 'forge' | 'crayon';
 
 type ColorScheme = 'automatic' | 'light' | 'dark';
 
@@ -11,7 +11,7 @@ type Appearance = {
 
 type RootAttributes = Pick<Element, 'getAttribute' | 'setAttribute' | 'removeAttribute'>;
 
-const THEMES: readonly Theme[] = ['base', 'ember', 'mono', 'forge'];
+const THEMES: readonly Theme[] = ['base', 'ember', 'mono', 'forge', 'crayon'];
 
 const COLOR_SCHEMES: readonly ColorScheme[] = ['automatic', 'light', 'dark'];
 
