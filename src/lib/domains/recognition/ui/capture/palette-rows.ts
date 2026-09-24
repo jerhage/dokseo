@@ -8,10 +8,10 @@ import type { SearchedBook } from '../../domain/capture/capture-results';
 import { matchedTagIds } from '../../domain/capture/quick-find';
 import type { QuickFinds } from '../../domain/capture/quick-find';
 import type { Tag } from '../../domain/tag/tag';
-import { markedLines } from '../capture/capture-lines';
-import { firstImage, NO_PLACE, pageLabel } from '../capture/capture-place';
-import { chipsOf } from '../capture/tag-chip';
-import type { TagChip } from '../capture/tag-chip';
+import { markedLines } from './capture-lines';
+import { firstImage, NO_PLACE, pageLabel } from './capture-place';
+import { chipsOf } from './tag-chip';
+import type { TagChip } from './tag-chip';
 
 type PaletteScope = 'book' | 'all';
 
