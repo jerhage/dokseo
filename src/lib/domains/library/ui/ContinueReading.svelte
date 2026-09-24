@@ -4,7 +4,6 @@
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
-  import './continue-reading.css';
 
   type Props = {
     readonly books: readonly Book[];
@@ -17,7 +16,7 @@
   const headingId = `${uid}-heading`;
 </script>
 
-<section class="continue-reading col gap-3" aria-labelledby={headingId}>
+<section class="col gap-3" aria-labelledby={headingId}>
   <h2 id={headingId} class="text-xs uppercase tracking-wide text-muted">Continue reading</h2>
   <ul class="scroll-strip">
     {#each books as book (book.id)}
@@ -26,7 +25,9 @@
       <li>
         <Card href="/read/{book.id}" variant="elevated">
           <div class="row items-center gap-4">
-            <span class="thumb aspect-portrait overflow-hidden surface-sunken rounded-control">
+            <span
+              class="w-10 shrink-0 aspect-portrait overflow-hidden surface-sunken rounded-control"
+            >
               {#if cover !== null}
                 <img class="object-cover" src={cover} alt="" />
               {/if}

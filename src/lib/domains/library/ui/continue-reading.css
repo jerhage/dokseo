@@ -1,8 +1,0 @@
-@layer features {
-  @scope (.continue-reading) {
-    .thumb {
-      flex: none;
-      inline-size: var(--sp-10);
-    }
-  }
-}
