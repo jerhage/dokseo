@@ -1,8 +1,11 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Divider from '$lib/components/Divider.svelte';
-  import { COLOR_SCHEMES, THEMES, applyAppearance, readAppearance } from './appearance';
+  import Dropdown from '$lib/components/Dropdown.svelte';
+  import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import DropdownLabel from '$lib/components/DropdownLabel.svelte';
+  import DropdownSeparator from '$lib/components/DropdownSeparator.svelte';
+  import { COLOR_SCHEMES, THEMES, readAppearance } from './appearance';
   import type { Appearance, ColorScheme, Theme } from './appearance';
+  import { chooseAppearance } from './saved-appearance';
 
   const THEME_LABELS: Readonly<Record<Theme, string>> = {
     base: 'Base',
@@ -19,36 +22,51 @@
     dark: 'Dark',
   };
 
+  const SCHEME_GLYPHS: Readonly<Record<ColorScheme, string>> = {
+    automatic: '◐',
+    light: '☀',
+    dark: '☾',
+  };
+
+  const uid = $props.id();
+
   let appearance = $state<Appearance>(readAppearance(document.documentElement));
 
-  function choose(next: Appearance): void {
+  function choose(event: MouseEvent, next: Appearance): void {
+    event.preventDefault();
     appearance = next;
-    applyAppearance(document.documentElement, next);
+    chooseAppearance(document.documentElement, next);
   }
 </script>
 
-<div class="row wrap items-center gap-4">
-  <div class="row wrap items-center gap-1" role="group" aria-label="Theme">
+<Dropdown variant="ghost" size="sm" align="end">
+  {#snippet trigger()}
+    <span aria-hidden="true">{SCHEME_GLYPHS[appearance.colorScheme]}</span>
+    <span class="visually-hidden">Appearance:</span>
+    {THEME_LABELS[appearance.theme]}
+    <span class="visually-hidden"
+      >theme, {SCHEME_LABELS[appearance.colorScheme].toLowerCase()} color scheme</span
+    >
+  {/snippet}
+  <div role="group" aria-labelledby="{uid}-theme">
+    <DropdownLabel id="{uid}-theme">Theme</DropdownLabel>
     {#each THEMES as theme (theme)}
-      <Button
-        size="sm"
-        variant="ghost"
-        active={appearance.theme === theme}
-        aria-pressed={appearance.theme === theme}
-        onclick={() => choose({ ...appearance, theme })}>{THEME_LABELS[theme]}</Button
+      <DropdownItem
+        selected={appearance.theme === theme}
+        onclick={(event) => choose(event, { ...appearance, theme })}
+        >{THEME_LABELS[theme]}</DropdownItem
       >
     {/each}
   </div>
-  <Divider vertical />
-  <div class="row items-center gap-1" role="group" aria-label="Color scheme">
+  <DropdownSeparator />
+  <div role="group" aria-labelledby="{uid}-scheme">
+    <DropdownLabel id="{uid}-scheme">Color scheme</DropdownLabel>
     {#each COLOR_SCHEMES as colorScheme (colorScheme)}
-      <Button
-        size="sm"
-        variant="ghost"
-        active={appearance.colorScheme === colorScheme}
-        aria-pressed={appearance.colorScheme === colorScheme}
-        onclick={() => choose({ ...appearance, colorScheme })}>{SCHEME_LABELS[colorScheme]}</Button
+      <DropdownItem
+        selected={appearance.colorScheme === colorScheme}
+        onclick={(event) => choose(event, { ...appearance, colorScheme })}
+        >{SCHEME_LABELS[colorScheme]}</DropdownItem
       >
     {/each}
   </div>
-</div>
+</Dropdown>
