@@ -5,7 +5,7 @@
   type Props = Omit<HTMLInputAttributes, 'type' | 'class' | 'children' | 'checked'> & {
     group?: HTMLInputAttributes['value'];
     class?: ClassValue;
-    hint?: string;
+    hint?: string | undefined;
     children: Snippet;
   };
 

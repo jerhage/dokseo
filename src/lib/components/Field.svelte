@@ -6,8 +6,8 @@
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     label: string;
-    hint?: string;
-    error?: string;
+    hint?: string | undefined;
+    error?: string | undefined;
     children: Snippet<[FieldControl]>;
   };
 

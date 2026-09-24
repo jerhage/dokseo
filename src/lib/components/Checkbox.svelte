@@ -4,7 +4,7 @@
 
   type Props = Omit<HTMLInputAttributes, 'type' | 'class' | 'children'> & {
     class?: ClassValue;
-    hint?: string;
+    hint?: string | undefined;
     children: Snippet;
   };
 
