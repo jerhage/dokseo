@@ -3,6 +3,8 @@
   import Dropzone from '$lib/components/Dropzone.svelte';
   import Field from '$lib/components/Field.svelte';
   import FileList from '$lib/components/FileList.svelte';
+  import Toggle from '$lib/components/Toggle.svelte';
+  import WindowDropzone from '$lib/components/WindowDropzone.svelte';
   import type { FileItemData } from '$lib/components/file-item';
   import { describeRejection } from '$lib/components/file-selection';
   import type { FileSelection } from '$lib/components/file-selection';
@@ -14,6 +16,8 @@
   let nextId = 0;
   let attachments = $state<readonly FileItemData[]>([]);
   let arrival = $state<readonly string[]>([]);
+  let windowDrop = $state(false);
+  let windowDropped = $state<readonly string[]>([]);
   let avatar = $state<readonly FileItemData[]>([
     { id: 'profile-photo', name: 'profile-photo.jpg', size: 422_707, state: 'complete' },
     {
@@ -68,7 +72,7 @@
 <DemoSection
   id="upload"
   title="File upload"
-  classes={['dropzone', 'dropzone-compact', 'file-list', 'file-item']}
+  classes={['dropzone', 'dropzone-compact', 'window-drop', 'file-list', 'file-item']}
 >
   <p class="text-sm text-muted">
     Drag files onto a zone or click to browse. Files over 50 MB or of the wrong type show as errors.
@@ -125,4 +129,23 @@
       </div>
     </div>
   </Card>
+  <Card>
+    <div class="stack-sm">
+      <Toggle bind:checked={windowDrop}>Drop anywhere in the window</Toggle>
+      <p class="text-xs text-faint">
+        {windowDrop
+          ? 'Drag files over any part of the page. A drop on a zone above goes to that zone only.'
+          : 'Off: a file dropped outside a zone is refused, not opened in the tab.'}
+      </p>
+      {#if windowDropped.length > 0}
+        <p class="text-xs text-faint">Dropped: {windowDropped.join(', ')}</p>
+      {/if}
+    </div>
+  </Card>
+  <WindowDropzone
+    disabled={!windowDrop}
+    onfiles={(files) => (windowDropped = files.map((file) => file.name))}
+  >
+    Drop to log the files
+  </WindowDropzone>
 </DemoSection>

@@ -109,3 +109,43 @@
   block-size: var(--control-h-md);
   margin: 0;
 }
+.window-drop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: var(--sp-4);
+  color: inherit;
+  background-color: var(--color-overlay);
+  border: none;
+  overflow: visible;
+  pointer-events: none;
+}
+.window-drop:popover-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.window-drop-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5);
+  text-align: center;
+  font-size: var(--text-sm);
+  line-height: var(--lh-snug);
+  color: var(--color-brand-text);
+  background-color: var(--color-surface-raised);
+  background-image: linear-gradient(var(--color-selected), var(--color-selected));
+  border: var(--border-width-strong) solid var(--color-primary);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-lg);
+}
+.window-drop-panel .dropzone-icon {
+  transform: translateY(calc(var(--sp-1) * -1));
+}
