@@ -4,6 +4,8 @@
   import ToastRegion from '$lib/components/ToastRegion.svelte';
   import { setToaster } from '$lib/components/toast-context';
   import { createToaster } from '$lib/components/toaster.svelte';
+  import AccordionSection from './AccordionSection.svelte';
+  import AlertSection from './AlertSection.svelte';
   import BadgesSection from './BadgesSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
@@ -11,6 +13,8 @@
   import FormSection from './FormSection.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
+  import TableSection from './TableSection.svelte';
+  import TabsSection from './TabsSection.svelte';
   import TokensSection from './TokensSection.svelte';
 
   const SECTIONS: readonly Component[] = [
@@ -20,6 +24,10 @@
     FormSection,
     ChoicesSection,
     CardSection,
+    AlertSection,
+    TabsSection,
+    AccordionSection,
+    TableSection,
   ];
 
   setToaster(createToaster());
