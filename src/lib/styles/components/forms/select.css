@@ -1,0 +1,17 @@
+.select {
+  appearance: none;
+  padding-inline-end: var(--sp-8);
+  cursor: pointer;
+}
+.field-control:has(> .select)::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--sp-3);
+  margin-block: auto;
+  inline-size: var(--sp-4);
+  block-size: var(--sp-4);
+  background-color: var(--color-text-muted);
+  mask: var(--icon-chevron-down) center / contain no-repeat;
+  pointer-events: none;
+}

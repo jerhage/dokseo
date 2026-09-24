@@ -25,6 +25,13 @@
 @import 'components/btn.css' layer(components);
 @import 'components/badge.css' layer(components);
 @import 'components/tag.css' layer(components);
+@import 'components/forms/field.css' layer(components);
+@import 'components/forms/control.css' layer(components);
+@import 'components/forms/select.css' layer(components);
+@import 'components/forms/textarea.css' layer(components);
+@import 'components/forms/checkbox.css' layer(components);
+@import 'components/forms/radio.css' layer(components);
+@import 'components/forms/toggle.css' layer(components);
 @import 'components/card.css' layer(components);
 @import 'components/avatar.css' layer(components);
 @import 'components/progress.css' layer(components);

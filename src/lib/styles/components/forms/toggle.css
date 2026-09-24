@@ -1,0 +1,51 @@
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--text-sm);
+  line-height: var(--lh-snug);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.toggle-input {
+  appearance: none;
+  flex: none;
+  position: relative;
+  inline-size: var(--sp-7);
+  block-size: var(--sp-5);
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: var(--color-text-faint);
+  cursor: pointer;
+  transition: background-color var(--transition-ui);
+}
+.toggle-input::before {
+  content: '';
+  position: absolute;
+  inset-block-start: var(--border-width-strong);
+  inset-inline-start: var(--border-width-strong);
+  inline-size: calc(var(--sp-5) - 2 * var(--border-width-strong));
+  block-size: calc(var(--sp-5) - 2 * var(--border-width-strong));
+  border-radius: var(--radius-full);
+  background-color: var(--color-text-inverse);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-spring);
+}
+.toggle-input:checked {
+  background-color: var(--color-primary);
+}
+.toggle-input:checked::before {
+  transform: translateX(calc(var(--sp-7) - var(--sp-5)));
+}
+.toggle-input:disabled {
+  background-color: var(--color-disabled-bg);
+  cursor: not-allowed;
+}
+.toggle-input:disabled::before {
+  background-color: var(--color-disabled);
+  box-shadow: none;
+}
+.toggle:has(:disabled) {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}

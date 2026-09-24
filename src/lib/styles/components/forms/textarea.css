@@ -1,0 +1,6 @@
+.textarea {
+  min-block-size: var(--sp-10);
+  padding-block: var(--sp-2);
+  resize: vertical;
+  field-sizing: content;
+}

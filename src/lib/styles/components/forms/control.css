@@ -1,0 +1,53 @@
+.input,
+.select,
+.textarea {
+  inline-size: 100%;
+  min-block-size: var(--control-h-md);
+  padding: 0 var(--sp-3);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-text);
+  background-color: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--border-color-strong);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-inset);
+  transition:
+    border-color var(--transition-ui),
+    background-color var(--transition-ui),
+    box-shadow var(--transition-ui);
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-text-faint);
+}
+.input:hover,
+.select:hover,
+.textarea:hover {
+  border-color: var(--color-text-faint);
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--border-color-focus);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  color: var(--color-disabled);
+  background-color: var(--color-disabled-bg);
+  border-color: var(--border-color);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.input[aria-invalid='true'],
+.select[aria-invalid='true'],
+.textarea[aria-invalid='true'],
+.field.is-invalid .input,
+.field.is-invalid .select,
+.field.is-invalid .textarea {
+  border-color: var(--color-danger);
+  outline-color: var(--color-danger);
+}
