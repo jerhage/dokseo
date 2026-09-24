@@ -23,6 +23,10 @@
 @import 'tokens/icons.css' layer(tokens);
 
 @import 'components/btn.css' layer(components);
+@import 'components/badge.css' layer(components);
+@import 'components/tag.css' layer(components);
+@import 'components/avatar.css' layer(components);
+@import 'components/divider.css' layer(components);
 
 @import 'utilities/animation.css' layer(utilities);
 

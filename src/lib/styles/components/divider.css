@@ -1,0 +1,32 @@
+.divider {
+  block-size: var(--border-width);
+  background-color: var(--border-color);
+  border: none;
+}
+.divider-strong {
+  background-color: var(--border-color-strong);
+}
+.divider-vertical {
+  inline-size: var(--border-width);
+  block-size: auto;
+  align-self: stretch;
+}
+.divider-labeled {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  block-size: auto;
+  background: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+.divider-labeled::before,
+.divider-labeled::after {
+  content: '';
+  flex: 1;
+  block-size: var(--border-width);
+  background-color: var(--border-color);
+}
