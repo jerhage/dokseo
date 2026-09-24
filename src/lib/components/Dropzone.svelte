@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ClassValue, HTMLInputAttributes } from 'svelte/elements';
+  import { readDropped } from './drop-reading';
+  import type { DropReader } from './drop-reading';
   import { acceptRules, selectFiles } from './file-selection';
   import type { FileSelection } from './file-selection';
 
@@ -17,6 +19,7 @@
     disabled?: boolean;
     compact?: boolean;
     invalid?: boolean;
+    readDrop?: DropReader<DataTransfer, File> | undefined;
     onfiles: (selection: FileSelection<File>) => void;
   };
 
@@ -29,6 +32,7 @@
     disabled = false,
     compact = false,
     invalid = false,
+    readDrop,
     onfiles,
     class: className,
     ...rest
@@ -56,11 +60,12 @@
     dragging = false;
   }
 
-  function drop(event: DragEvent): void {
+  async function drop(event: DragEvent): Promise<void> {
     event.preventDefault();
     dragging = false;
     if (disabled || event.dataTransfer === null) return;
-    report([...event.dataTransfer.files]);
+    const pending = readDropped(event.dataTransfer, readDrop);
+    report(await pending);
   }
 
   function choose(event: Event & { currentTarget: HTMLInputElement }): void {
