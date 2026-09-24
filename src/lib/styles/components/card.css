@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 .card-media {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--ratio-video);
   background-color: var(--color-surface-sunken);
 }
 .card-media > img {

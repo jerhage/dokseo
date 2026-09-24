@@ -29,6 +29,9 @@
   --container-wide: var(--ds-container-wide);
   --layout-hero-height: var(--ds-layout-hero-height);
   --layout-row-height: var(--ds-layout-row-height);
+  --ratio-portrait: var(--ds-ratio-portrait);
+  --ratio-square: var(--ds-ratio-square);
+  --ratio-video: var(--ds-ratio-video);
   --layout-sidebar-width: var(--ds-size-sidebar);
   --layout-list-width: var(--ds-size-list);
 
@@ -38,6 +41,8 @@
 
   --page-gutter: var(--ds-space-5);
   --grid-min-col: var(--ds-size-grid-min);
+  --grid-min-col-sm: var(--ds-size-grid-min-sm);
+  --grid-min-col-lg: var(--ds-size-grid-min-lg);
   --modal-width-sm: var(--ds-size-dialog-sm);
   --modal-width-md: var(--ds-size-dialog-md);
   --modal-width-lg: var(--ds-size-dialog-lg);

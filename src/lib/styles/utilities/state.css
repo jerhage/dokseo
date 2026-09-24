@@ -1,0 +1,4 @@
+.is-busy {
+  opacity: var(--opacity-muted);
+  transition: opacity var(--transition-ui);
+}

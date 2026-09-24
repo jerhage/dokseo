@@ -33,15 +33,54 @@
     order: 0;
   }
 }
-.layout-overlay {
+.layout-overlay,
+.overlay-host {
   display: grid;
   isolation: isolate;
+}
+.layout-overlay {
   min-block-size: var(--layout-row-height);
   border-radius: var(--radius-container);
   overflow: hidden;
 }
-.layout-overlay > * {
+.layout-overlay > *,
+.overlay-host > * {
   grid-area: 1 / 1;
+}
+.overlay-fill {
+  align-self: stretch;
+  justify-self: stretch;
+}
+.overlay-top-start {
+  align-self: start;
+  justify-self: start;
+  margin: var(--sp-2);
+}
+.overlay-top-end {
+  align-self: start;
+  justify-self: end;
+  margin: var(--sp-2);
+}
+.overlay-bottom {
+  align-self: end;
+  justify-self: stretch;
+}
+.overlay-pass-through {
+  pointer-events: none;
+}
+.overlay-pass-through :is(a, button, input, select, textarea, label, [tabindex]) {
+  pointer-events: auto;
+}
+@media (hover: hover) {
+  .reveal-on-hover {
+    opacity: 0;
+    transition: opacity var(--transition-ui);
+  }
+  :is(.overlay-host, .reveal-host):hover .reveal-on-hover,
+  .reveal-on-hover:has(:focus-visible),
+  .reveal-on-hover:has(:disabled) {
+    opacity: 1;
+  }
 }
 .layout-overlay-media {
   inline-size: 100%;
@@ -195,4 +234,20 @@
   .layout-mosaic > * {
     grid-column: 1 / -1;
   }
+}
+.scroll-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(100%, var(--grid-min-col));
+  gap: var(--sp-4);
+  margin-inline: calc(var(--sp-1) * -1);
+  padding: var(--sp-1) var(--sp-1) var(--sp-3);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  scroll-padding-inline: var(--sp-1);
+  list-style: none;
+}
+.scroll-strip > * {
+  scroll-snap-align: start;
 }

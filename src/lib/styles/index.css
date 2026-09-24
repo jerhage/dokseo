@@ -27,6 +27,7 @@
 @import 'tokens/motion.css' layer(tokens);
 @import 'tokens/elevation.css' layer(tokens);
 @import 'tokens/icons.css' layer(tokens);
+@import 'tokens/opacity.css' layer(tokens);
 
 @import 'components/btn.css' layer(components);
 @import 'components/badge.css' layer(components);
@@ -67,6 +68,8 @@
 @import 'utilities/flex.css' layer(utilities);
 @import 'utilities/spacing.css' layer(utilities);
 @import 'utilities/surface.css' layer(utilities);
+@import 'utilities/media.css' layer(utilities);
+@import 'utilities/state.css' layer(utilities);
 @import 'utilities/shadow.css' layer(utilities);
 @import 'utilities/text.css' layer(utilities);
 @import 'utilities/animation.css' layer(utilities);

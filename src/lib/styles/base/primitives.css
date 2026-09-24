@@ -74,12 +74,17 @@
   --ds-container-wide: 1280px;
   --ds-layout-hero-height: 32rem;
   --ds-layout-row-height: 12rem;
+  --ds-ratio-portrait: 2 / 3;
+  --ds-ratio-square: 1 / 1;
+  --ds-ratio-video: 16 / 9;
   --ds-size-dialog-sm: 24rem;
   --ds-size-dialog-md: 32rem;
   --ds-size-dialog-lg: 48rem;
   --ds-size-toast: 22rem;
   --ds-size-menu: 12rem;
   --ds-size-grid-min: 16rem;
+  --ds-size-grid-min-sm: 8rem;
+  --ds-size-grid-min-lg: 24rem;
   --ds-size-sidebar: 15rem;
   --ds-size-list: 18rem;
   --ds-size-stat: 11rem;
@@ -119,6 +124,9 @@
     1.005 72%,
     1
   );
+
+  --ds-opacity-muted: 0.55;
+  --ds-opacity-disabled: 0.4;
 
   --ds-z-base: 0;
   --ds-z-raised: 1;

@@ -1,8 +1,5 @@
 @layer features {
   @scope (.tokens-section) {
-    .sample-grid {
-      --grid-min-col: calc(var(--sp-10) * 2);
-    }
     .swatch {
       block-size: var(--sp-9);
       background-color: var(--swatch, transparent);
@@ -27,6 +24,7 @@
       border: var(--border-width) solid var(--border-color);
       border-radius: var(--sample-radius, var(--radius-control));
       box-shadow: var(--sample-shadow, none);
+      opacity: var(--sample-opacity, 1);
     }
   }
 }

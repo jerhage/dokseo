@@ -244,7 +244,12 @@ const SURFACES: Readonly<Record<string, string>> = {
 const TOKEN_UTILITIES: Readonly<Record<string, readonly [string, string, string]>> = {
   'utilities/shadow.css': ['shadow', 'box-shadow', 'shadow'],
   'utilities/surface.css': ['rounded', 'border-radius', 'radius'],
+  'utilities/media.css': ['aspect', 'aspect-ratio', 'ratio'],
 };
+
+const LANGUAGE_FACES = ['ja', 'ko'];
+
+const GRID_MIN_COLUMNS = ['sm', 'lg'];
 
 const RUNTIME_INPUTS = [
   '--menu-anchor-width',
@@ -398,6 +403,19 @@ function animationNames(css: string): readonly string[] {
 
 function definesClass(css: string, name: string): boolean {
   return new RegExp(`\\.${name}(?![\\w-])[^{}]*\\{`, 'u').test(css);
+}
+
+function mediaBlock(css: string, query: string): string {
+  const start = css.indexOf(`@media ${query}`);
+  if (start === -1) return '';
+  const open = css.indexOf('{', start);
+  let depth = 0;
+  for (let index = open; index < css.length; index += 1) {
+    if (css[index] === '{') depth += 1;
+    if (css[index] === '}') depth -= 1;
+    if (depth === 0) return css.slice(start, index + 1);
+  }
+  return css.slice(start);
 }
 
 function declarations(body: string): readonly string[] {
@@ -682,7 +700,7 @@ describe('the design system stylesheets', () => {
     expect(legend.filter((part) => !/^(margin|padding)/u.test(part))).toEqual(label);
   });
 
-  it('reads the token each shadow and radius utility names', () => {
+  it('reads the token each shadow, radius and aspect utility names', () => {
     for (const [path, [prefix, property, tokenPrefix]] of Object.entries(TOKEN_UTILITIES)) {
       const found = rules(style(path)).filter((rule) =>
         rule.selectors.some((selector) => selector.startsWith(`.${prefix}-`)),
@@ -699,6 +717,74 @@ describe('the design system stylesheets', () => {
         });
       }
     }
+  });
+
+  it('gives each language face a :lang() rule that sets it on the element and its controls', () => {
+    const elements = style('base/elements.css');
+
+    for (const language of LANGUAGE_FACES) {
+      const face = `var(--font-${language})`;
+
+      expect({
+        language,
+        body: declarations(ruleBody(elements, `:where([lang]:lang(${language}))`)).toSorted(),
+      }).toEqual({
+        language,
+        body: [`--font-body: ${face}`, `--font-display: ${face}`, `font-family: ${face}`],
+      });
+    }
+  });
+
+  it('points each grid density modifier at the minimum column token its name says', () => {
+    const grid = style('utilities/grid.css');
+
+    for (const size of GRID_MIN_COLUMNS) {
+      const selector = `.grid-auto-${size}`;
+
+      expect({ selector, body: declarations(ruleBody(grid, selector)) }).toEqual({
+        selector,
+        body: [`--grid-min-col: var(--grid-min-col-${size})`],
+      });
+    }
+  });
+
+  it('sizes the auto grids and the scroll strip from the minimum column the modifiers set', () => {
+    const grid = style('utilities/grid.css');
+    const strip = ruleBody(style('utilities/layout-patterns.css'), '.scroll-strip');
+
+    expect(ruleBody(grid, '.grid-auto')).toContain('var(--grid-min-col)');
+    expect(ruleBody(grid, '.grid-auto-fit')).toContain('var(--grid-min-col)');
+    expect(strip).toContain('var(--grid-min-col)');
+    expect(declarations(strip)).toEqual(
+      expect.arrayContaining(['grid-auto-flow: column', 'scroll-snap-type: inline mandatory']),
+    );
+  });
+
+  it('hides a hover reveal only on a device that can hover', () => {
+    const patterns = style('utilities/layout-patterns.css');
+    const hover = mediaBlock(patterns, '(hover: hover)');
+
+    expect(definesClass(hover, 'reveal-on-hover')).toBe(true);
+    expect(definesClass(patterns.replace(hover, ''), 'reveal-on-hover')).toBe(false);
+    expect(declarations(ruleBody(hover, '.reveal-on-hover'))).toContain('opacity: 0');
+  });
+
+  it('lets pointer events through a pass-through layer but not through its controls', () => {
+    const patterns = style('utilities/layout-patterns.css');
+    const controls = rules(patterns).find((rule) =>
+      rule.selectors.some((selector) => selector.startsWith('.overlay-pass-through :is(')),
+    );
+
+    expect(declarations(ruleBody(patterns, '.overlay-pass-through'))).toEqual([
+      'pointer-events: none',
+    ]);
+    expect(declarations(controls?.body ?? '')).toEqual(['pointer-events: auto']);
+  });
+
+  it('dims a busy element by the muted opacity token', () => {
+    expect(declarations(ruleBody(style('utilities/state.css'), '.is-busy'))).toContain(
+      'opacity: var(--opacity-muted)',
+    );
   });
 
   it('holds the z-index scale the contract locks', () => {

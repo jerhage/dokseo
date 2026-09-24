@@ -81,3 +81,14 @@ kbd {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
+
+:where([lang]:lang(ja)) {
+  --font-body: var(--font-ja);
+  --font-display: var(--font-ja);
+  font-family: var(--font-ja);
+}
+:where([lang]:lang(ko)) {
+  --font-body: var(--font-ko);
+  --font-display: var(--font-ko);
+  font-family: var(--font-ko);
+}

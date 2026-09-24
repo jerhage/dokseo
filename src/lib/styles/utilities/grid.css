@@ -45,6 +45,12 @@
 .grid-auto-fit {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--grid-min-col)), 1fr));
 }
+.grid-auto-sm {
+  --grid-min-col: var(--grid-min-col-sm);
+}
+.grid-auto-lg {
+  --grid-min-col: var(--grid-min-col-lg);
+}
 .grid-sidebar {
   display: flex;
   flex-wrap: wrap;

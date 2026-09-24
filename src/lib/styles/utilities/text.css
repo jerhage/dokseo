@@ -28,6 +28,9 @@
 .text-faint {
   color: var(--color-text-faint);
 }
+.weight-normal {
+  font-weight: var(--weight-normal);
+}
 .weight-medium {
   font-weight: var(--weight-medium);
 }

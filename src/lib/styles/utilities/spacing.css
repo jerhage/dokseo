@@ -1,3 +1,7 @@
+.gap-0 {
+  --_gap: 0;
+  gap: 0;
+}
 .gap-1 {
   --_gap: var(--sp-1);
   gap: var(--_gap);

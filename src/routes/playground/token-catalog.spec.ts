@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   COLOR_GROUPS,
   FONT_FAMILIES,
+  OPACITIES,
   RADII,
   SHADOWS,
   SPACING,
@@ -43,5 +44,9 @@ describe('the playground token catalog', () => {
   it('shows every shadow and every z-index step', () => {
     expect(sorted(SHADOWS)).toEqual(defined('elevation.css', /^--shadow-/u));
     expect(sorted(Z_SCALE)).toEqual(defined('elevation.css', /^--z-/u));
+  });
+
+  it('shows every opacity step', () => {
+    expect(sorted(OPACITIES)).toEqual(defined('opacity.css', /^--opacity-/u));
   });
 });

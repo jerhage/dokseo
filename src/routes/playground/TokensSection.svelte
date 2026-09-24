@@ -1,10 +1,12 @@
 <script lang="ts">
   import Card from '$lib/components/Card.svelte';
+  import Input from '$lib/components/Input.svelte';
   import Table from '$lib/components/Table.svelte';
   import DemoSection from './DemoSection.svelte';
   import {
     COLOR_GROUPS,
     FONT_FAMILIES,
+    OPACITIES,
     RADII,
     SHADOWS,
     SPACING,
@@ -34,7 +36,7 @@
       <div class="stack-sm">
         <span class="text-xs text-faint uppercase tracking-wide weight-semibold">{group.title}</span
         >
-        <div class="grid-auto sample-grid gap-3">
+        <div class="grid-auto grid-auto-sm gap-3">
           {#each group.tokens as name (name)}
             <div class="stack-sm">
               <div class="swatch" style:--swatch="var({name})"></div>
@@ -77,7 +79,7 @@
       </Card>
       <Card>
         <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Radii</span>
-        <div class="grid-auto sample-grid gap-4">
+        <div class="grid-auto grid-auto-sm gap-4">
           {#each RADII as name (name)}
             <div class="stack-sm">
               <span class="shape-sample" style:--sample-radius="var({name})"></span>
@@ -96,6 +98,25 @@
             </div>
           {/each}
         </div>
+      </Card>
+      <Card>
+        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Opacity</span>
+        <div class="row wrap gap-5">
+          {#each OPACITIES as name (name)}
+            <div class="stack-sm">
+              <span class="shape-sample" style:--sample-opacity="var({name})"></span>
+              {@render label(name)}
+            </div>
+          {/each}
+        </div>
+      </Card>
+      <Card>
+        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
+          Language faces follow the lang attribute
+        </span>
+        <p lang="ja">読書の記録</p>
+        <p lang="ko">독서 기록</p>
+        <Input lang="ja" value="入力欄も" aria-label="A Japanese field" />
       </Card>
       <Table compact caption="Z-index scale">
         <thead>

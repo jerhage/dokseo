@@ -10,6 +10,24 @@
   overflow-x: auto;
   scrollbar-width: none;
 }
+.tabs-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  min-inline-size: 0;
+}
+.tabs-header > .tab-list {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+.tabs-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-inline-start: auto;
+}
 .tab {
   position: relative;
   display: inline-flex;
@@ -70,6 +88,9 @@
   border-radius: var(--radius-control);
   background-color: var(--color-surface-sunken);
   box-shadow: var(--shadow-inset);
+}
+.tabs-pill .tabs-header > .tab-list {
+  flex: 0 1 auto;
 }
 .tabs-pill .tab {
   min-block-size: var(--control-h-sm);

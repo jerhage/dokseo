@@ -171,6 +171,8 @@ const SHADOWS: readonly string[] = [
   '--shadow-inset',
 ];
 
+const OPACITIES: readonly string[] = ['--opacity-muted', '--opacity-disabled'];
+
 const Z_SCALE: readonly string[] = [
   '--z-base',
   '--z-raised',
@@ -182,5 +184,5 @@ const Z_SCALE: readonly string[] = [
   '--z-tooltip',
 ];
 
-export { COLOR_GROUPS, FONT_FAMILIES, RADII, SHADOWS, SPACING, TYPE_SCALE, Z_SCALE };
+export { COLOR_GROUPS, FONT_FAMILIES, OPACITIES, RADII, SHADOWS, SPACING, TYPE_SCALE, Z_SCALE };
 export type { TokenGroup };

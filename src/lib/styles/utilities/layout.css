@@ -14,6 +14,24 @@
 .min-h-screen {
   min-block-size: 100dvh;
 }
+.h-full {
+  block-size: 100%;
+}
+.h-screen {
+  block-size: 100dvh;
+}
+.min-h-0 {
+  min-block-size: 0;
+}
+.overflow-auto {
+  overflow: auto;
+}
+.overflow-y-auto {
+  overflow-y: auto;
+}
+.overflow-hidden {
+  overflow: hidden;
+}
 .layout-app-shell {
   container: app-shell / inline-size;
   display: grid;
