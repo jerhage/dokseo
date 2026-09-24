@@ -1,0 +1,11 @@
+.codeblock {
+  padding: var(--sp-4) var(--sp-5);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--color-code-text);
+  background-color: var(--color-code-bg);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+}

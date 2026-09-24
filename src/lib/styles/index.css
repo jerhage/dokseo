@@ -25,8 +25,13 @@
 @import 'components/btn.css' layer(components);
 @import 'components/badge.css' layer(components);
 @import 'components/tag.css' layer(components);
+@import 'components/card.css' layer(components);
 @import 'components/avatar.css' layer(components);
+@import 'components/progress.css' layer(components);
+@import 'components/skeleton.css' layer(components);
 @import 'components/divider.css' layer(components);
+@import 'components/codeblock.css' layer(components);
+@import 'components/stat.css' layer(components);
 
 @import 'utilities/animation.css' layer(utilities);
 

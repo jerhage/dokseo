@@ -1,0 +1,32 @@
+.skeleton {
+  display: block;
+  block-size: var(--sp-4);
+  background-color: var(--color-skeleton-base);
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    var(--color-skeleton-shine),
+    transparent
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  border-radius: var(--radius-sm);
+  animation: kShimmer var(--dur-long) var(--ease-in-out) infinite;
+}
+.skeleton-text {
+  block-size: var(--sp-3);
+  border-radius: var(--radius-xs);
+}
+.skeleton-title {
+  block-size: var(--sp-5);
+  inline-size: 60%;
+}
+.skeleton-circle {
+  inline-size: var(--control-h-md);
+  block-size: var(--control-h-md);
+  border-radius: var(--radius-full);
+}
+.skeleton-block {
+  block-size: var(--layout-row-height);
+  border-radius: var(--radius-container);
+}
