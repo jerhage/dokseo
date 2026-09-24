@@ -1,7 +1,0 @@
-@layer features {
-  @scope (.upload-tile) {
-    .dropzone {
-      aspect-ratio: 2 / 3;
-    }
-  }
-}

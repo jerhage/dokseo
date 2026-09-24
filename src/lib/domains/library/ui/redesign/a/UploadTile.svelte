@@ -4,7 +4,6 @@
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from '../../accepted-formats';
   import { arrivedFiles, takeChosen } from '../chosen-files';
-  import './upload-tile.css';
 
   type Props = {
     readonly busy: boolean;
@@ -13,13 +12,11 @@
 
   let { busy, onfiles }: Props = $props();
 
-  const uid = $props.id();
-  const pickerId = `${uid}-files`;
-
+  let filePicker = $state<HTMLInputElement>();
   let folderPicker = $state<HTMLInputElement | null>(null);
 
   export function choose(): void {
-    document.getElementById(pickerId)?.click();
+    filePicker?.click();
   }
 
   function deliver(files: readonly File[]): void {
@@ -28,9 +25,10 @@
   }
 </script>
 
-<div class="upload-tile col gap-2">
+<div class="col gap-2">
   <Dropzone
-    id={pickerId}
+    bind:ref={filePicker}
+    class="aspect-portrait"
     multiple
     accept={ACCEPT_ATTRIBUTE}
     readDrop={filesFromDataTransfer}

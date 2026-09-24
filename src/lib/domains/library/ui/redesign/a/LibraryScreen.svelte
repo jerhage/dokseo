@@ -24,7 +24,6 @@
     storageText,
     titledBooks,
   } from '../library-overview';
-  import './library-screen.css';
 
   type Props = {
     readonly view: LibraryView;
@@ -52,7 +51,7 @@
   const matched = $derived(matchedText(titled.length));
 </script>
 
-<div class="library-screen surface-bg">
+<div class="row gap-0 h-screen surface-bg">
   <nav class="col items-center gap-2 px-3 py-4 surface" aria-label="Sections">
     <Avatar shape="square" size="sm" lang="ja" aria-hidden="true">読</Avatar>
     <NavLink href="/tags" title="Tags across your documents">
@@ -68,7 +67,7 @@
 
   <Divider vertical />
 
-  <div class="main">
+  <div class="col gap-0 flex-1 min-h-0">
     <header class="row wrap items-end gap-4 px-6 pt-5 pb-4">
       <div class="flex-1">
         <h1 class="text-lg">Your uploads</h1>
@@ -89,7 +88,7 @@
 
     <Divider />
 
-    <section class="body px-6 py-5">
+    <section class="flex-1 min-h-0 overflow-y-auto px-6 py-5">
       <div class="stack-md">
         {#if notice !== null}
           <Alert variant="warning" role="alert">{notice}</Alert>

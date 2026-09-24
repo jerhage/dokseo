@@ -9,7 +9,7 @@ function takeChosen<F>(input: ChosenInput<F>): readonly F[] {
 }
 
 function arrivedFiles<F extends FileLike>(selection: FileSelection<F>): readonly F[] {
-  return [...selection.accepted, ...selection.rejected.map((rejected) => rejected.file)];
+  return selection.arrived.map((arrived) => arrived.file);
 }
 
 export { arrivedFiles, takeChosen };

@@ -28,6 +28,7 @@
   const formId = `${uid}-form`;
 
   let open = $state(true);
+  let titleField = $state<HTMLInputElement>();
   let form = $state(untrack(() => bookForm(book)));
 
   const downward = $derived(form.layoutKind === 'continuous');
@@ -38,10 +39,7 @@
 
   async function focusTitle(): Promise<void> {
     await tick();
-    const element = document.getElementById(formId);
-    if (!(element instanceof HTMLFormElement)) return;
-    const title = element.elements.namedItem('title');
-    if (title instanceof HTMLInputElement) title.focus();
+    titleField?.focus();
   }
 
   function requestOpen(next: boolean): void {
@@ -62,6 +60,7 @@
       {#snippet children(control)}
         <Input
           {...control}
+          bind:ref={titleField}
           name="title"
           type="text"
           lang={form.language}

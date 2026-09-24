@@ -14,11 +14,13 @@
   const uid = $props.id();
   const fieldId = `${uid}-search`;
 
+  let field = $state<HTMLInputElement>();
+
   const active = $derived(isSearching(query));
 
   function abandon(): void {
     query = '';
-    document.getElementById(fieldId)?.focus();
+    field?.focus();
   }
 
   function keys(event: KeyboardEvent): void {
@@ -30,7 +32,14 @@
 
 <div class="row items-center gap-2">
   <label class="visually-hidden" for={fieldId}>{label}</label>
-  <Input id={fieldId} type="search" bind:value={query} placeholder={label} onkeydown={keys} />
+  <Input
+    bind:ref={field}
+    id={fieldId}
+    type="search"
+    bind:value={query}
+    placeholder={label}
+    onkeydown={keys}
+  />
   {#if matched !== null && active}
     <span class="text-xs mono text-muted" role="status">{matched}</span>
   {/if}
