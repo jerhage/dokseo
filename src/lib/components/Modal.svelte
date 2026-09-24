@@ -4,26 +4,40 @@
   import type { Snippet } from 'svelte';
   import type { HTMLDialogAttributes } from 'svelte/elements';
   import { animationsSettled } from './animations';
-  import { MODAL_SIZES } from './classes';
-  import type { ModalSize } from './classes';
+  import { MODAL_BODIES, MODAL_FOOTERS, MODAL_PLACEMENTS, MODAL_SIZES } from './classes';
+  import type { ModalBody, ModalFooter, ModalPlacement, ModalSize } from './classes';
+  import { modalHeading, modalLabelledBy } from './modal-heading';
   import { modalStep } from './modal-phase';
   import type { ModalEvent, ModalPhase } from './modal-phase';
   import { showsScrollbar } from './scrollbar';
 
-  type Props = Omit<HTMLDialogAttributes, 'title' | 'open'> & {
-    open?: boolean;
-    title: string;
-    size?: ModalSize;
-    closeLabel?: string;
-    footer?: Snippet<[() => void]>;
-  };
+  type Heading =
+    | { title: string; header?: undefined }
+    | { title?: undefined; header?: Snippet<[() => void]>; 'aria-label': string }
+    | { title?: undefined; header?: Snippet<[() => void]>; 'aria-labelledby': string };
+
+  type Props = Omit<HTMLDialogAttributes, 'title' | 'open'> &
+    Heading & {
+      open?: boolean;
+      size?: ModalSize;
+      placement?: ModalPlacement;
+      body?: ModalBody;
+      closeLabel?: string;
+      footer?: Snippet<[() => void]>;
+      footerVariant?: ModalFooter;
+    };
 
   let {
     open = $bindable(false),
     title,
+    header,
     size = 'md',
+    placement = 'center',
+    body = 'padded',
     closeLabel = 'Close',
     footer,
+    footerVariant = 'actions',
+    'aria-labelledby': labelledBy,
     onclose,
     class: className,
     children,
@@ -31,6 +45,8 @@
   }: Props = $props();
 
   const uid = $props.id();
+  const titleId = `${uid}-title`;
+  const heading = $derived(modalHeading(title, header));
   let dialog = $state<HTMLDialogElement>();
   let panel = $state<HTMLDivElement>();
   let phase = $state<ModalPhase>('closed');
@@ -98,23 +114,27 @@
 <dialog
   {...rest}
   bind:this={dialog}
-  aria-labelledby="{uid}-title"
+  aria-labelledby={modalLabelledBy(heading, titleId, labelledBy)}
   class={['modal-backdrop', { 'is-leaving': phase === 'leaving' }, className]}
   oncancel={cancel}
   onclose={closed}
   onpointerdown={pointerdown}
   onclick={click}
 >
-  <div bind:this={panel} class={['modal', MODAL_SIZES[size]]}>
-    <div class="modal-header">
-      <h2 class="modal-title" id="{uid}-title">{title}</h2>
-      <button type="button" class="modal-close" aria-label={closeLabel} onclick={hide}></button>
-    </div>
-    <div class="modal-body">
+  <div bind:this={panel} class={['modal', MODAL_SIZES[size], MODAL_PLACEMENTS[placement]]}>
+    {#if heading.kind === 'title'}
+      <div class="modal-header">
+        <h2 class="modal-title" id={titleId}>{heading.title}</h2>
+        <button type="button" class="modal-close" aria-label={closeLabel} onclick={hide}></button>
+      </div>
+    {:else if heading.kind === 'custom'}
+      {@render heading.header(hide)}
+    {/if}
+    <div class={['modal-body', MODAL_BODIES[body]]}>
       {@render children?.()}
     </div>
     {#if footer}
-      <div class="modal-footer">
+      <div class={['modal-footer', MODAL_FOOTERS[footerVariant]]}>
         {@render footer(hide)}
       </div>
     {/if}

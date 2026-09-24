@@ -37,6 +37,7 @@
   let sized = $state<ModalSize | undefined>();
   let confirmation = $state('');
   let closedBy = $state('nothing yet');
+  let bare = $state(false);
 
   function deleted(): void {
     toaster.show({ variant: 'danger', title: 'Workspace deleted', message: confirmation });
@@ -46,7 +47,7 @@
 <DemoSection
   id="modal"
   title="Modal and toast"
-  classes={['modal', 'modal-sm', 'modal-lg', 'toast']}
+  classes={['modal', 'modal-sm', 'modal-lg', 'modal-footer-info', 'toast']}
 >
   <Card>
     <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Modal</span>
@@ -55,6 +56,7 @@
       {#each SIZES as size (size)}
         <Button onclick={() => (sized = size)}>Open {size}</Button>
       {/each}
+      <Button onclick={() => (bare = true)}>Headerless</Button>
     </div>
     <p class="text-sm text-muted">Last closed: {closedBy}</p>
   </Card>
@@ -127,3 +129,18 @@
     {/snippet}
   </Modal>
 {/each}
+
+<Modal
+  bind:open={bare}
+  aria-label="Keyboard shortcuts"
+  size="sm"
+  footerVariant="info"
+  onclose={() => (closedBy = 'the headerless modal')}
+>
+  <p>No title row and no close button. Its name comes from aria-label.</p>
+  <p>Close with Escape or a click on the backdrop.</p>
+  {#snippet footer()}
+    <span>2 shortcuts</span>
+    <span>esc close</span>
+  {/snippet}
+</Modal>

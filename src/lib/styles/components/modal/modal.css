@@ -42,6 +42,11 @@
 .modal-lg {
   max-inline-size: var(--modal-width-lg);
 }
+.modal-top {
+  align-self: start;
+  margin-block-start: var(--sp-10);
+  max-block-size: calc(100dvh - var(--sp-10) - 2 * var(--sp-4));
+}
 .modal-header {
   display: flex;
   align-items: flex-start;
@@ -66,6 +71,9 @@
   line-height: var(--lh-relaxed);
   color: var(--color-text-muted);
 }
+.modal-body-flush {
+  padding: 0;
+}
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -74,8 +82,17 @@
   background-color: var(--color-surface-sunken);
   border-block-start: var(--border-width) solid var(--border-color);
 }
+.modal-footer-info {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
 @container (max-width: 26rem) {
-  .modal-footer {
+  .modal-footer:not(.modal-footer-info) {
     flex-direction: column-reverse;
   }
   .modal-footer > .btn {

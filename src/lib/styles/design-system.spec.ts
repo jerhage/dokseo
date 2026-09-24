@@ -250,6 +250,8 @@ const TOKEN_UTILITIES: Readonly<Record<string, readonly [string, string, string]
 
 const LANGUAGE_FACES = ['ja', 'ko'];
 
+const WIDTH_STEPS = ['6', '8', '10'];
+
 const GRID_MIN_COLUMNS = ['sm', 'lg'];
 
 const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
@@ -922,6 +924,38 @@ describe('the design system stylesheets', () => {
         ],
       });
     }
+  });
+
+  it('anchors a top-placed modal to the top and keeps it inside the viewport', () => {
+    const top = declarations(ruleBody(style('components/modal/modal.css'), '.modal-top'));
+
+    expect(top).toEqual(
+      expect.arrayContaining([
+        'align-self: start',
+        'margin-block-start: var(--sp-10)',
+        'max-block-size: calc(100dvh - var(--sp-10) - 2 * var(--sp-4))',
+      ]),
+    );
+  });
+
+  it('removes the padding of a flush modal body', () => {
+    expect(
+      declarations(ruleBody(style('components/modal/modal.css'), '.modal-body-flush')),
+    ).toEqual(['padding: 0']);
+  });
+
+  it('keeps an information footer in a row when a narrow modal stacks its action footer', () => {
+    const modal = style('components/modal/modal.css');
+    const reversing = rules(modal).filter((rule) =>
+      declarations(rule.body).includes('flex-direction: column-reverse'),
+    );
+
+    expect(reversing.flatMap((rule) => rule.selectors)).toEqual([
+      '.modal-footer:not(.modal-footer-info)',
+    ]);
+    expect(declarations(ruleBody(modal, '.modal-footer-info'))).toEqual(
+      expect.arrayContaining(['flex-wrap: wrap', 'justify-content: space-between']),
+    );
   });
 
   it('holds the z-index scale the contract locks', () => {

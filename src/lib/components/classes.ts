@@ -21,6 +21,12 @@ type MediaRatio = 'video' | 'square' | 'portrait';
 
 type ModalSize = 'sm' | 'md' | 'lg';
 
+type ModalPlacement = 'center' | 'top';
+
+type ModalBody = 'padded' | 'flush';
+
+type ModalFooter = 'actions' | 'info';
+
 type MenuAlign = 'start' | 'end';
 
 type AvatarShape = 'circle' | 'square';
@@ -135,6 +141,21 @@ const MODAL_SIZES: Readonly<Record<ModalSize, ClassList>> = {
   lg: ['modal-lg'],
 };
 
+const MODAL_PLACEMENTS: Readonly<Record<ModalPlacement, ClassList>> = {
+  center: [],
+  top: ['modal-top'],
+};
+
+const MODAL_BODIES: Readonly<Record<ModalBody, ClassList>> = {
+  padded: [],
+  flush: ['modal-body-flush'],
+};
+
+const MODAL_FOOTERS: Readonly<Record<ModalFooter, ClassList>> = {
+  actions: [],
+  info: ['modal-footer-info'],
+};
+
 const MENU_ALIGNS: Readonly<Record<MenuAlign, ClassList>> = {
   start: [],
   end: ['dropdown-menu-end'],
@@ -234,6 +255,9 @@ export {
   CARD_VARIANTS,
   MEDIA_RATIOS,
   MENU_ALIGNS,
+  MODAL_BODIES,
+  MODAL_FOOTERS,
+  MODAL_PLACEMENTS,
   MODAL_SIZES,
   PROGRESS_SIZES,
   PROGRESS_VARIANTS,
@@ -254,6 +278,9 @@ export type {
   ControlSize,
   MediaRatio,
   MenuAlign,
+  ModalBody,
+  ModalFooter,
+  ModalPlacement,
   ModalSize,
   ProgressVariant,
   SkeletonShape,
