@@ -9,6 +9,7 @@
     base: 'Base',
     ember: 'Ember',
     mono: 'Mono',
+    forge: 'Forge',
   };
 
   const SCHEME_LABELS: Readonly<Record<ColorScheme, string>> = {
@@ -31,7 +32,7 @@
     <Badge variant="brand">dev</Badge>
   </div>
   <div class="row wrap items-center gap-4">
-    <div class="row items-center gap-1" role="group" aria-label="Theme">
+    <div class="row wrap items-center gap-1" role="group" aria-label="Theme">
       {#each THEMES as theme (theme)}
         <Button
           size="sm"
