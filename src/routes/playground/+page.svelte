@@ -9,16 +9,20 @@
   import AppShellSection from './AppShellSection.svelte';
   import AvatarSection from './AvatarSection.svelte';
   import BadgesSection from './BadgesSection.svelte';
+  import BentoSection from './BentoSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import FormSection from './FormSection.svelte';
+  import GridSection from './GridSection.svelte';
   import HeroSection from './HeroSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
   import ModalToastSection from './ModalToastSection.svelte';
+  import MosaicSection from './MosaicSection.svelte';
   import NavigationSection from './NavigationSection.svelte';
+  import OverlaySection from './OverlaySection.svelte';
   import PageWrapSection from './PageWrapSection.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
@@ -28,6 +32,7 @@
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
   import TokensSection from './TokensSection.svelte';
+  import ZPatternSection from './ZPatternSection.svelte';
 
   const SECTIONS: readonly Component[] = [
     TokensSection,
@@ -52,6 +57,11 @@
     SidebarSection,
     HeroSection,
     SplitSection,
+    ZPatternSection,
+    OverlaySection,
+    BentoSection,
+    MosaicSection,
+    GridSection,
   ];
 
   setToaster(createToaster());
