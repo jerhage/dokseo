@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { TAG_COLOURS } from '../components/classes';
 
 const STYLES = new URL('./', import.meta.url);
 const SOURCE = new URL('../../', import.meta.url);
@@ -427,6 +428,15 @@ function mediaBlock(css: string, query: string): string {
   return css.slice(start);
 }
 
+function definitionValues(css: string): ReadonlyMap<string, string> {
+  return new Map(
+    Array.from(css.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/gu), (found) => [
+      group(found, 1),
+      group(found, 2).trim().replaceAll(/\s+/gu, ' '),
+    ]),
+  );
+}
+
 function declarations(body: string): readonly string[] {
   return body
     .split(';')
@@ -850,6 +860,43 @@ describe('the design system stylesheets', () => {
     expect(
       declarations(ruleBody(overrides, 'html:has(.modal-backdrop[open][data-page-scrollbar])')),
     ).toContain('scrollbar-gutter: stable');
+  });
+
+  it('declares every tag colour in the shared scheme as light-dark pairs, and in no theme', () => {
+    const scheme = definitionValues(style('base/scheme.css'));
+    const themed = themeFiles().flatMap((path) => definitions(style(path)));
+
+    for (const colour of TAG_COLOURS) {
+      for (const name of [
+        `--ds-tag-${colour}`,
+        `--ds-tag-${colour}-ink`,
+        `--ds-tag-${colour}-wash`,
+      ]) {
+        expect({ name, value: scheme.get(name)?.startsWith('light-dark(') }).toEqual({
+          name,
+          value: true,
+        });
+      }
+    }
+    expect(themed.filter((name) => name.startsWith('--ds-tag-'))).toEqual([]);
+  });
+
+  it('maps every tag colour to its text, background and border tokens', () => {
+    const tokens = definitionValues(style('tokens/colors.css'));
+
+    for (const colour of TAG_COLOURS) {
+      expect({
+        colour,
+        border: tokens.get(`--color-tag-${colour}`),
+        text: tokens.get(`--color-tag-${colour}-text`),
+        background: tokens.get(`--color-tag-${colour}-bg`),
+      }).toEqual({
+        colour,
+        border: `var(--ds-tag-${colour})`,
+        text: `var(--ds-tag-${colour}-ink)`,
+        background: `var(--ds-tag-${colour}-wash)`,
+      });
+    }
   });
 
   it('holds the z-index scale the contract locks', () => {

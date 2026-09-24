@@ -1,3 +1,5 @@
+import { TAG_COLOURS } from '$lib/components/classes';
+
 type TokenGroup = {
   readonly title: string;
   readonly tokens: readonly string[];
@@ -67,6 +69,18 @@ const COLOR_GROUPS: readonly TokenGroup[] = [
       '--color-info-border',
       '--color-info-muted',
     ],
+  },
+  {
+    title: 'Tag colours',
+    tokens: TAG_COLOURS.map((colour) => `--color-tag-${colour}`),
+  },
+  {
+    title: 'Tag text',
+    tokens: TAG_COLOURS.map((colour) => `--color-tag-${colour}-text`),
+  },
+  {
+    title: 'Tag backgrounds',
+    tokens: TAG_COLOURS.map((colour) => `--color-tag-${colour}-bg`),
   },
   {
     title: 'Text',

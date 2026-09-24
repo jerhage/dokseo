@@ -33,6 +33,24 @@ type SkeletonShape = 'default' | 'text' | 'title' | 'circle' | 'block';
 
 type StatTrend = 'flat' | 'up' | 'down';
 
+type TagColour =
+  | 'slate'
+  | 'clay'
+  | 'sage'
+  | 'plum'
+  | 'rose'
+  | 'ice'
+  | 'ruby'
+  | 'ember'
+  | 'olive'
+  | 'fern'
+  | 'cyan'
+  | 'sky'
+  | 'indigo'
+  | 'violet'
+  | 'magenta'
+  | 'stone';
+
 type ClassList = readonly string[];
 
 const BUTTON_VARIANTS: Readonly<Record<ButtonVariant, ClassList>> = {
@@ -59,6 +77,25 @@ const BADGE_VARIANTS: Readonly<Record<BadgeVariant, ClassList>> = {
   info: ['badge-info'],
   brand: ['badge-brand'],
   accent: ['badge-accent'],
+};
+
+const BADGE_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
+  slate: ['badge-color-slate'],
+  clay: ['badge-color-clay'],
+  sage: ['badge-color-sage'],
+  plum: ['badge-color-plum'],
+  rose: ['badge-color-rose'],
+  ice: ['badge-color-ice'],
+  ruby: ['badge-color-ruby'],
+  ember: ['badge-color-ember'],
+  olive: ['badge-color-olive'],
+  fern: ['badge-color-fern'],
+  cyan: ['badge-color-cyan'],
+  sky: ['badge-color-sky'],
+  indigo: ['badge-color-indigo'],
+  violet: ['badge-color-violet'],
+  magenta: ['badge-color-magenta'],
+  stone: ['badge-color-stone'],
 };
 
 const ALERT_VARIANTS: Readonly<Record<StatusVariant, ClassList>> = {
@@ -147,11 +184,50 @@ const STAT_TRENDS: Readonly<Record<StatTrend, ClassList>> = {
   down: ['stat-delta-down'],
 };
 
+const TAG_COLOURS: readonly TagColour[] = [
+  'slate',
+  'clay',
+  'sage',
+  'plum',
+  'rose',
+  'ice',
+  'ruby',
+  'ember',
+  'olive',
+  'fern',
+  'cyan',
+  'sky',
+  'indigo',
+  'violet',
+  'magenta',
+  'stone',
+];
+
+const TAG_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
+  slate: ['tag-color-slate'],
+  clay: ['tag-color-clay'],
+  sage: ['tag-color-sage'],
+  plum: ['tag-color-plum'],
+  rose: ['tag-color-rose'],
+  ice: ['tag-color-ice'],
+  ruby: ['tag-color-ruby'],
+  ember: ['tag-color-ember'],
+  olive: ['tag-color-olive'],
+  fern: ['tag-color-fern'],
+  cyan: ['tag-color-cyan'],
+  sky: ['tag-color-sky'],
+  indigo: ['tag-color-indigo'],
+  violet: ['tag-color-violet'],
+  magenta: ['tag-color-magenta'],
+  stone: ['tag-color-stone'],
+};
+
 export {
   ALERT_VARIANTS,
   AVATAR_SHAPES,
   AVATAR_SIZES,
   AVATAR_VARIANTS,
+  BADGE_COLOUR_CLASSES,
   BADGE_VARIANTS,
   BUTTON_SIZES,
   BUTTON_VARIANTS,
@@ -164,6 +240,8 @@ export {
   SKELETON_SHAPES,
   STAT_TRENDS,
   TABS_VARIANTS,
+  TAG_COLOUR_CLASSES,
+  TAG_COLOURS,
   TOAST_VARIANTS,
 };
 export type {
@@ -182,4 +260,5 @@ export type {
   StatTrend,
   StatusVariant,
   TabsVariant,
+  TagColour,
 };
