@@ -40,7 +40,7 @@
   }
 
   function focusFirst(): void {
-    const first = dialog?.querySelector('[autofocus], .modal-close');
+    const first = dialog?.querySelector('[autofocus]') ?? dialog?.querySelector('.modal-close');
     if (first instanceof HTMLElement) first.focus();
   }
 
