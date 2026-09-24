@@ -96,12 +96,12 @@ module.exports = {
     {
       name: 'base-components-know-no-app',
       comment:
-        "src/lib/components/ is the base UI library: domain-free atoms that a route or a domain ui/ module composes into a screen. It may import the shared kernel, static assets, its own siblings and npm packages, and nothing else under src/lib. A base component that reached a domain, container.ts, context.ts or platform/ would carry that knowledge into every screen that renders it, and would turn the library's place at the bottom of the UI into a cycle the moment that domain's ui/ composed it. Behaviour a base component needs arrives as a prop, a snippet or a callback; the caller decides what it means.",
+        "src/lib/components/ is the base UI library: domain-free atoms that a route or a domain ui/ module composes into a screen. It may import static assets, its own siblings and npm packages, and nothing else under src/lib — not even the shared kernel, because shared/ holds UI that more than one domain composes from these atoms (ReaderBars), so shared sits above the library and an import back down would open a cycle. A base component that reached a domain, container.ts, context.ts or platform/ would carry that knowledge into every screen that renders it, and would turn the library's place at the bottom of the UI into a cycle the moment that domain's ui/ composed it. Behaviour a base component needs arrives as a prop, a snippet or a callback; the caller decides what it means.",
       severity: 'error',
       from: { path: '^src/lib/components/' },
       to: {
         path: '^src/lib/',
-        pathNot: ['^src/lib/components/', '^src/lib/shared/', '^src/lib/assets/'],
+        pathNot: ['^src/lib/components/', '^src/lib/assets/'],
       },
     },
 
