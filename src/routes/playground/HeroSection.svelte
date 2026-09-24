@@ -1,6 +1,5 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 
@@ -9,7 +8,7 @@
   title="Hero"
   classes={['layout-hero', 'layout-hero-split', 'layout-hero-center']}
 >
-  <Card>
+  <div class="surface bordered rounded-container p-5">
     <div class="layout-hero layout-hero-split">
       <div class="layout-hero-content">
         <span class="card-eyebrow">Split</span>
@@ -22,8 +21,8 @@
       </div>
       <div class="layout-hero-media"></div>
     </div>
-  </Card>
-  <Card>
+  </div>
+  <div class="surface bordered rounded-container p-5">
     <div class="layout-hero layout-hero-center">
       <div class="layout-hero-content">
         <span class="card-eyebrow">Centre</span>
@@ -35,5 +34,5 @@
         </div>
       </div>
     </div>
-  </Card>
+  </div>
 </DemoSection>

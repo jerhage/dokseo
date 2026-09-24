@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
   import DemoSection from './DemoSection.svelte';
 
@@ -15,7 +14,7 @@
 </script>
 
 <DemoSection id="l-z" title="Z-pattern" classes={['layout-z-pattern']}>
-  <Card>
+  <div class="surface bordered rounded-container p-5">
     <div class="layout-z-pattern">
       {#each ROWS as row (row.step)}
         <div>
@@ -28,5 +27,5 @@
         </div>
       {/each}
     </div>
-  </Card>
+  </div>
 </DemoSection>

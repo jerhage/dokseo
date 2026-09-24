@@ -71,15 +71,17 @@
   <title>Component library</title>
 </svelte:head>
 
-<PlaygroundHeader />
-<main class="page-wrap">
-  <div class="stack-lg">
-    <PlaygroundIntro />
-    {#each SECTIONS as Section, index (index)}
+<div class="surface-bg min-h-screen">
+  <PlaygroundHeader />
+  <main class="page-wrap">
+    <div class="stack-lg">
+      <PlaygroundIntro />
+      {#each SECTIONS as Section, index (index)}
+        <Divider />
+        <Section />
+      {/each}
       <Divider />
-      <Section />
-    {/each}
-    <Divider />
-  </div>
-</main>
-<ToastRegion />
+    </div>
+  </main>
+  <ToastRegion />
+</div>
