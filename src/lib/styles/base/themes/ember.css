@@ -85,12 +85,19 @@
   --ds-border: var(--ds-sand-200);
   --ds-border-strong: var(--ds-sand-300);
   --ds-border-focus: var(--ds-ember-500);
+  --ds-border-width: var(--ds-border-1);
+  --ds-border-width-strong: var(--ds-border-2);
 
   --ds-font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --ds-font-body: 'Figtree', system-ui, sans-serif;
   --ds-font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --ds-weight-strong: var(--ds-fw-8);
+  --ds-tracking-tight: var(--ds-ls-tight);
 
+  --ds-corner-xs: var(--ds-radius-xs);
+  --ds-corner-sm: var(--ds-radius-sm);
+  --ds-corner-md: var(--ds-radius-md);
+  --ds-corner-lg: var(--ds-radius-lg);
   --ds-radius-control: 10px;
   --ds-radius-container: 16px;
   --ds-radius-overlay: 22px;
@@ -106,5 +113,8 @@
     0 24px 48px light-dark(oklch(0.35 0.05 45 / 0.14), oklch(0 0 0 / 0.45)),
     0 48px 112px light-dark(oklch(0.35 0.05 45 / 0.2), oklch(0 0 0 / 0.5));
 
+  --ds-shadow-inset: inset 0 1px 2px light-dark(oklch(0.2 0.02 255 / 0.06), oklch(0 0 0 / 0.25));
+
   --ds-dur-spring: var(--ds-dur-moderate);
+  --ds-easing-spring: var(--ds-ease-spring);
 }

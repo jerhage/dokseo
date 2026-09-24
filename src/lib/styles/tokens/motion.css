@@ -14,13 +14,13 @@
   --ease-crisp: var(--ds-ease-crisp);
   --ease-in-out: var(--ds-ease-in-out);
   --ease-in-out-sharp: var(--ds-ease-in-out-sharp);
-  --ease-spring: var(--ds-ease-spring);
+  --ease-spring: var(--ds-easing-spring);
   --ease-spring-gentle: var(--ds-ease-spring-gentle);
   --ease-bounce: var(--ds-ease-bounce);
   --ease-elastic: var(--ds-ease-elastic);
 
   --transition-ui: var(--ds-dur-flash) var(--ds-ease-smooth);
-  --transition-spring: var(--ds-dur-spring) var(--ds-ease-spring);
+  --transition-spring: var(--ds-dur-spring) var(--ds-easing-spring);
   --transition-enter: var(--ds-dur-quick) var(--ds-ease-out);
   --transition-exit: var(--ds-dur-flash) var(--ds-ease-in);
   --transition-bounce: var(--ds-dur-moderate) var(--ds-ease-bounce);

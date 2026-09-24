@@ -26,7 +26,7 @@
   --weight-extrabold: var(--ds-fw-extrabold);
   --weight-black: var(--ds-fw-black);
 
-  --ls-tight: var(--ds-ls-tight);
+  --ls-tight: var(--ds-tracking-tight);
   --ls-normal: var(--ds-ls-normal);
   --ls-wide: var(--ds-ls-wide);
   --ls-wider: var(--ds-ls-wider);

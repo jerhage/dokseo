@@ -11,10 +11,10 @@
   --sp-10: var(--ds-space-10);
 
   --radius-none: var(--ds-radius-none);
-  --radius-xs: var(--ds-radius-xs);
-  --radius-sm: var(--ds-radius-sm);
-  --radius-md: var(--ds-radius-md);
-  --radius-lg: var(--ds-radius-lg);
+  --radius-xs: var(--ds-corner-xs);
+  --radius-sm: var(--ds-corner-sm);
+  --radius-md: var(--ds-corner-md);
+  --radius-lg: var(--ds-corner-lg);
   --radius-xl: var(--ds-radius-xl);
   --radius-2xl: var(--ds-radius-2xl);
   --radius-full: var(--ds-radius-full);
@@ -22,8 +22,8 @@
   --radius-container: var(--ds-radius-container);
   --radius-overlay: var(--ds-radius-overlay);
 
-  --border-width: var(--ds-border-1);
-  --border-width-strong: var(--ds-border-2);
+  --border-width: var(--ds-border-width);
+  --border-width-strong: var(--ds-border-width-strong);
 
   --container-prose: var(--ds-container-prose);
   --container-wide: var(--ds-container-wide);
