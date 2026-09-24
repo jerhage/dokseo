@@ -35,9 +35,13 @@
 @import 'components/card.css' layer(components);
 @import 'components/close.css' layer(components);
 @import 'components/alert.css' layer(components);
+@import 'components/tabs.css' layer(components);
+@import 'components/accordion.css' layer(components);
+@import 'components/table.css' layer(components);
 @import 'components/modal/modal.css' layer(components);
 @import 'components/modal/modal-transitions.css' layer(components);
 @import 'components/toast.css' layer(components);
+@import 'components/dropdown.css' layer(components);
 @import 'components/avatar.css' layer(components);
 @import 'components/progress.css' layer(components);
 @import 'components/skeleton.css' layer(components);
