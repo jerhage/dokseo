@@ -899,6 +899,31 @@ describe('the design system stylesheets', () => {
     }
   });
 
+  it('gives every tag colour a tag and a badge class that read only that colour and the inverse text', () => {
+    const tag = style('components/tag.css');
+    const badge = style('components/badge.css');
+
+    for (const colour of TAG_COLOURS) {
+      expect({ colour, body: declarations(ruleBody(tag, `.tag-color-${colour}`)) }).toEqual({
+        colour,
+        body: [
+          `--_tag-text: var(--color-tag-${colour}-text)`,
+          `--_tag-bg: var(--color-tag-${colour}-bg)`,
+          `--_tag-border: var(--color-tag-${colour})`,
+          '--_tag-on: var(--color-text-inverse)',
+        ],
+      });
+      expect({ colour, body: declarations(ruleBody(badge, `.badge-color-${colour}`)) }).toEqual({
+        colour,
+        body: [
+          `--_badge-fg: var(--color-tag-${colour}-text)`,
+          `--_badge-bg: var(--color-tag-${colour}-bg)`,
+          `--_badge-border: var(--color-tag-${colour})`,
+        ],
+      });
+    }
+  });
+
   it('holds the z-index scale the contract locks', () => {
     const primitives = style('base/primitives.css');
 

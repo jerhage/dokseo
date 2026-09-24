@@ -9,9 +9,9 @@
   line-height: var(--lh-none);
   white-space: nowrap;
   text-decoration: none;
-  color: var(--color-text-muted);
-  background-color: var(--color-surface);
-  border: var(--border-width) solid var(--border-color);
+  color: var(--_tag-text, var(--color-text-muted));
+  background-color: var(--_tag-bg, var(--color-surface));
+  border: var(--border-width) solid var(--_tag-border, var(--border-color));
   border-radius: var(--radius-full);
   transition:
     background-color var(--transition-ui),
@@ -23,14 +23,114 @@ button.tag {
 }
 button.tag:hover,
 a.tag:hover {
-  color: var(--color-text);
-  border-color: var(--border-color-strong);
+  color: var(--_tag-text, var(--color-text));
+  border-color: var(--_tag-border, var(--border-color-strong));
   background-image: linear-gradient(var(--color-hover) 0 0);
 }
 .tag.is-active {
-  color: var(--color-brand-text);
-  background-color: var(--color-selected);
-  border-color: var(--color-brand-border-mid);
+  color: var(--_tag-on, var(--color-brand-text));
+  background-color: var(--_tag-text, var(--color-selected));
+  border-color: var(--_tag-border, var(--color-brand-border-mid));
+}
+button.tag.is-active:hover,
+a.tag.is-active:hover {
+  color: var(--_tag-on, var(--color-text));
+}
+.tag-color-slate {
+  --_tag-text: var(--color-tag-slate-text);
+  --_tag-bg: var(--color-tag-slate-bg);
+  --_tag-border: var(--color-tag-slate);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-clay {
+  --_tag-text: var(--color-tag-clay-text);
+  --_tag-bg: var(--color-tag-clay-bg);
+  --_tag-border: var(--color-tag-clay);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-sage {
+  --_tag-text: var(--color-tag-sage-text);
+  --_tag-bg: var(--color-tag-sage-bg);
+  --_tag-border: var(--color-tag-sage);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-plum {
+  --_tag-text: var(--color-tag-plum-text);
+  --_tag-bg: var(--color-tag-plum-bg);
+  --_tag-border: var(--color-tag-plum);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-rose {
+  --_tag-text: var(--color-tag-rose-text);
+  --_tag-bg: var(--color-tag-rose-bg);
+  --_tag-border: var(--color-tag-rose);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-ice {
+  --_tag-text: var(--color-tag-ice-text);
+  --_tag-bg: var(--color-tag-ice-bg);
+  --_tag-border: var(--color-tag-ice);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-ruby {
+  --_tag-text: var(--color-tag-ruby-text);
+  --_tag-bg: var(--color-tag-ruby-bg);
+  --_tag-border: var(--color-tag-ruby);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-ember {
+  --_tag-text: var(--color-tag-ember-text);
+  --_tag-bg: var(--color-tag-ember-bg);
+  --_tag-border: var(--color-tag-ember);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-olive {
+  --_tag-text: var(--color-tag-olive-text);
+  --_tag-bg: var(--color-tag-olive-bg);
+  --_tag-border: var(--color-tag-olive);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-fern {
+  --_tag-text: var(--color-tag-fern-text);
+  --_tag-bg: var(--color-tag-fern-bg);
+  --_tag-border: var(--color-tag-fern);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-cyan {
+  --_tag-text: var(--color-tag-cyan-text);
+  --_tag-bg: var(--color-tag-cyan-bg);
+  --_tag-border: var(--color-tag-cyan);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-sky {
+  --_tag-text: var(--color-tag-sky-text);
+  --_tag-bg: var(--color-tag-sky-bg);
+  --_tag-border: var(--color-tag-sky);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-indigo {
+  --_tag-text: var(--color-tag-indigo-text);
+  --_tag-bg: var(--color-tag-indigo-bg);
+  --_tag-border: var(--color-tag-indigo);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-violet {
+  --_tag-text: var(--color-tag-violet-text);
+  --_tag-bg: var(--color-tag-violet-bg);
+  --_tag-border: var(--color-tag-violet);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-magenta {
+  --_tag-text: var(--color-tag-magenta-text);
+  --_tag-bg: var(--color-tag-magenta-bg);
+  --_tag-border: var(--color-tag-magenta);
+  --_tag-on: var(--color-text-inverse);
+}
+.tag-color-stone {
+  --_tag-text: var(--color-tag-stone-text);
+  --_tag-bg: var(--color-tag-stone-bg);
+  --_tag-border: var(--color-tag-stone);
+  --_tag-on: var(--color-text-inverse);
 }
 .tag-remove {
   display: inline-grid;

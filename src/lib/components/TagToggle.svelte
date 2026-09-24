@@ -1,16 +1,20 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
+  import { TAG_COLOUR_CLASSES } from './classes';
+  import type { TagColour } from './classes';
 
   type Props = Omit<HTMLButtonAttributes, 'type' | 'aria-pressed'> & {
     pressed?: boolean;
     onpressedchange?: (pressed: boolean) => void;
     ref?: HTMLButtonElement | undefined;
+    colour?: TagColour;
   };
 
   let {
     pressed = $bindable(false),
     onpressedchange,
     ref = $bindable(),
+    colour,
     onclick,
     class: className,
     children,
@@ -30,7 +34,12 @@
   bind:this={ref}
   type="button"
   aria-pressed={pressed}
-  class={['tag', { 'is-active': pressed }, className]}
+  class={[
+    'tag',
+    colour === undefined ? [] : TAG_COLOUR_CLASSES[colour],
+    { 'is-active': pressed },
+    className,
+  ]}
   onclick={toggle}
 >
   {@render children?.()}

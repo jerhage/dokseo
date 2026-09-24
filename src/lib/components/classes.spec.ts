@@ -5,6 +5,7 @@ import {
   AVATAR_SHAPES,
   AVATAR_SIZES,
   AVATAR_VARIANTS,
+  BADGE_COLOUR_CLASSES,
   BADGE_VARIANTS,
   BUTTON_SIZES,
   BUTTON_VARIANTS,
@@ -17,6 +18,8 @@ import {
   SKELETON_SHAPES,
   STAT_TRENDS,
   TABS_VARIANTS,
+  TAG_COLOUR_CLASSES,
+  TAG_COLOURS,
   TOAST_VARIANTS,
 } from './classes';
 import type { ClassList } from './classes';
@@ -38,6 +41,7 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
   AVATAR_SHAPES,
   AVATAR_SIZES,
   AVATAR_VARIANTS,
+  BADGE_COLOUR_CLASSES,
   BADGE_VARIANTS,
   BUTTON_SIZES,
   BUTTON_VARIANTS,
@@ -50,6 +54,7 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
   SKELETON_SHAPES,
   STAT_TRENDS,
   TABS_VARIANTS,
+  TAG_COLOUR_CLASSES,
   TOAST_VARIANTS,
 };
 
@@ -107,6 +112,28 @@ describe('the base component class tables', () => {
     });
 
     expect(repeated.map(([table]) => table)).toEqual([]);
+  });
+});
+
+describe('the tag colour tables', () => {
+  it('map every tag colour, and no other, to the tag and badge class named after it', () => {
+    expect(Object.keys(TAG_COLOUR_CLASSES).toSorted()).toEqual(TAG_COLOURS.toSorted());
+    expect(Object.keys(BADGE_COLOUR_CLASSES).toSorted()).toEqual(TAG_COLOURS.toSorted());
+    for (const colour of TAG_COLOURS) {
+      expect({
+        colour,
+        tag: TAG_COLOUR_CLASSES[colour],
+        badge: BADGE_COLOUR_CLASSES[colour],
+      }).toEqual({
+        colour,
+        tag: [`tag-color-${colour}`],
+        badge: [`badge-color-${colour}`],
+      });
+    }
+  });
+
+  it('lists each tag colour once', () => {
+    expect(new Set(TAG_COLOURS).size).toBe(TAG_COLOURS.length);
   });
 });
 
