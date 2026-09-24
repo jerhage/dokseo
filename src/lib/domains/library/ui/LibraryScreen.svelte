@@ -26,6 +26,12 @@
   import RemoveBook from './RemoveBook.svelte';
   import ShelfView from './ShelfView.svelte';
   import UploadStrip from './UploadStrip.svelte';
+  import {
+    readArrangement,
+    saveCollectionView,
+    saveShelf,
+    saveSortOrder,
+  } from './library-arrangement';
   import { continueReading, shelfBooks, sortBooks } from './library-shelves';
   import type { CollectionView, Shelf, SortOrder } from './library-shelves';
 
@@ -40,9 +46,25 @@
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
   let removeFor = $state<BookId | null>(null);
-  let shelf = $state<Shelf>('all');
-  let order = $state<SortOrder>('added');
-  let layout = $state<CollectionView>('grid');
+  const arrangement = readArrangement();
+  let shelf = $state<Shelf>(arrangement.shelf);
+  let order = $state<SortOrder>(arrangement.order);
+  let layout = $state<CollectionView>(arrangement.layout);
+
+  function chooseShelf(next: Shelf): void {
+    shelf = next;
+    saveShelf(next);
+  }
+
+  function chooseOrder(next: SortOrder): void {
+    order = next;
+    saveSortOrder(next);
+  }
+
+  function chooseLayout(next: CollectionView): void {
+    layout = next;
+    saveCollectionView(next);
+  }
 
   const settingsBook = $derived(view.books.find((book) => book.id === openSettingsFor) ?? null);
   const removeBook = $derived(view.books.find((book) => book.id === removeFor) ?? null);
@@ -133,9 +155,9 @@
           {shown}
           covers={view.covers}
           {searching}
-          bind:shelf
-          bind:order
-          bind:layout
+          bind:shelf={() => shelf, chooseShelf}
+          bind:order={() => order, chooseOrder}
+          bind:layout={() => layout, chooseLayout}
           busy={(id) => view.removing === id || view.editing === id}
           onedit={(id) => (openSettingsFor = id)}
           onremove={(id) => (removeFor = id)}
