@@ -1,6 +1,20 @@
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { applyAppearance, readAppearance } from './appearance';
+import { THEMES, applyAppearance, readAppearance } from './appearance';
 import type { RootAttributes } from './appearance';
+
+const THEME_SHEETS = new URL('../styles/base/themes/', import.meta.url);
+
+function styledThemes(): readonly string[] {
+  const sheets = readdirSync(THEME_SHEETS)
+    .filter((name) => name.endsWith('.css'))
+    .map((name) => readFileSync(new URL(name, THEME_SHEETS), 'utf8'))
+    .join('\n');
+  return Array.from(
+    sheets.matchAll(/\[data-theme='([\w-]+)'\]/gu),
+    (found) => found[1] ?? '',
+  ).toSorted();
+}
 
 class FakeRoot implements RootAttributes {
   readonly attributes = new Map<string, string>();
@@ -79,5 +93,12 @@ describe('readAppearance', () => {
     applyAppearance(root, { theme: 'ember', colorScheme: 'dark' });
 
     expect(readAppearance(root)).toEqual({ theme: 'ember', colorScheme: 'dark' });
+  });
+});
+
+describe('THEMES', () => {
+  it('lists exactly the themes the stylesheet defines, each once', () => {
+    expect(THEMES.toSorted()).toEqual(['base', 'crayon', 'ember', 'forge', 'mono', 'moss']);
+    expect(THEMES.toSorted()).toEqual(styledThemes());
   });
 });
