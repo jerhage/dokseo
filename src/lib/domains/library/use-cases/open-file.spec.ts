@@ -76,6 +76,8 @@ function heldBook(hash: ContentHash): Book {
     imageCount: 182,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(9)),
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 
@@ -240,6 +242,12 @@ describe('openFile', () => {
     expect(result.ok && result.value.direction).toBe('rtl');
     expect(result.ok && result.value.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
     expect(result.ok && result.value.position).toEqual({ kind: 'image', index: 0 });
+  });
+
+  it('gives a new book no last read time and no finished mark', async () => {
+    const result = await openFile(deps({ now: () => 42 }), files);
+    expect(result.ok && result.value.lastReadAt).toBeNull();
+    expect(result.ok && result.value.finishedAt).toBeNull();
   });
 
   it('reads Korean from a hangul title, so the reader does not have to say so', async () => {

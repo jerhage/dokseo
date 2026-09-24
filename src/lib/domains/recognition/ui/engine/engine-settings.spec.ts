@@ -106,6 +106,9 @@ function world(snapshot: ModelStorageSnapshot): World {
       readSource: unused,
       removeBook: unused,
       editBook: unused,
+      saveReadingPlace: unused,
+      markFinished: unused,
+      markUnread: unused,
       readLibrarySize: unused,
     },
     recognition: {

@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
+import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError } from '../domain/book/library-repository';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
@@ -169,11 +170,37 @@ class LibraryView {
     await this.load();
   }
 
+  markFinished(id: BookId): Promise<void> {
+    return this.#mark(id, () => this.#container.library.markFinished(id));
+  }
+
+  markUnread(id: BookId): Promise<void> {
+    return this.#mark(id, () => this.#container.library.markUnread(id));
+  }
+
   dispose(): void {
     this.#generation += 1;
     revoke(this.#created.values());
     this.#created = new Map();
     this.covers = new Map();
+  }
+
+  async #mark(id: BookId, run: () => Promise<Result<Book, LibraryError>>): Promise<void> {
+    if (this.removing !== null || this.editing !== null || this.busy) return;
+    this.editing = id;
+    this.message = null;
+
+    try {
+      const marked = await run();
+      if (!marked.ok) {
+        this.message = describeLibraryError(marked.error);
+        return;
+      }
+    } finally {
+      this.editing = null;
+    }
+
+    await this.load();
   }
 
   async #readCovers(books: readonly Book[]): Promise<Map<BookId, string>> {

@@ -29,6 +29,8 @@ function comic(title: string, page: number, imageCount = 10, addedAt = 0): Book 
     imageCount,
     addedAt,
     position: imagePlace(imageIndex(page)),
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 
@@ -68,6 +70,15 @@ describe('readingState', () => {
 
   it('counts a text read to its end as finished', () => {
     expect(readingState(novel('a', textPlace('epubcfi(/6/40!/4/2)', 1)))).toBe('finished');
+  });
+
+  it('counts a book marked finished as finished wherever its place is', () => {
+    expect(readingState({ ...comic('a', 0), finishedAt: 5 })).toBe('finished');
+    expect(readingState({ ...comic('a', 4), finishedAt: 5 })).toBe('finished');
+    expect(readingState({ ...novel('a', START_OF_THE_TEXT), finishedAt: 5 })).toBe('finished');
+    expect(readingState({ ...novel('a', textPlace('epubcfi(/6/4!/2)', 0.4)), finishedAt: 5 })).toBe(
+      'finished',
+    );
   });
 });
 
@@ -124,6 +135,12 @@ describe('sortBooks', () => {
     expect(titles(sortBooks(books, 'progress'))).toEqual(['vol 2', 'Akira', 'Vol 10']);
   });
 
+  it('counts a book marked finished as read through', () => {
+    const marked = [comic('almost', 8), { ...comic('marked', 2), finishedAt: 5 }];
+
+    expect(titles(sortBooks(marked, 'progress'))).toEqual(['marked', 'almost']);
+  });
+
   it('leaves the given list unchanged', () => {
     sortBooks(books, 'title');
 
@@ -132,7 +149,7 @@ describe('sortBooks', () => {
 });
 
 describe('continueReading', () => {
-  it('offers only the books in progress, in the order given', () => {
+  it('offers only the books in progress, keeping the given order among equals', () => {
     const books = [comic('fresh', 0), comic('one', 2), comic('done', 9), comic('two', 5)];
 
     expect(titles(continueReading(books))).toEqual(['one', 'two']);
@@ -142,6 +159,44 @@ describe('continueReading', () => {
     const books = Array.from({ length: CONTINUE_LIMIT + 2 }, (_, at) => comic(`b${at}`, 3));
 
     expect(continueReading(books)).toHaveLength(CONTINUE_LIMIT);
+  });
+
+  it('leaves out a book marked finished even when it is read again', () => {
+    const books = [{ ...comic('marked', 4), lastReadAt: 300, finishedAt: 100 }, comic('open', 4)];
+
+    expect(titles(continueReading(books))).toEqual(['open']);
+  });
+
+  it('puts the book read most recently first', () => {
+    const books = [
+      { ...comic('earlier', 2), lastReadAt: 100 },
+      { ...comic('latest', 2), lastReadAt: 300 },
+      { ...comic('between', 2), lastReadAt: 200 },
+    ];
+
+    expect(titles(continueReading(books))).toEqual(['latest', 'between', 'earlier']);
+  });
+
+  it('places a book never read by the time it was added', () => {
+    const books = [
+      { ...comic('read', 2, 10, 50), lastReadAt: 200 },
+      comic('added later', 2, 10, 300),
+      comic('added earlier', 2, 10, 100),
+    ];
+
+    expect(titles(continueReading(books))).toEqual(['added later', 'read', 'added earlier']);
+  });
+
+  it('orders the whole shelf before it applies the limit', () => {
+    const books = [
+      ...Array.from({ length: CONTINUE_LIMIT }, (_, at) => ({
+        ...comic(`b${at}`, 3),
+        lastReadAt: at + 1,
+      })),
+      { ...comic('latest', 3), lastReadAt: 1000 },
+    ];
+
+    expect(titles(continueReading(books))[0]).toBe('latest');
   });
 });
 

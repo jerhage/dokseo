@@ -36,6 +36,8 @@ function book(id: string, overrides: Partial<Book> = {}): Book {
     imageCount: 182,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(13)),
+    lastReadAt: null,
+    finishedAt: null,
     ...overrides,
   };
 }
@@ -47,6 +49,12 @@ type CoverState = {
 
 type SizeState = { outcome: Result<number, LibraryError> };
 
+type Mark = {
+  readonly kind: 'finished' | 'unread';
+  readonly id: string;
+  readonly outcome: Deferred<Result<Book, LibraryError>>;
+};
+
 type Fakes = {
   readonly container: Container;
   readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
@@ -54,6 +62,7 @@ type Fakes = {
   readonly reports: (UploadReport | undefined)[];
   readonly removes: Deferred<Result<void, LibraryError>>[];
   readonly edits: Deferred<Result<Book, LibraryError>>[];
+  readonly marks: Mark[];
   readonly cover: CoverState;
   readonly size: SizeState;
 };
@@ -64,6 +73,7 @@ function fakes(): Fakes {
   const reports: (UploadReport | undefined)[] = [];
   const removes: Deferred<Result<void, LibraryError>>[] = [];
   const edits: Deferred<Result<Book, LibraryError>>[] = [];
+  const marks: Mark[] = [];
   const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
   const size: SizeState = { outcome: ok(2048) };
 
@@ -95,6 +105,17 @@ function fakes(): Fakes {
         const next = deferred<Result<Book, LibraryError>>();
         edits.push(next);
         return next.promise;
+      },
+      saveReadingPlace: () => Promise.reject(new Error('not used')),
+      markFinished: (id) => {
+        const outcome = deferred<Result<Book, LibraryError>>();
+        marks.push({ kind: 'finished', id, outcome });
+        return outcome.promise;
+      },
+      markUnread: (id) => {
+        const outcome = deferred<Result<Book, LibraryError>>();
+        marks.push({ kind: 'unread', id, outcome });
+        return outcome.promise;
       },
       readLibrarySize: () => Promise.resolve(size.outcome),
     },
@@ -136,7 +157,7 @@ function fakes(): Fakes {
     },
   };
 
-  return { container, lists, opens, reports, removes, edits, cover, size };
+  return { container, lists, opens, reports, removes, edits, marks, cover, size };
 }
 
 function chosen(name: string, path = ''): File {
@@ -674,5 +695,110 @@ describe('LibraryView', () => {
     await editing;
 
     expect(view.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
+  });
+
+  it('marks a book finished and reloads the list', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const marking = view.markFinished(bookId('one'));
+    expect(world.marks.map((mark) => [mark.kind, mark.id])).toEqual([['finished', 'one']]);
+    expect(view.editing).toBe('one');
+
+    at(world.marks, 0).outcome.settle(ok(book('one', { finishedAt: 5 })));
+    await settleMicrotasks();
+    expect(view.editing).toBeNull();
+    at(world.lists, 1).settle(ok([book('one', { finishedAt: 5 }), book('two')]));
+    await marking;
+
+    expect(view.books.map((b) => b.finishedAt)).toEqual([5, null]);
+    expect(view.message).toBeNull();
+  });
+
+  it('marks a book unread and reloads the list', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one', { finishedAt: 5 })]));
+    await loading;
+
+    const marking = view.markUnread(bookId('one'));
+    expect(world.marks.map((mark) => [mark.kind, mark.id])).toEqual([['unread', 'one']]);
+    expect(view.editing).toBe('one');
+
+    at(world.marks, 0).outcome.settle(ok(book('one')));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('one')]));
+    await marking;
+
+    expect(view.books.map((b) => b.finishedAt)).toEqual([null]);
+    expect(view.editing).toBeNull();
+  });
+
+  it('reports a failed mark and keeps the books without reloading', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one')]));
+    await loading;
+
+    const marking = view.markFinished(bookId('one'));
+    at(world.marks, 0).outcome.settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+    await expect(marking).resolves.toBeUndefined();
+
+    expect(view.editing).toBeNull();
+    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(world.lists).toHaveLength(1);
+  });
+
+  it('ignores a mark while another change is running', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const editing = view.edit(bookId('one'), { title: 'Blame! 1' });
+    void view.markFinished(bookId('two'));
+    void view.markUnread(bookId('two'));
+
+    expect(world.marks).toHaveLength(0);
+    expect(view.editing).toBe('one');
+
+    at(world.edits, 0).settle(ok(book('one', { title: 'Blame! 1' })));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('one', { title: 'Blame! 1' }), book('two')]));
+    await editing;
+  });
+
+  it('ignores a mark while an upload or a removal is running', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await loading;
+
+    const uploading = view.upload([chosen('page.png')]);
+    void view.markFinished(bookId('one'));
+    expect(world.marks).toHaveLength(0);
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
+
+    const removing = view.remove(bookId('two'));
+    void view.markUnread(bookId('one'));
+    at(world.removes, 0).settle(ok(undefined));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('one')]));
+    await removing;
+
+    expect(world.marks).toHaveLength(0);
   });
 });

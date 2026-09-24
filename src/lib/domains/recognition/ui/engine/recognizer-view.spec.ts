@@ -72,6 +72,9 @@ function fakes(granted: readonly Language[] = []): Fakes {
       readSource: unused,
       removeBook: unused,
       editBook: unused,
+      saveReadingPlace: unused,
+      markFinished: unused,
+      markUnread: unused,
       readLibrarySize: unused,
     },
     recognition: {

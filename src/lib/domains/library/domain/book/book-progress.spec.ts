@@ -21,6 +21,8 @@ function book(layoutKind: LayoutKind, imageCount: number, position: ReadingPlace
     imageCount,
     addedAt: 1758240000000,
     position,
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 

@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { imageIndex } from '$lib/shared/ids';
 import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type {
@@ -8,6 +9,7 @@ import type {
   ReadingDirection,
 } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
+import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 
 type SourceKind = 'images' | 'pdf' | 'archive' | 'epub';
@@ -25,6 +27,8 @@ type Book = {
   readonly imageCount: number;
   readonly addedAt: number;
   readonly position: ReadingPlace;
+  readonly lastReadAt: number | null;
+  readonly finishedAt: number | null;
 };
 
 const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
@@ -47,6 +51,8 @@ type BookEdit = {
   readonly pagePairing?: PagePairing;
   readonly pageFit?: PageFit;
   readonly position?: ReadingPlace;
+  readonly lastReadAt?: number;
+  readonly finishedAt?: number | null;
 };
 
 function editedTitle(book: Book, edit: BookEdit): string {
@@ -67,8 +73,17 @@ function applyEdit(book: Book, edit: BookEdit): Book {
     pagePairing: edit.pagePairing ?? book.pagePairing,
     pageFit,
     position: edit.position ?? book.position,
+    lastReadAt: edit.lastReadAt ?? book.lastReadAt,
+    finishedAt: edit.finishedAt === undefined ? book.finishedAt : edit.finishedAt,
   };
 }
 
-export { DEFAULT_PAGE_PAIRING, defaultPageFit, applyEdit };
+function startingPlace(book: Book): ReadingPlace {
+  return match(book.layoutKind)
+    .with('paged', 'continuous', () => imagePlace(imageIndex(0)))
+    .with('flow', () => START_OF_THE_TEXT)
+    .exhaustive();
+}
+
+export { DEFAULT_PAGE_PAIRING, defaultPageFit, applyEdit, startingPlace };
 export type { SourceKind, Book, BookEdit };

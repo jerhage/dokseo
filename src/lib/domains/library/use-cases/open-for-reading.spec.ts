@@ -31,6 +31,8 @@ function book(overrides: Partial<Book> = {}): Book {
     imageCount: 182,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(0)),
+    lastReadAt: null,
+    finishedAt: null,
     ...overrides,
   };
 }

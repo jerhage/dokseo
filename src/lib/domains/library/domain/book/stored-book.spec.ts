@@ -134,8 +134,35 @@ describe('bookFromStored', () => {
       pageFit: defaultPageFit(legacy.layoutKind),
       position: imagePlace(imageIndex(3)),
       contentHash: NO_CONTENT_HASH,
+      lastReadAt: null,
+      finishedAt: null,
     };
     expect(bookFromStored(legacy)).toEqual(expected);
+  });
+
+  it('reads a record written before reading times as never read and not marked finished', () => {
+    const book = bookFromStored(legacy);
+
+    expect(book.lastReadAt).toBeNull();
+    expect(book.finishedAt).toBeNull();
+  });
+
+  it('reads a stored null reading time as null', () => {
+    const book = bookFromStored({ ...legacy, lastReadAt: null, finishedAt: null });
+
+    expect(book.lastReadAt).toBeNull();
+    expect(book.finishedAt).toBeNull();
+  });
+
+  it('keeps stored reading times that are present', () => {
+    const book = bookFromStored({
+      ...legacy,
+      lastReadAt: 1758300000000,
+      finishedAt: 1758400000000,
+    });
+
+    expect(book.lastReadAt).toBe(1758300000000);
+    expect(book.finishedAt).toBe(1758400000000);
   });
 
   it('returns a new object and leaves the stored record untouched', () => {

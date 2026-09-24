@@ -25,6 +25,8 @@ function book(layoutKind: LayoutKind, imageCount: number, id = 'book-1'): Book {
     imageCount,
     addedAt: 1758240000000,
     position: layoutKind === 'flow' ? START_OF_THE_TEXT : imagePlace(imageIndex(0)),
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 

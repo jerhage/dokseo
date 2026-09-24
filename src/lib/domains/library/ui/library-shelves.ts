@@ -23,6 +23,7 @@ const CONTINUE_LIMIT = 3;
 const TITLE_ORDER = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 function readingState(book: Book): ReadingState {
+  if (book.finishedAt !== null) return 'finished';
   const place = book.position;
   if (place.kind === 'image') {
     if (place.index === 0) return 'unread';
@@ -68,7 +69,10 @@ function sortName(order: SortOrder): string {
     .exhaustive();
 }
 
+const WHOLE_BOOK = 100;
+
 function readPercent(book: Book): number {
+  if (book.finishedAt !== null) return WHOLE_BOOK;
   const progress = bookProgress(book);
   return progress.kind === 'known' ? progress.filled : 0;
 }
@@ -81,8 +85,14 @@ function sortBooks(books: readonly Book[], order: SortOrder): readonly Book[] {
     .exhaustive();
 }
 
+function lastTouched(book: Book): number {
+  return book.lastReadAt ?? book.addedAt;
+}
+
 function continueReading(books: readonly Book[]): readonly Book[] {
-  return shelfBooks(books, 'reading').slice(0, CONTINUE_LIMIT);
+  return shelfBooks(books, 'reading')
+    .toSorted((a, b) => lastTouched(b) - lastTouched(a))
+    .slice(0, CONTINUE_LIMIT);
 }
 
 function sourceName(sourceKind: SourceKind): string {

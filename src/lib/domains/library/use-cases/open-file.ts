@@ -174,6 +174,8 @@ async function openFile(
     imageCount: content.value.imageCount,
     addedAt: deps.now(),
     position: content.value.position,
+    lastReadAt: null,
+    finishedAt: null,
   };
 
   const startedAt = deps.now();

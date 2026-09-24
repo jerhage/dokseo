@@ -15,6 +15,7 @@ import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Result } from '$lib/shared/result';
 import { createReadingSettingsStore } from './domains/flowing/adapters/indexeddb-reading-settings';
 import type {
@@ -35,6 +36,10 @@ import { editBook } from './domains/library/use-cases/edit-book';
 import type { EditBookDeps } from './domains/library/use-cases/edit-book';
 import { listBooks } from './domains/library/use-cases/list-books';
 import type { ListBooksDeps } from './domains/library/use-cases/list-books';
+import { markFinished } from './domains/library/use-cases/mark-finished';
+import type { MarkFinishedDeps } from './domains/library/use-cases/mark-finished';
+import { markUnread } from './domains/library/use-cases/mark-unread';
+import type { MarkUnreadDeps } from './domains/library/use-cases/mark-unread';
 import { openFile } from './domains/library/use-cases/open-file';
 import type { OpenFileDeps, OpenFileError } from './domains/library/use-cases/open-file';
 import { openForReading } from './domains/library/use-cases/open-for-reading';
@@ -51,6 +56,8 @@ import { readLibrarySize } from './domains/library/use-cases/read-library-size';
 import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
 import { readSource } from './domains/library/use-cases/read-source';
 import type { ReadSourceDeps } from './domains/library/use-cases/read-source';
+import { saveReadingPlace } from './domains/library/use-cases/save-reading-place';
+import type { SaveReadingPlaceDeps } from './domains/library/use-cases/save-reading-place';
 import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
 import { createModelStorage } from './domains/recognition/adapters/model/cache-api-model-storage';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
@@ -244,6 +251,12 @@ type Container = {
     readonly readSource: (id: BookId) => Promise<Result<Blob, LibraryError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError | CaptureError>>;
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
+    readonly saveReadingPlace: (
+      id: BookId,
+      place: ReadingPlace,
+    ) => Promise<Result<Book, LibraryError>>;
+    readonly markFinished: (id: BookId) => Promise<Result<Book, LibraryError>>;
+    readonly markUnread: (id: BookId) => Promise<Result<Book, LibraryError>>;
     readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
   };
   readonly flowing: {
@@ -348,6 +361,9 @@ function buildContainer(): Container {
   const readCoverDeps: ReadCoverDeps = { repository };
   const readSourceDeps: ReadSourceDeps = { repository };
   const editBookDeps: EditBookDeps = { repository };
+  const saveReadingPlaceDeps: SaveReadingPlaceDeps = { repository, now: Date.now };
+  const markFinishedDeps: MarkFinishedDeps = { repository, now: Date.now };
+  const markUnreadDeps: MarkUnreadDeps = { repository };
   const readLibrarySizeDeps: ReadLibrarySizeDeps = { repository };
   const readingSettings = createReadingSettingsStore();
   const readReadingSettingsDeps: ReadReadingSettingsDeps = { settings: readingSettings };
@@ -406,6 +422,10 @@ function buildContainer(): Container {
       readSource: (id: BookId) => readSource(readSourceDeps, id),
       removeBook: (id: BookId) => removeBookAndCaptures(removeBookAndCapturesDeps, id),
       editBook: (id: BookId, edit: BookEdit) => editBook(editBookDeps, id, edit),
+      saveReadingPlace: (id: BookId, place: ReadingPlace) =>
+        saveReadingPlace(saveReadingPlaceDeps, id, place),
+      markFinished: (id: BookId) => markFinished(markFinishedDeps, id),
+      markUnread: (id: BookId) => markUnread(markUnreadDeps, id),
       readLibrarySize: () => readLibrarySize(readLibrarySizeDeps),
     },
     flowing: {

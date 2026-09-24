@@ -18,6 +18,8 @@
     readonly busy: (id: BookId) => boolean;
     readonly onedit: (id: BookId) => void;
     readonly onremove: (id: BookId) => void;
+    readonly onfinish: (id: BookId) => void;
+    readonly onunread: (id: BookId) => void;
     shelf?: Shelf;
     order?: SortOrder;
     layout?: CollectionView;
@@ -31,6 +33,8 @@
     busy,
     onedit,
     onremove,
+    onfinish,
+    onunread,
     shelf = $bindable('all'),
     order = $bindable('added'),
     layout = $bindable('grid'),
@@ -80,9 +84,9 @@
       {#if shown.length === 0}
         <p class="text-sm text-muted py-4">{emptyShelfText(shelf, searching)}</p>
       {:else if layout === 'grid'}
-        <BookGrid books={shown} {covers} {busy} {onedit} {onremove} />
+        <BookGrid books={shown} {covers} {busy} {onedit} {onremove} {onfinish} {onunread} />
       {:else}
-        <BookTable books={shown} {busy} {onedit} {onremove} />
+        <BookTable books={shown} {busy} {onedit} {onremove} {onfinish} {onunread} />
       {/if}
     {/snippet}
   </Tabs>

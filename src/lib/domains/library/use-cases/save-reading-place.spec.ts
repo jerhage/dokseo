@@ -6,9 +6,11 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
-import { editBook } from './edit-book';
+import { saveReadingPlace } from './save-reading-place';
 
 type UpdateCall = { readonly id: BookId; readonly edit: BookEdit };
+
+const NOW = 1758300000000;
 
 function notFound(id: BookId): Result<never, LibraryError> {
   return err({ kind: 'not-found', id });
@@ -18,10 +20,10 @@ const stored: Book = {
   id: bookId('book-7'),
   title: 'Blame! 1',
   language: 'ja',
-  layoutKind: 'continuous',
-  direction: 'ltr',
+  layoutKind: 'paged',
+  direction: 'rtl',
   pagePairing: 'single',
-  pageFit: 'width',
+  pageFit: 'height',
   sourceKind: 'archive',
   contentHash: contentHash('a1'),
   imageCount: 182,
@@ -49,25 +51,51 @@ function fakeRepository(outcome: Result<Book, LibraryError>) {
   return { repository, updates };
 }
 
-describe('editBook', () => {
-  it('passes the id and the edit to the repository and returns what the repository returned', async () => {
-    const outcome = ok(stored);
-    const repository = fakeRepository(outcome);
-    const edit: BookEdit = { title: 'Blame! 1', layoutKind: 'continuous' };
-    const result = await editBook({ repository: repository.repository }, bookId('book-7'), edit);
-    expect(repository.updates).toEqual([{ id: 'book-7', edit }]);
-    expect(result).toEqual(outcome);
+describe('saveReadingPlace', () => {
+  it('stores the place and stamps the time it was read', async () => {
+    const fake = fakeRepository(ok(stored));
+
+    await saveReadingPlace(
+      { repository: fake.repository, now: () => NOW },
+      bookId('book-7'),
+      imagePlace(imageIndex(12)),
+    );
+
+    expect(fake.updates).toEqual([
+      { id: 'book-7', edit: { position: { kind: 'image', index: 12 }, lastReadAt: NOW } },
+    ]);
   });
 
-  it('passes a text place to the repository unchanged', async () => {
-    const repository = fakeRepository(ok(stored));
-    const edit: BookEdit = { position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) };
-    await editBook({ repository: repository.repository }, bookId('book-7'), edit);
-    expect(repository.updates).toEqual([
+  it('stores a text place unchanged', async () => {
+    const fake = fakeRepository(ok(stored));
+
+    await saveReadingPlace(
+      { repository: fake.repository, now: () => NOW },
+      bookId('book-7'),
+      textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.37),
+    );
+
+    expect(fake.updates).toEqual([
       {
         id: 'book-7',
-        edit: { position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: null } },
+        edit: {
+          position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: 0.37 },
+          lastReadAt: NOW,
+        },
       },
     ]);
+  });
+
+  it('returns what the repository returned', async () => {
+    const failed = err({ kind: 'storage-failed', cause: 'the disk went away' } as const);
+    const fake = fakeRepository(failed);
+
+    const result = await saveReadingPlace(
+      { repository: fake.repository, now: () => NOW },
+      bookId('book-7'),
+      imagePlace(imageIndex(12)),
+    );
+
+    expect(result).toEqual(failed);
   });
 });

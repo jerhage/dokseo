@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
-import { imagePlace, textPlace } from '$lib/shared/reading-place';
-import { applyEdit, defaultPageFit } from './book';
+import { START_OF_THE_TEXT, imagePlace, textPlace } from '$lib/shared/reading-place';
+import { applyEdit, defaultPageFit, startingPlace } from './book';
 import type { Book } from './book';
 
 const book: Book = {
@@ -17,6 +17,8 @@ const book: Book = {
   imageCount: 182,
   addedAt: 1758240000000,
   position: imagePlace(imageIndex(3)),
+  lastReadAt: null,
+  finishedAt: null,
 };
 
 describe('applyEdit', () => {
@@ -64,6 +66,31 @@ describe('applyEdit', () => {
     expect(edited).not.toBe(book);
     expect(book.title).toBe('Yotsuba&! 1');
     expect(book.position).toEqual({ kind: 'image', index: 3 });
+  });
+
+  it('stamps the time the book was last read', () => {
+    expect(applyEdit(book, { lastReadAt: 1758300000000 }).lastReadAt).toBe(1758300000000);
+  });
+
+  it('keeps the last read time when the edit does not give one', () => {
+    const read: Book = { ...book, lastReadAt: 1758300000000 };
+    expect(applyEdit(read, { title: 'Blame! 1' }).lastReadAt).toBe(1758300000000);
+  });
+
+  it('marks the book finished at the given time', () => {
+    expect(applyEdit(book, { finishedAt: 1758400000000 }).finishedAt).toBe(1758400000000);
+  });
+
+  it('clears the finished mark when the edit gives null', () => {
+    const finished: Book = { ...book, finishedAt: 1758400000000 };
+    expect(applyEdit(finished, { finishedAt: null }).finishedAt).toBeNull();
+  });
+
+  it('keeps the finished mark when the edit does not name it', () => {
+    const finished: Book = { ...book, finishedAt: 1758400000000 };
+    expect(applyEdit(finished, { position: imagePlace(imageIndex(0)) }).finishedAt).toBe(
+      1758400000000,
+    );
   });
 
   it('keeps the direction when the edit turns the book continuous', () => {
@@ -150,5 +177,29 @@ describe('defaultPageFit', () => {
 
   it('answers for a flow book, which stores the fit and never reads it', () => {
     expect(defaultPageFit('flow')).toBe('width');
+  });
+});
+
+describe('startingPlace', () => {
+  it('starts a paged book on its first image', () => {
+    expect(startingPlace(book)).toEqual({ kind: 'image', index: 0 });
+  });
+
+  it('starts a continuous book on its first image', () => {
+    expect(startingPlace({ ...book, layoutKind: 'continuous' })).toEqual({
+      kind: 'image',
+      index: 0,
+    });
+  });
+
+  it('starts a flowing book at the start of its text', () => {
+    expect(
+      startingPlace({
+        ...book,
+        layoutKind: 'flow',
+        sourceKind: 'epub',
+        position: textPlace('epubcfi(/6/14!/4/2/1:0)', 0.5),
+      }),
+    ).toEqual(START_OF_THE_TEXT);
   });
 });

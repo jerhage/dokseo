@@ -161,6 +161,8 @@
           busy={(id) => view.removing === id || view.editing === id}
           onedit={(id) => (openSettingsFor = id)}
           onremove={(id) => (removeFor = id)}
+          onfinish={(id) => void view.markFinished(id)}
+          onunread={(id) => void view.markUnread(id)}
         />
       {/if}
 

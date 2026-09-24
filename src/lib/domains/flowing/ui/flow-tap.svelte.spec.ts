@@ -81,6 +81,8 @@ function novel(direction: 'ltr' | 'rtl'): FlowBook {
     imageCount: 0,
     addedAt: 1758240000000,
     position: START_OF_THE_TEXT,
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 
@@ -88,7 +90,7 @@ function shelf(source: Blob, book: FlowBook): Container {
   return {
     library: {
       readSource: () => Promise.resolve(ok(source)),
-      editBook: () => Promise.resolve(ok(book)),
+      saveReadingPlace: () => Promise.resolve(ok(book)),
     },
     flowing: {
       readReadingSettings: () => Promise.resolve(DEFAULT_READING_SETTINGS),

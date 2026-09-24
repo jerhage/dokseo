@@ -60,6 +60,8 @@ function novel(position: ReadingPlace): FlowBook {
     imageCount: 0,
     addedAt: 1758240000000,
     position,
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 
@@ -103,8 +105,8 @@ function shelf(): Shelf {
         world.reads.push(id);
         return world.read();
       },
-      editBook: (_id: BookId, edit: BookEdit) => {
-        world.edits.push(edit);
+      saveReadingPlace: (_id: BookId, place: ReadingPlace) => {
+        world.edits.push({ position: place });
         return world.save();
       },
     },

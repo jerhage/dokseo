@@ -27,6 +27,8 @@ function book(title: string, imageCount = 10): Book {
     imageCount,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(0)),
+    lastReadAt: null,
+    finishedAt: null,
   };
 }
 

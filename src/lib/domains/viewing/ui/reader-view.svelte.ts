@@ -398,7 +398,7 @@ class ReaderView {
     this.#placed = index;
 
     try {
-      const saved = await this.#container.library.editBook(id, { position: imagePlace(index) });
+      const saved = await this.#container.library.saveReadingPlace(id, imagePlace(index));
       if (generation !== this.#generation) return;
       if (!saved.ok) this.message = describeEditFailure(saved.error);
     } catch (cause) {

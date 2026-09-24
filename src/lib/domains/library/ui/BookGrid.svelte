@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Badge from '$lib/components/Badge.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -12,9 +13,11 @@
     readonly busy: (id: BookId) => boolean;
     readonly onedit: (id: BookId) => void;
     readonly onremove: (id: BookId) => void;
+    readonly onfinish: (id: BookId) => void;
+    readonly onunread: (id: BookId) => void;
   };
 
-  let { books, covers, busy, onedit, onremove }: Props = $props();
+  let { books, covers, busy, onedit, onremove, onfinish, onunread }: Props = $props();
 </script>
 
 <ul class="grid-auto grid-auto-sm p-0" aria-label="Books">
@@ -32,7 +35,11 @@
           <img class="object-cover" src={cover} alt="" />
         {/if}
       </a>
-      {#if progress.kind === 'known'}
+      {#if book.finishedAt !== null}
+        <div class="row">
+          <Badge variant="success">Finished</Badge>
+        </div>
+      {:else if progress.kind === 'known'}
         <Progress label="Read so far in {book.title}" value={progress.filled} size="sm" />
       {/if}
       <div class="row items-start gap-1">
@@ -47,6 +54,8 @@
           busy={busy(book.id)}
           onedit={() => onedit(book.id)}
           onremove={() => onremove(book.id)}
+          onfinish={() => onfinish(book.id)}
+          onunread={() => onunread(book.id)}
         />
       </div>
     </li>

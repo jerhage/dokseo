@@ -35,6 +35,8 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
     imageCount: 6,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(0)),
+    lastReadAt: null,
+    finishedAt: null,
     ...overrides,
   };
 }
@@ -171,6 +173,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       readSource: () => Promise.reject(new Error('not used')),
       removeBook: () => Promise.reject(new Error('not used')),
       editBook: async (id, edit) => {
+        if (edit.position !== undefined) throw new Error('a place is saved with saveReadingPlace');
         edits.push({
           id,
           position: edit.position,
@@ -193,6 +196,24 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         };
         return ok(world.stored);
       },
+      saveReadingPlace: async (id, place) => {
+        edits.push({
+          id,
+          position: place,
+          layoutKind: undefined,
+          pagePairing: undefined,
+          direction: undefined,
+          pageFit: undefined,
+        });
+        if (world.gate !== null) await world.gate;
+        if (world.editing === 'failed') {
+          return err({ kind: 'storage-failed', cause: 'the disk went away' });
+        }
+        world.stored = { ...world.stored, position: place };
+        return ok(world.stored);
+      },
+      markFinished: () => Promise.reject(new Error('not used')),
+      markUnread: () => Promise.reject(new Error('not used')),
       readLibrarySize: () => Promise.resolve(ok(0)),
     },
     recognition: {

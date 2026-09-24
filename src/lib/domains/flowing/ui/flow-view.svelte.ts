@@ -336,7 +336,7 @@ class FlowView {
 
     let saved: EditOutcome;
     try {
-      saved = await this.#container.library.editBook(id, { position: place });
+      saved = await this.#container.library.saveReadingPlace(id, place);
     } catch {
       this.#forget(place);
       return;
