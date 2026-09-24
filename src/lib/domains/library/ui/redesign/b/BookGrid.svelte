@@ -23,7 +23,7 @@
     {@const cover = covers.get(book.id) ?? null}
     <li class={['col gap-2', { 'is-busy': busy(book.id) }]} aria-busy={busy(book.id)}>
       <a
-        class="aspect-portrait overflow-hidden surface-sunken bordered rounded-container"
+        class="card card-interactive aspect-portrait surface-sunken"
         href="/read/{book.id}"
         aria-label="Read {book.title}"
         title={bookFacts(book)}
