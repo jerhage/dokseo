@@ -6,13 +6,19 @@
   import { createToaster } from '$lib/components/toaster.svelte';
   import AccordionSection from './AccordionSection.svelte';
   import AlertSection from './AlertSection.svelte';
+  import AvatarSection from './AvatarSection.svelte';
   import BadgesSection from './BadgesSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
+  import DividerSection from './DividerSection.svelte';
+  import DropdownSection from './DropdownSection.svelte';
   import FormSection from './FormSection.svelte';
+  import ModalToastSection from './ModalToastSection.svelte';
+  import NavigationSection from './NavigationSection.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
+  import ProgressSection from './ProgressSection.svelte';
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
   import TokensSection from './TokensSection.svelte';
@@ -28,6 +34,12 @@
     TabsSection,
     AccordionSection,
     TableSection,
+    ModalToastSection,
+    DropdownSection,
+    NavigationSection,
+    AvatarSection,
+    ProgressSection,
+    DividerSection,
   ];
 
   setToaster(createToaster());
