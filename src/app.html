@@ -4,6 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="text-scale" content="scale" />
+    <style>
+      @layer open-props, reset, base, tokens, components, features, utilities, overrides;
+    </style>
+    <script>
+      {
+        const themes = ['base', 'ember'];
+        const schemes = ['light', 'dark'];
+        let theme = 'base';
+        let scheme = null;
+        try {
+          const storedTheme = localStorage.getItem('reader.theme');
+          const storedScheme = localStorage.getItem('reader.color-scheme');
+          if (themes.includes(storedTheme)) theme = storedTheme;
+          if (schemes.includes(storedScheme)) scheme = storedScheme;
+        } catch {}
+        document.documentElement.setAttribute('data-theme', theme);
+        if (scheme !== null) document.documentElement.setAttribute('data-color-scheme', scheme);
+      }
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
