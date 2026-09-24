@@ -1,0 +1,38 @@
+.surface-bg {
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+.surface {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+.surface-raised {
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+}
+.surface-sunken {
+  color: var(--color-text);
+  background-color: var(--color-surface-sunken);
+}
+.surface-bright {
+  color: var(--color-text);
+  background-color: var(--color-surface-bright);
+}
+.bordered {
+  border: var(--border-width) solid var(--border-color);
+}
+.bordered-strong {
+  border: var(--border-width) solid var(--border-color-strong);
+}
+.rounded-control {
+  border-radius: var(--radius-control);
+}
+.rounded-container {
+  border-radius: var(--radius-container);
+}
+.rounded-overlay {
+  border-radius: var(--radius-overlay);
+}
+.rounded-full {
+  border-radius: var(--radius-full);
+}

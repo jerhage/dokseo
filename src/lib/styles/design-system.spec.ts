@@ -219,6 +219,33 @@ const CONTRACT_CLASSES: Readonly<Record<string, readonly string[]>> = {
   divider: ['divider-labeled'],
 };
 
+const SPACING_STEPS = ['0', '1', '2', '3', '4', '5', '6', '8'];
+
+const SPACING_SIDES: Readonly<Record<string, string>> = {
+  '': '',
+  x: '-inline',
+  y: '-block',
+  s: '-inline-start',
+  e: '-inline-end',
+  t: '-block-start',
+  b: '-block-end',
+};
+
+const SPACING_PROPERTIES: Readonly<Record<string, string>> = { p: 'padding', m: 'margin' };
+
+const SURFACES: Readonly<Record<string, string>> = {
+  'surface-bg': '--color-bg',
+  surface: '--color-surface',
+  'surface-raised': '--color-surface-raised',
+  'surface-sunken': '--color-surface-sunken',
+  'surface-bright': '--color-surface-bright',
+};
+
+const TOKEN_UTILITIES: Readonly<Record<string, readonly [string, string, string]>> = {
+  'utilities/shadow.css': ['shadow', 'box-shadow', 'shadow'],
+  'utilities/surface.css': ['rounded', 'border-radius', 'radius'],
+};
+
 const RUNTIME_INPUTS = ['--progress', '--skeleton-width', '--toast-timeout'];
 
 const ANIMATION_KEYWORDS = new Set([
@@ -345,6 +372,13 @@ function animationNames(css: string): readonly string[] {
 
 function definesClass(css: string, name: string): boolean {
   return new RegExp(`\\.${name}(?![\\w-])[^{}]*\\{`, 'u').test(css);
+}
+
+function declarations(body: string): readonly string[] {
+  return body
+    .split(';')
+    .map((part) => part.trim().replaceAll(/\s+/gu, ' '))
+    .filter((part) => part !== '');
 }
 
 function expectedLayer(path: string): string {
@@ -529,6 +563,56 @@ describe('the design system stylesheets', () => {
 
     expect(ruleBody(toast, '.toast::after')).toMatch(/transform-origin:\s*left;/u);
     expect(ruleBody(toast, '.toast:dir(rtl)::after')).toMatch(/transform-origin:\s*right;/u);
+  });
+
+  it('gives every padding and margin utility the logical side and step its name says', () => {
+    const spacing = style('utilities/spacing.css');
+
+    for (const [kind, property] of Object.entries(SPACING_PROPERTIES)) {
+      for (const [side, suffix] of Object.entries(SPACING_SIDES)) {
+        for (const step of SPACING_STEPS) {
+          const selector = `.${kind}${side}-${step}`;
+          const value = step === '0' ? '0' : `var(--sp-${step})`;
+
+          expect({ selector, body: declarations(ruleBody(spacing, selector)) }).toEqual({
+            selector,
+            body: [`${property}${suffix}: ${value}`],
+          });
+        }
+      }
+    }
+  });
+
+  it('paints every surface utility with its background and the text colour on it', () => {
+    const surface = style('utilities/surface.css');
+
+    for (const [name, token] of Object.entries(SURFACES)) {
+      const selector = `.${name}`;
+
+      expect({ selector, body: declarations(ruleBody(surface, selector)).toSorted() }).toEqual({
+        selector,
+        body: [`background-color: var(${token})`, 'color: var(--color-text)'],
+      });
+    }
+  });
+
+  it('reads the token each shadow and radius utility names', () => {
+    for (const [path, [prefix, property, tokenPrefix]] of Object.entries(TOKEN_UTILITIES)) {
+      const found = rules(style(path)).filter((rule) =>
+        rule.selectors.some((selector) => selector.startsWith(`.${prefix}-`)),
+      );
+
+      expect(found.length).toBeGreaterThan(0);
+      for (const rule of found) {
+        const [selector = ''] = rule.selectors;
+        const suffix = selector.slice(`.${prefix}-`.length);
+
+        expect({ selector, body: declarations(rule.body) }).toEqual({
+          selector,
+          body: [`${property}: var(--${tokenPrefix}-${suffix})`],
+        });
+      }
+    }
   });
 
   it('holds the z-index scale the contract locks', () => {

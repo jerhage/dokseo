@@ -11,6 +11,9 @@
 .w-full {
   inline-size: 100%;
 }
+.min-h-screen {
+  min-block-size: 100dvh;
+}
 .layout-app-shell {
   container: app-shell / inline-size;
   display: grid;
@@ -18,6 +21,9 @@
   grid-template-rows: auto auto minmax(0, 1fr);
   min-block-size: 100dvh;
   background-color: var(--color-bg);
+}
+.layout-app-shell-embedded {
+  min-block-size: 0;
 }
 .layout-app-shell-header {
   grid-column: 1 / -1;

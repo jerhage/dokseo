@@ -57,6 +57,8 @@
 @import 'utilities/grid.css' layer(utilities);
 @import 'utilities/flex.css' layer(utilities);
 @import 'utilities/spacing.css' layer(utilities);
+@import 'utilities/surface.css' layer(utilities);
+@import 'utilities/shadow.css' layer(utilities);
 @import 'utilities/text.css' layer(utilities);
 @import 'utilities/animation.css' layer(utilities);
 
