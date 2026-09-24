@@ -11,6 +11,14 @@
   font-size: var(--text-sm);
   color: var(--color-text);
 }
+.table caption {
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  color: var(--color-text);
+  border-block-end: var(--border-width) solid var(--border-color);
+}
 .table th {
   padding: var(--sp-3) var(--sp-4);
   font-size: var(--text-xs);
