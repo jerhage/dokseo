@@ -1,5 +1,6 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
+  import CommandItem from '$lib/components/CommandItem.svelte';
   import MarkedText from './MarkedText.svelte';
   import type { PaletteRow } from './palette-rows';
 
@@ -7,7 +8,7 @@
     readonly row: PaletteRow;
     readonly current: boolean;
     readonly onopen: (row: PaletteRow) => void;
-    ref?: HTMLAnchorElement | undefined;
+    ref?: HTMLElement | undefined;
   };
 
   let { row, current, onopen, ref = $bindable() }: Props = $props();
@@ -20,13 +21,16 @@
   }
 </script>
 
-<a
-  bind:this={ref}
-  class={['dropdown-item', 'items-center', 'gap-3', 'py-2', { 'is-selected': current }]}
+<CommandItem
+  bind:ref
   href={row.href}
+  selected={current}
+  hint={row.kind === 'capture' ? row.place : undefined}
   onclick={click}
 >
-  <span class="thumb aspect-portrait rounded-control overflow-hidden bordered surface-sunken">
+  <span
+    class="w-6 shrink-0 aspect-portrait rounded-control overflow-hidden bordered surface-sunken"
+  >
     {#if row.cover !== null}
       <img class="object-cover" src={row.cover} alt="" />
     {/if}
@@ -41,7 +45,9 @@
       {/if}
     {:else}
       {#if row.note !== null}
-        <span class="note truncate text-xs text-muted"><MarkedText segments={row.note} /></span>
+        <span class="accent-start truncate text-xs text-muted"
+          ><MarkedText segments={row.note} /></span
+        >
       {/if}
       {#if row.title !== null}
         <span class="truncate text-xs text-muted">{row.title}</span>
@@ -55,7 +61,4 @@
       {/if}
     {/if}
   </span>
-  {#if row.kind === 'capture'}
-    <span class="dropdown-item-shortcut">{row.place}</span>
-  {/if}
-</a>
+</CommandItem>
