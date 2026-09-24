@@ -19,6 +19,16 @@ import {
   TOAST_VARIANTS,
 } from './classes';
 import type { ClassList } from './classes';
+import { fileItemView } from './file-item';
+import type { FileItemData } from './file-item';
+
+const FILE_ITEMS: readonly FileItemData[] = [
+  { id: 'pending', name: 'a.pdf', size: 1, state: 'pending' },
+  { id: 'uploading', name: 'a.pdf', size: 1, state: 'uploading', progress: 50 },
+  { id: 'complete', name: 'a.pdf', size: 1, state: 'complete' },
+  { id: 'error', name: 'a.pdf', size: 1, state: 'error', message: 'Failed' },
+];
+
 const STYLES = new URL('../styles/', import.meta.url);
 const COMPONENTS = new URL('./', import.meta.url);
 
@@ -104,6 +114,20 @@ describe('the base components', () => {
     const missing = literalClasses()
       .filter(([, name]) => !defined.has(name))
       .map(([path, name]) => `${path}: ${name}`);
+
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('fileItemView', () => {
+  it('names only classes the stylesheets define', () => {
+    const defined = definedClasses();
+
+    const missing = FILE_ITEMS.flatMap((item) =>
+      fileItemView(item)
+        .classes.filter((name) => !defined.has(name))
+        .map((name) => `${item.state}: ${name}`),
+    );
 
     expect(missing).toEqual([]);
   });
