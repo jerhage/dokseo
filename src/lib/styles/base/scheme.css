@@ -1,0 +1,33 @@
+:root {
+  color-scheme: light dark;
+}
+:root[data-color-scheme='light'] {
+  color-scheme: light;
+}
+:root[data-color-scheme='dark'] {
+  color-scheme: dark;
+}
+
+:root {
+  --ds-white: oklch(1 0 0);
+  --ds-shade-45: light-dark(oklch(0.14 0.01 255 / 0.45), oklch(0.05 0 0 / 0.6));
+  --ds-shade-70: light-dark(oklch(0.14 0.01 255 / 0.7), oklch(0.05 0 0 / 0.8));
+  --ds-shadow-inset: inset 0 1px 2px light-dark(oklch(0.2 0.02 255 / 0.06), oklch(0 0 0 / 0.25));
+
+  --ds-success-50: light-dark(oklch(0.965 0.03 150), oklch(0.26 0.04 150));
+  --ds-success-200: light-dark(oklch(0.87 0.08 150), oklch(0.38 0.07 150));
+  --ds-success-600: light-dark(oklch(0.52 0.13 150), oklch(0.76 0.14 150));
+  --ds-success-a15: oklch(0.6 0.14 150 / 0.15);
+  --ds-warning-50: light-dark(oklch(0.975 0.035 85), oklch(0.27 0.04 70));
+  --ds-warning-200: light-dark(oklch(0.89 0.1 85), oklch(0.4 0.07 70));
+  --ds-warning-600: light-dark(oklch(0.56 0.13 60), oklch(0.82 0.13 80));
+  --ds-warning-a15: oklch(0.72 0.15 70 / 0.18);
+  --ds-danger-50: light-dark(oklch(0.97 0.02 25), oklch(0.26 0.05 25));
+  --ds-danger-200: light-dark(oklch(0.88 0.07 25), oklch(0.4 0.09 25));
+  --ds-danger-600: light-dark(oklch(0.53 0.18 25), oklch(0.73 0.16 25));
+  --ds-danger-a15: oklch(0.6 0.19 25 / 0.14);
+  --ds-info-50: light-dark(oklch(0.97 0.02 250), oklch(0.26 0.04 250));
+  --ds-info-200: light-dark(oklch(0.88 0.06 250), oklch(0.4 0.08 250));
+  --ds-info-600: light-dark(oklch(0.52 0.14 255), oklch(0.76 0.12 250));
+  --ds-info-a15: oklch(0.6 0.14 250 / 0.15);
+}

@@ -309,6 +309,17 @@ function importedFiles(): readonly string[] {
   return designSystemFiles().filter((path) => path !== 'index.css');
 }
 
+function themeFiles(): readonly string[] {
+  return importedFiles().filter((path) => path.startsWith('base/themes/'));
+}
+
+function themeSheets(): string {
+  return ['base/scheme.css']
+    .concat(themeFiles())
+    .map((path) => style(path))
+    .join('\n');
+}
+
 function orderStatement(css: string): string | null {
   return /@layer\s+[\w\s,-]+;/u.exec(css)?.[0].replaceAll(/\s+/gu, ' ') ?? null;
 }
@@ -459,7 +470,7 @@ describe('the design system stylesheets', () => {
   });
 
   it('has every theme assign exactly the custom properties the default theme assigns', () => {
-    const themed = themeRules(style('base/theme.css'));
+    const themed = themeRules(themeSheets());
     const [defaults, ...others] = themed.filter((rule) => rule.selectors.includes(':root'));
     const expected = definitions(defaults?.body ?? '').toSorted();
     const assigned = themed.map((rule) => ({
@@ -473,18 +484,37 @@ describe('the design system stylesheets', () => {
     expect(assigned).toEqual(assigned.map(({ theme }) => ({ theme, names: expected })));
   });
 
-  it('lets a bare root render the default theme', () => {
-    const theme = style('base/theme.css');
+  it('declares one theme in each theme file, named after the file', () => {
+    const declared = themeFiles().map((path) => ({
+      path,
+      themes: themeRules(style(path)).flatMap((rule) =>
+        rule.selectors.flatMap((selector) =>
+          Array.from(selector.matchAll(/\[data-theme='([\w-]+)'\]/gu), (found) => group(found, 1)),
+        ),
+      ),
+    }));
 
-    expect(ruleFor(theme, ":root[data-theme='base']").selectors).toContain(':root');
+    expect(declared.length).toBeGreaterThan(1);
+    expect(declared).toEqual(
+      declared.map(({ path }) => ({
+        path,
+        themes: [path.slice('base/themes/'.length, -'.css'.length)],
+      })),
+    );
+  });
+
+  it('lets a bare root render the default theme', () => {
+    expect(ruleFor(themeSheets(), ":root[data-theme='base']").selectors).toContain(':root');
   });
 
   it('declares every scheme-dependent color once, with no media query or scheme palette', () => {
-    const theme = style('base/theme.css');
+    const scheme = style('base/scheme.css');
 
-    expect(theme).not.toMatch(/prefers-color-scheme/u);
-    expect(ruleBody(theme, ":root[data-color-scheme='light']").trim()).toBe('color-scheme: light;');
-    expect(ruleBody(theme, ":root[data-color-scheme='dark']").trim()).toBe('color-scheme: dark;');
+    expect(themeSheets()).not.toMatch(/prefers-color-scheme/u);
+    expect(ruleBody(scheme, ":root[data-color-scheme='light']").trim()).toBe(
+      'color-scheme: light;',
+    );
+    expect(ruleBody(scheme, ":root[data-color-scheme='dark']").trim()).toBe('color-scheme: dark;');
   });
 
   it('defines every contract semantic token in tokens', () => {

@@ -1,0 +1,115 @@
+:root {
+  --ds-slate-0: light-dark(oklch(1 0 0), oklch(0.13 0.008 255));
+  --ds-slate-25: light-dark(oklch(0.985 0.003 255), oklch(0.155 0.009 255));
+  --ds-slate-50: light-dark(oklch(0.97 0.004 255), oklch(0.18 0.01 255));
+  --ds-slate-100: light-dark(oklch(0.945 0.006 255), oklch(0.22 0.012 255));
+  --ds-slate-200: light-dark(oklch(0.905 0.008 255), oklch(0.28 0.013 255));
+  --ds-slate-300: light-dark(oklch(0.85 0.01 255), oklch(0.34 0.014 255));
+  --ds-slate-400: light-dark(oklch(0.72 0.014 255), oklch(0.46 0.015 255));
+  --ds-slate-500: oklch(0.6 0.016 255);
+  --ds-slate-600: light-dark(oklch(0.5 0.016 255), oklch(0.7 0.014 255));
+  --ds-slate-800: light-dark(oklch(0.3 0.014 255), oklch(0.86 0.01 255));
+  --ds-slate-900: light-dark(oklch(0.22 0.012 255), oklch(0.94 0.006 255));
+  --ds-slate-tint-3: light-dark(oklch(0.25 0.02 255 / 0.03), oklch(0.98 0.005 255 / 0.03));
+  --ds-slate-tint-5: light-dark(oklch(0.25 0.02 255 / 0.05), oklch(0.98 0.005 255 / 0.06));
+  --ds-slate-tint-9: light-dark(oklch(0.25 0.02 255 / 0.09), oklch(0.98 0.005 255 / 0.1));
+  --ds-slate-tint-15: light-dark(oklch(0.25 0.02 255 / 0.15), oklch(0.98 0.005 255 / 0.18));
+
+  --ds-spruce-50: light-dark(oklch(0.97 0.02 195), oklch(0.24 0.04 195));
+  --ds-spruce-100: light-dark(oklch(0.93 0.04 195), oklch(0.29 0.05 195));
+  --ds-spruce-200: light-dark(oklch(0.87 0.06 195), oklch(0.35 0.06 195));
+  --ds-spruce-300: light-dark(oklch(0.78 0.09 195), oklch(0.45 0.08 195));
+  --ds-spruce-500: light-dark(oklch(0.52 0.1 195), oklch(0.74 0.11 195));
+  --ds-spruce-600: light-dark(oklch(0.46 0.09 195), oklch(0.8 0.1 195));
+  --ds-spruce-700: light-dark(oklch(0.39 0.08 195), oklch(0.86 0.08 195));
+  --ds-spruce-800: light-dark(oklch(0.32 0.06 195), oklch(0.91 0.05 195));
+  --ds-spruce-a12: light-dark(oklch(0.52 0.1 195 / 0.12), oklch(0.74 0.11 195 / 0.16));
+  --ds-spruce-glow: light-dark(oklch(0.52 0.1 195 / 0.35), oklch(0.74 0.11 195 / 0.3));
+
+  --ds-violet-50: light-dark(oklch(0.97 0.02 290), oklch(0.25 0.05 290));
+  --ds-violet-200: light-dark(oklch(0.87 0.07 290), oklch(0.37 0.08 290));
+  --ds-violet-400: light-dark(oklch(0.66 0.15 290), oklch(0.6 0.14 290));
+  --ds-violet-500: light-dark(oklch(0.56 0.17 290), oklch(0.72 0.15 290));
+  --ds-violet-600: light-dark(oklch(0.49 0.16 290), oklch(0.78 0.13 290));
+  --ds-violet-700: light-dark(oklch(0.42 0.14 290), oklch(0.85 0.1 290));
+  --ds-violet-glow: light-dark(oklch(0.56 0.17 290 / 0.35), oklch(0.72 0.15 290 / 0.3));
+}
+
+:root,
+:root[data-theme='base'] {
+  --ds-bg: var(--ds-slate-25);
+  --ds-bg-raised: var(--ds-slate-50);
+  --ds-surface: light-dark(oklch(1 0 0), oklch(0.18 0.01 255));
+  --ds-surface-raised: light-dark(oklch(1 0 0), oklch(0.22 0.012 255));
+  --ds-surface-bright: light-dark(oklch(1 0 0), oklch(0.28 0.013 255));
+  --ds-surface-sunken: light-dark(oklch(0.97 0.004 255), oklch(0.13 0.008 255));
+
+  --ds-primary: var(--ds-spruce-500);
+  --ds-primary-hover: var(--ds-spruce-600);
+  --ds-primary-subtle: var(--ds-spruce-50);
+  --ds-primary-soft: var(--ds-spruce-100);
+  --ds-primary-muted: var(--ds-spruce-300);
+  --ds-primary-glow: var(--ds-spruce-glow);
+  --ds-brand-tint: var(--ds-spruce-50);
+  --ds-brand-border: var(--ds-spruce-200);
+  --ds-brand-border-mid: var(--ds-spruce-300);
+  --ds-brand-text: var(--ds-spruce-700);
+
+  --ds-accent: var(--ds-violet-500);
+  --ds-accent-hover: var(--ds-violet-600);
+  --ds-accent-surface: var(--ds-violet-50);
+  --ds-accent-border: var(--ds-violet-200);
+  --ds-accent-mid: var(--ds-violet-400);
+  --ds-accent-text: var(--ds-violet-700);
+  --ds-accent-glow: var(--ds-violet-glow);
+
+  --ds-text: var(--ds-slate-900);
+  --ds-text-muted: var(--ds-slate-600);
+  --ds-text-faint: var(--ds-slate-500);
+  --ds-text-inverse: var(--ds-slate-0);
+  --ds-text-on-primary: var(--ds-slate-0);
+  --ds-text-on-accent: var(--ds-slate-0);
+  --ds-text-link: var(--ds-spruce-600);
+  --ds-text-link-hover: var(--ds-spruce-800);
+
+  --ds-hover: var(--ds-slate-tint-5);
+  --ds-active: var(--ds-slate-tint-9);
+  --ds-selected: var(--ds-spruce-a12);
+  --ds-disabled: var(--ds-slate-400);
+  --ds-disabled-bg: var(--ds-slate-100);
+
+  --ds-table-stripe: var(--ds-slate-tint-3);
+  --ds-table-row-hover: var(--ds-slate-tint-5);
+  --ds-skeleton-base: var(--ds-slate-100);
+  --ds-skeleton-shine: var(--ds-slate-25);
+  --ds-code-bg: var(--ds-slate-100);
+  --ds-code-text: var(--ds-slate-800);
+
+  --ds-border: var(--ds-slate-200);
+  --ds-border-strong: var(--ds-slate-300);
+  --ds-border-focus: var(--ds-spruce-500);
+
+  --ds-font-display: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ds-font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ds-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --ds-weight-strong: var(--ds-fw-7);
+
+  --ds-radius-control: var(--ds-radius-sm);
+  --ds-radius-container: var(--ds-radius-md);
+  --ds-radius-overlay: var(--ds-radius-lg);
+
+  --ds-shadow-1:
+    0 1px 2px light-dark(oklch(0.2 0.02 255 / 0.06), oklch(0 0 0 / 0.3)),
+    0 1px 1px light-dark(oklch(0.2 0.02 255 / 0.04), transparent);
+  --ds-shadow-2:
+    0 2px 4px light-dark(oklch(0.2 0.02 255 / 0.05), oklch(0 0 0 / 0.25)),
+    0 4px 12px light-dark(oklch(0.2 0.02 255 / 0.07), oklch(0 0 0 / 0.3));
+  --ds-shadow-3:
+    0 8px 16px light-dark(oklch(0.2 0.02 255 / 0.08), oklch(0 0 0 / 0.35)),
+    0 16px 40px light-dark(oklch(0.2 0.02 255 / 0.12), oklch(0 0 0 / 0.4));
+  --ds-shadow-4:
+    0 16px 32px light-dark(oklch(0.2 0.02 255 / 0.12), oklch(0 0 0 / 0.45)),
+    0 32px 80px light-dark(oklch(0.2 0.02 255 / 0.18), oklch(0 0 0 / 0.5));
+
+  --ds-dur-spring: var(--ds-dur-quick);
+}

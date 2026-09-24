@@ -1,8 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const HTML = readFileSync(new URL('../../app.html', import.meta.url), 'utf8');
-const THEME = readFileSync(new URL('base/theme.css', import.meta.url), 'utf8');
+const THEMES = new URL('base/themes/', import.meta.url);
+const THEME = readdirSync(THEMES)
+  .filter((name) => name.endsWith('.css'))
+  .map((name) => readFileSync(new URL(name, THEMES), 'utf8'))
+  .join('\n');
 const SCRIPT = /<script>([\s\S]*?)<\/script>/u.exec(HTML)?.[1] ?? '';
 
 type FakeStorage = { readonly getItem: (key: string) => string | null };
@@ -64,7 +68,7 @@ describe('the theme script in app.html', () => {
   });
 
   it('falls back to the defaults for values it does not know', () => {
-    const attributes = run(holding({ 'reader.theme': 'mono', 'reader.color-scheme': 'auto' }));
+    const attributes = run(holding({ 'reader.theme': 'neon', 'reader.color-scheme': 'auto' }));
 
     expect(attributes.get('data-theme')).toBe('base');
     expect(attributes.has('data-color-scheme')).toBe(false);

@@ -12,7 +12,9 @@
 
 @import 'base/fonts.css' layer(base);
 @import 'base/primitives.css' layer(base);
-@import 'base/theme.css' layer(base);
+@import 'base/scheme.css' layer(base);
+@import 'base/themes/base.css' layer(base);
+@import 'base/themes/ember.css' layer(base);
 @import 'base/elements.css' layer(base);
 
 @import 'tokens/colors.css' layer(tokens);

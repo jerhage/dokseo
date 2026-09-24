@@ -1,0 +1,110 @@
+:root {
+  --ds-sand-0: light-dark(oklch(0.995 0.004 80), oklch(0.15 0.01 50));
+  --ds-sand-50: light-dark(oklch(0.955 0.013 75), oklch(0.2 0.012 50));
+  --ds-sand-100: light-dark(oklch(0.925 0.016 72), oklch(0.24 0.014 50));
+  --ds-sand-200: light-dark(oklch(0.885 0.02 70), oklch(0.3 0.016 50));
+  --ds-sand-300: light-dark(oklch(0.82 0.024 68), oklch(0.37 0.018 52));
+  --ds-sand-400: light-dark(oklch(0.7 0.025 64), oklch(0.48 0.02 55));
+  --ds-sand-500: light-dark(oklch(0.58 0.025 60), oklch(0.62 0.022 60));
+  --ds-sand-600: light-dark(oklch(0.48 0.025 55), oklch(0.73 0.02 65));
+  --ds-sand-800: light-dark(oklch(0.32 0.02 50), oklch(0.88 0.014 72));
+  --ds-sand-900: light-dark(oklch(0.24 0.018 50), oklch(0.95 0.01 78));
+  --ds-sand-tint-3: light-dark(oklch(0.3 0.03 50 / 0.035), oklch(0.98 0.01 70 / 0.03));
+  --ds-sand-tint-5: light-dark(oklch(0.3 0.03 50 / 0.055), oklch(0.98 0.01 70 / 0.06));
+  --ds-sand-tint-9: light-dark(oklch(0.3 0.03 50 / 0.1), oklch(0.98 0.01 70 / 0.1));
+
+  --ds-ember-50: light-dark(oklch(0.97 0.02 50), oklch(0.26 0.04 40));
+  --ds-ember-100: light-dark(oklch(0.94 0.04 50), oklch(0.3 0.05 40));
+  --ds-ember-200: light-dark(oklch(0.88 0.07 48), oklch(0.37 0.07 40));
+  --ds-ember-300: light-dark(oklch(0.8 0.1 45), oklch(0.46 0.1 42));
+  --ds-ember-500: light-dark(oklch(0.6 0.16 40), oklch(0.72 0.15 45));
+  --ds-ember-600: light-dark(oklch(0.53 0.15 38), oklch(0.78 0.13 48));
+  --ds-ember-700: light-dark(oklch(0.46 0.13 36), oklch(0.85 0.1 50));
+  --ds-ember-800: light-dark(oklch(0.38 0.1 35), oklch(0.9 0.06 50));
+  --ds-ember-a12: light-dark(oklch(0.6 0.16 40 / 0.12), oklch(0.72 0.15 45 / 0.16));
+  --ds-ember-glow: light-dark(oklch(0.6 0.16 40 / 0.3), oklch(0.72 0.15 45 / 0.28));
+
+  --ds-moss-50: light-dark(oklch(0.97 0.025 130), oklch(0.26 0.04 130));
+  --ds-moss-200: light-dark(oklch(0.88 0.06 130), oklch(0.38 0.06 130));
+  --ds-moss-400: light-dark(oklch(0.68 0.1 130), oklch(0.6 0.09 130));
+  --ds-moss-500: light-dark(oklch(0.55 0.1 135), oklch(0.74 0.11 130));
+  --ds-moss-600: light-dark(oklch(0.48 0.09 135), oklch(0.8 0.1 130));
+  --ds-moss-700: light-dark(oklch(0.4 0.08 135), oklch(0.86 0.08 130));
+  --ds-moss-glow: light-dark(oklch(0.55 0.1 135 / 0.3), oklch(0.74 0.11 130 / 0.28));
+}
+
+:root[data-theme='ember'] {
+  --ds-bg: light-dark(oklch(0.975 0.01 78), oklch(0.17 0.011 50));
+  --ds-bg-raised: var(--ds-sand-50);
+  --ds-surface: light-dark(oklch(0.995 0.004 80), oklch(0.2 0.013 50));
+  --ds-surface-raised: light-dark(oklch(0.995 0.004 80), oklch(0.24 0.015 50));
+  --ds-surface-bright: light-dark(oklch(0.995 0.004 80), oklch(0.24 0.015 50));
+  --ds-surface-sunken: light-dark(oklch(0.955 0.013 75), oklch(0.15 0.01 50));
+
+  --ds-primary: var(--ds-ember-500);
+  --ds-primary-hover: var(--ds-ember-600);
+  --ds-primary-subtle: var(--ds-ember-50);
+  --ds-primary-soft: var(--ds-ember-100);
+  --ds-primary-muted: var(--ds-ember-300);
+  --ds-primary-glow: var(--ds-ember-glow);
+  --ds-brand-tint: var(--ds-ember-50);
+  --ds-brand-border: var(--ds-ember-200);
+  --ds-brand-border-mid: var(--ds-ember-300);
+  --ds-brand-text: var(--ds-ember-700);
+
+  --ds-accent: var(--ds-moss-500);
+  --ds-accent-hover: var(--ds-moss-600);
+  --ds-accent-surface: var(--ds-moss-50);
+  --ds-accent-border: var(--ds-moss-200);
+  --ds-accent-mid: var(--ds-moss-400);
+  --ds-accent-text: var(--ds-moss-700);
+  --ds-accent-glow: var(--ds-moss-glow);
+
+  --ds-text: var(--ds-sand-900);
+  --ds-text-muted: var(--ds-sand-600);
+  --ds-text-faint: var(--ds-sand-500);
+  --ds-text-inverse: var(--ds-sand-0);
+  --ds-text-on-primary: var(--ds-sand-0);
+  --ds-text-on-accent: var(--ds-sand-0);
+  --ds-text-link: var(--ds-ember-600);
+  --ds-text-link-hover: var(--ds-ember-800);
+
+  --ds-hover: var(--ds-sand-tint-5);
+  --ds-active: var(--ds-sand-tint-9);
+  --ds-selected: var(--ds-ember-a12);
+  --ds-disabled: var(--ds-sand-400);
+  --ds-disabled-bg: var(--ds-sand-100);
+
+  --ds-table-stripe: var(--ds-sand-tint-3);
+  --ds-table-row-hover: var(--ds-sand-tint-5);
+  --ds-skeleton-base: var(--ds-sand-100);
+  --ds-skeleton-shine: var(--ds-sand-0);
+  --ds-code-bg: var(--ds-sand-100);
+  --ds-code-text: var(--ds-sand-800);
+
+  --ds-border: var(--ds-sand-200);
+  --ds-border-strong: var(--ds-sand-300);
+  --ds-border-focus: var(--ds-ember-500);
+
+  --ds-font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --ds-font-body: 'Figtree', system-ui, sans-serif;
+  --ds-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-8);
+
+  --ds-radius-control: 10px;
+  --ds-radius-container: 16px;
+  --ds-radius-overlay: 22px;
+
+  --ds-shadow-1: 0 1px 2px light-dark(oklch(0.35 0.05 45 / 0.08), oklch(0 0 0 / 0.3));
+  --ds-shadow-2:
+    0 2px 6px light-dark(oklch(0.35 0.05 45 / 0.06), oklch(0 0 0 / 0.25)),
+    0 8px 24px light-dark(oklch(0.35 0.05 45 / 0.08), oklch(0 0 0 / 0.3));
+  --ds-shadow-3:
+    0 12px 24px light-dark(oklch(0.35 0.05 45 / 0.1), oklch(0 0 0 / 0.35)),
+    0 24px 56px light-dark(oklch(0.35 0.05 45 / 0.14), oklch(0 0 0 / 0.4));
+  --ds-shadow-4:
+    0 24px 48px light-dark(oklch(0.35 0.05 45 / 0.14), oklch(0 0 0 / 0.45)),
+    0 48px 112px light-dark(oklch(0.35 0.05 45 / 0.2), oklch(0 0 0 / 0.5));
+
+  --ds-dur-spring: var(--ds-dur-moderate);
+}
