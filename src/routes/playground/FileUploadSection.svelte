@@ -7,6 +7,7 @@
   import { describeRejection } from '$lib/components/file-selection';
   import type { FileSelection } from '$lib/components/file-selection';
   import DemoSection from './DemoSection.svelte';
+  import { SimulatedUploads, browserClock, withUploadState } from './simulated-upload';
 
   const MEGABYTE = 1024 * 1024;
 
@@ -40,6 +41,23 @@
     return [...accepted, ...rejected];
   }
 
+  const uploads = new SimulatedUploads(browserClock, Math.random, (id, state) => {
+    attachments = withUploadState(attachments, id, state);
+  });
+
+  $effect(() => () => uploads.cancelAll());
+
+  function addAttachments(selection: FileSelection<File>): void {
+    const added = itemsFrom(selection);
+    attachments = [...attachments, ...added];
+    for (const item of added) if (item.state === 'pending') uploads.start(item.id);
+  }
+
+  function removeAttachment(id: string): void {
+    uploads.cancel(id);
+    attachments = without(attachments, id);
+  }
+
   function without(items: readonly FileItemData[], id: string): readonly FileItemData[] {
     return items.filter((item) => item.id !== id);
   }
@@ -64,12 +82,9 @@
               accept="image/*,.pdf"
               maxSize={5 * MEGABYTE}
               hint="PNG, JPG or PDF · up to 5 MB each"
-              onfiles={(selection) => (attachments = [...attachments, ...itemsFrom(selection)])}
+              onfiles={addAttachments}
             />
-            <FileList
-              items={attachments}
-              onremove={(id) => (attachments = without(attachments, id))}
-            />
+            <FileList items={attachments} onremove={removeAttachment} />
           </div>
         {/snippet}
       </Field>
