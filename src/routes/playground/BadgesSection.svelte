@@ -4,7 +4,8 @@
   import Card from '$lib/components/Card.svelte';
   import Tag from '$lib/components/Tag.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
-  import type { BadgeVariant } from '$lib/components/classes';
+  import { TAG_COLOURS } from '$lib/components/classes';
+  import type { BadgeVariant, TagColour } from '$lib/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly BadgeVariant[] = [
@@ -23,9 +24,16 @@
 
   let chosen = $state<readonly string[]>(['Design']);
   let tags = $state<readonly string[]>(INITIAL_TAGS);
+  let pressedColours = $state<readonly TagColour[]>(['ruby', 'sky']);
 
   function choose(topic: string, pressed: boolean): void {
     chosen = pressed ? [...chosen, topic] : chosen.filter((name) => name !== topic);
+  }
+
+  function press(colour: TagColour, pressed: boolean): void {
+    pressedColours = pressed
+      ? [...pressedColours, colour]
+      : pressedColours.filter((name) => name !== colour);
   }
 
   function remove(tag: string): void {
@@ -33,7 +41,11 @@
   }
 </script>
 
-<DemoSection id="badge" title="Badge and tag" classes={['badge', 'badge-dot', 'tag', 'tag-remove']}>
+<DemoSection
+  id="badge"
+  title="Badge and tag"
+  classes={['badge', 'badge-dot', 'badge-solid', 'tag', 'tag-remove']}
+>
   <Card>
     <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Badges</span>
     <div class="row wrap items-center gap-2">
@@ -44,6 +56,33 @@
     <div class="row wrap items-center gap-2">
       {#each VARIANTS as variant (variant)}
         <Badge {variant} dot>{variant}</Badge>
+      {/each}
+    </div>
+  </Card>
+  <Card>
+    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Tag colours</span>
+    <div class="row wrap items-center gap-2">
+      {#each TAG_COLOURS as colour (colour)}
+        <Badge {colour}>{colour}</Badge>
+      {/each}
+    </div>
+    <div class="row wrap items-center gap-2">
+      {#each TAG_COLOURS as colour (colour)}
+        <Badge {colour} solid>{colour}</Badge>
+      {/each}
+    </div>
+    <div class="row wrap items-center gap-2">
+      {#each TAG_COLOURS as colour (colour)}
+        <Tag {colour}>{colour}</Tag>
+      {/each}
+    </div>
+    <div class="row wrap items-center gap-2">
+      {#each TAG_COLOURS as colour (colour)}
+        <TagToggle
+          {colour}
+          pressed={pressedColours.includes(colour)}
+          onpressedchange={(pressed) => press(colour, pressed)}>{colour}</TagToggle
+        >
       {/each}
     </div>
   </Card>

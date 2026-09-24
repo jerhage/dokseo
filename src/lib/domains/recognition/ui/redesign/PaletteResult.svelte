@@ -49,7 +49,7 @@
       {#if row.chips.length > 0}
         <span class="row wrap gap-1">
           {#each row.chips as chip (chip.id)}
-            <Badge variant={chip.matched ? 'brand' : 'neutral'}>{chip.name}</Badge>
+            <Badge colour={chip.colour} solid={chip.matched}>{chip.name}</Badge>
           {/each}
         </span>
       {/if}
