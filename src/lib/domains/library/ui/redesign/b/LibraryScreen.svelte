@@ -72,7 +72,7 @@
       <Avatar shape="square" size="sm" lang="ja" aria-hidden="true">読</Avatar>
       <span class="display weight-semibold">Library</span>
     </div>
-    <div class="row wrap items-center gap-3 flex-1 justify-end">
+    <div class="row wrap items-center gap-3 flex-fill justify-end">
       <LibrarySearch bind:query {matched} />
       <span class="text-xs text-faint"><kbd>⌘K</kbd> to search everything</span>
       <Button

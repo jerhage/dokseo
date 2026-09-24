@@ -30,7 +30,7 @@
   }
 </script>
 
-<div class="row items-center gap-2 flex-1" role="search">
+<div class="row items-center gap-2 flex-fill" role="search">
   <label class="visually-hidden" for={fieldId}>{LABEL}</label>
   <Input
     bind:ref={field}

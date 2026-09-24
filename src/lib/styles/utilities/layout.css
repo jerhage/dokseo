@@ -93,6 +93,7 @@
 .layout-main-area {
   container: main-area / inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: var(--sp-6);
   min-inline-size: 0;

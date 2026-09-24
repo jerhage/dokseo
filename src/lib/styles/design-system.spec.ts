@@ -760,6 +760,25 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('gives the main area one track that shrinks below the min-content of its children', () => {
+    expect(declarations(ruleBody(style('utilities/layout.css'), '.layout-main-area'))).toContain(
+      'grid-template-columns: minmax(0, 1fr)',
+    );
+  });
+
+  it('keeps the width of the scroll strip content out of the width of its container', () => {
+    expect(
+      declarations(ruleBody(style('utilities/layout-patterns.css'), '.scroll-strip')),
+    ).toContain('contain: inline-size');
+  });
+
+  it('wraps a fill item onto its own line before it shrinks below a grid column', () => {
+    expect(declarations(ruleBody(style('utilities/flex.css'), '.flex-fill'))).toEqual([
+      'flex: 1 1 var(--grid-min-col)',
+      'min-inline-size: 0',
+    ]);
+  });
+
   it('hides a hover reveal only on a device that can hover', () => {
     const patterns = style('utilities/layout-patterns.css');
     const hover = mediaBlock(patterns, '(hover: hover)');
