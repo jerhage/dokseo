@@ -135,7 +135,24 @@ describe('selectFiles', () => {
     const selection = selectFiles([archive, photo, scan], policy({ rules, multiple: false }));
 
     expect(selection.accepted).toEqual([photo]);
-    expect(selection.rejected).toEqual([{ file: archive, reason: { kind: 'wrong-type' } }]);
+  });
+
+  it('reports every accepted file after the first as too many when a single file is allowed', () => {
+    const selfie = file('selfie.jpg', 'image/jpeg');
+    const selection = selectFiles(
+      [archive, photo, scan, poster, selfie],
+      policy({ rules, maxSize: MB, multiple: false }),
+    );
+
+    expect(selection).toEqual({
+      accepted: [photo],
+      rejected: [
+        { file: archive, reason: { kind: 'wrong-type' } },
+        { file: scan, reason: { kind: 'too-many' } },
+        { file: poster, reason: { kind: 'too-large', limit: MB } },
+        { file: selfie, reason: { kind: 'too-many' } },
+      ],
+    });
   });
 
   it('returns the same file objects it was given', () => {
@@ -178,5 +195,9 @@ describe('describeRejection', () => {
 
   it('names a disallowed type', () => {
     expect(describeRejection({ kind: 'wrong-type' })).toBe('File type not allowed');
+  });
+
+  it('names a file beyond the one allowed', () => {
+    expect(describeRejection({ kind: 'too-many' })).toBe('Only one file at a time');
   });
 });

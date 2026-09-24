@@ -9,9 +9,12 @@ type AcceptRule =
 
 type Rejection =
   | { readonly kind: 'too-large'; readonly limit: number }
-  | { readonly kind: 'wrong-type' };
+  | { readonly kind: 'wrong-type' }
+  | { readonly kind: 'too-many' };
 
-type FileVerdict = { readonly kind: 'accepted' } | Rejection;
+type FileVerdict =
+  | { readonly kind: 'accepted' }
+  | Exclude<Rejection, { readonly kind: 'too-many' }>;
 
 type SelectionPolicy = {
   readonly rules: readonly AcceptRule[];
@@ -71,10 +74,12 @@ function selectFiles<F extends FileLike>(
   const rejected: RejectedFile<F>[] = [];
   for (const file of files) {
     const verdict = fileVerdict(file, policy);
-    if (verdict.kind === 'accepted') accepted.push(file);
-    else rejected.push({ file, reason: verdict });
+    if (verdict.kind !== 'accepted') rejected.push({ file, reason: verdict });
+    else if (!policy.multiple && accepted.length > 0) {
+      rejected.push({ file, reason: { kind: 'too-many' } });
+    } else accepted.push(file);
   }
-  return { accepted: policy.multiple ? accepted : accepted.slice(0, 1), rejected };
+  return { accepted, rejected };
 }
 
 function formatFileSize(bytes: number): string {
@@ -85,8 +90,11 @@ function formatFileSize(bytes: number): string {
 }
 
 function describeRejection(reason: Rejection): string {
-  if (reason.kind === 'too-large') return `Larger than ${formatFileSize(reason.limit)}`;
-  return 'File type not allowed';
+  return match(reason)
+    .with({ kind: 'too-large' }, ({ limit }) => `Larger than ${formatFileSize(limit)}`)
+    .with({ kind: 'wrong-type' }, () => 'File type not allowed')
+    .with({ kind: 'too-many' }, () => 'Only one file at a time')
+    .exhaustive();
 }
 
 export { acceptRules, describeRejection, fileVerdict, formatFileSize, selectFiles };
