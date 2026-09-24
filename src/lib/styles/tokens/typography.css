@@ -1,0 +1,41 @@
+:root {
+  --font-display: var(--ds-font-display);
+  --font-body: var(--ds-font-body);
+  --font-mono: var(--ds-font-mono);
+  --font-ja: var(--ds-font-ja);
+  --font-ko: var(--ds-font-ko);
+
+  --text-xxs: var(--ds-fz-xxs);
+  --text-2xs: var(--ds-fz-2xs);
+  --text-xs: var(--ds-fz-xs);
+  --text-sm: var(--ds-fz-sm);
+  --text-base: var(--ds-fz-base);
+  --text-md: var(--ds-fz-md);
+  --text-lg: var(--ds-fz-lg);
+  --text-xl: var(--ds-fz-xl);
+  --text-2xl: var(--ds-fz-2xl);
+  --text-3xl: var(--ds-fz-3xl);
+  --text-4xl: var(--ds-fz-4xl);
+  --text-5xl: var(--ds-fz-5xl);
+
+  --weight-light: var(--ds-fw-light);
+  --weight-normal: var(--ds-fw-normal);
+  --weight-medium: var(--ds-fw-5);
+  --weight-semibold: var(--ds-fw-semibold);
+  --weight-bold: var(--ds-weight-strong);
+  --weight-extrabold: var(--ds-fw-extrabold);
+  --weight-black: var(--ds-fw-black);
+
+  --ls-tight: var(--ds-ls-tight);
+  --ls-normal: var(--ds-ls-normal);
+  --ls-wide: var(--ds-ls-wide);
+  --ls-wider: var(--ds-ls-wider);
+  --ls-widest: var(--ds-ls-widest);
+
+  --lh-none: var(--ds-lh-none);
+  --lh-tight: var(--ds-lh-tight);
+  --lh-snug: var(--ds-lh-snug);
+  --lh-normal: var(--ds-lh-normal);
+  --lh-relaxed: var(--ds-lh-relaxed);
+  --lh-loose: var(--ds-lh-loose);
+}

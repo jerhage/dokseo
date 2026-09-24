@@ -1,0 +1,23 @@
+/*
+  The same statement is inlined in src/app.html ahead of %sveltekit.head%.
+  Layer order is fixed by the first time the browser sees each name, and a
+  component's own stylesheet (a domain file in the features layer) can load
+  before this file. Declaring the order in app.html first means no import
+  order can move a layer. Repeating it here changes nothing and keeps this
+  file readable on its own.
+*/
+@layer open-props, reset, base, tokens, components, features, utilities, overrides;
+
+@import 'reset.css' layer(reset);
+
+@import 'base/fonts.css' layer(base);
+@import 'base/primitives.css' layer(base);
+@import 'base/theme.css' layer(base);
+@import 'base/elements.css' layer(base);
+
+@import 'tokens/colors.css' layer(tokens);
+@import 'tokens/typography.css' layer(tokens);
+@import 'tokens/spacing.css' layer(tokens);
+@import 'tokens/motion.css' layer(tokens);
+@import 'tokens/elevation.css' layer(tokens);
+@import 'tokens/icons.css' layer(tokens);

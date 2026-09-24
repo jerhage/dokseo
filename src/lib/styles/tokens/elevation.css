@@ -1,0 +1,16 @@
+:root {
+  --shadow-sm: var(--ds-shadow-1);
+  --shadow-md: var(--ds-shadow-2);
+  --shadow-lg: var(--ds-shadow-3);
+  --shadow-xl: var(--ds-shadow-4);
+  --shadow-inset: var(--ds-shadow-inset);
+
+  --z-base: var(--ds-z-base);
+  --z-raised: var(--ds-z-raised);
+  --z-dropdown: var(--ds-z-dropdown);
+  --z-sticky: var(--ds-z-sticky);
+  --z-overlay: var(--ds-z-overlay);
+  --z-modal: var(--ds-z-modal);
+  --z-toast: var(--ds-z-toast);
+  --z-tooltip: var(--ds-z-tooltip);
+}

@@ -1,0 +1,47 @@
+:root {
+  --sp-1: var(--ds-space-1);
+  --sp-2: var(--ds-space-2);
+  --sp-3: var(--ds-space-3);
+  --sp-4: var(--ds-space-4);
+  --sp-5: var(--ds-space-5);
+  --sp-6: var(--ds-space-6);
+  --sp-7: var(--ds-space-7);
+  --sp-8: var(--ds-space-8);
+  --sp-9: var(--ds-space-9);
+  --sp-10: var(--ds-space-10);
+
+  --radius-none: var(--ds-radius-none);
+  --radius-xs: var(--ds-radius-xs);
+  --radius-sm: var(--ds-radius-sm);
+  --radius-md: var(--ds-radius-md);
+  --radius-lg: var(--ds-radius-lg);
+  --radius-xl: var(--ds-radius-xl);
+  --radius-2xl: var(--ds-radius-2xl);
+  --radius-full: var(--ds-radius-full);
+  --radius-control: var(--ds-radius-control);
+  --radius-container: var(--ds-radius-container);
+  --radius-overlay: var(--ds-radius-overlay);
+
+  --border-width: var(--ds-border-1);
+  --border-width-strong: var(--ds-border-2);
+
+  --container-prose: var(--ds-container-prose);
+  --container-wide: var(--ds-container-wide);
+  --layout-hero-height: var(--ds-layout-hero-height);
+  --layout-row-height: var(--ds-layout-row-height);
+  --layout-sidebar-width: var(--ds-size-sidebar);
+  --layout-list-width: var(--ds-size-list);
+
+  --control-h-sm: var(--ds-space-7);
+  --control-h-md: var(--ds-space-8);
+  --control-h-lg: var(--ds-space-9);
+
+  --page-gutter: var(--ds-space-5);
+  --grid-min-col: var(--ds-size-grid-min);
+  --modal-width-sm: var(--ds-size-dialog-sm);
+  --modal-width-md: var(--ds-size-dialog-md);
+  --modal-width-lg: var(--ds-size-dialog-lg);
+  --toast-width: var(--ds-size-toast);
+  --menu-min-width: var(--ds-size-menu);
+  --stat-min-width: var(--ds-size-stat);
+}

@@ -1,0 +1,28 @@
+:root {
+  --dur-instant: var(--ds-dur-instant);
+  --dur-flash: var(--ds-dur-flash);
+  --dur-quick: var(--ds-dur-quick);
+  --dur-moderate: var(--ds-dur-moderate);
+  --dur-slow: var(--ds-dur-slow);
+  --dur-crawl: var(--ds-dur-crawl);
+  --dur-long: var(--ds-dur-long);
+  --toast-duration: var(--ds-dur-toast);
+
+  --ease-smooth: var(--ds-ease-smooth);
+  --ease-in: var(--ds-ease-in);
+  --ease-out: var(--ds-ease-out);
+  --ease-crisp: var(--ds-ease-crisp);
+  --ease-in-out: var(--ds-ease-in-out);
+  --ease-in-out-sharp: var(--ds-ease-in-out-sharp);
+  --ease-spring: var(--ds-ease-spring);
+  --ease-spring-gentle: var(--ds-ease-spring-gentle);
+  --ease-bounce: var(--ds-ease-bounce);
+  --ease-elastic: var(--ds-ease-elastic);
+
+  --transition-ui: var(--ds-dur-flash) var(--ds-ease-smooth);
+  --transition-spring: var(--ds-dur-spring) var(--ds-ease-spring);
+  --transition-enter: var(--ds-dur-quick) var(--ds-ease-out);
+  --transition-exit: var(--ds-dur-flash) var(--ds-ease-in);
+  --transition-bounce: var(--ds-dur-moderate) var(--ds-ease-bounce);
+  --transition-elastic: var(--ds-dur-slow) var(--ds-ease-elastic);
+}
