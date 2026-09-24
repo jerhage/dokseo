@@ -13,6 +13,7 @@
 .layout-z-pattern {
   container: z-pattern / inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-10);
 }
 .layout-z-pattern > * {
@@ -36,6 +37,7 @@
 .layout-overlay,
 .overlay-host {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   isolation: isolate;
 }
 .layout-overlay {
@@ -94,10 +96,12 @@
 .layout-overlay-content {
   z-index: var(--z-raised);
   align-self: end;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-2);
   padding: var(--sp-6);
   color: var(--color-text-on-scrim);
+  min-inline-size: 0;
 }
 .layout-overlay-content :is(h1, h2, h3, h4, h5, h6, p) {
   color: inherit;

@@ -1,6 +1,7 @@
 .dropzone {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   align-content: center;
   gap: var(--sp-2);

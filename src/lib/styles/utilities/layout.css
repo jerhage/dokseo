@@ -112,11 +112,14 @@
 .layout-sidebar-aside {
   position: sticky;
   inset-block-start: var(--sp-5);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-1);
+  min-inline-size: 0;
 }
 .layout-sidebar-content {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-5);
   min-inline-size: 0;
 }
@@ -131,6 +134,7 @@
 .layout-hero {
   container: hero / inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: var(--sp-8);
   min-block-size: var(--layout-hero-height);
@@ -144,13 +148,15 @@
   text-align: center;
 }
 .layout-hero-content {
-  display: grid;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: var(--sp-5);
   max-inline-size: var(--container-prose);
+  min-inline-size: 0;
 }
 .layout-hero-center .layout-hero-content {
-  justify-items: center;
+  align-items: center;
 }
 .layout-hero-title {
   font-family: var(--font-display);
@@ -204,6 +210,7 @@
 }
 .split-pane {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: center;
   gap: var(--sp-4);
   min-inline-size: 0;

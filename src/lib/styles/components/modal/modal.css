@@ -58,6 +58,7 @@
 }
 .modal-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-3);
   padding: var(--sp-2) var(--sp-5) var(--sp-5);
   overflow-y: auto;

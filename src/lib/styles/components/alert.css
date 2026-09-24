@@ -44,10 +44,12 @@
   mask: var(--_alert-icon) center / contain no-repeat;
 }
 .alert-content {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-1);
   font-size: var(--text-sm);
   line-height: var(--lh-normal);
+  min-inline-size: 0;
 }
 .alert-title {
   font-weight: var(--weight-semibold);

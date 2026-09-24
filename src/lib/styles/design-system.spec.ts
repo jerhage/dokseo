@@ -251,6 +251,15 @@ const LANGUAGE_FACES = ['ja', 'ko'];
 
 const GRID_MIN_COLUMNS = ['sm', 'lg'];
 
+const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
+  '.file-item-icon': 'a fixed-size box that centres one pseudo-element glyph',
+  '.dropzone-icon': 'a fixed-size box that centres one pseudo-element glyph',
+  '.checkbox-input': 'a fixed-size input that centres its pseudo-element check mark',
+  '.radio-input': 'a fixed-size input that centres its pseudo-element dot',
+  '.modal-backdrop[open]': 'centres one dialog whose inline size is contained',
+  '.modal-backdrop.is-open': 'centres one dialog whose inline size is contained',
+};
+
 const RUNTIME_INPUTS = [
   '--menu-anchor-width',
   '--menu-bottom',
@@ -764,6 +773,25 @@ describe('the design system stylesheets', () => {
     expect(declarations(ruleBody(style('utilities/layout.css'), '.layout-main-area'))).toContain(
       'grid-template-columns: minmax(0, 1fr)',
     );
+  });
+
+  it('declares the columns of every component and utility grid, so no content-sized track can widen it', () => {
+    const untracked = styled(['components', 'utilities']).flatMap((path) => {
+      const all = rules(style(path));
+      const tracked = (selector: string): boolean =>
+        all.some(
+          (rule) =>
+            rule.selectors.includes(selector) &&
+            declarations(rule.body).some((declaration) =>
+              /^grid-(?:template(?:-columns)?|auto-columns):/u.test(declaration),
+            ),
+        );
+      return all
+        .filter((rule) => declarations(rule.body).includes('display: grid'))
+        .flatMap((rule) => rule.selectors)
+        .filter((selector) => !tracked(selector));
+    });
+    expect(untracked.toSorted()).toEqual(Object.keys(GRIDS_WITHOUT_COLUMNS).toSorted());
   });
 
   it('keeps the width of the scroll strip content out of the width of its container', () => {

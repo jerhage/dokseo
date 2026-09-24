@@ -44,7 +44,8 @@
   left: var(--menu-left, auto);
 }
 .dropdown-menu:popover-open {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   animation: kDropIn var(--transition-enter) both;
 }
 .dropdown-item {

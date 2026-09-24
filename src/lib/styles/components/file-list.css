@@ -1,5 +1,6 @@
 .file-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-2);
   padding: 0;
   list-style: none;
@@ -33,7 +34,8 @@
   mask: var(--icon-file) center / contain no-repeat;
 }
 .file-item-meta {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-1);
   min-inline-size: 0;
 }
