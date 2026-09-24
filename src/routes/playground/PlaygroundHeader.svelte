@@ -11,6 +11,7 @@
     mono: 'Mono',
     forge: 'Forge',
     crayon: 'Crayon',
+    moss: 'Moss',
   };
 
   const SCHEME_LABELS: Readonly<Record<ColorScheme, string>> = {

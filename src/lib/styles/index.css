@@ -18,6 +18,7 @@
 @import 'base/themes/mono.css' layer(base);
 @import 'base/themes/forge.css' layer(base);
 @import 'base/themes/crayon.css' layer(base);
+@import 'base/themes/moss.css' layer(base);
 @import 'base/elements.css' layer(base);
 
 @import 'tokens/colors.css' layer(tokens);

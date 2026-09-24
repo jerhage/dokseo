@@ -1,0 +1,129 @@
+:root {
+  --ds-parchment-canvas: light-dark(oklch(0.945 0.03 85), oklch(0.17 0.02 140));
+  --ds-parchment-paper: light-dark(oklch(0.97 0.022 88), oklch(0.205 0.022 138));
+  --ds-parchment-raised: light-dark(oklch(0.985 0.015 90), oklch(0.24 0.024 136));
+  --ds-parchment-sunken: light-dark(oklch(0.915 0.035 82), oklch(0.145 0.018 140));
+  --ds-parchment-well: light-dark(oklch(0.9 0.035 80), oklch(0.26 0.022 136));
+  --ds-parchment-on-fern: light-dark(oklch(0.97 0.022 88), oklch(0.17 0.02 140));
+
+  --ds-sepia-900: light-dark(oklch(0.26 0.035 60), oklch(0.92 0.03 85));
+  --ds-sepia-800: light-dark(oklch(0.34 0.035 60), oklch(0.85 0.03 85));
+  --ds-sepia-600: light-dark(oklch(0.46 0.035 62), oklch(0.74 0.03 85));
+  --ds-sepia-500: light-dark(oklch(0.58 0.035 65), oklch(0.6 0.03 90));
+  --ds-sepia-line: light-dark(oklch(0.83 0.035 75), oklch(0.3 0.025 135));
+  --ds-sepia-line-strong: light-dark(oklch(0.72 0.04 70), oklch(0.38 0.03 130));
+  --ds-sepia-tint-3: light-dark(oklch(0.35 0.04 60 / 0.035), oklch(0.95 0.03 85 / 0.03));
+  --ds-sepia-tint-5: light-dark(oklch(0.35 0.04 60 / 0.06), oklch(0.95 0.03 85 / 0.06));
+  --ds-sepia-tint-9: light-dark(oklch(0.35 0.04 60 / 0.11), oklch(0.95 0.03 85 / 0.1));
+  --ds-sepia-tint-15: light-dark(oklch(0.35 0.04 60 / 0.16), oklch(0.95 0.03 85 / 0.16));
+
+  --ds-fern-50: light-dark(oklch(0.94 0.03 125), oklch(0.25 0.035 138));
+  --ds-fern-100: light-dark(oklch(0.9 0.045 128), oklch(0.3 0.045 136));
+  --ds-fern-200: light-dark(oklch(0.83 0.06 130), oklch(0.37 0.055 134));
+  --ds-fern-300: light-dark(oklch(0.72 0.075 132), oklch(0.46 0.07 132));
+  --ds-fern-500: light-dark(oklch(0.47 0.08 138), oklch(0.74 0.1 130));
+  --ds-fern-600: light-dark(oklch(0.41 0.075 140), oklch(0.8 0.09 128));
+  --ds-fern-700: light-dark(oklch(0.36 0.065 140), oklch(0.86 0.07 125));
+  --ds-fern-a12: light-dark(oklch(0.47 0.08 138 / 0.13), oklch(0.74 0.1 130 / 0.15));
+  --ds-fern-glow: light-dark(oklch(0.47 0.08 138 / 0.25), oklch(0.74 0.1 130 / 0.25));
+
+  --ds-lichen-50: light-dark(oklch(0.95 0.045 95), oklch(0.26 0.04 90));
+  --ds-lichen-200: light-dark(oklch(0.86 0.08 95), oklch(0.4 0.07 90));
+  --ds-lichen-400: light-dark(oklch(0.76 0.11 92), oklch(0.66 0.1 90));
+  --ds-lichen-500: light-dark(oklch(0.72 0.12 90), oklch(0.8 0.12 92));
+  --ds-lichen-600: light-dark(oklch(0.66 0.12 85), oklch(0.85 0.1 95));
+  --ds-lichen-700: light-dark(oklch(0.45 0.08 80), oklch(0.86 0.09 95));
+  --ds-lichen-ink: oklch(0.26 0.035 60);
+  --ds-lichen-glow: light-dark(oklch(0.72 0.12 90 / 0.3), oklch(0.8 0.12 92 / 0.3));
+}
+
+:root[data-theme='moss'] {
+  --ds-bg: var(--ds-parchment-canvas);
+  --ds-bg-raised: var(--ds-parchment-paper);
+  --ds-surface: var(--ds-parchment-paper);
+  --ds-surface-raised: var(--ds-parchment-raised);
+  --ds-surface-bright: var(--ds-parchment-raised);
+  --ds-surface-sunken: var(--ds-parchment-sunken);
+
+  --ds-primary: var(--ds-fern-500);
+  --ds-primary-hover: var(--ds-fern-600);
+  --ds-primary-subtle: var(--ds-fern-50);
+  --ds-primary-soft: var(--ds-fern-100);
+  --ds-primary-muted: var(--ds-fern-300);
+  --ds-primary-glow: var(--ds-fern-glow);
+  --ds-brand-tint: var(--ds-fern-50);
+  --ds-brand-border: var(--ds-fern-200);
+  --ds-brand-border-mid: var(--ds-fern-300);
+  --ds-brand-text: var(--ds-fern-700);
+
+  --ds-accent: var(--ds-lichen-500);
+  --ds-accent-hover: var(--ds-lichen-600);
+  --ds-accent-surface: var(--ds-lichen-50);
+  --ds-accent-border: var(--ds-lichen-200);
+  --ds-accent-mid: var(--ds-lichen-400);
+  --ds-accent-text: var(--ds-lichen-700);
+  --ds-accent-glow: var(--ds-lichen-glow);
+
+  --ds-text: var(--ds-sepia-900);
+  --ds-text-muted: var(--ds-sepia-600);
+  --ds-text-faint: var(--ds-sepia-500);
+  --ds-text-inverse: var(--ds-parchment-on-fern);
+  --ds-text-on-primary: var(--ds-parchment-on-fern);
+  --ds-text-on-accent: var(--ds-lichen-ink);
+  --ds-text-link: var(--ds-fern-600);
+  --ds-text-link-hover: var(--ds-fern-700);
+
+  --ds-hover: var(--ds-sepia-tint-5);
+  --ds-active: var(--ds-sepia-tint-9);
+  --ds-selected: var(--ds-fern-a12);
+  --ds-disabled: var(--ds-sepia-500);
+  --ds-disabled-bg: var(--ds-parchment-well);
+
+  --ds-spinner-track: var(--ds-sepia-tint-15);
+  --ds-table-stripe: var(--ds-sepia-tint-3);
+  --ds-table-row-hover: var(--ds-sepia-tint-5);
+  --ds-skeleton-base: var(--ds-parchment-well);
+  --ds-skeleton-shine: var(--ds-parchment-raised);
+  --ds-code-bg: var(--ds-parchment-sunken);
+  --ds-code-text: var(--ds-sepia-800);
+
+  --ds-border: var(--ds-sepia-line);
+  --ds-border-strong: var(--ds-sepia-line-strong);
+  --ds-border-focus: var(--ds-fern-500);
+  --ds-border-width: var(--ds-border-1);
+  --ds-border-width-strong: var(--ds-border-2);
+
+  --ds-font-display: 'Newsreader', Georgia, serif;
+  --ds-font-body: 'Literata', Georgia, serif;
+  --ds-font-mono: 'Courier Prime', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-6);
+  --ds-weight-semibold: var(--ds-fw-semibold);
+  --ds-tracking-tight: -0.01em;
+  --ds-tracking-wider: var(--ds-ls-wider);
+  --ds-tracking-widest: var(--ds-ls-widest);
+
+  --ds-corner-xs: 4px;
+  --ds-corner-sm: 4px;
+  --ds-corner-md: 6px;
+  --ds-corner-lg: 10px;
+  --ds-radius-control: 4px;
+  --ds-radius-container: 6px;
+  --ds-radius-overlay: 10px;
+
+  --ds-shadow-1: 0 1px 2px light-dark(oklch(0.35 0.05 60 / 0.1), oklch(0 0 0 / 0.3));
+  --ds-shadow-2:
+    0 2px 6px light-dark(oklch(0.35 0.05 60 / 0.08), oklch(0 0 0 / 0.25)),
+    0 10px 28px light-dark(oklch(0.35 0.05 60 / 0.1), oklch(0 0 0 / 0.3));
+  --ds-shadow-3:
+    0 12px 28px light-dark(oklch(0.35 0.05 60 / 0.14), oklch(0 0 0 / 0.35)),
+    0 28px 72px light-dark(oklch(0.35 0.05 60 / 0.16), oklch(0 0 0 / 0.45));
+  --ds-shadow-4:
+    0 12px 28px light-dark(oklch(0.35 0.05 60 / 0.14), oklch(0 0 0 / 0.35)),
+    0 28px 72px light-dark(oklch(0.35 0.05 60 / 0.16), oklch(0 0 0 / 0.45));
+
+  --ds-shadow-inset: inset 0 1px 3px light-dark(oklch(0.35 0.05 60 / 0.1), oklch(0 0 0 / 0.3));
+
+  --ds-duration-quick: var(--ds-dur-quick);
+  --ds-dur-spring: var(--ds-dur-moderate);
+  --ds-easing-spring: var(--ds-ease-spring-gentle);
+}

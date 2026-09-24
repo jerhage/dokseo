@@ -82,7 +82,7 @@ describe('the theme script in app.html', () => {
   });
 
   it('accepts exactly the themes the stylesheet defines', () => {
-    expect(acceptedThemes()).toEqual(['base', 'crayon', 'ember', 'forge', 'mono']);
+    expect(acceptedThemes()).toEqual(['base', 'crayon', 'ember', 'forge', 'mono', 'moss']);
     expect(acceptedThemes()).toEqual(styledThemes());
   });
 });
