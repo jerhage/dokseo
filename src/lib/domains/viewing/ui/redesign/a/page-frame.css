@@ -1,0 +1,36 @@
+@layer features {
+  @scope (.page-frame) {
+    :scope {
+      block-size: 100%;
+      aspect-ratio: var(--page-ratio, 2 / 3);
+    }
+    .glow {
+      position: absolute;
+      left: var(--glow-left, 0%);
+      top: var(--glow-top, 0%);
+      width: var(--glow-width, 0%);
+      height: var(--glow-height, 0%);
+      z-index: var(--z-raised);
+      border: var(--border-width-strong) solid var(--color-primary);
+      background-color: var(--color-selected);
+      box-shadow: 0 0 0 var(--sp-1) var(--color-primary-glow);
+      pointer-events: none;
+    }
+    .glow.is-note {
+      border-color: var(--color-accent);
+      background-color: transparent;
+      box-shadow: 0 0 0 var(--sp-1) var(--color-accent-glow);
+    }
+    .glow-marker {
+      position: absolute;
+      bottom: calc(100% + var(--sp-1));
+      left: 0;
+      white-space: nowrap;
+    }
+    .notice {
+      position: absolute;
+      inset: 0;
+      text-align: center;
+    }
+  }
+}
