@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
-  import { scrubStep } from './page-scrubber';
+  import { scrubStep, turnsSide } from './page-scrubber';
   import './page-bar.css';
 
   type ShownTurn = {
@@ -28,6 +28,7 @@
 
   const shown = $derived(preview ?? at);
   const marker = $derived(markerAt(shown));
+  const side = $derived(turnsSide(direction));
 
   function previewed(value: string): void {
     preview = scrubStep(value, steps);
@@ -57,10 +58,20 @@
   {/if}
 {/snippet}
 
-<div class="page-bar row items-center gap-2 flex-1">
-  {@render turn(first)}
+{#snippet turns()}
+  {#if first !== null || second !== null}
+    <div class="row items-center gap-1 shrink-0" role="group" aria-label="Turn the page">
+      {@render turn(first)}
+      {@render turn(second)}
+    </div>
+  {/if}
+{/snippet}
 
-  <p class="mono text-xs text-muted shrink-0">{marker}</p>
+<div class="page-bar row items-center gap-2 flex-1">
+  {#if side === 'before'}
+    {@render turns()}
+    <p class="mono text-xs text-muted shrink-0">{marker}</p>
+  {/if}
 
   <input
     class="scrub flex-1"
@@ -77,5 +88,8 @@
     onchange={(event) => committed(event.currentTarget.value)}
   />
 
-  {@render turn(second)}
+  {#if side === 'after'}
+    <p class="mono text-xs text-muted shrink-0">{marker}</p>
+    {@render turns()}
+  {/if}
 </div>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
 import type { ScrubSource } from './page-scrubber';
-import { scrubPlace, scrubStep, stepMarker } from './page-scrubber';
+import { scrubPlace, scrubStep, stepMarker, turnsSide } from './page-scrubber';
 
 const SPREADS: ScrubSource = {
   layout: 'paged',
@@ -70,5 +70,15 @@ describe('scrubStep', () => {
 
   it('refuses every value when there is nowhere to go', () => {
     expect(scrubStep('0', 0)).toBeNull();
+  });
+});
+
+describe('turnsSide', () => {
+  it('places the turn buttons on the left of a right-to-left scrubber, where it moves forward', () => {
+    expect(turnsSide('rtl')).toBe('before');
+  });
+
+  it('places the turn buttons on the right of a left-to-right scrubber, where it moves forward', () => {
+    expect(turnsSide('ltr')).toBe('after');
   });
 });

@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { ImageIndex } from '$lib/shared/ids';
-import type { ImageLayoutKind } from '$lib/shared/layout-kind';
+import type { ImageLayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageGroup } from '../../../domain/page-pairing';
 
 type ScrubSource = {
@@ -10,6 +10,8 @@ type ScrubSource = {
   readonly index: ImageIndex;
   readonly total: number;
 };
+
+type TurnsSide = 'before' | 'after';
 
 type ScrubPlace = {
   readonly steps: number;
@@ -60,5 +62,9 @@ function scrubStep(value: string, steps: number): number | null {
   return within(step, steps);
 }
 
-export { scrubPlace, scrubStep, stepMarker };
-export type { ScrubPlace, ScrubSource };
+function turnsSide(direction: ReadingDirection): TurnsSide {
+  return direction === 'rtl' ? 'before' : 'after';
+}
+
+export { scrubPlace, scrubStep, stepMarker, turnsSide };
+export type { ScrubPlace, ScrubSource, TurnsSide };
