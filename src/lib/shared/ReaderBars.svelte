@@ -8,6 +8,8 @@
 
   type BarPlacement = 'stacked' | 'floating';
 
+  type BarScheme = 'dark' | 'page';
+
   type Props = {
     readonly placement: BarPlacement;
     readonly startShown: boolean;
@@ -15,9 +17,18 @@
     readonly footer: Snippet;
     readonly between?: Snippet;
     readonly heldOpen?: boolean;
+    readonly scheme?: BarScheme;
   };
 
-  const { placement, startShown, header, footer, between, heldOpen = false }: Props = $props();
+  const {
+    placement,
+    startShown,
+    header,
+    footer,
+    between,
+    heldOpen = false,
+    scheme = 'dark',
+  }: Props = $props();
 
   let topBar = $state<HTMLElement | null>(null);
   let bottomBar = $state<HTMLElement | null>(null);
@@ -38,7 +49,10 @@
     () => [document.activeElement, ...openPopovers()],
   );
 
-  const bar = 'reader-bar row items-center surface scheme-dark hushable';
+  const bar = $derived([
+    'reader-bar row items-center surface hushable',
+    { 'scheme-dark': scheme === 'dark' },
+  ]);
   const fit = $derived(
     placement === 'stacked'
       ? { both: 'stacked shrink-0 gap-4 px-responsive py-3', top: '', bottom: '' }
