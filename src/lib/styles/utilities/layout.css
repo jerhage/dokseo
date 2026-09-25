@@ -88,11 +88,11 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr);
-  min-block-size: 100dvh;
+  block-size: 100dvh;
   background-color: var(--color-bg);
 }
 .layout-app-shell-embedded {
-  min-block-size: 0;
+  block-size: auto;
 }
 :root:has(.layout-app-shell:not(.layout-app-shell-embedded)) {
   background-color: var(--color-bg);
@@ -126,6 +126,12 @@
 .layout-app-shell > .layout-main-area {
   grid-column: 2;
   grid-row: 2 / -1;
+}
+.layout-app-shell:not(.layout-app-shell-embedded) > .layout-main-area {
+  position: relative;
+  min-block-size: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 @container app-shell (max-width: 48rem) {
   .layout-app-shell-nav {

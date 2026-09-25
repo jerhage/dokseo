@@ -803,6 +803,35 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('fills the viewport with the full-page shell and scrolls only its main area', () => {
+    const layout = style('utilities/layout.css');
+
+    expect(declarations(ruleBody(layout, '.layout-app-shell'))).toEqual(
+      expect.arrayContaining([
+        'block-size: 100dvh',
+        'grid-template-rows: auto auto minmax(0, 1fr)',
+      ]),
+    );
+    expect(
+      declarations(
+        ruleBody(layout, '.layout-app-shell:not(.layout-app-shell-embedded) > .layout-main-area'),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        'position: relative',
+        'min-block-size: 0',
+        'overflow-y: auto',
+        'scrollbar-gutter: stable',
+      ]),
+    );
+  });
+
+  it('keeps the embedded shell at the height of its content', () => {
+    expect(
+      declarations(ruleBody(style('utilities/layout.css'), '.layout-app-shell-embedded')),
+    ).toContain('block-size: auto');
+  });
+
   it('declares the columns of every component and utility grid, so no content-sized track can widen it', () => {
     const untracked = styled(['components', 'utilities']).flatMap((path) => {
       const all = rules(style(path));
