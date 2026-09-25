@@ -1,0 +1,31 @@
+@layer features {
+  @scope (.paged-viewer) {
+    .frame {
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .frame.is-grabbable {
+      cursor: grab;
+    }
+    .frame.is-grabbing {
+      cursor: grabbing;
+    }
+    .strip {
+      transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
+      transform-origin: 0 0;
+    }
+    .strip.is-rtl {
+      flex-direction: row-reverse;
+    }
+    .hint {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      z-index: var(--z-sticky);
+      pointer-events: none;
+    }
+    .does {
+      white-space: nowrap;
+    }
+  }
+}

@@ -1,0 +1,426 @@
+<script lang="ts">
+  import { untrack } from 'svelte';
+  import { match } from 'ts-pattern';
+  import type { CaptureOrigin } from '$lib/shared/capture-origin';
+  import type { Size } from '$lib/shared/geometry';
+  import type { ImageIndex } from '$lib/shared/ids';
+  import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
+  import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import type { PagePicture } from '$lib/shared/page-source';
+  import type { PageFit } from '$lib/shared/page-fit';
+  import type { PageGroup } from '../../../domain/page-pairing';
+  import { canPan, centrePan, clampPan, fitZoom, panBy, zoomAt } from '../../../domain/viewport';
+  import type { Viewport } from '../../../domain/viewport';
+  import { hintsToShow, pagedHints } from '../../gesture-hint';
+  import type { GestureHint } from '../../gesture-hint';
+  import { handlesOwnKeys, handlesOwnSpace } from '../../keyboard';
+  import { learnedGestures, learnGesture } from '../../learned-gestures.svelte';
+  import { glowOn } from '../../page-glow';
+  import PageFrame from './PageFrame.svelte';
+  import SelectionLayer from './SelectionLayer.svelte';
+  import './paged-viewer.css';
+
+  type Fit = PageFit | 'free';
+
+  type Frames = { readonly content: Size; readonly frame: Size };
+
+  type Grab = {
+    readonly id: number;
+    readonly x: number;
+    readonly y: number;
+    readonly bySpace: boolean;
+  };
+
+  type Props = {
+    readonly pages: PageGroup;
+    readonly direction: ReadingDirection;
+    readonly pageFit: PageFit;
+    readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
+    readonly measured: (index: ImageIndex, size: Size) => void;
+    readonly glow?: readonly GlowRegion[];
+    readonly makes?: CaptureOrigin;
+    readonly chromeShown: boolean;
+    readonly select: (regions: readonly ImageRegion[]) => void;
+    readonly clear: () => void;
+    readonly onTap: () => void;
+    readonly onFit: (fit: PageFit) => void;
+  };
+
+  let {
+    pages,
+    direction,
+    pageFit,
+    pictureAt,
+    measured,
+    glow = [],
+    makes = 'recognized',
+    chromeShown,
+    select,
+    clear,
+    onTap,
+    onFit,
+  }: Props = $props();
+
+  const ZOOM_STEP = 1.2;
+  const WHEEL_ZOOM_SPAN = 320;
+  const WHEEL_LINE_PX = 16;
+  const FIT_HEIGHT_ZOOM = 1;
+
+  let frame = $state<HTMLDivElement | null>(null);
+  let strip = $state<HTMLDivElement | null>(null);
+  let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
+  let viewport = $state.raw<Viewport>({ zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 });
+  let fit = $state.raw<Fit>(untrack(() => pageFit));
+  let grab = $state.raw<Grab | null>(null);
+  let spaceHeld = $state(false);
+  let pannable = $state(false);
+  let revealed = $state(false);
+  let hintLines = $state.raw<readonly GestureHint[]>([]);
+
+  let shownPages: PageGroup | null = null;
+
+  const pending = $derived(
+    hintsToShow(chromeShown, pagedHints(pannable), learnedGestures(), revealed),
+  );
+
+  function label(index: ImageIndex): string {
+    return String(index + 1).padStart(3, '0');
+  }
+
+  function selected(regions: readonly ImageRegion[]): void {
+    learnGesture('select');
+    select(regions);
+  }
+
+  function framesNow(): Frames | null {
+    const outer = frame;
+    const inner = strip;
+    if (outer === null || inner === null) return null;
+
+    const zoom = viewport.zoom;
+    if (!Number.isFinite(zoom) || zoom <= 0) return null;
+
+    const outerBox = outer.getBoundingClientRect();
+    const innerBox = inner.getBoundingClientRect();
+
+    return {
+      frame: { width: outerBox.width, height: outerBox.height },
+      content: { width: innerBox.width / zoom, height: innerBox.height / zoom },
+    };
+  }
+
+  function commit(next: Viewport, sizes: Frames | null): void {
+    viewport = next;
+    if (sizes !== null) pannable = canPan(sizes.content, sizes.frame, next.zoom);
+  }
+
+  function settle(next: Viewport): void {
+    const sizes = framesNow();
+    commit(sizes === null ? next : clampPan(next, sizes.content, sizes.frame), sizes);
+  }
+
+  function recentre(zoom: number): void {
+    const sizes = framesNow();
+    const next: Viewport = { zoom, panX: viewport.panX, panY: viewport.panY };
+    commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
+  }
+
+  function applyHeight(): void {
+    fit = 'height';
+    recentre(FIT_HEIGHT_ZOOM);
+  }
+
+  function applyWidth(): void {
+    const sizes = framesNow();
+    fit = 'width';
+    if (sizes === null) return;
+    recentre(fitZoom(sizes.content, sizes.frame, 'width'));
+  }
+
+  export function fitHeight(): void {
+    applyHeight();
+    onFit('height');
+  }
+
+  export function fitWidth(): void {
+    applyWidth();
+    onFit('width');
+  }
+
+  export function activeFit(): Fit {
+    return fit;
+  }
+
+  function reapplyFit(): void {
+    match(fit)
+      .with('height', () => applyHeight())
+      .with('width', () => applyWidth())
+      .with('free', () => settle(viewport))
+      .exhaustive();
+  }
+
+  function zoomed(next: Viewport): void {
+    fit = 'free';
+    settle(next);
+    if (pannable) learnGesture('zoom-to-pan');
+  }
+
+  function stepZoom(factor: number): void {
+    const sizes = framesNow();
+    if (sizes === null) return;
+
+    zoomed(zoomAt(viewport, factor, sizes.frame.width / 2, sizes.frame.height / 2));
+  }
+
+  function scrolled(delta: number, mode: number, extent: number): number {
+    if (mode === WheelEvent.DOM_DELTA_LINE) return delta * WHEEL_LINE_PX;
+    if (mode === WheelEvent.DOM_DELTA_PAGE) return delta * extent;
+    return delta;
+  }
+
+  function release(id: number): void {
+    const element = frame;
+    if (element !== null && element.hasPointerCapture(id)) element.releasePointerCapture(id);
+  }
+
+  function stopGrab(): void {
+    const moving = grab;
+    if (moving === null) return;
+    release(moving.id);
+    grab = null;
+  }
+
+  function startGrab(element: HTMLElement, event: PointerEvent, bySpace: boolean): void {
+    grab = { id: event.pointerId, x: event.clientX, y: event.clientY, bySpace };
+    element.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  function dropSpace(): void {
+    spaceHeld = false;
+    if (grab !== null && grab.bySpace) stopGrab();
+  }
+
+  function onwheel(event: WheelEvent): void {
+    const element = frame;
+    if (element === null) return;
+
+    event.preventDefault();
+    const box = element.getBoundingClientRect();
+    const dx = scrolled(event.deltaX, event.deltaMode, box.width);
+    const dy = scrolled(event.deltaY, event.deltaMode, box.height);
+
+    if (event.ctrlKey || event.metaKey) {
+      zoomed(
+        zoomAt(
+          viewport,
+          Math.exp(-dy / WHEEL_ZOOM_SPAN),
+          event.clientX - box.x,
+          event.clientY - box.y,
+        ),
+      );
+      return;
+    }
+
+    if (event.shiftKey) {
+      settle(panBy(viewport, -(dx + dy), 0));
+      return;
+    }
+
+    settle(panBy(viewport, -dx, -dy));
+  }
+
+  function onpointerdown(event: PointerEvent): void {
+    const element = frame;
+    if (element === null) return;
+
+    if (event.button === 1) {
+      startGrab(element, event, false);
+      return;
+    }
+
+    if (!event.isPrimary || event.button !== 0) return;
+
+    if (spaceHeld) {
+      startGrab(element, event, true);
+      return;
+    }
+
+    selection?.pointerdown(event);
+  }
+
+  function onpointermove(event: PointerEvent): void {
+    const moving = grab;
+    if (moving !== null && moving.id === event.pointerId) {
+      learnGesture(moving.bySpace ? 'space-pan' : 'middle-pan');
+      grab = { id: moving.id, x: event.clientX, y: event.clientY, bySpace: moving.bySpace };
+      settle(panBy(viewport, event.clientX - moving.x, event.clientY - moving.y));
+      return;
+    }
+
+    selection?.pointermove(event);
+  }
+
+  function onpointerup(event: PointerEvent): void {
+    if (grab !== null && grab.id === event.pointerId) {
+      stopGrab();
+      return;
+    }
+
+    selection?.pointerup(event);
+  }
+
+  function onpointercancel(event: PointerEvent): void {
+    if (grab !== null && grab.id === event.pointerId) {
+      stopGrab();
+      return;
+    }
+
+    selection?.pointercancel(event);
+  }
+
+  function onkeydown(event: KeyboardEvent): void {
+    if (event.defaultPrevented) return;
+
+    if (event.key === 'Escape') {
+      selection?.dismiss();
+      return;
+    }
+
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (handlesOwnKeys(event.target)) return;
+
+    if (event.key === '?') {
+      event.preventDefault();
+      revealed = !revealed;
+      return;
+    }
+
+    if (event.key === ' ') {
+      if (handlesOwnSpace(event.target)) return;
+      event.preventDefault();
+      spaceHeld = true;
+      return;
+    }
+
+    if (event.key === '+' || event.key === '=') {
+      event.preventDefault();
+      stepZoom(ZOOM_STEP);
+      return;
+    }
+
+    if (event.key === '-') {
+      event.preventDefault();
+      stepZoom(1 / ZOOM_STEP);
+      return;
+    }
+
+    if (event.key === '0') {
+      event.preventDefault();
+      fitHeight();
+    }
+  }
+
+  function onkeyup(event: KeyboardEvent): void {
+    if (event.key !== ' ') return;
+    dropSpace();
+  }
+
+  function onblur(): void {
+    dropSpace();
+  }
+
+  $effect(() => {
+    const lines = pending;
+    if (lines.length > 0) hintLines = lines;
+  });
+
+  $effect(() => {
+    const outer = frame;
+    const inner = strip;
+    if (outer === null || inner === null) return;
+
+    const observer = new ResizeObserver(() => reapplyFit());
+    observer.observe(outer);
+    observer.observe(inner);
+
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    const group = pages;
+
+    untrack(() => {
+      if (group === shownPages) return;
+
+      shownPages = group;
+      selection?.reset();
+      stopGrab();
+      recentre(viewport.zoom);
+    });
+  });
+</script>
+
+<svelte:window {onkeydown} {onkeyup} {onblur} />
+
+<div class="paged-viewer row gap-0 flex-1 min-h-0 overflow-hidden scheme-dark surface-sunken">
+  <div
+    class={[
+      'frame relative row gap-0 flex-1 min-h-0 overflow-hidden',
+      {
+        'is-grabbable': spaceHeld && grab === null && !(selection?.dragging() ?? false),
+        'is-grabbing': grab !== null,
+      },
+    ]}
+    role="group"
+    aria-label="Pages in view"
+    bind:this={frame}
+    {onwheel}
+    {onpointerdown}
+    {onpointermove}
+    {onpointerup}
+    {onpointercancel}
+  >
+    <div
+      class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
+      bind:this={strip}
+      style:--pan-x="{viewport.panX}px"
+      style:--pan-y="{viewport.panY}px"
+      style:--zoom={viewport.zoom}
+    >
+      {#each pages as index (index)}
+        <PageFrame {index} label={label(index)} {pictureAt} {measured} glow={glowOn(glow, index)} />
+      {/each}
+    </div>
+
+    <SelectionLayer
+      bind:this={selection}
+      within={frame}
+      arrangement="row"
+      pointerTypes="any"
+      {makes}
+      suppressed={spaceHeld}
+      select={selected}
+      {clear}
+      tap={onTap}
+    />
+
+    <p
+      class={[
+        'hint row wrap items-center gap-3 m-0 px-3 py-2 text-xs text-muted hushable',
+        { 'is-hushed': pending.length === 0 },
+      ]}
+      aria-hidden="true"
+    >
+      {#each hintLines as hint (hint.keys.join('+'))}
+        <span class="row items-center gap-1">
+          {#each hint.keys as key, step (key)}
+            {#if step > 0}<span class="text-faint">+</span>{/if}
+            <kbd class="text-xs">{key}</kbd>
+          {/each}
+          <span class="does">{hint.does}</span>
+        </span>
+      {/each}
+    </p>
+  </div>
+</div>
