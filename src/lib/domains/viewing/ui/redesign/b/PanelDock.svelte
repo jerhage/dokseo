@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
-  import { dockToggle } from './panel-dock';
+  import { dockName, dockTally, dockToggle } from './panel-dock';
   import type { DockPlacement } from './panel-dock';
   import './panel-dock.css';
 
@@ -19,7 +19,8 @@
 
   const toggle = $derived(dockToggle(placement));
   const beside = $derived(placement === 'side' || placement === 'rail');
-  const tally = $derived(count !== null && count > 0 && !toggle.open ? count : null);
+  const tally = $derived(dockTally(placement, count));
+  const name = $derived(dockName(placement, count));
 </script>
 
 <aside
@@ -31,23 +32,21 @@
   aria-label="Captures"
 >
   {#if beside}
-    <div class="col items-center gap-2 p-1 shrink-0 border-e">
-      <Button
-        variant="ghost"
-        size="sm"
-        square
-        aria-expanded={toggle.open}
-        aria-controls="{uid}-panel"
-        title={toggle.label}
-        onclick={ontoggle}
-      >
-        <span aria-hidden="true">{toggle.glyph}</span>
-        <span class="visually-hidden">{toggle.label}</span>
-      </Button>
+    <Button
+      variant="ghost"
+      size="sm"
+      class="rail-toggle col items-center gap-2 px-1 py-2 shrink-0 border-e"
+      aria-expanded={toggle.open}
+      aria-controls="{uid}-panel"
+      aria-label={name}
+      title={name}
+      onclick={ontoggle}
+    >
+      <span aria-hidden="true">{toggle.glyph}</span>
       {#if tally !== null}
-        <Badge>{tally}</Badge>
+        <Badge aria-hidden="true">{tally}</Badge>
       {/if}
-    </div>
+    </Button>
   {:else}
     <Button
       variant="ghost"
@@ -56,12 +55,13 @@
       class="shrink-0"
       aria-expanded={toggle.open}
       aria-controls="{uid}-panel"
+      aria-label={name}
       onclick={ontoggle}
     >
       <span aria-hidden="true">{toggle.glyph}</span>
       {toggle.open ? toggle.label : 'Captures'}
       {#if tally !== null}
-        <Badge>{tally}</Badge>
+        <Badge aria-hidden="true">{tally}</Badge>
       {/if}
     </Button>
   {/if}

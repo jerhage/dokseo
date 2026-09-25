@@ -6,5 +6,9 @@
     :scope.is-sheet {
       block-size: 40%;
     }
+    .rail-toggle {
+      justify-content: flex-start;
+      min-inline-size: var(--sp-8);
+    }
   }
 }

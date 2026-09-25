@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dockPlacement, dockToggle, isNarrow } from './panel-dock';
+import { dockName, dockPlacement, dockTally, dockToggle, isNarrow } from './panel-dock';
 
 describe('isNarrow', () => {
   it('calls a body narrower than the compact breakpoint narrow', () => {
@@ -48,5 +48,35 @@ describe('dockToggle', () => {
     expect(dockToggle('rail').glyph).toBe('‹');
     expect(dockToggle('sheet').glyph).toBe('▾');
     expect(dockToggle('peek').glyph).toBe('▴');
+  });
+});
+
+describe('dockTally', () => {
+  it('shows the count on a closed panel', () => {
+    expect(dockTally('rail', 3)).toBe(3);
+    expect(dockTally('peek', 3)).toBe(3);
+  });
+
+  it('hides the count while the panel is open', () => {
+    expect(dockTally('side', 3)).toBeNull();
+    expect(dockTally('sheet', 3)).toBeNull();
+  });
+
+  it('shows no count when there are no captures or none are known', () => {
+    expect(dockTally('rail', 0)).toBeNull();
+    expect(dockTally('peek', null)).toBeNull();
+  });
+});
+
+describe('dockName', () => {
+  it('names the action and the count of a closed panel', () => {
+    expect(dockName('rail', 3)).toBe('Show captures, 3');
+    expect(dockName('peek', 12)).toBe('Show captures, 12');
+  });
+
+  it('names the action alone when no count is shown', () => {
+    expect(dockName('rail', 0)).toBe('Show captures');
+    expect(dockName('side', 3)).toBe('Hide captures');
+    expect(dockName('sheet', null)).toBe('Hide captures');
   });
 });

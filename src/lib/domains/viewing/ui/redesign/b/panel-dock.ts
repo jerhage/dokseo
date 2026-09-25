@@ -31,5 +31,16 @@ function dockToggle(placement: DockPlacement): DockToggle {
     .exhaustive();
 }
 
-export { dockPlacement, dockToggle, isNarrow };
+function dockTally(placement: DockPlacement, count: number | null): number | null {
+  if (dockToggle(placement).open) return null;
+  return count !== null && count > 0 ? count : null;
+}
+
+function dockName(placement: DockPlacement, count: number | null): string {
+  const label = dockToggle(placement).label;
+  const tally = dockTally(placement, count);
+  return tally === null ? label : `${label}, ${tally}`;
+}
+
+export { dockName, dockPlacement, dockTally, dockToggle, isNarrow };
 export type { DockPlacement, DockToggle };
