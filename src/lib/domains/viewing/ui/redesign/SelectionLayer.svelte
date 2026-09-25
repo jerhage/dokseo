@@ -7,17 +7,17 @@
   import { isEmpty, normalize } from '$lib/shared/geometry';
   import type { ScreenRect, Size } from '$lib/shared/geometry';
   import type { ImageRegion } from '$lib/shared/image-region';
-  import { regionsIn } from '../../../domain/placement';
-  import type { PlacedImage } from '../../../domain/placement';
+  import { regionsIn } from '../../domain/placement';
+  import type { PlacedImage } from '../../domain/placement';
   import {
     dragEnded,
     isTap,
     MIN_SELECTION_PX,
     selectionFrom,
     selectionSize,
-  } from '../../../domain/selection';
-  import type { Point } from '../../../domain/selection';
-  import { placedImages } from '../../page-placements';
+  } from '../../domain/selection';
+  import type { Point } from '../../domain/selection';
+  import { placedImages } from '../page-placements';
   import './selection-layer.css';
 
   type Watch = {

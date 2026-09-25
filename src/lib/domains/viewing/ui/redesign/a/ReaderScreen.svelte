@@ -25,8 +25,8 @@
   import { moveOrder } from '../../page-moves';
   import type { PageMove } from '../../page-moves';
   import type { ReaderView } from '../../reader-view.svelte';
-  import ContinuousViewer from './ContinuousViewer.svelte';
-  import PagedViewer from './PagedViewer.svelte';
+  import ContinuousViewer from '../ContinuousViewer.svelte';
+  import PagedViewer from '../PagedViewer.svelte';
   import './reader-screen.css';
 
   type ScreenFill = 'screen' | 'parent';

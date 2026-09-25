@@ -3,8 +3,8 @@
   import Modal from '$lib/components/Modal.svelte';
   import { megabytes } from '$lib/shared/bytes';
   import { languageName } from '$lib/shared/language';
-  import { downloadMb, onDiskMb } from '../../../../domain/model/model-footprint';
-  import type { ConsentRequest } from '../../recognizer-view.svelte';
+  import { downloadMb, onDiskMb } from '../../../domain/model/model-footprint';
+  import type { ConsentRequest } from '../recognizer-view.svelte';
 
   type Props = {
     readonly request: ConsentRequest;

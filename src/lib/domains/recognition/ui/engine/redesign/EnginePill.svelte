@@ -4,17 +4,17 @@
   import Radio from '$lib/components/Radio.svelte';
   import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { Language } from '$lib/shared/language';
-  import { chosenModel, knownModel } from '../../../../domain/model/model-footprint';
+  import { chosenModel, knownModel } from '../../../domain/model/model-footprint';
   import {
     engineFellBack,
     engineMismatch,
     engineStatus,
     NOT_INSTALLED,
     OCR_ENGINES,
-  } from '../../../../domain/engine/ocr-engine';
-  import type { EngineState } from '../../../../domain/engine/ocr-engine';
-  import { deviceName } from '../../../../domain/engine/recognizer-session';
-  import { statusVariant } from '../../engine-screen';
+  } from '../../../domain/engine/ocr-engine';
+  import type { EngineState } from '../../../domain/engine/ocr-engine';
+  import { deviceName } from '../../../domain/engine/recognizer-session';
+  import { statusVariant } from '../engine-screen';
   import './engine-pill.css';
 
   type Props = {

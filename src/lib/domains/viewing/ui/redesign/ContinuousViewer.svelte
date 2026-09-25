@@ -5,7 +5,7 @@
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
-  import type { ReadingPosition } from '../../../domain/reading-position';
+  import type { ReadingPosition } from '../../domain/reading-position';
   import {
     layOutStrip,
     positionAtScroll,
@@ -14,10 +14,10 @@
     stripHeight,
     stripOverscan,
     visibleRange,
-  } from '../../../domain/strip';
-  import { clampZoom } from '../../../domain/viewport';
-  import { handlesOwnKeys } from '../../keyboard';
-  import { glowOn } from '../../page-glow';
+  } from '../../domain/strip';
+  import { clampZoom } from '../../domain/viewport';
+  import { handlesOwnKeys } from '../keyboard';
+  import { glowOn } from '../page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
   import './continuous-viewer.css';

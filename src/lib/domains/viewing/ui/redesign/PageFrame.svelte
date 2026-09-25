@@ -7,8 +7,8 @@
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
-  import { toPageFraction } from '../../../domain/placement';
-  import { glowMarker } from '../../page-glow';
+  import { toPageFraction } from '../../domain/placement';
+  import { glowMarker } from '../page-glow';
   import './page-frame.css';
 
   type Phase = 'loading' | 'shown' | 'failed';

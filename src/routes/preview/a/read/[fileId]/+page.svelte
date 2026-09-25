@@ -7,8 +7,8 @@
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
   import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
-  import EnginePill from '$lib/domains/recognition/ui/engine/redesign/a/EnginePill.svelte';
-  import ModelConsentDialog from '$lib/domains/recognition/ui/engine/redesign/a/ModelConsentDialog.svelte';
+  import EnginePill from '$lib/domains/recognition/ui/engine/redesign/EnginePill.svelte';
+  import ModelConsentDialog from '$lib/domains/recognition/ui/engine/redesign/ModelConsentDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';

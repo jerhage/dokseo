@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { JAPANESE_OCR_MODEL } from '../../../../domain/model/model-footprint';
+import { JAPANESE_OCR_MODEL } from '../../../domain/model/model-footprint';
 import ModelConsentDialog from './ModelConsentDialog.svelte';
 
 const DIALOG = ModelConsentDialog as unknown as Component<Record<string, unknown>>;
