@@ -1,0 +1,22 @@
+@layer features {
+  @scope (.continuous-viewer) {
+    .scroller {
+      cursor: crosshair;
+      overflow-anchor: none;
+      scrollbar-gutter: stable;
+      overscroll-behavior: contain;
+    }
+    .scroller:focus-visible {
+      outline-offset: calc(var(--focus-ring-offset) * -1);
+    }
+    .strip {
+      inline-size: var(--strip-width, 100%);
+    }
+    .slice {
+      block-size: var(--slice-height, 0px);
+    }
+    .spacer {
+      block-size: var(--spacer-height, 0px);
+    }
+  }
+}
