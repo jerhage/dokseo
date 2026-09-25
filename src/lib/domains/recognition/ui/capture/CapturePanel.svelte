@@ -24,9 +24,10 @@
     readonly language: Language | null;
     readonly direction: ReadingDirection;
     readonly onSeek?: (passage: TextAnchor) => void;
+    readonly asksConsent?: boolean;
   };
 
-  let { view, language, direction, onSeek }: Props = $props();
+  let { view, language, direction, onSeek, asksConsent = true }: Props = $props();
 
   const mismatch = $derived(engineMismatch(view.session, language));
 
@@ -321,7 +322,7 @@
 
   <DocumentTags tags={view.tags} counts={view.bookCounts} />
 
-  {#if view.consentRequest !== null}
+  {#if asksConsent && view.consentRequest !== null}
     <ModelConsentDialog
       request={view.consentRequest}
       onagree={() => void view.agree()}

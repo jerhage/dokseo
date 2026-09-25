@@ -1,0 +1,14 @@
+@layer features {
+  @scope (.engine-pill) {
+    .trigger {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      max-inline-size: 100%;
+      white-space: normal;
+    }
+    .sheet {
+      inset: auto;
+      inline-size: min(var(--modal-width-sm), 100% - 2 * var(--sp-2));
+    }
+  }
+}
