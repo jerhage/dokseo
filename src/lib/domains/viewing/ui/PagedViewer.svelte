@@ -147,6 +147,10 @@
     onFit('width');
   }
 
+  export function surface(): HTMLElement | null {
+    return frame;
+  }
+
   export function activeFit(): Fit {
     return fit;
   }
@@ -374,6 +378,7 @@
     ]}
     role="group"
     aria-label="Pages in view"
+    tabindex="-1"
     bind:this={frame}
     {onwheel}
     {onpointerdown}

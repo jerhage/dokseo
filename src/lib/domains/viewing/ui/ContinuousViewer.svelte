@@ -154,6 +154,10 @@
     zoomFromCentre(FIT_WIDTH_ZOOM / zoom);
   }
 
+  export function surface(): HTMLElement | null {
+    return scroller;
+  }
+
   export function atFitWidth(): boolean {
     return zoom === FIT_WIDTH_ZOOM;
   }

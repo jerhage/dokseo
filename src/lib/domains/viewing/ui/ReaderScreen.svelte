@@ -25,6 +25,7 @@
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
   import ReaderSettings from './ReaderSettings.svelte';
+  import { returnFocusToPage } from './reading-surface';
   import './reader-screen.css';
 
   type Props = {
@@ -91,7 +92,7 @@
   function releaseBars(): void {
     const focused = document.activeElement;
     if (!(focused instanceof HTMLElement)) return;
-    if (topBar?.contains(focused) || bottomBar?.contains(focused)) focused.blur();
+    returnFocusToPage(focused, [topBar, bottomBar], paged?.surface() ?? strip?.surface() ?? null);
   }
 
   function toggleChrome(): void {
