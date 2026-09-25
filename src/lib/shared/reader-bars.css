@@ -1,0 +1,41 @@
+@layer features {
+  @scope (.reader-bar) {
+    :scope {
+      color-scheme: dark;
+      transition: opacity var(--dur-quick) var(--ease-smooth);
+    }
+    :scope.top {
+      border-block-end: var(--border-width) solid var(--border-color);
+    }
+    :scope.bottom {
+      border-block-start: var(--border-width) solid var(--border-color);
+    }
+    :scope.is-hushed {
+      opacity: 0;
+      pointer-events: none;
+    }
+    :scope.stacked {
+      flex: none;
+      transition:
+        margin var(--dur-quick) var(--ease-smooth),
+        opacity var(--dur-quick) var(--ease-smooth);
+    }
+    :scope.stacked.top.is-hushed {
+      margin-block-start: var(--rise, 0px);
+    }
+    :scope.stacked.bottom.is-hushed {
+      margin-block-end: var(--drop, 0px);
+    }
+    :scope.floating {
+      position: absolute;
+      inset-inline: 0;
+      z-index: var(--z-raised);
+    }
+    :scope.floating.top {
+      inset-block-start: 0;
+    }
+    :scope.floating.bottom {
+      inset-block-end: 0;
+    }
+  }
+}

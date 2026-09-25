@@ -126,7 +126,7 @@ function paginator(): Renderer {
 }
 
 function chromeHushed(): boolean {
-  return document.querySelector('header.bar.top')?.classList.contains('hushed') ?? false;
+  return document.querySelector('header.reader-bar.top')?.classList.contains('is-hushed') ?? false;
 }
 
 function chapterDoc(): Document {

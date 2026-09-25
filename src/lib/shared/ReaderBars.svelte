@@ -3,6 +3,7 @@
   import type { Snippet } from 'svelte';
   import { ChromeFocus } from './chrome-focus.svelte';
   import { chromeShown } from './reader-chrome';
+  import './reader-bars.css';
 
   type BarPlacement = 'stacked' | 'floating';
 
@@ -36,7 +37,7 @@
     () => [document.activeElement, ...openPopovers()],
   );
 
-  const stacked = $derived(placement === 'stacked');
+  const spacing = $derived(placement === 'stacked' ? 'gap-4 px-6 py-3' : 'gap-3 px-4 py-2');
   const awake = $derived(chromeShown(asked, focus.held || heldOpen));
 
   export function shown(): boolean {
@@ -65,17 +66,14 @@
 </script>
 
 <header
-  class="bar top"
-  class:stacked
-  class:floating={!stacked}
-  class:hushed={!awake}
+  class={['reader-bar top row items-center surface', placement, spacing, { 'is-hushed': !awake }]}
   inert={!awake}
   bind:this={topBar}
   bind:offsetHeight={topHeight}
   style:--rise="{-topHeight}px"
 >
-  <a class="back" href="/">
-    <span class="glyph" aria-hidden="true">‹</span>
+  <a class="btn btn-sm shrink-0" href="/">
+    <span aria-hidden="true">‹</span>
     Library
   </a>
   {@render header()}
@@ -84,10 +82,12 @@
 {@render between?.()}
 
 <footer
-  class="bar bottom"
-  class:stacked
-  class:floating={!stacked}
-  class:hushed={!awake}
+  class={[
+    'reader-bar bottom row items-center surface',
+    placement,
+    spacing,
+    { 'is-hushed': !awake },
+  ]}
   inert={!awake}
   bind:this={bottomBar}
   bind:offsetHeight={bottomHeight}
@@ -95,96 +95,3 @@
 >
   {@render footer()}
 </footer>
-
-<style>
-  .bar {
-    display: flex;
-    align-items: center;
-    background: var(--c-surface-chrome);
-    opacity: 1;
-  }
-
-  .bar.hushed {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .top {
-    border-bottom: 1px solid var(--c-border-1);
-  }
-
-  .bottom {
-    border-top: 1px solid var(--c-border-1);
-  }
-
-  .stacked {
-    flex: none;
-    gap: var(--s-4);
-    padding: var(--s-3) var(--s-5);
-    transition:
-      margin 200ms ease,
-      opacity 200ms ease;
-  }
-
-  .stacked.top.hushed {
-    margin-block-start: var(--rise);
-  }
-
-  .stacked.bottom.hushed {
-    margin-block-end: var(--drop);
-  }
-
-  .floating {
-    position: absolute;
-    box-sizing: border-box;
-    inset-inline: 0;
-    z-index: var(--z-chrome);
-    gap: var(--s-3);
-    padding: var(--s-2) var(--s-4);
-    transition: opacity 200ms ease;
-  }
-
-  .floating.top {
-    inset-block-start: 0;
-  }
-
-  .floating.bottom {
-    inset-block-end: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bar {
-      transition: none;
-    }
-  }
-
-  .back {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--s-1);
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-size: 11.5px;
-    text-decoration: none;
-  }
-
-  .back:hover,
-  .back:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .glyph {
-    display: block;
-  }
-
-  @media (max-width: 700px) {
-    .stacked {
-      padding: var(--s-3) var(--s-4);
-    }
-  }
-</style>
