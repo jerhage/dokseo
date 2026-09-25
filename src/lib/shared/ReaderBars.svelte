@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
+  import Button from '$lib/components/Button.svelte';
   import { ChromeFocus } from './chrome-focus.svelte';
   import { chromeShown } from './reader-chrome';
   import './reader-bars.css';
@@ -37,7 +38,12 @@
     () => [document.activeElement, ...openPopovers()],
   );
 
-  const spacing = $derived(placement === 'stacked' ? 'gap-4 px-6 py-3' : 'gap-3 px-4 py-2');
+  const bar = 'reader-bar row items-center surface scheme-dark hushable';
+  const fit = $derived(
+    placement === 'stacked'
+      ? { both: 'stacked shrink-0 gap-4 px-responsive py-3', top: '', bottom: '' }
+      : { both: 'z-raised gap-3 px-4 py-2', top: 'pin-top', bottom: 'pin-bottom' },
+  );
   const awake = $derived(chromeShown(asked, focus.held || heldOpen));
 
   export function shown(): boolean {
@@ -66,28 +72,23 @@
 </script>
 
 <header
-  class={['reader-bar top row items-center surface', placement, spacing, { 'is-hushed': !awake }]}
+  class={[bar, 'top border-b', fit.both, fit.top, { 'is-hushed': !awake }]}
   inert={!awake}
   bind:this={topBar}
   bind:offsetHeight={topHeight}
   style:--rise="{-topHeight}px"
 >
-  <a class="btn btn-sm shrink-0" href="/">
+  <Button href="/" size="sm" class="shrink-0">
     <span aria-hidden="true">‹</span>
     Library
-  </a>
+  </Button>
   {@render header()}
 </header>
 
 {@render between?.()}
 
 <footer
-  class={[
-    'reader-bar bottom row items-center surface',
-    placement,
-    spacing,
-    { 'is-hushed': !awake },
-  ]}
+  class={[bar, 'bottom border-t', fit.both, fit.bottom, { 'is-hushed': !awake }]}
   inert={!awake}
   bind:this={bottomBar}
   bind:offsetHeight={bottomHeight}
