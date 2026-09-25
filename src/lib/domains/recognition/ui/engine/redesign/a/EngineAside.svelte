@@ -1,7 +1,7 @@
 <script lang="ts">
   import { engineStatus } from '../../../../domain/engine/ocr-engine';
   import type { EngineSettingsView } from '../../engine-settings.svelte';
-  import { activeDevice, activeEngine } from './engine-screen';
+  import { activeDevice, activeEngine } from '../engine-screen';
 
   type Props = { readonly view: EngineSettingsView };
 

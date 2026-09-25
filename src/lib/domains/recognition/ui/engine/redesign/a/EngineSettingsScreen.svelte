@@ -38,7 +38,7 @@
     statusVariant,
     UNBUILT_ENGINES,
     weightsFigure,
-  } from './engine-screen';
+  } from '../engine-screen';
 
   type Props = { readonly view: EngineSettingsView; readonly storageHref?: string };
 
