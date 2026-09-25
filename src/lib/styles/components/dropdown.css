@@ -21,7 +21,9 @@
   left: var(--menu-left, auto);
   display: none;
   gap: 0;
+  inline-size: max-content;
   min-inline-size: max(var(--menu-anchor-width, 0px), var(--menu-min-width));
+  max-inline-size: var(--menu-max-width, none);
   margin: var(--sp-1) 0;
   padding: var(--sp-1);
   color: var(--color-text);

@@ -36,6 +36,7 @@
   let menu = $state<HTMLDivElement>();
   let placement = $state<MenuPlacement>();
   const inset = $derived(menuInset(placement));
+  const shownAlign = $derived(placement?.align ?? align);
 
   provideMenu({ close: () => close(true) });
 
@@ -91,10 +92,16 @@
   function place(): void {
     if (button === undefined || menu === undefined) return;
     const viewport = document.documentElement;
+    const style = getComputedStyle(menu);
     placement = menuPlacement(
       button.getBoundingClientRect(),
       { width: viewport.clientWidth, height: viewport.clientHeight },
-      menu.offsetHeight,
+      { width: menu.offsetWidth, height: menu.offsetHeight },
+      {
+        align,
+        direction: style.direction === 'rtl' ? 'rtl' : 'ltr',
+        gutter: Number.parseFloat(style.marginBlockStart),
+      },
     );
   }
 
@@ -149,12 +156,13 @@
     role="menu"
     aria-labelledby="{uid}-trigger"
     popover="manual"
-    class={['dropdown-menu', MENU_ALIGNS[align]]}
+    class={['dropdown-menu', MENU_ALIGNS[shownAlign]]}
     style:--menu-top={inset.top}
     style:--menu-bottom={inset.bottom}
     style:--menu-left={inset.left}
     style:--menu-right={inset.right}
     style:--menu-anchor-width={inset.anchorWidth}
+    style:--menu-max-width={inset.maxWidth}
   >
     {@render children()}
   </div>
