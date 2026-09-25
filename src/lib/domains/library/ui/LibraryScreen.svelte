@@ -2,6 +2,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Button from '$lib/components/Button.svelte';
+  import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
   import WindowDropzone from '$lib/components/WindowDropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
@@ -117,7 +118,7 @@
     <NavLink href="/settings" title="OCR engine settings">Settings</NavLink>
   </nav>
 
-  <main class="layout-main-area">
+  <main class="layout-main-area" tabindex="-1" {@attach keyboardScrolling}>
     <div class="col gap-1">
       <h1 class="text-lg">Your uploads</h1>
       <p class="text-xs text-muted">{summary}</p>

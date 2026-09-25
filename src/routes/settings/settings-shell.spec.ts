@@ -60,4 +60,8 @@ describe('SettingsShell', () => {
     expect(mainClasses(markup({ current: 'engine', flush: true }))).toContain('p-0');
     expect(mainClasses(markup({ current: 'storage' }))).not.toContain('p-0');
   });
+
+  it('lets a script focus the main area without adding it to the tab order', () => {
+    expect(markup({ current: 'storage' })).toMatch(/<main [^>]*tabindex="-1"/u);
+  });
 });

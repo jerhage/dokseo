@@ -3,6 +3,7 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/Button.svelte';
+  import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
   import { settingsSections } from './settings-sections';
   import type { SettingsSection } from './settings-sections';
@@ -54,7 +55,11 @@
     {/if}
   </nav>
 
-  <main class={['layout-main-area', { 'p-0 gap-0': flush }]}>
+  <main
+    class={['layout-main-area', { 'p-0 gap-0': flush }]}
+    tabindex="-1"
+    {@attach keyboardScrolling}
+  >
     {@render children()}
   </main>
 </div>
