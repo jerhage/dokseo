@@ -1,0 +1,21 @@
+@layer features {
+  @scope (.storage-account) {
+    table {
+      border-collapse: collapse;
+    }
+
+    caption,
+    th {
+      text-align: start;
+    }
+
+    .figure {
+      text-align: end;
+      white-space: nowrap;
+    }
+
+    .total {
+      color: var(--color-brand-text);
+    }
+  }
+}
