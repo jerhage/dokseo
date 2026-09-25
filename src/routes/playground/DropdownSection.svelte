@@ -44,4 +44,21 @@
     </div>
     <p class="text-sm text-muted">Last chosen: {chosen}</p>
   </Card>
+  <Card>
+    <p class="text-sm text-muted">
+      A menu flips to the other side of its trigger rather than open past the edge of the screen.
+    </p>
+    <div class="row justify-between gap-3">
+      <Dropdown size="sm" align="end">
+        {#snippet trigger()}End{/snippet}
+        <DropdownItem onclick={() => (chosen = 'Export')}>Export</DropdownItem>
+        <DropdownItem onclick={() => (chosen = 'Share')}>Share</DropdownItem>
+      </Dropdown>
+      <Dropdown size="sm">
+        {#snippet trigger()}Start{/snippet}
+        <DropdownItem onclick={() => (chosen = 'Export')}>Export</DropdownItem>
+        <DropdownItem onclick={() => (chosen = 'Share')}>Share</DropdownItem>
+      </Dropdown>
+    </div>
+  </Card>
 </DemoSection>
