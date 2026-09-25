@@ -1,0 +1,8 @@
+@layer features {
+  @scope (.engine-trade) {
+    .sheet {
+      inset: auto;
+      inline-size: min(var(--modal-width-sm), 100% - 2 * var(--sp-2));
+    }
+  }
+}
