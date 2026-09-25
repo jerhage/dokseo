@@ -1,8 +1,11 @@
 <script lang="ts">
+  import Badge from '$lib/components/Badge.svelte';
+  import Button from '$lib/components/Button.svelte';
   import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { ModelFootprint } from '../../domain/model/model-footprint';
   import { tradeAspectName, tradeOffsOf } from '../../domain/engine/ocr-engine';
   import type { OcrEngine } from '../../domain/engine/ocr-engine';
+  import './engine-trade.css';
 
   type Props = {
     readonly engine: OcrEngine;
@@ -15,149 +18,44 @@
 
   const uid = $props.id();
 
-  let trigger = $state<HTMLButtonElement | null>(null);
+  let trigger = $state<HTMLButtonElement | undefined>();
 </script>
 
-<span class="trade">
-  <button
-    class="mark"
-    type="button"
-    bind:this={trigger}
+<span class="engine-trade row">
+  <Button
+    variant="outline"
+    size="sm"
+    square
+    pill
+    bind:ref={trigger}
     aria-haspopup="dialog"
     aria-label="About {engine.about}"
     popovertarget="{uid}-sheet"
   >
     i
-  </button>
+  </Button>
 
-  <span
-    class="sheet"
+  <div
+    class="sheet surface-raised bordered rounded-container shadow-lg m-0 p-4"
     id="{uid}-sheet"
     popover
     role="dialog"
     aria-label="About {engine.about}"
-    use:anchoredTo={() => trigger}
+    use:anchoredTo={() => trigger ?? null}
   >
-    <span class="caption">{engine.name}</span>
-    <span class="rows">
-      {#each trades as trade (trade.aspect)}
-        <span class="row">
-          <span class="dot {trade.verdict}" aria-hidden="true"></span>
-          <span class="aspect">{tradeAspectName(trade.aspect)}</span>
-          <span class="value">{trade.value}</span>
-        </span>
-      {/each}
-    </span>
-    <span class="footnote">{engine.footnote}</span>
-  </span>
+    <div class="col gap-3">
+      <p class="mono text-xs uppercase tracking-wide text-faint">{engine.name}</p>
+      <ul class="list-reset col gap-3">
+        {#each trades as trade (trade.aspect)}
+          <li class="col items-start gap-1">
+            <Badge dot variant={trade.verdict === 'good' ? 'success' : 'warning'}>
+              {tradeAspectName(trade.aspect)}
+            </Badge>
+            <span class="text-sm">{trade.value}</span>
+          </li>
+        {/each}
+      </ul>
+      <p class="text-xs text-muted border-t pt-2">{engine.footnote}</p>
+    </div>
+  </div>
 </span>
-
-<style>
-  .trade {
-    display: inline-flex;
-  }
-
-  .mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    border: 1px solid var(--c-border-7);
-    border-radius: var(--r-pill);
-    background: transparent;
-    color: var(--c-text-7);
-    font-family: Georgia, serif;
-    font-size: 9.5px;
-    font-style: italic;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .mark:hover,
-  .mark:focus-visible {
-    border-color: var(--c-accent-border);
-    background: var(--c-accent-wash-soft);
-    color: var(--c-accent);
-  }
-
-  .sheet {
-    position: fixed;
-    inset: auto;
-    width: 294px;
-    margin: 0;
-    padding: var(--s-3);
-    overflow: visible;
-    border: 1px solid var(--c-border-6);
-    border-radius: var(--r-6);
-    background: var(--c-surface-popover);
-    box-shadow: 0 20px 44px rgb(0 0 0 / 65%);
-    color: inherit;
-  }
-
-  .sheet:popover-open {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .caption {
-    margin-bottom: var(--s-3);
-    color: var(--c-text-10);
-    font-family: var(--f-mono);
-    font-size: 9.5px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .rows {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-  }
-
-  .row {
-    display: flex;
-    align-items: baseline;
-    gap: var(--s-2);
-  }
-
-  .dot {
-    flex: none;
-    width: 5px;
-    height: 5px;
-    border-radius: var(--r-pill);
-    background: var(--c-warning);
-    transform: translateY(-2px);
-  }
-
-  .dot.good {
-    background: var(--c-accent);
-  }
-
-  .aspect {
-    flex: none;
-    width: 52px;
-    color: var(--c-text-9);
-    font-family: var(--f-mono);
-    font-size: 9.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .value {
-    flex: 1 1 auto;
-    color: var(--c-text-4);
-    font-size: 11.5px;
-    line-height: 1.45;
-  }
-
-  .footnote {
-    margin-top: var(--s-3);
-    padding-top: var(--s-2);
-    border-top: 1px solid var(--c-border-2);
-    color: var(--c-text-9);
-    font-size: 10.5px;
-    line-height: 1.5;
-  }
-</style>

@@ -1,8 +1,8 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { accountOf } from '../../../domain/storage-parts';
-import type { StorageAccount, StoragePart } from '../../../domain/storage-parts';
+import { accountOf } from '../domain/storage-parts';
+import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 import StorageBreakdown from './StorageBreakdown.svelte';
 
 const MODEL: StoragePart = {

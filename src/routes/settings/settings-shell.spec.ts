@@ -31,11 +31,11 @@ describe('SettingsShell', () => {
   });
 
   it('links every section beneath the root it is given', () => {
-    const html = markup({ current: 'engine', root: '/preview/b/settings' });
+    const html = markup({ current: 'engine', root: '/elsewhere/settings' });
 
-    expect(html).toContain('href="/preview/b/settings"');
-    expect(html).toContain('href="/preview/b/settings/storage"');
-    expect(html).toContain('href="/preview/b/settings/appearance"');
+    expect(html).toContain('href="/elsewhere/settings"');
+    expect(html).toContain('href="/elsewhere/settings/storage"');
+    expect(html).toContain('href="/elsewhere/settings/appearance"');
   });
 
   it('names the current section last in the breadcrumb', () => {

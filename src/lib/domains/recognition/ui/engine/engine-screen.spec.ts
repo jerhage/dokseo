@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { JAPANESE_OCR_MODEL } from '../../../domain/model/model-footprint';
-import { engineStatus, OCR_ENGINES } from '../../../domain/engine/ocr-engine';
-import type { EngineState } from '../../../domain/engine/ocr-engine';
-import type { ModelStorageSnapshot } from '../../../use-cases/model/read-model-storage';
+import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import { engineStatus, OCR_ENGINES } from '../../domain/engine/ocr-engine';
+import type { EngineState } from '../../domain/engine/ocr-engine';
+import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import {
   activeDevice,
   activeEngine,

@@ -1,11 +1,11 @@
-import type { StorageAccount } from '../../../domain/storage-parts';
+import type { StorageAccount } from '../domain/storage-parts';
 import {
   measuredFigure,
   originFigure,
   partFigure,
   unnamedFigure,
   unnamedNote,
-} from '../../storage-view.svelte';
+} from './storage-view.svelte';
 
 type StorageScreenState =
   | { readonly kind: 'reading' }

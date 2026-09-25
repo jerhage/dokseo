@@ -2,8 +2,8 @@
   import Badge from '$lib/components/Badge.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import Stat from '$lib/components/Stat.svelte';
-  import type { StorageAccount } from '../../../domain/storage-parts';
-  import { allowanceNote, persistenceNote } from '../../storage-view.svelte';
+  import type { StorageAccount } from '../domain/storage-parts';
+  import { allowanceNote, persistenceNote } from './storage-view.svelte';
   import { allowanceOf, usedHeadline } from './storage-overview';
 
   type Props = { readonly account: StorageAccount };

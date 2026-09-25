@@ -1,7 +1,7 @@
 <script lang="ts">
   import Progress from '$lib/components/Progress.svelte';
-  import type { StorageAccount } from '../../../domain/storage-parts';
-  import { measuredFigure, originFigure } from '../../storage-view.svelte';
+  import type { StorageAccount } from '../domain/storage-parts';
+  import { measuredFigure, originFigure } from './storage-view.svelte';
   import { UNNAMED_KEY, breakdownRows, breakdownScale } from './storage-overview';
 
   type Props = { readonly account: StorageAccount };

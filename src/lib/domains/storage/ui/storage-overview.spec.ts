@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { accountOf } from '../../../domain/storage-parts';
-import type { StorageAccount, StoragePart } from '../../../domain/storage-parts';
+import { accountOf } from '../domain/storage-parts';
+import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 import {
   UNNAMED_KEY,
   allowanceOf,

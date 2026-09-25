@@ -1,14 +1,14 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import type { ComputeChoice } from '../../../../domain/engine/compute-choice';
-import { GPU_UNDETECTED } from '../../../../domain/engine/compute-choice';
-import type { EngineState } from '../../../../domain/engine/ocr-engine';
-import type { RecognizerSession } from '../../../../domain/engine/recognizer-session';
-import type { DownloadState } from '../../../../domain/model/model-download';
-import { IDLE } from '../../../../domain/model/model-download';
-import { JAPANESE_OCR_MODEL, modelsFor } from '../../../../domain/model/model-footprint';
-import type { ModelStorageSnapshot } from '../../../../use-cases/model/read-model-storage';
+import type { ComputeChoice } from '../../domain/engine/compute-choice';
+import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
+import type { EngineState } from '../../domain/engine/ocr-engine';
+import type { RecognizerSession } from '../../domain/engine/recognizer-session';
+import type { DownloadState } from '../../domain/model/model-download';
+import { IDLE } from '../../domain/model/model-download';
+import { JAPANESE_OCR_MODEL, modelsFor } from '../../domain/model/model-footprint';
+import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import EngineAside from './EngineAside.svelte';
 import EngineSettingsScreen from './EngineSettingsScreen.svelte';
 
@@ -98,7 +98,7 @@ function aside(over: Partial<Fake>): string {
   return render(ASIDE, { props: { view: viewOf(over) } }).body;
 }
 
-describe('EngineSettingsScreen, variant A', () => {
+describe('EngineSettingsScreen', () => {
   it('says no model is chosen and draws no engine when the view has none', () => {
     const html = screen({ chosen: false });
 
@@ -205,13 +205,13 @@ describe('EngineSettingsScreen, variant A', () => {
   it('links to the storage section it is given', () => {
     expect(screen({})).toContain('href="/settings/storage"');
     const html = render(SCREEN, {
-      props: { view: viewOf({}), storageHref: '/preview/a/settings/storage' },
+      props: { view: viewOf({}), storageHref: '/elsewhere/storage' },
     }).body;
-    expect(html).toContain('href="/preview/a/settings/storage"');
+    expect(html).toContain('href="/elsewhere/storage"');
   });
 });
 
-describe('EngineAside, variant A', () => {
+describe('EngineAside', () => {
   it('names the engine and the status word before a session opens', () => {
     const html = aside({});
 

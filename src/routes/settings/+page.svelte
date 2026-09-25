@@ -13,9 +13,9 @@
   });
 </script>
 
-<SettingsShell current="engine">
+<SettingsShell current="engine" flush>
   {#snippet aside()}
     <EngineAside {view} />
   {/snippet}
-  <EngineSettingsScreen {view} />
+  <EngineSettingsScreen {view} storageHref="/settings/storage" />
 </SettingsShell>

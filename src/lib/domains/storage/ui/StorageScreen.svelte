@@ -1,195 +1,65 @@
 <script lang="ts">
-  import {
-    allowanceNote,
-    measuredFigure,
-    originFigure,
-    partFigure,
-    persistenceNote,
-    unnamedFigure,
-    unnamedNote,
-  } from './storage-view.svelte';
+  import Alert from '$lib/components/Alert.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import Skeleton from '$lib/components/Skeleton.svelte';
   import type { StorageSettingsView } from './storage-view.svelte';
+  import StorageBreakdown from './StorageBreakdown.svelte';
+  import StorageSummary from './StorageSummary.svelte';
+  import { screenState } from './storage-overview';
+  import type { StorageScreenState } from './storage-overview';
 
-  type Props = { readonly view: StorageSettingsView };
+  type Props = { readonly view: StorageSettingsView; readonly engineHref?: string };
 
-  let { view }: Props = $props();
+  let { view, engineHref = '/settings' }: Props = $props();
 
-  const account = $derived(view.account);
+  const uid = $props.id();
+
+  const state: StorageScreenState = $derived(screenState(view.account, view.message));
 </script>
 
-<header class="head">
-  <h1 class="title">Storage</h1>
-  <p class="lead">
-    Everything this app keeps on this device, part by part. The parts are added up, then compared
-    with the total the browser reports for this app, so that whatever the parts do not explain is
-    named rather than hidden.
-  </p>
-</header>
+<div class="col gap-6 prose">
+  <header class="col gap-1">
+    <h1 class="text-lg">Storage</h1>
+    <p class="text-sm text-muted">
+      Everything this app keeps on this device, largest first. The parts are added up, then compared
+      with the total the browser reports, so whatever they do not explain is named rather than
+      hidden.
+    </p>
+  </header>
 
-{#if account === null}
-  <p class="notice">{view.message ?? 'Reading what is stored…'}</p>
-{:else}
-  <section class="card">
-    <table class="parts">
-      <caption class="caption">Stored on this device</caption>
-      <tbody>
-        {#each account.parts as part (part.key)}
-          <tr>
-            <th scope="row">
-              <span class="what">{part.label}</span>
-              <span class="detail">{part.detail}</span>
-            </th>
-            <td class="figure" class:vague={part.bytes === null}>{partFigure(part)}</td>
-          </tr>
-        {/each}
-        <tr class="sum">
-          <th scope="row"><span class="what">Measured above</span></th>
-          <td class="figure">{measuredFigure(account)}</td>
-        </tr>
-        {#if unnamedFigure(account) !== null}
-          <tr>
-            <th scope="row">
-              <span class="what">Other browser storage</span>
-              <span class="detail">{unnamedNote(account)}</span>
-            </th>
-            <td class="figure">{unnamedFigure(account)}</td>
-          </tr>
-        {/if}
-        {#if originFigure(account) !== null}
-          <tr class="sum total">
-            <th scope="row"><span class="what">Counted by the browser for this app</span></th>
-            <td class="figure">{originFigure(account)}</td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
-
-    <div class="notes">
-      {#if allowanceNote(account) !== null}
-        <p class="footnote">{allowanceNote(account)}</p>
-      {/if}
-      <p class="footnote">{persistenceNote(account)}</p>
-      <p class="footnote">
-        Books are removed from your library. The model is removed on
-        <a class="link" href="/settings">OCR engine</a>.
-      </p>
+  {#if state.kind === 'reading'}
+    <div class="surface bordered rounded-container col gap-3 p-5" aria-busy="true">
+      <p class="text-sm text-muted" aria-live="polite">Reading what is stored…</p>
+      <Skeleton shape="title" width="40%" />
+      <Skeleton shape="text" />
+      <Skeleton shape="text" width="70%" />
     </div>
+  {:else if state.kind === 'failed'}
+    <Alert variant="danger" title="Storage could not be read">{state.message}</Alert>
+  {:else if state.kind === 'ready'}
+    <StorageSummary account={state.account} />
+    <StorageBreakdown account={state.account} />
+  {/if}
+
+  <section class="col gap-2" aria-labelledby="{uid}-free">
+    <h2 id="{uid}-free" class="px-1 text-xs uppercase tracking-wide text-muted weight-semibold">
+      Free up space
+    </h2>
+    <ul class="list-reset surface bordered rounded-container overflow-hidden">
+      <li class="row wrap items-center justify-between gap-3 px-4 py-3">
+        <div class="col gap-1 flex-fill">
+          <span class="text-sm">Books</span>
+          <span class="text-xs text-muted">Books are removed from your library.</span>
+        </div>
+        <Button href="/" size="sm" variant="outline">Open your library</Button>
+      </li>
+      <li class="row wrap items-center justify-between gap-3 px-4 py-3 border-t">
+        <div class="col gap-1 flex-fill">
+          <span class="text-sm">Recognition model</span>
+          <span class="text-xs text-muted">The model is removed on the OCR engine page.</span>
+        </div>
+        <Button href={engineHref} size="sm" variant="outline">OCR engine</Button>
+      </li>
+    </ul>
   </section>
-{/if}
-
-<style>
-  .head {
-    flex: none;
-    padding: var(--s-5) var(--s-6) var(--s-4);
-    border-bottom: 1px solid var(--c-border-1);
-  }
-
-  .title {
-    margin: 0;
-    color: var(--c-text-1);
-    font-size: 20px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-  }
-
-  .lead {
-    max-width: 620px;
-    margin: var(--s-1) 0 0;
-    color: var(--c-text-7);
-    font-size: 12.5px;
-    line-height: 1.5;
-  }
-
-  .notice {
-    margin: var(--s-5) var(--s-6);
-    color: var(--c-text-7);
-    font-size: 12.5px;
-  }
-
-  .card {
-    margin: var(--s-4) var(--s-6) var(--s-6);
-    overflow: hidden;
-    border: 1px solid var(--c-border-6);
-    border-radius: var(--r-6);
-    background: var(--c-surface-card-quiet);
-  }
-
-  .parts {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .caption {
-    padding: var(--s-3) var(--s-4) var(--s-2);
-    color: var(--c-text-10);
-    font-family: var(--f-mono);
-    font-size: 9.5px;
-    letter-spacing: 0.1em;
-    text-align: left;
-    text-transform: uppercase;
-  }
-
-  th {
-    padding: var(--s-2) var(--s-4);
-    border-top: 1px solid var(--c-border-2);
-    font-weight: 400;
-    text-align: left;
-  }
-
-  .what {
-    display: block;
-    color: var(--c-text-2);
-    font-size: 12.5px;
-  }
-
-  .detail {
-    display: block;
-    margin-top: 2px;
-    color: var(--c-text-9);
-    font-size: 10.5px;
-  }
-
-  .figure {
-    padding: var(--s-2) var(--s-4);
-    border-top: 1px solid var(--c-border-2);
-    color: var(--c-text-2);
-    font-family: var(--f-mono);
-    font-size: 13px;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .figure.vague {
-    color: var(--c-text-9);
-    font-size: 11px;
-  }
-
-  .sum .what,
-  .sum .figure {
-    color: var(--c-text-1);
-  }
-
-  .total .what,
-  .total .figure {
-    color: var(--c-accent);
-  }
-
-  .notes {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-1);
-    padding: var(--s-3) var(--s-4) var(--s-4);
-    border-top: 1px solid var(--c-border-2);
-  }
-
-  .footnote {
-    margin: 0;
-    color: var(--c-text-9);
-    font-size: 10.5px;
-    line-height: 1.5;
-  }
-
-  .link {
-    color: var(--c-accent);
-  }
-</style>
+</div>
