@@ -1,0 +1,10 @@
+@layer features {
+  @scope (.panel-dock) {
+    :scope.is-side .panel-slot {
+      inline-size: var(--layout-list-width);
+    }
+    :scope.is-sheet {
+      block-size: 40%;
+    }
+  }
+}
