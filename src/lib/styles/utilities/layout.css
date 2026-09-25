@@ -41,6 +41,44 @@
 .overflow-hidden {
   overflow: hidden;
 }
+.relative {
+  position: relative;
+}
+.pin-top,
+.pin-bottom {
+  position: absolute;
+  inset-inline: 0;
+}
+.pin-top {
+  inset-block-start: 0;
+}
+.pin-bottom {
+  inset-block-end: 0;
+}
+.z-base {
+  z-index: var(--z-base);
+}
+.z-raised {
+  z-index: var(--z-raised);
+}
+.z-dropdown {
+  z-index: var(--z-dropdown);
+}
+.z-sticky {
+  z-index: var(--z-sticky);
+}
+.z-overlay {
+  z-index: var(--z-overlay);
+}
+.z-modal {
+  z-index: var(--z-modal);
+}
+.z-toast {
+  z-index: var(--z-toast);
+}
+.z-tooltip {
+  z-index: var(--z-tooltip);
+}
 .list-reset {
   padding: 0;
   list-style: none;

@@ -2,3 +2,12 @@
   opacity: var(--opacity-muted);
   transition: opacity var(--transition-ui);
 }
+.hushable {
+  transition:
+    opacity var(--dur-quick) var(--ease-smooth),
+    margin-block var(--dur-quick) var(--ease-smooth);
+}
+.is-hushed {
+  opacity: 0;
+  pointer-events: none;
+}

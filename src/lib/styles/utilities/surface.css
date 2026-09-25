@@ -1,3 +1,11 @@
+.scheme-light {
+  color-scheme: light;
+  color: var(--color-text);
+}
+.scheme-dark {
+  color-scheme: dark;
+  color: var(--color-text);
+}
 .surface-bg {
   color: var(--color-text);
   background-color: var(--color-bg);
@@ -23,6 +31,18 @@
 }
 .bordered-strong {
   border: var(--border-width) solid var(--border-color-strong);
+}
+.border-t {
+  border-block-start: var(--border-width) solid var(--border-color);
+}
+.border-b {
+  border-block-end: var(--border-width) solid var(--border-color);
+}
+.border-s {
+  border-inline-start: var(--border-width) solid var(--border-color);
+}
+.border-e {
+  border-inline-end: var(--border-width) solid var(--border-color);
 }
 .accent-start {
   padding-inline-start: var(--sp-2);

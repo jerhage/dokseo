@@ -88,6 +88,7 @@
   --ds-size-sidebar: 15rem;
   --ds-size-list: 18rem;
   --ds-size-stat: 11rem;
+  --ds-size-compact: 43.75rem;
 
   --ds-dur-instant: 40ms;
   --ds-dur-flash: 90ms;

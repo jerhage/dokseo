@@ -93,6 +93,9 @@
 .px-8 {
   padding-inline: var(--sp-8);
 }
+.px-responsive {
+  padding-inline: clamp(var(--sp-4), (100% - var(--breakpoint-compact)) * 1000, var(--sp-6));
+}
 .py-0 {
   padding-block: 0;
 }

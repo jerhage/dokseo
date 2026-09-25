@@ -248,6 +248,15 @@ const TOKEN_UTILITIES: Readonly<Record<string, readonly [string, string, string]
   'utilities/media.css': ['aspect', 'aspect-ratio', 'ratio'],
 };
 
+const BORDER_SIDES: Readonly<Record<string, string>> = {
+  t: 'border-block-start',
+  b: 'border-block-end',
+  s: 'border-inline-start',
+  e: 'border-inline-end',
+};
+
+const SCHEMES = ['light', 'dark'];
+
 const LANGUAGE_FACES = ['ja', 'ko'];
 
 const WIDTH_STEPS = ['6', '8', '10'];
@@ -386,6 +395,12 @@ function themeRules(css: string): readonly Rule[] {
 
 function ruleBody(css: string, selector: string): string {
   return ruleFor(css, selector).body;
+}
+
+function everyDeclarationFor(css: string, selector: string): readonly string[] {
+  return rules(css)
+    .filter((rule) => rule.selectors.includes(selector))
+    .flatMap((rule) => declarations(rule.body));
 }
 
 function styled(folders: readonly string[]): readonly string[] {
@@ -1009,6 +1024,91 @@ describe('the design system stylesheets', () => {
     );
     expect(declarations(ruleBody(command, '.command-item-hint'))).toContain(
       'margin-inline-start: auto',
+    );
+  });
+
+  it('draws each one-sided border on the logical side its name says, as a bordered box draws all four', () => {
+    const surface = style('utilities/surface.css');
+    const all = declarations(ruleBody(surface, '.bordered'))[0]?.replace(/^border:/u, '');
+
+    for (const [side, property] of Object.entries(BORDER_SIDES)) {
+      const selector = `.border-${side}`;
+
+      expect({ selector, body: declarations(ruleBody(surface, selector)) }).toEqual({
+        selector,
+        body: [`${property}:${all}`],
+      });
+    }
+  });
+
+  it('pins a subtree to the scheme its name says and sets its text colour in that scheme', () => {
+    const surface = style('utilities/surface.css');
+
+    for (const scheme of SCHEMES) {
+      const selector = `.scheme-${scheme}`;
+
+      expect({ selector, body: declarations(ruleBody(surface, selector)).toSorted() }).toEqual({
+        selector,
+        body: ['color-scheme: ' + scheme, 'color: var(--color-text)'],
+      });
+    }
+  });
+
+  it('hides a hushed element from sight and from the pointer, but not from layout', () => {
+    const state = style('utilities/state.css');
+
+    expect(declarations(ruleBody(state, '.is-hushed'))).toEqual([
+      'opacity: 0',
+      'pointer-events: none',
+    ]);
+  });
+
+  it('fades a hushable element and eases its block margins on the motion tokens', () => {
+    expect(declarations(ruleBody(style('utilities/state.css'), '.hushable'))).toEqual([
+      'transition: opacity var(--dur-quick) var(--ease-smooth), margin-block var(--dur-quick) var(--ease-smooth)',
+    ]);
+  });
+
+  it('pins a bar across the full width of its positioned ancestor, at the edge its name says', () => {
+    const layout = style('utilities/layout.css');
+
+    expect(everyDeclarationFor(layout, '.pin-top').toSorted()).toEqual([
+      'inset-block-start: 0',
+      'inset-inline: 0',
+      'position: absolute',
+    ]);
+    expect(everyDeclarationFor(layout, '.pin-bottom').toSorted()).toEqual([
+      'inset-block-end: 0',
+      'inset-inline: 0',
+      'position: absolute',
+    ]);
+    expect(declarations(ruleBody(layout, '.relative'))).toEqual(['position: relative']);
+  });
+
+  it('gives every step of the z-index scale a utility that reads its token', () => {
+    const layout = style('utilities/layout.css');
+
+    for (const primitive of Object.keys(LOCKED_Z_SCALE)) {
+      const name = primitive.replace('--ds-', '');
+
+      expect({ name, body: declarations(ruleBody(layout, `.${name}`)) }).toEqual({
+        name,
+        body: [`z-index: var(--${name})`],
+      });
+    }
+  });
+
+  it('pads a responsive box by the narrow step below the compact breakpoint of its container, and the wide step above it', () => {
+    const body = declarations(ruleBody(style('utilities/spacing.css'), '.px-responsive'));
+
+    expect(body).toEqual([
+      'padding-inline: clamp(var(--sp-4), (100% - var(--breakpoint-compact)) * 1000, var(--sp-6))',
+    ]);
+    expect(definitionValues(style('tokens/spacing.css')).get('--breakpoint-compact')).toBe(
+      'var(--ds-size-compact)',
+    );
+    expect(definitionValues(style('base/primitives.css')).get('--ds-size-compact')).toBe(
+      '43.75rem',
     );
   });
 

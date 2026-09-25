@@ -49,4 +49,5 @@
   --toast-width: var(--ds-size-toast);
   --menu-min-width: var(--ds-size-menu);
   --stat-min-width: var(--ds-size-stat);
+  --breakpoint-compact: var(--ds-size-compact);
 }

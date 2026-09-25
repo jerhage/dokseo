@@ -12,6 +12,7 @@
   import BentoSection from './BentoSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
+  import ChromeSection from './ChromeSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
   import CommandSection from './CommandSection.svelte';
   import DividerSection from './DividerSection.svelte';
@@ -63,6 +64,7 @@
     SplitSection,
     ZPatternSection,
     OverlaySection,
+    ChromeSection,
     BentoSection,
     MosaicSection,
     GridSection,

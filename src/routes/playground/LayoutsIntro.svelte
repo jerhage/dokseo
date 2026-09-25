@@ -7,6 +7,7 @@
     { id: 'l-split', label: 'Split' },
     { id: 'l-z', label: 'Z-pattern' },
     { id: 'l-overlay', label: 'Overlay' },
+    { id: 'l-chrome', label: 'Page chrome' },
     { id: 'l-bento', label: 'Bento' },
     { id: 'l-mosaic', label: 'Mosaic' },
     { id: 'l-grid', label: 'Grid, span and stack' },
