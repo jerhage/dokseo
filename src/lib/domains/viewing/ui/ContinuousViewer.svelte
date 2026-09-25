@@ -20,6 +20,7 @@
   import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
+  import './continuous-viewer.css';
 
   type Hold = {
     readonly position: ReadingPosition;
@@ -278,9 +279,9 @@
 
 <svelte:window {onkeydown} />
 
-<div class="viewer">
+<div class="continuous-viewer relative row gap-0 flex-1 min-h-0 scheme-dark surface-sunken">
   <div
-    class="scroller"
+    class="scroller flex-1 min-h-0 overflow-auto"
     role="region"
     aria-label="Continuous strip"
     bind:this={scroller}
@@ -291,10 +292,10 @@
     onpointerup={(event) => selection?.pointerup(event)}
     onpointercancel={(event) => selection?.pointercancel(event)}
   >
-    <div class="strip" style:width="{width}px">
-      <div class="spacer" style:height="{spacers.before}px" aria-hidden="true"></div>
+    <div class="strip mx-auto" style:--strip-width="{width}px">
+      <div class="spacer" style:--spacer-height="{spacers.before}px" aria-hidden="true"></div>
       {#each spacers.slices as slice (slice.index)}
-        <div class="slice" style:height="{slice.height}px">
+        <div class="slice overflow-hidden" style:--slice-height="{slice.height}px">
           <PageFrame
             index={slice.index}
             label={label(slice.index)}
@@ -305,7 +306,7 @@
           />
         </div>
       {/each}
-      <div class="spacer" style:height="{spacers.after}px" aria-hidden="true"></div>
+      <div class="spacer" style:--spacer-height="{spacers.after}px" aria-hidden="true"></div>
     </div>
   </div>
 
@@ -320,42 +321,3 @@
     tap={onTap}
   />
 </div>
-
-<style>
-  .viewer {
-    position: relative;
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    background: var(--c-viewer-gradient);
-  }
-
-  .scroller {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    overflow: auto;
-    cursor: crosshair;
-    overflow-anchor: none;
-    scrollbar-gutter: stable;
-    overscroll-behavior: contain;
-  }
-
-  .scroller:focus-visible {
-    outline: 1px solid var(--c-accent-border-strong);
-    outline-offset: -1px;
-  }
-
-  .strip {
-    margin: 0 auto;
-  }
-
-  .slice {
-    display: block;
-    overflow: hidden;
-  }
-
-  .spacer {
-    display: block;
-  }
-</style>

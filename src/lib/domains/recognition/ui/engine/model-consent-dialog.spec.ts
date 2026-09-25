@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { JAPANESE_OCR_MODEL } from '../../../domain/model/model-footprint';
+import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import ModelConsentDialog from './ModelConsentDialog.svelte';
 
 const DIALOG = ModelConsentDialog as unknown as Component<Record<string, unknown>>;
@@ -21,7 +21,7 @@ function text(language: string): string {
     .trim();
 }
 
-describe('ModelConsentDialog, variant A', () => {
+describe('ModelConsentDialog', () => {
   it('asks for the model of the language the request names', () => {
     expect(text('ja')).toContain('Download the Japanese recognition model?');
     expect(text('ko')).toContain('Download the Korean recognition model?');

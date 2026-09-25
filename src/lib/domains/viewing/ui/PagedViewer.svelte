@@ -18,6 +18,7 @@
   import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
+  import './paged-viewer.css';
 
   type Fit = PageFit | 'free';
 
@@ -77,10 +78,6 @@
   let hintLines = $state.raw<readonly GestureHint[]>([]);
 
   let shownPages: PageGroup | null = null;
-
-  const transform = $derived(
-    `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
-  );
 
   const pending = $derived(
     hintsToShow(chromeShown, pagedHints(pannable), learnedGestures(), revealed),
@@ -366,11 +363,15 @@
 
 <svelte:window {onkeydown} {onkeyup} {onblur} />
 
-<div class="viewer">
+<div class="paged-viewer row gap-0 flex-1 min-h-0 overflow-hidden scheme-dark surface-sunken">
   <div
-    class="frame"
-    class:grabbable={spaceHeld && grab === null && !(selection?.dragging() ?? false)}
-    class:grabbing={grab !== null}
+    class={[
+      'frame relative row gap-0 flex-1 min-h-0 overflow-hidden',
+      {
+        'is-grabbable': spaceHeld && grab === null && !(selection?.dragging() ?? false),
+        'is-grabbing': grab !== null,
+      },
+    ]}
     role="group"
     aria-label="Pages in view"
     bind:this={frame}
@@ -380,7 +381,13 @@
     {onpointerup}
     {onpointercancel}
   >
-    <div class="strip" class:rtl={direction === 'rtl'} bind:this={strip} style:transform>
+    <div
+      class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
+      bind:this={strip}
+      style:--pan-x="{viewport.panX}px"
+      style:--pan-y="{viewport.panY}px"
+      style:--zoom={viewport.zoom}
+    >
       {#each pages as index (index)}
         <PageFrame {index} label={label(index)} {pictureAt} {measured} glow={glowOn(glow, index)} />
       {/each}
@@ -398,12 +405,18 @@
       tap={onTap}
     />
 
-    <p class="hint" class:hushed={pending.length === 0} aria-hidden="true">
+    <p
+      class={[
+        'hint row wrap items-center gap-3 m-0 px-3 py-2 text-xs text-muted hushable',
+        { 'is-hushed': pending.length === 0 },
+      ]}
+      aria-hidden="true"
+    >
       {#each hintLines as hint (hint.keys.join('+'))}
-        <span class="gesture">
+        <span class="row items-center gap-1">
           {#each hint.keys as key, step (key)}
-            {#if step > 0}<span class="join">+</span>{/if}
-            <span class="cap">{key}</span>
+            {#if step > 0}<span class="text-faint">+</span>{/if}
+            <kbd class="text-xs">{key}</kbd>
           {/each}
           <span class="does">{hint.does}</span>
         </span>
@@ -411,100 +424,3 @@
     </p>
   </div>
 </div>
-
-<style>
-  .viewer {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    background: var(--c-viewer-gradient);
-  }
-
-  .frame {
-    position: relative;
-    display: flex;
-    flex: 1 1 auto;
-    align-items: stretch;
-    justify-content: flex-start;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    cursor: crosshair;
-    touch-action: none;
-  }
-
-  .frame.grabbable {
-    cursor: grab;
-  }
-
-  .frame.grabbing {
-    cursor: grabbing;
-  }
-
-  .strip {
-    display: flex;
-    flex: none;
-    flex-direction: row;
-    align-items: stretch;
-    height: 100%;
-    transform-origin: 0 0;
-  }
-
-  .strip.rtl {
-    flex-direction: row-reverse;
-  }
-
-  .hint {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    z-index: var(--z-chrome);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-1) var(--s-3);
-    margin: 0;
-    padding: var(--s-2) var(--s-3);
-    opacity: 1;
-    transition: opacity 240ms ease;
-    color: var(--c-text-10);
-    font-size: 10.5px;
-    pointer-events: none;
-  }
-
-  .hint.hushed {
-    opacity: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hint {
-      transition: none;
-    }
-  }
-
-  .gesture {
-    display: flex;
-    align-items: center;
-    gap: var(--s-1);
-  }
-
-  .cap {
-    padding: 0 var(--s-1);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-1);
-    background: var(--c-surface-chip);
-    color: var(--c-text-9);
-    font-family: var(--f-mono);
-    font-size: 9.5px;
-    line-height: 15px;
-  }
-
-  .join {
-    color: var(--c-text-11);
-  }
-
-  .does {
-    white-space: nowrap;
-  }
-</style>

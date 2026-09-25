@@ -1,8 +1,8 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import type { EngineState } from '../../../domain/engine/ocr-engine';
-import { JAPANESE_OCR_MODEL } from '../../../domain/model/model-footprint';
+import type { EngineState } from '../../domain/engine/ocr-engine';
+import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import EnginePill from './EnginePill.svelte';
 
 const PILL = EnginePill as unknown as Component<Record<string, unknown>>;
@@ -39,7 +39,7 @@ function text(html: string): string {
     .trim();
 }
 
-describe('EnginePill, variant A', () => {
+describe('EnginePill', () => {
   it('renders nothing while there is no book language and no session', () => {
     expect(markup(IDLE, null)).not.toContain('popovertarget');
   });

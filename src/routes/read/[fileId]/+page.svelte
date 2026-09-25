@@ -8,6 +8,7 @@
   import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
+  import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
@@ -113,6 +114,7 @@
   <ReaderScreen
     {view}
     {glow}
+    panelCount={captures.count}
     onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
     onNote={(regions) => captures.note(regions)}
   >
@@ -125,9 +127,17 @@
       <EnginePill engine={captures.engine} {language} />
     {/snippet}
     {#snippet panel()}
-      <CapturePanel view={captures} {language} direction={view.direction} />
+      <CapturePanel view={captures} {language} direction={view.direction} asksConsent={false} />
     {/snippet}
   </ReaderScreen>
+
+  {#if captures.consentRequest !== null}
+    <ModelConsentDialog
+      request={captures.consentRequest}
+      onagree={() => void captures.agree()}
+      ondecline={() => captures.decline()}
+    />
+  {/if}
 {/if}
 
 <CapturePalette

@@ -18,6 +18,7 @@
   } from '../domain/selection';
   import type { Point } from '../domain/selection';
   import { placedImages } from './page-placements';
+  import './selection-layer.css';
 
   type Watch = {
     readonly id: number;
@@ -65,8 +66,6 @@
     return isEmpty(rect) ? null : rect;
   });
 
-  // The committed rect is deliberately left unrendered; `committed`, `captured` and the
-  // handles stay because editing a committed selection is planned.
   const marquee = $derived(dragged);
 
   const noting = $derived(makes === 'written');
@@ -277,93 +276,22 @@
   }
 </script>
 
-<div class="layer" bind:this={host} aria-hidden="true">
+<div class="selection-layer" bind:this={host} aria-hidden="true">
   {#if overlay !== null}
     <div
-      class="marquee"
-      class:noting
-      style:left="{overlay.left}px"
-      style:top="{overlay.top}px"
-      style:width="{overlay.width}px"
-      style:height="{overlay.height}px"
+      class={['marquee', { 'is-note': noting }]}
+      style:--marquee-left="{overlay.left}px"
+      style:--marquee-top="{overlay.top}px"
+      style:--marquee-width="{overlay.width}px"
+      style:--marquee-height="{overlay.height}px"
     >
       <span class="handle north west"></span>
       <span class="handle north east"></span>
       <span class="handle south west"></span>
       <span class="handle south east"></span>
       {#if measure !== null}
-        <p class="size">{measure}</p>
+        <p class="size mono text-xs surface-raised rounded-control px-2 py-1">{measure}</p>
       {/if}
     </div>
   {/if}
 </div>
-
-<style>
-  .layer {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .marquee {
-    position: absolute;
-    z-index: var(--z-marquee);
-    border: 2px solid var(--c-accent);
-    background: var(--c-accent-wash);
-    pointer-events: none;
-  }
-
-  .marquee.noting {
-    border-color: var(--c-note);
-    background: var(--c-note-wash);
-  }
-
-  .marquee.noting .handle {
-    background: var(--c-note);
-  }
-
-  .marquee.noting .size {
-    color: var(--c-note);
-  }
-
-  .handle {
-    position: absolute;
-    display: block;
-    width: 9px;
-    height: 9px;
-    border: 1px solid var(--c-surface-void);
-    background: var(--c-accent);
-  }
-
-  .north {
-    top: -6px;
-  }
-
-  .south {
-    bottom: -6px;
-  }
-
-  .west {
-    left: -6px;
-  }
-
-  .east {
-    right: -6px;
-  }
-
-  .size {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    margin: 0 0 var(--s-1);
-    padding: var(--s-1) var(--s-2);
-    border-radius: var(--r-1);
-    background: var(--c-surface-popover);
-    color: var(--c-accent);
-    font-family: var(--f-mono);
-    font-size: 10.5px;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-  }
-</style>

@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageLayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
-import type { PageGroup } from '../../../domain/page-pairing';
+import type { PageGroup } from '../domain/page-pairing';
 
 type ScrubSource = {
   readonly layout: ImageLayoutKind;

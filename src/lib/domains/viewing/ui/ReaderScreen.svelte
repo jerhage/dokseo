@@ -1,33 +1,37 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
+  import Alert from '$lib/components/Alert.svelte';
+  import Button from '$lib/components/Button.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import type { ImageIndex } from '$lib/shared/ids';
+  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
+  import { imageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
-  import {
-    LAYOUT_KIND_CHOICES,
-    LAYOUT_KIND_LEGEND_BRIEF,
-    PAGE_PAIRING_CHOICES,
-    PAGE_PAIRING_LEGEND_BRIEF,
-    READING_DIRECTION_CHOICES,
-    READING_DIRECTION_LEGEND_BRIEF,
-  } from '$lib/shared/layout-choices';
-  import ReaderBars from '$lib/shared/ReaderBars.svelte';
-  import ContinuousViewer from './ContinuousViewer.svelte';
+  import { chromeShown } from '$lib/shared/reader-chrome';
   import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
-  import PagedViewer from './PagedViewer.svelte';
   import type { ReaderView } from './reader-view.svelte';
+  import ContinuousViewer from './ContinuousViewer.svelte';
+  import PagedViewer from './PagedViewer.svelte';
+  import PageBar from './PageBar.svelte';
+  import { dockPlacement, dockToggle, isNarrow } from './panel-dock';
+  import PanelDock from './PanelDock.svelte';
+  import { scrubPlace, stepMarker } from './page-scrubber';
+  import type { ScrubSource } from './page-scrubber';
+  import ReaderSettings from './ReaderSettings.svelte';
+  import './reader-screen.css';
 
   type Props = {
     readonly view: ReaderView;
     readonly glow?: readonly GlowRegion[];
     readonly panel?: Snippet;
+    readonly panelCount?: number;
     readonly engine?: Snippet;
     readonly arrival?: Snippet;
     readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
@@ -47,50 +51,65 @@
     readonly go: () => void;
   };
 
-  type Place = {
-    readonly marker: string;
-    readonly of: number;
-    readonly at: number;
-  };
-
-  let { view, glow = [], panel, engine, arrival, onSelect, onNote }: Props = $props();
-
-  const uid = $props.id();
+  let { view, glow = [], panel, panelCount, engine, arrival, onSelect, onNote }: Props = $props();
 
   const SIDEWAYS: readonly string[] = ['‹', '›'];
   const DOWNWARDS: readonly string[] = ['↑', '↓'];
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
-  let bars = $state<ReturnType<typeof ReaderBars> | null>(null);
+  let topBar = $state<HTMLElement | null>(null);
+  let bottomBar = $state<HTMLElement | null>(null);
+  let topHeight = $state(0);
+  let bottomHeight = $state(0);
+  let bodyWidth = $state(0);
+  let compactWidth = $state(0);
+  let asked = $state(false);
   let noting = $state(false);
+  let settingsOpen = $state(false);
+  let panelAsked = $state<boolean | null>(null);
 
+  function openPopovers(): readonly Element[] {
+    try {
+      return [...document.querySelectorAll(':popover-open')];
+    } catch {
+      return [];
+    }
+  }
+
+  const focus = new ChromeFocus(
+    () => [topBar, bottomBar],
+    () => [document.activeElement, ...openPopovers()],
+  );
+
+  const shown = $derived(chromeShown(asked, focus.held));
   const makes = $derived(dragOrigin(noting));
+  const narrow = $derived(isNarrow(bodyWidth, compactWidth));
+  const placement = $derived(dockPlacement(narrow, panelAsked));
+  const panelOpen = $derived(dockToggle(placement).open);
 
-  const barsShown = $derived(bars?.shown() ?? false);
+  function releaseBars(): void {
+    const focused = document.activeElement;
+    if (!(focused instanceof HTMLElement)) return;
+    if (topBar?.contains(focused) || bottomBar?.contains(focused)) focused.blur();
+  }
 
-  function toggleBars(): void {
-    bars?.toggle();
+  function toggleChrome(): void {
+    if (shown) releaseBars();
+    asked = !shown;
+  }
+
+  function togglePanel(): void {
+    panelAsked = !panelOpen;
   }
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
-  const rtl = $derived(view.direction === 'rtl');
   const groupCount = $derived(view.groups.length);
   const group = $derived(view.group);
-  const renderer = $derived.by(() => {
-    const kind = view.layout;
-    if (kind === null) return null;
-
-    return match(kind)
-      .with('paged', () => 'paged' as const)
-      .with('continuous', () => 'strip' as const)
-      .exhaustive();
-  });
-  const downward = $derived(renderer === 'strip');
   const layout = $derived(view.layout);
-  const pairing = $derived(book?.pagePairing ?? null);
-  const direction = $derived(book?.direction ?? null);
+  const downward = $derived(layout === 'continuous');
+  const forwardKey = $derived(view.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight');
 
   const stage = $derived(
     match(view.status)
@@ -116,56 +135,56 @@
 
   const meta = $derived(book === null ? '' : `${total} images · ${languageName(book.language)}`);
 
+  const source = $derived<ScrubSource | null>(
+    layout === null
+      ? null
+      : {
+          layout,
+          groups: view.groups,
+          group,
+          index: view.position.index,
+          total,
+        },
+  );
+
+  const place = $derived(source === null ? { steps: 0, at: 0 } : scrubPlace(source));
+
+  function markerAt(step: number): string {
+    return source === null ? `— / ${total}` : stepMarker(source, step);
+  }
+
+  function scrubTo(step: number): void {
+    const opened = book;
+    if (opened === null || layout === null) return;
+
+    match(layout)
+      .with('paged', () => void view.goToGroup(step))
+      .with('continuous', () => void view.goToImage(opened.id, imageIndex(step)))
+      .exhaustive();
+  }
+
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     view.select(regions);
+    if (panel !== undefined) panelAsked = true;
     if (makes === 'written') onNote?.(regions);
     else onSelect?.(regions, arrangement);
   }
 
-  function page(index: ImageIndex): string {
-    return String(index + 1).padStart(3, '0');
-  }
-
-  const canPrevious = $derived(stage === 'reading' && group > 0);
-  const canNext = $derived(stage === 'reading' && group + 1 < groupCount);
-
-  const forwardKey = $derived(rtl ? 'ArrowLeft' : 'ArrowRight');
-
-  const place = $derived.by<Place>(() => {
-    const kind = view.layout;
-    if (kind === null) return { marker: `— / ${total}`, of: 0, at: 0 };
-
-    return match(kind)
-      .with('paged', () => ({
-        marker:
-          view.visiblePages.length === 0
-            ? `— / ${total}`
-            : `${view.visiblePages.map(page).join('–')} / ${total}`,
-        of: groupCount,
-        at: groupCount === 0 ? 0 : group + 1,
-      }))
-      .with('continuous', () => ({
-        marker: total === 0 ? `— / ${total}` : `${page(view.position.index)} / ${total}`,
-        of: total,
-        at: total === 0 ? 0 : view.position.index + 1,
-      }))
-      .exhaustive();
-  });
-
-  const progress = $derived(place.of === 0 ? 0 : (place.at / place.of) * 100);
-
   const turns = $derived.by<Record<PageMove, Turn> | null>(() => {
-    const kind = view.layout;
-    if (kind === null) return null;
+    if (layout === null) return null;
 
-    return match(kind)
+    return match(layout)
       .with('paged', () => ({
         decrement: {
           label: 'Previous page',
-          enabled: canPrevious,
+          enabled: stage === 'reading' && group > 0,
           go: () => void view.previous(),
         },
-        increment: { label: 'Next page', enabled: canNext, go: () => void view.next() },
+        increment: {
+          label: 'Next page',
+          enabled: stage === 'reading' && group + 1 < groupCount,
+          go: () => void view.next(),
+        },
       }))
       .with('continuous', () => ({
         decrement: {
@@ -182,20 +201,21 @@
       .exhaustive();
   });
 
-  const order = $derived.by<readonly PageMove[]>(() => {
-    const kind = view.layout;
-    if (kind === null) return [];
+  const shownTurns = $derived.by(() => {
+    const all = turns;
+    if (all === null || layout === null) return [null, null];
 
-    return moveOrder(kind, view.direction);
+    const glyphs = downward ? DOWNWARDS : SIDEWAYS;
+    return moveOrder(layout, view.direction).map((move, slot) => {
+      const turn = all[move];
+      return { label: turn.label, enabled: turn.enabled, go: turn.go, glyph: glyphs[slot] ?? '' };
+    });
   });
 
-  const glyphs = $derived(downward ? DOWNWARDS : SIDEWAYS);
-
   const fits = $derived.by<readonly FitChoice[]>(() => {
-    const kind = view.layout;
-    if (kind === null) return [];
+    if (layout === null) return [];
 
-    return match(kind)
+    return match(layout)
       .with('paged', () => [
         {
           label: 'Fit height',
@@ -223,6 +243,22 @@
 
   $effect(() => lockScrolling(document.documentElement));
 
+  $effect(() => {
+    function refresh(): void {
+      focus.refresh();
+    }
+
+    window.addEventListener('focusin', refresh);
+    window.addEventListener('focusout', refresh);
+    window.addEventListener('toggle', refresh, true);
+
+    return () => {
+      window.removeEventListener('focusin', refresh);
+      window.removeEventListener('focusout', refresh);
+      window.removeEventListener('toggle', refresh, true);
+    };
+  });
+
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (downward) return;
@@ -237,511 +273,159 @@
 
 <svelte:window {onkeydown} />
 
-<div class="screen">
-  <ReaderBars bind:this={bars} placement="stacked" startShown={false}>
-    {#snippet header()}
-      <div class="heading">
-        <h1 class="title" class:ko={book?.language === 'ko'} lang={book?.language ?? 'en'}>
-          {book?.title ?? 'Reader'}
-        </h1>
-        <p class="meta">{meta}</p>
-      </div>
+<div class="reader-screen col gap-0 h-screen overflow-hidden surface-bg">
+  {#if view.message !== null && stage === 'reading'}
+    <Alert variant="warning" role="alert" class="shrink-0">{view.message}</Alert>
+  {/if}
 
-      {#if book !== null}
-        <div class="settings">
-          <fieldset class="group" disabled={view.saving}>
-            <legend class="legend">{LAYOUT_KIND_LEGEND_BRIEF}</legend>
-            {#each LAYOUT_KIND_CHOICES as choice (choice.value)}
-              <label class="pill" title={choice.label}>
-                <input
-                  type="radio"
-                  name="{uid}-layout"
-                  value={choice.value}
-                  checked={layout === choice.value}
-                  onchange={() => void view.setLayoutKind(choice.value)}
-                />
-                <span>{choice.brief}</span>
-              </label>
-            {/each}
-          </fieldset>
+  <div
+    class={['body relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
+    bind:clientWidth={bodyWidth}
+  >
+    <div class="compact-probe" aria-hidden="true" bind:clientWidth={compactWidth}></div>
 
-          {#if engine !== undefined}
-            <fieldset class="group">
-              <legend class="legend">Engine</legend>
-              {@render engine()}
-            </fieldset>
-          {/if}
-
-          <fieldset class="group" disabled={view.saving || downward}>
-            <legend class="legend">{PAGE_PAIRING_LEGEND_BRIEF}</legend>
-            {#each PAGE_PAIRING_CHOICES as choice (choice.value)}
-              <label class="pill" title={choice.label}>
-                <input
-                  type="radio"
-                  name="{uid}-pairing"
-                  value={choice.value}
-                  checked={pairing === choice.value}
-                  onchange={() => void view.setPairing(choice.value)}
-                />
-                <span>{choice.brief}</span>
-              </label>
-            {/each}
-          </fieldset>
-
-          <fieldset class="group" disabled={view.saving || downward}>
-            <legend class="legend">{READING_DIRECTION_LEGEND_BRIEF}</legend>
-            {#each READING_DIRECTION_CHOICES as choice (choice.value)}
-              <label class="pill" title={choice.label}>
-                <input
-                  type="radio"
-                  name="{uid}-direction"
-                  value={choice.value}
-                  checked={direction === choice.value}
-                  onchange={() => void view.setDirection(choice.value)}
-                />
-                <span>{choice.brief}</span>
-              </label>
-            {/each}
-          </fieldset>
-
-          <div class="group" role="group" aria-labelledby="{uid}-fit">
-            <span class="legend" id="{uid}-fit">Fit</span>
-            {#each fits as choice (choice.label)}
-              <button
-                class="fit"
-                type="button"
-                disabled={!choice.ready}
-                aria-pressed={choice.active}
-                onclick={choice.go}
-              >
-                {choice.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-    {/snippet}
-
-    {#snippet between()}
-      {#if view.message !== null && stage === 'reading'}
-        <p class="alert" role="alert">{view.message}</p>
-      {/if}
-
-      <div class="body">
-        {#if curtain === null && book !== null && renderer === 'strip'}
-          <ContinuousViewer
-            bind:this={strip}
-            sizes={view.sizes}
-            start={view.position}
+    <div
+      class="page relative col gap-0 flex-1 min-h-0 overflow-hidden"
+      style:--chrome-top="{shown ? topHeight : 0}px"
+      style:--chrome-bottom="{shown ? bottomHeight : 0}px"
+    >
+      {#if curtain === null && book !== null && layout === 'continuous'}
+        <ContinuousViewer
+          bind:this={strip}
+          sizes={view.sizes}
+          start={view.position}
+          pictureAt={(index) => view.pictureAt(index)}
+          measured={(index, size) => view.measure(index, size)}
+          {glow}
+          {makes}
+          moveTo={(position) => view.moveTo(position)}
+          select={(regions) => commit(regions, 'column')}
+          clear={() => view.clearSelection()}
+          onTap={toggleChrome}
+        />
+      {:else if curtain === null && book !== null}
+        {#key book.id}
+          <PagedViewer
+            bind:this={paged}
+            pages={view.visiblePages}
+            direction={book.direction}
+            pageFit={book.pageFit}
             pictureAt={(index) => view.pictureAt(index)}
             measured={(index, size) => view.measure(index, size)}
             {glow}
             {makes}
-            moveTo={(position) => view.moveTo(position)}
-            select={(regions) => commit(regions, 'column')}
+            chromeShown={shown}
+            select={(regions) => commit(regions, 'row')}
             clear={() => view.clearSelection()}
-            onTap={toggleBars}
+            onTap={toggleChrome}
+            onFit={(fit) => void view.setPageFit(fit)}
           />
-        {:else if curtain === null && book !== null}
-          {#key book.id}
-            <PagedViewer
-              bind:this={paged}
-              pages={view.visiblePages}
-              direction={book.direction}
-              pageFit={book.pageFit}
-              pictureAt={(index) => view.pictureAt(index)}
-              measured={(index, size) => view.measure(index, size)}
-              {glow}
-              {makes}
-              chromeShown={barsShown}
-              select={(regions) => commit(regions, 'row')}
-              clear={() => view.clearSelection()}
-              onTap={toggleBars}
-              onFit={(fit) => void view.setPageFit(fit)}
-            />
-          {/key}
-        {:else}
-          <div class="curtain">
-            <p class="notice" aria-live="polite">{curtain}</p>
-            {#if stage === 'failed'}
-              <a class="escape" href="/">Back to your library</a>
-            {/if}
-          </div>
-        {/if}
+        {/key}
+      {:else}
+        <div
+          class="col items-center justify-center gap-3 flex-1 min-h-0 p-5 scheme-dark surface-sunken"
+        >
+          <p class="prose text-sm text-muted" aria-live="polite">{curtain}</p>
+          {#if stage === 'failed'}
+            <Button href="/" variant="primary" size="sm">Back to your library</Button>
+          {/if}
+        </div>
+      {/if}
 
-        {#if barsShown}
-          <div class="rail" role="group" aria-label="Reader controls">
-            <a class="key" href="/">
-              <span class="glyph" aria-hidden="true">⌂</span>
-              <span class="assistive">Back to your library</span>
-            </a>
+      {#if arrival !== undefined}
+        <div class="arrived">{@render arrival()}</div>
+      {/if}
 
-            {#if turns !== null}
-              <span class="parting"></span>
-
-              {#each order as move, slot (move)}
-                {@const turn = turns[move]}
-                <button class="key" type="button" disabled={!turn.enabled} onclick={turn.go}>
-                  <span class="glyph" aria-hidden="true">{glyphs[slot]}</span>
-                  <span class="assistive">{turn.label}</span>
-                </button>
-              {/each}
-
-              <span class="parting"></span>
-
-              <button
-                class="key"
-                type="button"
-                aria-pressed={noting}
-                title={NOTE_MODE_LABEL}
-                onclick={() => (noting = !noting)}
-              >
-                <span class="glyph" aria-hidden="true">{NOTE_GLYPH}</span>
-                <span class="assistive">{NOTE_MODE_LABEL}</span>
-              </button>
-            {/if}
-          </div>
-        {/if}
-
-        {#if arrival !== undefined}
-          <div class="arrived">{@render arrival()}</div>
-        {/if}
-
-        {#if panel !== undefined}
-          <aside class="dock">{@render panel()}</aside>
-        {/if}
-      </div>
-    {/snippet}
-
-    {#snippet footer()}
-      <p class="marker">{place.marker}</p>
-
-      <div
-        class="track"
-        class:rtl
-        role="progressbar"
-        aria-label="Reading progress"
-        aria-valuemin={0}
-        aria-valuemax={place.of}
-        aria-valuenow={place.at}
-        aria-valuetext={place.marker}
+      <header
+        class={[
+          'pin-top z-sticky row wrap items-center gap-2 px-responsive py-2 surface border-b shadow-sm hushable',
+          { 'is-hushed': !shown },
+        ]}
+        inert={!shown}
+        bind:this={topBar}
+        bind:offsetHeight={topHeight}
       >
-        <span class="fill" style:width="{progress}%"></span>
-      </div>
-    {/snippet}
-  </ReaderBars>
+        <Button href="/" size="sm" class="shrink-0">
+          <span aria-hidden="true">‹</span>
+          Library
+        </Button>
+
+        <div class="col gap-0 flex-1">
+          <h1 class="text-base weight-medium truncate" lang={book?.language ?? 'en'}>
+            {book?.title ?? 'Reader'}
+          </h1>
+          <p class="text-xs text-faint truncate">{meta}</p>
+        </div>
+
+        {#if book !== null}
+          <Button
+            variant={noting ? 'accent' : 'default'}
+            size="sm"
+            square
+            class="shrink-0"
+            aria-pressed={noting}
+            title={NOTE_MODE_LABEL}
+            onclick={() => (noting = !noting)}
+          >
+            <span aria-hidden="true">{NOTE_GLYPH}</span>
+            <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
+          </Button>
+
+          <Button
+            size="sm"
+            class="shrink-0"
+            aria-haspopup="dialog"
+            onclick={() => (settingsOpen = true)}
+          >
+            Settings
+          </Button>
+
+          {@render engine?.()}
+        {/if}
+
+        {#if !narrow}
+          <AppearanceSwitcher />
+        {/if}
+      </header>
+
+      <footer
+        class={[
+          'pin-bottom z-sticky row items-center gap-2 px-responsive py-2 surface border-t hushable',
+          { 'is-hushed': !shown },
+        ]}
+        inert={!shown}
+        bind:this={bottomBar}
+        bind:offsetHeight={bottomHeight}
+      >
+        <PageBar
+          first={shownTurns[0] ?? null}
+          second={shownTurns[1] ?? null}
+          steps={place.steps}
+          at={place.at}
+          direction={view.direction}
+          enabled={stage === 'reading'}
+          {markerAt}
+          onscrub={scrubTo}
+        />
+      </footer>
+    </div>
+
+    {#if panel !== undefined}
+      <PanelDock {placement} count={panelCount ?? null} {panel} ontoggle={togglePanel} />
+    {/if}
+  </div>
 </div>
 
-<style>
-  .screen {
-    --w-rail: 38px;
-
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-    background: var(--c-surface-app);
-    color: var(--c-text-2);
-    font-family: var(--f-ui);
-  }
-
-  .heading {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .title {
-    margin: 0;
-    overflow: hidden;
-    color: var(--c-text-1);
-    font-family: var(--f-ja);
-    font-size: 15px;
-    font-weight: 400;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .title.ko {
-    font-family: var(--f-ko);
-  }
-
-  .meta {
-    margin: var(--s-1) 0 0;
-    color: var(--c-text-8);
-    font-size: 11px;
-  }
-
-  .settings {
-    display: flex;
-    flex: none;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--s-2) var(--s-4);
-  }
-
-  .group {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-1);
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .group:disabled {
-    opacity: 0.5;
-  }
-
-  .legend {
-    flex: 1 0 100%;
-    padding: 0;
-    color: var(--c-text-8);
-    font-family: var(--f-ui);
-    font-size: 10px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .pill {
-    position: relative;
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-size: 11px;
-    white-space: nowrap;
-  }
-
-  .pill input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-
-  .group:not(:disabled) .pill {
-    cursor: pointer;
-  }
-
-  .group:not(:disabled) .pill:hover {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .pill:has(input:checked) {
-    border-color: var(--c-accent-border);
-    background: var(--c-accent-wash-soft);
-    color: var(--c-accent);
-  }
-
-  .pill:has(input:focus-visible) {
-    outline: 1px solid var(--c-accent-border-strong);
-    outline-offset: 1px;
-  }
-
-  .fit {
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-family: var(--f-ui);
-    font-size: 11px;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .fit:hover:not(:disabled),
-  .fit:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .fit[aria-pressed='true'] {
-    border-color: var(--c-accent-border);
-    background: var(--c-accent-wash-soft);
-    color: var(--c-accent);
-  }
-
-  .fit:disabled {
-    cursor: default;
-    opacity: 0.5;
-  }
-
-  .alert {
-    flex: none;
-    margin: 0;
-    padding: var(--s-2) var(--s-5);
-    border-bottom: 1px solid var(--c-accent-border-soft);
-    background: var(--c-accent-wash-faint);
-    color: var(--c-text-3);
-    font-size: 12px;
-  }
-
-  .body {
-    position: relative;
-    display: flex;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  .arrived {
-    position: absolute;
-    top: var(--s-4);
-    left: calc(var(--s-3) * 2 + var(--w-rail));
-    z-index: var(--z-chrome);
-  }
-
-  .rail {
-    position: absolute;
-    box-sizing: border-box;
-    top: 50%;
-    left: var(--s-3);
-    z-index: var(--z-chrome);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-1);
-    width: var(--w-rail);
-    padding: var(--s-1);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-chrome);
-    transform: translateY(-50%);
-  }
-
-  .key {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--r-pill);
-    background: transparent;
-    color: var(--c-text-5);
-    font-family: var(--f-ui);
-    font-size: 14px;
-    line-height: 1;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .key:hover:not(:disabled),
-  .key:focus-visible {
-    background: var(--c-surface-button);
-    color: var(--c-accent);
-  }
-
-  .key[aria-pressed='true'],
-  .key[aria-pressed='true']:hover,
-  .key[aria-pressed='true']:focus-visible {
-    background: var(--c-note-wash);
-    color: var(--c-note);
-  }
-
-  .key:disabled {
-    cursor: default;
-    opacity: 0.4;
-  }
-
-  .parting {
-    width: 14px;
-    height: 1px;
-    margin: var(--s-1) auto;
-    background: var(--c-border-4);
-  }
-
-  .dock {
-    display: flex;
-    flex: none;
-    width: 320px;
-    min-height: 0;
-    border-left: 1px solid var(--c-border-1);
-    background: var(--c-surface-rail);
-  }
-
-  .curtain {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--s-3);
-    min-height: 0;
-    padding: var(--s-5);
-    background: var(--c-viewer-gradient);
-  }
-
-  .notice {
-    margin: 0;
-    color: var(--c-text-7);
-    font-size: 12.5px;
-    text-align: center;
-  }
-
-  .escape {
-    padding: var(--s-2) var(--s-3);
-    border-radius: var(--r-4);
-    background: var(--c-accent);
-    color: var(--c-accent-text);
-    font-size: 12px;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .marker {
-    flex: none;
-    margin: 0;
-    color: var(--c-text-5);
-    font-family: var(--f-mono);
-    font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-
-  .glyph {
-    display: block;
-  }
-
-  .assistive {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .track {
-    position: relative;
-    flex: 1 1 auto;
-    height: 3px;
-    min-width: 0;
-    overflow: hidden;
-    border-radius: var(--r-pill);
-    background: var(--c-border-2);
-  }
-
-  .fill {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    display: block;
-    background: var(--c-accent);
-  }
-
-  .track.rtl .fill {
-    right: 0;
-    left: auto;
-  }
-
-  @media (max-width: 700px) {
-    .dock {
-      width: 240px;
-    }
-  }
-</style>
+<ReaderSettings
+  bind:open={settingsOpen}
+  {layout}
+  pairing={book?.pagePairing ?? null}
+  direction={book?.direction ?? null}
+  saving={view.saving}
+  {downward}
+  {fits}
+  offersAppearance={narrow}
+  onlayout={(kind) => void view.setLayoutKind(kind)}
+  onpairing={(pairing) => void view.setPairing(pairing)}
+  ondirection={(direction) => void view.setDirection(direction)}
+/>

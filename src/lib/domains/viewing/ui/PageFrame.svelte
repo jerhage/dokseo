@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
+  import Badge from '$lib/components/Badge.svelte';
   import { releasePicture } from '$lib/platform/image/bitmap';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -8,6 +9,7 @@
   import type { PagePicture } from '$lib/shared/page-source';
   import { toPageFraction } from '../domain/placement';
   import { glowMarker } from './page-glow';
+  import './page-frame.css';
 
   type Phase = 'loading' | 'shown' | 'failed';
 
@@ -120,15 +122,18 @@
 </script>
 
 <div
-  class="page"
-  class:blank={phase !== 'shown'}
-  class:flush
-  style:aspect-ratio={ratio}
+  class={[
+    'page-frame relative',
+    phase === 'shown' ? 'scheme-light surface-bright' : 'surface-raised',
+    { 'shadow-md': !flush },
+  ]}
+  style:--page-ratio={ratio}
   role="img"
   aria-label={caption}
 >
   {#if picture !== null && picture.kind === 'encoded'}
     <img
+      class="w-full h-full"
       src={picture.url}
       alt=""
       decoding="async"
@@ -137,99 +142,29 @@
       onerror={() => (phase = 'failed')}
     />
   {:else}
-    <canvas bind:this={frame} width={0} height={0} data-image-index={index}></canvas>
+    <canvas class="w-full h-full" bind:this={frame} width={0} height={0} data-image-index={index}
+    ></canvas>
   {/if}
   {#each boxes as drawn, order (order)}
     <span
-      class="glow"
-      class:noting={drawn.origin === 'written'}
-      style:left="{drawn.box.left}%"
-      style:top="{drawn.box.top}%"
-      style:width="{drawn.box.width}%"
-      style:height="{drawn.box.height}%"
+      class={['glow', { 'is-note': drawn.origin === 'written' }]}
+      style:--glow-left="{drawn.box.left}%"
+      style:--glow-top="{drawn.box.top}%"
+      style:--glow-width="{drawn.box.width}%"
+      style:--glow-height="{drawn.box.height}%"
     >
       {#if marker !== null && order === 0}
-        <span class="marker">{marker}</span>
+        <Badge
+          class="glow-marker mono"
+          solid
+          variant={drawn.origin === 'written' ? 'accent' : 'brand'}>{marker}</Badge
+        >
       {/if}
     </span>
   {/each}
   {#if notice !== null}
-    <p class="notice" aria-hidden="true">{notice}</p>
+    <p class="notice col items-center justify-center p-3 text-xs text-faint" aria-hidden="true">
+      {notice}
+    </p>
   {/if}
 </div>
-
-<style>
-  .page {
-    position: relative;
-    height: 100%;
-    background: var(--c-paper);
-    box-shadow: 0 0 var(--s-6) var(--c-surface-void);
-  }
-
-  .page.flush {
-    box-shadow: none;
-  }
-
-  .page.blank {
-    background: var(--c-surface-card-quiet);
-  }
-
-  canvas,
-  img {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  .glow {
-    position: absolute;
-    z-index: var(--z-marquee);
-    border: 2px solid var(--c-accent);
-    background: var(--c-accent-wash-strong);
-    box-shadow:
-      0 0 0 4px rgb(79 178 134 / 18%),
-      0 0 34px rgb(79 178 134 / 25%);
-    pointer-events: none;
-  }
-
-  .glow.noting {
-    border-color: var(--c-note);
-    background: var(--c-note-wash-strong);
-    box-shadow:
-      0 0 0 4px var(--c-note-halo),
-      0 0 34px var(--c-note-halo-strong);
-  }
-
-  .glow.noting .marker {
-    background: var(--c-note);
-    color: var(--c-note-text);
-  }
-
-  .marker {
-    position: absolute;
-    bottom: calc(100% + 5px);
-    left: 0;
-    padding: 3px var(--s-2);
-    border-radius: var(--r-2);
-    background: var(--c-accent);
-    color: var(--c-accent-text);
-    font-family: var(--f-mono);
-    font-size: 10px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .notice {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    padding: var(--s-3);
-    color: var(--c-text-8);
-    font-family: var(--f-ui);
-    font-size: 11.5px;
-    text-align: center;
-  }
-</style>

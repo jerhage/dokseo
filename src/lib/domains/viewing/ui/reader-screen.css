@@ -1,5 +1,5 @@
 @layer features {
-  @scope (.reader-b) {
+  @scope (.reader-screen) {
     .compact-probe {
       position: absolute;
       inset-block-start: 0;
