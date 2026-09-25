@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { COMPARISON } from './comparison';
+  import { activeComparison } from './comparison';
+
+  const comparison = activeComparison();
 </script>
 
-<p class="p-4 text-muted">Comparing {COMPARISON.title.toLowerCase()}: choose a variant above.</p>
+{#if comparison === null}
+  <p class="p-4 text-muted">No design comparison is active.</p>
+{:else}
+  <p class="p-4 text-muted">
+    Comparing {comparison.title.toLowerCase()}: choose a variant above.
+  </p>
+{/if}
