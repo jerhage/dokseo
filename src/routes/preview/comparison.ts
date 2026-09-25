@@ -16,18 +16,8 @@ type RouteParameters = Readonly<Record<string, string | undefined>>;
 
 const PARAMETER = /^\[(\w+)\]$/u;
 
-const IMAGE_READER: Comparison = {
-  title: 'The image reader',
-  fills: 'screen',
-  variants: [
-    { label: 'Current', route: '/read/[fileId]', within: null },
-    { label: 'A', route: '/preview/a/read/[fileId]', within: '/preview/a' },
-    { label: 'B', route: '/preview/b/read/[fileId]', within: '/preview/b' },
-  ],
-};
-
 function activeComparison(): Comparison | null {
-  return IMAGE_READER;
+  return null;
 }
 
 function parameterOf(segment: string): string | null {

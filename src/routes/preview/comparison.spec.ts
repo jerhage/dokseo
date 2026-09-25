@@ -72,14 +72,13 @@ describe('activeComparison', () => {
     expect(shownCounts.filter((count) => count !== 1)).toEqual([]);
   });
 
-  it('keeps the book of the page in every variant link', () => {
+  it('keeps the book and the query of the page in every variant link that takes a book', () => {
     const variants = activeComparison()?.variants ?? [];
-    const hrefs = variants.map((variant) => variantHref(variant, { fileId: 'book-1' }, '?image=3'));
+    const lost = variants
+      .filter((variant) => routeParameters(variant.route).includes('fileId'))
+      .map((variant) => variantHref(variant, { fileId: 'book-1' }, '?image=3') ?? '')
+      .filter((href) => !href.includes('/book-1?image=3'));
 
-    expect(hrefs).toEqual([
-      '/read/book-1?image=3',
-      '/preview/a/read/book-1?image=3',
-      '/preview/b/read/book-1?image=3',
-    ]);
+    expect(lost).toEqual([]);
   });
 });
