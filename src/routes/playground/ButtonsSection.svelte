@@ -64,4 +64,15 @@
       <Button variant="primary" disabled>Disabled primary</Button>
     </div>
   </Card>
+  <Card>
+    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">As a link</span>
+    <div class="row wrap items-center gap-3">
+      <Button href="#button" size="sm">
+        <span aria-hidden="true">‹</span>
+        Back
+      </Button>
+      <Button href="#button" variant="primary">Primary link</Button>
+      <Button href="#button" variant="ghost" pill>Ghost pill link</Button>
+    </div>
+  </Card>
 </DemoSection>
