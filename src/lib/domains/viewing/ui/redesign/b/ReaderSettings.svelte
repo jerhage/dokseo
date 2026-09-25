@@ -3,6 +3,7 @@
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
   import {
     LAYOUT_KIND_CHOICES,
@@ -28,6 +29,7 @@
     readonly saving: boolean;
     readonly downward: boolean;
     readonly fits: readonly FitChoice[];
+    readonly offersAppearance: boolean;
     readonly onlayout: (kind: ImageLayoutKind) => void;
     readonly onpairing: (pairing: PagePairing) => void;
     readonly ondirection: (direction: ReadingDirection) => void;
@@ -41,6 +43,7 @@
     saving,
     downward,
     fits,
+    offersAppearance,
     onlayout,
     onpairing,
     ondirection,
@@ -108,5 +111,12 @@
         {/each}
       </div>
     </div>
+
+    {#if offersAppearance}
+      <div class="row items-center justify-between" role="group" aria-labelledby="{uid}-appearance">
+        <span class="fieldset-legend mb-0" id="{uid}-appearance">Appearance</span>
+        <AppearanceSwitcher />
+      </div>
+    {/if}
   </div>
 </Modal>

@@ -4,6 +4,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import { imageIndex } from '$lib/shared/ids';
@@ -399,6 +400,10 @@
 
           {@render engine?.()}
         {/if}
+
+        {#if !narrow}
+          <AppearanceSwitcher />
+        {/if}
       </header>
 
       <footer
@@ -437,6 +442,7 @@
   saving={view.saving}
   {downward}
   {fits}
+  offersAppearance={narrow}
   onlayout={(kind) => void view.setLayoutKind(kind)}
   onpairing={(pairing) => void view.setPairing(pairing)}
   ondirection={(direction) => void view.setDirection(direction)}
