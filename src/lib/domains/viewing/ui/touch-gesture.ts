@@ -22,6 +22,7 @@ type TouchContext = {
   readonly selectMode: boolean;
   readonly turns: TouchTurns;
   readonly frame: FrameSpan;
+  readonly doubleTaps: boolean;
 };
 
 type TouchIntent =
@@ -248,6 +249,7 @@ function releasePressed(
   }
   if (elapsed >= LONG_PRESS_MS) return still(TOUCH_IDLE);
   if (pending !== null) return { state: TOUCH_IDLE, intent: { kind: 'double-tap', ...at } };
+  if (!context.doubleTaps) return { state: TOUCH_IDLE, intent: tapAt(at) };
 
   const zone = tapZone(at.x - context.frame.left, context.frame.width, context.turns);
   if (zone !== 'centre') return { state: TOUCH_IDLE, intent: tapAt(at) };

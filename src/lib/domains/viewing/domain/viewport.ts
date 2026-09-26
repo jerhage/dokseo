@@ -147,6 +147,14 @@ function pinchStep(viewport: Viewport, pinch: Pinch, bounds: PinchBounds): Viewp
   return clampPan(zoomAt(moved, zoom / from, pinch.cx, pinch.cy), bounds.content, bounds.frame);
 }
 
+function pinchZoom(zoom: number, scale: number, fit: number): number {
+  const from = clampZoom(zoom);
+  const floor = Math.min(from, clampZoom(fit));
+  const factor = isPositiveFinite(scale) ? scale : 1;
+
+  return clampZoom(Math.max(floor, from * factor));
+}
+
 function doubleTapTarget(viewport: Viewport, fit: number, point: ZoomPoint): DoubleTapTarget {
   const from = clampZoom(viewport.zoom);
   const home = clampZoom(fit);
@@ -174,6 +182,7 @@ export {
   centrePan,
   fitZoom,
   pinchStep,
+  pinchZoom,
   doubleTapTarget,
 };
 export type { DoubleTapTarget, FitMode, Pinch, PinchBounds, Viewport, ZoomPoint };

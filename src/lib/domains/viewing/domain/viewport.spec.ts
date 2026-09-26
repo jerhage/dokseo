@@ -12,6 +12,7 @@ import {
   MIN_ZOOM,
   panBy,
   pinchStep,
+  pinchZoom,
   zoomAt,
 } from './viewport';
 import type { Viewport } from './viewport';
@@ -435,6 +436,33 @@ describe('pinchStep', () => {
     expect(
       pinchStep(start, { scale: Number.NaN, cx: 0, cy: 0, dx: Number.NaN, dy: 1 / 0 }, bounds),
     ).toEqual(start);
+  });
+});
+
+describe('pinchZoom', () => {
+  it('scales the zoom by the pinch', () => {
+    expect(pinchZoom(1, 1.5, 1)).toBe(1.5);
+    expect(pinchZoom(2, 0.75, 1)).toBe(1.5);
+  });
+
+  it('stops a pinch-in at the fit', () => {
+    expect(pinchZoom(1.2, 0.5, 1)).toBe(1);
+    expect(pinchZoom(1, 0.5, 1)).toBe(1);
+  });
+
+  it('neither raises nor lowers a zoom already below the fit', () => {
+    expect(pinchZoom(0.5, 0.5, 1)).toBe(0.5);
+    expect(pinchZoom(0.5, 1.2, 1)).toBe(0.6);
+  });
+
+  it('stops a pinch-out at the maximum zoom', () => {
+    expect(pinchZoom(MAX_ZOOM, 2, 1)).toBe(MAX_ZOOM);
+  });
+
+  it('holds the zoom for a scale that is not a positive number', () => {
+    expect(pinchZoom(1.5, Number.NaN, 1)).toBe(1.5);
+    expect(pinchZoom(1.5, 0, 1)).toBe(1.5);
+    expect(pinchZoom(1.5, -2, 1)).toBe(1.5);
   });
 });
 

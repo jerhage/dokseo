@@ -19,6 +19,7 @@ const FIT: TouchContext = {
   selectMode: false,
   turns: 'tap-zones',
   frame: { left: 0, width: 390 },
+  doubleTaps: true,
 };
 
 const ZOOMED: TouchContext = { ...FIT, pannable: true };
@@ -610,5 +611,32 @@ describe('touchDeadline', () => {
 
     expect(touchStep(state, tick(deadline - 1), FIT).intent.kind).toBe('none');
     expect(touchStep(state, tick(deadline), FIT).intent.kind).toBe('long-press');
+  });
+});
+
+describe('touchStep without double taps', () => {
+  const IMMEDIATE: TouchContext = { ...FIT, doubleTaps: false };
+
+  it('taps a centre tap at the release, with nothing left to wait for', () => {
+    expect(run([down(CENTRE, 0), up(CENTRE, 90)], IMMEDIATE)).toEqual([
+      { kind: 'none' },
+      { kind: 'tap', x: CENTRE, y: ROW },
+    ]);
+    expect(touchDeadline(settled([down(CENTRE, 0), up(CENTRE, 90)], IMMEDIATE))).toBeNull();
+  });
+
+  it('reports two quick centre taps as two taps and no double tap', () => {
+    expect(
+      heard([down(CENTRE, 0), up(CENTRE, 60), down(CENTRE, 200), up(CENTRE, 260)], IMMEDIATE),
+    ).toEqual([
+      { kind: 'tap', x: CENTRE, y: ROW },
+      { kind: 'tap', x: CENTRE, y: ROW },
+    ]);
+  });
+
+  it('still reports a long press', () => {
+    expect(heard([down(CENTRE, 0), tick(LONG_PRESS_MS)], IMMEDIATE)).toEqual([
+      { kind: 'long-press', x: CENTRE, y: ROW },
+    ]);
   });
 });

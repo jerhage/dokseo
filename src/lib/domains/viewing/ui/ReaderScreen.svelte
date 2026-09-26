@@ -21,6 +21,7 @@
   import { languageName } from '$lib/shared/language';
   import PageBar from '$lib/shared/PageBar.svelte';
   import type { TouchTurns } from '$lib/shared/page-turn';
+  import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns-trial';
   import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
   import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
@@ -36,7 +37,6 @@
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
   import ReaderSettings from './ReaderSettings.svelte';
-  import { readTouchTurns, saveTouchTurns } from './touch-turns-trial';
   import './reader-screen.css';
 
   type Props = {
@@ -331,6 +331,7 @@
           measured={(index, size) => view.measure(index, size)}
           {glow}
           {makes}
+          {selecting}
           moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
           select={(regions) => commit(regions, 'column')}
           clear={() => view.clearSelection()}
@@ -407,7 +408,7 @@
             <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
           </Button>
 
-          {#if layout === 'paged'}
+          {#if layout !== null}
             <Button
               variant={selecting ? 'accent' : 'default'}
               size="sm"

@@ -1,10 +1,12 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { match } from 'ts-pattern';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
+  import type { FrameSpan } from '$lib/shared/page-turn';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     layOutStrip,
@@ -16,11 +18,16 @@
     stripOverscan,
     visibleRange,
   } from '../domain/strip';
-  import { clampZoom } from '../domain/viewport';
+  import type { Point } from '../domain/selection';
+  import { clampZoom, pinchZoom } from '../domain/viewport';
   import { handlesOwnKeys } from './keyboard';
   import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
+  import { holdsTheScroll, stripTouchAction } from './strip-touch';
+  import type { StripTouchAction } from './strip-touch';
+  import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
+  import type { TouchInput, TouchSample, TouchState } from './touch-gesture';
   import './continuous-viewer.css';
 
   type Hold = {
@@ -37,6 +44,7 @@
     readonly measured: (index: ImageIndex, size: Size) => void;
     readonly glow?: readonly GlowRegion[];
     readonly makes?: CaptureOrigin;
+    readonly selecting?: boolean;
     readonly moveTo: (position: ReadingPosition, shownThrough: ImageIndex) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
@@ -50,6 +58,7 @@
     measured,
     glow = [],
     makes = 'recognized',
+    selecting = false,
     moveTo,
     select,
     clear,
@@ -78,6 +87,9 @@
   });
 
   let written: { readonly top: number; readonly left: number } | null = null;
+  let touch: TouchState = TOUCH_IDLE;
+  let touchTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastPointer = '';
 
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
@@ -143,6 +155,137 @@
       left: x,
     };
     zoom = next;
+  }
+
+  function pinchBy(scale: number, from: Point, to: Point): void {
+    const element = scroller;
+    if (element === null) return;
+
+    const box = element.getBoundingClientRect();
+    const was = { x: from.x - box.left, y: from.y - box.top };
+    const now = { x: to.x - box.left, y: to.y - box.top };
+    const top = element.scrollTop;
+    const left = element.scrollLeft;
+
+    hold = {
+      position: positionAtScroll(layout, top + was.y) ?? hold.position,
+      top: now.y,
+      across: width > 0 ? (left + was.x) / width : 0,
+      left: now.x,
+    };
+
+    const next = pinchZoom(zoom, scale, FIT_WIDTH_ZOOM);
+    if (next === zoom) {
+      apply(element, hold);
+      return;
+    }
+    zoom = next;
+  }
+
+  function frameSpan(): FrameSpan {
+    const element = scroller;
+    if (element === null) return { left: 0, width: 0 };
+
+    const box = element.getBoundingClientRect();
+    return { left: box.left, width: box.width };
+  }
+
+  function stopTouchTimer(): void {
+    if (touchTimer !== null) clearTimeout(touchTimer);
+    touchTimer = null;
+  }
+
+  function scheduleTick(): void {
+    stopTouchTimer();
+    const deadline = touchDeadline(touch);
+    if (deadline === null) return;
+
+    touchTimer = setTimeout(
+      () => {
+        touchTimer = null;
+        feed({ kind: 'tick', t: performance.now() });
+      },
+      Math.max(0, deadline - performance.now()),
+    );
+  }
+
+  function act(action: StripTouchAction): void {
+    match(action)
+      .with({ kind: 'none' }, () => undefined)
+      .with({ kind: 'toggle-chrome' }, () => onTap())
+      .with({ kind: 'zoom' }, ({ scale, from, to }) => pinchBy(scale, from, to))
+      .with({ kind: 'select-begin' }, ({ from, to }) => {
+        if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
+      })
+      .with({ kind: 'select-move' }, ({ at }) => selection?.extendTo(at))
+      .with({ kind: 'select-end' }, ({ at }) => selection?.endAt(at))
+      .with({ kind: 'drop' }, () => selection?.abandon())
+      .exhaustive();
+  }
+
+  function feed(input: TouchInput): void {
+    const step = touchStep(touch, input, {
+      pannable: false,
+      selectMode: selecting,
+      turns: 'tap-zones',
+      frame: frameSpan(),
+      doubleTaps: false,
+    });
+    touch = step.state;
+    scheduleTick();
+    act(stripTouchAction(step.intent));
+  }
+
+  function feedTouch(kind: TouchSample['kind'], event: PointerEvent): void {
+    feed({
+      kind,
+      id: event.pointerId,
+      type: event.pointerType,
+      x: event.clientX,
+      y: event.clientY,
+      t: performance.now(),
+    });
+  }
+
+  function onpointerdown(event: PointerEvent): void {
+    lastPointer = event.pointerType;
+    if (event.pointerType === 'touch') {
+      feedTouch('down', event);
+      return;
+    }
+
+    selection?.pointerdown(event);
+  }
+
+  function onpointermove(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      feedTouch('move', event);
+      return;
+    }
+
+    selection?.pointermove(event);
+  }
+
+  function onpointerup(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      feedTouch('up', event);
+      return;
+    }
+
+    selection?.pointerup(event);
+  }
+
+  function onpointercancel(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      feedTouch('cancel', event);
+      return;
+    }
+
+    selection?.pointercancel(event);
+  }
+
+  function oncontextmenu(event: MouseEvent): void {
+    if (lastPointer === 'touch') event.preventDefault();
   }
 
   function zoomFromCentre(factor: number): void {
@@ -247,6 +390,20 @@
     }
   }
 
+  $effect(() => stopTouchTimer);
+
+  $effect(() => {
+    const element = scroller;
+    if (element === null) return;
+
+    function ontouchmove(event: TouchEvent): void {
+      if (event.cancelable && holdsTheScroll(touch, event.touches.length)) event.preventDefault();
+    }
+
+    element.addEventListener('touchmove', ontouchmove, { passive: false });
+    return () => element.removeEventListener('touchmove', ontouchmove);
+  });
+
   $effect(() => {
     const element = scroller;
     if (element === null) return;
@@ -289,16 +446,17 @@
 
 <div class="continuous-viewer relative row gap-0 flex-1 min-h-0 scheme-dark surface-sunken">
   <div
-    class="scroller flex-1 min-h-0 overflow-auto"
+    class={['scroller flex-1 min-h-0 overflow-auto', { 'is-selecting': selecting }]}
     role="region"
     aria-label="Continuous strip"
     bind:this={scroller}
     {onscroll}
     {onwheel}
-    onpointerdown={(event) => selection?.pointerdown(event)}
-    onpointermove={(event) => selection?.pointermove(event)}
-    onpointerup={(event) => selection?.pointerup(event)}
-    onpointercancel={(event) => selection?.pointercancel(event)}
+    {onpointerdown}
+    {onpointermove}
+    {onpointerup}
+    {onpointercancel}
+    {oncontextmenu}
   >
     <div class="strip mx-auto" style:--strip-width="{width}px">
       <div class="spacer" style:--spacer-height="{spacers.before}px" aria-hidden="true"></div>

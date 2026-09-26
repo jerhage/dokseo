@@ -5,6 +5,13 @@
       overflow-anchor: none;
       scrollbar-gutter: stable;
       overscroll-behavior: contain;
+      touch-action: pan-x pan-y;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .scroller.is-selecting {
+      touch-action: none;
     }
     .scroller:focus-visible {
       outline-offset: calc(var(--focus-ring-offset) * -1);

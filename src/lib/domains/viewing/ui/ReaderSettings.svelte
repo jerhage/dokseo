@@ -14,7 +14,7 @@
     READING_DIRECTION_LEGEND,
   } from '$lib/shared/layout-choices';
   import type { TouchTurns } from '$lib/shared/page-turn';
-  import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from './touch-turns-trial';
+  import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from '$lib/shared/touch-turns-trial';
 
   type FitChoice = {
     readonly label: string;

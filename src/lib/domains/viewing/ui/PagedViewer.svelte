@@ -364,6 +364,7 @@
       selectMode: selecting,
       turns,
       frame: span,
+      doubleTaps: true,
     });
     touch = step.state;
     scheduleTick();
