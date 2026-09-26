@@ -44,12 +44,22 @@ describe('bookFromStored', () => {
   });
 
   it('reads a stored number as the image it names', () => {
-    expect(bookFromStored(legacy).position).toEqual({ kind: 'image', index: 3 });
+    expect(bookFromStored(legacy).position).toEqual({ kind: 'image', index: 3, shownThrough: 3 });
   });
 
   it('reads a stored image place back whole', () => {
     const stored: StoredBook = { ...legacy, position: imagePlace(imageIndex(12)) };
-    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 12 });
+    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 12, shownThrough: 12 });
+  });
+
+  it('reads a stored image place back with the last image it showed', () => {
+    const stored: StoredBook = { ...legacy, position: imagePlace(imageIndex(3), imageIndex(4)) };
+    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 3, shownThrough: 4 });
+  });
+
+  it('reads an image place stored before the last shown image as showing its own image', () => {
+    const stored: StoredBook = { ...legacy, position: { kind: 'image', index: imageIndex(12) } };
+    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 12, shownThrough: 12 });
   });
 
   it('reads a stored text place back whole', () => {
@@ -110,6 +120,7 @@ describe('bookFromStored', () => {
     expect(bookFromStored({ ...legacy, position: imageIndex(0) }).position).toEqual({
       kind: 'image',
       index: 0,
+      shownThrough: 0,
     });
   });
 

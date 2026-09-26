@@ -1,15 +1,26 @@
+import { imageIndex } from './ids';
 import type { ImageIndex } from './ids';
 
-type ReadingPlace =
-  | { readonly kind: 'image'; readonly index: ImageIndex }
-  | { readonly kind: 'text'; readonly cfi: string; readonly fraction: number | null };
+type ImagePlace = {
+  readonly kind: 'image';
+  readonly index: ImageIndex;
+  readonly shownThrough: ImageIndex;
+};
+
+type TextPlace = { readonly kind: 'text'; readonly cfi: string; readonly fraction: number | null };
+
+type ReadingPlace = ImagePlace | TextPlace;
 
 const WHEREVER_THE_BOOK_STARTS = '';
 
 const NO_FRACTION_REPORTED = null;
 
-function imagePlace(index: ImageIndex): ReadingPlace {
-  return { kind: 'image', index };
+const THE_END_OF_THE_TEXT = 1;
+
+const ROUNDING_SHORT_OF_THE_END = 1e-9;
+
+function imagePlace(index: ImageIndex, shownThrough: ImageIndex = index): ImagePlace {
+  return { kind: 'image', index, shownThrough: imageIndex(Math.max(index, shownThrough)) };
 }
 
 function withinTheBook(fraction: number | null): number | null {
@@ -30,10 +41,30 @@ function resumedCfi(place: ReadingPlace): string | null {
 }
 
 function samePlace(one: ReadingPlace, other: ReadingPlace): boolean {
-  if (one.kind === 'image') return other.kind === 'image' && one.index === other.index;
+  if (one.kind === 'image') {
+    return (
+      other.kind === 'image' && one.index === other.index && one.shownThrough === other.shownThrough
+    );
+  }
 
   return other.kind === 'text' && one.cfi === other.cfi && one.fraction === other.fraction;
 }
 
-export { imagePlace, NO_FRACTION_REPORTED, resumedCfi, samePlace, START_OF_THE_TEXT, textPlace };
-export type { ReadingPlace };
+function showsTheEnd(place: ReadingPlace, imageCount: number): boolean {
+  if (place.kind === 'image') return place.shownThrough >= imageCount - 1;
+
+  return (
+    place.fraction !== null && place.fraction >= THE_END_OF_THE_TEXT - ROUNDING_SHORT_OF_THE_END
+  );
+}
+
+export {
+  imagePlace,
+  NO_FRACTION_REPORTED,
+  resumedCfi,
+  samePlace,
+  showsTheEnd,
+  START_OF_THE_TEXT,
+  textPlace,
+};
+export type { ImagePlace, ReadingPlace };

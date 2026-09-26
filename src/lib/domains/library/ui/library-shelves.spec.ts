@@ -61,6 +61,26 @@ describe('readingState', () => {
     expect(readingState(comic('a', 9))).toBe('finished');
   });
 
+  it('counts a comic whose last spread showed the last page as finished', () => {
+    const spread = imagePlace(imageIndex(3), imageIndex(4));
+    expect(readingState({ ...comic('a', 0, 5), position: spread })).toBe('finished');
+  });
+
+  it('counts a comic whose spread showed the page before the last as in progress', () => {
+    const spread = imagePlace(imageIndex(2), imageIndex(3));
+    expect(readingState({ ...comic('a', 0, 5), position: spread })).toBe('reading');
+  });
+
+  it('counts a comic back on its first page as not started whatever it showed', () => {
+    const cover = imagePlace(imageIndex(0), imageIndex(1));
+    expect(readingState({ ...comic('a', 0, 2), position: cover })).toBe('unread');
+  });
+
+  it('counts a text whose last page reported a rounding short of one as finished', () => {
+    const last = textPlace('epubcfi(/6/40!/4/2)', 0.9999999999999999);
+    expect(readingState(novel('a', last))).toBe('finished');
+  });
+
   it('counts a text never opened past its start as not started', () => {
     expect(readingState(novel('a', START_OF_THE_TEXT))).toBe('unread');
   });

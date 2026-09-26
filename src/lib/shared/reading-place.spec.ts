@@ -1,15 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { imageIndex } from './ids';
-import { imagePlace, resumedCfi, samePlace, START_OF_THE_TEXT, textPlace } from './reading-place';
+import {
+  imagePlace,
+  resumedCfi,
+  samePlace,
+  showsTheEnd,
+  START_OF_THE_TEXT,
+  textPlace,
+} from './reading-place';
 import type { ReadingPlace } from './reading-place';
 
 describe('imagePlace', () => {
   it('holds the image index it was given', () => {
-    expect(imagePlace(imageIndex(7))).toEqual({ kind: 'image', index: 7 });
+    expect(imagePlace(imageIndex(7))).toEqual({ kind: 'image', index: 7, shownThrough: 7 });
   });
 
   it('holds the first image without treating it as absent', () => {
-    expect(imagePlace(imageIndex(0))).toEqual({ kind: 'image', index: 0 });
+    expect(imagePlace(imageIndex(0))).toEqual({ kind: 'image', index: 0, shownThrough: 0 });
+  });
+
+  it('holds the last image shown beside the image the place opens at', () => {
+    expect(imagePlace(imageIndex(3), imageIndex(4))).toEqual({
+      kind: 'image',
+      index: 3,
+      shownThrough: 4,
+    });
+  });
+
+  it('raises a last image shown before the opening image to the opening image', () => {
+    expect(imagePlace(imageIndex(5), imageIndex(2))).toEqual({
+      kind: 'image',
+      index: 5,
+      shownThrough: 5,
+    });
   });
 });
 
@@ -115,8 +138,42 @@ describe('samePlace', () => {
     expect(samePlace(imagePlace(imageIndex(7)), imagePlace(imageIndex(8)))).toBe(false);
   });
 
+  it('separates two image places at one index that showed different last images', () => {
+    expect(
+      samePlace(imagePlace(imageIndex(3), imageIndex(3)), imagePlace(imageIndex(3), imageIndex(4))),
+    ).toBe(false);
+  });
+
   it('separates an image place from a text place', () => {
     expect(samePlace(imagePlace(imageIndex(0)), textPlace('epubcfi(/6/4!/2)', 0))).toBe(false);
     expect(samePlace(textPlace('epubcfi(/6/4!/2)', 0), imagePlace(imageIndex(0)))).toBe(false);
+  });
+});
+
+describe('showsTheEnd', () => {
+  it('reports the end for a place that showed the last image of the book', () => {
+    expect(showsTheEnd(imagePlace(imageIndex(3), imageIndex(4)), 5)).toBe(true);
+    expect(showsTheEnd(imagePlace(imageIndex(4)), 5)).toBe(true);
+  });
+
+  it('reports no end for a place that showed up to the image before the last', () => {
+    expect(showsTheEnd(imagePlace(imageIndex(2), imageIndex(3)), 5)).toBe(false);
+    expect(showsTheEnd(imagePlace(imageIndex(3)), 5)).toBe(false);
+  });
+
+  it('reports the end for a text read to its end', () => {
+    expect(showsTheEnd(textPlace('epubcfi(/6/40!/4/2)', 1), 0)).toBe(true);
+  });
+
+  it('reports the end for a text whose last page summed a rounding short of one', () => {
+    expect(showsTheEnd(textPlace('epubcfi(/6/40!/4/2)', 0.9999999999999999), 0)).toBe(true);
+  });
+
+  it('reports no end for a text one small page short of its end', () => {
+    expect(showsTheEnd(textPlace('epubcfi(/6/40!/4/2)', 0.9999), 0)).toBe(false);
+  });
+
+  it('reports no end for a text that measured no fraction', () => {
+    expect(showsTheEnd(textPlace('epubcfi(/6/40!/4/2)', null), 0)).toBe(false);
   });
 });

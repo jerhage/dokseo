@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import { effectiveDirection } from '$lib/shared/layout-kind';
-import { resumedCfi } from '$lib/shared/reading-place';
+import { resumedCfi, showsTheEnd } from '$lib/shared/reading-place';
 import type { TabItem } from '$lib/components/tabs';
 import type { Book, SourceKind } from '../domain/book/book';
 import { bookContents, describeBookContents } from '../domain/book/book-contents';
@@ -25,12 +25,9 @@ const TITLE_ORDER = new Intl.Collator(undefined, { numeric: true, sensitivity: '
 function readingState(book: Book): ReadingState {
   if (book.finishedAt !== null) return 'finished';
   const place = book.position;
-  if (place.kind === 'image') {
-    if (place.index === 0) return 'unread';
-    return place.index >= book.imageCount - 1 ? 'finished' : 'reading';
-  }
-  if (resumedCfi(place) === null) return 'unread';
-  return place.fraction !== null && place.fraction >= 1 ? 'finished' : 'reading';
+  const started = place.kind === 'image' ? place.index !== 0 : resumedCfi(place) !== null;
+  if (!started) return 'unread';
+  return showsTheEnd(place, book.imageCount) ? 'finished' : 'reading';
 }
 
 function onShelf(book: Book, shelf: Shelf): boolean {

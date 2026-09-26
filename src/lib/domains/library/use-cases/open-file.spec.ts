@@ -244,7 +244,11 @@ describe('openFile', () => {
     expect(result.ok && result.value.book.layoutKind).toBe('paged');
     expect(result.ok && result.value.book.direction).toBe('rtl');
     expect(result.ok && result.value.book.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
-    expect(result.ok && result.value.book.position).toEqual({ kind: 'image', index: 0 });
+    expect(result.ok && result.value.book.position).toEqual({
+      kind: 'image',
+      index: 0,
+      shownThrough: 0,
+    });
   });
 
   it('gives a new book no last read time and no finished mark', async () => {
@@ -375,7 +379,7 @@ describe('openFile', () => {
   it('leaves the reading position typed as a reading place', async () => {
     const result = await openFile(deps(), files);
     const position: ReadingPlace | undefined = result.ok ? result.value.book.position : undefined;
-    expect(position).toEqual({ kind: 'image', index: 0 });
+    expect(position).toEqual({ kind: 'image', index: 0, shownThrough: 0 });
   });
 
   it('forwards every stage the builder reported', async () => {
@@ -740,7 +744,11 @@ describe('openFile', () => {
     );
 
     expect(result.ok && result.value.book.layoutKind).toBe('paged');
-    expect(result.ok && result.value.book.position).toEqual({ kind: 'image', index: 0 });
+    expect(result.ok && result.value.book.position).toEqual({
+      kind: 'image',
+      index: 0,
+      shownThrough: 0,
+    });
   });
 
   it('carries the protection of a locked EPUB out to its caller', async () => {

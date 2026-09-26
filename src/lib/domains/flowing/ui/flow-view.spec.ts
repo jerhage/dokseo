@@ -5,7 +5,7 @@ import type { TextQuote } from '$lib/shared/anchor';
 import { bookId, contentHash } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
-import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
+import { showsTheEnd, START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Notice, Notify } from '$lib/shared/notice';
 import { err, ok } from '$lib/shared/result';
@@ -545,6 +545,34 @@ describe('the place a flow book keeps', () => {
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
+  });
+
+  it('saves a place showing the end for a last page whose fraction summed a rounding short of one', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(LATER_STILL, { fraction: 0.9999999999999999 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    const saved = places(world.edits);
+    expect(saved).toHaveLength(1);
+    expect(saved.every((place) => place !== undefined && showsTheEnd(place, 0))).toBe(true);
+  });
+
+  it('saves a place short of the end for the page before the last', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON, { fraction: 2 / 3 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    const saved = places(world.edits);
+    expect(saved).toHaveLength(1);
+    expect(saved.some((place) => place !== undefined && showsTheEnd(place, 0))).toBe(false);
   });
 
   it('saves no fraction for a book that cannot measure one', async () => {

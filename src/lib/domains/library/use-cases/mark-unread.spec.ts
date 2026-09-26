@@ -64,7 +64,10 @@ describe('markUnread', () => {
     await markUnread({ repository: fake.repository }, bookId('book-7'));
 
     expect(fake.updates).toEqual([
-      { id: 'book-7', edit: { finishedAt: null, position: { kind: 'image', index: 0 } } },
+      {
+        id: 'book-7',
+        edit: { finishedAt: null, position: { kind: 'image', index: 0, shownThrough: 0 } },
+      },
     ]);
   });
 

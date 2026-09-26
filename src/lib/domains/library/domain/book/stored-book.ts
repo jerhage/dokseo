@@ -11,7 +11,7 @@ import type { Book } from './book';
 const NO_CONTENT_HASH = contentHash('');
 
 type StoredPlace =
-  | { readonly kind: 'image'; readonly index: ImageIndex }
+  | { readonly kind: 'image'; readonly index: ImageIndex; readonly shownThrough?: ImageIndex }
   | { readonly kind: 'text'; readonly cfi: string; readonly fraction?: number | null };
 
 type StoredBook = Omit<
@@ -29,7 +29,7 @@ type StoredBook = Omit<
 function storedPlace(position: ImageIndex | StoredPlace): ReadingPlace {
   return match(position)
     .with(P.number, (index) => imagePlace(index))
-    .with({ kind: 'image' }, (at) => imagePlace(at.index))
+    .with({ kind: 'image' }, (at) => imagePlace(at.index, at.shownThrough ?? at.index))
     .with({ kind: 'text' }, (at) => textPlace(at.cfi, at.fraction ?? NO_FRACTION_REPORTED))
     .exhaustive();
 }
