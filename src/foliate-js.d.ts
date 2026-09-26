@@ -100,7 +100,7 @@ declare module 'foliate-js/view.js' {
     open(book: FoliateBook): Promise<void>;
     goTo(target: number | string | FractionTarget): Promise<unknown>;
     getCFI(index: number, range?: Range): string;
-    resolveNavigation(target: number | string | FractionTarget): ResolvedTarget | undefined;
+    resolveNavigation(target: number | string | FractionTarget): ResolvedTarget | null | undefined;
     goLeft(): Promise<void>;
     goRight(): Promise<void>;
     prev(distance?: number): Promise<void>;

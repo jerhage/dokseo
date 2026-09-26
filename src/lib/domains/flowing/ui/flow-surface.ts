@@ -5,6 +5,7 @@ import type {
   FractionTarget,
   HighlightStyle,
   Relocation,
+  ResolvedTarget,
   TocItem,
   View,
 } from 'foliate-js/view.js';
@@ -28,6 +29,7 @@ import type { TextQuote } from '$lib/shared/anchor';
 import type { LiftedPassage } from './flow-lift';
 import { quoteRange } from './flow-passage';
 import type { ChapterCfis } from './flow-passage';
+import { match } from 'ts-pattern';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 import type { PassageArrival } from './flow-quote';
 import type { PageTurner } from './flow-turn';
@@ -78,6 +80,20 @@ type Drawable = Pick<DrawnAnnotation, 'annotation' | 'draw'>;
 
 type FlowTarget = number | string | FractionTarget;
 
+type Navigation =
+  | { readonly kind: 'arrived' }
+  | { readonly kind: 'unresolved' }
+  | { readonly kind: 'no-body' }
+  | { readonly kind: 'refused' };
+
+const ARRIVED: Navigation = { kind: 'arrived' };
+
+const UNRESOLVED: Navigation = { kind: 'unresolved' };
+
+const NO_SECTION_HAS_A_BODY: Navigation = { kind: 'no-body' };
+
+const REFUSED: Navigation = { kind: 'refused' };
+
 const EPUB_MEDIA_TYPE = 'application/epub+zip';
 
 const SOURCE_FILE_NAME = 'book.epub';
@@ -110,15 +126,34 @@ function tearDown(view: Closable, book: Destroyable): void {
   });
 }
 
-async function navigate(view: Navigable, spine: Spine, target: FlowTarget): Promise<unknown> {
-  const resolved = view.resolveNavigation(target);
-  if (resolved === undefined) return view.goTo(target);
+function namesASection(spine: Spine, resolved: ResolvedTarget | null | undefined): number | null {
+  if (resolved === null || resolved === undefined) return null;
 
-  const paged = sectionWithABody(spine, resolved.index);
-  if (paged === null) return undefined;
-  if (paged === resolved.index) return view.goTo(target);
+  const index = resolved.index;
+  return index >= 0 && index < spine.sections ? index : null;
+}
 
-  return view.goTo(paged);
+async function goneTo(view: Navigable, target: FlowTarget): Promise<Navigation> {
+  const shown = await view.goTo(target);
+  return shown === undefined ? REFUSED : ARRIVED;
+}
+
+async function navigate(view: Navigable, spine: Spine, target: FlowTarget): Promise<Navigation> {
+  const index = namesASection(spine, view.resolveNavigation(target));
+  if (index === null) return UNRESOLVED;
+
+  const paged = sectionWithABody(spine, index);
+  if (paged === null) return NO_SECTION_HAS_A_BODY;
+  if (paged === index) return goneTo(view, target);
+
+  return goneTo(view, paged);
+}
+
+function reached(navigation: Navigation): boolean {
+  return match(navigation)
+    .with({ kind: 'arrived' }, () => true)
+    .with({ kind: 'unresolved' }, { kind: 'no-body' }, { kind: 'refused' }, () => false)
+    .exhaustive();
 }
 
 async function passageCfi(
@@ -153,13 +188,13 @@ async function goToPassage(
   passage: LiftedPassage,
 ): Promise<PassageArrival> {
   const stored = await navigate(view, spine, passage.cfi);
-  if (stored !== undefined) return arrivedAtTheCfi(passage.cfi);
+  if (reached(stored)) return arrivedAtTheCfi(passage.cfi);
 
   const fresh = await find(passage.quote);
   if (fresh === null) return THE_PASSAGE_IS_LOST;
 
   const refound = await navigate(view, spine, fresh);
-  return refound === undefined ? THE_PASSAGE_IS_LOST : foundByItsText(fresh);
+  return reached(refound) ? foundByItsText(fresh) : THE_PASSAGE_IS_LOST;
 }
 
 function drawn(view: Annotatable, annotation: Annotation): void {
@@ -211,11 +246,11 @@ function redrawPassages(view: Annotatable, shown: ReadonlyMap<string, PassageWei
 async function openAt(view: Navigable, spine: Spine, at: string | null): Promise<boolean> {
   if (at !== null) {
     const resumed = await navigate(view, spine, at);
-    if (resumed !== undefined) return true;
+    if (reached(resumed)) return true;
   }
 
   const started = await navigate(view, spine, OPENS_AT_THE_FIRST_SECTION);
-  return started !== undefined;
+  return reached(started);
 }
 
 async function openFlowSurface(
@@ -309,5 +344,6 @@ export type {
   FlowSurface,
   FlowTarget,
   Navigable,
+  Navigation,
   Searchable,
 };

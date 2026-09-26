@@ -21,16 +21,23 @@ const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
 
 const FIRST_SECTION = 0;
 
+const UNKNOWN_HREF = 'nowhere.xhtml';
+
+const PAST_THE_SPINE = 'epubcfi(/6/99!/4/2/1:0)';
+
+const FOLIATE_FINDS_NO_ITEMREF = -1;
+
 type Stage = {
   readonly targets: FlowTarget[];
   readonly goTo: (target: FlowTarget) => Promise<unknown>;
-  readonly resolveNavigation: (target: FlowTarget) => { index: number } | undefined;
+  readonly resolveNavigation: (target: FlowTarget) => { index: number } | null | undefined;
 };
 
 type StageOptions = {
   readonly refuses?: readonly FlowTarget[];
   readonly at?: Readonly<Record<string, number>>;
   readonly unresolvable?: readonly FlowTarget[];
+  readonly unknown?: readonly FlowTarget[];
 };
 
 function everySectionHasABody(sections: number): Spine {
@@ -42,6 +49,7 @@ function stage(options: StageOptions = {}): Stage {
   const refuses = options.refuses ?? [];
   const at = options.at ?? {};
   const unresolvable = options.unresolvable ?? [];
+  const unknown = options.unknown ?? [];
 
   return {
     targets,
@@ -51,6 +59,7 @@ function stage(options: StageOptions = {}): Stage {
     },
     resolveNavigation: (target) => {
       if (unresolvable.includes(target)) return undefined;
+      if (unknown.includes(target)) return null;
       if (typeof target === 'number') return { index: target };
       if (typeof target === 'string') return { index: at[target] ?? 0 };
 
@@ -157,6 +166,13 @@ describe('openAt', () => {
     expect(view.targets).toEqual([SOMEWHERE]);
   });
 
+  it('falls back to the first section when the stored cfi lies past the end of the spine', async () => {
+    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
+
+    await expect(openAt(view, everySectionHasABody(3), PAST_THE_SPINE)).resolves.toBe(true);
+    expect(view.targets).toEqual([FIRST_SECTION]);
+  });
+
   it('reports a failure when no section in the book has a body element', async () => {
     const view = stage();
 
@@ -166,12 +182,66 @@ describe('openAt', () => {
 });
 
 describe('navigate', () => {
-  it('hands a target foliate cannot resolve to foliate, which reports it', async () => {
-    const view = stage({ unresolvable: ['nowhere.xhtml'] });
+  it('reports a target foliate cannot resolve as unresolved, and asks foliate for nothing', async () => {
+    const view = stage({ unresolvable: [UNKNOWN_HREF] });
 
-    await navigate(view, { sections: 3, withoutABody: [0] }, 'nowhere.xhtml');
+    await expect(navigate(view, { sections: 3, withoutABody: [0] }, UNKNOWN_HREF)).resolves.toEqual(
+      { kind: 'unresolved' },
+    );
+    expect(view.targets).toEqual([]);
+  });
 
-    expect(view.targets).toEqual(['nowhere.xhtml']);
+  it('reports an href the book does not hold as unresolved rather than throwing', async () => {
+    const view = stage({ unknown: [UNKNOWN_HREF] });
+
+    await expect(navigate(view, everySectionHasABody(3), UNKNOWN_HREF)).resolves.toEqual({
+      kind: 'unresolved',
+    });
+    expect(view.targets).toEqual([]);
+  });
+
+  it('reports a cfi past the end of the spine as unresolved', async () => {
+    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
+
+    await expect(navigate(view, everySectionHasABody(3), PAST_THE_SPINE)).resolves.toEqual({
+      kind: 'unresolved',
+    });
+    expect(view.targets).toEqual([]);
+  });
+
+  it('reports a section index one past the last section as unresolved', async () => {
+    const view = stage({ at: { [PAST_THE_SPINE]: 3 } });
+
+    await expect(navigate(view, everySectionHasABody(3), PAST_THE_SPINE)).resolves.toEqual({
+      kind: 'unresolved',
+    });
+    expect(view.targets).toEqual([]);
+  });
+
+  it('arrives at the last section of the spine', async () => {
+    const view = stage({ at: { [SOMEWHERE]: 2 } });
+
+    await expect(navigate(view, everySectionHasABody(3), SOMEWHERE)).resolves.toEqual({
+      kind: 'arrived',
+    });
+    expect(view.targets).toEqual([SOMEWHERE]);
+  });
+
+  it('reports a target foliate will not lay out as refused', async () => {
+    const view = stage({ refuses: [SOMEWHERE] });
+
+    await expect(navigate(view, everySectionHasABody(3), SOMEWHERE)).resolves.toEqual({
+      kind: 'refused',
+    });
+  });
+
+  it('reports a book with no section that has a body', async () => {
+    const view = stage();
+
+    await expect(navigate(view, { sections: 2, withoutABody: [0, 1] }, 0)).resolves.toEqual({
+      kind: 'no-body',
+    });
+    expect(view.targets).toEqual([]);
   });
 
   it('sends a contents entry pointing at a section with no body to the next one', async () => {
@@ -313,6 +383,57 @@ describe('goToPassage', () => {
 
     expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
     expect(view.targets).toEqual([SOMEWHERE]);
+  });
+
+  it('re-finds the passage by its text when its stored place names no file in the book', async () => {
+    const view = stage({ unknown: [UNKNOWN_HREF] });
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      () => Promise.resolve(REFOUND),
+      { cfi: UNKNOWN_HREF, quote: QUOTE },
+    );
+
+    expect(arrival).toEqual(foundByItsText(REFOUND));
+    expect(view.targets).toEqual([REFOUND]);
+  });
+
+  it('reports the passage lost when its stored place names no file and its text is gone', async () => {
+    const view = stage({ unknown: [UNKNOWN_HREF] });
+
+    const arrival = await goToPassage(view, everySectionHasABody(3), () => Promise.resolve(null), {
+      cfi: UNKNOWN_HREF,
+      quote: QUOTE,
+    });
+
+    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
+    expect(view.targets).toEqual([]);
+  });
+
+  it('re-finds the passage by its text when its stored cfi lies past the end of the spine', async () => {
+    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      () => Promise.resolve(REFOUND),
+      { cfi: PAST_THE_SPINE, quote: QUOTE },
+    );
+
+    expect(arrival).toEqual(foundByItsText(REFOUND));
+    expect(view.targets).toEqual([REFOUND]);
+  });
+
+  it('reports the passage lost when its cfi lies past the spine and its text is gone', async () => {
+    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
+
+    const arrival = await goToPassage(view, everySectionHasABody(3), () => Promise.resolve(null), {
+      cfi: PAST_THE_SPINE,
+      quote: QUOTE,
+    });
+
+    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
   });
 
   it('reports the passage lost when the re-found cfi will not lay out either', async () => {
