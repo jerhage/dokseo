@@ -1,0 +1,91 @@
+@layer features {
+  @scope (.flow-viewer) {
+    .stage > foliate-view {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+    }
+    .ink-link {
+      color: var(--color-text-link);
+    }
+    .ink-selection {
+      color: var(--color-primary-soft);
+    }
+    .curtain {
+      justify-content: center;
+      text-align: center;
+    }
+    .lift {
+      position: absolute;
+      left: var(--lift-left);
+      top: var(--lift-top);
+      inline-size: var(--lift-width);
+      block-size: var(--lift-height);
+    }
+    .lift-button {
+      inline-size: 100%;
+      block-size: 100%;
+    }
+    .told {
+      position: absolute;
+      inset-block-start: var(--sp-3);
+      inset-inline-start: 50%;
+      translate: -50% 0;
+      inline-size: max-content;
+      max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3));
+    }
+    .dock {
+      inline-size: clamp(
+        var(--layout-sidebar-width),
+        (100% - var(--breakpoint-compact)) * 1000,
+        var(--layout-list-width)
+      );
+    }
+    .scrub {
+      display: block;
+      inline-size: 100%;
+      block-size: var(--sp-1);
+      margin: 0;
+      padding: 0;
+      border-radius: var(--radius-full);
+      background: linear-gradient(
+        to right,
+        var(--color-primary) var(--fill),
+        var(--border-color-strong) var(--fill)
+      );
+      appearance: none;
+      cursor: pointer;
+    }
+    .scrub:dir(rtl) {
+      background: linear-gradient(
+        to left,
+        var(--color-primary) var(--fill),
+        var(--border-color-strong) var(--fill)
+      );
+    }
+    .scrub::-webkit-slider-thumb {
+      inline-size: var(--sp-3);
+      block-size: var(--sp-3);
+      border: 0;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+      appearance: none;
+    }
+    .scrub::-moz-range-thumb {
+      inline-size: var(--sp-3);
+      block-size: var(--sp-3);
+      border: 0;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+    }
+    .tick {
+      position: absolute;
+      inset-block: 0;
+      left: var(--at);
+      inline-size: var(--border-width);
+      background: var(--color-text-muted);
+      translate: -50% 0;
+      pointer-events: none;
+    }
+  }
+}
