@@ -10,6 +10,7 @@ import {
   OVERSCAN_SCREENS,
   positionAtScroll,
   scrollForPosition,
+  shownThroughAtScroll,
   spacersFor,
   stripHeight,
   stripOverscan,
@@ -337,6 +338,41 @@ describe('positionAtScroll', () => {
 
   it('returns nothing for an empty layout', () => {
     expect(positionAtScroll([], 500)).toBeNull();
+  });
+});
+
+describe('shownThroughAtScroll', () => {
+  const short: Size = { width: 800, height: 300 };
+  const panel: Size = { width: 800, height: 2400 };
+  const VIEWPORT = 1000;
+  const layout = layOutStrip([panel, panel, panel, panel, short], WIDTH);
+  const endOfStrip = stripHeight(layout) - VIEWPORT;
+
+  it('names the short last image once the strip is scrolled to its end', () => {
+    expect(positionAt(layout, endOfStrip).index).toBe(imageIndex(3));
+    expect(shownThroughAtScroll(layout, endOfStrip, VIEWPORT)).toBe(imageIndex(4));
+  });
+
+  it('names the image before the last while the last image is still below the screen', () => {
+    expect(shownThroughAtScroll(layout, endOfStrip - 400, VIEWPORT)).toBe(imageIndex(3));
+  });
+
+  it('names the image before the last while the last image is only partly on screen', () => {
+    expect(shownThroughAtScroll(layout, endOfStrip - 100, VIEWPORT)).toBe(imageIndex(3));
+  });
+
+  it('names the image under the top of the screen when no image ends on screen', () => {
+    expect(shownThroughAtScroll(layout, 2400 + 200, VIEWPORT)).toBe(imageIndex(1));
+  });
+
+  it('names the last image of a strip shorter than the screen', () => {
+    const brief = layOutStrip([short, short], WIDTH);
+
+    expect(shownThroughAtScroll(brief, 0, VIEWPORT)).toBe(imageIndex(1));
+  });
+
+  it('returns nothing for an empty layout', () => {
+    expect(shownThroughAtScroll([], 0, VIEWPORT)).toBeNull();
   });
 });
 

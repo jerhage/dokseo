@@ -9,7 +9,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource } from '$lib/shared/page-source';
-import { imagePlace, textPlace } from '$lib/shared/reading-place';
+import { imagePlace, showsTheEnd, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
@@ -329,7 +329,9 @@ describe('ReaderView', () => {
 
     expect(view.group).toBe(2);
     expect(view.visiblePages).toEqual([4, 5]);
-    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(4))]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([
+      imagePlace(imageIndex(4), imageIndex(5)),
+    ]);
   });
 
   it('closes the page source on dispose', async () => {
@@ -381,7 +383,9 @@ describe('ReaderView', () => {
 
     await view.next();
 
-    expect(world.edits).toEqual([{ id: 'one', position: imagePlace(imageIndex(2)) }]);
+    expect(world.edits).toEqual([
+      { id: 'one', position: imagePlace(imageIndex(2), imageIndex(3)) },
+    ]);
   });
 
   it('reports a page that will not decode without failing the book', async () => {
@@ -848,6 +852,96 @@ describe('the reading place of a continuous strip', () => {
   });
 });
 
+describe('reading to the end', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function stopAt(world: Fakes, groupsBeforeTheEnd: number): Promise<ReaderView> {
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    await view.goToGroup(view.groups.length - 1 - groupsBeforeTheEnd);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+    return view;
+  }
+
+  const books: readonly (readonly [PagePairing, number])[] = [
+    ['double-after-cover', 5],
+    ['double-after-cover', 6],
+    ['double', 6],
+    ['double', 5],
+    ['single', 5],
+  ];
+
+  for (const [pairing, count] of books) {
+    it(`saves a place showing the end once ${pairing} shows the last of ${count} pages`, async () => {
+      const world = fakes({ pagePairing: pairing, imageCount: count });
+
+      await stopAt(world, 0);
+
+      expect(showsTheEnd(world.stored.position, count)).toBe(true);
+    });
+
+    it(`saves a place short of the end while ${pairing} shows the group before the last of ${count} pages`, async () => {
+      const world = fakes({ pagePairing: pairing, imageCount: count });
+
+      await stopAt(world, 1);
+
+      expect(showsTheEnd(world.stored.position, count)).toBe(false);
+    });
+  }
+
+  it('saves the first page of the last spread as the place to reopen at', async () => {
+    const world = fakes({ pagePairing: 'double-after-cover', imageCount: 5 });
+
+    await stopAt(world, 0);
+
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(3), imageIndex(4)));
+  });
+
+  it('reopens a book read to its last spread at that spread, not past it', async () => {
+    const world = fakes({
+      pagePairing: 'double-after-cover',
+      imageCount: 5,
+      position: imagePlace(imageIndex(3), imageIndex(4)),
+    });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.position.index).toBe(3);
+    expect(view.visiblePages).toEqual([3, 4]);
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves a place showing the end once a strip shows its short last image', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', imageCount: 5 });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(3), 0.6), imageIndex(4));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(3), imageIndex(4)));
+    expect(showsTheEnd(world.stored.position, 5)).toBe(true);
+  });
+
+  it('saves a place short of the end while a strip has not yet shown its last image', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', imageCount: 5 });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(3));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(showsTheEnd(world.stored.position, 5)).toBe(false);
+  });
+});
+
 describe('the reading place in the url', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -873,7 +967,9 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'), imageIndex(4));
 
-    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(4))]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([
+      imagePlace(imageIndex(4), imageIndex(5)),
+    ]);
   });
 
   it('keeps a saved text place when the url asks for an image', async () => {
@@ -941,8 +1037,8 @@ describe('the reading place in the url', () => {
 
     expect(mirrored).toEqual([4]);
     expect(world.edits.map((edit) => edit.position)).toEqual([
-      imagePlace(imageIndex(2)),
-      imagePlace(imageIndex(4)),
+      imagePlace(imageIndex(2), imageIndex(3)),
+      imagePlace(imageIndex(4), imageIndex(5)),
     ]);
   });
 

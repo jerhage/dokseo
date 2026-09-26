@@ -10,6 +10,7 @@
     layOutStrip,
     positionAtScroll,
     scrollForPosition,
+    shownThroughAtScroll,
     spacersFor,
     stripHeight,
     stripOverscan,
@@ -36,7 +37,7 @@
     readonly measured: (index: ImageIndex, size: Size) => void;
     readonly glow?: readonly GlowRegion[];
     readonly makes?: CaptureOrigin;
-    readonly moveTo: (position: ReadingPosition) => void;
+    readonly moveTo: (position: ReadingPosition, shownThrough: ImageIndex) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
     readonly onTap: () => void;
@@ -193,7 +194,10 @@
 
     selection?.reset();
     hold = holdAt(top, left);
-    moveTo(hold.position);
+    moveTo(
+      hold.position,
+      shownThroughAtScroll(layout, top, element.clientHeight) ?? hold.position.index,
+    );
   }
 
   function onwheel(event: WheelEvent): void {

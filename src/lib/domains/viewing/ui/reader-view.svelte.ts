@@ -12,7 +12,8 @@ import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
-import { imagePlace } from '$lib/shared/reading-place';
+import { imagePlace, samePlace } from '$lib/shared/reading-place';
+import type { ImagePlace } from '$lib/shared/reading-place';
 import { groupContaining, pairPages } from '../domain/page-pairing';
 import type { PageGroup } from '../domain/page-pairing';
 import { groupOf, positionOfGroup, readingPosition } from '../domain/reading-position';
@@ -62,7 +63,7 @@ const PLACE_FAILED = 'Could not save your place';
 
 type PendingSave = {
   readonly id: BookId;
-  readonly index: ImageIndex;
+  readonly place: ImagePlace;
   readonly timer: ReturnType<typeof setTimeout>;
 };
 
@@ -128,7 +129,7 @@ class ReaderView {
   #source: PageSource | null = null;
   #generation = 0;
   #saving: PendingSave | null = null;
-  #placed: ImageIndex | null = null;
+  #placed: ImagePlace | null = null;
   #placeFailing = false;
 
   constructor(container: Container, notify: Notify, mirror: PlaceMirror | null = null) {
@@ -212,12 +213,13 @@ class ReaderView {
     if (place === null) return;
 
     this.position = readingPosition(place.index, 0);
-    this.#placed = place.index;
+    this.#placed =
+      saved.kind === 'image' && saved.index === place.index ? saved : imagePlace(place.index);
     if (place.clamped) {
       this.message = `This book holds ${book.imageCount} images, so it opened at the last one.`;
     }
     if (place.asked && saved.kind === 'image' && place.index !== saved.index) {
-      void this.#persist(book.id, place.index);
+      void this.#persist(book.id, this.#placeShowing(place.index));
     }
     this.#mirror?.(place.index);
   }
@@ -265,8 +267,9 @@ class ReaderView {
 
     this.position = moved;
     this.clearSelection();
-    this.#scheduleSave(book.id, moved.index);
-    await this.#persist(book.id, moved.index);
+    const place = this.#placeShowing(moved.index);
+    this.#scheduleSave(book.id, place);
+    await this.#persist(book.id, place);
   }
 
   async goToImage(id: BookId, index: ImageIndex): Promise<void> {
@@ -285,7 +288,7 @@ class ReaderView {
     if (group >= 0) await this.goToGroup(group);
   }
 
-  moveTo(position: ReadingPosition): void {
+  moveTo(position: ReadingPosition, shownThrough: ImageIndex = position.index): void {
     const book = this.book;
     if (book === null) return;
 
@@ -293,7 +296,7 @@ class ReaderView {
     if (position.index === held.index && position.offset === held.offset) return;
 
     this.position = position;
-    this.#scheduleSave(book.id, position.index);
+    this.#scheduleSave(book.id, imagePlace(position.index, shownThrough));
   }
 
   async setLayoutKind(kind: ImageLayoutKind): Promise<void> {
@@ -385,17 +388,27 @@ class ReaderView {
       layout === null ? NO_GROUPS : pairPages(sizes, effectivePairing(book.pagePairing, layout));
   }
 
-  #scheduleSave(id: BookId, index: ImageIndex): void {
+  #placeShowing(index: ImageIndex): ImagePlace {
+    const group = this.groups[groupContaining(this.groups, index)] ?? NO_PAGES;
+    return imagePlace(index, group.at(-1) ?? index);
+  }
+
+  #scheduleSave(id: BookId, place: ImagePlace): void {
     const waiting = this.#saving;
     if (waiting !== null) clearTimeout(waiting.timer);
 
     const timer = setTimeout(() => {
       this.#saving = null;
-      this.#mirror?.(index);
-      if (index !== this.#placed) void this.#persist(id, index);
+      this.#mirror?.(place.index);
+      if (!this.#alreadyPlaced(place)) void this.#persist(id, place);
     }, PLACE_SAVE_DELAY_MS);
 
-    this.#saving = { id, index, timer };
+    this.#saving = { id, place, timer };
+  }
+
+  #alreadyPlaced(place: ImagePlace): boolean {
+    const placed = this.#placed;
+    return placed !== null && samePlace(placed, place);
   }
 
   #flushSave(): void {
@@ -404,16 +417,16 @@ class ReaderView {
 
     clearTimeout(waiting.timer);
     this.#saving = null;
-    if (waiting.index === this.#placed) return;
-    void this.#persist(waiting.id, waiting.index);
+    if (this.#alreadyPlaced(waiting.place)) return;
+    void this.#persist(waiting.id, waiting.place);
   }
 
-  async #persist(id: BookId, index: ImageIndex): Promise<void> {
+  async #persist(id: BookId, place: ImagePlace): Promise<void> {
     const generation = this.#generation;
-    this.#placed = index;
+    this.#placed = place;
 
     try {
-      const saved = await this.#container.library.saveReadingPlace(id, imagePlace(index));
+      const saved = await this.#container.library.saveReadingPlace(id, place);
       if (generation !== this.#generation) return;
       if (saved.ok) this.#placeFailing = false;
       else this.#failPlace(describeEditFailure(saved.error));

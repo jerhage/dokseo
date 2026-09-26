@@ -316,7 +316,7 @@
           measured={(index, size) => view.measure(index, size)}
           {glow}
           {makes}
-          moveTo={(position) => view.moveTo(position)}
+          moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
           select={(regions) => commit(regions, 'column')}
           clear={() => view.clearSelection()}
           onTap={toggleChrome}

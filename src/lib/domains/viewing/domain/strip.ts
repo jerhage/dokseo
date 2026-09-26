@@ -27,6 +27,8 @@ const OVERSCAN_SCREENS = 0.5;
 
 const NOTHING_VISIBLE: VisibleRange = { first: 0, last: -1 };
 
+const EDGE_SLACK_PX = 1;
+
 function positiveOrZero(value: number): number {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
@@ -134,6 +136,26 @@ function positionAtScroll(
   return readingPosition(reached.index, fraction);
 }
 
+function shownThroughAtScroll(
+  layout: readonly SliceLayout[],
+  scrollTop: number,
+  viewportHeight: number,
+): ImageIndex | null {
+  const reached = positionAtScroll(layout, scrollTop);
+  if (reached === null) return null;
+
+  const top = Number.isFinite(scrollTop) ? scrollTop : 0;
+  const bottom = top + positiveOrZero(viewportHeight) + EDGE_SLACK_PX;
+  let through = reached.index;
+
+  for (const slice of layout) {
+    if (slice.top + slice.height > bottom) break;
+    if (slice.index > through) through = slice.index;
+  }
+
+  return through;
+}
+
 function scrollForPosition(layout: readonly SliceLayout[], position: ReadingPosition): number {
   const slice = layout.find((candidate) => candidate.index === position.index);
   if (slice === undefined) return 0;
@@ -150,6 +172,7 @@ export {
   stripOverscan,
   spacersFor,
   positionAtScroll,
+  shownThroughAtScroll,
   scrollForPosition,
 };
 export type { SliceLayout, VisibleRange, PlacedSlice, StripSpacers };
