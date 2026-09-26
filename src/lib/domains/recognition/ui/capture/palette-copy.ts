@@ -1,5 +1,25 @@
 import type { PaletteFilter } from '../../domain/capture/quick-find';
 import type { PaletteScope } from './palette-rows';
+import type { CaptureSearchStatus } from './capture-search.svelte';
+
+type PaletteNote =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unread' }
+  | { readonly kind: 'nothing'; readonly message: string };
+
+type PaletteNoteInput = {
+  readonly status: CaptureSearchStatus;
+  readonly query: string;
+  readonly rows: number;
+  readonly filter: PaletteFilter;
+  readonly scope: PaletteScope;
+};
+
+const NO_NOTE: PaletteNote = { kind: 'none' };
+
+const CAPTURES_UNREAD: PaletteNote = { kind: 'unread' };
+
+const CAPTURES_UNREAD_MESSAGE = 'Your captures could not be read.';
 
 const PALETTE_KEYS = '↑↓ move · ↵ jump to result · ⌘↵ new tab · esc close';
 
@@ -23,8 +43,23 @@ function paletteNothing(filter: PaletteFilter, scope: PaletteScope): string {
     : 'No capture holds that text.';
 }
 
+function paletteNote(input: PaletteNoteInput): PaletteNote {
+  if (input.status === 'failed') return CAPTURES_UNREAD;
+  if (input.rows > 0 || input.query.trim().length === 0) return NO_NOTE;
+
+  return { kind: 'nothing', message: paletteNothing(input.filter, input.scope) };
+}
+
 function resultCount(count: number): string {
   return `${count} ${count === 1 ? 'result' : 'results'}`;
 }
 
-export { PALETTE_KEYS, paletteInvite, paletteNothing, resultCount };
+export {
+  CAPTURES_UNREAD_MESSAGE,
+  PALETTE_KEYS,
+  paletteInvite,
+  paletteNote,
+  paletteNothing,
+  resultCount,
+};
+export type { PaletteNote, PaletteNoteInput };

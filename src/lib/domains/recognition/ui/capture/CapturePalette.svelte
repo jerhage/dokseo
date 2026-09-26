@@ -1,6 +1,8 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
+  import Alert from '$lib/components/Alert.svelte';
+  import Button from '$lib/components/Button.svelte';
   import Divider from '$lib/components/Divider.svelte';
   import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -13,7 +15,13 @@
   import type { PaletteFilter, QuickFinds } from '../../domain/capture/quick-find';
   import type { Tag } from '../../domain/tag/tag';
   import type { CaptureSearchView } from './capture-search.svelte';
-  import { PALETTE_KEYS, paletteInvite, paletteNothing, resultCount } from './palette-copy';
+  import {
+    CAPTURES_UNREAD_MESSAGE,
+    PALETTE_KEYS,
+    paletteInvite,
+    paletteNote,
+    resultCount,
+  } from './palette-copy';
   import { paletteKey } from './palette-keys';
   import { effectiveScope, paletteRows, searchedBooks } from './palette-rows';
   import type { PaletteRow, PaletteScope } from './palette-rows';
@@ -68,6 +76,16 @@
   );
 
   const cursor = $derived(at >= results.rows.length ? NO_MATCH : at);
+
+  const note = $derived(
+    paletteNote({
+      status: find.status,
+      query,
+      rows: results.rows.length,
+      filter,
+      scope: scoped,
+    }),
+  );
 
   function choose(chosen: PaletteScope): void {
     scope = chosen;
@@ -194,11 +212,20 @@
     </div>
   {/snippet}
 
-  {#if results.rows.length === 0}
-    {#if query.trim().length > 0}
-      <p class="px-5 py-5 text-sm text-muted">{paletteNothing(filter, scoped)}</p>
-    {/if}
-  {:else}
+  {#if note.kind === 'unread'}
+    <div class="p-3">
+      <Alert variant="danger">
+        {CAPTURES_UNREAD_MESSAGE}
+        {#snippet actions()}
+          <Button size="sm" onclick={() => void find.load()}>Try again</Button>
+        {/snippet}
+      </Alert>
+    </div>
+  {:else if note.kind === 'nothing'}
+    <p class="px-5 py-5 text-sm text-muted">{note.message}</p>
+  {/if}
+
+  {#if results.rows.length > 0}
     <div class="col gap-3 p-2">
       {#each results.sections as group (group.label)}
         <div class="col gap-1">
