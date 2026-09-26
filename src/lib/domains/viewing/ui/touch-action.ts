@@ -2,6 +2,8 @@ import { match } from 'ts-pattern';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { swipeTurn, tapZone } from '$lib/shared/page-turn';
 import type { FrameSpan, TapZone, TouchTurns } from '$lib/shared/page-turn';
+import { overscrollTurn } from '../domain/overscroll';
+import type { PanReach } from '../domain/overscroll';
 import type { Point } from '../domain/selection';
 import { moveTowards } from './page-moves';
 import type { PageMove } from './page-moves';
@@ -13,6 +15,7 @@ type TouchScene = {
   readonly direction: ReadingDirection;
   readonly frame: FrameSpan;
   readonly viewportWidth: number;
+  readonly reach: PanReach | null;
 };
 
 type TouchAction =
@@ -20,6 +23,15 @@ type TouchAction =
   | { readonly kind: 'toggle-chrome' }
   | { readonly kind: 'turn'; readonly move: PageMove }
   | { readonly kind: 'pan'; readonly dx: number; readonly dy: number }
+  | {
+      readonly kind: 'pinch';
+      readonly scale: number;
+      readonly cx: number;
+      readonly cy: number;
+      readonly dx: number;
+      readonly dy: number;
+    }
+  | { readonly kind: 'zoom-toggle'; readonly at: Point }
   | { readonly kind: 'select-begin'; readonly from: Point; readonly to: Point }
   | { readonly kind: 'select-move'; readonly at: Point }
   | { readonly kind: 'select-end'; readonly at: Point }
@@ -47,6 +59,21 @@ function swipeAction(start: Point, end: Point, elapsed: number, scene: TouchScen
   return side === null ? NOTHING : turnTo(moveTowards(side, 'paged', scene.direction));
 }
 
+function panEndAction(start: Point, end: Point, elapsed: number, scene: TouchScene): TouchAction {
+  if (scene.reach === null) return NOTHING;
+
+  const side = overscrollTurn(
+    scene.reach,
+    { start, end, elapsed },
+    { span: scene.frame, viewportWidth: scene.viewportWidth, turns: scene.turns },
+  );
+  return side === null ? NOTHING : turnTo(moveTowards(side, 'paged', scene.direction));
+}
+
+function doubleTapAction(at: Point, scene: TouchScene): TouchAction {
+  return scene.chromeShown ? TOGGLE_CHROME : { kind: 'zoom-toggle', at };
+}
+
 function touchAction(intent: TouchIntent, scene: TouchScene): TouchAction {
   return match<TouchIntent, TouchAction>(intent)
     .with({ kind: 'none' }, () => NOTHING)
@@ -62,7 +89,18 @@ function touchAction(intent: TouchIntent, scene: TouchScene): TouchAction {
     .with({ kind: 'select-move' }, ({ x, y }) => ({ kind: 'select-move', at: { x, y } }))
     .with({ kind: 'select-end' }, ({ x, y }) => ({ kind: 'select-end', at: { x, y } }))
     .with({ kind: 'cancel' }, () => ({ kind: 'drop' }))
-    .with({ kind: 'pan-end' }, { kind: 'pinch' }, { kind: 'double-tap' }, () => NOTHING)
+    .with({ kind: 'pan-end' }, ({ start, end, elapsed }) =>
+      panEndAction(start, end, elapsed, scene),
+    )
+    .with({ kind: 'pinch' }, ({ scale, cx, cy, dx, dy }) => ({
+      kind: 'pinch',
+      scale,
+      cx,
+      cy,
+      dx,
+      dy,
+    }))
+    .with({ kind: 'double-tap' }, ({ x, y }) => doubleTapAction({ x, y }, scene))
     .exhaustive();
 }
 

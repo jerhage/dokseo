@@ -5,10 +5,13 @@ import {
   centrePan,
   clampPan,
   clampZoom,
+  DOUBLE_TAP_ZOOM,
+  doubleTapTarget,
   fitZoom,
   MAX_ZOOM,
   MIN_ZOOM,
   panBy,
+  pinchStep,
   zoomAt,
 } from './viewport';
 import type { Viewport } from './viewport';
@@ -361,5 +364,113 @@ describe('canPan', () => {
     expect(canPan(content, frame, 0)).toBe(false);
     expect(canPan(content, frame, Number.NaN)).toBe(false);
     expect(canPan(content, frame, Number.POSITIVE_INFINITY)).toBe(false);
+  });
+});
+
+describe('pinchStep', () => {
+  const content: Size = { width: 400, height: 600 };
+  const frame: Size = { width: 400, height: 600 };
+  const bounds = { content, frame, floor: 1 };
+  const still = { scale: 1, cx: 200, cy: 300, dx: 0, dy: 0 };
+
+  it('keeps the content under the fingers under their midpoint as they spread', () => {
+    const next = pinchStep(identity, { ...still, scale: 2, cx: 100, cy: 150 }, bounds);
+
+    expect(next.zoom).toBe(2);
+    expect(contentUnder(next, 100, 150)).toEqual(contentUnder(identity, 100, 150));
+  });
+
+  it('carries the content along with a moving midpoint before zooming around it', () => {
+    const start: Viewport = { zoom: 2, panX: -200, panY: -300 };
+    const before = contentUnder(start, 180, 280);
+    const next = pinchStep(start, { scale: 1.5, cx: 200, cy: 300, dx: 20, dy: 20 }, bounds);
+
+    expect(next.zoom).toBe(3);
+    expect(contentUnder(next, 200, 300).x).toBeCloseTo(before.x);
+    expect(contentUnder(next, 200, 300).y).toBeCloseTo(before.y);
+  });
+
+  it('pans with two fingers that move without spreading', () => {
+    const start: Viewport = { zoom: 2, panX: -200, panY: -300 };
+
+    expect(pinchStep(start, { ...still, dx: 30, dy: -40 }, bounds)).toEqual({
+      zoom: 2,
+      panX: -170,
+      panY: -340,
+    });
+  });
+
+  it('stops at the fit rather than shrinking the page below it', () => {
+    const start: Viewport = { zoom: 1.5, panX: -100, panY: -150 };
+
+    expect(pinchStep(start, { ...still, scale: 0.25 }, bounds).zoom).toBe(1);
+  });
+
+  it('never raises a zoom that already sits below the fit', () => {
+    const start: Viewport = { zoom: 0.5, panX: 100, panY: 150 };
+
+    expect(pinchStep(start, { ...still, scale: 0.5 }, bounds).zoom).toBe(0.5);
+    expect(pinchStep(start, { ...still, scale: 1.2 }, bounds).zoom).toBeCloseTo(0.6);
+  });
+
+  it('stops at the maximum zoom', () => {
+    const start: Viewport = { zoom: 6, panX: 0, panY: 0 };
+
+    expect(pinchStep(start, { ...still, scale: 4 }, bounds).zoom).toBe(MAX_ZOOM);
+  });
+
+  it('clamps the pan so the page cannot be dragged off the frame', () => {
+    const start: Viewport = { zoom: 2, panX: 0, panY: 0 };
+
+    expect(pinchStep(start, { ...still, dx: 500, dy: 500 }, bounds)).toEqual({
+      zoom: 2,
+      panX: 0,
+      panY: 0,
+    });
+  });
+
+  it('treats a non-finite scale or delta as no change', () => {
+    const start: Viewport = { zoom: 2, panX: -100, panY: -100 };
+
+    expect(
+      pinchStep(start, { scale: Number.NaN, cx: 0, cy: 0, dx: Number.NaN, dy: 1 / 0 }, bounds),
+    ).toEqual(start);
+  });
+});
+
+describe('doubleTapTarget', () => {
+  const at = { x: 120, y: 300 };
+
+  it('zooms from the fit to two and a half times the fit around the tapped point', () => {
+    const target = doubleTapTarget(identity, 1, at);
+
+    expect(target.kind).toBe('zoom');
+    expect(target.viewport.zoom).toBe(DOUBLE_TAP_ZOOM);
+    expect(contentUnder(target.viewport, at.x, at.y)).toEqual(contentUnder(identity, at.x, at.y));
+  });
+
+  it('measures the zoom-in from the fit, not from the zoom it starts at', () => {
+    expect(doubleTapTarget({ zoom: 0.5, panX: 0, panY: 0 }, 0.8, at).viewport.zoom).toBeCloseTo(
+      0.8 * DOUBLE_TAP_ZOOM,
+    );
+  });
+
+  it('returns to the fit from any zoom above it, keeping the tapped point still', () => {
+    const start: Viewport = { zoom: 1.5, panX: -80, panY: -120 };
+    const target = doubleTapTarget(start, 1, at);
+
+    expect(target.kind).toBe('fit');
+    expect(target.viewport.zoom).toBeCloseTo(1);
+    expect(contentUnder(target.viewport, at.x, at.y).x).toBeCloseTo(
+      contentUnder(start, at.x, at.y).x,
+    );
+  });
+
+  it('counts a zoom a hair above the fit as the fit', () => {
+    expect(doubleTapTarget({ zoom: 1.005, panX: 0, panY: 0 }, 1, at).kind).toBe('zoom');
+  });
+
+  it('caps the zoom-in at the maximum zoom', () => {
+    expect(doubleTapTarget({ zoom: 4, panX: 0, panY: 0 }, 4, at).viewport.zoom).toBe(MAX_ZOOM);
   });
 });

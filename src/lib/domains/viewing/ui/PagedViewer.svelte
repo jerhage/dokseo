@@ -10,8 +10,18 @@
   import type { PageFit } from '$lib/shared/page-fit';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import type { PageGroup } from '../domain/page-pairing';
-  import { canPan, centrePan, clampPan, fitZoom, panBy, zoomAt } from '../domain/viewport';
-  import type { Viewport } from '../domain/viewport';
+  import {
+    canPan,
+    centrePan,
+    clampPan,
+    doubleTapTarget,
+    fitZoom,
+    panBy,
+    pinchStep,
+    zoomAt,
+  } from '../domain/viewport';
+  import type { Pinch, Viewport, ZoomPoint } from '../domain/viewport';
+  import type { PanReach } from '../domain/overscroll';
   import { hintsToShow, pagedHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
@@ -92,6 +102,7 @@
   let shownPages: PageGroup | null = null;
   let touch: TouchState = TOUCH_IDLE;
   let touchTimer: ReturnType<typeof setTimeout> | null = null;
+  let panOrigin: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
   let lastPointer = '';
 
   const pending = $derived(
@@ -182,6 +193,50 @@
     fit = 'free';
     settle(next);
     if (pannable) learnGesture('zoom-to-pan');
+  }
+
+  function fitFloor(sizes: Frames): number {
+    return match(pageFit)
+      .with('height', () => FIT_HEIGHT_ZOOM)
+      .with('width', () => fitZoom(sizes.content, sizes.frame, 'width'))
+      .exhaustive();
+  }
+
+  function framePoint(x: number, y: number): ZoomPoint | null {
+    const element = frame;
+    if (element === null) return null;
+
+    const box = element.getBoundingClientRect();
+    return { x: x - box.left, y: y - box.top };
+  }
+
+  function pinched(pinch: Pinch): void {
+    const sizes = framesNow();
+    const centre = framePoint(pinch.cx, pinch.cy);
+    if (sizes === null || centre === null) return;
+
+    zoomed(
+      pinchStep(
+        viewport,
+        { ...pinch, cx: centre.x, cy: centre.y },
+        { content: sizes.content, frame: sizes.frame, floor: fitFloor(sizes) },
+      ),
+    );
+  }
+
+  function doubleTapped(at: ZoomPoint): void {
+    const sizes = framesNow();
+    const point = framePoint(at.x, at.y);
+    if (sizes === null || point === null) return;
+
+    const target = doubleTapTarget(viewport, fitFloor(sizes), point);
+    if (target.kind === 'zoom') {
+      zoomed(target.viewport);
+      return;
+    }
+
+    fit = pageFit;
+    settle(target.viewport);
   }
 
   function stepZoom(factor: number): void {
@@ -282,6 +337,8 @@
       .with({ kind: 'toggle-chrome' }, () => onTap())
       .with({ kind: 'turn' }, ({ move }) => onTurn?.(move))
       .with({ kind: 'pan' }, ({ dx, dy }) => settle(panBy(viewport, dx, dy)))
+      .with({ kind: 'pinch' }, (pinch) => pinched(pinch))
+      .with({ kind: 'zoom-toggle' }, ({ at }) => doubleTapped(at))
       .with({ kind: 'select-begin' }, ({ from, to }) => {
         if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
       })
@@ -291,7 +348,16 @@
       .exhaustive();
   }
 
+  function panReach(): PanReach | null {
+    const sizes = framesNow();
+    return sizes === null
+      ? null
+      : { origin: panOrigin, content: sizes.content, frame: sizes.frame };
+  }
+
   function feed(input: TouchInput): void {
+    if (input.kind === 'down' && touch.kind === 'idle') panOrigin = viewport;
+
     const span = frameSpan();
     const step = touchStep(touch, input, {
       pannable,
@@ -308,6 +374,7 @@
         direction,
         frame: span,
         viewportWidth: window.innerWidth,
+        reach: step.intent.kind === 'pan-end' ? panReach() : null,
       }),
     );
   }

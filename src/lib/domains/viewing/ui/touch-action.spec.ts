@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { touchAction } from './touch-action';
+import type { PanReach } from '../domain/overscroll';
 import type { TouchScene } from './touch-action';
 
 const BARE: TouchScene = {
@@ -8,6 +9,7 @@ const BARE: TouchScene = {
   direction: 'ltr',
   frame: { left: 0, width: 390 },
   viewportWidth: 390,
+  reach: null,
 };
 
 const MANGA: TouchScene = { ...BARE, direction: 'rtl' };
@@ -128,14 +130,66 @@ describe('touchAction gestures that pass through', () => {
     expect(touchAction({ kind: 'cancel' }, BARE)).toEqual({ kind: 'drop' });
   });
 
-  it('does nothing yet for a pinch, a double tap or the end of a pan', () => {
-    expect([
-      touchAction({ kind: 'pinch', scale: 2, cx: 0, cy: 0, dx: 0, dy: 0 }, BARE),
-      touchAction({ kind: 'double-tap', x: CENTRE, y: ROW }, BARE),
-      touchAction(
-        { kind: 'pan-end', start: { x: 0, y: 0 }, end: { x: 300, y: 0 }, elapsed: 100 },
-        BARE,
-      ),
-    ]).toEqual([{ kind: 'none' }, { kind: 'none' }, { kind: 'none' }]);
+  it('passes a pinch through step by step', () => {
+    expect(touchAction({ kind: 'pinch', scale: 2, cx: 10, cy: 20, dx: 3, dy: 4 }, BARE)).toEqual({
+      kind: 'pinch',
+      scale: 2,
+      cx: 10,
+      cy: 20,
+      dx: 3,
+      dy: 4,
+    });
+  });
+});
+
+describe('touchAction double taps', () => {
+  it('toggles the zoom at the tapped point', () => {
+    expect(touchAction({ kind: 'double-tap', x: CENTRE, y: ROW }, BARE)).toEqual({
+      kind: 'zoom-toggle',
+      at: { x: CENTRE, y: ROW },
+    });
+  });
+
+  it('only hides the chrome when the bars are up', () => {
+    expect(touchAction({ kind: 'double-tap', x: CENTRE, y: ROW }, WITH_BARS)).toEqual({
+      kind: 'toggle-chrome',
+    });
+  });
+});
+
+describe('touchAction pan ends', () => {
+  const zoomed: PanReach = {
+    origin: { zoom: 2, panX: -390, panY: 0 },
+    content: { width: 390, height: 700 },
+    frame: { width: 390, height: 700 },
+  };
+
+  function panEnd(fromX: number, toX: number, scene: TouchScene) {
+    return touchAction(
+      { kind: 'pan-end', start: { x: fromX, y: ROW }, end: { x: toX, y: ROW }, elapsed: 200 },
+      scene,
+    );
+  }
+
+  it('turns forward past the right edge of a zoomed page in a left-to-right book', () => {
+    expect(panEnd(300, 200, { ...BARE, reach: zoomed })).toEqual({
+      kind: 'turn',
+      move: 'increment',
+    });
+  });
+
+  it('turns back past the right edge of a zoomed page in a right-to-left book', () => {
+    expect(panEnd(300, 200, { ...MANGA, reach: zoomed })).toEqual({
+      kind: 'turn',
+      move: 'decrement',
+    });
+  });
+
+  it('does not turn a pan the page absorbs', () => {
+    expect(panEnd(200, 300, { ...BARE, reach: zoomed })).toEqual({ kind: 'none' });
+  });
+
+  it('does nothing when the page could not be measured', () => {
+    expect(panEnd(300, 200, BARE)).toEqual({ kind: 'none' });
   });
 });

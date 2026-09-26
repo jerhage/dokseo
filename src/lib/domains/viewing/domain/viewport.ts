@@ -5,9 +5,29 @@ type Viewport = { readonly zoom: number; readonly panX: number; readonly panY: n
 
 type FitMode = 'height' | 'width' | 'contain';
 
+type Pinch = {
+  readonly scale: number;
+  readonly cx: number;
+  readonly cy: number;
+  readonly dx: number;
+  readonly dy: number;
+};
+
+type PinchBounds = { readonly content: Size; readonly frame: Size; readonly floor: number };
+
+type ZoomPoint = { readonly x: number; readonly y: number };
+
+type DoubleTapTarget =
+  | { readonly kind: 'fit'; readonly viewport: Viewport }
+  | { readonly kind: 'zoom'; readonly viewport: Viewport };
+
 const MIN_ZOOM = 0.1;
 
 const MAX_ZOOM = 8;
+
+const DOUBLE_TAP_ZOOM = 2.5;
+
+const FIT_TOLERANCE = 1.01;
 
 function isPositiveFinite(value: number): boolean {
   return Number.isFinite(value) && value > 0;
@@ -113,5 +133,47 @@ function fitZoom(content: Size, frame: Size, mode: FitMode): number {
     .exhaustive();
 }
 
-export { MIN_ZOOM, MAX_ZOOM, clampZoom, panBy, zoomAt, canPan, clampPan, centrePan, fitZoom };
-export type { Viewport, FitMode };
+function finiteOr(value: number, fallback: number): number {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function pinchStep(viewport: Viewport, pinch: Pinch, bounds: PinchBounds): Viewport {
+  const moved = panBy(viewport, finiteOr(pinch.dx, 0), finiteOr(pinch.dy, 0));
+  const from = clampZoom(viewport.zoom);
+  const floor = Math.min(from, clampZoom(bounds.floor));
+  const scale = isPositiveFinite(pinch.scale) ? pinch.scale : 1;
+  const zoom = Math.max(floor, from * scale);
+
+  return clampPan(zoomAt(moved, zoom / from, pinch.cx, pinch.cy), bounds.content, bounds.frame);
+}
+
+function doubleTapTarget(viewport: Viewport, fit: number, point: ZoomPoint): DoubleTapTarget {
+  const from = clampZoom(viewport.zoom);
+  const home = clampZoom(fit);
+
+  if (from > home * FIT_TOLERANCE) {
+    return { kind: 'fit', viewport: zoomAt(viewport, home / from, point.x, point.y) };
+  }
+
+  return {
+    kind: 'zoom',
+    viewport: zoomAt(viewport, (home * DOUBLE_TAP_ZOOM) / from, point.x, point.y),
+  };
+}
+
+export {
+  DOUBLE_TAP_ZOOM,
+  FIT_TOLERANCE,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  clampZoom,
+  panBy,
+  zoomAt,
+  canPan,
+  clampPan,
+  centrePan,
+  fitZoom,
+  pinchStep,
+  doubleTapTarget,
+};
+export type { DoubleTapTarget, FitMode, Pinch, PinchBounds, Viewport, ZoomPoint };
