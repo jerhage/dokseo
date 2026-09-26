@@ -264,9 +264,8 @@ const WIDTH_STEPS = ['6', '8', '10'];
 const GRID_MIN_COLUMNS = ['sm', 'lg'];
 
 const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
-  '.file-item-icon': 'a fixed-size box that centres one pseudo-element glyph',
-  '.dropzone-icon': 'a fixed-size box that centres one pseudo-element glyph',
-  '.checkbox-input': 'a fixed-size input that centres its pseudo-element check mark',
+  '.file-item-icon': 'a fixed-size box that centres one icon',
+  '.dropzone-icon': 'a fixed-size box that centres one icon',
   '.radio-input': 'a fixed-size input that centres its pseudo-element dot',
   '.modal-backdrop[open]': 'centres one dialog whose inline size is contained',
   '.modal-backdrop.is-open': 'centres one dialog whose inline size is contained',
@@ -1166,5 +1165,76 @@ describe('the design system stylesheets', () => {
 
     expect(themed.length).toBeGreaterThan(1);
     for (const rule of themed) expect(definitions(rule.body)).toContain('--ds-icon-stroke');
+  });
+
+  it('draws no icon from a mask or a data url', () => {
+    for (const path of designSystemFiles()) {
+      const css = style(path);
+
+      expect({ path, mask: /(?:^|[\s;{])mask(?:-image)?\s*:/u.test(css) }).toEqual({
+        path,
+        mask: false,
+      });
+      expect({ path, data: css.includes('url("data:') }).toEqual({ path, data: false });
+    }
+  });
+
+  it('shows the check only on a checked box that is not indeterminate, and the dash only on an indeterminate one', () => {
+    const checkbox = style('components/forms/checkbox.css');
+    const shown = ruleFor(checkbox, '.checkbox-input:indeterminate ~ .checkbox-dash');
+
+    expect(shown.selectors.toSorted()).toEqual([
+      '.checkbox-input:checked:not(:indeterminate) ~ .checkbox-check',
+      '.checkbox-input:indeterminate ~ .checkbox-dash',
+    ]);
+    expect(declarations(shown.body)).toEqual(['transform: scale(1)']);
+    expect(declarations(ruleBody(checkbox, '.checkbox-mark'))).toEqual(
+      expect.arrayContaining([
+        'transform: scale(0)',
+        'color: var(--color-text-on-primary)',
+        'stroke-width: calc(var(--icon-stroke) * 1.5)',
+      ]),
+    );
+    expect(declarations(ruleBody(checkbox, '.checkbox-input:disabled ~ .checkbox-mark'))).toEqual([
+      'color: var(--color-disabled)',
+    ]);
+  });
+
+  it('turns the chevron of an open accordion item and of an open dropdown upside down', () => {
+    const accordion = style('components/accordion.css');
+    const dropdown = style('components/dropdown.css');
+
+    for (const selector of [
+      '.accordion-item[open] > .accordion-trigger > .accordion-icon',
+      '.accordion-item.is-open > .accordion-trigger > .accordion-icon',
+    ]) {
+      expect(declarations(ruleBody(accordion, selector))).toEqual(['transform: rotate(180deg)']);
+    }
+    expect(
+      declarations(ruleBody(dropdown, '.dropdown.is-open > .dropdown-trigger > .dropdown-icon')),
+    ).toEqual(['transform: rotate(180deg)']);
+  });
+
+  it('shows the select chevron only inside a field control, placed at its inline end', () => {
+    const select = style('components/forms/select.css');
+
+    expect(declarations(ruleBody(select, '.select-icon'))).toEqual(['display: none']);
+    expect(declarations(ruleBody(select, '.field-control > .select-icon'))).toEqual(
+      expect.arrayContaining([
+        'display: block',
+        'position: absolute',
+        'inset-inline-end: var(--sp-3)',
+        'pointer-events: none',
+      ]),
+    );
+  });
+
+  it('colours each status icon with the foreground of its alert or toast', () => {
+    expect(declarations(ruleBody(style('components/alert.css'), '.alert-icon'))).toContain(
+      'color: var(--_alert-fg)',
+    );
+    expect(declarations(ruleBody(style('components/toast.css'), '.toast-icon'))).toContain(
+      'color: var(--_toast-fg)',
+    );
   });
 });

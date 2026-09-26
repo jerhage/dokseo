@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLDetailsAttributes } from 'svelte/elements';
+  import ChevronDown from './icons/ChevronDown.svelte';
 
   type Props = Omit<HTMLDetailsAttributes, 'title'> & {
     title: string | Snippet;
@@ -16,6 +17,7 @@
     {:else}
       {@render title()}
     {/if}
+    <ChevronDown class="accordion-icon" />
   </summary>
   <div class="accordion-body">
     {@render children?.()}

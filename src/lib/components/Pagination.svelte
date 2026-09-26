@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
+  import ChevronLeft from './icons/ChevronLeft.svelte';
+  import ChevronRight from './icons/ChevronRight.svelte';
   import { paginationWindow } from './pagination-window';
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
@@ -35,6 +37,16 @@
   }
 </script>
 
+{#snippet content(text: string, part: string | undefined)}
+  {#if part === 'pagination-prev'}
+    <ChevronLeft class="pagination-icon" />
+  {/if}
+  {text}
+  {#if part === 'pagination-next'}
+    <ChevronRight class="pagination-icon" />
+  {/if}
+{/snippet}
+
 {#snippet item(target: number, text: string, part: string | undefined, available: boolean)}
   {@const current = part === undefined && target === page}
   {#if href === undefined}
@@ -44,7 +56,7 @@
       aria-current={current ? 'page' : undefined}
       aria-disabled={available ? undefined : 'true'}
       disabled={!available}
-      onclick={() => go(target)}>{text}</button
+      onclick={() => go(target)}>{@render content(text, part)}</button
     >
   {:else}
     <a
@@ -52,7 +64,7 @@
       href={available ? href(target) : undefined}
       aria-current={current ? 'page' : undefined}
       aria-disabled={available ? undefined : 'true'}
-      onclick={() => go(target)}>{text}</a
+      onclick={() => go(target)}>{@render content(text, part)}</a
     >
   {/if}
 {/snippet}

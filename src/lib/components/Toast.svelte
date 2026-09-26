@@ -4,6 +4,7 @@
   import { announcementRole } from './announcement';
   import { TOAST_VARIANTS } from './classes';
   import X from './icons/X.svelte';
+  import StatusIcon from './StatusIcon.svelte';
   import { toastTimeout } from './toast-duration';
   import { ToastTimer } from './toast-timer';
   import type { Toast, Toaster } from './toaster.svelte';
@@ -61,7 +62,7 @@
   onfocusin={() => timer?.pause('focus')}
   onfocusout={focusout}
 >
-  <span class="toast-icon" aria-hidden="true"></span>
+  <StatusIcon variant={toast.variant} class="toast-icon" />
   <div class="toast-content">
     <p class="toast-title">{toast.title}</p>
     {#if toast.message !== undefined}

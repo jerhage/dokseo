@@ -44,16 +44,9 @@
 .pagination-next {
   padding-inline: var(--sp-3);
 }
-.pagination-prev::before,
-.pagination-next::after {
-  content: '';
+.pagination-icon {
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
-  background-color: currentColor;
-  mask: var(--icon-chevron-right) center / contain no-repeat;
-}
-.pagination-prev::before {
-  transform: scaleX(-1);
 }
 .pagination-ellipsis {
   min-inline-size: var(--control-h-sm);

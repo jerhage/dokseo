@@ -29,11 +29,8 @@
   line-height: var(--lh-normal);
   color: var(--color-danger);
 }
-.field-error::before {
-  content: '';
+.field-error-icon {
   flex: none;
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
-  background-color: currentColor;
-  mask: var(--icon-danger) center / contain no-repeat;
 }

@@ -2,15 +2,12 @@
   position: relative;
   display: inline-block;
 }
-.dropdown-trigger::after {
-  content: '';
+.dropdown-icon {
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
-  background-color: currentColor;
-  mask: var(--icon-chevron-down) center / contain no-repeat;
   transition: transform var(--transition-spring);
 }
-.dropdown.is-open .dropdown-trigger::after {
+.dropdown.is-open > .dropdown-trigger > .dropdown-icon {
   transform: rotate(180deg);
 }
 .dropdown-menu {

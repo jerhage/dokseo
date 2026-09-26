@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ClassValue, HTMLInputAttributes } from 'svelte/elements';
+  import Check from './icons/Check.svelte';
+  import Minus from './icons/Minus.svelte';
 
   type Props = Omit<HTMLInputAttributes, 'type' | 'class' | 'children'> & {
     class?: ClassValue;
@@ -29,6 +31,8 @@
     bind:checked
     bind:indeterminate
   />
+  <Check class="checkbox-mark checkbox-check" />
+  <Minus class="checkbox-mark checkbox-dash" />
   <span class="checkbox-label">
     {@render children()}
     {#if hint !== undefined}

@@ -2,7 +2,6 @@
   --_alert-fg: var(--color-text-muted);
   --_alert-bg: var(--color-surface-sunken);
   --_alert-border: var(--border-color);
-  --_alert-icon: var(--icon-info);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
@@ -17,31 +16,26 @@
   --_alert-fg: var(--color-success);
   --_alert-bg: var(--color-success-bg);
   --_alert-border: var(--color-success-border);
-  --_alert-icon: var(--icon-success);
 }
 .alert-warning {
   --_alert-fg: var(--color-warning);
   --_alert-bg: var(--color-warning-bg);
   --_alert-border: var(--color-warning-border);
-  --_alert-icon: var(--icon-warning);
 }
 .alert-danger {
   --_alert-fg: var(--color-danger);
   --_alert-bg: var(--color-danger-bg);
   --_alert-border: var(--color-danger-border);
-  --_alert-icon: var(--icon-danger);
 }
 .alert-info {
   --_alert-fg: var(--color-info);
   --_alert-bg: var(--color-info-bg);
   --_alert-border: var(--color-info-border);
-  --_alert-icon: var(--icon-info);
 }
 .alert-icon {
   inline-size: var(--sp-5);
   block-size: var(--sp-5);
-  background-color: var(--_alert-fg);
-  mask: var(--_alert-icon) center / contain no-repeat;
+  color: var(--_alert-fg);
 }
 .alert-content {
   display: flex;

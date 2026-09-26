@@ -26,12 +26,9 @@
   background-color: var(--color-brand-tint);
   border-radius: var(--radius-control);
 }
-.file-item-icon::before {
-  content: '';
+.file-item-mark {
   inline-size: var(--sp-5);
   block-size: var(--sp-5);
-  background-color: currentColor;
-  mask: var(--icon-file) center / contain no-repeat;
 }
 .file-item-meta {
   display: flex;
@@ -59,9 +56,6 @@
   color: var(--color-danger);
   background-color: var(--color-danger-muted);
 }
-.file-item.is-error .file-item-icon::before {
-  mask-image: var(--icon-danger);
-}
 .file-item.is-error .file-item-size {
   color: var(--color-danger);
   font-family: var(--font-body);
@@ -69,7 +63,4 @@
 .file-item.is-complete .file-item-icon {
   color: var(--color-success);
   background-color: var(--color-success-muted);
-}
-.file-item.is-complete .file-item-icon::before {
-  mask-image: var(--icon-success);
 }

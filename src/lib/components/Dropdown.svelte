@@ -4,6 +4,7 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import { BUTTON_SIZES, BUTTON_VARIANTS, MENU_ALIGNS } from './classes';
   import type { ButtonVariant, ControlSize, MenuAlign } from './classes';
+  import ChevronDown from './icons/ChevronDown.svelte';
   import { menuOpening, provideMenu } from './menu';
   import { menuInset, menuPlacement } from './menu-placement';
   import type { MenuPlacement } from './menu-placement';
@@ -149,6 +150,7 @@
     onclick={toggle}
   >
     {@render trigger()}
+    <ChevronDown class="dropdown-icon" />
   </button>
   <div
     bind:this={menu}

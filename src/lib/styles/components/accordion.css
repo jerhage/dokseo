@@ -25,13 +25,11 @@
 .accordion-trigger::-webkit-details-marker {
   display: none;
 }
-.accordion-trigger::after {
-  content: '';
+.accordion-icon {
   flex: none;
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
-  background-color: var(--color-text-muted);
-  mask: var(--icon-chevron-down) center / contain no-repeat;
+  color: var(--color-text-muted);
   transition: transform var(--transition-spring);
 }
 .accordion-trigger:hover {
@@ -40,8 +38,8 @@
 .accordion-trigger:focus-visible {
   outline-offset: calc(var(--focus-ring-offset) * -1);
 }
-.accordion-item[open] > .accordion-trigger::after,
-.accordion-item.is-open > .accordion-trigger::after {
+.accordion-item[open] > .accordion-trigger > .accordion-icon,
+.accordion-item.is-open > .accordion-trigger > .accordion-icon {
   transform: rotate(180deg);
 }
 .accordion-body {

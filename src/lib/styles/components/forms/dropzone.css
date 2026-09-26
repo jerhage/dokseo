@@ -65,12 +65,9 @@
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-spring);
 }
-.dropzone-icon::before {
-  content: '';
+.dropzone-mark {
   inline-size: var(--sp-5);
   block-size: var(--sp-5);
-  background-color: currentColor;
-  mask: var(--icon-upload) center / contain no-repeat;
 }
 .dropzone.is-dragover .dropzone-icon {
   transform: translateY(calc(var(--sp-1) * -1));

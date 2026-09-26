@@ -29,10 +29,7 @@
   display: inline-flex;
   color: var(--color-text-faint);
 }
-.breadcrumb-separator:empty::before {
-  content: '';
+.breadcrumb-icon {
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
-  background-color: currentColor;
-  mask: var(--icon-chevron-right) center / contain no-repeat;
 }

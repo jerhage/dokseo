@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
+  import ChevronRight from './icons/ChevronRight.svelte';
 
   type Crumb = { readonly label: string; readonly href?: string | undefined };
 
@@ -15,7 +16,9 @@
   <ol class="breadcrumb">
     {#each items as item, index (index)}
       {#if index > 0}
-        <li class="breadcrumb-separator" aria-hidden="true"></li>
+        <li class="breadcrumb-separator" aria-hidden="true">
+          <ChevronRight class="breadcrumb-icon" />
+        </li>
       {/if}
       <li class="breadcrumb-item">
         {#if index === items.length - 1 || item.href === undefined}

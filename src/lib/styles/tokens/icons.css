@@ -1,14 +1,3 @@
 :root {
   --icon-stroke: var(--ds-icon-stroke);
-  --icon-check: var(--ds-icon-check);
-  --icon-dash: var(--ds-icon-dash);
-  --icon-close: var(--ds-icon-close);
-  --icon-chevron-down: var(--ds-icon-chevron-down);
-  --icon-chevron-right: var(--ds-icon-chevron-right);
-  --icon-info: var(--ds-icon-info);
-  --icon-success: var(--ds-icon-success);
-  --icon-warning: var(--ds-icon-warning);
-  --icon-danger: var(--ds-icon-danger);
-  --icon-upload: var(--ds-icon-upload);
-  --icon-file: var(--ds-icon-file);
 }

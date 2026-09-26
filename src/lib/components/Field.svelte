@@ -3,6 +3,7 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import { fieldControl, fieldIds } from './field';
   import type { FieldControl } from './field';
+  import CircleX from './icons/CircleX.svelte';
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     label: string;
@@ -27,6 +28,6 @@
     <p class="field-hint" id={ids.hint}>{hint}</p>
   {/if}
   {#if error !== undefined}
-    <p class="field-error" id={ids.error}>{error}</p>
+    <p class="field-error" id={ids.error}><CircleX class="field-error-icon" />{error}</p>
   {/if}
 </div>

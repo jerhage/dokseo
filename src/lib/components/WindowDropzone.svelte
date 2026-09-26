@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { readDropped } from './drop-reading';
   import type { DropReader } from './drop-reading';
+  import Upload from './icons/Upload.svelte';
   import { IDLE_DRAG, carriesFiles, dropped, entered, left } from './window-drag';
   import type { WindowDrag } from './window-drag';
 
@@ -56,7 +57,7 @@
 {#if showing}
   <div class="window-drop" popover="manual" aria-hidden="true" {@attach raise}>
     <div class="window-drop-panel">
-      <span class="dropzone-icon"></span>
+      <span class="dropzone-icon"><Upload class="dropzone-mark" /></span>
       <span class="dropzone-title">{@render children()}</span>
     </div>
   </div>

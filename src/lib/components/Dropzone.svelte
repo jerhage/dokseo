@@ -4,6 +4,7 @@
   import { readDropped } from './drop-reading';
   import type { DropReader } from './drop-reading';
   import { acceptRules, selectFiles } from './file-selection';
+  import Upload from './icons/Upload.svelte';
   import type { FileSelection } from './file-selection';
 
   type Props = Omit<
@@ -100,7 +101,7 @@
     {disabled}
     onchange={choose}
   />
-  <span class="dropzone-icon" aria-hidden="true"></span>
+  <span class="dropzone-icon" aria-hidden="true"><Upload class="dropzone-mark" /></span>
   <span class="dropzone-title">
     {#if title === undefined}
       Drop files here or <span class="dropzone-browse">browse</span>

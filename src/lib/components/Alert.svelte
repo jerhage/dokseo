@@ -5,6 +5,7 @@
   import { ALERT_VARIANTS } from './classes';
   import type { StatusVariant } from './classes';
   import X from './icons/X.svelte';
+  import StatusIcon from './StatusIcon.svelte';
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
     variant?: StatusVariant;
@@ -31,7 +32,7 @@
   {...rest}
   class={['alert', ALERT_VARIANTS[variant], className]}
 >
-  <span class="alert-icon" aria-hidden="true"></span>
+  <StatusIcon {variant} class="alert-icon" />
   <div class="alert-content">
     {#if title !== undefined}
       <p class="alert-title">{title}</p>
