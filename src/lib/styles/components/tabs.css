@@ -26,6 +26,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  flex-shrink: 0;
   gap: var(--sp-2);
   margin-inline-start: auto;
 }

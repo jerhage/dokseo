@@ -172,6 +172,19 @@
     display: none;
   }
 }
+@container app-shell (width < 48rem) {
+  .layout-app-shell .layout-app-shell-wide-only {
+    display: none;
+  }
+  .layout-app-shell .layout-app-shell-narrow-nowrap {
+    flex-wrap: nowrap;
+  }
+}
+@container app-shell (width >= 48rem) {
+  .layout-app-shell .layout-app-shell-narrow-only {
+    display: none;
+  }
+}
 .layout-main-area {
   container: main-area / inline-size;
   display: grid;

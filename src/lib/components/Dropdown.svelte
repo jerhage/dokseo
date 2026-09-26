@@ -18,6 +18,8 @@
     variant?: ButtonVariant;
     size?: ControlSize;
     align?: MenuAlign;
+    square?: boolean;
+    chevron?: boolean;
   };
 
   let {
@@ -27,6 +29,8 @@
     variant = 'default',
     size = 'md',
     align = 'start',
+    square = false,
+    chevron = true,
     class: className,
     ...rest
   }: Props = $props();
@@ -146,11 +150,19 @@
     aria-haspopup="menu"
     aria-expanded={open}
     aria-controls="{uid}-menu"
-    class={['btn', 'dropdown-trigger', BUTTON_VARIANTS[variant], BUTTON_SIZES[size]]}
+    class={[
+      'btn',
+      'dropdown-trigger',
+      BUTTON_VARIANTS[variant],
+      BUTTON_SIZES[size],
+      { 'btn-square': square },
+    ]}
     onclick={toggle}
   >
     {@render trigger()}
-    <ChevronDown class="dropdown-icon" />
+    {#if chevron}
+      <ChevronDown class="dropdown-icon" />
+    {/if}
   </button>
   <div
     bind:this={menu}

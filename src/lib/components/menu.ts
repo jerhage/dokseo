@@ -28,5 +28,5 @@ function useMenu(): Menu {
   return menu;
 }
 
-export { menuOpening, provideMenu, useMenu };
+export { MENU, menuOpening, provideMenu, useMenu };
 export type { Menu };

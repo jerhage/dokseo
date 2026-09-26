@@ -876,6 +876,45 @@ describe('the design system stylesheets', () => {
     ).toBe(false);
   });
 
+  it('hides wide-only shell content and keeps a nowrap row on one line strictly below the shell breakpoint', () => {
+    const layout = style('utilities/layout.css');
+    const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
+
+    expect(declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-wide-only'))).toEqual(
+      ['display: none'],
+    );
+    expect(
+      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-nowrap')),
+    ).toEqual(['flex-wrap: nowrap']);
+    expect(
+      rules(layout.replace(narrow, '')).some((rule) =>
+        rule.selectors.some((selector) =>
+          /layout-app-shell-(?:wide-only|narrow-nowrap)$/u.test(selector),
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it('hides narrow-only shell content from the shell breakpoint up', () => {
+    const layout = style('utilities/layout.css');
+    const wide = atRuleBlock(layout, '@container app-shell (width >= 48rem)');
+
+    expect(declarations(ruleBody(wide, '.layout-app-shell .layout-app-shell-narrow-only'))).toEqual(
+      ['display: none'],
+    );
+    expect(
+      rules(layout.replace(wide, '')).some((rule) =>
+        rule.selectors.some((selector) => selector.endsWith('.layout-app-shell-narrow-only')),
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps the tab tools at their own width, so a row that cannot wrap shrinks the tab list instead', () => {
+    expect(declarations(ruleBody(style('components/tabs.css'), '.tabs-tools'))).toContain(
+      'flex-shrink: 0',
+    );
+  });
+
   it('pushes the shell nav aside to the end of the wide nav', () => {
     expect(
       declarations(ruleBody(style('utilities/layout.css'), '.layout-app-shell-nav-aside')),

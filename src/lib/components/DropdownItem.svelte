@@ -1,46 +1,75 @@
 <script lang="ts">
-  import type { HTMLButtonAttributes } from 'svelte/elements';
+  import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
   import { useMenu } from './menu';
 
-  type Props = Omit<HTMLButtonAttributes, 'type' | 'role'> & {
+  type Looks = {
     danger?: boolean;
-    selected?: boolean | undefined;
     shortcut?: string | undefined;
   };
 
-  let {
-    danger = false,
-    selected,
-    shortcut,
-    onclick,
-    class: className,
-    children,
-    ...rest
-  }: Props = $props();
+  type ButtonProps = Looks &
+    Omit<HTMLButtonAttributes, 'type' | 'role'> & {
+      href?: undefined;
+      selected?: boolean | undefined;
+    };
+
+  type LinkProps = Looks &
+    Omit<HTMLAnchorAttributes, 'role'> & {
+      href: string;
+      current?: boolean;
+    };
+
+  type Props = ButtonProps | LinkProps;
+
+  let { danger = false, shortcut, class: className, children, ...rest }: Props = $props();
 
   const menu = useMenu();
 
-  function choose(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }): void {
-    onclick?.(event);
+  function chosen(event: MouseEvent): void {
     if (!event.defaultPrevented) menu.close();
   }
 </script>
 
-<button
-  {...rest}
-  type="button"
-  role={selected === undefined ? 'menuitem' : 'menuitemradio'}
-  aria-checked={selected}
-  tabindex="-1"
-  class={[
-    'dropdown-item',
-    { 'dropdown-item-danger': danger, 'is-selected': selected === true },
-    className,
-  ]}
-  onclick={choose}
->
+{#snippet content()}
   {@render children?.()}
   {#if shortcut !== undefined}
     <span class="dropdown-item-shortcut">{shortcut}</span>
   {/if}
-</button>
+{/snippet}
+
+{#if rest.href === undefined}
+  {@const { selected, onclick, ...button } = rest}
+  <button
+    {...button}
+    type="button"
+    role={selected === undefined ? 'menuitem' : 'menuitemradio'}
+    aria-checked={selected}
+    tabindex="-1"
+    class={[
+      'dropdown-item',
+      { 'dropdown-item-danger': danger, 'is-selected': selected === true },
+      className,
+    ]}
+    onclick={(event) => {
+      onclick?.(event);
+      chosen(event);
+    }}
+  >
+    {@render content()}
+  </button>
+{:else}
+  {@const { current = false, onclick, ...link } = rest}
+  <a
+    {...link}
+    role="menuitem"
+    aria-current={current ? 'page' : undefined}
+    tabindex="-1"
+    class={['dropdown-item', { 'dropdown-item-danger': danger, 'is-selected': current }, className]}
+    onclick={(event) => {
+      onclick?.(event);
+      chosen(event);
+    }}
+  >
+    {@render content()}
+  </a>
+{/if}
