@@ -1,0 +1,32 @@
+@layer features {
+  @scope (.flow-viewer-b) {
+    .stage > foliate-view {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+    }
+    .curtain {
+      justify-content: center;
+      text-align: center;
+    }
+    .lift {
+      position: absolute;
+      left: var(--lift-left);
+      top: var(--lift-top);
+      inline-size: var(--lift-width);
+      block-size: var(--lift-height);
+    }
+    .lift-button {
+      inline-size: 100%;
+      block-size: 100%;
+    }
+    .told {
+      position: absolute;
+      inset-block-start: calc(var(--chrome-top, 0px) + var(--sp-3));
+      inset-inline-start: 50%;
+      translate: -50% 0;
+      inline-size: max-content;
+      max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3));
+    }
+  }
+}
