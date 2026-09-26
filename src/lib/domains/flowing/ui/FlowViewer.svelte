@@ -55,6 +55,8 @@
   type Props = {
     readonly view: FlowView;
     readonly book: FlowBook;
+    readonly fill?: 'screen' | 'parent';
+    readonly panelScheme?: 'dark' | 'page';
     readonly panel?: Snippet;
     readonly panelCount?: number;
     readonly anchors?: readonly Anchor[];
@@ -67,7 +69,16 @@
     readonly top: number;
   };
 
-  const { view, book, panel, panelCount, anchors = NO_ANCHORS, onLift }: Props = $props();
+  const {
+    view,
+    book,
+    fill = 'screen',
+    panelScheme = 'dark',
+    panel,
+    panelCount,
+    anchors = NO_ANCHORS,
+    onLift,
+  }: Props = $props();
 
   const LIFT_LABEL = 'Save this passage as a capture';
 
@@ -438,7 +449,12 @@
 
 <svelte:window onkeydown={onkey} />
 
-<div class="flow-viewer col gap-0 h-screen overflow-hidden surface-bg">
+<div
+  class={[
+    'flow-viewer col gap-0 overflow-hidden surface-bg',
+    fill === 'screen' ? 'h-screen' : 'flex-1 min-h-0',
+  ]}
+>
   <div
     class={['relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
     bind:clientWidth={bodyWidth}
@@ -558,7 +574,13 @@
     </div>
 
     {#if panel !== undefined}
-      <PanelDock {placement} count={panelCount ?? null} {panel} ontoggle={togglePanel} />
+      <PanelDock
+        {placement}
+        scheme={panelScheme}
+        count={panelCount ?? null}
+        {panel}
+        ontoggle={togglePanel}
+      />
     {/if}
   </div>
 </div>

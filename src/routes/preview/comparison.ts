@@ -21,8 +21,18 @@ type RouteParameters = Readonly<Record<string, string | undefined>>;
 
 const PARAMETER = /^\[(\w+)\]$/u;
 
+const CAPTURE_PANEL: Comparison = {
+  title: 'Capture panel',
+  fills: 'screen',
+  books: 'any',
+  variants: [
+    { label: 'Current', route: '/read/[fileId]', within: null },
+    { label: 'B', route: '/preview/b/read/[fileId]', within: '/preview/b' },
+  ],
+};
+
 function activeComparison(): Comparison | null {
-  return null;
+  return CAPTURE_PANEL;
 }
 
 function comparesBook(comparison: Comparison, layoutKind: LayoutKind): boolean {

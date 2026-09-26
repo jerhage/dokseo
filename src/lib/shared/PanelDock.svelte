@@ -11,14 +11,17 @@
   import type { DockPlacement } from './panel-dock';
   import './panel-dock.css';
 
+  type DockScheme = 'dark' | 'page';
+
   type Props = {
     readonly placement: DockPlacement;
+    readonly scheme?: DockScheme;
     readonly count: number | null;
     readonly panel: Snippet;
     readonly ontoggle: () => void;
   };
 
-  let { placement, count, panel, ontoggle }: Props = $props();
+  let { placement, scheme = 'dark', count, panel, ontoggle }: Props = $props();
 
   const uid = $props.id();
 
@@ -38,7 +41,8 @@
 
 <aside
   class={[
-    'panel-dock gap-0 min-h-0 shrink-0 scheme-dark surface',
+    'panel-dock gap-0 min-h-0 shrink-0 surface',
+    { 'scheme-dark': scheme === 'dark' },
     `is-${placement}`,
     beside ? 'row border-s' : 'col border-t',
   ]}
