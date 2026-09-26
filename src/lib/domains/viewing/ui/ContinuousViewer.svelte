@@ -9,15 +9,18 @@
   import type { FrameSpan } from '$lib/shared/page-turn';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
+    anchorOf,
     layOutStrip,
     positionAtScroll,
+    relayoutFor,
     scrollForPosition,
     shownThroughAtScroll,
     spacersFor,
     stripHeight,
-    stripOverscan,
-    visibleRange,
+    stripWindow,
+    travelBetween,
   } from '../domain/strip';
+  import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
   import { clampZoom, pinchZoom } from '../domain/viewport';
   import { hintsToShow, inputKind, readerHints } from './gesture-hint';
@@ -84,6 +87,7 @@
   let frameHeight = $state(0);
   let scrolled = $state(0);
   let zoom = $state(FIT_WIDTH_ZOOM);
+  let travel = $state<Travel>('down');
   let hold = $state.raw<Hold>({
     position: untrack(() => start),
     top: 0,
@@ -95,6 +99,7 @@
   let hintLines = $state.raw<readonly GestureHint[]>([]);
 
   let written: { readonly top: number; readonly left: number } | null = null;
+  let reading: StripAnchor | null = null;
   let touch: TouchState = TOUCH_IDLE;
   let touchTimer: ReturnType<typeof setTimeout> | null = null;
   let lastPointer = '';
@@ -104,7 +109,7 @@
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
   const height = $derived(stripHeight(layout));
-  const range = $derived(visibleRange(layout, scrolled, frameHeight, stripOverscan(frameHeight)));
+  const range = $derived(stripWindow(layout, scrolled, frameHeight, travel));
   const spacers = $derived(spacersFor(layout, range, snapToDevicePixels));
   const pointing = $derived(inputKind(lastPointerType, coarse));
   const pending = $derived(
@@ -171,6 +176,7 @@
     const top = element.scrollTop;
     const left = element.scrollLeft;
 
+    reading = null;
     hold = {
       position: positionAtScroll(layout, top + y) ?? hold.position,
       top: y,
@@ -190,6 +196,7 @@
     const top = element.scrollTop;
     const left = element.scrollLeft;
 
+    reading = null;
     hold = {
       position: positionAtScroll(layout, top + was.y) ?? hold.position,
       top: now.y,
@@ -358,7 +365,6 @@
 
     const top = element.scrollTop;
     const left = element.scrollLeft;
-    scrolled = top;
 
     const ours = written;
     written = null;
@@ -367,11 +373,15 @@
       Math.abs(top - ours.top) < SETTLED_PX &&
       Math.abs(left - ours.left) < SETTLED_PX
     ) {
+      scrolled = top;
       return;
     }
 
+    travel = travelBetween(scrolled, top, travel);
+    scrolled = top;
     selection?.reset();
     hold = holdAt(top, left);
+    reading = anchorOf(layout, width, hold.position.index);
     moveTo(
       hold.position,
       shownThroughAtScroll(layout, top, element.clientHeight) ?? hold.position.index,
@@ -465,7 +475,24 @@
     const placed = layout;
     if (element === null || placed.length === 0) return;
 
-    untrack(() => apply(element, hold));
+    untrack(() =>
+      match(relayoutFor(placed, width, reading))
+        .with({ kind: 'place' }, () => apply(element, hold))
+        .with({ kind: 'follow' }, () => {
+          apply(element, hold);
+          reading = anchorOf(placed, width, hold.position.index);
+        })
+        .with({ kind: 'stay' }, () => {
+          const top = element.scrollTop;
+          hold = holdAt(top, element.scrollLeft);
+          reading = anchorOf(placed, width, hold.position.index);
+          moveTo(
+            hold.position,
+            shownThroughAtScroll(placed, top, element.clientHeight) ?? hold.position.index,
+          );
+        })
+        .exhaustive(),
+    );
   });
 
   $effect(() => {
@@ -476,6 +503,7 @@
       if (element === null || layout.length === 0) return;
       if (asked.index === hold.position.index) return;
 
+      reading = null;
       hold = { position: asked, top: 0, across: hold.across, left: 0 };
       apply(element, hold);
     });

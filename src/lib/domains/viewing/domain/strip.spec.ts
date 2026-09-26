@@ -5,15 +5,20 @@ import { at } from '$lib/shared/testing/at';
 import { readingPosition } from './reading-position';
 import type { ReadingPosition } from './reading-position';
 import {
+  AHEAD_SCREENS,
+  anchorOf,
   ASSUMED_ASPECT,
+  BEHIND_SCREENS,
   layOutStrip,
-  OVERSCAN_SCREENS,
+  MOST_SLICES,
   positionAtScroll,
+  relayoutFor,
   scrollForPosition,
   shownThroughAtScroll,
   spacersFor,
   stripHeight,
-  stripOverscan,
+  stripWindow,
+  travelBetween,
   visibleRange,
 } from './strip';
 import type { SliceLayout } from './strip';
@@ -200,20 +205,160 @@ describe('visibleRange', () => {
   });
 });
 
-describe('stripOverscan', () => {
-  it('reaches beyond the viewport by a fraction of a screen', () => {
-    expect(stripOverscan(1000)).toBeCloseTo(1000 * OVERSCAN_SCREENS);
+describe('travelBetween', () => {
+  it('reports down when the scroll grows and up when it shrinks', () => {
+    expect(travelBetween(100, 250, 'up')).toBe('down');
+    expect(travelBetween(250, 100, 'down')).toBe('up');
   });
 
-  it('keeps the overscan between nothing and a whole screen', () => {
-    expect(OVERSCAN_SCREENS).toBeGreaterThan(0);
-    expect(OVERSCAN_SCREENS).toBeLessThanOrEqual(1);
+  it('keeps the last travel when the scroll has not moved', () => {
+    expect(travelBetween(300, 300, 'up')).toBe('up');
+    expect(travelBetween(300, 300, 'down')).toBe('down');
   });
 
-  it('reports no overscan for a degenerate viewport', () => {
-    for (const height of [0, -900, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(stripOverscan(height)).toBe(0);
-    }
+  it('keeps the last travel for a non-finite scroll', () => {
+    expect(travelBetween(Number.NaN, 300, 'up')).toBe('up');
+    expect(travelBetween(300, Number.POSITIVE_INFINITY, 'up')).toBe('up');
+  });
+});
+
+describe('stripWindow', () => {
+  const SCREEN = 1000;
+  const SHORT: Size = { width: WIDTH, height: 400 };
+  const SHORT_HEIGHT = WIDTH * (400 / 800);
+  const layout = layOutStrip(unmeasured(40), WIDTH);
+  const scrollTop = ASSUMED_HEIGHT * 20 + 100;
+
+  it('reaches further ahead of a downward travel than behind it', () => {
+    const range = stripWindow(layout, scrollTop, SCREEN, 'down');
+    const shown = visibleRange(layout, scrollTop, SCREEN, 0);
+
+    expect(range.last - shown.last).toBeGreaterThan(shown.first - range.first);
+  });
+
+  it('reaches further ahead of an upward travel than below it', () => {
+    const range = stripWindow(layout, scrollTop, SCREEN, 'up');
+    const shown = visibleRange(layout, scrollTop, SCREEN, 0);
+
+    expect(shown.first - range.first).toBeGreaterThan(range.last - shown.last);
+  });
+
+  it('reaches the named number of screens each way while under the cap', () => {
+    const tallLayout = layOutStrip(
+      Array.from({ length: 40 }, () => ({ width: WIDTH, height: 2400 })),
+      WIDTH,
+    );
+    const sliceHeight = WIDTH * 3;
+    const top = sliceHeight * 20 + 10;
+
+    expect(visibleRange(tallLayout, top, sliceHeight, 0)).toEqual({ first: 20, last: 21 });
+    expect(stripWindow(tallLayout, top, sliceHeight, 'down')).toEqual({
+      first: 20 - BEHIND_SCREENS,
+      last: 21 + AHEAD_SCREENS,
+    });
+    expect(stripWindow(tallLayout, top, sliceHeight, 'up')).toEqual({
+      first: 20 - AHEAD_SCREENS,
+      last: 21 + BEHIND_SCREENS,
+    });
+  });
+
+  it('mounts no more than the cap of slices, keeping the ones ahead first', () => {
+    const shortLayout = layOutStrip(
+      Array.from({ length: 60 }, () => SHORT),
+      WIDTH,
+    );
+    const top = SHORT_HEIGHT * 30;
+    const range = stripWindow(shortLayout, top, SCREEN, 'down');
+    const shown = visibleRange(shortLayout, top, SCREEN, 0);
+
+    expect(range.last - range.first + 1).toBe(MOST_SLICES);
+    expect(range.first).toBe(shown.first);
+    expect(range.last).toBeGreaterThan(shown.last);
+  });
+
+  it('keeps the slices on screen when they alone exceed the cap', () => {
+    const shortLayout = layOutStrip(
+      Array.from({ length: 60 }, () => SHORT),
+      WIDTH,
+    );
+    const screen = SHORT_HEIGHT * (MOST_SLICES + 4);
+    const shown = visibleRange(shortLayout, 0, screen, 0);
+
+    expect(stripWindow(shortLayout, 0, screen, 'down')).toEqual(shown);
+  });
+
+  it('returns a range that loops over nothing for an empty layout', () => {
+    const range = stripWindow([], 0, SCREEN, 'down');
+
+    expect(range.last).toBeLessThan(range.first);
+  });
+
+  it('returns a range that loops over nothing for a scroll past the end', () => {
+    const range = stripWindow(layout, stripHeight(layout) + 10_000, SCREEN, 'up');
+
+    expect(range.last).toBeLessThan(range.first);
+  });
+});
+
+describe('relayoutFor', () => {
+  const sizes = unmeasured(10);
+  const layout = layOutStrip(sizes, WIDTH);
+  const reading = anchorOf(layout, WIDTH, imageIndex(4));
+
+  it('places a hold that no scroll of the reader set', () => {
+    expect(relayoutFor(layout, WIDTH, null)).toEqual({ kind: 'place' });
+  });
+
+  it('stays when the anchor slice itself is measured', () => {
+    const measured = [...sizes];
+    measured[4] = tall;
+
+    expect(relayoutFor(layOutStrip(measured, WIDTH), WIDTH, reading)).toEqual({ kind: 'stay' });
+  });
+
+  it('stays when a slice below the anchor is measured', () => {
+    const measured = [...sizes];
+    measured[7] = tall;
+
+    expect(relayoutFor(layOutStrip(measured, WIDTH), WIDTH, reading)).toEqual({ kind: 'stay' });
+  });
+
+  it('follows the anchor when a slice above it is measured', () => {
+    const measured = [...sizes];
+    measured[2] = tall;
+
+    expect(relayoutFor(layOutStrip(measured, WIDTH), WIDTH, reading)).toEqual({
+      kind: 'follow',
+    });
+  });
+
+  it('follows the anchor when the width changes, even where its top edge stays', () => {
+    const wider = WIDTH * 2;
+    const first = anchorOf(layout, WIDTH, imageIndex(0));
+
+    expect(relayoutFor(layOutStrip(sizes, wider), wider, first)).toEqual({ kind: 'follow' });
+  });
+
+  it('follows when the anchor slice is gone from the layout', () => {
+    expect(relayoutFor(layOutStrip(unmeasured(3), WIDTH), WIDTH, reading)).toEqual({
+      kind: 'follow',
+    });
+  });
+});
+
+describe('anchorOf', () => {
+  it('records the top of the slice and the width it was laid out at', () => {
+    const layout = layOutStrip(unmeasured(5), WIDTH);
+
+    expect(anchorOf(layout, WIDTH, imageIndex(3))).toEqual({
+      index: imageIndex(3),
+      edge: ASSUMED_HEIGHT * 3,
+      width: WIDTH,
+    });
+  });
+
+  it('reports nothing for an index outside the layout', () => {
+    expect(anchorOf(layOutStrip(unmeasured(2), WIDTH), WIDTH, imageIndex(5))).toBeNull();
   });
 });
 
