@@ -214,13 +214,13 @@ afterEach(() => {
 });
 
 describe('a tap in a flow chapter', () => {
-  it('turns a left-to-right book forward on the far quarter and back on the near one', async () => {
+  it('turns a left-to-right book forward on the far tenth and back on the near one', async () => {
     const reading = await readWith('ltr', 'horizontal-tb', [0.9, 0.5, 0.1]);
 
     expect(reading).toEqual(['0.9:forward', '0.5:still+chrome', '0.1:back']);
   });
 
-  it('turns a right-to-left book forward on the near quarter and back on the far one', async () => {
+  it('turns a right-to-left book forward on the near tenth and back on the far one', async () => {
     const reading = await readWith('rtl', 'horizontal-tb', [0.1, 0.5, 0.9]);
 
     expect(reading).toEqual(['0.1:forward', '0.5:still+chrome', '0.9:back']);
@@ -242,7 +242,7 @@ describe('a tap in a flow chapter', () => {
     doc.body.dispatchEvent(pointer('pointerup', far, 0));
     await rests();
 
-    expect([paginator().page, chromeHushed()]).toEqual([settled, false]);
+    expect([paginator().page, chromeHushed()]).toEqual([settled, true]);
   });
 
   it('turns nothing when the pointer travelled across the page before coming up', async () => {
@@ -253,6 +253,6 @@ describe('a tap in a flow chapter', () => {
     doc.body.dispatchEvent(pointer('pointerup', frameX(doc, 0.9), 0));
     await rests();
 
-    expect([paginator().page, chromeHushed()]).toEqual([settled, false]);
+    expect([paginator().page, chromeHushed()]).toEqual([settled, true]);
   });
 });

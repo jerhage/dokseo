@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { TouchTurns } from '$lib/shared/page-turn';
 import { keyMove, pointerEnded, releaseAction, turnPage } from './flow-turn';
 import type { FlowAction, FlowMove, KeyPress, PageTurner, Point } from './flow-turn';
 
@@ -13,6 +14,8 @@ type Release = {
   readonly at: Point;
   readonly width: number;
   readonly textSelected: boolean;
+  readonly turns: TouchTurns;
+  readonly chromeShown: boolean;
 };
 
 const DID_NOTHING: FlowAction = { kind: 'nothing' };
@@ -41,6 +44,8 @@ class FlowGestures {
         pointerType: began.pointerType,
         width: release.width,
         textSelected: release.textSelected,
+        turns: release.turns,
+        chromeShown: release.chromeShown,
       }),
     );
 

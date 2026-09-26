@@ -33,6 +33,8 @@ function releaseAt(x: number, held: Partial<Release> = {}): Release {
     at: { x, y: 200 },
     width: PAGE_WIDTH,
     textSelected: false,
+    turns: 'tap-zones',
+    chromeShown: false,
     ...held,
   };
 }
@@ -135,6 +137,46 @@ describe('FlowGestures', () => {
     gestures.released(releaseAt(766));
 
     expect(reader.calls).toEqual(['next']);
+  });
+
+  it('turns the page when a finger taps a quarter of the way in', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(PAGE_WIDTH / 4, { pointerType: 'touch' }));
+    gestures.released(releaseAt(PAGE_WIDTH / 4));
+
+    expect(reader.calls).toEqual(['prev']);
+  });
+
+  it('asks for the chrome and turns nothing when a finger taps an edge and only a swipe turns', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(4, { pointerType: 'touch' }));
+    const action = gestures.released(releaseAt(4, { turns: 'swipe-only' }));
+
+    expect([action, reader.calls]).toEqual([{ kind: 'chrome' }, []]);
+  });
+
+  it('only asks for the chrome when a finger taps an edge while the chrome is up', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(760, { pointerType: 'touch' }));
+    const action = gestures.released(releaseAt(760, { chromeShown: true }));
+
+    expect([action, reader.calls]).toEqual([{ kind: 'chrome' }, []]);
+  });
+
+  it('turns nothing when a mouse clicks a quarter of the way in', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(PAGE_WIDTH / 4));
+    const action = gestures.released(releaseAt(PAGE_WIDTH / 4));
+
+    expect([action, reader.calls]).toEqual([{ kind: 'chrome' }, []]);
   });
 
   it('asks for nothing when a mouse drifts six pixels', () => {

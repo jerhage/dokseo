@@ -1,8 +1,8 @@
 import { match } from 'ts-pattern';
 import { clickSlop } from '$lib/shared/click-slop';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import { towards } from '$lib/shared/page-turn';
-import type { TurnSide } from '$lib/shared/page-turn';
+import { tapZone, towards } from '$lib/shared/page-turn';
+import type { TapZone, TouchTurns, TurnSide } from '$lib/shared/page-turn';
 
 type Point = { readonly x: number; readonly y: number };
 
@@ -22,6 +22,8 @@ type PointerRelease = {
   readonly pointerType: string;
   readonly width: number;
   readonly textSelected: boolean;
+  readonly turns: TouchTurns;
+  readonly chromeShown: boolean;
 };
 
 type StageBox = {
@@ -161,6 +163,27 @@ function regionAt(x: number, width: number): ClickRegion {
   return MIDDLE;
 }
 
+function touchRegionAt(
+  x: number,
+  width: number,
+  turns: TouchTurns,
+  chromeShown: boolean,
+): ClickRegion {
+  if (chromeShown) return MIDDLE;
+
+  return match<TapZone, ClickRegion>(tapZone(x, width, turns))
+    .with('left', () => LEFT_EDGE)
+    .with('centre', () => MIDDLE)
+    .with('right', () => RIGHT_EDGE)
+    .exhaustive();
+}
+
+function releasedRegion(release: PointerRelease): ClickRegion {
+  if (release.pointerType !== 'touch') return regionAt(release.to.x, release.width);
+
+  return touchRegionAt(release.to.x, release.width, release.turns, release.chromeShown);
+}
+
 function stayedStill(from: Point, to: Point, pointerType: string): boolean {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -174,7 +197,7 @@ function pointerEnded(release: PointerRelease): PointerEnd {
   if (release.textSelected) return SELECTING;
   if (!stayedStill(release.from, release.to, release.pointerType)) return DRAGGED;
 
-  return { kind: 'click', region: regionAt(release.to.x, release.width) };
+  return { kind: 'click', region: releasedRegion(release) };
 }
 
 function moveForRegion(region: ClickRegion): FlowMove {
@@ -255,6 +278,7 @@ export {
   regionAt,
   releaseAction,
   tapOnStage,
+  touchRegionAt,
   turnOrder,
   turnPage,
   turnTowards,

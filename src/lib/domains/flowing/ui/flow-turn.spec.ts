@@ -14,6 +14,7 @@ import {
   regionAt,
   releaseAction,
   tapOnStage,
+  touchRegionAt,
   turnOrder,
   turnPage,
   turnTowards,
@@ -120,6 +121,8 @@ function releasing(release: Partial<PointerRelease> = {}): PointerRelease {
     pointerType: 'mouse',
     width: PAGE_WIDTH,
     textSelected: false,
+    turns: 'tap-zones',
+    chromeShown: false,
     ...release,
   };
 }
@@ -368,7 +371,72 @@ describe('regionAt', () => {
   });
 });
 
+describe('touchRegionAt', () => {
+  it('turns from the outer thirds of the page for a finger', () => {
+    expect(touchRegionAt(200, PAGE_WIDTH, 'tap-zones', false)).toEqual({ kind: 'left-edge' });
+    expect(touchRegionAt(400, PAGE_WIDTH, 'tap-zones', false)).toEqual({ kind: 'middle' });
+    expect(touchRegionAt(600, PAGE_WIDTH, 'tap-zones', false)).toEqual({ kind: 'right-edge' });
+  });
+
+  it('names every finger tap the middle when only a swipe turns', () => {
+    expect(touchRegionAt(4, PAGE_WIDTH, 'swipe-only', false)).toEqual({ kind: 'middle' });
+    expect(touchRegionAt(796, PAGE_WIDTH, 'swipe-only', false)).toEqual({ kind: 'middle' });
+  });
+
+  it('names every finger tap the middle while the chrome is up', () => {
+    expect(touchRegionAt(4, PAGE_WIDTH, 'tap-zones', true)).toEqual({ kind: 'middle' });
+    expect(touchRegionAt(796, PAGE_WIDTH, 'tap-zones', true)).toEqual({ kind: 'middle' });
+  });
+});
+
 describe('pointerEnded', () => {
+  it('turns from a quarter of the way in for a finger and not for a mouse', () => {
+    const quarter = { x: PAGE_WIDTH / 4, y: 100 };
+
+    expect(pointerEnded(releasing({ to: quarter, pointerType: 'touch' }))).toEqual({
+      kind: 'click',
+      region: { kind: 'left-edge' },
+    });
+    expect(pointerEnded(releasing({ to: quarter, pointerType: 'mouse' }))).toEqual({
+      kind: 'click',
+      region: { kind: 'middle' },
+    });
+  });
+
+  it('keeps the mouse edges for a pen', () => {
+    expect(
+      pointerEnded(releasing({ to: { x: PAGE_WIDTH / 4, y: 100 }, pointerType: 'pen' })),
+    ).toEqual({ kind: 'click', region: { kind: 'middle' } });
+  });
+
+  it('keeps the mouse edges whatever the touch variant and the chrome', () => {
+    const edge = { x: 4, y: 100 };
+
+    expect(
+      pointerEnded(
+        releasing({ to: edge, pointerType: 'mouse', turns: 'swipe-only', chromeShown: true }),
+      ),
+    ).toEqual({ kind: 'click', region: { kind: 'left-edge' } });
+  });
+
+  it('asks for the chrome for a finger tap on an edge while the chrome is up', () => {
+    expect(
+      releaseAction(
+        pointerEnded(releasing({ to: { x: 4, y: 100 }, pointerType: 'touch', chromeShown: true })),
+      ),
+    ).toEqual({ kind: 'chrome' });
+  });
+
+  it('asks for the chrome for a finger tap on an edge when only a swipe turns', () => {
+    expect(
+      releaseAction(
+        pointerEnded(
+          releasing({ to: { x: 4, y: 100 }, pointerType: 'touch', turns: 'swipe-only' }),
+        ),
+      ),
+    ).toEqual({ kind: 'chrome' });
+  });
+
   it('refuses a release that leaves text selected, wherever it landed', () => {
     expect(pointerEnded(releasing({ textSelected: true }))).toEqual({ kind: 'selecting' });
     expect(pointerEnded(releasing({ to: { x: 4, y: 100 }, textSelected: true }))).toEqual({
@@ -615,7 +683,7 @@ describe('tapOnStage', () => {
     expect(regionAt(1128, COLUMNISED_FRAME_WIDTH)).not.toEqual(regionAt(spot.at.x, spot.width));
   });
 
-  it('sorts a chapter tap into the near quarter, the middle half and the far quarter', () => {
+  it('sorts a chapter tap into the near tenth, the middle and the far tenth', () => {
     const regions = [26, 192, 358].map((x) => {
       const spot = tapOnStage({ x, y: 448 }, FRAME_AT_THE_FIRST_PAGE, STAGE);
       return regionAt(spot.at.x, spot.width).kind;
@@ -644,6 +712,8 @@ describe('tapOnStage', () => {
           pointerType: 'mouse',
           width: spot.width,
           textSelected: false,
+          turns: 'tap-zones',
+          chromeShown: false,
         }),
       ),
     ).toEqual({ kind: 'nothing' });

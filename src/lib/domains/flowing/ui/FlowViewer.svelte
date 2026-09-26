@@ -18,6 +18,7 @@
   import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import { returnFocusToPage } from '$lib/shared/reading-surface';
+  import { readTouchTurns } from '$lib/shared/touch-turns-trial';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
@@ -72,6 +73,8 @@
 
   const LIFT_LABEL = 'Save this passage as a capture';
 
+  const touchTurns = readTouchTurns();
+
   const ICONS: readonly Component<IconProps>[] = [ChevronLeft, ChevronRight];
 
   const TURN_LABELS: Readonly<Record<FlowTurn, string>> = {
@@ -88,7 +91,7 @@
   let stageHeight = $state(0);
   let bodyWidth = $state(0);
   let compactWidth = $state(0);
-  let barsAsked = $state(true);
+  let barsAsked = $state(false);
   let panelAsked = $state<boolean | null>(null);
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
@@ -264,6 +267,8 @@
       at: spot.at,
       width: spot.width,
       textSelected: textSelected(),
+      turns: touchTurns,
+      chromeShown: awake,
     });
     pointerHeld = false;
     askAboutTheOffer();
