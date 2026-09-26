@@ -1,5 +1,6 @@
 <script lang="ts">
   import { flushSync, untrack } from 'svelte';
+  import { SvelteMap } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
@@ -13,6 +14,8 @@
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
   import {
+    FIT_HEIGHT_ZOOM,
+    arrivalViewport,
     canPan,
     centrePan,
     clampPan,
@@ -38,7 +41,7 @@
     slideStep,
     slideTravel,
   } from './page-slide';
-  import type { Neighbours, Slide } from './page-slide';
+  import type { Neighbours, Slide, SlidePane } from './page-slide';
   import { touchAction, touchLesson } from './touch-action';
   import type { TouchAction } from './touch-action';
   import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
@@ -104,7 +107,6 @@
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
   const WHEEL_LINE_PX = 16;
-  const FIT_HEIGHT_ZOOM = 1;
 
   let frame = $state<HTMLDivElement | null>(null);
   let strip = $state<HTMLDivElement | null>(null);
@@ -118,6 +120,9 @@
   let hintLines = $state.raw<readonly GestureHint[]>([]);
   let slide = $state.raw<Slide>(SLIDE_REST);
   let lastPointerType = $state<string | null>(null);
+  let frameSize = $state.raw<Size | null>(null);
+
+  const contents = new SvelteMap<ImageIndex, Size>();
 
   let shownPages: PageGroup | null = null;
   let touch: TouchState = TOUCH_IDLE;
@@ -169,6 +174,41 @@
     };
   }
 
+  function framingOf(key: ImageIndex | undefined): Frames | null {
+    const content = key === undefined ? undefined : contents.get(key);
+    const outer = frameSize;
+    return content === undefined || outer === null ? null : { content, frame: outer };
+  }
+
+  function paneViewport(pane: SlidePane): Viewport {
+    return pane.beside === 0 ? viewport : arrivalViewport(fit, viewport, framingOf(pane.key));
+  }
+
+  function measureFrame(element: HTMLDivElement): () => void {
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry !== undefined) {
+        frameSize = { width: entry.contentRect.width, height: entry.contentRect.height };
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }
+
+  function measureContent(key: ImageIndex): (element: HTMLDivElement) => () => void {
+    return (element) => {
+      const observer = new ResizeObserver(([entry]) => {
+        if (entry !== undefined) {
+          contents.set(key, { width: entry.contentRect.width, height: entry.contentRect.height });
+        }
+      });
+      observer.observe(element);
+      return () => {
+        observer.disconnect();
+        contents.delete(key);
+      };
+    };
+  }
+
   function commit(next: Viewport, sizes: Frames | null): void {
     viewport = next;
     if (sizes !== null) pannable = canPan(sizes.content, sizes.frame, next.zoom);
@@ -183,6 +223,11 @@
     const sizes = framesNow();
     const next: Viewport = { zoom, panX: viewport.panX, panY: viewport.panY };
     commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
+  }
+
+  function arrive(key: ImageIndex | undefined): void {
+    const sizes = framingOf(key) ?? framesNow();
+    commit(arrivalViewport(fit, viewport, sizes), sizes);
   }
 
   function applyHeight(): void {
@@ -658,7 +703,7 @@
       slide = SLIDE_REST;
       selection?.reset();
       stopGrab();
-      recentre(viewport.zoom);
+      arrive(group[0]);
     });
   });
 </script>
@@ -678,6 +723,7 @@
     aria-label="Pages in view"
     tabindex="-1"
     bind:this={frame}
+    {@attach measureFrame}
     {onwheel}
     {onpointerdown}
     {onpointermove}
@@ -686,11 +732,12 @@
     {oncontextmenu}
   >
     {#each panes as pane (pane.key)}
+      {@const view = paneViewport(pane)}
       <div
         class={[
           'pane row gap-0 shrink-0',
           {
-            'items-center justify-center is-beside': pane.beside !== 0,
+            'is-beside': pane.beside !== 0,
             'is-settling': slide.kind === 'settle',
           },
         ]}
@@ -702,10 +749,11 @@
       >
         <div
           class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
-          style:--pan-x="{viewport.panX}px"
-          style:--pan-y="{viewport.panY}px"
-          style:--zoom={viewport.zoom}
+          style:--pan-x="{view.panX}px"
+          style:--pan-y="{view.panY}px"
+          style:--zoom={view.zoom}
           {@attach pane.beside === 0 ? holdStrip : null}
+          {@attach untrack(() => measureContent(pane.key))}
         >
           {#each pane.pages as index (index)}
             <PageFrame

@@ -169,6 +169,17 @@ describe('slideStep', () => {
     });
   });
 
+  it('lands the neighbour it turns to exactly on the current slot, in either direction', () => {
+    for (const scene of [MIDDLE, MANGA]) {
+      for (const move of ['increment', 'decrement'] as const) {
+        const travel = besideOf(move, scene.direction) * -120;
+        const end = slideStep(following(travel), IDLE, travel, move, scene);
+
+        expect(slideShift(end) + besideOf(move, scene.direction) * ACROSS).toBe(0);
+      }
+    }
+  });
+
   it('snaps back when the release turns nothing', () => {
     expect(slideStep(following(-30), IDLE, -30, null, MIDDLE)).toEqual({
       kind: 'settle',

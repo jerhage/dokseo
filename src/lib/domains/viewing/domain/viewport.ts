@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Size } from '$lib/shared/geometry';
+import type { PageFit } from '$lib/shared/page-fit';
 
 type Viewport = { readonly zoom: number; readonly panX: number; readonly panY: number };
 
@@ -15,6 +16,10 @@ type Pinch = {
 
 type PinchBounds = { readonly content: Size; readonly frame: Size; readonly floor: number };
 
+type ViewportFit = PageFit | 'free';
+
+type Framing = { readonly content: Size; readonly frame: Size };
+
 type ZoomPoint = { readonly x: number; readonly y: number };
 
 type DoubleTapTarget =
@@ -28,6 +33,8 @@ const MAX_ZOOM = 8;
 const DOUBLE_TAP_ZOOM = 2.5;
 
 const FIT_TOLERANCE = 1.01;
+
+const FIT_HEIGHT_ZOOM = 1;
 
 function isPositiveFinite(value: number): boolean {
   return Number.isFinite(value) && value > 0;
@@ -169,8 +176,21 @@ function doubleTapTarget(viewport: Viewport, fit: number, point: ZoomPoint): Dou
   };
 }
 
+function arrivalViewport(fit: ViewportFit, from: Viewport, framing: Framing | null): Viewport {
+  if (framing === null) return from;
+
+  const zoom = match(fit)
+    .with('height', () => FIT_HEIGHT_ZOOM)
+    .with('width', () => fitZoom(framing.content, framing.frame, 'width'))
+    .with('free', () => from.zoom)
+    .exhaustive();
+
+  return centrePan({ zoom, panX: from.panX, panY: from.panY }, framing.content, framing.frame);
+}
+
 export {
   DOUBLE_TAP_ZOOM,
+  FIT_HEIGHT_ZOOM,
   FIT_TOLERANCE,
   MIN_ZOOM,
   MAX_ZOOM,
@@ -184,5 +204,15 @@ export {
   pinchStep,
   pinchZoom,
   doubleTapTarget,
+  arrivalViewport,
 };
-export type { DoubleTapTarget, FitMode, Pinch, PinchBounds, Viewport, ZoomPoint };
+export type {
+  DoubleTapTarget,
+  FitMode,
+  Framing,
+  Pinch,
+  PinchBounds,
+  Viewport,
+  ViewportFit,
+  ZoomPoint,
+};
