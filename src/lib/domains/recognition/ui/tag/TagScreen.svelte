@@ -19,17 +19,19 @@
     taggedShelves,
     walkKey,
   } from './tag-screen';
+  import type { Shelf } from './tag-screen';
   import type { TagView } from './tag-view.svelte';
   import TagsShell from './TagsShell.svelte';
 
   type Props = {
     readonly view: TagView;
     readonly covers: ReadonlyMap<BookId, string>;
+    readonly shelf: Shelf;
   };
 
   type Walk = { readonly tag: TagId | null; readonly at: number };
 
-  let { view, covers }: Props = $props();
+  let { view, covers, shelf }: Props = $props();
 
   let walk = $state.raw<Walk | null>(null);
   let anchors = $state<(HTMLElement | undefined)[]>([]);
@@ -40,6 +42,7 @@
       summary: view.summary,
       tags: view.tags.length,
       status: view.status,
+      shelf: shelf.status,
     }),
   );
 
@@ -102,6 +105,15 @@
       <Alert variant="danger" role="alert">Your tags could not be read.</Alert>
     {/if}
 
+    {#if shelf.status === 'failed'}
+      <Alert variant="danger" role="alert" title="Your library could not be read">
+        {shelf.loadFailure ?? 'The captures under your tags cannot be shown.'}
+        {#snippet actions()}
+          <Button size="sm" onclick={() => void shelf.load()}>Try again</Button>
+        {/snippet}
+      </Alert>
+    {/if}
+
     {#if stage.kind === 'loading'}
       <p class="text-sm text-muted" aria-live="polite">Reading your tags…</p>
     {:else if stage.kind === 'no-tags'}
@@ -117,6 +129,11 @@
           Choose a tag
         </Button>
       </div>
+    {:else if stage.kind === 'unshelved'}
+      <h1 class="row items-center gap-2 text-lg min-w-0">
+        <Badge colour={stage.tag.colour} quiet dot aria-hidden="true" />
+        <span class="truncate">{stage.tag.name}</span>
+      </h1>
     {:else}
       {@const added = addedText(stage.summary, Date.now())}
       <header class="col gap-1">

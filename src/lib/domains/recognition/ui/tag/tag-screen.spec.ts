@@ -64,7 +64,7 @@ describe('tagStage', () => {
   const summary = { captures: 2, documents: 1, lastAdded: 5 };
 
   it('shows a chosen tag with its summary when captures carry it', () => {
-    expect(tagStage({ tag: SFX, summary, tags: 3, status: 'ready' })).toEqual({
+    expect(tagStage({ tag: SFX, summary, tags: 3, status: 'ready', shelf: 'ready' })).toEqual({
       kind: 'chosen',
       tag: SFX,
       summary,
@@ -74,31 +74,53 @@ describe('tagStage', () => {
   it('reports a chosen tag nothing carries as empty', () => {
     const none = { captures: 0, documents: 0, lastAdded: null };
 
-    expect(tagStage({ tag: SFX, summary: none, tags: 3, status: 'ready' }).kind).toBe('empty');
+    expect(
+      tagStage({ tag: SFX, summary: none, tags: 3, status: 'ready', shelf: 'ready' }).kind,
+    ).toBe('empty');
   });
 
   it('asks for a choice when tags exist and none is chosen', () => {
-    expect(tagStage({ tag: undefined, summary: null, tags: 3, status: 'ready' }).kind).toBe(
-      'unchosen',
-    );
+    expect(
+      tagStage({ tag: undefined, summary: null, tags: 3, status: 'ready', shelf: 'ready' }).kind,
+    ).toBe('unchosen');
   });
 
   it('reports loading while no tag has arrived yet', () => {
-    expect(tagStage({ tag: undefined, summary: null, tags: 0, status: 'idle' }).kind).toBe(
-      'loading',
-    );
-    expect(tagStage({ tag: undefined, summary: null, tags: 0, status: 'loading' }).kind).toBe(
-      'loading',
+    expect(
+      tagStage({ tag: undefined, summary: null, tags: 0, status: 'idle', shelf: 'ready' }).kind,
+    ).toBe('loading');
+    expect(
+      tagStage({ tag: undefined, summary: null, tags: 0, status: 'loading', shelf: 'ready' }).kind,
+    ).toBe('loading');
+  });
+
+  it('reports the tag unshelved when the library could not be read', () => {
+    const none = { captures: 0, documents: 0, lastAdded: null };
+
+    expect(
+      tagStage({ tag: SFX, summary: none, tags: 3, status: 'ready', shelf: 'failed' }),
+    ).toEqual({ kind: 'unshelved', tag: SFX });
+  });
+
+  it('keeps asking for a choice when the library could not be read', () => {
+    expect(
+      tagStage({ tag: undefined, summary: null, tags: 3, status: 'ready', shelf: 'failed' }).kind,
+    ).toBe('unchosen');
+  });
+
+  it('shows the chosen tag once the library is read again', () => {
+    expect(tagStage({ tag: SFX, summary, tags: 3, status: 'ready', shelf: 'ready' }).kind).toBe(
+      'chosen',
     );
   });
 
   it('reports no tags once the load settles empty or fails', () => {
-    expect(tagStage({ tag: undefined, summary: null, tags: 0, status: 'ready' }).kind).toBe(
-      'no-tags',
-    );
-    expect(tagStage({ tag: undefined, summary: null, tags: 0, status: 'failed' }).kind).toBe(
-      'no-tags',
-    );
+    expect(
+      tagStage({ tag: undefined, summary: null, tags: 0, status: 'ready', shelf: 'ready' }).kind,
+    ).toBe('no-tags');
+    expect(
+      tagStage({ tag: undefined, summary: null, tags: 0, status: 'failed', shelf: 'ready' }).kind,
+    ).toBe('no-tags');
   });
 });
 

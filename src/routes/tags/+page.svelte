@@ -30,4 +30,4 @@
   });
 </script>
 
-<TagScreen {view} covers={shelf.covers} />
+<TagScreen {view} covers={shelf.covers} {shelf} />

@@ -15,6 +15,7 @@ import type { TagViewStatus } from './tag-view.svelte';
 
 type TagStage =
   | { readonly kind: 'loading' }
+  | { readonly kind: 'unshelved'; readonly tag: Tag }
   | { readonly kind: 'no-tags' }
   | { readonly kind: 'unchosen' }
   | { readonly kind: 'empty'; readonly tag: Tag; readonly summary: TagSummary }
@@ -60,11 +61,20 @@ type WalkKey =
   | { readonly kind: 'open' }
   | { readonly kind: 'open-in-new-tab' };
 
+type ShelfStatus = 'idle' | 'loading' | 'ready' | 'failed';
+
+type Shelf = {
+  readonly status: ShelfStatus;
+  readonly loadFailure: string | null;
+  load(): Promise<void>;
+};
+
 type StageInput = {
   readonly tag: Tag | undefined;
   readonly summary: TagSummary | null;
   readonly tags: number;
   readonly status: TagViewStatus;
+  readonly shelf: ShelfStatus;
 };
 
 type ShelfInput = {
@@ -79,6 +89,8 @@ function tagStage(input: StageInput): TagStage {
   const { tag, summary } = input;
 
   if (tag !== undefined && summary !== null) {
+    if (input.shelf === 'failed') return { kind: 'unshelved', tag };
+
     return summary.captures === 0
       ? { kind: 'empty', tag, summary }
       : { kind: 'chosen', tag, summary };
@@ -180,4 +192,4 @@ export {
   taggedShelves,
   walkKey,
 };
-export type { Neighbour, TagStage, TaggedRow, TaggedShelf, WalkKey, WalkPress };
+export type { Neighbour, Shelf, ShelfStatus, TagStage, TaggedRow, TaggedShelf, WalkKey, WalkPress };
