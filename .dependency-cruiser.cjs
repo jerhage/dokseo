@@ -106,6 +106,15 @@ module.exports = {
     },
 
     {
+      name: 'icons-are-imported-one-by-one',
+      comment:
+        'Each icon is its own module, imported by its own path ($lib/components/icons/X.svelte), so only the icons a screen names reach the build. An index module in icons/ would re-export the whole set: one import of it would ship every icon, and it would be the barrel this project forbids. The unused-icon spec in icons/ keeps the other half: no icon file exists that nothing imports.',
+      severity: 'error',
+      from: {},
+      to: { path: '^src/lib/components/icons/index\\.' },
+    },
+
+    {
       name: 'no-unresolvable',
       comment:
         "An import that does not resolve is invisible to every rule above, so a broken alias silently disables the architecture checks rather than failing loudly. $app and $env are SvelteKit's own virtual modules and are expected here.",

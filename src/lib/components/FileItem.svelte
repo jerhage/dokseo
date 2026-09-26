@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLLiAttributes } from 'svelte/elements';
+  import X from './icons/X.svelte';
   import Progress from './Progress.svelte';
   import { fileItemView } from './file-item';
   import type { FileItemData } from './file-item';
@@ -44,6 +45,8 @@
       class="file-item-remove"
       aria-label={actionLabel}
       onclick={() => onremove(item.id)}
-    ></button>
+    >
+      <X class="close-icon" />
+    </button>
   {/if}
 </li>

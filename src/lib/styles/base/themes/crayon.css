@@ -91,6 +91,7 @@
   --ds-border-focus: var(--ds-cyan-500);
   --ds-border-width: var(--ds-border-2);
   --ds-border-width-strong: 3px;
+  --ds-icon-stroke: 2.5;
 
   --ds-font-display: 'Zen Maru Gothic', 'M PLUS Rounded 1c', system-ui, sans-serif;
   --ds-font-body: 'M PLUS Rounded 1c', system-ui, sans-serif;

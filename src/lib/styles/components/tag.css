@@ -146,12 +146,9 @@ a.tag.is-active:hover {
   cursor: pointer;
   transition: background-color var(--transition-ui);
 }
-.tag-remove::before {
-  content: '';
+.tag-remove-icon {
   inline-size: var(--sp-3);
   block-size: var(--sp-3);
-  background-color: currentColor;
-  mask: var(--icon-close) center / contain no-repeat;
 }
 .tag-remove:hover {
   background-color: var(--color-active);

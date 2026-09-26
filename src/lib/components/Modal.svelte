@@ -5,6 +5,7 @@
   import type { HTMLDialogAttributes } from 'svelte/elements';
   import { animationsSettled } from './animations';
   import { MODAL_BODIES, MODAL_FOOTERS, MODAL_PLACEMENTS, MODAL_SIZES } from './classes';
+  import X from './icons/X.svelte';
   import type { ModalBody, ModalFooter, ModalPlacement, ModalSize } from './classes';
   import { modalHeading, modalLabelledBy } from './modal-heading';
   import { modalStep } from './modal-phase';
@@ -125,7 +126,9 @@
     {#if heading.kind === 'title'}
       <div class="modal-header">
         <h2 class="modal-title" id={titleId}>{heading.title}</h2>
-        <button type="button" class="modal-close" aria-label={closeLabel} onclick={hide}></button>
+        <button type="button" class="modal-close" aria-label={closeLabel} onclick={hide}>
+          <X class="close-icon" />
+        </button>
       </div>
     {:else if heading.kind === 'custom'}
       {@render heading.header(hide)}

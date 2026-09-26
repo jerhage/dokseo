@@ -1,4 +1,5 @@
 :root {
+  --icon-stroke: var(--ds-icon-stroke);
   --icon-check: var(--ds-icon-check);
   --icon-dash: var(--ds-icon-dash);
   --icon-close: var(--ds-icon-close);

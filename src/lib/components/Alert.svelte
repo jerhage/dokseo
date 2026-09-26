@@ -4,6 +4,7 @@
   import { announcementRole } from './announcement';
   import { ALERT_VARIANTS } from './classes';
   import type { StatusVariant } from './classes';
+  import X from './icons/X.svelte';
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
     variant?: StatusVariant;
@@ -43,7 +44,8 @@
     {/if}
   </div>
   {#if ondismiss !== undefined}
-    <button type="button" class="alert-close" aria-label={dismissLabel} onclick={ondismiss}
-    ></button>
+    <button type="button" class="alert-close" aria-label={dismissLabel} onclick={ondismiss}>
+      <X class="close-icon" />
+    </button>
   {/if}
 </div>

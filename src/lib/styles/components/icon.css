@@ -1,0 +1,3 @@
+:where(.lucide:not([data-fixed-stroke])) {
+  stroke-width: var(--icon-stroke);
+}

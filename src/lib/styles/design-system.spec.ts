@@ -1149,4 +1149,22 @@ describe('the design system stylesheets', () => {
       expect(new RegExp(`${name}:\\s*${value};`, 'u').test(primitives)).toBe(true);
     }
   });
+
+  it('strokes every icon without a fixed stroke at the theme icon stroke, at zero specificity', () => {
+    const icon = style('components/icon.css');
+
+    expect(declarations(ruleBody(icon, ':where(.lucide:not([data-fixed-stroke]))'))).toEqual([
+      'stroke-width: var(--icon-stroke)',
+    ]);
+    expect(definitionValues(style('tokens/icons.css')).get('--icon-stroke')).toBe(
+      'var(--ds-icon-stroke)',
+    );
+  });
+
+  it('gives every theme an icon stroke', () => {
+    const themed = themeRules(themeSheets());
+
+    expect(themed.length).toBeGreaterThan(1);
+    for (const rule of themed) expect(definitions(rule.body)).toContain('--ds-icon-stroke');
+  });
 });

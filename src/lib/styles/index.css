@@ -29,6 +29,7 @@
 @import 'tokens/icons.css' layer(tokens);
 @import 'tokens/opacity.css' layer(tokens);
 
+@import 'components/icon.css' layer(components);
 @import 'components/btn.css' layer(components);
 @import 'components/badge.css' layer(components);
 @import 'components/tag.css' layer(components);

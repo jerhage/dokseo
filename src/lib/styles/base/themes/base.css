@@ -91,6 +91,7 @@
   --ds-border-focus: var(--ds-spruce-500);
   --ds-border-width: var(--ds-border-1);
   --ds-border-width-strong: var(--ds-border-2);
+  --ds-icon-stroke: 2;
 
   --ds-font-display: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --ds-font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;

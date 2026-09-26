@@ -89,6 +89,7 @@
   --ds-border-focus: var(--ds-ember-500);
   --ds-border-width: var(--ds-border-1);
   --ds-border-width-strong: var(--ds-border-2);
+  --ds-icon-stroke: 2;
 
   --ds-font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --ds-font-body: 'Figtree', system-ui, sans-serif;

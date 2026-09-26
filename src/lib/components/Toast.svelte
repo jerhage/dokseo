@@ -3,6 +3,7 @@
   import { animationsSettled } from './animations';
   import { announcementRole } from './announcement';
   import { TOAST_VARIANTS } from './classes';
+  import X from './icons/X.svelte';
   import { toastTimeout } from './toast-duration';
   import { ToastTimer } from './toast-timer';
   import type { Toast, Toaster } from './toaster.svelte';
@@ -72,5 +73,7 @@
     class="toast-close"
     aria-label={dismissLabel}
     onclick={() => toaster.dismiss(toast.id)}
-  ></button>
+  >
+    <X class="close-icon" />
+  </button>
 </div>

@@ -71,6 +71,7 @@
   --ds-border-focus: var(--ds-mono-ink);
   --ds-border-width: var(--ds-border-2);
   --ds-border-width-strong: 3px;
+  --ds-icon-stroke: 2.5;
 
   --ds-font-display: 'Archivo', system-ui, sans-serif;
   --ds-font-body: 'Archivo', system-ui, sans-serif;
