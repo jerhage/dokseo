@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
 import type { Language } from '$lib/shared/language';
-import { ok } from '$lib/shared/result';
+import type { Notice } from '$lib/shared/notice';
+import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
@@ -11,11 +12,18 @@ import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
 import { setupChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import type { ModelStorageError } from '../../domain/model/model-storage';
+import type { SetupError } from '../../domain/engine/recognizer-setup';
+import { at } from '$lib/shared/testing/at';
 import {
   cancelHint,
   engineLanguages,
   EngineSettingsView,
+  LOAD_FAILED,
   loadFigure,
+  REMOVAL_WARNING,
+  REMOVE_FAILED,
+  SETUP_FAILED,
   partialFigure,
   resumeLabel,
   storageFailureNote,
@@ -45,13 +53,16 @@ type Attempt = {
 };
 
 type World = {
-  readonly view: EngineSettingsView;
+  view: EngineSettingsView;
   readonly attempts: Attempt[];
   readonly pauses: Language[];
   readonly cancels: string[];
   readonly grants: Language[];
   readonly closes: Language[];
+  readonly notices: Notice[];
   snapshot: ModelStorageSnapshot;
+  saving: Result<void, SetupError>;
+  deleting: Result<ModelStorageReport, ModelStorageError>;
 };
 
 function snapshotOf(
@@ -85,6 +96,7 @@ function world(snapshot: ModelStorageSnapshot): World {
   const cancels: string[] = [];
   const grants: Language[] = [];
   const closes: Language[] = [];
+  const notices: Notice[] = [];
 
   const built: World = {
     view: undefined as unknown as EngineSettingsView,
@@ -93,7 +105,10 @@ function world(snapshot: ModelStorageSnapshot): World {
     cancels,
     grants,
     closes,
+    notices,
     snapshot,
+    saving: ok(undefined),
+    deleting: ok(report({ files: 7, bytes: 120_000_000 })),
   };
 
   const container = {
@@ -125,9 +140,9 @@ function world(snapshot: ModelStorageSnapshot): World {
       removeCapture: unused,
       clearCaptures: unused,
       readModelStorage: () => Promise.resolve(ok(built.snapshot)),
-      deleteModel: unused,
+      deleteModel: () => Promise.resolve(built.deleting),
       readRecognizerSetup: (language: Language) => Promise.resolve(ok(setupChoice(language, null))),
-      saveRecognizerSetup: () => Promise.resolve(ok(undefined)),
+      saveRecognizerSetup: () => Promise.resolve(built.saving),
       detectCompute: () => Promise.resolve(GPU_UNDETECTED),
       prepareRecognizer: () =>
         new Promise<Result<RecognizerSession, ModelLoadError>>((resolve) => {
@@ -148,7 +163,10 @@ function world(snapshot: ModelStorageSnapshot): World {
     },
   } as unknown as Container;
 
-  return { ...built, view: new EngineSettingsView(container) };
+  built.view = new EngineSettingsView(container, (notice) => {
+    notices.push(notice);
+  });
+  return built;
 }
 
 async function settled(): Promise<void> {
@@ -278,6 +296,98 @@ describe('EngineSettingsView', () => {
 
     expect(built.pauses).toEqual(['ja']);
     expect(built.closes).toEqual(['ja']);
+  });
+
+  it('reports a compute choice that storage refused to keep', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    built.saving = err({ kind: 'storage-failed', cause: 'quota' });
+    await built.view.load();
+
+    await built.view.chooseCompute('gpu');
+
+    expect(built.notices).toEqual([
+      { tone: 'danger', title: SETUP_FAILED, message: 'Local storage failed: quota' },
+    ]);
+  });
+
+  it('reports a model choice that storage refused to keep', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    built.saving = err({ kind: 'storage-unavailable' });
+    await built.view.load();
+
+    await built.view.chooseModel('another-model');
+
+    expect(built.notices.map((notice) => [notice.tone, notice.title])).toEqual([
+      ['danger', SETUP_FAILED],
+    ]);
+  });
+
+  it('reports nothing when a compute choice is kept', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    await built.view.chooseCompute('gpu');
+
+    expect(built.notices).toEqual([]);
+  });
+
+  it('reports a download that failed, naming the cause', async () => {
+    const built = world(snapshotOf([], 0, 0));
+    await built.view.load();
+
+    const starting = built.view.start();
+    await settled();
+    at(built.attempts, 0).settle(err({ kind: 'unavailable', cause: 'network down' }));
+    await starting;
+
+    expect(built.view.download).toEqual({ kind: 'failed', cause: 'network down' });
+    expect(built.notices).toEqual([
+      { tone: 'danger', title: LOAD_FAILED, message: 'network down' },
+    ]);
+  });
+
+  it('reports nothing for a download that opened or was cancelled', async () => {
+    const built = world(snapshotOf([], 0, 0));
+    await built.view.load();
+
+    const opening = built.view.start();
+    await settled();
+    at(built.attempts, 0).settle(ok(OPENED));
+    await opening;
+
+    const cancelling = built.view.start();
+    await settled();
+    at(built.attempts, 1).settle(err({ kind: 'cancelled' }));
+    await cancelling;
+
+    expect(built.notices).toEqual([]);
+  });
+
+  it('reports a model that could not be deleted', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    built.deleting = err({ kind: 'cache-failed', cause: 'locked' });
+    await built.view.load();
+
+    await built.view.remove();
+
+    expect(built.notices).toEqual([
+      {
+        tone: 'danger',
+        title: REMOVE_FAILED,
+        message: 'The cache could not be read: locked',
+      },
+    ]);
+    expect(built.view.message).toBeNull();
+  });
+
+  it('says what a deletion freed, next to its button, without a toast', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    await built.view.remove();
+
+    expect(built.view.message).toBe(`Freed 120 MB. ${REMOVAL_WARNING}`);
+    expect(built.notices).toEqual([]);
   });
 
   it('offers a resume when the configuration is cached and the weights are not', async () => {

@@ -1,3 +1,4 @@
+import { describeCause } from '$lib/shared/cause';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
@@ -24,7 +25,8 @@ type OpenFileError =
   | { readonly kind: 'source'; readonly error: SourceBuildError }
   | { readonly kind: 'storage'; readonly error: LibraryError }
   | { readonly kind: 'epub'; readonly error: EpubInspectionError }
-  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle };
+  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle }
+  | { readonly kind: 'fingerprint'; readonly cause: string };
 
 type OpenFileDeps = {
   readonly repository: LibraryRepository;
@@ -46,9 +48,17 @@ function hashedPart(files: readonly File[]): Blob {
   return new Blob([uploadManifest(files)]);
 }
 
-async function uploadHash(deps: OpenFileDeps, files: readonly File[]): Promise<ContentHash> {
-  const digest = await deps.fingerprint(hashedPart(files));
-  return contentHash(digest);
+async function uploadHash(
+  deps: OpenFileDeps,
+  files: readonly File[],
+): Promise<Result<ContentHash, OpenFileError>> {
+  let digest: string;
+  try {
+    digest = await deps.fingerprint(hashedPart(files));
+  } catch (cause) {
+    return err({ kind: 'fingerprint', cause: describeCause(cause) });
+  }
+  return ok(contentHash(digest));
 }
 
 function epubUpload(files: readonly File[]): File | null {
@@ -141,7 +151,9 @@ async function openFile(
 ): Promise<Result<Book, OpenFileError>> {
   await deps.requestPersistence();
 
-  const hash = await uploadHash(deps, files);
+  const hashed = await uploadHash(deps, files);
+  if (!hashed.ok) return hashed;
+  const hash = hashed.value;
   const held = await deps.repository.list();
   if (!held.ok) return err({ kind: 'storage', error: held.error });
 

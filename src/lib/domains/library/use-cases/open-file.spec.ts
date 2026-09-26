@@ -435,6 +435,24 @@ describe('openFile', () => {
     expect(hashing.hashed).toEqual([at(files, 0)]);
   });
 
+  it('returns a fingerprint failure instead of rejecting, and stores nothing', async () => {
+    const repository = fakeRepository();
+    const builder = fakeBuilder(ok(builtSource()));
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        builder: builder.builder,
+        fingerprint: () => Promise.reject(new Error('no hashing here.')),
+      }),
+      files,
+    );
+
+    expect(result).toEqual(err({ kind: 'fingerprint', cause: 'no hashing here.' }));
+    expect(repository.added).toEqual([]);
+    expect(builder.calls).toEqual([]);
+  });
+
   it('fingerprints the sorted names and sizes of a folder of images', async () => {
     const hashing = fakeFingerprint();
 

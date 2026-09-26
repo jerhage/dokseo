@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { FINGERPRINT_SAMPLE_BYTES, FINGERPRINT_WHOLE_UP_TO, fingerprintOf } from './fingerprint';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  FINGERPRINT_SAMPLE_BYTES,
+  FINGERPRINT_WHOLE_UP_TO,
+  NO_DIGEST_OUTSIDE_A_SECURE_CONTEXT,
+  fingerprintOf,
+} from './fingerprint';
 
 function run(length: number, fill: number): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(length);
@@ -11,7 +16,19 @@ const HEAD = run(FINGERPRINT_SAMPLE_BYTES, 0x61);
 
 const TAIL = run(FINGERPRINT_SAMPLE_BYTES, 0x7a);
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe('fingerprintOf', () => {
+  it('rejects with a named reason when the page offers no crypto.subtle', async () => {
+    vi.stubGlobal('crypto', {});
+
+    await expect(fingerprintOf(new Blob(['page bytes']))).rejects.toThrow(
+      NO_DIGEST_OUTSIDE_A_SECURE_CONTEXT,
+    );
+  });
+
   it('hashes a small blob to sixty-four hex characters', async () => {
     const digest = await fingerprintOf(new Blob(['page bytes']));
 

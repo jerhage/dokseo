@@ -1,15 +1,18 @@
 <script lang="ts">
+  import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import ManageTagsScreen from '$lib/domains/recognition/ui/tag/ManageTagsScreen.svelte';
   import { ManageTagsView } from '$lib/domains/recognition/ui/tag/manage-tags.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
   import { effectiveDirection } from '$lib/shared/layout-kind';
+  import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
-  const shelf = new LibraryView(container);
+  const notify = toastNotify(getToaster());
+  const shelf = new LibraryView(container, notify);
   const view = new TagView(container);
-  const manage = new ManageTagsView(container, () => view.load());
+  const manage = new ManageTagsView(container, notify, () => view.load());
 
   $effect(() => {
     view.books = shelf.books.map((book) => ({

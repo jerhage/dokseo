@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
+  import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
@@ -18,6 +19,7 @@
   import { bookId } from '$lib/shared/ids';
   import type { ImageIndex } from '$lib/shared/ids';
   import { glowRegions } from '$lib/shared/image-region';
+  import { toastNotify } from '$lib/shared/notice-toast';
   import type { GlowRegion } from '$lib/shared/image-region';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
@@ -36,11 +38,12 @@
   }
 
   const container = useContainer();
-  const view = new ReaderView(container, mirror);
+  const notify = toastNotify(getToaster());
+  const view = new ReaderView(container, notify, mirror);
   const captures = new CaptureView(container);
-  const shelf = new LibraryView(container);
+  const shelf = new LibraryView(container, notify);
   const find = new CaptureSearchView(container);
-  const flow = new FlowView(container);
+  const flow = new FlowView(container, notify);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.book?.language ?? null);
   const flowBook = $derived(view.flowBook);

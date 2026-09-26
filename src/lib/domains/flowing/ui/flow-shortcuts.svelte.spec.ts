@@ -178,7 +178,7 @@ async function selectsAWord(doc: Document): Promise<void> {
 async function opened(): Promise<Document> {
   const book = novel();
   const source = await epub();
-  render(FlowViewer, { view: new FlowView(shelf(source, book)), book });
+  render(FlowViewer, { view: new FlowView(shelf(source, book), () => undefined), book });
 
   await expect.poll(() => paginator().pages, { timeout: LAID_OUT_WITHIN_MS }).toBeGreaterThan(2);
   await rests();

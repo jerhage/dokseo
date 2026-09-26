@@ -180,7 +180,7 @@ async function tap(share: number): Promise<void> {
 async function opened(direction: 'ltr' | 'rtl', mode: string): Promise<Document> {
   const book = novel(direction);
   const source = await epub(direction, mode);
-  render(FlowViewer, { view: new FlowView(shelf(source, book)), book });
+  render(FlowViewer, { view: new FlowView(shelf(source, book), () => undefined), book });
 
   await expect.poll(() => paginator().pages, { timeout: LAID_OUT_WITHIN_MS }).toBeGreaterThan(2);
   await rests();

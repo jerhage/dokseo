@@ -1,10 +1,12 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { releasePicture } from '$lib/platform/image/bitmap';
+import { describeCause } from '$lib/shared/cause';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
+import type { Notify } from '$lib/shared/notice';
 import { effectiveDirection, effectivePairing, imageLayoutKind } from '$lib/shared/layout-kind';
 import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
@@ -47,6 +49,16 @@ const NO_GROUPS: readonly PageGroup[] = [];
 const AT_THE_FIRST_IMAGE: ReadingPosition = readingPosition(imageIndex(0), 0);
 
 const PLACE_SAVE_DELAY_MS = 500;
+
+const LAYOUT_FAILED = 'Could not change the layout';
+
+const PAIRING_FAILED = 'Could not change the page pairing';
+
+const DIRECTION_FAILED = 'Could not change the reading direction';
+
+const FIT_FAILED = 'Could not change the page fit';
+
+const PLACE_FAILED = 'Could not save your place';
 
 type PendingSave = {
   readonly id: BookId;
@@ -111,14 +123,17 @@ class ReaderView {
   regions = $state.raw<readonly ImageRegion[]>([]);
 
   #container: Container;
+  #notify: Notify;
   #mirror: PlaceMirror | null;
   #source: PageSource | null = null;
   #generation = 0;
   #saving: PendingSave | null = null;
   #placed: ImageIndex | null = null;
+  #placeFailing = false;
 
-  constructor(container: Container, mirror: PlaceMirror | null = null) {
+  constructor(container: Container, notify: Notify, mirror: PlaceMirror | null = null) {
     this.#container = container;
+    this.#notify = notify;
     this.#mirror = mirror;
   }
 
@@ -158,6 +173,7 @@ class ReaderView {
     this.regions = [];
     this.position = AT_THE_FIRST_IMAGE;
     this.#placed = null;
+    this.#placeFailing = false;
 
     let opened: OpenOutcome;
     try {
@@ -284,26 +300,26 @@ class ReaderView {
     const book = this.book;
     if (book === null || this.saving || book.layoutKind === kind) return;
     this.clearSelection();
-    await this.#edit(book.id, { layoutKind: kind });
+    await this.#edit(book.id, { layoutKind: kind }, LAYOUT_FAILED);
   }
 
   async setPairing(pairing: PagePairing): Promise<void> {
     const book = this.book;
     if (book === null || this.saving || book.pagePairing === pairing) return;
     this.clearSelection();
-    await this.#edit(book.id, { pagePairing: pairing });
+    await this.#edit(book.id, { pagePairing: pairing }, PAIRING_FAILED);
   }
 
   async setDirection(direction: ReadingDirection): Promise<void> {
     const book = this.book;
     if (book === null || this.saving || book.direction === direction) return;
-    await this.#edit(book.id, { direction });
+    await this.#edit(book.id, { direction }, DIRECTION_FAILED);
   }
 
   async setPageFit(fit: PageFit): Promise<void> {
     const book = this.book;
     if (book === null || book.pageFit === fit) return;
-    await this.#edit(book.id, { pageFit: fit });
+    await this.#edit(book.id, { pageFit: fit }, FIT_FAILED);
   }
 
   select(regions: readonly ImageRegion[]): void {
@@ -329,23 +345,22 @@ class ReaderView {
     this.#placed = null;
   }
 
-  async #edit(id: BookId, edit: BookEdit): Promise<void> {
+  async #edit(id: BookId, edit: BookEdit, failed: string): Promise<void> {
     const generation = this.#generation;
     this.saving = true;
-    this.message = null;
 
     try {
       const saved = await this.#container.library.editBook(id, edit);
       if (generation !== this.#generation) return;
       if (!saved.ok) {
-        this.message = describeEditFailure(saved.error);
+        this.#fail(failed, describeEditFailure(saved.error));
         return;
       }
       this.book = saved.value;
       this.#regroup(saved.value, this.sizes);
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.message = `That change could not be saved: ${String(cause)}`;
+      this.#fail(failed, describeCause(cause));
     } finally {
       this.saving = false;
     }
@@ -400,11 +415,22 @@ class ReaderView {
     try {
       const saved = await this.#container.library.saveReadingPlace(id, imagePlace(index));
       if (generation !== this.#generation) return;
-      if (!saved.ok) this.message = describeEditFailure(saved.error);
+      if (saved.ok) this.#placeFailing = false;
+      else this.#failPlace(describeEditFailure(saved.error));
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.message = `Your place could not be saved: ${String(cause)}`;
+      this.#failPlace(describeCause(cause));
     }
+  }
+
+  #failPlace(message: string): void {
+    if (this.#placeFailing) return;
+    this.#placeFailing = true;
+    this.#fail(PLACE_FAILED, message);
+  }
+
+  #fail(title: string, message: string): void {
+    this.#notify({ tone: 'danger', title, message });
   }
 
   #release(): void {
@@ -413,5 +439,13 @@ class ReaderView {
   }
 }
 
-export { PLACE_SAVE_DELAY_MS, ReaderView };
+export {
+  DIRECTION_FAILED,
+  FIT_FAILED,
+  LAYOUT_FAILED,
+  PAIRING_FAILED,
+  PLACE_FAILED,
+  PLACE_SAVE_DELAY_MS,
+  ReaderView,
+};
 export type { ReaderBook, ReaderStatus, PlaceMirror };

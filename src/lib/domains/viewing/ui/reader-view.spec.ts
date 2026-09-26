@@ -14,7 +14,16 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { readingPosition } from '../domain/reading-position';
-import { PLACE_SAVE_DELAY_MS, ReaderView } from './reader-view.svelte';
+import type { Notice, Notify } from '$lib/shared/notice';
+import {
+  DIRECTION_FAILED,
+  FIT_FAILED,
+  LAYOUT_FAILED,
+  PAIRING_FAILED,
+  PLACE_FAILED,
+  PLACE_SAVE_DELAY_MS,
+  ReaderView,
+} from './reader-view.svelte';
 import type { ReaderBook } from './reader-view.svelte';
 
 const PORTRAIT: Size = { width: 1000, height: 1500 };
@@ -125,16 +134,23 @@ type Fakes = {
   editing: 'ok' | 'failed';
   gate: Promise<void> | null;
   stored: ReaderBook;
+  readonly notices: Notice[];
+  readonly notify: Notify;
 };
 
 function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
   const opened = book(overrides);
   const pages = fakeSource(opened.imageCount);
   const edits: Edit[] = [];
+  const notices: Notice[] = [];
 
   const world = {
     pages,
     edits,
+    notices,
+    notify: (notice: Notice) => {
+      notices.push(notice);
+    },
     opening: opened as ReaderBook | 'unreadable' | 'missing' | 'flow',
     editing: 'ok' as 'ok' | 'failed',
     gate: null as Promise<void> | null,
@@ -260,7 +276,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
 describe('ReaderView', () => {
   it('opens a book and exposes its first group', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     expect(view.status).toBe('idle');
 
     await view.open(bookId('one'));
@@ -275,7 +291,7 @@ describe('ReaderView', () => {
   it('lands a failure in the status without throwing', async () => {
     const world = fakes();
     world.opening = 'unreadable';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await expect(view.open(bookId('one'))).resolves.toBeUndefined();
 
@@ -287,7 +303,7 @@ describe('ReaderView', () => {
 
   it('moves to the next group and back', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.next();
@@ -301,7 +317,7 @@ describe('ReaderView', () => {
 
   it('refuses to move past either end', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.previous();
@@ -317,7 +333,7 @@ describe('ReaderView', () => {
 
   it('closes the page source on dispose', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(world.pages.closed).toBe(0);
 
@@ -331,7 +347,7 @@ describe('ReaderView', () => {
   it('records a measured size and regroups', async () => {
     const world = fakes();
     world.pages.sizes.set(0, LANDSCAPE);
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.groups).toHaveLength(3);
 
@@ -345,7 +361,7 @@ describe('ReaderView', () => {
   it('keeps the reader on the same image when a discovered wide page re-phases the groups', async () => {
     const world = fakes({ position: imagePlace(imageIndex(3)) });
     world.pages.sizes.set(2, LANDSCAPE);
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.group).toBe(1);
 
@@ -358,7 +374,7 @@ describe('ReaderView', () => {
 
   it('persists the position when the group changes', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(world.edits).toHaveLength(0);
 
@@ -370,7 +386,7 @@ describe('ReaderView', () => {
   it('reports a page that will not decode without failing the book', async () => {
     const world = fakes();
     world.pages.broken.add(1);
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     const drawn = await view.pictureAt(imageIndex(1));
@@ -383,7 +399,7 @@ describe('ReaderView', () => {
   it('hands the display an encoded picture and measures nothing', async () => {
     const world = fakes();
     world.pages.kind = 'encoded';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     const shown = await view.pictureAt(imageIndex(0));
@@ -399,7 +415,7 @@ describe('ReaderView', () => {
       .mockImplementation((url: string) => void revoked.push(url));
     const world = fakes();
     world.pages.kind = 'encoded';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     let arrive = (): void => undefined;
@@ -418,7 +434,7 @@ describe('ReaderView', () => {
   it('records a size the display measured and regroups', async () => {
     const world = fakes();
     world.pages.kind = 'encoded';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.groups).toHaveLength(3);
 
@@ -430,7 +446,7 @@ describe('ReaderView', () => {
 
   it('sets the pairing and rebuilds the groups', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.groups).toHaveLength(3);
 
@@ -444,7 +460,7 @@ describe('ReaderView', () => {
 
   it('groups a strip one image at a time whatever pairing the book stores', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'double', direction: 'rtl' });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
 
@@ -455,7 +471,7 @@ describe('ReaderView', () => {
 
   it('keeps the reader on the same image when the pairing changes', async () => {
     const world = fakes({ position: imagePlace(imageIndex(3)) });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.group).toBe(1);
     expect(view.visiblePages).toEqual([2, 3]);
@@ -469,7 +485,7 @@ describe('ReaderView', () => {
 
   it('sets the layout kind and regroups the strip one image at a time', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.groups).toHaveLength(3);
 
@@ -484,7 +500,7 @@ describe('ReaderView', () => {
 
   it('keeps the reader on the same image when the layout changes', async () => {
     const world = fakes({ position: imagePlace(imageIndex(3)) });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.group).toBe(1);
     expect(view.visiblePages).toEqual([2, 3]);
@@ -498,7 +514,7 @@ describe('ReaderView', () => {
 
   it('keeps the reader on the same image when the layout returns to pages', async () => {
     const world = fakes({ layoutKind: 'continuous', position: imagePlace(imageIndex(3)) });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.group).toBe(3);
 
@@ -511,7 +527,7 @@ describe('ReaderView', () => {
 
   it('clears the selection when the layout changes', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     view.select([region(0)]);
 
@@ -522,7 +538,7 @@ describe('ReaderView', () => {
 
   it('ignores a layout already in force', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.setLayoutKind('paged');
@@ -532,7 +548,7 @@ describe('ReaderView', () => {
 
   it('ignores a layout change while a write is in flight', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     let release = (): void => undefined;
@@ -552,7 +568,7 @@ describe('ReaderView', () => {
 
   it('sets the direction', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.setDirection('ltr');
@@ -564,7 +580,7 @@ describe('ReaderView', () => {
 
   it('sets the page fit', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.setPageFit('width');
@@ -576,7 +592,7 @@ describe('ReaderView', () => {
 
   it('keeps the selection when the page fit changes', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     view.select([region(0)]);
 
@@ -587,7 +603,7 @@ describe('ReaderView', () => {
 
   it('saves the page fit even while another write is in flight', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     let release = (): void => undefined;
@@ -607,7 +623,7 @@ describe('ReaderView', () => {
 
   it('ignores a setting already in force', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.setPairing('double');
@@ -620,12 +636,19 @@ describe('ReaderView', () => {
   it('reports a failed setting and leaves the book unchanged', async () => {
     const world = fakes();
     world.editing = 'failed';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await expect(view.setPairing('single')).resolves.toBeUndefined();
 
-    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: PAIRING_FAILED,
+        message: 'Local storage failed: the disk went away',
+      },
+    ]);
+    expect(view.message).toBeNull();
     expect(view.book?.pagePairing).toBe('double');
     expect(view.groups).toHaveLength(3);
     expect(view.saving).toBe(false);
@@ -633,7 +656,7 @@ describe('ReaderView', () => {
 
   it('ignores a second setting while a write is in flight', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     let release = (): void => undefined;
@@ -656,18 +679,83 @@ describe('ReaderView', () => {
   it('reports a failed save of the reading position', async () => {
     const world = fakes();
     world.editing = 'failed';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.next();
 
     expect(view.group).toBe(1);
-    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: PLACE_FAILED,
+        message: 'Local storage failed: the disk went away',
+      },
+    ]);
+    expect(view.message).toBeNull();
+  });
+
+  it('reports a run of failed place saves once, and again after one succeeds', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.next();
+    await view.next();
+    expect(world.notices.map((notice) => notice.title)).toEqual([PLACE_FAILED]);
+
+    world.editing = 'ok';
+    await view.previous();
+    world.editing = 'failed';
+    await view.next();
+
+    expect(world.notices.map((notice) => notice.title)).toEqual([PLACE_FAILED, PLACE_FAILED]);
+  });
+
+  it('titles a failed layout, direction and fit change by the setting it changed', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setLayoutKind('continuous');
+    await view.setDirection('ltr');
+    await view.setPageFit('width');
+
+    expect(world.notices.map((notice) => [notice.tone, notice.title])).toEqual([
+      ['danger', LAYOUT_FAILED],
+      ['danger', DIRECTION_FAILED],
+      ['danger', FIT_FAILED],
+    ]);
+  });
+
+  it('keeps the note about the last image when a setting fails', async () => {
+    const world = fakes({ imageCount: 6 });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'), imageIndex(40));
+    world.editing = 'failed';
+
+    await view.setPageFit('width');
+
+    expect(view.message).toBe('This book holds 6 images, so it opened at the last one.');
+    expect(world.notices.map((notice) => notice.title)).toEqual([FIT_FAILED]);
+  });
+
+  it('reports nothing when a setting and a place save succeed', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setPairing('single');
+    await view.next();
+
+    expect(world.notices).toEqual([]);
   });
 
   it('holds the regions it is given', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     expect(view.regions).toEqual([]);
 
@@ -678,7 +766,7 @@ describe('ReaderView', () => {
 
   it('clears the regions when the group changes', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     view.select([region(0)]);
 
@@ -690,7 +778,7 @@ describe('ReaderView', () => {
 
   it('clears the regions on dispose', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     view.select([region(0)]);
     expect(view.regions).toHaveLength(1);
@@ -712,7 +800,7 @@ describe('the reading place of a continuous strip', () => {
 
   it('holds a new place at once without saving it', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     view.moveTo(readingPosition(imageIndex(3), 0.5));
@@ -723,7 +811,7 @@ describe('the reading place of a continuous strip', () => {
 
   it('saves only the last place once the scrolling settles', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     view.moveTo(readingPosition(imageIndex(1), 0.25));
@@ -737,7 +825,7 @@ describe('the reading place of a continuous strip', () => {
 
   it('saves a place still waiting when the reader leaves', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
     view.moveTo(readingPosition(imageIndex(5), 0.5));
     expect(world.edits).toEqual([]);
@@ -749,7 +837,7 @@ describe('the reading place of a continuous strip', () => {
 
   it('saves nothing for a move to the place it already holds', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     view.moveTo(readingPosition(imageIndex(0), 0));
@@ -770,7 +858,7 @@ describe('the reading place in the url', () => {
 
   it('opens at the index the url asked for', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'), imageIndex(4));
 
@@ -780,7 +868,7 @@ describe('the reading place in the url', () => {
 
   it('overwrites the saved place with the one the url asked for', async () => {
     const world = fakes({ position: imagePlace(imageIndex(2)) });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'), imageIndex(4));
 
@@ -789,7 +877,7 @@ describe('the reading place in the url', () => {
 
   it('keeps a saved text place when the url asks for an image', async () => {
     const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'), imageIndex(4));
 
@@ -800,7 +888,7 @@ describe('the reading place in the url', () => {
   it('mirrors no image and saves nothing when the book stopped at a text place', async () => {
     const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) });
     const mirrored: number[] = [];
-    const view = new ReaderView(world.container, (index) => mirrored.push(index));
+    const view = new ReaderView(world.container, world.notify, (index) => mirrored.push(index));
 
     await view.open(bookId('one'));
 
@@ -811,7 +899,7 @@ describe('the reading place in the url', () => {
 
   it('keeps the saved place when the url asks for nothing', async () => {
     const world = fakes({ position: imagePlace(imageIndex(2)) });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
 
@@ -821,7 +909,7 @@ describe('the reading place in the url', () => {
 
   it('clamps a url index past the end and says what it did', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'), imageIndex(99));
 
@@ -832,7 +920,7 @@ describe('the reading place in the url', () => {
   it('reports the place it opened at to its mirror', async () => {
     const world = fakes();
     const mirrored: number[] = [];
-    const view = new ReaderView(world.container, (index) => mirrored.push(index));
+    const view = new ReaderView(world.container, world.notify, (index) => mirrored.push(index));
 
     await view.open(bookId('one'), imageIndex(4));
 
@@ -842,7 +930,7 @@ describe('the reading place in the url', () => {
   it('mirrors a page turn once the turning settles, without saving twice', async () => {
     const world = fakes();
     const mirrored: number[] = [];
-    const view = new ReaderView(world.container, (index) => mirrored.push(index));
+    const view = new ReaderView(world.container, world.notify, (index) => mirrored.push(index));
     await view.open(bookId('one'));
     mirrored.length = 0;
 
@@ -859,7 +947,7 @@ describe('the reading place in the url', () => {
 
   it('moves to the group holding the image the url asked for', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.goToImage(bookId('one'), imageIndex(4));
@@ -870,7 +958,7 @@ describe('the reading place in the url', () => {
 
   it('clamps a jump past the end to the last image', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.goToImage(bookId('one'), imageIndex(99));
@@ -880,7 +968,7 @@ describe('the reading place in the url', () => {
 
   it('holds the place a jump asked for in a continuous book', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single' });
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.goToImage(bookId('one'), imageIndex(3));
@@ -890,7 +978,7 @@ describe('the reading place in the url', () => {
 
   it('ignores a jump aimed at a book it is not showing', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.goToImage(bookId('another'), imageIndex(4));
@@ -900,7 +988,7 @@ describe('the reading place in the url', () => {
 
   it('saves nothing for a jump to the place it already holds', async () => {
     const world = fakes();
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     await view.goToImage(bookId('one'), imageIndex(0));
@@ -911,7 +999,7 @@ describe('the reading place in the url', () => {
   it('names a flow book as its own state, holding no book and no page source', async () => {
     const world = fakes();
     world.opening = 'flow';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
 
@@ -924,7 +1012,7 @@ describe('the reading place in the url', () => {
   it('asks a flow book for no picture', async () => {
     const world = fakes();
     world.opening = 'flow';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     const picture = await view.pictureAt(imageIndex(0));
@@ -936,7 +1024,7 @@ describe('the reading place in the url', () => {
   it('keeps the flow book that opened, for the screen that can show one', async () => {
     const world = fakes();
     world.opening = 'flow';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
 
@@ -946,7 +1034,7 @@ describe('the reading place in the url', () => {
   it('forgets the flow book when a book of images opens next', async () => {
     const world = fakes();
     world.opening = 'flow';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
     world.opening = world.stored;
@@ -959,7 +1047,7 @@ describe('the reading place in the url', () => {
   it('reports a book that is no longer in the library as missing', async () => {
     const world = fakes();
     world.opening = 'missing';
-    const view = new ReaderView(world.container);
+    const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
 

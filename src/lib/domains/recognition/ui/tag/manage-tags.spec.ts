@@ -10,7 +10,13 @@ import type { Tag } from '../../domain/tag/tag';
 import type { TagColour } from '../../domain/tag/tag-colour';
 import type { TagError } from '../../domain/tag/tag-repository';
 import type { RenameTagError } from '../../use-cases/tag/rename-tag';
-import { ManageTagsView } from './manage-tags.svelte';
+import type { Notice } from '$lib/shared/notice';
+import {
+  ManageTagsView,
+  RECOLOUR_FAILED,
+  REMOVE_FAILED,
+  RENAME_FAILED,
+} from './manage-tags.svelte';
 
 const SFX: Tag = namedTag(tagId('sfx'), 'sfx', 'slate', 1);
 
@@ -73,7 +79,12 @@ function world() {
     return Promise.resolve();
   };
 
-  return { manage: new ManageTagsView(container, reload), store };
+  const notices: Notice[] = [];
+  const notify = (notice: Notice): void => {
+    notices.push(notice);
+  };
+
+  return { manage: new ManageTagsView(container, notify, reload), store, notices };
 }
 
 describe('ManageTagsView', () => {
@@ -86,7 +97,7 @@ describe('ManageTagsView', () => {
   });
 
   it('writes the new name and reads the tags again', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     manage.startRename(SFX);
     manage.draft = 'sound effects';
     await manage.rename(SFX);
@@ -94,17 +105,19 @@ describe('ManageTagsView', () => {
     expect(store.written.map((tag) => tag.name)).toEqual(['sound effects']);
     expect(store.reloads).toBe(1);
     expect(manage.renaming).toBeNull();
-    expect(manage.failure).toBeNull();
+    expect(manage.invalid).toBeNull();
+    expect(notices).toEqual([]);
   });
 
   it('names the tag already holding the name and keeps the field open', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     store.taken = KEIGO;
     manage.startRename(SFX);
     manage.draft = 'keigo';
     await manage.rename(SFX);
 
-    expect(manage.failure).toContain('keigo');
+    expect(manage.invalid).toContain('keigo');
+    expect(notices).toEqual([]);
     expect(manage.renaming).toBe(SFX.id);
     expect(manage.draft).toBe('keigo');
     expect(store.written).toEqual([]);
@@ -112,44 +125,60 @@ describe('ManageTagsView', () => {
   });
 
   it('refuses a draft that is only whitespace, so a tag never loses its name', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     manage.startRename(SFX);
     manage.draft = '   ';
     await manage.rename(SFX);
 
-    expect(manage.failure).toBe('A tag needs a name.');
+    expect(manage.invalid).toBe('A tag needs a name.');
+    expect(notices).toEqual([]);
     expect(store.written).toEqual([]);
     expect(manage.renaming).toBe(SFX.id);
   });
 
   it('reports a rename that storage refused and keeps the field open', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     store.renameFails = true;
     manage.startRename(SFX);
     manage.draft = 'sound effects';
     await manage.rename(SFX);
 
-    expect(manage.failure).toBe('That tag could not be renamed.');
+    expect(notices).toEqual([
+      {
+        tone: 'danger',
+        title: RENAME_FAILED,
+        message: 'This browser blocks local storage, so tags cannot be changed.',
+      },
+    ]);
+    expect(manage.invalid).toBeNull();
     expect(manage.renaming).toBe(SFX.id);
     expect(store.written).toEqual([]);
     expect(store.reloads).toBe(0);
   });
 
   it('writes the chosen colour and reads the tags again', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     await manage.recolour(SFX, 'plum');
 
     expect(store.written.map((tag) => tag.colour)).toEqual(['plum']);
     expect(store.reloads).toBe(1);
-    expect(manage.failure).toBeNull();
+    expect(manage.invalid).toBeNull();
+    expect(notices).toEqual([]);
   });
 
   it('reports a colour that storage refused and writes nothing', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     store.recolourFails = true;
     await manage.recolour(SFX, 'plum');
 
-    expect(manage.failure).toBe('That tag could not be recoloured.');
+    expect(notices).toEqual([
+      {
+        tone: 'danger',
+        title: RECOLOUR_FAILED,
+        message: 'This browser blocks local storage, so tags cannot be changed.',
+      },
+    ]);
+    expect(manage.invalid).toBeNull();
     expect(store.written).toEqual([]);
     expect(store.reloads).toBe(0);
   });
@@ -171,23 +200,31 @@ describe('ManageTagsView', () => {
   });
 
   it('deletes the tag, closes the confirmation and reads the tags again', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     manage.askRemove(SFX);
     await manage.remove(SFX);
 
     expect(store.removed).toEqual([SFX.id]);
     expect(manage.confirming).toBeNull();
     expect(store.reloads).toBe(1);
-    expect(manage.failure).toBeNull();
+    expect(manage.invalid).toBeNull();
+    expect(notices).toEqual([]);
   });
 
   it('reports a delete that storage refused and leaves the confirmation open', async () => {
-    const { manage, store } = world();
+    const { manage, store, notices } = world();
     store.removeFails = true;
     manage.askRemove(SFX);
     await manage.remove(SFX);
 
-    expect(manage.failure).toBe('That tag could not be deleted.');
+    expect(notices).toEqual([
+      {
+        tone: 'danger',
+        title: REMOVE_FAILED,
+        message: 'This browser blocks local storage, so tags cannot be changed.',
+      },
+    ]);
+    expect(manage.invalid).toBeNull();
     expect(manage.confirming).toBe(SFX.id);
     expect(store.removed).toEqual([]);
     expect(store.reloads).toBe(0);

@@ -2,6 +2,7 @@
   import type { Snapshot } from '@sveltejs/kit';
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
+  import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
@@ -10,9 +11,11 @@
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import { MISSING_BOOK_PARAMETER, missingBookNotice } from '$lib/shared/reader-location';
+  import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
-  const view = new LibraryView(container);
+  const notify = toastNotify(getToaster());
+  const view = new LibraryView(container, notify);
   const find = new CaptureSearchView(container);
   const scroll = new LibraryScrollView();
   const notice = $derived(missingBookNotice(page.url.searchParams.get(MISSING_BOOK_PARAMETER)));

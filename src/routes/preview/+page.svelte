@@ -1,13 +1,15 @@
 <script lang="ts">
+  import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import { activeComparison, comparesBook, routeParameters, variantHref } from './comparison';
+  import { toastNotify } from '$lib/shared/notice-toast';
 
   const comparison = activeComparison();
   const needsBook = (comparison?.variants ?? []).some((variant) =>
     routeParameters(variant.route).includes('fileId'),
   );
-  const shelf = new LibraryView(useContainer());
+  const shelf = new LibraryView(useContainer(), toastNotify(getToaster()));
   const compared = $derived(
     comparison === null
       ? []

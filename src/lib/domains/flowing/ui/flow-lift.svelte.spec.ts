@@ -230,7 +230,7 @@ async function opened(): Promise<Document> {
   const book = novel();
   const source = await epub();
   render(FlowViewer, {
-    view: new FlowView(shelf(source, book)),
+    view: new FlowView(shelf(source, book), () => undefined),
     book,
     onLift: (passage: LiftedPassage) => {
       lifted.push(passage);

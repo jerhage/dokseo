@@ -7,9 +7,10 @@ import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
+import type { Notice, Notify } from '$lib/shared/notice';
 import { err, ok } from '$lib/shared/result';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
-import type { ReadingSettings } from '../domain/reading-settings';
+import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
 import type { ContentsEntry } from './flow-contents';
 import type { LiftedPassage } from './flow-lift';
 import {
@@ -25,7 +26,7 @@ import type { PassageArrival } from './flow-quote';
 import { INK_FOR_THE_DARK_PAGE } from './flow-styles';
 import type { PageInk } from './flow-styles';
 import type { FlowOpening, FlowSurface } from './flow-surface';
-import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
+import { FlowView, PLACE_FAILED, PLACE_SAVE_DELAY_MS, SETTINGS_FAILED } from './flow-view.svelte';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
 
 const NOVEL: BookId = bookId('one');
@@ -77,12 +78,21 @@ type Shelf = {
   keep: () => Promise<Keeps>;
   read: () => Promise<Reads>;
   save: () => Promise<Edits>;
+  readonly notices: Notice[];
+  readonly notify: Notify;
 };
+
+const IGNORED: Notify = () => undefined;
 
 const NO_CONTAINER = {} as unknown as Container;
 
 function shelf(): Shelf {
+  const notices: Notice[] = [];
   const world: Shelf = {
+    notices,
+    notify: (notice) => {
+      notices.push(notice);
+    },
     container: NO_CONTAINER,
     edits: [],
     reads: [],
@@ -236,7 +246,7 @@ describe('FlowView direction', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.direction = 'rtl';
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -244,7 +254,7 @@ describe('FlowView direction', () => {
   });
 
   it('reads left to right before a book has opened', () => {
-    const view = new FlowView(shelf().container);
+    const view = new FlowView(shelf().container, IGNORED);
 
     expect(view.direction).toBe('ltr');
   });
@@ -253,7 +263,7 @@ describe('FlowView direction', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.direction = 'rtl';
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.close();
@@ -267,7 +277,7 @@ describe('FlowView ticks', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.ticks = [Number.EPSILON, 0.5, 0.25];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -275,7 +285,7 @@ describe('FlowView ticks', () => {
   });
 
   it('marks nothing before a book has opened', () => {
-    const view = new FlowView(shelf().container);
+    const view = new FlowView(shelf().container, IGNORED);
 
     expect(view.ticks).toEqual([]);
   });
@@ -284,7 +294,7 @@ describe('FlowView ticks', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.ticks = [0.25, 0.5];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.close();
@@ -297,7 +307,7 @@ describe('FlowView', () => {
   it('reads the stored source and hands it to the surface', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -312,7 +322,7 @@ describe('FlowView', () => {
     const surfaces = shows();
     const gate = held();
     surfaces.gate = gate.promise;
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     const opening = view.open(novel(world.place), surfaces.show);
     await Promise.resolve();
@@ -328,7 +338,7 @@ describe('FlowView', () => {
     const world = shelf();
     const surfaces = shows();
     world.read = () => Promise.resolve(err<LibraryFailure>({ kind: 'not-found', id: NOVEL }));
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -342,7 +352,7 @@ describe('FlowView', () => {
   it('reports storage that the browser refuses', async () => {
     const world = shelf();
     world.read = () => Promise.resolve(err<LibraryFailure>({ kind: 'storage-unavailable' }));
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), shows().show);
 
@@ -355,7 +365,7 @@ describe('FlowView', () => {
   it('reports the cause when a read throws', async () => {
     const world = shelf();
     world.read = () => Promise.reject(new Error('disk gone'));
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), shows().show);
 
@@ -369,7 +379,7 @@ describe('FlowView', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.failure = 'not a zip';
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -382,7 +392,7 @@ describe('FlowView', () => {
   it('destroys the open surface when the viewer closes', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
     view.close();
@@ -394,7 +404,7 @@ describe('FlowView', () => {
   it('destroys the open surface before opening another book', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
     await view.open({ ...novel(world.place), id: bookId('two') }, surfaces.show);
@@ -408,7 +418,7 @@ describe('FlowView', () => {
     const surfaces = shows();
     const gate = held();
     surfaces.gate = gate.promise;
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     const opening = view.open(novel(world.place), surfaces.show);
     await settled();
@@ -429,7 +439,7 @@ describe('FlowView', () => {
       await gate.promise;
       return err<LibraryFailure>({ kind: 'storage-failed', cause: 'quota' });
     };
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     const opening = view.open(novel(world.place), shows().show);
     view.close();
@@ -445,7 +455,7 @@ describe('the place a flow book opens at', () => {
     const world = shelf();
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, null);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -455,7 +465,7 @@ describe('the place a flow book opens at', () => {
   it('opens at the start when the book is still at the start of its text', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -475,7 +485,7 @@ describe('the place a flow book keeps', () => {
   it('saves only the last place once the page turning settles', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
@@ -490,7 +500,7 @@ describe('the place a flow book keeps', () => {
   it('saves nothing while the pages are still turning', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
@@ -502,7 +512,7 @@ describe('the place a flow book keeps', () => {
   it('saves a place still waiting when the reader leaves the book', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     expect(world.edits).toEqual([]);
@@ -516,7 +526,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, null);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
@@ -528,7 +538,7 @@ describe('the place a flow book keeps', () => {
   it('saves the fraction the book reported beside the cfi it stopped at', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
@@ -540,7 +550,7 @@ describe('the place a flow book keeps', () => {
   it('saves no fraction for a book that cannot measure one', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: Number.NaN }));
@@ -553,7 +563,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, null);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
@@ -566,7 +576,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, 0.37);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
@@ -579,7 +589,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, 0.37);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.41 }));
@@ -591,7 +601,7 @@ describe('the place a flow book keeps', () => {
   it('saves the fraction of a place still waiting when the reader leaves the book', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
 
@@ -603,7 +613,7 @@ describe('the place a flow book keeps', () => {
   it('saves nothing for a move that arrives after the viewer closed', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
@@ -619,13 +629,55 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.save = () =>
       Promise.resolve(err<LibraryFailure>({ kind: 'storage-failed', cause: 'io' }));
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(view.state).toEqual({ kind: 'ready' });
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: PLACE_FAILED, message: 'Local storage failed: io' },
+    ]);
+  });
+
+  it('reports a run of failed place saves once, and again after one succeeds', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.save = () => Promise.reject(new Error('the disk went away'));
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+    const moved = surfaces.openings[0]?.moved;
+
+    moved?.(relocated(SOMEWHERE));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+    moved?.(relocated(FURTHER_ON));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: PLACE_FAILED, message: 'the disk went away' },
+    ]);
+
+    world.save = () => Promise.resolve(ok(novel(world.place)));
+    moved?.(relocated(LATER_STILL));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+    world.save = () => Promise.reject(new Error('the disk went away'));
+    moved?.(relocated(SOMEWHERE));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.notices.map((notice) => notice.title)).toEqual([PLACE_FAILED, PLACE_FAILED]);
+  });
+
+  it('reports nothing when a place is saved', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toHaveLength(1);
+    expect(world.notices).toEqual([]);
   });
 
   it('saves the same place again at the next turn after a save failed', async () => {
@@ -633,7 +685,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.save = () =>
       Promise.resolve(err<LibraryFailure>({ kind: 'storage-failed', cause: 'io' }));
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
@@ -649,7 +701,7 @@ describe('the place a flow book keeps', () => {
 describe('the progress a flow book reports', () => {
   it('reports nothing until the book has said where it is', async () => {
     const world = shelf();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), shows().show);
 
@@ -660,7 +712,7 @@ describe('the progress a flow book reports', () => {
   it('reports how far through the book the reader is', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(
@@ -674,7 +726,7 @@ describe('the progress a flow book reports', () => {
   it('reports nothing for a book that cannot say how far through it is', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
@@ -685,7 +737,7 @@ describe('the progress a flow book reports', () => {
   it('forgets where it was when the reader leaves the book', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.5 }));
 
@@ -697,7 +749,7 @@ describe('the progress a flow book reports', () => {
   it('ignores a move that arrives after the viewer closed', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
@@ -712,7 +764,7 @@ describe('the controls a flow book offers', () => {
   it('turns the page in reading order, whichever way the book runs', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.turn('previous');
@@ -723,7 +775,7 @@ describe('the controls a flow book offers', () => {
 
   it('turns nothing before a book is open', () => {
     const world = shelf();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     view.turn('next');
 
@@ -733,7 +785,7 @@ describe('the controls a flow book offers', () => {
   it('sends the scrubbed fraction to the book', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
@@ -745,7 +797,7 @@ describe('the controls a flow book offers', () => {
   it('holds a scrub inside the book it can reach', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
@@ -758,7 +810,7 @@ describe('the controls a flow book offers', () => {
   it('refuses a scrub on a book that cannot say how far through it is', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
@@ -770,7 +822,7 @@ describe('the controls a flow book offers', () => {
   it('refuses a scrub that is not a number at all', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
@@ -794,7 +846,7 @@ describe('the contents a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE, CHAPTER_TWO];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -807,7 +859,7 @@ describe('the contents a flow book offers', () => {
   it('lists nothing for a book that carries no navigation', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -819,7 +871,7 @@ describe('the contents a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE, CHAPTER_TWO];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { tocItem: CHAPTER_TWO }));
@@ -831,7 +883,7 @@ describe('the contents a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     const [entry] = entries(view);
@@ -844,7 +896,7 @@ describe('the contents a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.toc = [{ label: 'Part One' }];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     const [entry] = entries(view);
@@ -857,7 +909,7 @@ describe('the contents a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE];
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.close();
@@ -871,7 +923,7 @@ describe('FlowView reading settings', () => {
     const world = shelf();
     world.stored = { textSize: 'largest', lineSpacing: 'loose', showPhoneticReadings: true };
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -880,7 +932,7 @@ describe('FlowView reading settings', () => {
   });
 
   it('reads the defaults for a reader who has chosen nothing', async () => {
-    const view = new FlowView(shelf().container);
+    const view = new FlowView(shelf().container, IGNORED);
 
     expect(view.settings).toEqual(DEFAULT_READING_SETTINGS);
   });
@@ -888,7 +940,7 @@ describe('FlowView reading settings', () => {
   it('restyles the chapter already on screen rather than opening the book again', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.restyle({ textSize: 'large', lineSpacing: 'tight', showPhoneticReadings: true });
@@ -903,7 +955,7 @@ describe('FlowView reading settings', () => {
   it('turns no page and seeks nowhere when the reader resizes the text', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.restyle({ textSize: 'smallest', lineSpacing: 'loose', showPhoneticReadings: true });
@@ -916,7 +968,7 @@ describe('FlowView reading settings', () => {
   it('remembers a chosen size for the reader, not for the book', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.restyle({ textSize: 'small', lineSpacing: 'relaxed', showPhoneticReadings: true });
@@ -931,7 +983,7 @@ describe('FlowView reading settings', () => {
   it('holds a choice made before a book is open, and touches no surface', () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     view.restyle({ textSize: 'large', lineSpacing: 'loose', showPhoneticReadings: true });
 
@@ -946,7 +998,7 @@ describe('FlowView reading settings', () => {
   it('hides the readings in the chapter already on screen and remembers the choice', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.restyle({ ...view.settings, showPhoneticReadings: false });
@@ -957,12 +1009,29 @@ describe('FlowView reading settings', () => {
     ]);
     expect(world.chosen).toEqual([{ ...DEFAULT_READING_SETTINGS, showPhoneticReadings: false }]);
     expect(surfaces.openings).toHaveLength(1);
+    expect(world.notices).toEqual([]);
+  });
+
+  it('reports a choice that storage refused to keep', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+    world.keep = () =>
+      Promise.resolve(err<ReadingSettingsError>({ kind: 'storage-failed', cause: 'quota' }));
+
+    view.restyle({ ...view.settings, textSize: 'largest' });
+    await settled();
+
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: SETTINGS_FAILED, message: 'Local storage failed: quota' },
+    ]);
   });
 
   it('keeps reading when storage refuses to remember a choice', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     world.keep = () => Promise.reject(new Error('storage gone'));
 
@@ -976,6 +1045,9 @@ describe('FlowView reading settings', () => {
     });
     expect(surfaces.restyled).toEqual([
       { textSize: 'largest', lineSpacing: 'tight', showPhoneticReadings: true },
+    ]);
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: SETTINGS_FAILED, message: 'storage gone' },
     ]);
   });
 });
@@ -992,7 +1064,7 @@ describe('FlowView page ink', () => {
   it('opens the book in the dark page ink when nothing painted it', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     await view.open(novel(world.place), surfaces.show);
 
@@ -1002,7 +1074,7 @@ describe('FlowView page ink', () => {
   it('opens the book in the ink painted before it opened, and restyles nothing', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     view.paint(PAPER);
     await view.open(novel(world.place), surfaces.show);
@@ -1015,7 +1087,7 @@ describe('FlowView page ink', () => {
     const world = shelf();
     world.stored = { textSize: 'large', lineSpacing: 'loose', showPhoneticReadings: false };
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.paint(PAPER);
@@ -1028,7 +1100,7 @@ describe('FlowView page ink', () => {
   it('restyles nothing for an ink equal to the one on the page', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     view.paint(PAPER);
     await view.open(novel(world.place), surfaces.show);
 
@@ -1040,7 +1112,7 @@ describe('FlowView page ink', () => {
   it('remembers no reading settings when it repaints', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.paint(PAPER);
@@ -1052,7 +1124,7 @@ describe('FlowView page ink', () => {
   it('keeps the painted ink when the reader resizes the text', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     view.paint(PAPER);
     await view.open(novel(world.place), surfaces.show);
 
@@ -1066,7 +1138,7 @@ describe('FlowView page ink', () => {
     const surfaces = shows();
     const gate = held();
     surfaces.gate = gate.promise;
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     const opening = view.open(novel(world.place), surfaces.show);
     await settled();
 
@@ -1089,7 +1161,7 @@ describe('FlowView jumpToPassage', () => {
   it('takes the book to the stored passage and says nothing about it', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1108,7 +1180,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.arrival = foundByItsText(REFOUND);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1120,7 +1192,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.arrival = THE_PASSAGE_IS_LOST;
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1132,7 +1204,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.arrival = THE_PASSAGE_IS_LOST;
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     await view.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1143,7 +1215,7 @@ describe('FlowView jumpToPassage', () => {
 
   it('asks nothing of a viewer with no book open', async () => {
     const surfaces = shows();
-    const view = new FlowView(shelf().container);
+    const view = new FlowView(shelf().container, IGNORED);
 
     await view.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1154,7 +1226,7 @@ describe('FlowView jumpToPassage', () => {
   it('marks the passage it arrived at, on the page it landed on', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
 
@@ -1171,7 +1243,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.arrival = foundByItsText(REFOUND);
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
 
@@ -1184,7 +1256,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.arrival = THE_PASSAGE_IS_LOST;
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
 
@@ -1196,7 +1268,7 @@ describe('FlowView jumpToPassage', () => {
   it('takes the mark away when the reader turns the page', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1209,7 +1281,7 @@ describe('FlowView jumpToPassage', () => {
   it('keeps the mark while the reader stays on the page it landed on', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1223,7 +1295,7 @@ describe('FlowView jumpToPassage', () => {
   it('takes the mark and the notice away when the reader dismisses the arrival', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1237,7 +1309,7 @@ describe('FlowView jumpToPassage', () => {
   it('redraws nothing when the reader dismisses an arrival that is already gone', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1252,7 +1324,7 @@ describe('FlowView jumpToPassage', () => {
   it('reports an arrival is standing while the reader has not moved off it', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1263,7 +1335,7 @@ describe('FlowView jumpToPassage', () => {
   it('reports no arrival is standing once it has been dismissed', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1276,7 +1348,7 @@ describe('FlowView jumpToPassage', () => {
   it('reports no arrival is standing before the reader has jumped anywhere', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     expect(view.arrivalStanding).toBe(false);
@@ -1285,7 +1357,7 @@ describe('FlowView jumpToPassage', () => {
   it('keeps the marked passage drawn when the reader deletes its capture', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     view.markPassages([SOMEWHERE]);
     await view.open(novel(world.place), surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
@@ -1307,7 +1379,7 @@ describe('FlowView markPassages', () => {
   it('draws the captures the reader already had when the book opens', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     view.markPassages([SOMEWHERE]);
     await view.open(novel(world.place), surfaces.show);
@@ -1318,7 +1390,7 @@ describe('FlowView markPassages', () => {
   it('draws a capture taken while the book is open', async () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
     await view.open(novel(world.place), surfaces.show);
 
     view.markPassages([SOMEWHERE, ANOTHER]);
@@ -1329,7 +1401,7 @@ describe('FlowView markPassages', () => {
   it('draws nothing for a viewer with no book open', () => {
     const world = shelf();
     const surfaces = shows();
-    const view = new FlowView(world.container);
+    const view = new FlowView(world.container, world.notify);
 
     view.markPassages([SOMEWHERE]);
 

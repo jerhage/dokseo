@@ -34,10 +34,25 @@ function hex(digest: ArrayBuffer): string {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+const NO_DIGEST_OUTSIDE_A_SECURE_CONTEXT =
+  'the browser offers no hashing outside https or localhost.';
+
+function subtleCrypto(): SubtleCrypto {
+  const subtle: SubtleCrypto | undefined = crypto.subtle;
+  if (subtle === undefined) throw new Error(NO_DIGEST_OUTSIDE_A_SECURE_CONTEXT);
+  return subtle;
+}
+
 async function fingerprintOf(blob: Blob): Promise<string> {
+  const subtle = subtleCrypto();
   const samples = await Promise.all(sampledParts(blob).map((part) => part.arrayBuffer()));
-  const digest = await crypto.subtle.digest('SHA-256', joined(sizeHeader(blob.size), samples));
+  const digest = await subtle.digest('SHA-256', joined(sizeHeader(blob.size), samples));
   return hex(digest);
 }
 
-export { FINGERPRINT_SAMPLE_BYTES, FINGERPRINT_WHOLE_UP_TO, fingerprintOf };
+export {
+  FINGERPRINT_SAMPLE_BYTES,
+  FINGERPRINT_WHOLE_UP_TO,
+  NO_DIGEST_OUTSIDE_A_SECURE_CONTEXT,
+  fingerprintOf,
+};

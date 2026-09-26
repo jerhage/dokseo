@@ -4,6 +4,7 @@
   import Button from '$lib/components/Button.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import CircleX from '$lib/components/icons/CircleX.svelte';
   import Input from '$lib/components/Input.svelte';
   import { tagsHref } from '$lib/shared/tag-location';
   import type { Tag } from '../../domain/tag/tag';
@@ -56,10 +57,6 @@
       <Alert variant="danger" role="alert">Your tags could not be read.</Alert>
     {/if}
 
-    {#if manage.failure !== null}
-      <Alert variant="danger" role="alert">{manage.failure}</Alert>
-    {/if}
-
     {#if notice !== null}
       <p class="text-sm text-muted">{notice}</p>
     {:else}
@@ -70,7 +67,7 @@
               <Badge colour={row.tag.colour} quiet dot aria-hidden="true" />
               {#if manage.renaming === row.id}
                 <form
-                  class="row flex-1"
+                  class="col gap-1 flex-1"
                   id="{uid}-rename-{row.id}"
                   onsubmit={(event) => submit(event, row.tag)}
                 >
@@ -79,12 +76,18 @@
                   </label>
                   <Input
                     id="{uid}-name-{row.id}"
-                    class="flex-1"
                     type="text"
+                    aria-invalid={manage.invalid !== null}
+                    aria-describedby={manage.invalid === null ? undefined : `${uid}-invalid`}
                     bind:value={manage.draft}
                     onkeydown={abandon}
                     {@attach takeFocus}
                   />
+                  {#if manage.invalid !== null}
+                    <p class="field-error" id="{uid}-invalid" role="alert">
+                      <CircleX class="field-error-icon" />{manage.invalid}
+                    </p>
+                  {/if}
                 </form>
               {:else}
                 <span class="flex-1 truncate weight-medium">{row.tag.name}</span>

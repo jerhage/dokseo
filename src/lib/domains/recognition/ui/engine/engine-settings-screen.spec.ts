@@ -166,11 +166,12 @@ describe('EngineSettingsScreen', () => {
     expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:<!---->)?Deleting…/u);
   });
 
-  it('announces a failed load as an alert', () => {
+  it('shows a failed load in the status badge and its note, leaving the alert to a toast', () => {
     const html = screen({ download: { kind: 'failed', cause: 'no memory' } });
 
     expect(html).toContain('Not available');
-    expect(html).toMatch(/role="alert"[^]*The model could not be loaded: no memory/u);
+    expect(html).toContain('The engine could not be opened: no memory');
+    expect(html).not.toContain('The model could not be loaded');
   });
 
   it('warns about the GPU as an alert only when the GPU is chosen', () => {

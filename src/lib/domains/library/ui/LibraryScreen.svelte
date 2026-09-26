@@ -88,13 +88,13 @@
   const removeBook = $derived(view.books.find((book) => book.id === removeFor) ?? null);
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
-    await view.edit(id, edit);
-    openSettingsFor = null;
+    const outcome = await view.edit(id, edit);
+    if (outcome !== 'failed') openSettingsFor = null;
   }
 
   async function remove(id: BookId): Promise<void> {
-    await view.remove(id);
-    removeFor = null;
+    const outcome = await view.remove(id);
+    if (outcome !== 'failed') removeFor = null;
   }
 
   const searching = $derived(isSearching(query));
@@ -222,10 +222,6 @@
       <Alert variant="warning" role="alert">{notice}</Alert>
     {/if}
 
-    {#if view.message !== null}
-      <Alert variant="danger" role="alert">{view.message}</Alert>
-    {/if}
-
     {#if view.pending !== null}
       <ImportStatus title={view.pending} language="ja" stage={view.progress} />
     {/if}
@@ -236,6 +232,9 @@
       {#if body === 'failed'}
         <div class="row wrap items-center gap-3 text-sm text-muted">
           <span>Your library could not be read.</span>
+          {#if view.loadFailure !== null}
+            <span>{view.loadFailure}</span>
+          {/if}
           <Button size="sm" onclick={() => void view.load()}>Try again</Button>
         </div>
       {:else if body === 'empty'}

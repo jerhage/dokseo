@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
+import type { Notify } from '$lib/shared/notice';
 import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError } from '../domain/book/library-repository';
@@ -15,6 +16,18 @@ import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
 
 type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
+
+type ChangeOutcome = 'changed' | 'failed' | 'skipped';
+
+const UPLOAD_FAILED = 'Could not add that upload';
+
+const EDIT_FAILED = 'Could not save the book settings';
+
+const REMOVE_FAILED = 'Could not remove that book';
+
+const FINISH_FAILED = 'Could not mark that book finished';
+
+const UNREAD_FAILED = 'Could not mark that book unread';
 
 function describeLibraryError(error: LibraryError): string {
   return match(error)
@@ -45,7 +58,12 @@ function describeOpenFileError(error: OpenFileError): string {
     .with({ kind: 'storage' }, (storage) => describeLibraryError(storage.error))
     .with({ kind: 'epub' }, (epub) => describeEpubRefusal(epub.error))
     .with({ kind: 'not-paged' }, (blocked) => describePageObstacle(blocked.obstacle))
+    .with({ kind: 'fingerprint' }, (failed) => describeFingerprintFailure(failed.cause))
     .exhaustive();
+}
+
+function describeFingerprintFailure(cause: string): string {
+  return `This page cannot check uploads for duplicates here: ${cause}`;
 }
 
 function revoke(urls: Iterable<string>): void {
@@ -60,7 +78,7 @@ class LibraryView {
   books = $state.raw<readonly Book[]>([]);
   covers = $state.raw<ReadonlyMap<BookId, string>>(new Map());
   status = $state<LibraryStatus>('idle');
-  message = $state<string | null>(null);
+  loadFailure = $state<string | null>(null);
   busy = $state(false);
   pending = $state.raw<string | null>(null);
   progress = $state.raw<UploadStage>(INSPECTING);
@@ -69,11 +87,13 @@ class LibraryView {
   storedBytes = $state.raw<number | null>(null);
 
   #container: Container;
+  #notify: Notify;
   #created = new Map<BookId, string>();
   #generation = 0;
 
-  constructor(container: Container) {
+  constructor(container: Container, notify: Notify) {
     this.#container = container;
+    this.#notify = notify;
   }
 
   get imageCounts(): ReadonlyMap<BookId, number> {
@@ -83,13 +103,13 @@ class LibraryView {
   async load(): Promise<void> {
     const generation = ++this.#generation;
     this.status = 'loading';
-    this.message = null;
+    this.loadFailure = null;
 
     const listed = await this.#container.library.listBooks();
     if (generation !== this.#generation) return;
     if (!listed.ok) {
       this.status = 'failed';
-      this.message = describeLibraryError(listed.error);
+      this.loadFailure = describeLibraryError(listed.error);
       return;
     }
 
@@ -111,7 +131,6 @@ class LibraryView {
   async upload(files: readonly File[]): Promise<void> {
     if (files.length === 0) return;
     this.busy = true;
-    this.message = null;
     this.pending = suggestTitle(
       files.map((file) => ({ name: file.name, path: file.webkitRelativePath })),
     );
@@ -122,7 +141,7 @@ class LibraryView {
         this.progress = stage;
       });
       if (!opened.ok) {
-        this.message = describeOpenFileError(opened.error);
+        this.#fail(UPLOAD_FAILED, describeOpenFileError(opened.error));
         return;
       }
     } finally {
@@ -134,48 +153,48 @@ class LibraryView {
     await this.load();
   }
 
-  async remove(id: BookId): Promise<void> {
-    if (this.removing !== null || this.editing !== null || this.busy) return;
+  async remove(id: BookId): Promise<ChangeOutcome> {
+    if (this.removing !== null || this.editing !== null || this.busy) return 'skipped';
     this.removing = id;
-    this.message = null;
 
     try {
       const removed = await this.#container.library.removeBook(id);
       if (!removed.ok) {
-        this.message = describeLibraryError(removed.error);
-        return;
+        this.#fail(REMOVE_FAILED, describeLibraryError(removed.error));
+        return 'failed';
       }
     } finally {
       this.removing = null;
     }
 
     await this.load();
+    return 'changed';
   }
 
-  async edit(id: BookId, edit: BookEdit): Promise<void> {
-    if (this.removing !== null || this.editing !== null || this.busy) return;
+  async edit(id: BookId, edit: BookEdit): Promise<ChangeOutcome> {
+    if (this.removing !== null || this.editing !== null || this.busy) return 'skipped';
     this.editing = id;
-    this.message = null;
 
     try {
       const edited = await this.#container.library.editBook(id, edit);
       if (!edited.ok) {
-        this.message = describeLibraryError(edited.error);
-        return;
+        this.#fail(EDIT_FAILED, describeLibraryError(edited.error));
+        return 'failed';
       }
     } finally {
       this.editing = null;
     }
 
     await this.load();
+    return 'changed';
   }
 
   markFinished(id: BookId): Promise<void> {
-    return this.#mark(id, () => this.#container.library.markFinished(id));
+    return this.#mark(id, FINISH_FAILED, () => this.#container.library.markFinished(id));
   }
 
   markUnread(id: BookId): Promise<void> {
-    return this.#mark(id, () => this.#container.library.markUnread(id));
+    return this.#mark(id, UNREAD_FAILED, () => this.#container.library.markUnread(id));
   }
 
   dispose(): void {
@@ -185,15 +204,18 @@ class LibraryView {
     this.covers = new Map();
   }
 
-  async #mark(id: BookId, run: () => Promise<Result<Book, LibraryError>>): Promise<void> {
+  async #mark(
+    id: BookId,
+    failed: string,
+    run: () => Promise<Result<Book, LibraryError>>,
+  ): Promise<void> {
     if (this.removing !== null || this.editing !== null || this.busy) return;
     this.editing = id;
-    this.message = null;
 
     try {
       const marked = await run();
       if (!marked.ok) {
-        this.message = describeLibraryError(marked.error);
+        this.#fail(failed, describeLibraryError(marked.error));
         return;
       }
     } finally {
@@ -201,6 +223,10 @@ class LibraryView {
     }
 
     await this.load();
+  }
+
+  #fail(title: string, message: string): void {
+    this.#notify({ tone: 'danger', title, message });
   }
 
   async #readCovers(books: readonly Book[]): Promise<Map<BookId, string>> {
@@ -219,5 +245,5 @@ class LibraryView {
   }
 }
 
-export { LibraryView };
-export type { LibraryStatus };
+export { EDIT_FAILED, FINISH_FAILED, LibraryView, REMOVE_FAILED, UNREAD_FAILED, UPLOAD_FAILED };
+export type { ChangeOutcome, LibraryStatus };

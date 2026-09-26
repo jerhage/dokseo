@@ -4,6 +4,7 @@ import { megabytes, storedSize } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
 import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
+import type { Notify } from '$lib/shared/notice';
 import type { Result } from '$lib/shared/result';
 import type { ComputeChoice, GpuDetection } from '../../domain/engine/compute-choice';
 import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
@@ -17,6 +18,7 @@ import type { ModelLoad } from '../../domain/model/model-load';
 import { modelsFor } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type { ModelStorageError } from '../../domain/model/model-storage';
+import type { SetupError } from '../../domain/engine/recognizer-setup';
 import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
@@ -24,6 +26,22 @@ import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-stor
 const FULL_PERCENT = 100;
 
 const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
+
+const SETUP_FAILED = 'Could not save the engine choice';
+
+const LOAD_FAILED = 'Could not load the model';
+
+const REMOVE_FAILED = 'Could not delete the model';
+
+function setupFailureNote(error: SetupError): string {
+  return match(error)
+    .with(
+      { kind: 'storage-unavailable' },
+      () => 'This browser blocks local storage, so the choice was not kept.',
+    )
+    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
+    .exhaustive();
+}
 
 function storageFailureNote(error: ModelStorageError): string {
   return match(error)
@@ -96,10 +114,12 @@ class EngineSettingsView {
   message = $state.raw<string | null>(null);
 
   #container: Container;
+  #notify: Notify;
   #generation = 0;
 
-  constructor(container: Container) {
+  constructor(container: Container, notify: Notify) {
     this.#container = container;
+    this.#notify = notify;
   }
 
   get model(): ModelFootprint | null {
@@ -220,6 +240,8 @@ class EngineSettingsView {
       this.#step({ kind: 'opened', session: opened.value });
     } else {
       this.#step({ kind: 'settled', error: opened.error });
+      const settled = this.download;
+      if (settled.kind === 'failed') this.#fail(LOAD_FAILED, settled.cause);
     }
 
     await this.measure(generation);
@@ -274,13 +296,11 @@ class EngineSettingsView {
 
       this.session = null;
       this.download = IDLE;
-      this.message = removed.ok
-        ? `Freed ${megabytes(removed.value.bytes)} MB. ${REMOVAL_WARNING}`
-        : storageFailureNote(removed.error);
+      if (removed.ok)
+        this.message = `Freed ${megabytes(removed.value.bytes)} MB. ${REMOVAL_WARNING}`;
+      else this.#fail(REMOVE_FAILED, storageFailureNote(removed.error));
     } catch (cause) {
-      if (generation === this.#generation) {
-        this.message = `The model could not be removed: ${describeCause(cause)}`;
-      }
+      if (generation === this.#generation) this.#fail(REMOVE_FAILED, describeCause(cause));
     } finally {
       if (generation === this.#generation) this.removing = false;
     }
@@ -322,10 +342,13 @@ class EngineSettingsView {
     this.session = null;
     this.download = IDLE;
 
-    await this.#container.recognition.saveRecognizerSetup(language, {
+    const saved = await this.#container.recognition.saveRecognizerSetup(language, {
       modelId: model.modelId,
       compute: this.compute,
     });
+    if (!saved.ok && generation === this.#generation) {
+      this.#fail(SETUP_FAILED, setupFailureNote(saved.error));
+    }
 
     if (abandoned === null) await this.#container.recognition.pauseModelLoad(language);
     else await this.#container.recognition.cancelModelLoad(language, abandoned);
@@ -334,6 +357,10 @@ class EngineSettingsView {
 
     if (generation !== this.#generation) return;
     await this.measure(generation);
+  }
+
+  #fail(title: string, message: string): void {
+    this.#notify({ tone: 'danger', title, message });
   }
 
   #step(event: DownloadEvent): void {
@@ -347,7 +374,10 @@ class EngineSettingsView {
 }
 
 export {
+  LOAD_FAILED,
   REMOVAL_WARNING,
+  REMOVE_FAILED,
+  SETUP_FAILED,
   storageFailureNote,
   loadFigure,
   cancelHint,

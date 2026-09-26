@@ -10,7 +10,15 @@ import type { Book } from '../domain/book/book';
 import type { LibraryError } from '../domain/book/library-repository';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 import type { OpenFileError } from '../use-cases/open-file';
-import { LibraryView } from './library-view.svelte';
+import type { Notice, Notify } from '$lib/shared/notice';
+import {
+  EDIT_FAILED,
+  FINISH_FAILED,
+  LibraryView,
+  REMOVE_FAILED,
+  UNREAD_FAILED,
+  UPLOAD_FAILED,
+} from './library-view.svelte';
 
 type Deferred<T> = { readonly promise: Promise<T>; readonly settle: (value: T) => void };
 
@@ -65,6 +73,8 @@ type Fakes = {
   readonly marks: Mark[];
   readonly cover: CoverState;
   readonly size: SizeState;
+  readonly notices: Notice[];
+  readonly notify: Notify;
 };
 
 function fakes(): Fakes {
@@ -76,6 +86,10 @@ function fakes(): Fakes {
   const marks: Mark[] = [];
   const cover: CoverState = { outcome: ok(new Blob(['cover'])), gate: () => Promise.resolve() };
   const size: SizeState = { outcome: ok(2048) };
+  const notices: Notice[] = [];
+  const notify: Notify = (notice) => {
+    notices.push(notice);
+  };
 
   const container: Container = {
     beginTrace: noTrace,
@@ -157,7 +171,7 @@ function fakes(): Fakes {
     },
   };
 
-  return { container, lists, opens, reports, removes, edits, marks, cover, size };
+  return { container, lists, opens, reports, removes, edits, marks, cover, size, notices, notify };
 }
 
 function chosen(name: string, path = ''): File {
@@ -198,7 +212,7 @@ afterEach(() => {
 describe('LibraryView', () => {
   it('moves from idle to loading to ready and exposes the books', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
     expect(view.status).toBe('idle');
 
     const running = view.load();
@@ -210,12 +224,12 @@ describe('LibraryView', () => {
     expect(view.status).toBe('ready');
     expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(view.covers.size).toBe(2);
-    expect(view.message).toBeNull();
+    expect(world.notices).toEqual([]);
   });
 
   it('exposes the bytes the uploads occupy once the library has loaded', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
     expect(view.storedBytes).toBeNull();
 
     const running = view.load();
@@ -228,7 +242,7 @@ describe('LibraryView', () => {
   it('reports no size when the uploads cannot be measured', async () => {
     const world = fakes();
     world.size.outcome = err({ kind: 'storage-unavailable' });
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const running = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -240,7 +254,7 @@ describe('LibraryView', () => {
 
   it('orders the newest upload first', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const running = view.load();
     at(world.lists, 0).settle(ok([book('older', { addedAt: 1 }), book('newer', { addedAt: 2 })]));
@@ -251,21 +265,22 @@ describe('LibraryView', () => {
 
   it('lands a repository failure in the failed status without throwing', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const running = view.load();
     at(world.lists, 0).settle(err({ kind: 'storage-failed', cause: 'quota exceeded' }));
     await expect(running).resolves.toBeUndefined();
 
     expect(view.status).toBe('failed');
-    expect(view.message).toBe('Local storage failed: quota exceeded');
+    expect(view.loadFailure).toBe('Local storage failed: quota exceeded');
+    expect(world.notices).toEqual([]);
     expect(view.books).toEqual([]);
   });
 
   it('keeps a book whose cover cannot be read', async () => {
     const world = fakes();
     world.cover.outcome = err({ kind: 'not-found', id: bookId('one') });
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const running = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -278,7 +293,7 @@ describe('LibraryView', () => {
 
   it('revokes every object URL it created when disposed', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const running = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -292,7 +307,7 @@ describe('LibraryView', () => {
 
   it('revokes the replaced object URLs on a second load', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const first = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -308,7 +323,7 @@ describe('LibraryView', () => {
 
   it('lets the later of two overlapping loads win', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const first = view.load();
     const second = view.load();
@@ -324,7 +339,7 @@ describe('LibraryView', () => {
 
   it('revokes the covers a stale load created', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
     const held = deferred<void>();
     world.cover.gate = () => held.promise;
 
@@ -347,7 +362,7 @@ describe('LibraryView', () => {
 
   it('reports an upload failure and keeps the books it already has', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -360,14 +375,20 @@ describe('LibraryView', () => {
     await expect(uploading).resolves.toBeUndefined();
 
     expect(view.busy).toBe(false);
-    expect(view.message).toBe('Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.');
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: UPLOAD_FAILED,
+        message: 'Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.',
+      },
+    ]);
     expect(view.books.map((b) => b.id)).toEqual(['one']);
     expect(view.status).toBe('ready');
   });
 
   it('reloads the library after a successful upload', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -381,12 +402,12 @@ describe('LibraryView', () => {
     await uploading;
 
     expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
-    expect(view.message).toBeNull();
+    expect(world.notices).toEqual([]);
   });
 
   it('sets the pending title while the upload runs and clears it afterwards', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -408,7 +429,7 @@ describe('LibraryView', () => {
 
   it('clears the pending title when the upload fails', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const uploading = view.upload([chosen('chapter-1.cbz')]);
     expect(view.pending).toBe('chapter-1');
@@ -419,12 +440,14 @@ describe('LibraryView', () => {
     await uploading;
 
     expect(view.pending).toBeNull();
-    expect(view.message).toBe('That upload could not be read: bad zip');
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: UPLOAD_FAILED, message: 'That upload could not be read: bad zip' },
+    ]);
   });
 
   it('starts an upload at the inspecting stage', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const uploading = view.upload([chosen('chapter-1.cbz')]);
     expect(view.progress).toEqual({ kind: 'inspecting' });
@@ -435,7 +458,7 @@ describe('LibraryView', () => {
 
   it('exposes each stage the upload reports as it arrives', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const uploading = view.upload([chosen('chapter-1.cbz')]);
     const report = at(world.reports, 0);
@@ -465,7 +488,7 @@ describe('LibraryView', () => {
 
   it('returns the stage to inspecting once the upload settles', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const uploading = view.upload([chosen('chapter-1.cbz')]);
     at(world.reports, 0)?.({ kind: 'covering', imageCount: 186 });
@@ -478,14 +501,14 @@ describe('LibraryView', () => {
 
   it('reports no pending title before any upload', () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     expect(view.pending).toBeNull();
   });
 
   it('ignores an upload with no files', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     await view.upload([]);
 
@@ -495,7 +518,7 @@ describe('LibraryView', () => {
 
   it('removes a book and reloads the list', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -509,12 +532,12 @@ describe('LibraryView', () => {
 
     expect(view.books.map((b) => b.id)).toEqual(['two']);
     expect(view.status).toBe('ready');
-    expect(view.message).toBeNull();
+    expect(world.notices).toEqual([]);
   });
 
   it('sets removing while the call runs and clears it afterwards', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -535,7 +558,7 @@ describe('LibraryView', () => {
 
   it('clears removing and reports a message when the repository fails', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -543,17 +566,19 @@ describe('LibraryView', () => {
 
     const removing = view.remove(bookId('one'));
     at(world.removes, 0).settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
-    await expect(removing).resolves.toBeUndefined();
+    await expect(removing).resolves.toBe('failed');
 
     expect(view.removing).toBeNull();
-    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: REMOVE_FAILED, message: 'Local storage failed: the disk went away' },
+    ]);
     expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(world.lists).toHaveLength(1);
   });
 
   it('ignores a remove while another remove is running', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -575,7 +600,7 @@ describe('LibraryView', () => {
 
   it('ignores a remove while an upload is running', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -595,7 +620,7 @@ describe('LibraryView', () => {
 
   it('edits a book and reloads the list', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -609,12 +634,12 @@ describe('LibraryView', () => {
 
     expect(view.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
     expect(view.status).toBe('ready');
-    expect(view.message).toBeNull();
+    expect(world.notices).toEqual([]);
   });
 
   it('sets editing while the call runs and clears it afterwards', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -635,7 +660,7 @@ describe('LibraryView', () => {
 
   it('clears editing and reports a message when the repository fails', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -643,17 +668,19 @@ describe('LibraryView', () => {
 
     const editing = view.edit(bookId('one'), { title: 'Blame! 1' });
     at(world.edits, 0).settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
-    await expect(editing).resolves.toBeUndefined();
+    await expect(editing).resolves.toBe('failed');
 
     expect(view.editing).toBeNull();
-    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: EDIT_FAILED, message: 'Local storage failed: the disk went away' },
+    ]);
     expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(world.lists).toHaveLength(1);
   });
 
   it('ignores an edit while a removal is running', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -676,7 +703,7 @@ describe('LibraryView', () => {
 
   it('ignores a removal while an edit is running', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -699,7 +726,7 @@ describe('LibraryView', () => {
 
   it('marks a book finished and reloads the list', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -716,12 +743,12 @@ describe('LibraryView', () => {
     await marking;
 
     expect(view.books.map((b) => b.finishedAt)).toEqual([5, null]);
-    expect(view.message).toBeNull();
+    expect(world.notices).toEqual([]);
   });
 
   it('marks a book unread and reloads the list', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one', { finishedAt: 5 })]));
@@ -742,7 +769,7 @@ describe('LibraryView', () => {
 
   it('reports a failed mark and keeps the books without reloading', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one')]));
@@ -753,13 +780,15 @@ describe('LibraryView', () => {
     await expect(marking).resolves.toBeUndefined();
 
     expect(view.editing).toBeNull();
-    expect(view.message).toBe('Local storage failed: the disk went away');
+    expect(world.notices).toEqual([
+      { tone: 'danger', title: FINISH_FAILED, message: 'Local storage failed: the disk went away' },
+    ]);
     expect(world.lists).toHaveLength(1);
   });
 
   it('ignores a mark while another change is running', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -780,7 +809,7 @@ describe('LibraryView', () => {
 
   it('ignores a mark while an upload or a removal is running', async () => {
     const world = fakes();
-    const view = new LibraryView(world.container);
+    const view = new LibraryView(world.container, world.notify);
 
     const loading = view.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
@@ -800,5 +829,85 @@ describe('LibraryView', () => {
     await removing;
 
     expect(world.marks).toHaveLength(0);
+  });
+
+  it('reports a failed unread mark once, under its own title', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one', { finishedAt: 5 })]));
+    await loading;
+
+    const marking = view.markUnread(bookId('one'));
+    at(world.marks, 0).outcome.settle(err({ kind: 'storage-unavailable' }));
+    await marking;
+
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: UNREAD_FAILED,
+        message: 'This browser blocks local storage, so uploads cannot be kept.',
+      },
+    ]);
+  });
+
+  it('reports an upload that could not be fingerprinted', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload([chosen('page.png')]);
+    at(world.opens, 0).settle(err({ kind: 'fingerprint', cause: 'no hashing here.' }));
+    await uploading;
+
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: UPLOAD_FAILED,
+        message: 'This page cannot check uploads for duplicates here: no hashing here.',
+      },
+    ]);
+    expect(view.busy).toBe(false);
+  });
+
+  it('answers an edit with its outcome, so a failed save can keep the form open', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one')]));
+    await loading;
+
+    const failing = view.edit(bookId('one'), { title: 'Blame! 1' });
+    at(world.edits, 0).settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+    expect(await failing).toBe('failed');
+
+    const saving = view.edit(bookId('one'), { title: 'Blame! 1' });
+    const skipped = view.edit(bookId('one'), { title: 'Blame! 2' });
+    expect(await skipped).toBe('skipped');
+    at(world.edits, 1).settle(ok(book('one', { title: 'Blame! 1' })));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('one', { title: 'Blame! 1' })]));
+    expect(await saving).toBe('changed');
+  });
+
+  it('answers a removal with its outcome', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const loading = view.load();
+    at(world.lists, 0).settle(ok([book('one')]));
+    await loading;
+
+    const failing = view.remove(bookId('one'));
+    at(world.removes, 0).settle(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+    expect(await failing).toBe('failed');
+
+    const removing = view.remove(bookId('one'));
+    at(world.removes, 1).settle(ok(undefined));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([]));
+    expect(await removing).toBe('changed');
+    expect(world.notices.map((notice) => notice.title)).toEqual([REMOVE_FAILED]);
   });
 });

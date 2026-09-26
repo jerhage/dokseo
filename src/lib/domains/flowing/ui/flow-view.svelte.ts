@@ -2,12 +2,14 @@ import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { TextQuote } from '$lib/shared/anchor';
+import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
+import type { Notify } from '$lib/shared/notice';
 import { resumedCfi, samePlace, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
-import type { ReadingSettings } from '../domain/reading-settings';
+import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
 import { markAfterMove, NO_PASSAGES, NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
@@ -71,12 +73,37 @@ const WAITING_FOR_THE_BOOK: FlowCurtain = { kind: 'opening' };
 
 const PLACE_SAVE_DELAY_MS = 500;
 
+const SETTINGS_FAILED = 'Could not save the text settings';
+
+const PLACE_FAILED = 'Could not save your place';
+
 function describeLibraryFailure(error: LibraryFailure): string {
   return match(error)
     .with({ kind: 'not-found' }, () => 'That book is no longer stored on this device.')
     .with(
       { kind: 'storage-unavailable' },
       () => 'This browser blocks local storage, so that book cannot be read.',
+    )
+    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
+    .exhaustive();
+}
+
+function describePlaceFailure(error: LibraryFailure): string {
+  return match(error)
+    .with({ kind: 'not-found' }, () => 'That book is no longer stored on this device.')
+    .with(
+      { kind: 'storage-unavailable' },
+      () => 'This browser blocks local storage, so your place cannot be kept.',
+    )
+    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
+    .exhaustive();
+}
+
+function describeSettingsFailure(error: ReadingSettingsError): string {
+  return match(error)
+    .with(
+      { kind: 'storage-unavailable' },
+      () => 'This browser blocks local storage, so these settings cannot be kept.',
     )
     .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
     .exhaustive();
@@ -104,6 +131,7 @@ class FlowView {
   notice = $state.raw<string | null>(null);
 
   #container: Container;
+  #notify: Notify;
   #generation = 0;
   #surface: FlowSurface | null = null;
   #saving: PendingSave | null = null;
@@ -111,9 +139,11 @@ class FlowView {
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
   #ink: PageInk = INK_FOR_THE_DARK_PAGE;
+  #placeFailing = false;
 
-  constructor(container: Container) {
+  constructor(container: Container, notify: Notify) {
     this.#container = container;
+    this.#notify = notify;
   }
 
   get curtain(): FlowCurtain {
@@ -139,6 +169,7 @@ class FlowView {
     this.state = OPENING;
     this.#marked = NOTHING_ARRIVED_AT;
     this.#placed = null;
+    this.#placeFailing = false;
     this.location = null;
     this.contents = NO_CONTENTS;
     this.ticks = NO_CHAPTER_TICKS;
@@ -327,11 +358,15 @@ class FlowView {
   }
 
   async #remember(settings: ReadingSettings): Promise<void> {
+    let saved: Awaited<ReturnType<Container['flowing']['saveReadingSettings']>>;
     try {
-      await this.#container.flowing.saveReadingSettings(settings);
-    } catch {
+      saved = await this.#container.flowing.saveReadingSettings(settings);
+    } catch (cause) {
+      this.#fail(SETTINGS_FAILED, describeCause(cause));
       return;
     }
+
+    if (!saved.ok) this.#fail(SETTINGS_FAILED, describeSettingsFailure(saved.error));
   }
 
   #flushSave(): void {
@@ -350,12 +385,29 @@ class FlowView {
     let saved: EditOutcome;
     try {
       saved = await this.#container.library.saveReadingPlace(id, place);
-    } catch {
+    } catch (cause) {
       this.#forget(place);
+      this.#failPlace(describeCause(cause));
       return;
     }
 
-    if (!saved.ok) this.#forget(place);
+    if (saved.ok) {
+      this.#placeFailing = false;
+      return;
+    }
+
+    this.#forget(place);
+    this.#failPlace(describePlaceFailure(saved.error));
+  }
+
+  #failPlace(message: string): void {
+    if (this.#placeFailing) return;
+    this.#placeFailing = true;
+    this.#fail(PLACE_FAILED, message);
+  }
+
+  #fail(title: string, message: string): void {
+    this.#notify({ tone: 'danger', title, message });
   }
 
   #forget(place: ReadingPlace): void {
@@ -368,5 +420,5 @@ class FlowView {
   }
 }
 
-export { FlowView, PLACE_SAVE_DELAY_MS };
+export { FlowView, PLACE_FAILED, PLACE_SAVE_DELAY_MS, SETTINGS_FAILED };
 export type { FlowBook, FlowCurtain, FlowState, ShowFlowBook };

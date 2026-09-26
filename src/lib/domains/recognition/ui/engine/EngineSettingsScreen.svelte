@@ -62,7 +62,6 @@
     }),
   );
 
-  const failure = $derived(download.kind === 'failed' ? download.cause : null);
   const progress = $derived(download.kind === 'loading' ? download.load : null);
   const percent = $derived(loadPercent(progress));
 
@@ -250,9 +249,6 @@
           </Alert>
         {/if}
 
-        {#if failure !== null}
-          <Alert variant="danger">The model could not be loaded: {failure}</Alert>
-        {/if}
         {#if view.message !== null}
           <p class="text-xs text-muted" role="status">{view.message}</p>
         {/if}
