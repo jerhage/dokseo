@@ -4,6 +4,7 @@
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import ToastClearance from '$lib/components/ToastClearance.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
@@ -82,6 +83,9 @@
   let topBar = $state<HTMLElement | null>(null);
   let bottomBar = $state<HTMLElement | null>(null);
   let topHeight = $state(0);
+  let bottomHeight = $state(0);
+  let bodyHeight = $state(0);
+  let stageHeight = $state(0);
   let bodyWidth = $state(0);
   let compactWidth = $state(0);
   let barsAsked = $state(true);
@@ -134,6 +138,7 @@
   );
 
   const awake = $derived(chromeShown(barsAsked, focus.held || dialogOpen));
+  const toastClearance = $derived(bodyHeight - stageHeight + (awake ? bottomHeight : 0));
 
   function releaseBars(): void {
     const focused = document.activeElement;
@@ -442,11 +447,13 @@
   <div
     class={['relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
     bind:clientWidth={bodyWidth}
+    bind:clientHeight={bodyHeight}
   >
     <CompactProbe bind:width={compactWidth} />
 
     <div
       class="overlay-host relative flex-1 min-h-0 overflow-hidden"
+      bind:clientHeight={stageHeight}
       style:--chrome-top="{awake ? topHeight : 0}px"
     >
       <div class="stage min-h-0" tabindex="-1" bind:this={stage}></div>
@@ -522,6 +529,7 @@
         ]}
         inert={!awake}
         bind:this={bottomBar}
+        bind:offsetHeight={bottomHeight}
       >
         <PageBar
           first={turns[0] ?? null}
@@ -572,6 +580,8 @@
     onpick={pickEntry}
   />
 {/if}
+
+<ToastClearance blockEnd={toastClearance} />
 
 <FlowSettingsDialog
   bind:open={settingsOpen}

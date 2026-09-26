@@ -3,6 +3,7 @@
   import { match } from 'ts-pattern';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import ToastClearance from '$lib/components/ToastClearance.svelte';
   import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
   import ArrowUp from '$lib/components/icons/ArrowUp.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
@@ -74,6 +75,8 @@
   let topHeight = $state(0);
   let bottomHeight = $state(0);
   let bodyWidth = $state(0);
+  let bodyHeight = $state(0);
+  let pageHeight = $state(0);
   let compactWidth = $state(0);
   let asked = $state(false);
   let noting = $state(false);
@@ -98,6 +101,7 @@
   const narrow = $derived(isNarrow(bodyWidth, compactWidth));
   const placement = $derived(dockPlacement(narrow, panelAsked));
   const panelOpen = $derived(dockToggle(placement).open);
+  const toastClearance = $derived(bodyHeight - pageHeight + (shown ? bottomHeight : 0));
 
   function releaseBars(): void {
     const focused = document.activeElement;
@@ -293,11 +297,13 @@
   <div
     class={['body relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
     bind:clientWidth={bodyWidth}
+    bind:clientHeight={bodyHeight}
   >
     <CompactProbe bind:width={compactWidth} />
 
     <div
       class="page relative col gap-0 flex-1 min-h-0 overflow-hidden"
+      bind:clientHeight={pageHeight}
       style:--chrome-top="{shown ? topHeight : 0}px"
       style:--chrome-bottom="{shown ? bottomHeight : 0}px"
     >
@@ -427,6 +433,8 @@
     {/if}
   </div>
 </div>
+
+<ToastClearance blockEnd={toastClearance} />
 
 <ReaderSettings
   bind:open={settingsOpen}
