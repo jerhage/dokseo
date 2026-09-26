@@ -2,8 +2,10 @@ import { match } from 'ts-pattern';
 
 type DockPlacement = 'side' | 'rail' | 'sheet' | 'peek';
 
+type DockArrow = 'left' | 'right' | 'up' | 'down';
+
 type DockToggle = {
-  readonly glyph: string;
+  readonly points: DockArrow;
   readonly label: string;
   readonly open: boolean;
 };
@@ -23,11 +25,11 @@ function dockPlacement(narrow: boolean, asked: boolean | null): DockPlacement {
 }
 
 function dockToggle(placement: DockPlacement): DockToggle {
-  return match(placement)
-    .with('side', () => ({ glyph: '›', label: HIDE_LABEL, open: true }))
-    .with('rail', () => ({ glyph: '‹', label: SHOW_LABEL, open: false }))
-    .with('sheet', () => ({ glyph: '▾', label: HIDE_LABEL, open: true }))
-    .with('peek', () => ({ glyph: '▴', label: SHOW_LABEL, open: false }))
+  return match<DockPlacement, DockToggle>(placement)
+    .with('side', () => ({ points: 'right', label: HIDE_LABEL, open: true }))
+    .with('rail', () => ({ points: 'left', label: SHOW_LABEL, open: false }))
+    .with('sheet', () => ({ points: 'down', label: HIDE_LABEL, open: true }))
+    .with('peek', () => ({ points: 'up', label: SHOW_LABEL, open: false }))
     .exhaustive();
 }
 
@@ -43,4 +45,4 @@ function dockName(placement: DockPlacement, count: number | null): string {
 }
 
 export { dockName, dockPlacement, dockTally, dockToggle, isNarrow };
-export type { DockPlacement, DockToggle };
+export type { DockArrow, DockPlacement, DockToggle };

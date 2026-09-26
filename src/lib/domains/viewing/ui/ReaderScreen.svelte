@@ -1,8 +1,14 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
+  import ArrowUp from '$lib/components/icons/ArrowUp.svelte';
+  import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
+  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
+  import type { IconProps } from '$lib/components/icons/icon';
+  import Pencil from '$lib/components/icons/Pencil.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
@@ -11,7 +17,7 @@
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
   import { chromeShown } from '$lib/shared/reader-chrome';
-  import { dragOrigin, NOTE_GLYPH, NOTE_MODE_LABEL } from './drag-mode';
+  import { dragOrigin, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
@@ -54,8 +60,11 @@
 
   let { view, glow = [], panel, panelCount, engine, arrival, onSelect, onNote }: Props = $props();
 
-  const SIDEWAYS: readonly string[] = ['‹', '›'];
-  const DOWNWARDS: readonly string[] = ['↑', '↓'];
+  const SIDEWAYS: readonly [Component<IconProps>, Component<IconProps>] = [
+    ChevronLeft,
+    ChevronRight,
+  ];
+  const DOWNWARDS: readonly [Component<IconProps>, Component<IconProps>] = [ArrowUp, ArrowDown];
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
@@ -206,10 +215,11 @@
     const all = turns;
     if (all === null || layout === null) return [null, null];
 
-    const glyphs = downward ? DOWNWARDS : SIDEWAYS;
+    const [before, after] = downward ? DOWNWARDS : SIDEWAYS;
     return moveOrder(layout, view.direction).map((move, slot) => {
       const turn = all[move];
-      return { label: turn.label, enabled: turn.enabled, go: turn.go, glyph: glyphs[slot] ?? '' };
+      const icon = slot === 0 ? before : after;
+      return { label: turn.label, enabled: turn.enabled, go: turn.go, icon };
     });
   });
 
@@ -347,7 +357,7 @@
         bind:offsetHeight={topHeight}
       >
         <Button href="/" size="sm" class="shrink-0">
-          <span aria-hidden="true">‹</span>
+          <ChevronLeft class="btn-icon" />
           Library
         </Button>
 
@@ -368,7 +378,7 @@
             title={NOTE_MODE_LABEL}
             onclick={() => (noting = !noting)}
           >
-            <span aria-hidden="true">{NOTE_GLYPH}</span>
+            <Pencil class="btn-icon" />
             <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
           </Button>
 

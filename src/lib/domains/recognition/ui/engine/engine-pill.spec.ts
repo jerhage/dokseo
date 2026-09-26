@@ -45,11 +45,17 @@ describe('EnginePill', () => {
   });
 
   it('names the engine and the status of the model a book of its language would use', () => {
-    expect(text(trigger(markup(IDLE, 'ja')))).toBe('On-device · manga-ocr Not downloaded ▾');
+    expect(text(trigger(markup(IDLE, 'ja')))).toBe('On-device · manga-ocr Not downloaded');
   });
 
   it('names the device once a session is open, in place of the status', () => {
-    expect(text(trigger(markup(RUNNING, 'ja')))).toBe('On-device · manga-ocr CPU ▾');
+    expect(text(trigger(markup(RUNNING, 'ja')))).toBe('On-device · manga-ocr CPU');
+  });
+
+  it('ends the trigger with a decorative chevron', () => {
+    expect(trigger(markup(IDLE, 'ja'))).toMatch(
+      /<svg[^>]*aria-hidden="true"[^>]*class="lucide lucide-chevron-down btn-icon"/u,
+    );
   });
 
   it('offers every engine and disables each one that is not installed', () => {

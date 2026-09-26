@@ -1,6 +1,7 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
   import Radio from '$lib/components/Radio.svelte';
   import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { Language } from '$lib/shared/language';
@@ -53,7 +54,7 @@
     >
       On-device · {model.engine}
       <Badge dot variant={statusVariant(status.tone)}>{device ?? status.label}</Badge>
-      <span aria-hidden="true">▾</span>
+      <ChevronDown class="btn-icon" />
     </Button>
 
     <div

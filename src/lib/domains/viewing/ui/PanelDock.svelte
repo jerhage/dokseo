@@ -1,7 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
+  import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
+  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
+  import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
   import { dockName, dockTally, dockToggle } from './panel-dock';
   import type { DockPlacement } from './panel-dock';
   import './panel-dock.css';
@@ -21,6 +26,14 @@
   const beside = $derived(placement === 'side' || placement === 'rail');
   const tally = $derived(dockTally(placement, count));
   const name = $derived(dockName(placement, count));
+  const Arrow = $derived(
+    match(toggle.points)
+      .with('left', () => ChevronLeft)
+      .with('right', () => ChevronRight)
+      .with('up', () => ChevronUp)
+      .with('down', () => ChevronDown)
+      .exhaustive(),
+  );
 </script>
 
 <aside
@@ -42,7 +55,7 @@
       title={name}
       onclick={ontoggle}
     >
-      <span aria-hidden="true">{toggle.glyph}</span>
+      <Arrow class="btn-icon" />
       {#if tally !== null}
         <Badge aria-hidden="true">{tally}</Badge>
       {/if}
@@ -58,7 +71,7 @@
       aria-label={name}
       onclick={ontoggle}
     >
-      <span aria-hidden="true">{toggle.glyph}</span>
+      <Arrow class="btn-icon" />
       {toggle.open ? toggle.label : 'Captures'}
       {#if tally !== null}
         <Badge aria-hidden="true">{tally}</Badge>

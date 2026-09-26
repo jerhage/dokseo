@@ -41,7 +41,7 @@
     {#each sections as section (section.id)}
       <NavLink href={section.href} current={section.id === current} class="py-2">
         {#snippet icon()}
-          <Avatar shape="square" size="sm">{section.glyph}</Avatar>
+          <Avatar shape="square" size="sm"><section.icon class="avatar-icon" /></Avatar>
         {/snippet}
         <span class="col gap-0">
           <span>{section.name}</span>

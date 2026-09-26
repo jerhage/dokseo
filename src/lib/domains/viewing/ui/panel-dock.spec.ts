@@ -43,11 +43,11 @@ describe('dockToggle', () => {
     expect(dockToggle('peek')).toMatchObject({ open: false, label: 'Show captures' });
   });
 
-  it('points each glyph the way the panel will move', () => {
-    expect(dockToggle('side').glyph).toBe('›');
-    expect(dockToggle('rail').glyph).toBe('‹');
-    expect(dockToggle('sheet').glyph).toBe('▾');
-    expect(dockToggle('peek').glyph).toBe('▴');
+  it('points each arrow the way the panel will move', () => {
+    expect(dockToggle('side').points).toBe('right');
+    expect(dockToggle('rail').points).toBe('left');
+    expect(dockToggle('sheet').points).toBe('down');
+    expect(dockToggle('peek').points).toBe('up');
   });
 });
 

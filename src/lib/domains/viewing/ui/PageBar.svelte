@@ -1,11 +1,13 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
   import Button from '$lib/components/Button.svelte';
+  import type { IconProps } from '$lib/components/icons/icon';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import { scrubStep, turnsSide } from './page-scrubber';
   import './page-bar.css';
 
   type ShownTurn = {
-    readonly glyph: string;
+    readonly icon: Component<IconProps>;
     readonly label: string;
     readonly enabled: boolean;
     readonly go: () => void;
@@ -52,7 +54,7 @@
       title={shown.label}
       onclick={shown.go}
     >
-      <span aria-hidden="true">{shown.glyph}</span>
+      <shown.icon class="btn-icon" />
       <span class="visually-hidden">{shown.label}</span>
     </Button>
   {/if}

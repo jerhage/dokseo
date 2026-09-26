@@ -1,6 +1,7 @@
 <script lang="ts">
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import type { Book } from '../domain/book/book';
   import { readingState } from './library-shelves';
 
@@ -20,7 +21,7 @@
 
 <Dropdown size="sm" variant="ghost" align="end">
   {#snippet trigger()}
-    <span aria-hidden="true">⋯</span>
+    <Ellipsis class="btn-icon" />
     <span class="visually-hidden">Actions for {book.title}</span>
   {/snippet}
   {#if reading !== 'finished'}
