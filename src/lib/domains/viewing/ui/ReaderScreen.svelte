@@ -37,8 +37,6 @@
 
   type Props = {
     readonly view: ReaderView;
-    readonly fill?: 'screen' | 'parent';
-    readonly panelScheme?: 'dark' | 'page';
     readonly glow?: readonly GlowRegion[];
     readonly panel?: Snippet;
     readonly panelCount?: number;
@@ -61,18 +59,7 @@
     readonly go: () => void;
   };
 
-  let {
-    view,
-    fill = 'screen',
-    panelScheme = 'dark',
-    glow = [],
-    panel,
-    panelCount,
-    engine,
-    arrival,
-    onSelect,
-    onNote,
-  }: Props = $props();
+  let { view, glow = [], panel, panelCount, engine, arrival, onSelect, onNote }: Props = $props();
 
   const SIDEWAYS: readonly [Component<IconProps>, Component<IconProps>] = [
     ChevronLeft,
@@ -298,12 +285,7 @@
 
 <svelte:window {onkeydown} />
 
-<div
-  class={[
-    'reader-screen col gap-0 overflow-hidden surface-bg',
-    fill === 'screen' ? 'h-screen' : 'flex-1 min-h-0',
-  ]}
->
+<div class="reader-screen col gap-0 h-screen overflow-hidden surface-bg">
   {#if view.message !== null && stage === 'reading'}
     <Alert variant="warning" role="alert" class="shrink-0">{view.message}</Alert>
   {/if}
@@ -441,13 +423,7 @@
     </div>
 
     {#if panel !== undefined}
-      <PanelDock
-        {placement}
-        scheme={panelScheme}
-        count={panelCount ?? null}
-        {panel}
-        ontoggle={togglePanel}
-      />
+      <PanelDock {placement} count={panelCount ?? null} {panel} ontoggle={togglePanel} />
     {/if}
   </div>
 </div>
