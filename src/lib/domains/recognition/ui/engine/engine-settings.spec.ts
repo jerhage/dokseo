@@ -138,6 +138,7 @@ function world(snapshot: ModelStorageSnapshot): World {
       saveCapture: unused,
       editCaptureText: unused,
       removeCapture: unused,
+      restoreCapture: unused,
       clearCaptures: unused,
       readModelStorage: () => Promise.resolve(ok(built.snapshot)),
       deleteModel: () => Promise.resolve(built.deleting),

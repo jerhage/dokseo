@@ -28,6 +28,10 @@ type OpenFileError =
   | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle }
   | { readonly kind: 'fingerprint'; readonly cause: string };
 
+type OpenedUpload =
+  | { readonly kind: 'added'; readonly book: Book }
+  | { readonly kind: 'already-held'; readonly book: Book };
+
 type OpenFileDeps = {
   readonly repository: LibraryRepository;
   readonly builder: SourceBuilder;
@@ -148,7 +152,7 @@ async function openFile(
   deps: OpenFileDeps,
   files: readonly File[],
   report: UploadReport = () => undefined,
-): Promise<Result<Book, OpenFileError>> {
+): Promise<Result<OpenedUpload, OpenFileError>> {
   await deps.requestPersistence();
 
   const hashed = await uploadHash(deps, files);
@@ -158,7 +162,7 @@ async function openFile(
   if (!held.ok) return err({ kind: 'storage', error: held.error });
 
   const known = held.value.find((book) => book.contentHash === hash);
-  if (known !== undefined) return ok(known);
+  if (known !== undefined) return ok({ kind: 'already-held', book: known });
 
   const inspection = await inspectUpload(deps, files);
   if (inspection.kind === 'refused') return err({ kind: 'epub', error: inspection.refusal });
@@ -207,8 +211,8 @@ async function openFile(
   );
   if (!stored.ok) return err({ kind: 'storage', error: stored.error });
 
-  return ok(book);
+  return ok({ kind: 'added', book });
 }
 
 export { openFile };
-export type { OpenFileError, OpenFileDeps };
+export type { OpenFileError, OpenFileDeps, OpenedUpload };

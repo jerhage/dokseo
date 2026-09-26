@@ -1,7 +1,8 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
-import type { Notify } from '$lib/shared/notice';
+import { ACTION_NOTICE_MS } from '$lib/shared/notice';
+import type { Notice, Notify } from '$lib/shared/notice';
 import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError } from '../domain/book/library-repository';
@@ -10,14 +11,20 @@ import { suggestTitle } from '../domain/book/title';
 import { describeIngestLimit } from '../domain/ingest/ingest-limits';
 import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadStage } from '../domain/ingest/upload-progress';
-import type { OpenFileError } from '../use-cases/open-file';
+import type { OpenedUpload, OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
+import { onShelf } from './library-shelves';
+import type { Shelf } from './library-shelves';
 
 type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
 type ChangeOutcome = 'changed' | 'failed' | 'skipped';
+
+type OpenBook = (id: BookId) => void;
+
+type Mark = 'finished' | 'unread';
 
 const UPLOAD_FAILED = 'Could not add that upload';
 
@@ -28,6 +35,33 @@ const REMOVE_FAILED = 'Could not remove that book';
 const FINISH_FAILED = 'Could not mark that book finished';
 
 const UNREAD_FAILED = 'Could not mark that book unread';
+
+const UNDO_MARK_FAILED = 'Could not undo that change';
+
+const ALREADY_HELD = 'Already in your library';
+
+function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
+  const open = { label: 'Open', run: () => openBook(opened.book.id) };
+  return match(opened)
+    .with({ kind: 'added' }, ({ book }) => ({
+      tone: 'success' as const,
+      title: `Added ${book.title}`,
+      action: open,
+      duration: ACTION_NOTICE_MS,
+    }))
+    .with({ kind: 'already-held' }, ({ book }) => ({
+      tone: 'info' as const,
+      title: ALREADY_HELD,
+      message: book.title,
+      action: open,
+      duration: ACTION_NOTICE_MS,
+    }))
+    .exhaustive();
+}
+
+function markedTitle(mark: Mark, book: Book): string {
+  return mark === 'finished' ? `Marked ${book.title} finished` : `Marked ${book.title} unread`;
+}
 
 function describeLibraryError(error: LibraryError): string {
   return match(error)
@@ -128,7 +162,7 @@ class LibraryView {
     this.storedBytes = size.ok ? size.value : null;
   }
 
-  async upload(files: readonly File[]): Promise<void> {
+  async upload(files: readonly File[], openBook: OpenBook): Promise<void> {
     if (files.length === 0) return;
     this.busy = true;
     this.pending = suggestTitle(
@@ -144,6 +178,7 @@ class LibraryView {
         this.#fail(UPLOAD_FAILED, describeOpenFileError(opened.error));
         return;
       }
+      this.#notify(uploadNotice(opened.value, openBook));
     } finally {
       this.busy = false;
       this.pending = null;
@@ -189,12 +224,12 @@ class LibraryView {
     return 'changed';
   }
 
-  markFinished(id: BookId): Promise<void> {
-    return this.#mark(id, FINISH_FAILED, () => this.#container.library.markFinished(id));
+  async markFinished(id: BookId, shelf: Shelf): Promise<void> {
+    await this.#markOn(id, shelf, 'finished');
   }
 
-  markUnread(id: BookId): Promise<void> {
-    return this.#mark(id, UNREAD_FAILED, () => this.#container.library.markUnread(id));
+  async markUnread(id: BookId, shelf: Shelf): Promise<void> {
+    await this.#markOn(id, shelf, 'unread');
   }
 
   dispose(): void {
@@ -204,25 +239,55 @@ class LibraryView {
     this.covers = new Map();
   }
 
+  async #markOn(id: BookId, shelf: Shelf, mark: Mark): Promise<void> {
+    const before = this.books.find((held) => held.id === id);
+    const marked = await this.#mark(id, mark === 'finished' ? FINISH_FAILED : UNREAD_FAILED, () =>
+      mark === 'finished'
+        ? this.#container.library.markFinished(id)
+        : this.#container.library.markUnread(id),
+    );
+    if (marked === null || before === undefined) return;
+    if (!onShelf(before, shelf) || onShelf(marked, shelf)) return;
+
+    this.#notify({
+      tone: 'success',
+      title: markedTitle(mark, marked),
+      action: { label: 'Undo', run: () => void this.#undoMark(before) },
+      duration: ACTION_NOTICE_MS,
+    });
+  }
+
+  async #undoMark(before: Book): Promise<void> {
+    await this.#mark(before.id, UNDO_MARK_FAILED, () =>
+      this.#container.library.editBook(before.id, {
+        finishedAt: before.finishedAt,
+        position: before.position,
+      }),
+    );
+  }
+
   async #mark(
     id: BookId,
     failed: string,
     run: () => Promise<Result<Book, LibraryError>>,
-  ): Promise<void> {
-    if (this.removing !== null || this.editing !== null || this.busy) return;
+  ): Promise<Book | null> {
+    if (this.removing !== null || this.editing !== null || this.busy) return null;
     this.editing = id;
 
+    let marked: Book;
     try {
-      const marked = await run();
-      if (!marked.ok) {
-        this.#fail(failed, describeLibraryError(marked.error));
-        return;
+      const changed = await run();
+      if (!changed.ok) {
+        this.#fail(failed, describeLibraryError(changed.error));
+        return null;
       }
+      marked = changed.value;
     } finally {
       this.editing = null;
     }
 
     await this.load();
+    return marked;
   }
 
   #fail(title: string, message: string): void {
@@ -245,5 +310,14 @@ class LibraryView {
   }
 }
 
-export { EDIT_FAILED, FINISH_FAILED, LibraryView, REMOVE_FAILED, UNREAD_FAILED, UPLOAD_FAILED };
-export type { ChangeOutcome, LibraryStatus };
+export {
+  ALREADY_HELD,
+  EDIT_FAILED,
+  FINISH_FAILED,
+  LibraryView,
+  REMOVE_FAILED,
+  UNDO_MARK_FAILED,
+  UNREAD_FAILED,
+  UPLOAD_FAILED,
+};
+export type { ChangeOutcome, LibraryStatus, OpenBook };

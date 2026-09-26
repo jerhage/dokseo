@@ -21,6 +21,11 @@ type ReaderArrival = {
   readonly query: string | null;
 };
 
+type MissingBookArrival = {
+  readonly notice: string;
+  readonly cleaned: URL;
+};
+
 type OpeningPlace = {
   readonly index: ImageIndex;
   readonly asked: boolean;
@@ -88,6 +93,15 @@ function missingBookNotice(value: string | null | undefined): string | null {
   return value === MISSING_BOOK_VALUE ? MISSING_BOOK_NOTICE : null;
 }
 
+function missingBookArrival(url: URL): MissingBookArrival | null {
+  const notice = missingBookNotice(url.searchParams.get(MISSING_BOOK_PARAMETER));
+  if (notice === null) return null;
+
+  const cleaned = new URL(url);
+  cleaned.searchParams.delete(MISSING_BOOK_PARAMETER);
+  return { notice, cleaned };
+}
+
 export {
   IMAGE_PARAMETER,
   FIND_PARAMETER,
@@ -102,5 +116,6 @@ export {
   readerHref,
   readArrival,
   missingBookNotice,
+  missingBookArrival,
 };
-export type { ReaderArrival, OpeningPlace };
+export type { MissingBookArrival, ReaderArrival, OpeningPlace };

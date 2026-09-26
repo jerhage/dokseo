@@ -3,6 +3,7 @@ import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import { captureId, tagId } from '$lib/shared/ids';
+import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { err } from '$lib/shared/result';
 import { clearScope } from './clearing';
@@ -61,6 +62,10 @@ type TagOutcome =
   | { readonly kind: 'created'; readonly tag: Tag }
   | { readonly kind: 'existing'; readonly tag: Tag }
   | { readonly kind: 'failed'; readonly failure: StorageFailure };
+
+const CAPTURE_REMOVED = 'Capture removed';
+
+const RESTORE_FAILED = 'The capture could not be restored';
 
 const LOADING: CaptureLoad = { status: 'loading' };
 
@@ -479,12 +484,33 @@ class CaptureCollection {
     const removed = this.#take(id);
     if (removed === null || removed.stored === undefined) return 'saved';
 
+    const stored = removed.stored;
     const generation = this.#generation;
     const gone = await this.#container.recognition.removeCapture(id).catch(thrownFailure);
-    if (gone.ok || generation !== this.#generation) return 'saved';
+    if (generation !== this.#generation) return 'saved';
+    if (gone.ok) {
+      this.#notify({
+        tone: 'success',
+        title: CAPTURE_REMOVED,
+        action: { label: 'Undo', run: () => void this.#undoRemove(removed, stored, generation) },
+        duration: ACTION_NOTICE_MS,
+      });
+      return 'saved';
+    }
 
     this.#putBack(removed);
     return this.#refuse('The capture could not be removed', gone.error);
+  }
+
+  async #undoRemove(removed: Removed, stored: Capture, generation: number): Promise<void> {
+    const restored = await this.#container.recognition.restoreCapture(stored).catch(thrownFailure);
+    if (!restored.ok) {
+      this.#refuse(RESTORE_FAILED, restored.error);
+      return;
+    }
+    if (generation !== this.#generation) return;
+
+    this.#putBack(removed);
   }
 
   #take(id: CaptureId): Removed | null {
@@ -656,5 +682,5 @@ class CaptureCollection {
   }
 }
 
-export { CaptureCollection };
+export { CAPTURE_REMOVED, CaptureCollection, RESTORE_FAILED };
 export type { CaptureLoad, CaptureStatus, PanelCapture, Settled, WriteOutcome };

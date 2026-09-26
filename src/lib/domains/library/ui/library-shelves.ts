@@ -144,6 +144,7 @@ export {
   bookFacts,
   continueReading,
   emptyShelfText,
+  onShelf,
   otherView,
   readingState,
   shelfBooks,

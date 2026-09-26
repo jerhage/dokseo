@@ -98,6 +98,7 @@ function fakes(): Fakes {
       editCaptureText: unused,
       writeCaptureNote: unused,
       removeCapture: unused,
+      restoreCapture: unused,
       clearCaptures: (book: BookId): Promise<Result<void, CaptureError>> => {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve(ok(undefined));

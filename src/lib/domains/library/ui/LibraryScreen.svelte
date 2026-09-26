@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import UploadIcon from '$lib/components/icons/Upload.svelte';
@@ -49,12 +49,11 @@
   type Props = {
     readonly view: LibraryView;
     readonly scroll: LibraryScrollView;
-    readonly notice?: string | null;
     readonly onsearcheverything?: (() => void) | undefined;
     query?: string;
   };
 
-  let { view, scroll, notice = null, onsearcheverything, query = $bindable('') }: Props = $props();
+  let { view, scroll, onsearcheverything, query = $bindable('') }: Props = $props();
 
   let main = $state<HTMLElement | null>(null);
 
@@ -90,6 +89,14 @@
   async function save(id: BookId, edit: BookEdit): Promise<void> {
     const outcome = await view.edit(id, edit);
     if (outcome !== 'failed') openSettingsFor = null;
+  }
+
+  function openBook(id: BookId): void {
+    void goto(`/read/${encodeURIComponent(id)}`);
+  }
+
+  function upload(files: readonly File[]): void {
+    void view.upload(files, openBook);
   }
 
   async function remove(id: BookId): Promise<void> {
@@ -218,10 +225,6 @@
       <p class="text-xs text-muted">{summary}</p>
     </div>
 
-    {#if notice !== null}
-      <Alert variant="warning" role="alert">{notice}</Alert>
-    {/if}
-
     {#if view.pending !== null}
       <ImportStatus title={view.pending} language="ja" stage={view.progress} />
     {/if}
@@ -257,8 +260,8 @@
           busy={(id) => view.removing === id || view.editing === id}
           onedit={(id) => (openSettingsFor = id)}
           onremove={(id) => (removeFor = id)}
-          onfinish={(id) => void view.markFinished(id)}
-          onunread={(id) => void view.markUnread(id)}
+          onfinish={(id) => void view.markFinished(id, shelf)}
+          onunread={(id) => void view.markUnread(id, shelf)}
         />
       {/if}
 
@@ -267,7 +270,7 @@
           bind:this={strip}
           busy={view.busy}
           compact={view.books.length > 0}
-          onfiles={(files) => void view.upload(files)}
+          onfiles={upload}
         />
       </div>
     {/if}
@@ -296,7 +299,7 @@
 <WindowDropzone
   disabled={view.busy || settingsBook !== null || removeBook !== null}
   readDrop={filesFromDataTransfer}
-  onfiles={(files) => void view.upload(files)}
+  onfiles={upload}
 >
   Drop to add to your library
 </WindowDropzone>

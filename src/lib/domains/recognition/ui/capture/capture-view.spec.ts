@@ -8,6 +8,7 @@ import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
+import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notice, Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
@@ -28,6 +29,7 @@ import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import { CAPTURE_REMOVED, RESTORE_FAILED } from './capture-collection.svelte';
 import { CaptureView } from './capture-view.svelte';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
@@ -70,6 +72,7 @@ type Store = {
   editFails: boolean;
   noteFails: boolean;
   removeFails: boolean;
+  restoreFails: boolean;
   clearFails: boolean;
 };
 
@@ -140,6 +143,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     editFails: false,
     noteFails: false,
     removeFails: false,
+    restoreFails: false,
     clearFails: false,
   };
 
@@ -293,6 +297,12 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
           store.rows = store.rows.filter((row) => row.id !== capture);
           return ok(undefined);
         }),
+      restoreCapture: (capture: Capture): Promise<Result<void, CaptureError>> => {
+        if (store.restoreFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+
+        store.rows = [...store.rows.filter((row) => row.id !== capture.id), capture];
+        return Promise.resolve(ok(undefined));
+      },
       clearCaptures: (book: BookId): Promise<Result<void, CaptureError>> => {
         if (store.clearFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
 
@@ -446,6 +456,10 @@ function regions(index = 13): readonly ImageRegion[] {
 
 function read(view: CaptureView): Promise<void> {
   return view.recognize(source, 'ja', regions(), 'row');
+}
+
+async function settle(): Promise<void> {
+  for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
 }
 
 async function started(world: Fakes, index: number): Promise<Call> {
@@ -1320,7 +1334,75 @@ describe('CaptureView', () => {
     expect(outcome).toBe('saved');
     expect(panelTexts(view)).toEqual(['second']);
     expect(world.store.rows.map((row) => row.id)).toEqual(['b']);
-    expect(world.notices).toEqual([]);
+  });
+
+  it('offers Undo once a removal is stored', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'first', 1)];
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+
+    await view.remove(captureId('a'));
+
+    expect(world.notices).toEqual([
+      {
+        tone: 'success',
+        title: CAPTURE_REMOVED,
+        action: { label: 'Undo', run: expect.any(Function) },
+        duration: ACTION_NOTICE_MS,
+      },
+    ]);
+  });
+
+  it('puts the card back at its place and stores its record again on Undo', async () => {
+    const world = fakes();
+    const middle = { ...storedRow('b', ONE, 'second', 2), note: 'a thought' };
+    world.store.rows = [storedRow('a', ONE, 'first', 1), middle, storedRow('c', ONE, 'third', 3)];
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+    await view.remove(captureId('b'));
+
+    at(world.notices, 0).action?.run();
+    await settle();
+
+    expect(panelTexts(view)).toEqual(['first', 'second', 'third']);
+    expect(world.store.rows.find((row) => row.id === 'b')).toEqual(middle);
+    expect(await view.edit(captureId('b'), 'fixed')).toBe('saved');
+    expect(world.notices).toHaveLength(1);
+  });
+
+  it('reports an Undo the store refuses and leaves the card out', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'first', 1), storedRow('b', ONE, 'second', 2)];
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+    await view.remove(captureId('a'));
+    world.store.restoreFails = true;
+
+    at(world.notices, 0).action?.run();
+    await settle();
+
+    expect(panelTexts(view)).toEqual(['second']);
+    expect(world.notices.at(-1)).toEqual({
+      tone: 'danger',
+      title: RESTORE_FAILED,
+      message: 'This browser blocks local storage.',
+    });
+  });
+
+  it('stores the record again but leaves the new book’s list alone on a late Undo', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('a', ONE, 'first', 1), storedRow('b', TWO, 'other', 2)];
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+    await view.remove(captureId('a'));
+    await view.open(TWO);
+
+    at(world.notices, 0).action?.run();
+    await settle();
+
+    expect(panelTexts(view)).toEqual(['other']);
+    expect(world.store.rows.map((row) => row.id)).toEqual(['b', 'a']);
   });
 
   it('takes a card off the list before the store answers', async () => {

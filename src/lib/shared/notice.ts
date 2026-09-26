@@ -10,8 +10,12 @@ type Notice = {
   readonly title: string;
   readonly message?: string;
   readonly action?: NoticeAction;
+  readonly duration?: number;
 };
 
 type Notify = (notice: Notice) => void;
 
+const ACTION_NOTICE_MS = 10_000;
+
+export { ACTION_NOTICE_MS };
 export type { Notice, NoticeAction, NoticeTone, Notify };

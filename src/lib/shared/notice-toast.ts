@@ -7,6 +7,7 @@ function noticeToast(notice: Notice): ToastOptions {
     title: notice.title,
     ...(notice.message === undefined ? {} : { message: notice.message }),
     ...(notice.action === undefined ? {} : { action: notice.action }),
+    ...(notice.duration === undefined ? {} : { duration: notice.duration }),
   };
 }
 

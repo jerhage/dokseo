@@ -205,14 +205,17 @@ describe('openFile', () => {
     const repository = fakeRepository();
     const result = await openFile(deps({ repository: repository.repository }), files);
     expect(result.ok).toBe(true);
-    expect(result.ok && result.value.title).toBe('Yotsuba&! 1');
+    expect(result.ok && result.value.book.title).toBe('Yotsuba&! 1');
   });
 
-  it('stores exactly the book it returns', async () => {
+  it('stores exactly the book it answers as added', async () => {
     const repository = fakeRepository();
     const result = await openFile(deps({ repository: repository.repository }), files);
     expect(repository.added).toHaveLength(1);
-    expect(result.ok && result.value).toEqual(at(repository.added, 0).book);
+    expect(result.ok && result.value).toEqual({
+      kind: 'added',
+      book: at(repository.added, 0).book,
+    });
   });
 
   it('stores the source blob and the cover the builder produced', async () => {
@@ -230,24 +233,24 @@ describe('openFile', () => {
       deps({ builder: builder.builder, now: () => 42, newId: () => 'b-99' }),
       files,
     );
-    expect(result.ok && result.value.id).toBe('b-99');
-    expect(result.ok && result.value.addedAt).toBe(42);
-    expect(result.ok && result.value.title).toBe('Nichijou 3');
+    expect(result.ok && result.value.book.id).toBe('b-99');
+    expect(result.ok && result.value.book.addedAt).toBe(42);
+    expect(result.ok && result.value.book.title).toBe('Nichijou 3');
   });
 
   it('defaults a new book to Japanese, paged, right to left, two pages after a cover, at the first image', async () => {
     const result = await openFile(deps(), files);
-    expect(result.ok && result.value.language).toBe('ja');
-    expect(result.ok && result.value.layoutKind).toBe('paged');
-    expect(result.ok && result.value.direction).toBe('rtl');
-    expect(result.ok && result.value.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
-    expect(result.ok && result.value.position).toEqual({ kind: 'image', index: 0 });
+    expect(result.ok && result.value.book.language).toBe('ja');
+    expect(result.ok && result.value.book.layoutKind).toBe('paged');
+    expect(result.ok && result.value.book.direction).toBe('rtl');
+    expect(result.ok && result.value.book.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
+    expect(result.ok && result.value.book.position).toEqual({ kind: 'image', index: 0 });
   });
 
   it('gives a new book no last read time and no finished mark', async () => {
     const result = await openFile(deps({ now: () => 42 }), files);
-    expect(result.ok && result.value.lastReadAt).toBeNull();
-    expect(result.ok && result.value.finishedAt).toBeNull();
+    expect(result.ok && result.value.book.lastReadAt).toBeNull();
+    expect(result.ok && result.value.book.finishedAt).toBeNull();
   });
 
   it('reads Korean from a hangul title, so the reader does not have to say so', async () => {
@@ -255,7 +258,7 @@ describe('openFile', () => {
 
     const result = await openFile(deps({ builder }), files);
 
-    expect(result.ok && result.value.language).toBe('ko');
+    expect(result.ok && result.value.book.language).toBe('ko');
   });
 
   it('reads Japanese from a kana title', async () => {
@@ -263,7 +266,7 @@ describe('openFile', () => {
 
     const result = await openFile(deps({ builder }), files);
 
-    expect(result.ok && result.value.language).toBe('ja');
+    expect(result.ok && result.value.book.language).toBe('ja');
   });
 
   it('falls back to Japanese when the title says nothing', async () => {
@@ -271,12 +274,12 @@ describe('openFile', () => {
 
     const result = await openFile(deps({ builder }), files);
 
-    expect(result.ok && result.value.language).toBe('ja');
+    expect(result.ok && result.value.book.language).toBe('ja');
   });
 
   it('defaults a new book to the fit its layout kind asks for', async () => {
     const result = await openFile(deps(), files);
-    expect(result.ok && result.value.pageFit).toBe(defaultPageFit('paged'));
+    expect(result.ok && result.value.book.pageFit).toBe(defaultPageFit('paged'));
   });
 
   it('carries the source kind and the image count the builder reported', async () => {
@@ -284,8 +287,8 @@ describe('openFile', () => {
       ok(builtSource({ sourceKind: 'pdf', pages: builtImages({ imageCount: 7 }) })),
     );
     const result = await openFile(deps({ builder: builder.builder }), files);
-    expect(result.ok && result.value.sourceKind).toBe('pdf');
-    expect(result.ok && result.value.imageCount).toBe(7);
+    expect(result.ok && result.value.book.sourceKind).toBe('pdf');
+    expect(result.ok && result.value.book.imageCount).toBe(7);
   });
 
   it('hands the builder the files it was given', async () => {
@@ -371,7 +374,7 @@ describe('openFile', () => {
 
   it('leaves the reading position typed as a reading place', async () => {
     const result = await openFile(deps(), files);
-    const position: ReadingPlace | undefined = result.ok ? result.value.position : undefined;
+    const position: ReadingPlace | undefined = result.ok ? result.value.book.position : undefined;
     expect(position).toEqual({ kind: 'image', index: 0 });
   });
 
@@ -417,7 +420,7 @@ describe('openFile', () => {
       files,
       seen.report,
     );
-    expect(result.ok && result.value.addedAt).toBe(7);
+    expect(result.ok && result.value.book.addedAt).toBe(7);
     expect(at(seen.stages, 0)).toEqual({
       kind: 'storing',
       imageCount: 182,
@@ -479,17 +482,17 @@ describe('openFile', () => {
       files,
     );
 
-    expect(result.ok && result.value.contentHash).toBe('beef01');
+    expect(result.ok && result.value.book.contentHash).toBe('beef01');
     expect(at(repository.added, 0).book.contentHash).toBe('beef01');
   });
 
-  it('returns the book it already holds when the fingerprint matches', async () => {
+  it('answers already-held with the book it holds when the fingerprint matches', async () => {
     const known = heldBook(contentHash(DIGEST));
     const repository = fakeRepository(ok(undefined), [], ok([known]));
 
     const result = await openFile(deps({ repository: repository.repository }), files);
 
-    expect(result).toEqual(ok(known));
+    expect(result).toEqual(ok({ kind: 'already-held', book: known }));
   });
 
   it('stores nothing and builds nothing when the fingerprint matches', async () => {
@@ -508,7 +511,7 @@ describe('openFile', () => {
     const result = await openFile(deps({ repository: repository.repository }), files);
 
     expect(repository.added).toHaveLength(1);
-    expect(result.ok && result.value.id).toBe(NEW_ID);
+    expect(result.ok && result.value.book.id).toBe(NEW_ID);
   });
 
   it('imports a file although a book stored before fingerprints carries none', async () => {
@@ -517,7 +520,7 @@ describe('openFile', () => {
     const result = await openFile(deps({ repository: repository.repository }), files);
 
     expect(repository.added).toHaveLength(1);
-    expect(result.ok && result.value.id).toBe(NEW_ID);
+    expect(result.ok && result.value.book.id).toBe(NEW_ID);
   });
 
   it('reports a failure to read the library as a storage error', async () => {
@@ -557,7 +560,7 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.language).toBe('ko');
+    expect(result.ok && result.value.book.language).toBe('ko');
   });
 
   it('opens an EPUB declaring English as English, whatever its Latin title looks like', async () => {
@@ -570,7 +573,7 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.language).toBe('en');
+    expect(result.ok && result.value.book.language).toBe('en');
   });
 
   it('falls back to the title when the EPUB declares a language this app cannot read', async () => {
@@ -584,7 +587,7 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.language).toBe('ko');
+    expect(result.ok && result.value.book.language).toBe('ko');
   });
 
   it('takes the reading direction the EPUB itself declares', async () => {
@@ -599,7 +602,7 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.direction).toBe('ltr');
+    expect(result.ok && result.value.book.direction).toBe('ltr');
   });
 
   it('reads an EPUB that declares no direction left to right, as the format says', async () => {
@@ -611,13 +614,13 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.direction).toBe('ltr');
+    expect(result.ok && result.value.book.direction).toBe('ltr');
   });
 
   it('keeps the manga default for an upload that is no EPUB at all', async () => {
     const result = await openFile(deps(), files);
 
-    expect(result.ok && result.value.direction).toBe('rtl');
+    expect(result.ok && result.value.book.direction).toBe('rtl');
   });
 
   it('imports a fixed-layout EPUB', async () => {
@@ -631,7 +634,7 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.sourceKind).toBe('epub');
+    expect(result.ok && result.value.book.sourceKind).toBe('epub');
     expect(repository.added).toHaveLength(1);
   });
 
@@ -649,7 +652,7 @@ describe('openFile', () => {
     );
 
     expect(builder.calls).toEqual([epub]);
-    expect(result.ok && result.value.sourceKind).toBe('epub');
+    expect(result.ok && result.value.book.sourceKind).toBe('epub');
     expect(repository.added).toHaveLength(1);
   });
 
@@ -667,8 +670,8 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.layoutKind).toBe('flow');
-    expect(result.ok && result.value.sourceKind).toBe('epub');
+    expect(result.ok && result.value.book.layoutKind).toBe('flow');
+    expect(result.ok && result.value.book.sourceKind).toBe('epub');
     expect(repository.added).toHaveLength(1);
   });
 
@@ -687,8 +690,8 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.imageCount).toBe(0);
-    expect(result.ok && result.value.position).toEqual({
+    expect(result.ok && result.value.book.imageCount).toBe(0);
+    expect(result.ok && result.value.book.position).toEqual({
       kind: 'text',
       cfi: '',
       fraction: null,
@@ -723,8 +726,8 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
-    expect(result.ok && result.value.pageFit).toBe(defaultPageFit('flow'));
+    expect(result.ok && result.value.book.pagePairing).toBe(DEFAULT_PAGE_PAIRING);
+    expect(result.ok && result.value.book.pageFit).toBe(defaultPageFit('flow'));
   });
 
   it('imports an EPUB declaring reflowable whose every page is one image as a paged book', async () => {
@@ -736,8 +739,8 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(result.ok && result.value.layoutKind).toBe('paged');
-    expect(result.ok && result.value.position).toEqual({ kind: 'image', index: 0 });
+    expect(result.ok && result.value.book.layoutKind).toBe('paged');
+    expect(result.ok && result.value.book.position).toEqual({ kind: 'image', index: 0 });
   });
 
   it('carries the protection of a locked EPUB out to its caller', async () => {

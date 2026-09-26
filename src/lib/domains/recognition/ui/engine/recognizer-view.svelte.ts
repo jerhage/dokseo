@@ -4,6 +4,8 @@ import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
+import { ACTION_NOTICE_MS } from '$lib/shared/notice';
+import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
@@ -18,6 +20,12 @@ import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
 
 const READING_SELECTION = 'Reading the selection.';
+
+const RECOGNITION_OFF = 'Text recognition is off';
+
+const RECOGNITION_OFF_REASON = 'You chose not to download the recognition model.';
+
+const TURN_ON = 'Turn on';
 
 const FULL_PERCENT = 100;
 
@@ -56,6 +64,7 @@ class RecognizerView {
   consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
+  #notify: Notify;
   #generation: () => number;
   #warmGeneration = -1;
   #activeRecognitions = 0;
@@ -63,9 +72,11 @@ class RecognizerView {
   #pendingRecognition: PendingRecognition | null = null;
   #agreed = new Set<Language>();
   #declined = new Set<Language>();
+  #toldDeclined = new Set<Language>();
 
-  constructor(container: Container, generation: () => number) {
+  constructor(container: Container, notify: Notify, generation: () => number) {
     this.#container = container;
+    this.#notify = notify;
     this.#generation = generation;
   }
 
@@ -196,6 +207,7 @@ class RecognizerView {
 
     if (this.#declined.has(language)) {
       trace.step('stopped', { guard: 'declined-this-session', language });
+      this.#tellDeclined(held, footprint);
       return false;
     }
 
@@ -203,6 +215,27 @@ class RecognizerView {
     this.consentRequest = { language, footprint };
     trace.step('asking', { gate: 'consent-dialog', language, downloadMb: downloadMb(footprint) });
     return false;
+  }
+
+  #tellDeclined(held: PendingRecognition, footprint: ModelFootprint): void {
+    if (this.#toldDeclined.has(held.language)) return;
+    this.#toldDeclined.add(held.language);
+
+    const generation = this.#generation();
+    this.#notify({
+      tone: 'info',
+      title: RECOGNITION_OFF,
+      message: RECOGNITION_OFF_REASON,
+      action: { label: TURN_ON, run: () => this.#askAgain(held, footprint, generation) },
+      duration: ACTION_NOTICE_MS,
+    });
+  }
+
+  #askAgain(held: PendingRecognition, footprint: ModelFootprint, generation: number): void {
+    if (generation !== this.#generation() || this.consentRequest !== null) return;
+
+    this.#pendingRecognition = held;
+    this.consentRequest = { language: held.language, footprint };
   }
 
   async agree(): Promise<PendingRecognition | null> {
@@ -219,6 +252,7 @@ class RecognizerView {
     if (held === null) return;
 
     this.#declined.add(held.language);
+    this.#toldDeclined.delete(held.language);
   }
 
   #takePending(): PendingRecognition | null {
@@ -274,5 +308,12 @@ class RecognizerView {
   }
 }
 
-export { READING_SELECTION, modelLoadNote, modelLoadAnnouncement, RecognizerView };
+export {
+  READING_SELECTION,
+  RECOGNITION_OFF,
+  TURN_ON,
+  modelLoadNote,
+  modelLoadAnnouncement,
+  RecognizerView,
+};
 export type { ConsentRequest, PendingRecognition };

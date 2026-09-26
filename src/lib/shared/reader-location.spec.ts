@@ -4,6 +4,7 @@ import {
   IMAGE_PARAMETER,
   MISSING_BOOK_NOTICE,
   missingBookNotice,
+  missingBookArrival,
   openingPlace,
   readArrival,
   readerHref,
@@ -173,5 +174,19 @@ describe('missingBookNotice', () => {
   it('says nothing for any other value', () => {
     expect(missingBookNotice(null)).toBeNull();
     expect(missingBookNotice('anything else')).toBeNull();
+  });
+});
+
+describe('missingBookArrival', () => {
+  it('explains the missing book and drops only its parameter from the address', () => {
+    const arrival = missingBookArrival(new URL('https://r.test/?missing=book&shelf=reading#top'));
+
+    expect(arrival?.notice).toBe(MISSING_BOOK_NOTICE);
+    expect(arrival?.cleaned.href).toBe('https://r.test/?shelf=reading#top');
+  });
+
+  it('answers nothing for an address without the missing-book parameter', () => {
+    expect(missingBookArrival(new URL('https://r.test/'))).toBeNull();
+    expect(missingBookArrival(new URL('https://r.test/?missing=page'))).toBeNull();
   });
 });

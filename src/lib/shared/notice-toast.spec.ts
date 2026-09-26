@@ -25,6 +25,12 @@ describe('noticeToast', () => {
     expect(noticeToast({ tone: 'success', title: 'Removed', action }).action).toBe(action);
   });
 
+  it('passes a duration through, so an action toast can leave on its own', () => {
+    expect(noticeToast({ tone: 'success', title: 'Removed', duration: 10_000 }).duration).toBe(
+      10_000,
+    );
+  });
+
   it('leaves out a message and an action the notice does not have', () => {
     expect(Object.keys(noticeToast({ tone: 'info', title: 'Done' }))).toEqual(['variant', 'title']);
   });

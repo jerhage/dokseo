@@ -5,6 +5,8 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
+import { ACTION_NOTICE_MS } from '$lib/shared/notice';
+import type { Notice, Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import { ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -20,7 +22,9 @@ import {
   modelLoadAnnouncement,
   modelLoadNote,
   READING_SELECTION,
+  RECOGNITION_OFF,
   RecognizerView,
+  TURN_ON,
 } from './recognizer-view.svelte';
 import type { PendingRecognition } from './recognizer-view.svelte';
 
@@ -45,6 +49,8 @@ type Fakes = {
   readonly granted: Set<Language>;
   readonly grants: Language[];
   readonly closes: Language[];
+  readonly notices: Notice[];
+  readonly notify: Notify;
 };
 
 function unused(): never {
@@ -56,6 +62,10 @@ function fakes(granted: readonly Language[] = []): Fakes {
   const grants: Language[] = [];
   const closes: Language[] = [];
   const agreed = new Set(granted);
+  const told: Notice[] = [];
+  const notify: Notify = (notice) => {
+    told.push(notice);
+  };
 
   const container: Container = {
     beginTrace: (): Trace => ({
@@ -98,6 +108,7 @@ function fakes(granted: readonly Language[] = []): Fakes {
       editCaptureText: unused,
       writeCaptureNote: unused,
       removeCapture: unused,
+      restoreCapture: unused,
       clearCaptures: unused,
       listTags: unused,
       createTag: unused,
@@ -148,7 +159,7 @@ function fakes(granted: readonly Language[] = []): Fakes {
     },
   };
 
-  return { container, calls, granted: agreed, grants, closes };
+  return { container, calls, granted: agreed, grants, closes, notices: told, notify };
 }
 
 const source = {} as PageSource;
@@ -175,7 +186,7 @@ async function started(world: Fakes, index: number): Promise<Call> {
 describe('RecognizerView', () => {
   it('refuses a selection it has no agreement for and holds it for the dialog', async () => {
     const world = fakes();
-    const view = new RecognizerView(world.container, fixed());
+    const view = new RecognizerView(world.container, world.notify, fixed());
 
     const admitted = await view.admits(selection());
 
@@ -185,7 +196,7 @@ describe('RecognizerView', () => {
 
   it('hands back the held selection once the reader agrees, and stores the grant', async () => {
     const world = fakes();
-    const view = new RecognizerView(world.container, fixed());
+    const view = new RecognizerView(world.container, world.notify, fixed());
     const held = selection();
     await view.admits(held);
 
@@ -198,7 +209,7 @@ describe('RecognizerView', () => {
 
   it('hands back nothing and refuses a second selection after the reader declines', async () => {
     const world = fakes();
-    const view = new RecognizerView(world.container, fixed());
+    const view = new RecognizerView(world.container, world.notify, fixed());
     await view.admits(selection());
 
     view.decline();
@@ -209,9 +220,74 @@ describe('RecognizerView', () => {
     expect(view.consentRequest).toBeNull();
   });
 
+  it('says recognition is off once for a selection after the reader declines, and nothing before', async () => {
+    const world = fakes();
+    const view = new RecognizerView(world.container, world.notify, fixed());
+    await view.admits(selection());
+    expect(world.notices).toEqual([]);
+
+    view.decline();
+    await view.admits(selection());
+    await view.admits(selection());
+
+    expect(world.notices).toEqual([
+      {
+        tone: 'info',
+        title: RECOGNITION_OFF,
+        message: 'You chose not to download the recognition model.',
+        action: { label: TURN_ON, run: expect.any(Function) },
+        duration: ACTION_NOTICE_MS,
+      },
+    ]);
+  });
+
+  it('asks again with the latest selection when the reader turns recognition on', async () => {
+    const world = fakes();
+    const view = new RecognizerView(world.container, world.notify, fixed());
+    await view.admits(selection());
+    view.decline();
+    const later = selection();
+    await view.admits(later);
+
+    at(world.notices, 0).action?.run();
+
+    expect(view.consentRequest?.language).toBe('ja');
+    expect(await view.agree()).toBe(later);
+    expect(world.grants).toEqual(['ja']);
+  });
+
+  it('tells the reader again only after a second decline', async () => {
+    const world = fakes();
+    const view = new RecognizerView(world.container, world.notify, fixed());
+    await view.admits(selection());
+    view.decline();
+    await view.admits(selection());
+    at(world.notices, 0).action?.run();
+    view.decline();
+
+    await view.admits(selection());
+    await view.admits(selection());
+
+    expect(world.notices.map((notice) => notice.title)).toEqual([RECOGNITION_OFF, RECOGNITION_OFF]);
+  });
+
+  it('asks nothing when Turn on is pressed after the reader moved to another book', async () => {
+    const world = fakes();
+    let generation = 0;
+    const view = new RecognizerView(world.container, world.notify, () => generation);
+    await view.admits(selection());
+    view.decline();
+    await view.admits(selection());
+
+    generation = 1;
+    at(world.notices, 0).action?.run();
+
+    expect(view.consentRequest).toBeNull();
+  });
+
   it('holds the load progress until the last recognition in flight settles', async () => {
     const world = fakes(['ja']);
-    const view = new RecognizerView(world.container, fixed());
+    const view = new RecognizerView(world.container, world.notify, fixed());
     const first = view.read(selection());
     const second = view.read(selection());
 
@@ -230,7 +306,7 @@ describe('RecognizerView', () => {
 
   it('closes the recognizer it opened and forgets the session it reported', async () => {
     const world = fakes(['ja']);
-    const view = new RecognizerView(world.container, fixed());
+    const view = new RecognizerView(world.container, world.notify, fixed());
     await view.warm('ja');
 
     expect(view.session).toEqual(OPENED_SESSION);

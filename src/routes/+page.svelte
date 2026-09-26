@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snapshot } from '@sveltejs/kit';
-  import { afterNavigate } from '$app/navigation';
+  import { afterNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
@@ -10,7 +10,7 @@
   import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { effectiveDirection } from '$lib/shared/layout-kind';
-  import { MISSING_BOOK_PARAMETER, missingBookNotice } from '$lib/shared/reader-location';
+  import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
@@ -18,7 +18,6 @@
   const view = new LibraryView(container, notify);
   const find = new CaptureSearchView(container);
   const scroll = new LibraryScrollView();
-  const notice = $derived(missingBookNotice(page.url.searchParams.get(MISSING_BOOK_PARAMETER)));
   const books = $derived(
     view.books.map((book) => ({
       id: book.id,
@@ -36,7 +35,13 @@
     restore: (top) => scroll.restore(top),
   };
 
-  afterNavigate((navigation) => scroll.arrive(navigation.type, navigation.from?.route.id ?? null));
+  afterNavigate((navigation) => {
+    scroll.arrive(navigation.type, navigation.from?.route.id ?? null);
+    const missing = missingBookArrival(page.url);
+    if (missing === null) return;
+    notify({ tone: 'warning', title: missing.notice });
+    replaceState(missing.cleaned, page.state);
+  });
 
   $effect(() => {
     void view.load();
@@ -47,13 +52,7 @@
   });
 </script>
 
-<LibraryScreen
-  {view}
-  {scroll}
-  {notice}
-  onsearcheverything={() => palette?.searchEverything()}
-  bind:query
-/>
+<LibraryScreen {view} {scroll} onsearcheverything={() => palette?.searchEverything()} bind:query />
 
 <CapturePalette
   bind:this={palette}

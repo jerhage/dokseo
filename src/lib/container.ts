@@ -41,7 +41,11 @@ import type { MarkFinishedDeps } from './domains/library/use-cases/mark-finished
 import { markUnread } from './domains/library/use-cases/mark-unread';
 import type { MarkUnreadDeps } from './domains/library/use-cases/mark-unread';
 import { openFile } from './domains/library/use-cases/open-file';
-import type { OpenFileDeps, OpenFileError } from './domains/library/use-cases/open-file';
+import type {
+  OpenFileDeps,
+  OpenFileError,
+  OpenedUpload,
+} from './domains/library/use-cases/open-file';
 import { openForReading } from './domains/library/use-cases/open-for-reading';
 import type {
   OpenedBook,
@@ -135,6 +139,8 @@ import { recognizeRegion } from './domains/recognition/use-cases/engine/recogniz
 import type { RecognizeRegionError } from './domains/recognition/use-cases/engine/recognize-region';
 import { removeCapture } from './domains/recognition/use-cases/capture/remove-capture';
 import type { RemoveCaptureDeps } from './domains/recognition/use-cases/capture/remove-capture';
+import { restoreCapture } from './domains/recognition/use-cases/capture/restore-capture';
+import type { RestoreCaptureDeps } from './domains/recognition/use-cases/capture/restore-capture';
 import { recolourTag } from './domains/recognition/use-cases/tag/recolour-tag';
 import type { RecolourTagDeps } from './domains/recognition/use-cases/tag/recolour-tag';
 import { removeTagFromCapture } from './domains/recognition/use-cases/tag/remove-tag-from-capture';
@@ -243,7 +249,7 @@ type Container = {
     readonly openFile: (
       files: readonly File[],
       report?: UploadReport,
-    ) => Promise<Result<Book, OpenFileError>>;
+    ) => Promise<Result<OpenedUpload, OpenFileError>>;
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
     readonly readBook: (id: BookId) => Promise<Result<Book, LibraryError>>;
@@ -294,6 +300,7 @@ type Container = {
       note: string,
     ) => Promise<Result<T, CaptureError>>;
     readonly removeCapture: (capture: CaptureId) => Promise<Result<void, CaptureError>>;
+    readonly restoreCapture: (capture: Capture) => Promise<Result<void, CaptureError>>;
     readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
     readonly listTags: () => Promise<Result<readonly Tag[], TagError>>;
     readonly createTag: (id: TagId, name: string) => Promise<Result<Tag, CreateTagError>>;
@@ -380,6 +387,7 @@ function buildContainer(): Container {
   const editCaptureTextDeps: EditCaptureTextDeps = { captures, now: Date.now };
   const writeCaptureNoteDeps: WriteCaptureNoteDeps = { captures };
   const removeCaptureDeps: RemoveCaptureDeps = { captures };
+  const restoreCaptureDeps: RestoreCaptureDeps = { captures };
   const clearCapturesDeps: ClearCapturesDeps = { captures };
   const removeBookAndCapturesDeps: RemoveBookAndCapturesDeps = {
     clearing: clearCapturesDeps,
@@ -475,6 +483,7 @@ function buildContainer(): Container {
       writeCaptureNote: <T extends NotableCapture>(capture: T, note: string) =>
         writeCaptureNote(writeCaptureNoteDeps, capture, note),
       removeCapture: (capture: CaptureId) => removeCapture(removeCaptureDeps, capture),
+      restoreCapture: (capture: Capture) => restoreCapture(restoreCaptureDeps, capture),
       clearCaptures: (book: BookId) => clearCaptures(clearCapturesDeps, book),
       listTags: () => listTags(listTagsDeps),
       createTag: (id: TagId, name: string) => createTag(createTagDeps, id, name),

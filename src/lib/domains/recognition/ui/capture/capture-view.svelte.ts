@@ -80,7 +80,7 @@ class CaptureView {
   constructor(container: Container, notify: Notify) {
     this.#container = container;
     this.#collection = new CaptureCollection(container, notify);
-    this.#recognizer = new RecognizerView(container, () => this.#collection.generation);
+    this.#recognizer = new RecognizerView(container, notify, () => this.#collection.generation);
   }
 
   get captures(): readonly PanelCapture[] {
