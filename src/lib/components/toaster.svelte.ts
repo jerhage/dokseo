@@ -1,16 +1,25 @@
+import { untrack } from 'svelte';
 import { toastDuration } from './toast-duration';
 import type { RequestedDuration, ToastDuration } from './toast-duration';
 import type { StatusVariant } from './classes';
 
 type ToastId = number;
 
+type RegionId = number;
+
 type ToastPhase = 'shown' | 'leaving';
+
+type ToastAction = {
+  readonly label: string;
+  readonly run: () => void;
+};
 
 type ToastOptions = {
   readonly title: string;
   readonly message?: string;
   readonly variant?: StatusVariant;
   readonly duration?: RequestedDuration;
+  readonly action?: ToastAction;
 };
 
 type Toast = {
@@ -19,15 +28,33 @@ type Toast = {
   readonly message: string | undefined;
   readonly variant: StatusVariant;
   readonly duration: ToastDuration;
+  readonly action: ToastAction | undefined;
   readonly phase: ToastPhase;
+};
+
+type Clearance = {
+  readonly id: number;
+  readonly blockEnd: number;
 };
 
 class Toaster {
   #toasts = $state<readonly Toast[]>([]);
+  #regions = $state<readonly RegionId[]>([]);
+  #clearances = $state<readonly Clearance[]>([]);
   #next: ToastId = 1;
+  #nextRegion: RegionId = 1;
+  #nextClearance = 1;
 
   get toasts(): readonly Toast[] {
     return this.#toasts;
+  }
+
+  get activeRegion(): RegionId | undefined {
+    return this.#regions.at(-1);
+  }
+
+  get clearance(): number {
+    return Math.max(0, ...this.#clearances.map((clearance) => clearance.blockEnd));
   }
 
   show(options: ToastOptions): ToastId {
@@ -38,21 +65,56 @@ class Toaster {
       title: options.title,
       message: options.message,
       variant: options.variant ?? 'info',
-      duration: toastDuration(options.duration),
+      duration: toastDuration(options.duration, options.action !== undefined),
+      action: options.action,
       phase: 'shown',
     };
-    this.#toasts = [...this.#toasts, toast];
+    this.#toasts = untrack(() => [...this.#toasts, toast]);
     return id;
   }
 
+  act(id: ToastId): void {
+    const toast = untrack(() =>
+      this.#toasts.find((shown) => shown.id === id && shown.phase === 'shown'),
+    );
+    if (toast?.action === undefined) return;
+    try {
+      toast.action.run();
+    } finally {
+      this.dismiss(id);
+    }
+  }
+
   dismiss(id: ToastId): void {
-    this.#toasts = this.#toasts.map((toast) =>
-      toast.id === id && toast.phase === 'shown' ? { ...toast, phase: 'leaving' } : toast,
+    this.#toasts = untrack(() =>
+      this.#toasts.map((toast) =>
+        toast.id === id && toast.phase === 'shown' ? { ...toast, phase: 'leaving' } : toast,
+      ),
     );
   }
 
   remove(id: ToastId): void {
-    this.#toasts = this.#toasts.filter((toast) => toast.id !== id);
+    this.#toasts = untrack(() => this.#toasts.filter((toast) => toast.id !== id));
+  }
+
+  attachRegion(): RegionId {
+    const id = this.#nextRegion;
+    this.#nextRegion += 1;
+    this.#regions = untrack(() => [...this.#regions, id]);
+    return id;
+  }
+
+  detachRegion(id: RegionId): void {
+    this.#regions = untrack(() => this.#regions.filter((region) => region !== id));
+  }
+
+  reserveBlockEnd(blockEnd: number): () => void {
+    const id = this.#nextClearance;
+    this.#nextClearance += 1;
+    this.#clearances = untrack(() => [...this.#clearances, { id, blockEnd }]);
+    return () => {
+      this.#clearances = untrack(() => this.#clearances.filter((clearance) => clearance.id !== id));
+    };
   }
 }
 
@@ -61,4 +123,4 @@ function createToaster(): Toaster {
 }
 
 export { Toaster, createToaster };
-export type { Toast, ToastId, ToastOptions, ToastPhase };
+export type { RegionId, Toast, ToastAction, ToastId, ToastOptions, ToastPhase };

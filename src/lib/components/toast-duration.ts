@@ -16,8 +16,8 @@ function parseDuration(text: string): number | undefined {
   return found[2]?.toLowerCase() === 's' ? amount * 1000 : amount;
 }
 
-function toastDuration(requested: RequestedDuration): ToastDuration {
-  if (requested === undefined) return { kind: 'default' };
+function toastDuration(requested: RequestedDuration, offersAction = false): ToastDuration {
+  if (requested === undefined) return offersAction ? { kind: 'persistent' } : { kind: 'default' };
   if (requested === 'persistent' || !(requested > 0)) return { kind: 'persistent' };
   return { kind: 'timed', ms: requested };
 }

@@ -290,6 +290,7 @@ const RUNTIME_INPUTS = [
   '--menu-top',
   '--progress',
   '--skeleton-width',
+  '--toast-offset-block-end',
   '--toast-timeout',
 ];
 

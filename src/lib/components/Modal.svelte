@@ -11,6 +11,8 @@
   import { modalStep } from './modal-phase';
   import type { ModalEvent, ModalPhase } from './modal-phase';
   import { showsScrollbar } from './scrollbar';
+  import { findToaster } from './toast-context';
+  import ToastRegion from './ToastRegion.svelte';
 
   type Heading =
     | { title: string; header?: undefined }
@@ -47,6 +49,7 @@
 
   const uid = $props.id();
   const titleId = `${uid}-title`;
+  const toaster = findToaster();
   const heading = $derived(modalHeading(title, header));
   let dialog = $state<HTMLDialogElement>();
   let panel = $state<HTMLDivElement>();
@@ -142,4 +145,7 @@
       </div>
     {/if}
   </div>
+  {#if phase !== 'closed' && toaster !== undefined}
+    <ToastRegion {toaster} clearance={false} />
+  {/if}
 </dialog>

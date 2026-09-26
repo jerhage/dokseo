@@ -1,13 +1,32 @@
 .toast-region {
+  --_toast-gutter: var(--sp-5);
   position: fixed;
-  inset-block-end: var(--sp-5);
-  inset-inline-end: var(--sp-5);
+  inset: auto;
+  inset-block-end: calc(
+    var(--_toast-gutter) + var(--toast-offset-block-end, 0px) + env(safe-area-inset-bottom, 0px)
+  );
+  inset-inline-end: var(--_toast-gutter);
   z-index: var(--z-toast);
-  display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  inline-size: min(100% - 2 * var(--sp-5), var(--toast-width));
+  inline-size: min(100% - 2 * var(--_toast-gutter), var(--toast-width));
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  color: inherit;
+  background: none;
+  border: none;
   pointer-events: none;
+}
+.toast-region:popover-open {
+  display: flex;
+}
+@media (width < 48rem) {
+  .toast-region {
+    --_toast-gutter: var(--sp-4);
+    inset-inline: var(--_toast-gutter);
+    inline-size: auto;
+  }
 }
 .toast {
   --_toast-fg: var(--color-text-muted);
@@ -73,6 +92,11 @@
   font-size: var(--text-sm);
   line-height: var(--lh-normal);
   min-inline-size: 0;
+}
+.toast-actions {
+  display: flex;
+  margin-block-start: var(--sp-1);
+  margin-inline-start: calc(-1 * var(--sp-3));
 }
 .toast-title {
   font-weight: var(--weight-semibold);

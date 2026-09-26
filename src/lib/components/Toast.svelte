@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { animationsSettled } from './animations';
   import { announcementRole } from './announcement';
+  import Button from './Button.svelte';
   import { TOAST_VARIANTS } from './classes';
   import X from './icons/X.svelte';
   import StatusIcon from './StatusIcon.svelte';
@@ -67,6 +68,13 @@
     <p class="toast-title">{toast.title}</p>
     {#if toast.message !== undefined}
       <p class="toast-description">{toast.message}</p>
+    {/if}
+    {#if toast.action !== undefined}
+      <div class="toast-actions">
+        <Button variant="ghost" size="sm" onclick={() => toaster.act(toast.id)}>
+          {toast.action.label}
+        </Button>
+      </div>
     {/if}
   </div>
   <button

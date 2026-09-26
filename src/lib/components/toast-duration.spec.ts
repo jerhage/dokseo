@@ -40,6 +40,14 @@ describe('toastDuration', () => {
     expect(toastDuration(2500)).toEqual({ kind: 'timed', ms: 2500 });
   });
 
+  it('keeps an unrequested toast with an action up until dismissed', () => {
+    expect(toastDuration(undefined, true)).toEqual({ kind: 'persistent' });
+  });
+
+  it('times a toast with an action for the milliseconds requested', () => {
+    expect(toastDuration(9000, true)).toEqual({ kind: 'timed', ms: 9000 });
+  });
+
   it('keeps a toast up when asked to persist', () => {
     expect(toastDuration('persistent')).toEqual({ kind: 'persistent' });
   });
