@@ -1,3 +1,5 @@
+import type { LayoutKind } from '$lib/shared/layout-kind';
+
 type Variant = {
   readonly label: string;
   readonly route: string;
@@ -6,9 +8,12 @@ type Variant = {
 
 type ComparisonFill = 'page' | 'screen';
 
+type ComparedBooks = 'any' | 'flowing';
+
 type Comparison = {
   readonly title: string;
   readonly fills: ComparisonFill;
+  readonly books: ComparedBooks;
   readonly variants: readonly Variant[];
 };
 
@@ -16,8 +21,23 @@ type RouteParameters = Readonly<Record<string, string | undefined>>;
 
 const PARAMETER = /^\[(\w+)\]$/u;
 
+const FLOWING_READER: Comparison = {
+  title: 'The flowing reader',
+  fills: 'screen',
+  books: 'flowing',
+  variants: [
+    { label: 'Current', route: '/read/[fileId]', within: null },
+    { label: 'A', route: '/preview/a/read/[fileId]', within: '/preview/a' },
+    { label: 'B', route: '/preview/b/read/[fileId]', within: '/preview/b' },
+  ],
+};
+
 function activeComparison(): Comparison | null {
-  return null;
+  return FLOWING_READER;
+}
+
+function comparesBook(comparison: Comparison, layoutKind: LayoutKind): boolean {
+  return comparison.books === 'any' || layoutKind === 'flow';
 }
 
 function parameterOf(segment: string): string | null {
@@ -66,5 +86,5 @@ function isShowing(variant: Variant, pathname: string): boolean {
   return pathname === variant.within || pathname.startsWith(`${variant.within}/`);
 }
 
-export { activeComparison, isShowing, routeParameters, variantHref };
-export type { Comparison, ComparisonFill, RouteParameters, Variant };
+export { activeComparison, comparesBook, isShowing, routeParameters, variantHref };
+export type { ComparedBooks, Comparison, ComparisonFill, RouteParameters, Variant };

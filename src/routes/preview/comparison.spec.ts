@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { activeComparison, isShowing, routeParameters, variantHref } from './comparison';
-import type { Variant } from './comparison';
+import {
+  activeComparison,
+  comparesBook,
+  isShowing,
+  routeParameters,
+  variantHref,
+} from './comparison';
+import type { Comparison, Variant } from './comparison';
 
 const A: Variant = { label: 'A', route: '/preview/a/settings/storage', within: '/preview/a' };
 const CURRENT: Variant = { label: 'Current', route: '/settings/storage', within: null };
@@ -80,5 +86,22 @@ describe('activeComparison', () => {
       .filter((href) => !href.includes('/book-1?image=3'));
 
     expect(lost).toEqual([]);
+  });
+});
+
+describe('comparesBook', () => {
+  const FLOWING: Comparison = { title: 'Flowing', fills: 'screen', books: 'flowing', variants: [] };
+  const ANY: Comparison = { title: 'Any', fills: 'screen', books: 'any', variants: [] };
+
+  it('offers only flowing books to a comparison of the flowing reader', () => {
+    expect(comparesBook(FLOWING, 'flow')).toBe(true);
+    expect(comparesBook(FLOWING, 'paged')).toBe(false);
+    expect(comparesBook(FLOWING, 'continuous')).toBe(false);
+  });
+
+  it('offers every book to a comparison that takes any', () => {
+    expect(comparesBook(ANY, 'flow')).toBe(true);
+    expect(comparesBook(ANY, 'paged')).toBe(true);
+    expect(comparesBook(ANY, 'continuous')).toBe(true);
   });
 });
