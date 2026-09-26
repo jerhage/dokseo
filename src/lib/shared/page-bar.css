@@ -1,0 +1,21 @@
+@layer features {
+  @scope (.page-bar) {
+    .scrub {
+      accent-color: var(--color-primary);
+    }
+    .gauge > .scrub {
+      display: block;
+      margin-inline: 0;
+    }
+    .tick {
+      position: absolute;
+      inset-block-start: 50%;
+      left: var(--at);
+      inline-size: var(--border-width);
+      block-size: var(--sp-2);
+      background: var(--color-text-muted);
+      translate: -50% -50%;
+      pointer-events: none;
+    }
+  }
+}

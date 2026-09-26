@@ -1,7 +1,0 @@
-@layer features {
-  @scope (.page-bar) {
-    .scrub {
-      accent-color: var(--color-primary);
-    }
-  }
-}

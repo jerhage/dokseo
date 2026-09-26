@@ -11,12 +11,17 @@
   import Pencil from '$lib/components/icons/Pencil.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import CompactProbe from '$lib/shared/CompactProbe.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import { imageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
+  import PageBar from '$lib/shared/PageBar.svelte';
+  import { dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
+  import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
+  import { returnFocusToPage } from '$lib/shared/reading-surface';
   import { dragOrigin, NOTE_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
@@ -25,13 +30,9 @@
   import type { ReaderView } from './reader-view.svelte';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import PagedViewer from './PagedViewer.svelte';
-  import PageBar from './PageBar.svelte';
-  import { dockPlacement, dockToggle, isNarrow } from './panel-dock';
-  import PanelDock from './PanelDock.svelte';
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
   import ReaderSettings from './ReaderSettings.svelte';
-  import { returnFocusToPage } from './reading-surface';
   import './reader-screen.css';
 
   type Props = {
@@ -293,7 +294,7 @@
     class={['body relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
     bind:clientWidth={bodyWidth}
   >
-    <div class="compact-probe" aria-hidden="true" bind:clientWidth={compactWidth}></div>
+    <CompactProbe bind:width={compactWidth} />
 
     <div
       class="page relative col gap-0 flex-1 min-h-0 overflow-hidden"

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
 import type { ScrubSource } from './page-scrubber';
-import { scrubPlace, scrubStep, stepMarker, turnsSide } from './page-scrubber';
+import { scrubPlace, stepMarker } from './page-scrubber';
 
 const SPREADS: ScrubSource = {
   layout: 'paged',
@@ -49,36 +49,5 @@ describe('stepMarker', () => {
   it('prints a dash for a step that holds no page', () => {
     expect(stepMarker(SPREADS, 3)).toBe('— / 5');
     expect(stepMarker(STRIP, 40)).toBe('— / 40');
-  });
-});
-
-describe('scrubStep', () => {
-  it('reads the step a range input reports', () => {
-    expect(scrubStep('2', 3)).toBe(2);
-  });
-
-  it('holds a reported step inside the book', () => {
-    expect(scrubStep('7', 3)).toBe(2);
-    expect(scrubStep('-1', 3)).toBe(0);
-  });
-
-  it('refuses a value that is not a whole step', () => {
-    expect(scrubStep('', 3)).toBeNull();
-    expect(scrubStep('1.5', 3)).toBeNull();
-    expect(scrubStep('page', 3)).toBeNull();
-  });
-
-  it('refuses every value when there is nowhere to go', () => {
-    expect(scrubStep('0', 0)).toBeNull();
-  });
-});
-
-describe('turnsSide', () => {
-  it('places the turn buttons on the left of a right-to-left scrubber, where it moves forward', () => {
-    expect(turnsSide('rtl')).toBe('before');
-  });
-
-  it('places the turn buttons on the right of a left-to-right scrubber, where it moves forward', () => {
-    expect(turnsSide('ltr')).toBe('after');
   });
 });
