@@ -853,7 +853,7 @@ describe('the design system stylesheets', () => {
     );
   });
 
-  it('shares one row between the links of a compact shell nav below the shell breakpoint, and hides their detail', () => {
+  it('shares one row between the links of a compact shell nav below the shell breakpoint, and hides their detail and the aside', () => {
     const layout = style('utilities/layout.css');
     const narrow = atRuleBlock(layout, '@container app-shell (max-width: 48rem)');
 
@@ -866,9 +866,9 @@ describe('the design system stylesheets', () => {
     expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-detail'))).toEqual([
       'display: none',
     ]);
-    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-aside'))).toEqual(
-      expect.arrayContaining(['flex-basis: 100%', 'margin-block-start: 0']),
-    );
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-aside'))).toEqual([
+      'display: none',
+    ]);
     expect(
       rules(layout.replace(narrow, '')).some((rule) =>
         rule.selectors.includes('.layout-app-shell-nav-detail'),

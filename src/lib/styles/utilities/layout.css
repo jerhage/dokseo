@@ -169,8 +169,7 @@
     display: none;
   }
   .layout-app-shell-nav-aside {
-    flex-basis: 100%;
-    margin-block-start: 0;
+    display: none;
   }
 }
 .layout-main-area {
