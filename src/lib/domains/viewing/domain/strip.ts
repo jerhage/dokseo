@@ -119,6 +119,8 @@ function stripWindow(
   viewportHeight: number,
   travel: Travel,
 ): VisibleRange {
+  if (positiveOrZero(viewportHeight) === 0 || stripHeight(layout) === 0) return NOTHING_VISIBLE;
+
   const shown = visibleRange(layout, scrollTop, viewportHeight, 0);
   if (shown.last < shown.first) return shown;
 

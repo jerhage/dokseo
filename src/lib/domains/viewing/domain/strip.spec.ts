@@ -287,6 +287,18 @@ describe('stripWindow', () => {
     expect(stripWindow(shortLayout, 0, screen, 'down')).toEqual(shown);
   });
 
+  it('mounts nothing while the frame has no height', () => {
+    const range = stripWindow(layout, 0, 0, 'down');
+
+    expect(range.last).toBeLessThan(range.first);
+  });
+
+  it('mounts nothing while the frame has no width', () => {
+    const range = stripWindow(layOutStrip(unmeasured(40), 0), 0, SCREEN, 'down');
+
+    expect(range.last).toBeLessThan(range.first);
+  });
+
   it('returns a range that loops over nothing for an empty layout', () => {
     const range = stripWindow([], 0, SCREEN, 'down');
 
