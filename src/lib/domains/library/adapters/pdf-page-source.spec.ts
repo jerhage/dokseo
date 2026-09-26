@@ -15,48 +15,66 @@ const document = vi.hoisted(() => ({
   failRender: false,
 }));
 
-vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => {
-  class FakeTransport {
-    onDataRange(): void {
-      return undefined;
+const pdfjs = vi.hoisted(() => {
+  const openedBy: string[] = [];
+  const fake = (build: string) => {
+    class FakeTransport {
+      onDataRange(): void {
+        return undefined;
+      }
+
+      requestDataRange(): void {
+        return undefined;
+      }
+
+      abort(): void {
+        return undefined;
+      }
     }
 
-    requestDataRange(): void {
-      return undefined;
-    }
-
-    abort(): void {
-      return undefined;
-    }
-  }
-
-  const page = (number: number) => ({
-    getViewport: ({ scale }: { scale: number }) => ({
-      width: document.size.width * scale,
-      height: document.size.height * scale,
-    }),
-    render: () => {
-      document.rendered.push(number);
-      return {
-        promise: document.failRender
-          ? Promise.reject(new Error('the page is damaged'))
-          : Promise.resolve(),
-      };
-    },
-  });
-
-  return {
-    GlobalWorkerOptions: {},
-    PDFDataRangeTransport: FakeTransport,
-    getDocument: () => ({
-      promise: Promise.resolve({
-        numPages: document.pages,
-        getPage: (number: number) => Promise.resolve(page(number)),
+    const page = (number: number) => ({
+      getViewport: ({ scale }: { scale: number }) => ({
+        width: document.size.width * scale,
+        height: document.size.height * scale,
       }),
-      destroy: () => Promise.resolve(),
-    }),
+      render: () => {
+        document.rendered.push(number);
+        return {
+          promise: document.failRender
+            ? Promise.reject(new Error('the page is damaged'))
+            : Promise.resolve(),
+        };
+      },
+    });
+
+    return {
+      GlobalWorkerOptions: { workerSrc: '' },
+      PDFDataRangeTransport: FakeTransport,
+      getDocument: () => {
+        openedBy.push(build);
+        return {
+          promise: Promise.resolve({
+            numPages: document.pages,
+            getPage: (number: number) => Promise.resolve(page(number)),
+          }),
+          destroy: () => Promise.resolve(),
+        };
+      },
+    };
+  };
+  return {
+    build: { chosen: 'modern' as 'modern' | 'legacy' },
+    openedBy,
+    modern: fake('modern'),
+    legacy: fake('legacy'),
   };
 });
+
+vi.mock('pdfjs-dist', () => pdfjs.modern);
+
+vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => pdfjs.legacy);
+
+vi.mock('./pdf-build', () => ({ choosePdfBuild: () => pdfjs.build.chosen }));
 
 class FakeOffscreenCanvas {
   readonly width: number;
@@ -88,6 +106,11 @@ async function opened(): Promise<PageSource> {
 }
 
 beforeEach(() => {
+  vi.resetModules();
+  pdfjs.build.chosen = 'modern';
+  pdfjs.openedBy.length = 0;
+  pdfjs.modern.GlobalWorkerOptions.workerSrc = '';
+  pdfjs.legacy.GlobalWorkerOptions.workerSrc = '';
   document.rendered = [];
   document.size = PORTRAIT;
   document.failRender = false;
@@ -171,5 +194,40 @@ describe('openPdfPageSource', () => {
       expected,
     );
     expect({ width: image.value.width, height: image.value.height }).toEqual(expected);
+  });
+
+  it('opens the document with the modern build and its worker when the browser has every API', async () => {
+    pdfjs.build.chosen = 'modern';
+    using source = await opened();
+
+    expect(source.count).toBe(3);
+
+    expect(pdfjs.openedBy).toEqual(['modern']);
+    expect(pdfjs.modern.GlobalWorkerOptions.workerSrc).toMatch(/\/build\/pdf\.worker\.min\.mjs$/u);
+    expect(pdfjs.modern.GlobalWorkerOptions.workerSrc).not.toContain('legacy');
+    expect(pdfjs.legacy.GlobalWorkerOptions.workerSrc).toBe('');
+  });
+
+  it('opens the document with the legacy build and its worker when the browser lacks an API', async () => {
+    pdfjs.build.chosen = 'legacy';
+    using source = await opened();
+
+    expect(source.count).toBe(3);
+
+    expect(pdfjs.openedBy).toEqual(['legacy']);
+    expect(pdfjs.legacy.GlobalWorkerOptions.workerSrc).toMatch(
+      /\/legacy\/build\/pdf\.worker\.min\.mjs$/u,
+    );
+    expect(pdfjs.modern.GlobalWorkerOptions.workerSrc).toBe('');
+  });
+
+  it('chooses the build once and keeps it for every later document', async () => {
+    pdfjs.build.chosen = 'legacy';
+    using first = await opened();
+    pdfjs.build.chosen = 'modern';
+    using second = await opened();
+
+    expect([first.count, second.count]).toEqual([3, 3]);
+    expect(pdfjs.openedBy).toEqual(['legacy', 'legacy']);
   });
 });

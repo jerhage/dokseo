@@ -1,56 +1,96 @@
-import {
-  GlobalWorkerOptions,
-  PDFDataRangeTransport,
-  getDocument,
-} from 'pdfjs-dist/legacy/build/pdf.mjs';
-import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import type * as PdfJs from 'pdfjs-dist';
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 import { RANGE_CHUNK_BYTES, clampRange, initialChunkSize } from './pdf-ranges';
+import { choosePdfBuild } from './pdf-build';
+import type { PdfBuild } from './pdf-build';
 
 const RENDER_SCALE = 2;
 
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
-  import.meta.url,
-).href;
+function defineBlobRangeTransport(base: typeof PdfJs.PDFDataRangeTransport) {
+  return class BlobRangeTransport extends base {
+    readonly failure: Promise<never>;
+    #blob: Blob;
+    #aborted = false;
+    #reportFailure: (cause: unknown) => void = () => undefined;
 
-class BlobRangeTransport extends PDFDataRangeTransport {
-  readonly failure: Promise<never>;
-  #blob: Blob;
-  #aborted = false;
-  #reportFailure: (cause: unknown) => void = () => undefined;
-
-  constructor(blob: Blob, initialData: Uint8Array) {
-    super(blob.size, initialData, true);
-    this.#blob = blob;
-    this.failure = new Promise<never>((_resolve, reject) => {
-      this.#reportFailure = reject;
-    });
-    this.failure.catch(() => undefined);
-  }
-
-  override requestDataRange(begin: number, end: number): void {
-    void this.#serve(begin, end);
-  }
-
-  override abort(): void {
-    this.#aborted = true;
-  }
-
-  async #serve(begin: number, end: number): Promise<void> {
-    const range = clampRange(begin, end, this.#blob.size);
-    try {
-      const bytes = await this.#blob.slice(range.begin, range.end).arrayBuffer();
-      if (this.#aborted) return;
-      this.onDataRange(range.begin, new Uint8Array(bytes));
-    } catch (cause) {
-      this.#reportFailure(cause);
+    constructor(blob: Blob, initialData: Uint8Array) {
+      super(blob.size, initialData, true);
+      this.#blob = blob;
+      this.failure = new Promise<never>((_resolve, reject) => {
+        this.#reportFailure = reject;
+      });
+      this.failure.catch(() => undefined);
     }
+
+    override requestDataRange(begin: number, end: number): void {
+      void this.#serve(begin, end);
+    }
+
+    override abort(): void {
+      this.#aborted = true;
+    }
+
+    async #serve(begin: number, end: number): Promise<void> {
+      const range = clampRange(begin, end, this.#blob.size);
+      try {
+        const bytes = await this.#blob.slice(range.begin, range.end).arrayBuffer();
+        if (this.#aborted) return;
+        this.onDataRange(range.begin, new Uint8Array(bytes));
+      } catch (cause) {
+        this.#reportFailure(cause);
+      }
+    }
+  };
+}
+
+type BlobRangeTransport = InstanceType<ReturnType<typeof defineBlobRangeTransport>>;
+
+interface PdfJsRuntime {
+  readonly getDocument: typeof PdfJs.getDocument;
+  readonly BlobRangeTransport: ReturnType<typeof defineBlobRangeTransport>;
+}
+
+interface PdfJsBuildFiles {
+  readonly library: Promise<typeof PdfJs>;
+  readonly workerSrc: string;
+}
+
+function pdfJsBuildFiles(build: PdfBuild): PdfJsBuildFiles {
+  if (build === 'modern') {
+    return {
+      library: import('pdfjs-dist'),
+      workerSrc: new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href,
+    };
   }
+  return {
+    library: import('pdfjs-dist/legacy/build/pdf.mjs'),
+    workerSrc: new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).href,
+  };
+}
+
+async function loadPdfJsRuntime(): Promise<PdfJsRuntime> {
+  const files = pdfJsBuildFiles(choosePdfBuild(globalThis));
+  const pdfjs = await files.library;
+  pdfjs.GlobalWorkerOptions.workerSrc = files.workerSrc;
+  return {
+    getDocument: pdfjs.getDocument,
+    BlobRangeTransport: defineBlobRangeTransport(pdfjs.PDFDataRangeTransport),
+  };
+}
+
+let runtime: Promise<PdfJsRuntime> | undefined;
+
+function pdfJsRuntime(): Promise<PdfJsRuntime> {
+  runtime ??= loadPdfJsRuntime().catch((cause: unknown) => {
+    runtime = undefined;
+    throw cause;
+  });
+  return runtime;
 }
 
 async function renderToBitmap(pdf: PDFDocumentProxy, pageNumber: number): Promise<ImageBitmap> {
@@ -72,6 +112,7 @@ async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageS
   let transport: BlobRangeTransport;
   let pdf: PDFDocumentProxy;
   try {
+    const { getDocument, BlobRangeTransport } = await pdfJsRuntime();
     const head = await source.slice(0, initialChunkSize(source.size)).arrayBuffer();
     transport = new BlobRangeTransport(source, new Uint8Array(head));
     task = getDocument({
