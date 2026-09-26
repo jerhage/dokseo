@@ -1,0 +1,10 @@
+@layer features {
+  @scope (.page-ink-probe) {
+    .ink-link {
+      color: var(--color-text-link);
+    }
+    .ink-selection {
+      color: var(--color-primary-soft);
+    }
+  }
+}

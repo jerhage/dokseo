@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
@@ -17,8 +16,9 @@
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from '../../flow-contents';
   import type { ContentsEntry } from '../../flow-contents';
   import { NO_ANCHORS, passageCfis } from '../../flow-highlight';
-  import FlowContentsDialog from './FlowContentsDialog.svelte';
-  import FlowSettingsDialog from './FlowSettingsDialog.svelte';
+  import FlowContentsDialog from '../FlowContentsDialog.svelte';
+  import FlowSettingsDialog from '../FlowSettingsDialog.svelte';
+  import PageInkProbe from '../PageInkProbe.svelte';
   import { FlowGestures } from '../../flow-gestures';
   import { flowMeta, progressLabel, SCRUB_STEP, tickOffsets } from '../../flow-progress';
   import {
@@ -43,7 +43,6 @@
   } from '../../flow-turn';
   import type { FlowAction, FlowTurn, KeyTarget, Point, StageTap } from '../../flow-turn';
   import type { FlowBook, FlowView } from '../../flow-view.svelte';
-  import { pageInk } from './page-ink';
   import './flow-viewer.css';
 
   type ScreenFill = 'screen' | 'parent';
@@ -69,10 +68,6 @@
 
   const ICONS: readonly Component<IconProps>[] = [ChevronLeft, ChevronRight];
 
-  const PREFERS_DARK = '(prefers-color-scheme: dark)';
-
-  const APPEARANCE_ATTRIBUTES: readonly string[] = ['data-theme', 'data-color-scheme'];
-
   const TURN_LABELS: Readonly<Record<FlowTurn, string>> = {
     previous: 'Previous page',
     next: 'Next page',
@@ -81,8 +76,6 @@
   let stage = $state<HTMLElement | null>(null);
   let topBar = $state<HTMLElement | null>(null);
   let bottomBar = $state<HTMLElement | null>(null);
-  let inkLink = $state<HTMLElement | null>(null);
-  let inkSelection = $state<HTMLElement | null>(null);
   let barsAsked = $state(true);
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
@@ -125,24 +118,6 @@
 
   function toggleBars(): void {
     barsAsked = !awake;
-  }
-
-  function readInk(): void {
-    const host = stage;
-    const link = inkLink;
-    const selection = inkSelection;
-    if (host === null || link === null || selection === null) return;
-
-    const page = getComputedStyle(host);
-    view.paint(
-      pageInk({
-        declaredScheme: page.colorScheme,
-        prefersDark: window.matchMedia(PREFERS_DARK).matches,
-        text: page.color,
-        link: getComputedStyle(link).color,
-        selection: getComputedStyle(selection).color,
-      }),
-    );
   }
 
   function isEditable(target: EventTarget): boolean {
@@ -388,21 +363,6 @@
   });
 
   $effect(() => {
-    const preference = window.matchMedia(PREFERS_DARK);
-    const appearance = new MutationObserver(readInk);
-    appearance.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: [...APPEARANCE_ATTRIBUTES],
-    });
-    preference.addEventListener('change', readInk);
-
-    return () => {
-      appearance.disconnect();
-      preference.removeEventListener('change', readInk);
-    };
-  });
-
-  $effect(() => {
     if (reported !== null) askAboutTheOffer();
   });
 
@@ -420,7 +380,6 @@
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    untrack(readInk);
     void view.open(held, (opening) =>
       openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
     );
@@ -453,10 +412,7 @@
   <div class="reading overlay-host relative flex-1 min-h-0">
     <div class="stage min-h-0" bind:this={stage}></div>
 
-    <span class="ink visually-hidden" aria-hidden="true">
-      <span class="ink-link" bind:this={inkLink}></span>
-      <span class="ink-selection" bind:this={inkSelection}></span>
-    </span>
+    <PageInkProbe onink={(ink) => view.paint(ink)} />
 
     {#if offer !== null}
       <div

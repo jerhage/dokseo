@@ -3,6 +3,7 @@
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import {
     LINE_SPACING_CHOICES,
     LINE_SPACING_LEGEND,
@@ -12,16 +13,17 @@
     withLineSpacing,
     withPhoneticReadings,
     withTextSize,
-  } from '../../../domain/reading-settings';
-  import type { LineSpacing, ReadingSettings, TextSize } from '../../../domain/reading-settings';
+  } from '../../domain/reading-settings';
+  import type { LineSpacing, ReadingSettings, TextSize } from '../../domain/reading-settings';
 
   type Props = {
     open: boolean;
     readonly settings: ReadingSettings;
     readonly onchoose: (settings: ReadingSettings) => void;
+    readonly offersAppearance?: boolean;
   };
 
-  let { open = $bindable(false), settings, onchoose }: Props = $props();
+  let { open = $bindable(false), settings, onchoose, offersAppearance = false }: Props = $props();
 
   const uid = $props.id();
 
@@ -72,5 +74,12 @@
         onchange={(event) => chooseReadings(event.currentTarget.checked)}>Show</Checkbox
       >
     </Fieldset>
+
+    {#if offersAppearance}
+      <div class="row items-center justify-between" role="group" aria-labelledby="{uid}-appearance">
+        <span class="fieldset-legend mb-0" id="{uid}-appearance">Appearance</span>
+        <AppearanceSwitcher />
+      </div>
+    {/if}
   </div>
 </Modal>

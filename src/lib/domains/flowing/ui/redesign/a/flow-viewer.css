@@ -5,12 +5,6 @@
       inline-size: 100%;
       block-size: 100%;
     }
-    .ink-link {
-      color: var(--color-text-link);
-    }
-    .ink-selection {
-      color: var(--color-primary-soft);
-    }
     .curtain {
       justify-content: center;
       text-align: center;
