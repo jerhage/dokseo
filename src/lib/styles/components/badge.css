@@ -136,6 +136,11 @@
   background-color: var(--_badge-fg);
   border-color: var(--_badge-fg);
 }
+.badge-quiet {
+  padding-inline: 0;
+  background-color: transparent;
+  border-color: transparent;
+}
 .badge-dot::before {
   content: '';
   inline-size: var(--sp-2);

@@ -11,6 +11,7 @@
     Tone & {
       dot?: boolean;
       solid?: boolean;
+      quiet?: boolean;
     };
 
   let {
@@ -18,6 +19,7 @@
     colour,
     dot = false,
     solid = false,
+    quiet = false,
     class: className,
     children,
     ...rest
@@ -28,6 +30,14 @@
   );
 </script>
 
-<span {...rest} class={['badge', tone, { 'badge-dot': dot, 'badge-solid': solid }, className]}>
+<span
+  {...rest}
+  class={[
+    'badge',
+    tone,
+    { 'badge-dot': dot, 'badge-solid': solid, 'badge-quiet': quiet },
+    className,
+  ]}
+>
   {@render children?.()}
 </span>

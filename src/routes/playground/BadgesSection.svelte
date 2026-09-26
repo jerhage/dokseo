@@ -44,7 +44,7 @@
 <DemoSection
   id="badge"
   title="Badge and tag"
-  classes={['badge', 'badge-dot', 'badge-solid', 'tag', 'tag-remove']}
+  classes={['badge', 'badge-dot', 'badge-solid', 'badge-quiet', 'tag', 'tag-remove']}
 >
   <Card>
     <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Badges</span>
@@ -69,6 +69,11 @@
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
         <Badge {colour} solid>{colour}</Badge>
+      {/each}
+    </div>
+    <div class="row wrap items-center gap-3">
+      {#each TAG_COLOURS as colour (colour)}
+        <Badge {colour} quiet dot>{colour}</Badge>
       {/each}
     </div>
     <div class="row wrap items-center gap-2">
