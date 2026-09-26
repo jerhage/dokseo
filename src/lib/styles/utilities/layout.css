@@ -32,6 +32,9 @@
 .min-h-0 {
   min-block-size: 0;
 }
+.min-w-0 {
+  min-inline-size: 0;
+}
 .overflow-auto {
   overflow: auto;
 }
@@ -178,6 +181,20 @@
   }
   .layout-app-shell .layout-app-shell-narrow-nowrap {
     flex-wrap: nowrap;
+  }
+  .layout-app-shell .layout-app-shell-narrow-touch .btn {
+    min-block-size: var(--control-h-touch);
+  }
+  .layout-app-shell .layout-app-shell-narrow-fit {
+    flex: none;
+  }
+  .layout-app-shell .layout-app-shell-narrow-visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 @container app-shell (width >= 48rem) {

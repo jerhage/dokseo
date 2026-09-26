@@ -909,6 +909,41 @@ describe('the design system stylesheets', () => {
     ).toBe(false);
   });
 
+  it('grows the buttons of a touch shell row to the 44px touch height strictly below the shell breakpoint', () => {
+    const layout = style('utilities/layout.css');
+    const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
+
+    expect(
+      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-touch .btn')),
+    ).toEqual(['min-block-size: var(--control-h-touch)']);
+    expect(definitionValues(style('tokens/spacing.css')).get('--control-h-touch')).toBe(
+      'var(--ds-size-touch)',
+    );
+    expect(definitionValues(style('base/primitives.css')).get('--ds-size-touch')).toBe('2.75rem');
+    expect(layout.replace(narrow, '')).not.toContain('layout-app-shell-narrow-touch');
+  });
+
+  it('lets a narrow shell row keep its content width and hide content visually strictly below the shell breakpoint', () => {
+    const layout = style('utilities/layout.css');
+    const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
+
+    expect(
+      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-fit')),
+    ).toEqual(['flex: none']);
+    expect(
+      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-visually-hidden')),
+    ).toEqual(declarations(ruleBody(style('utilities/text.css'), '.visually-hidden')));
+    expect(layout.replace(narrow, '')).not.toMatch(
+      /layout-app-shell-narrow-(?:fit|visually-hidden)/u,
+    );
+  });
+
+  it('lets an element shrink below its content width', () => {
+    expect(declarations(ruleBody(style('utilities/layout.css'), '.min-w-0'))).toEqual([
+      'min-inline-size: 0',
+    ]);
+  });
+
   it('keeps the tab tools at their own width, so a row that cannot wrap shrinks the tab list instead', () => {
     expect(declarations(ruleBody(style('components/tabs.css'), '.tabs-tools'))).toContain(
       'flex-shrink: 0',

@@ -127,12 +127,26 @@
 </script>
 
 <div class="layout-app-shell">
-  <header class="layout-app-shell-header wrap layout-app-shell-narrow-nowrap">
-    <div class={['row items-center gap-2', { 'layout-app-shell-wide-only': filterShown }]}>
+  <header
+    class="layout-app-shell-header wrap layout-app-shell-narrow-nowrap layout-app-shell-narrow-touch"
+  >
+    <div class={['row items-center gap-2 min-w-0', { 'layout-app-shell-wide-only': filterShown }]}>
       <Avatar shape="square" size="sm" lang="ja" aria-hidden="true">読</Avatar>
-      <span class="display weight-semibold">Library</span>
+      <div class="col gap-0 flex-1">
+        <span class="display weight-semibold">Library</span>
+        <span
+          class="text-xs text-muted truncate layout-app-shell-narrow-only"
+          title={summary}
+          aria-hidden="true">{summary}</span
+        >
+      </div>
     </div>
-    <div class="row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap">
+    <div
+      class={[
+        'row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap',
+        { 'layout-app-shell-narrow-fit': !filterShown },
+      ]}
+    >
       <LibrarySearch
         bind:this={search}
         bind:query
@@ -199,7 +213,7 @@
     onscroll={(event) => scroll.track(event.currentTarget.scrollTop)}
     {@attach keyboardScrolling}
   >
-    <div class="col gap-1">
+    <div class="col gap-1 layout-app-shell-narrow-visually-hidden">
       <h1 class="text-lg">Your uploads</h1>
       <p class="text-xs text-muted">{summary}</p>
     </div>
