@@ -13,6 +13,8 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND,
   } from '$lib/shared/layout-choices';
+  import type { TouchTurns } from '$lib/shared/page-turn';
+  import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from './touch-turns-trial';
 
   type FitChoice = {
     readonly label: string;
@@ -30,9 +32,11 @@
     readonly downward: boolean;
     readonly fits: readonly FitChoice[];
     readonly offersAppearance: boolean;
+    readonly touchTurns: TouchTurns;
     readonly onlayout: (kind: ImageLayoutKind) => void;
     readonly onpairing: (pairing: PagePairing) => void;
     readonly ondirection: (direction: ReadingDirection) => void;
+    readonly ontouchturns: (turns: TouchTurns) => void;
   };
 
   let {
@@ -44,9 +48,11 @@
     downward,
     fits,
     offersAppearance,
+    touchTurns,
     onlayout,
     onpairing,
     ondirection,
+    ontouchturns,
   }: Props = $props();
 
   const uid = $props.id();
@@ -111,6 +117,21 @@
         {/each}
       </div>
     </div>
+
+    {#if layout === 'paged'}
+      <Fieldset legend={TOUCH_TURNS_LEGEND}>
+        <div class="col gap-2">
+          {#each TOUCH_TURNS_CHOICES as choice (choice.value)}
+            <Radio
+              name="{uid}-touch-turns"
+              value={choice.value}
+              group={touchTurns}
+              onchange={() => ontouchturns(choice.value)}>{choice.label}</Radio
+            >
+          {/each}
+        </div>
+      </Fieldset>
+    {/if}
 
     {#if offersAppearance}
       <div class="row items-center justify-between" role="group" aria-labelledby="{uid}-appearance">

@@ -196,27 +196,19 @@
     pointer = pointAt(event);
   }
 
-  export function pointerup(event: PointerEvent): void {
-    const watching = watch;
-    if (watching !== null && watching.id === event.pointerId) {
-      watch = null;
-      if (!watching.strayed && isTap(watching.from, pointAt(event))) tap();
-      return;
-    }
-
+  function conclude(released: number, to: Point, pointerType: string, clicked: () => void): void {
     const id = held;
     if (id === null) return;
 
     const trace = beginTrace('selection');
     try {
-      if (id !== event.pointerId) {
-        trace.step('stopped', { guard: 'pointer-mismatch', held: id, released: event.pointerId });
+      if (id !== released) {
+        trace.step('stopped', { guard: 'pointer-mismatch', held: id, released });
         return;
       }
 
       const element = within;
       const from = anchor;
-      const to = pointAt(event);
       stopDrag();
       if (element === null || from === null) {
         trace.step('stopped', {
@@ -227,12 +219,12 @@
         return;
       }
 
-      const ended = dragEnded(from, to, event.pointerType);
+      const ended = dragEnded(from, to, pointerType);
       trace.step('pointer', { from, to, kind: ended.kind });
 
       match(ended)
         .with({ kind: 'click' }, () => {
-          tap();
+          clicked();
         })
         .with({ kind: 'too-small' }, ({ selection }) => {
           const measured = normalize(selection);
@@ -263,6 +255,48 @@
     } finally {
       trace.end();
     }
+  }
+
+  export function pointerup(event: PointerEvent): void {
+    const watching = watch;
+    if (watching !== null && watching.id === event.pointerId) {
+      watch = null;
+      if (!watching.strayed && isTap(watching.from, pointAt(event))) tap();
+      return;
+    }
+
+    conclude(event.pointerId, pointAt(event), event.pointerType, tap);
+  }
+
+  export function beginAt(id: number, from: Point, to: Point): void {
+    const box = host;
+    watch = null;
+    if (within === null || box === null || suppressed) return;
+
+    const placed = box.getBoundingClientRect();
+    corner = { x: placed.x, y: placed.y };
+    anchor = from;
+    pointer = to;
+    held = id;
+    forget();
+    clear();
+  }
+
+  export function extendTo(at: Point): void {
+    if (held === null || anchor === null) return;
+    pointer = at;
+  }
+
+  export function endAt(at: Point): void {
+    const id = held;
+    if (id === null) return;
+
+    conclude(id, at, 'touch', () => undefined);
+  }
+
+  export function abandon(): void {
+    if (held === null) return;
+    stopDrag();
   }
 
   export function pointercancel(event: PointerEvent): void {

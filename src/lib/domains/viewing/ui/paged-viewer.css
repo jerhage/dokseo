@@ -3,6 +3,9 @@
     .frame {
       cursor: crosshair;
       touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     .frame.is-grabbable {
       cursor: grab;

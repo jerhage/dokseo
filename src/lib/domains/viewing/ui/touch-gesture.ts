@@ -410,6 +410,23 @@ function tick(state: TouchState, t: number): TouchStep {
     .exhaustive();
 }
 
+function touchDeadline(state: TouchState): number | null {
+  return match<TouchState, number | null>(state)
+    .with({ kind: 'idle' }, ({ pending }) => (pending === null ? null : pending.t + DOUBLE_TAP_MS))
+    .with({ kind: 'pressed' }, ({ press }) =>
+      press.strayed ? null : press.startedAt + LONG_PRESS_MS,
+    )
+    .with(
+      { kind: 'panning' },
+      { kind: 'swiping' },
+      { kind: 'selecting' },
+      { kind: 'pinching' },
+      { kind: 'lifting' },
+      () => null,
+    )
+    .exhaustive();
+}
+
 function touchStep(state: TouchState, input: TouchInput, context: TouchContext): TouchStep {
   if (input.kind === 'tick') return tick(state, input.t);
   if (input.type !== 'touch') return still(state);
@@ -422,7 +439,7 @@ function touchStep(state: TouchState, input: TouchInput, context: TouchContext):
     .exhaustive();
 }
 
-export { DOUBLE_TAP_MS, DOUBLE_TAP_SLOP_PX, LONG_PRESS_MS, TOUCH_IDLE, touchStep };
+export { DOUBLE_TAP_MS, DOUBLE_TAP_SLOP_PX, LONG_PRESS_MS, TOUCH_IDLE, touchDeadline, touchStep };
 export type {
   TouchContext,
   TouchInput,

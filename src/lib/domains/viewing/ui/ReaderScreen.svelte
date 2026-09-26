@@ -10,6 +10,7 @@
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
   import Pencil from '$lib/components/icons/Pencil.svelte';
+  import SquareDashedMousePointer from '$lib/components/icons/SquareDashedMousePointer.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import CompactProbe from '$lib/shared/CompactProbe.svelte';
@@ -19,11 +20,12 @@
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
   import PageBar from '$lib/shared/PageBar.svelte';
-  import { dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
+  import type { TouchTurns } from '$lib/shared/page-turn';
+  import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
   import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import { returnFocusToPage } from '$lib/shared/reading-surface';
-  import { dragOrigin, NOTE_MODE_LABEL } from './drag-mode';
+  import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
@@ -34,6 +36,7 @@
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
   import ReaderSettings from './ReaderSettings.svelte';
+  import { readTouchTurns, saveTouchTurns } from './touch-turns-trial';
   import './reader-screen.css';
 
   type Props = {
@@ -80,6 +83,8 @@
   let compactWidth = $state(0);
   let asked = $state(false);
   let noting = $state(false);
+  let selecting = $state(false);
+  let touchTurns = $state<TouchTurns>(readTouchTurns());
   let settingsOpen = $state(false);
   let panelAsked = $state<boolean | null>(null);
 
@@ -96,7 +101,7 @@
     () => [document.activeElement, ...openPopovers()],
   );
 
-  const shown = $derived(chromeShown(asked, focus.held));
+  const shown = $derived(chromeShown(asked, focus.held) || selecting);
   const makes = $derived(dragOrigin(noting));
   const narrow = $derived(isNarrow(bodyWidth, compactWidth));
   const placement = $derived(dockPlacement(narrow, panelAsked));
@@ -180,7 +185,7 @@
 
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     view.select(regions);
-    if (panel !== undefined) panelAsked = true;
+    if (panel !== undefined) panelAsked = askedAfterCapture(narrow, panelAsked);
     if (makes === 'written') onNote?.(regions);
     else onSelect?.(regions, arrangement);
   }
@@ -215,6 +220,16 @@
       }))
       .exhaustive();
   });
+
+  function turnTowards(move: PageMove): void {
+    const turn = turns?.[move];
+    if (turn !== undefined && turn.enabled) turn.go();
+  }
+
+  function chooseTouchTurns(chosen: TouchTurns): void {
+    touchTurns = chosen;
+    saveTouchTurns(chosen);
+  }
 
   const shownTurns = $derived.by(() => {
     const all = turns;
@@ -333,10 +348,13 @@
             {glow}
             {makes}
             chromeShown={shown}
+            {selecting}
+            turns={touchTurns}
             select={(regions) => commit(regions, 'row')}
             clear={() => view.clearSelection()}
             onTap={toggleChrome}
             onFit={(fit) => void view.setPageFit(fit)}
+            onTurn={turnTowards}
           />
         {/key}
       {:else}
@@ -388,6 +406,21 @@
             <Pencil class="btn-icon" />
             <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
           </Button>
+
+          {#if layout === 'paged'}
+            <Button
+              variant={selecting ? 'accent' : 'default'}
+              size="sm"
+              square
+              class="shrink-0"
+              aria-pressed={selecting}
+              title={SELECT_MODE_LABEL}
+              onclick={() => (selecting = !selecting)}
+            >
+              <SquareDashedMousePointer class="btn-icon" />
+              <span class="visually-hidden">{SELECT_MODE_LABEL}</span>
+            </Button>
+          {/if}
 
           <Button
             size="sm"
@@ -445,6 +478,8 @@
   {downward}
   {fits}
   offersAppearance={narrow}
+  {touchTurns}
+  ontouchturns={chooseTouchTurns}
   onlayout={(kind) => void view.setLayoutKind(kind)}
   onpairing={(pairing) => void view.setPairing(pairing)}
   ondirection={(direction) => void view.setDirection(direction)}

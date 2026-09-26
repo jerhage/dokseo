@@ -8,6 +8,7 @@
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PagePicture } from '$lib/shared/page-source';
   import type { PageFit } from '$lib/shared/page-fit';
+  import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import type { PageGroup } from '../domain/page-pairing';
   import { canPan, centrePan, clampPan, fitZoom, panBy, zoomAt } from '../domain/viewport';
   import type { Viewport } from '../domain/viewport';
@@ -16,6 +17,11 @@
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
+  import type { PageMove } from './page-moves';
+  import { touchAction } from './touch-action';
+  import type { TouchAction } from './touch-action';
+  import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
+  import type { TouchInput, TouchSample, TouchState } from './touch-gesture';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
   import './paged-viewer.css';
@@ -40,10 +46,13 @@
     readonly glow?: readonly GlowRegion[];
     readonly makes?: CaptureOrigin;
     readonly chromeShown: boolean;
+    readonly selecting?: boolean;
+    readonly turns?: TouchTurns;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
     readonly onTap: () => void;
     readonly onFit: (fit: PageFit) => void;
+    readonly onTurn?: (move: PageMove) => void;
   };
 
   let {
@@ -55,10 +64,13 @@
     glow = [],
     makes = 'recognized',
     chromeShown,
+    selecting = false,
+    turns = 'tap-zones',
     select,
     clear,
     onTap,
     onFit,
+    onTurn,
   }: Props = $props();
 
   const ZOOM_STEP = 1.2;
@@ -78,6 +90,9 @@
   let hintLines = $state.raw<readonly GestureHint[]>([]);
 
   let shownPages: PageGroup | null = null;
+  let touch: TouchState = TOUCH_IDLE;
+  let touchTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastPointer = '';
 
   const pending = $derived(
     hintsToShow(chromeShown, pagedHints(pannable), learnedGestures(), revealed),
@@ -234,9 +249,95 @@
     settle(panBy(viewport, -dx, -dy));
   }
 
+  function frameSpan(): FrameSpan {
+    const element = frame;
+    if (element === null) return { left: 0, width: 0 };
+
+    const box = element.getBoundingClientRect();
+    return { left: box.left, width: box.width };
+  }
+
+  function stopTouchTimer(): void {
+    if (touchTimer !== null) clearTimeout(touchTimer);
+    touchTimer = null;
+  }
+
+  function scheduleTick(): void {
+    stopTouchTimer();
+    const deadline = touchDeadline(touch);
+    if (deadline === null) return;
+
+    touchTimer = setTimeout(
+      () => {
+        touchTimer = null;
+        feed({ kind: 'tick', t: performance.now() });
+      },
+      Math.max(0, deadline - performance.now()),
+    );
+  }
+
+  function act(action: TouchAction): void {
+    match(action)
+      .with({ kind: 'none' }, () => undefined)
+      .with({ kind: 'toggle-chrome' }, () => onTap())
+      .with({ kind: 'turn' }, ({ move }) => onTurn?.(move))
+      .with({ kind: 'pan' }, ({ dx, dy }) => settle(panBy(viewport, dx, dy)))
+      .with({ kind: 'select-begin' }, ({ from, to }) => {
+        if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
+      })
+      .with({ kind: 'select-move' }, ({ at }) => selection?.extendTo(at))
+      .with({ kind: 'select-end' }, ({ at }) => selection?.endAt(at))
+      .with({ kind: 'drop' }, () => selection?.abandon())
+      .exhaustive();
+  }
+
+  function feed(input: TouchInput): void {
+    const span = frameSpan();
+    const step = touchStep(touch, input, {
+      pannable,
+      selectMode: selecting,
+      turns,
+      frame: span,
+    });
+    touch = step.state;
+    scheduleTick();
+    act(
+      touchAction(step.intent, {
+        chromeShown,
+        turns,
+        direction,
+        frame: span,
+        viewportWidth: window.innerWidth,
+      }),
+    );
+  }
+
+  function feedTouch(kind: TouchSample['kind'], event: PointerEvent): void {
+    feed({
+      kind,
+      id: event.pointerId,
+      type: event.pointerType,
+      x: event.clientX,
+      y: event.clientY,
+      t: performance.now(),
+    });
+  }
+
+  function oncontextmenu(event: MouseEvent): void {
+    if (lastPointer === 'touch') event.preventDefault();
+  }
+
   function onpointerdown(event: PointerEvent): void {
     const element = frame;
     if (element === null) return;
+
+    lastPointer = event.pointerType;
+    if (event.pointerType === 'touch') {
+      element.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      feedTouch('down', event);
+      return;
+    }
 
     if (event.button === 1) {
       startGrab(element, event, false);
@@ -254,6 +355,11 @@
   }
 
   function onpointermove(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      feedTouch('move', event);
+      return;
+    }
+
     const moving = grab;
     if (moving !== null && moving.id === event.pointerId) {
       learnGesture(moving.bySpace ? 'space-pan' : 'middle-pan');
@@ -266,6 +372,11 @@
   }
 
   function onpointerup(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      feedTouch('up', event);
+      return;
+    }
+
     if (grab !== null && grab.id === event.pointerId) {
       stopGrab();
       return;
@@ -275,6 +386,11 @@
   }
 
   function onpointercancel(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      feedTouch('cancel', event);
+      return;
+    }
+
     if (grab !== null && grab.id === event.pointerId) {
       stopGrab();
       return;
@@ -334,6 +450,8 @@
     dropSpace();
   }
 
+  $effect(() => stopTouchTimer);
+
   $effect(() => {
     const lines = pending;
     if (lines.length > 0) hintLines = lines;
@@ -385,6 +503,7 @@
     {onpointermove}
     {onpointerup}
     {onpointercancel}
+    {oncontextmenu}
   >
     <div
       class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}

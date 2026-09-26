@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { DOUBLE_TAP_MS, LONG_PRESS_MS, TOUCH_IDLE, touchStep } from './touch-gesture';
-import type { TouchContext, TouchInput, TouchIntent, TouchSample } from './touch-gesture';
+import {
+  DOUBLE_TAP_MS,
+  LONG_PRESS_MS,
+  TOUCH_IDLE,
+  touchDeadline,
+  touchStep,
+} from './touch-gesture';
+import type {
+  TouchContext,
+  TouchInput,
+  TouchIntent,
+  TouchSample,
+  TouchState,
+} from './touch-gesture';
 
 const FIT: TouchContext = {
   pannable: false,
@@ -563,5 +575,40 @@ describe('touchStep pointer types', () => {
 
       expect(heard(inputs, ZOOMED)).toEqual([]);
     }
+  });
+});
+
+function settled(inputs: readonly TouchInput[], context: TouchContext = FIT): TouchState {
+  let state = TOUCH_IDLE;
+  for (const input of inputs) state = touchStep(state, input, context).state;
+
+  return state;
+}
+
+describe('touchDeadline', () => {
+  it('asks for no tick while nothing is pending', () => {
+    expect(touchDeadline(TOUCH_IDLE)).toBeNull();
+  });
+
+  it('asks for a tick when a held press would become a long press', () => {
+    expect(touchDeadline(settled([down(CENTRE, 100)]))).toBe(100 + LONG_PRESS_MS);
+  });
+
+  it('asks for a tick when a held centre tap runs out of its double-tap window', () => {
+    expect(touchDeadline(settled([down(CENTRE, 100), up(CENTRE, 150)]))).toBe(150 + DOUBLE_TAP_MS);
+  });
+
+  it('asks for no tick once a press has become a pan, a swipe or a selection', () => {
+    expect(touchDeadline(settled([down(100, 0), move(200, 30)], ZOOMED))).toBeNull();
+    expect(touchDeadline(settled([down(100, 0), move(200, 30)]))).toBeNull();
+    expect(touchDeadline(settled([down(100, 0), move(200, 30)], SELECTING))).toBeNull();
+  });
+
+  it('never asks for a tick that lands before the moment the reducer acts on', () => {
+    const state = settled([down(CENTRE, 0)]);
+    const deadline = touchDeadline(state) ?? Number.NaN;
+
+    expect(touchStep(state, tick(deadline - 1), FIT).intent.kind).toBe('none');
+    expect(touchStep(state, tick(deadline), FIT).intent.kind).toBe('long-press');
   });
 });

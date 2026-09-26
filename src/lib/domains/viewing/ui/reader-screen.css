@@ -1,5 +1,8 @@
 @layer features {
   @scope (.reader-screen) {
+    :scope {
+      touch-action: manipulation;
+    }
     .arrived {
       position: absolute;
       inset-block-start: calc(var(--chrome-top, 0px) + var(--sp-3));
