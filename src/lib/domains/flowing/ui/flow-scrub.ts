@@ -1,5 +1,5 @@
-import { PROGRESS_UNKNOWN_LABEL, progressLabel, SCRUB_STEP } from '../../flow-progress';
-import type { FlowProgress } from '../../flow-progress';
+import { PROGRESS_UNKNOWN_LABEL, progressLabel, SCRUB_STEP } from './flow-progress';
+import type { FlowProgress } from './flow-progress';
 
 type FlowScrub = {
   readonly steps: number;

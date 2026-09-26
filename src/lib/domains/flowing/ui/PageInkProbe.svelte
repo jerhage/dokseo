@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { PageInk } from '../flow-styles';
+  import type { PageInk } from './flow-styles';
   import { pageInk } from './page-ink';
   import './page-ink-probe.css';
 

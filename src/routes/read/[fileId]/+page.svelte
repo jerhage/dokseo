@@ -98,6 +98,7 @@
   <FlowViewer
     view={flow}
     book={flowBook}
+    panelCount={captures.count}
     anchors={captures.anchors}
     onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
   >
@@ -106,6 +107,7 @@
         view={captures}
         {language}
         direction={flow.direction}
+        asksConsent={false}
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
     {/snippet}
@@ -130,14 +132,14 @@
       <CapturePanel view={captures} {language} direction={view.direction} asksConsent={false} />
     {/snippet}
   </ReaderScreen>
+{/if}
 
-  {#if captures.consentRequest !== null}
-    <ModelConsentDialog
-      request={captures.consentRequest}
-      onagree={() => void captures.agree()}
-      ondecline={() => captures.decline()}
-    />
-  {/if}
+{#if captures.consentRequest !== null}
+  <ModelConsentDialog
+    request={captures.consentRequest}
+    onagree={() => void captures.agree()}
+    ondecline={() => captures.decline()}
+  />
 {/if}
 
 <CapturePalette

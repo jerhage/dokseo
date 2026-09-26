@@ -24,7 +24,7 @@ test('opens for a book of any language, because it asks about none', async () =>
     props: {
       settings: DEFAULT_READING_SETTINGS,
       onchoose: vi.fn(),
-      onclose: vi.fn(),
+      open: true,
     },
   });
 
@@ -36,7 +36,7 @@ test('offers the readings beside the two scales, whatever the book', async () =>
     props: {
       settings: DEFAULT_READING_SETTINGS,
       onchoose: vi.fn(),
-      onclose: vi.fn(),
+      open: true,
     },
   });
 
@@ -50,7 +50,7 @@ test('reports the readings turned off when the switch is unticked', async () => 
     props: {
       settings: DEFAULT_READING_SETTINGS,
       onchoose,
-      onclose: vi.fn(),
+      open: true,
     },
   });
 

@@ -1,4 +1,4 @@
-import type { PageInk, PageScheme } from '../flow-styles';
+import type { PageInk, PageScheme } from './flow-styles';
 
 type InkReading = {
   readonly declaredScheme: string;

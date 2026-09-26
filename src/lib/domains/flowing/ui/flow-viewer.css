@@ -1,5 +1,5 @@
 @layer features {
-  @scope (.flow-viewer-b) {
+  @scope (.flow-viewer) {
     .stage > foliate-view {
       display: block;
       inline-size: 100%;

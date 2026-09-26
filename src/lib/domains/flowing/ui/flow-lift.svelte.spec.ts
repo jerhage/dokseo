@@ -7,6 +7,7 @@ import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import { ok } from '$lib/shared/result';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
+import '$lib/styles/index.css';
 import FlowViewer from './FlowViewer.svelte';
 import { FlowView } from './flow-view.svelte';
 import type { FlowBook } from './flow-view.svelte';
@@ -134,7 +135,7 @@ function chapterDoc(): Document {
 }
 
 function liftButton(): HTMLButtonElement | null {
-  return document.querySelector<HTMLButtonElement>('button.lift');
+  return document.querySelector<HTMLButtonElement>('.lift button');
 }
 
 function pointer(kind: string, x: number, buttons: number): PointerEvent {

@@ -7,6 +7,7 @@ import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import { ok } from '$lib/shared/result';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
+import '$lib/styles/index.css';
 import FlowViewer from './FlowViewer.svelte';
 import { FlowView } from './flow-view.svelte';
 import type { FlowBook } from './flow-view.svelte';
@@ -126,7 +127,7 @@ function paginator(): Renderer {
 }
 
 function chromeHushed(): boolean {
-  return document.querySelector('header.reader-bar.top')?.classList.contains('is-hushed') ?? false;
+  return document.querySelector('header.hushable')?.classList.contains('is-hushed') ?? false;
 }
 
 function chapterDoc(): Document {

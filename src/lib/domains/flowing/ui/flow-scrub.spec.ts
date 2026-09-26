@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { flowProgress, PROGRESS_UNKNOWN_LABEL } from '../../flow-progress';
+import { flowProgress, PROGRESS_UNKNOWN_LABEL } from './flow-progress';
 import {
   flowScrub,
   LAST_STEP,

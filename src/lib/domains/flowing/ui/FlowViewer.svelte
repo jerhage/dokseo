@@ -1,18 +1,29 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
+  import Alert from '$lib/components/Alert.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
+  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
+  import type { IconProps } from '$lib/components/icons/icon';
+  import Pencil from '$lib/components/icons/Pencil.svelte';
   import type { Anchor } from '$lib/shared/anchor';
-  import ReaderBars from '$lib/shared/ReaderBars.svelte';
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
+  import CompactProbe from '$lib/shared/CompactProbe.svelte';
+  import PageBar from '$lib/shared/PageBar.svelte';
+  import { dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
+  import PanelDock from '$lib/shared/PanelDock.svelte';
+  import { chromeShown } from '$lib/shared/reader-chrome';
+  import { returnFocusToPage } from '$lib/shared/reading-surface';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';
   import { NO_ANCHORS, passageCfis } from './flow-highlight';
-  import FlowContentsDialog from './FlowContentsDialog.svelte';
-  import FlowSettingsDialog from './FlowSettingsDialog.svelte';
   import { FlowGestures } from './flow-gestures';
-  import { flowMeta, progressLabel, SCRUB_STEP, tickOffsets } from './flow-progress';
+  import { flowMeta, tickOffsets } from './flow-progress';
   import {
     LIFT_BUTTON_HEIGHT_PX,
     LIFT_BUTTON_WIDTH_PX,
@@ -35,11 +46,17 @@
   } from './flow-turn';
   import type { FlowAction, FlowTurn, KeyTarget, Point, StageTap } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
+  import FlowContentsDialog from './FlowContentsDialog.svelte';
+  import FlowSettingsDialog from './FlowSettingsDialog.svelte';
+  import PageInkProbe from './PageInkProbe.svelte';
+  import { flowScrub, scrubbedFractionAt, scrubMarker } from './flow-scrub';
+  import './flow-viewer.css';
 
   type Props = {
     readonly view: FlowView;
     readonly book: FlowBook;
     readonly panel?: Snippet;
+    readonly panelCount?: number;
     readonly anchors?: readonly Anchor[];
     readonly onLift?: (passage: LiftedPassage) => void;
   };
@@ -50,11 +67,11 @@
     readonly top: number;
   };
 
-  const { view, book, panel, anchors = NO_ANCHORS, onLift }: Props = $props();
+  const { view, book, panel, panelCount, anchors = NO_ANCHORS, onLift }: Props = $props();
 
   const LIFT_LABEL = 'Save this passage as a capture';
 
-  const GLYPHS: readonly string[] = ['‹', '›'];
+  const ICONS: readonly Component<IconProps>[] = [ChevronLeft, ChevronRight];
 
   const TURN_LABELS: Readonly<Record<FlowTurn, string>> = {
     previous: 'Previous page',
@@ -62,7 +79,13 @@
   };
 
   let stage = $state<HTMLElement | null>(null);
-  let bars = $state<ReturnType<typeof ReaderBars> | null>(null);
+  let topBar = $state<HTMLElement | null>(null);
+  let bottomBar = $state<HTMLElement | null>(null);
+  let topHeight = $state(0);
+  let bodyWidth = $state(0);
+  let compactWidth = $state(0);
+  let barsAsked = $state(true);
+  let panelAsked = $state<boolean | null>(null);
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
@@ -74,22 +97,57 @@
 
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
-  const panelOpen = $derived(contentsOpen || settingsOpen);
+  const dialogOpen = $derived(contentsOpen || settingsOpen);
   const reading = $derived(view.state.kind === 'ready');
   const contents = $derived(view.contents);
   const settings = $derived(view.settings);
   const progress = $derived(view.progress);
-  const marker = $derived(progressLabel(progress));
+  const scrub = $derived(flowScrub(progress));
   const meta = $derived(flowMeta(view.chapter, book.language));
   const turning = $derived(view.direction);
-  const rtl = $derived(turning === 'rtl');
-  const order = $derived(turnOrder(turning));
   const marks = $derived(tickOffsets(view.ticks, turning));
   const reported = $derived(view.location);
   const passages = $derived(passageCfis(anchors));
+  const narrow = $derived(isNarrow(bodyWidth, compactWidth));
+  const placement = $derived(dockPlacement(narrow, panelAsked));
+  const panelOpen = $derived(dockToggle(placement).open);
+  const turns = $derived(
+    turnOrder(turning).map((turn, slot) => ({
+      icon: ICONS[slot] ?? ChevronRight,
+      label: TURN_LABELS[turn],
+      enabled: reading,
+      go: () => view.turn(turn),
+    })),
+  );
+
+  function openPopovers(): readonly Element[] {
+    try {
+      return [...document.querySelectorAll(':popover-open')];
+    } catch {
+      return [];
+    }
+  }
+
+  const focus = new ChromeFocus(
+    () => [topBar, bottomBar],
+    () => [document.activeElement, ...openPopovers()],
+  );
+
+  const awake = $derived(chromeShown(barsAsked, focus.held || dialogOpen));
+
+  function releaseBars(): void {
+    const focused = document.activeElement;
+    if (!(focused instanceof HTMLElement)) return;
+    returnFocusToPage(focused, [topBar, bottomBar], stage);
+  }
 
   function toggleBars(): void {
-    bars?.toggle();
+    if (awake) releaseBars();
+    barsAsked = !awake;
+  }
+
+  function togglePanel(): void {
+    panelAsked = !panelOpen;
   }
 
   function isEditable(target: EventTarget): boolean {
@@ -146,7 +204,7 @@
   }
 
   function onkey(event: KeyboardEvent): void {
-    if (event.defaultPrevented || panelOpen || gestures === null) return;
+    if (event.defaultPrevented || dialogOpen || gestures === null) return;
 
     if (event.key === 'Escape' && offer !== null) {
       offer = null;
@@ -229,8 +287,8 @@
     });
   }
 
-  function spotOfferedAt(placement: LiftPlacement): Omit<LiftOffer, 'chapter'> | null {
-    return match(placement)
+  function spotOfferedAt(placed: LiftPlacement): Omit<LiftOffer, 'chapter'> | null {
+    return match(placed)
       .with({ kind: 'nowhere' }, () => null)
       .with({ kind: 'above' }, (above) => ({ left: above.left, top: above.top }))
       .with({ kind: 'below' }, (below) => ({ left: below.left, top: below.top }))
@@ -289,11 +347,16 @@
     for (const doc of chapters) forgetSelection(doc);
     if (passage === null) return;
 
+    if (panel !== undefined) panelAsked = true;
     onLift?.(passage);
   }
 
-  function scrubbed(asked: string): void {
-    view.seek(Number(asked));
+  function markerAt(step: number): string {
+    return scrubMarker(progress, step);
+  }
+
+  function scrubTo(step: number): void {
+    view.seek(scrubbedFractionAt(step));
   }
 
   function bind(host: HTMLElement, chapter: ChapterView): void {
@@ -316,6 +379,22 @@
 
   $effect(() => {
     view.markPassages(passages);
+  });
+
+  $effect(() => {
+    function refresh(): void {
+      focus.refresh();
+    }
+
+    window.addEventListener('focusin', refresh);
+    window.addEventListener('focusout', refresh);
+    window.addEventListener('toggle', refresh, true);
+
+    return () => {
+      window.removeEventListener('focusin', refresh);
+      window.removeEventListener('focusout', refresh);
+      window.removeEventListener('toggle', refresh, true);
+    };
   });
 
   $effect(() => {
@@ -359,449 +438,144 @@
 
 <svelte:window onkeydown={onkey} />
 
-<div class="screen">
-  <div class="reading">
-    <div class="stage" bind:this={stage}></div>
+<div class="flow-viewer col gap-0 h-screen overflow-hidden surface-bg">
+  <div
+    class={['relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
+    bind:clientWidth={bodyWidth}
+  >
+    <CompactProbe bind:width={compactWidth} />
 
-    {#if offer !== null}
-      <button
-        class="lift"
-        type="button"
-        style:--lift-left="{offer.left}px"
-        style:--lift-top="{offer.top}px"
-        style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
-        style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
-        onclick={takeLift}
-      >
-        <span class="glyph" aria-hidden="true">✎</span>
-        <span class="assistive">{LIFT_LABEL}</span>
-      </button>
-    {/if}
+    <div
+      class="overlay-host relative flex-1 min-h-0 overflow-hidden"
+      style:--chrome-top="{awake ? topHeight : 0}px"
+    >
+      <div class="stage min-h-0" tabindex="-1" bind:this={stage}></div>
 
-    <ReaderBars bind:this={bars} placement="floating" startShown={true} heldOpen={panelOpen}>
-      {#snippet header()}
-        <div class="heading">
-          <h1 class="title" class:ko={book.language === 'ko'} lang={book.language}>{book.title}</h1>
-          <p class="meta">{meta}</p>
+      <PageInkProbe onink={(ink) => view.paint(ink)} />
+
+      {#if offer !== null}
+        <div
+          class="lift z-overlay"
+          style:--lift-left="{offer.left}px"
+          style:--lift-top="{offer.top}px"
+          style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
+          style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
+        >
+          <Button variant="accent" square pill class="lift-button" onclick={takeLift}>
+            <Pencil class="btn-icon" />
+            <span class="visually-hidden">{LIFT_LABEL}</span>
+          </Button>
         </div>
+      {/if}
+
+      <header
+        class={[
+          'pin-top z-sticky row wrap items-center gap-2 px-responsive py-2 surface border-b shadow-sm hushable',
+          { 'is-hushed': !awake },
+        ]}
+        inert={!awake}
+        bind:this={topBar}
+        bind:offsetHeight={topHeight}
+      >
+        <Button href="/" size="sm" class="shrink-0">
+          <ChevronLeft class="btn-icon" />
+          Library
+        </Button>
+
+        <div class="col gap-0 flex-1">
+          <h1 class="text-base weight-medium truncate" lang={book.language}>{book.title}</h1>
+          <p class="text-xs text-faint truncate">{meta}</p>
+        </div>
+
         {#if reading}
           {#if contents.kind === 'listed'}
-            <button class="tool" type="button" onclick={() => (contentsOpen = true)}>
+            <Button
+              size="sm"
+              class="shrink-0"
+              aria-haspopup="dialog"
+              onclick={() => (contentsOpen = true)}
+            >
               {CONTENTS_LABEL}
-            </button>
+            </Button>
           {:else}
-            <p class="bare">{NO_CONTENTS_LABEL}</p>
+            <p class="text-xs text-faint shrink-0">{NO_CONTENTS_LABEL}</p>
           {/if}
-          <button class="tool" type="button" onclick={() => (settingsOpen = true)}>
+          <Button
+            size="sm"
+            class="shrink-0"
+            aria-haspopup="dialog"
+            onclick={() => (settingsOpen = true)}
+          >
             {TEXT_SETTINGS_LABEL}
-          </button>
+          </Button>
         {/if}
-      {/snippet}
 
-      {#snippet footer()}
-        <div class="turns" role="group" aria-label="Turn the page">
-          {#each order as turn, slot (turn)}
-            <button class="key" type="button" disabled={!reading} onclick={() => view.turn(turn)}>
-              <span class="glyph" aria-hidden="true">{GLYPHS[slot]}</span>
-              <span class="assistive">{TURN_LABELS[turn]}</span>
-            </button>
-          {/each}
+        {#if !narrow}
+          <AppearanceSwitcher />
+        {/if}
+      </header>
+
+      <footer
+        class={[
+          'pin-bottom z-sticky row items-center gap-2 px-responsive py-2 surface border-t hushable',
+          { 'is-hushed': !awake },
+        ]}
+        inert={!awake}
+        bind:this={bottomBar}
+      >
+        <PageBar
+          first={turns[0] ?? null}
+          second={turns[1] ?? null}
+          steps={scrub.steps}
+          at={scrub.at}
+          direction={turning}
+          enabled={reading}
+          label="Reading progress"
+          ticks={marks}
+          {markerAt}
+          onscrub={scrubTo}
+        />
+      </footer>
+
+      {#if view.notice !== null}
+        <div class="told z-sticky">
+          <Alert dismissLabel="Hide this message" ondismiss={() => view.dismissNotice()}>
+            {view.notice}
+          </Alert>
         </div>
+      {/if}
 
-        <p class="marker" class:quiet={progress.kind === 'unknown'}>{marker}</p>
+      {#if curtain.kind === 'opening'}
+        <div class="curtain overlay-fill z-overlay col items-center gap-3 p-5 surface-bg">
+          <p class="prose text-sm text-muted" aria-live="polite">Opening this book…</p>
+        </div>
+      {:else if message !== null}
+        <div class="curtain overlay-fill z-overlay col items-center gap-3 p-5 surface-bg">
+          <p class="prose text-sm text-muted" aria-live="polite">{message}</p>
+          <Button href="/" variant="primary" size="sm">Back to your library</Button>
+        </div>
+      {/if}
+    </div>
 
-        {#if progress.kind === 'known'}
-          <div class="gauge">
-            <input
-              class="scrub"
-              class:rtl
-              type="range"
-              min={0}
-              max={1}
-              step={SCRUB_STEP}
-              value={progress.fraction}
-              style:--fill="{progress.percent}%"
-              aria-label="Reading progress"
-              aria-valuetext={marker}
-              onchange={(event) => scrubbed(event.currentTarget.value)}
-            />
-            {#each marks as offset, slot (slot)}
-              <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
-            {/each}
-          </div>
-        {/if}
-      {/snippet}
-    </ReaderBars>
-
-    {#if contentsOpen && contents.kind === 'listed'}
-      <FlowContentsDialog
-        entries={contents.entries}
-        currentKey={view.currentKey}
-        onpick={pickEntry}
-        onclose={() => (contentsOpen = false)}
-      />
-    {/if}
-
-    {#if settingsOpen}
-      <FlowSettingsDialog
-        {settings}
-        onchoose={chooseSettings}
-        onclose={() => (settingsOpen = false)}
-      />
-    {/if}
-
-    {#if view.notice !== null}
-      <div class="told" role="status">
-        <p class="said">{view.notice}</p>
-        <button class="dismiss" type="button" onclick={() => view.dismissNotice()}>
-          <span class="glyph" aria-hidden="true">×</span>
-          <span class="assistive">Hide this message</span>
-        </button>
-      </div>
-    {/if}
-
-    {#if curtain.kind === 'opening'}
-      <div class="curtain">
-        <p class="notice" aria-live="polite">Opening this book…</p>
-      </div>
-    {:else if message !== null}
-      <div class="curtain">
-        <p class="notice" aria-live="polite">{message}</p>
-        <a class="escape" href="/">Back to your library</a>
-      </div>
+    {#if panel !== undefined}
+      <PanelDock {placement} count={panelCount ?? null} {panel} ontoggle={togglePanel} />
     {/if}
   </div>
-
-  {#if panel !== undefined}
-    <aside class="dock">{@render panel()}</aside>
-  {/if}
 </div>
 
-<style>
-  .screen {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-    background: var(--c-surface-void);
-    color: var(--c-text-2);
-    font-family: var(--f-ui);
-  }
+{#if contents.kind === 'listed'}
+  <FlowContentsDialog
+    bind:open={contentsOpen}
+    entries={contents.entries}
+    language={book.language}
+    currentKey={view.currentKey}
+    onpick={pickEntry}
+  />
+{/if}
 
-  .reading {
-    position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
-    height: 100%;
-  }
-
-  .dock {
-    display: flex;
-    flex: none;
-    width: 320px;
-    min-height: 0;
-    border-left: 1px solid var(--c-border-1);
-    background: var(--c-surface-rail);
-  }
-
-  @media (max-width: 900px) {
-    .dock {
-      width: 240px;
-    }
-  }
-
-  .stage {
-    height: 100%;
-  }
-
-  .lift {
-    position: absolute;
-    z-index: calc(var(--z-chrome) + 1);
-    left: var(--lift-left);
-    top: var(--lift-top);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--lift-width);
-    height: var(--lift-height);
-    padding: 0;
-    border: 1px solid var(--c-accent-border);
-    border-radius: var(--r-pill);
-    background: var(--c-accent);
-    color: var(--c-accent-text);
-    font-family: var(--f-ui);
-    font-size: 15px;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .lift:hover,
-  .lift:focus-visible {
-    outline: 1px solid var(--c-accent-border-strong);
-    outline-offset: 2px;
-  }
-
-  .stage :global(foliate-view) {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  .tool {
-    flex: none;
-    padding: var(--s-1) var(--s-2);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-family: var(--f-ui);
-    font-size: 11.5px;
-    cursor: pointer;
-  }
-
-  .tool:hover,
-  .tool:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .bare {
-    flex: none;
-    margin: 0;
-    color: var(--c-text-8);
-    font-size: 11px;
-  }
-
-  .heading {
-    display: flex;
-    flex: 1 1 auto;
-    align-items: baseline;
-    gap: var(--s-2);
-    min-width: 0;
-  }
-
-  .title {
-    flex: 0 1 auto;
-    margin: 0;
-    overflow: hidden;
-    color: var(--c-text-1);
-    font-family: var(--f-ja);
-    font-size: 13.5px;
-    font-weight: 400;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .title.ko {
-    font-family: var(--f-ko);
-  }
-
-  .meta {
-    flex: 0 1 auto;
-    margin: 0;
-    overflow: hidden;
-    color: var(--c-text-8);
-    font-size: 11px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .turns {
-    display: flex;
-    flex: none;
-    gap: var(--s-1);
-  }
-
-  .key {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-button);
-    color: var(--c-text-5);
-    font-family: var(--f-ui);
-    font-size: 14px;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .key:hover:not(:disabled),
-  .key:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .key:disabled {
-    cursor: default;
-    opacity: 0.4;
-  }
-
-  .glyph {
-    display: block;
-  }
-
-  .assistive {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .marker {
-    flex: none;
-    margin: 0;
-    color: var(--c-text-5);
-    font-family: var(--f-mono);
-    font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-
-  .marker.quiet {
-    color: var(--c-text-8);
-    font-family: var(--f-ui);
-  }
-
-  .gauge {
-    position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .tick {
-    position: absolute;
-    inset-block: 0;
-    left: var(--at);
-    width: 1px;
-    background: var(--c-text-10);
-    transform: translateX(-0.5px);
-    pointer-events: none;
-  }
-
-  .scrub {
-    display: block;
-    width: 100%;
-    height: 3px;
-    margin: 0;
-    padding: 0;
-    border-radius: var(--r-pill);
-    background: linear-gradient(
-      to right,
-      var(--c-accent) var(--fill),
-      var(--c-border-2) var(--fill)
-    );
-    appearance: none;
-    cursor: pointer;
-  }
-
-  .scrub.rtl {
-    direction: rtl;
-    background: linear-gradient(
-      to left,
-      var(--c-accent) var(--fill),
-      var(--c-border-2) var(--fill)
-    );
-  }
-
-  .scrub::-webkit-slider-thumb {
-    width: 11px;
-    height: 11px;
-    border: 0;
-    border-radius: var(--r-pill);
-    background: var(--c-accent);
-    appearance: none;
-  }
-
-  .scrub::-moz-range-thumb {
-    width: 11px;
-    height: 11px;
-    border: 0;
-    border-radius: var(--r-pill);
-    background: var(--c-accent);
-  }
-
-  .scrub:focus-visible {
-    outline: 1px solid var(--c-accent-border-strong);
-    outline-offset: 4px;
-  }
-
-  .told {
-    position: absolute;
-    top: var(--s-3);
-    left: 50%;
-    z-index: calc(var(--z-chrome) + 1);
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    max-width: min(48ch, calc(100% - var(--s-5)));
-    padding: var(--s-2) var(--s-3);
-    transform: translateX(-50%);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-card-active);
-  }
-
-  .said {
-    margin: 0;
-    color: var(--c-text-3);
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
-  .dismiss {
-    display: flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    border: 1px solid transparent;
-    border-radius: var(--r-1);
-    background: none;
-    color: var(--c-text-8);
-    font-family: var(--f-ui);
-    cursor: pointer;
-  }
-
-  .dismiss:hover,
-  .dismiss:focus-visible {
-    border-color: var(--c-accent-border);
-    color: var(--c-accent);
-  }
-
-  .curtain {
-    position: absolute;
-    inset: 0;
-    z-index: calc(var(--z-chrome) + 1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--s-3);
-    padding: var(--s-5);
-    background: var(--c-viewer-gradient);
-  }
-
-  .notice {
-    max-width: 44ch;
-    margin: 0;
-    color: var(--c-text-7);
-    font-size: 12.5px;
-    text-align: center;
-  }
-
-  .escape {
-    padding: var(--s-2) var(--s-3);
-    border-radius: var(--r-4);
-    background: var(--c-accent);
-    color: var(--c-accent-text);
-    font-size: 12px;
-    font-weight: 600;
-    text-decoration: none;
-  }
-</style>
+<FlowSettingsDialog
+  bind:open={settingsOpen}
+  {settings}
+  offersAppearance={narrow}
+  onchoose={chooseSettings}
+/>
