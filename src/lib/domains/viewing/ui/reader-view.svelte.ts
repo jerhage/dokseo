@@ -18,6 +18,7 @@ import { groupContaining, pairPages } from '../domain/page-pairing';
 import type { PageGroup } from '../domain/page-pairing';
 import { groupOf, positionOfGroup, readingPosition } from '../domain/reading-position';
 import type { ReadingPosition } from '../domain/reading-position';
+import type { PageMove } from './page-moves';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
@@ -159,6 +160,11 @@ class ReaderView {
 
   get visiblePages(): PageGroup {
     return this.groups[this.group] ?? NO_PAGES;
+  }
+
+  get besidePages(): Readonly<Record<PageMove, PageGroup | null>> {
+    const at = this.group;
+    return { decrement: this.groups[at - 1] ?? null, increment: this.groups[at + 1] ?? null };
   }
 
   async open(id: BookId, at: ImageIndex | null = null): Promise<void> {

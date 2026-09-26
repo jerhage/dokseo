@@ -316,6 +316,20 @@ describe('ReaderView', () => {
     expect(view.visiblePages).toEqual([0, 1]);
   });
 
+  it('offers the groups on either side of the current one, and none past either end', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    expect(view.besidePages).toEqual({ decrement: null, increment: [2, 3] });
+
+    await view.next();
+    expect(view.besidePages).toEqual({ decrement: [0, 1], increment: [4, 5] });
+
+    await view.next();
+    expect(view.besidePages).toEqual({ decrement: [2, 3], increment: null });
+  });
+
   it('refuses to move past either end', async () => {
     const world = fakes();
     const view = new ReaderView(world.container, world.notify);

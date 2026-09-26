@@ -13,9 +13,27 @@
     .frame.is-grabbing {
       cursor: grabbing;
     }
+    .pane {
+      transition: none;
+      transform: translateX(
+        calc(var(--beside, 0) * (100% + var(--slide-gap, 0px)) + var(--slide, 0px))
+      );
+    }
+    .pane.is-beside {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .pane.is-settling {
+      transition: transform var(--dur-quick) var(--ease-out);
+    }
     .strip {
       transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
       transform-origin: 0 0;
+    }
+    .pane.is-beside .strip {
+      transform: scale(var(--zoom, 1));
+      transform-origin: center;
     }
     .strip.is-rtl {
       flex-direction: row-reverse;

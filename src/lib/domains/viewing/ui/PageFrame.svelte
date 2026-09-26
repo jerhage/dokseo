@@ -20,9 +20,20 @@
     readonly measured?: (index: ImageIndex, size: Size) => void;
     readonly flush?: boolean;
     readonly glow?: readonly GlowRegion[];
+    readonly beside?: boolean;
   };
 
-  let { index, label, pictureAt, measured, flush = false, glow = [] }: Props = $props();
+  let {
+    index,
+    label,
+    pictureAt,
+    measured,
+    flush = false,
+    glow = [],
+    beside = false,
+  }: Props = $props();
+
+  const selectable = $derived(beside ? undefined : index);
 
   const marker = $derived(glowMarker(glow));
 
@@ -137,12 +148,17 @@
       src={picture.url}
       alt=""
       decoding="async"
-      data-image-index={index}
+      data-image-index={selectable}
       onload={shown}
       onerror={() => (phase = 'failed')}
     />
   {:else}
-    <canvas class="w-full h-full" bind:this={frame} width={0} height={0} data-image-index={index}
+    <canvas
+      class="w-full h-full"
+      bind:this={frame}
+      width={0}
+      height={0}
+      data-image-index={selectable}
     ></canvas>
   {/if}
   {#each boxes as drawn, order (order)}

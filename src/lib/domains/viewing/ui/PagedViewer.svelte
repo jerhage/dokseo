@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { flushSync, untrack } from 'svelte';
   import { match } from 'ts-pattern';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
@@ -8,6 +8,7 @@
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PagePicture } from '$lib/shared/page-source';
   import type { PageFit } from '$lib/shared/page-fit';
+  import { swipeMayStart } from '$lib/shared/page-turn';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import type { PageGroup } from '../domain/page-pairing';
   import {
@@ -28,6 +29,15 @@
   import { learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import type { PageMove } from './page-moves';
+  import {
+    SLIDE_GAP_PX,
+    SLIDE_REST,
+    slidePanes,
+    slideShift,
+    slideStep,
+    slideTravel,
+  } from './page-slide';
+  import type { Neighbours, Slide } from './page-slide';
   import { touchAction } from './touch-action';
   import type { TouchAction } from './touch-action';
   import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
@@ -47,8 +57,11 @@
     readonly bySpace: boolean;
   };
 
+  const NO_NEIGHBOURS: Neighbours = { decrement: null, increment: null };
+
   type Props = {
     readonly pages: PageGroup;
+    readonly beside?: Neighbours;
     readonly direction: ReadingDirection;
     readonly pageFit: PageFit;
     readonly pictureAt: (index: ImageIndex) => Promise<PagePicture | null>;
@@ -67,6 +80,7 @@
 
   let {
     pages,
+    beside = NO_NEIGHBOURS,
     direction,
     pageFit,
     pictureAt,
@@ -83,6 +97,7 @@
     onTurn,
   }: Props = $props();
 
+  const SETTLE_FALLBACK_MS = 400;
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
   const WHEEL_LINE_PX = 16;
@@ -98,12 +113,17 @@
   let pannable = $state(false);
   let revealed = $state(false);
   let hintLines = $state.raw<readonly GestureHint[]>([]);
+  let slide = $state.raw<Slide>(SLIDE_REST);
 
   let shownPages: PageGroup | null = null;
   let touch: TouchState = TOUCH_IDLE;
   let touchTimer: ReturnType<typeof setTimeout> | null = null;
   let panOrigin: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
   let lastPointer = '';
+  let slides = false;
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const panes = $derived(slidePanes(pages, beside, direction));
 
   const pending = $derived(
     hintsToShow(chromeShown, pagedHints(pannable), learnedGestures(), revealed),
@@ -355,8 +375,60 @@
       : { origin: panOrigin, content: sizes.content, frame: sizes.frame };
   }
 
+  function holdStrip(element: HTMLDivElement): () => void {
+    strip = element;
+    return () => {
+      if (strip === element) strip = null;
+    };
+  }
+
+  function stopSettleTimer(): void {
+    if (settleTimer !== null) clearTimeout(settleTimer);
+    settleTimer = null;
+  }
+
+  function finishSlide(): void {
+    const settling = slide;
+    if (settling.kind !== 'settle') return;
+
+    stopSettleTimer();
+    slide = SLIDE_REST;
+    if (settling.move !== null) onTurn?.(settling.move);
+  }
+
+  function settled(event: TransitionEvent): void {
+    if (event.target === event.currentTarget && event.propertyName === 'transform') finishSlide();
+  }
+
+  function followsTheFinger(input: TouchInput, span: FrameSpan): boolean {
+    if (input.kind === 'tick') return false;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    return swipeMayStart(input, span, window.innerWidth, turns);
+  }
+
+  function slideWith(state: TouchState, action: TouchAction, width: number): boolean {
+    const was = slide;
+    const travel = slides ? slideTravel(state, state.kind === 'panning' ? panReach() : null) : 0;
+    const turn = action.kind === 'turn' ? action.move : null;
+    slide = slideStep(was, state, travel, turn, { width, direction, neighbours: beside });
+
+    const handed = was.kind === 'follow' && slide.kind === 'settle';
+    if (handed) {
+      stopSettleTimer();
+      settleTimer = setTimeout(finishSlide, SETTLE_FALLBACK_MS);
+    }
+    return handed;
+  }
+
   function feed(input: TouchInput): void {
-    if (input.kind === 'down' && touch.kind === 'idle') panOrigin = viewport;
+    if (input.kind === 'down' && touch.kind === 'idle') {
+      if (slide.kind === 'settle') {
+        finishSlide();
+        flushSync();
+      }
+      panOrigin = viewport;
+      slides = followsTheFinger(input, frameSpan());
+    }
 
     const span = frameSpan();
     const step = touchStep(touch, input, {
@@ -368,16 +440,16 @@
     });
     touch = step.state;
     scheduleTick();
-    act(
-      touchAction(step.intent, {
-        chromeShown,
-        turns,
-        direction,
-        frame: span,
-        viewportWidth: window.innerWidth,
-        reach: step.intent.kind === 'pan-end' ? panReach() : null,
-      }),
-    );
+    const action = touchAction(step.intent, {
+      chromeShown,
+      turns,
+      direction,
+      frame: span,
+      viewportWidth: window.innerWidth,
+      reach: step.intent.kind === 'pan-end' ? panReach() : null,
+    });
+    const handed = slideWith(step.state, action, span.width);
+    if (!(handed && action.kind === 'turn')) act(action);
   }
 
   function feedTouch(kind: TouchSample['kind'], event: PointerEvent): void {
@@ -520,6 +592,8 @@
 
   $effect(() => stopTouchTimer);
 
+  $effect(() => stopSettleTimer);
+
   $effect(() => {
     const lines = pending;
     if (lines.length > 0) hintLines = lines;
@@ -544,6 +618,8 @@
       if (group === shownPages) return;
 
       shownPages = group;
+      stopSettleTimer();
+      slide = SLIDE_REST;
       selection?.reset();
       stopGrab();
       recentre(viewport.zoom);
@@ -573,17 +649,41 @@
     {onpointercancel}
     {oncontextmenu}
   >
-    <div
-      class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
-      bind:this={strip}
-      style:--pan-x="{viewport.panX}px"
-      style:--pan-y="{viewport.panY}px"
-      style:--zoom={viewport.zoom}
-    >
-      {#each pages as index (index)}
-        <PageFrame {index} label={label(index)} {pictureAt} {measured} glow={glowOn(glow, index)} />
-      {/each}
-    </div>
+    {#each panes as pane (pane.key)}
+      <div
+        class={[
+          'pane row gap-0 shrink-0',
+          {
+            'items-center justify-center is-beside': pane.beside !== 0,
+            'is-settling': slide.kind === 'settle',
+          },
+        ]}
+        inert={pane.beside !== 0}
+        style:--beside={pane.beside}
+        style:--slide="{slideShift(slide)}px"
+        style:--slide-gap="{SLIDE_GAP_PX}px"
+        ontransitionend={settled}
+      >
+        <div
+          class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
+          style:--pan-x="{viewport.panX}px"
+          style:--pan-y="{viewport.panY}px"
+          style:--zoom={viewport.zoom}
+          {@attach pane.beside === 0 ? holdStrip : null}
+        >
+          {#each pane.pages as index (index)}
+            <PageFrame
+              {index}
+              label={label(index)}
+              {pictureAt}
+              {measured}
+              glow={glowOn(glow, index)}
+              beside={pane.beside !== 0}
+            />
+          {/each}
+        </div>
+      </div>
+    {/each}
 
     <SelectionLayer
       bind:this={selection}

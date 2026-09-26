@@ -342,6 +342,7 @@
           <PagedViewer
             bind:this={paged}
             pages={view.visiblePages}
+            beside={view.besidePages}
             direction={book.direction}
             pageFit={book.pageFit}
             pictureAt={(index) => view.pictureAt(index)}

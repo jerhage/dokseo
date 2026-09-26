@@ -35,5 +35,5 @@ function overscrollTurn(reach: PanReach, stroke: PanStroke, area: TurnArea): Tur
   );
 }
 
-export { overscrollTurn };
+export { overscrollTurn, travelPastEdge };
 export type { PanReach, PanStroke, TurnArea };

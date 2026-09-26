@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE_GUTTER_PX, SWIPE_MIN_PX, swipeTurn, tapZone, towards } from './page-turn';
+import {
+  EDGE_GUTTER_PX,
+  SWIPE_MIN_PX,
+  swipeMayStart,
+  swipeTurn,
+  tapZone,
+  towards,
+} from './page-turn';
 import type { FrameSpan, TouchTurns, TurnPoint } from './page-turn';
 
 const PHONE_WIDTH = 390;
@@ -153,6 +160,32 @@ describe('swipeTurn', () => {
     expect(
       swipeTurn(at(300), at(200), SLOW_MS, { left: 0, width: 0 }, PHONE_WIDTH, 'tap-zones'),
     ).toBeNull();
+  });
+});
+
+describe('swipeMayStart', () => {
+  it('lets a swipe start anywhere on the frame in the tap-zones variant', () => {
+    for (const x of [0, EDGE_GUTTER_PX - 1, 195, PHONE_WIDTH]) {
+      expect(swipeMayStart(at(x), WHOLE_SCREEN, PHONE_WIDTH, 'tap-zones')).toBe(true);
+    }
+  });
+
+  it('refuses a start in either edge gutter in the swipe-only variant', () => {
+    expect(swipeMayStart(at(EDGE_GUTTER_PX - 1), WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only')).toBe(
+      false,
+    );
+    expect(
+      swipeMayStart(at(PHONE_WIDTH - EDGE_GUTTER_PX + 1), WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only'),
+    ).toBe(false);
+    expect(swipeMayStart(at(195), WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only')).toBe(true);
+  });
+
+  it('refuses a start off the frame, on a frame with no width, or at no number', () => {
+    for (const turns of BOTH) {
+      expect(swipeMayStart(at(50), { left: 100, width: 200 }, PHONE_WIDTH, turns)).toBe(false);
+      expect(swipeMayStart(at(195), { left: 0, width: 0 }, PHONE_WIDTH, turns)).toBe(false);
+      expect(swipeMayStart(at(Number.NaN), WHOLE_SCREEN, PHONE_WIDTH, turns)).toBe(false);
+    }
   });
 });
 

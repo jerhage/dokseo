@@ -71,6 +71,18 @@ function swipeTurn(
   return dx < 0 ? 'right' : 'left';
 }
 
+function swipeMayStart(
+  start: TurnPoint,
+  frame: FrameSpan,
+  viewportWidth: number,
+  turns: TouchTurns,
+): boolean {
+  if (!Number.isFinite(start.x)) return false;
+  if (!isPositiveFinite(frame.width) || !onFrame(start.x, frame)) return false;
+
+  return turns !== 'swipe-only' || !inEdgeGutter(start.x, viewportWidth);
+}
+
 function towards<T>(side: TurnSide, order: readonly [T, T]): T {
   return side === 'left' ? order[0] : order[1];
 }
@@ -81,6 +93,7 @@ export {
   SWIPE_AXIS_RATIO,
   SWIPE_MIN_PX,
   SWIPE_MIN_PX_PER_MS,
+  swipeMayStart,
   swipeTurn,
   tapZone,
   towards,
