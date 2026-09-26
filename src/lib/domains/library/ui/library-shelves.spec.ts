@@ -8,11 +8,13 @@ import {
   bookFacts,
   continueReading,
   emptyShelfText,
+  otherView,
   readingState,
   shelfBooks,
   shelfTabs,
   sortBooks,
   toShelf,
+  viewSwitchName,
 } from './library-shelves';
 
 function comic(title: string, page: number, imageCount = 10, addedAt = 0): Book {
@@ -232,5 +234,20 @@ describe('emptyShelfText', () => {
   it('explains an empty shelf when nothing is searched', () => {
     expect(emptyShelfText('reading', false)).toBe('Nothing in progress. Open a book to start it.');
     expect(emptyShelfText('finished', false)).toBe('No finished books yet.');
+  });
+});
+
+describe('otherView', () => {
+  it('switches covers to a list and a list back to covers', () => {
+    expect([otherView('grid'), otherView('list')]).toEqual(['list', 'grid']);
+  });
+});
+
+describe('viewSwitchName', () => {
+  it('names the view the switch leads to, not the one on screen', () => {
+    expect([viewSwitchName('grid'), viewSwitchName('list')]).toEqual([
+      'Show as list',
+      'Show as covers',
+    ]);
   });
 });

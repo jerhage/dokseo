@@ -69,6 +69,14 @@ function sortName(order: SortOrder): string {
     .exhaustive();
 }
 
+function otherView(layout: CollectionView): CollectionView {
+  return layout === 'grid' ? 'list' : 'grid';
+}
+
+function viewSwitchName(layout: CollectionView): string {
+  return otherView(layout) === 'list' ? 'Show as list' : 'Show as covers';
+}
+
 const WHOLE_BOOK = 100;
 
 function readPercent(book: Book): number {
@@ -136,6 +144,7 @@ export {
   bookFacts,
   continueReading,
   emptyShelfText,
+  otherView,
   readingState,
   shelfBooks,
   shelfName,
@@ -143,5 +152,6 @@ export {
   sortBooks,
   sortName,
   toShelf,
+  viewSwitchName,
 };
 export type { CollectionView, ReadingState, Shelf, SortOrder };

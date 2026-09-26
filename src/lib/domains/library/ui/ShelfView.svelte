@@ -2,12 +2,23 @@
   import Button from '$lib/components/Button.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
+  import LayoutGrid from '$lib/components/icons/LayoutGrid.svelte';
+  import List from '$lib/components/icons/List.svelte';
   import Tabs from '$lib/components/Tabs.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import BookGrid from './BookGrid.svelte';
   import BookTable from './BookTable.svelte';
-  import { SORT_ORDERS, emptyShelfText, shelfTabs, sortName, toShelf } from './library-shelves';
+  import {
+    SORT_ORDERS,
+    emptyShelfText,
+    otherView,
+    shelfTabs,
+    sortName,
+    toShelf,
+    viewSwitchName,
+  } from './library-shelves';
   import type { CollectionView, Shelf, SortOrder } from './library-shelves';
 
   type Props = {
@@ -43,23 +54,28 @@
   const tabs = $derived(shelfTabs(books));
 </script>
 
+{#snippet sortChoices()}
+  {#each SORT_ORDERS as choice (choice)}
+    <DropdownItem selected={order === choice} onclick={() => (order = choice)}>
+      {sortName(choice)}
+    </DropdownItem>
+  {/each}
+{/snippet}
+
 <section aria-label="Your books">
   <Tabs
     {tabs}
     label="Shelves"
     variant="pill"
+    headerClass="layout-app-shell-narrow-nowrap"
     bind:selected={() => shelf, (id) => (shelf = toShelf(id))}
   >
     {#snippet tools()}
-      <Dropdown size="sm" variant="ghost" align="end">
+      <Dropdown size="sm" variant="ghost" align="end" class="layout-app-shell-wide-only">
         {#snippet trigger()}Sort: {sortName(order)}{/snippet}
-        {#each SORT_ORDERS as choice (choice)}
-          <DropdownItem selected={order === choice} onclick={() => (order = choice)}>
-            {sortName(choice)}
-          </DropdownItem>
-        {/each}
+        {@render sortChoices()}
       </Dropdown>
-      <div class="row gap-1" role="group" aria-label="Show books as">
+      <div class="row gap-1 layout-app-shell-wide-only" role="group" aria-label="Show books as">
         <Button
           size="sm"
           variant="ghost"
@@ -79,6 +95,32 @@
           List
         </Button>
       </div>
+      <Dropdown
+        variant="ghost"
+        align="end"
+        square
+        chevron={false}
+        class="layout-app-shell-narrow-only"
+      >
+        {#snippet trigger()}
+          <ArrowUpDown class="btn-icon" />
+          <span class="visually-hidden">Sort: {sortName(order)}</span>
+        {/snippet}
+        {@render sortChoices()}
+      </Dropdown>
+      <Button
+        variant="ghost"
+        square
+        class="layout-app-shell-narrow-only"
+        aria-label={viewSwitchName(layout)}
+        onclick={() => (layout = otherView(layout))}
+      >
+        {#if layout === 'grid'}
+          <List class="btn-icon" />
+        {:else}
+          <LayoutGrid class="btn-icon" />
+        {/if}
+      </Button>
     {/snippet}
     {#snippet panel()}
       {#if shown.length === 0}
