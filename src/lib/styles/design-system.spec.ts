@@ -242,6 +242,17 @@ const SURFACES: Readonly<Record<string, string>> = {
   'surface-bright': '--color-surface-bright',
 };
 
+const TEXT_COLOURS: Readonly<Record<string, string>> = {
+  'text-muted': '--color-text-muted',
+  'text-faint': '--color-text-faint',
+  'text-primary': '--color-primary',
+  'text-accent': '--color-accent',
+  'text-success': '--color-success',
+  'text-warning': '--color-warning',
+  'text-danger': '--color-danger',
+  'text-info': '--color-info',
+};
+
 const TOKEN_UTILITIES: Readonly<Record<string, readonly [string, string, string]>> = {
   'utilities/shadow.css': ['shadow', 'box-shadow', 'shadow'],
   'utilities/surface.css': ['rounded', 'border-radius', 'radius'],
@@ -714,6 +725,19 @@ describe('the design system stylesheets', () => {
       expect({ selector, body: declarations(ruleBody(surface, selector)).toSorted() }).toEqual({
         selector,
         body: [`background-color: var(${token})`, 'color: var(--color-text)'],
+      });
+    }
+  });
+
+  it('colours the text of every text colour utility with the semantic token its name says, and nothing else', () => {
+    const text = style('utilities/text.css');
+
+    for (const [name, token] of Object.entries(TEXT_COLOURS)) {
+      const selector = `.${name}`;
+
+      expect({ selector, body: declarations(ruleBody(text, selector)) }).toEqual({
+        selector,
+        body: [`color: var(${token})`],
       });
     }
   });

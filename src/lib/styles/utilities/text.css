@@ -28,6 +28,24 @@
 .text-faint {
   color: var(--color-text-faint);
 }
+.text-primary {
+  color: var(--color-primary);
+}
+.text-accent {
+  color: var(--color-accent);
+}
+.text-success {
+  color: var(--color-success);
+}
+.text-warning {
+  color: var(--color-warning);
+}
+.text-danger {
+  color: var(--color-danger);
+}
+.text-info {
+  color: var(--color-info);
+}
 .weight-normal {
   font-weight: var(--weight-normal);
 }
