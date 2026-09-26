@@ -69,6 +69,7 @@ function fakes(): Fakes {
       markFinished: unused,
       markUnread: unused,
       readLibrarySize: unused,
+      readPageSizes: unused,
     },
     recognition: {
       readModelConsent: unused,

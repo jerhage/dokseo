@@ -7,6 +7,7 @@ import type { Result } from '$lib/shared/result';
 import { selectImageEntries } from '../domain/ingest/image-entries';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
+import { entryImageSizes } from './entry-image-size';
 
 function orderedImages(entries: readonly Entry[]): FileEntry[] {
   const byName = new Map<string, FileEntry>();
@@ -82,6 +83,8 @@ async function openArchivePageSource(source: Blob): Promise<Result<PageSource, P
         return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
       }
     },
+
+    sizes: () => entryImageSizes(source, images, () => closed, 'The archive is closed'),
 
     close,
     [Symbol.dispose]: close,

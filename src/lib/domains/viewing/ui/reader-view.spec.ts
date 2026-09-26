@@ -67,6 +67,9 @@ type FakeSource = {
   readonly asked: number[];
   readonly sizes: Map<number, Size>;
   readonly broken: Set<number>;
+  readonly headers: Map<number, Size>;
+  headersRead: Promise<void> | null;
+  headersFail: boolean;
   kind: 'drawn' | 'encoded';
   held: Promise<void> | null;
   closed: number;
@@ -76,12 +79,16 @@ function fakeSource(count: number): FakeSource {
   const asked: number[] = [];
   const sizes = new Map<number, Size>();
   const broken = new Set<number>();
+  const headers = new Map<number, Size>();
 
   const state = {
     source: {} as PageSource,
     asked,
     sizes,
     broken,
+    headers,
+    headersRead: null as Promise<void> | null,
+    headersFail: false,
     kind: 'drawn' as 'drawn' | 'encoded',
     held: null as Promise<void> | null,
     closed: 0,
@@ -105,6 +112,12 @@ function fakeSource(count: number): FakeSource {
         return Promise.resolve(err({ kind: 'decode-failed', index, cause: 'torn page' } as const));
       }
       return Promise.resolve(ok(bitmap(sizes.get(index) ?? PORTRAIT)));
+    },
+    sizes: async () => {
+      const known = new Map(headers);
+      await state.headersRead;
+      if (state.headersFail) return err({ kind: 'source-unreadable', cause: 'bad zip' } as const);
+      return ok(Array.from({ length: count }, (_, index) => known.get(index) ?? null));
     },
     close: () => {
       state.closed += 1;
@@ -231,6 +244,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       markFinished: () => Promise.reject(new Error('not used')),
       markUnread: () => Promise.reject(new Error('not used')),
       readLibrarySize: () => Promise.resolve(ok(0)),
+      readPageSizes: (source) => source.sizes(),
     },
     recognition: {
       readModelConsent: () => Promise.reject(new Error('not used')),
@@ -461,6 +475,81 @@ describe('ReaderView', () => {
 
     expect(at(view.sizes, 0)).toEqual(LANDSCAPE);
     expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+  });
+
+  it('pairs from the sizes read at open, before any page is shown', async () => {
+    const world = fakes();
+    world.pages.headers.set(0, LANDSCAPE);
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+    await vi.waitFor(() => expect(at(view.sizes, 0)).toEqual(LANDSCAPE));
+
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+    expect(world.pages.asked).toEqual([]);
+  });
+
+  it('keeps a size the display measured over the one read at open', async () => {
+    const world = fakes();
+    world.pages.headers.set(0, PORTRAIT);
+    let arrive = (): void => undefined;
+    world.pages.headersRead = new Promise<void>((resolve) => {
+      arrive = resolve;
+    });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    view.measure(imageIndex(0), LANDSCAPE);
+    arrive();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(at(view.sizes, 0)).toEqual(LANDSCAPE);
+  });
+
+  it('lets a later measurement replace a size read at open', async () => {
+    const world = fakes();
+    world.pages.headers.set(0, PORTRAIT);
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    await vi.waitFor(() => expect(at(view.sizes, 0)).toEqual(PORTRAIT));
+
+    view.measure(imageIndex(0), LANDSCAPE);
+
+    expect(at(view.sizes, 0)).toEqual(LANDSCAPE);
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+  });
+
+  it('drops sizes read for a book the reader has already left', async () => {
+    const world = fakes();
+    world.pages.headers.set(0, LANDSCAPE);
+    let arrive = (): void => undefined;
+    world.pages.headersRead = new Promise<void>((resolve) => {
+      arrive = resolve;
+    });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    world.pages.headersRead = null;
+    world.pages.headers.clear();
+    await view.open(bookId('one'));
+    arrive();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(at(view.sizes, 0)).toBeNull();
+  });
+
+  it('keeps the assumed sizes when they cannot be read at open', async () => {
+    const world = fakes();
+    world.pages.headers.set(0, LANDSCAPE);
+    world.pages.headersFail = true;
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(at(view.sizes, 0)).toBeNull();
+    expect(view.status).toBe('ready');
+    expect(world.notices).toEqual([]);
   });
 
   it('sets the pairing and rebuilds the groups', async () => {

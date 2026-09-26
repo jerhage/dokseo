@@ -1,5 +1,6 @@
 import type * as PdfJs from 'pdfjs-dist';
-import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
+import type { PDFDocumentLoadingTask, PDFDocumentProxy, PageViewport } from 'pdfjs-dist';
+import type { Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -93,10 +94,24 @@ function pdfJsRuntime(): Promise<PdfJsRuntime> {
   return runtime;
 }
 
+function drawnSize(viewport: PageViewport): Size {
+  return { width: Math.ceil(viewport.width), height: Math.ceil(viewport.height) };
+}
+
+async function pageSizes(pdf: PDFDocumentProxy): Promise<readonly Size[]> {
+  const sizes: Size[] = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    sizes.push(drawnSize(page.getViewport({ scale: RENDER_SCALE })));
+  }
+  return sizes;
+}
+
 async function renderToBitmap(pdf: PDFDocumentProxy, pageNumber: number): Promise<ImageBitmap> {
   const page = await pdf.getPage(pageNumber);
   const viewport = page.getViewport({ scale: RENDER_SCALE });
-  const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+  const size = drawnSize(viewport);
+  const canvas = new OffscreenCanvas(size.width, size.height);
   const context = canvas.getContext('2d');
   if (context === null) throw new Error('A 2D drawing context was unavailable');
   await page.render({
@@ -160,6 +175,16 @@ async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageS
     },
 
     image: render,
+
+    async sizes(): Promise<Result<readonly (Size | null)[], PageSourceError>> {
+      if (closed) return err({ kind: 'source-unreadable', cause: 'The document is closed' });
+      try {
+        const sizes = await Promise.race([pageSizes(pdf), transport.failure]);
+        return ok(sizes);
+      } catch (cause) {
+        return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+      }
+    },
 
     close,
     [Symbol.dispose]: close,

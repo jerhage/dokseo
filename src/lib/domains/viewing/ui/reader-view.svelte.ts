@@ -213,6 +213,7 @@ class ReaderView {
     this.#source = pages;
     this.book = book;
     this.#regroup(book, unmeasured(book.imageCount));
+    void this.#seedSizes(pages, generation);
     const saved = book.position;
     const place = openingPlace(at, saved, book.imageCount);
     this.status = this.groups.length === 0 ? 'empty' : 'ready';
@@ -384,6 +385,23 @@ class ReaderView {
 
     const sizes = [...this.sizes];
     sizes[index] = size;
+    this.#regroup(book, sizes);
+  }
+
+  async #seedSizes(source: PageSource, generation: number): Promise<void> {
+    let read: Awaited<ReturnType<PageSource['sizes']>>;
+    try {
+      read = await this.#container.library.readPageSizes(source);
+    } catch {
+      return;
+    }
+
+    const book = this.book;
+    if (generation !== this.#generation || book === null || !read.ok) return;
+
+    const found = read.value;
+    const sizes = this.sizes.map((known, index) => known ?? found[index] ?? null);
+    if (sizes.every((size, index) => size === this.sizes[index])) return;
     this.#regroup(book, sizes);
   }
 

@@ -206,6 +206,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       markFinished: unused,
       markUnread: unused,
       readLibrarySize: unused,
+      readPageSizes: unused,
     },
     recognition: {
       readModelConsent: (

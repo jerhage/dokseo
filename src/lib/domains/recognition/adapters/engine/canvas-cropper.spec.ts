@@ -70,6 +70,7 @@ function pageSource(answer: () => Result<ImageBitmap, PageSourceError>): PageSou
     picture: (_index: ImageIndex) =>
       Promise.resolve(err<PageSourceError>({ kind: 'source-unreadable', cause: 'not asked for' })),
     image: (_index: ImageIndex) => Promise.resolve(answer()),
+    sizes: () => Promise.resolve(ok([])),
     close,
     [Symbol.dispose]: close,
   };

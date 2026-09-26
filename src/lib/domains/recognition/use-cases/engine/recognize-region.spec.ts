@@ -45,6 +45,7 @@ function fakePageSource(): PageSource {
     count: 1,
     picture: missing,
     image: missing,
+    sizes: () => Promise.resolve(ok([])),
     close,
     [Symbol.dispose]: close,
   };

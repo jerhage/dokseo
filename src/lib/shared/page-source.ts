@@ -1,3 +1,4 @@
+import type { Size } from './geometry';
 import type { ImageIndex } from './ids';
 import type { Result } from './result';
 
@@ -16,6 +17,7 @@ interface PageSource {
   readonly count: number;
   picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>>;
   image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>>;
+  sizes(): Promise<Result<readonly (Size | null)[], PageSourceError>>;
   close(): void;
   [Symbol.dispose](): void;
 }

@@ -13,6 +13,7 @@ import type { PageDocumentReader, PageImage, PageObstacle } from '../domain/inge
 import { readEpubSpine } from '../domain/ingest/epub-spine';
 import { epubCoverImage } from './epub-cover-image';
 import type { CoverEntry } from './epub-cover-image';
+import { entryImageSizes } from './entry-image-size';
 
 type OpenedEpub =
   | { readonly kind: 'paged'; readonly source: PageSource }
@@ -101,7 +102,11 @@ function imageEntries(
   return ok(entries);
 }
 
-function pageSourceOver(reader: ZipReader<Blob>, images: readonly FileEntry[]): PageSource {
+function pageSourceOver(
+  archive: Blob,
+  reader: ZipReader<Blob>,
+  images: readonly FileEntry[],
+): PageSource {
   const count = images.length;
   let closed = false;
 
@@ -154,12 +159,17 @@ function pageSourceOver(reader: ZipReader<Blob>, images: readonly FileEntry[]): 
       }
     },
 
+    sizes: () => entryImageSizes(archive, images, () => closed, 'The EPUB is closed'),
+
     close,
     [Symbol.dispose]: close,
   };
 }
 
-async function readEpub(reader: ZipReader<Blob>): Promise<Result<OpenedEpub, PageSourceError>> {
+async function readEpub(
+  archive: Blob,
+  reader: ZipReader<Blob>,
+): Promise<Result<OpenedEpub, PageSourceError>> {
   const files = filesByName(await reader.getEntries());
 
   const packaged = await packageOf(files);
@@ -184,7 +194,7 @@ async function readEpub(reader: ZipReader<Blob>): Promise<Result<OpenedEpub, Pag
     return unpaged;
   }
 
-  return ok({ kind: 'paged', source: pageSourceOver(reader, entries.value) });
+  return ok({ kind: 'paged', source: pageSourceOver(archive, reader, entries.value) });
 }
 
 async function openEpubBook(source: Blob): Promise<Result<OpenedEpub, PageSourceError>> {
@@ -192,7 +202,7 @@ async function openEpubBook(source: Blob): Promise<Result<OpenedEpub, PageSource
 
   let opened: Result<OpenedEpub, PageSourceError>;
   try {
-    opened = await readEpub(reader);
+    opened = await readEpub(source, reader);
   } catch (cause) {
     await reader.close().catch(() => undefined);
     return err({ kind: 'source-unreadable', cause: describeCause(cause) });

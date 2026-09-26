@@ -145,6 +145,7 @@ function fakes(): Fakes {
         return outcome.promise;
       },
       readLibrarySize: () => Promise.resolve(size.outcome),
+      readPageSizes: () => Promise.reject(new Error('not used')),
     },
     recognition: {
       readModelConsent: () => Promise.reject(new Error('not used')),

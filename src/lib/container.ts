@@ -11,10 +11,11 @@ import { beginTrace } from '$lib/platform/trace/pipeline-trace';
 import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Anchor } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
+import type { Size } from '$lib/shared/geometry';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
-import type { PageSource } from '$lib/shared/page-source';
+import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Result } from '$lib/shared/result';
 import { createReadingSettingsStore } from './domains/flowing/adapters/indexeddb-reading-settings';
@@ -58,6 +59,7 @@ import { readCover } from './domains/library/use-cases/read-cover';
 import type { ReadCoverDeps } from './domains/library/use-cases/read-cover';
 import { readLibrarySize } from './domains/library/use-cases/read-library-size';
 import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
+import { readPageSizes } from './domains/library/use-cases/read-page-sizes';
 import { readSource } from './domains/library/use-cases/read-source';
 import type { ReadSourceDeps } from './domains/library/use-cases/read-source';
 import { saveReadingPlace } from './domains/library/use-cases/save-reading-place';
@@ -264,6 +266,9 @@ type Container = {
     readonly markFinished: (id: BookId) => Promise<Result<Book, LibraryError>>;
     readonly markUnread: (id: BookId) => Promise<Result<Book, LibraryError>>;
     readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
+    readonly readPageSizes: (
+      source: PageSource,
+    ) => Promise<Result<readonly (Size | null)[], PageSourceError>>;
   };
   readonly flowing: {
     readonly readReadingSettings: () => Promise<ReadingSettings>;
@@ -435,6 +440,7 @@ function buildContainer(): Container {
       markFinished: (id: BookId) => markFinished(markFinishedDeps, id),
       markUnread: (id: BookId) => markUnread(markUnreadDeps, id),
       readLibrarySize: () => readLibrarySize(readLibrarySizeDeps),
+      readPageSizes: (source: PageSource) => readPageSizes(source),
     },
     flowing: {
       readReadingSettings: () => readReadingSettings(readReadingSettingsDeps),

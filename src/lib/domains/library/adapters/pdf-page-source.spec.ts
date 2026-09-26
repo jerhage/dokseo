@@ -196,6 +196,35 @@ describe('openPdfPageSource', () => {
     expect({ width: image.value.width, height: image.value.height }).toEqual(expected);
   });
 
+  it.each(geometries)(
+    'sizes a $shape as its picture is drawn, without drawing it',
+    async ({ size }) => {
+      document.size = size;
+      using source = await opened();
+
+      const sizes = await source.sizes();
+      const picture = await source.picture(imageIndex(0));
+
+      if (!sizes.ok) throw new Error('the pages were not sized');
+      if (!picture.ok || picture.value.kind !== 'drawn') throw new Error('the page did not draw');
+      const drawn = { width: picture.value.bitmap.width, height: picture.value.bitmap.height };
+      expect(sizes.value).toEqual([drawn, drawn, drawn]);
+      expect(document.rendered).toEqual([1]);
+    },
+  );
+
+  it('reports no sizes once the document is closed', async () => {
+    const source = await opened();
+    source.close();
+
+    const sizes = await source.sizes();
+
+    expect(sizes).toEqual({
+      ok: false,
+      error: { kind: 'source-unreadable', cause: 'The document is closed' },
+    });
+  });
+
   it('opens the document with the modern build and its worker when the browser has every API', async () => {
     pdfjs.build.chosen = 'modern';
     using source = await opened();
