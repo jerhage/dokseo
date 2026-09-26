@@ -14,7 +14,7 @@
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import CompactProbe from '$lib/shared/CompactProbe.svelte';
   import PageBar from '$lib/shared/PageBar.svelte';
-  import { dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
+  import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
   import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import { returnFocusToPage } from '$lib/shared/reading-surface';
@@ -353,7 +353,7 @@
     for (const doc of chapters) forgetSelection(doc);
     if (passage === null) return;
 
-    if (panel !== undefined) panelAsked = true;
+    if (panel !== undefined) panelAsked = askedAfterCapture(narrow, panelAsked);
     onLift?.(passage);
   }
 

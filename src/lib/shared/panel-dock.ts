@@ -24,6 +24,10 @@ function dockPlacement(narrow: boolean, asked: boolean | null): DockPlacement {
   return open ? 'side' : 'rail';
 }
 
+function askedAfterCapture(narrow: boolean, asked: boolean | null): boolean | null {
+  return narrow ? asked : true;
+}
+
 function dockToggle(placement: DockPlacement): DockToggle {
   return match<DockPlacement, DockToggle>(placement)
     .with('side', () => ({ points: 'right', label: HIDE_LABEL, open: true }))
@@ -44,5 +48,5 @@ function dockName(placement: DockPlacement, count: number | null): string {
   return tally === null ? label : `${label}, ${tally}`;
 }
 
-export { dockName, dockPlacement, dockTally, dockToggle, isNarrow };
+export { askedAfterCapture, dockName, dockPlacement, dockTally, dockToggle, isNarrow };
 export type { DockArrow, DockPlacement, DockToggle };

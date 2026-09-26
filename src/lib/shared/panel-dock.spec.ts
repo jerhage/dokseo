@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { dockName, dockPlacement, dockTally, dockToggle, isNarrow } from './panel-dock';
+import {
+  askedAfterCapture,
+  dockName,
+  dockPlacement,
+  dockTally,
+  dockToggle,
+  isNarrow,
+} from './panel-dock';
 
 describe('isNarrow', () => {
   it('calls a body narrower than the compact breakpoint narrow', () => {
@@ -32,6 +39,19 @@ describe('dockPlacement', () => {
 
   it('follows the reader who opened it on a narrow screen', () => {
     expect(dockPlacement(true, true)).toBe('sheet');
+  });
+});
+
+describe('askedAfterCapture', () => {
+  it('opens the panel on a wide screen after a capture', () => {
+    expect(askedAfterCapture(false, null)).toBe(true);
+    expect(askedAfterCapture(false, false)).toBe(true);
+  });
+
+  it('leaves the sheet as the reader left it on a narrow screen', () => {
+    expect(askedAfterCapture(true, null)).toBeNull();
+    expect(askedAfterCapture(true, false)).toBe(false);
+    expect(askedAfterCapture(true, true)).toBe(true);
   });
 });
 
