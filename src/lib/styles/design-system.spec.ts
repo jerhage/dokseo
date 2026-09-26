@@ -4,7 +4,6 @@ import { TAG_COLOURS } from '../components/classes';
 
 const STYLES = new URL('./', import.meta.url);
 const SOURCE = new URL('../../', import.meta.url);
-const LEGACY = 'tokens.css';
 
 const CONTRACT_TOKENS = [
   '--color-bg',
@@ -339,7 +338,7 @@ function filesUnder(root: URL, extensions: readonly string[]): readonly string[]
 }
 
 function designSystemFiles(): readonly string[] {
-  return filesUnder(STYLES, ['.css']).filter((path) => path !== LEGACY);
+  return filesUnder(STYLES, ['.css']);
 }
 
 function importedFiles(): readonly string[] {
