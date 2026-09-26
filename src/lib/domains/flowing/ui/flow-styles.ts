@@ -1,11 +1,30 @@
 import { lineSpacingHeight, textSizePercent } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 
-const READABLE_ON_A_DARK_PAGE = `
+type PageScheme = 'light' | 'dark';
+
+type PageInk = {
+  readonly scheme: PageScheme;
+  readonly text: string;
+  readonly link: string;
+  readonly selection: string;
+  readonly selectionText: string;
+};
+
+const INK_FOR_THE_DARK_PAGE: PageInk = {
+  scheme: 'dark',
+  text: '#d9d6d0',
+  link: '#8fb8d8',
+  selection: 'rgba(79, 178, 134, 0.35)',
+  selectionText: '#f2efe9',
+};
+
+function readableOnThePage(ink: PageInk): string {
+  return `
   @namespace epub "http://www.idpf.org/2007/ops";
 
   html {
-    color-scheme: dark;
+    color-scheme: ${ink.scheme};
   }
 
   html, body {
@@ -14,30 +33,35 @@ const READABLE_ON_A_DARK_PAGE = `
 
   a:link,
   a:visited {
-    color: #8fb8d8;
+    color: ${ink.link};
   }
 
   rt {
     font-size: 0.6em;
   }
 `;
+}
 
-const OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK = `
+function overridesABookThatForcesItsOwnInk(ink: PageInk): string {
+  return `
   html, body, p, div, span, li, dd, dt, blockquote, h1, h2, h3, h4, h5, h6 {
     color: inherit;
   }
 
   body {
-    color: #d9d6d0;
+    color: ${ink.text};
   }
 `;
+}
 
-const A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS = `
+function aSelectionIsSeenWhereverFocusIs(ink: PageInk): string {
+  return `
   ::selection {
-    background: rgba(79, 178, 134, 0.35) !important;
-    color: #f2efe9 !important;
+    background: ${ink.selection} !important;
+    color: ${ink.selectionText} !important;
   }
 `;
+}
 
 const THE_READINGS_ARE_PUT_AWAY = `
   rt, rp {
@@ -57,13 +81,27 @@ function sizedForTheReader(settings: ReadingSettings): string {
 `;
 }
 
-function flowStyles(settings: ReadingSettings): readonly [string, string] {
+function flowStyles(
+  settings: ReadingSettings,
+  ink: PageInk = INK_FOR_THE_DARK_PAGE,
+): readonly [string, string] {
   const readings = settings.showPhoneticReadings ? '' : THE_READINGS_ARE_PUT_AWAY;
 
   return [
-    READABLE_ON_A_DARK_PAGE,
-    `${OVERRIDES_A_BOOK_THAT_FORCES_ITS_OWN_INK}${A_SELECTION_IS_SEEN_WHEREVER_FOCUS_IS}${sizedForTheReader(settings)}${readings}`,
+    readableOnThePage(ink),
+    `${overridesABookThatForcesItsOwnInk(ink)}${aSelectionIsSeenWhereverFocusIs(ink)}${sizedForTheReader(settings)}${readings}`,
   ];
 }
 
-export { flowStyles };
+function sameInk(one: PageInk, other: PageInk): boolean {
+  return (
+    one.scheme === other.scheme &&
+    one.text === other.text &&
+    one.link === other.link &&
+    one.selection === other.selection &&
+    one.selectionText === other.selectionText
+  );
+}
+
+export { flowStyles, INK_FOR_THE_DARK_PAGE, sameInk };
+export type { PageInk, PageScheme };

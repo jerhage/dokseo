@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { lineSpacingHeight, textSizePercent } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
-import { flowStyles } from './flow-styles';
+import { flowStyles, INK_FOR_THE_DARK_PAGE, sameInk } from './flow-styles';
+import type { PageInk } from './flow-styles';
 
 const SMALL_AND_TIGHT: ReadingSettings = {
   textSize: 'smallest',
@@ -112,5 +113,81 @@ describe('flowStyles', () => {
 
   it('answers a different sheet whether the readings are shown or hidden', () => {
     expect(injected(READINGS_HIDDEN)).not.toBe(injected(BIG_AND_LOOSE));
+  });
+});
+
+describe('flowStyles with an ink', () => {
+  const PAPER: PageInk = {
+    scheme: 'light',
+    text: 'oklch(0.22 0.012 255)',
+    link: 'oklch(0.46 0.09 195)',
+    selection: 'oklch(0.93 0.04 195)',
+    selectionText: 'oklch(0.3 0.01 255)',
+  };
+
+  it('answers the dark page sheets when no ink is given', () => {
+    expect(flowStyles(BIG_AND_LOOSE)).toEqual(flowStyles(BIG_AND_LOOSE, INK_FOR_THE_DARK_PAGE));
+  });
+
+  it('declares the scheme of the page the ink is for', () => {
+    const [prepended] = flowStyles(SMALL_AND_TIGHT, PAPER);
+
+    expect(prepended).toContain('color-scheme: light');
+    expect(prepended).not.toContain('color-scheme: dark');
+  });
+
+  it('colours the body text and the links with the ink', () => {
+    const [prepended, appended] = flowStyles(SMALL_AND_TIGHT, PAPER);
+
+    expect(appended).toMatch(/body\s*\{\s*color: oklch\(0\.22 0\.012 255\);/u);
+    expect(prepended).toMatch(/a:visited\s*\{\s*color: oklch\(0\.46 0\.09 195\);/u);
+  });
+
+  it('paints a selection with the ink and still outranks the book', () => {
+    const rule =
+      /::selection\s*\{([^}]*)\}/u.exec(flowStyles(SMALL_AND_TIGHT, PAPER)[1])?.[1] ?? '';
+
+    expect(rule).toContain('background: oklch(0.93 0.04 195) !important');
+    expect(rule).toContain('color: oklch(0.3 0.01 255) !important');
+  });
+
+  it('keeps the size, the spacing and the readings whatever the ink', () => {
+    const [, appended] = flowStyles(READINGS_HIDDEN, PAPER);
+
+    expect(appended).toContain(`font-size: ${textSizePercent('largest')}%`);
+    expect(appended).toContain(`line-height: ${lineSpacingHeight('loose')}`);
+    expect(appended).toMatch(/rt,\s*rp\s*\{\s*display: none !important/u);
+  });
+});
+
+describe('sameInk', () => {
+  const INK: PageInk = {
+    scheme: 'light',
+    text: 'a',
+    link: 'b',
+    selection: 'c',
+    selectionText: 'd',
+  };
+
+  it('answers true for two inks with the same five values', () => {
+    expect(sameInk(INK, { ...INK })).toBe(true);
+  });
+
+  it('answers false when any one of the five values differs', () => {
+    const changed: readonly PageInk[] = [
+      { ...INK, scheme: 'dark' },
+      { ...INK, text: 'x' },
+      { ...INK, link: 'x' },
+      { ...INK, selection: 'x' },
+      { ...INK, selectionText: 'x' },
+    ];
+
+    expect(changed.map((other) => sameInk(INK, other))).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 });

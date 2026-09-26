@@ -21,6 +21,8 @@ import {
 } from './flow-progress';
 import type { FlowLocation, FlowProgress } from './flow-progress';
 import { passageNotice } from './flow-quote';
+import { INK_FOR_THE_DARK_PAGE, sameInk } from './flow-styles';
+import type { PageInk } from './flow-styles';
 import type { PassageArrival } from './flow-quote';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { moveForTurn, turnPage } from './flow-turn';
@@ -108,6 +110,7 @@ class FlowView {
   #placed: ReadingPlace | null = null;
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
+  #ink: PageInk = INK_FOR_THE_DARK_PAGE;
 
   constructor(container: Container) {
     this.#container = container;
@@ -167,12 +170,14 @@ class FlowView {
 
     this.settings = chosen;
 
+    const inked = this.#ink;
     let surface: FlowSurface;
     try {
       surface = await show({
         source: stored.value,
         at,
         settings: chosen,
+        ink: inked,
         moved: (relocation) => {
           this.#moved(generation, book.id, relocation);
         },
@@ -192,6 +197,7 @@ class FlowView {
     }
 
     this.#surface = surface;
+    if (!sameInk(inked, this.#ink)) surface.restyle(this.settings, this.#ink);
     surface.mark(this.#passages, this.#marked);
     this.contents = flowContents(surface.toc);
     this.ticks = chapterTicks(surface.ticks);
@@ -269,8 +275,15 @@ class FlowView {
 
   restyle(settings: ReadingSettings): void {
     this.settings = settings;
-    this.#surface?.restyle(settings);
+    this.#surface?.restyle(settings, this.#ink);
     void this.#remember(settings);
+  }
+
+  paint(ink: PageInk): void {
+    if (sameInk(this.#ink, ink)) return;
+
+    this.#ink = ink;
+    this.#surface?.restyle(this.settings, ink);
   }
 
   seek(asked: number): void {

@@ -22,6 +22,8 @@ import {
 import { NOTHING_ARRIVED_AT } from './flow-highlight';
 import type { PassageMark } from './flow-highlight';
 import type { PassageArrival } from './flow-quote';
+import { INK_FOR_THE_DARK_PAGE } from './flow-styles';
+import type { PageInk } from './flow-styles';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { FlowView, PLACE_SAVE_DELAY_MS } from './flow-view.svelte';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
@@ -135,6 +137,7 @@ type Shown = {
   readonly sought: number[];
   readonly jumped: string[];
   readonly restyled: ReadingSettings[];
+  readonly inked: PageInk[];
   readonly passages: LiftedPassage[];
   readonly marked: (readonly string[])[];
   readonly arrivals: PassageMark[];
@@ -153,6 +156,7 @@ function shows(): Shown {
   const sought: number[] = [];
   const jumped: string[] = [];
   const restyled: ReadingSettings[] = [];
+  const inked: PageInk[] = [];
   const passages: LiftedPassage[] = [];
   const marked: (readonly string[])[] = [];
   const arrivals: PassageMark[] = [];
@@ -164,6 +168,7 @@ function shows(): Shown {
     sought,
     jumped,
     restyled,
+    inked,
     passages,
     marked,
     arrivals,
@@ -205,8 +210,9 @@ function shows(): Shown {
         passages.push(passage);
         return Promise.resolve(world.arrival);
       },
-      restyle: (settings: ReadingSettings) => {
+      restyle: (settings: ReadingSettings, ink: PageInk) => {
         restyled.push(settings);
+        inked.push(ink);
       },
       destroy: () => {
         destroyed.push(which);
@@ -971,6 +977,105 @@ describe('FlowView reading settings', () => {
     expect(surfaces.restyled).toEqual([
       { textSize: 'largest', lineSpacing: 'tight', showPhoneticReadings: true },
     ]);
+  });
+});
+
+describe('FlowView page ink', () => {
+  const PAPER: PageInk = {
+    scheme: 'light',
+    text: 'oklch(0.22 0.012 255)',
+    link: 'oklch(0.46 0.09 195)',
+    selection: 'oklch(0.93 0.04 195)',
+    selectionText: 'oklch(0.22 0.012 255)',
+  };
+
+  it('opens the book in the dark page ink when nothing painted it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(surfaces.openings.map((opening) => opening.ink)).toEqual([INK_FOR_THE_DARK_PAGE]);
+  });
+
+  it('opens the book in the ink painted before it opened, and restyles nothing', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+
+    view.paint(PAPER);
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(surfaces.openings.map((opening) => opening.ink)).toEqual([PAPER]);
+    expect(surfaces.restyled).toEqual([]);
+  });
+
+  it('repaints the chapter on screen with the settings already chosen', async () => {
+    const world = shelf();
+    world.stored = { textSize: 'large', lineSpacing: 'loose', showPhoneticReadings: false };
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.paint(PAPER);
+
+    expect(surfaces.inked).toEqual([PAPER]);
+    expect(surfaces.restyled).toEqual([world.stored]);
+    expect(surfaces.openings).toHaveLength(1);
+  });
+
+  it('restyles nothing for an ink equal to the one on the page', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    view.paint(PAPER);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.paint({ ...PAPER });
+
+    expect(surfaces.restyled).toEqual([]);
+  });
+
+  it('remembers no reading settings when it repaints', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.paint(PAPER);
+    await settled();
+
+    expect(world.chosen).toEqual([]);
+  });
+
+  it('keeps the painted ink when the reader resizes the text', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container);
+    view.paint(PAPER);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.restyle({ textSize: 'small', lineSpacing: 'tight', showPhoneticReadings: true });
+
+    expect(surfaces.inked).toEqual([PAPER]);
+  });
+
+  it('repaints a book that was still opening when the ink changed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const gate = held();
+    surfaces.gate = gate.promise;
+    const view = new FlowView(world.container);
+    const opening = view.open(novel(world.place), surfaces.show);
+    await settled();
+
+    view.paint(PAPER);
+    gate.release();
+    await opening;
+
+    expect(surfaces.openings.map((opened) => opened.ink)).toEqual([INK_FOR_THE_DARK_PAGE]);
+    expect(surfaces.inked).toEqual([PAPER]);
   });
 });
 

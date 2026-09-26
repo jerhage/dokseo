@@ -21,6 +21,7 @@ import {
 } from './flow-highlight';
 import type { PassageMark, PassageWeight } from './flow-highlight';
 import { flowStyles } from './flow-styles';
+import type { PageInk } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { TextQuote } from '$lib/shared/anchor';
@@ -40,7 +41,7 @@ type FlowSurface = {
   jump(href: string): void;
   goToPassage(passage: LiftedPassage): Promise<PassageArrival>;
   mark(passages: readonly string[], arrived: PassageMark): void;
-  restyle(settings: ReadingSettings): void;
+  restyle(settings: ReadingSettings, ink: PageInk): void;
   destroy(): void;
 };
 
@@ -48,6 +49,7 @@ type FlowOpening = {
   readonly source: Blob;
   readonly at: string | null;
   readonly settings: ReadingSettings;
+  readonly ink?: PageInk;
   readonly moved: (at: Relocation) => void;
 };
 
@@ -251,7 +253,7 @@ async function openFlowSurface(
 
   try {
     await view.open(book);
-    view.renderer.setStyles(flowStyles(opening.settings));
+    view.renderer.setStyles(flowStyles(opening.settings, opening.ink));
     const laidOut = await openAt(view, spine, opening.at);
     if (!laidOut) throw new Error('its first section could not be laid out');
   } catch (cause) {
@@ -275,8 +277,8 @@ async function openFlowSurface(
     },
     goToPassage: (passage: LiftedPassage) =>
       goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),
-    restyle: (settings: ReadingSettings) => {
-      view.renderer.setStyles(flowStyles(settings));
+    restyle: (settings: ReadingSettings, ink: PageInk) => {
+      view.renderer.setStyles(flowStyles(settings, ink));
     },
     destroy: () => {
       tearDown(view, book);
