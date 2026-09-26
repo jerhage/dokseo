@@ -21,19 +21,8 @@ type RouteParameters = Readonly<Record<string, string | undefined>>;
 
 const PARAMETER = /^\[(\w+)\]$/u;
 
-const FLOWING_READER: Comparison = {
-  title: 'The flowing reader',
-  fills: 'screen',
-  books: 'flowing',
-  variants: [
-    { label: 'Current', route: '/read/[fileId]', within: null },
-    { label: 'A', route: '/preview/a/read/[fileId]', within: '/preview/a' },
-    { label: 'B', route: '/preview/b/read/[fileId]', within: '/preview/b' },
-  ],
-};
-
 function activeComparison(): Comparison | null {
-  return FLOWING_READER;
+  return null;
 }
 
 function comparesBook(comparison: Comparison, layoutKind: LayoutKind): boolean {
