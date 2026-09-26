@@ -82,6 +82,10 @@
     onopen?.();
   }
 
+  export function searchEverything(): void {
+    reveal('all');
+  }
+
   function hide(): void {
     shown = false;
   }

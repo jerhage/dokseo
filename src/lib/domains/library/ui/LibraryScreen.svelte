@@ -1,7 +1,11 @@
 <script lang="ts">
   import Alert from '$lib/components/Alert.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
+  import { tick } from 'svelte';
   import Button from '$lib/components/Button.svelte';
+  import SearchIcon from '$lib/components/icons/Search.svelte';
+  import UploadIcon from '$lib/components/icons/Upload.svelte';
+  import X from '$lib/components/icons/X.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
   import WindowDropzone from '$lib/components/WindowDropzone.svelte';
@@ -20,12 +24,15 @@
     libraryBody,
     librarySummary,
     matchedText,
+    showsFilter,
     storageText,
     titledBooks,
   } from './library-overview';
   import BookSettings from './BookSettings.svelte';
   import ContinueReading from './ContinueReading.svelte';
   import ImportStatus from './ImportStatus.svelte';
+  import LibraryMenu from './LibraryMenu.svelte';
+  import { LIBRARY_SECTIONS } from './library-sections';
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
   import ShelfView from './ShelfView.svelte';
@@ -43,14 +50,18 @@
     readonly view: LibraryView;
     readonly scroll: LibraryScrollView;
     readonly notice?: string | null;
+    readonly onsearcheverything?: (() => void) | undefined;
     query?: string;
   };
 
-  let { view, scroll, notice = null, query = $bindable('') }: Props = $props();
+  let { view, scroll, notice = null, onsearcheverything, query = $bindable('') }: Props = $props();
 
   let main = $state<HTMLElement | null>(null);
 
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
+  let search = $state<ReturnType<typeof LibrarySearch> | null>(null);
+  let searchToggle = $state<HTMLButtonElement>();
+  let filterOpened = $state(false);
   let openSettingsFor = $state<BookId | null>(null);
   let removeFor = $state<BookId | null>(null);
   const arrangement = readArrangement();
@@ -87,6 +98,20 @@
   }
 
   const searching = $derived(isSearching(query));
+  const filterShown = $derived(showsFilter(filterOpened, query));
+
+  async function openFilter(): Promise<void> {
+    filterOpened = true;
+    await tick();
+    search?.focus();
+  }
+
+  async function closeFilter(): Promise<void> {
+    query = '';
+    filterOpened = false;
+    await tick();
+    searchToggle?.focus();
+  }
   const titled = $derived(titledBooks(view.books, query));
   const space = $derived(storageText(view.storedBytes));
   const summary = $derived(librarySummary(view.books, view.storedBytes));
@@ -102,29 +127,69 @@
 </script>
 
 <div class="layout-app-shell">
-  <header class="layout-app-shell-header wrap">
-    <div class="row items-center gap-2">
+  <header class="layout-app-shell-header wrap layout-app-shell-narrow-nowrap">
+    <div class={['row items-center gap-2', { 'layout-app-shell-wide-only': filterShown }]}>
       <Avatar shape="square" size="sm" lang="ja" aria-hidden="true">読</Avatar>
       <span class="display weight-semibold">Library</span>
     </div>
-    <div class="row wrap items-center gap-3 flex-fill justify-end">
-      <LibrarySearch bind:query {matched} />
-      <span class="text-xs text-faint"><kbd>⌘K</kbd> to search everything</span>
+    <div class="row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap">
+      <LibrarySearch
+        bind:this={search}
+        bind:query
+        {matched}
+        onclose={filterOpened ? closeFilter : undefined}
+        class={{ 'layout-app-shell-wide-only': !filterShown }}
+      />
+      <span class="text-xs text-faint layout-app-shell-wide-only"
+        ><kbd>⌘K</kbd> to search everything</span
+      >
       <Button
         variant="primary"
+        class="layout-app-shell-wide-only"
         disabled={view.busy || strip === null}
         onclick={() => strip?.choose()}
       >
         {view.busy ? 'Adding…' : 'Upload'}
       </Button>
-      <AppearanceSwitcher />
+      <div class="row layout-app-shell-wide-only">
+        <AppearanceSwitcher />
+      </div>
+      <div class="row items-center gap-1 layout-app-shell-narrow-only">
+        {#if filterShown}
+          <Button variant="ghost" square aria-label="Close the filter" onclick={closeFilter}>
+            <X class="btn-icon" />
+          </Button>
+        {:else}
+          <Button
+            variant="ghost"
+            square
+            aria-label="Filter these titles"
+            bind:ref={searchToggle}
+            onclick={openFilter}
+          >
+            <SearchIcon class="btn-icon" />
+          </Button>
+        {/if}
+        <Button
+          variant="primary"
+          square
+          aria-label={view.busy ? 'Adding…' : 'Upload'}
+          disabled={view.busy || strip === null}
+          onclick={() => strip?.choose()}
+        >
+          <UploadIcon class="btn-icon" />
+        </Button>
+        <LibraryMenu {onsearcheverything} />
+      </div>
     </div>
   </header>
 
-  <nav class="layout-app-shell-nav" aria-label="Sections">
-    <NavLink href="/" current>Library</NavLink>
-    <NavLink href="/tags" title="Tags across your documents">Tags</NavLink>
-    <NavLink href="/settings" title="OCR engine settings">Settings</NavLink>
+  <nav class="layout-app-shell-nav layout-app-shell-wide-only" aria-label="Sections">
+    {#each LIBRARY_SECTIONS as section (section.href)}
+      <NavLink href={section.href} current={section.current} title={section.title}
+        >{section.name}</NavLink
+      >
+    {/each}
   </nav>
 
   <main

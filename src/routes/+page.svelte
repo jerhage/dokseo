@@ -26,6 +26,7 @@
   );
 
   let query = $state('');
+  let palette = $state<ReturnType<typeof CapturePalette>>();
 
   export const snapshot: Snapshot<number> = {
     capture: () => scroll.capture(),
@@ -43,9 +44,16 @@
   });
 </script>
 
-<LibraryScreen {view} {scroll} {notice} bind:query />
+<LibraryScreen
+  {view}
+  {scroll}
+  {notice}
+  onsearcheverything={() => palette?.searchEverything()}
+  bind:query
+/>
 
 <CapturePalette
+  bind:this={palette}
   book={null}
   {books}
   {find}
