@@ -3,8 +3,8 @@
     :scope.is-side .panel-slot {
       inline-size: var(--layout-list-width);
     }
-    :scope.is-sheet {
-      block-size: 40%;
+    :scope.is-sheet .panel-slot {
+      block-size: 40dvh;
     }
     .rail-toggle {
       justify-content: flex-start;

@@ -79,7 +79,7 @@
     </Button>
   {/if}
 
-  <div class="panel-slot row gap-0 flex-1 min-h-0" id="{uid}-panel" hidden={!toggle.open}>
+  <div class="panel-slot row gap-0 min-h-0" id="{uid}-panel" hidden={!toggle.open}>
     {@render panel()}
   </div>
 </aside>
