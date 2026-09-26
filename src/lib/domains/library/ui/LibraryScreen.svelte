@@ -10,6 +10,7 @@
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
   import { DROP_INVITATION } from './accepted-formats';
+  import type { LibraryScrollView } from './library-scroll-view.svelte';
   import type { LibraryView } from './library-view.svelte';
   import {
     GITHUB_MARK,
@@ -40,11 +41,14 @@
 
   type Props = {
     readonly view: LibraryView;
+    readonly scroll: LibraryScrollView;
     readonly notice?: string | null;
     query?: string;
   };
 
-  let { view, notice = null, query = $bindable('') }: Props = $props();
+  let { view, scroll, notice = null, query = $bindable('') }: Props = $props();
+
+  let main = $state<HTMLElement | null>(null);
 
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
@@ -90,6 +94,11 @@
   const shown = $derived(sortBooks(shelfBooks(titled, shelf), order));
   const matched = $derived(matchedText(shown.length));
   const resumable = $derived(searching ? [] : continueReading(view.books));
+
+  $effect(() => {
+    const top = scroll.settle(body);
+    if (top !== null && main !== null) main.scrollTop = top;
+  });
 </script>
 
 <div class="layout-app-shell">
@@ -118,7 +127,13 @@
     <NavLink href="/settings" title="OCR engine settings">Settings</NavLink>
   </nav>
 
-  <main class="layout-main-area" tabindex="-1" {@attach keyboardScrolling}>
+  <main
+    class="layout-main-area"
+    tabindex="-1"
+    bind:this={main}
+    onscroll={(event) => scroll.track(event.currentTarget.scrollTop)}
+    {@attach keyboardScrolling}
+  >
     <div class="col gap-1">
       <h1 class="text-lg">Your uploads</h1>
       <p class="text-xs text-muted">{summary}</p>
