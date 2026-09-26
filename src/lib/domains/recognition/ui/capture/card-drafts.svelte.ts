@@ -1,5 +1,5 @@
 import type { CaptureId } from '$lib/shared/ids';
-import type { FocusTarget } from '../card-editing.svelte';
+import type { FocusTarget } from './card-editing.svelte';
 
 type DraftField = 'text' | 'note';
 

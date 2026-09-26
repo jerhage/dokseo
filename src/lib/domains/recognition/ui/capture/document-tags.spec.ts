@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import type { Tag } from '../../../domain/tag/tag';
+import type { Tag } from '../../domain/tag/tag';
 import { tagsInUse } from './document-tags';
 
 const VERB: Tag = {

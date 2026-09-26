@@ -6,8 +6,8 @@
   import Modal from '$lib/components/Modal.svelte';
   import Tag from '$lib/components/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
-  import type { TagChip } from '../tag-chip';
-  import type { PickerRow, TagPicker } from '../tag-picker.svelte';
+  import type { TagChip } from './tag-chip';
+  import type { PickerRow, TagPicker } from './tag-picker.svelte';
   import { pickerOffers } from './picker-offers';
   import { pickerKey } from './editor-keys';
   import './tag-picker.css';

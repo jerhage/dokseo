@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NO_MATCH } from '../../../domain/capture/match-stepping';
+import { NO_MATCH } from '../../domain/capture/match-stepping';
 import { searchSteps } from './panel-search';
 
 describe('searchSteps', () => {

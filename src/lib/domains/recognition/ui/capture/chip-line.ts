@@ -1,4 +1,4 @@
-import type { TagChip } from '../tag-chip';
+import type { TagChip } from './tag-chip';
 
 type ChipLine = {
   readonly shown: readonly TagChip[];

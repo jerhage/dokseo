@@ -1,8 +1,8 @@
 import type { BookId } from '$lib/shared/ids';
 import { readerHref } from '$lib/shared/reader-location';
-import type { ArrivalCapture, Stepping } from '../../../domain/capture/capture-arrival';
-import { matchOfTotal } from '../../../domain/capture/match-stepping';
-import { firstImage } from '../capture-place';
+import type { ArrivalCapture, Stepping } from '../../domain/capture/capture-arrival';
+import { matchOfTotal } from '../../domain/capture/match-stepping';
+import { firstImage } from './capture-place';
 
 type ArrivalSteps = {
   readonly count: string;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
-import type { ArrivalCapture } from '../../../domain/capture/capture-arrival';
+import type { ArrivalCapture } from '../../domain/capture/capture-arrival';
 import { arrivalSteps } from './arrival-steps';
 
 const BOOK = bookId('book-1');

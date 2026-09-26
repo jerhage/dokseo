@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import type { TagChip } from '../tag-chip';
+import type { TagChip } from './tag-chip';
 import { chipLine } from './chip-line';
 
 function chips(count: number): readonly TagChip[] {

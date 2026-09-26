@@ -1,11 +1,13 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import Badge from '$lib/components/Badge.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
+  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
-  import { readerHref } from '$lib/shared/reader-location';
   import type { ArrivalCapture, Stepping } from '../../domain/capture/capture-arrival';
-  import { matchOfTotal } from '../../domain/capture/match-stepping';
-  import { firstImage } from './capture-place';
+  import { arrivalSteps } from './arrival-steps';
 
   type Props = {
     readonly book: BookId;
@@ -16,14 +18,7 @@
 
   let { book, query, language, stepping }: Props = $props();
 
-  function hrefOf(capture: ArrivalCapture): string | null {
-    const index = firstImage(capture.anchor);
-    return index === null ? null : readerHref(book, index, { capture: capture.id, query });
-  }
-
-  const previous = $derived(hrefOf(stepping.previous));
-  const next = $derived(hrefOf(stepping.next));
-  const count = $derived(matchOfTotal(stepping.ordinal - 1, stepping.total));
+  const steps = $derived(arrivalSteps(book, query, stepping));
 
   function follow(event: MouseEvent, href: string): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -33,65 +28,41 @@
   }
 </script>
 
-<div class="bar">
-  <span class="count">{count}</span>
-  <span class="rule"></span>
-  <span class="query" class:ko={language === 'ko'} lang={language}>{query}</span>
-  {#if previous !== null}
-    <a class="step" href={previous} onclick={(event) => follow(event, previous)}>‹ Previous</a>
-  {/if}
-  {#if next !== null}
-    <a class="step" href={next} onclick={(event) => follow(event, next)}>Next ›</a>
-  {/if}
+<div
+  class="row items-center gap-2 ps-3 pe-1 py-1 surface-raised bordered rounded-container shadow-md"
+  role="group"
+  aria-label="Search matches"
+>
+  <Badge variant="brand" class="shrink-0">{steps.count}</Badge>
+  <span class="flex-fill min-w-0 truncate text-sm" lang={language}>{query}</span>
+  <span class="row items-center gap-0 shrink-0">
+    {#if steps.previous !== null}
+      {@const previous = steps.previous}
+      <Button
+        variant="ghost"
+        size="sm"
+        square
+        href={previous}
+        title="Previous match"
+        onclick={(event) => follow(event, previous)}
+      >
+        <ChevronLeft class="btn-icon" />
+        <span class="visually-hidden">Previous match</span>
+      </Button>
+    {/if}
+    {#if steps.next !== null}
+      {@const next = steps.next}
+      <Button
+        variant="ghost"
+        size="sm"
+        square
+        href={next}
+        title="Next match"
+        onclick={(event) => follow(event, next)}
+      >
+        <ChevronRight class="btn-icon" />
+        <span class="visually-hidden">Next match</span>
+      </Button>
+    {/if}
+  </span>
 </div>
-
-<style>
-  .bar {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    padding: var(--s-2) var(--s-3);
-    border: 1px solid var(--c-border-4);
-    border-radius: var(--r-4);
-    background: rgb(20 22 26 / 90%);
-    font-family: var(--f-ui);
-  }
-
-  .count {
-    color: var(--c-text-8);
-    font-family: var(--f-mono);
-    font-size: 10.5px;
-  }
-
-  .rule {
-    width: 1px;
-    height: 12px;
-    background: var(--c-border-7);
-  }
-
-  .query {
-    max-width: 220px;
-    overflow: hidden;
-    color: var(--c-text-3);
-    font-family: var(--f-ja);
-    font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .query.ko {
-    font-family: var(--f-ko);
-  }
-
-  .step {
-    color: var(--c-accent);
-    font-size: 11.5px;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .step:hover,
-  .step:focus-visible {
-    text-decoration: underline;
-  }
-</style>

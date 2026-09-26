@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import type { Tag } from '../../../domain/tag/tag';
-import type { PickerRow } from '../tag-picker.svelte';
+import type { Tag } from '../../domain/tag/tag';
+import type { PickerRow } from './tag-picker.svelte';
 import { pickerOffers } from './picker-offers';
 
 const VERB: Tag = { id: tagId('t1'), name: 'verb', colour: 'rose', createdAt: 1 };

@@ -1,6 +1,6 @@
 import type { TagId } from '$lib/shared/ids';
-import type { Tag } from '../../../domain/tag/tag';
-import type { TagColour } from '../../../domain/tag/tag-colour';
+import type { Tag } from '../../domain/tag/tag';
+import type { TagColour } from '../../domain/tag/tag-colour';
 
 type UsedTag = {
   readonly id: TagId;

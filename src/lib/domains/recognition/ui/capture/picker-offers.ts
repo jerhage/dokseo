@@ -1,5 +1,5 @@
-import type { Tag } from '../../../domain/tag/tag';
-import type { PickerRow } from '../tag-picker.svelte';
+import type { Tag } from '../../domain/tag/tag';
+import type { PickerRow } from './tag-picker.svelte';
 
 type TagOffer = {
   readonly id: string;

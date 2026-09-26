@@ -107,7 +107,6 @@
         view={captures}
         {language}
         direction={flow.direction}
-        asksConsent={false}
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
     {/snippet}
@@ -129,7 +128,7 @@
       <EnginePill engine={captures.engine} {language} />
     {/snippet}
     {#snippet panel()}
-      <CapturePanel view={captures} {language} direction={view.direction} asksConsent={false} />
+      <CapturePanel view={captures} {language} direction={view.direction} />
     {/snippet}
   </ReaderScreen>
 {/if}
