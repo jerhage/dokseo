@@ -21,6 +21,7 @@
   import FormSection from './FormSection.svelte';
   import GridSection from './GridSection.svelte';
   import HeroSection from './HeroSection.svelte';
+  import IconsSection from './IconsSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
   import ModalToastSection from './ModalToastSection.svelte';
   import MosaicSection from './MosaicSection.svelte';
@@ -39,6 +40,7 @@
 
   const SECTIONS: readonly Component[] = [
     TokensSection,
+    IconsSection,
     ButtonsSection,
     BadgesSection,
     FormSection,
