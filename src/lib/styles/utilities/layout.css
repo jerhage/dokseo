@@ -123,6 +123,9 @@
   background-color: var(--color-surface);
   border-inline-end: var(--border-width) solid var(--border-color);
 }
+.layout-app-shell-nav-aside {
+  margin-block-start: auto;
+}
 .layout-app-shell > .layout-main-area {
   grid-column: 2;
   grid-row: 2 / -1;
@@ -148,6 +151,26 @@
   .layout-app-shell > .layout-main-area {
     grid-column: 1 / -1;
     grid-row: 3;
+  }
+  .layout-app-shell-nav-compact {
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+  }
+  .layout-app-shell-nav-compact > .nav-link {
+    flex: 1 1 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-inline-size: 0;
+    padding-inline: var(--sp-1);
+    text-align: center;
+  }
+  .layout-app-shell-nav-detail {
+    display: none;
+  }
+  .layout-app-shell-nav-aside {
+    flex-basis: 100%;
+    margin-block-start: 0;
   }
 }
 .layout-main-area {

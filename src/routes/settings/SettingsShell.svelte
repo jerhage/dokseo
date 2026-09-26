@@ -37,7 +37,7 @@
     </div>
   </header>
 
-  <nav class="layout-app-shell-nav wrap" aria-label="Settings">
+  <nav class="layout-app-shell-nav layout-app-shell-nav-compact wrap" aria-label="Settings">
     {#each sections as section (section.id)}
       <NavLink href={section.href} current={section.id === current} class="py-2">
         {#snippet icon()}
@@ -45,13 +45,16 @@
         {/snippet}
         <span class="col gap-0">
           <span>{section.name}</span>
-          <span class="text-xs text-faint weight-normal">{section.summary}</span>
+          <span class="layout-app-shell-nav-detail text-xs text-faint weight-normal">
+            {section.summary}
+          </span>
         </span>
       </NavLink>
     {/each}
-    <div class="flex-1"></div>
     {#if aside !== undefined}
-      {@render aside()}
+      <div class="layout-app-shell-nav-aside">
+        {@render aside()}
+      </div>
     {/if}
   </nav>
 

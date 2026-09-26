@@ -56,6 +56,32 @@ describe('SettingsShell', () => {
     expect(markup({ current: 'engine', aside: ASIDE })).toContain('<p>Aside</p>');
   });
 
+  it('compacts the section navigation on a narrow shell', () => {
+    expect(markup({ current: 'engine' })).toMatch(
+      /<nav class="[^"]*\blayout-app-shell-nav-compact\b[^"]*" aria-label="Settings"/u,
+    );
+  });
+
+  it('marks every section summary as detail a narrow shell hides', () => {
+    const details = [
+      ...markup({ current: 'engine' }).matchAll(
+        /<span class="layout-app-shell-nav-detail[^"]*">([^<]*)<\/span>/gu,
+      ),
+    ].map((found) => (found[1] ?? '').trim());
+
+    expect(details).toEqual([
+      'Where recognition runs',
+      'What this device keeps',
+      'Theme and color scheme',
+    ]);
+  });
+
+  it('wraps the aside in the nav aside, so it drops to its own row on a narrow shell', () => {
+    expect(markup({ current: 'engine', aside: ASIDE })).toMatch(
+      /<div class="layout-app-shell-nav-aside"><p>Aside<\/p>/u,
+    );
+  });
+
   it('drops the main padding only for a flush page', () => {
     expect(mainClasses(markup({ current: 'engine', flush: true }))).toContain('p-0');
     expect(mainClasses(markup({ current: 'storage' }))).not.toContain('p-0');

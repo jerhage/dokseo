@@ -444,7 +444,11 @@ function definesClass(css: string, name: string): boolean {
 }
 
 function mediaBlock(css: string, query: string): string {
-  const start = css.indexOf(`@media ${query}`);
+  return atRuleBlock(css, `@media ${query}`);
+}
+
+function atRuleBlock(css: string, prelude: string): string {
+  const start = css.indexOf(prelude);
   if (start === -1) return '';
   const open = css.indexOf('{', start);
   let depth = 0;
@@ -847,6 +851,35 @@ describe('the design system stylesheets', () => {
         'scrollbar-gutter: stable',
       ]),
     );
+  });
+
+  it('shares one row between the links of a compact shell nav below the shell breakpoint, and hides their detail', () => {
+    const layout = style('utilities/layout.css');
+    const narrow = atRuleBlock(layout, '@container app-shell (max-width: 48rem)');
+
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-compact > .nav-link'))).toEqual(
+      expect.arrayContaining(['flex: 1 1 0', 'flex-direction: column', 'min-inline-size: 0']),
+    );
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-compact'))).toContain(
+      'flex-wrap: wrap',
+    );
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-detail'))).toEqual([
+      'display: none',
+    ]);
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-aside'))).toEqual(
+      expect.arrayContaining(['flex-basis: 100%', 'margin-block-start: 0']),
+    );
+    expect(
+      rules(layout.replace(narrow, '')).some((rule) =>
+        rule.selectors.includes('.layout-app-shell-nav-detail'),
+      ),
+    ).toBe(false);
+  });
+
+  it('pushes the shell nav aside to the end of the wide nav', () => {
+    expect(
+      declarations(ruleBody(style('utilities/layout.css'), '.layout-app-shell-nav-aside')),
+    ).toEqual(['margin-block-start: auto']);
   });
 
   it('keeps the embedded shell at the height of its content', () => {
