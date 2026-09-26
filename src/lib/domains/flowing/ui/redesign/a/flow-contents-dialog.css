@@ -1,0 +1,7 @@
+@layer features {
+  @scope (.flow-contents) {
+    .contents-row {
+      padding-inline-start: calc(var(--sp-4) * var(--depth, 0));
+    }
+  }
+}
