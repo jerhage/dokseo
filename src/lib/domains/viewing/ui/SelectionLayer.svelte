@@ -227,7 +227,7 @@
         return;
       }
 
-      const ended = dragEnded(from, to);
+      const ended = dragEnded(from, to, event.pointerType);
       trace.step('pointer', { from, to, kind: ended.kind });
 
       match(ended)

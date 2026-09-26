@@ -1,4 +1,5 @@
 import type { Arrangement } from '$lib/shared/arrangement';
+import { clickSlop } from '$lib/shared/click-slop';
 import { normalize, screenRect } from '$lib/shared/geometry';
 import type { ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -6,8 +7,6 @@ import type { ImageRegion } from '$lib/shared/image-region';
 type Point = { readonly x: number; readonly y: number };
 
 const MIN_SELECTION_PX = 12;
-
-const CLICK_SLOP_PX = 3;
 
 type DragEnd =
   | { readonly kind: 'click' }
@@ -29,14 +28,15 @@ function isUsableSelection(selection: ScreenRect): boolean {
   return rect.width >= MIN_SELECTION_PX && rect.height >= MIN_SELECTION_PX;
 }
 
-function isClick(from: Point, to: Point): boolean {
+function isClick(from: Point, to: Point, pointerType: string): boolean {
   const moved = selectionFrom(from, to);
-  return moved.width < CLICK_SLOP_PX && moved.height < CLICK_SLOP_PX;
+  const slop = clickSlop(pointerType);
+  return moved.width < slop && moved.height < slop;
 }
 
-function dragEnded(from: Point, to: Point): DragEnd {
+function dragEnded(from: Point, to: Point, pointerType: string): DragEnd {
   const selection = selectionFrom(from, to);
-  if (isClick(from, to)) return { kind: 'click' };
+  if (isClick(from, to, pointerType)) return { kind: 'click' };
   if (!isUsableSelection(selection)) return { kind: 'too-small', selection };
 
   return { kind: 'selection', selection };
@@ -67,7 +67,6 @@ function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement
 }
 
 export {
-  CLICK_SLOP_PX,
   MIN_SELECTION_PX,
   dragEnded,
   isClick,

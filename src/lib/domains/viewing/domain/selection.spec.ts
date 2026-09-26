@@ -107,23 +107,23 @@ describe('dragEnded', () => {
   const from = { x: 100, y: 100 };
 
   it('calls a still pointer a click, so the chrome still toggles', () => {
-    expect(dragEnded(from, { x: 100, y: 100 })).toEqual({ kind: 'click' });
+    expect(dragEnded(from, { x: 100, y: 100 }, 'mouse')).toEqual({ kind: 'click' });
   });
 
   it('forgives the jitter of a hand on a mouse', () => {
-    expect(dragEnded(from, { x: 102, y: 101 }).kind).toBe('click');
+    expect(dragEnded(from, { x: 102, y: 101 }, 'mouse').kind).toBe('click');
   });
 
   it('calls a small drag too small, NOT a click, so the chrome stays put', () => {
-    expect(dragEnded(from, { x: 108, y: 104 }).kind).toBe('too-small');
+    expect(dragEnded(from, { x: 108, y: 104 }, 'mouse').kind).toBe('too-small');
   });
 
   it('calls a long thin drag too small, though it can select nothing', () => {
-    expect(dragEnded(from, { x: 300, y: 104 }).kind).toBe('too-small');
+    expect(dragEnded(from, { x: 300, y: 104 }, 'mouse').kind).toBe('too-small');
   });
 
   it('calls a real drag a selection, and carries the rect', () => {
-    expect(dragEnded(from, { x: 300, y: 260 })).toEqual({
+    expect(dragEnded(from, { x: 300, y: 260 }, 'mouse')).toEqual({
       kind: 'selection',
       selection: selectionFrom(from, { x: 300, y: 260 }),
     });
@@ -132,8 +132,29 @@ describe('dragEnded', () => {
   it('is stricter than the touch tap, which forgives a moving finger', () => {
     const drifted = { x: 108, y: 104 };
 
-    expect(dragEnded(from, drifted).kind).toBe('too-small');
+    expect(dragEnded(from, drifted, 'mouse').kind).toBe('too-small');
     expect(isTap(from, drifted)).toBe(true);
+  });
+
+  it('calls a finger that drifts six pixels a click, so a tap on a phone toggles the chrome', () => {
+    expect(dragEnded(from, { x: 106, y: 106 }, 'touch')).toEqual({ kind: 'click' });
+  });
+
+  it('calls a mouse that drifts six pixels too small, NOT a click', () => {
+    expect(dragEnded(from, { x: 106, y: 106 }, 'mouse').kind).toBe('too-small');
+  });
+
+  it('calls a finger that drifts eleven pixels a click and twelve too small', () => {
+    expect(dragEnded(from, { x: 111, y: 89 }, 'touch').kind).toBe('click');
+    expect(dragEnded(from, { x: 112, y: 100 }, 'touch').kind).toBe('too-small');
+  });
+
+  it('holds a pen to the mouse slop', () => {
+    expect(dragEnded(from, { x: 106, y: 106 }, 'pen').kind).toBe('too-small');
+  });
+
+  it('still calls a real touch drag a selection', () => {
+    expect(dragEnded(from, { x: 300, y: 260 }, 'touch').kind).toBe('selection');
   });
 });
 
@@ -141,28 +162,28 @@ describe('isClick', () => {
   const from = { x: 100, y: 100 };
 
   it('calls a still pointer a click, so the chrome still toggles', () => {
-    expect(isClick(from, { x: 100, y: 100 })).toBe(true);
+    expect(isClick(from, { x: 100, y: 100 }, 'mouse')).toBe(true);
   });
 
   it('forgives the jitter of a hand on a mouse', () => {
-    expect(isClick(from, { x: 102, y: 101 })).toBe(true);
+    expect(isClick(from, { x: 102, y: 101 }, 'mouse')).toBe(true);
   });
 
   it('calls any real drag a capture attempt, not a click', () => {
-    expect(isClick(from, { x: 108, y: 104 })).toBe(false);
+    expect(isClick(from, { x: 108, y: 104 }, 'mouse')).toBe(false);
   });
 
   it('calls a long thin drag a capture attempt, though it selects nothing', () => {
     const thin = { x: 300, y: 104 };
 
-    expect(isClick(from, thin)).toBe(false);
+    expect(isClick(from, thin, 'mouse')).toBe(false);
     expect(isUsableSelection(selectionFrom(from, thin))).toBe(false);
   });
 
   it('is stricter than the touch tap, which forgives a moving finger', () => {
     const drifted = { x: 108, y: 104 };
 
-    expect(isClick(from, drifted)).toBe(false);
+    expect(isClick(from, drifted, 'mouse')).toBe(false);
     expect(isTap(from, drifted)).toBe(true);
   });
 });
