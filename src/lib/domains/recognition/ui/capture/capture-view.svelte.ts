@@ -8,11 +8,12 @@ import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
 import { CaptureCollection } from './capture-collection.svelte';
-import type { PanelCapture, Settled } from './capture-collection.svelte';
+import type { CaptureLoad, PanelCapture, Settled, WriteOutcome } from './capture-collection.svelte';
 import { RecognizerView } from '../engine/recognizer-view.svelte';
 import type { ConsentRequest, PendingRecognition } from '../engine/recognizer-view.svelte';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
@@ -76,14 +77,18 @@ class CaptureView {
   #collection: CaptureCollection;
   #recognizer: RecognizerView;
 
-  constructor(container: Container) {
+  constructor(container: Container, notify: Notify) {
     this.#container = container;
-    this.#collection = new CaptureCollection(container);
+    this.#collection = new CaptureCollection(container, notify);
     this.#recognizer = new RecognizerView(container, () => this.#collection.generation);
   }
 
   get captures(): readonly PanelCapture[] {
     return this.#collection.captures;
+  }
+
+  get load(): CaptureLoad {
+    return this.#collection.load;
   }
 
   get writing(): CaptureId | null {
@@ -172,6 +177,10 @@ class CaptureView {
   async open(book: BookId): Promise<void> {
     this.#recognizer.forget();
     await this.#collection.open(book);
+  }
+
+  async reload(): Promise<void> {
+    await this.#collection.reload();
   }
 
   close(): void {
@@ -267,16 +276,16 @@ class CaptureView {
     }
   }
 
-  async edit(id: CaptureId, text: string): Promise<void> {
-    await this.#collection.edit(id, text);
+  edit(id: CaptureId, text: string): Promise<WriteOutcome> {
+    return this.#collection.edit(id, text);
   }
 
-  async annotate(id: CaptureId, note: string): Promise<void> {
-    await this.#collection.annotate(id, note);
+  annotate(id: CaptureId, note: string): Promise<WriteOutcome> {
+    return this.#collection.annotate(id, note);
   }
 
-  async remove(id: CaptureId): Promise<void> {
-    await this.#collection.remove(id);
+  remove(id: CaptureId): Promise<WriteOutcome> {
+    return this.#collection.remove(id);
   }
 
   async loadTags(): Promise<void> {

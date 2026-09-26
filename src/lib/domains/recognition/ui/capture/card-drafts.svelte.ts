@@ -1,5 +1,6 @@
 import type { CaptureId } from '$lib/shared/ids';
 import type { FocusTarget } from './card-editing.svelte';
+import type { WriteOutcome } from './capture-collection.svelte';
 
 type DraftField = 'text' | 'note';
 
@@ -10,12 +11,14 @@ type OpenDraft = {
   readonly from: FocusTarget | null;
 };
 
-type KeptDraft = {
-  readonly field: DraftField;
-  readonly capture: CaptureId;
-  readonly written: string;
-  readonly from: FocusTarget | null;
-};
+type DraftSave =
+  | { readonly kind: 'nothing' }
+  | { readonly kind: 'closed'; readonly from: FocusTarget | null }
+  | { readonly kind: 'kept-open' };
+
+const NOTHING: DraftSave = { kind: 'nothing' };
+
+const KEPT_OPEN: DraftSave = { kind: 'kept-open' };
 
 function keyOf(field: DraftField, capture: CaptureId): string {
   return `${field}:${capture}`;
@@ -23,6 +26,7 @@ function keyOf(field: DraftField, capture: CaptureId): string {
 
 class CardDrafts {
   #open = $state.raw<ReadonlyMap<string, OpenDraft>>(new Map());
+  #saving = new Set<string>();
 
   holds(field: DraftField, capture: CaptureId): boolean {
     return this.#open.has(keyOf(field, capture));
@@ -47,12 +51,25 @@ class CardDrafts {
     this.#open = new Map(this.#open).set(key, { ...held, draft });
   }
 
-  save(field: DraftField, capture: CaptureId): KeptDraft | null {
-    const held = this.#open.get(keyOf(field, capture));
-    if (held === undefined) return null;
+  async save(
+    field: DraftField,
+    capture: CaptureId,
+    keep: (written: string) => Promise<WriteOutcome>,
+  ): Promise<DraftSave> {
+    const key = keyOf(field, capture);
+    const held = this.#open.get(key);
+    if (held === undefined || this.#saving.has(key)) return NOTHING;
 
-    this.#close(keyOf(field, capture));
-    return { field, capture, written: held.draft, from: held.from };
+    this.#saving.add(key);
+    const outcome = await keep(held.draft).finally(() => this.#saving.delete(key));
+    if (outcome === 'failed') return KEPT_OPEN;
+
+    const now = this.#open.get(key);
+    if (now === undefined) return NOTHING;
+    if (now.draft !== held.draft) return KEPT_OPEN;
+
+    this.#close(key);
+    return { kind: 'closed', from: held.from };
   }
 
   abandon(field: DraftField, capture: CaptureId): FocusTarget | null {
@@ -75,4 +92,4 @@ class CardDrafts {
 }
 
 export { CardDrafts };
-export type { DraftField, KeptDraft, OpenDraft };
+export type { DraftField, DraftSave, OpenDraft };

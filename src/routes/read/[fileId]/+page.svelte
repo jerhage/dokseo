@@ -40,7 +40,7 @@
   const container = useContainer();
   const notify = toastNotify(getToaster());
   const view = new ReaderView(container, notify, mirror);
-  const captures = new CaptureView(container);
+  const captures = new CaptureView(container, notify);
   const shelf = new LibraryView(container, notify);
   const find = new CaptureSearchView(container);
   const flow = new FlowView(container, notify);

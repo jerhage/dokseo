@@ -61,9 +61,9 @@
 
   const tools = $derived(cardTools(card));
 
-  const writingText = $derived(drafts.holds('text', card.id));
+  const writingText = $derived(card.editable && drafts.holds('text', card.id));
 
-  const writingNote = $derived(drafts.holds('note', card.id));
+  const writingNote = $derived(card.editable && drafts.holds('note', card.id));
 
   function editorId(field: DraftField): string {
     return `${uid}-${field}`;

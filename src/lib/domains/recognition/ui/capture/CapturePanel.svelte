@@ -13,10 +13,12 @@
   import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import Trash from '$lib/components/icons/Trash.svelte';
+  import { getToaster } from '$lib/components/toast-context';
   import type { TextAnchor } from '$lib/shared/anchor';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import { toastNotify } from '$lib/shared/notice-toast';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
   import { modelLoadAnnouncement } from '../engine/recognizer-view.svelte';
   import type { FocusTarget } from './card-editing.svelte';
@@ -31,6 +33,7 @@
   import DocumentTags from './DocumentTags.svelte';
   import TagPickerModal from './TagPickerModal.svelte';
   import { searchSteps } from './panel-search';
+  import { TextCopy } from './text-copy.svelte';
 
   type Props = {
     readonly view: CaptureView;
@@ -40,8 +43,6 @@
   };
 
   let { view, language, direction, onSeek }: Props = $props();
-
-  const COPIED_FOR = 1500;
 
   const uid = $props.id();
 
@@ -68,9 +69,12 @@
 
   const drafts = new CardDrafts();
 
+  const copying = new TextCopy(
+    (text) => navigator.clipboard.writeText(text),
+    toastNotify(getToaster()),
+  );
+
   let list = $state<HTMLElement>();
-  let copied = $state<CaptureId | null>(null);
-  let told = $state('');
   let tagFrom: FocusTarget | null = null;
 
   $effect(() => {
@@ -89,6 +93,7 @@
   const steps = $derived(searchSteps(panel.cursor, cards.length, view.count));
   const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
   const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
+  const loadFailure = $derived(view.load.status === 'failed' ? view.load.message : null);
 
   function openHref(href: string, replace: boolean): void {
     void goto(href, { replaceState: replace, keepFocus: true, noScroll: true });
@@ -137,23 +142,23 @@
     void restore(drafts.abandon(field, capture));
   }
 
-  function save(field: DraftField, capture: CaptureId): void {
-    const kept = drafts.save(field, capture);
-    if (kept === null) return;
+  async function save(field: DraftField, capture: CaptureId): Promise<void> {
+    const saved = await drafts.save(field, capture, (written) =>
+      match(field)
+        .with('text', () => view.edit(capture, written))
+        .with('note', () => view.annotate(capture, written))
+        .exhaustive(),
+    );
 
-    void restore(kept.from);
-    void match(kept.field)
-      .with('text', () => view.edit(kept.capture, kept.written))
-      .with('note', () => view.annotate(kept.capture, kept.written))
-      .exhaustive();
+    if (saved.kind === 'closed') await restore(saved.from);
   }
 
   async function remove(capture: CaptureId): Promise<void> {
-    drafts.forget(capture);
     if (selection.opened(capture)) selection.close();
-    await view.remove(capture);
+    const removed = view.remove(capture);
     await tick();
     list?.focus({ preventScroll: true });
+    if ((await removed) === 'saved') drafts.forget(capture);
   }
 
   function openTags(capture: CaptureId, from: FocusTarget): void {
@@ -167,20 +172,6 @@
     selection.close();
     void restore(tagFrom);
     tagFrom = null;
-  }
-
-  async function copy(capture: CaptureId, text: string): Promise<void> {
-    const done = await navigator.clipboard.writeText(text).then(
-      () => true,
-      () => false,
-    );
-    told = done ? 'Copied the text' : 'The text could not be copied';
-    if (!done) return;
-
-    copied = capture;
-    setTimeout(() => {
-      if (copied === capture) copied = null;
-    }, COPIED_FOR);
   }
 </script>
 
@@ -202,7 +193,7 @@
   </header>
 
   <p class="visually-hidden" role="status">{announcement}</p>
-  <p class="visually-hidden" role="status">{told}</p>
+  <p class="visually-hidden" role="status">{copying.told}</p>
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <div class="col gap-2 px-3 pt-3">
@@ -253,15 +244,26 @@
       {#if mismatch !== null}
         <Alert variant="warning">{mismatch}</Alert>
       {/if}
+
+      {#if loadFailure !== null}
+        <Alert variant="danger" title="Your captures could not be loaded">
+          {loadFailure}
+          {#snippet actions()}
+            <Button size="sm" onclick={() => void view.reload()}>Try again</Button>
+          {/snippet}
+        </Alert>
+      {/if}
     </div>
 
     <div class="col gap-2 p-3">
       {#if cards.length === 0}
-        <p class="m-0 p-2 text-sm text-muted">
-          {searching
-            ? 'No capture or note in this book holds that text.'
-            : 'Drag a box over a speech bubble and the text arrives here.'}
-        </p>
+        {#if loadFailure === null}
+          <p class="m-0 p-2 text-sm text-muted">
+            {searching
+              ? 'No capture or note in this book holds that text.'
+              : 'Drag a box over a speech bubble and the text arrives here.'}
+          </p>
+        {/if}
       {:else}
         <ul class="col gap-2 list-reset" aria-label="Captures in this book">
           {#each cards as card, order (card.id)}
@@ -271,14 +273,14 @@
                 {language}
                 current={searching && order === panel.cursor}
                 {drafts}
-                copied={copied === card.id}
+                copied={copying.copied === card.id}
                 onseek={onSeek}
                 onfollow={(event) => follow(event, order)}
                 onwrite={(field, from) => openDraft(field, card, from)}
-                onsave={(field) => save(field, card.id)}
+                onsave={(field) => void save(field, card.id)}
                 onabandon={(field) => abandon(field, card.id)}
                 ontag={(from) => openTags(card.id, from)}
-                oncopy={(text) => void copy(card.id, text)}
+                oncopy={(text) => void copying.copy(card.id, text)}
                 onremove={(capture) => void remove(capture)}
               />
             </li>

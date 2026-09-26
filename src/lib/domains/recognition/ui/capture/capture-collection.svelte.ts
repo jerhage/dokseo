@@ -3,6 +3,8 @@ import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import { captureId, tagId } from '$lib/shared/ids';
+import type { Notify } from '$lib/shared/notice';
+import { err } from '$lib/shared/result';
 import { clearScope } from './clearing';
 import type { ClearScope } from './clearing';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
@@ -19,6 +21,8 @@ import type { Tag } from '../../domain/tag/tag';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
+import { NOT_STORED, describeStorageFailure, thrownFailure } from './storage-failure';
+import type { StorageFailure } from './storage-failure';
 
 type CaptureStatus = 'pending' | 'done' | 'empty' | 'failed';
 
@@ -40,20 +44,39 @@ type Settled =
 
 type PanelCapture = (Taken & { readonly status: 'pending' }) | (Taken & Settled);
 
+type CaptureLoad =
+  | { readonly status: 'loading' }
+  | { readonly status: 'loaded' }
+  | { readonly status: 'failed'; readonly message: string };
+
+type WriteOutcome = 'saved' | 'failed';
+
+type Removed = {
+  readonly card: PanelCapture;
+  readonly stored: Capture | undefined;
+  readonly at: number;
+};
+
 type TagOutcome =
   | { readonly kind: 'created'; readonly tag: Tag }
   | { readonly kind: 'existing'; readonly tag: Tag }
-  | { readonly kind: 'unavailable' };
+  | { readonly kind: 'failed'; readonly failure: StorageFailure };
 
-const UNAVAILABLE = { kind: 'unavailable' } as const;
+const LOADING: CaptureLoad = { status: 'loading' };
 
-function tagOutcome(created: Result<Tag, CreateTagError> | null): TagOutcome {
-  if (created === null) return UNAVAILABLE;
+const LOADED: CaptureLoad = { status: 'loaded' };
+
+function tagOutcome(created: Result<Tag, CreateTagError | StorageFailure>): TagOutcome {
   if (created.ok) return { kind: 'created', tag: created.value };
 
   return match(created.error)
     .with({ kind: 'name-taken' }, (taken) => ({ kind: 'existing', tag: taken.tag }) as const)
-    .with({ kind: 'storage-unavailable' }, { kind: 'storage-failed' }, () => UNAVAILABLE)
+    .with(
+      { kind: 'storage-unavailable' },
+      { kind: 'storage-failed' },
+      { kind: 'not-stored' },
+      (failure) => ({ kind: 'failed', failure }) as const,
+    )
     .exhaustive();
 }
 
@@ -132,14 +155,17 @@ class CaptureCollection {
   confirmingClear = $state(false);
   tags = $state.raw<readonly Tag[]>([]);
   libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
+  load = $state.raw<CaptureLoad>(LOADING);
 
   #container: Container;
+  #notify: Notify;
   #book = $state.raw<BookId | null>(null);
   #generation = 0;
   #capturesById = new Map<CaptureId, Capture>();
 
-  constructor(container: Container) {
+  constructor(container: Container, notify: Notify) {
     this.#container = container;
+    this.#notify = notify;
   }
 
   get generation(): number {
@@ -211,22 +237,47 @@ class CaptureCollection {
     const generation = this.forget();
     this.#book = book;
 
+    await this.#load(book, generation);
+  }
+
+  async reload(): Promise<void> {
+    const book = this.#book;
+    if (book === null) return;
+
+    this.load = LOADING;
+    await this.#load(book, this.#generation);
+  }
+
+  async #load(book: BookId, generation: number): Promise<void> {
     const [listed, named] = await Promise.all([
-      this.#container.recognition.listCaptures(book).catch(() => null),
-      this.#container.recognition.listTags().catch(() => null),
+      this.#container.recognition.listCaptures(book).catch(thrownFailure),
+      this.#container.recognition.listTags().catch(thrownFailure),
     ]);
 
     if (generation !== this.#generation) return;
-    if (named !== null && named.ok) this.tags = named.value;
-    if (listed === null || !listed.ok) return;
+    if (named.ok) this.tags = named.value;
+    if (listed.ok) this.#hold(oldestFirst(listed.value));
 
-    const held = oldestFirst(listed.value);
-    this.#capturesById = new Map(held.map((capture) => [capture.id, capture]));
-    this.captures = held.map(cardOf);
+    const failed = listed.ok ? (named.ok ? null : named.error) : listed.error;
+    this.load =
+      failed === null ? LOADED : { status: 'failed', message: describeStorageFailure(failed) };
+  }
+
+  #hold(held: readonly Capture[]): void {
+    const stored = new Set(held.map((capture) => capture.id));
+    this.#capturesById = new Map([
+      ...this.#capturesById,
+      ...held.map((capture) => [capture.id, capture] as const),
+    ]);
+    this.captures = [
+      ...held.map(cardOf),
+      ...this.captures.filter((capture) => !stored.has(capture.id)),
+    ];
   }
 
   forget(): number {
     this.#book = null;
+    this.load = LOADING;
     this.captures = [];
     this.writing = null;
     this.#capturesById = new Map();
@@ -322,8 +373,15 @@ class CaptureCollection {
     ];
     this.writing = id;
 
-    const written = await this.#container.recognition.writeNote(id, book, anchor).catch(() => null);
-    if (written === null || !written.ok || generation !== this.#generation) return;
+    const written = await this.#container.recognition
+      .writeNote(id, book, anchor)
+      .catch(thrownFailure);
+    if (generation !== this.#generation) return;
+    if (!written.ok) {
+      if (this.writing === id) this.writing = null;
+      this.#unsaved(id, 'The note could not be saved', written.error);
+      return;
+    }
 
     this.#capturesById.set(written.value.id, written.value);
   }
@@ -369,58 +427,83 @@ class CaptureCollection {
     });
   }
 
-  async edit(id: CaptureId, text: string): Promise<void> {
+  async edit(id: CaptureId, text: string): Promise<WriteOutcome> {
     const card = this.captures.find((capture) => capture.id === id);
-    if (card === undefined || card.status !== 'done') return;
+    if (card === undefined || card.status !== 'done') return 'saved';
 
     const settled = editedText(card.text.text, text, card.origin);
-    if (settled === card.text.text) return;
+    if (settled === card.text.text) return 'saved';
 
     const generation = this.#generation;
     const stored = this.#capturesById.get(id);
     const written =
       stored === undefined
-        ? null
-        : await this.#container.recognition.editCaptureText(stored, settled).catch(() => null);
+        ? err(NOT_STORED)
+        : await this.#container.recognition.editCaptureText(stored, settled).catch(thrownFailure);
 
-    if (generation !== this.#generation) return;
-    if (written !== null && written.ok) this.#capturesById.set(id, written.value);
+    if (generation !== this.#generation) return 'saved';
+    if (!written.ok) return this.#refuse('The text could not be saved', written.error);
 
+    this.#capturesById.set(id, written.value);
     this.captures = this.captures.map((capture) =>
       capture.id === id && capture.status === 'done'
         ? { ...capture, text: recognizedText(settled, capture.text.confidence), edited: true }
         : capture,
     );
+    return 'saved';
   }
 
-  async annotate(id: CaptureId, note: string): Promise<void> {
+  async annotate(id: CaptureId, note: string): Promise<WriteOutcome> {
     const stored = this.#capturesById.get(id);
-    if (stored === undefined || stored.origin === 'written') return;
+    if (stored?.origin === 'written') return 'saved';
+    if (!this.captures.some((capture) => capture.id === id)) return 'saved';
 
     const generation = this.#generation;
-    const written = await this.#container.recognition
-      .writeCaptureNote(stored, note)
-      .catch(() => null);
+    const written =
+      stored === undefined
+        ? err(NOT_STORED)
+        : await this.#container.recognition.writeCaptureNote(stored, note).catch(thrownFailure);
 
-    if (generation !== this.#generation || written === null || !written.ok) return;
+    if (generation !== this.#generation) return 'saved';
+    if (!written.ok) return this.#refuse('The note could not be saved', written.error);
 
     this.#capturesById.set(id, written.value);
     const kept = written.value.note;
     this.captures = this.captures.map((capture) =>
       capture.id === id && capture.origin !== 'written' ? { ...capture, note: kept } : capture,
     );
+    return 'saved';
   }
 
-  async remove(id: CaptureId): Promise<void> {
+  async remove(id: CaptureId): Promise<WriteOutcome> {
+    const removed = this.#take(id);
+    if (removed === null || removed.stored === undefined) return 'saved';
+
     const generation = this.#generation;
-    if (this.#capturesById.has(id)) {
-      await this.#container.recognition.removeCapture(id).catch(() => undefined);
-    }
+    const gone = await this.#container.recognition.removeCapture(id).catch(thrownFailure);
+    if (gone.ok || generation !== this.#generation) return 'saved';
 
-    if (generation !== this.#generation) return;
+    this.#putBack(removed);
+    return this.#refuse('The capture could not be removed', gone.error);
+  }
 
+  #take(id: CaptureId): Removed | null {
+    const at = this.captures.findIndex((capture) => capture.id === id);
+    const card = this.captures[at];
+    if (card === undefined) return null;
+
+    const stored = this.#capturesById.get(id);
     this.#capturesById.delete(id);
-    this.captures = this.captures.filter((capture) => capture.id !== id);
+    this.captures = this.captures.toSpliced(at, 1);
+    return { card, stored, at };
+  }
+
+  #putBack(removed: Removed): void {
+    const id = removed.card.id;
+    if (this.captures.some((capture) => capture.id === id)) return;
+
+    if (removed.stored !== undefined) this.#capturesById.set(id, removed.stored);
+    this.captures = this.captures.toSpliced(removed.at, 0, removed.card);
   }
 
   async loadTags(): Promise<void> {
@@ -443,14 +526,21 @@ class CaptureCollection {
 
   async addTag(id: CaptureId, tag: TagId): Promise<void> {
     const stored = this.#capturesById.get(id);
-    if (stored === undefined) return;
+    if (stored === undefined) {
+      this.#refuse('The tag could not be added', NOT_STORED);
+      return;
+    }
 
     const generation = this.#generation;
     const written = await this.#container.recognition
       .addTagToCapture(stored, tag)
-      .catch(() => null);
+      .catch(thrownFailure);
 
-    if (generation !== this.#generation || written === null || !written.ok) return;
+    if (generation !== this.#generation) return;
+    if (!written.ok) {
+      this.#refuse('The tag could not be added', written.error);
+      return;
+    }
 
     this.#capturesById.set(id, written.value);
     this.#retag(id, stored.tagIds, written.value.tagIds);
@@ -458,36 +548,46 @@ class CaptureCollection {
 
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
     const stored = this.#capturesById.get(id);
-    if (stored === undefined) return;
+    if (stored === undefined) {
+      this.#refuse('The tag could not be removed', NOT_STORED);
+      return;
+    }
 
     const generation = this.#generation;
     const written = await this.#container.recognition
       .removeTagFromCapture(stored, tag)
-      .catch(() => null);
+      .catch(thrownFailure);
 
-    if (generation !== this.#generation || written === null || !written.ok) return;
+    if (generation !== this.#generation) return;
+    if (!written.ok) {
+      this.#refuse('The tag could not be removed', written.error);
+      return;
+    }
 
     this.#capturesById.set(id, written.value);
     this.#retag(id, stored.tagIds, written.value.tagIds);
   }
 
   async createTag(id: CaptureId, name: string): Promise<void> {
-    if (!this.#capturesById.has(id)) return;
+    if (!this.#capturesById.has(id)) {
+      this.#refuse('The tag could not be added', NOT_STORED);
+      return;
+    }
 
     const generation = this.#generation;
     const created = await this.#container.recognition
       .createTag(tagId(crypto.randomUUID()), name)
-      .catch(() => null);
+      .catch(thrownFailure);
 
     if (generation !== this.#generation) return;
 
-    const minted = match(tagOutcome(created))
-      .with({ kind: 'created' }, (made) => made.tag)
-      .with({ kind: 'existing' }, (found) => found.tag)
-      .with({ kind: 'unavailable' }, () => null)
-      .exhaustive();
+    const outcome = tagOutcome(created);
+    if (outcome.kind === 'failed') {
+      this.#refuse('The tag could not be created', outcome.failure);
+      return;
+    }
 
-    if (minted === null) return;
+    const minted = outcome.tag;
 
     this.tags = withTag(this.tags, minted);
     await this.addTag(id, minted.id);
@@ -511,20 +611,42 @@ class CaptureCollection {
 
   async clear(): Promise<void> {
     const book = this.#book;
+    const held = { captures: this.captures, stored: this.#capturesById };
     this.confirmingClear = false;
     this.#generation += 1;
+    const generation = this.#generation;
     this.captures = [];
     this.#capturesById = new Map();
     if (book === null) return;
 
-    await this.#container.recognition.clearCaptures(book).catch(() => undefined);
+    const cleared = await this.#container.recognition.clearCaptures(book).catch(thrownFailure);
+    if (cleared.ok || generation !== this.#generation) return;
+
+    this.captures = [...held.captures, ...this.captures];
+    this.#capturesById = new Map([...held.stored, ...this.#capturesById]);
+    this.#refuse('Your captures could not be deleted', cleared.error);
   }
 
   async #keep(generation: number, draft: CaptureDraft): Promise<void> {
-    const kept = await this.#container.recognition.saveCapture(draft).catch(() => null);
-    if (kept === null || !kept.ok || generation !== this.#generation) return;
+    const kept = await this.#container.recognition.saveCapture(draft).catch(thrownFailure);
+    if (generation !== this.#generation) return;
+    if (!kept.ok) {
+      this.#unsaved(draft.id, 'The capture could not be saved', kept.error);
+      return;
+    }
 
     this.#capturesById.set(kept.value.id, kept.value);
+  }
+
+  #unsaved(id: CaptureId, title: string, failure: StorageFailure): void {
+    const reason = describeStorageFailure(failure);
+    this.#settle(id, { status: 'failed', message: `Not saved. ${reason}` });
+    this.#notify({ tone: 'danger', title, message: reason });
+  }
+
+  #refuse(title: string, failure: StorageFailure): 'failed' {
+    this.#notify({ tone: 'danger', title, message: describeStorageFailure(failure) });
+    return 'failed';
   }
 
   #settle(id: CaptureId, settled: Settled): void {
@@ -535,4 +657,4 @@ class CaptureCollection {
 }
 
 export { CaptureCollection };
-export type { CaptureStatus, PanelCapture, Settled };
+export type { CaptureLoad, CaptureStatus, PanelCapture, Settled, WriteOutcome };
