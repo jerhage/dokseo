@@ -101,7 +101,7 @@
     () => [document.activeElement, ...openPopovers()],
   );
 
-  const shown = $derived(chromeShown(asked, focus.held) || selecting);
+  const shown = $derived(chromeShown(asked, focus.held));
   const makes = $derived(dragOrigin(noting));
   const narrow = $derived(isNarrow(bodyWidth, compactWidth));
   const placement = $derived(dockPlacement(narrow, panelAsked));
@@ -382,10 +382,17 @@
         bind:this={topBar}
         bind:offsetHeight={topHeight}
       >
-        <Button href="/" size="sm" class="shrink-0">
-          <ChevronLeft class="btn-icon" />
-          Library
-        </Button>
+        {#if narrow}
+          <Button href="/" size="sm" square class="shrink-0">
+            <ChevronLeft class="btn-icon" />
+            <span class="visually-hidden">Library</span>
+          </Button>
+        {:else}
+          <Button href="/" size="sm" class="shrink-0">
+            <ChevronLeft class="btn-icon" />
+            Library
+          </Button>
+        {/if}
 
         <div class="col gap-0 flex-1">
           <h1 class="text-base weight-medium truncate" lang={book?.language ?? 'en'}>
@@ -432,7 +439,9 @@
             Settings
           </Button>
 
-          {@render engine?.()}
+          {#if !narrow}
+            {@render engine?.()}
+          {/if}
         {/if}
 
         {#if !narrow}
