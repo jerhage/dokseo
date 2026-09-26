@@ -71,6 +71,7 @@ function localHttps() {
 export default defineConfig({
   oxc: { target: LOWERS_EXPLICIT_RESOURCE_MANAGEMENT },
   server: localHttps(),
+  optimizeDeps: { include: ['@huggingface/transformers'] },
   build: { cssTarget: SUPPORTS_LIGHT_DARK },
   plugins: [
     sveltekit({
