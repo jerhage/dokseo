@@ -1,5 +1,9 @@
-import { GlobalWorkerOptions, PDFDataRangeTransport, getDocument } from 'pdfjs-dist';
-import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
+import {
+  GlobalWorkerOptions,
+  PDFDataRangeTransport,
+  getDocument,
+} from 'pdfjs-dist/legacy/build/pdf.mjs';
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { ImageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -10,7 +14,7 @@ import { RANGE_CHUNK_BYTES, clampRange, initialChunkSize } from './pdf-ranges';
 const RENDER_SCALE = 2;
 
 GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
+  'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
   import.meta.url,
 ).href;
 

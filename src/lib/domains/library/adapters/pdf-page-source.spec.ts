@@ -15,7 +15,7 @@ const document = vi.hoisted(() => ({
   failRender: false,
 }));
 
-vi.mock('pdfjs-dist', () => {
+vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => {
   class FakeTransport {
     onDataRange(): void {
       return undefined;
