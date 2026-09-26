@@ -1,0 +1,10 @@
+@layer features {
+  @scope (.tag-picker) {
+    .chips {
+      min-block-size: var(--control-h-sm);
+    }
+    .picks {
+      block-size: var(--layout-list-width);
+    }
+  }
+}
