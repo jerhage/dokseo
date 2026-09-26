@@ -21,7 +21,7 @@
   import { languageName } from '$lib/shared/language';
   import PageBar from '$lib/shared/PageBar.svelte';
   import type { TouchTurns } from '$lib/shared/page-turn';
-  import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns-trial';
+  import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
   import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
   import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';

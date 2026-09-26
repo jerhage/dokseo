@@ -18,7 +18,7 @@
   import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import { returnFocusToPage } from '$lib/shared/reading-surface';
-  import { readTouchTurns } from '$lib/shared/touch-turns-trial';
+  import { readTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';

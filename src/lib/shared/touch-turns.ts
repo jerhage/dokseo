@@ -6,7 +6,7 @@ type TouchTurnsChoice = { readonly value: TouchTurns; readonly label: string };
 
 const TOUCH_TURNS_KEY = 'reader.touch.turns';
 
-const TOUCH_TURNS_LEGEND = 'Page turns (testing)';
+const TOUCH_TURNS_LEGEND = 'Page turns';
 
 const TOUCH_TURNS_CHOICES: readonly TouchTurnsChoice[] = [
   { value: 'tap-zones', label: 'Tap zones and swipe' },
@@ -14,7 +14,7 @@ const TOUCH_TURNS_CHOICES: readonly TouchTurnsChoice[] = [
 ];
 
 function toTouchTurns(stored: string | null): TouchTurns {
-  return TOUCH_TURNS_CHOICES.find((choice) => choice.value === stored)?.value ?? 'tap-zones';
+  return TOUCH_TURNS_CHOICES.find((choice) => choice.value === stored)?.value ?? 'swipe-only';
 }
 
 function readTouchTurns(locate?: LocateStore): TouchTurns {

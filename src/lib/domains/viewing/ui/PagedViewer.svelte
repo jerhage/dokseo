@@ -10,6 +10,7 @@
   import type { PageFit } from '$lib/shared/page-fit';
   import { swipeMayStart } from '$lib/shared/page-turn';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
+  import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
   import {
     canPan,
@@ -89,7 +90,7 @@
     makes = 'recognized',
     chromeShown,
     selecting = false,
-    turns = 'tap-zones',
+    turns = readTouchTurns(),
     select,
     clear,
     onTap,
