@@ -38,6 +38,21 @@
   let confirmation = $state('');
   let closedBy = $state('nothing yet');
   let bare = $state(false);
+  let layered = $state(false);
+
+  function removed(): void {
+    toaster.show({
+      variant: 'success',
+      title: 'Book removed',
+      message: 'Stays until you act or close it.',
+      action: { label: 'Undo', run: () => toaster.show({ title: 'Book restored' }) },
+    });
+  }
+
+  function toastThenModal(): void {
+    toaster.show({ title: 'Shown before the modal', duration: 'persistent' });
+    layered = true;
+  }
 
   function deleted(): void {
     toaster.show({ variant: 'danger', title: 'Workspace deleted', message: confirmation });
@@ -79,6 +94,11 @@
         Persistent
       </Button>
       <Button onclick={() => toaster.show({ title: 'Title only' })}>Title only</Button>
+    </div>
+    <Divider />
+    <div class="row wrap items-center gap-3">
+      <Button onclick={removed}>With an action</Button>
+      <Button onclick={toastThenModal}>Toast, then a modal</Button>
     </div>
   </Card>
 </DemoSection>
@@ -142,5 +162,13 @@
   {#snippet footer()}
     <span>2 shortcuts</span>
     <span>esc close</span>
+  {/snippet}
+</Modal>
+
+<Modal bind:open={layered} title="Toasts stay on top" size="sm">
+  <p>A toast shown now, or one shown before this opened, sits above the modal and takes clicks.</p>
+  {#snippet footer(close)}
+    <Button onclick={removed}>Show a toast</Button>
+    <Button variant="primary" onclick={close}>Done</Button>
   {/snippet}
 </Modal>

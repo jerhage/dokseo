@@ -1,9 +1,6 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import Divider from '$lib/components/Divider.svelte';
-  import ToastRegion from '$lib/components/ToastRegion.svelte';
-  import { setToaster } from '$lib/components/toast-context';
-  import { createToaster } from '$lib/components/toaster.svelte';
   import AccordionSection from './AccordionSection.svelte';
   import AlertSection from './AlertSection.svelte';
   import AppShellSection from './AppShellSection.svelte';
@@ -71,8 +68,6 @@
     MosaicSection,
     GridSection,
   ];
-
-  setToaster(createToaster());
 </script>
 
 <svelte:head>
@@ -91,5 +86,4 @@
       <Divider />
     </div>
   </main>
-  <ToastRegion />
 </div>
