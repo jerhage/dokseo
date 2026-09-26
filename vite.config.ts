@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
@@ -54,8 +55,22 @@ function runtimeServedFromCdn(): Plugin {
 
 const SUPPORTS_LIGHT_DARK = ['chrome123', 'firefox120', 'safari17.5'];
 
+const DEV_KEY = '.certs/dev-key.pem';
+
+const DEV_CERT = '.certs/dev-cert.pem';
+
+function localHttps() {
+  if (!existsSync(DEV_KEY) || !existsSync(DEV_CERT)) return {};
+
+  return {
+    host: true,
+    https: { key: readFileSync(DEV_KEY), cert: readFileSync(DEV_CERT) },
+  };
+}
+
 export default defineConfig({
   oxc: { target: LOWERS_EXPLICIT_RESOURCE_MANAGEMENT },
+  server: localHttps(),
   build: { cssTarget: SUPPORTS_LIGHT_DARK },
   plugins: [
     sveltekit({
