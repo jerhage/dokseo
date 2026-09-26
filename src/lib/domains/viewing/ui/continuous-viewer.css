@@ -25,5 +25,15 @@
     .spacer {
       block-size: var(--spacer-height, 0px);
     }
+    .hint {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      z-index: var(--z-sticky);
+      pointer-events: none;
+    }
+    .does {
+      white-space: nowrap;
+    }
   }
 }

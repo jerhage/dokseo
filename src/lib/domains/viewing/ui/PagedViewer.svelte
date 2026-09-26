@@ -8,7 +8,7 @@
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PagePicture } from '$lib/shared/page-source';
   import type { PageFit } from '$lib/shared/page-fit';
-  import { swipeMayStart } from '$lib/shared/page-turn';
+  import { SIDE_ZONE_SHARE, swipeMayStart } from '$lib/shared/page-turn';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
@@ -24,10 +24,10 @@
   } from '../domain/viewport';
   import type { Pinch, Viewport, ZoomPoint } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
-  import { hintsToShow, pagedHints } from './gesture-hint';
+  import { hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
-  import { learnedGestures, learnGesture } from './learned-gestures.svelte';
+  import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import type { PageMove } from './page-moves';
   import {
@@ -39,10 +39,12 @@
     slideTravel,
   } from './page-slide';
   import type { Neighbours, Slide } from './page-slide';
-  import { touchAction } from './touch-action';
+  import { touchAction, touchLesson } from './touch-action';
   import type { TouchAction } from './touch-action';
   import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
   import type { TouchInput, TouchSample, TouchState } from './touch-gesture';
+  import { showsZoneOverlay, zoneLabels } from './zone-overlay';
+  import { markZonesSeen, zonesSeen } from './zones-seen.svelte';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
   import './paged-viewer.css';
@@ -115,6 +117,7 @@
   let revealed = $state(false);
   let hintLines = $state.raw<readonly GestureHint[]>([]);
   let slide = $state.raw<Slide>(SLIDE_REST);
+  let lastPointerType = $state<string | null>(null);
 
   let shownPages: PageGroup | null = null;
   let touch: TouchState = TOUCH_IDLE;
@@ -124,18 +127,28 @@
   let slides = false;
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
+
   const panes = $derived(slidePanes(pages, beside, direction));
 
+  const pointing = $derived(inputKind(lastPointerType, coarse));
+
   const pending = $derived(
-    hintsToShow(chromeShown, pagedHints(pannable), learnedGestures(), revealed),
+    hintsToShow(
+      readerHints({ input: pointing, layoutKind: 'paged', pannable, turns }),
+      learnedGestures(),
+      { chromeShown, wanted: hintsWanted(), revealed, input: pointing },
+    ),
   );
+
+  const zonesShown = $derived(showsZoneOverlay({ turns, input: pointing, seen: zonesSeen() }));
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
   }
 
   function selected(regions: readonly ImageRegion[]): void {
-    learnGesture('select');
+    learnGesture(lastPointer === 'touch' ? 'touch-select' : 'select');
     select(regions);
   }
 
@@ -449,6 +462,8 @@
       viewportWidth: window.innerWidth,
       reach: step.intent.kind === 'pan-end' ? panReach() : null,
     });
+    const lesson = touchLesson(step.intent, action);
+    if (lesson !== null) learnGesture(lesson);
     const handed = slideWith(step.state, action, span.width);
     if (!(handed && action.kind === 'turn')) act(action);
   }
@@ -591,6 +606,26 @@
     dropSpace();
   }
 
+  function noticePointer(event: PointerEvent): void {
+    lastPointerType = event.pointerType;
+  }
+
+  function holdZones(event: PointerEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    if (event.currentTarget instanceof Element)
+      event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function swallow(event: PointerEvent): void {
+    event.stopPropagation();
+  }
+
+  function dismissZones(event: PointerEvent): void {
+    event.stopPropagation();
+    markZonesSeen();
+  }
+
   $effect(() => stopTouchTimer);
 
   $effect(() => stopSettleTimer);
@@ -628,7 +663,7 @@
   });
 </script>
 
-<svelte:window {onkeydown} {onkeyup} {onblur} />
+<svelte:window {onkeydown} {onkeyup} {onblur} onpointerdowncapture={noticePointer} />
 
 <div class="paged-viewer row gap-0 flex-1 min-h-0 overflow-hidden scheme-dark surface-sunken">
   <div
@@ -715,5 +750,23 @@
         </span>
       {/each}
     </p>
+
+    {#if zonesShown}
+      <div
+        class="zones"
+        style:--side-share={SIDE_ZONE_SHARE}
+        aria-hidden="true"
+        onpointerdown={holdZones}
+        onpointermove={swallow}
+        onpointerup={dismissZones}
+        onpointercancel={dismissZones}
+      >
+        {#each zoneLabels(direction) as zone (zone.zone)}
+          <div class="zone row items-center justify-center">
+            <span class="text-sm weight-medium">{zone.label}</span>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </div>
 </div>

@@ -118,6 +118,7 @@ test('reports a finished mouse drag in a strip as a selection and never as a tap
       start: { index: imageIndex(0), offset: 0 },
       pictureAt,
       measured: (_index: ImageIndex) => undefined,
+      chromeShown: false,
       moveTo: () => undefined,
       select,
       clear: () => undefined,

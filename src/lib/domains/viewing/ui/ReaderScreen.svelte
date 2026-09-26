@@ -36,6 +36,8 @@
   import PagedViewer from './PagedViewer.svelte';
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
+  import { chooseHints, hintsWanted } from './learned-gestures.svelte';
+  import { forgetZonesSeen } from './zones-seen.svelte';
   import ReaderSettings from './ReaderSettings.svelte';
   import './reader-screen.css';
 
@@ -229,6 +231,7 @@
   function chooseTouchTurns(chosen: TouchTurns): void {
     touchTurns = chosen;
     saveTouchTurns(chosen);
+    if (chosen === 'tap-zones') forgetZonesSeen();
   }
 
   const shownTurns = $derived.by(() => {
@@ -331,6 +334,7 @@
           measured={(index, size) => view.measure(index, size)}
           {glow}
           {makes}
+          chromeShown={shown}
           {selecting}
           moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
           select={(regions) => commit(regions, 'column')}
@@ -491,6 +495,8 @@
   offersAppearance={narrow}
   {touchTurns}
   ontouchturns={chooseTouchTurns}
+  gestureHints={hintsWanted()}
+  ongesturehints={chooseHints}
   onlayout={(kind) => void view.setLayoutKind(kind)}
   onpairing={(pairing) => void view.setPairing(pairing)}
   ondirection={(direction) => void view.setDirection(direction)}

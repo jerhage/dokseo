@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { touchAction } from './touch-action';
+import { touchAction, touchLesson } from './touch-action';
 import type { PanReach } from '../domain/overscroll';
 import type { TouchScene } from './touch-action';
 
@@ -191,5 +191,70 @@ describe('touchAction pan ends', () => {
 
   it('does nothing when the page could not be measured', () => {
     expect(panEnd(300, 200, BARE)).toEqual({ kind: 'none' });
+  });
+});
+
+describe('touchLesson', () => {
+  it('teaches tapping the sides when a tap turns the page', () => {
+    const intent = { kind: 'tap', x: LEFT, y: ROW } as const;
+
+    expect(touchLesson(intent, touchAction(intent, BARE))).toBe('tap-sides');
+  });
+
+  it('teaches the swipe when a swipe turns the page', () => {
+    const intent = {
+      kind: 'swipe',
+      start: { x: RIGHT, y: ROW },
+      end: { x: LEFT, y: ROW },
+      elapsed: 150,
+    } as const;
+
+    expect(touchLesson(intent, touchAction(intent, BARE))).toBe('swipe');
+  });
+
+  it('teaches the swipe when an overscroll turns the page', () => {
+    const intent = {
+      kind: 'pan-end',
+      start: { x: RIGHT, y: ROW },
+      end: { x: LEFT, y: ROW },
+      elapsed: 150,
+    } as const;
+
+    expect(touchLesson(intent, { kind: 'turn', move: 'increment' })).toBe('swipe');
+  });
+
+  it('teaches nothing for a swipe that turns no page', () => {
+    const intent = {
+      kind: 'swipe',
+      start: { x: CENTRE, y: ROW },
+      end: { x: CENTRE, y: ROW + 200 },
+      elapsed: 150,
+    } as const;
+
+    expect(touchLesson(intent, touchAction(intent, BARE))).toBeNull();
+  });
+
+  it('teaches the pinch when a pinch zooms', () => {
+    const intent = { kind: 'pinch', scale: 1.2, cx: 0, cy: 0, dx: 0, dy: 0 } as const;
+
+    expect(touchLesson(intent, touchAction(intent, BARE))).toBe('pinch');
+  });
+
+  it('teaches the double tap when a double tap zooms', () => {
+    const intent = { kind: 'double-tap', x: CENTRE, y: ROW } as const;
+
+    expect(touchLesson(intent, touchAction(intent, BARE))).toBe('double-tap');
+  });
+
+  it('teaches nothing when a double tap only hides the bars', () => {
+    const intent = { kind: 'double-tap', x: CENTRE, y: ROW } as const;
+
+    expect(touchLesson(intent, touchAction(intent, WITH_BARS))).toBeNull();
+  });
+
+  it('teaches nothing for a centre tap', () => {
+    const intent = { kind: 'tap', x: CENTRE, y: ROW } as const;
+
+    expect(touchLesson(intent, touchAction(intent, BARE))).toBeNull();
   });
 });

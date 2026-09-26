@@ -1,6 +1,7 @@
 type RememberedSet = {
   readonly values: () => readonly string[];
   readonly add: (value: string) => readonly string[];
+  readonly clear: () => readonly string[];
 };
 
 function store(): Storage | null {
@@ -39,6 +40,17 @@ function write(key: string, values: readonly string[]): void {
   }
 }
 
+function forget(key: string): void {
+  const held = store();
+  if (held === null) return;
+
+  try {
+    held.removeItem(key);
+  } catch {
+    return;
+  }
+}
+
 function rememberedSet(key: string): RememberedSet {
   let values = read(key);
 
@@ -49,6 +61,11 @@ function rememberedSet(key: string): RememberedSet {
 
       values = [...values, value];
       write(key, values);
+      return values;
+    },
+    clear: () => {
+      values = [];
+      forget(key);
       return values;
     },
   };

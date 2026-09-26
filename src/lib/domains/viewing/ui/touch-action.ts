@@ -5,6 +5,7 @@ import type { FrameSpan, TapZone, TouchTurns } from '$lib/shared/page-turn';
 import { overscrollTurn } from '../domain/overscroll';
 import type { PanReach } from '../domain/overscroll';
 import type { Point } from '../domain/selection';
+import type { ReaderGesture } from './gesture-hint';
 import { moveTowards } from './page-moves';
 import type { PageMove } from './page-moves';
 import type { TouchIntent } from './touch-gesture';
@@ -104,5 +105,23 @@ function touchAction(intent: TouchIntent, scene: TouchScene): TouchAction {
     .exhaustive();
 }
 
-export { touchAction };
+function touchLesson(intent: TouchIntent, action: TouchAction): ReaderGesture | null {
+  return match<TouchAction, ReaderGesture | null>(action)
+    .with({ kind: 'turn' }, () => (intent.kind === 'tap' ? 'tap-sides' : 'swipe'))
+    .with({ kind: 'pinch' }, () => 'pinch')
+    .with({ kind: 'zoom-toggle' }, () => 'double-tap')
+    .with(
+      { kind: 'none' },
+      { kind: 'toggle-chrome' },
+      { kind: 'pan' },
+      { kind: 'select-begin' },
+      { kind: 'select-move' },
+      { kind: 'select-end' },
+      { kind: 'drop' },
+      () => null,
+    )
+    .exhaustive();
+}
+
+export { touchAction, touchLesson };
 export type { TouchAction, TouchScene };

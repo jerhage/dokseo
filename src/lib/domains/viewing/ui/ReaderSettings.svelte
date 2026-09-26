@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
+  import Checkbox from '$lib/components/Checkbox.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Radio from '$lib/components/Radio.svelte';
@@ -15,6 +16,7 @@
   } from '$lib/shared/layout-choices';
   import type { TouchTurns } from '$lib/shared/page-turn';
   import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from '$lib/shared/touch-turns';
+  import { GESTURE_HINTS_LABEL } from './gesture-hints-setting';
 
   type FitChoice = {
     readonly label: string;
@@ -33,10 +35,12 @@
     readonly fits: readonly FitChoice[];
     readonly offersAppearance: boolean;
     readonly touchTurns: TouchTurns;
+    readonly gestureHints: boolean;
     readonly onlayout: (kind: ImageLayoutKind) => void;
     readonly onpairing: (pairing: PagePairing) => void;
     readonly ondirection: (direction: ReadingDirection) => void;
     readonly ontouchturns: (turns: TouchTurns) => void;
+    readonly ongesturehints: (wanted: boolean) => void;
   };
 
   let {
@@ -49,10 +53,12 @@
     fits,
     offersAppearance,
     touchTurns,
+    gestureHints,
     onlayout,
     onpairing,
     ondirection,
     ontouchturns,
+    ongesturehints,
   }: Props = $props();
 
   const uid = $props.id();
@@ -132,6 +138,12 @@
         </div>
       </Fieldset>
     {/if}
+
+    <Checkbox
+      checked={gestureHints}
+      onchange={(event) => ongesturehints(event.currentTarget.checked)}
+      >{GESTURE_HINTS_LABEL}</Checkbox
+    >
 
     {#if offersAppearance}
       <div class="row items-center justify-between" role="group" aria-labelledby="{uid}-appearance">

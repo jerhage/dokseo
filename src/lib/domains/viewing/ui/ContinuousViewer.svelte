@@ -20,7 +20,10 @@
   } from '../domain/strip';
   import type { Point } from '../domain/selection';
   import { clampZoom, pinchZoom } from '../domain/viewport';
+  import { hintsToShow, inputKind, readerHints } from './gesture-hint';
+  import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys } from './keyboard';
+  import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
@@ -44,6 +47,7 @@
     readonly measured: (index: ImageIndex, size: Size) => void;
     readonly glow?: readonly GlowRegion[];
     readonly makes?: CaptureOrigin;
+    readonly chromeShown: boolean;
     readonly selecting?: boolean;
     readonly moveTo: (position: ReadingPosition, shownThrough: ImageIndex) => void;
     readonly select: (regions: readonly ImageRegion[]) => void;
@@ -58,6 +62,7 @@
     measured,
     glow = [],
     makes = 'recognized',
+    chromeShown,
     selecting = false,
     moveTo,
     select,
@@ -86,16 +91,34 @@
     left: 0,
   });
 
+  let lastPointerType = $state<string | null>(null);
+  let hintLines = $state.raw<readonly GestureHint[]>([]);
+
   let written: { readonly top: number; readonly left: number } | null = null;
   let touch: TouchState = TOUCH_IDLE;
   let touchTimer: ReturnType<typeof setTimeout> | null = null;
   let lastPointer = '';
+
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
 
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
   const height = $derived(stripHeight(layout));
   const range = $derived(visibleRange(layout, scrolled, frameHeight, stripOverscan(frameHeight)));
   const spacers = $derived(spacersFor(layout, range, snapToDevicePixels));
+  const pointing = $derived(inputKind(lastPointerType, coarse));
+  const pending = $derived(
+    hintsToShow(
+      readerHints({
+        input: pointing,
+        layoutKind: 'continuous',
+        pannable: false,
+        turns: 'swipe-only',
+      }),
+      learnedGestures(),
+      { chromeShown, wanted: hintsWanted(), revealed: false, input: pointing },
+    ),
+  );
 
   function snapToDevicePixels(value: number): number {
     const ratio = window.devicePixelRatio;
@@ -213,7 +236,10 @@
     match(action)
       .with({ kind: 'none' }, () => undefined)
       .with({ kind: 'toggle-chrome' }, () => onTap())
-      .with({ kind: 'zoom' }, ({ scale, from, to }) => pinchBy(scale, from, to))
+      .with({ kind: 'zoom' }, ({ scale, from, to }) => {
+        learnGesture('pinch');
+        pinchBy(scale, from, to);
+      })
       .with({ kind: 'select-begin' }, ({ from, to }) => {
         if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
       })
@@ -282,6 +308,15 @@
     }
 
     selection?.pointercancel(event);
+  }
+
+  function selected(regions: readonly ImageRegion[]): void {
+    if (lastPointer === 'touch') learnGesture('touch-select');
+    select(regions);
+  }
+
+  function noticePointer(event: PointerEvent): void {
+    lastPointerType = event.pointerType;
   }
 
   function oncontextmenu(event: MouseEvent): void {
@@ -393,6 +428,11 @@
   $effect(() => stopTouchTimer);
 
   $effect(() => {
+    const lines = pending;
+    if (lines.length > 0) hintLines = lines;
+  });
+
+  $effect(() => {
     const element = scroller;
     if (element === null) return;
 
@@ -442,7 +482,7 @@
   });
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} onpointerdowncapture={noticePointer} />
 
 <div class="continuous-viewer relative row gap-0 flex-1 min-h-0 scheme-dark surface-sunken">
   <div
@@ -482,8 +522,26 @@
     arrangement="column"
     pointerTypes={DRAG_SELECTS_WITH}
     {makes}
-    {select}
+    select={selected}
     {clear}
     tap={onTap}
   />
+
+  <p
+    class={[
+      'hint row wrap items-center gap-3 m-0 px-3 py-2 text-xs text-muted hushable',
+      { 'is-hushed': pending.length === 0 },
+    ]}
+    aria-hidden="true"
+  >
+    {#each hintLines as hint (hint.keys.join('+'))}
+      <span class="row items-center gap-1">
+        {#each hint.keys as key, step (key)}
+          {#if step > 0}<span class="text-faint">+</span>{/if}
+          <kbd class="text-xs">{key}</kbd>
+        {/each}
+        <span class="does">{hint.does}</span>
+      </span>
+    {/each}
+  </p>
 </div>

@@ -48,5 +48,20 @@
     .does {
       white-space: nowrap;
     }
+    .zones {
+      position: absolute;
+      inset: 0;
+      z-index: var(--z-sticky);
+      display: grid;
+      grid-template-columns:
+        calc(var(--side-share) * 100%)
+        1fr
+        calc(var(--side-share) * 100%);
+      background-color: var(--color-overlay);
+      color: var(--color-text-on-scrim);
+    }
+    .zone + .zone {
+      border-inline-start: var(--border-width-strong) dashed var(--color-text-on-scrim);
+    }
   }
 }
