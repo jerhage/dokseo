@@ -253,6 +253,7 @@
     pointerHeld = true;
     gestures?.pressed({
       pointerId: event.pointerId,
+      pointerType: event.pointerType,
       at: spot.at,
     });
   }

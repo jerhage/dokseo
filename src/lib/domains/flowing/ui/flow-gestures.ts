@@ -4,6 +4,7 @@ import type { FlowAction, FlowMove, KeyPress, PageTurner, Point } from './flow-t
 
 type Press = {
   readonly pointerId: number;
+  readonly pointerType: string;
   readonly at: Point;
 };
 
@@ -37,6 +38,7 @@ class FlowGestures {
       pointerEnded({
         from: began.at,
         to: release.at,
+        pointerType: began.pointerType,
         width: release.width,
         textSelected: release.textSelected,
       }),

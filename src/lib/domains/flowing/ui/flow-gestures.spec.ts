@@ -24,7 +24,7 @@ function foliateLike(dir: 'ltr' | 'rtl'): { readonly pages: PageTurner; readonly
 }
 
 function pressAt(x: number, held: Partial<Press> = {}): Press {
-  return { pointerId: ONE_POINTER, at: { x, y: 200 }, ...held };
+  return { pointerId: ONE_POINTER, pointerType: 'mouse', at: { x, y: 200 }, ...held };
 }
 
 function releaseAt(x: number, held: Partial<Release> = {}): Release {
@@ -115,6 +115,35 @@ describe('FlowGestures', () => {
 
     expect(action).toEqual({ kind: 'nothing' });
     expect(reader.calls).toEqual([]);
+  });
+
+  it('asks for the chrome when a finger drifts six pixels in the middle of the page', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(400, { pointerType: 'touch' }));
+    const action = gestures.released(releaseAt(406));
+
+    expect(action).toEqual({ kind: 'chrome' });
+  });
+
+  it('turns the page when a finger drifts six pixels on an edge', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(760, { pointerType: 'touch' }));
+    gestures.released(releaseAt(766));
+
+    expect(reader.calls).toEqual(['next']);
+  });
+
+  it('asks for nothing when a mouse drifts six pixels', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(400, { pointerType: 'mouse' }));
+
+    expect(gestures.released(releaseAt(406))).toEqual({ kind: 'nothing' });
   });
 
   it('turns nothing for a release that belongs to another pointer', () => {

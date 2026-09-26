@@ -1,5 +1,8 @@
 import { match } from 'ts-pattern';
+import { clickSlop } from '$lib/shared/click-slop';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import { towards } from '$lib/shared/page-turn';
+import type { TurnSide } from '$lib/shared/page-turn';
 
 type Point = { readonly x: number; readonly y: number };
 
@@ -16,6 +19,7 @@ type KeyPress = {
 type PointerRelease = {
   readonly from: Point;
   readonly to: Point;
+  readonly pointerType: string;
   readonly width: number;
   readonly textSelected: boolean;
 };
@@ -68,8 +72,6 @@ type PageTurner = {
   prev(): unknown;
   next(): unknown;
 };
-
-const CLICK_SLOP_PX = 3;
 
 const EDGE_SHARE = 0.1;
 
@@ -159,17 +161,18 @@ function regionAt(x: number, width: number): ClickRegion {
   return MIDDLE;
 }
 
-function stayedStill(from: Point, to: Point): boolean {
+function stayedStill(from: Point, to: Point, pointerType: string): boolean {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   if (!Number.isFinite(dx) || !Number.isFinite(dy)) return false;
 
-  return Math.abs(dx) < CLICK_SLOP_PX && Math.abs(dy) < CLICK_SLOP_PX;
+  const slop = clickSlop(pointerType);
+  return Math.abs(dx) < slop && Math.abs(dy) < slop;
 }
 
 function pointerEnded(release: PointerRelease): PointerEnd {
   if (release.textSelected) return SELECTING;
-  if (!stayedStill(release.from, release.to)) return DRAGGED;
+  if (!stayedStill(release.from, release.to, release.pointerType)) return DRAGGED;
 
   return { kind: 'click', region: regionAt(release.to.x, release.width) };
 }
@@ -207,8 +210,12 @@ function releaseAction(end: PointerEnd): FlowAction {
     .exhaustive();
 }
 
-function turnOrder(direction: ReadingDirection): readonly FlowTurn[] {
+function turnOrder(direction: ReadingDirection): readonly [FlowTurn, FlowTurn] {
   return direction === 'rtl' ? ['next', 'previous'] : ['previous', 'next'];
+}
+
+function turnTowards(side: TurnSide, direction: ReadingDirection): FlowTurn {
+  return towards(side, turnOrder(direction));
 }
 
 function moveForTurn(turn: FlowTurn): FlowMove {
@@ -234,7 +241,6 @@ function turnPage(pages: PageTurner, move: FlowMove): void {
 }
 
 export {
-  CLICK_SLOP_PX,
   EDGE_SHARE,
   FRAME_NOWHERE_ON_THE_STAGE,
   HOST_VIEWPORT_ORIGIN,
@@ -251,6 +257,7 @@ export {
   tapOnStage,
   turnOrder,
   turnPage,
+  turnTowards,
 };
 export type {
   ClickRegion,

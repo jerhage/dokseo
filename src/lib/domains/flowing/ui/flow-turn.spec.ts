@@ -16,6 +16,7 @@ import {
   tapOnStage,
   turnOrder,
   turnPage,
+  turnTowards,
 } from './flow-turn';
 import type {
   FlowMove,
@@ -116,6 +117,7 @@ function releasing(release: Partial<PointerRelease> = {}): PointerRelease {
   return {
     from: landed,
     to: landed,
+    pointerType: 'mouse',
     width: PAGE_WIDTH,
     textSelected: false,
     ...release,
@@ -393,6 +395,30 @@ describe('pointerEnded', () => {
     });
   });
 
+  it('allows a finger that drifted six pixels, so a tap on a phone still lands', () => {
+    expect(
+      pointerEnded(
+        releasing({ from: { x: 400, y: 100 }, to: { x: 406, y: 94 }, pointerType: 'touch' }),
+      ),
+    ).toEqual({ kind: 'click', region: { kind: 'middle' } });
+  });
+
+  it('refuses a mouse that drifted six pixels', () => {
+    expect(
+      pointerEnded(
+        releasing({ from: { x: 400, y: 100 }, to: { x: 406, y: 94 }, pointerType: 'mouse' }),
+      ),
+    ).toEqual({ kind: 'dragged' });
+  });
+
+  it('refuses a finger that travelled twelve pixels', () => {
+    expect(
+      pointerEnded(
+        releasing({ from: { x: 400, y: 100 }, to: { x: 412, y: 100 }, pointerType: 'touch' }),
+      ),
+    ).toEqual({ kind: 'dragged' });
+  });
+
   it('reports a still release as a click on the region it landed in', () => {
     expect(pointerEnded(releasing({ from: { x: 4, y: 9 }, to: { x: 4, y: 9 } }))).toEqual({
       kind: 'click',
@@ -546,6 +572,26 @@ describe('moveForTurn', () => {
   });
 });
 
+describe('turnTowards', () => {
+  it('goes forward from the left side of a right-to-left book, exactly as the footer does', () => {
+    expect(turnTowards('left', 'rtl')).toBe('next');
+    expect(turnTowards('right', 'rtl')).toBe('previous');
+  });
+
+  it('goes forward from the right side of a left-to-right book', () => {
+    expect(turnTowards('left', 'ltr')).toBe('previous');
+    expect(turnTowards('right', 'ltr')).toBe('next');
+  });
+
+  it('matches the footer slot on each side in both directions', () => {
+    for (const direction of ['ltr', 'rtl'] as const) {
+      expect([turnTowards('left', direction), turnTowards('right', direction)]).toEqual(
+        turnOrder(direction),
+      );
+    }
+  });
+});
+
 const STAGE: StageBox = { left: 0, top: 0, width: 414 };
 
 const COLUMNISED_FRAME_WIDTH = 8471;
@@ -592,7 +638,13 @@ describe('tapOnStage', () => {
 
     expect(
       releaseAction(
-        pointerEnded({ from: spot.at, to: spot.at, width: spot.width, textSelected: false }),
+        pointerEnded({
+          from: spot.at,
+          to: spot.at,
+          pointerType: 'mouse',
+          width: spot.width,
+          textSelected: false,
+        }),
       ),
     ).toEqual({ kind: 'nothing' });
   });
