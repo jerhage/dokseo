@@ -62,10 +62,10 @@ describe('KeyHints', () => {
     const html = markup({}).replaceAll(/>\s+</gu, '><');
 
     expect(html).toContain(
-      '<span class="key-hint"><kbd>Esc</kbd><span class="key-hint-does">cancels</span></span>',
+      '<span class="key-hints-item"><kbd>Esc</kbd><span class="key-hints-description">cancels</span></span>',
     );
     expect(html).toContain(
-      '<span class="key-hint"><kbd>⌘/Ctrl</kbd><span class="key-hint-joiner">+</span><kbd>Enter</kbd><span class="key-hint-does">saves</span></span>',
+      '<span class="key-hints-item"><kbd>⌘/Ctrl</kbd><span class="key-hints-joiner">+</span><kbd>Enter</kbd><span class="key-hints-description">saves</span></span>',
     );
   });
 

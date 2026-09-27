@@ -9,15 +9,15 @@
   align-items: center;
   gap: var(--sp-3);
 }
-.key-hint {
+.key-hints-item {
   display: flex;
   align-items: center;
   gap: var(--sp-1);
 }
-.key-hint-joiner {
+.key-hints-joiner {
   color: var(--color-text-faint);
 }
-.key-hint-does {
+.key-hints-description {
   white-space: nowrap;
 }
 .key-hints-sm kbd {

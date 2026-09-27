@@ -37,12 +37,12 @@
         >{:else}{piece.text}{/if}{/each}
   {:else}
     {#each hints as hint, place (place)}
-      <span class="key-hint">
+      <span class="key-hints-item">
         {#each hint.keys as key, step (step)}
-          {#if step > 0}<span class="key-hint-joiner">{KEY_JOINER}</span>{/if}
+          {#if step > 0}<span class="key-hints-joiner">{KEY_JOINER}</span>{/if}
           <kbd>{key}</kbd>
         {/each}
-        <span class="key-hint-does">{hint.does}</span>
+        <span class="key-hints-description">{hint.does}</span>
       </span>
     {/each}
   {/if}
