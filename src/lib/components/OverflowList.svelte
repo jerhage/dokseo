@@ -32,7 +32,7 @@
     <span class="text-xs text-muted" title={more}>{@render count()}</span>
   {/if}
 {:else if items.length > 0}
-  <ul class={['row items-center list-reset min-w-0 overflow-hidden', className]} aria-label={label}>
+  <ul class={['overflow-list', className]} aria-label={label}>
     {#each line.shown as entry, at (key?.(entry) ?? at)}
       <li class="row min-w-0">{@render item(entry)}</li>
     {/each}

@@ -81,7 +81,7 @@
   {/if}
 {/snippet}
 
-<div {...rest} class={['row items-center', className]}>
+<div {...rest} class={['stepper', className]}>
   {#if count !== null && tally === 'badge'}
     <Badge variant="brand" class="shrink-0">{count}</Badge>
   {/if}

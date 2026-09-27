@@ -25,7 +25,7 @@
   <Badge colour={shown.colour} quiet dot>{shown.name}</Badge>
 {/snippet}
 
-<DemoSection id="overflow-list" title="Overflow list" classes={[]}>
+<DemoSection id="overflow-list" title="Overflow list" classes={['overflow-list']}>
   <p class="text-sm text-muted">
     As many items as the room holds. When there are more, the last place is a count of the rest,
     which names them in its tooltip and to a screen reader.

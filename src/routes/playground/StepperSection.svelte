@@ -37,7 +37,7 @@
   }
 </script>
 
-<DemoSection id="stepper" title="Stepper" classes={[]}>
+<DemoSection id="stepper" title="Stepper" classes={['stepper']}>
   <p class="text-sm text-muted">
     Previous and next through a list, with the place in it. A step is an address (a link), a
     function (a button) or nothing; nothing is a disabled button, or no button at all.
