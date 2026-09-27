@@ -76,6 +76,13 @@
   inline-size: max-content;
   max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3));
 }
+.place-rect {
+  position: absolute;
+  left: var(--rect-left, 0px);
+  top: var(--rect-top, 0px);
+  width: var(--rect-width, 0px);
+  height: var(--rect-height, 0px);
+}
 .z-base {
   z-index: var(--z-base);
 }

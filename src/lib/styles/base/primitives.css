@@ -69,6 +69,7 @@
   --ds-border-1: 1px;
   --ds-border-2: 2px;
   --ds-focus-offset: 2px;
+  --ds-glow-ring-width: 0.25rem;
 
   --ds-container-prose: 68ch;
   --ds-container-wide: 1280px;
