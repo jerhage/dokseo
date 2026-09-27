@@ -8,6 +8,7 @@
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import UploadIcon from '$lib/components/icons/Upload.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
+  import KeyHints from '$lib/components/KeyHints.svelte';
   import NavLink from '$lib/components/NavLink.svelte';
   import WindowDropzone from '$lib/components/WindowDropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
@@ -19,6 +20,7 @@
   import type { LibraryView } from './library-view.svelte';
   import {
     GITHUB_MARK,
+    SEARCH_EVERYTHING_HINTS,
     SOURCE_LABEL,
     SOURCE_URL,
     isSearching,
@@ -135,9 +137,12 @@
       class="row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap layout-app-shell-narrow-fit"
     >
       <LibrarySearch bind:query {matched} class="layout-app-shell-wide-only" />
-      <span class="text-xs text-faint layout-app-shell-wide-only"
-        ><kbd>⌘K</kbd> to search everything</span
-      >
+      <KeyHints
+        hints={SEARCH_EVERYTHING_HINTS}
+        variant="inline"
+        element="span"
+        class="text-faint layout-app-shell-wide-only"
+      />
       <Button
         variant="primary"
         class="layout-app-shell-wide-only"

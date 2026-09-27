@@ -44,6 +44,14 @@
       </div>
     </Card>
     <Card>
+      <div class="col gap-2">
+        <p class="text-sm text-muted">inline, in running text</p>
+        <p class="text-sm">
+          Anywhere in the list: <KeyHints hints={LIST_KEYS} variant="inline" element="span" />.
+        </p>
+      </div>
+    </Card>
+    <Card>
       <div
         class="relative overflow-hidden surface-sunken rounded-container aspect-video"
         style:--pin-lift="{barHeight}px"

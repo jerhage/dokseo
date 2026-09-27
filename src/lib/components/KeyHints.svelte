@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
-  import { KEY_HINTS_SIZES, KEY_HINTS_VARIANTS, KEY_JOINER, hintText } from './key-hints';
+  import { KEY_HINTS_SIZES, KEY_HINTS_VARIANTS, KEY_JOINER, hintsBody } from './key-hints';
   import type { KeyHint, KeyHintsElement, KeyHintsSize, KeyHintsVariant } from './key-hints';
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'children' | 'aria-hidden'> & {
@@ -20,6 +20,8 @@
     class: className,
     ...rest
   }: Props = $props();
+
+  const body = $derived(hintsBody(variant, hints));
 </script>
 
 <svelte:element
@@ -28,8 +30,11 @@
   aria-hidden={decorative ? 'true' : undefined}
   class={['key-hints', KEY_HINTS_VARIANTS[variant], KEY_HINTS_SIZES[size], className]}
 >
-  {#if variant === 'text'}
-    {hintText(hints)}
+  {#if body.kind === 'text'}
+    {body.text}
+  {:else if body.kind === 'inline'}
+    {#each body.pieces as piece, place (place)}{#if piece.kind === 'key'}<kbd>{piece.text}</kbd
+        >{:else}{piece.text}{/if}{/each}
   {:else}
     {#each hints as hint, place (place)}
       <span class="key-hint">

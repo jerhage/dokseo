@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { KEY_HINTS_SIZES, KEY_HINTS_VARIANTS, hintText } from './key-hints';
+import { KEY_HINTS_SIZES, KEY_HINTS_VARIANTS, hintPieces, hintText, hintsBody } from './key-hints';
 import KeyHints from './KeyHints.svelte';
 
 const HINTS_COMPONENT = KeyHints as unknown as Component<Record<string, unknown>>;
@@ -28,9 +28,31 @@ describe('hintText', () => {
   });
 });
 
+describe('hintPieces', () => {
+  it('writes each key as a key piece and the joiners, separators and descriptions as words', () => {
+    expect(hintPieces(HINTS)).toEqual([
+      { kind: 'key', text: 'Esc' },
+      { kind: 'words', text: ' cancels' },
+      { kind: 'words', text: ' · ' },
+      { kind: 'key', text: '⌘/Ctrl' },
+      { kind: 'words', text: ' + ' },
+      { kind: 'key', text: 'Enter' },
+      { kind: 'words', text: ' saves' },
+    ]);
+  });
+});
+
+describe('hintsBody', () => {
+  it('gives the chips variant nothing to precompute, the inline variant its pieces and the text variant its line', () => {
+    expect(hintsBody('chips', HINTS)).toEqual({ kind: 'chips' });
+    expect(hintsBody('inline', HINTS)).toEqual({ kind: 'inline', pieces: hintPieces(HINTS) });
+    expect(hintsBody('text', HINTS)).toEqual({ kind: 'text', text: hintText(HINTS) });
+  });
+});
+
 describe('KEY_HINTS_VARIANTS and KEY_HINTS_SIZES', () => {
   it('lays out the chips variant only, and shrinks the keys in the small size only', () => {
-    expect(KEY_HINTS_VARIANTS).toEqual({ chips: ['key-hints-chips'], text: [] });
+    expect(KEY_HINTS_VARIANTS).toEqual({ chips: ['key-hints-chips'], inline: [], text: [] });
     expect(KEY_HINTS_SIZES).toEqual({ sm: ['key-hints-sm'], md: [] });
   });
 });
@@ -56,6 +78,14 @@ describe('KeyHints', () => {
 
     expect(html).toBe(
       '<span class="key-hints flex-fill">Esc cancels · ⌘/Ctrl + Enter saves</span>',
+    );
+  });
+
+  it('writes the inline variant as running text with each key in a kbd and no wrapper', () => {
+    const html = markup({ variant: 'inline', element: 'span', class: 'text-faint' });
+
+    expect(html).toBe(
+      '<span class="key-hints text-faint"><kbd>Esc</kbd> cancels · <kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd> saves</span>',
     );
   });
 

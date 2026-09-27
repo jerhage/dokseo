@@ -1,5 +1,6 @@
 import { matchesQuery } from '$lib/shared/text-search';
 import { isComposingKey } from '$lib/shared/composing-key';
+import type { KeyHint } from '$lib/components/key-hints';
 import type { ComposingSignals } from '$lib/shared/composing-key';
 import type { Book } from '../domain/book/book';
 import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';
@@ -16,6 +17,10 @@ type FilterPress = ComposingSignals & {
 const SOURCE_URL = 'https://github.com/jerhage/dokseo';
 
 const SOURCE_LABEL = 'The source of this app, on GitHub';
+
+const SEARCH_EVERYTHING_HINTS: readonly KeyHint[] = [
+  { keys: ['⌘K'], does: 'to search everything' },
+];
 
 const GITHUB_MARK =
   'M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 ' +
@@ -81,6 +86,7 @@ function libraryBody(status: LibraryStatus, bookCount: number, importing: boolea
 
 export {
   GITHUB_MARK,
+  SEARCH_EVERYTHING_HINTS,
   SOURCE_LABEL,
   SOURCE_URL,
   clearsSearch,
