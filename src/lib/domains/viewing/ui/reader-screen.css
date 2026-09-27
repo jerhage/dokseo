@@ -3,12 +3,5 @@
     :scope {
       touch-action: pan-x pan-y;
     }
-    .arrived {
-      position: absolute;
-      inset-block-start: calc(var(--chrome-top, 0px) + var(--sp-3));
-      inset-inline-start: var(--sp-3);
-      z-index: var(--z-sticky);
-      max-inline-size: calc(100% - 2 * var(--sp-3));
-    }
   }
 }

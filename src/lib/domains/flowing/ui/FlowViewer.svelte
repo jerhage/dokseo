@@ -5,7 +5,6 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
-  import ToastClearance from '$lib/components/ToastClearance.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
@@ -13,13 +12,10 @@
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import type { Anchor } from '$lib/shared/anchor';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
-  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
-  import CompactProbe from '$lib/shared/CompactProbe.svelte';
   import PageBar from '$lib/shared/PageBar.svelte';
-  import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
-  import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
-  import { returnFocusToPage } from '$lib/shared/reading-surface';
+  import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
+  import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
@@ -87,16 +83,7 @@
   };
 
   let stage = $state<HTMLElement | null>(null);
-  let topBar = $state<HTMLElement | null>(null);
-  let bottomBar = $state<HTMLElement | null>(null);
-  let topHeight = $state(0);
-  let bottomHeight = $state(0);
-  let bodyHeight = $state(0);
-  let stageHeight = $state(0);
-  let bodyWidth = $state(0);
-  let compactWidth = $state(0);
   let barsAsked = $state(false);
-  let panelAsked = $state<boolean | null>(null);
   let contentsOpen = $state(false);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
@@ -119,9 +106,8 @@
   const marks = $derived(tickOffsets(view.ticks, turning));
   const reported = $derived(view.location);
   const passages = $derived(passageCfis(anchors));
-  const narrow = $derived(isNarrow(bodyWidth, compactWidth));
-  const placement = $derived(dockPlacement(narrow, panelAsked));
-  const panelOpen = $derived(dockToggle(placement).open);
+  const readerFrame = new ReaderFrameView();
+  const narrow = $derived(readerFrame.narrow);
   const turns = $derived(
     turnOrder(turning).map((turn, slot) => ({
       icon: ICONS[slot] ?? ChevronRight,
@@ -131,35 +117,11 @@
     })),
   );
 
-  function openPopovers(): readonly Element[] {
-    try {
-      return [...document.querySelectorAll(':popover-open')];
-    } catch {
-      return [];
-    }
-  }
-
-  const focus = new ChromeFocus(
-    () => [topBar, bottomBar],
-    () => [document.activeElement, ...openPopovers()],
-  );
-
-  const awake = $derived(chromeShown(barsAsked, focus.held || dialogOpen));
-  const toastClearance = $derived(bodyHeight - stageHeight + (awake ? bottomHeight : 0));
-
-  function releaseBars(): void {
-    const focused = document.activeElement;
-    if (!(focused instanceof HTMLElement)) return;
-    returnFocusToPage(focused, [topBar, bottomBar], stage);
-  }
+  const awake = $derived(chromeShown(barsAsked, readerFrame.focus.held || dialogOpen));
 
   function toggleBars(): void {
-    if (awake) releaseBars();
+    if (awake) readerFrame.releaseBars(document.activeElement, stage);
     barsAsked = !awake;
-  }
-
-  function togglePanel(): void {
-    panelAsked = !panelOpen;
   }
 
   function isEditable(target: EventTarget): boolean {
@@ -362,7 +324,7 @@
     for (const doc of chapters) forgetSelection(doc);
     if (passage === null) return;
 
-    if (panel !== undefined) panelAsked = askedAfterCapture(narrow, panelAsked);
+    if (panel !== undefined) readerFrame.panelAfterCapture();
     onLift?.(passage);
   }
 
@@ -394,22 +356,6 @@
 
   $effect(() => {
     view.markPassages(passages);
-  });
-
-  $effect(() => {
-    function refresh(): void {
-      focus.refresh();
-    }
-
-    window.addEventListener('focusin', refresh);
-    window.addEventListener('focusout', refresh);
-    window.addEventListener('toggle', refresh, true);
-
-    return () => {
-      window.removeEventListener('focusin', refresh);
-      window.removeEventListener('focusout', refresh);
-      window.removeEventListener('toggle', refresh, true);
-    };
   });
 
   $effect(() => {
@@ -453,155 +399,132 @@
 
 <svelte:window onkeydown={onkey} />
 
-<div class="flow-viewer col gap-0 h-screen overflow-hidden surface-bg">
-  <div
-    class={['relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
-    bind:clientWidth={bodyWidth}
-    bind:clientHeight={bodyHeight}
-  >
-    <CompactProbe bind:width={compactWidth} />
+<ReaderFrame
+  frame={readerFrame}
+  shown={awake}
+  class="flow-viewer"
+  pageClass="overlay-host"
+  {panel}
+  {panelCount}
+>
+  {#snippet page()}
+    <div class="stage min-h-0" tabindex="-1" bind:this={stage}></div>
 
-    <div
-      class="overlay-host relative flex-1 min-h-0 overflow-hidden"
-      bind:clientHeight={stageHeight}
-      style:--chrome-top="{awake ? topHeight : 0}px"
-    >
-      <div class="stage min-h-0" tabindex="-1" bind:this={stage}></div>
+    <PageInkProbe onink={(ink) => view.paint(ink)} />
 
-      <PageInkProbe onink={(ink) => view.paint(ink)} />
-
-      {#if offer !== null}
-        <div
-          class="lift z-overlay"
-          style:--lift-left="{offer.left}px"
-          style:--lift-top="{offer.top}px"
-          style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
-          style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
-        >
-          <Button variant="accent" square pill class="lift-button" onclick={takeLift}>
-            <Pencil class="btn-icon" />
-            <span class="visually-hidden">{LIFT_LABEL}</span>
-          </Button>
-        </div>
-      {/if}
-
-      <header
-        class={[
-          'pin-top z-sticky row wrap items-center gap-2 px-responsive py-2 surface border-b shadow-sm hushable',
-          { 'is-hushed': !awake },
-        ]}
-        inert={!awake}
-        bind:this={topBar}
-        bind:offsetHeight={topHeight}
+    {#if offer !== null}
+      <div
+        class="lift z-overlay"
+        style:--lift-left="{offer.left}px"
+        style:--lift-top="{offer.top}px"
+        style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
+        style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
       >
-        <Button href="/" size="sm" class="shrink-0">
-          <ChevronLeft class="btn-icon" />
-          Library
+        <Button variant="accent" square pill class="lift-button" onclick={takeLift}>
+          <Pencil class="btn-icon" />
+          <span class="visually-hidden">{LIFT_LABEL}</span>
         </Button>
+      </div>
+    {/if}
+  {/snippet}
 
-        <div class="col gap-0 flex-1">
-          <h1 class="text-base weight-medium truncate" lang={book.language}>{book.title}</h1>
-          <p class="text-xs text-faint truncate">{meta}</p>
-        </div>
+  {#snippet header()}
+    <Button href="/" size="sm" class="shrink-0">
+      <ChevronLeft class="btn-icon" />
+      Library
+    </Button>
 
-        {#if reading}
-          {#if contents.kind === 'listed'}
-            <Button
-              size="sm"
-              class="shrink-0"
-              aria-haspopup="dialog"
-              onclick={() => (contentsOpen = true)}
-            >
-              {CONTENTS_LABEL}
-            </Button>
-          {:else}
-            <p class="text-xs text-faint shrink-0">{NO_CONTENTS_LABEL}</p>
-          {/if}
-          {#if onsearch !== undefined}
-            <Button
-              size="sm"
-              square
-              class="shrink-0"
-              aria-haspopup="dialog"
-              title={SEARCH_BOOK_LABEL}
-              onclick={onsearch}
-            >
-              <SearchIcon class="btn-icon" />
-              <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
-            </Button>
-          {/if}
-          <Button
-            size="sm"
-            class="shrink-0"
-            aria-haspopup="dialog"
-            onclick={() => (settingsOpen = true)}
-          >
-            {TEXT_SETTINGS_LABEL}
-          </Button>
-        {/if}
-
-        {#if !narrow}
-          <AppearanceSwitcher />
-        {/if}
-      </header>
-
-      <footer
-        class={[
-          'pin-bottom z-sticky row items-center gap-2 px-responsive py-2 surface border-t hushable',
-          { 'is-hushed': !awake },
-        ]}
-        inert={!awake}
-        bind:this={bottomBar}
-        bind:offsetHeight={bottomHeight}
-      >
-        <PageBar
-          first={turns[0] ?? null}
-          second={turns[1] ?? null}
-          steps={scrub.steps}
-          at={scrub.at}
-          direction={turning}
-          enabled={reading}
-          label="Reading progress"
-          ticks={marks}
-          {markerAt}
-          onscrub={scrubTo}
-        />
-      </footer>
-
-      {#if view.notice !== null}
-        <div class="told z-sticky">
-          <Alert dismissLabel="Hide this message" ondismiss={() => view.dismissNotice()}>
-            {view.notice}
-          </Alert>
-        </div>
-      {/if}
-
-      {#if curtain.kind === 'opening'}
-        <EmptyState
-          variant="fill"
-          live
-          message="Opening this book…"
-          class="overlay-fill z-overlay surface-bg text-center"
-        />
-      {:else if message !== null}
-        <EmptyState
-          variant="fill"
-          live
-          {message}
-          class="overlay-fill z-overlay surface-bg text-center"
-        >
-          {#snippet action()}
-            <Button href="/" variant="primary" size="sm">Back to your library</Button>
-          {/snippet}
-        </EmptyState>
-      {/if}
+    <div class="col gap-0 flex-1">
+      <h1 class="text-base weight-medium truncate" lang={book.language}>{book.title}</h1>
+      <p class="text-xs text-faint truncate">{meta}</p>
     </div>
 
-    {#if panel !== undefined}
-      <PanelDock {placement} count={panelCount ?? null} {panel} ontoggle={togglePanel} />
+    {#if reading}
+      {#if contents.kind === 'listed'}
+        <Button
+          size="sm"
+          class="shrink-0"
+          aria-haspopup="dialog"
+          onclick={() => (contentsOpen = true)}
+        >
+          {CONTENTS_LABEL}
+        </Button>
+      {:else}
+        <p class="text-xs text-faint shrink-0">{NO_CONTENTS_LABEL}</p>
+      {/if}
+      {#if onsearch !== undefined}
+        <Button
+          size="sm"
+          square
+          class="shrink-0"
+          aria-haspopup="dialog"
+          title={SEARCH_BOOK_LABEL}
+          onclick={onsearch}
+        >
+          <SearchIcon class="btn-icon" />
+          <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
+        </Button>
+      {/if}
+      <Button
+        size="sm"
+        class="shrink-0"
+        aria-haspopup="dialog"
+        onclick={() => (settingsOpen = true)}
+      >
+        {TEXT_SETTINGS_LABEL}
+      </Button>
     {/if}
-  </div>
-</div>
+
+    {#if !narrow}
+      <AppearanceSwitcher />
+    {/if}
+  {/snippet}
+
+  {#snippet footer()}
+    <PageBar
+      first={turns[0] ?? null}
+      second={turns[1] ?? null}
+      steps={scrub.steps}
+      at={scrub.at}
+      direction={turning}
+      enabled={reading}
+      label="Reading progress"
+      ticks={marks}
+      {markerAt}
+      onscrub={scrubTo}
+    />
+  {/snippet}
+
+  {#snippet overlay()}
+    {#if view.notice !== null}
+      <div class="callout-top-center z-sticky">
+        <Alert dismissLabel="Hide this message" ondismiss={() => view.dismissNotice()}>
+          {view.notice}
+        </Alert>
+      </div>
+    {/if}
+
+    {#if curtain.kind === 'opening'}
+      <EmptyState
+        variant="fill"
+        live
+        message="Opening this book…"
+        class="overlay-fill z-overlay surface-bg text-center"
+      />
+    {:else if message !== null}
+      <EmptyState
+        variant="fill"
+        live
+        {message}
+        class="overlay-fill z-overlay surface-bg text-center"
+      >
+        {#snippet action()}
+          <Button href="/" variant="primary" size="sm">Back to your library</Button>
+        {/snippet}
+      </EmptyState>
+    {/if}
+  {/snippet}
+</ReaderFrame>
 
 {#if contents.kind === 'listed'}
   <FlowContentsDialog
@@ -612,8 +535,6 @@
     onpick={pickEntry}
   />
 {/if}
-
-<ToastClearance blockEnd={toastClearance} />
 
 <FlowSettingsDialog
   bind:open={settingsOpen}

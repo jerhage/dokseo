@@ -4,7 +4,6 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
-  import ToastClearance from '$lib/components/ToastClearance.svelte';
   import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
   import ArrowUp from '$lib/components/icons/ArrowUp.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
@@ -15,19 +14,16 @@
   import SquareDashedMousePointer from '$lib/components/icons/SquareDashedMousePointer.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
-  import CompactProbe from '$lib/shared/CompactProbe.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
-  import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
   import { imageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
   import PageBar from '$lib/shared/PageBar.svelte';
   import type { TouchTurns } from '$lib/shared/page-turn';
   import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
-  import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from '$lib/shared/panel-dock';
-  import PanelDock from '$lib/shared/PanelDock.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
-  import { returnFocusToPage } from '$lib/shared/reading-surface';
+  import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
+  import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
@@ -89,54 +85,23 @@
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
-  let topBar = $state<HTMLElement | null>(null);
-  let bottomBar = $state<HTMLElement | null>(null);
-  let topHeight = $state(0);
-  let bottomHeight = $state(0);
-  let bodyWidth = $state(0);
-  let bodyHeight = $state(0);
-  let pageHeight = $state(0);
-  let compactWidth = $state(0);
   let asked = $state(false);
   let noting = $state(false);
   let selecting = $state(false);
   let touchTurns = $state<TouchTurns>(readTouchTurns());
   let settingsOpen = $state(false);
-  let panelAsked = $state<boolean | null>(null);
 
-  function openPopovers(): readonly Element[] {
-    try {
-      return [...document.querySelectorAll(':popover-open')];
-    } catch {
-      return [];
-    }
-  }
+  const readerFrame = new ReaderFrameView();
 
-  const focus = new ChromeFocus(
-    () => [topBar, bottomBar],
-    () => [document.activeElement, ...openPopovers()],
-  );
-
-  const shown = $derived(chromeShown(asked, focus.held));
+  const shown = $derived(chromeShown(asked, readerFrame.focus.held));
   const makes = $derived(dragOrigin(noting));
-  const narrow = $derived(isNarrow(bodyWidth, compactWidth));
-  const placement = $derived(dockPlacement(narrow, panelAsked));
-  const panelOpen = $derived(dockToggle(placement).open);
-  const toastClearance = $derived(bodyHeight - pageHeight + (shown ? bottomHeight : 0));
-
-  function releaseBars(): void {
-    const focused = document.activeElement;
-    if (!(focused instanceof HTMLElement)) return;
-    returnFocusToPage(focused, [topBar, bottomBar], paged?.surface() ?? strip?.surface() ?? null);
-  }
+  const narrow = $derived(readerFrame.narrow);
 
   function toggleChrome(): void {
-    if (shown) releaseBars();
+    if (shown) {
+      readerFrame.releaseBars(document.activeElement, paged?.surface() ?? strip?.surface() ?? null);
+    }
     asked = !shown;
-  }
-
-  function togglePanel(): void {
-    panelAsked = !panelOpen;
   }
 
   const book = $derived(view.book);
@@ -201,7 +166,7 @@
 
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
     view.select(regions);
-    if (panel !== undefined) panelAsked = askedAfterCapture(narrow, panelAsked);
+    if (panel !== undefined) readerFrame.panelAfterCapture();
     if (makes === 'written') onNote?.(regions);
     else onSelect?.(regions, arrangement);
   }
@@ -291,22 +256,6 @@
 
   $effect(() => lockScrolling(document.documentElement));
 
-  $effect(() => {
-    function refresh(): void {
-      focus.refresh();
-    }
-
-    window.addEventListener('focusin', refresh);
-    window.addEventListener('focusout', refresh);
-    window.addEventListener('toggle', refresh, true);
-
-    return () => {
-      window.removeEventListener('focusin', refresh);
-      window.removeEventListener('focusout', refresh);
-      window.removeEventListener('toggle', refresh, true);
-    };
-  });
-
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (downward) return;
@@ -321,200 +270,174 @@
 
 <svelte:window {onkeydown} />
 
-<div class="reader-screen col gap-0 h-screen overflow-hidden surface-bg">
-  {#if view.message !== null && stage === 'reading'}
-    <Alert variant="warning" role="alert" class="shrink-0">{view.message}</Alert>
-  {/if}
+<ReaderFrame
+  frame={readerFrame}
+  {shown}
+  class="reader-screen"
+  pageClass="col gap-0"
+  {panel}
+  {panelCount}
+>
+  {#snippet notice()}
+    {#if view.message !== null && stage === 'reading'}
+      <Alert variant="warning" role="alert" class="shrink-0">{view.message}</Alert>
+    {/if}
+  {/snippet}
 
-  <div
-    class={['body relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
-    bind:clientWidth={bodyWidth}
-    bind:clientHeight={bodyHeight}
-  >
-    <CompactProbe bind:width={compactWidth} />
-
-    <div
-      class="relative col gap-0 flex-1 min-h-0 overflow-hidden"
-      bind:clientHeight={pageHeight}
-      style:--chrome-top="{shown ? topHeight : 0}px"
-      style:--pin-lift="{shown ? bottomHeight : 0}px"
-    >
-      {#if curtain === null && book !== null && layout === 'continuous'}
-        <ContinuousViewer
-          bind:this={strip}
-          sizes={view.sizes}
-          start={view.position}
+  {#snippet page()}
+    {#if curtain === null && book !== null && layout === 'continuous'}
+      <ContinuousViewer
+        bind:this={strip}
+        sizes={view.sizes}
+        start={view.position}
+        pictureAt={(index) => view.pictureAt(index)}
+        measured={(index, size) => view.measure(index, size)}
+        {glow}
+        {makes}
+        chromeShown={shown}
+        {selecting}
+        moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
+        select={(regions) => commit(regions, 'column')}
+        clear={() => view.clearSelection()}
+        onTap={toggleChrome}
+      />
+    {:else if curtain === null && book !== null}
+      {#key book.id}
+        <PagedViewer
+          bind:this={paged}
+          pages={view.visiblePages}
+          beside={view.besidePages}
+          direction={book.direction}
+          pageFit={book.pageFit}
           pictureAt={(index) => view.pictureAt(index)}
           measured={(index, size) => view.measure(index, size)}
           {glow}
           {makes}
           chromeShown={shown}
           {selecting}
-          moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
-          select={(regions) => commit(regions, 'column')}
+          turns={touchTurns}
+          select={(regions) => commit(regions, 'row')}
           clear={() => view.clearSelection()}
           onTap={toggleChrome}
+          onFit={(fit) => void view.setPageFit(fit)}
+          onTurn={turnTowards}
         />
-      {:else if curtain === null && book !== null}
-        {#key book.id}
-          <PagedViewer
-            bind:this={paged}
-            pages={view.visiblePages}
-            beside={view.besidePages}
-            direction={book.direction}
-            pageFit={book.pageFit}
-            pictureAt={(index) => view.pictureAt(index)}
-            measured={(index, size) => view.measure(index, size)}
-            {glow}
-            {makes}
-            chromeShown={shown}
-            {selecting}
-            turns={touchTurns}
-            select={(regions) => commit(regions, 'row')}
-            clear={() => view.clearSelection()}
-            onTap={toggleChrome}
-            onFit={(fit) => void view.setPageFit(fit)}
-            onTurn={turnTowards}
-          />
-        {/key}
-      {:else}
-        <EmptyState
-          variant="fill"
-          live
-          message={curtain ?? ''}
-          class="flex-1 min-h-0 scheme-dark surface-sunken"
-        >
-          {#snippet action()}
-            {#if stage === 'failed'}
-              <Button href="/" variant="primary" size="sm">Back to your library</Button>
-            {/if}
-          {/snippet}
-        </EmptyState>
-      {/if}
-
-      {#if arrival !== undefined}
-        <div class="arrived">{@render arrival()}</div>
-      {/if}
-
-      <header
-        class={[
-          'pin-top z-sticky row wrap items-center gap-2 px-responsive py-2 surface border-b shadow-sm hushable',
-          { 'is-hushed': !shown },
-        ]}
-        inert={!shown}
-        bind:this={topBar}
-        bind:offsetHeight={topHeight}
+      {/key}
+    {:else}
+      <EmptyState
+        variant="fill"
+        live
+        message={curtain ?? ''}
+        class="flex-1 min-h-0 scheme-dark surface-sunken"
       >
-        {#if narrow}
-          <Button href="/" size="sm" square class="shrink-0">
-            <ChevronLeft class="btn-icon" />
-            <span class="visually-hidden">Library</span>
-          </Button>
-        {:else}
-          <Button href="/" size="sm" class="shrink-0">
-            <ChevronLeft class="btn-icon" />
-            Library
-          </Button>
-        {/if}
-
-        <div class="col gap-0 flex-1">
-          <h1 class="text-base weight-medium truncate" lang={book?.language ?? 'en'}>
-            {book?.title ?? 'Reader'}
-          </h1>
-          <p class="text-xs text-faint truncate">{meta}</p>
-        </div>
-
-        {#if book !== null}
-          <Button
-            variant={noting ? 'accent' : 'default'}
-            size="sm"
-            square
-            class="shrink-0"
-            aria-pressed={noting}
-            title={NOTE_MODE_LABEL}
-            onclick={() => (noting = !noting)}
-          >
-            <Pencil class="btn-icon" />
-            <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
-          </Button>
-
-          {#if layout !== null}
-            <Button
-              variant={selecting ? 'accent' : 'default'}
-              size="sm"
-              square
-              class="shrink-0"
-              aria-pressed={selecting}
-              title={SELECT_MODE_LABEL}
-              onclick={() => (selecting = !selecting)}
-            >
-              <SquareDashedMousePointer class="btn-icon" />
-              <span class="visually-hidden">{SELECT_MODE_LABEL}</span>
-            </Button>
+        {#snippet action()}
+          {#if stage === 'failed'}
+            <Button href="/" variant="primary" size="sm">Back to your library</Button>
           {/if}
+        {/snippet}
+      </EmptyState>
+    {/if}
 
-          {#if onsearch !== undefined}
-            <Button
-              size="sm"
-              square
-              class="shrink-0"
-              aria-haspopup="dialog"
-              title={SEARCH_BOOK_LABEL}
-              onclick={onsearch}
-            >
-              <SearchIcon class="btn-icon" />
-              <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
-            </Button>
-          {/if}
+    {#if arrival !== undefined}
+      <div class="callout-top-start z-sticky">{@render arrival()}</div>
+    {/if}
+  {/snippet}
 
-          <Button
-            size="sm"
-            class="shrink-0"
-            aria-haspopup="dialog"
-            onclick={() => (settingsOpen = true)}
-          >
-            Settings
-          </Button>
+  {#snippet header()}
+    {#if narrow}
+      <Button href="/" size="sm" square class="shrink-0">
+        <ChevronLeft class="btn-icon" />
+        <span class="visually-hidden">Library</span>
+      </Button>
+    {:else}
+      <Button href="/" size="sm" class="shrink-0">
+        <ChevronLeft class="btn-icon" />
+        Library
+      </Button>
+    {/if}
 
-          {#if !narrow}
-            {@render engine?.()}
-          {/if}
-        {/if}
-
-        {#if !narrow}
-          <AppearanceSwitcher />
-        {/if}
-      </header>
-
-      <footer
-        class={[
-          'pin-bottom z-sticky row items-center gap-2 px-responsive py-2 surface border-t hushable',
-          { 'is-hushed': !shown },
-        ]}
-        inert={!shown}
-        bind:this={bottomBar}
-        bind:offsetHeight={bottomHeight}
-      >
-        <PageBar
-          first={shownTurns[0] ?? null}
-          second={shownTurns[1] ?? null}
-          steps={place.steps}
-          at={place.at}
-          direction={view.direction}
-          enabled={stage === 'reading'}
-          {markerAt}
-          onscrub={scrubTo}
-        />
-      </footer>
+    <div class="col gap-0 flex-1">
+      <h1 class="text-base weight-medium truncate" lang={book?.language ?? 'en'}>
+        {book?.title ?? 'Reader'}
+      </h1>
+      <p class="text-xs text-faint truncate">{meta}</p>
     </div>
 
-    {#if panel !== undefined}
-      <PanelDock {placement} count={panelCount ?? null} {panel} ontoggle={togglePanel} />
-    {/if}
-  </div>
-</div>
+    {#if book !== null}
+      <Button
+        variant={noting ? 'accent' : 'default'}
+        size="sm"
+        square
+        class="shrink-0"
+        aria-pressed={noting}
+        title={NOTE_MODE_LABEL}
+        onclick={() => (noting = !noting)}
+      >
+        <Pencil class="btn-icon" />
+        <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
+      </Button>
 
-<ToastClearance blockEnd={toastClearance} />
+      {#if layout !== null}
+        <Button
+          variant={selecting ? 'accent' : 'default'}
+          size="sm"
+          square
+          class="shrink-0"
+          aria-pressed={selecting}
+          title={SELECT_MODE_LABEL}
+          onclick={() => (selecting = !selecting)}
+        >
+          <SquareDashedMousePointer class="btn-icon" />
+          <span class="visually-hidden">{SELECT_MODE_LABEL}</span>
+        </Button>
+      {/if}
+
+      {#if onsearch !== undefined}
+        <Button
+          size="sm"
+          square
+          class="shrink-0"
+          aria-haspopup="dialog"
+          title={SEARCH_BOOK_LABEL}
+          onclick={onsearch}
+        >
+          <SearchIcon class="btn-icon" />
+          <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
+        </Button>
+      {/if}
+
+      <Button
+        size="sm"
+        class="shrink-0"
+        aria-haspopup="dialog"
+        onclick={() => (settingsOpen = true)}
+      >
+        Settings
+      </Button>
+
+      {#if !narrow}
+        {@render engine?.()}
+      {/if}
+    {/if}
+
+    {#if !narrow}
+      <AppearanceSwitcher />
+    {/if}
+  {/snippet}
+
+  {#snippet footer()}
+    <PageBar
+      first={shownTurns[0] ?? null}
+      second={shownTurns[1] ?? null}
+      steps={place.steps}
+      at={place.at}
+      direction={view.direction}
+      enabled={stage === 'reading'}
+      {markerAt}
+      onscrub={scrubTo}
+    />
+  {/snippet}
+</ReaderFrame>
 
 <ReaderSettings
   bind:open={settingsOpen}
