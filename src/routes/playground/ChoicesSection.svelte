@@ -1,12 +1,20 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
   import Checkbox from '$lib/components/Checkbox.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import type { SegmentOption } from '$lib/components/segmented-control';
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
+
+  type Density = 'Compact' | 'Comfortable';
+
+  const DENSITIES: readonly SegmentOption<Density>[] = [
+    { value: 'Compact', label: 'Compact' },
+    { value: 'Comfortable', label: 'Comfortable' },
+  ];
 
   const uid = $props.id();
 
@@ -17,7 +25,7 @@
   let size = $state('medium');
   let autosave = $state(true);
   let publicLink = $state(false);
-  let density = $state('Comfortable');
+  let density = $state<Density>('Comfortable');
 </script>
 
 <DemoSection
@@ -93,16 +101,12 @@
     </Card>
     <Card>
       <SettingsRow label="Density">
-        <div class="row gap-2">
-          {#each ['Compact', 'Comfortable'] as choice (choice)}
-            <Button
-              size="sm"
-              active={density === choice}
-              aria-pressed={density === choice}
-              onclick={() => (density = choice)}>{choice}</Button
-            >
-          {/each}
-        </div>
+        <SegmentedControl
+          options={DENSITIES}
+          value={density}
+          onchoose={(choice) => (density = choice)}
+          class="gap-2"
+        />
       </SettingsRow>
     </Card>
   </div>

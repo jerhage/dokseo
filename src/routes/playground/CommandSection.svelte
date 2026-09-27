@@ -2,8 +2,8 @@
   import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
-  import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
   import DemoSection from './DemoSection.svelte';
 
@@ -15,8 +15,6 @@
     { name: 'Export as archive', note: 'Packs every file into one download', hint: '⌘E' },
     { name: 'Remove member', note: 'Revokes access at once', hint: '⌘⌫' },
   ];
-
-  const uid = $props.id();
 
   let searching = $state(false);
   let query = $state('');
@@ -107,7 +105,7 @@
 
 <Modal
   bind:open={searching}
-  aria-labelledby="{uid}-label"
+  aria-label="Run a command"
   size="lg"
   placement="top"
   body="flush"
@@ -118,12 +116,11 @@
   }}
 >
   {#snippet header()}
-    <label class="visually-hidden" id="{uid}-label" for="{uid}-query">Run a command</label>
-    <Input
+    <SearchField
       bind:value={query}
-      id="{uid}-query"
+      label="Run a command"
+      hideLabel
       class="flex-fill"
-      type="search"
       autofocus
       placeholder="Run a command"
       oninput={() => (at = 0)}
