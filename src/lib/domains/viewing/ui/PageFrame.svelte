@@ -144,7 +144,7 @@
 >
   {#if picture !== null && picture.kind === 'encoded'}
     <img
-      class="w-full h-full"
+      class="picture w-full h-full"
       src={picture.url}
       alt=""
       decoding="async"
@@ -154,7 +154,7 @@
     />
   {:else}
     <canvas
-      class="w-full h-full"
+      class="picture w-full h-full"
       bind:this={frame}
       width={0}
       height={0}

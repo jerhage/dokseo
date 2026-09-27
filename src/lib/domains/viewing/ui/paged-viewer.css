@@ -16,6 +16,7 @@
     .pane {
       flex: 0 0 100%;
       overflow: hidden;
+      container-type: size;
       transition: none;
       transform: translateX(
         calc(var(--beside, 0) * (100% + var(--slide-gap, 0px)) + var(--slide, 0px))
@@ -31,6 +32,9 @@
     .strip {
       transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
       transform-origin: 0 0;
+    }
+    .strip > .page-frame {
+      block-size: 100cqb;
     }
     .strip.is-rtl {
       flex-direction: row-reverse;

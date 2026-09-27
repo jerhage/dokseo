@@ -4,6 +4,10 @@
       block-size: 100%;
       aspect-ratio: var(--page-ratio, 2 / 3);
     }
+    .picture {
+      position: absolute;
+      inset: 0;
+    }
     .glow {
       position: absolute;
       left: var(--glow-left, 0%);
