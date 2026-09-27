@@ -8,12 +8,13 @@
   import type { KeyHint } from '$lib/components/key-hints';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import ListGroup from '$lib/components/ListGroup.svelte';
+  import OverflowList from '$lib/components/OverflowList.svelte';
   import Tag from '$lib/components/Tag.svelte';
   import Thumbnail from '$lib/components/Thumbnail.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
-  import { chipLine } from '../capture/chip-line';
+  import { CHIPS_ON_A_CARD } from '../capture/chip-line';
   import {
     addedText,
     neighboursOf,
@@ -196,7 +197,6 @@
               </div>
               <ListGroup variant="inset">
                 {#each shelf.rows as row (row.id)}
-                  {@const line = chipLine(row.chips)}
                   <li>
                     <CommandItem
                       bind:ref={anchors[row.order]}
@@ -212,18 +212,17 @@
                           {#if row.when !== null}
                             <span>{row.when}</span>
                           {/if}
-                          {#each line.shown as chip (chip.id)}
-                            <Badge colour={chip.colour} quiet dot>{chip.name}</Badge>
-                          {/each}
-                          {#if line.more > 0}
-                            {@const more = row.chips
-                              .slice(line.shown.length)
-                              .map((chip) => chip.name)
-                              .join(', ')}
-                            <span title={more}
-                              >+{line.more}<span class="visually-hidden"> more: {more}</span></span
-                            >
-                          {/if}
+                          <OverflowList
+                            inline
+                            items={row.chips}
+                            room={CHIPS_ON_A_CARD}
+                            name={(chip) => chip.name}
+                            key={(chip) => chip.id}
+                          >
+                            {#snippet item(chip)}
+                              <Badge colour={chip.colour} quiet dot>{chip.name}</Badge>
+                            {/snippet}
+                          </OverflowList>
                         </span>
                       </span>
                       <span class="visually-hidden">Jump to p.{row.page}</span>

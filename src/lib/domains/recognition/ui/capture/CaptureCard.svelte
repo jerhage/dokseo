@@ -3,6 +3,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
+  import OverflowList from '$lib/components/OverflowList.svelte';
   import CardFrame from '$lib/components/Card.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
@@ -24,7 +25,7 @@
   import type { CardDrafts, DraftField } from './card-drafts.svelte';
   import { cardTools } from './card-tools';
   import InlineEditor from './InlineEditor.svelte';
-  import { chipLine } from './chip-line';
+  import { CHIPS_ON_A_CARD } from './chip-line';
   import { noteLines, plainSegments } from './note-lines';
 
   type Props = {
@@ -88,15 +89,6 @@
       .with({ tone: 'done', origin: 'written' }, () => 'accent')
       .with({ tone: 'done' }, () => null)
       .exhaustive(),
-  );
-
-  const line = $derived(chipLine(card.tags));
-
-  const moreNames = $derived(
-    card.tags
-      .slice(line.shown.length)
-      .map((chip) => chip.name)
-      .join(', '),
   );
 
   const note = $derived(
@@ -171,18 +163,18 @@
     </p>
   {/if}
 
-  {#if line.shown.length > 0}
-    <ul class="row items-center gap-2 list-reset min-w-0 overflow-hidden" aria-label="Tags">
-      {#each line.shown as chip (chip.id)}
-        <li class="row min-w-0"><Badge colour={chip.colour} quiet dot>{chip.name}</Badge></li>
-      {/each}
-      {#if line.more > 0}
-        <li class="shrink-0 text-xs text-muted" title={moreNames}>
-          +{line.more}<span class="visually-hidden"> more: {moreNames}</span>
-        </li>
-      {/if}
-    </ul>
-  {/if}
+  <OverflowList
+    items={card.tags}
+    room={CHIPS_ON_A_CARD}
+    name={(chip) => chip.name}
+    key={(chip) => chip.id}
+    label="Tags"
+    class="gap-2"
+  >
+    {#snippet item(chip)}
+      <Badge colour={chip.colour} quiet dot>{chip.name}</Badge>
+    {/snippet}
+  </OverflowList>
 
   <div class="row items-center gap-1">
     <span class="row items-center gap-1 flex-fill min-w-0 overflow-hidden">
