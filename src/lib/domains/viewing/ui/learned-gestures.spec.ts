@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const KEY = 'reader.gestures.learned';
 
@@ -19,6 +19,12 @@ class FakeStorage {
 }
 
 let storage = new FakeStorage();
+
+beforeAll(async () => {
+  vi.stubGlobal('localStorage', new FakeStorage());
+  await import('./learned-gestures.svelte');
+  vi.unstubAllGlobals();
+}, 30_000);
 
 beforeEach(() => {
   storage = new FakeStorage();
