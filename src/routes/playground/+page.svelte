@@ -33,6 +33,7 @@
   import SearchFieldSection from './SearchFieldSection.svelte';
   import SegmentedSection from './SegmentedSection.svelte';
   import SidebarSection from './SidebarSection.svelte';
+  import SliderSection from './SliderSection.svelte';
   import SplitSection from './SplitSection.svelte';
   import StatSection from './StatSection.svelte';
   import TableSection from './TableSection.svelte';
@@ -63,6 +64,7 @@
     NavigationSection,
     AvatarSection,
     ProgressSection,
+    SliderSection,
     StatSection,
     DividerSection,
     LayoutsIntro,

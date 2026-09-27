@@ -291,6 +291,7 @@ const RUNTIME_INPUTS = [
   '--popover-top',
   '--progress',
   '--skeleton-width',
+  '--slider-tick-at',
   '--toast-offset-block-end',
   '--toast-timeout',
 ];
