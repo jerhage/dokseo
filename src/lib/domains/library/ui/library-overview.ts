@@ -5,7 +5,7 @@ import type { LibraryStatus } from './library-view.svelte';
 
 type LibraryBody = 'reading' | 'failed' | 'empty' | 'listed';
 
-type FilterKey = 'clear' | 'close' | 'ignore';
+type FilterKey = 'clear' | 'ignore';
 
 const SOURCE_URL = 'https://github.com/jerhage/dokseo';
 
@@ -58,14 +58,8 @@ function clearsSearch(key: string, query: string): boolean {
   return key === 'Escape' && query.length > 0;
 }
 
-function showsFilter(opened: boolean, query: string): boolean {
-  return opened || isSearching(query);
-}
-
-function filterKey(key: string, query: string, closable: boolean): FilterKey {
-  if (clearsSearch(key, query)) return 'clear';
-  if (closable && key === 'Escape') return 'close';
-  return 'ignore';
+function filterKey(key: string, query: string): FilterKey {
+  return clearsSearch(key, query) ? 'clear' : 'ignore';
 }
 
 function libraryBody(status: LibraryStatus, bookCount: number, importing: boolean): LibraryBody {
@@ -88,7 +82,6 @@ export {
   libraryBody,
   librarySummary,
   matchedText,
-  showsFilter,
   storageText,
   titledBooks,
 };

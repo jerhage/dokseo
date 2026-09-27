@@ -10,7 +10,6 @@ import {
   libraryBody,
   librarySummary,
   matchedText,
-  showsFilter,
   storageText,
   titledBooks,
 } from './library-overview';
@@ -118,41 +117,17 @@ describe('clearsSearch', () => {
   });
 });
 
-describe('showsFilter', () => {
-  it('shows the filter once it is opened', () => {
-    expect(showsFilter(true, '')).toBe(true);
-  });
-
-  it('shows the filter while a query narrows the titles, even when it was never opened', () => {
-    expect(showsFilter(false, 'yotsuba')).toBe(true);
-  });
-
-  it('hides the filter when it is closed and the query is empty or blank', () => {
-    expect([showsFilter(false, ''), showsFilter(false, '  ')]).toEqual([false, false]);
-  });
-});
-
 describe('filterKey', () => {
-  it('clears the query on Escape while it holds text, whether or not the filter can close', () => {
-    expect([filterKey('Escape', 'yotsuba', true), filterKey('Escape', 'yotsuba', false)]).toEqual([
-      'clear',
-      'clear',
-    ]);
+  it('clears the query on Escape while it holds text', () => {
+    expect(filterKey('Escape', 'yotsuba')).toBe('clear');
   });
 
-  it('closes a closable filter on Escape once the query is empty', () => {
-    expect(filterKey('Escape', '', true)).toBe('close');
-  });
-
-  it('ignores Escape on an empty filter that cannot close', () => {
-    expect(filterKey('Escape', '', false)).toBe('ignore');
+  it('ignores Escape on an empty query', () => {
+    expect(filterKey('Escape', '')).toBe('ignore');
   });
 
   it('ignores every other key', () => {
-    expect([filterKey('Enter', 'yotsuba', true), filterKey('Enter', '', true)]).toEqual([
-      'ignore',
-      'ignore',
-    ]);
+    expect([filterKey('Enter', 'yotsuba'), filterKey('Enter', '')]).toEqual(['ignore', 'ignore']);
   });
 });
 

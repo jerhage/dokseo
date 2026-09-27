@@ -8,11 +8,10 @@
   type Props = {
     query?: string;
     readonly matched: string;
-    readonly onclose?: (() => void) | undefined;
     readonly class?: ClassValue;
   };
 
-  let { query = $bindable(''), matched, onclose, class: className }: Props = $props();
+  let { query = $bindable(''), matched, class: className }: Props = $props();
 
   const uid = $props.id();
   const fieldId = `${uid}-search`;
@@ -27,19 +26,11 @@
     field?.focus();
   }
 
-  export function focus(): void {
-    field?.focus();
-  }
-
   function keys(event: KeyboardEvent): void {
-    match(filterKey(event.key, query, onclose !== undefined))
+    match(filterKey(event.key, query))
       .with('clear', () => {
         event.preventDefault();
         abandon();
-      })
-      .with('close', () => {
-        event.preventDefault();
-        onclose?.();
       })
       .with('ignore', () => {})
       .exhaustive();
