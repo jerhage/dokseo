@@ -1,6 +1,6 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import Popover from '$lib/components/Popover.svelte';
   import type { ModelFootprint } from '../../domain/model/model-footprint';
   import { tradeAspectName, tradeOffsOf } from '../../domain/engine/ocr-engine';
@@ -19,16 +19,16 @@
 <span class="row">
   <Popover label="About {engine.about}">
     {#snippet trigger(popover)}
-      <Button
+      <IconButton
         variant="outline"
         size="sm"
-        square
         pill
-        aria-label="About {engine.about}"
+        label="About {engine.about}"
+        tooltip={false}
         {...popover}
       >
-        i
-      </Button>
+        <span aria-hidden="true">i</span>
+      </IconButton>
     {/snippet}
     <div class="col gap-3">
       <p class="mono text-xs uppercase tracking-wide text-faint">{engine.name}</p>

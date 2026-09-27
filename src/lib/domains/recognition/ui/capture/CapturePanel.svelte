@@ -5,6 +5,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -211,28 +212,22 @@
             onkeydown={stepOnEnter}
           />
           {#if searching}
-            <Button
+            <IconButton
               variant="ghost"
               size="sm"
-              square
-              title="Previous match"
+              icon={ChevronUp}
+              label="Previous match"
               disabled={!steps.previous}
               onclick={() => stepBy(-1)}
-            >
-              <ChevronUp class="btn-icon" />
-              <span class="visually-hidden">Previous match</span>
-            </Button>
-            <Button
+            />
+            <IconButton
               variant="ghost"
               size="sm"
-              square
-              title="Next match"
+              icon={ChevronDown}
+              label="Next match"
               disabled={!steps.next}
               onclick={() => stepBy(1)}
-            >
-              <ChevronDown class="btn-icon" />
-              <span class="visually-hidden">Next match</span>
-            </Button>
+            />
           {/if}
         </div>
         {#if searching}

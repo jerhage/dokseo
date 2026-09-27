@@ -2,6 +2,7 @@
   import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import CardFrame from '$lib/components/Card.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
@@ -213,55 +214,41 @@
 
     <span class="row items-center gap-0 ms-auto shrink-0">
       {#if tools.text.kind === 'shown'}
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
-          square
-          title={tools.text.label}
+          icon={Pencil}
+          label={tools.text.label}
           onclick={(event) => write('text', event.currentTarget)}
-        >
-          <Pencil class="btn-icon" />
-          <span class="visually-hidden">{tools.text.label}</span>
-        </Button>
+        />
       {/if}
       {#if tools.note.kind !== 'none'}
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
-          square
-          title={tools.note.label}
+          icon={NotebookPen}
+          label={tools.note.label}
           onclick={(event) => write('note', event.currentTarget)}
-        >
-          <NotebookPen class="btn-icon" />
-          <span class="visually-hidden">{tools.note.label}</span>
-        </Button>
+        />
       {/if}
-      <Button
+      <IconButton
         variant="ghost"
         size="sm"
-        square
-        title="Tags"
+        icon={TagIcon}
+        label="Add a tag to the capture at {card.place}"
+        tooltip="Tags"
         onclick={(event) => ontag(event.currentTarget)}
-      >
-        <TagIcon class="btn-icon" />
-        <span class="visually-hidden">Add a tag to the capture at {card.place}</span>
-      </Button>
+      />
       {#if tools.copies !== null}
         {@const text = tools.copies}
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
-          square
-          title={copied ? 'Copied' : 'Copy the text'}
+          icon={copied ? Check : Copy}
+          label="Copy the text of the capture at {card.place}"
+          tooltip={copied ? 'Copied' : 'Copy the text'}
           onclick={() => oncopy(text)}
-        >
-          {#if copied}
-            <Check class="btn-icon" />
-          {:else}
-            <Copy class="btn-icon" />
-          {/if}
-          <span class="visually-hidden">Copy the text of the capture at {card.place}</span>
-        </Button>
+        />
       {/if}
       <Dropdown variant="ghost" size="sm" align="end" square chevron={false}>
         {#snippet trigger()}

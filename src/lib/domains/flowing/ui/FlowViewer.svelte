@@ -5,6 +5,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
@@ -420,10 +421,15 @@
         style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
         style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
       >
-        <Button variant="accent" square pill class="lift-button" onclick={takeLift}>
-          <Pencil class="btn-icon" />
-          <span class="visually-hidden">{LIFT_LABEL}</span>
-        </Button>
+        <IconButton
+          variant="accent"
+          pill
+          class="lift-button"
+          icon={Pencil}
+          label={LIFT_LABEL}
+          tooltip={false}
+          onclick={takeLift}
+        />
       </div>
     {/if}
   {/snippet}
@@ -453,17 +459,14 @@
         <p class="text-xs text-faint shrink-0">{NO_CONTENTS_LABEL}</p>
       {/if}
       {#if onsearch !== undefined}
-        <Button
+        <IconButton
           size="sm"
-          square
           class="shrink-0"
           aria-haspopup="dialog"
-          title={SEARCH_BOOK_LABEL}
+          icon={SearchIcon}
+          label={SEARCH_BOOK_LABEL}
           onclick={onsearch}
-        >
-          <SearchIcon class="btn-icon" />
-          <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
-        </Button>
+        />
       {/if}
       <Button
         size="sm"

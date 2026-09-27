@@ -4,6 +4,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
   import ArrowUp from '$lib/components/icons/ArrowUp.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
@@ -345,10 +346,14 @@
 
   {#snippet header()}
     {#if narrow}
-      <Button href="/" size="sm" square class="shrink-0">
-        <ChevronLeft class="btn-icon" />
-        <span class="visually-hidden">Library</span>
-      </Button>
+      <IconButton
+        href="/"
+        size="sm"
+        class="shrink-0"
+        icon={ChevronLeft}
+        label="Library"
+        tooltip={false}
+      />
     {:else}
       <Button href="/" size="sm" class="shrink-0">
         <ChevronLeft class="btn-icon" />
@@ -364,46 +369,37 @@
     </div>
 
     {#if book !== null}
-      <Button
+      <IconButton
         variant={noting ? 'accent' : 'default'}
         size="sm"
-        square
         class="shrink-0"
         aria-pressed={noting}
-        title={NOTE_MODE_LABEL}
+        icon={Pencil}
+        label={NOTE_MODE_LABEL}
         onclick={() => (noting = !noting)}
-      >
-        <Pencil class="btn-icon" />
-        <span class="visually-hidden">{NOTE_MODE_LABEL}</span>
-      </Button>
+      />
 
       {#if layout !== null}
-        <Button
+        <IconButton
           variant={selecting ? 'accent' : 'default'}
           size="sm"
-          square
           class="shrink-0"
           aria-pressed={selecting}
-          title={SELECT_MODE_LABEL}
+          icon={SquareDashedMousePointer}
+          label={SELECT_MODE_LABEL}
           onclick={() => (selecting = !selecting)}
-        >
-          <SquareDashedMousePointer class="btn-icon" />
-          <span class="visually-hidden">{SELECT_MODE_LABEL}</span>
-        </Button>
+        />
       {/if}
 
       {#if onsearch !== undefined}
-        <Button
+        <IconButton
           size="sm"
-          square
           class="shrink-0"
           aria-haspopup="dialog"
-          title={SEARCH_BOOK_LABEL}
+          icon={SearchIcon}
+          label={SEARCH_BOOK_LABEL}
           onclick={onsearch}
-        >
-          <SearchIcon class="btn-icon" />
-          <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
-        </Button>
+        />
       {/if}
 
       <Button

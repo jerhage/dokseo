@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { BookId } from '$lib/shared/ids';
@@ -38,31 +38,25 @@
   <span class="row items-center gap-0 shrink-0">
     {#if steps.previous !== null}
       {@const previous = steps.previous}
-      <Button
+      <IconButton
         variant="ghost"
         size="sm"
-        square
         href={previous}
-        title="Previous match"
+        icon={ChevronLeft}
+        label="Previous match"
         onclick={(event) => follow(event, previous)}
-      >
-        <ChevronLeft class="btn-icon" />
-        <span class="visually-hidden">Previous match</span>
-      </Button>
+      />
     {/if}
     {#if steps.next !== null}
       {@const next = steps.next}
-      <Button
+      <IconButton
         variant="ghost"
         size="sm"
-        square
         href={next}
-        title="Next match"
+        icon={ChevronRight}
+        label="Next match"
         onclick={(event) => follow(event, next)}
-      >
-        <ChevronRight class="btn-icon" />
-        <span class="visually-hidden">Next match</span>
-      </Button>
+      />
     {/if}
   </span>
 </div>

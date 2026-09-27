@@ -114,7 +114,8 @@ describe('EngineSettingsScreen', () => {
     expect(engines).toHaveLength(3);
     expect(engines.filter((input) => input.includes('type="radio"'))).toHaveLength(3);
     expect(engines.filter((input) => / disabled[ =/>]/u.test(input))).toHaveLength(2);
-    expect(html.match(/aria-label="About the /gu)).toHaveLength(6);
+    expect(html.match(/<span class="visually-hidden">About the /gu)).toHaveLength(3);
+    expect(html.match(/aria-label="About the /gu)).toHaveLength(3);
   });
 
   it('offers a download when nothing is stored', () => {

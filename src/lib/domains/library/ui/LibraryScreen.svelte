@@ -3,6 +3,7 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import UploadIcon from '$lib/components/icons/Upload.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
@@ -149,24 +150,22 @@
       </div>
       <div class="row items-center gap-1 layout-app-shell-narrow-only">
         {#if onsearcheverything !== undefined}
-          <Button
+          <IconButton
             variant="ghost"
-            square
-            aria-label="Search everything"
+            icon={SearchIcon}
+            label="Search everything"
+            tooltip={false}
             onclick={onsearcheverything}
-          >
-            <SearchIcon class="btn-icon" />
-          </Button>
+          />
         {/if}
-        <Button
+        <IconButton
           variant="primary"
-          square
-          aria-label={view.busy ? 'Adding…' : 'Upload'}
+          icon={UploadIcon}
+          label={view.busy ? 'Adding…' : 'Upload'}
+          tooltip={false}
           disabled={view.busy || strip === null}
           onclick={() => strip?.choose()}
-        >
-          <UploadIcon class="btn-icon" />
-        </Button>
+        />
         <LibraryMenu {onsearcheverything} />
       </div>
     </div>

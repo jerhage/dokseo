@@ -1,6 +1,7 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import TagIcon from '$lib/components/icons/Tag.svelte';
@@ -23,17 +24,14 @@
   const used = $derived(tagsInUse(tags, counts));
 </script>
 
-<Button
+<IconButton
   variant="ghost"
   size="sm"
-  square
-  title="Tags in this book"
   aria-haspopup="dialog"
+  icon={TagIcon}
+  label="Tags in this book"
   onclick={() => (open = true)}
->
-  <TagIcon class="btn-icon" />
-  <span class="visually-hidden">Tags in this book</span>
-</Button>
+/>
 
 <Modal bind:open title="Tags in this book" size="sm" body="flush">
   {#if used.length === 0}

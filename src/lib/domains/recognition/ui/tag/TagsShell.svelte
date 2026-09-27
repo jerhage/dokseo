@@ -3,6 +3,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import TagIcon from '$lib/components/icons/Tag.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import Modal from '$lib/components/Modal.svelte';
@@ -66,23 +67,22 @@
 <div class="layout-app-shell">
   <header class="layout-app-shell-header layout-app-shell-narrow-nowrap">
     <div class="row items-center gap-3 min-w-0">
-      <Button href="/" variant="primary" size="sm" square aria-label="Your library">
+      <IconButton href="/" variant="primary" size="sm" label="Your library" tooltip={false}>
         <span lang="ja" aria-hidden="true">読</span>
-      </Button>
+      </IconButton>
       <Breadcrumb items={crumbs} label="You are here" class="min-w-0" />
     </div>
     <div class="row items-center gap-1 shrink-0">
-      <Button
+      <IconButton
         variant="ghost"
         size="sm"
-        square
         class="layout-app-shell-narrow-only"
-        aria-label="Choose a tag"
         aria-haspopup="dialog"
+        icon={TagIcon}
+        label="Choose a tag"
+        tooltip={false}
         onclick={showList}
-      >
-        <TagIcon class="btn-icon" />
-      </Button>
+      />
       <Button href="/settings" variant="ghost" size="sm" title="OCR engine settings"
         >Settings</Button
       >

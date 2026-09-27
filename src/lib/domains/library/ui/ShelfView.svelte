@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
@@ -103,19 +103,14 @@
         {/snippet}
         {@render sortChoices()}
       </Dropdown>
-      <Button
+      <IconButton
         variant="ghost"
-        square
         class="layout-app-shell-narrow-only"
-        aria-label={viewSwitchName(layout)}
+        icon={layout === 'grid' ? List : LayoutGrid}
+        label={viewSwitchName(layout)}
+        tooltip={false}
         onclick={() => (layout = otherView(layout))}
-      >
-        {#if layout === 'grid'}
-          <List class="btn-icon" />
-        {:else}
-          <LayoutGrid class="btn-icon" />
-        {/if}
-      </Button>
+      />
     {/snippet}
     {#snippet panel()}
       {#if shown.length === 0}
