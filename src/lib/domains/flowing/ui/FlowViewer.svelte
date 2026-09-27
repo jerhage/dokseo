@@ -9,6 +9,7 @@
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
   import Pencil from '$lib/components/icons/Pencil.svelte';
+  import SearchIcon from '$lib/components/icons/Search.svelte';
   import type { Anchor } from '$lib/shared/anchor';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import { ChromeFocus } from '$lib/shared/chrome-focus.svelte';
@@ -61,6 +62,7 @@
     readonly panelCount?: number;
     readonly anchors?: readonly Anchor[];
     readonly onLift?: (passage: LiftedPassage) => void;
+    readonly onsearch?: (() => void) | undefined;
   };
 
   type LiftOffer = {
@@ -69,9 +71,10 @@
     readonly top: number;
   };
 
-  const { view, book, panel, panelCount, anchors = NO_ANCHORS, onLift }: Props = $props();
+  const { view, book, panel, panelCount, anchors = NO_ANCHORS, onLift, onsearch }: Props = $props();
 
   const LIFT_LABEL = 'Save this passage as a capture';
+  const SEARCH_BOOK_LABEL = 'Search this book';
 
   const touchTurns = readTouchTurns();
 
@@ -512,6 +515,19 @@
             </Button>
           {:else}
             <p class="text-xs text-faint shrink-0">{NO_CONTENTS_LABEL}</p>
+          {/if}
+          {#if onsearch !== undefined}
+            <Button
+              size="sm"
+              square
+              class="shrink-0"
+              aria-haspopup="dialog"
+              title={SEARCH_BOOK_LABEL}
+              onclick={onsearch}
+            >
+              <SearchIcon class="btn-icon" />
+              <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
+            </Button>
           {/if}
           <Button
             size="sm"

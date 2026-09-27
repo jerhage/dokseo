@@ -104,6 +104,10 @@
     reveal('all');
   }
 
+  export function searchThisBook(): void {
+    reveal('book');
+  }
+
   function hide(): void {
     shown = false;
   }

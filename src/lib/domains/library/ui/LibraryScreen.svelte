@@ -1,11 +1,9 @@
 <script lang="ts">
   import Avatar from '$lib/components/Avatar.svelte';
-  import { tick } from 'svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import UploadIcon from '$lib/components/icons/Upload.svelte';
-  import X from '$lib/components/icons/X.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
   import WindowDropzone from '$lib/components/WindowDropzone.svelte';
@@ -24,7 +22,6 @@
     libraryBody,
     librarySummary,
     matchedText,
-    showsFilter,
     storageText,
     titledBooks,
   } from './library-overview';
@@ -58,9 +55,6 @@
   let main = $state<HTMLElement | null>(null);
 
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
-  let search = $state<ReturnType<typeof LibrarySearch> | null>(null);
-  let searchToggle = $state<HTMLButtonElement>();
-  let filterOpened = $state(false);
   let openSettingsFor = $state<BookId | null>(null);
   let removeFor = $state<BookId | null>(null);
   const arrangement = readArrangement();
@@ -105,20 +99,6 @@
   }
 
   const searching = $derived(isSearching(query));
-  const filterShown = $derived(showsFilter(filterOpened, query));
-
-  async function openFilter(): Promise<void> {
-    filterOpened = true;
-    await tick();
-    search?.focus();
-  }
-
-  async function closeFilter(): Promise<void> {
-    query = '';
-    filterOpened = false;
-    await tick();
-    searchToggle?.focus();
-  }
   const titled = $derived(titledBooks(view.books, query));
   const space = $derived(storageText(view.storedBytes));
   const summary = $derived(librarySummary(view.books, view.storedBytes));
@@ -137,7 +117,7 @@
   <header
     class="layout-app-shell-header wrap layout-app-shell-narrow-nowrap layout-app-shell-narrow-touch"
   >
-    <div class={['row items-center gap-2 min-w-0', { 'layout-app-shell-wide-only': filterShown }]}>
+    <div class="row items-center gap-2 min-w-0">
       <Avatar shape="square" size="sm" lang="ja" aria-hidden="true">読</Avatar>
       <div class="col gap-0 flex-1">
         <span class="display weight-semibold">Library</span>
@@ -149,18 +129,9 @@
       </div>
     </div>
     <div
-      class={[
-        'row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap',
-        { 'layout-app-shell-narrow-fit': !filterShown },
-      ]}
+      class="row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap layout-app-shell-narrow-fit"
     >
-      <LibrarySearch
-        bind:this={search}
-        bind:query
-        {matched}
-        onclose={filterOpened ? closeFilter : undefined}
-        class={{ 'layout-app-shell-wide-only': !filterShown }}
-      />
+      <LibrarySearch bind:query {matched} class="layout-app-shell-wide-only" />
       <span class="text-xs text-faint layout-app-shell-wide-only"
         ><kbd>⌘K</kbd> to search everything</span
       >
@@ -176,17 +147,12 @@
         <AppearanceSwitcher />
       </div>
       <div class="row items-center gap-1 layout-app-shell-narrow-only">
-        {#if filterShown}
-          <Button variant="ghost" square aria-label="Close the filter" onclick={closeFilter}>
-            <X class="btn-icon" />
-          </Button>
-        {:else}
+        {#if onsearcheverything !== undefined}
           <Button
             variant="ghost"
             square
-            aria-label="Filter these titles"
-            bind:ref={searchToggle}
-            onclick={openFilter}
+            aria-label="Search everything"
+            onclick={onsearcheverything}
           >
             <SearchIcon class="btn-icon" />
           </Button>

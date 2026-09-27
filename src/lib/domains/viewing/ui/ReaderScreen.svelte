@@ -10,6 +10,7 @@
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
   import Pencil from '$lib/components/icons/Pencil.svelte';
+  import SearchIcon from '$lib/components/icons/Search.svelte';
   import SquareDashedMousePointer from '$lib/components/icons/SquareDashedMousePointer.svelte';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
@@ -50,6 +51,7 @@
     readonly arrival?: Snippet;
     readonly onSelect?: (regions: readonly ImageRegion[], arrangement: Arrangement) => void;
     readonly onNote?: (regions: readonly ImageRegion[]) => void;
+    readonly onsearch?: (() => void) | undefined;
   };
 
   type Turn = {
@@ -65,13 +67,24 @@
     readonly go: () => void;
   };
 
-  let { view, glow = [], panel, panelCount, engine, arrival, onSelect, onNote }: Props = $props();
+  let {
+    view,
+    glow = [],
+    panel,
+    panelCount,
+    engine,
+    arrival,
+    onSelect,
+    onNote,
+    onsearch,
+  }: Props = $props();
 
   const SIDEWAYS: readonly [Component<IconProps>, Component<IconProps>] = [
     ChevronLeft,
     ChevronRight,
   ];
   const DOWNWARDS: readonly [Component<IconProps>, Component<IconProps>] = [ArrowUp, ArrowDown];
+  const SEARCH_BOOK_LABEL = 'Search this book';
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
@@ -432,6 +445,20 @@
             >
               <SquareDashedMousePointer class="btn-icon" />
               <span class="visually-hidden">{SELECT_MODE_LABEL}</span>
+            </Button>
+          {/if}
+
+          {#if onsearch !== undefined}
+            <Button
+              size="sm"
+              square
+              class="shrink-0"
+              aria-haspopup="dialog"
+              title={SEARCH_BOOK_LABEL}
+              onclick={onsearch}
+            >
+              <SearchIcon class="btn-icon" />
+              <span class="visually-hidden">{SEARCH_BOOK_LABEL}</span>
             </Button>
           {/if}
 

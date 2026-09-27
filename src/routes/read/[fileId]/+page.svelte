@@ -32,6 +32,8 @@
 
   const NOTHING_TO_GLOW: readonly GlowRegion[] = [];
 
+  let palette = $state<ReturnType<typeof CapturePalette>>();
+
   function mirror(index: ImageIndex): void {
     const moved = urlWithImageIndex(page.url, index);
     if (moved !== null) replaceState(moved, page.state);
@@ -104,6 +106,7 @@
     panelCount={captures.count}
     anchors={captures.anchors}
     onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
+    onsearch={() => palette?.searchThisBook()}
   >
     {#snippet panel()}
       <CapturePanel
@@ -121,6 +124,7 @@
     panelCount={captures.count}
     onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
     onNote={(regions) => captures.note(regions)}
+    onsearch={() => palette?.searchThisBook()}
   >
     {#snippet arrival()}
       {#if stepping !== null && finding !== null}
@@ -145,6 +149,7 @@
 {/if}
 
 <CapturePalette
+  bind:this={palette}
   book={id}
   {books}
   {find}
