@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import Button from '$lib/components/Button.svelte';
+  import Slider from '$lib/components/Slider.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
   import type { ReadingDirection } from './layout-kind';
   import { scrubStep, turnsSide } from './page-bar';
-  import './page-bar.css';
 
   type ShownTurn = {
     readonly icon: Component<IconProps>;
@@ -75,23 +75,6 @@
   {/if}
 {/snippet}
 
-{#snippet scrub(shape: string)}
-  <input
-    class={shape}
-    type="range"
-    min={0}
-    max={Math.max(steps - 1, 0)}
-    step={1}
-    value={shown}
-    dir={direction}
-    disabled={!enabled || steps < 2}
-    aria-label={label}
-    aria-valuetext={marker}
-    oninput={(event) => previewed(event.currentTarget.value)}
-    onchange={(event) => committed(event.currentTarget.value)}
-  />
-{/snippet}
-
 {#snippet turns()}
   {#if first !== null || second !== null}
     <div class="row items-center gap-1 shrink-0" role="group" aria-label="Turn the page">
@@ -101,22 +84,24 @@
   {/if}
 {/snippet}
 
-<div class="page-bar row items-center gap-2 flex-1">
+<div class="row items-center gap-2 flex-1">
   {#if side === 'before'}
     {@render turns()}
     <p class="mono text-xs text-muted shrink-0">{marker}</p>
   {/if}
 
-  {#if ticks.length === 0}
-    {@render scrub('scrub flex-1')}
-  {:else}
-    <div class="gauge relative flex-1">
-      {@render scrub('scrub w-full')}
-      {#each ticks as offset, slot (slot)}
-        <span class="tick" aria-hidden="true" style:--at="{offset}%"></span>
-      {/each}
-    </div>
-  {/if}
+  <Slider
+    class="flex-1"
+    value={shown}
+    max={Math.max(steps - 1, 0)}
+    dir={direction}
+    {ticks}
+    disabled={!enabled || steps < 2}
+    {label}
+    valuetext={marker}
+    oninput={(event) => previewed(event.currentTarget.value)}
+    onchange={(event) => committed(event.currentTarget.value)}
+  />
 
   {#if side === 'after'}
     <p class="mono text-xs text-muted shrink-0">{marker}</p>

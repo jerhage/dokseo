@@ -22,7 +22,7 @@ function markup(props: Record<string, unknown>): string {
 }
 
 function offsets(html: string): readonly string[] {
-  return [...html.matchAll(/class="tick"[^>]*style="--at: ([^;"]*)/gu)].map(
+  return [...html.matchAll(/class="slider-tick"[^>]*style="--slider-tick-at: ([^;"]*)/gu)].map(
     (found) => found[1] ?? '',
   );
 }
@@ -32,14 +32,14 @@ describe('PageBar', () => {
     const html = markup({ ticks: [12.5, 60] });
 
     expect(offsets(html)).toEqual(['12.5%', '60%']);
-    expect(html).toMatch(/class="gauge[^"]*"[^>]*>\s*<input/u);
+    expect(html).toMatch(/class="slider-ticked[^"]*"[^>]*>\s*<input/u);
   });
 
-  it('draws no ticks and no gauge when it is given none', () => {
+  it('draws no ticks and no tick wrapper when it is given none', () => {
     const html = markup({});
 
     expect(offsets(html)).toEqual([]);
-    expect(html).not.toContain('gauge');
+    expect(html).not.toContain('slider-ticked');
   });
 
   it('names the scrubber for pages unless told otherwise', () => {
