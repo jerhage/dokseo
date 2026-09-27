@@ -165,7 +165,7 @@
     <span
       class={[
         'glow place-rect region-box region-box-glow z-raised',
-        { 'region-box-note': drawn.origin === 'written' },
+        { 'region-box-accent': drawn.origin === 'written' },
       ]}
       style:--rect-left="{drawn.box.left}%"
       style:--rect-top="{drawn.box.top}%"

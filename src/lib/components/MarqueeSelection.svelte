@@ -252,7 +252,10 @@
 <div class="marquee-selection" bind:this={host} aria-hidden="true">
   {#if box !== null}
     <div
-      class={['marquee-selection-box place-rect region-box z-raised', { 'region-box-note': note }]}
+      class={[
+        'marquee-selection-box place-rect region-box z-raised',
+        { 'region-box-accent': note },
+      ]}
       style:--rect-left="{box.left}px"
       style:--rect-top="{box.top}px"
       style:--rect-width="{box.width}px"

@@ -22,7 +22,7 @@
 <DemoSection
   id="region-box"
   title="Region box"
-  classes={['place-rect', 'region-box', 'region-box-note', 'region-box-glow']}
+  classes={['place-rect', 'region-box', 'region-box-accent', 'region-box-glow']}
 >
   <p class="text-sm text-muted">
     <code>.place-rect</code> places a box at the rectangle a caller measured at run time, passed as
@@ -37,7 +37,7 @@
         <span
           class={[
             'place-rect region-box z-raised',
-            { 'region-box-note': region.note, 'region-box-glow': glowing },
+            { 'region-box-accent': region.note, 'region-box-glow': glowing },
           ]}
           style:--rect-left="{region.left}%"
           style:--rect-top="{region.top}%"

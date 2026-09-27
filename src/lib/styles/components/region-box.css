@@ -4,7 +4,7 @@
   border: var(--border-width-strong) solid var(--_region-color);
   background-color: var(--color-selected);
 }
-.region-box-note {
+.region-box-accent {
   --_region-color: var(--color-accent);
   --_region-glow: var(--color-accent-glow);
   background-color: transparent;

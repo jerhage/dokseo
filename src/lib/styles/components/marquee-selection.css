@@ -11,7 +11,7 @@
   background-color: var(--color-primary);
   border: var(--border-width) solid var(--color-surface);
 }
-.marquee-selection-box.region-box-note .marquee-selection-handle {
+.marquee-selection-box.region-box-accent .marquee-selection-handle {
   background-color: var(--color-accent);
 }
 .marquee-selection-handle-north {
