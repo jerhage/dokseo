@@ -72,9 +72,9 @@ describe('SearchField', () => {
     const clearable = markup({ clearable: true, value: 'kraken' });
 
     expect(clearable).toContain(`<span class="visually-hidden">${CLEAR_LABEL}</span>`);
-    expect(clearable).toContain('input-clearable');
+    expect(tag(clearable, 'div')).toContain('search-field search-field-clearable');
     expect(markup({ clearable: true, value: '' })).not.toContain('<button');
     expect(markup({ value: 'kraken' })).not.toContain('<button');
-    expect(markup({ value: 'kraken' })).not.toContain('input-clearable');
+    expect(markup({ value: 'kraken' })).not.toContain('search-field-clearable');
   });
 });

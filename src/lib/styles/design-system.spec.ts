@@ -1300,21 +1300,24 @@ describe('the design system stylesheets', () => {
   });
 
   it('draws the clear button of a clearable field only on a coarse pointer, in place of the native one', () => {
-    const control = style('components/forms/control.css');
-    const coarse = mediaBlock(control, '(pointer: coarse)');
+    const field = style('components/forms/search-field.css');
+    const coarse = mediaBlock(field, '(pointer: coarse)');
 
-    expect(declarations(ruleBody(control, '.input-clearable > .input-clear'))).toEqual([
+    expect(declarations(ruleBody(field, '.search-field-clearable .search-field-clear'))).toEqual([
       'display: none',
     ]);
-    expect(declarations(ruleBody(coarse, '.input-clearable > .input-clear'))).toContain(
+    expect(declarations(ruleBody(coarse, '.search-field-clearable .search-field-clear'))).toContain(
       'display: inline-flex',
     );
-    expect(control.indexOf('.input-clearable > .input-clear {')).toBeLessThan(
-      control.indexOf(coarse),
+    expect(field.indexOf('.search-field-clearable .search-field-clear {')).toBeLessThan(
+      field.indexOf(coarse),
     );
     expect(
-      declarations(ruleBody(coarse, '.input-clearable > .input::-webkit-search-cancel-button')),
+      declarations(
+        ruleBody(coarse, '.search-field-clearable .input::-webkit-search-cancel-button'),
+      ),
     ).toEqual(['display: none']);
+    expect(style('components/forms/control.css')).not.toContain('clear');
   });
 
   it('hides a touch-hidden element only on a coarse pointer', () => {

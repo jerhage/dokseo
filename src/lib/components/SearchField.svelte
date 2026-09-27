@@ -44,15 +44,15 @@
   }
 </script>
 
-<div class={['search-field', className]}>
+<div class={['search-field', { 'search-field-clearable': clearable }, className]}>
   <label class={['field-label', { 'visually-hidden': hideLabel }]} for={fieldId}>{label}</label>
-  <div class={['search-field-control', { 'input-clearable': clearable }]}>
+  <div class="search-field-control">
     <Input {...rest} bind:value bind:ref id={fieldId} {type} />
     {#if showsClear(clearable, value)}
       <IconButton
         variant="ghost"
         size="sm"
-        class="input-clear"
+        class="search-field-clear"
         label={CLEAR_LABEL}
         tooltip={false}
         onmousedown={keepFocus}

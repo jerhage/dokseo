@@ -15,7 +15,7 @@
 <DemoSection
   id="search-field"
   title="Search field"
-  classes={['search-field', 'search-field-control', 'input-clearable', 'input-clear']}
+  classes={['search-field', 'search-field-control', 'search-field-clearable', 'search-field-clear']}
 >
   <div class="grid-2">
     <Card>
