@@ -31,7 +31,7 @@
   {@render children?.()}
   {#if onremove !== undefined}
     <button type="button" class="tag-remove" aria-label={removeLabel} onclick={onremove}>
-      <X class="tag-remove-icon" />
+      <X class="close-icon close-icon-sm" />
     </button>
   {/if}
 </svelte:element>

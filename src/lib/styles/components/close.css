@@ -22,6 +22,10 @@
   inline-size: var(--sp-4);
   block-size: var(--sp-4);
 }
+.close-icon-sm {
+  inline-size: var(--sp-3);
+  block-size: var(--sp-3);
+}
 .alert-close:hover,
 .modal-close:hover,
 .toast-close:hover,

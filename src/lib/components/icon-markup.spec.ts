@@ -127,7 +127,7 @@ describe('the icons the base components draw', () => {
   it('draws a cross in the remove button of a removable tag only', () => {
     expect(
       icons(markup(Tag, { onremove: () => undefined, removeLabel: 'Remove', children: TEXT })),
-    ).toEqual(['x tag-remove-icon']);
+    ).toEqual(['x close-icon close-icon-sm']);
     expect(icons(markup(Tag, { children: TEXT }))).toEqual([]);
   });
 
