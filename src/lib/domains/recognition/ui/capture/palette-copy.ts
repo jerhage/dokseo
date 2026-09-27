@@ -7,6 +7,8 @@ type PaletteNote =
   | { readonly kind: 'unread' }
   | { readonly kind: 'nothing'; readonly message: string };
 
+type PaletteRoom = 'wide' | 'narrow';
+
 type PaletteNoteInput = {
   readonly status: CaptureSearchStatus;
   readonly query: string;
@@ -27,12 +29,13 @@ function searchesTitles(filter: PaletteFilter, scope: PaletteScope): boolean {
   return filter !== 'tags' && scope === 'all';
 }
 
-function paletteInvite(filter: PaletteFilter, scope: PaletteScope): string {
+function paletteInvite(filter: PaletteFilter, scope: PaletteScope, room: PaletteRoom): string {
   if (filter === 'tags') return 'Find a tag';
 
-  return searchesTitles(filter, scope)
-    ? 'Find in titles, text, tags and notes'
-    : 'Find in text, tags and notes';
+  const titled = searchesTitles(filter, scope);
+  if (room === 'narrow') return titled ? 'Titles, text, tags, notes' : 'Text, tags, notes';
+
+  return titled ? 'Find in titles, text, tags and notes' : 'Find in text, tags and notes';
 }
 
 function paletteNothing(filter: PaletteFilter, scope: PaletteScope): string {
@@ -62,4 +65,4 @@ export {
   paletteNothing,
   resultCount,
 };
-export type { PaletteNote, PaletteNoteInput };
+export type { PaletteNote, PaletteNoteInput, PaletteRoom };

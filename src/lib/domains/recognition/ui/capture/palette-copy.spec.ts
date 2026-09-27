@@ -3,14 +3,20 @@ import { paletteInvite, paletteNote, paletteNothing, resultCount } from './palet
 import type { PaletteNoteInput } from './palette-copy';
 
 describe('paletteInvite', () => {
-  it('invites a tag name under the tags filter in either scope', () => {
-    expect(paletteInvite('tags', 'all')).toBe('Find a tag');
-    expect(paletteInvite('tags', 'book')).toBe('Find a tag');
+  it('invites a tag name under the tags filter in either scope and room', () => {
+    expect(paletteInvite('tags', 'all', 'wide')).toBe('Find a tag');
+    expect(paletteInvite('tags', 'book', 'wide')).toBe('Find a tag');
+    expect(paletteInvite('tags', 'all', 'narrow')).toBe('Find a tag');
   });
 
   it('offers titles only across every upload', () => {
-    expect(paletteInvite('everything', 'all')).toBe('Find in titles, text, tags and notes');
-    expect(paletteInvite('everything', 'book')).toBe('Find in text, tags and notes');
+    expect(paletteInvite('everything', 'all', 'wide')).toBe('Find in titles, text, tags and notes');
+    expect(paletteInvite('everything', 'book', 'wide')).toBe('Find in text, tags and notes');
+  });
+
+  it('shortens the invitation on a narrow screen and still names titles only across every book', () => {
+    expect(paletteInvite('everything', 'all', 'narrow')).toBe('Titles, text, tags, notes');
+    expect(paletteInvite('everything', 'book', 'narrow')).toBe('Text, tags, notes');
   });
 });
 

@@ -1,9 +1,11 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
+  import { MediaQuery } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import Divider from '$lib/components/Divider.svelte';
+  import X from '$lib/components/icons/X.svelte';
   import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
@@ -23,6 +25,7 @@
     resultCount,
   } from './palette-copy';
   import { paletteKey } from './palette-keys';
+  import { openerOf } from './palette-opener';
   import { effectiveScope, paletteRows, searchedBooks } from './palette-rows';
   import type { PaletteRow, PaletteScope } from './palette-rows';
   import PaletteResult from './PaletteResult.svelte';
@@ -39,10 +42,12 @@
 
   const SCOPES: readonly { readonly value: PaletteScope; readonly label: string }[] = [
     { value: 'book', label: 'This book' },
-    { value: 'all', label: 'All uploads' },
+    { value: 'all', label: 'All books' },
   ];
 
   const NOTHING: QuickFinds<Capture> = { books: [], captures: [] };
+
+  const narrowScreen = new MediaQuery('(width < 48rem)');
 
   let {
     book,
@@ -62,6 +67,9 @@
   let filter = $state<PaletteFilter>('everything');
   let at = $state(NO_MATCH);
   let list = $state<(HTMLElement | undefined)[]>([]);
+  let field = $state<HTMLInputElement>();
+  let lastPressed: HTMLElement | null = null;
+  let opener: HTMLElement | null = null;
 
   const scoped = $derived(effectiveScope(book, scope));
 
@@ -74,6 +82,8 @@
   const results = $derived(
     paletteRows({ found, scope: scoped, book, covers, counts, tags, query }),
   );
+
+  const invite = $derived(paletteInvite(filter, scoped, narrowScreen.current ? 'narrow' : 'wide'));
 
   const cursor = $derived(at >= results.rows.length ? NO_MATCH : at);
 
@@ -92,7 +102,14 @@
     at = NO_MATCH;
   }
 
+  function remember(event: PointerEvent): void {
+    const control = event.target instanceof Element ? event.target.closest('button, a') : null;
+    lastPressed = control instanceof HTMLElement ? control : null;
+  }
+
   function reveal(chosen: PaletteScope): void {
+    const focused = document.activeElement;
+    opener = openerOf(focused instanceof HTMLElement ? focused : null, lastPressed, document.body);
     shown = true;
     present = true;
     choose(chosen);
@@ -114,6 +131,8 @@
 
   function gone(): void {
     present = false;
+    if (opener?.isConnected === true && document.activeElement === document.body) opener.focus();
+    opener = null;
   }
 
   function moveBy(by: number): void {
@@ -140,6 +159,7 @@
   }
 
   function shortcuts(event: KeyboardEvent): void {
+    lastPressed = null;
     const pressed = paletteKey(event, { shown, scope, hasBook: book !== null });
 
     match(pressed)
@@ -164,6 +184,25 @@
       .exhaustive();
   }
 
+  function clear(): void {
+    query = '';
+    at = NO_MATCH;
+    field?.focus();
+  }
+
+  function keepFocus(event: MouseEvent): void {
+    event.preventDefault();
+  }
+
+  function dragged(): void {
+    if (field !== undefined && document.activeElement === field) field.blur();
+  }
+
+  function blurOnDrag(resultList: HTMLElement): () => void {
+    resultList.addEventListener('touchmove', dragged, { passive: true });
+    return () => resultList.removeEventListener('touchmove', dragged);
+  }
+
   function toggleTags(event: MouseEvent): void {
     event.preventDefault();
     filter = filter === 'tags' ? 'everything' : 'tags';
@@ -176,13 +215,26 @@
   }
 </script>
 
-<svelte:window onkeydown={shortcuts} />
+<svelte:window onkeydown={shortcuts} onpointerdowncapture={remember} />
+
+{#snippet scopeChoices(placed: string | undefined)}
+  {#each SCOPES as choice (choice.value)}
+    <TagToggle
+      class={placed}
+      pressed={scope === choice.value}
+      onclick={(event) => pickScope(event, choice.value)}
+    >
+      {choice.label}
+    </TagToggle>
+  {/each}
+{/snippet}
 
 <Modal
   bind:open={shown}
   aria-label="Find in captures"
   size="lg"
   placement="top"
+  narrow="fill"
   body="flush"
   footerVariant="info"
   onclose={gone}
@@ -190,26 +242,39 @@
   {#snippet header()}
     <div class="modal-header wrap items-center gap-2 p-3">
       <label class="visually-hidden" for="{uid}-query">Find in captures</label>
-      <Input
-        bind:value={query}
-        id="{uid}-query"
-        class="flex-fill"
-        type="search"
-        autofocus
-        placeholder={paletteInvite(filter, scoped)}
-        oninput={() => (at = NO_MATCH)}
-      />
+      <div class="input-clearable flex-fill">
+        <Input
+          bind:value={query}
+          bind:ref={field}
+          id="{uid}-query"
+          type="search"
+          enterkeyhint="search"
+          autofocus
+          placeholder={invite}
+          oninput={() => (at = NO_MATCH)}
+        />
+        {#if query !== ''}
+          <Button
+            variant="ghost"
+            size="sm"
+            square
+            class="input-clear"
+            aria-label="Clear the search"
+            onmousedown={keepFocus}
+            onclick={clear}
+          >
+            <X />
+          </Button>
+        {/if}
+      </div>
+      <Button variant="ghost" class="modal-fill-only" onclick={hide}>Cancel</Button>
       <span class="row items-center gap-1">
         {#if book !== null}
-          {#each SCOPES as choice (choice.value)}
-            <TagToggle
-              pressed={scope === choice.value}
-              onclick={(event) => pickScope(event, choice.value)}
-            >
-              {choice.label}
-            </TagToggle>
-          {/each}
-          <Divider vertical />
+          {@render scopeChoices('modal-panel-only')}
+          <Divider vertical class="modal-panel-only" />
+          <span class="tag-segmented modal-fill-only" role="group" aria-label="Search in">
+            {@render scopeChoices(undefined)}
+          </span>
         {/if}
         <TagToggle pressed={filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
       </span>
@@ -230,7 +295,7 @@
   {/if}
 
   {#if results.rows.length > 0}
-    <div class="col gap-3 p-2">
+    <div class="col gap-3 p-2" {@attach blurOnDrag}>
       {#each results.sections as group (group.label)}
         <div class="col gap-1">
           <Divider>{group.label}</Divider>
@@ -253,7 +318,7 @@
   {/if}
 
   {#snippet footer()}
-    <span>{resultCount(results.rows.length)}</span>
-    <span>{PALETTE_KEYS}</span>
+    <span role="status">{resultCount(results.rows.length)}</span>
+    <span class="hidden-on-touch">{PALETTE_KEYS}</span>
   {/snippet}
 </Modal>
