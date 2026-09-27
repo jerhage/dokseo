@@ -8,11 +8,13 @@
   justify-content: center;
   padding: var(--sp-5);
 }
+.empty-state-fill > .empty-state-message {
+  max-inline-size: var(--container-prose);
+}
 .empty-state-inline {
   align-items: flex-start;
 }
 .empty-state-message {
-  max-inline-size: var(--container-prose);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }

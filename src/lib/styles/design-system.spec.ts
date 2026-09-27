@@ -1232,6 +1232,17 @@ describe('the design system stylesheets', () => {
     ).toEqual(['padding: 0']);
   });
 
+  it('caps an empty state message at the prose measure only when the state fills its area', () => {
+    const emptyState = style('components/empty-state.css');
+    const capping = rules(emptyState).filter((rule) =>
+      declarations(rule.body).includes('max-inline-size: var(--container-prose)'),
+    );
+
+    expect(capping.flatMap((rule) => rule.selectors)).toEqual([
+      '.empty-state-fill > .empty-state-message',
+    ]);
+  });
+
   it('keeps an information footer in a row when a narrow modal stacks its action footer', () => {
     const modal = style('components/modal/modal.css');
     const reversing = rules(modal).filter((rule) =>
