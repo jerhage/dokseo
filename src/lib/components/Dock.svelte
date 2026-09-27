@@ -61,7 +61,7 @@
       variant="ghost"
       size="sm"
       square={false}
-      class="dock-rail-toggle col items-center gap-2 px-1 py-2 shrink-0 border-e"
+      class="dock-toggle col items-center gap-2 px-1 py-2 shrink-0 border-e"
       aria-expanded={toggle.open}
       aria-controls="{uid}-panel"
       label={name}

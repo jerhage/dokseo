@@ -4,7 +4,7 @@
 .dock-sheet .dock-panel {
   block-size: var(--layout-sheet-height);
 }
-.dock .dock-rail-toggle {
+.dock .dock-toggle {
   justify-content: flex-start;
   min-inline-size: var(--sp-8);
 }
