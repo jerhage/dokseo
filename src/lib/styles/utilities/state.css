@@ -11,6 +11,12 @@
   opacity: 0;
   pointer-events: none;
 }
+.is-grabbable {
+  cursor: grab;
+}
+.is-grabbing {
+  cursor: grabbing;
+}
 @media (pointer: coarse) {
   .hidden-on-touch {
     display: none;

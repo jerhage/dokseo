@@ -34,6 +34,7 @@
   import NavigationSection from './NavigationSection.svelte';
   import OverlaySection from './OverlaySection.svelte';
   import PageWrapSection from './PageWrapSection.svelte';
+  import PanZoomSection from './PanZoomSection.svelte';
   import PopoverSection from './PopoverSection.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
@@ -80,6 +81,7 @@
     CarouselSection,
     DockSection,
     GestureSection,
+    PanZoomSection,
     ProgressSection,
     SliderSection,
     StatSection,

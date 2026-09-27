@@ -289,6 +289,8 @@ const RUNTIME_INPUTS = [
   '--menu-left',
   '--menu-max-width',
   '--menu-top',
+  '--pan-x',
+  '--pan-y',
   '--pin-drop',
   '--pin-lift',
   '--popover-left',
@@ -298,6 +300,7 @@ const RUNTIME_INPUTS = [
   '--slider-tick-at',
   '--toast-offset-block-end',
   '--toast-timeout',
+  '--zoom',
 ];
 
 const ANIMATION_KEYWORDS = new Set([
