@@ -4,20 +4,34 @@
   import type { TagColour } from './classes';
   import X from './icons/X.svelte';
 
-  type Removal =
-    | { onremove?: undefined; removeLabel?: undefined }
-    | { onremove: () => void; removeLabel: string };
+  type Form =
+    | { href?: undefined; onremove?: undefined; removeLabel?: undefined }
+    | { href?: undefined; onremove: () => void; removeLabel: string }
+    | { href: string; onremove?: undefined; removeLabel?: undefined };
 
-  type Props = HTMLAttributes<HTMLSpanElement> & Removal & { colour?: TagColour };
+  type Props = HTMLAttributes<HTMLElement> & Form & { colour?: TagColour };
 
-  let { onremove, removeLabel, colour, class: className, children, ...rest }: Props = $props();
+  let {
+    href,
+    onremove,
+    removeLabel,
+    colour,
+    class: className,
+    children,
+    ...rest
+  }: Props = $props();
 </script>
 
-<span {...rest} class={['tag', colour === undefined ? [] : TAG_COLOUR_CLASSES[colour], className]}>
+<svelte:element
+  this={href === undefined ? 'span' : 'a'}
+  {...rest}
+  {href}
+  class={['tag', colour === undefined ? [] : TAG_COLOUR_CLASSES[colour], className]}
+>
   {@render children?.()}
   {#if onremove !== undefined}
     <button type="button" class="tag-remove" aria-label={removeLabel} onclick={onremove}>
       <X class="tag-remove-icon" />
     </button>
   {/if}
-</span>
+</svelte:element>

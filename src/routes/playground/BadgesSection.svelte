@@ -110,7 +110,8 @@
       {#each tags as tag (tag)}
         <Tag onremove={() => remove(tag)} removeLabel="Remove {tag}">{tag}</Tag>
       {/each}
-      <a class="tag" href="#badge">Link tag</a>
+      <Tag href="#badge">Link tag</Tag>
+      <Tag href="#badge" colour="sky">Coloured link tag</Tag>
     </div>
     <div class="row">
       <Button

@@ -3,10 +3,10 @@
   import Alert from '$lib/components/Alert.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
-  import { TAG_COLOUR_CLASSES } from '$lib/components/classes';
   import CommandItem from '$lib/components/CommandItem.svelte';
   import type { KeyHint } from '$lib/components/key-hints';
   import KeyHints from '$lib/components/KeyHints.svelte';
+  import Tag from '$lib/components/Tag.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
@@ -166,13 +166,10 @@
             <ul class="row wrap items-center gap-2 list-reset">
               {#each neighbours as other (other.id)}
                 <li class="row min-w-0">
-                  <a
-                    class={['tag min-w-0', TAG_COLOUR_CLASSES[other.colour]]}
-                    href={tagsHref(other.name)}
-                  >
+                  <Tag href={tagsHref(other.name)} colour={other.colour} class="min-w-0">
                     <span class="truncate">{other.name}</span>
                     <span class="text-xs mono">{other.count}</span>
-                  </a>
+                  </Tag>
                 </li>
               {/each}
             </ul>
