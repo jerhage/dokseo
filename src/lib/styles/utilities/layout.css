@@ -58,6 +58,9 @@
 .pin-bottom {
   inset-block-end: 0;
 }
+.pin-lift {
+  inset-block-end: var(--pin-lift, 0px);
+}
 .z-base {
   z-index: var(--z-base);
 }

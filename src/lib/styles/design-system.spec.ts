@@ -286,6 +286,7 @@ const RUNTIME_INPUTS = [
   '--menu-left',
   '--menu-max-width',
   '--menu-top',
+  '--pin-lift',
   '--popover-left',
   '--popover-top',
   '--progress',
@@ -1313,6 +1314,15 @@ describe('the design system stylesheets', () => {
       'position: absolute',
     ]);
     expect(declarations(ruleBody(layout, '.relative'))).toEqual(['position: relative']);
+  });
+
+  it('lifts a bottom-pinned element by the offset its ancestor sets, and by nothing without one', () => {
+    const layout = style('utilities/layout.css');
+
+    expect(everyDeclarationFor(layout, '.pin-lift')).toEqual([
+      'inset-block-end: var(--pin-lift, 0px)',
+    ]);
+    expect(layout.indexOf('.pin-lift {')).toBeGreaterThan(layout.indexOf('.pin-bottom {'));
   });
 
   it('gives every step of the z-index scale a utility that reads its token', () => {

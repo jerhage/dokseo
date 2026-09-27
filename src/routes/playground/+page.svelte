@@ -19,6 +19,7 @@
   import GridSection from './GridSection.svelte';
   import HeroSection from './HeroSection.svelte';
   import IconsSection from './IconsSection.svelte';
+  import KeyHintsSection from './KeyHintsSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
   import ModalToastSection from './ModalToastSection.svelte';
   import MosaicSection from './MosaicSection.svelte';
@@ -56,6 +57,7 @@
     DropdownSection,
     PopoverSection,
     CommandSection,
+    KeyHintsSection,
     NavigationSection,
     AvatarSection,
     ProgressSection,
