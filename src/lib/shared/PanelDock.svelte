@@ -3,6 +3,7 @@
   import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
@@ -45,21 +46,21 @@
   aria-label="Captures"
 >
   {#if beside}
-    <Button
+    <IconButton
       variant="ghost"
       size="sm"
+      square={false}
       class="rail-toggle col items-center gap-2 px-1 py-2 shrink-0 border-e"
       aria-expanded={toggle.open}
       aria-controls="{uid}-panel"
-      aria-label={name}
-      title={name}
+      label={name}
       onclick={ontoggle}
     >
       <Arrow class="btn-icon" />
       {#if tally !== null}
         <Badge aria-hidden="true">{tally}</Badge>
       {/if}
-    </Button>
+    </IconButton>
   {:else}
     <Button
       variant="ghost"

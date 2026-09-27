@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ClassValue, HTMLInputAttributes } from 'svelte/elements';
-  import Button from './Button.svelte';
+  import IconButton from './IconButton.svelte';
   import X from './icons/X.svelte';
   import Input from './Input.svelte';
   import { CLEAR_LABEL, searchFieldId, showsClear } from './search-field';
@@ -49,17 +49,17 @@
   <div class={['search-field-control', { 'input-clearable': clearable }]}>
     <Input {...rest} bind:value bind:ref id={fieldId} {type} />
     {#if showsClear(clearable, value)}
-      <Button
+      <IconButton
         variant="ghost"
         size="sm"
-        square
         class="input-clear"
-        aria-label={CLEAR_LABEL}
+        label={CLEAR_LABEL}
+        tooltip={false}
         onmousedown={keepFocus}
         onclick={clear}
       >
         <X />
-      </Button>
+      </IconButton>
     {/if}
   </div>
 </div>

@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
   import { settingsSections } from './settings-sections';
@@ -30,9 +30,9 @@
 <div class="layout-app-shell">
   <header class="layout-app-shell-header wrap">
     <div class="row items-center gap-3">
-      <Button href="/" variant="primary" size="sm" square aria-label="Your library">
+      <IconButton href="/" variant="primary" size="sm" label="Your library" tooltip={false}>
         <span lang="ja" aria-hidden="true">読</span>
-      </Button>
+      </IconButton>
       <Breadcrumb items={crumbs} label="You are here" />
     </div>
   </header>

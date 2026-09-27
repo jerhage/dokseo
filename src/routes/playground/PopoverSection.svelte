@@ -1,6 +1,7 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import Card from '$lib/components/Card.svelte';
   import Popover from '$lib/components/Popover.svelte';
   import DemoSection from './DemoSection.svelte';
@@ -15,9 +16,16 @@
     <div class="row wrap items-center gap-3">
       <Popover label="About this plan">
         {#snippet trigger(popover)}
-          <Button variant="outline" size="sm" square pill aria-label="About this plan" {...popover}>
-            i
-          </Button>
+          <IconButton
+            variant="outline"
+            size="sm"
+            pill
+            label="About this plan"
+            tooltip={false}
+            {...popover}
+          >
+            <span aria-hidden="true">i</span>
+          </IconButton>
         {/snippet}
         <div class="col gap-3">
           <p class="mono text-xs uppercase tracking-wide text-faint">Team plan</p>

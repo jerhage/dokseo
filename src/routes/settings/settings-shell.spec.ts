@@ -47,7 +47,7 @@ describe('SettingsShell', () => {
   it('keeps the library mark and the way back to the library', () => {
     const html = markup({ current: 'engine' });
 
-    expect(html).toContain('aria-label="Your library"');
+    expect(html).toContain('<span class="visually-hidden">Your library</span>');
     expect(html).toContain('<a href="/">Library</a>');
   });
 

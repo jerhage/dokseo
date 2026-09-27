@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import Slider from '$lib/components/Slider.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
   import type { ReadingDirection } from './layout-kind';
@@ -60,18 +60,15 @@
 
 {#snippet turn(shown: ShownTurn | null)}
   {#if shown !== null}
-    <Button
+    <IconButton
       variant="ghost"
       size="sm"
-      square
       class="shrink-0"
       disabled={!shown.enabled}
-      title={shown.label}
+      icon={shown.icon}
+      label={shown.label}
       onclick={shown.go}
-    >
-      <shown.icon class="btn-icon" />
-      <span class="visually-hidden">{shown.label}</span>
-    </Button>
+    />
   {/if}
 {/snippet}
 

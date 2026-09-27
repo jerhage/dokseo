@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
+  import IconButton from '$lib/components/IconButton.svelte';
   import Card from '$lib/components/Card.svelte';
   import type { ButtonVariant, ControlSize } from '$lib/components/classes';
   import DemoSection from './DemoSection.svelte';
@@ -45,7 +46,8 @@
         <Button variant="primary" {size}>{size}</Button>
         <Button {size}>{size}</Button>
         <Button {size} pill>Pill</Button>
-        <Button {size} square aria-label="Add">+</Button>
+        <IconButton {size} label="Add" tooltip={false}><span aria-hidden="true">+</span></IconButton
+        >
       </div>
     {/each}
     <Button variant="primary" block>Block</Button>

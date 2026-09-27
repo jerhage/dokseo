@@ -71,7 +71,7 @@ describe('SearchField', () => {
   it('draws a clear button only when the field is clearable and holds a value', () => {
     const clearable = markup({ clearable: true, value: 'kraken' });
 
-    expect(clearable).toContain(`aria-label="${CLEAR_LABEL}"`);
+    expect(clearable).toContain(`<span class="visually-hidden">${CLEAR_LABEL}</span>`);
     expect(clearable).toContain('input-clearable');
     expect(markup({ clearable: true, value: '' })).not.toContain('<button');
     expect(markup({ value: 'kraken' })).not.toContain('<button');
