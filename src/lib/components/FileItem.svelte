@@ -42,12 +42,12 @@
 
 <li {...rest} class={['file-item', view.classes, className]}>
   <span class="file-item-icon" aria-hidden="true"><Mark class="file-item-mark" /></span>
-  <div class="file-item-meta">
+  <div class="file-item-content">
     <span class="file-item-name">{item.name}</span>
     {#if view.detail.kind === 'progress'}
       <Progress label={progressLabel(item.name)} value={view.detail.value} size="sm" />
     {:else}
-      <span class="file-item-size">{view.detail.text}</span>
+      <span class="file-item-detail">{view.detail.text}</span>
     {/if}
   </div>
   {#if onremove !== undefined}
