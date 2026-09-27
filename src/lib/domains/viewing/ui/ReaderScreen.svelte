@@ -3,6 +3,7 @@
   import { match } from 'ts-pattern';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import ToastClearance from '$lib/components/ToastClearance.svelte';
   import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
   import ArrowUp from '$lib/components/icons/ArrowUp.svelte';
@@ -377,14 +378,18 @@
           />
         {/key}
       {:else}
-        <div
-          class="col items-center justify-center gap-3 flex-1 min-h-0 p-5 scheme-dark surface-sunken"
+        <EmptyState
+          variant="fill"
+          live
+          message={curtain ?? ''}
+          class="flex-1 min-h-0 scheme-dark surface-sunken"
         >
-          <p class="prose text-sm text-muted" aria-live="polite">{curtain}</p>
-          {#if stage === 'failed'}
-            <Button href="/" variant="primary" size="sm">Back to your library</Button>
-          {/if}
-        </div>
+          {#snippet action()}
+            {#if stage === 'failed'}
+              <Button href="/" variant="primary" size="sm">Back to your library</Button>
+            {/if}
+          {/snippet}
+        </EmptyState>
       {/if}
 
       {#if arrival !== undefined}

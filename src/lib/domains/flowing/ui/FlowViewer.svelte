@@ -4,6 +4,7 @@
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import ToastClearance from '$lib/components/ToastClearance.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
@@ -576,14 +577,23 @@
       {/if}
 
       {#if curtain.kind === 'opening'}
-        <div class="curtain overlay-fill z-overlay col items-center gap-3 p-5 surface-bg">
-          <p class="prose text-sm text-muted" aria-live="polite">Opening this book…</p>
-        </div>
+        <EmptyState
+          variant="fill"
+          live
+          message="Opening this book…"
+          class="overlay-fill z-overlay surface-bg text-center"
+        />
       {:else if message !== null}
-        <div class="curtain overlay-fill z-overlay col items-center gap-3 p-5 surface-bg">
-          <p class="prose text-sm text-muted" aria-live="polite">{message}</p>
-          <Button href="/" variant="primary" size="sm">Back to your library</Button>
-        </div>
+        <EmptyState
+          variant="fill"
+          live
+          {message}
+          class="overlay-fill z-overlay surface-bg text-center"
+        >
+          {#snippet action()}
+            <Button href="/" variant="primary" size="sm">Back to your library</Button>
+          {/snippet}
+        </EmptyState>
       {/if}
     </div>
 

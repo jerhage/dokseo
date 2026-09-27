@@ -1,6 +1,9 @@
 .prose {
   max-inline-size: var(--container-prose);
 }
+.text-center {
+  text-align: center;
+}
 .uppercase {
   text-transform: uppercase;
 }

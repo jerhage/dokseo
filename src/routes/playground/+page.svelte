@@ -14,6 +14,7 @@
   import CommandSection from './CommandSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
+  import EmptyStateSection from './EmptyStateSection.svelte';
   import FileUploadSection from './FileUploadSection.svelte';
   import FormSection from './FormSection.svelte';
   import GridSection from './GridSection.svelte';
@@ -53,6 +54,7 @@
     SegmentedSection,
     CardSection,
     AlertSection,
+    EmptyStateSection,
     TabsSection,
     AccordionSection,
     TableSection,

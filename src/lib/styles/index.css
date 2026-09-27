@@ -68,6 +68,7 @@
 @import 'components/divider.css' layer(components);
 @import 'components/codeblock.css' layer(components);
 @import 'components/key-hints.css' layer(components);
+@import 'components/empty-state.css' layer(components);
 @import 'components/stat.css' layer(components);
 
 @import 'utilities/layout.css' layer(utilities);
