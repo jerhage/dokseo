@@ -20,6 +20,7 @@
     disabled?: boolean;
     compact?: boolean;
     invalid?: boolean;
+    directory?: boolean;
     readDrop?: DropReader<DataTransfer, File> | undefined;
     ref?: HTMLInputElement | undefined;
     onfiles: (selection: FileSelection<File>) => void;
@@ -34,6 +35,7 @@
     disabled = false,
     compact = false,
     invalid = false,
+    directory = false,
     readDrop,
     ref = $bindable(),
     onfiles,
@@ -42,6 +44,11 @@
   }: Props = $props();
 
   let dragging = $state(false);
+  let directoryPicker = $state<HTMLInputElement | null>(null);
+
+  export function chooseDirectory(): void {
+    directoryPicker?.click();
+  }
 
   const policy = $derived({ rules: acceptRules(accept), maxSize, multiple });
 
@@ -101,6 +108,19 @@
     {disabled}
     onchange={choose}
   />
+  {#if directory}
+    <input
+      bind:this={directoryPicker}
+      type="file"
+      class="dropzone-input"
+      multiple
+      webkitdirectory
+      aria-hidden="true"
+      tabindex="-1"
+      {disabled}
+      onchange={choose}
+    />
+  {/if}
   <span class="dropzone-icon" aria-hidden="true"><Upload class="dropzone-mark" /></span>
   <span class="dropzone-title">
     {#if title === undefined}

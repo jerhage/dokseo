@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
   import Dropzone from '$lib/components/Dropzone.svelte';
   import Field from '$lib/components/Field.svelte';
@@ -16,6 +17,7 @@
   let nextId = 0;
   let attachments = $state<readonly FileItemData[]>([]);
   let arrival = $state<readonly string[]>([]);
+  let attachmentZone = $state<ReturnType<typeof Dropzone> | null>(null);
   let windowDrop = $state(false);
   let windowDropped = $state<readonly string[]>([]);
   let avatar = $state<readonly FileItemData[]>([
@@ -83,13 +85,20 @@
         {#snippet children(control)}
           <div class="stack-sm">
             <Dropzone
+              bind:this={attachmentZone}
               {...control}
               multiple
+              directory
               accept="image/*,.pdf,.epub"
               maxSize={50 * MEGABYTE}
               hint="PNG, JPG, PDF or EPUB · up to 50 MB each"
               onfiles={addAttachments}
             />
+            <div class="row">
+              <Button size="sm" variant="ghost" onclick={() => attachmentZone?.chooseDirectory()}>
+                Choose a folder instead
+              </Button>
+            </div>
             {#if arrival.length > 0}
               <p class="text-xs text-faint">Arrival order: {arrival.join(', ')}</p>
             {/if}

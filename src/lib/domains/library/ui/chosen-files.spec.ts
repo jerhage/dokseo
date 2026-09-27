@@ -1,33 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { selectFiles } from '$lib/components/file-selection';
 import type { FileLike } from '$lib/components/file-selection';
-import { arrivedFiles, takeChosen } from './chosen-files';
+import { arrivedFiles } from './chosen-files';
 
 function file(name: string, type = ''): FileLike {
   return { name, type, size: 1 };
 }
-
-describe('takeChosen', () => {
-  it('returns the chosen files in the order they were chosen', () => {
-    const input = { files: [file('b.jpg'), file('a.jpg')], value: 'C:\\fakepath\\b.jpg' };
-
-    expect(takeChosen(input).map((chosen) => chosen.name)).toEqual(['b.jpg', 'a.jpg']);
-  });
-
-  it('clears the input so the same file can be chosen twice', () => {
-    const input = { files: [file('chapter.cbz')], value: 'C:\\fakepath\\chapter.cbz' };
-
-    takeChosen(input);
-
-    expect(input.value).toBe('');
-  });
-
-  it('returns nothing when the input holds no file list', () => {
-    const input = { files: null, value: '' };
-
-    expect(takeChosen(input)).toEqual([]);
-  });
-});
 
 describe('arrivedFiles', () => {
   const policy = {

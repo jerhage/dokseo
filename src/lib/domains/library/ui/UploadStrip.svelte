@@ -3,7 +3,7 @@
   import Dropzone from '$lib/components/Dropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from './accepted-formats';
-  import { arrivedFiles, takeChosen } from './chosen-files';
+  import { arrivedFiles } from './chosen-files';
 
   type Props = {
     readonly busy: boolean;
@@ -14,7 +14,7 @@
   let { busy, compact, onfiles }: Props = $props();
 
   let filePicker = $state<HTMLInputElement>();
-  let folderPicker = $state<HTMLInputElement | null>(null);
+  let dropzone = $state<ReturnType<typeof Dropzone> | null>(null);
 
   export function choose(): void {
     filePicker?.click();
@@ -28,8 +28,10 @@
 
 <section class="col gap-2" aria-label="Add to your library">
   <Dropzone
+    bind:this={dropzone}
     bind:ref={filePicker}
     multiple
+    directory
     {compact}
     accept={ACCEPT_ATTRIBUTE}
     readDrop={filesFromDataTransfer}
@@ -41,19 +43,8 @@
 
   <div class="row wrap items-center justify-between gap-2">
     <p class="text-xs text-faint">{ACCEPTED_SUMMARY}</p>
-    <Button size="sm" variant="ghost" disabled={busy} onclick={() => folderPicker?.click()}>
+    <Button size="sm" variant="ghost" disabled={busy} onclick={() => dropzone?.chooseDirectory()}>
       Choose a folder instead
     </Button>
   </div>
-
-  <input
-    bind:this={folderPicker}
-    class="visually-hidden"
-    type="file"
-    multiple
-    webkitdirectory
-    aria-hidden="true"
-    tabindex="-1"
-    onchange={(event) => deliver(takeChosen(event.currentTarget))}
-  />
 </section>
