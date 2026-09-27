@@ -29,6 +29,7 @@
   import KeyHintsSection from './KeyHintsSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
   import ListGroupSection from './ListGroupSection.svelte';
+  import MarqueeSelectionSection from './MarqueeSelectionSection.svelte';
   import ModalToastSection from './ModalToastSection.svelte';
   import MosaicSection from './MosaicSection.svelte';
   import NavigationSection from './NavigationSection.svelte';
@@ -88,6 +89,7 @@
     GestureSection,
     PanZoomSection,
     RegionBoxSection,
+    MarqueeSelectionSection,
     ProgressSection,
     SliderSection,
     StatSection,

@@ -51,6 +51,7 @@
   --control-h-md: var(--ds-space-8);
   --control-h-lg: var(--ds-space-9);
   --control-h-touch: var(--ds-size-touch);
+  --handle-size: var(--ds-size-handle);
 
   --page-gutter: var(--ds-space-5);
   --grid-min-col: var(--ds-size-grid-min);
