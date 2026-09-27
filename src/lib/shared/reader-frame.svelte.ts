@@ -1,7 +1,8 @@
+import { dockPlacement, dockToggle } from '$lib/components/dock';
+import type { DockPlacement } from '$lib/components/dock';
 import { ChromeFocus } from './chrome-focus.svelte';
 import type { FocusedNodes } from './chrome-focus.svelte';
-import { askedAfterCapture, dockPlacement, dockToggle, isNarrow } from './panel-dock';
-import type { DockPlacement } from './panel-dock';
+import { askedAfterCapture, isNarrow } from './panel-dock';
 import { returnFocusToPage } from './reading-surface';
 import type { ReadingSurface } from './reading-surface';
 

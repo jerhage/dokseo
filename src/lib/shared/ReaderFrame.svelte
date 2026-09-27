@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import ChromeBar from '$lib/components/ChromeBar.svelte';
+  import Dock from '$lib/components/Dock.svelte';
   import ToastClearance from '$lib/components/ToastClearance.svelte';
   import CompactProbe from './CompactProbe.svelte';
-  import PanelDock from './PanelDock.svelte';
   import type { ReaderFrameView } from './reader-frame.svelte';
 
   type Props = {
@@ -81,12 +81,16 @@
     </div>
 
     {#if panel !== undefined}
-      <PanelDock
+      <Dock
         placement={frame.placement}
         count={panelCount ?? null}
-        {panel}
+        label="Captures"
+        showLabel="Show captures"
+        hideLabel="Hide captures"
         ontoggle={() => frame.togglePanel()}
-      />
+      >
+        {@render panel()}
+      </Dock>
     {/if}
   </div>
 </div>
