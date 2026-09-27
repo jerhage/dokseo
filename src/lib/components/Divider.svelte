@@ -13,7 +13,7 @@
   <div
     {...rest}
     role="separator"
-    class={['divider', 'divider-labeled', { 'divider-strong': strong }, className]}
+    class={['divider', 'divider-labeled', 'eyebrow', { 'divider-strong': strong }, className]}
   >
     {@render children()}
   </div>

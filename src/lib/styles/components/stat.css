@@ -6,10 +6,7 @@
   min-inline-size: 0;
 }
 .stat-label {
-  font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-wider);
-  text-transform: uppercase;
   color: var(--color-text-muted);
 }
 .stat-value {

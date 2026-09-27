@@ -1,6 +1,7 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import DropdownLabel from '$lib/components/DropdownLabel.svelte';
   import NavLink from '$lib/components/NavLink.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
   import DemoSection from './DemoSection.svelte';
@@ -37,7 +38,7 @@
   </div>
   <div class="layout-split-view">
     <div class="split-pane">
-      <span class="dropdown-label">Inbox</span>
+      <DropdownLabel>Inbox</DropdownLabel>
       {#each THREADS as name (name)}
         <NavLink href="#l-split" current={thread === name} onclick={() => (thread = name)}
           >{name}</NavLink

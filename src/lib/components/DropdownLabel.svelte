@@ -6,6 +6,6 @@
   let { class: className, children, ...rest }: Props = $props();
 </script>
 
-<span {...rest} role="presentation" class={['dropdown-label', className]}>
+<span {...rest} role="presentation" class={['dropdown-label', 'eyebrow', className]}>
   {@render children?.()}
 </span>

@@ -25,7 +25,7 @@
 </script>
 
 <div {...rest} class={['stat', STAT_SIZES[size], className]}>
-  <svelte:element this={listed ? 'dt' : 'span'} class="stat-label">{label}</svelte:element>
+  <svelte:element this={listed ? 'dt' : 'span'} class="stat-label eyebrow">{label}</svelte:element>
   <svelte:element this={listed ? 'dd' : 'span'} class="stat-value">{value}</svelte:element>
   {#if delta !== undefined}
     <svelte:element this={listed ? 'dd' : 'span'} class={['stat-delta', STAT_TRENDS[trend]]}

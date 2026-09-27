@@ -757,6 +757,20 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
+  it('leaves the eyebrow recipe to the utility in the stat label, the dropdown label and the labelled divider', () => {
+    const copies = [
+      { file: 'components/stat.css', selector: '.stat-label' },
+      { file: 'components/dropdown.css', selector: '.dropdown-label' },
+      { file: 'components/divider.css', selector: '.divider-labeled' },
+    ].flatMap(({ file, selector }) =>
+      declarations(ruleBody(style(file), selector)).filter((part) =>
+        /^(font-size|letter-spacing|text-transform):/u.test(part),
+      ),
+    );
+
+    expect(copies).toEqual([]);
+  });
+
   it('declares the eyebrow before every text utility, so a size, tracking, face, weight or colour utility beside it wins', () => {
     const textRules = rules(style('utilities/text.css'));
     const eyebrow = textRules.findIndex((rule) => rule.selectors.includes('.eyebrow'));

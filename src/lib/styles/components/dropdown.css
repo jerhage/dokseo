@@ -86,10 +86,7 @@
 }
 .dropdown-label {
   padding: var(--sp-2) var(--sp-3) var(--sp-1);
-  font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-wider);
-  text-transform: uppercase;
   color: var(--color-text-faint);
 }
 .dropdown-separator {
