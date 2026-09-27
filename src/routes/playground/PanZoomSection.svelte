@@ -19,6 +19,7 @@
     wheelPixels,
     wheelZoomFactor,
     zoomAt,
+    ZOOM_STEP,
   } from '$lib/components/pan-zoom';
   import type { FitMode, Pinch, Size, Viewport, ZoomPoint } from '$lib/components/pan-zoom';
   import DemoSection from './DemoSection.svelte';
@@ -26,7 +27,6 @@
 
   type Grab = { readonly id: number; readonly x: number; readonly y: number };
 
-  const ZOOM_STEP = 1.2;
   const FITS: readonly FitMode[] = ['contain', 'width', 'height'];
   const CELLS = Array.from({ length: 9 }, (_, index) => index + 1);
 
@@ -221,9 +221,9 @@
     <code>pan-zoom.ts</code> holds the viewport maths: zoom about a point, a pan clamped to the
     frame, fits, a pinch that stops at the fit, and a double tap that zooms to {DOUBLE_TAP_ZOOM} × the
     fit and back, all within {MIN_ZOOM}–{MAX_ZOOM} ×. <code>.zoom-surface</code> draws the viewport
-    from <code>--pan-x</code>, <code>--pan-y</code>
-    and <code>--zoom</code>. Drag to pan, Ctrl or ⌘ and the wheel to zoom, double click or double
-    tap, pinch.
+    from <code>--zoom-surface-pan-x</code>, <code>--zoom-surface-pan-y</code>
+    and <code>--zoom-surface-zoom</code>. Drag to pan, Ctrl or ⌘ and the wheel to zoom, double click
+    or double tap, pinch.
   </p>
   <div class="row wrap gap-2">
     {#each FITS as mode (mode)}
@@ -259,9 +259,9 @@
         bind:offsetWidth={contentWidth}
         bind:offsetHeight={contentHeight}
         class="zoom-surface h-full aspect-portrait grid-3-col gap-1 p-2 surface-raised bordered"
-        style:--pan-x="{viewport.panX}px"
-        style:--pan-y="{viewport.panY}px"
-        style:--zoom={viewport.zoom}
+        style:--zoom-surface-pan-x="{viewport.panX}px"
+        style:--zoom-surface-pan-y="{viewport.panY}px"
+        style:--zoom-surface-zoom={viewport.zoom}
       >
         {#each CELLS as cell (cell)}
           <span class="col items-center justify-center surface-sunken rounded-control mono"

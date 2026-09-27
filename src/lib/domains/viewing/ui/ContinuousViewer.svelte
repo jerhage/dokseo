@@ -4,7 +4,13 @@
   import KeyHints from '$lib/components/KeyHints.svelte';
   import type { GestureInput, GestureSample } from '$lib/components/gesture';
   import { GestureFeed } from '$lib/components/gesture-feed';
-  import { clampZoom, pinchZoom, wheelPixels, wheelZoomFactor } from '$lib/components/pan-zoom';
+  import {
+    ZOOM_STEP,
+    clampZoom,
+    pinchZoom,
+    wheelPixels,
+    wheelZoomFactor,
+  } from '$lib/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -73,7 +79,6 @@
     onTap,
   }: Props = $props();
 
-  const ZOOM_STEP = 1.2;
   const FIT_WIDTH_ZOOM = 1;
   const SCREEN_OVERLAP = 0.9;
   const SETTLED_PX = 0.5;

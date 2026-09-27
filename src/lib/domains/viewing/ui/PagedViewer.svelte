@@ -19,6 +19,7 @@
     wheelPixels,
     wheelZoomFactor,
     zoomAt,
+    ZOOM_STEP,
   } from '$lib/components/pan-zoom';
   import type { Pinch, Viewport, ZoomPoint } from '$lib/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
@@ -32,7 +33,8 @@
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
-  import { FIT_HEIGHT_ZOOM, arrivalViewport } from '../domain/viewport';
+  import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
+  import type { Framing } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
   import { hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
@@ -51,8 +53,6 @@
   import './paged-viewer.css';
 
   type Fit = PageFit | 'free';
-
-  type Frames = { readonly content: Size; readonly frame: Size };
 
   type Grab = {
     readonly id: number;
@@ -100,8 +100,6 @@
     onFit,
     onTurn,
   }: Props = $props();
-
-  const ZOOM_STEP = 1.2;
 
   let frame = $state<HTMLDivElement | null>(null);
   let strip = $state<HTMLDivElement | null>(null);
@@ -151,7 +149,7 @@
     select(regions);
   }
 
-  function framesNow(): Frames | null {
+  function framesNow(): Framing | null {
     const outer = frame;
     const inner = strip;
     if (outer === null || inner === null) return null;
@@ -168,7 +166,7 @@
     };
   }
 
-  function framingOf(key: ImageIndex | undefined): Frames | null {
+  function framingOf(key: ImageIndex | undefined): Framing | null {
     const content = key === undefined ? undefined : contents.get(key);
     const outer = frameSize;
     return content === undefined || outer === null ? null : { content, frame: outer };
@@ -203,7 +201,7 @@
     };
   }
 
-  function commit(next: Viewport, sizes: Frames | null): void {
+  function commit(next: Viewport, sizes: Framing | null): void {
     viewport = next;
     if (sizes !== null) pannable = canPan(sizes.content, sizes.frame, next.zoom);
   }
@@ -268,13 +266,6 @@
     if (pannable) learnGesture('zoom-to-pan');
   }
 
-  function fitFloor(sizes: Frames): number {
-    return match(pageFit)
-      .with('height', () => FIT_HEIGHT_ZOOM)
-      .with('width', () => fitZoom(sizes.content, sizes.frame, 'width'))
-      .exhaustive();
-  }
-
   function framePoint(x: number, y: number): ZoomPoint | null {
     const element = frame;
     if (element === null) return null;
@@ -292,7 +283,7 @@
       pinchStep(
         viewport,
         { ...pinch, cx: centre.x, cy: centre.y },
-        { content: sizes.content, frame: sizes.frame, floor: fitFloor(sizes) },
+        { content: sizes.content, frame: sizes.frame, floor: pageFitZoom(pageFit, sizes) },
       ),
     );
   }
@@ -302,7 +293,7 @@
     const point = framePoint(at.x, at.y);
     if (sizes === null || point === null) return;
 
-    const target = doubleTapTarget(viewport, fitFloor(sizes), point);
+    const target = doubleTapTarget(viewport, pageFitZoom(pageFit, sizes), point);
     if (target.kind === 'zoom') {
       zoomed(target.viewport);
       return;
@@ -673,9 +664,9 @@
             'strip zoom-surface row gap-0 shrink-0 h-full',
             { 'is-rtl': direction === 'rtl' },
           ]}
-          style:--pan-x="{view.panX}px"
-          style:--pan-y="{view.panY}px"
-          style:--zoom={view.zoom}
+          style:--zoom-surface-pan-x="{view.panX}px"
+          style:--zoom-surface-pan-y="{view.panY}px"
+          style:--zoom-surface-zoom={view.zoom}
           {@attach pane.beside === 0 ? holdStrip : null}
           {@attach untrack(() => measureContent(pane.key))}
         >

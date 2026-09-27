@@ -19,6 +19,7 @@ import {
   wheelPixels,
   wheelZoomFactor,
   zoomAt,
+  ZOOM_STEP,
 } from './pan-zoom';
 import type { Size, Viewport } from './pan-zoom';
 
@@ -539,5 +540,16 @@ describe('wheelZoomFactor', () => {
   it('zooms by e for each span of pixels turned up', () => {
     expect(WHEEL_ZOOM_SPAN).toBe(320);
     expect(wheelZoomFactor(-WHEEL_ZOOM_SPAN)).toBeCloseTo(Math.E, 12);
+  });
+});
+
+describe('ZOOM_STEP', () => {
+  it('steps the zoom by a fifth, and a step out undoes a step in about the same point', () => {
+    const back = zoomAt(zoomAt(identity, ZOOM_STEP, 120, 80), 1 / ZOOM_STEP, 120, 80);
+
+    expect(ZOOM_STEP).toBe(1.2);
+    expect(back.zoom).toBeCloseTo(1, 12);
+    expect(back.panX).toBeCloseTo(0, 9);
+    expect(back.panY).toBeCloseTo(0, 9);
   });
 });

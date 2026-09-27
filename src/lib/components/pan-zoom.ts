@@ -28,6 +28,8 @@ const MAX_ZOOM = 8;
 
 const DOUBLE_TAP_ZOOM = 2.5;
 
+const ZOOM_STEP = 1.2;
+
 const FIT_TOLERANCE = 1.01;
 
 const WHEEL_DELTA_LINE = 1;
@@ -197,6 +199,7 @@ export {
   WHEEL_DELTA_PAGE,
   WHEEL_LINE_PX,
   WHEEL_ZOOM_SPAN,
+  ZOOM_STEP,
   clampZoom,
   panBy,
   zoomAt,

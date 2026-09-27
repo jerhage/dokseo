@@ -1,4 +1,4 @@
-import { match } from 'ts-pattern';
+import { P, match } from 'ts-pattern';
 import { centrePan, fitZoom } from '$lib/components/pan-zoom';
 import type { Viewport } from '$lib/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
@@ -10,17 +10,23 @@ type Framing = { readonly content: Size; readonly frame: Size };
 
 const FIT_HEIGHT_ZOOM = 1;
 
+function pageFitZoom(fit: PageFit, framing: Framing): number {
+  return match(fit)
+    .with('height', () => FIT_HEIGHT_ZOOM)
+    .with('width', () => fitZoom(framing.content, framing.frame, 'width'))
+    .exhaustive();
+}
+
 function arrivalViewport(fit: ViewportFit, from: Viewport, framing: Framing | null): Viewport {
   if (framing === null) return from;
 
   const zoom = match(fit)
-    .with('height', () => FIT_HEIGHT_ZOOM)
-    .with('width', () => fitZoom(framing.content, framing.frame, 'width'))
     .with('free', () => from.zoom)
+    .with(P.union('height', 'width'), (fitted) => pageFitZoom(fitted, framing))
     .exhaustive();
 
   return centrePan({ zoom, panX: from.panX, panY: from.panY }, framing.content, framing.frame);
 }
 
-export { FIT_HEIGHT_ZOOM, arrivalViewport };
+export { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom };
 export type { Framing, ViewportFit };

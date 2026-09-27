@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { clampPan } from '$lib/components/pan-zoom';
 import type { Viewport } from '$lib/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
-import { FIT_HEIGHT_ZOOM, arrivalViewport } from './viewport';
+import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from './viewport';
 import type { Framing, ViewportFit } from './viewport';
 
 describe('arrivalViewport', () => {
@@ -55,6 +55,27 @@ describe('arrivalViewport', () => {
         expect(arrivalViewport(fit, landed, framing)).toEqual(landed);
         expect(clampPan(landed, framing.content, framing.frame)).toEqual(landed);
       }
+    }
+  });
+});
+
+describe('pageFitZoom', () => {
+  const frame: Size = { width: 390, height: 811 };
+  const tall: Framing = { content: { width: 324.5, height: 811 }, frame };
+
+  it('floors a height fit at the unscaled page', () => {
+    expect(pageFitZoom('height', tall)).toBe(FIT_HEIGHT_ZOOM);
+  });
+
+  it('floors a width fit at the zoom that fills the frame across', () => {
+    expect(pageFitZoom('width', tall)).toBe(390 / 324.5);
+  });
+
+  it('gives the zoom a fitted arrival lands on', () => {
+    for (const fit of ['height', 'width'] as const) {
+      expect(arrivalViewport(fit, { zoom: 3, panX: 0, panY: 0 }, tall).zoom).toBe(
+        pageFitZoom(fit, tall),
+      );
     }
   });
 });
