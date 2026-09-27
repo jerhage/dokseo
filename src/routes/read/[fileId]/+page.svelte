@@ -6,7 +6,7 @@
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
-  import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
+  import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
@@ -32,7 +32,7 @@
 
   const NOTHING_TO_GLOW: readonly GlowRegion[] = [];
 
-  let palette = $state<ReturnType<typeof CapturePalette>>();
+  let search = $state<ReturnType<typeof SearchDialog>>();
 
   function mirror(index: ImageIndex): void {
     const moved = urlWithImageIndex(page.url, index);
@@ -106,7 +106,7 @@
     panelCount={captures.count}
     anchors={captures.anchors}
     onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
-    onsearch={() => palette?.searchThisBook()}
+    onsearch={() => search?.searchThisBook()}
   >
     {#snippet panel()}
       <CapturePanel
@@ -124,7 +124,7 @@
     panelCount={captures.count}
     onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
     onNote={(regions) => captures.note(regions)}
-    onsearch={() => palette?.searchThisBook()}
+    onsearch={() => search?.searchThisBook()}
   >
     {#snippet arrival()}
       {#if stepping !== null && finding !== null}
@@ -148,8 +148,8 @@
   />
 {/if}
 
-<CapturePalette
-  bind:this={palette}
+<SearchDialog
+  bind:this={search}
   book={id}
   {books}
   {find}

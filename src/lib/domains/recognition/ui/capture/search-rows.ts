@@ -13,7 +13,7 @@ import { firstImage, NO_PLACE, pageLabel } from './capture-place';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
 
-type PaletteScope = 'book' | 'all';
+type SearchScope = 'book' | 'all';
 
 type RowChip = TagChip & { readonly matched: boolean };
 
@@ -40,17 +40,17 @@ type CaptureRow = {
   readonly chips: readonly RowChip[];
 };
 
-type PaletteRow = BookRow | CaptureRow;
+type SearchRow = BookRow | CaptureRow;
 
-type PaletteSection = {
+type SearchSection = {
   readonly label: string;
   readonly from: number;
-  readonly rows: readonly PaletteRow[];
+  readonly rows: readonly SearchRow[];
 };
 
-type PaletteInput = {
+type SearchRowsInput = {
   readonly found: QuickFinds<Capture>;
-  readonly scope: PaletteScope;
+  readonly scope: SearchScope;
   readonly book: BookId | null;
   readonly covers: ReadonlyMap<BookId, string>;
   readonly counts: ReadonlyMap<BookId, number>;
@@ -58,28 +58,28 @@ type PaletteInput = {
   readonly query: string;
 };
 
-type PaletteRows = {
-  readonly rows: readonly PaletteRow[];
-  readonly sections: readonly PaletteSection[];
+type SearchRows = {
+  readonly rows: readonly SearchRow[];
+  readonly sections: readonly SearchSection[];
 };
 
 function bookHref(id: BookId): string {
   return `/read/${encodeURIComponent(id)}`;
 }
 
-function effectiveScope(book: BookId | null, scope: PaletteScope): PaletteScope {
+function effectiveScope(book: BookId | null, scope: SearchScope): SearchScope {
   return book === null ? 'all' : scope;
 }
 
 function searchedBooks(
   books: readonly SearchedBook[],
   book: BookId | null,
-  scope: PaletteScope,
+  scope: SearchScope,
 ): readonly SearchedBook[] {
   return books.filter((shelf) => scope === 'all' || shelf.id === book);
 }
 
-function bookRow(shelf: SearchedBook, input: PaletteInput): BookRow {
+function bookRow(shelf: SearchedBook, input: SearchRowsInput): BookRow {
   return {
     kind: 'book',
     key: shelf.id,
@@ -91,7 +91,7 @@ function bookRow(shelf: SearchedBook, input: PaletteInput): BookRow {
   };
 }
 
-function captureRow(shelf: SearchedBook, capture: Capture, input: PaletteInput): CaptureRow {
+function captureRow(shelf: SearchedBook, capture: Capture, input: SearchRowsInput): CaptureRow {
   const index = firstImage(capture.anchor);
   const lit = new Set(matchedTagIds(capture, input.tags, input.query));
   const lines = markedLines(capture, input.query);
@@ -118,7 +118,7 @@ function captureRow(shelf: SearchedBook, capture: Capture, input: PaletteInput):
   };
 }
 
-function paletteRows(input: PaletteInput): PaletteRows {
+function searchRows(input: SearchRowsInput): SearchRows {
   const titled = input.scope === 'book' ? [] : input.found.books;
   const bookRows = titled.map((shelf) => bookRow(shelf, input));
   const captureRows = input.found.captures.flatMap((matched) =>
@@ -133,14 +133,14 @@ function paletteRows(input: PaletteInput): PaletteRows {
   return { rows: [...bookRows, ...captureRows], sections };
 }
 
-export { bookHref, effectiveScope, paletteRows, searchedBooks };
+export { bookHref, effectiveScope, searchRows, searchedBooks };
 export type {
   BookRow,
   CaptureRow,
-  PaletteInput,
-  PaletteRow,
-  PaletteRows,
-  PaletteScope,
-  PaletteSection,
+  SearchRowsInput,
+  SearchRow,
+  SearchRows,
+  SearchScope,
+  SearchSection,
   RowChip,
 };

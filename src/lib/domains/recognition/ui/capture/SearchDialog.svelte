@@ -16,21 +16,21 @@
   import type { SearchedBook } from '../../domain/capture/capture-results';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
   import { quickFinds } from '../../domain/capture/quick-find';
-  import type { PaletteFilter, QuickFinds } from '../../domain/capture/quick-find';
+  import type { SearchFilter, QuickFinds } from '../../domain/capture/quick-find';
   import type { Tag } from '../../domain/tag/tag';
   import type { CaptureSearchView } from './capture-search.svelte';
   import {
     CAPTURES_UNREAD_MESSAGE,
     PALETTE_KEYS,
-    paletteInvite,
-    paletteNote,
+    searchInvite,
+    searchNote,
     resultCount,
-  } from './palette-copy';
-  import { paletteKey } from './palette-keys';
-  import { openerOf } from './palette-opener';
-  import { effectiveScope, paletteRows, searchedBooks } from './palette-rows';
-  import type { PaletteRow, PaletteScope } from './palette-rows';
-  import PaletteResult from './PaletteResult.svelte';
+  } from './search-copy';
+  import { searchKey } from './search-keys';
+  import { openerOf } from './search-opener';
+  import { effectiveScope, searchRows, searchedBooks } from './search-rows';
+  import type { SearchRow, SearchScope } from './search-rows';
+  import SearchResult from './SearchResult.svelte';
 
   type Props = {
     readonly book: BookId | null;
@@ -42,7 +42,7 @@
     readonly onopen?: () => void;
   };
 
-  const SCOPES: readonly { readonly value: PaletteScope; readonly label: string }[] = [
+  const SCOPES: readonly { readonly value: SearchScope; readonly label: string }[] = [
     { value: 'book', label: 'This book' },
     { value: 'all', label: 'All books' },
   ];
@@ -64,8 +64,8 @@
   let shown = $state(false);
   let present = $state(false);
   let query = $state('');
-  let scope = $state<PaletteScope>('book');
-  let filter = $state<PaletteFilter>('everything');
+  let scope = $state<SearchScope>('book');
+  let filter = $state<SearchFilter>('everything');
   let at = $state(NO_MATCH);
   let list = $state<(HTMLElement | undefined)[]>([]);
   let field = $state<HTMLInputElement>();
@@ -80,16 +80,14 @@
       : NOTHING,
   );
 
-  const results = $derived(
-    paletteRows({ found, scope: scoped, book, covers, counts, tags, query }),
-  );
+  const results = $derived(searchRows({ found, scope: scoped, book, covers, counts, tags, query }));
 
-  const invite = $derived(paletteInvite(filter, scoped, narrowScreen.current ? 'narrow' : 'wide'));
+  const invite = $derived(searchInvite(filter, scoped, narrowScreen.current ? 'narrow' : 'wide'));
 
   const cursor = $derived(at >= results.rows.length ? NO_MATCH : at);
 
   const note = $derived(
-    paletteNote({
+    searchNote({
       status: find.status,
       query,
       rows: results.rows.length,
@@ -98,7 +96,7 @@
     }),
   );
 
-  function choose(chosen: PaletteScope): void {
+  function choose(chosen: SearchScope): void {
     scope = chosen;
     at = NO_MATCH;
   }
@@ -108,7 +106,7 @@
     lastPressed = control instanceof HTMLElement ? control : null;
   }
 
-  function reveal(chosen: PaletteScope): void {
+  function reveal(chosen: SearchScope): void {
     const focused = document.activeElement;
     opener = openerOf(focused instanceof HTMLElement ? focused : null, lastPressed, document.body);
     shown = true;
@@ -147,7 +145,7 @@
     list[at]?.scrollIntoView({ block: 'nearest' });
   }
 
-  function open(row: PaletteRow, newTab: boolean): void {
+  function open(row: SearchRow, newTab: boolean): void {
     if (newTab) {
       window.open(row.href, '_blank', 'noopener');
       return;
@@ -167,7 +165,7 @@
 
   function shortcuts(event: KeyboardEvent): void {
     lastPressed = null;
-    const pressed = paletteKey(event, { shown, scope, hasBook: book !== null });
+    const pressed = searchKey(event, { shown, scope, hasBook: book !== null });
 
     match(pressed)
       .with({ kind: 'ignore' }, () => {})
@@ -206,7 +204,7 @@
     at = NO_MATCH;
   }
 
-  function pickScope(event: MouseEvent, chosen: PaletteScope): void {
+  function pickScope(event: MouseEvent, chosen: SearchScope): void {
     event.preventDefault();
     choose(chosen);
   }
@@ -288,7 +286,7 @@
             {#each group.rows as row, order (row.key)}
               {@const place = group.from + order}
               <li>
-                <PaletteResult
+                <SearchResult
                   bind:ref={list[place]}
                   {row}
                   current={place === cursor}

@@ -4,7 +4,7 @@ import { captureHolds, inBooks } from './capture-results';
 import type { BookMatches, SearchedBook, Tagged, Written } from './capture-results';
 import type { Tag } from '../tag/tag';
 
-type PaletteFilter = 'everything' | 'tags';
+type SearchFilter = 'everything' | 'tags';
 
 type QuickFinds<T> = {
   readonly books: readonly SearchedBook[];
@@ -25,7 +25,7 @@ function matchedTagIds(capture: Tagged, tags: readonly Tag[], query: string): re
 function titledBooks(
   books: readonly SearchedBook[],
   query: string,
-  filter: PaletteFilter,
+  filter: SearchFilter,
 ): readonly SearchedBook[] {
   if (filter === 'tags') return [];
 
@@ -37,7 +37,7 @@ function quickFinds<T extends Written & Tagged>(
   books: readonly SearchedBook[],
   tags: readonly Tag[],
   query: string,
-  filter: PaletteFilter,
+  filter: SearchFilter,
 ): QuickFinds<T> {
   if (query.trim().length === 0) return { books: [], captures: [] };
 
@@ -52,4 +52,4 @@ function quickFinds<T extends Written & Tagged>(
 }
 
 export { quickFinds, matchedTagIds };
-export type { PaletteFilter, QuickFinds };
+export type { SearchFilter, QuickFinds };

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { openerOf } from './palette-opener';
+import { openerOf } from './search-opener';
 
 describe('openerOf', () => {
-  it('returns the focused control when the palette opens from the keyboard', () => {
+  it('returns the focused control when the search opens from the keyboard', () => {
     expect(openerOf('field', 'icon', 'body')).toBe('field');
   });
 

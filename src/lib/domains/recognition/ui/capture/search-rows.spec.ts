@@ -9,8 +9,8 @@ import type { Capture } from '../../domain/capture/capture';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import type { QuickFinds } from '../../domain/capture/quick-find';
 import type { Tag } from '../../domain/tag/tag';
-import { effectiveScope, paletteRows, searchedBooks } from './palette-rows';
-import type { CaptureRow, PaletteInput, PaletteRow } from './palette-rows';
+import { effectiveScope, searchRows, searchedBooks } from './search-rows';
+import type { CaptureRow, SearchRowsInput, SearchRow } from './search-rows';
 
 const ONE: SearchedBook = { id: bookId('one'), title: '海の本', language: 'ja', direction: 'rtl' };
 
@@ -42,7 +42,10 @@ function written(id: string, book: SearchedBook, text: string, anchor: Anchor): 
   };
 }
 
-function input(found: QuickFinds<Capture>, overrides: Partial<PaletteInput> = {}): PaletteInput {
+function input(
+  found: QuickFinds<Capture>,
+  overrides: Partial<SearchRowsInput> = {},
+): SearchRowsInput {
   return {
     found,
     scope: 'all',
@@ -55,20 +58,20 @@ function input(found: QuickFinds<Capture>, overrides: Partial<PaletteInput> = {}
   };
 }
 
-function captureAt(rows: readonly PaletteRow[], index: number): CaptureRow {
+function captureAt(rows: readonly SearchRow[], index: number): CaptureRow {
   const row = at(rows, index);
   if (row.kind !== 'capture') throw new Error(`Row ${index} is a ${row.kind}`);
   return row;
 }
 
-describe('paletteRows', () => {
+describe('searchRows', () => {
   it('lists matched titles before captures across every upload', () => {
     const found = {
       books: [ONE],
       captures: [{ book: ONE, captures: [written('a', ONE, '海', onPage(0))] }],
     };
 
-    const { rows, sections } = paletteRows(input(found));
+    const { rows, sections } = searchRows(input(found));
 
     expect(rows.map((row) => row.kind)).toEqual(['book', 'capture']);
     expect(sections.map((group) => [group.label, group.from, group.rows.length])).toEqual([
@@ -83,14 +86,14 @@ describe('paletteRows', () => {
       captures: [{ book: ONE, captures: [written('a', ONE, '海', onPage(0))] }],
     };
 
-    const { rows, sections } = paletteRows(input(found, { scope: 'book', book: ONE.id }));
+    const { rows, sections } = searchRows(input(found, { scope: 'book', book: ONE.id }));
 
     expect(rows.map((row) => row.kind)).toEqual(['capture']);
     expect(sections.map((group) => [group.label, group.from])).toEqual([['Captures', 0]]);
   });
 
   it('leaves out an empty group', () => {
-    const { rows, sections } = paletteRows(input({ books: [ONE], captures: [] }));
+    const { rows, sections } = searchRows(input({ books: [ONE], captures: [] }));
 
     expect(rows).toHaveLength(1);
     expect(sections.map((group) => group.label)).toEqual(['Books']);
@@ -101,7 +104,7 @@ describe('paletteRows', () => {
     const counts = new Map<BookId, number>([[ONE.id, 42]]);
 
     const row = at(
-      paletteRows(input({ books: [ONE, TWO], captures: [] }, { covers, counts })).rows,
+      searchRows(input({ books: [ONE, TWO], captures: [] }, { covers, counts })).rows,
       0,
     );
 
@@ -117,7 +120,7 @@ describe('paletteRows', () => {
       ],
       images: 42,
     });
-    expect(at(paletteRows(input({ books: [TWO], captures: [] })).rows, 0)).toMatchObject({
+    expect(at(searchRows(input({ books: [TWO], captures: [] })).rows, 0)).toMatchObject({
       cover: null,
       images: null,
     });
@@ -129,7 +132,7 @@ describe('paletteRows', () => {
       captures: [{ book: TWO, captures: [written('c-1', TWO, '海と山', onPage(2))] }],
     };
 
-    const row = captureAt(paletteRows(input(found)).rows, 0);
+    const row = captureAt(searchRows(input(found)).rows, 0);
 
     expect(row.href).toBe('/read/two?image=2&find=%E6%B5%B7&capture=c-1');
     expect(row.place).toBe('p.003');
@@ -143,7 +146,7 @@ describe('paletteRows', () => {
       captures: [{ book: ONE, captures: [written('t', ONE, '海', anchor)] }],
     };
 
-    const row = captureAt(paletteRows(input(found)).rows, 0);
+    const row = captureAt(searchRows(input(found)).rows, 0);
 
     expect(row.href).toBe('/read/one');
     expect(row.place).toBe('no page');
@@ -158,7 +161,7 @@ describe('paletteRows', () => {
       ],
     };
 
-    const { rows } = paletteRows(input(found, { book: ONE.id }));
+    const { rows } = searchRows(input(found, { book: ONE.id }));
 
     expect(captureAt(rows, 0).title).toBeNull();
     expect(captureAt(rows, 1).title).toBe('山の本');
@@ -171,7 +174,7 @@ describe('paletteRows', () => {
     };
 
     const row = captureAt(
-      paletteRows(input({ books: [], captures: [{ book: ONE, captures: [tagged] }] })).rows,
+      searchRows(input({ books: [], captures: [{ book: ONE, captures: [tagged] }] })).rows,
       0,
     );
 
@@ -196,7 +199,7 @@ describe('paletteRows', () => {
     };
 
     const row = captureAt(
-      paletteRows(input({ books: [], captures: [{ book: ONE, captures: [noted] }] })).rows,
+      searchRows(input({ books: [], captures: [{ book: ONE, captures: [noted] }] })).rows,
       0,
     );
 

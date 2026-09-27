@@ -1,7 +1,7 @@
 import { isComposingKey } from '$lib/shared/composing-key';
-import type { PaletteScope } from './palette-rows';
+import type { SearchScope } from './search-rows';
 
-type PaletteKeyPress = {
+type SearchKeyPress = {
   readonly key: string;
   readonly metaKey: boolean;
   readonly ctrlKey: boolean;
@@ -10,29 +10,29 @@ type PaletteKeyPress = {
   readonly keyCode: number;
 };
 
-type PaletteKeyContext = {
+type SearchKeyContext = {
   readonly shown: boolean;
-  readonly scope: PaletteScope;
+  readonly scope: SearchScope;
   readonly hasBook: boolean;
 };
 
-type PaletteKey =
-  | { readonly kind: 'reveal'; readonly scope: PaletteScope }
-  | { readonly kind: 'choose'; readonly scope: PaletteScope }
+type SearchKey =
+  | { readonly kind: 'reveal'; readonly scope: SearchScope }
+  | { readonly kind: 'choose'; readonly scope: SearchScope }
   | { readonly kind: 'hide' }
   | { readonly kind: 'move'; readonly by: 1 | -1 }
   | { readonly kind: 'open'; readonly newTab: boolean }
   | { readonly kind: 'ignore' };
 
-function isShortcut(press: PaletteKeyPress): boolean {
+function isShortcut(press: SearchKeyPress): boolean {
   return press.key.toLowerCase() === 'k' && (press.metaKey || press.ctrlKey);
 }
 
-function paletteKey(press: PaletteKeyPress, context: PaletteKeyContext): PaletteKey {
+function searchKey(press: SearchKeyPress, context: SearchKeyContext): SearchKey {
   if (isComposingKey(press)) return { kind: 'ignore' };
 
   if (isShortcut(press)) {
-    const scope: PaletteScope = !context.hasBook || press.shiftKey ? 'all' : 'book';
+    const scope: SearchScope = !context.hasBook || press.shiftKey ? 'all' : 'book';
     if (!context.shown) return { kind: 'reveal', scope };
 
     return context.scope === scope ? { kind: 'hide' } : { kind: 'choose', scope };
@@ -47,5 +47,5 @@ function paletteKey(press: PaletteKeyPress, context: PaletteKeyContext): Palette
   return { kind: 'ignore' };
 }
 
-export { paletteKey };
-export type { PaletteKey, PaletteKeyContext, PaletteKeyPress };
+export { searchKey };
+export type { SearchKey, SearchKeyContext, SearchKeyPress };

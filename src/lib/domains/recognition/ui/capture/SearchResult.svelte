@@ -2,12 +2,12 @@
   import Badge from '$lib/components/Badge.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
   import MarkedText from './MarkedText.svelte';
-  import type { PaletteRow } from './palette-rows';
+  import type { SearchRow } from './search-rows';
 
   type Props = {
-    readonly row: PaletteRow;
+    readonly row: SearchRow;
     readonly current: boolean;
-    readonly onopen: (row: PaletteRow) => void;
+    readonly onopen: (row: SearchRow) => void;
     ref?: HTMLElement | undefined;
   };
 

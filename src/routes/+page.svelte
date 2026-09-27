@@ -7,7 +7,7 @@
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
-  import CapturePalette from '$lib/domains/recognition/ui/capture/CapturePalette.svelte';
+  import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import { missingBookArrival } from '$lib/shared/reader-location';
@@ -28,7 +28,7 @@
   );
 
   let query = $state('');
-  let palette = $state<ReturnType<typeof CapturePalette>>();
+  let search = $state<ReturnType<typeof SearchDialog>>();
 
   export const snapshot: Snapshot<number> = {
     capture: () => scroll.capture(),
@@ -52,10 +52,10 @@
   });
 </script>
 
-<LibraryScreen {view} {scroll} onsearcheverything={() => palette?.searchEverything()} bind:query />
+<LibraryScreen {view} {scroll} onsearcheverything={() => search?.searchEverything()} bind:query />
 
-<CapturePalette
-  bind:this={palette}
+<SearchDialog
+  bind:this={search}
   book={null}
   {books}
   {find}

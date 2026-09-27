@@ -1,26 +1,26 @@
 import type { KeyHint } from '$lib/components/key-hints';
-import type { PaletteFilter } from '../../domain/capture/quick-find';
-import type { PaletteScope } from './palette-rows';
+import type { SearchFilter } from '../../domain/capture/quick-find';
+import type { SearchScope } from './search-rows';
 import type { CaptureSearchStatus } from './capture-search.svelte';
 
-type PaletteNote =
+type SearchNote =
   | { readonly kind: 'none' }
   | { readonly kind: 'unread' }
   | { readonly kind: 'nothing'; readonly message: string };
 
-type PaletteRoom = 'wide' | 'narrow';
+type SearchRoom = 'wide' | 'narrow';
 
-type PaletteNoteInput = {
+type SearchNoteInput = {
   readonly status: CaptureSearchStatus;
   readonly query: string;
   readonly rows: number;
-  readonly filter: PaletteFilter;
-  readonly scope: PaletteScope;
+  readonly filter: SearchFilter;
+  readonly scope: SearchScope;
 };
 
-const NO_NOTE: PaletteNote = { kind: 'none' };
+const NO_NOTE: SearchNote = { kind: 'none' };
 
-const CAPTURES_UNREAD: PaletteNote = { kind: 'unread' };
+const CAPTURES_UNREAD: SearchNote = { kind: 'unread' };
 
 const CAPTURES_UNREAD_MESSAGE = 'Your captures could not be read.';
 
@@ -31,11 +31,11 @@ const PALETTE_KEYS: readonly KeyHint[] = [
   { keys: ['esc'], does: 'close' },
 ];
 
-function searchesTitles(filter: PaletteFilter, scope: PaletteScope): boolean {
+function searchesTitles(filter: SearchFilter, scope: SearchScope): boolean {
   return filter !== 'tags' && scope === 'all';
 }
 
-function paletteInvite(filter: PaletteFilter, scope: PaletteScope, room: PaletteRoom): string {
+function searchInvite(filter: SearchFilter, scope: SearchScope, room: SearchRoom): string {
   if (filter === 'tags') return 'Find a tag';
 
   const titled = searchesTitles(filter, scope);
@@ -44,7 +44,7 @@ function paletteInvite(filter: PaletteFilter, scope: PaletteScope, room: Palette
   return titled ? 'Find in titles, text, tags and notes' : 'Find in text, tags and notes';
 }
 
-function paletteNothing(filter: PaletteFilter, scope: PaletteScope): string {
+function searchNothing(filter: SearchFilter, scope: SearchScope): string {
   if (filter === 'tags') return 'No capture carries a tag of that name.';
 
   return searchesTitles(filter, scope)
@@ -52,11 +52,11 @@ function paletteNothing(filter: PaletteFilter, scope: PaletteScope): string {
     : 'No capture holds that text.';
 }
 
-function paletteNote(input: PaletteNoteInput): PaletteNote {
+function searchNote(input: SearchNoteInput): SearchNote {
   if (input.status === 'failed') return CAPTURES_UNREAD;
   if (input.rows > 0 || input.query.trim().length === 0) return NO_NOTE;
 
-  return { kind: 'nothing', message: paletteNothing(input.filter, input.scope) };
+  return { kind: 'nothing', message: searchNothing(input.filter, input.scope) };
 }
 
 function resultCount(count: number): string {
@@ -66,9 +66,9 @@ function resultCount(count: number): string {
 export {
   CAPTURES_UNREAD_MESSAGE,
   PALETTE_KEYS,
-  paletteInvite,
-  paletteNote,
-  paletteNothing,
+  searchInvite,
+  searchNote,
+  searchNothing,
   resultCount,
 };
-export type { PaletteNote, PaletteNoteInput, PaletteRoom };
+export type { SearchNote, SearchNoteInput, SearchRoom };
