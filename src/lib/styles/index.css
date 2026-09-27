@@ -79,6 +79,7 @@
 @import 'components/region-box.css' layer(components);
 @import 'components/marquee-selection.css' layer(components);
 @import 'components/breakpoint-probe.css' layer(components);
+@import 'components/page-header.css' layer(components);
 
 @import 'utilities/layout.css' layer(utilities);
 @import 'utilities/layout-patterns.css' layer(utilities);

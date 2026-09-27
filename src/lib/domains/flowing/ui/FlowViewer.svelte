@@ -6,6 +6,7 @@
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
@@ -17,7 +18,6 @@
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
-  import ReaderTitle from '$lib/shared/ReaderTitle.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
@@ -436,12 +436,7 @@
   {/snippet}
 
   {#snippet header()}
-    <Button href="/" size="sm" class="shrink-0">
-      <ChevronLeft class="btn-icon" />
-      Library
-    </Button>
-
-    <ReaderTitle title={book.title} lang={book.language} {meta} />
+    <PageHeader backHref="/" backLabel="Library" title={book.title} lang={book.language} {meta} />
 
     {#if reading}
       {#if contents.kind === 'listed'}

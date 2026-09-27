@@ -5,6 +5,7 @@
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
+  import PageHeader from '$lib/components/PageHeader.svelte';
   import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
   import ArrowUp from '$lib/components/icons/ArrowUp.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
@@ -25,7 +26,6 @@
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
-  import ReaderTitle from '$lib/shared/ReaderTitle.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
@@ -346,23 +346,14 @@
   {/snippet}
 
   {#snippet header()}
-    {#if narrow}
-      <IconButton
-        href="/"
-        size="sm"
-        class="shrink-0"
-        icon={ChevronLeft}
-        label="Library"
-        tooltip={false}
-      />
-    {:else}
-      <Button href="/" size="sm" class="shrink-0">
-        <ChevronLeft class="btn-icon" />
-        Library
-      </Button>
-    {/if}
-
-    <ReaderTitle title={book?.title ?? 'Reader'} lang={book?.language ?? 'en'} {meta} />
+    <PageHeader
+      backHref="/"
+      backLabel="Library"
+      compact={narrow}
+      title={book?.title ?? 'Reader'}
+      lang={book?.language ?? 'en'}
+      {meta}
+    />
 
     {#if book !== null}
       <IconButton

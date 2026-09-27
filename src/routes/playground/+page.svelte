@@ -36,6 +36,7 @@
   import NavigationSection from './NavigationSection.svelte';
   import OverflowListSection from './OverflowListSection.svelte';
   import OverlaySection from './OverlaySection.svelte';
+  import PageHeaderSection from './PageHeaderSection.svelte';
   import PageWrapSection from './PageWrapSection.svelte';
   import PanZoomSection from './PanZoomSection.svelte';
   import PopoverSection from './PopoverSection.svelte';
@@ -81,6 +82,7 @@
     CommandSection,
     KeyHintsSection,
     NavigationSection,
+    PageHeaderSection,
     StepperSection,
     AvatarSection,
     ThumbnailSection,
