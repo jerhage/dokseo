@@ -4,6 +4,7 @@
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
   import {
@@ -145,10 +146,9 @@
     >
 
     {#if offersAppearance}
-      <div class="row items-center justify-between" role="group" aria-labelledby="{uid}-appearance">
-        <span class="fieldset-legend mb-0" id="{uid}-appearance">Appearance</span>
+      <SettingsRow label="Appearance">
         <AppearanceSwitcher />
-      </div>
+      </SettingsRow>
     {/if}
   </div>
 </Modal>

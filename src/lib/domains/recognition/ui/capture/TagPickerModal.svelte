@@ -114,8 +114,10 @@
           </CommandItem>
         </li>
       {:else}
-        <li role="presentation" class="command-item text-muted" aria-hidden="true">
-          Type a new name to create a tag
+        <li role="presentation">
+          <CommandItem interactive={false} class="text-muted" aria-hidden="true">
+            Type a new name to create a tag
+          </CommandItem>
         </li>
       {/if}
       <li role="presentation" class="border-t">

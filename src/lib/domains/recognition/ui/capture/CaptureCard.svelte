@@ -2,6 +2,7 @@
   import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import CardFrame from '$lib/components/Card.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import DropdownSeparator from '$lib/components/DropdownSeparator.svelte';
@@ -112,175 +113,169 @@
   }
 </script>
 
-<article
-  class={[
-    'card',
-    {
-      'card-feature': current,
-      'bordered-strong': (writingText || writingNote) && !current,
-    },
-  ]}
+<CardFrame
+  variant={current ? 'feature' : 'default'}
+  size="sm"
+  class={{ 'bordered-strong': (writingText || writingNote) && !current }}
   aria-label="Capture at {card.place}"
   aria-current={current ? 'true' : undefined}
 >
-  <div class="card-body col gap-2 p-3">
-    {#if card.tone === 'pending'}
-      <span class="col gap-1">
-        <Skeleton shape="text" />
-        <Skeleton shape="text" width="60%" />
-      </span>
-    {:else if writingText}
-      <InlineEditor
-        id={editorId('text')}
-        label={card.origin === 'written'
-          ? `Note at ${card.place}`
-          : `Text of the capture at ${card.place}`}
-        value={drafts.draft('text', card.id)}
-        {language}
-        note={false}
-        oninput={(value) => drafts.write('text', card.id, value)}
-        onsave={() => onsave('text')}
-        onabandon={() => onabandon('text')}
-      />
-    {:else if card.segments !== null}
-      <p class="m-0 text-lg" lang={language}><MarkedText segments={card.segments} /></p>
-    {:else if card.text !== null}
-      <p class="m-0 text-lg" lang={language}>{card.text}</p>
-    {/if}
+  {#if card.tone === 'pending'}
+    <span class="col gap-1">
+      <Skeleton shape="text" />
+      <Skeleton shape="text" width="60%" />
+    </span>
+  {:else if writingText}
+    <InlineEditor
+      id={editorId('text')}
+      label={card.origin === 'written'
+        ? `Note at ${card.place}`
+        : `Text of the capture at ${card.place}`}
+      value={drafts.draft('text', card.id)}
+      {language}
+      note={false}
+      oninput={(value) => drafts.write('text', card.id, value)}
+      onsave={() => onsave('text')}
+      onabandon={() => onabandon('text')}
+    />
+  {:else if card.segments !== null}
+    <p class="m-0 text-lg" lang={language}><MarkedText segments={card.segments} /></p>
+  {:else if card.text !== null}
+    <p class="m-0 text-lg" lang={language}>{card.text}</p>
+  {/if}
 
-    {#if card.note !== null}
-      <p class={['m-0 text-sm', card.tone === 'failed' ? 'text-danger' : 'text-muted']}>
-        {card.note}
-      </p>
-    {/if}
+  {#if card.note !== null}
+    <p class={['m-0 text-sm', card.tone === 'failed' ? 'text-danger' : 'text-muted']}>
+      {card.note}
+    </p>
+  {/if}
 
-    {#if writingNote}
-      <InlineEditor
-        id={editorId('note')}
-        label="Note on the capture at {card.place}"
-        value={drafts.draft('note', card.id)}
-        {language}
-        note
-        oninput={(value) => drafts.write('note', card.id, value)}
-        onsave={() => onsave('note')}
-        onabandon={() => onabandon('note')}
-      />
-    {:else if note !== null}
-      <p class="m-0 text-sm accent-start">
-        <span class="visually-hidden">Your note:</span>
-        {#each note as line, order (order)}{#if order > 0}<br />{/if}<MarkedText
-            segments={line}
-          />{/each}
-      </p>
-    {/if}
+  {#if writingNote}
+    <InlineEditor
+      id={editorId('note')}
+      label="Note on the capture at {card.place}"
+      value={drafts.draft('note', card.id)}
+      {language}
+      note
+      oninput={(value) => drafts.write('note', card.id, value)}
+      onsave={() => onsave('note')}
+      onabandon={() => onabandon('note')}
+    />
+  {:else if note !== null}
+    <p class="m-0 text-sm accent-start">
+      <span class="visually-hidden">Your note:</span>
+      {#each note as line, order (order)}{#if order > 0}<br />{/if}<MarkedText
+          segments={line}
+        />{/each}
+    </p>
+  {/if}
 
-    {#if line.shown.length > 0}
-      <ul class="row items-center gap-2 list-reset min-w-0 overflow-hidden" aria-label="Tags">
-        {#each line.shown as chip (chip.id)}
-          <li class="row min-w-0"><Badge colour={chip.colour} quiet dot>{chip.name}</Badge></li>
-        {/each}
-        {#if line.more > 0}
-          <li class="shrink-0 text-xs text-muted" title={moreNames}>
-            +{line.more}<span class="visually-hidden"> more: {moreNames}</span>
-          </li>
-        {/if}
-      </ul>
-    {/if}
+  {#if line.shown.length > 0}
+    <ul class="row items-center gap-2 list-reset min-w-0 overflow-hidden" aria-label="Tags">
+      {#each line.shown as chip (chip.id)}
+        <li class="row min-w-0"><Badge colour={chip.colour} quiet dot>{chip.name}</Badge></li>
+      {/each}
+      {#if line.more > 0}
+        <li class="shrink-0 text-xs text-muted" title={moreNames}>
+          +{line.more}<span class="visually-hidden"> more: {moreNames}</span>
+        </li>
+      {/if}
+    </ul>
+  {/if}
 
-    <div class="row items-center gap-1">
-      <span class="row items-center gap-1 flex-fill min-w-0 overflow-hidden">
-        {#if card.passage !== null && onseek !== undefined}
-          {@const passage = card.passage}
-          <Button variant="ghost" size="sm" class="px-2 min-w-0" onclick={() => onseek(passage)}>
-            <span class="truncate">Go to passage</span>
-          </Button>
-        {:else if card.href === null}
-          <span class="px-2 text-xs text-muted mono truncate">{card.place}</span>
-        {:else}
-          <Button
-            variant="ghost"
-            size="sm"
-            class="px-2 min-w-0 mono"
-            href={card.href}
-            onclick={onfollow}
-          >
-            <span class="truncate">{card.place}</span>
-            <span class="visually-hidden">Open the book at this capture</span>
-          </Button>
-        {/if}
-        {#if tone === null}
-          <span class="visually-hidden">{card.stateLabel}</span>
-        {:else}
-          <Badge variant={tone} quiet class="shrink-0">{card.stateLabel}</Badge>
-        {/if}
-      </span>
+  <div class="row items-center gap-1">
+    <span class="row items-center gap-1 flex-fill min-w-0 overflow-hidden">
+      {#if card.passage !== null && onseek !== undefined}
+        {@const passage = card.passage}
+        <Button variant="ghost" size="sm" class="px-2 min-w-0" onclick={() => onseek(passage)}>
+          <span class="truncate">Go to passage</span>
+        </Button>
+      {:else if card.href === null}
+        <span class="px-2 text-xs text-muted mono truncate">{card.place}</span>
+      {:else}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="px-2 min-w-0 mono"
+          href={card.href}
+          onclick={onfollow}
+        >
+          <span class="truncate">{card.place}</span>
+          <span class="visually-hidden">Open the book at this capture</span>
+        </Button>
+      {/if}
+      {#if tone === null}
+        <span class="visually-hidden">{card.stateLabel}</span>
+      {:else}
+        <Badge variant={tone} quiet class="shrink-0">{card.stateLabel}</Badge>
+      {/if}
+    </span>
 
-      <span class="row items-center gap-0 ms-auto shrink-0">
-        {#if tools.text.kind === 'shown'}
-          <Button
-            variant="ghost"
-            size="sm"
-            square
-            title={tools.text.label}
-            onclick={(event) => write('text', event.currentTarget)}
-          >
-            <Pencil class="btn-icon" />
-            <span class="visually-hidden">{tools.text.label}</span>
-          </Button>
-        {/if}
-        {#if tools.note.kind !== 'none'}
-          <Button
-            variant="ghost"
-            size="sm"
-            square
-            title={tools.note.label}
-            onclick={(event) => write('note', event.currentTarget)}
-          >
-            <NotebookPen class="btn-icon" />
-            <span class="visually-hidden">{tools.note.label}</span>
-          </Button>
-        {/if}
+    <span class="row items-center gap-0 ms-auto shrink-0">
+      {#if tools.text.kind === 'shown'}
         <Button
           variant="ghost"
           size="sm"
           square
-          title="Tags"
-          onclick={(event) => ontag(event.currentTarget)}
+          title={tools.text.label}
+          onclick={(event) => write('text', event.currentTarget)}
         >
-          <TagIcon class="btn-icon" />
-          <span class="visually-hidden">Add a tag to the capture at {card.place}</span>
+          <Pencil class="btn-icon" />
+          <span class="visually-hidden">{tools.text.label}</span>
         </Button>
-        {#if tools.copies !== null}
-          {@const text = tools.copies}
-          <Button
-            variant="ghost"
-            size="sm"
-            square
-            title={copied ? 'Copied' : 'Copy the text'}
-            onclick={() => oncopy(text)}
-          >
-            {#if copied}
-              <Check class="btn-icon" />
-            {:else}
-              <Copy class="btn-icon" />
-            {/if}
-            <span class="visually-hidden">Copy the text of the capture at {card.place}</span>
-          </Button>
-        {/if}
-        <Dropdown variant="ghost" size="sm" align="end" square chevron={false}>
-          {#snippet trigger()}
-            <Ellipsis class="btn-icon" />
-            <span class="visually-hidden">More for the capture at {card.place}</span>
-          {/snippet}
-          {#if tools.text.kind === 'tucked'}
-            <DropdownItem onclick={(event) => write('text', menuTrigger(event))}>
-              Edit the text
-            </DropdownItem>
-            <DropdownSeparator />
+      {/if}
+      {#if tools.note.kind !== 'none'}
+        <Button
+          variant="ghost"
+          size="sm"
+          square
+          title={tools.note.label}
+          onclick={(event) => write('note', event.currentTarget)}
+        >
+          <NotebookPen class="btn-icon" />
+          <span class="visually-hidden">{tools.note.label}</span>
+        </Button>
+      {/if}
+      <Button
+        variant="ghost"
+        size="sm"
+        square
+        title="Tags"
+        onclick={(event) => ontag(event.currentTarget)}
+      >
+        <TagIcon class="btn-icon" />
+        <span class="visually-hidden">Add a tag to the capture at {card.place}</span>
+      </Button>
+      {#if tools.copies !== null}
+        {@const text = tools.copies}
+        <Button
+          variant="ghost"
+          size="sm"
+          square
+          title={copied ? 'Copied' : 'Copy the text'}
+          onclick={() => oncopy(text)}
+        >
+          {#if copied}
+            <Check class="btn-icon" />
+          {:else}
+            <Copy class="btn-icon" />
           {/if}
-          <DropdownItem danger onclick={() => onremove(card.id)}>Remove capture</DropdownItem>
-        </Dropdown>
-      </span>
-    </div>
+          <span class="visually-hidden">Copy the text of the capture at {card.place}</span>
+        </Button>
+      {/if}
+      <Dropdown variant="ghost" size="sm" align="end" square chevron={false}>
+        {#snippet trigger()}
+          <Ellipsis class="btn-icon" />
+          <span class="visually-hidden">More for the capture at {card.place}</span>
+        {/snippet}
+        {#if tools.text.kind === 'tucked'}
+          <DropdownItem onclick={(event) => write('text', menuTrigger(event))}>
+            Edit the text
+          </DropdownItem>
+          <DropdownSeparator />
+        {/if}
+        <DropdownItem danger onclick={() => onremove(card.id)}>Remove capture</DropdownItem>
+      </Dropdown>
+    </span>
   </div>
-</article>
+</CardFrame>

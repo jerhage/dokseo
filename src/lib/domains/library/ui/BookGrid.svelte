@@ -1,5 +1,6 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
+  import Card from '$lib/components/Card.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -25,16 +26,18 @@
     {@const progress = bookProgress(book)}
     {@const cover = covers.get(book.id) ?? null}
     <li class={['col gap-2', { 'is-busy': busy(book.id) }]} aria-busy={busy(book.id)}>
-      <a
-        class="card card-interactive aspect-portrait surface-sunken"
+      <Card
         href="/read/{book.id}"
+        mediaRatio="portrait"
         aria-label="Read {book.title}"
-        title={bookFacts(book)}
+        tooltip={bookFacts(book)}
       >
-        {#if cover !== null}
-          <img class="object-cover" src={cover} alt="" />
-        {/if}
-      </a>
+        {#snippet media()}
+          {#if cover !== null}
+            <img src={cover} alt="" />
+          {/if}
+        {/snippet}
+      </Card>
       {#if book.finishedAt !== null}
         <div class="row">
           <Badge variant="success">Finished</Badge>

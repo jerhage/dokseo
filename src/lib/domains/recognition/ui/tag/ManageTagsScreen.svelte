@@ -4,7 +4,7 @@
   import Button from '$lib/components/Button.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import CircleX from '$lib/components/icons/CircleX.svelte';
+  import Field from '$lib/components/Field.svelte';
   import Input from '$lib/components/Input.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
   import { tagsHref } from '$lib/shared/tag-location';
@@ -73,23 +73,23 @@
                   id="{uid}-rename-{row.id}"
                   onsubmit={(event) => submit(event, row.tag)}
                 >
-                  <label class="visually-hidden" for="{uid}-name-{row.id}">
-                    Rename {row.tag.name}
-                  </label>
-                  <Input
-                    id="{uid}-name-{row.id}"
-                    type="text"
-                    aria-invalid={manage.invalid !== null}
-                    aria-describedby={manage.invalid === null ? undefined : `${uid}-invalid`}
-                    bind:value={manage.draft}
-                    onkeydown={abandon}
-                    {@attach takeFocus}
-                  />
-                  {#if manage.invalid !== null}
-                    <p class="field-error" id="{uid}-invalid" role="alert">
-                      <CircleX class="field-error-icon" />{manage.invalid}
-                    </p>
-                  {/if}
+                  <Field
+                    label="Rename {row.tag.name}"
+                    hideLabel
+                    error={manage.invalid ?? undefined}
+                    announceError
+                    class="gap-1"
+                  >
+                    {#snippet children(control)}
+                      <Input
+                        {...control}
+                        type="text"
+                        bind:value={manage.draft}
+                        onkeydown={abandon}
+                        {@attach takeFocus}
+                      />
+                    {/snippet}
+                  </Field>
                 </form>
               {:else}
                 <span class="flex-1 truncate weight-medium">{row.tag.name}</span>

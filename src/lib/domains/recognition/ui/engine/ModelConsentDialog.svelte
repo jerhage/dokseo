@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import Stat from '$lib/components/Stat.svelte';
   import { megabytes } from '$lib/shared/bytes';
   import { languageName } from '$lib/shared/language';
   import { downloadMb, onDiskMb } from '../../domain/model/model-footprint';
@@ -53,14 +54,20 @@
   </p>
 
   <dl class="grid-2-col gap-2">
-    <div class="col gap-1 p-3 surface-sunken bordered rounded-control">
-      <dt class="text-xs uppercase tracking-wide">Download</dt>
-      <dd class="mono text-sm">about {download} MB</dd>
-    </div>
-    <div class="col gap-1 p-3 surface-sunken bordered rounded-control">
-      <dt class="text-xs uppercase tracking-wide">On disk</dt>
-      <dd class="mono text-sm">about {disk} MB</dd>
-    </div>
+    <Stat
+      size="sm"
+      listed
+      class="surface-sunken bordered rounded-control"
+      label="Download"
+      value="about {download} MB"
+    />
+    <Stat
+      size="sm"
+      listed
+      class="surface-sunken bordered rounded-control"
+      label="On disk"
+      value="about {disk} MB"
+    />
   </dl>
 
   <p class="text-xs">
