@@ -1552,12 +1552,12 @@ describe('the design system stylesheets', () => {
     const accordion = style('components/accordion.css');
     const dropdown = style('components/dropdown.css');
 
-    for (const selector of [
-      '.accordion-item[open] > .accordion-trigger > .accordion-icon',
-      '.accordion-item.is-open > .accordion-trigger > .accordion-icon',
-    ]) {
-      expect(declarations(ruleBody(accordion, selector))).toEqual(['transform: rotate(180deg)']);
-    }
+    expect(
+      declarations(
+        ruleBody(accordion, '.accordion-item[open] > .accordion-trigger > .accordion-icon'),
+      ),
+    ).toEqual(['transform: rotate(180deg)']);
+    expect(accordion).not.toContain('is-open');
     expect(
       declarations(ruleBody(dropdown, '.dropdown.is-open > .dropdown-trigger > .dropdown-icon')),
     ).toEqual(['transform: rotate(180deg)']);

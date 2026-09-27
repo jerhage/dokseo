@@ -54,14 +54,14 @@ describe('DropdownItem', () => {
     expect(html).toContain('<span>Tags</span>');
   });
 
-  it('marks only a current link as the current page and shows it selected', () => {
+  it('marks only a current link as the current page and shows it chosen', () => {
     const current = item({ href: '/', current: true });
     const other = item({ href: '/tags' });
 
     expect(attribute(current, 'aria-current')).toBe('page');
-    expect(attribute(current, 'class')?.split(' ')).toContain('is-selected');
+    expect(attribute(current, 'class')?.split(' ')).toContain('is-active');
     expect(attribute(other, 'aria-current')).toBeNull();
-    expect(attribute(other, 'class')?.split(' ')).not.toContain('is-selected');
+    expect(attribute(other, 'class')?.split(' ')).not.toContain('is-active');
   });
 });
 

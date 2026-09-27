@@ -47,7 +47,7 @@
     tabindex="-1"
     class={[
       'dropdown-item',
-      { 'dropdown-item-danger': danger, 'is-selected': selected === true },
+      { 'dropdown-item-danger': danger, 'is-active': selected === true },
       className,
     ]}
     onclick={(event) => {
@@ -64,7 +64,7 @@
     role="menuitem"
     aria-current={current ? 'page' : undefined}
     tabindex="-1"
-    class={['dropdown-item', { 'dropdown-item-danger': danger, 'is-selected': current }, className]}
+    class={['dropdown-item', { 'dropdown-item-danger': danger, 'is-active': current }, className]}
     onclick={(event) => {
       onclick?.(event);
       chosen(event);

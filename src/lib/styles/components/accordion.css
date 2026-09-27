@@ -38,8 +38,7 @@
 .accordion-trigger:focus-visible {
   outline-offset: calc(var(--focus-ring-offset) * -1);
 }
-.accordion-item[open] > .accordion-trigger > .accordion-icon,
-.accordion-item.is-open > .accordion-trigger > .accordion-icon {
+.accordion-item[open] > .accordion-trigger > .accordion-icon {
   transform: rotate(180deg);
 }
 .accordion-body {

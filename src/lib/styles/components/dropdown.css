@@ -59,7 +59,7 @@
   outline: none;
   background-color: var(--color-selected);
 }
-.dropdown-item.is-selected {
+.dropdown-item.is-active {
   background-color: var(--color-selected);
   color: var(--color-brand-text);
 }

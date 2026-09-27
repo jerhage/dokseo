@@ -15,7 +15,14 @@
 <DemoSection
   id="dropdown"
   title="Dropdown"
-  classes={['dropdown', 'dropdown-menu', 'dropdown-item', 'dropdown-separator', 'is-open']}
+  classes={[
+    'dropdown',
+    'dropdown-menu',
+    'dropdown-item',
+    'dropdown-separator',
+    'is-open',
+    'is-active',
+  ]}
 >
   <Card>
     <div class="row wrap items-start gap-3">
