@@ -107,8 +107,7 @@
       </div>
     </Fieldset>
 
-    <div class="fieldset" role="group" aria-labelledby="{uid}-fit">
-      <span class="fieldset-legend" id="{uid}-fit">Fit</span>
+    <Fieldset legend="Fit">
       <div class="row wrap gap-2">
         {#each fits as choice (choice.label)}
           <Button
@@ -122,7 +121,7 @@
           </Button>
         {/each}
       </div>
-    </div>
+    </Fieldset>
 
     {#if layout === 'paged'}
       <Fieldset legend={TOUCH_TURNS_LEGEND}>

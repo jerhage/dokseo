@@ -4,7 +4,7 @@
       inline-size: var(--layout-list-width);
     }
     :scope.is-sheet .panel-slot {
-      block-size: 40dvh;
+      block-size: var(--layout-sheet-height);
     }
     .rail-toggle {
       justify-content: flex-start;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Alert from '$lib/components/Alert.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
@@ -199,13 +200,14 @@
       <p class="text-sm text-muted" aria-live="polite">Reading your library…</p>
     {:else}
       {#if body === 'failed'}
-        <div class="row wrap items-center gap-3 text-sm text-muted">
-          <span>Your library could not be read.</span>
+        <Alert variant="danger" title="Your library could not be read.">
           {#if view.loadFailure !== null}
-            <span>{view.loadFailure}</span>
+            {view.loadFailure}
           {/if}
-          <Button size="sm" onclick={() => void view.load()}>Try again</Button>
-        </div>
+          {#snippet actions()}
+            <Button size="sm" onclick={() => void view.load()}>Try again</Button>
+          {/snippet}
+        </Alert>
       {:else if body === 'empty'}
         <p class="text-sm text-muted">No uploads yet. {DROP_INVITATION.toLowerCase()} to start.</p>
       {/if}
