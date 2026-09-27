@@ -1,5 +1,6 @@
 <script lang="ts">
   import CodeBlock from '$lib/components/CodeBlock.svelte';
+  import Tag from '$lib/components/Tag.svelte';
 
   const SECTIONS = [
     { id: 'tokens', label: 'Tokens' },
@@ -38,7 +39,7 @@
     />
     <nav class="row wrap gap-2" aria-label="Sections">
       {#each SECTIONS as section (section.id)}
-        <a class="tag" href="#{section.id}">{section.label}</a>
+        <Tag href="#{section.id}">{section.label}</Tag>
       {/each}
     </nav>
   </div>

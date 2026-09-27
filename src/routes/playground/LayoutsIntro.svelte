@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Tag from '$lib/components/Tag.svelte';
+
   const LAYOUTS = [
     { id: 'l-page', label: 'Page wrap' },
     { id: 'l-shell', label: 'App shell' },
@@ -23,7 +25,7 @@
   </p>
   <nav class="row wrap gap-2" aria-label="Layouts">
     {#each LAYOUTS as layout (layout.id)}
-      <a class="tag" href="#{layout.id}">{layout.label}</a>
+      <Tag href="#{layout.id}">{layout.label}</Tag>
     {/each}
   </nav>
 </div>
