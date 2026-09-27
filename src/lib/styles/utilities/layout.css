@@ -61,6 +61,21 @@
 .pin-lift {
   inset-block-end: var(--pin-lift, 0px);
 }
+.callout-top-start,
+.callout-top-center {
+  position: absolute;
+  inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3));
+}
+.callout-top-start {
+  inset-inline-start: var(--sp-3);
+  max-inline-size: calc(100% - 2 * var(--sp-3));
+}
+.callout-top-center {
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  inline-size: max-content;
+  max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3));
+}
 .z-base {
   z-index: var(--z-base);
 }

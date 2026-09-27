@@ -286,6 +286,7 @@ const RUNTIME_INPUTS = [
   '--menu-left',
   '--menu-max-width',
   '--menu-top',
+  '--pin-drop',
   '--pin-lift',
   '--popover-left',
   '--popover-top',
@@ -1324,6 +1325,25 @@ describe('the design system stylesheets', () => {
       'inset-block-end: var(--pin-lift, 0px)',
     ]);
     expect(layout.indexOf('.pin-lift {')).toBeGreaterThan(layout.indexOf('.pin-bottom {'));
+  });
+
+  it('floats a callout a step below the offset its ancestor drops it by, at the start or centred', () => {
+    const layout = style('utilities/layout.css');
+
+    expect(everyDeclarationFor(layout, '.callout-top-start').toSorted()).toEqual([
+      'inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3))',
+      'inset-inline-start: var(--sp-3)',
+      'max-inline-size: calc(100% - 2 * var(--sp-3))',
+      'position: absolute',
+    ]);
+    expect(everyDeclarationFor(layout, '.callout-top-center').toSorted()).toEqual([
+      'inline-size: max-content',
+      'inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3))',
+      'inset-inline-start: 50%',
+      'max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3))',
+      'position: absolute',
+      'translate: -50% 0',
+    ]);
   });
 
   it('gives every step of the z-index scale a utility that reads its token', () => {
