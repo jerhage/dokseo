@@ -1,3 +1,4 @@
+import { isComposingKey } from '$lib/shared/composing-key';
 import type { PaletteScope } from './palette-rows';
 
 type PaletteKeyPress = {
@@ -23,18 +24,12 @@ type PaletteKey =
   | { readonly kind: 'open'; readonly newTab: boolean }
   | { readonly kind: 'ignore' };
 
-const IME_PROCESS_KEY_CODE = 229;
-
-function isComposing(press: PaletteKeyPress): boolean {
-  return press.isComposing || press.keyCode === IME_PROCESS_KEY_CODE;
-}
-
 function isShortcut(press: PaletteKeyPress): boolean {
   return press.key.toLowerCase() === 'k' && (press.metaKey || press.ctrlKey);
 }
 
 function paletteKey(press: PaletteKeyPress, context: PaletteKeyContext): PaletteKey {
-  if (isComposing(press)) return { kind: 'ignore' };
+  if (isComposingKey(press)) return { kind: 'ignore' };
 
   if (isShortcut(press)) {
     const scope: PaletteScope = !context.hasBook || press.shiftKey ? 'all' : 'book';

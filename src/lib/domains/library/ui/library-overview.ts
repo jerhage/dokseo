@@ -1,4 +1,6 @@
 import { matchesQuery } from '$lib/shared/text-search';
+import { isComposingKey } from '$lib/shared/composing-key';
+import type { ComposingSignals } from '$lib/shared/composing-key';
 import type { Book } from '../domain/book/book';
 import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';
 import type { LibraryStatus } from './library-view.svelte';
@@ -6,6 +8,10 @@ import type { LibraryStatus } from './library-view.svelte';
 type LibraryBody = 'reading' | 'failed' | 'empty' | 'listed';
 
 type FilterKey = 'clear' | 'ignore';
+
+type FilterPress = ComposingSignals & {
+  readonly key: string;
+};
 
 const SOURCE_URL = 'https://github.com/jerhage/dokseo';
 
@@ -58,8 +64,10 @@ function clearsSearch(key: string, query: string): boolean {
   return key === 'Escape' && query.length > 0;
 }
 
-function filterKey(key: string, query: string): FilterKey {
-  return clearsSearch(key, query) ? 'clear' : 'ignore';
+function filterKey(press: FilterPress, query: string): FilterKey {
+  if (isComposingKey(press)) return 'ignore';
+
+  return clearsSearch(press.key, query) ? 'clear' : 'ignore';
 }
 
 function libraryBody(status: LibraryStatus, bookCount: number, importing: boolean): LibraryBody {
@@ -85,4 +93,4 @@ export {
   storageText,
   titledBooks,
 };
-export type { FilterKey, LibraryBody };
+export type { FilterKey, FilterPress, LibraryBody };

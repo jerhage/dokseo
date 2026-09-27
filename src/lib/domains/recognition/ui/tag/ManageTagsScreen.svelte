@@ -6,6 +6,7 @@
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import CircleX from '$lib/components/icons/CircleX.svelte';
   import Input from '$lib/components/Input.svelte';
+  import { isComposingKey } from '$lib/shared/composing-key';
   import { tagsHref } from '$lib/shared/tag-location';
   import type { Tag } from '../../domain/tag/tag';
   import { TAG_COLOURS } from '../../domain/tag/tag-colour';
@@ -33,6 +34,7 @@
   }
 
   function abandon(event: KeyboardEvent): void {
+    if (isComposingKey(event)) return;
     if (event.key !== 'Escape') return;
 
     event.preventDefault();

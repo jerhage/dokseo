@@ -118,16 +118,31 @@ describe('clearsSearch', () => {
 });
 
 describe('filterKey', () => {
+  function press(key: string, held: { isComposing?: boolean; keyCode?: number } = {}) {
+    return { key, isComposing: false, keyCode: 0, ...held };
+  }
+
   it('clears the query on Escape while it holds text', () => {
-    expect(filterKey('Escape', 'yotsuba')).toBe('clear');
+    expect(filterKey(press('Escape'), 'yotsuba')).toBe('clear');
   });
 
   it('ignores Escape on an empty query', () => {
-    expect(filterKey('Escape', '')).toBe('ignore');
+    expect(filterKey(press('Escape'), '')).toBe('ignore');
   });
 
   it('ignores every other key', () => {
-    expect([filterKey('Enter', 'yotsuba'), filterKey('Enter', '')]).toEqual(['ignore', 'ignore']);
+    expect([filterKey(press('Enter'), 'yotsuba'), filterKey(press('Enter'), '')]).toEqual([
+      'ignore',
+      'ignore',
+    ]);
+  });
+
+  it('ignores the Escape that cancels an IME conversion', () => {
+    expect(filterKey(press('Escape', { isComposing: true }), 'yotsuba')).toBe('ignore');
+  });
+
+  it('ignores an Escape on the IME process key code 229 that Safari sends', () => {
+    expect(filterKey(press('Escape', { keyCode: 229 }), 'yotsuba')).toBe('ignore');
   });
 });
 

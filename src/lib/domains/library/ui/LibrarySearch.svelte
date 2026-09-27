@@ -27,7 +27,7 @@
   }
 
   function keys(event: KeyboardEvent): void {
-    match(filterKey(event.key, query))
+    match(filterKey(event, query))
       .with('clear', () => {
         event.preventDefault();
         abandon();

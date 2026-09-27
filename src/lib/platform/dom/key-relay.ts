@@ -47,6 +47,7 @@ function copyOf(event: KeyboardEvent, host: Window): KeyboardEvent {
     shiftKey: event.shiftKey,
     repeat: event.repeat,
     isComposing: event.isComposing,
+    keyCode: event.keyCode,
     bubbles: true,
     cancelable: true,
     composed: true,

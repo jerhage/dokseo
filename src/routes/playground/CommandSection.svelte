@@ -4,6 +4,7 @@
   import CommandItem from '$lib/components/CommandItem.svelte';
   import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import { isComposingKey } from '$lib/shared/composing-key';
   import DemoSection from './DemoSection.svelte';
 
   type Command = { readonly name: string; readonly note: string; readonly hint: string };
@@ -27,6 +28,7 @@
   );
 
   function keys(event: KeyboardEvent): void {
+    if (isComposingKey(event)) return;
     if (event.key === 'ArrowDown') at = Math.min(at + 1, found.length - 1);
     if (event.key === 'ArrowUp') at = Math.max(at - 1, 0);
     if (event.key !== 'Enter') return;

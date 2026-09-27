@@ -15,6 +15,7 @@
   import Trash from '$lib/components/icons/Trash.svelte';
   import { getToaster } from '$lib/components/toast-context';
   import type { TextAnchor } from '$lib/shared/anchor';
+  import { isComposingKey } from '$lib/shared/composing-key';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -122,6 +123,7 @@
   }
 
   function stepOnEnter(event: KeyboardEvent): void {
+    if (isComposingKey(event)) return;
     if (event.key !== 'Enter') return;
 
     event.preventDefault();
