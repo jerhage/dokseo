@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
-  min-block-size: var(--control-h-md);
+  min-block-size: var(--btn-min-block-size, var(--control-h-md));
   padding: 0 var(--sp-4);
   font-family: var(--font-body);
   font-size: var(--text-sm);
@@ -97,13 +97,13 @@
   background-image: none;
 }
 .btn-sm {
-  min-block-size: var(--control-h-sm);
+  min-block-size: var(--btn-min-block-size, var(--control-h-sm));
   padding-inline: var(--sp-3);
   font-size: var(--text-xs);
   gap: var(--sp-1);
 }
 .btn-lg {
-  min-block-size: var(--control-h-lg);
+  min-block-size: var(--btn-min-block-size, var(--control-h-lg));
   padding-inline: var(--sp-6);
   font-size: var(--text-base);
 }

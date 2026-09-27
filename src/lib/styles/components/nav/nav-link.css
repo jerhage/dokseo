@@ -1,9 +1,12 @@
 .nav-link {
   display: flex;
+  flex-direction: var(--nav-link-direction, row);
   align-items: center;
-  gap: var(--sp-2);
+  justify-content: var(--nav-link-justify, normal);
+  gap: var(--nav-link-gap, var(--sp-2));
   min-block-size: var(--control-h-sm);
-  padding-inline: var(--sp-3);
+  padding-inline: var(--nav-link-padding-inline, var(--sp-3));
+  text-align: var(--nav-link-text-align, start);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   white-space: nowrap;

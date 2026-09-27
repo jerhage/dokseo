@@ -283,6 +283,7 @@ const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
 
 const RUNTIME_INPUTS = [
   '--breakpoint-probe-width',
+  '--btn-min-block-size',
   '--carousel-beside',
   '--carousel-gap',
   '--carousel-shift',
@@ -291,6 +292,11 @@ const RUNTIME_INPUTS = [
   '--menu-left',
   '--menu-max-width',
   '--menu-top',
+  '--nav-link-direction',
+  '--nav-link-gap',
+  '--nav-link-justify',
+  '--nav-link-padding-inline',
+  '--nav-link-text-align',
   '--pin-drop',
   '--pin-lift',
   '--popover-left',
@@ -915,11 +921,12 @@ describe('the design system stylesheets', () => {
     const layout = style('utilities/layout.css');
     const narrow = atRuleBlock(layout, '@container app-shell (max-width: 48rem)');
 
-    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-compact > .nav-link'))).toEqual(
-      expect.arrayContaining(['flex: 1 1 0', 'flex-direction: column', 'min-inline-size: 0']),
-    );
-    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-compact'))).toContain(
-      'flex-wrap: wrap',
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-compact > *'))).toEqual([
+      'flex: 1 1 0',
+      'min-inline-size: 0',
+    ]);
+    expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-compact'))).toEqual(
+      expect.arrayContaining(['flex-wrap: wrap', '--nav-link-direction: column']),
     );
     expect(declarations(ruleBody(narrow, '.layout-app-shell-nav-detail'))).toEqual([
       'display: none',
@@ -972,13 +979,53 @@ describe('the design system stylesheets', () => {
     const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
 
     expect(
-      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-touch .btn')),
-    ).toEqual(['min-block-size: var(--control-h-touch)']);
+      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-touch')),
+    ).toEqual(['--btn-min-block-size: var(--control-h-touch)']);
     expect(definitionValues(style('tokens/spacing.css')).get('--control-h-touch')).toBe(
       'var(--ds-size-touch)',
     );
     expect(definitionValues(style('base/primitives.css')).get('--ds-size-touch')).toBe('2.75rem');
     expect(layout.replace(narrow, '')).not.toContain('layout-app-shell-narrow-touch');
+  });
+
+  it('lets a touch shell row and a compact shell nav adjust buttons and links only through the custom properties those read', () => {
+    const btn = style('components/btn.css');
+    const link = style('components/nav/nav-link.css');
+
+    expect(declarations(ruleBody(btn, '.btn'))).toContain(
+      'min-block-size: var(--btn-min-block-size, var(--control-h-md))',
+    );
+    expect(declarations(ruleBody(btn, '.btn-sm'))).toContain(
+      'min-block-size: var(--btn-min-block-size, var(--control-h-sm))',
+    );
+    expect(declarations(ruleBody(btn, '.btn-lg'))).toContain(
+      'min-block-size: var(--btn-min-block-size, var(--control-h-lg))',
+    );
+    expect(declarations(ruleBody(link, '.nav-link'))).toEqual(
+      expect.arrayContaining([
+        'flex-direction: var(--nav-link-direction, row)',
+        'justify-content: var(--nav-link-justify, normal)',
+        'gap: var(--nav-link-gap, var(--sp-2))',
+        'padding-inline: var(--nav-link-padding-inline, var(--sp-3))',
+        'text-align: var(--nav-link-text-align, start)',
+      ]),
+    );
+  });
+
+  it('names no component class in any utility', () => {
+    const classesIn = (css: string): readonly string[] =>
+      rules(withoutComments(css)).flatMap((rule) =>
+        rule.selectors.flatMap((selector) =>
+          Array.from(selector.matchAll(/\.([a-z][\w-]*)/giu), (found) => group(found, 1)),
+        ),
+      );
+    const components = new Set(styled(['components']).flatMap((path) => classesIn(style(path))));
+
+    for (const path of styled(['utilities'])) {
+      const named = unique(classesIn(style(path)).filter((name) => components.has(name)));
+
+      expect({ path, named }).toEqual({ path, named: [] });
+    }
   });
 
   it('lets a narrow shell row keep its content width and hide content visually strictly below the shell breakpoint', () => {
