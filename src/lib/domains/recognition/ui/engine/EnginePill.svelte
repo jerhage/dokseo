@@ -2,8 +2,8 @@
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
   import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
+  import Popover from '$lib/components/Popover.svelte';
   import Radio from '$lib/components/Radio.svelte';
-  import { anchoredTo } from '$lib/platform/dom/anchored-popover';
   import type { Language } from '$lib/shared/language';
   import { chosenModel, knownModel } from '../../domain/model/model-footprint';
   import {
@@ -16,7 +16,6 @@
   import type { EngineState } from '../../domain/engine/ocr-engine';
   import { deviceName } from '../../domain/engine/recognizer-session';
   import { statusVariant } from './engine-screen';
-  import './engine-pill.css';
 
   type Props = {
     readonly engine: EngineState;
@@ -26,8 +25,6 @@
   let { engine, language }: Props = $props();
 
   const uid = $props.id();
-
-  let trigger = $state<HTMLButtonElement | undefined>();
 
   const session = $derived(engine.session);
   const running = $derived(session === null ? null : knownModel(session.modelId));
@@ -41,30 +38,22 @@
 </script>
 
 {#if model !== null}
-  <div class="engine-pill">
-    <Button
-      class="trigger"
-      size="sm"
-      pill
-      variant={session === null ? 'default' : 'outline'}
-      bind:ref={trigger}
-      aria-haspopup="dialog"
-      title={session?.modelId ?? model.modelId}
-      popovertarget="{uid}-sheet"
-    >
-      On-device · {model.engine}
-      <Badge dot variant={statusVariant(status.tone)}>{device ?? status.label}</Badge>
-      <ChevronDown class="btn-icon" />
-    </Button>
-
-    <div
-      class="sheet surface-raised bordered rounded-container shadow-lg m-0 p-2"
-      id="{uid}-sheet"
-      popover
-      role="dialog"
-      aria-label="Engine for new captures"
-      use:anchoredTo={() => trigger ?? null}
-    >
+  <div>
+    <Popover label="Engine for new captures" class="p-2">
+      {#snippet trigger(popover)}
+        <Button
+          size="sm"
+          pill
+          wrap
+          variant={session === null ? 'default' : 'outline'}
+          title={session?.modelId ?? model.modelId}
+          {...popover}
+        >
+          On-device · {model.engine}
+          <Badge dot variant={statusVariant(status.tone)}>{device ?? status.label}</Badge>
+          <ChevronDown class="btn-icon" />
+        </Button>
+      {/snippet}
       <p class="mono text-xs uppercase tracking-wide text-faint px-2 pt-1 pb-2">
         Engine for new captures
       </p>
@@ -91,6 +80,6 @@
       {/if}
       <p class={[aside, 'text-muted']}>{status.note}</p>
       <p class="text-sm px-2 pt-2 pb-1"><a href="/settings">Engine settings…</a></p>
-    </div>
+    </Popover>
   </div>
 {/if}
