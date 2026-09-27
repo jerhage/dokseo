@@ -4,10 +4,10 @@
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/Button.svelte';
   import TagIcon from '$lib/components/icons/Tag.svelte';
-  import Input from '$lib/components/Input.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import Modal from '$lib/components/Modal.svelte';
   import NavLink from '$lib/components/NavLink.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import { tagsHref } from '$lib/shared/tag-location';
   import { tagsCrumbs } from './tags-crumbs';
   import type { TagsPlace } from './tags-crumbs';
@@ -20,8 +20,6 @@
   };
 
   let { view, current, children }: Props = $props();
-
-  const uid = $props.id();
 
   let listing = $state(false);
 
@@ -39,13 +37,7 @@
       <Badge>{view.tags.length}</Badge>
     </div>
   {/if}
-  <label class="visually-hidden" for="{uid}-{where}-filter">Filter tags</label>
-  <Input
-    id="{uid}-{where}-filter"
-    type="search"
-    placeholder="Filter tags"
-    bind:value={view.filter}
-  />
+  <SearchField label="Filter tags" hideLabel placeholder="Filter tags" bind:value={view.filter} />
   <ul class="list-reset col gap-1">
     {#each view.column as option (option.tag.id)}
       <li>

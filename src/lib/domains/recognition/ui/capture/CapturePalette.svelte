@@ -6,10 +6,9 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import Divider from '$lib/components/Divider.svelte';
-  import X from '$lib/components/icons/X.svelte';
-  import Input from '$lib/components/Input.svelte';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
   import type { BookId } from '$lib/shared/ids';
@@ -62,7 +61,6 @@
     onopen,
   }: Props = $props();
 
-  const uid = $props.id();
   let shown = $state(false);
   let present = $state(false);
   let query = $state('');
@@ -193,16 +191,6 @@
       .exhaustive();
   }
 
-  function clear(): void {
-    query = '';
-    at = NO_MATCH;
-    field?.focus();
-  }
-
-  function keepFocus(event: MouseEvent): void {
-    event.preventDefault();
-  }
-
   function dragged(): void {
     if (field !== undefined && document.activeElement === field) field.blur();
   }
@@ -238,32 +226,19 @@
 >
   {#snippet header()}
     <div class="modal-header wrap items-center gap-2 p-3">
-      <label class="visually-hidden" for="{uid}-query">Find in captures</label>
-      <div class="input-clearable flex-fill">
-        <Input
-          bind:value={query}
-          bind:ref={field}
-          id="{uid}-query"
-          type="search"
-          enterkeyhint="search"
-          autofocus
-          placeholder={invite}
-          oninput={() => (at = NO_MATCH)}
-        />
-        {#if query !== ''}
-          <Button
-            variant="ghost"
-            size="sm"
-            square
-            class="input-clear"
-            aria-label="Clear the search"
-            onmousedown={keepFocus}
-            onclick={clear}
-          >
-            <X />
-          </Button>
-        {/if}
-      </div>
+      <SearchField
+        bind:value={query}
+        bind:ref={field}
+        label="Find in captures"
+        hideLabel
+        clearable
+        onclear={() => (at = NO_MATCH)}
+        class="flex-fill"
+        enterkeyhint="search"
+        autofocus
+        placeholder={invite}
+        oninput={() => (at = NO_MATCH)}
+      />
       <Button variant="ghost" class="modal-fill-only" onclick={hide}>Cancel</Button>
       <span class="row items-center gap-1">
         {#if book !== null}

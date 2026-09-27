@@ -7,8 +7,8 @@
   import Button from '$lib/components/Button.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
   import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
@@ -201,14 +201,11 @@
     <div class="col gap-2 px-3 pt-3">
       {#if view.count > 0}
         <div class="row items-center gap-1">
-          <label class="visually-hidden" for="{uid}-search">
-            Search this book's captures and notes
-          </label>
-          <Input
+          <SearchField
             bind:value={panel.query}
-            id="{uid}-search"
+            label="Search this book's captures and notes"
+            hideLabel
             class="flex-fill min-w-0"
-            type="search"
             placeholder="Search captures and notes…"
             title="Search this book's captures and notes · Enter steps to the next match"
             onkeydown={stepOnEnter}

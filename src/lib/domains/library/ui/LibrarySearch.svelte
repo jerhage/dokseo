@@ -2,7 +2,7 @@
   import { match } from 'ts-pattern';
   import type { ClassValue } from 'svelte/elements';
   import Button from '$lib/components/Button.svelte';
-  import Input from '$lib/components/Input.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import { filterKey, isSearching } from './library-overview';
 
   type Props = {
@@ -13,8 +13,6 @@
 
   let { query = $bindable(''), matched, class: className }: Props = $props();
 
-  const uid = $props.id();
-  const fieldId = `${uid}-search`;
   const LABEL = 'Filter these titles';
 
   let field = $state<HTMLInputElement>();
@@ -38,13 +36,12 @@
 </script>
 
 <div class={['row items-center gap-2 flex-fill', className]} role="search">
-  <label class="visually-hidden" for={fieldId}>{LABEL}</label>
-  <Input
+  <SearchField
     bind:ref={field}
-    id={fieldId}
-    class="flex-1"
-    type="search"
     bind:value={query}
+    label={LABEL}
+    hideLabel
+    class="flex-1"
     placeholder={LABEL}
     onkeydown={keys}
   />

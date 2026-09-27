@@ -2,10 +2,10 @@
   import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
-  import Input from '$lib/components/Input.svelte';
   import type { KeyHint } from '$lib/components/key-hints';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import Tag from '$lib/components/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
   import type { TagChip } from './tag-chip';
@@ -90,11 +90,11 @@
       {/each}
     </ul>
 
-    <label class="visually-hidden" for="{uid}-filter">Filter or create a tag</label>
-    <Input
+    <SearchField
       bind:ref={filter}
       bind:value={picker.query}
-      id="{uid}-filter"
+      label="Filter or create a tag"
+      hideLabel
       type="text"
       role="combobox"
       autocomplete="off"
