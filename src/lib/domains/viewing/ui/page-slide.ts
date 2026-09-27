@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import type { CarouselInput, CarouselSide } from '$lib/components/carousel';
+import type { GestureState } from '$lib/components/gesture';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { travelPastEdge } from '../domain/overscroll';
@@ -7,7 +8,6 @@ import type { PanReach } from '../domain/overscroll';
 import type { PageGroup } from '../domain/page-pairing';
 import { moveTowards } from './page-moves';
 import type { PageMove } from './page-moves';
-import type { TouchState } from './touch-gesture';
 
 type Beside = CarouselSide | 0;
 
@@ -23,7 +23,7 @@ function moveOf(side: CarouselSide, direction: ReadingDirection): PageMove {
   return besideOf('increment', direction) === side ? 'increment' : 'decrement';
 }
 
-function slideTravel(state: TouchState, reach: PanReach | null): number {
+function slideTravel(state: GestureState, reach: PanReach | null): number {
   return match(state)
     .with({ kind: 'swiping' }, ({ press }) => press.at.x - press.start.x)
     .with({ kind: 'panning' }, ({ press }) =>
@@ -41,7 +41,7 @@ function slideTravel(state: TouchState, reach: PanReach | null): number {
 }
 
 function slideInput(
-  state: TouchState,
+  state: GestureState,
   travel: number,
   turn: PageMove | null,
   direction: ReadingDirection,

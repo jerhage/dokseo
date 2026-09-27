@@ -2,12 +2,13 @@
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
   import KeyHints from '$lib/components/KeyHints.svelte';
+  import type { GestureInput, GestureSample } from '$lib/components/gesture';
+  import { GestureFeed } from '$lib/components/gesture-feed';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
-  import type { FrameSpan } from '$lib/shared/page-turn';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     anchorOf,
@@ -33,8 +34,6 @@
   import SelectionLayer from './SelectionLayer.svelte';
   import { holdsTheScroll, stripTouchAction } from './strip-touch';
   import type { StripTouchAction } from './strip-touch';
-  import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
-  import type { TouchInput, TouchSample, TouchState } from './touch-gesture';
   import './continuous-viewer.css';
 
   type Hold = {
@@ -101,11 +100,10 @@
 
   let written: { readonly top: number; readonly left: number } | null = null;
   let reading: StripAnchor | null = null;
-  let touch: TouchState = TOUCH_IDLE;
-  let touchTimer: ReturnType<typeof setTimeout> | null = null;
   let lastPointer = '';
 
   const coarse = window.matchMedia('(pointer: coarse)').matches;
+  const gestures = new GestureFeed(feed);
 
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
@@ -213,33 +211,6 @@
     zoom = next;
   }
 
-  function frameSpan(): FrameSpan {
-    const element = scroller;
-    if (element === null) return { left: 0, width: 0 };
-
-    const box = element.getBoundingClientRect();
-    return { left: box.left, width: box.width };
-  }
-
-  function stopTouchTimer(): void {
-    if (touchTimer !== null) clearTimeout(touchTimer);
-    touchTimer = null;
-  }
-
-  function scheduleTick(): void {
-    stopTouchTimer();
-    const deadline = touchDeadline(touch);
-    if (deadline === null) return;
-
-    touchTimer = setTimeout(
-      () => {
-        touchTimer = null;
-        feed({ kind: 'tick', t: performance.now() });
-      },
-      Math.max(0, deadline - performance.now()),
-    );
-  }
-
   function act(action: StripTouchAction): void {
     match(action)
       .with({ kind: 'none' }, () => undefined)
@@ -249,6 +220,7 @@
         pinchBy(scale, from, to);
       })
       .with({ kind: 'select-begin' }, ({ from, to }) => {
+        const touch = gestures.state;
         if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
       })
       .with({ kind: 'select-move' }, ({ at }) => selection?.extendTo(at))
@@ -257,28 +229,18 @@
       .exhaustive();
   }
 
-  function feed(input: TouchInput): void {
-    const step = touchStep(touch, input, {
+  function feed(input: GestureInput): void {
+    const step = gestures.step(input, {
       pannable: false,
       selectMode: selecting,
-      turns: 'tap-zones',
-      frame: frameSpan(),
       doubleTaps: false,
+      waitsForDoubleTap: () => false,
     });
-    touch = step.state;
-    scheduleTick();
     act(stripTouchAction(step.intent));
   }
 
-  function feedTouch(kind: TouchSample['kind'], event: PointerEvent): void {
-    feed({
-      kind,
-      id: event.pointerId,
-      type: event.pointerType,
-      x: event.clientX,
-      y: event.clientY,
-      t: performance.now(),
-    });
+  function feedTouch(kind: GestureSample['kind'], event: PointerEvent): void {
+    feed(gestures.sample(kind, event));
   }
 
   function onpointerdown(event: PointerEvent): void {
@@ -436,7 +398,7 @@
     }
   }
 
-  $effect(() => stopTouchTimer);
+  $effect(() => () => gestures.stop());
 
   $effect(() => {
     const lines = pending;
@@ -448,7 +410,8 @@
     if (element === null) return;
 
     function ontouchmove(event: TouchEvent): void {
-      if (event.cancelable && holdsTheScroll(touch, event.touches.length)) event.preventDefault();
+      if (event.cancelable && holdsTheScroll(gestures.state, event.touches.length))
+        event.preventDefault();
     }
 
     element.addEventListener('touchmove', ontouchmove, { passive: false });

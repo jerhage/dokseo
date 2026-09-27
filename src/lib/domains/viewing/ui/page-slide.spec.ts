@@ -7,6 +7,7 @@ import {
   carouselStep,
 } from '$lib/components/carousel';
 import type { CarouselMotion, CarouselScene } from '$lib/components/carousel';
+import type { GestureState } from '$lib/components/gesture';
 import { imageIndex } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PanReach } from '../domain/overscroll';
@@ -14,7 +15,6 @@ import type { PageGroup } from '../domain/page-pairing';
 import type { PageMove } from './page-moves';
 import { besideOf, moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
 import type { Neighbours } from './page-slide';
-import type { TouchState } from './touch-gesture';
 
 type BookScene = { readonly direction: ReadingDirection; readonly neighbours: Neighbours };
 
@@ -47,15 +47,15 @@ function press(fromX: number, toX: number) {
   };
 }
 
-function swiping(fromX: number, toX: number): TouchState {
+function swiping(fromX: number, toX: number): GestureState {
   return { kind: 'swiping', press: press(fromX, toX) };
 }
 
-function panning(fromX: number, toX: number): TouchState {
+function panning(fromX: number, toX: number): GestureState {
   return { kind: 'panning', press: { ...press(fromX, toX), plan: 'pan' } };
 }
 
-const IDLE: TouchState = { kind: 'idle', pending: null };
+const IDLE: GestureState = { kind: 'idle', pending: null };
 
 function following(offset: number): CarouselMotion {
   return { kind: 'follow', offset };
@@ -63,7 +63,7 @@ function following(offset: number): CarouselMotion {
 
 function slideStep(
   motion: CarouselMotion,
-  state: TouchState,
+  state: GestureState,
   travel: number,
   turn: PageMove | null,
   scene: BookScene,
@@ -199,7 +199,7 @@ describe('slideInput, stepped by the carousel', () => {
   });
 
   it('snaps back when a second finger turns the swipe into a pinch', () => {
-    const pinching: TouchState = {
+    const pinching: GestureState = {
       kind: 'pinching',
       first: { id: 1, at: { x: 100, y: 400 } },
       second: { id: 2, at: { x: 200, y: 400 } },

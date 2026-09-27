@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { GestureIntent } from '$lib/components/gesture';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { swipeTurn, tapZone } from '$lib/shared/page-turn';
 import type { FrameSpan, TapZone, TouchTurns } from '$lib/shared/page-turn';
@@ -8,7 +9,6 @@ import type { Point } from '../domain/selection';
 import type { ReaderGesture } from './gesture-hint';
 import { moveTowards } from './page-moves';
 import type { PageMove } from './page-moves';
-import type { TouchIntent } from './touch-gesture';
 
 type TouchScene = {
   readonly chromeShown: boolean;
@@ -75,8 +75,12 @@ function doubleTapAction(at: Point, scene: TouchScene): TouchAction {
   return scene.chromeShown ? TOGGLE_CHROME : { kind: 'zoom-toggle', at };
 }
 
-function touchAction(intent: TouchIntent, scene: TouchScene): TouchAction {
-  return match<TouchIntent, TouchAction>(intent)
+function centreZoneWaits(frame: FrameSpan, turns: TouchTurns): (at: Point) => boolean {
+  return (at) => tapZone(at.x - frame.left, frame.width, turns) === 'centre';
+}
+
+function touchAction(intent: GestureIntent, scene: TouchScene): TouchAction {
+  return match<GestureIntent, TouchAction>(intent)
     .with({ kind: 'none' }, () => NOTHING)
     .with({ kind: 'tap' }, ({ x }) => tapAction(x, scene))
     .with({ kind: 'swipe' }, ({ start, end, elapsed }) => swipeAction(start, end, elapsed, scene))
@@ -105,7 +109,7 @@ function touchAction(intent: TouchIntent, scene: TouchScene): TouchAction {
     .exhaustive();
 }
 
-function touchLesson(intent: TouchIntent, action: TouchAction): ReaderGesture | null {
+function touchLesson(intent: GestureIntent, action: TouchAction): ReaderGesture | null {
   return match<TouchAction, ReaderGesture | null>(action)
     .with({ kind: 'turn' }, () => (intent.kind === 'tap' ? 'tap-sides' : 'swipe'))
     .with({ kind: 'pinch' }, () => 'pinch')
@@ -123,5 +127,5 @@ function touchLesson(intent: TouchIntent, action: TouchAction): ReaderGesture | 
     .exhaustive();
 }
 
-export { touchAction, touchLesson };
+export { centreZoneWaits, touchAction, touchLesson };
 export type { TouchAction, TouchScene };

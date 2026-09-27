@@ -6,6 +6,8 @@
   import KeyHints from '$lib/components/KeyHints.svelte';
   import { CAROUSEL_REST } from '$lib/components/carousel';
   import type { CarouselMotion, CarouselSide } from '$lib/components/carousel';
+  import type { GestureInput, GestureSample, GestureState } from '$lib/components/gesture';
+  import { GestureFeed } from '$lib/components/gesture-feed';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -39,10 +41,8 @@
   import type { PageMove } from './page-moves';
   import { moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
   import type { Neighbours, SlidePane } from './page-slide';
-  import { touchAction, touchLesson } from './touch-action';
+  import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
   import type { TouchAction } from './touch-action';
-  import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
-  import type { TouchInput, TouchSample, TouchState } from './touch-gesture';
   import { showsZoneOverlay, zoneLabels } from './zone-overlay';
   import { markZonesSeen, zonesSeen } from './zones-seen.svelte';
   import PageFrame from './PageFrame.svelte';
@@ -120,10 +120,9 @@
   let frameSize = $state.raw<Size | null>(null);
 
   const contents = new SvelteMap<ImageIndex, Size>();
+  const gestures = new GestureFeed(feed);
 
   let shownPages: PageGroup | null = null;
-  let touch: TouchState = TOUCH_IDLE;
-  let touchTimer: ReturnType<typeof setTimeout> | null = null;
   let panOrigin: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
   let lastPointer = '';
   let slides = false;
@@ -387,25 +386,6 @@
     return { left: box.left, width: box.width };
   }
 
-  function stopTouchTimer(): void {
-    if (touchTimer !== null) clearTimeout(touchTimer);
-    touchTimer = null;
-  }
-
-  function scheduleTick(): void {
-    stopTouchTimer();
-    const deadline = touchDeadline(touch);
-    if (deadline === null) return;
-
-    touchTimer = setTimeout(
-      () => {
-        touchTimer = null;
-        feed({ kind: 'tick', t: performance.now() });
-      },
-      Math.max(0, deadline - performance.now()),
-    );
-  }
-
   function act(action: TouchAction): void {
     match(action)
       .with({ kind: 'none' }, () => undefined)
@@ -415,6 +395,7 @@
       .with({ kind: 'pinch' }, (pinch) => pinched(pinch))
       .with({ kind: 'zoom-toggle' }, ({ at }) => doubleTapped(at))
       .with({ kind: 'select-begin' }, ({ from, to }) => {
+        const touch = gestures.state;
         if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
       })
       .with({ kind: 'select-move' }, ({ at }) => selection?.extendTo(at))
@@ -441,19 +422,19 @@
     onTurn?.(moveOf(side, direction));
   }
 
-  function followsTheFinger(input: TouchInput, span: FrameSpan): boolean {
+  function followsTheFinger(input: GestureInput, span: FrameSpan): boolean {
     if (input.kind === 'tick') return false;
     return swipeMayStart(input, span, window.innerWidth, turns);
   }
 
-  function slideWith(state: TouchState, action: TouchAction): boolean {
+  function slideWith(state: GestureState, action: TouchAction): boolean {
     const travel = slides ? slideTravel(state, state.kind === 'panning' ? panReach() : null) : 0;
     const turn = action.kind === 'turn' ? action.move : null;
     return carousel?.drive(slideInput(state, travel, turn, direction)) ?? false;
   }
 
-  function feed(input: TouchInput): void {
-    if (input.kind === 'down' && touch.kind === 'idle') {
+  function feed(input: GestureInput): void {
+    if (input.kind === 'down' && gestures.state.kind === 'idle') {
       if (motion.kind === 'settle') {
         carousel?.finish();
         flushSync();
@@ -463,15 +444,12 @@
     }
 
     const span = frameSpan();
-    const step = touchStep(touch, input, {
+    const step = gestures.step(input, {
       pannable,
       selectMode: selecting,
-      turns,
-      frame: span,
       doubleTaps: true,
+      waitsForDoubleTap: centreZoneWaits(span, turns),
     });
-    touch = step.state;
-    scheduleTick();
     const action = touchAction(step.intent, {
       chromeShown,
       turns,
@@ -486,15 +464,8 @@
     if (!(handed && action.kind === 'turn')) act(action);
   }
 
-  function feedTouch(kind: TouchSample['kind'], event: PointerEvent): void {
-    feed({
-      kind,
-      id: event.pointerId,
-      type: event.pointerType,
-      x: event.clientX,
-      y: event.clientY,
-      t: performance.now(),
-    });
+  function feedTouch(kind: GestureSample['kind'], event: PointerEvent): void {
+    feed(gestures.sample(kind, event));
   }
 
   function oncontextmenu(event: MouseEvent): void {
@@ -644,7 +615,7 @@
     markZonesSeen();
   }
 
-  $effect(() => stopTouchTimer);
+  $effect(() => () => gestures.stop());
 
   $effect(() => {
     const lines = pending;

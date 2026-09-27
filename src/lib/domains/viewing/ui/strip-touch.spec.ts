@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { GESTURE_IDLE, LONG_PRESS_MS, gestureStep } from '$lib/components/gesture';
+import type { GestureContext, GestureInput, GestureState } from '$lib/components/gesture';
 import { holdsTheScroll, stripTouchAction } from './strip-touch';
-import { LONG_PRESS_MS, TOUCH_IDLE, touchStep } from './touch-gesture';
-import type { TouchContext, TouchInput, TouchState } from './touch-gesture';
 
-const STRIP: TouchContext = {
+const STRIP: GestureContext = {
   pannable: false,
   selectMode: false,
-  turns: 'tap-zones',
-  frame: { left: 0, width: 390 },
   doubleTaps: false,
+  waitsForDoubleTap: () => false,
 };
 
 const ROW = 400;
@@ -17,22 +16,22 @@ const FINGER = 1;
 
 const THUMB = 2;
 
-function touch(kind: 'down' | 'move' | 'up', x: number, t: number, id = FINGER): TouchInput {
+function touch(kind: 'down' | 'move' | 'up', x: number, t: number, id = FINGER): GestureInput {
   return { kind, id, type: 'touch', x, y: ROW, t };
 }
 
-function settled(inputs: readonly TouchInput[], context: TouchContext = STRIP): TouchState {
-  let state = TOUCH_IDLE;
-  for (const input of inputs) state = touchStep(state, input, context).state;
+function settled(inputs: readonly GestureInput[], context: GestureContext = STRIP): GestureState {
+  let state = GESTURE_IDLE;
+  for (const input of inputs) state = gestureStep(state, input, context).state;
 
   return state;
 }
 
-function actions(inputs: readonly TouchInput[], context: TouchContext = STRIP) {
-  let state = TOUCH_IDLE;
+function actions(inputs: readonly GestureInput[], context: GestureContext = STRIP) {
+  let state = GESTURE_IDLE;
   const seen = [];
   for (const input of inputs) {
-    const step = touchStep(state, input, context);
+    const step = gestureStep(state, input, context);
     state = step.state;
     const action = stripTouchAction(step.intent);
     if (action.kind !== 'none') seen.push(action);
@@ -122,7 +121,7 @@ describe('the strip through the classifier', () => {
 
 describe('holdsTheScroll', () => {
   it('lets the browser scroll a press, a scroll and an empty strip', () => {
-    expect(holdsTheScroll(TOUCH_IDLE, 0)).toBe(false);
+    expect(holdsTheScroll(GESTURE_IDLE, 0)).toBe(false);
     expect(holdsTheScroll(settled([touch('down', 100, 0)]), 1)).toBe(false);
     expect(holdsTheScroll(settled([touch('down', 100, 0), touch('move', 160, 40)]), 1)).toBe(false);
   });
@@ -150,6 +149,6 @@ describe('holdsTheScroll', () => {
   });
 
   it('holds the scroll whenever two fingers are down, whatever the classifier saw', () => {
-    expect(holdsTheScroll(TOUCH_IDLE, 2)).toBe(true);
+    expect(holdsTheScroll(GESTURE_IDLE, 2)).toBe(true);
   });
 });

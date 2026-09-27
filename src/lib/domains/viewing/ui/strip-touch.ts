@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
+import type { GestureIntent, GestureState } from '$lib/components/gesture';
 import type { Point } from '../domain/selection';
-import type { TouchIntent, TouchState } from './touch-gesture';
 
 type StripTouchAction =
   | { readonly kind: 'none' }
@@ -15,8 +15,8 @@ const NOTHING: StripTouchAction = { kind: 'none' };
 
 const TOGGLE_CHROME: StripTouchAction = { kind: 'toggle-chrome' };
 
-function stripTouchAction(intent: TouchIntent): StripTouchAction {
-  return match<TouchIntent, StripTouchAction>(intent)
+function stripTouchAction(intent: GestureIntent): StripTouchAction {
+  return match<GestureIntent, StripTouchAction>(intent)
     .with({ kind: 'none' }, () => NOTHING)
     .with({ kind: 'tap' }, { kind: 'double-tap' }, () => TOGGLE_CHROME)
     .with({ kind: 'pan' }, { kind: 'pan-end' }, { kind: 'swipe' }, () => NOTHING)
@@ -38,7 +38,7 @@ function stripTouchAction(intent: TouchIntent): StripTouchAction {
     .exhaustive();
 }
 
-function holdsTheScroll(state: TouchState, fingers: number): boolean {
+function holdsTheScroll(state: GestureState, fingers: number): boolean {
   if (fingers > 1) return true;
 
   return match(state)

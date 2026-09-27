@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { touchAction, touchLesson } from './touch-action';
+import { GESTURE_IDLE, gestureStep } from '$lib/components/gesture';
+import type { GestureContext, GestureInput, GestureIntent } from '$lib/components/gesture';
+import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
+import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
 import type { PanReach } from '../domain/overscroll';
 import type { TouchScene } from './touch-action';
 
@@ -256,5 +259,99 @@ describe('touchLesson', () => {
     const intent = { kind: 'tap', x: CENTRE, y: ROW } as const;
 
     expect(touchLesson(intent, touchAction(intent, BARE))).toBeNull();
+  });
+});
+
+function pressed(x: number, t: number, kind: 'down' | 'up'): GestureInput {
+  return { kind, id: 1, type: 'touch', x, y: ROW, t };
+}
+
+function heardThrough(
+  inputs: readonly GestureInput[],
+  frame: FrameSpan,
+  turns: TouchTurns,
+): GestureIntent[] {
+  const context: GestureContext = {
+    pannable: false,
+    selectMode: false,
+    doubleTaps: true,
+    waitsForDoubleTap: centreZoneWaits(frame, turns),
+  };
+  let state = GESTURE_IDLE;
+  const intents: GestureIntent[] = [];
+  for (const input of inputs) {
+    const step = gestureStep(state, input, context);
+    state = step.state;
+    if (step.intent.kind !== 'none') intents.push(step.intent);
+  }
+
+  return intents;
+}
+
+describe('centreZoneWaits', () => {
+  const PHONE: FrameSpan = { left: 0, width: 390 };
+
+  it('taps at once on an edge zone in the tap-zones variant', () => {
+    expect(
+      heardThrough([pressed(LEFT, 0, 'down'), pressed(LEFT, 90, 'up')], PHONE, 'tap-zones'),
+    ).toEqual([{ kind: 'tap', x: LEFT, y: ROW }]);
+    expect(
+      heardThrough([pressed(RIGHT, 0, 'down'), pressed(RIGHT, 90, 'up')], PHONE, 'tap-zones'),
+    ).toEqual([{ kind: 'tap', x: RIGHT, y: ROW }]);
+  });
+
+  it('holds a centre tap for the double-tap window', () => {
+    expect(
+      heardThrough([pressed(CENTRE, 0, 'down'), pressed(CENTRE, 90, 'up')], PHONE, 'tap-zones'),
+    ).toEqual([]);
+    expect(
+      heardThrough(
+        [pressed(CENTRE, 0, 'down'), pressed(CENTRE, 90, 'up'), { kind: 'tick', t: 390 }],
+        PHONE,
+        'tap-zones',
+      ),
+    ).toEqual([{ kind: 'tap', x: CENTRE, y: ROW }]);
+  });
+
+  it('holds an edge tap too in the swipe-only variant, because every tap is a centre tap there', () => {
+    expect(
+      heardThrough([pressed(LEFT, 0, 'down'), pressed(LEFT, 90, 'up')], PHONE, 'swipe-only'),
+    ).toEqual([]);
+    expect(
+      heardThrough(
+        [pressed(LEFT, 0, 'down'), pressed(LEFT, 90, 'up'), { kind: 'tick', t: 400 }],
+        PHONE,
+        'swipe-only',
+      ),
+    ).toEqual([{ kind: 'tap', x: LEFT, y: ROW }]);
+  });
+
+  it('reads the zone against the frame, not the screen', () => {
+    const inset: FrameSpan = { left: 100, width: 200 };
+
+    expect(
+      heardThrough([pressed(120, 0, 'down'), pressed(120, 90, 'up')], inset, 'tap-zones'),
+    ).toEqual([{ kind: 'tap', x: 120, y: ROW }]);
+    expect(
+      heardThrough([pressed(200, 0, 'down'), pressed(200, 90, 'up')], inset, 'tap-zones'),
+    ).toEqual([]);
+  });
+
+  it('never delays an edge tap, so two edge taps turn two pages', () => {
+    expect(
+      heardThrough(
+        [
+          pressed(RIGHT, 0, 'down'),
+          pressed(RIGHT, 60, 'up'),
+          pressed(RIGHT, 120, 'down'),
+          pressed(RIGHT, 180, 'up'),
+        ],
+        PHONE,
+        'tap-zones',
+      ),
+    ).toEqual([
+      { kind: 'tap', x: RIGHT, y: ROW },
+      { kind: 'tap', x: RIGHT, y: ROW },
+    ]);
   });
 });
