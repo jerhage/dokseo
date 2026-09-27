@@ -11,11 +11,11 @@
   title="Card"
   classes={[
     'card',
+    'card-cover',
     'card-elevated',
     'card-feature',
     'card-interactive',
     'card-media',
-    'card-media-only',
     'card-sm',
   ]}
 >

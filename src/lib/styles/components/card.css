@@ -10,12 +10,12 @@
   overflow: hidden;
 }
 .card-media,
-.card-media-only {
+.card-cover {
   aspect-ratio: var(--ratio-video);
   background-color: var(--color-surface-sunken);
 }
 .card-media > img,
-.card-media-only > img {
+.card-cover > img {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;

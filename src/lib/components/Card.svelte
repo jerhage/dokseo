@@ -55,7 +55,7 @@
     CARD_VARIANTS[variant],
     CARD_SIZES[size],
     { 'card-interactive': href !== undefined },
-    mediaOnly && ['card-media-only', MEDIA_RATIOS[mediaRatio]],
+    mediaOnly && ['card-cover', MEDIA_RATIOS[mediaRatio]],
     className,
   ]}
 >
