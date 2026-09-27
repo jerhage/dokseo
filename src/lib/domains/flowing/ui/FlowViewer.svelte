@@ -416,11 +416,11 @@
 
     {#if offer !== null}
       <div
-        class="lift z-overlay"
-        style:--lift-left="{offer.left}px"
-        style:--lift-top="{offer.top}px"
-        style:--lift-width="{LIFT_BUTTON_WIDTH_PX}px"
-        style:--lift-height="{LIFT_BUTTON_HEIGHT_PX}px"
+        class="lift place-rect z-overlay"
+        style:--rect-left="{offer.left}px"
+        style:--rect-top="{offer.top}px"
+        style:--rect-width="{LIFT_BUTTON_WIDTH_PX}px"
+        style:--rect-height="{LIFT_BUTTON_HEIGHT_PX}px"
       >
         <IconButton
           variant="accent"

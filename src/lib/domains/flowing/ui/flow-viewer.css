@@ -5,13 +5,6 @@
       inline-size: 100%;
       block-size: 100%;
     }
-    .lift {
-      position: absolute;
-      left: var(--lift-left);
-      top: var(--lift-top);
-      inline-size: var(--lift-width);
-      block-size: var(--lift-height);
-    }
     .lift-button {
       inline-size: 100%;
       block-size: 100%;

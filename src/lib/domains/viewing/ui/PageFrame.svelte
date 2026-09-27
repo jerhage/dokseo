@@ -163,11 +163,14 @@
   {/if}
   {#each boxes as drawn, order (order)}
     <span
-      class={['glow', { 'is-note': drawn.origin === 'written' }]}
-      style:--glow-left="{drawn.box.left}%"
-      style:--glow-top="{drawn.box.top}%"
-      style:--glow-width="{drawn.box.width}%"
-      style:--glow-height="{drawn.box.height}%"
+      class={[
+        'glow place-rect region-box region-box-glow z-raised',
+        { 'region-box-note': drawn.origin === 'written' },
+      ]}
+      style:--rect-left="{drawn.box.left}%"
+      style:--rect-top="{drawn.box.top}%"
+      style:--rect-width="{drawn.box.width}%"
+      style:--rect-height="{drawn.box.height}%"
     >
       {#if marker !== null && order === 0}
         <Badge

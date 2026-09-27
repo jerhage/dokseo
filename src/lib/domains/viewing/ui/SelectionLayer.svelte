@@ -313,11 +313,11 @@
 <div class="selection-layer" bind:this={host} aria-hidden="true">
   {#if overlay !== null}
     <div
-      class={['marquee', { 'is-note': noting }]}
-      style:--marquee-left="{overlay.left}px"
-      style:--marquee-top="{overlay.top}px"
-      style:--marquee-width="{overlay.width}px"
-      style:--marquee-height="{overlay.height}px"
+      class={['marquee place-rect region-box z-raised', { 'region-box-note': noting }]}
+      style:--rect-left="{overlay.left}px"
+      style:--rect-top="{overlay.top}px"
+      style:--rect-width="{overlay.width}px"
+      style:--rect-height="{overlay.height}px"
     >
       <span class="handle north west"></span>
       <span class="handle north east"></span>

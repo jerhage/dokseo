@@ -6,20 +6,6 @@
       overflow: hidden;
       pointer-events: none;
     }
-    .marquee {
-      position: absolute;
-      left: var(--marquee-left, 0px);
-      top: var(--marquee-top, 0px);
-      width: var(--marquee-width, 0px);
-      height: var(--marquee-height, 0px);
-      z-index: var(--z-raised);
-      border: var(--border-width-strong) solid var(--color-primary);
-      background-color: var(--color-selected);
-    }
-    .marquee.is-note {
-      border-color: var(--color-accent);
-      background-color: transparent;
-    }
     .handle {
       position: absolute;
       inline-size: var(--sp-2);
@@ -27,7 +13,7 @@
       background-color: var(--color-primary);
       border: var(--border-width) solid var(--color-surface);
     }
-    .marquee.is-note .handle {
+    .marquee.region-box-note .handle {
       background-color: var(--color-accent);
     }
     .north {
