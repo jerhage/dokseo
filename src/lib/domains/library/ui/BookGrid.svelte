@@ -2,6 +2,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import Card from '$lib/components/Card.svelte';
   import Progress from '$lib/components/Progress.svelte';
+  import Thumbnail from '$lib/components/Thumbnail.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
@@ -33,9 +34,7 @@
         tooltip={bookFacts(book)}
       >
         {#snippet media()}
-          {#if cover !== null}
-            <img src={cover} alt="" />
-          {/if}
+          <Thumbnail src={cover} size="fill" />
         {/snippet}
       </Card>
       {#if book.finishedAt !== null}
