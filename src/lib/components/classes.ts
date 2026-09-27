@@ -31,6 +31,8 @@ type ModalFooter = 'actions' | 'info';
 
 type ModalNarrow = 'panel' | 'fill';
 
+type RadioVariant = 'default' | 'tile';
+
 type MenuAlign = 'start' | 'end';
 
 type AvatarShape = 'circle' | 'square';
@@ -172,6 +174,11 @@ const MODAL_NARROWS: Readonly<Record<ModalNarrow, ClassList>> = {
   fill: ['modal-fills-narrow'],
 };
 
+const RADIO_VARIANTS: Readonly<Record<RadioVariant, ClassList>> = {
+  default: [],
+  tile: ['radio-tile'],
+};
+
 const AVATAR_SIZES: Readonly<Record<ControlSize, ClassList>> = {
   sm: ['avatar-sm'],
   md: [],
@@ -278,6 +285,7 @@ export {
   MODAL_SIZES,
   PROGRESS_SIZES,
   PROGRESS_VARIANTS,
+  RADIO_VARIANTS,
   SKELETON_SHAPES,
   STAT_SIZES,
   STAT_TRENDS,
@@ -303,6 +311,7 @@ export type {
   ModalPlacement,
   ModalSize,
   ProgressVariant,
+  RadioVariant,
   SkeletonShape,
   StatSize,
   StatTrend,

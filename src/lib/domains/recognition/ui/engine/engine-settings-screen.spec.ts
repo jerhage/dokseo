@@ -109,8 +109,11 @@ describe('EngineSettingsScreen', () => {
   it('lists all three engines, and only the on-device one can be picked', () => {
     const html = screen({});
 
-    expect(html.match(/type="radio" name="[^"]*-engine-choice"/gu)).toHaveLength(3);
-    expect(html.match(/-engine-choice" value="[^"]*" disabled/gu)).toHaveLength(2);
+    const engines = html.match(/<input [^>]*name="[^"]*-engine-choice"[^>]*>/gu) ?? [];
+
+    expect(engines).toHaveLength(3);
+    expect(engines.filter((input) => input.includes('type="radio"'))).toHaveLength(3);
+    expect(engines.filter((input) => / disabled[ =/>]/u.test(input))).toHaveLength(2);
     expect(html.match(/aria-label="About the /gu)).toHaveLength(6);
   });
 

@@ -8,10 +8,13 @@
   import Toggle from '$lib/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
+  const uid = $props.id();
+
   let digests = $state(true);
   let mentions = $state(false);
   let partial = $state(true);
   let plan = $state('monthly');
+  let size = $state('medium');
   let autosave = $state(true);
   let publicLink = $state(false);
   let density = $state('Comfortable');
@@ -20,7 +23,14 @@
 <DemoSection
   id="choice"
   title="Checkbox, radio and toggle"
-  classes={['fieldset', 'settings-row', 'checkbox-wrapper', 'radio-wrapper', 'toggle']}
+  classes={[
+    'fieldset',
+    'settings-row',
+    'checkbox-wrapper',
+    'radio-wrapper',
+    'radio-tile',
+    'toggle',
+  ]}
 >
   <div class="grid-3">
     <Card>
@@ -41,6 +51,36 @@
         <Radio name="plan" value="lifetime" bind:group={plan} disabled>Lifetime (unavailable)</Radio
         >
         <p class="text-sm text-muted">Plan: {plan}</p>
+      </Fieldset>
+    </Card>
+    <Card>
+      <Fieldset legend="Radio tile" hint="The whole tile picks it.">
+        <div class="grid-3 grid-auto-sm">
+          <Radio name="size" value="small" bind:group={size} variant="tile">Small</Radio>
+          <Radio name="size" value="medium" bind:group={size} variant="tile" hint="Most books."
+            >Medium</Radio
+          >
+          <Radio name="size" value="large" bind:group={size} variant="tile" disabled>Large</Radio>
+        </div>
+        <p class="text-sm text-muted">Size: {size}</p>
+      </Fieldset>
+    </Card>
+    <Card>
+      <Fieldset legend="Radio named from elsewhere">
+        <div class="row items-center gap-2">
+          <Radio name="{uid}-engine" value="here" group="here" aria-labelledby="{uid}-here" />
+          <h3 class="text-base weight-semibold" id="{uid}-here">On this device</h3>
+        </div>
+        <div class="row items-center gap-2">
+          <Radio
+            name="{uid}-engine"
+            value="server"
+            group="here"
+            disabled
+            aria-labelledby="{uid}-server"
+          />
+          <h3 class="text-base weight-semibold" id="{uid}-server">On a server</h3>
+        </div>
       </Fieldset>
     </Card>
     <Card>

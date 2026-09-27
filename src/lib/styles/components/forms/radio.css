@@ -7,6 +7,15 @@
   color: var(--color-text);
   cursor: pointer;
 }
+.radio-tile {
+  display: flex;
+  padding: var(--sp-2) var(--sp-3);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-control);
+}
+.radio-tile:has(:disabled) {
+  background-color: transparent;
+}
 .radio-label {
   display: flex;
   flex-direction: column;

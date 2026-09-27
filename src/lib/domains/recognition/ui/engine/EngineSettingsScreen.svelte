@@ -99,12 +99,10 @@
       <div class="col gap-2 p-4 surface-raised">
         <div class="row wrap items-center justify-between gap-2">
           <div class="row wrap items-center gap-2">
-            <input
-              class="radio-input"
-              type="radio"
+            <Radio
               name="{uid}-engine-choice"
               value={ON_DEVICE_ENGINE.id}
-              checked
+              group={ON_DEVICE_ENGINE.id}
               aria-labelledby="{uid}-engine"
             />
             <h2 class="text-base weight-semibold" id="{uid}-engine">On-device</h2>
@@ -156,7 +154,8 @@
                   value={offered.modelId}
                   group={model.modelId}
                   hint={weightsFigure(offered)}
-                  class="surface-sunken bordered rounded-control px-3 py-2"
+                  variant="tile"
+                  class="bordered"
                   onchange={() => void view.chooseModel(offered.modelId)}
                 >
                   {offered.label}
@@ -260,11 +259,10 @@
       >
         <div class="row wrap items-center justify-between gap-2">
           <div class="row wrap items-center gap-2">
-            <input
-              class="radio-input"
-              type="radio"
+            <Radio
               name="{uid}-engine-choice"
               value={offered.id}
+              group={ON_DEVICE_ENGINE.id}
               disabled
               aria-labelledby="{uid}-{offered.id}"
             />

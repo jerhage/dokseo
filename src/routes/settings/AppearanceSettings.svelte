@@ -33,7 +33,7 @@
             name="{uid}-theme"
             value={option.theme}
             group={appearance.theme}
-            class="surface-sunken rounded-control px-3 py-2"
+            variant="tile"
             onchange={() => choose({ ...appearance, theme: option.theme })}
           >
             {option.label}
