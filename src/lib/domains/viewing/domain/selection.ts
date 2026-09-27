@@ -1,51 +1,11 @@
 import type { Arrangement } from '$lib/shared/arrangement';
-import { clickSlop } from '$lib/shared/click-slop';
-import { normalize, screenRect } from '$lib/shared/geometry';
-import type { ScreenRect, Size } from '$lib/shared/geometry';
+import { normalize } from '$lib/shared/geometry';
+import type { Size } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 
 type Point = { readonly x: number; readonly y: number };
 
 const MIN_SELECTION_PX = 12;
-
-type DragEnd =
-  | { readonly kind: 'click' }
-  | { readonly kind: 'too-small'; readonly selection: ScreenRect }
-  | { readonly kind: 'selection'; readonly selection: ScreenRect };
-
-function isFinitePoint(point: Point): boolean {
-  return Number.isFinite(point.x) && Number.isFinite(point.y);
-}
-
-function selectionFrom(from: Point, to: Point): ScreenRect {
-  if (!isFinitePoint(from) || !isFinitePoint(to)) return screenRect(0, 0, 0, 0);
-
-  return normalize(screenRect(from.x, from.y, to.x - from.x, to.y - from.y));
-}
-
-function isUsableSelection(selection: ScreenRect): boolean {
-  const rect = normalize(selection);
-  return rect.width >= MIN_SELECTION_PX && rect.height >= MIN_SELECTION_PX;
-}
-
-function isClick(from: Point, to: Point, pointerType: string): boolean {
-  const moved = selectionFrom(from, to);
-  const slop = clickSlop(pointerType);
-  return moved.width < slop && moved.height < slop;
-}
-
-function dragEnded(from: Point, to: Point, pointerType: string): DragEnd {
-  const selection = selectionFrom(from, to);
-  if (isClick(from, to, pointerType)) return { kind: 'click' };
-  if (!isUsableSelection(selection)) return { kind: 'too-small', selection };
-
-  return { kind: 'selection', selection };
-}
-
-function isTap(from: Point, to: Point): boolean {
-  const moved = selectionFrom(from, to);
-  return moved.width < MIN_SELECTION_PX && moved.height < MIN_SELECTION_PX;
-}
 
 function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement): Size {
   const stacked = arrangement === 'column';
@@ -66,13 +26,5 @@ function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement
   return { width, height };
 }
 
-export {
-  MIN_SELECTION_PX,
-  dragEnded,
-  isClick,
-  isTap,
-  isUsableSelection,
-  selectionFrom,
-  selectionSize,
-};
-export type { DragEnd, Point };
+export { MIN_SELECTION_PX, selectionSize };
+export type { Point };
