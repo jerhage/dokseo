@@ -3,6 +3,7 @@
   import Avatar from '$lib/components/Avatar.svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import UploadIcon from '$lib/components/icons/Upload.svelte';
@@ -196,7 +197,7 @@
     {/if}
 
     {#if body === 'reading'}
-      <p class="text-sm text-muted" aria-live="polite">Reading your library…</p>
+      <EmptyState live message="Reading your library…" />
     {:else}
       {#if body === 'failed'}
         <Alert variant="danger" title="Your library could not be read.">
@@ -208,7 +209,7 @@
           {/snippet}
         </Alert>
       {:else if body === 'empty'}
-        <p class="text-sm text-muted">No uploads yet. {DROP_INVITATION.toLowerCase()} to start.</p>
+        <EmptyState message="No uploads yet. {DROP_INVITATION.toLowerCase()} to start." />
       {/if}
 
       {#if resumable.length > 0}

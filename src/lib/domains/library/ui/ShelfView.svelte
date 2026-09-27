@@ -2,6 +2,7 @@
   import IconButton from '$lib/components/IconButton.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
   import LayoutGrid from '$lib/components/icons/LayoutGrid.svelte';
   import List from '$lib/components/icons/List.svelte';
@@ -114,7 +115,7 @@
     {/snippet}
     {#snippet panel()}
       {#if shown.length === 0}
-        <p class="text-sm text-muted py-4">{emptyShelfText(shelf, searching)}</p>
+        <EmptyState class="py-4" message={emptyShelfText(shelf, searching)} />
       {:else if layout === 'grid'}
         <BookGrid books={shown} {covers} {busy} {onedit} {onremove} {onfinish} {onunread} />
       {:else}
