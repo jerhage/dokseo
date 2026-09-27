@@ -1,6 +1,8 @@
 <script lang="ts">
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import ListGroup from '$lib/components/ListGroup.svelte';
+  import ListRow from '$lib/components/ListRow.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
   import type { StorageSettingsView } from './storage-view.svelte';
   import StorageBreakdown from './StorageBreakdown.svelte';
@@ -11,8 +13,6 @@
   type Props = { readonly view: StorageSettingsView; readonly engineHref?: string };
 
   let { view, engineHref = '/settings' }: Props = $props();
-
-  const uid = $props.id();
 
   const state: StorageScreenState = $derived(screenState(view.account, view.message));
 </script>
@@ -41,25 +41,16 @@
     <StorageBreakdown account={state.account} />
   {/if}
 
-  <section class="col gap-2" aria-labelledby="{uid}-free">
-    <h2 id="{uid}-free" class="px-1 text-xs uppercase tracking-wide text-muted weight-semibold">
-      Free up space
-    </h2>
-    <ul class="list-reset surface bordered rounded-container overflow-hidden">
-      <li class="row wrap items-center justify-between gap-3 px-4 py-3">
-        <div class="col gap-1 flex-fill">
-          <span class="text-sm">Books</span>
-          <span class="text-xs text-muted">Books are removed from your library.</span>
-        </div>
+  <ListGroup label="Free up space">
+    <ListRow title="Books" description="Books are removed from your library.">
+      {#snippet actions()}
         <Button href="/" size="sm" variant="outline">Open your library</Button>
-      </li>
-      <li class="row wrap items-center justify-between gap-3 px-4 py-3 border-t">
-        <div class="col gap-1 flex-fill">
-          <span class="text-sm">Recognition model</span>
-          <span class="text-xs text-muted">The model is removed on the OCR engine page.</span>
-        </div>
+      {/snippet}
+    </ListRow>
+    <ListRow title="Recognition model" description="The model is removed on the OCR engine page.">
+      {#snippet actions()}
         <Button href={engineHref} size="sm" variant="outline">OCR engine</Button>
-      </li>
-    </ul>
-  </section>
+      {/snippet}
+    </ListRow>
+  </ListGroup>
 </div>
