@@ -1,3 +1,4 @@
+import type { KeyHint } from '$lib/components/key-hints';
 import type { PaletteFilter } from '../../domain/capture/quick-find';
 import type { PaletteScope } from './palette-rows';
 import type { CaptureSearchStatus } from './capture-search.svelte';
@@ -23,7 +24,12 @@ const CAPTURES_UNREAD: PaletteNote = { kind: 'unread' };
 
 const CAPTURES_UNREAD_MESSAGE = 'Your captures could not be read.';
 
-const PALETTE_KEYS = '↑↓ move · ↵ jump to result · ⌘↵ new tab · esc close';
+const PALETTE_KEYS: readonly KeyHint[] = [
+  { keys: ['↑↓'], does: 'move' },
+  { keys: ['↵'], does: 'jump to result' },
+  { keys: ['⌘↵'], does: 'new tab' },
+  { keys: ['esc'], does: 'close' },
+];
 
 function searchesTitles(filter: PaletteFilter, scope: PaletteScope): boolean {
   return filter !== 'tags' && scope === 'all';

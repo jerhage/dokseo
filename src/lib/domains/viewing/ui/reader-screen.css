@@ -10,8 +10,5 @@
       z-index: var(--z-sticky);
       max-inline-size: calc(100% - 2 * var(--sp-3));
     }
-    .page :is(.paged-viewer, .continuous-viewer) .hint {
-      bottom: var(--chrome-bottom, 0px);
-    }
   }
 }

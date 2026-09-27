@@ -1,6 +1,8 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import Button from '$lib/components/Button.svelte';
+  import type { KeyHint } from '$lib/components/key-hints';
+  import KeyHints from '$lib/components/KeyHints.svelte';
   import Textarea from '$lib/components/Textarea.svelte';
   import type { Language } from '$lib/shared/language';
   import { writerKey } from './editor-keys';
@@ -17,6 +19,11 @@
   };
 
   let { id, label, value, language, note, oninput, onsave, onabandon }: Props = $props();
+
+  const WRITER_KEYS: readonly KeyHint[] = [
+    { keys: ['Esc'], does: 'cancels' },
+    { keys: ['⌘/Ctrl', 'Enter'], does: 'saves' },
+  ];
 
   let area = $state<HTMLTextAreaElement>();
 
@@ -57,7 +64,7 @@
     onkeydown={keys}
   />
   <div class="row wrap items-center gap-2">
-    <span class="flex-fill text-xs text-muted">Esc cancels · ⌘/Ctrl + Enter saves</span>
+    <KeyHints hints={WRITER_KEYS} variant="text" element="span" class="flex-fill" />
     <span class="row items-center gap-2 ms-auto">
       <Button variant="ghost" size="sm" onclick={onabandon}>Cancel</Button>
       <Button variant="primary" size="sm" type="submit">Save</Button>

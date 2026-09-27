@@ -3,6 +3,8 @@
   import Badge from '$lib/components/Badge.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
   import Input from '$lib/components/Input.svelte';
+  import type { KeyHint } from '$lib/components/key-hints';
+  import KeyHints from '$lib/components/KeyHints.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Tag from '$lib/components/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
@@ -23,6 +25,12 @@
   };
 
   let { open, picker, place, chips, onchoose, onuntag, onclose }: Props = $props();
+
+  const PICKER_KEYS: readonly KeyHint[] = [
+    { keys: ['↑↓'], does: 'move' },
+    { keys: ['↵'], does: 'adds' },
+    { keys: ['esc'], does: 'closes' },
+  ];
 
   const uid = $props.id();
 
@@ -146,6 +154,6 @@
         </ul>
       </li>
     </ul>
-    <p class="m-0 text-xs text-muted">↑↓ move · ↵ adds · esc closes</p>
+    <KeyHints hints={PICKER_KEYS} variant="text" />
   </div>
 </Modal>

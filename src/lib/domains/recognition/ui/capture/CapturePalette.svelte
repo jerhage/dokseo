@@ -8,6 +8,7 @@
   import Divider from '$lib/components/Divider.svelte';
   import X from '$lib/components/icons/X.svelte';
   import Input from '$lib/components/Input.svelte';
+  import KeyHints from '$lib/components/KeyHints.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
@@ -328,6 +329,11 @@
 
   {#snippet footer()}
     <span role="status">{resultCount(results.rows.length)}</span>
-    <span class="hidden-on-touch">{PALETTE_KEYS}</span>
+    <KeyHints
+      hints={PALETTE_KEYS}
+      variant="text"
+      element="span"
+      class="text-faint hidden-on-touch"
+    />
   {/snippet}
 </Modal>

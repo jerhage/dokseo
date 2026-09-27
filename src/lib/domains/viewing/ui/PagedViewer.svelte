@@ -2,6 +2,7 @@
   import { flushSync, untrack } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
+  import KeyHints from '$lib/components/KeyHints.svelte';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -781,23 +782,15 @@
       tap={onTap}
     />
 
-    <p
+    <KeyHints
+      hints={hintLines}
+      size="sm"
+      decorative
       class={[
-        'hint row wrap items-center gap-3 m-0 px-3 py-2 text-xs text-muted hushable',
+        'pin-bottom pin-lift z-sticky overlay-pass-through px-3 py-2 hushable',
         { 'is-hushed': pending.length === 0 },
       ]}
-      aria-hidden="true"
-    >
-      {#each hintLines as hint (hint.keys.join('+'))}
-        <span class="row items-center gap-1">
-          {#each hint.keys as key, step (key)}
-            {#if step > 0}<span class="text-faint">+</span>{/if}
-            <kbd class="text-xs">{key}</kbd>
-          {/each}
-          <span class="does">{hint.does}</span>
-        </span>
-      {/each}
-    </p>
+    />
 
     {#if zonesShown}
       <div

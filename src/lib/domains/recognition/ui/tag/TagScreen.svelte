@@ -5,6 +5,8 @@
   import Button from '$lib/components/Button.svelte';
   import { TAG_COLOUR_CLASSES } from '$lib/components/classes';
   import CommandItem from '$lib/components/CommandItem.svelte';
+  import type { KeyHint } from '$lib/components/key-hints';
+  import KeyHints from '$lib/components/KeyHints.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
@@ -30,6 +32,12 @@
   };
 
   type Walk = { readonly tag: TagId | null; readonly at: number };
+
+  const TAG_SCREEN_KEYS: readonly KeyHint[] = [
+    { keys: ['↑↓'], does: 'move' },
+    { keys: ['↵'], does: 'jump' },
+    { keys: ['⌘↵'], does: 'new tab' },
+  ];
 
   let { view, covers, shelf }: Props = $props();
 
@@ -233,11 +241,7 @@
           {/each}
         </ul>
 
-        <footer class="row wrap items-center gap-4 text-xs text-muted">
-          <span class="row items-center gap-1"><kbd>↑↓</kbd> move</span>
-          <span class="row items-center gap-1"><kbd>↵</kbd> jump</span>
-          <span class="row items-center gap-1"><kbd>⌘↵</kbd> new tab</span>
-        </footer>
+        <KeyHints hints={TAG_SCREEN_KEYS} element="footer" class="gap-4" />
       {/if}
     {/if}
   {/snippet}
