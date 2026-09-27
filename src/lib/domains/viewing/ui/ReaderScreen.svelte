@@ -25,6 +25,7 @@
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import ReaderTitle from '$lib/shared/ReaderTitle.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABEL } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
@@ -361,12 +362,7 @@
       </Button>
     {/if}
 
-    <div class="col gap-0 flex-1">
-      <h1 class="text-base weight-medium truncate" lang={book?.language ?? 'en'}>
-        {book?.title ?? 'Reader'}
-      </h1>
-      <p class="text-xs text-faint truncate">{meta}</p>
-    </div>
+    <ReaderTitle title={book?.title ?? 'Reader'} lang={book?.language ?? 'en'} {meta} />
 
     {#if book !== null}
       <IconButton

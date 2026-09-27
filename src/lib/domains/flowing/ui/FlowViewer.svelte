@@ -17,6 +17,7 @@
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import ReaderTitle from '$lib/shared/ReaderTitle.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
@@ -440,10 +441,7 @@
       Library
     </Button>
 
-    <div class="col gap-0 flex-1">
-      <h1 class="text-base weight-medium truncate" lang={book.language}>{book.title}</h1>
-      <p class="text-xs text-faint truncate">{meta}</p>
-    </div>
+    <ReaderTitle title={book.title} lang={book.language} {meta} />
 
     {#if reading}
       {#if contents.kind === 'listed'}
