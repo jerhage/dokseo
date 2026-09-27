@@ -5,6 +5,7 @@
   import Field from '$lib/components/Field.svelte';
   import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import SearchField from '$lib/components/SearchField.svelte';
   import type { ModalSize, StatusVariant } from '$lib/components/classes';
   import { getToaster } from '$lib/components/toast-context';
   import type { ToastOptions } from '$lib/components/toaster.svelte';
@@ -39,6 +40,9 @@
   let closedBy = $state('nothing yet');
   let bare = $state(false);
   let layered = $state(false);
+  let asking = $state(false);
+  let barred = $state(false);
+  let filter = $state('');
 
   function removed(): void {
     toaster.show({
@@ -62,7 +66,7 @@
 <DemoSection
   id="modal"
   title="Modal and toast"
-  classes={['modal', 'modal-sm', 'modal-lg', 'modal-footer-info', 'toast']}
+  classes={['modal', 'modal-sm', 'modal-lg', 'modal-header-bar', 'modal-footer-info', 'toast']}
 >
   <Card>
     <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Modal</span>
@@ -72,6 +76,8 @@
         <Button onclick={() => (sized = size)}>Open {size}</Button>
       {/each}
       <Button onclick={() => (bare = true)}>Headerless</Button>
+      <Button onclick={() => (asking = true)}>No close button</Button>
+      <Button onclick={() => (barred = true)}>Header bar</Button>
     </div>
     <p class="text-sm text-muted">Last closed: {closedBy}</p>
   </Card>
@@ -163,6 +169,44 @@
     <span>2 shortcuts</span>
     <span>esc close</span>
   {/snippet}
+</Modal>
+
+<Modal
+  bind:open={asking}
+  title="Download the sample files?"
+  closeButton={false}
+  size="sm"
+  onclose={() => (closedBy = 'the modal without a close button')}
+>
+  <p>
+    A title row with no close button, for a question the footer answers. Escape still closes it.
+  </p>
+  {#snippet footer(close)}
+    <Button onclick={close}>Not now</Button>
+    <Button variant="primary" onclick={close}>Download</Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  bind:open={barred}
+  aria-label="Filter the files"
+  size="md"
+  body="flush"
+  onclose={() => (closedBy = 'the header bar modal')}
+>
+  {#snippet header(close)}
+    <SearchField
+      bind:value={filter}
+      label="Filter the files"
+      hideLabel
+      class="flex-fill"
+      placeholder="Filter the files"
+    />
+    <Button variant="ghost" onclick={close}>Cancel</Button>
+  {/snippet}
+  <p class="px-5 py-5 text-sm text-muted">
+    The header snippet sits in a compact bar that wraps: a field and its controls, no title.
+  </p>
 </Modal>
 
 <Modal bind:open={layered} title="Toasts stay on top" size="sm">

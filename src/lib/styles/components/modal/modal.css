@@ -54,6 +54,12 @@
   gap: var(--sp-4);
   padding: var(--sp-5) var(--sp-5) var(--sp-2);
 }
+.modal-header-bar {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+}
 .modal-title {
   font-family: var(--font-display);
   font-size: var(--text-xl);

@@ -223,45 +223,43 @@
   onclose={gone}
 >
   {#snippet header()}
-    <div class="modal-header wrap items-center gap-2 p-3">
-      <SearchField
-        bind:value={query}
-        bind:ref={field}
-        label="Find in captures"
-        hideLabel
-        clearable
-        onclear={() => (at = NO_MATCH)}
-        class="flex-fill"
-        enterkeyhint="search"
-        autofocus
-        placeholder={invite}
-        oninput={() => (at = NO_MATCH)}
-      />
-      <Button variant="ghost" class="modal-fill-only" onclick={hide}>Cancel</Button>
-      <span class="row items-center gap-1">
-        {#if book !== null}
-          {#each SCOPES as choice (choice.value)}
-            <TagToggle
-              class="modal-panel-only"
-              pressed={scope === choice.value}
-              onclick={(event) => pickScope(event, choice.value)}
-            >
-              {choice.label}
-            </TagToggle>
-          {/each}
-          <Divider vertical class="modal-panel-only" />
-          <SegmentedControl
-            variant="track"
-            label="Search in"
-            class="modal-fill-only"
-            options={SCOPES}
-            value={scope}
-            onchoose={choose}
-          />
-        {/if}
-        <TagToggle pressed={filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
-      </span>
-    </div>
+    <SearchField
+      bind:value={query}
+      bind:ref={field}
+      label="Find in captures"
+      hideLabel
+      clearable
+      onclear={() => (at = NO_MATCH)}
+      class="flex-fill"
+      enterkeyhint="search"
+      autofocus
+      placeholder={invite}
+      oninput={() => (at = NO_MATCH)}
+    />
+    <Button variant="ghost" class="modal-fill-only" onclick={hide}>Cancel</Button>
+    <span class="row items-center gap-1">
+      {#if book !== null}
+        {#each SCOPES as choice (choice.value)}
+          <TagToggle
+            class="modal-panel-only"
+            pressed={scope === choice.value}
+            onclick={(event) => pickScope(event, choice.value)}
+          >
+            {choice.label}
+          </TagToggle>
+        {/each}
+        <Divider vertical class="modal-panel-only" />
+        <SegmentedControl
+          variant="track"
+          label="Search in"
+          class="modal-fill-only"
+          options={SCOPES}
+          value={scope}
+          onchoose={choose}
+        />
+      {/if}
+      <TagToggle pressed={filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
+    </span>
   {/snippet}
 
   {#if note.kind === 'unread'}

@@ -118,19 +118,17 @@
   }}
 >
   {#snippet header()}
-    <div class="modal-header items-center gap-2 p-3">
-      <label class="visually-hidden" id="{uid}-label" for="{uid}-query">Run a command</label>
-      <Input
-        bind:value={query}
-        id="{uid}-query"
-        class="flex-fill"
-        type="search"
-        autofocus
-        placeholder="Run a command"
-        oninput={() => (at = 0)}
-        onkeydown={keys}
-      />
-    </div>
+    <label class="visually-hidden" id="{uid}-label" for="{uid}-query">Run a command</label>
+    <Input
+      bind:value={query}
+      id="{uid}-query"
+      class="flex-fill"
+      type="search"
+      autofocus
+      placeholder="Run a command"
+      oninput={() => (at = 0)}
+      onkeydown={keys}
+    />
   {/snippet}
   {#if found.length > 0}
     <div class="p-2">{@render rows(found, at)}</div>

@@ -41,13 +41,13 @@
   }
 </script>
 
-<Modal bind:open aria-labelledby="{uid}-heading" aria-describedby="{uid}-lead" onclose={answer}>
-  {#snippet header()}
-    <div class="modal-header">
-      <h2 class="modal-title" id="{uid}-heading">Download the {name} recognition model?</h2>
-    </div>
-  {/snippet}
-
+<Modal
+  bind:open
+  title="Download the {name} recognition model?"
+  closeButton={false}
+  aria-describedby="{uid}-lead"
+  onclose={answer}
+>
   <p id="{uid}-lead">
     Reading a selection needs the {name} recognition model. It is downloaded once and then kept on this
     device.

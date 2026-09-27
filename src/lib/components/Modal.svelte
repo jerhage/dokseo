@@ -21,9 +21,19 @@
   import ToastRegion from './ToastRegion.svelte';
 
   type Heading =
-    | { title: string; header?: undefined }
-    | { title?: undefined; header?: Snippet<[() => void]>; 'aria-label': string }
-    | { title?: undefined; header?: Snippet<[() => void]>; 'aria-labelledby': string };
+    | { title: string; closeButton?: boolean; header?: undefined }
+    | {
+        title?: undefined;
+        closeButton?: undefined;
+        header?: Snippet<[() => void]>;
+        'aria-label': string;
+      }
+    | {
+        title?: undefined;
+        closeButton?: undefined;
+        header?: Snippet<[() => void]>;
+        'aria-labelledby': string;
+      };
 
   type Props = Omit<HTMLDialogAttributes, 'title' | 'open'> &
     Heading & {
@@ -40,6 +50,7 @@
   let {
     open = $bindable(false),
     title,
+    closeButton = true,
     header,
     size = 'md',
     placement = 'center',
@@ -142,12 +153,16 @@
     {#if heading.kind === 'title'}
       <div class="modal-header">
         <h2 class="modal-title" id={titleId}>{heading.title}</h2>
-        <button type="button" class="modal-close" aria-label={closeLabel} onclick={hide}>
-          <X class="close-icon" />
-        </button>
+        {#if closeButton}
+          <button type="button" class="modal-close" aria-label={closeLabel} onclick={hide}>
+            <X class="close-icon" />
+          </button>
+        {/if}
       </div>
     {:else if heading.kind === 'custom'}
-      {@render heading.header(hide)}
+      <div class="modal-header modal-header-bar">
+        {@render heading.header(hide)}
+      </div>
     {/if}
     <div class={['modal-body', MODAL_BODIES[body]]}>
       {@render children?.()}
