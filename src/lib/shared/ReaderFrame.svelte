@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import BreakpointProbe from '$lib/components/BreakpointProbe.svelte';
   import ChromeBar from '$lib/components/ChromeBar.svelte';
   import Dock from '$lib/components/Dock.svelte';
   import ToastClearance from '$lib/components/ToastClearance.svelte';
-  import CompactProbe from './CompactProbe.svelte';
   import type { ReaderFrameView } from './reader-frame.svelte';
 
   type Props = {
@@ -59,7 +59,7 @@
     bind:clientWidth={frame.bodyWidth}
     bind:clientHeight={frame.bodyHeight}
   >
-    <CompactProbe bind:width={frame.compactWidth} />
+    <BreakpointProbe breakpoint="--breakpoint-compact" bind:width={frame.compactWidth} />
 
     <div
       class={['relative flex-1 min-h-0 overflow-hidden', pageClass]}

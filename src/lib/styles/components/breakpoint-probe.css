@@ -1,0 +1,9 @@
+.breakpoint-probe {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--breakpoint-probe-width, 0px);
+  block-size: 0;
+  visibility: hidden;
+  pointer-events: none;
+}

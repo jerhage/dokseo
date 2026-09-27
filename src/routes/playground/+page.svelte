@@ -7,6 +7,7 @@
   import AvatarSection from './AvatarSection.svelte';
   import BadgesSection from './BadgesSection.svelte';
   import BentoSection from './BentoSection.svelte';
+  import BreakpointProbeSection from './BreakpointProbeSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
   import CarouselSection from './CarouselSection.svelte';
@@ -90,6 +91,7 @@
     PanZoomSection,
     RegionBoxSection,
     MarqueeSelectionSection,
+    BreakpointProbeSection,
     ProgressSection,
     SliderSection,
     StatSection,
