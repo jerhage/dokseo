@@ -288,6 +288,8 @@ const RUNTIME_INPUTS = [
   '--menu-max-width',
   '--menu-right',
   '--menu-top',
+  '--popover-left',
+  '--popover-top',
   '--progress',
   '--skeleton-width',
   '--toast-offset-block-end',

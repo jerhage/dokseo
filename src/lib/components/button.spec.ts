@@ -57,6 +57,11 @@ describe('Button', () => {
     expect(attribute(html, 'class')?.split(' ')).toContain('btn-loading');
   });
 
+  it('lets a wrapping button break its content over lines', () => {
+    expect(attribute(markup({ wrap: true }), 'class')?.split(' ')).toContain('btn-wrap');
+    expect(attribute(markup({}), 'class')?.split(' ')).not.toContain('btn-wrap');
+  });
+
   it('keeps the type a caller asks of a button', () => {
     expect(attribute(markup({ type: 'submit' }), 'type')).toBe('submit');
   });

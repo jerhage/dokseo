@@ -15,6 +15,7 @@
     { id: 'table', label: 'Table' },
     { id: 'modal', label: 'Modal and toast' },
     { id: 'dropdown', label: 'Dropdown' },
+    { id: 'popover', label: 'Popover' },
     { id: 'navigation', label: 'Breadcrumb and pagination' },
     { id: 'avatar', label: 'Avatar' },
     { id: 'progress', label: 'Progress and skeleton' },

@@ -9,6 +9,7 @@
     square?: boolean;
     block?: boolean;
     pill?: boolean;
+    wrap?: boolean;
     loading?: boolean;
     active?: boolean;
   };
@@ -33,6 +34,7 @@
     square = false,
     block = false,
     pill = false,
+    wrap = false,
     loading = false,
     active = false,
     ref = $bindable(),
@@ -49,6 +51,7 @@
       'btn-square': square,
       'btn-block': block,
       'btn-pill': pill,
+      'btn-wrap': wrap,
       'btn-loading': loading,
       'is-active': active,
     },

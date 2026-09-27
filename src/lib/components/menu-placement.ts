@@ -149,7 +149,7 @@ function menuInset(placement: MenuPlacement | undefined): MenuInset {
   };
 }
 
-export { menuInset, menuPlacement };
+export { menuBlock, menuInset, menuPlacement };
 export type {
   AnchorRect,
   InlineDirection,

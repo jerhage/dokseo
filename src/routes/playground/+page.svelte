@@ -25,6 +25,7 @@
   import NavigationSection from './NavigationSection.svelte';
   import OverlaySection from './OverlaySection.svelte';
   import PageWrapSection from './PageWrapSection.svelte';
+  import PopoverSection from './PopoverSection.svelte';
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
   import ProgressSection from './ProgressSection.svelte';
@@ -51,6 +52,7 @@
     TableSection,
     ModalToastSection,
     DropdownSection,
+    PopoverSection,
     CommandSection,
     NavigationSection,
     AvatarSection,

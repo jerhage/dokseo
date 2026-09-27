@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
+  import { followAnchor } from './anchor-tracking';
   import { BUTTON_SIZES, BUTTON_VARIANTS, MENU_ALIGNS } from './classes';
   import type { ButtonVariant, ControlSize, MenuAlign } from './classes';
   import ChevronDown from './icons/ChevronDown.svelte';
@@ -115,11 +116,9 @@
     if (!open || shown === undefined) return;
     shown.showPopover();
     place();
-    window.addEventListener('scroll', place, { capture: true, passive: true });
-    window.addEventListener('resize', place, { passive: true });
+    const stop = followAnchor(place);
     return () => {
-      window.removeEventListener('scroll', place, { capture: true });
-      window.removeEventListener('resize', place);
+      stop();
       if (shown.matches(':popover-open')) shown.hidePopover();
     };
   });

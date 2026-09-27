@@ -114,6 +114,12 @@
 .btn-block {
   inline-size: 100%;
 }
+.btn-wrap {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  max-inline-size: 100%;
+  white-space: normal;
+}
 .btn:disabled,
 .btn[aria-disabled='true'] {
   --_btn-fg: var(--color-disabled);

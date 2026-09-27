@@ -49,6 +49,7 @@
   --modal-width-md: var(--ds-size-dialog-md);
   --modal-width-lg: var(--ds-size-dialog-lg);
   --toast-width: var(--ds-size-toast);
+  --popover-width: var(--ds-size-popover);
   --menu-min-width: var(--ds-size-menu);
   --stat-min-width: var(--ds-size-stat);
   --breakpoint-compact: var(--ds-size-compact);
