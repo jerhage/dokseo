@@ -1,6 +1,6 @@
-const CLICK_SLOP_PX = 3;
+import { TOUCH_SLOP_PX } from '$lib/components/gesture';
 
-const TOUCH_SLOP_PX = 12;
+const CLICK_SLOP_PX = 3;
 
 function clickSlop(pointerType: string): number {
   return pointerType === 'touch' ? TOUCH_SLOP_PX : CLICK_SLOP_PX;

@@ -21,6 +21,7 @@
   import EyebrowSection from './EyebrowSection.svelte';
   import FileUploadSection from './FileUploadSection.svelte';
   import FormSection from './FormSection.svelte';
+  import GestureSection from './GestureSection.svelte';
   import GridSection from './GridSection.svelte';
   import HeroSection from './HeroSection.svelte';
   import IconButtonSection from './IconButtonSection.svelte';
@@ -78,6 +79,7 @@
     ThumbnailSection,
     CarouselSection,
     DockSection,
+    GestureSection,
     ProgressSection,
     SliderSection,
     StatSection,
