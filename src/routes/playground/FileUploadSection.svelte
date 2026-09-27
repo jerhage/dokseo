@@ -99,7 +99,7 @@
 <DemoSection
   id="upload"
   title="File upload"
-  classes={['dropzone', 'dropzone-compact', 'window-drop', 'file-list', 'file-item']}
+  classes={['dropzone', 'dropzone-compact', 'window-dropzone', 'file-list', 'file-item']}
 >
   <p class="text-sm text-muted">
     Drag files onto a zone or click to browse. Files over 50 MB or of the wrong type show as errors.

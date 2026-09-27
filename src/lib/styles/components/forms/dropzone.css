@@ -106,7 +106,7 @@
   block-size: var(--control-h-md);
   margin: 0;
 }
-.window-drop {
+.window-dropzone {
   position: fixed;
   inset: 0;
   display: none;
@@ -122,11 +122,11 @@
   overflow: visible;
   pointer-events: none;
 }
-.window-drop:popover-open {
+.window-dropzone:popover-open {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
 }
-.window-drop-panel {
+.window-dropzone-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
@@ -143,6 +143,6 @@
   border-radius: var(--radius-container);
   box-shadow: var(--shadow-lg);
 }
-.window-drop-panel .dropzone-icon {
+.window-dropzone-panel .dropzone-icon {
   transform: translateY(calc(var(--sp-1) * -1));
 }

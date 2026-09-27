@@ -55,8 +55,8 @@
 <svelte:window ondragenter={enter} ondragover={hover} ondragleave={leave} ondrop={drop} />
 
 {#if showing}
-  <div class="window-drop" popover="manual" aria-hidden="true" {@attach raise}>
-    <div class="window-drop-panel">
+  <div class="window-dropzone" popover="manual" aria-hidden="true" {@attach raise}>
+    <div class="window-dropzone-panel">
       <span class="dropzone-icon"><Upload class="dropzone-mark" /></span>
       <span class="dropzone-title">{@render children()}</span>
     </div>
