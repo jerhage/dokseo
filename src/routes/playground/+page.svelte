@@ -20,6 +20,7 @@
   import FormSection from './FormSection.svelte';
   import GridSection from './GridSection.svelte';
   import HeroSection from './HeroSection.svelte';
+  import IconButtonSection from './IconButtonSection.svelte';
   import IconsSection from './IconsSection.svelte';
   import KeyHintsSection from './KeyHintsSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
@@ -47,6 +48,7 @@
     TokensSection,
     IconsSection,
     ButtonsSection,
+    IconButtonSection,
     BadgesSection,
     FormSection,
     SearchFieldSection,
