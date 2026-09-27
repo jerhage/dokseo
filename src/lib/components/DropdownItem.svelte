@@ -33,7 +33,7 @@
 {#snippet content()}
   {@render children?.()}
   {#if shortcut !== undefined}
-    <span class="dropdown-item-shortcut">{shortcut}</span>
+    <span class="dropdown-item-hint">{shortcut}</span>
   {/if}
 {/snippet}
 
