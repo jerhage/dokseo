@@ -8,6 +8,7 @@
   import IconButton from '$lib/components/IconButton.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import SearchField from '$lib/components/SearchField.svelte';
   import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
@@ -252,11 +253,12 @@
     <div class="col gap-2 p-3">
       {#if cards.length === 0}
         {#if loadFailure === null}
-          <p class="m-0 p-2 text-sm text-muted">
-            {searching
+          <EmptyState
+            class="p-2"
+            message={searching
               ? 'No capture or note in this book holds that text.'
               : 'Drag a box over a speech bubble and the text arrives here.'}
-          </p>
+          />
         {/if}
       {:else}
         <ul class="col gap-2 list-reset" aria-label="Captures in this book">

@@ -6,6 +6,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
   import Divider from '$lib/components/Divider.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import SearchField from '$lib/components/SearchField.svelte';
@@ -272,7 +273,7 @@
       </Alert>
     </div>
   {:else if note.kind === 'nothing'}
-    <p class="px-5 py-5 text-sm text-muted">{note.message}</p>
+    <EmptyState class="px-5 py-5" message={note.message} />
   {/if}
 
   {#if results.rows.length > 0}

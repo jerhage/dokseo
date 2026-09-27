@@ -4,6 +4,7 @@
   import Button from '$lib/components/Button.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import Field from '$lib/components/Field.svelte';
   import Input from '$lib/components/Input.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
@@ -60,7 +61,7 @@
     {/if}
 
     {#if notice !== null}
-      <p class="text-sm text-muted">{notice}</p>
+      <EmptyState message={notice} />
     {:else}
       <ul class="col gap-2 list-reset">
         {#each rows as row (row.id)}

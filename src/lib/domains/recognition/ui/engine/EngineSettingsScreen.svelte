@@ -2,6 +2,7 @@
   import Alert from '$lib/components/Alert.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import Radio from '$lib/components/Radio.svelte';
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
@@ -87,9 +88,10 @@
 </header>
 
 {#if model === null || language === null}
-  <p class="px-responsive py-5 text-sm text-muted">
-    No recognition model has been chosen for any language yet.
-  </p>
+  <EmptyState
+    class="px-responsive py-5"
+    message="No recognition model has been chosen for any language yet."
+  />
 {:else}
   <div class="col gap-4 px-responsive pt-4 pb-6">
     <section

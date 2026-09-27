@@ -3,6 +3,7 @@
   import Button from '$lib/components/Button.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import TagIcon from '$lib/components/icons/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
@@ -35,7 +36,7 @@
 
 <Modal bind:open title="Tags in this book" size="sm" body="flush">
   {#if used.length === 0}
-    <p class="m-0 px-5 pb-5 text-sm text-muted">No capture in this book carries a tag yet.</p>
+    <EmptyState class="px-5 pb-5" message="No capture in this book carries a tag yet." />
   {:else}
     <ul class="col gap-0 list-reset px-3 pb-3" aria-label="Tags in this book">
       {#each used as tag (tag.id)}

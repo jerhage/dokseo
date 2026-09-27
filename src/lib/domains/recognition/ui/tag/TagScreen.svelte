@@ -4,6 +4,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import type { KeyHint } from '$lib/components/key-hints';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import Tag from '$lib/components/Tag.svelte';
@@ -123,20 +124,19 @@
     {/if}
 
     {#if stage.kind === 'loading'}
-      <p class="text-sm text-muted" aria-live="polite">Reading your tags…</p>
+      <EmptyState live message="Reading your tags…" />
     {:else if stage.kind === 'no-tags'}
-      <p class="text-sm text-muted">
-        No tags yet. Tag a capture from the capture panel in the reader and it appears here.
-      </p>
+      <EmptyState
+        message="No tags yet. Tag a capture from the capture panel in the reader and it appears here."
+      />
     {:else if stage.kind === 'unchosen'}
-      <div class="col items-start gap-3">
-        <p class="text-sm text-muted">
-          No tag chosen. Pick one from the list to see everything carrying it.
-        </p>
-        <Button class="layout-app-shell-narrow-only" aria-haspopup="dialog" onclick={showList}>
-          Choose a tag
-        </Button>
-      </div>
+      <EmptyState message="No tag chosen. Pick one from the list to see everything carrying it.">
+        {#snippet action()}
+          <Button class="layout-app-shell-narrow-only" aria-haspopup="dialog" onclick={showList}>
+            Choose a tag
+          </Button>
+        {/snippet}
+      </EmptyState>
     {:else if stage.kind === 'unshelved'}
       <h1 class="row items-center gap-2 text-lg min-w-0">
         <Badge colour={stage.tag.colour} quiet dot aria-hidden="true" />
@@ -156,9 +156,10 @@
       </header>
 
       {#if stage.kind === 'empty'}
-        <p class="text-sm text-muted">
-          Nothing carries {stage.tag.name} any more. Tag a capture in the reader to fill this in.
-        </p>
+        <EmptyState
+          message="Nothing carries {stage.tag
+            .name} any more. Tag a capture in the reader to fill this in."
+        />
       {:else}
         {#if neighbours.length > 0}
           <section class="col gap-2" aria-label="Also tagged">
