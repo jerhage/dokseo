@@ -30,6 +30,7 @@
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
   import ProgressSection from './ProgressSection.svelte';
+  import SearchFieldSection from './SearchFieldSection.svelte';
   import SegmentedSection from './SegmentedSection.svelte';
   import SidebarSection from './SidebarSection.svelte';
   import SplitSection from './SplitSection.svelte';
@@ -45,6 +46,7 @@
     ButtonsSection,
     BadgesSection,
     FormSection,
+    SearchFieldSection,
     FileUploadSection,
     ChoicesSection,
     SegmentedSection,

@@ -38,6 +38,7 @@
 @import 'components/forms/fieldset.css' layer(components);
 @import 'components/forms/settings-row.css' layer(components);
 @import 'components/forms/control.css' layer(components);
+@import 'components/forms/search-field.css' layer(components);
 @import 'components/forms/select.css' layer(components);
 @import 'components/forms/textarea.css' layer(components);
 @import 'components/forms/checkbox.css' layer(components);
