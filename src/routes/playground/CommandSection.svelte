@@ -67,6 +67,7 @@
   classes={[
     'command-item',
     'command-item-hint',
+    'command-item-static',
     'is-selected',
     'modal-top',
     'modal-body-flush',
@@ -82,6 +83,9 @@
   <Card>
     <span class="text-xs text-faint uppercase tracking-wide weight-semibold">In a plain list</span>
     {@render rows(COMMANDS, 1)}
+    <CommandItem interactive={false} class="text-muted" aria-hidden="true">
+      A static row: interactive=false renders a plain element for a placeholder
+    </CommandItem>
   </Card>
   <Card>
     <span class="text-xs text-faint uppercase tracking-wide weight-semibold">

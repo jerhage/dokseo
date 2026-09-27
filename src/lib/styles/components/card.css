@@ -52,6 +52,12 @@
   padding: var(--sp-4) var(--sp-5);
   border-block-start: var(--border-width) solid var(--border-color);
 }
+.card-sm > .card-body {
+  padding: var(--sp-3);
+}
+.card-sm > .card-footer {
+  padding: var(--sp-2) var(--sp-3);
+}
 .card-elevated {
   background-color: var(--color-surface-raised);
   border-color: transparent;

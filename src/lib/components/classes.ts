@@ -15,6 +15,8 @@ type StatusVariant = 'info' | 'success' | 'warning' | 'danger';
 
 type CardVariant = 'default' | 'elevated' | 'feature';
 
+type CardSize = 'sm' | 'md';
+
 type TabsVariant = 'underline' | 'pill';
 
 type MediaRatio = 'video' | 'square' | 'portrait';
@@ -40,6 +42,8 @@ type ProgressVariant = 'primary' | 'success' | 'warning' | 'danger' | 'accent';
 type SkeletonShape = 'default' | 'text' | 'title' | 'circle' | 'block';
 
 type StatTrend = 'flat' | 'up' | 'down';
+
+type StatSize = 'sm' | 'md';
 
 type TagColour =
   | 'slate'
@@ -124,6 +128,11 @@ const CARD_VARIANTS: Readonly<Record<CardVariant, ClassList>> = {
   default: [],
   elevated: ['card-elevated'],
   feature: ['card-feature'],
+};
+
+const CARD_SIZES: Readonly<Record<CardSize, ClassList>> = {
+  sm: ['card-sm'],
+  md: [],
 };
 
 const MEDIA_RATIOS: Readonly<Record<MediaRatio, ClassList>> = {
@@ -212,6 +221,11 @@ const STAT_TRENDS: Readonly<Record<StatTrend, ClassList>> = {
   down: ['stat-delta-down'],
 };
 
+const STAT_SIZES: Readonly<Record<StatSize, ClassList>> = {
+  sm: ['stat-sm'],
+  md: [],
+};
+
 const TAG_COLOURS: readonly TagColour[] = [
   'slate',
   'clay',
@@ -259,6 +273,7 @@ export {
   BADGE_VARIANTS,
   BUTTON_SIZES,
   BUTTON_VARIANTS,
+  CARD_SIZES,
   CARD_VARIANTS,
   MEDIA_RATIOS,
   MENU_ALIGNS,
@@ -270,6 +285,7 @@ export {
   PROGRESS_SIZES,
   PROGRESS_VARIANTS,
   SKELETON_SHAPES,
+  STAT_SIZES,
   STAT_TRENDS,
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
@@ -281,6 +297,7 @@ export type {
   AvatarVariant,
   BadgeVariant,
   ButtonVariant,
+  CardSize,
   CardVariant,
   ClassList,
   ControlSize,
@@ -293,6 +310,7 @@ export type {
   ModalSize,
   ProgressVariant,
   SkeletonShape,
+  StatSize,
   StatTrend,
   StatusVariant,
   TabsVariant,

@@ -10,10 +10,13 @@
   let email = $state('ada@');
   let role = $state('design');
   let projectField = $state<HTMLInputElement>();
+  let rename = $state('');
 
   const emailError = $derived(
     /^[^@\s]+@[^@\s]+\.[^@\s]+$/u.test(email) ? undefined : 'Enter a complete email address.',
   );
+
+  const renameError = $derived(rename.trim() === '' ? 'A name is needed.' : undefined);
 </script>
 
 <DemoSection
@@ -71,6 +74,17 @@
       <Field label="Disabled notes" error="An error on a textarea." class="col-span-full">
         {#snippet children(control)}
           <Textarea {...control} rows={2} value="Locked" disabled />
+        {/snippet}
+      </Field>
+      <Field
+        label="Rename the workspace"
+        hideLabel
+        error={renameError}
+        announceError
+        class="col-span-full"
+      >
+        {#snippet children(control)}
+          <Input {...control} bind:value={rename} placeholder="hideLabel and announceError" />
         {/snippet}
       </Field>
     </div>

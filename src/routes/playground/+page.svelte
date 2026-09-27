@@ -30,6 +30,7 @@
   import ProgressSection from './ProgressSection.svelte';
   import SidebarSection from './SidebarSection.svelte';
   import SplitSection from './SplitSection.svelte';
+  import StatSection from './StatSection.svelte';
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
   import TokensSection from './TokensSection.svelte';
@@ -54,6 +55,7 @@
     NavigationSection,
     AvatarSection,
     ProgressSection,
+    StatSection,
     DividerSection,
     LayoutsIntro,
     PageWrapSection,

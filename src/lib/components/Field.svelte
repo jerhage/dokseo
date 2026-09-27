@@ -9,10 +9,21 @@
     label: string;
     hint?: string | undefined;
     error?: string | undefined;
+    hideLabel?: boolean;
+    announceError?: boolean;
     children: Snippet<[FieldControl]>;
   };
 
-  let { label, hint, error, class: className, children, ...rest }: Props = $props();
+  let {
+    label,
+    hint,
+    error,
+    hideLabel = false,
+    announceError = false,
+    class: className,
+    children,
+    ...rest
+  }: Props = $props();
 
   const uid = $props.id();
   const ids = fieldIds(uid);
@@ -20,7 +31,7 @@
 </script>
 
 <div {...rest} class={['field', { 'is-invalid': error !== undefined }, className]}>
-  <label class="field-label" for={ids.control}>{label}</label>
+  <label class={['field-label', { 'visually-hidden': hideLabel }]} for={ids.control}>{label}</label>
   <div class="field-control">
     {@render children(control)}
   </div>
@@ -28,6 +39,8 @@
     <p class="field-hint" id={ids.hint}>{hint}</p>
   {/if}
   {#if error !== undefined}
-    <p class="field-error" id={ids.error}><CircleX class="field-error-icon" />{error}</p>
+    <p class="field-error" id={ids.error} role={announceError ? 'alert' : undefined}>
+      <CircleX class="field-error-icon" />{error}
+    </p>
   {/if}
 </div>

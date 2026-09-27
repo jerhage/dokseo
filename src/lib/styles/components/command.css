@@ -34,6 +34,11 @@
   background-color: transparent;
   cursor: not-allowed;
 }
+.command-item-static,
+.command-item-static:hover {
+  background-color: transparent;
+  cursor: default;
+}
 .command-item-hint {
   flex-shrink: 0;
   margin-inline-start: auto;

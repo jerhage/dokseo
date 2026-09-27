@@ -1,8 +1,10 @@
 <script lang="ts">
+  import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
   import Checkbox from '$lib/components/Checkbox.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import SettingsRow from '$lib/components/SettingsRow.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
@@ -12,12 +14,13 @@
   let plan = $state('monthly');
   let autosave = $state(true);
   let publicLink = $state(false);
+  let density = $state('Comfortable');
 </script>
 
 <DemoSection
   id="choice"
   title="Checkbox, radio and toggle"
-  classes={['fieldset', 'checkbox-wrapper', 'radio-wrapper', 'toggle']}
+  classes={['fieldset', 'settings-row', 'checkbox-wrapper', 'radio-wrapper', 'toggle']}
 >
   <div class="grid-3">
     <Card>
@@ -47,6 +50,20 @@
         <Toggle disabled>SSO (Enterprise)</Toggle>
         <Toggle checked disabled>Enforced</Toggle>
       </Fieldset>
+    </Card>
+    <Card>
+      <SettingsRow label="Density">
+        <div class="row gap-2">
+          {#each ['Compact', 'Comfortable'] as choice (choice)}
+            <Button
+              size="sm"
+              active={density === choice}
+              aria-pressed={density === choice}
+              onclick={() => (density = choice)}>{choice}</Button
+            >
+          {/each}
+        </div>
+      </SettingsRow>
     </Card>
   </div>
 </DemoSection>

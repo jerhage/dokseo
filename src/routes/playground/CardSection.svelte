@@ -9,7 +9,7 @@
 <DemoSection
   id="card"
   title="Card"
-  classes={['card', 'card-elevated', 'card-feature', 'card-interactive', 'card-media']}
+  classes={['card', 'card-elevated', 'card-feature', 'card-interactive', 'card-media', 'card-sm']}
 >
   <div class="grid-4">
     <Card>
@@ -57,6 +57,22 @@
     <Card heading="h4">
       {#snippet title()}Body only{/snippet}
       <p class="text-sm">Free content goes in the body after the title.</p>
+    </Card>
+    <Card size="sm">
+      {#snippet eyebrow()}Compact{/snippet}
+      {#snippet title()}size="sm"{/snippet}
+      {#snippet description()}The body and footer take the smaller padding.{/snippet}
+      {#snippet footer()}<Badge dot>Dense lists</Badge>{/snippet}
+    </Card>
+  </div>
+  <div class="grid-auto grid-auto-sm">
+    <Card
+      href="#card"
+      mediaRatio="portrait"
+      tooltip="A tooltip on the whole card"
+      aria-label="Media only"
+    >
+      {#snippet media()}{/snippet}
     </Card>
   </div>
 </DemoSection>
