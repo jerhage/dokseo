@@ -29,6 +29,7 @@
   import PlaygroundHeader from './PlaygroundHeader.svelte';
   import PlaygroundIntro from './PlaygroundIntro.svelte';
   import ProgressSection from './ProgressSection.svelte';
+  import SegmentedSection from './SegmentedSection.svelte';
   import SidebarSection from './SidebarSection.svelte';
   import SplitSection from './SplitSection.svelte';
   import StatSection from './StatSection.svelte';
@@ -45,6 +46,7 @@
     FormSection,
     FileUploadSection,
     ChoicesSection,
+    SegmentedSection,
     CardSection,
     AlertSection,
     TabsSection,

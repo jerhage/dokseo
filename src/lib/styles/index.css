@@ -33,6 +33,7 @@
 @import 'components/btn.css' layer(components);
 @import 'components/badge.css' layer(components);
 @import 'components/tag.css' layer(components);
+@import 'components/segmented.css' layer(components);
 @import 'components/forms/field.css' layer(components);
 @import 'components/forms/fieldset.css' layer(components);
 @import 'components/forms/settings-row.css' layer(components);

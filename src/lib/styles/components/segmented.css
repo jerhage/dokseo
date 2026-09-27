@@ -1,0 +1,27 @@
+.segmented {
+  display: inline-flex;
+  gap: var(--sp-1);
+}
+.segmented-track {
+  padding: var(--sp-1);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-inset);
+}
+.segmented-track > button.tag {
+  flex: 1 1 0;
+  justify-content: center;
+  border-color: transparent;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+}
+.segmented-track > button.tag.is-active {
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+.segmented-track > button.tag:disabled {
+  color: var(--color-disabled);
+  background-image: none;
+  cursor: not-allowed;
+}
