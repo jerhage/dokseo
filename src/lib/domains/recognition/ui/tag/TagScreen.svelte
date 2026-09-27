@@ -7,6 +7,7 @@
   import EmptyState from '$lib/components/EmptyState.svelte';
   import type { KeyHint } from '$lib/components/key-hints';
   import KeyHints from '$lib/components/KeyHints.svelte';
+  import ListGroup from '$lib/components/ListGroup.svelte';
   import Tag from '$lib/components/Tag.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
@@ -198,7 +199,7 @@
                   Open document
                 </Button>
               </div>
-              <ul class="col gap-0 list-reset p-1 surface bordered rounded-container">
+              <ListGroup variant="inset">
                 {#each shelf.rows as row (row.id)}
                   {@const line = chipLine(row.chips)}
                   <li>
@@ -234,7 +235,7 @@
                     </CommandItem>
                   </li>
                 {/each}
-              </ul>
+              </ListGroup>
             </li>
           {/each}
         </ul>
