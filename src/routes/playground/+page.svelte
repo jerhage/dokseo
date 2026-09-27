@@ -15,6 +15,7 @@
   import ChoicesSection from './ChoicesSection.svelte';
   import CommandSection from './CommandSection.svelte';
   import DividerSection from './DividerSection.svelte';
+  import DockSection from './DockSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import EmptyStateSection from './EmptyStateSection.svelte';
   import EyebrowSection from './EyebrowSection.svelte';
@@ -76,6 +77,7 @@
     AvatarSection,
     ThumbnailSection,
     CarouselSection,
+    DockSection,
     ProgressSection,
     SliderSection,
     StatSection,

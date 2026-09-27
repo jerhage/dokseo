@@ -1,0 +1,10 @@
+.dock-side .dock-panel {
+  inline-size: var(--layout-list-width);
+}
+.dock-sheet .dock-panel {
+  block-size: var(--layout-sheet-height);
+}
+.dock .dock-rail-toggle {
+  justify-content: flex-start;
+  min-inline-size: var(--sp-8);
+}
