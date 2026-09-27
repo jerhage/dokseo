@@ -81,14 +81,14 @@
   ]}
 >
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">In a plain list</span>
+    <span class="eyebrow text-faint weight-semibold">In a plain list</span>
     {@render rows(COMMANDS, 1)}
     <CommandItem interactive={false} class="text-muted" aria-hidden="true">
       A static row: interactive=false renders a plain element for a placeholder
     </CommandItem>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
+    <span class="eyebrow text-faint weight-semibold">
       In a top-anchored modal with a search header and an information footer
     </span>
     <div class="row wrap items-center gap-3">

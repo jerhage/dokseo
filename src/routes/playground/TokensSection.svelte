@@ -34,8 +34,7 @@
     </p>
     {#each COLOR_GROUPS as group (group.title)}
       <div class="stack-sm">
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">{group.title}</span
-        >
+        <span class="eyebrow text-faint weight-semibold">{group.title}</span>
         <div class="grid-auto grid-auto-sm gap-3">
           {#each group.tokens as name (name)}
             <div class="stack-sm">
@@ -48,7 +47,7 @@
     {/each}
     <div class="grid-2 gap-5">
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Type scale</span>
+        <span class="eyebrow text-faint weight-semibold">Type scale</span>
         {#each TYPE_SCALE as name (name)}
           <div class="row wrap items-center gap-3">
             <span class="type-sample" style:--sample-size="var({name})">Aa</span>
@@ -57,8 +56,7 @@
         {/each}
       </Card>
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Font families</span
-        >
+        <span class="eyebrow text-faint weight-semibold">Font families</span>
         {#each FONT_FAMILIES as name (name)}
           <div class="stack-sm">
             <span class="type-sample" style:--sample-family="var({name})">
@@ -69,7 +67,7 @@
         {/each}
       </Card>
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Spacing</span>
+        <span class="eyebrow text-faint weight-semibold">Spacing</span>
         {#each SPACING as name (name)}
           <div class="row items-center gap-3">
             <span class="space-sample" style:--sample-space="var({name})"></span>
@@ -78,7 +76,7 @@
         {/each}
       </Card>
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Radii</span>
+        <span class="eyebrow text-faint weight-semibold">Radii</span>
         <div class="grid-auto grid-auto-sm gap-4">
           {#each RADII as name (name)}
             <div class="stack-sm">
@@ -89,7 +87,7 @@
         </div>
       </Card>
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Shadows</span>
+        <span class="eyebrow text-faint weight-semibold">Shadows</span>
         <div class="row wrap gap-5">
           {#each SHADOWS as name (name)}
             <div class="stack-sm">
@@ -100,7 +98,7 @@
         </div>
       </Card>
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Opacity</span>
+        <span class="eyebrow text-faint weight-semibold">Opacity</span>
         <div class="row wrap gap-5">
           {#each OPACITIES as name (name)}
             <div class="stack-sm">
@@ -111,7 +109,7 @@
         </div>
       </Card>
       <Card>
-        <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
+        <span class="eyebrow text-faint weight-semibold">
           Language faces follow the lang attribute
         </span>
         <p lang="ja">読書の記録</p>

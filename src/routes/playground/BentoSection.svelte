@@ -26,9 +26,7 @@
     <Tile class="bento-col-3" label=".bento-col-3" />
     <Tile class="tile-wide" label=".tile-wide" />
   </div>
-  <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-    .layout-bento: the first child is 2 × 2
-  </span>
+  <span class="eyebrow text-faint weight-semibold"> .layout-bento: the first child is 2 × 2 </span>
   <div class="layout-bento">
     <Tile variant="feature" label="first child" />
     <Tile label="2" />

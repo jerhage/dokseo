@@ -32,7 +32,7 @@
   classes={['btn', 'btn-primary', 'btn-outline', 'btn-ghost', 'btn-accent', 'btn-danger']}
 >
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Variants</span>
+    <span class="eyebrow text-faint weight-semibold">Variants</span>
     <div class="row wrap items-center gap-3">
       {#each VARIANTS as variant (variant)}
         <Button {variant}>{variant}</Button>
@@ -40,7 +40,7 @@
     </div>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Sizes and shapes</span>
+    <span class="eyebrow text-faint weight-semibold">Sizes and shapes</span>
     {#each SIZES as size (size)}
       <div class="row wrap items-center gap-3">
         <Button variant="primary" {size}>{size}</Button>
@@ -53,7 +53,7 @@
     <Button variant="primary" block>Block</Button>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">States</span>
+    <span class="eyebrow text-faint weight-semibold">States</span>
     <div class="row wrap items-center gap-3">
       <Button variant="primary" loading={saving} disabled={saving} onclick={save}>
         {saving ? 'Saving' : 'Save'}
@@ -67,7 +67,7 @@
     </div>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">As a link</span>
+    <span class="eyebrow text-faint weight-semibold">As a link</span>
     <div class="row wrap items-center gap-3">
       <Button href="#button" size="sm">
         <span aria-hidden="true">‹</span>

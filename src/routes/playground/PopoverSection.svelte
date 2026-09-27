@@ -28,7 +28,7 @@
           </IconButton>
         {/snippet}
         <div class="col gap-3">
-          <p class="mono text-xs uppercase tracking-wide text-faint">Team plan</p>
+          <p class="eyebrow mono text-faint">Team plan</p>
           <p class="text-sm">Five seats, shared folders and a weekly export.</p>
           <p class="text-xs text-muted border-t pt-2">Billed yearly.</p>
         </div>
@@ -61,7 +61,7 @@
     </div>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Wrapping button</span>
+    <span class="eyebrow text-faint weight-semibold">Wrapping button</span>
     <div class="grid-auto grid-auto-sm">
       <Button size="sm" pill wrap>
         A long label that breaks over lines

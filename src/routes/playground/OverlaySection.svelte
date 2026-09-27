@@ -32,7 +32,7 @@
       <div class="layout-overlay-media"></div>
       <div class="layout-overlay-scrim"></div>
       <div class="layout-overlay-content">
-        <span class="text-xs uppercase tracking-wide weight-semibold">Case study</span>
+        <span class="eyebrow weight-semibold">Case study</span>
         <h3>Northwind rebrand in two weeks</h3>
       </div>
     </div>

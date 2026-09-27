@@ -9,7 +9,7 @@
 </script>
 
 {#snippet caption(text: string)}
-  <span class="text-xs text-faint uppercase tracking-wide weight-semibold">{text}</span>
+  <span class="eyebrow text-faint weight-semibold">{text}</span>
 {/snippet}
 
 <DemoSection

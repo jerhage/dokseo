@@ -73,9 +73,7 @@
     </ul>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-      Size, at the theme stroke
-    </span>
+    <span class="eyebrow text-faint weight-semibold"> Size, at the theme stroke </span>
     <div class="row wrap items-end gap-6">
       {#each SIZES as size (size)}
         <div class="col items-center gap-2">
@@ -88,9 +86,7 @@
         </div>
       {/each}
     </div>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-      A fixed stroke, and an absolute one
-    </span>
+    <span class="eyebrow text-faint weight-semibold"> A fixed stroke, and an absolute one </span>
     <div class="row wrap items-end gap-6">
       {#each STROKES as strokeWidth (strokeWidth)}
         <div class="col items-center gap-2">
@@ -121,9 +117,7 @@
       An icon strokes in currentColor, so it takes its colour from the text around it. Switch the
       theme and the scheme in the header to see how each theme colours them.
     </p>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-      A text colour utility
-    </span>
+    <span class="eyebrow text-faint weight-semibold"> A text colour utility </span>
     <div class="row wrap items-end gap-6">
       {#each COLOURS as sample (sample.role)}
         <div class="col items-center gap-2">
@@ -132,9 +126,7 @@
         </div>
       {/each}
     </div>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-      The color prop, given a semantic token
-    </span>
+    <span class="eyebrow text-faint weight-semibold"> The color prop, given a semantic token </span>
     <div class="row wrap items-end gap-6">
       {#each COLOURS as sample (sample.role)}
         <div class="col items-center gap-2">
@@ -143,9 +135,7 @@
         </div>
       {/each}
     </div>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-      Inherited from a coloured parent
-    </span>
+    <span class="eyebrow text-faint weight-semibold"> Inherited from a coloured parent </span>
     <div class="row wrap items-center gap-3">
       <Button variant="primary"><Upload class="btn-icon" /> Upload</Button>
       <Button variant="danger"><CircleX class="btn-icon" /> Remove</Button>
@@ -159,7 +149,7 @@
     <p class="row wrap items-center gap-2 text-sm text-success">
       <CircleCheck /> Inside a paragraph with the success text colour.
     </p>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
+    <span class="eyebrow text-faint weight-semibold">
       The tag colours, through the color prop
     </span>
     <ul class="list-reset row wrap items-end gap-4">

@@ -69,7 +69,7 @@
   classes={['modal', 'modal-sm', 'modal-lg', 'modal-header-bar', 'modal-footer-info', 'toast']}
 >
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Modal</span>
+    <span class="eyebrow text-faint weight-semibold">Modal</span>
     <div class="row wrap items-center gap-3">
       <Button variant="danger" onclick={() => (deleting = true)}>Delete workspace</Button>
       {#each SIZES as size (size)}
@@ -82,7 +82,7 @@
     <p class="text-sm text-muted">Last closed: {closedBy}</p>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Toast</span>
+    <span class="eyebrow text-faint weight-semibold">Toast</span>
     <div class="row wrap items-center gap-3">
       {#each TOASTS as toast (toast.variant)}
         <Button onclick={() => toaster.show(toast)}>{toast.button}</Button>

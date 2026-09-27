@@ -47,7 +47,7 @@
   classes={['badge', 'badge-dot', 'badge-solid', 'badge-quiet', 'tag', 'tag-remove']}
 >
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Badges</span>
+    <span class="eyebrow text-faint weight-semibold">Badges</span>
     <div class="row wrap items-center gap-2">
       {#each VARIANTS as variant (variant)}
         <Badge {variant}>{variant}</Badge>
@@ -60,7 +60,7 @@
     </div>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Tag colours</span>
+    <span class="eyebrow text-faint weight-semibold">Tag colours</span>
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
         <Badge {colour}>{colour}</Badge>
@@ -92,7 +92,7 @@
     </div>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Toggle tags</span>
+    <span class="eyebrow text-faint weight-semibold">Toggle tags</span>
     <div class="row wrap items-center gap-2">
       {#each TOPICS as topic (topic)}
         <TagToggle
@@ -104,7 +104,7 @@
     <p class="text-sm text-muted">Chosen: {chosen.length === 0 ? 'none' : chosen.join(', ')}</p>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Removable tags</span>
+    <span class="eyebrow text-faint weight-semibold">Removable tags</span>
     <div class="row wrap items-center gap-2">
       <Tag>Static</Tag>
       {#each tags as tag (tag)}

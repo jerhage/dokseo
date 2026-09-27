@@ -7,11 +7,11 @@
 <DemoSection id="stat" title="Stat" classes={['stat', 'stat-sm']}>
   <div class="grid-2">
     <Card>
-      <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Default</span>
+      <span class="eyebrow text-faint weight-semibold">Default</span>
       <Stat class="p-0" label="Active users" value="3,914" delta="+3.1%" trend="up" />
     </Card>
     <Card>
-      <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
+      <span class="eyebrow text-faint weight-semibold">
         size="sm" listed, in a dl the caller supplies
       </span>
       <dl class="grid-2-col gap-2">

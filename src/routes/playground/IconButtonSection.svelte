@@ -15,7 +15,7 @@
 
 <DemoSection id="icon-button" title="Icon button" classes={['btn-square', 'btn-icon']}>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">Sizes</span>
+    <span class="eyebrow text-faint weight-semibold">Sizes</span>
     <div class="row wrap items-center gap-3">
       {#each SIZES as size (size)}
         <IconButton {size} icon={Search} label="Search, {size}" />
@@ -26,9 +26,7 @@
     </div>
   </Card>
   <Card>
-    <span class="text-xs text-faint uppercase tracking-wide weight-semibold">
-      Label and tooltip
-    </span>
+    <span class="eyebrow text-faint weight-semibold"> Label and tooltip </span>
     <div class="row wrap items-center gap-3">
       <IconButton size="sm" icon={Copy} label="Copy the text" />
       <IconButton size="sm" icon={Tag} label="Add a tag to the capture at p.12" tooltip="Tags" />
