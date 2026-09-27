@@ -9,7 +9,15 @@
 <DemoSection
   id="card"
   title="Card"
-  classes={['card', 'card-elevated', 'card-feature', 'card-interactive', 'card-media', 'card-sm']}
+  classes={[
+    'card',
+    'card-elevated',
+    'card-feature',
+    'card-interactive',
+    'card-media',
+    'card-media-only',
+    'card-sm',
+  ]}
 >
   <div class="grid-4">
     <Card>
