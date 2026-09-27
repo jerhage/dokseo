@@ -9,6 +9,7 @@
   import BentoSection from './BentoSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
+  import CarouselSection from './CarouselSection.svelte';
   import ChromeBarSection from './ChromeBarSection.svelte';
   import ChromeSection from './ChromeSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
@@ -74,6 +75,7 @@
     NavigationSection,
     AvatarSection,
     ThumbnailSection,
+    CarouselSection,
     ProgressSection,
     SliderSection,
     StatSection,

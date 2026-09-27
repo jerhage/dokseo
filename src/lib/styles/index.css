@@ -73,6 +73,7 @@
 @import 'components/stat.css' layer(components);
 @import 'components/list-group.css' layer(components);
 @import 'components/thumbnail.css' layer(components);
+@import 'components/carousel.css' layer(components);
 
 @import 'utilities/layout.css' layer(utilities);
 @import 'utilities/layout-patterns.css' layer(utilities);

@@ -282,6 +282,9 @@ const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
 };
 
 const RUNTIME_INPUTS = [
+  '--carousel-beside',
+  '--carousel-gap',
+  '--carousel-shift',
   '--menu-anchor-width',
   '--menu-left',
   '--menu-max-width',
