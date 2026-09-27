@@ -32,7 +32,8 @@
   aria-labelledby={label === undefined ? undefined : `${uid}-label`}
 >
   {#if label !== undefined}
-    <svelte:element this={heading} class="list-group-label" id="{uid}-label">{label}</svelte:element
+    <svelte:element this={heading} class="list-group-label eyebrow" id="{uid}-label"
+      >{label}</svelte:element
     >
   {/if}
   <div class="list-group-box">

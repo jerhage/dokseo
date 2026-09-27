@@ -749,6 +749,35 @@ describe('the design system stylesheets', () => {
     }
   });
 
+  it('sets an eyebrow in the extra-small size, the wider tracking and upper case, and nothing else', () => {
+    expect(declarations(ruleBody(style('utilities/text.css'), '.eyebrow'))).toEqual([
+      'font-size: var(--text-xs)',
+      'letter-spacing: var(--ls-wider)',
+      'text-transform: uppercase',
+    ]);
+  });
+
+  it('declares the eyebrow before every text utility, so a size, tracking, face, weight or colour utility beside it wins', () => {
+    const textRules = rules(style('utilities/text.css'));
+    const eyebrow = textRules.findIndex((rule) => rule.selectors.includes('.eyebrow'));
+    const typeSetters = textRules
+      .map((rule, index) => ({ rule, index }))
+      .filter(({ rule }) =>
+        declarations(rule.body).some((part) =>
+          /^(font-size|letter-spacing|text-transform|font-family|font-weight|color):/u.test(part),
+        ),
+      )
+      .filter(({ rule }) => !rule.selectors.includes('.eyebrow'));
+
+    expect(typeSetters.length).toBeGreaterThan(0);
+    for (const { rule, index } of typeSetters) {
+      expect({ selectors: rule.selectors, after: index > eyebrow }).toEqual({
+        selectors: rule.selectors,
+        after: true,
+      });
+    }
+  });
+
   it('clears the user agent box of a fieldset and the padding of its legend', () => {
     const fieldset = style('components/forms/fieldset.css');
 

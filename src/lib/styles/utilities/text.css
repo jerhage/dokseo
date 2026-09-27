@@ -1,3 +1,8 @@
+.eyebrow {
+  font-size: var(--text-xs);
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+}
 .prose {
   max-inline-size: var(--container-prose);
 }

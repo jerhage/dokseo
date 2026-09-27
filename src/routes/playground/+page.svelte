@@ -16,6 +16,7 @@
   import DividerSection from './DividerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import EmptyStateSection from './EmptyStateSection.svelte';
+  import EyebrowSection from './EyebrowSection.svelte';
   import FileUploadSection from './FileUploadSection.svelte';
   import FormSection from './FormSection.svelte';
   import GridSection from './GridSection.svelte';
@@ -48,6 +49,7 @@
 
   const SECTIONS: readonly Component[] = [
     TokensSection,
+    EyebrowSection,
     IconsSection,
     ButtonsSection,
     IconButtonSection,

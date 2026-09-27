@@ -5,10 +5,7 @@
 }
 .list-group-label {
   padding-inline: var(--sp-1);
-  font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-wider);
-  text-transform: uppercase;
   color: var(--color-text-muted);
 }
 .list-group-box {
