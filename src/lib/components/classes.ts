@@ -172,11 +172,6 @@ const MODAL_NARROWS: Readonly<Record<ModalNarrow, ClassList>> = {
   fill: ['modal-fills-narrow'],
 };
 
-const MENU_ALIGNS: Readonly<Record<MenuAlign, ClassList>> = {
-  start: [],
-  end: ['dropdown-menu-end'],
-};
-
 const AVATAR_SIZES: Readonly<Record<ControlSize, ClassList>> = {
   sm: ['avatar-sm'],
   md: [],
@@ -276,7 +271,6 @@ export {
   CARD_SIZES,
   CARD_VARIANTS,
   MEDIA_RATIOS,
-  MENU_ALIGNS,
   MODAL_BODIES,
   MODAL_FOOTERS,
   MODAL_NARROWS,

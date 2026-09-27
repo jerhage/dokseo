@@ -2,7 +2,7 @@
   inset: auto;
   top: var(--popover-top, auto);
   left: var(--popover-left, auto);
-  inline-size: min(var(--popover-width), 100% - 2 * var(--sp-2));
+  inline-size: min(var(--popover-width), 100% - 2 * var(--overlay-edge));
   margin: 0;
   padding: var(--sp-4);
   color: var(--color-text);

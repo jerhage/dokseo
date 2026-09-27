@@ -3,12 +3,17 @@
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
   import { followAnchor } from './anchor-tracking';
-  import { BUTTON_SIZES, BUTTON_VARIANTS, MENU_ALIGNS } from './classes';
+  import { BUTTON_SIZES, BUTTON_VARIANTS } from './classes';
   import type { ButtonVariant, ControlSize, MenuAlign } from './classes';
   import ChevronDown from './icons/ChevronDown.svelte';
   import { menuOpening, provideMenu } from './menu';
-  import { menuInset, menuPlacement } from './menu-placement';
-  import type { MenuPlacement } from './menu-placement';
+  import {
+    inlineDirection,
+    menuInset,
+    overlayPlacement,
+    overlaySpacing,
+  } from './overlay-placement';
+  import type { OverlayPlacement } from './overlay-placement';
   import { landOn, menuMove } from './roving';
   import type { Move } from './roving';
 
@@ -40,9 +45,8 @@
   let root = $state<HTMLDivElement>();
   let button = $state<HTMLButtonElement>();
   let menu = $state<HTMLDivElement>();
-  let placement = $state<MenuPlacement>();
+  let placement = $state<OverlayPlacement>();
   const inset = $derived(menuInset(placement));
-  const shownAlign = $derived(placement?.align ?? align);
 
   provideMenu({ close: () => close(true) });
 
@@ -99,15 +103,12 @@
     if (button === undefined || menu === undefined) return;
     const viewport = document.documentElement;
     const style = getComputedStyle(menu);
-    placement = menuPlacement(
+    placement = overlayPlacement(
       button.getBoundingClientRect(),
       { width: viewport.clientWidth, height: viewport.clientHeight },
       { width: menu.offsetWidth, height: menu.offsetHeight },
-      {
-        align,
-        direction: style.direction === 'rtl' ? 'rtl' : 'ltr',
-        gutter: Number.parseFloat(style.marginBlockStart),
-      },
+      { align, direction: inlineDirection(style.direction), width: 'at-least-anchor' },
+      overlaySpacing(style),
     );
   }
 
@@ -169,11 +170,9 @@
     role="menu"
     aria-labelledby="{uid}-trigger"
     popover="manual"
-    class={['dropdown-menu', MENU_ALIGNS[shownAlign]]}
+    class="dropdown-menu"
     style:--menu-top={inset.top}
-    style:--menu-bottom={inset.bottom}
     style:--menu-left={inset.left}
-    style:--menu-right={inset.right}
     style:--menu-anchor-width={inset.anchorWidth}
     style:--menu-max-width={inset.maxWidth}
   >

@@ -39,8 +39,8 @@
   </Card>
   <Card>
     <p class="text-sm text-muted">
-      Near the end of the screen the popover shifts back inside it; with no room below it opens
-      above.
+      Near the end of the screen the popover lines up with the end of its trigger, or shifts back
+      inside the screen when neither side fits; with no room below it opens above.
     </p>
     <div class="row justify-between gap-3">
       <span></span>

@@ -4,8 +4,8 @@
   import type { Attachment } from 'svelte/attachments';
   import type { HTMLAttributes } from 'svelte/elements';
   import { followAnchor } from './anchor-tracking';
-  import { popoverPlacement } from './popover-placement';
-  import type { PopoverPlacement } from './popover-placement';
+  import { inlineDirection, overlayPlacement, overlaySpacing } from './overlay-placement';
+  import type { OverlayPlacement } from './overlay-placement';
 
   type PopoverTrigger = {
     readonly popovertarget: string;
@@ -25,7 +25,7 @@
   let sheet = $state<HTMLDivElement>();
   let anchor: HTMLElement | undefined;
   let open = $state(false);
-  let placement = $state<PopoverPlacement>();
+  let placement = $state<OverlayPlacement>();
 
   const triggerProps: PopoverTrigger = {
     popovertarget: `${uid}-popover`,
@@ -41,10 +41,14 @@
   function place(): void {
     if (anchor === undefined || sheet === undefined) return;
     const box = sheet.getBoundingClientRect();
-    placement = popoverPlacement(
+    const style = getComputedStyle(sheet);
+    const viewport = document.documentElement;
+    placement = overlayPlacement(
       anchor.getBoundingClientRect(),
-      { width: window.innerWidth, height: window.innerHeight },
+      { width: viewport.clientWidth, height: viewport.clientHeight },
       { width: box.width, height: box.height },
+      { align: 'start', direction: inlineDirection(style.direction), width: 'content' },
+      overlaySpacing(style),
     );
   }
 
