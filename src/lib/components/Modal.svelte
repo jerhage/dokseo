@@ -4,9 +4,15 @@
   import type { Snippet } from 'svelte';
   import type { HTMLDialogAttributes } from 'svelte/elements';
   import { animationsSettled } from './animations';
-  import { MODAL_BODIES, MODAL_FOOTERS, MODAL_PLACEMENTS, MODAL_SIZES } from './classes';
+  import {
+    MODAL_BODIES,
+    MODAL_FOOTERS,
+    MODAL_NARROWS,
+    MODAL_PLACEMENTS,
+    MODAL_SIZES,
+  } from './classes';
   import X from './icons/X.svelte';
-  import type { ModalBody, ModalFooter, ModalPlacement, ModalSize } from './classes';
+  import type { ModalBody, ModalFooter, ModalNarrow, ModalPlacement, ModalSize } from './classes';
   import { modalHeading, modalLabelledBy } from './modal-heading';
   import { modalStep } from './modal-phase';
   import type { ModalEvent, ModalPhase } from './modal-phase';
@@ -24,6 +30,7 @@
       open?: boolean;
       size?: ModalSize;
       placement?: ModalPlacement;
+      narrow?: ModalNarrow;
       body?: ModalBody;
       closeLabel?: string;
       footer?: Snippet<[() => void]>;
@@ -36,6 +43,7 @@
     header,
     size = 'md',
     placement = 'center',
+    narrow = 'panel',
     body = 'padded',
     closeLabel = 'Close',
     footer,
@@ -119,7 +127,12 @@
   {...rest}
   bind:this={dialog}
   aria-labelledby={modalLabelledBy(heading, titleId, labelledBy)}
-  class={['modal-backdrop', { 'is-leaving': phase === 'leaving' }, className]}
+  class={[
+    'modal-backdrop',
+    MODAL_NARROWS[narrow],
+    { 'is-leaving': phase === 'leaving' },
+    className,
+  ]}
   oncancel={cancel}
   onclose={closed}
   onpointerdown={pointerdown}

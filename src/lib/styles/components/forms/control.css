@@ -17,11 +17,30 @@
     background-color var(--transition-ui),
     box-shadow var(--transition-ui);
 }
+.input-clearable {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-clearable > .input-clear {
+  display: none;
+}
 @media (pointer: coarse) {
   .input,
   .select,
   .textarea {
     font-size: var(--text-base);
+  }
+  .input-clearable > .input {
+    padding-inline-end: var(--control-h-md);
+  }
+  .input-clearable > .input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .input-clearable > .input-clear {
+    position: absolute;
+    inset-inline-end: 0;
+    display: inline-flex;
   }
 }
 .input::placeholder,

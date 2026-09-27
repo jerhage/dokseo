@@ -153,3 +153,23 @@ a.tag.is-active:hover {
 .tag-remove:hover {
   background-color: var(--color-active);
 }
+.tag-segmented {
+  display: inline-flex;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-inset);
+}
+.tag-segmented > button.tag {
+  flex: 1 1 0;
+  justify-content: center;
+  border-color: transparent;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+}
+.tag-segmented > button.tag.is-active {
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  box-shadow: var(--shadow-sm);
+}

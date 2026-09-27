@@ -99,3 +99,36 @@
     inline-size: 100%;
   }
 }
+.modal-backdrop:not(.modal-fills-narrow) .modal-fill-only {
+  display: none;
+}
+@media (width < 48rem) {
+  .modal-fills-narrow {
+    padding: 0;
+    background-color: transparent;
+  }
+  .modal-fills-narrow > .modal {
+    align-self: stretch;
+    max-inline-size: none;
+    block-size: 100dvh;
+    max-block-size: none;
+    margin: 0;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .modal-fills-narrow .modal-body {
+    flex: 1 1 auto;
+    overscroll-behavior: contain;
+  }
+  .modal-fills-narrow .modal-panel-only {
+    display: none;
+  }
+}
+@media (width >= 48rem) {
+  .modal-fills-narrow .modal-fill-only {
+    display: none;
+  }
+}

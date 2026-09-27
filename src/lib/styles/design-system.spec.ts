@@ -1153,6 +1153,76 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('fills a narrow screen with a filling modal, drops its card chrome and contains its scroll', () => {
+    const narrow = mediaBlock(style('components/modal/modal.css'), '(width < 48rem)');
+    const panel = declarations(ruleBody(narrow, '.modal-fills-narrow > .modal'));
+
+    expect(panel).toEqual(
+      expect.arrayContaining([
+        'block-size: 100dvh',
+        'max-inline-size: none',
+        'margin: 0',
+        'border-radius: 0',
+        'box-shadow: none',
+      ]),
+    );
+    expect(panel.some((line) => line.includes('env(safe-area-inset-top'))).toBe(true);
+    expect(declarations(ruleBody(narrow, '.modal-fills-narrow'))).toEqual([
+      'padding: 0',
+      'background-color: transparent',
+    ]);
+    expect(declarations(ruleBody(narrow, '.modal-fills-narrow .modal-body'))).toContain(
+      'overscroll-behavior: contain',
+    );
+  });
+
+  it('shows fill-only content only while a modal fills the screen, and hides panel-only content then', () => {
+    const modal = style('components/modal/modal.css');
+
+    expect(
+      declarations(
+        ruleBody(mediaBlock(modal, '(width < 48rem)'), '.modal-fills-narrow .modal-panel-only'),
+      ),
+    ).toEqual(['display: none']);
+    expect(
+      declarations(
+        ruleBody(mediaBlock(modal, '(width >= 48rem)'), '.modal-fills-narrow .modal-fill-only'),
+      ),
+    ).toEqual(['display: none']);
+    expect(
+      declarations(ruleBody(modal, '.modal-backdrop:not(.modal-fills-narrow) .modal-fill-only')),
+    ).toEqual(['display: none']);
+  });
+
+  it('draws the clear button of a clearable field only on a coarse pointer, in place of the native one', () => {
+    const control = style('components/forms/control.css');
+    const coarse = mediaBlock(control, '(pointer: coarse)');
+
+    expect(declarations(ruleBody(control, '.input-clearable > .input-clear'))).toEqual([
+      'display: none',
+    ]);
+    expect(declarations(ruleBody(coarse, '.input-clearable > .input-clear'))).toContain(
+      'display: inline-flex',
+    );
+    expect(control.indexOf('.input-clearable > .input-clear {')).toBeLessThan(
+      control.indexOf(coarse),
+    );
+    expect(
+      declarations(ruleBody(coarse, '.input-clearable > .input::-webkit-search-cancel-button')),
+    ).toEqual(['display: none']);
+  });
+
+  it('hides a touch-hidden element only on a coarse pointer', () => {
+    const state = style('utilities/state.css');
+
+    expect(
+      declarations(ruleBody(mediaBlock(state, '(pointer: coarse)'), '.hidden-on-touch')),
+    ).toEqual(['display: none']);
+    expect(
+      definesClass(state.replace(mediaBlock(state, '(pointer: coarse)'), ''), 'hidden-on-touch'),
+    ).toBe(false);
+  });
+
   it('removes the padding of a flush modal body', () => {
     expect(
       declarations(ruleBody(style('components/modal/modal.css'), '.modal-body-flush')),

@@ -11,3 +11,8 @@
   opacity: 0;
   pointer-events: none;
 }
+@media (pointer: coarse) {
+  .hidden-on-touch {
+    display: none;
+  }
+}

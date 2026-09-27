@@ -27,6 +27,8 @@ type ModalBody = 'padded' | 'flush';
 
 type ModalFooter = 'actions' | 'info';
 
+type ModalNarrow = 'panel' | 'fill';
+
 type MenuAlign = 'start' | 'end';
 
 type AvatarShape = 'circle' | 'square';
@@ -156,6 +158,11 @@ const MODAL_FOOTERS: Readonly<Record<ModalFooter, ClassList>> = {
   info: ['modal-footer-info'],
 };
 
+const MODAL_NARROWS: Readonly<Record<ModalNarrow, ClassList>> = {
+  panel: [],
+  fill: ['modal-fills-narrow'],
+};
+
 const MENU_ALIGNS: Readonly<Record<MenuAlign, ClassList>> = {
   start: [],
   end: ['dropdown-menu-end'],
@@ -257,6 +264,7 @@ export {
   MENU_ALIGNS,
   MODAL_BODIES,
   MODAL_FOOTERS,
+  MODAL_NARROWS,
   MODAL_PLACEMENTS,
   MODAL_SIZES,
   PROGRESS_SIZES,
@@ -280,6 +288,7 @@ export type {
   MenuAlign,
   ModalBody,
   ModalFooter,
+  ModalNarrow,
   ModalPlacement,
   ModalSize,
   ProgressVariant,
