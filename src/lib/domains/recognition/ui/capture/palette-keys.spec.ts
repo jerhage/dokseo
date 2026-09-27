@@ -3,7 +3,15 @@ import { paletteKey } from './palette-keys';
 import type { PaletteKeyContext, PaletteKeyPress } from './palette-keys';
 
 function press(key: string, held: Partial<Omit<PaletteKeyPress, 'key'>> = {}): PaletteKeyPress {
-  return { key, metaKey: false, ctrlKey: false, shiftKey: false, ...held };
+  return {
+    key,
+    metaKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    isComposing: false,
+    keyCode: 0,
+    ...held,
+  };
 }
 
 const HIDDEN_IN_BOOK: PaletteKeyContext = { shown: false, scope: 'book', hasBook: true };
@@ -78,5 +86,27 @@ describe('paletteKey', () => {
 
   it('ignores typing while shown', () => {
     expect(paletteKey(press('a'), SHOWN_ON_SHELF)).toEqual({ kind: 'ignore' });
+  });
+
+  it('ignores every command key while an IME composes', () => {
+    for (const key of ['Enter', 'Escape', 'ArrowDown', 'ArrowUp']) {
+      expect(paletteKey(press(key, { isComposing: true }), SHOWN_ON_SHELF)).toEqual({
+        kind: 'ignore',
+      });
+    }
+  });
+
+  it('ignores the IME process key code 229 that Safari sends for a confirming Enter', () => {
+    for (const key of ['Enter', 'Escape', 'ArrowDown', 'ArrowUp']) {
+      expect(paletteKey(press(key, { keyCode: 229 }), SHOWN_ON_SHELF)).toEqual({
+        kind: 'ignore',
+      });
+    }
+  });
+
+  it('ignores the shortcut while an IME composes', () => {
+    expect(paletteKey(press('k', { metaKey: true, isComposing: true }), HIDDEN_IN_BOOK)).toEqual({
+      kind: 'ignore',
+    });
   });
 });

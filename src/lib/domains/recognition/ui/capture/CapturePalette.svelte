@@ -1,5 +1,6 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
+  import { tick } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import Alert from '$lib/components/Alert.svelte';
@@ -115,6 +116,12 @@
     choose(chosen);
     void find.load();
     onopen?.();
+    void selectKeptQuery();
+  }
+
+  async function selectKeptQuery(): Promise<void> {
+    await tick();
+    if (field !== undefined && query !== '') field.select();
   }
 
   export function searchEverything(): void {
