@@ -40,7 +40,7 @@ test('offers the readings beside the two scales, whatever the book', async () =>
     },
   });
 
-  expect(legendsIn(panel(container))).toEqual(['Text size', 'Line spacing', 'Furigana']);
+  expect(legendsIn(panel(container))).toEqual(['Text size', 'Line spacing', 'Furigana / Hanja']);
   expect(readingsSwitch(panel(container)).checked).toBe(true);
 });
 

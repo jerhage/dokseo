@@ -69,7 +69,7 @@
       </div>
     </Fieldset>
 
-    <Fieldset legend="Furigana">
+    <Fieldset legend="Furigana / Hanja">
       <Checkbox
         checked={settings.showPhoneticReadings}
         onchange={(event) => chooseReadings(event.currentTarget.checked)}>Show</Checkbox
