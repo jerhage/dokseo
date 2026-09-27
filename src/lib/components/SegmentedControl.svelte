@@ -43,7 +43,7 @@
         type="button"
         aria-pressed={pressed}
         disabled={option.disabled}
-        class={['tag', { 'is-active': pressed }]}
+        class={['segmented-item', { 'is-active': pressed }]}
         onclick={() => onchoose(option.value)}>{option.label}</button
       >
     {:else}

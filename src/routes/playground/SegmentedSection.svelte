@@ -17,7 +17,11 @@
   let scope = $state<string | undefined>(undefined);
 </script>
 
-<DemoSection id="segmented" title="Segmented control" classes={['segmented', 'segmented-track']}>
+<DemoSection
+  id="segmented"
+  title="Segmented control"
+  classes={['segmented', 'segmented-track', 'segmented-item']}
+>
   <div class="grid-2">
     {#each VARIANTS as variant (variant)}
       <Card>

@@ -106,13 +106,13 @@ describe('SegmentedControl', () => {
     expect(list).toContain('class="btn btn-outline btn-sm is-active"');
   });
 
-  it('renders chips inside the track in the track variant', () => {
+  it('renders its own items inside the track in the track variant', () => {
     const html = markup({ variant: 'track', class: 'modal-fill-only' });
     const [covers, list] = buttons(html);
 
     expect(html).toMatch(/<div[^>]*class="segmented segmented-track modal-fill-only"/u);
-    expect(covers).toContain('class="tag"');
-    expect(list).toContain('class="tag is-active"');
+    expect(covers).toContain('class="segmented-item"');
+    expect(list).toContain('class="segmented-item is-active"');
     expect(list).toContain('type="button"');
   });
 });

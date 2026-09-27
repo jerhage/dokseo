@@ -8,19 +8,39 @@
   border-radius: var(--radius-control);
   box-shadow: var(--shadow-inset);
 }
-.segmented-track > button.tag {
+.segmented-item {
+  display: inline-flex;
   flex: 1 1 0;
+  align-items: center;
   justify-content: center;
-  border-color: transparent;
-  border-radius: var(--radius-control);
+  gap: var(--sp-1);
+  min-block-size: var(--control-h-sm);
+  padding: 0 var(--sp-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-none);
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--color-text-muted);
   background-color: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-ui),
+    border-color var(--transition-ui),
+    color var(--transition-ui);
 }
-.segmented-track > button.tag.is-active {
+.segmented-item:hover {
+  color: var(--color-text);
+  background-image: linear-gradient(var(--color-hover) 0 0);
+}
+.segmented-item.is-active {
   color: var(--color-text);
   background-color: var(--color-surface-raised);
   box-shadow: var(--shadow-sm);
 }
-.segmented-track > button.tag:disabled {
+.segmented-item:disabled {
   color: var(--color-disabled);
   background-image: none;
   cursor: not-allowed;
