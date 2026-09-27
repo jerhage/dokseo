@@ -12,7 +12,7 @@
   title="List group"
   classes={[
     'list-group',
-    'list-group-label',
+    'list-group-title',
     'list-group-separated',
     'list-group-inset',
     'list-group-summary',
