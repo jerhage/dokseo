@@ -121,7 +121,7 @@
       onchange={choose}
     />
   {/if}
-  <span class="dropzone-icon" aria-hidden="true"><Upload class="dropzone-mark" /></span>
+  <span class="dropzone-icon-frame" aria-hidden="true"><Upload class="dropzone-icon" /></span>
   <span class="dropzone-title">
     {#if title === undefined}
       Drop files here or <span class="dropzone-browse">browse</span>

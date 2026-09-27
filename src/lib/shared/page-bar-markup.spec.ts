@@ -32,14 +32,14 @@ describe('PageBar', () => {
     const html = markup({ ticks: [12.5, 60] });
 
     expect(offsets(html)).toEqual(['12.5%', '60%']);
-    expect(html).toMatch(/class="slider-ticked[^"]*"[^>]*>\s*<input/u);
+    expect(html).toMatch(/class="slider-wrapper[^"]*"[^>]*>\s*<input/u);
   });
 
   it('draws no ticks and no tick wrapper when it is given none', () => {
     const html = markup({});
 
     expect(offsets(html)).toEqual([]);
-    expect(html).not.toContain('slider-ticked');
+    expect(html).not.toContain('slider-wrapper');
   });
 
   it('names the scrubber for pages unless told otherwise', () => {

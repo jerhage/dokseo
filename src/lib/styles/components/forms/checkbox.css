@@ -27,7 +27,7 @@
     background-color var(--transition-ui),
     border-color var(--transition-ui);
 }
-.checkbox-mark {
+.checkbox-icon {
   position: absolute;
   inset-block-start: calc((1lh - var(--sp-3)) / 2);
   inset-inline-start: calc((var(--sp-4) - var(--sp-3)) / 2);
@@ -56,7 +56,7 @@
   border-color: var(--border-color);
   cursor: not-allowed;
 }
-.checkbox-input:disabled ~ .checkbox-mark {
+.checkbox-input:disabled ~ .checkbox-icon {
   color: var(--color-disabled);
 }
 .checkbox-wrapper:has(:disabled) {

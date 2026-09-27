@@ -274,8 +274,8 @@ const WIDTH_STEPS = ['6', '8', '10'];
 const GRID_MIN_COLUMNS = ['sm', 'lg'];
 
 const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
-  '.file-item-icon': 'a fixed-size box that centres one icon',
-  '.dropzone-icon': 'a fixed-size box that centres one icon',
+  '.file-item-icon-frame': 'a fixed-size box that centres one icon',
+  '.dropzone-icon-frame': 'a fixed-size box that centres one icon',
   '.radio-input': 'a fixed-size input that centres its pseudo-element dot',
   '.modal-backdrop[open]': 'centres one dialog whose inline size is contained',
   '.modal-backdrop.is-open': 'centres one dialog whose inline size is contained',
@@ -1050,7 +1050,7 @@ describe('the design system stylesheets', () => {
   });
 
   it('keeps the tab tools at their own width, so a row that cannot wrap shrinks the tab list instead', () => {
-    expect(declarations(ruleBody(style('components/tabs.css'), '.tabs-tools'))).toContain(
+    expect(declarations(ruleBody(style('components/tabs.css'), '.tabs-actions'))).toContain(
       'flex-shrink: 0',
     );
   });
@@ -1536,14 +1536,14 @@ describe('the design system stylesheets', () => {
       '.checkbox-input:indeterminate ~ .checkbox-dash',
     ]);
     expect(declarations(shown.body)).toEqual(['transform: scale(1)']);
-    expect(declarations(ruleBody(checkbox, '.checkbox-mark'))).toEqual(
+    expect(declarations(ruleBody(checkbox, '.checkbox-icon'))).toEqual(
       expect.arrayContaining([
         'transform: scale(0)',
         'color: var(--color-text-on-primary)',
         'stroke-width: calc(var(--icon-stroke) * 1.5)',
       ]),
     );
-    expect(declarations(ruleBody(checkbox, '.checkbox-input:disabled ~ .checkbox-mark'))).toEqual([
+    expect(declarations(ruleBody(checkbox, '.checkbox-input:disabled ~ .checkbox-icon'))).toEqual([
       'color: var(--color-disabled)',
     ]);
   });

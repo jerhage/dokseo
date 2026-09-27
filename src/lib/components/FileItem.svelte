@@ -41,7 +41,7 @@
 </script>
 
 <li {...rest} class={['file-item', view.classes, className]}>
-  <span class="file-item-icon" aria-hidden="true"><Mark class="file-item-mark" /></span>
+  <span class="file-item-icon-frame" aria-hidden="true"><Mark class="file-item-icon" /></span>
   <div class="file-item-content">
     <span class="file-item-name">{item.name}</span>
     {#if view.detail.kind === 'progress'}

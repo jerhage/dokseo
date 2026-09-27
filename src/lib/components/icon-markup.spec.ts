@@ -51,8 +51,8 @@ describe('the icons the base components draw', () => {
     const html = markup(Checkbox, { children: TEXT });
 
     expect(icons(html)).toEqual([
-      'check checkbox-mark checkbox-check',
-      'minus checkbox-mark checkbox-dash',
+      'check checkbox-icon checkbox-check',
+      'minus checkbox-icon checkbox-dash',
     ]);
     expect(hiddenIcons(html)).toBe(2);
     expect(html.indexOf('checkbox-input')).toBeLessThan(html.indexOf('lucide-check'));
@@ -118,7 +118,7 @@ describe('the icons the base components draw', () => {
 
     for (const [item, name] of items) {
       expect(icons(markup(FileItem, { item, onremove: () => undefined }))).toEqual([
-        `${name} file-item-mark`,
+        `${name} file-item-icon`,
         'x close-icon',
       ]);
     }
@@ -162,7 +162,7 @@ describe('the icons the base components draw', () => {
   it('draws the upload arrow in the dropzone icon box', () => {
     const html = markup(Dropzone, { onfiles: () => undefined });
 
-    expect(icons(html)).toEqual(['upload dropzone-mark']);
-    expect(html).toMatch(/<span class="dropzone-icon"[^>]*><svg/u);
+    expect(icons(html)).toEqual(['upload dropzone-icon']);
+    expect(html).toMatch(/<span class="dropzone-icon-frame"[^>]*><svg/u);
   });
 });

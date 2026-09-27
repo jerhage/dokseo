@@ -22,7 +22,7 @@
   flex: 1 1 auto;
   min-inline-size: 0;
 }
-.tabs-tools {
+.tabs-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

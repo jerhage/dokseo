@@ -31,8 +31,8 @@
     bind:checked
     bind:indeterminate
   />
-  <Check class="checkbox-mark checkbox-check" />
-  <Minus class="checkbox-mark checkbox-dash" />
+  <Check class="checkbox-icon checkbox-check" />
+  <Minus class="checkbox-icon checkbox-dash" />
   <span class="checkbox-label">
     {@render children()}
     {#if hint !== undefined}

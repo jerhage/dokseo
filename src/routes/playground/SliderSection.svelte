@@ -12,7 +12,7 @@
   let progress = $state(250);
 </script>
 
-<DemoSection id="slider" title="Slider" classes={['slider', 'slider-ticked', 'slider-tick']}>
+<DemoSection id="slider" title="Slider" classes={['slider', 'slider-wrapper', 'slider-tick']}>
   <div class="grid-2">
     <Card>
       <div class="col gap-2">

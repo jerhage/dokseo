@@ -84,7 +84,7 @@
   {#if tools}
     <div class={['tabs-header', headerClass]}>
       {@render tabList()}
-      <div class="tabs-tools">{@render tools()}</div>
+      <div class="tabs-actions">{@render tools()}</div>
     </div>
   {:else}
     {@render tabList()}

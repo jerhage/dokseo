@@ -60,7 +60,7 @@
 {#if ticks.length === 0}
   {@render control(['slider', className])}
 {:else}
-  <div class={['slider-ticked', className]}>
+  <div class={['slider-wrapper', className]}>
     {@render control('slider')}
     {#each ticks as offset, slot (slot)}
       <span class="slider-tick" aria-hidden="true" style:--slider-tick-at="{offset}%"></span>

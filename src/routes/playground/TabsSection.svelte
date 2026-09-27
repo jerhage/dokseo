@@ -38,7 +38,7 @@
 <DemoSection
   id="tabs"
   title="Tabs"
-  classes={['tabs', 'tabs-pill', 'tab-list', 'tab', 'tab-panel', 'tabs-header', 'tabs-tools']}
+  classes={['tabs', 'tabs-pill', 'tab-list', 'tab', 'tab-panel', 'tabs-header', 'tabs-actions']}
 >
   <div class="grid-3">
     <Card>

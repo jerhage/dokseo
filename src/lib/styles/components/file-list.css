@@ -17,7 +17,7 @@
   border-radius: var(--radius-container);
   animation: kSlideUp var(--transition-enter) both;
 }
-.file-item-icon {
+.file-item-icon-frame {
   display: grid;
   place-items: center;
   inline-size: var(--control-h-md);
@@ -26,7 +26,7 @@
   background-color: var(--color-brand-tint);
   border-radius: var(--radius-control);
 }
-.file-item-mark {
+.file-item-icon {
   inline-size: var(--sp-5);
   block-size: var(--sp-5);
 }
@@ -52,7 +52,7 @@
   background-color: var(--color-danger-bg);
   border-color: var(--color-danger-border);
 }
-.file-item.is-error .file-item-icon {
+.file-item.is-error .file-item-icon-frame {
   color: var(--color-danger);
   background-color: var(--color-danger-muted);
 }
@@ -60,7 +60,7 @@
   color: var(--color-danger);
   font-family: var(--font-body);
 }
-.file-item.is-complete .file-item-icon {
+.file-item.is-complete .file-item-icon-frame {
   color: var(--color-success);
   background-color: var(--color-success-muted);
 }

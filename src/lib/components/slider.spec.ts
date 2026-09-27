@@ -47,14 +47,14 @@ describe('Slider', () => {
 
     expect(html).toMatch(/<input[^>]*class="slider flex-1"/u);
     expect(html).toMatch(/<input[^>]*disabled/u);
-    expect(html).not.toContain('slider-ticked');
+    expect(html).not.toContain('slider-wrapper');
     expect(tickOffsets(html)).toEqual([]);
   });
 
   it('wraps the input and draws one hidden tick at each offset from the left edge', () => {
     const html = markup({ ticks: [12.5, 60], class: 'flex-1' });
 
-    expect(html).toMatch(/^<div class="slider-ticked flex-1">\s*<input[^>]*class="slider"/u);
+    expect(html).toMatch(/^<div class="slider-wrapper flex-1">\s*<input[^>]*class="slider"/u);
     expect(tickOffsets(html)).toEqual(['12.5%', '60%']);
     expect(html).toMatch(/class="slider-tick" aria-hidden="true"/u);
   });
