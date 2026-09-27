@@ -19,6 +19,7 @@
     'layout-overlay',
     'layout-overlay-center',
     'layout-overlay-scrim',
+    'scrim',
     'overlay-host',
     'overlay-*',
     'reveal-on-hover',
@@ -45,6 +46,12 @@
           <Button size="sm">Watch</Button>
         </div>
       </div>
+    </div>
+  </div>
+  <div class="relative aspect-video overflow-hidden rounded-container surface-sunken">
+    <img class="object-cover" src={ART} alt="" />
+    <div class="scrim row items-center justify-center">
+      <span class="text-sm weight-medium">.scrim covers its positioned parent</span>
     </div>
   </div>
   <div class="grid-auto grid-auto-sm">

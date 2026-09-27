@@ -717,7 +717,7 @@
 
     {#if zonesShown}
       <div
-        class="zones"
+        class="zones scrim z-sticky"
         style:--side-share={SIDE_ZONE_SHARE}
         aria-hidden="true"
         onpointerdown={holdZones}

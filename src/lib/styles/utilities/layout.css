@@ -44,6 +44,12 @@
 .overflow-hidden {
   overflow: hidden;
 }
+.scrim {
+  position: absolute;
+  inset: 0;
+  color: var(--color-text-on-scrim);
+  background-color: var(--color-overlay);
+}
 .relative {
   position: relative;
 }
