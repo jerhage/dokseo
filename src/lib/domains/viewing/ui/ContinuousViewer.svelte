@@ -4,6 +4,7 @@
   import KeyHints from '$lib/components/KeyHints.svelte';
   import type { GestureInput, GestureSample } from '$lib/components/gesture';
   import { GestureFeed } from '$lib/components/gesture-feed';
+  import { clampZoom, pinchZoom, wheelPixels, wheelZoomFactor } from '$lib/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -24,7 +25,6 @@
   } from '../domain/strip';
   import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
-  import { clampZoom, pinchZoom } from '../domain/viewport';
   import { hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys } from './keyboard';
@@ -74,8 +74,6 @@
   }: Props = $props();
 
   const ZOOM_STEP = 1.2;
-  const WHEEL_ZOOM_SPAN = 320;
-  const WHEEL_LINE_PX = 16;
   const FIT_WIDTH_ZOOM = 1;
   const SCREEN_OVERLAP = 0.9;
   const SETTLED_PX = 0.5;
@@ -132,12 +130,6 @@
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
-  }
-
-  function wheelPixels(delta: number, mode: number, extent: number): number {
-    if (mode === WheelEvent.DOM_DELTA_LINE) return delta * WHEEL_LINE_PX;
-    if (mode === WheelEvent.DOM_DELTA_PAGE) return delta * extent;
-    return delta;
   }
 
   function holdAt(top: number, left: number): Hold {
@@ -366,7 +358,7 @@
     const box = element.getBoundingClientRect();
     const dy = wheelPixels(event.deltaY, event.deltaMode, box.height);
 
-    zoomBy(Math.exp(-dy / WHEEL_ZOOM_SPAN), event.clientX - box.x, event.clientY - box.y);
+    zoomBy(wheelZoomFactor(dy), event.clientX - box.x, event.clientY - box.y);
   }
 
   function onkeydown(event: KeyboardEvent): void {

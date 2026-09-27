@@ -1,8 +1,8 @@
+import { clampPan, panBy } from '$lib/components/pan-zoom';
+import type { Viewport } from '$lib/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import { swipeTurn } from '$lib/shared/page-turn';
 import type { FrameSpan, TouchTurns, TurnPoint, TurnSide } from '$lib/shared/page-turn';
-import { clampPan, panBy } from './viewport';
-import type { Viewport } from './viewport';
 
 type PanReach = { readonly origin: Viewport; readonly content: Size; readonly frame: Size };
 

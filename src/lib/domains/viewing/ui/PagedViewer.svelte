@@ -8,6 +8,19 @@
   import type { CarouselMotion, CarouselSide } from '$lib/components/carousel';
   import type { GestureInput, GestureSample, GestureState } from '$lib/components/gesture';
   import { GestureFeed } from '$lib/components/gesture-feed';
+  import {
+    canPan,
+    centrePan,
+    clampPan,
+    doubleTapTarget,
+    fitZoom,
+    panBy,
+    pinchStep,
+    wheelPixels,
+    wheelZoomFactor,
+    zoomAt,
+  } from '$lib/components/pan-zoom';
+  import type { Pinch, Viewport, ZoomPoint } from '$lib/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -19,19 +32,7 @@
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
-  import {
-    FIT_HEIGHT_ZOOM,
-    arrivalViewport,
-    canPan,
-    centrePan,
-    clampPan,
-    doubleTapTarget,
-    fitZoom,
-    panBy,
-    pinchStep,
-    zoomAt,
-  } from '../domain/viewport';
-  import type { Pinch, Viewport, ZoomPoint } from '../domain/viewport';
+  import { FIT_HEIGHT_ZOOM, arrivalViewport } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
   import { hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
@@ -101,8 +102,6 @@
   }: Props = $props();
 
   const ZOOM_STEP = 1.2;
-  const WHEEL_ZOOM_SPAN = 320;
-  const WHEEL_LINE_PX = 16;
 
   let frame = $state<HTMLDivElement | null>(null);
   let strip = $state<HTMLDivElement | null>(null);
@@ -320,12 +319,6 @@
     zoomed(zoomAt(viewport, factor, sizes.frame.width / 2, sizes.frame.height / 2));
   }
 
-  function scrolled(delta: number, mode: number, extent: number): number {
-    if (mode === WheelEvent.DOM_DELTA_LINE) return delta * WHEEL_LINE_PX;
-    if (mode === WheelEvent.DOM_DELTA_PAGE) return delta * extent;
-    return delta;
-  }
-
   function release(id: number): void {
     const element = frame;
     if (element !== null && element.hasPointerCapture(id)) element.releasePointerCapture(id);
@@ -355,18 +348,11 @@
 
     event.preventDefault();
     const box = element.getBoundingClientRect();
-    const dx = scrolled(event.deltaX, event.deltaMode, box.width);
-    const dy = scrolled(event.deltaY, event.deltaMode, box.height);
+    const dx = wheelPixels(event.deltaX, event.deltaMode, box.width);
+    const dy = wheelPixels(event.deltaY, event.deltaMode, box.height);
 
     if (event.ctrlKey || event.metaKey) {
-      zoomed(
-        zoomAt(
-          viewport,
-          Math.exp(-dy / WHEEL_ZOOM_SPAN),
-          event.clientX - box.x,
-          event.clientY - box.y,
-        ),
-      );
+      zoomed(zoomAt(viewport, wheelZoomFactor(dy), event.clientX - box.x, event.clientY - box.y));
       return;
     }
 
@@ -683,7 +669,10 @@
       {#snippet slide(pane)}
         {@const view = paneViewport(pane)}
         <div
-          class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
+          class={[
+            'strip zoom-surface row gap-0 shrink-0 h-full',
+            { 'is-rtl': direction === 'rtl' },
+          ]}
           style:--pan-x="{view.panX}px"
           style:--pan-y="{view.panY}px"
           style:--zoom={view.zoom}
