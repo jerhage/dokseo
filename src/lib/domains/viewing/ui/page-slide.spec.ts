@@ -1,23 +1,26 @@
 import { describe, expect, it } from 'vitest';
+import {
+  CAROUSEL_GAP_PX,
+  CAROUSEL_REST,
+  carouselNeighbours,
+  carouselShift,
+  carouselStep,
+} from '$lib/components/carousel';
+import type { CarouselMotion, CarouselScene } from '$lib/components/carousel';
 import { imageIndex } from '$lib/shared/ids';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PanReach } from '../domain/overscroll';
 import type { PageGroup } from '../domain/page-pairing';
-import {
-  SLIDE_GAP_PX,
-  SLIDE_REST,
-  besideOf,
-  slideOffset,
-  slidePanes,
-  slideShift,
-  slideStep,
-  slideTravel,
-} from './page-slide';
-import type { Neighbours, Slide, SlideScene } from './page-slide';
+import type { PageMove } from './page-moves';
+import { besideOf, moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
+import type { Neighbours } from './page-slide';
 import type { TouchState } from './touch-gesture';
+
+type BookScene = { readonly direction: ReadingDirection; readonly neighbours: Neighbours };
 
 const WIDTH = 390;
 
-const ACROSS = WIDTH + SLIDE_GAP_PX;
+const ACROSS = WIDTH + CAROUSEL_GAP_PX;
 
 const PREVIOUS: PageGroup = [imageIndex(0), imageIndex(1)];
 
@@ -27,13 +30,11 @@ const NEXT: PageGroup = [imageIndex(4)];
 
 const BOTH: Neighbours = { decrement: PREVIOUS, increment: NEXT };
 
-const MIDDLE: SlideScene = { width: WIDTH, direction: 'ltr', neighbours: BOTH };
+const MIDDLE: BookScene = { direction: 'ltr', neighbours: BOTH };
 
-const MANGA: SlideScene = { ...MIDDLE, direction: 'rtl' };
+const MANGA: BookScene = { ...MIDDLE, direction: 'rtl' };
 
-const FIRST: SlideScene = { ...MIDDLE, neighbours: { decrement: null, increment: NEXT } };
-
-const LAST: SlideScene = { ...MIDDLE, neighbours: { decrement: PREVIOUS, increment: null } };
+const FIRST: BookScene = { ...MIDDLE, neighbours: { decrement: null, increment: NEXT } };
 
 function press(fromX: number, toX: number) {
   return {
@@ -56,8 +57,24 @@ function panning(fromX: number, toX: number): TouchState {
 
 const IDLE: TouchState = { kind: 'idle', pending: null };
 
-function following(offset: number): Slide {
+function following(offset: number): CarouselMotion {
   return { kind: 'follow', offset };
+}
+
+function slideStep(
+  motion: CarouselMotion,
+  state: TouchState,
+  travel: number,
+  turn: PageMove | null,
+  scene: BookScene,
+): CarouselMotion {
+  const carousel: CarouselScene = {
+    width: WIDTH,
+    gap: CAROUSEL_GAP_PX,
+    direction: 'ltr',
+    neighbours: carouselNeighbours(slidePanes(CURRENT, scene.neighbours, scene.direction)),
+  };
+  return carouselStep(motion, slideInput(state, travel, turn, scene.direction), carousel);
 }
 
 describe('besideOf', () => {
@@ -69,6 +86,16 @@ describe('besideOf', () => {
   it('mirrors the neighbours in a right-to-left book', () => {
     expect(besideOf('increment', 'rtl')).toBe(-1);
     expect(besideOf('decrement', 'rtl')).toBe(1);
+  });
+});
+
+describe('moveOf', () => {
+  it('turns the side a slide settled on back into the page move beside that side', () => {
+    for (const direction of ['ltr', 'rtl'] as const) {
+      for (const move of ['increment', 'decrement'] as const) {
+        expect(moveOf(besideOf(move, direction), direction)).toBe(move);
+      }
+    }
   });
 });
 
@@ -104,60 +131,35 @@ describe('slideTravel', () => {
   });
 });
 
-describe('slideOffset', () => {
-  it('follows the finger where a neighbour waits on that side', () => {
-    expect(slideOffset(-120, MIDDLE)).toBe(-120);
-    expect(slideOffset(90, MIDDLE)).toBe(90);
-  });
-
-  it('stops once the neighbour has arrived', () => {
-    expect(slideOffset(-900, MIDDLE)).toBe(-ACROSS);
-    expect(slideOffset(900, MIDDLE)).toBe(ACROSS);
-  });
-
-  it('resists a drag towards the missing group before the first one', () => {
-    const offset = slideOffset(200, FIRST);
-
-    expect(offset).toBeGreaterThan(0);
-    expect(offset).toBeLessThan(100);
-    expect(slideOffset(-200, FIRST)).toBe(-200);
-  });
-
-  it('resists a drag past the last group, and never lets the page leave', () => {
-    expect(slideOffset(-200, LAST)).toBeGreaterThan(-100);
-    expect(slideOffset(-100_000, LAST)).toBeGreaterThan(-WIDTH);
-  });
-
-  it('resists on the mirrored side in a right-to-left book', () => {
-    const atTheEnd: SlideScene = { ...MANGA, neighbours: { decrement: PREVIOUS, increment: null } };
-
-    expect(slideOffset(200, atTheEnd)).toBeLessThan(100);
-    expect(slideOffset(-200, atTheEnd)).toBe(-200);
-  });
-
-  it('stays put for no travel, a travel that is not a number, or a frame with no width', () => {
-    expect(slideOffset(0, MIDDLE)).toBe(0);
-    expect(slideOffset(Number.NaN, MIDDLE)).toBe(0);
-    expect(slideOffset(-120, { ...MIDDLE, width: 0 })).toBe(0);
-  });
-});
-
-describe('slideStep', () => {
+describe('slideInput, stepped by the carousel', () => {
   it('follows while the finger swipes or pans', () => {
-    expect(slideStep(SLIDE_REST, swiping(300, 180), -120, null, MIDDLE)).toEqual(following(-120));
+    expect(slideStep(CAROUSEL_REST, swiping(300, 180), -120, null, MIDDLE)).toEqual(
+      following(-120),
+    );
     expect(slideStep(following(-60), panning(300, 180), -80, null, MIDDLE)).toEqual(following(-80));
+  });
+
+  it('resists a drag past the last group on the mirrored side in a right-to-left book', () => {
+    const atTheEnd: BookScene = { ...MANGA, neighbours: { decrement: PREVIOUS, increment: null } };
+    const resisted = slideStep(CAROUSEL_REST, swiping(100, 300), 200, null, atTheEnd);
+
+    expect(carouselShift(resisted)).toBeGreaterThan(0);
+    expect(carouselShift(resisted)).toBeLessThan(100);
+    expect(slideStep(CAROUSEL_REST, swiping(300, 100), -200, null, atTheEnd)).toEqual(
+      following(-200),
+    );
   });
 
   it('completes the slide towards the turn the release asked for', () => {
     expect(slideStep(following(-120), IDLE, -120, 'increment', MIDDLE)).toEqual({
       kind: 'settle',
       offset: -ACROSS,
-      move: 'increment',
+      towards: 1,
     });
     expect(slideStep(following(120), IDLE, 120, 'decrement', MIDDLE)).toEqual({
       kind: 'settle',
       offset: ACROSS,
-      move: 'decrement',
+      towards: -1,
     });
   });
 
@@ -165,7 +167,7 @@ describe('slideStep', () => {
     expect(slideStep(following(120), IDLE, 120, 'increment', MANGA)).toEqual({
       kind: 'settle',
       offset: ACROSS,
-      move: 'increment',
+      towards: -1,
     });
   });
 
@@ -175,7 +177,7 @@ describe('slideStep', () => {
         const travel = besideOf(move, scene.direction) * -120;
         const end = slideStep(following(travel), IDLE, travel, move, scene);
 
-        expect(slideShift(end) + besideOf(move, scene.direction) * ACROSS).toBe(0);
+        expect(carouselShift(end) + besideOf(move, scene.direction) * ACROSS).toBe(0);
       }
     }
   });
@@ -184,7 +186,7 @@ describe('slideStep', () => {
     expect(slideStep(following(-30), IDLE, -30, null, MIDDLE)).toEqual({
       kind: 'settle',
       offset: 0,
-      move: null,
+      towards: null,
     });
   });
 
@@ -192,7 +194,7 @@ describe('slideStep', () => {
     expect(slideStep(following(40), IDLE, 200, 'decrement', FIRST)).toEqual({
       kind: 'settle',
       offset: 0,
-      move: null,
+      towards: null,
     });
   });
 
@@ -206,28 +208,20 @@ describe('slideStep', () => {
     expect(slideStep(following(-50), pinching, 0, null, MIDDLE)).toEqual({
       kind: 'settle',
       offset: 0,
-      move: null,
+      towards: null,
     });
   });
 
   it('rests when the finger never moved the page, so the turn stays instant', () => {
-    expect(slideStep(following(0), IDLE, 0, 'increment', MIDDLE)).toEqual(SLIDE_REST);
-    expect(slideStep(SLIDE_REST, IDLE, 0, 'increment', MIDDLE)).toEqual(SLIDE_REST);
+    expect(slideStep(following(0), IDLE, 0, 'increment', MIDDLE)).toEqual(CAROUSEL_REST);
+    expect(slideStep(CAROUSEL_REST, IDLE, 0, 'increment', MIDDLE)).toEqual(CAROUSEL_REST);
   });
 
   it('leaves a settling slide alone until it finishes', () => {
-    const settling: Slide = { kind: 'settle', offset: -ACROSS, move: 'increment' };
+    const settling: CarouselMotion = { kind: 'settle', offset: -ACROSS, towards: 1 };
 
     expect(slideStep(settling, swiping(300, 100), -200, null, MIDDLE)).toBe(settling);
     expect(slideStep(settling, IDLE, 0, 'decrement', MIDDLE)).toBe(settling);
-  });
-});
-
-describe('slideShift', () => {
-  it('shifts by the offset while following or settling, and not at rest', () => {
-    expect(slideShift(SLIDE_REST)).toBe(0);
-    expect(slideShift(following(-42))).toBe(-42);
-    expect(slideShift({ kind: 'settle', offset: ACROSS, move: 'decrement' })).toBe(ACROSS);
   });
 });
 

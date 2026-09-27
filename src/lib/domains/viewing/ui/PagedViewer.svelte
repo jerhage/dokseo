@@ -2,7 +2,10 @@
   import { flushSync, untrack } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
+  import Carousel from '$lib/components/Carousel.svelte';
   import KeyHints from '$lib/components/KeyHints.svelte';
+  import { CAROUSEL_REST } from '$lib/components/carousel';
+  import type { CarouselMotion, CarouselSide } from '$lib/components/carousel';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -34,15 +37,8 @@
   import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import type { PageMove } from './page-moves';
-  import {
-    SLIDE_GAP_PX,
-    SLIDE_REST,
-    slidePanes,
-    slideShift,
-    slideStep,
-    slideTravel,
-  } from './page-slide';
-  import type { Neighbours, Slide, SlidePane } from './page-slide';
+  import { moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
+  import type { Neighbours, SlidePane } from './page-slide';
   import { touchAction, touchLesson } from './touch-action';
   import type { TouchAction } from './touch-action';
   import { TOUCH_IDLE, touchDeadline, touchStep } from './touch-gesture';
@@ -104,7 +100,6 @@
     onTurn,
   }: Props = $props();
 
-  const SETTLE_FALLBACK_MS = 400;
   const ZOOM_STEP = 1.2;
   const WHEEL_ZOOM_SPAN = 320;
   const WHEEL_LINE_PX = 16;
@@ -112,6 +107,7 @@
   let frame = $state<HTMLDivElement | null>(null);
   let strip = $state<HTMLDivElement | null>(null);
   let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
+  let carousel = $state<ReturnType<typeof Carousel<SlidePane>> | null>(null);
   let viewport = $state.raw<Viewport>({ zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 });
   let fit = $state.raw<Fit>(untrack(() => pageFit));
   let grab = $state.raw<Grab | null>(null);
@@ -119,7 +115,7 @@
   let pannable = $state(false);
   let revealed = $state(false);
   let hintLines = $state.raw<readonly GestureHint[]>([]);
-  let slide = $state.raw<Slide>(SLIDE_REST);
+  let motion = $state.raw<CarouselMotion>(CAROUSEL_REST);
   let lastPointerType = $state<string | null>(null);
   let frameSize = $state.raw<Size | null>(null);
 
@@ -131,7 +127,6 @@
   let panOrigin: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
   let lastPointer = '';
   let slides = false;
-  let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
   const coarse = window.matchMedia('(pointer: coarse)').matches;
 
@@ -442,48 +437,25 @@
     };
   }
 
-  function stopSettleTimer(): void {
-    if (settleTimer !== null) clearTimeout(settleTimer);
-    settleTimer = null;
-  }
-
-  function finishSlide(): void {
-    const settling = slide;
-    if (settling.kind !== 'settle') return;
-
-    stopSettleTimer();
-    slide = SLIDE_REST;
-    if (settling.move !== null) onTurn?.(settling.move);
-  }
-
-  function settled(event: TransitionEvent): void {
-    if (event.target === event.currentTarget && event.propertyName === 'transform') finishSlide();
+  function settledTowards(side: CarouselSide): void {
+    onTurn?.(moveOf(side, direction));
   }
 
   function followsTheFinger(input: TouchInput, span: FrameSpan): boolean {
     if (input.kind === 'tick') return false;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
     return swipeMayStart(input, span, window.innerWidth, turns);
   }
 
-  function slideWith(state: TouchState, action: TouchAction, width: number): boolean {
-    const was = slide;
+  function slideWith(state: TouchState, action: TouchAction): boolean {
     const travel = slides ? slideTravel(state, state.kind === 'panning' ? panReach() : null) : 0;
     const turn = action.kind === 'turn' ? action.move : null;
-    slide = slideStep(was, state, travel, turn, { width, direction, neighbours: beside });
-
-    const handed = was.kind === 'follow' && slide.kind === 'settle';
-    if (handed) {
-      stopSettleTimer();
-      settleTimer = setTimeout(finishSlide, SETTLE_FALLBACK_MS);
-    }
-    return handed;
+    return carousel?.drive(slideInput(state, travel, turn, direction)) ?? false;
   }
 
   function feed(input: TouchInput): void {
     if (input.kind === 'down' && touch.kind === 'idle') {
-      if (slide.kind === 'settle') {
-        finishSlide();
+      if (motion.kind === 'settle') {
+        carousel?.finish();
         flushSync();
       }
       panOrigin = viewport;
@@ -510,7 +482,7 @@
     });
     const lesson = touchLesson(step.intent, action);
     if (lesson !== null) learnGesture(lesson);
-    const handed = slideWith(step.state, action, span.width);
+    const handed = slideWith(step.state, action);
     if (!(handed && action.kind === 'turn')) act(action);
   }
 
@@ -674,8 +646,6 @@
 
   $effect(() => stopTouchTimer);
 
-  $effect(() => stopSettleTimer);
-
   $effect(() => {
     const lines = pending;
     if (lines.length > 0) hintLines = lines;
@@ -700,8 +670,7 @@
       if (group === shownPages) return;
 
       shownPages = group;
-      stopSettleTimer();
-      slide = SLIDE_REST;
+      carousel?.rest();
       selection?.reset();
       stopGrab();
       arrive(group[0]);
@@ -732,22 +701,16 @@
     {onpointercancel}
     {oncontextmenu}
   >
-    {#each panes as pane (pane.key)}
-      {@const view = paneViewport(pane)}
-      <div
-        class={[
-          'pane row gap-0 shrink-0',
-          {
-            'is-beside': pane.beside !== 0,
-            'is-settling': slide.kind === 'settle',
-          },
-        ]}
-        inert={pane.beside !== 0}
-        style:--beside={pane.beside}
-        style:--slide="{slideShift(slide)}px"
-        style:--slide-gap="{SLIDE_GAP_PX}px"
-        ontransitionend={settled}
-      >
+    <Carousel
+      bind:this={carousel}
+      bind:motion
+      class="flex-1"
+      slides={panes}
+      driven
+      onsettled={settledTowards}
+    >
+      {#snippet slide(pane)}
+        {@const view = paneViewport(pane)}
         <div
           class={['strip row gap-0 shrink-0 h-full', { 'is-rtl': direction === 'rtl' }]}
           style:--pan-x="{view.panX}px"
@@ -767,8 +730,8 @@
             />
           {/each}
         </div>
-      </div>
-    {/each}
+      {/snippet}
+    </Carousel>
 
     <SelectionLayer
       bind:this={selection}
