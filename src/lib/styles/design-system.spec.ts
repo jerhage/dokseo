@@ -1260,7 +1260,7 @@ describe('the design system stylesheets', () => {
 
   it('fills a narrow screen with a filling modal, drops its card chrome and contains its scroll', () => {
     const narrow = mediaBlock(style('components/modal/modal.css'), '(width < 48rem)');
-    const panel = declarations(ruleBody(narrow, '.modal-fills-narrow > .modal'));
+    const panel = declarations(ruleBody(narrow, '.modal-fill-narrow > .modal'));
 
     expect(panel).toEqual(
       expect.arrayContaining([
@@ -1272,11 +1272,11 @@ describe('the design system stylesheets', () => {
       ]),
     );
     expect(panel.some((line) => line.includes('env(safe-area-inset-top'))).toBe(true);
-    expect(declarations(ruleBody(narrow, '.modal-fills-narrow'))).toEqual([
+    expect(declarations(ruleBody(narrow, '.modal-fill-narrow'))).toEqual([
       'padding: 0',
       'background-color: transparent',
     ]);
-    expect(declarations(ruleBody(narrow, '.modal-fills-narrow .modal-body'))).toContain(
+    expect(declarations(ruleBody(narrow, '.modal-fill-narrow .modal-body'))).toContain(
       'overscroll-behavior: contain',
     );
   });
@@ -1286,16 +1286,16 @@ describe('the design system stylesheets', () => {
 
     expect(
       declarations(
-        ruleBody(mediaBlock(modal, '(width < 48rem)'), '.modal-fills-narrow .modal-panel-only'),
+        ruleBody(mediaBlock(modal, '(width < 48rem)'), '.modal-fill-narrow .modal-panel-only'),
       ),
     ).toEqual(['display: none']);
     expect(
       declarations(
-        ruleBody(mediaBlock(modal, '(width >= 48rem)'), '.modal-fills-narrow .modal-fill-only'),
+        ruleBody(mediaBlock(modal, '(width >= 48rem)'), '.modal-fill-narrow .modal-fill-only'),
       ),
     ).toEqual(['display: none']);
     expect(
-      declarations(ruleBody(modal, '.modal-backdrop:not(.modal-fills-narrow) .modal-fill-only')),
+      declarations(ruleBody(modal, '.modal-backdrop:not(.modal-fill-narrow) .modal-fill-only')),
     ).toEqual(['display: none']);
   });
 

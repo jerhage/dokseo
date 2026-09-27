@@ -171,7 +171,7 @@ const MODAL_FOOTERS: Readonly<Record<ModalFooter, ClassList>> = {
 
 const MODAL_NARROWS: Readonly<Record<ModalNarrow, ClassList>> = {
   panel: [],
-  fill: ['modal-fills-narrow'],
+  fill: ['modal-fill-narrow'],
 };
 
 const RADIO_VARIANTS: Readonly<Record<RadioVariant, ClassList>> = {

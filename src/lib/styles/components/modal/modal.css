@@ -105,15 +105,15 @@
     inline-size: 100%;
   }
 }
-.modal-backdrop:not(.modal-fills-narrow) .modal-fill-only {
+.modal-backdrop:not(.modal-fill-narrow) .modal-fill-only {
   display: none;
 }
 @media (width < 48rem) {
-  .modal-fills-narrow {
+  .modal-fill-narrow {
     padding: 0;
     background-color: transparent;
   }
-  .modal-fills-narrow > .modal {
+  .modal-fill-narrow > .modal {
     align-self: stretch;
     max-inline-size: none;
     block-size: 100dvh;
@@ -125,16 +125,16 @@
     border-radius: 0;
     box-shadow: none;
   }
-  .modal-fills-narrow .modal-body {
+  .modal-fill-narrow .modal-body {
     flex: 1 1 auto;
     overscroll-behavior: contain;
   }
-  .modal-fills-narrow .modal-panel-only {
+  .modal-fill-narrow .modal-panel-only {
     display: none;
   }
 }
 @media (width >= 48rem) {
-  .modal-fills-narrow .modal-fill-only {
+  .modal-fill-narrow .modal-fill-only {
     display: none;
   }
 }
