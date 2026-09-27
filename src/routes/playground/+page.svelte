@@ -29,6 +29,7 @@
   import IconButtonSection from './IconButtonSection.svelte';
   import IconsSection from './IconsSection.svelte';
   import KeyHintsSection from './KeyHintsSection.svelte';
+  import KeyboardScrollingSection from './KeyboardScrollingSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
   import ListGroupSection from './ListGroupSection.svelte';
   import MarqueeSelectionSection from './MarqueeSelectionSection.svelte';
@@ -51,10 +52,12 @@
   import SliderSection from './SliderSection.svelte';
   import SplitSection from './SplitSection.svelte';
   import StatSection from './StatSection.svelte';
+  import StatusIconSection from './StatusIconSection.svelte';
   import StepperSection from './StepperSection.svelte';
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
   import ThumbnailSection from './ThumbnailSection.svelte';
+  import ToastSection from './ToastSection.svelte';
   import TokensSection from './TokensSection.svelte';
   import ZPatternSection from './ZPatternSection.svelte';
 
@@ -72,16 +75,19 @@
     SegmentedSection,
     CardSection,
     AlertSection,
+    StatusIconSection,
     EmptyStateSection,
     TabsSection,
     AccordionSection,
     TableSection,
     ListGroupSection,
     ModalToastSection,
+    ToastSection,
     DropdownSection,
     PopoverSection,
     CommandSection,
     KeyHintsSection,
+    KeyboardScrollingSection,
     NavigationSection,
     PageHeaderSection,
     StepperSection,

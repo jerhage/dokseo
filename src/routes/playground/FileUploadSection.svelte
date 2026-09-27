@@ -3,6 +3,7 @@
   import Card from '$lib/components/Card.svelte';
   import Dropzone from '$lib/components/Dropzone.svelte';
   import Field from '$lib/components/Field.svelte';
+  import FileItem from '$lib/components/FileItem.svelte';
   import FileList from '$lib/components/FileList.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import WindowDropzone from '$lib/components/WindowDropzone.svelte';
@@ -18,6 +19,7 @@
   let attachments = $state<readonly FileItemData[]>([]);
   let arrival = $state<readonly string[]>([]);
   let attachmentZone = $state<ReturnType<typeof Dropzone> | null>(null);
+  let sortedDrop = $state<readonly string[]>([]);
   let windowDrop = $state(false);
   let windowDropped = $state<readonly string[]>([]);
   let avatar = $state<readonly FileItemData[]>([
@@ -64,6 +66,29 @@
   function removeAttachment(id: string): void {
     uploads.cancel(id);
     attachments = without(attachments, id);
+  }
+
+  const STATES: readonly FileItemData[] = [
+    { id: 'state-pending', name: 'queued-scan.png', size: 81_920, state: 'pending' },
+    {
+      id: 'state-uploading',
+      name: 'chapter-02.cbz',
+      size: 24_117_248,
+      state: 'uploading',
+      progress: 40,
+    },
+    { id: 'state-complete', name: 'cover.jpg', size: 312_004, state: 'complete' },
+    {
+      id: 'state-error',
+      name: 'notes.txt',
+      size: 2_048,
+      state: 'error',
+      message: 'File type not allowed',
+    },
+  ];
+
+  function byName(transfer: DataTransfer): readonly File[] {
+    return [...transfer.files].toSorted((first, second) => first.name.localeCompare(second.name));
   }
 
   function without(items: readonly FileItemData[], id: string): readonly FileItemData[] {
@@ -135,6 +160,32 @@
             />
           {/snippet}
         </Field>
+      </div>
+    </div>
+  </Card>
+  <Card>
+    <div class="grid-2 gap-5">
+      <div class="stack-sm">
+        <span class="eyebrow text-faint weight-semibold">A drop reader</span>
+        <Dropzone
+          compact
+          multiple
+          title="Drop files to sort them by name"
+          hint="readDrop decides what a drop holds; this one sorts it"
+          readDrop={byName}
+          onfiles={(selection) => (sortedDrop = selection.arrived.map(({ file }) => file.name))}
+        />
+        {#if sortedDrop.length > 0}
+          <p class="text-xs text-faint">Read: {sortedDrop.join(', ')}</p>
+        {/if}
+      </div>
+      <div class="stack-sm">
+        <span class="eyebrow text-faint weight-semibold">File items, one per state</span>
+        <ul class="file-list">
+          {#each STATES as item (item.id)}
+            <FileItem {item} onremove={() => undefined} />
+          {/each}
+        </ul>
       </div>
     </div>
   </Card>
