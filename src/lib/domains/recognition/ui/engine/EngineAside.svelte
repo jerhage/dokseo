@@ -11,7 +11,7 @@
 </script>
 
 <div class="col gap-1 surface-sunken bordered rounded-container p-3">
-  <p class="mono text-xs uppercase tracking-wide text-faint">Active engine</p>
+  <p class="eyebrow mono text-faint">Active engine</p>
   <p class="text-sm">{activeEngine(view.model)}</p>
   <p class="text-xs text-muted">{activeDevice(view.session, state)}</p>
 </div>

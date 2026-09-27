@@ -55,7 +55,7 @@
             {/if}
           </CommandItem>
         {:else}
-          <p class="text-xs uppercase tracking-wide text-muted px-3 py-2">{entry.label}</p>
+          <p class="eyebrow text-muted px-3 py-2">{entry.label}</p>
         {/if}
       </li>
     {/each}

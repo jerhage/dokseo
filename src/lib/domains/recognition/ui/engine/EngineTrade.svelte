@@ -31,7 +31,7 @@
       </IconButton>
     {/snippet}
     <div class="col gap-3">
-      <p class="mono text-xs uppercase tracking-wide text-faint">{engine.name}</p>
+      <p class="eyebrow mono text-faint">{engine.name}</p>
       <ul class="list-reset col gap-3">
         {#each trades as trade (trade.aspect)}
           <li class="col items-start gap-1">

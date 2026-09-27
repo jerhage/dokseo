@@ -75,7 +75,7 @@
     value: choice,
     label: computeChoiceName(choice),
   }));
-  const caption = 'mono text-xs uppercase tracking-wide text-faint';
+  const caption = 'eyebrow mono text-faint';
   const note = 'text-xs text-muted surface-sunken bordered rounded-control px-3 py-2';
 </script>
 
