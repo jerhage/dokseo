@@ -17,6 +17,13 @@
     background-color var(--transition-ui),
     box-shadow var(--transition-ui);
 }
+@media (pointer: coarse) {
+  .input,
+  .select,
+  .textarea {
+    font-size: var(--text-base);
+  }
+}
 .input::placeholder,
 .textarea::placeholder {
   color: var(--color-text-faint);
