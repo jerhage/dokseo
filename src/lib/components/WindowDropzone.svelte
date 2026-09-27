@@ -57,8 +57,8 @@
 {#if showing}
   <div class="window-dropzone" popover="manual" aria-hidden="true" {@attach raise}>
     <div class="window-dropzone-panel">
-      <span class="dropzone-icon-frame"><Upload class="dropzone-icon" /></span>
-      <span class="dropzone-title">{@render children()}</span>
+      <span class="window-dropzone-icon-frame"><Upload class="window-dropzone-icon" /></span>
+      <span class="window-dropzone-title">{@render children()}</span>
     </div>
   </div>
 {/if}

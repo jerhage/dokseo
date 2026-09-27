@@ -276,6 +276,7 @@ const GRID_MIN_COLUMNS = ['sm', 'lg'];
 const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
   '.file-item-icon-frame': 'a fixed-size box that centres one icon',
   '.dropzone-icon-frame': 'a fixed-size box that centres one icon',
+  '.window-dropzone-icon-frame': 'a fixed-size box that centres one icon',
   '.radio-input': 'a fixed-size input that centres its pseudo-element dot',
   '.modal-backdrop[open]': 'centres one dialog whose inline size is contained',
   '.modal-backdrop.is-open': 'centres one dialog whose inline size is contained',

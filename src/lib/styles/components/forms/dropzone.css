@@ -52,7 +52,8 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.dropzone-icon-frame {
+.dropzone-icon-frame,
+.window-dropzone-icon-frame {
   display: grid;
   place-items: center;
   inline-size: var(--control-h-lg);
@@ -65,7 +66,8 @@
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-spring);
 }
-.dropzone-icon {
+.dropzone-icon,
+.window-dropzone-icon {
   inline-size: var(--sp-5);
   block-size: var(--sp-5);
 }
@@ -76,7 +78,8 @@
   color: var(--color-disabled);
   box-shadow: none;
 }
-.dropzone-title {
+.dropzone-title,
+.window-dropzone-title {
   font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
@@ -143,6 +146,6 @@
   border-radius: var(--radius-container);
   box-shadow: var(--shadow-lg);
 }
-.window-dropzone-panel .dropzone-icon-frame {
+.window-dropzone-icon-frame {
   transform: translateY(calc(var(--sp-1) * -1));
 }
