@@ -5,7 +5,6 @@
   import type { Language } from '$lib/shared/language';
   import { CONTENTS_LABEL, entryLabel, indentDepth } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';
-  import './flow-contents-dialog.css';
 
   type Props = {
     open: boolean;
@@ -38,9 +37,9 @@
 </script>
 
 <Modal bind:open title={CONTENTS_LABEL} size="sm" body="flush">
-  <ul class="flow-contents list-reset col gap-0 px-3 pb-4" lang={language} bind:this={list}>
+  <ul class="list-reset col gap-0 px-3 pb-4" lang={language} bind:this={list}>
     {#each entries as entry (entry.key)}
-      <li class="contents-row" style:--depth={indentDepth(entry.depth)}>
+      <li class="indent" style:--indent-depth={indentDepth(entry.depth)}>
         {#if entry.kind === 'link'}
           <CommandItem
             class={{ 'text-faint': entry.label === null }}

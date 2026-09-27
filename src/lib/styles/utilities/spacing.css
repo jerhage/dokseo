@@ -45,6 +45,9 @@
 .stack-lg {
   gap: var(--sp-7);
 }
+.indent {
+  padding-inline-start: calc(var(--sp-4) * var(--indent-depth, 0));
+}
 .p-0 {
   padding: 0;
 }

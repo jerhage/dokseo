@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { TextSegment } from '$lib/shared/text-search';
+  import type { HighlightSegment } from './highlight';
 
   type Props = {
-    readonly segments: readonly TextSegment[];
+    segments: readonly HighlightSegment[];
   };
 
   let { segments }: Props = $props();

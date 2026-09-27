@@ -2,6 +2,7 @@
   import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
+  import Highlight from '$lib/components/Highlight.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
   import OverflowList from '$lib/components/OverflowList.svelte';
   import CardFrame from '$lib/components/Card.svelte';
@@ -21,7 +22,6 @@
   import type { BadgeVariant } from '$lib/components/classes';
   import type { FocusTarget } from './card-editing.svelte';
   import type { Card } from './capture-cards.svelte';
-  import MarkedText from './MarkedText.svelte';
   import type { CardDrafts, DraftField } from './card-drafts.svelte';
   import { cardTools } from './card-tools';
   import InlineEditor from './InlineEditor.svelte';
@@ -132,7 +132,7 @@
       onabandon={() => onabandon('text')}
     />
   {:else if card.segments !== null}
-    <p class="m-0 text-lg" lang={language}><MarkedText segments={card.segments} /></p>
+    <p class="m-0 text-lg" lang={language}><Highlight segments={card.segments} /></p>
   {:else if card.text !== null}
     <p class="m-0 text-lg" lang={language}>{card.text}</p>
   {/if}
@@ -157,7 +157,7 @@
   {:else if note !== null}
     <p class="m-0 text-sm accent-start">
       <span class="visually-hidden">Your note:</span>
-      {#each note as line, order (order)}{#if order > 0}<br />{/if}<MarkedText
+      {#each note as line, order (order)}{#if order > 0}<br />{/if}<Highlight
           segments={line}
         />{/each}
     </p>

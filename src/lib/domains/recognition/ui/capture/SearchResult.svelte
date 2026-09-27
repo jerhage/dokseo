@@ -1,8 +1,8 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
+  import Highlight from '$lib/components/Highlight.svelte';
   import Thumbnail from '$lib/components/Thumbnail.svelte';
-  import MarkedText from './MarkedText.svelte';
   import type { SearchRow } from './search-rows';
 
   type Props = {
@@ -32,7 +32,7 @@
   <Thumbnail src={row.cover} size="sm" bordered />
   <span class="col gap-1 flex-1">
     <span class="truncate text-base" lang={row.language}>
-      <MarkedText segments={row.segments} />
+      <Highlight segments={row.segments} />
     </span>
     {#if row.kind === 'book'}
       {#if row.images !== null}
@@ -41,7 +41,7 @@
     {:else}
       {#if row.note !== null}
         <span class="accent-start truncate text-xs text-muted"
-          ><MarkedText segments={row.note} /></span
+          ><Highlight segments={row.note} /></span
         >
       {/if}
       {#if row.title !== null}
