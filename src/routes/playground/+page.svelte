@@ -45,6 +45,7 @@
   import SliderSection from './SliderSection.svelte';
   import SplitSection from './SplitSection.svelte';
   import StatSection from './StatSection.svelte';
+  import StepperSection from './StepperSection.svelte';
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
   import ThumbnailSection from './ThumbnailSection.svelte';
@@ -76,6 +77,7 @@
     CommandSection,
     KeyHintsSection,
     NavigationSection,
+    StepperSection,
     AvatarSection,
     ThumbnailSection,
     CarouselSection,
