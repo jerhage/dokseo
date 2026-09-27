@@ -32,6 +32,7 @@
   import ModalToastSection from './ModalToastSection.svelte';
   import MosaicSection from './MosaicSection.svelte';
   import NavigationSection from './NavigationSection.svelte';
+  import OverflowListSection from './OverflowListSection.svelte';
   import OverlaySection from './OverlaySection.svelte';
   import PageWrapSection from './PageWrapSection.svelte';
   import PanZoomSection from './PanZoomSection.svelte';
@@ -81,6 +82,7 @@
     StepperSection,
     AvatarSection,
     ThumbnailSection,
+    OverflowListSection,
     CarouselSection,
     DockSection,
     GestureSection,
