@@ -42,6 +42,7 @@
   import StatSection from './StatSection.svelte';
   import TableSection from './TableSection.svelte';
   import TabsSection from './TabsSection.svelte';
+  import ThumbnailSection from './ThumbnailSection.svelte';
   import TokensSection from './TokensSection.svelte';
   import ZPatternSection from './ZPatternSection.svelte';
 
@@ -70,6 +71,7 @@
     KeyHintsSection,
     NavigationSection,
     AvatarSection,
+    ThumbnailSection,
     ProgressSection,
     SliderSection,
     StatSection,

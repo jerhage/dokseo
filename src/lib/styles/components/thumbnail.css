@@ -1,0 +1,31 @@
+.thumbnail {
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-control);
+}
+.thumbnail > img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.thumbnail-sm {
+  inline-size: var(--sp-6);
+}
+.thumbnail-md {
+  inline-size: var(--sp-8);
+}
+.thumbnail-lg {
+  inline-size: var(--sp-10);
+}
+.thumbnail-fill {
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  background-color: transparent;
+  border-radius: 0;
+}
+.thumbnail-bordered {
+  border: var(--border-width) solid var(--border-color);
+}

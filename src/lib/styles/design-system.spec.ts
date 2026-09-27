@@ -1494,4 +1494,14 @@ describe('the design system stylesheets', () => {
     ]);
     expect(declarations(ruleBody(css, '.list-group-box'))).not.toContain('overflow: hidden');
   });
+
+  it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
+    expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
+      'inline-size: 100%',
+      'block-size: 100%',
+      'overflow: visible',
+      'background-color: transparent',
+      'border-radius: 0',
+    ]);
+  });
 });
