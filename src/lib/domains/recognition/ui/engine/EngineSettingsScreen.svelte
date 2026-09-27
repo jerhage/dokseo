@@ -4,6 +4,7 @@
   import Button from '$lib/components/Button.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import { languageName } from '$lib/shared/language';
   import {
     COMPUTE_CHOICES,
@@ -65,7 +66,14 @@
   const progress = $derived(download.kind === 'loading' ? download.load : null);
   const percent = $derived(loadPercent(progress));
 
-  const languages = engineLanguages();
+  const languageOptions = engineLanguages().map((offered) => ({
+    value: offered,
+    label: languageName(offered),
+  }));
+  const computeOptions = COMPUTE_CHOICES.map((choice) => ({
+    value: choice,
+    label: computeChoiceName(choice),
+  }));
   const caption = 'mono text-xs uppercase tracking-wide text-faint';
   const note = 'text-xs text-muted surface-sunken bordered rounded-control px-3 py-2';
 </script>
@@ -131,19 +139,14 @@
       <div class="grid-2 p-4 border-t">
         <div class="col gap-2">
           <p class={caption} id="{uid}-language">Language</p>
-          <div class="grid-3 grid-auto-sm" role="group" aria-labelledby="{uid}-language">
-            {#each languages as offered (offered)}
-              <Button
-                size="sm"
-                variant={language === offered ? 'outline' : 'default'}
-                active={language === offered}
-                aria-pressed={language === offered}
-                onclick={() => void view.chooseLanguage(offered)}
-              >
-                {languageName(offered)}
-              </Button>
-            {/each}
-          </div>
+          <SegmentedControl
+            variant="outline"
+            labelledby="{uid}-language"
+            class="grid-3 grid-auto-sm"
+            options={languageOptions}
+            value={language}
+            onchoose={(offered) => void view.chooseLanguage(offered)}
+          />
           <p class={caption} id="{uid}-model">Model</p>
           <ul class="list-reset col gap-2" aria-labelledby="{uid}-model">
             {#each view.models as offered (offered.modelId)}
@@ -166,19 +169,14 @@
 
         <div class="col gap-2">
           <p class={caption} id="{uid}-compute">Compute</p>
-          <div class="grid-3 grid-auto-sm" role="group" aria-labelledby="{uid}-compute">
-            {#each COMPUTE_CHOICES as choice (choice)}
-              <Button
-                size="sm"
-                variant={view.compute === choice ? 'outline' : 'default'}
-                active={view.compute === choice}
-                aria-pressed={view.compute === choice}
-                onclick={() => void view.chooseCompute(choice)}
-              >
-                {computeChoiceName(choice)}
-              </Button>
-            {/each}
-          </div>
+          <SegmentedControl
+            variant="outline"
+            labelledby="{uid}-compute"
+            class="grid-3 grid-auto-sm"
+            options={computeOptions}
+            value={view.compute}
+            onchoose={(choice) => void view.chooseCompute(choice)}
+          />
           <p class={note}>{computeDetectionNote(view.detection, view.compute)}</p>
           {#if cpuNote !== null}
             <p class={note}>{cpuNote}</p>

@@ -5,6 +5,8 @@
   import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
   import LayoutGrid from '$lib/components/icons/LayoutGrid.svelte';
   import List from '$lib/components/icons/List.svelte';
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+  import type { SegmentOption } from '$lib/components/segmented-control';
   import Tabs from '$lib/components/Tabs.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -52,6 +54,11 @@
   }: Props = $props();
 
   const tabs = $derived(shelfTabs(books));
+
+  const views: readonly SegmentOption<CollectionView>[] = [
+    { value: 'grid', label: 'Covers' },
+    { value: 'list', label: 'List' },
+  ];
 </script>
 
 {#snippet sortChoices()}
@@ -75,26 +82,14 @@
         {#snippet trigger()}Sort: {sortName(order)}{/snippet}
         {@render sortChoices()}
       </Dropdown>
-      <div class="row gap-1 layout-app-shell-wide-only" role="group" aria-label="Show books as">
-        <Button
-          size="sm"
-          variant="ghost"
-          active={layout === 'grid'}
-          aria-pressed={layout === 'grid'}
-          onclick={() => (layout = 'grid')}
-        >
-          Covers
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          active={layout === 'list'}
-          aria-pressed={layout === 'list'}
-          onclick={() => (layout = 'list')}
-        >
-          List
-        </Button>
-      </div>
+      <SegmentedControl
+        variant="ghost"
+        label="Show books as"
+        class="row gap-1 layout-app-shell-wide-only"
+        options={views}
+        value={layout}
+        onchoose={(chosen) => (layout = chosen)}
+      />
       <Dropdown
         variant="ghost"
         align="end"

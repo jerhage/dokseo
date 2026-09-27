@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
   import Checkbox from '$lib/components/Checkbox.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Radio from '$lib/components/Radio.svelte';
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
@@ -65,6 +65,9 @@
   const uid = $props.id();
 
   const stripHint = $derived(downward ? 'A strip reads top to bottom.' : undefined);
+  const fitOptions = $derived(
+    fits.map((choice) => ({ value: choice.label, label: choice.label, disabled: !choice.ready })),
+  );
 </script>
 
 <Modal bind:open title="Reading settings" size="sm">
@@ -109,19 +112,12 @@
     </Fieldset>
 
     <Fieldset legend="Fit">
-      <div class="row wrap gap-2">
-        {#each fits as choice (choice.label)}
-          <Button
-            size="sm"
-            disabled={!choice.ready}
-            active={choice.active}
-            aria-pressed={choice.active}
-            onclick={choice.go}
-          >
-            {choice.label}
-          </Button>
-        {/each}
-      </div>
+      <SegmentedControl
+        class="row wrap gap-2"
+        options={fitOptions}
+        value={fits.find((choice) => choice.active)?.label}
+        onchoose={(label) => fits.find((choice) => choice.label === label)?.go()}
+      />
     </Fieldset>
 
     {#if layout === 'paged'}

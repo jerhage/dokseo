@@ -9,6 +9,7 @@
   import X from '$lib/components/icons/X.svelte';
   import Input from '$lib/components/Input.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Capture } from '../../domain/capture/capture';
@@ -224,18 +225,6 @@
 
 <svelte:window onkeydown={shortcuts} onpointerdowncapture={remember} />
 
-{#snippet scopeChoices(placed: string | undefined)}
-  {#each SCOPES as choice (choice.value)}
-    <TagToggle
-      class={placed}
-      pressed={scope === choice.value}
-      onclick={(event) => pickScope(event, choice.value)}
-    >
-      {choice.label}
-    </TagToggle>
-  {/each}
-{/snippet}
-
 <Modal
   bind:open={shown}
   aria-label="Find in captures"
@@ -277,11 +266,24 @@
       <Button variant="ghost" class="modal-fill-only" onclick={hide}>Cancel</Button>
       <span class="row items-center gap-1">
         {#if book !== null}
-          {@render scopeChoices('modal-panel-only')}
+          {#each SCOPES as choice (choice.value)}
+            <TagToggle
+              class="modal-panel-only"
+              pressed={scope === choice.value}
+              onclick={(event) => pickScope(event, choice.value)}
+            >
+              {choice.label}
+            </TagToggle>
+          {/each}
           <Divider vertical class="modal-panel-only" />
-          <span class="tag-segmented modal-fill-only" role="group" aria-label="Search in">
-            {@render scopeChoices(undefined)}
-          </span>
+          <SegmentedControl
+            variant="track"
+            label="Search in"
+            class="modal-fill-only"
+            options={SCOPES}
+            value={scope}
+            onchoose={choose}
+          />
         {/if}
         <TagToggle pressed={filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
       </span>
