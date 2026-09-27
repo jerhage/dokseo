@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
-  import type { MediaRatio } from './classes';
-  import { THUMBNAIL_SIZES, thumbnailContent, thumbnailRatio } from './thumbnail';
+  import type { ControlSize, MediaRatio } from './classes';
+  import { thumbnailContent, thumbnailFraming } from './thumbnail';
 
   type Framing =
-    | { size?: 'sm' | 'md' | 'lg'; ratio?: MediaRatio }
-    | { size: 'fill'; ratio?: never };
+    | { fill?: false; size?: ControlSize; ratio?: MediaRatio }
+    | { fill: true; size?: never; ratio?: never };
 
   type Props = Omit<HTMLAttributes<HTMLSpanElement>, 'children' | 'role'> &
     Framing & {
@@ -17,6 +17,7 @@
   let {
     src,
     alt = '',
+    fill = false,
     size = 'md',
     ratio = 'portrait',
     bordered = false,
@@ -31,8 +32,7 @@
   {...rest}
   class={[
     'thumbnail',
-    THUMBNAIL_SIZES[size],
-    thumbnailRatio(size, ratio),
+    thumbnailFraming(fill, size, ratio),
     { 'thumbnail-bordered': bordered },
     className,
   ]}

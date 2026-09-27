@@ -34,7 +34,7 @@
         tooltip={bookFacts(book)}
       >
         {#snippet media()}
-          <Thumbnail src={cover} size="fill" />
+          <Thumbnail src={cover} fill />
         {/snippet}
       </Card>
       {#if book.finishedAt !== null}

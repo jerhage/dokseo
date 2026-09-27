@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ClassValue, HTMLInputAttributes } from 'svelte/elements';
+  import { DROPZONE_SIZES } from './classes';
+  import type { DropzoneSize } from './classes';
   import { readDropped } from './drop-reading';
   import type { DropReader } from './drop-reading';
   import { acceptRules, selectFiles } from './file-selection';
@@ -9,7 +11,15 @@
 
   type Props = Omit<
     HTMLInputAttributes,
-    'type' | 'class' | 'children' | 'title' | 'accept' | 'multiple' | 'disabled' | 'onchange'
+    | 'type'
+    | 'class'
+    | 'children'
+    | 'title'
+    | 'accept'
+    | 'multiple'
+    | 'disabled'
+    | 'onchange'
+    | 'size'
   > & {
     class?: ClassValue;
     title?: string | Snippet;
@@ -18,7 +28,7 @@
     multiple?: boolean;
     maxSize?: number | undefined;
     disabled?: boolean;
-    compact?: boolean;
+    size?: DropzoneSize;
     invalid?: boolean;
     directory?: boolean;
     readDrop?: DropReader<DataTransfer, File> | undefined;
@@ -33,7 +43,7 @@
     multiple = false,
     maxSize,
     disabled = false,
-    compact = false,
+    size = 'md',
     invalid = false,
     directory = false,
     readDrop,
@@ -89,7 +99,8 @@
 <label
   class={[
     'dropzone',
-    { 'dropzone-compact': compact, 'is-dragover': dragging, 'is-invalid': invalid },
+    DROPZONE_SIZES[size],
+    { 'is-dragover': dragging, 'is-invalid': invalid },
     className,
   ]}
   ondragenter={hover}

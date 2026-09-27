@@ -17,6 +17,10 @@ type CardVariant = 'default' | 'elevated' | 'feature';
 
 type CardSize = 'sm' | 'md';
 
+type TableSize = 'sm' | 'md';
+
+type DropzoneSize = 'sm' | 'md';
+
 type TabsVariant = 'underline' | 'pill';
 
 type MediaRatio = 'video' | 'square' | 'portrait';
@@ -134,6 +138,16 @@ const CARD_VARIANTS: Readonly<Record<CardVariant, ClassList>> = {
 
 const CARD_SIZES: Readonly<Record<CardSize, ClassList>> = {
   sm: ['card-sm'],
+  md: [],
+};
+
+const TABLE_SIZES: Readonly<Record<TableSize, ClassList>> = {
+  sm: ['table-sm'],
+  md: [],
+};
+
+const DROPZONE_SIZES: Readonly<Record<DropzoneSize, ClassList>> = {
+  sm: ['dropzone-sm'],
   md: [],
 };
 
@@ -277,6 +291,7 @@ export {
   BUTTON_VARIANTS,
   CARD_SIZES,
   CARD_VARIANTS,
+  DROPZONE_SIZES,
   MEDIA_RATIOS,
   MODAL_BODIES,
   MODAL_FOOTERS,
@@ -289,6 +304,7 @@ export {
   SKELETON_SHAPES,
   STAT_SIZES,
   STAT_TRENDS,
+  TABLE_SIZES,
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
   TAG_COLOURS,
@@ -303,6 +319,7 @@ export type {
   CardVariant,
   ClassList,
   ControlSize,
+  DropzoneSize,
   MediaRatio,
   MenuAlign,
   ModalBody,
@@ -316,6 +333,7 @@ export type {
   StatSize,
   StatTrend,
   StatusVariant,
+  TableSize,
   TabsVariant,
   TagColour,
 };

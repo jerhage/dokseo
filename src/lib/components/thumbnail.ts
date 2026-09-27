@@ -1,18 +1,14 @@
-import { match } from 'ts-pattern';
-import type { ClassList, MediaRatio } from './classes';
-
-type ThumbnailSize = 'sm' | 'md' | 'lg' | 'fill';
+import type { ClassList, ControlSize, MediaRatio } from './classes';
 
 type ThumbnailContent =
   | { readonly kind: 'image'; readonly src: string; readonly alt: string }
   | { readonly kind: 'named'; readonly label: string }
   | { readonly kind: 'blank' };
 
-const THUMBNAIL_SIZES: Readonly<Record<ThumbnailSize, ClassList>> = {
+const THUMBNAIL_SIZES: Readonly<Record<ControlSize, ClassList>> = {
   sm: ['thumbnail-sm'],
-  md: ['thumbnail-md'],
+  md: [],
   lg: ['thumbnail-lg'],
-  fill: ['thumbnail-fill'],
 };
 
 const THUMBNAIL_RATIOS: Readonly<Record<MediaRatio, ClassList>> = {
@@ -26,12 +22,9 @@ function thumbnailContent(src: string | null, alt: string): ThumbnailContent {
   return alt === '' ? { kind: 'blank' } : { kind: 'named', label: alt };
 }
 
-function thumbnailRatio(size: ThumbnailSize, ratio: MediaRatio): ClassList {
-  return match(size)
-    .with('fill', () => [])
-    .with('sm', 'md', 'lg', () => THUMBNAIL_RATIOS[ratio])
-    .exhaustive();
+function thumbnailFraming(fill: boolean, size: ControlSize, ratio: MediaRatio): ClassList {
+  return fill ? ['thumbnail-fill'] : [...THUMBNAIL_SIZES[size], ...THUMBNAIL_RATIOS[ratio]];
 }
 
-export { THUMBNAIL_RATIOS, THUMBNAIL_SIZES, thumbnailContent, thumbnailRatio };
-export type { ThumbnailContent, ThumbnailSize };
+export { THUMBNAIL_RATIOS, THUMBNAIL_SIZES, thumbnailContent, thumbnailFraming };
+export type { ThumbnailContent };

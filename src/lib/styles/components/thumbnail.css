@@ -1,6 +1,7 @@
 .thumbnail {
   display: block;
   flex-shrink: 0;
+  inline-size: var(--sp-8);
   overflow: hidden;
   background-color: var(--color-surface-sunken);
   border-radius: var(--radius-control);
@@ -12,9 +13,6 @@
 }
 .thumbnail-sm {
   inline-size: var(--sp-6);
-}
-.thumbnail-md {
-  inline-size: var(--sp-8);
 }
 .thumbnail-lg {
   inline-size: var(--sp-10);

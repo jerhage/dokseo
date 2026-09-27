@@ -12,14 +12,7 @@
 <DemoSection
   id="thumbnail"
   title="Thumbnail"
-  classes={[
-    'thumbnail',
-    'thumbnail-sm',
-    'thumbnail-md',
-    'thumbnail-lg',
-    'thumbnail-fill',
-    'thumbnail-bordered',
-  ]}
+  classes={['thumbnail', 'thumbnail-sm', 'thumbnail-lg', 'thumbnail-fill', 'thumbnail-bordered']}
 >
   <Card>
     <div class="row wrap items-center gap-4">
@@ -40,15 +33,15 @@
     <div class="stack-sm">
       <Card href="#thumbnail" mediaRatio="portrait" aria-label="A card whose media is a thumbnail">
         {#snippet media()}
-          <Thumbnail src={ART} size="fill" />
+          <Thumbnail src={ART} fill />
         {/snippet}
       </Card>
-      <code class="text-xs">Card media, size="fill"</code>
+      <code class="text-xs">Card media, fill</code>
     </div>
     <div class="stack-sm">
       <Card href="#thumbnail" mediaRatio="portrait" aria-label="A card with no cover yet">
         {#snippet media()}
-          <Thumbnail src={null} size="fill" />
+          <Thumbnail src={null} fill />
         {/snippet}
       </Card>
       <code class="text-xs">no image</code>

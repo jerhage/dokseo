@@ -92,7 +92,7 @@
   font-size: var(--text-xs);
   color: var(--color-text-faint);
 }
-.dropzone-compact {
+.dropzone-sm {
   grid-template-columns: auto minmax(0, 1fr);
   justify-items: start;
   column-gap: var(--sp-3);
@@ -100,7 +100,7 @@
   padding: var(--sp-3) var(--sp-4);
   text-align: start;
 }
-.dropzone-compact .dropzone-icon-frame {
+.dropzone-sm .dropzone-icon-frame {
   grid-row: span 2;
   inline-size: var(--control-h-md);
   block-size: var(--control-h-md);

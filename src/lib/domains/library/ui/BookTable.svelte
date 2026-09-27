@@ -20,7 +20,7 @@
   let { books, busy, onedit, onremove, onfinish, onunread }: Props = $props();
 </script>
 
-<Table compact aria-label="Books">
+<Table size="sm" aria-label="Books">
   <thead>
     <tr>
       <th scope="col">Title</th>

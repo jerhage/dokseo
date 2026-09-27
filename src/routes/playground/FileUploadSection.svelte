@@ -99,7 +99,7 @@
 <DemoSection
   id="upload"
   title="File upload"
-  classes={['dropzone', 'dropzone-compact', 'window-dropzone', 'file-list', 'file-item']}
+  classes={['dropzone', 'dropzone-sm', 'window-dropzone', 'file-list', 'file-item']}
 >
   <p class="text-sm text-muted">
     Drag files onto a zone or click to browse. Files over 50 MB or of the wrong type show as errors.
@@ -137,7 +137,7 @@
             <div class="stack-sm">
               <Dropzone
                 {...control}
-                compact
+                size="sm"
                 accept="image/*"
                 maxSize={2 * MEGABYTE}
                 title="Upload an image"
@@ -152,7 +152,7 @@
           {#snippet children(control)}
             <Dropzone
               {...control}
-              compact
+              size="sm"
               disabled
               title="Uploads disabled"
               hint="Signed documents can't be replaced"
@@ -168,7 +168,7 @@
       <div class="stack-sm">
         <span class="eyebrow text-faint weight-semibold">A drop reader</span>
         <Dropzone
-          compact
+          size="sm"
           multiple
           title="Drop files to sort them by name"
           hint="readDrop decides what a drop holds; this one sorts it"

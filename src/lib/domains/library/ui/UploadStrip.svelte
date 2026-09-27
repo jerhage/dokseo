@@ -32,7 +32,7 @@
     bind:ref={filePicker}
     multiple
     directory
-    {compact}
+    size={compact ? 'sm' : 'md'}
     accept={ACCEPT_ATTRIBUTE}
     readDrop={filesFromDataTransfer}
     disabled={busy}

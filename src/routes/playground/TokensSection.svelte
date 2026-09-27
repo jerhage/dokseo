@@ -116,7 +116,7 @@
         <p lang="ko">독서 기록</p>
         <Input lang="ja" value="入力欄も" aria-label="A Japanese field" />
       </Card>
-      <Table compact caption="Z-index scale">
+      <Table size="sm" caption="Z-index scale">
         <thead>
           <tr><th>Token</th><th class="table-numeric">Value</th></tr>
         </thead>

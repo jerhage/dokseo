@@ -64,7 +64,7 @@
 <DemoSection
   id="table"
   title="Table"
-  classes={['table-wrapper', 'table', 'table-striped', 'table-compact', 'table-numeric']}
+  classes={['table-wrapper', 'table', 'table-striped', 'table-sm', 'table-numeric']}
 >
   <Table caption="Default">
     {@render head()}
@@ -74,7 +74,7 @@
     {@render head()}
     {@render body()}
   </Table>
-  <Table compact caption={richCaption}>
+  <Table size="sm" caption={richCaption}>
     {@render head()}
     {@render body()}
   </Table>

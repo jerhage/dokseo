@@ -51,8 +51,8 @@
 .table-striped tbody tr:nth-child(even):hover {
   background-color: var(--color-table-row-hover);
 }
-.table-compact th,
-.table-compact td {
+.table-sm th,
+.table-sm td {
   padding: var(--sp-2) var(--sp-3);
 }
 .table .table-numeric {

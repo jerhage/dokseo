@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { THUMBNAIL_RATIOS, THUMBNAIL_SIZES, thumbnailContent, thumbnailRatio } from './thumbnail';
+import { THUMBNAIL_RATIOS, THUMBNAIL_SIZES, thumbnailContent, thumbnailFraming } from './thumbnail';
 import Thumbnail from './Thumbnail.svelte';
 
 const THUMBNAIL = Thumbnail as unknown as Component<Record<string, unknown>>;
@@ -13,12 +13,11 @@ function markup(props: Record<string, unknown>): string {
 }
 
 describe('the thumbnail class maps', () => {
-  it('names one class for each size', () => {
+  it('names one class for each size but the default', () => {
     expect(THUMBNAIL_SIZES).toEqual({
       sm: ['thumbnail-sm'],
-      md: ['thumbnail-md'],
+      md: [],
       lg: ['thumbnail-lg'],
-      fill: ['thumbnail-fill'],
     });
   });
 
@@ -31,13 +30,17 @@ describe('the thumbnail class maps', () => {
   });
 });
 
-describe('thumbnailRatio', () => {
-  it('keeps the ratio for a sized frame', () => {
-    expect(thumbnailRatio('sm', 'square')).toEqual(['aspect-square']);
+describe('thumbnailFraming', () => {
+  it('pairs the size with the ratio for a sized frame', () => {
+    expect(thumbnailFraming(false, 'sm', 'square')).toEqual(['thumbnail-sm', 'aspect-square']);
   });
 
-  it('drops the ratio for a frame that fills its parent', () => {
-    expect(thumbnailRatio('fill', 'portrait')).toEqual([]);
+  it('gives the default size no class of its own', () => {
+    expect(thumbnailFraming(false, 'md', 'portrait')).toEqual(['aspect-portrait']);
+  });
+
+  it('drops the size and the ratio for a frame that fills its parent', () => {
+    expect(thumbnailFraming(true, 'lg', 'portrait')).toEqual(['thumbnail-fill']);
   });
 });
 
@@ -63,9 +66,9 @@ describe('thumbnailContent', () => {
 });
 
 describe('Thumbnail', () => {
-  it('renders a decorative portrait frame at the middle size', () => {
+  it('renders a decorative portrait frame at the default size', () => {
     expect(markup({ src: 'blob:cover' })).toBe(
-      '<span class="thumbnail thumbnail-md aspect-portrait"><img src="blob:cover" alt=""/></span>',
+      '<span class="thumbnail aspect-portrait"><img src="blob:cover" alt=""/></span>',
     );
   });
 
@@ -82,7 +85,7 @@ describe('Thumbnail', () => {
   });
 
   it('fills its parent without a ratio of its own and passes a class through', () => {
-    expect(markup({ src: 'blob:cover', alt: 'Cover of Dune', size: 'fill', class: 'x' })).toBe(
+    expect(markup({ src: 'blob:cover', alt: 'Cover of Dune', fill: true, class: 'x' })).toBe(
       '<span class="thumbnail thumbnail-fill x"><img src="blob:cover" alt="Cover of Dune"/></span>',
     );
   });
