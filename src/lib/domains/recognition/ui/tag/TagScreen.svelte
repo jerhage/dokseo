@@ -9,6 +9,7 @@
   import KeyHints from '$lib/components/KeyHints.svelte';
   import ListGroup from '$lib/components/ListGroup.svelte';
   import Tag from '$lib/components/Tag.svelte';
+  import Thumbnail from '$lib/components/Thumbnail.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
@@ -182,13 +183,7 @@
           {#each shelves as shelf (shelf.id)}
             <li class="col gap-3">
               <div class="row items-center gap-3">
-                <span
-                  class="w-8 shrink-0 aspect-portrait overflow-hidden surface-sunken rounded-control"
-                >
-                  {#if shelf.cover !== null}
-                    <img class="object-cover" src={shelf.cover} alt="" />
-                  {/if}
-                </span>
+                <Thumbnail src={shelf.cover} size="md" />
                 <div class="col gap-0 flex-1">
                   <h2 class="text-base weight-semibold truncate" lang={shelf.language}>
                     {shelf.title}
