@@ -1480,4 +1480,18 @@ describe('the design system stylesheets', () => {
       'color: var(--_toast-fg)',
     );
   });
+
+  it('rules a line between the rows of a separated list group and of its summary, and clips only a separated box', () => {
+    const css = style('components/list-group.css');
+    const rule = ruleFor(css, '.list-group-separated .list-group-list > * + *');
+
+    expect(rule.selectors).toContain('.list-group-summary > * + *');
+    expect(declarations(rule.body)).toEqual([
+      'border-block-start: var(--border-width) solid var(--border-color)',
+    ]);
+    expect(declarations(ruleBody(css, '.list-group-separated > .list-group-box'))).toEqual([
+      'overflow: hidden',
+    ]);
+    expect(declarations(ruleBody(css, '.list-group-box'))).not.toContain('overflow: hidden');
+  });
 });

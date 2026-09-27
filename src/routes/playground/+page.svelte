@@ -24,6 +24,7 @@
   import IconsSection from './IconsSection.svelte';
   import KeyHintsSection from './KeyHintsSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
+  import ListGroupSection from './ListGroupSection.svelte';
   import ModalToastSection from './ModalToastSection.svelte';
   import MosaicSection from './MosaicSection.svelte';
   import NavigationSection from './NavigationSection.svelte';
@@ -61,6 +62,7 @@
     TabsSection,
     AccordionSection,
     TableSection,
+    ListGroupSection,
     ModalToastSection,
     DropdownSection,
     PopoverSection,
