@@ -5,14 +5,13 @@
   import Alert from '$lib/components/Alert.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import SearchField from '$lib/components/SearchField.svelte';
-  import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
-  import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
+  import Stepper from '$lib/components/Stepper.svelte';
+  import type { StepperSteps } from '$lib/components/stepper';
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import Trash from '$lib/components/icons/Trash.svelte';
   import { getToaster } from '$lib/components/toast-context';
@@ -94,6 +93,15 @@
   const cards = $derived(panel.cards);
   const searching = $derived(panel.searching);
   const steps = $derived(searchSteps(panel.cursor, cards.length, view.count));
+  const stepping = $derived<StepperSteps | null>(
+    searching
+      ? {
+          previous: steps.previous ? () => stepBy(-1) : null,
+          next: steps.next ? () => stepBy(1) : null,
+          count: steps.tally,
+        }
+      : null,
+  );
   const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
   const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
   const loadFailure = $derived(view.load.status === 'failed' ? view.load.message : null);
@@ -202,7 +210,15 @@
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <div class="col gap-2 px-3 pt-3">
       {#if view.count > 0}
-        <div class="row items-center gap-1">
+        <Stepper
+          steps={stepping}
+          axis="block"
+          tally="status"
+          spaced
+          previousLabel="Previous match"
+          nextLabel="Next match"
+          class="gap-1"
+        >
           <SearchField
             bind:value={panel.query}
             label="Search this book's captures and notes"
@@ -212,28 +228,7 @@
             title="Search this book's captures and notes · Enter steps to the next match"
             onkeydown={stepOnEnter}
           />
-          {#if searching}
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={ChevronUp}
-              label="Previous match"
-              disabled={!steps.previous}
-              onclick={() => stepBy(-1)}
-            />
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={ChevronDown}
-              label="Next match"
-              disabled={!steps.next}
-              onclick={() => stepBy(1)}
-            />
-          {/if}
-        </div>
-        {#if searching}
-          <p class="m-0 text-xs text-muted mono" role="status">{steps.tally}</p>
-        {/if}
+        </Stepper>
       {/if}
 
       {#if mismatch !== null}
