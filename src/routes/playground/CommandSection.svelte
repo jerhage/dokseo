@@ -48,7 +48,7 @@
     {#each list as command, index (command.name)}
       <li>
         <CommandItem selected={index === cursor} hint={command.hint} onclick={() => run(command)}>
-          <span class="w-8 shrink-0 aspect-square rounded-control surface-sunken bordered"></span>
+          <span class="w-md shrink-0 aspect-square rounded-control surface-sunken bordered"></span>
           <span class="col gap-1 flex-1">
             <span class="truncate">{command.name}</span>
             <span class="accent-start truncate text-xs text-muted">{command.note}</span>
@@ -71,9 +71,9 @@
     'modal-body-flush',
     'modal-footer-info',
     'list-reset',
-    'w-6',
-    'w-8',
-    'w-10',
+    'w-sm',
+    'w-md',
+    'w-lg',
     'shrink-0',
     'accent-start',
   ]}
@@ -94,7 +94,7 @@
     </div>
     <p class="text-sm text-muted">Last run: {chosen}</p>
     <div class="row wrap items-center gap-3">
-      {#each ['w-6', 'w-8', 'w-10'] as width (width)}
+      {#each ['w-sm', 'w-md', 'w-lg'] as width (width)}
         <span class="{width} shrink-0 aspect-portrait rounded-control surface-sunken bordered"
         ></span>
       {/each}

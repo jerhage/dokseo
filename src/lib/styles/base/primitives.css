@@ -123,6 +123,11 @@
   --ds-size-skeleton-line-sm: 0.75rem;
   --ds-size-skeleton-line-md: 1rem;
   --ds-size-skeleton-line-lg: 1.25rem;
+  --ds-size-width-sm: 1.5rem;
+  --ds-size-width-md: 2.5rem;
+  --ds-size-width-lg: 4rem;
+  --ds-size-swatch: 3rem;
+  --ds-size-swatch-bar: 0.75rem;
 
   --ds-dur-instant: 40ms;
   --ds-dur-flash: 90ms;

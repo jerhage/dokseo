@@ -11,14 +11,14 @@
 .w-full {
   inline-size: 100%;
 }
-.w-6 {
-  inline-size: var(--sp-6);
+.w-sm {
+  inline-size: var(--width-sm);
 }
-.w-8 {
-  inline-size: var(--sp-8);
+.w-md {
+  inline-size: var(--width-md);
 }
-.w-10 {
-  inline-size: var(--sp-10);
+.w-lg {
+  inline-size: var(--width-lg);
 }
 .min-h-screen {
   min-block-size: 100dvh;

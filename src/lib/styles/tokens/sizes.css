@@ -31,6 +31,11 @@
   --skeleton-line-sm: var(--ds-size-skeleton-line-sm);
   --skeleton-line-md: var(--ds-size-skeleton-line-md);
   --skeleton-line-lg: var(--ds-size-skeleton-line-lg);
+  --width-sm: var(--ds-size-width-sm);
+  --width-md: var(--ds-size-width-md);
+  --width-lg: var(--ds-size-width-lg);
+  --swatch-size: var(--ds-size-swatch);
+  --swatch-bar-h: var(--ds-size-swatch-bar);
   --indeterminate-share: var(--ds-share-indeterminate);
 
   --modal-width-sm: var(--ds-size-dialog-sm);

@@ -1,7 +1,7 @@
 @layer features {
   @scope (.tokens-section) {
     .swatch {
-      block-size: var(--sp-9);
+      block-size: var(--swatch-size);
       background-color: var(--swatch, transparent);
       border: var(--border-width) solid var(--border-color);
       border-radius: var(--radius-control);
@@ -13,13 +13,13 @@
     }
     .space-sample {
       inline-size: var(--sample-space, 0);
-      block-size: var(--sp-3);
+      block-size: var(--swatch-bar-h);
       background-color: var(--color-primary);
       border-radius: var(--radius-xs);
     }
     .shape-sample {
-      inline-size: var(--sp-9);
-      block-size: var(--sp-9);
+      inline-size: var(--swatch-size);
+      block-size: var(--swatch-size);
       background-color: var(--color-surface-raised);
       border: var(--border-width) solid var(--border-color);
       border-radius: var(--sample-radius, var(--radius-control));

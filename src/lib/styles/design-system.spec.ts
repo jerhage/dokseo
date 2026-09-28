@@ -270,7 +270,7 @@ const SCHEMES = ['light', 'dark'];
 
 const LANGUAGE_FACES = ['ja', 'ko'];
 
-const WIDTH_STEPS = ['6', '8', '10'];
+const WIDTH_STEPS = ['sm', 'md', 'lg'] as const;
 
 const GRID_MIN_COLUMNS = ['sm', 'lg'];
 
@@ -1289,7 +1289,7 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
-  it('sizes each width utility to the spacing step its name says', () => {
+  it('sizes each width utility to the width token its name says', () => {
     const layout = style('utilities/layout.css');
 
     for (const step of WIDTH_STEPS) {
@@ -1297,7 +1297,7 @@ describe('the design system stylesheets', () => {
 
       expect({ selector, body: declarations(ruleBody(layout, selector)) }).toEqual({
         selector,
-        body: [`inline-size: var(--sp-${step})`],
+        body: [`inline-size: var(--width-${step})`],
       });
     }
   });
