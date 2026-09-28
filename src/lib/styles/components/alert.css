@@ -12,6 +12,10 @@
   border: var(--border-width) solid var(--_alert-border);
   border-radius: var(--radius-container);
 }
+.alert-banner {
+  border-inline: none;
+  border-radius: var(--radius-none);
+}
 .alert-success {
   --_alert-fg: var(--color-success);
   --_alert-bg: var(--color-success-bg);

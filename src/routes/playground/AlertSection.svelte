@@ -4,10 +4,12 @@
   import type { StatusVariant } from '$lib/components/classes';
   import DemoSection from './DemoSection.svelte';
 
-  let dismissed = $state<readonly StatusVariant[]>([]);
+  type Dismissible = StatusVariant | 'banner';
 
-  function dismiss(variant: StatusVariant): void {
-    dismissed = [...dismissed, variant];
+  let dismissed = $state<readonly Dismissible[]>([]);
+
+  function dismiss(alert: Dismissible): void {
+    dismissed = [...dismissed, alert];
   }
 </script>
 
@@ -18,7 +20,14 @@
 <DemoSection
   id="alert"
   title="Alert"
-  classes={['alert', 'alert-success', 'alert-warning', 'alert-danger', 'alert-info']}
+  classes={[
+    'alert',
+    'alert-success',
+    'alert-warning',
+    'alert-danger',
+    'alert-info',
+    'alert-banner',
+  ]}
 >
   <div class="grid-2">
     {#if !dismissed.includes('success')}
@@ -47,6 +56,14 @@
       </Alert>
     {/if}
     <Alert variant="info">Without a title or a close button.</Alert>
+  </div>
+  <div class="surface bordered rounded-container overflow-hidden">
+    {#if !dismissed.includes('banner')}
+      <Alert variant="warning" banner title="A banner alert" ondismiss={() => dismiss('banner')}>
+        Square, and flush with the sides of the surface it heads.
+      </Alert>
+    {/if}
+    <p class="p-5 text-sm text-muted">The surface the banner sits at the top of.</p>
   </div>
   <div class="row">
     <Button size="sm" disabled={dismissed.length === 0} onclick={() => (dismissed = [])}>

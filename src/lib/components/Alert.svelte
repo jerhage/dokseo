@@ -13,6 +13,7 @@
     actions?: Snippet;
     ondismiss?: () => void;
     dismissLabel?: string;
+    banner?: boolean;
   };
 
   let {
@@ -21,6 +22,7 @@
     actions,
     ondismiss,
     dismissLabel = 'Dismiss',
+    banner = false,
     class: className,
     children,
     ...rest
@@ -30,7 +32,7 @@
 <div
   role={announcementRole(variant)}
   {...rest}
-  class={['alert', ALERT_VARIANTS[variant], className]}
+  class={['alert', ALERT_VARIANTS[variant], { 'alert-banner': banner }, className]}
 >
   <StatusIcon {variant} class="alert-icon" />
   <div class="alert-content">

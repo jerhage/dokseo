@@ -1792,6 +1792,13 @@ describe('the design system stylesheets', () => {
     expect(everyDeclarationFor(css, '.field-inline > .field-error')).toEqual(['flex-basis: 100%']);
   });
 
+  it('squares a banner alert and drops its inline borders', () => {
+    expect(declarations(ruleBody(style('components/alert.css'), '.alert-banner'))).toEqual([
+      'border-inline: none',
+      'border-radius: var(--radius-none)',
+    ]);
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',
