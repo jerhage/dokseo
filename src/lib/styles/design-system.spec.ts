@@ -1111,12 +1111,10 @@ describe('the design system stylesheets', () => {
   it('lets pointer events through a pass-through layer but not through its controls', () => {
     const patterns = style('utilities/layout-patterns.css');
     const controls = rules(patterns).find((rule) =>
-      rule.selectors.some((selector) => selector.startsWith('.overlay-pass-through :is(')),
+      rule.selectors.some((selector) => selector.startsWith('.pass-through :is(')),
     );
 
-    expect(declarations(ruleBody(patterns, '.overlay-pass-through'))).toEqual([
-      'pointer-events: none',
-    ]);
+    expect(declarations(ruleBody(patterns, '.pass-through'))).toEqual(['pointer-events: none']);
     expect(declarations(controls?.body ?? '')).toEqual(['pointer-events: auto']);
   });
 

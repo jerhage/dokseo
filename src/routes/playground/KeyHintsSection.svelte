@@ -60,7 +60,7 @@
           hints={CANVAS_KEYS}
           size="sm"
           decorative
-          class="pin-bottom pin-lift overlay-pass-through px-3 py-2"
+          class="pin-bottom pin-lift pass-through px-3 py-2"
         />
         <p class="pin-bottom m-0 px-3 py-2 surface border-t text-sm" bind:offsetHeight={barHeight}>
           A bar pinned below

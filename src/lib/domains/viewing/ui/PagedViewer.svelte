@@ -701,7 +701,7 @@
       size="sm"
       decorative
       class={[
-        'pin-bottom pin-lift z-sticky overlay-pass-through px-3 py-2 hushable',
+        'pin-bottom pin-lift z-sticky pass-through px-3 py-2 hushable',
         { 'is-hushed': pending.length === 0 },
       ]}
     />

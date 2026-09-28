@@ -20,8 +20,9 @@
     'layout-overlay-center',
     'layout-overlay-scrim',
     'scrim',
-    'overlay-host',
-    'overlay-*',
+    'layout-overlay-bare',
+    'layout-overlay-*',
+    'pass-through',
     'reveal-on-hover',
     'aspect-*',
     'object-cover',
@@ -70,15 +71,15 @@
   </div>
   <div class="grid-auto grid-auto-sm">
     <div class={['reveal-host stack-sm', { 'is-busy': busy }]} aria-busy={busy}>
-      <div class="overlay-host aspect-portrait overflow-hidden bordered rounded-container">
-        <img class="overlay-fill object-cover" src={ART} alt="" />
-        <div class="overlay-top-end reveal-on-hover">
+      <div class="layout-overlay-bare aspect-portrait overflow-hidden bordered rounded-container">
+        <img class="layout-overlay-fill object-cover" src={ART} alt="" />
+        <div class="layout-overlay-top-end reveal-on-hover">
           <Button size="sm" pill onclick={() => (busy = !busy)}>{busy ? 'Done' : 'Busy'}</Button>
         </div>
-        <div class="overlay-top-start">
+        <div class="layout-overlay-top-start">
           <Badge variant="brand">top-start</Badge>
         </div>
-        <div class="overlay-bottom overlay-pass-through col items-start gap-2 p-2">
+        <div class="layout-overlay-bottom pass-through col items-start gap-2 p-2">
           <Badge variant="neutral">pass-through</Badge>
           <Progress label="Overlay progress" value={40} size="sm" />
         </div>

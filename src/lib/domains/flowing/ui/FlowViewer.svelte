@@ -405,7 +405,7 @@
   frame={readerFrame}
   shown={awake}
   class="flow-viewer"
-  pageClass="overlay-host"
+  pageClass="layout-overlay-bare"
   {panel}
   {panelCount}
 >
@@ -505,14 +505,14 @@
         variant="fill"
         live
         message="Opening this book…"
-        class="overlay-fill z-overlay surface-bg text-center"
+        class="layout-overlay-fill z-overlay surface-bg text-center"
       />
     {:else if message !== null}
       <EmptyState
         variant="fill"
         live
         {message}
-        class="overlay-fill z-overlay surface-bg text-center"
+        class="layout-overlay-fill z-overlay surface-bg text-center"
       >
         {#snippet action()}
           <Button href="/" variant="primary" size="sm">Back to your library</Button>
