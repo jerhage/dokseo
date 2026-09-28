@@ -812,15 +812,16 @@ describe('the design system stylesheets', () => {
     }
   });
 
-  it('paints every surface utility with its background and the text colour on it', () => {
+  it('paints every surface utility with its background and the text colour on it, and the page surface with the page backdrop', () => {
     const surface = style('utilities/surface.css');
 
     for (const [name, token] of Object.entries(SURFACES)) {
       const selector = `.${name}`;
+      const backdrop = name === 'surface-bg' ? ['background-image: var(--page-backdrop)'] : [];
 
       expect({ selector, body: declarations(ruleBody(surface, selector)).toSorted() }).toEqual({
         selector,
-        body: [`background-color: var(${token})`, 'color: var(--color-text)'],
+        body: [`background-color: var(${token})`, ...backdrop, 'color: var(--color-text)'],
       });
     }
   });
@@ -1856,9 +1857,10 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
-  it('paints the page backdrop over the page colour on the body, fixed to the viewport, and on the app shell', () => {
+  it('paints the page backdrop over the page colour on the body, fixed to the viewport, on the app shell and on the page surface', () => {
     const body = everyDeclarationFor(style('base/elements.css'), 'body');
     const shell = everyDeclarationFor(style('utilities/layout.css'), '.layout-app-shell');
+    const page = everyDeclarationFor(style('utilities/surface.css'), '.surface-bg');
 
     expect(body).toEqual(
       expect.arrayContaining([
@@ -1867,12 +1869,14 @@ describe('the design system stylesheets', () => {
         'background-attachment: fixed',
       ]),
     );
-    expect(shell).toEqual(
-      expect.arrayContaining([
-        'background-color: var(--color-bg)',
-        'background-image: var(--page-backdrop)',
-      ]),
-    );
+    for (const painted of [shell, page]) {
+      expect(painted).toEqual(
+        expect.arrayContaining([
+          'background-color: var(--color-bg)',
+          'background-image: var(--page-backdrop)',
+        ]),
+      );
+    }
   });
 
   it('sets no page backdrop in the default theme', () => {

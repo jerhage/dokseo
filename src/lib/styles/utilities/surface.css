@@ -9,6 +9,7 @@
 .surface-bg {
   color: var(--color-text);
   background-color: var(--color-bg);
+  background-image: var(--page-backdrop);
 }
 .surface {
   color: var(--color-text);
