@@ -12,17 +12,17 @@
   type Props = Omit<HTMLLiAttributes, 'children'> & {
     item: FileItemData;
     onremove?: ((id: string) => void) | undefined;
-    removeLabel?: ((name: string) => string) | undefined;
-    cancelLabel?: ((name: string) => string) | undefined;
-    progressLabel?: ((name: string) => string) | undefined;
+    removeLabel?: string | undefined;
+    cancelLabel?: string | undefined;
+    progressLabel?: string | undefined;
   };
 
   let {
     item,
     onremove,
-    removeLabel = (name) => `Remove ${name}`,
-    cancelLabel = () => 'Cancel upload',
-    progressLabel = (name) => `Uploading ${name}`,
+    removeLabel,
+    cancelLabel = 'Cancel upload',
+    progressLabel,
     class: className,
     ...rest
   }: Props = $props();
@@ -36,8 +36,9 @@
       .exhaustive(),
   );
   const actionLabel = $derived(
-    view.removal === 'cancel' ? cancelLabel(item.name) : removeLabel(item.name),
+    view.removal === 'cancel' ? cancelLabel : (removeLabel ?? `Remove ${item.name}`),
   );
+  const uploadingLabel = $derived(progressLabel ?? `Uploading ${item.name}`);
 </script>
 
 <li {...rest} class={['file-item', view.classes, className]}>
@@ -45,7 +46,7 @@
   <div class="file-item-content">
     <span class="file-item-name">{item.name}</span>
     {#if view.detail.kind === 'progress'}
-      <Progress label={progressLabel(item.name)} value={view.detail.value} size="sm" />
+      <Progress label={uploadingLabel} value={view.detail.value} size="sm" />
     {:else}
       <span class="file-item-detail">{view.detail.text}</span>
     {/if}
