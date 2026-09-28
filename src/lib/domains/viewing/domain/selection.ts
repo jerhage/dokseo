@@ -1,7 +1,9 @@
 import type { Arrangement } from '$lib/shared/arrangement';
 import { normalize } from '$lib/shared/geometry';
-import type { Size } from '$lib/shared/geometry';
+import type { ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
+import { regionsIn } from './placement';
+import type { PlacedImage } from './placement';
 
 type Point = { readonly x: number; readonly y: number };
 
@@ -26,5 +28,18 @@ function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement
   return { width, height };
 }
 
-export { MIN_SELECTION_PX, selectionSize };
+function drawnSize(
+  placed: readonly PlacedImage[],
+  selection: ScreenRect,
+  arrangement: Arrangement,
+): Size | null {
+  const regions = regionsIn(placed, selection);
+  return regions.length === 0 ? null : selectionSize(regions, arrangement);
+}
+
+function sizeLabel(size: Size): string {
+  return `${Math.round(size.width)} × ${Math.round(size.height)}`;
+}
+
+export { MIN_SELECTION_PX, drawnSize, selectionSize, sizeLabel };
 export type { Point };

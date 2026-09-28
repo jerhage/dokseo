@@ -3,6 +3,7 @@
   import MarqueeSelection from '$lib/components/MarqueeSelection.svelte';
   import type {
     MarqueeEnd,
+    MarqueeRect,
     MarqueeRefusal,
     MarqueeStroke,
   } from '$lib/components/marquee-selection';
@@ -16,7 +17,7 @@
   import type { ImageRegion } from '$lib/shared/image-region';
   import { regionsIn } from '../domain/placement';
   import type { PlacedImage } from '../domain/placement';
-  import { MIN_SELECTION_PX, selectionSize } from '../domain/selection';
+  import { drawnSize, MIN_SELECTION_PX, selectionSize, sizeLabel } from '../domain/selection';
   import type { Point } from '../domain/selection';
   import { placedImages } from './page-placements';
 
@@ -47,11 +48,7 @@
 
   const noting = $derived(makes === 'written');
 
-  const measure = $derived.by(() => {
-    const size = captured;
-    if (size === null) return undefined;
-    return `${Math.round(size.width)} × ${Math.round(size.height)}`;
-  });
+  const measure = $derived(captured === null ? undefined : sizeLabel(captured));
 
   function placementsIn(element: HTMLElement, trace: Trace): readonly PlacedImage[] {
     const found = element.querySelectorAll('[data-image-index]');
@@ -68,6 +65,15 @@
     }
 
     return placed;
+  }
+
+  function drawn(selection: MarqueeRect): void {
+    const surface = within;
+    if (surface === null) return;
+
+    const rect = screenRect(selection.x, selection.y, selection.width, selection.height);
+    const placed = placedImages(surface.querySelectorAll('[data-image-index]'));
+    captured = drawnSize(placed, rect, arrangement);
   }
 
   function forget(): void {
@@ -185,6 +191,7 @@
   accent={noting}
   label={measure}
   onstart={forget}
+  ondraw={drawn}
   onend={ended}
   onrefuse={refused}
   onclick={tap}

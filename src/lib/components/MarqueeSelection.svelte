@@ -5,6 +5,7 @@
     marqueeBox,
     marqueeEnd,
     marqueePress,
+    marqueeRect,
     stayedPut,
   } from './marquee-selection';
   import type {
@@ -31,6 +32,7 @@
     readonly accent?: boolean;
     readonly label?: string | undefined;
     readonly onstart?: () => void;
+    readonly ondraw?: (selection: MarqueeRect) => void;
     readonly onend?: (end: MarqueeEnd, stroke: MarqueeStroke) => void;
     readonly onrefuse?: (refusal: MarqueeRefusal) => void;
     readonly onclick?: () => void;
@@ -46,6 +48,7 @@
     accent = false,
     label,
     onstart,
+    ondraw,
     onend,
     onrefuse,
     onclick,
@@ -88,6 +91,11 @@
     if (element !== null && element.hasPointerCapture(id)) element.releasePointerCapture(id);
   }
 
+  function drawTo(from: MarqueePoint, to: MarqueePoint): void {
+    pointer = to;
+    ondraw?.(marqueeRect(from, to));
+  }
+
   function stopDrag(): void {
     const id = held;
     if (id !== null) release(id);
@@ -100,10 +108,10 @@
     const placed = layer.getBoundingClientRect();
     corner = { x: placed.x, y: placed.y };
     anchor = from;
-    pointer = to;
     held = id;
     kept = null;
     onstart?.();
+    drawTo(from, to);
   }
 
   function conclude(
@@ -198,8 +206,9 @@
       return;
     }
 
-    if (held !== event.pointerId || anchor === null) return;
-    pointer = pointAt(event);
+    const from = anchor;
+    if (held !== event.pointerId || from === null) return;
+    drawTo(from, pointAt(event));
   }
 
   export function pointerup(event: PointerEvent): void {
@@ -232,8 +241,9 @@
   }
 
   export function extendTo(at: MarqueePoint): void {
-    if (held === null || anchor === null) return;
-    pointer = at;
+    const from = anchor;
+    if (held === null || from === null) return;
+    drawTo(from, at);
   }
 
   export function endAt(at: MarqueePoint): void {
