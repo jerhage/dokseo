@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { Snapshot } from '@sveltejs/kit';
   import { afterNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
@@ -44,7 +45,7 @@
   });
 
   $effect(() => {
-    void view.load();
+    untrack(() => void view.load());
     return () => {
       view.dispose();
       find.dispose();

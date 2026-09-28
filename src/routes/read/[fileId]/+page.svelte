@@ -72,9 +72,12 @@
   );
 
   $effect(() => {
+    const book = id;
     const entry = untrack(() => asked);
-    void view.open(id, entry);
-    void captures.open(id);
+    untrack(() => {
+      void view.open(book, entry);
+      void captures.open(book);
+    });
     return () => {
       view.dispose();
       captures.close();

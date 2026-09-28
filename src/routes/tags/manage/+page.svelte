@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
@@ -24,8 +25,10 @@
   });
 
   $effect(() => {
-    void shelf.load();
-    void view.load();
+    untrack(() => {
+      void shelf.load();
+      void view.load();
+    });
     return () => shelf.dispose();
   });
 </script>
