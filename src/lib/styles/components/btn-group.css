@@ -1,0 +1,21 @@
+.btn-group {
+  display: inline-flex;
+  max-inline-size: 100%;
+}
+.btn-group > .btn {
+  box-shadow: none;
+}
+.btn-group > .btn:not(:first-child) {
+  margin-inline-start: calc(-1 * var(--border-width));
+  border-start-start-radius: var(--radius-none);
+  border-end-start-radius: var(--radius-none);
+}
+.btn-group > .btn:not(:last-child) {
+  border-start-end-radius: var(--radius-none);
+  border-end-end-radius: var(--radius-none);
+}
+.btn-group > .btn:hover,
+.btn-group > .btn:focus-visible,
+.btn-group > .btn.is-active {
+  z-index: var(--z-raised);
+}

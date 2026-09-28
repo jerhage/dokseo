@@ -1737,6 +1737,24 @@ describe('the design system stylesheets', () => {
     expect(declarations(ruleBody(css, '.list-group-box'))).not.toContain('overflow: hidden');
   });
 
+  it('joins the buttons of a button group: shared corners square, shared borders overlapped, no shadow', () => {
+    const css = style('components/btn-group.css');
+
+    expect(declarations(ruleBody(css, '.btn-group > .btn'))).toEqual(['box-shadow: none']);
+    expect(declarations(ruleBody(css, '.btn-group > .btn:not(:first-child)'))).toEqual([
+      'margin-inline-start: calc(-1 * var(--border-width))',
+      'border-start-start-radius: var(--radius-none)',
+      'border-end-start-radius: var(--radius-none)',
+    ]);
+    expect(declarations(ruleBody(css, '.btn-group > .btn:not(:last-child)'))).toEqual([
+      'border-start-end-radius: var(--radius-none)',
+      'border-end-end-radius: var(--radius-none)',
+    ]);
+    expect(everyDeclarationFor(css, '.btn-group > .btn.is-active')).toEqual([
+      'z-index: var(--z-raised)',
+    ]);
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',

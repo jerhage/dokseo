@@ -8,6 +8,7 @@
   import BadgesSection from './BadgesSection.svelte';
   import BentoSection from './BentoSection.svelte';
   import BreakpointProbeSection from './BreakpointProbeSection.svelte';
+  import ButtonGroupSection from './ButtonGroupSection.svelte';
   import ButtonsSection from './ButtonsSection.svelte';
   import CardSection from './CardSection.svelte';
   import CarouselSection from './CarouselSection.svelte';
@@ -67,6 +68,7 @@
     IconsSection,
     ButtonsSection,
     IconButtonSection,
+    ButtonGroupSection,
     BadgesSection,
     FormSection,
     SearchFieldSection,

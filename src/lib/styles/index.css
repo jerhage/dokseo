@@ -37,6 +37,7 @@
 
 @import 'components/icon.css' layer(components);
 @import 'components/btn.css' layer(components);
+@import 'components/btn-group.css' layer(components);
 @import 'components/badge.css' layer(components);
 @import 'components/tag.css' layer(components);
 @import 'components/segmented.css' layer(components);
