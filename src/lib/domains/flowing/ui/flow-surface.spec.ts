@@ -70,7 +70,11 @@ function stage(options: StageOptions = {}): Stage {
 
 type Wash = { readonly wash: boolean; readonly options: HighlightOptions };
 
-function handed(shown: Readonly<Record<string, PassageWeight>>, cfi: string): Wash | null {
+function handed(
+  shown: Readonly<Record<string, PassageWeight>>,
+  cfi: string,
+  ringWidth = 1,
+): Wash | null {
   let given: Wash | null = null;
   const drawing: Drawable = {
     annotation: { value: cfi },
@@ -78,7 +82,13 @@ function handed(shown: Readonly<Record<string, PassageWeight>>, cfi: string): Wa
       given = { wash: style === Overlayer.highlight, options };
     },
   };
-  drawPassage(new Map(Object.entries(shown)), drawing, Overlayer.highlight, Overlayer.outline);
+  drawPassage(
+    new Map(Object.entries(shown)),
+    drawing,
+    Overlayer.highlight,
+    Overlayer.outline,
+    ringWidth,
+  );
 
   return given;
 }
@@ -105,8 +115,8 @@ describe('drawPassage', () => {
     expect(handed({ [SOMEWHERE]: 'ordinary' }, SOMEWHERE)?.wash).toBe(true);
   });
 
-  it('rings it thinly, so two lines of one passage stay apart', () => {
-    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE)?.options.width).toBe(1);
+  it('rings it at the width it is handed', () => {
+    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE, 2)?.options.width).toBe(2);
   });
 });
 

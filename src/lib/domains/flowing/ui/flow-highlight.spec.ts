@@ -4,7 +4,8 @@ import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import {
-  ARRIVED_BORDER_WIDTH,
+  ARRIVED_BORDER_WIDTH_PROPERTY,
+  arrivedBorderWidth,
   joinedLines,
   highlightChange,
   markAfterMove,
@@ -99,8 +100,14 @@ describe('passageColour', () => {
     expect(passageColour(undefined)).toBe(PASSAGE_HIGHLIGHT_COLOUR);
   });
 
-  it('draws the border thin enough that two lines of one passage stay apart', () => {
-    expect(ARRIVED_BORDER_WIDTH).toBeLessThan(3);
+  it('reads the ring width in pixels from the border width token', () => {
+    const style = {
+      getPropertyValue: (property: string) =>
+        property === ARRIVED_BORDER_WIDTH_PROPERTY ? '2px' : '',
+    };
+
+    expect(ARRIVED_BORDER_WIDTH_PROPERTY).toBe('--border-width');
+    expect(arrivedBorderWidth(style)).toBe(2);
   });
 });
 

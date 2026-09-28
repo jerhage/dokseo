@@ -14,12 +14,7 @@ import { sanitiseChapters, sanitisedDocument, treatmentOf } from './chapter-tran
 import type { SanitiseChapter } from './chapter-transform';
 import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-spine';
 import type { Spine } from './flow-spine';
-import {
-  ARRIVED_BORDER_WIDTH,
-  highlightChange,
-  joinedLines,
-  passageColour,
-} from './flow-highlight';
+import { arrivedBorderWidth, highlightChange, joinedLines, passageColour } from './flow-highlight';
 import type { PassageMark, PassageWeight } from './flow-highlight';
 import { flowStyles } from './flow-styles';
 import type { PageInk } from './flow-styles';
@@ -206,13 +201,14 @@ function drawPassage(
   drawing: Drawable,
   wash: HighlightStyle,
   ring: HighlightStyle,
+  ringWidth: number,
 ): void {
   const weight = shown.get(drawing.annotation.value);
   const colour = passageColour(weight);
   if (weight === 'arrived') {
     drawing.draw((rects, options) => ring(joinedLines(rects), options), {
       color: colour,
-      width: ARRIVED_BORDER_WIDTH,
+      width: ringWidth,
     });
     return;
   }
@@ -271,7 +267,13 @@ async function openFlowSurface(
   const view = new FoliateView();
   const shown = new Map<string, PassageWeight>();
   view.addEventListener('draw-annotation', (drawing) => {
-    drawPassage(shown, drawing.detail, Overlayer.highlight, Overlayer.outline);
+    drawPassage(
+      shown,
+      drawing.detail,
+      Overlayer.highlight,
+      Overlayer.outline,
+      arrivedBorderWidth(getComputedStyle(host)),
+    );
   });
   view.addEventListener('create-overlay', () => {
     queueMicrotask(() => {

@@ -1,4 +1,6 @@
 import { match } from 'ts-pattern';
+import { pixelLength } from '$lib/components/css-length';
+import type { StyleSource } from '$lib/components/css-length';
 import type { Anchor } from '$lib/shared/anchor';
 import type { PassageArrival } from './flow-quote';
 
@@ -20,13 +22,17 @@ type HighlightChange = {
 
 const PASSAGE_HIGHLIGHT_COLOUR = '#e3c34d';
 
-const ARRIVED_BORDER_WIDTH = 1;
+const ARRIVED_BORDER_WIDTH_PROPERTY = '--border-width';
 
 const NO_PASSAGES: readonly string[] = [];
 
 const NO_ANCHORS: readonly Anchor[] = [];
 
 const NOTHING_ARRIVED_AT: PassageMark = { kind: 'none' };
+
+function arrivedBorderWidth(style: StyleSource): number {
+  return pixelLength(style, ARRIVED_BORDER_WIDTH_PROPERTY);
+}
 
 function passageCfis(anchors: readonly Anchor[]): readonly string[] {
   const wanted = new Set<string>();
@@ -149,7 +155,8 @@ function highlightChange(
 }
 
 export {
-  ARRIVED_BORDER_WIDTH,
+  ARRIVED_BORDER_WIDTH_PROPERTY,
+  arrivedBorderWidth,
   joinedLines,
   NO_ANCHORS,
   NO_PASSAGES,
