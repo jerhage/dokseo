@@ -88,8 +88,7 @@
         label="Show books as"
         class="row gap-1 layout-app-shell-wide-only"
         options={views}
-        value={layout}
-        onchoose={(chosen) => (layout = chosen)}
+        bind:value={layout}
       />
       <Dropdown
         variant="ghost"

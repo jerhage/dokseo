@@ -4,35 +4,36 @@
   import { SEGMENTED_VARIANTS, groupRole, segmentLook } from './segmented-control';
   import type { SegmentOption, SegmentedVariant } from './segmented-control';
 
-  type Props = Omit<
-    HTMLAttributes<HTMLDivElement>,
-    'children' | 'role' | 'aria-label' | 'aria-labelledby'
-  > & {
+  type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'role' | 'aria-label'> & {
     options: readonly SegmentOption<V>[];
-    value: V | undefined;
-    onchoose: (value: V) => void;
+    value?: V | undefined;
+    onvaluechange?: (value: V) => void;
     label?: string;
-    labelledby?: string;
     variant?: SegmentedVariant;
   };
 
   let {
     options,
-    value,
-    onchoose,
+    value = $bindable(),
+    onvaluechange,
     label,
-    labelledby,
+    'aria-labelledby': labelledBy,
     variant = 'default',
     class: className,
     ...rest
   }: Props = $props();
+
+  function press(chosen: V): void {
+    value = chosen;
+    onvaluechange?.(chosen);
+  }
 </script>
 
 <div
   {...rest}
-  role={groupRole(label, labelledby)}
+  role={groupRole(label, labelledBy)}
   aria-label={label}
-  aria-labelledby={labelledby}
+  aria-labelledby={labelledBy}
   class={['segmented', SEGMENTED_VARIANTS[variant], className]}
 >
   {#each options as option (option.value)}
@@ -44,7 +45,7 @@
         aria-pressed={pressed}
         disabled={option.disabled}
         class={['segmented-item', { 'is-active': pressed }]}
-        onclick={() => onchoose(option.value)}>{option.label}</button
+        onclick={() => press(option.value)}>{option.label}</button
       >
     {:else}
       <Button
@@ -53,7 +54,7 @@
         active={pressed}
         aria-pressed={pressed}
         disabled={option.disabled}
-        onclick={() => onchoose(option.value)}
+        onclick={() => press(option.value)}
       >
         {option.label}
       </Button>

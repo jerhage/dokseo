@@ -141,11 +141,11 @@
           <p class={caption} id="{uid}-language">Language</p>
           <SegmentedControl
             variant="outline"
-            labelledby="{uid}-language"
+            aria-labelledby="{uid}-language"
             class="grid-3 grid-auto-sm"
             options={languageOptions}
             value={language}
-            onchoose={(offered) => void view.chooseLanguage(offered)}
+            onvaluechange={(offered) => void view.chooseLanguage(offered)}
           />
           <p class={caption} id="{uid}-model">Model</p>
           <ul class="list-reset col gap-2" aria-labelledby="{uid}-model">
@@ -172,11 +172,11 @@
           <p class={caption} id="{uid}-compute">Compute</p>
           <SegmentedControl
             variant="outline"
-            labelledby="{uid}-compute"
+            aria-labelledby="{uid}-compute"
             class="grid-3 grid-auto-sm"
             options={computeOptions}
             value={view.compute}
-            onchoose={(choice) => void view.chooseCompute(choice)}
+            onvaluechange={(choice) => void view.chooseCompute(choice)}
           />
           <p class={note}>{computeDetectionNote(view.detection, view.compute)}</p>
           {#if cpuNote !== null}

@@ -30,8 +30,12 @@ function segmentLook(variant: SegmentedVariant, pressed: boolean): SegmentLook {
     .exhaustive();
 }
 
-function groupRole(label: string | undefined, labelledby: string | undefined): 'group' | undefined {
-  return label === undefined && labelledby === undefined ? undefined : 'group';
+function groupRole(
+  label: string | undefined,
+  labelledBy: string | null | undefined,
+): 'group' | undefined {
+  const named = label !== undefined || (labelledBy !== undefined && labelledBy !== null);
+  return named ? 'group' : undefined;
 }
 
 export { SEGMENTED_VARIANTS, groupRole, segmentLook };

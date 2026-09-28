@@ -14,7 +14,7 @@ const OPTIONS = [
 
 function markup(props: Record<string, unknown>): string {
   return render(CONTROL, {
-    props: { options: OPTIONS, value: 'list', onchoose: () => undefined, ...props },
+    props: { options: OPTIONS, value: 'list', ...props },
   }).body;
 }
 
@@ -90,7 +90,7 @@ describe('SegmentedControl', () => {
   });
 
   it('names the group by the element it is labelled by', () => {
-    const html = markup({ labelledby: 'x-language' });
+    const html = markup({ 'aria-labelledby': 'x-language' });
 
     expect(html).toMatch(/<div[^>]*role="group"[^>]*aria-labelledby="x-language"/u);
   });

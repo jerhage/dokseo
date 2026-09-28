@@ -31,8 +31,7 @@
             {variant}
             label="Calendar view, {variant}"
             options={VIEWS}
-            value={view}
-            onchoose={(chosen) => (view = chosen)}
+            bind:value={view}
           />
         </div>
       </Card>
@@ -47,8 +46,7 @@
             { value: 'here', label: 'This page' },
             { value: 'all', label: 'Everywhere' },
           ]}
-          value={scope}
-          onchoose={(chosen) => (scope = chosen)}
+          bind:value={scope}
         />
       </div>
     </Card>

@@ -256,7 +256,7 @@
           class="modal-fill-only"
           options={SCOPES}
           value={scope}
-          onchoose={choose}
+          onvaluechange={choose}
         />
       {/if}
       <TagToggle pressed={filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>

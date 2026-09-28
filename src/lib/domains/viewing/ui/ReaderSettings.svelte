@@ -116,7 +116,7 @@
         class="row wrap gap-2"
         options={fitOptions}
         value={fits.find((choice) => choice.active)?.label}
-        onchoose={(label) => fits.find((choice) => choice.label === label)?.go()}
+        onvaluechange={(label) => fits.find((choice) => choice.label === label)?.go()}
       />
     </Fieldset>
 

@@ -101,12 +101,7 @@
     </Card>
     <Card>
       <SettingsRow label="Density">
-        <SegmentedControl
-          options={DENSITIES}
-          value={density}
-          onchoose={(choice) => (density = choice)}
-          class="gap-2"
-        />
+        <SegmentedControl options={DENSITIES} bind:value={density} class="gap-2" />
       </SettingsRow>
     </Card>
   </div>
