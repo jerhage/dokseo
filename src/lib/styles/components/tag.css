@@ -38,13 +38,13 @@ a.tag {
 button.tag:hover,
 a.tag:hover {
   color: var(--color-hover-text, var(--_tag-text, var(--color-text)));
-  border-color: var(--_tag-border, var(--border-color-strong));
+  border-color: var(--color-chosen-fill, var(--_tag-border, var(--border-color-strong)));
   background-size: 100% 100%;
 }
 .tag.is-active {
   color: var(--color-chosen-text, var(--_tag-on, var(--color-brand-text)));
   background-color: var(--color-chosen-fill, var(--_tag-text, var(--color-selected)));
-  border-color: var(--_tag-border, var(--color-brand-border-mid));
+  border-color: var(--color-chosen-fill, var(--_tag-border, var(--color-brand-border-mid)));
 }
 button.tag.is-active:hover,
 a.tag.is-active:hover {

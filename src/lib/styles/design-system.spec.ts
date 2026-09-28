@@ -2148,6 +2148,23 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('borders a hovered or chosen tag in the chosen fill, falling back to its own border', () => {
+    const tag = style('components/tag.css');
+
+    for (const [selector, own] of [
+      ['button.tag:hover', 'var(--border-color-strong)'],
+      ['a.tag:hover', 'var(--border-color-strong)'],
+      ['.tag.is-active', 'var(--color-brand-border-mid)'],
+    ] as const) {
+      expect({ selector, lines: everyDeclarationFor(tag, selector) }).toEqual({
+        selector,
+        lines: expect.arrayContaining([
+          `border-color: var(--color-chosen-fill, var(--_tag-border, ${own}))`,
+        ]),
+      });
+    }
+  });
+
   it('rules a line above and below a hovered or chosen item, a gap away, in the hover rule colour and timing', () => {
     const ruled = [
       ['components/btn.css', '.btn', ['.btn:hover', '.btn.is-active']],
