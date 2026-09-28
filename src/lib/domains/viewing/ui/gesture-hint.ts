@@ -131,5 +131,12 @@ function hintsToShow(
   return pending.length === 0 ? [] : withRecall(pending, showing.input);
 }
 
-export { hintsToShow, inputKind, isReaderGesture, pagedHints, readerHints };
+function heldHints(
+  previous: readonly GestureHint[],
+  pending: readonly GestureHint[],
+): readonly GestureHint[] {
+  return pending.length > 0 ? pending : previous;
+}
+
+export { heldHints, hintsToShow, inputKind, isReaderGesture, pagedHints, readerHints };
 export type { GestureHint, HintScene, HintShowing, InputKind, ReaderGesture };

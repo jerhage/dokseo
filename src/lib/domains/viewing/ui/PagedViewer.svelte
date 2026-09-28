@@ -36,7 +36,7 @@
   import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
   import type { Framing } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
-  import { hintsToShow, inputKind, readerHints } from './gesture-hint';
+  import { heldHints, hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
@@ -111,7 +111,7 @@
   let spaceHeld = $state(false);
   let pannable = $state(false);
   let revealed = $state(false);
-  let hintLines = $state.raw<readonly GestureHint[]>([]);
+  let heldLines: readonly GestureHint[] = [];
   let motion = $state.raw<CarouselMotion>(CAROUSEL_REST);
   let lastPointerType = $state<string | null>(null);
   let frameSize = $state.raw<Size | null>(null);
@@ -137,6 +137,10 @@
       { chromeShown, wanted: hintsWanted(), revealed, input: pointing },
     ),
   );
+  const hintLines = $derived.by(() => {
+    heldLines = heldHints(heldLines, pending);
+    return heldLines;
+  });
 
   const zonesShown = $derived(showsZoneOverlay({ turns, input: pointing, seen: zonesSeen() }));
 
@@ -592,11 +596,6 @@
   }
 
   $effect(() => () => gestures.stop());
-
-  $effect(() => {
-    const lines = pending;
-    if (lines.length > 0) hintLines = lines;
-  });
 
   $effect(() => {
     const outer = frame;

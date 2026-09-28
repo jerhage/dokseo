@@ -31,7 +31,7 @@
   } from '../domain/strip';
   import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
-  import { hintsToShow, inputKind, readerHints } from './gesture-hint';
+  import { heldHints, hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys } from './keyboard';
   import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
@@ -99,7 +99,7 @@
   });
 
   let lastPointerType = $state<string | null>(null);
-  let hintLines = $state.raw<readonly GestureHint[]>([]);
+  let heldLines: readonly GestureHint[] = [];
 
   let written: { readonly top: number; readonly left: number } | null = null;
   let reading: StripAnchor | null = null;
@@ -126,6 +126,10 @@
       { chromeShown, wanted: hintsWanted(), revealed: false, input: pointing },
     ),
   );
+  const hintLines = $derived.by(() => {
+    heldLines = heldHints(heldLines, pending);
+    return heldLines;
+  });
 
   function snapToDevicePixels(value: number): number {
     const ratio = window.devicePixelRatio;
@@ -395,11 +399,6 @@
   }
 
   $effect(() => () => gestures.stop());
-
-  $effect(() => {
-    const lines = pending;
-    if (lines.length > 0) hintLines = lines;
-  });
 
   $effect(() => {
     const element = scroller;

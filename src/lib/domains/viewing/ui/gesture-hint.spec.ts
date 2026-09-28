@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { hintsToShow, inputKind, isReaderGesture, pagedHints, readerHints } from './gesture-hint';
+import {
+  heldHints,
+  hintsToShow,
+  inputKind,
+  isReaderGesture,
+  pagedHints,
+  readerHints,
+} from './gesture-hint';
 import type { GestureHint, HintScene, InputKind, ReaderGesture } from './gesture-hint';
 
 function visible(
@@ -242,5 +249,23 @@ describe('isReaderGesture', () => {
 
   it('rejects anything else a stale store holds', () => {
     expect(isReaderGesture('wiggle')).toBe(false);
+  });
+});
+
+describe('heldHints', () => {
+  it('holds nothing before any hint was pending', () => {
+    expect(heldHints([], [])).toEqual([]);
+  });
+
+  it('takes the pending hints when there are some', () => {
+    expect(taught(heldHints(pagedHints(false), pagedHints(true)))).toEqual([
+      'select',
+      'space-pan',
+      'middle-pan',
+    ]);
+  });
+
+  it('keeps the hints it held once nothing is pending, so the fading card keeps its lines', () => {
+    expect(taught(heldHints(pagedHints(true), []))).toEqual(['select', 'space-pan', 'middle-pan']);
   });
 });
