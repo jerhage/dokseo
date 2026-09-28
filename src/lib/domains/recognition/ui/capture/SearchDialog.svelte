@@ -4,6 +4,7 @@
   import { MediaQuery } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import Alert from '$lib/components/Alert.svelte';
+  import { NARROW_SCREEN_QUERY } from '$lib/components/breakpoints';
   import Button from '$lib/components/Button.svelte';
   import Divider from '$lib/components/Divider.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
@@ -50,7 +51,7 @@
 
   const NOTHING: QuickFinds<Capture> = { books: [], captures: [] };
 
-  const narrowScreen = new MediaQuery('(width < 48rem)');
+  const narrowScreen = new MediaQuery(NARROW_SCREEN_QUERY);
 
   let {
     book,

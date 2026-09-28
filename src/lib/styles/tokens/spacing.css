@@ -85,4 +85,5 @@
   --overlay-edge: var(--ds-space-2);
   --stat-min-width: var(--ds-size-stat);
   --breakpoint-compact: var(--ds-size-compact);
+  --breakpoint-narrow: var(--ds-size-narrow);
 }

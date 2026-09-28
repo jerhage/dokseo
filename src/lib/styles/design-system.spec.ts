@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { NARROW_SCREEN_QUERY } from '../components/breakpoints';
 import { TAG_COLOURS } from '../components/classes';
 
 const STYLES = new URL('./', import.meta.url);
@@ -281,6 +282,14 @@ const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
   '.modal-backdrop[open]': 'centres one dialog whose inline size is contained',
 };
 
+const BREAKPOINT_SCALE = ['24rem', '26rem', '34rem', '40rem', '44rem'];
+
+const NARROW_QUERIES: Readonly<Record<string, number>> = {
+  'lib/styles/components/modal/modal.css': 2,
+  'lib/styles/components/toast.css': 1,
+  'lib/styles/utilities/layout.css': 4,
+};
+
 const RUNTIME_INPUTS = [
   '--breakpoint-probe-width',
   '--btn-min-block-size',
@@ -462,6 +471,20 @@ function animationNames(css: string): readonly string[] {
 
 function definesClass(css: string, name: string): boolean {
   return new RegExp(`\\.${name}(?![\\w-])[^{}]*\\{`, 'u').test(css);
+}
+
+function queryWidths(css: string): readonly string[] {
+  return Array.from(css.matchAll(/@(?:media|container)\b([^{]*)\{/gu), (found) =>
+    Array.from(group(found, 1).matchAll(/\d+(?:\.\d+)?(?:rem|em|px)/gu), (width) => width[0]),
+  ).flat();
+}
+
+function sourceStylesheets(): readonly string[] {
+  return filesUnder(SOURCE, ['.css']);
+}
+
+function sourceStyle(path: string): string {
+  return withoutComments(read(new URL(path, SOURCE)));
 }
 
 function mediaBlock(css: string, query: string): string {
@@ -1504,6 +1527,36 @@ describe('the design system stylesheets', () => {
     expect(definitionValues(style('base/primitives.css')).get('--ds-size-compact')).toBe(
       '43.75rem',
     );
+  });
+
+  it('switches every query that names the narrow breakpoint at the value of its token, and the TypeScript query too', () => {
+    const narrow = definitionValues(style('base/primitives.css')).get('--ds-size-narrow') ?? '';
+    const counts = sourceStylesheets()
+      .map(
+        (path) =>
+          [path, queryWidths(sourceStyle(path)).filter((width) => width === narrow)] as const,
+      )
+      .filter(([, widths]) => widths.length > 0)
+      .map(([path, widths]) => [path, widths.length] as const);
+
+    expect(definitionValues(style('tokens/spacing.css')).get('--breakpoint-narrow')).toBe(
+      'var(--ds-size-narrow)',
+    );
+    expect(narrow).toBe('48rem');
+    expect(Object.fromEntries(counts)).toEqual(NARROW_QUERIES);
+    expect(NARROW_SCREEN_QUERY).toBe(`(width < ${narrow})`);
+  });
+
+  it('switches every media and container query at a width on the breakpoint scale', () => {
+    const narrow = definitionValues(style('base/primitives.css')).get('--ds-size-narrow') ?? '';
+    const scale = new Set([...BREAKPOINT_SCALE, narrow]);
+    const offScale = sourceStylesheets().flatMap((path) =>
+      queryWidths(sourceStyle(path))
+        .filter((width) => !scale.has(width))
+        .map((width) => `${path}: ${width}`),
+    );
+
+    expect(offScale).toEqual([]);
   });
 
   it('holds the z-index scale the contract locks', () => {
