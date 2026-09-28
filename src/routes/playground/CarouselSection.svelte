@@ -42,7 +42,7 @@
 
 {#snippet coloured(slide: CarouselSlide)}
   <div class="flex-1 col items-center justify-center surface-raised bordered rounded-container">
-    <Badge colour={colourAt(slide)} solid>Slide {Number(slide.key) + 1}</Badge>
+    <Badge colour={colourAt(slide)} emphasis="solid">Slide {Number(slide.key) + 1}</Badge>
   </div>
 {/snippet}
 

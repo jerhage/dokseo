@@ -10,9 +10,9 @@ type StepperSteps = {
 
 type StepperAxis = 'inline' | 'block';
 
-type StepperEnds = 'disabled' | 'hidden';
+type StepperMissingStep = 'disabled' | 'hidden';
 
-type StepperTally = 'badge' | 'status';
+type StepperCountAs = 'badge' | 'status';
 
 type StepperArrow = 'left' | 'right' | 'up' | 'down';
 
@@ -27,11 +27,11 @@ type StepFace =
   | { readonly kind: 'disabled' }
   | { readonly kind: 'hidden' };
 
-function stepFace(step: Step, ends: StepperEnds): StepFace {
+function stepFace(step: Step, missingStep: StepperMissingStep): StepFace {
   if (typeof step === 'string') return { kind: 'link', href: step };
   if (typeof step === 'function') return { kind: 'action', run: step };
 
-  return match<StepperEnds, StepFace>(ends)
+  return match<StepperMissingStep, StepFace>(missingStep)
     .with('disabled', () => ({ kind: 'disabled' }))
     .with('hidden', () => ({ kind: 'hidden' }))
     .exhaustive();
@@ -51,7 +51,7 @@ export type {
   StepperArrow,
   StepperArrows,
   StepperAxis,
-  StepperEnds,
+  StepperCountAs,
+  StepperMissingStep,
   StepperSteps,
-  StepperTally,
 };

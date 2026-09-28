@@ -68,12 +68,12 @@
     </div>
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
-        <Badge {colour} solid>{colour}</Badge>
+        <Badge {colour} emphasis="solid">{colour}</Badge>
       {/each}
     </div>
     <div class="row wrap items-center gap-3">
       {#each TAG_COLOURS as colour (colour)}
-        <Badge {colour} quiet dot>{colour}</Badge>
+        <Badge {colour} emphasis="quiet" dot>{colour}</Badge>
       {/each}
     </div>
     <div class="row wrap items-center gap-2">

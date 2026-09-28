@@ -175,7 +175,7 @@
       {#if marker !== null && order === 0}
         <Badge
           class="glow-marker mono"
-          solid
+          emphasis="solid"
           variant={drawn.origin === 'written' ? 'accent' : 'brand'}>{marker}</Badge
         >
       {/if}

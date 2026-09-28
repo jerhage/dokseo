@@ -45,10 +45,10 @@
   <div class="grid-2">
     <Card>
       <div class="col gap-2">
-        <code class="text-xs">tally="badge" ends="hidden", links</code>
+        <code class="text-xs">countAs="badge" missingStep="hidden", links</code>
         <Stepper
           steps={linkedSteps}
-          ends="hidden"
+          missingStep="hidden"
           previousLabel="Previous word"
           nextLabel="Next word"
           onfollow={follow}
@@ -62,12 +62,12 @@
     </Card>
     <Card>
       <div class="col gap-2">
-        <code class="text-xs">axis="block" tally="status" spaced, buttons</code>
+        <code class="text-xs">axis="block" countAs="status" spaced, buttons</code>
         <Toggle bind:checked={looking}>Stepping</Toggle>
         <Stepper
           steps={foundSteps}
           axis="block"
-          tally="status"
+          countAs="status"
           spaced
           previousLabel="Previous match"
           nextLabel="Next match"

@@ -14,16 +14,16 @@
     StepFace,
     StepperArrow,
     StepperAxis,
-    StepperEnds,
+    StepperCountAs,
+    StepperMissingStep,
     StepperSteps,
-    StepperTally,
   } from './stepper';
 
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     steps: StepperSteps | null;
     axis?: StepperAxis;
-    ends?: StepperEnds;
-    tally?: StepperTally;
+    missingStep?: StepperMissingStep;
+    countAs?: StepperCountAs;
     spaced?: boolean;
     previousLabel?: string;
     nextLabel?: string;
@@ -34,8 +34,8 @@
   let {
     steps,
     axis = 'inline',
-    ends = 'disabled',
-    tally = 'badge',
+    missingStep = 'disabled',
+    countAs = 'badge',
     spaced = false,
     previousLabel = 'Previous',
     nextLabel = 'Next',
@@ -82,17 +82,17 @@
 {/snippet}
 
 <div {...rest} class={['stepper', className]}>
-  {#if count !== null && tally === 'badge'}
+  {#if count !== null && countAs === 'badge'}
     <Badge variant="brand" class="shrink-0">{count}</Badge>
   {/if}
   {@render children?.()}
   {#if steps !== null}
     <span class={['row items-center shrink-0', spaced ? 'gap-1' : 'gap-0']}>
-      {@render arrow(stepFace(steps.previous, ends), arrows.previous, previousLabel)}
-      {@render arrow(stepFace(steps.next, ends), arrows.next, nextLabel)}
+      {@render arrow(stepFace(steps.previous, missingStep), arrows.previous, previousLabel)}
+      {@render arrow(stepFace(steps.next, missingStep), arrows.next, nextLabel)}
     </span>
   {/if}
 </div>
-{#if count !== null && tally === 'status'}
+{#if count !== null && countAs === 'status'}
   <p class="m-0 text-xs text-muted mono" role="status">{count}</p>
 {/if}

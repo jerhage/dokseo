@@ -218,9 +218,9 @@
   aria-label="Find in captures"
   size="lg"
   placement="top"
-  narrow="fill"
-  body="flush"
-  footerVariant="info"
+  fillNarrow
+  flushBody
+  infoFooter
   onclose={gone}
 >
   {#snippet header()}

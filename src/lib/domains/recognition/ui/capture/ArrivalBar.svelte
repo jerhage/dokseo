@@ -27,7 +27,7 @@
 
 <Stepper
   {steps}
-  ends="hidden"
+  missingStep="hidden"
   previousLabel="Previous match"
   nextLabel="Next match"
   onfollow={follow}

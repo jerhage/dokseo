@@ -49,7 +49,7 @@
           onclick={() => (listing = false)}
         >
           {#snippet icon()}
-            <Badge colour={option.tag.colour} quiet dot />
+            <Badge colour={option.tag.colour} emphasis="quiet" dot />
           {/snippet}
           <span class="truncate flex-1">{option.tag.name}</span>
           <span class="text-xs mono text-faint">{option.count}</span>

@@ -64,7 +64,7 @@
   title="Tags"
   size="sm"
   placement="top"
-  body="flush"
+  flushBody
   class="tag-picker"
   closeLabel="Done"
   onclose={() => onclose()}
@@ -145,7 +145,7 @@
                 hint={String(offer.count)}
                 onclick={() => take(offer.row)}
               >
-                <Badge colour={offer.tag.colour} quiet dot>{offer.tag.name}</Badge>
+                <Badge colour={offer.tag.colour} emphasis="quiet" dot>{offer.tag.name}</Badge>
               </CommandItem>
             </li>
           {:else}

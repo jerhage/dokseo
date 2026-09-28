@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
-  import { BADGE_COLOUR_CLASSES, BADGE_VARIANTS } from './classes';
-  import type { BadgeVariant, TagColour } from './classes';
+  import { BADGE_COLOUR_CLASSES, BADGE_EMPHASES, BADGE_VARIANTS } from './classes';
+  import type { BadgeEmphasis, BadgeVariant, TagColour } from './classes';
 
   type Tone =
     | { variant?: BadgeVariant; colour?: undefined }
@@ -10,16 +10,14 @@
   type Props = HTMLAttributes<HTMLSpanElement> &
     Tone & {
       dot?: boolean;
-      solid?: boolean;
-      quiet?: boolean;
+      emphasis?: BadgeEmphasis;
     };
 
   let {
     variant = 'neutral',
     colour,
     dot = false,
-    solid = false,
-    quiet = false,
+    emphasis = 'tinted',
     class: className,
     children,
     ...rest
@@ -30,14 +28,6 @@
   );
 </script>
 
-<span
-  {...rest}
-  class={[
-    'badge',
-    tone,
-    { 'badge-dot': dot, 'badge-solid': solid, 'badge-quiet': quiet },
-    className,
-  ]}
->
+<span {...rest} class={['badge', tone, { 'badge-dot': dot }, BADGE_EMPHASES[emphasis], className]}>
   {@render children?.()}
 </span>

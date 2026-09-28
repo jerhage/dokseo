@@ -160,7 +160,7 @@
   bind:open={bare}
   aria-label="Keyboard shortcuts"
   size="sm"
-  footerVariant="info"
+  infoFooter
   onclose={() => (closedBy = 'the headerless modal')}
 >
   <p>No title row and no close button. Its name comes from aria-label.</p>
@@ -191,7 +191,7 @@
   bind:open={barred}
   aria-label="Filter the files"
   size="md"
-  body="flush"
+  flushBody
   onclose={() => (closedBy = 'the header bar modal')}
 >
   {#snippet header(close)}

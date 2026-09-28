@@ -108,8 +108,8 @@
   aria-label="Run a command"
   size="lg"
   placement="top"
-  body="flush"
-  footerVariant="info"
+  flushBody
+  infoFooter
   onclose={() => {
     query = '';
     at = 0;

@@ -11,6 +11,8 @@ type ControlSize = 'sm' | 'md' | 'lg';
 
 type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand' | 'accent';
 
+type BadgeEmphasis = 'tinted' | 'solid' | 'quiet';
+
 type StatusVariant = 'info' | 'success' | 'warning' | 'danger';
 
 type CardVariant = 'default' | 'elevated' | 'feature';
@@ -28,12 +30,6 @@ type MediaRatio = 'video' | 'square' | 'portrait';
 type ModalSize = 'sm' | 'md' | 'lg';
 
 type ModalPlacement = 'center' | 'top';
-
-type ModalBody = 'padded' | 'flush';
-
-type ModalFooter = 'actions' | 'info';
-
-type ModalNarrow = 'panel' | 'fill';
 
 type RadioVariant = 'default' | 'tile';
 
@@ -95,6 +91,12 @@ const BADGE_VARIANTS: Readonly<Record<BadgeVariant, ClassList>> = {
   info: ['badge-info'],
   brand: ['badge-brand'],
   accent: ['badge-accent'],
+};
+
+const BADGE_EMPHASES: Readonly<Record<BadgeEmphasis, ClassList>> = {
+  tinted: [],
+  solid: ['badge-solid'],
+  quiet: ['badge-quiet'],
 };
 
 const BADGE_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
@@ -171,21 +173,6 @@ const MODAL_SIZES: Readonly<Record<ModalSize, ClassList>> = {
 const MODAL_PLACEMENTS: Readonly<Record<ModalPlacement, ClassList>> = {
   center: [],
   top: ['modal-top'],
-};
-
-const MODAL_BODIES: Readonly<Record<ModalBody, ClassList>> = {
-  padded: [],
-  flush: ['modal-body-flush'],
-};
-
-const MODAL_FOOTERS: Readonly<Record<ModalFooter, ClassList>> = {
-  actions: [],
-  info: ['modal-footer-info'],
-};
-
-const MODAL_NARROWS: Readonly<Record<ModalNarrow, ClassList>> = {
-  panel: [],
-  fill: ['modal-fill-narrow'],
 };
 
 const RADIO_VARIANTS: Readonly<Record<RadioVariant, ClassList>> = {
@@ -286,6 +273,7 @@ export {
   AVATAR_SIZES,
   AVATAR_VARIANTS,
   BADGE_COLOUR_CLASSES,
+  BADGE_EMPHASES,
   BADGE_VARIANTS,
   BUTTON_SIZES,
   BUTTON_VARIANTS,
@@ -293,9 +281,6 @@ export {
   CARD_VARIANTS,
   DROPZONE_SIZES,
   MEDIA_RATIOS,
-  MODAL_BODIES,
-  MODAL_FOOTERS,
-  MODAL_NARROWS,
   MODAL_PLACEMENTS,
   MODAL_SIZES,
   PROGRESS_SIZES,
@@ -313,6 +298,7 @@ export {
 export type {
   AvatarShape,
   AvatarVariant,
+  BadgeEmphasis,
   BadgeVariant,
   ButtonVariant,
   CardSize,
@@ -322,9 +308,6 @@ export type {
   DropzoneSize,
   MediaRatio,
   MenuAlign,
-  ModalBody,
-  ModalFooter,
-  ModalNarrow,
   ModalPlacement,
   ModalSize,
   ProgressVariant,

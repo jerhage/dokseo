@@ -34,7 +34,7 @@
   onclick={() => (open = true)}
 />
 
-<Modal bind:open title="Tags in this book" size="sm" body="flush">
+<Modal bind:open title="Tags in this book" size="sm" flushBody>
   {#if used.length === 0}
     <EmptyState class="px-5 pb-5" message="No capture in this book carries a tag yet." />
   {:else}
@@ -45,7 +45,7 @@
             href={tagsHref(tag.name)}
             hint="{tag.count} {tag.count === 1 ? 'capture' : 'captures'}"
           >
-            <Badge colour={tag.colour} quiet dot>{tag.name}</Badge>
+            <Badge colour={tag.colour} emphasis="quiet" dot>{tag.name}</Badge>
           </CommandItem>
         </li>
       {/each}

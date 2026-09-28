@@ -172,7 +172,7 @@
     class="gap-2"
   >
     {#snippet item(chip)}
-      <Badge colour={chip.colour} quiet dot>{chip.name}</Badge>
+      <Badge colour={chip.colour} emphasis="quiet" dot>{chip.name}</Badge>
     {/snippet}
   </OverflowList>
 
@@ -200,7 +200,7 @@
       {#if tone === null}
         <span class="visually-hidden">{card.stateLabel}</span>
       {:else}
-        <Badge variant={tone} quiet class="shrink-0">{card.stateLabel}</Badge>
+        <Badge variant={tone} emphasis="quiet" class="shrink-0">{card.stateLabel}</Badge>
       {/if}
     </span>
 

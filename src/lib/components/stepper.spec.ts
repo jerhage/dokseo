@@ -19,11 +19,11 @@ describe('stepFace', () => {
     expect(ran).toBe(1);
   });
 
-  it('disables a missing step when the ends are disabled', () => {
+  it('disables a missing step when missing steps are disabled', () => {
     expect(stepFace(null, 'disabled')).toEqual({ kind: 'disabled' });
   });
 
-  it('leaves a missing step out when the ends are hidden', () => {
+  it('leaves a missing step out when missing steps are hidden', () => {
     expect(stepFace(null, 'hidden')).toEqual({ kind: 'hidden' });
   });
 });

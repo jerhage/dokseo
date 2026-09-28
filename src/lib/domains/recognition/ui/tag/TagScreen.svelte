@@ -142,14 +142,14 @@
       </EmptyState>
     {:else if stage.kind === 'unshelved'}
       <h1 class="row items-center gap-2 text-lg min-w-0">
-        <Badge colour={stage.tag.colour} quiet dot aria-hidden="true" />
+        <Badge colour={stage.tag.colour} emphasis="quiet" dot aria-hidden="true" />
         <span class="truncate">{stage.tag.name}</span>
       </h1>
     {:else}
       {@const added = addedText(stage.summary, Date.now())}
       <header class="col gap-1">
         <h1 class="row items-center gap-2 text-lg min-w-0">
-          <Badge colour={stage.tag.colour} quiet dot aria-hidden="true" />
+          <Badge colour={stage.tag.colour} emphasis="quiet" dot aria-hidden="true" />
           <span class="truncate">{stage.tag.name}</span>
         </h1>
         <p class="text-sm text-muted">
@@ -220,7 +220,7 @@
                             key={(chip) => chip.id}
                           >
                             {#snippet item(chip)}
-                              <Badge colour={chip.colour} quiet dot>{chip.name}</Badge>
+                              <Badge colour={chip.colour} emphasis="quiet" dot>{chip.name}</Badge>
                             {/snippet}
                           </OverflowList>
                         </span>

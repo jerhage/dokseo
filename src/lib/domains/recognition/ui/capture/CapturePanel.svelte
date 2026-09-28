@@ -213,7 +213,7 @@
         <Stepper
           steps={stepping}
           axis="block"
-          tally="status"
+          countAs="status"
           spaced
           previousLabel="Previous match"
           nextLabel="Next match"

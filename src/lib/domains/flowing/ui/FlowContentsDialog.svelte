@@ -36,7 +36,7 @@
   }
 </script>
 
-<Modal bind:open title={CONTENTS_LABEL} size="sm" body="flush">
+<Modal bind:open title={CONTENTS_LABEL} size="sm" flushBody>
   <ul class="list-reset col gap-0 px-3 pb-4" lang={language} bind:this={list}>
     {#each entries as entry (entry.key)}
       <li class="indent" style:--indent-depth={indentDepth(entry.depth)}>

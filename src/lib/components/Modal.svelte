@@ -4,15 +4,9 @@
   import type { Snippet } from 'svelte';
   import type { HTMLDialogAttributes } from 'svelte/elements';
   import { animationsSettled } from './animations';
-  import {
-    MODAL_BODIES,
-    MODAL_FOOTERS,
-    MODAL_NARROWS,
-    MODAL_PLACEMENTS,
-    MODAL_SIZES,
-  } from './classes';
+  import { MODAL_PLACEMENTS, MODAL_SIZES } from './classes';
   import X from './icons/X.svelte';
-  import type { ModalBody, ModalFooter, ModalNarrow, ModalPlacement, ModalSize } from './classes';
+  import type { ModalPlacement, ModalSize } from './classes';
   import { modalHeading, modalLabelledBy } from './modal-heading';
   import { modalStep } from './modal-phase';
   import type { ModalEvent, ModalPhase } from './modal-phase';
@@ -40,11 +34,11 @@
       open?: boolean;
       size?: ModalSize;
       placement?: ModalPlacement;
-      narrow?: ModalNarrow;
-      body?: ModalBody;
+      fillNarrow?: boolean;
+      flushBody?: boolean;
       closeLabel?: string;
       footer?: Snippet<[() => void]>;
-      footerVariant?: ModalFooter;
+      infoFooter?: boolean;
     };
 
   let {
@@ -54,11 +48,11 @@
     header,
     size = 'md',
     placement = 'center',
-    narrow = 'panel',
-    body = 'padded',
+    fillNarrow = false,
+    flushBody = false,
     closeLabel = 'Close',
     footer,
-    footerVariant = 'actions',
+    infoFooter = false,
     'aria-labelledby': labelledBy,
     onclose,
     class: className,
@@ -140,8 +134,7 @@
   aria-labelledby={modalLabelledBy(heading, titleId, labelledBy)}
   class={[
     'modal-backdrop',
-    MODAL_NARROWS[narrow],
-    { 'is-leaving': phase === 'leaving' },
+    { 'modal-fill-narrow': fillNarrow, 'is-leaving': phase === 'leaving' },
     className,
   ]}
   oncancel={cancel}
@@ -164,11 +157,11 @@
         {@render heading.header(hide)}
       </div>
     {/if}
-    <div class={['modal-body', MODAL_BODIES[body]]}>
+    <div class={['modal-body', { 'modal-body-flush': flushBody }]}>
       {@render children?.()}
     </div>
     {#if footer}
-      <div class={['modal-footer', MODAL_FOOTERS[footerVariant]]}>
+      <div class={['modal-footer', { 'modal-footer-info': infoFooter }]}>
         {@render footer(hide)}
       </div>
     {/if}
