@@ -22,7 +22,7 @@
 </script>
 
 {#snippet chip(shown: Chip)}
-  <Badge colour={shown.colour} emphasis="quiet" dot>{shown.name}</Badge>
+  <Badge color={shown.colour} emphasis="quiet" dot>{shown.name}</Badge>
 {/snippet}
 
 <DemoSection id="overflow-list" title="Overflow list" classes={['overflow-list']}>

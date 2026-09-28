@@ -16,13 +16,13 @@ function markup(props: Record<string, unknown>): string {
 
 describe('Tag', () => {
   it('renders a span with no href', () => {
-    expect(markup({ colour: 'sky' })).toBe(
+    expect(markup({ color: 'sky' })).toBe(
       '<span class="tag tag-color-sky"><span>beta</span></span>',
     );
   });
 
   it('renders a link to the href, keeping its colour and the caller class', () => {
-    expect(markup({ href: '/tags?tag=beta', colour: 'sky', class: 'min-w-0' })).toBe(
+    expect(markup({ href: '/tags?tag=beta', color: 'sky', class: 'min-w-0' })).toBe(
       '<a href="/tags?tag=beta" class="tag tag-color-sky min-w-0"><span>beta</span></a>',
     );
   });

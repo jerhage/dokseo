@@ -7,14 +7,14 @@
     pressed?: boolean;
     onpressedchange?: (pressed: boolean) => void;
     ref?: HTMLButtonElement | undefined;
-    colour?: TagColour;
+    color?: TagColour;
   };
 
   let {
     pressed = $bindable(false),
     onpressedchange,
     ref = $bindable(),
-    colour,
+    color,
     onclick,
     class: className,
     children,
@@ -36,7 +36,7 @@
   aria-pressed={pressed}
   class={[
     'tag',
-    colour === undefined ? [] : TAG_COLOUR_CLASSES[colour],
+    color === undefined ? [] : TAG_COLOUR_CLASSES[color],
     { 'is-active': pressed },
     className,
   ]}

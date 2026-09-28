@@ -13,7 +13,7 @@
 }
 .tabs-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: var(--tabs-header-wrap, wrap);
   align-items: center;
   gap: var(--sp-2) var(--sp-3);
   min-inline-size: 0;

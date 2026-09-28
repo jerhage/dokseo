@@ -172,7 +172,7 @@
     class="gap-2"
   >
     {#snippet item(chip)}
-      <Badge colour={chip.colour} emphasis="quiet" dot>{chip.name}</Badge>
+      <Badge color={chip.colour} emphasis="quiet" dot>{chip.name}</Badge>
     {/snippet}
   </OverflowList>
 

@@ -38,17 +38,18 @@ describe('shownTab', () => {
 });
 
 describe('Tabs', () => {
-  it('adds the header class to the header that holds the tab list and the actions', () => {
+  it('puts the caller class on the root, not on the header that holds the tab list and the actions', () => {
     const html = render(TABS_COMPONENT, {
       props: {
         tabs: [{ id: 'all', label: 'All' }],
         label: 'Shelves',
-        headerClass: 'narrow-row',
+        class: 'narrow-row',
         actions: NOTHING,
         panel: NOTHING,
       },
     }).body;
 
-    expect(html).toMatch(/class="tabs-header narrow-row"/u);
+    expect(html).toMatch(/class="tabs narrow-row"/u);
+    expect(html).toMatch(/class="tabs-header"/u);
   });
 });

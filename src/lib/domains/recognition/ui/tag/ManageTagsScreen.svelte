@@ -67,7 +67,7 @@
         {#each rows as row (row.id)}
           <li class="row wrap items-center gap-3 p-3 surface bordered rounded-container">
             <div class="row items-center gap-3 flex-fill">
-              <Badge colour={row.tag.colour} emphasis="quiet" dot aria-hidden="true" />
+              <Badge color={row.tag.colour} emphasis="quiet" dot aria-hidden="true" />
               {#if manage.renaming === row.id}
                 <form
                   class="col gap-1 flex-1"
@@ -101,7 +101,7 @@
               {#if manage.confirming !== row.id}
                 <Dropdown size="sm" variant="ghost">
                   {#snippet trigger()}
-                    <Badge colour={row.tag.colour} emphasis="quiet" dot>{row.tag.colour}</Badge>
+                    <Badge color={row.tag.colour} emphasis="quiet" dot>{row.tag.colour}</Badge>
                     <span class="visually-hidden">Colour for {row.tag.name}</span>
                   {/snippet}
                   {#each TAG_COLOURS as colour (colour)}
@@ -110,7 +110,7 @@
                       aria-label="Make {row.tag.name} {colour}"
                       onclick={() => void manage.recolour(row.tag, colour)}
                     >
-                      <Badge {colour} emphasis="quiet" dot>{colour}</Badge>
+                      <Badge color={colour} emphasis="quiet" dot>{colour}</Badge>
                     </DropdownItem>
                   {/each}
                 </Dropdown>

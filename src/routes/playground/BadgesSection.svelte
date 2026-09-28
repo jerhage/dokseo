@@ -63,28 +63,28 @@
     <span class="eyebrow text-faint weight-semibold">Tag colours</span>
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
-        <Badge {colour}>{colour}</Badge>
+        <Badge color={colour}>{colour}</Badge>
       {/each}
     </div>
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
-        <Badge {colour} emphasis="solid">{colour}</Badge>
+        <Badge color={colour} emphasis="solid">{colour}</Badge>
       {/each}
     </div>
     <div class="row wrap items-center gap-3">
       {#each TAG_COLOURS as colour (colour)}
-        <Badge {colour} emphasis="quiet" dot>{colour}</Badge>
+        <Badge color={colour} emphasis="quiet" dot>{colour}</Badge>
       {/each}
     </div>
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
-        <Tag {colour}>{colour}</Tag>
+        <Tag color={colour}>{colour}</Tag>
       {/each}
     </div>
     <div class="row wrap items-center gap-2">
       {#each TAG_COLOURS as colour (colour)}
         <TagToggle
-          {colour}
+          color={colour}
           pressed={pressedColours.includes(colour)}
           onpressedchange={(pressed) => press(colour, pressed)}>{colour}</TagToggle
         >
@@ -111,7 +111,7 @@
         <Tag onremove={() => remove(tag)} removeLabel="Remove {tag}">{tag}</Tag>
       {/each}
       <Tag href="#badge">Link tag</Tag>
-      <Tag href="#badge" colour="sky">Coloured link tag</Tag>
+      <Tag href="#badge" color="sky">Coloured link tag</Tag>
     </div>
     <div class="row">
       <Button

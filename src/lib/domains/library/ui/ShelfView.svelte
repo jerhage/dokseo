@@ -75,7 +75,7 @@
     {tabs}
     label="Shelves"
     variant="pill"
-    headerClass="layout-app-shell-narrow-nowrap"
+    class="layout-app-shell-narrow-nowrap"
     bind:selected={() => shelf, (id) => (shelf = toShelf(id))}
   >
     {#snippet actions()}

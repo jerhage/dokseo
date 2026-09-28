@@ -78,7 +78,7 @@
       {#each chips as chip (chip.id)}
         <li class="shrink-0">
           <Tag
-            colour={chip.colour}
+            color={chip.colour}
             onremove={() => onuntag(chip.id)}
             removeLabel="Remove the tag {chip.name} from the capture at {place}"
           >
@@ -145,7 +145,7 @@
                 hint={String(offer.count)}
                 onclick={() => take(offer.row)}
               >
-                <Badge colour={offer.tag.colour} emphasis="quiet" dot>{offer.tag.name}</Badge>
+                <Badge color={offer.tag.colour} emphasis="quiet" dot>{offer.tag.name}</Badge>
               </CommandItem>
             </li>
           {:else}

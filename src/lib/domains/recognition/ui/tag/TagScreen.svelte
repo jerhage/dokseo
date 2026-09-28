@@ -142,14 +142,14 @@
       </EmptyState>
     {:else if stage.kind === 'unshelved'}
       <h1 class="row items-center gap-2 text-lg min-w-0">
-        <Badge colour={stage.tag.colour} emphasis="quiet" dot aria-hidden="true" />
+        <Badge color={stage.tag.colour} emphasis="quiet" dot aria-hidden="true" />
         <span class="truncate">{stage.tag.name}</span>
       </h1>
     {:else}
       {@const added = addedText(stage.summary, Date.now())}
       <header class="col gap-1">
         <h1 class="row items-center gap-2 text-lg min-w-0">
-          <Badge colour={stage.tag.colour} emphasis="quiet" dot aria-hidden="true" />
+          <Badge color={stage.tag.colour} emphasis="quiet" dot aria-hidden="true" />
           <span class="truncate">{stage.tag.name}</span>
         </h1>
         <p class="text-sm text-muted">
@@ -170,7 +170,7 @@
             <ul class="row wrap items-center gap-2 list-reset">
               {#each neighbours as other (other.id)}
                 <li class="row min-w-0">
-                  <Tag href={tagsHref(other.name)} colour={other.colour} class="min-w-0">
+                  <Tag href={tagsHref(other.name)} color={other.colour} class="min-w-0">
                     <span class="truncate">{other.name}</span>
                     <span class="text-xs mono">{other.count}</span>
                   </Tag>
@@ -220,7 +220,7 @@
                             key={(chip) => chip.id}
                           >
                             {#snippet item(chip)}
-                              <Badge colour={chip.colour} emphasis="quiet" dot>{chip.name}</Badge>
+                              <Badge color={chip.colour} emphasis="quiet" dot>{chip.name}</Badge>
                             {/snippet}
                           </OverflowList>
                         </span>

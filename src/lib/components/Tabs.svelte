@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { ClassValue, HTMLAttributes } from 'svelte/elements';
+  import type { HTMLAttributes } from 'svelte/elements';
   import { TABS_VARIANTS } from './classes';
   import type { TabsVariant } from './classes';
   import { landOn, tabMove, textDirection } from './roving';
@@ -15,7 +15,6 @@
     onselectedchange?: (id: string) => void;
     panel: Snippet<[TabItem]>;
     actions?: Snippet;
-    headerClass?: ClassValue;
   };
 
   let {
@@ -26,7 +25,6 @@
     onselectedchange,
     panel,
     actions,
-    headerClass,
     class: className,
     ...rest
   }: Props = $props();
@@ -82,7 +80,7 @@
 
 <div {...rest} class={['tabs', TABS_VARIANTS[variant], className]}>
   {#if actions}
-    <div class={['tabs-header', headerClass]}>
+    <div class="tabs-header">
       {@render tabList()}
       <div class="tabs-actions">{@render actions()}</div>
     </div>

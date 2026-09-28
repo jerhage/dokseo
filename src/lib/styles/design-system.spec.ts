@@ -308,6 +308,7 @@ const RUNTIME_INPUTS = [
   '--rect-width',
   '--skeleton-width',
   '--slider-tick-at',
+  '--tabs-header-wrap',
   '--toast-offset-block-end',
   '--toast-timeout',
   '--zoom-surface-pan-x',
@@ -950,7 +951,7 @@ describe('the design system stylesheets', () => {
     );
     expect(
       declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-nowrap')),
-    ).toEqual(['flex-wrap: nowrap']);
+    ).toEqual(['flex-wrap: nowrap', '--tabs-header-wrap: nowrap']);
     expect(
       rules(layout.replace(narrow, '')).some((rule) =>
         rule.selectors.some((selector) =>
@@ -1047,6 +1048,12 @@ describe('the design system stylesheets', () => {
     expect(declarations(ruleBody(style('utilities/layout.css'), '.min-w-0'))).toEqual([
       'min-inline-size: 0',
     ]);
+  });
+
+  it('wraps the tab header unless an ancestor sets it not to', () => {
+    expect(declarations(ruleBody(style('components/tabs.css'), '.tabs-header'))).toContain(
+      'flex-wrap: var(--tabs-header-wrap, wrap)',
+    );
   });
 
   it('keeps the tab actions at their own width, so a row that cannot wrap shrinks the tab list instead', () => {

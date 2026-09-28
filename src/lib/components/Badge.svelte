@@ -4,8 +4,8 @@
   import type { BadgeEmphasis, BadgeVariant, TagColour } from './classes';
 
   type Tone =
-    | { variant?: BadgeVariant; colour?: undefined }
-    | { colour: TagColour; variant?: undefined };
+    | { variant?: BadgeVariant; color?: undefined }
+    | { color: TagColour; variant?: undefined };
 
   type Props = HTMLAttributes<HTMLSpanElement> &
     Tone & {
@@ -15,7 +15,7 @@
 
   let {
     variant = 'neutral',
-    colour,
+    color,
     dot = false,
     emphasis = 'tinted',
     class: className,
@@ -24,7 +24,7 @@
   }: Props = $props();
 
   const tone = $derived(
-    colour === undefined ? BADGE_VARIANTS[variant] : BADGE_COLOUR_CLASSES[colour],
+    color === undefined ? BADGE_VARIANTS[variant] : BADGE_COLOUR_CLASSES[color],
   );
 </script>
 

@@ -17,9 +17,9 @@ function classes(props: Attributes): readonly string[] {
 
 describe('Badge', () => {
   it('draws the quiet variant only when asked, beside the colour and the dot', () => {
-    expect(classes({ colour: 'rose', dot: true, emphasis: 'quiet' })).toEqual(
+    expect(classes({ color: 'rose', dot: true, emphasis: 'quiet' })).toEqual(
       expect.arrayContaining(['badge', 'badge-color-rose', 'badge-dot', 'badge-quiet']),
     );
-    expect(classes({ colour: 'rose' })).not.toContain('badge-quiet');
+    expect(classes({ color: 'rose' })).not.toContain('badge-quiet');
   });
 });

@@ -9,24 +9,16 @@
     | { href?: undefined; onremove: () => void; removeLabel: string }
     | { href: string; onremove?: undefined; removeLabel?: undefined };
 
-  type Props = HTMLAttributes<HTMLElement> & Form & { colour?: TagColour };
+  type Props = HTMLAttributes<HTMLElement> & Form & { color?: TagColour };
 
-  let {
-    href,
-    onremove,
-    removeLabel,
-    colour,
-    class: className,
-    children,
-    ...rest
-  }: Props = $props();
+  let { href, onremove, removeLabel, color, class: className, children, ...rest }: Props = $props();
 </script>
 
 <svelte:element
   this={href === undefined ? 'span' : 'a'}
   {...rest}
   {href}
-  class={['tag', colour === undefined ? [] : TAG_COLOUR_CLASSES[colour], className]}
+  class={['tag', color === undefined ? [] : TAG_COLOUR_CLASSES[color], className]}
 >
   {@render children?.()}
   {#if onremove !== undefined}

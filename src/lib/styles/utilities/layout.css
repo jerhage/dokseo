@@ -212,6 +212,7 @@
   }
   .layout-app-shell .layout-app-shell-narrow-nowrap {
     flex-wrap: nowrap;
+    --tabs-header-wrap: nowrap;
   }
   .layout-app-shell .layout-app-shell-narrow-touch {
     --btn-min-block-size: var(--control-h-touch);

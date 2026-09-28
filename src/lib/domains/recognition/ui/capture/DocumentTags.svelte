@@ -45,7 +45,7 @@
             href={tagsHref(tag.name)}
             hint="{tag.count} {tag.count === 1 ? 'capture' : 'captures'}"
           >
-            <Badge colour={tag.colour} emphasis="quiet" dot>{tag.name}</Badge>
+            <Badge color={tag.colour} emphasis="quiet" dot>{tag.name}</Badge>
           </CommandItem>
         </li>
       {/each}
