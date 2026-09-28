@@ -4,7 +4,7 @@
 
   const SAMPLES = [
     { classes: 'eyebrow', text: 'Plain' },
-    { classes: 'eyebrow text-muted', text: 'Continue reading' },
+    { classes: 'eyebrow text-faint', text: 'Continue reading' },
     { classes: 'eyebrow text-faint weight-semibold', text: 'Section caption' },
     { classes: 'eyebrow mono text-faint', text: 'Active engine' },
   ] as const;

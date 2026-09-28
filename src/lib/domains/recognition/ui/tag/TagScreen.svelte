@@ -166,7 +166,7 @@
       {:else}
         {#if neighbours.length > 0}
           <section class="col gap-2" aria-label="Also tagged">
-            <p class="eyebrow text-muted">Also tagged</p>
+            <p class="eyebrow text-faint">Also tagged</p>
             <ul class="row wrap items-center gap-2 list-reset">
               {#each neighbours as other (other.id)}
                 <li class="row min-w-0">

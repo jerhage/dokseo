@@ -55,6 +55,19 @@ describe('the styling of the source tree', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('writes no eyebrow in the muted colour', () => {
+    const offenders = sourceFiles(['.svelte', '.ts'])
+      .filter((path) => !path.endsWith('.spec.ts'))
+      .flatMap((path) =>
+        Array.from(read(path).matchAll(/["'`]([^"'`]*)["'`]/gu), (found) => found[1] ?? '')
+          .filter((classes) => /(?<![\w-])eyebrow(?![\w-])/u.test(classes))
+          .filter((classes) => /(?<![\w-])text-muted(?![\w-])/u.test(classes))
+          .map((classes) => `${path}: ${classes}`),
+      );
+
+    expect(offenders).toEqual([]);
+  });
+
   it('writes every domain, shared and route stylesheet as one @layer features block holding one @scope block', () => {
     const featureFiles = sourceFiles(['.css']).filter((path) =>
       FEATURE_FOLDERS.some((folder) => path.startsWith(folder)),

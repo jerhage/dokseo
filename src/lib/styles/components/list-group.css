@@ -6,7 +6,7 @@
 .list-group-title {
   padding-inline: var(--sp-1);
   font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
 }
 .list-group-box {
   color: var(--color-text);

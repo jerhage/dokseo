@@ -18,7 +18,7 @@
 </script>
 
 <section class="col gap-3" aria-labelledby={headingId}>
-  <h2 id={headingId} class="eyebrow text-muted">Continue reading</h2>
+  <h2 id={headingId} class="eyebrow text-faint">Continue reading</h2>
   <ul class="scroll-strip">
     {#each books as book (book.id)}
       {@const progress = bookProgress(book)}

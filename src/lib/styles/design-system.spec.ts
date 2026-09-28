@@ -812,6 +812,27 @@ describe('the design system stylesheets', () => {
     expect(copies).toEqual([]);
   });
 
+  it('colours every component eyebrow faint', () => {
+    const colours = [
+      { file: 'components/stat.css', selector: '.stat-label' },
+      { file: 'components/dropdown.css', selector: '.dropdown-label' },
+      { file: 'components/divider.css', selector: '.divider-labeled' },
+      { file: 'components/list-group.css', selector: '.list-group-title' },
+    ].map(({ file, selector }) => ({
+      selector,
+      colour: declarations(ruleBody(style(file), selector)).find((part) =>
+        part.startsWith('color:'),
+      ),
+    }));
+
+    expect(colours).toEqual([
+      { selector: '.stat-label', colour: 'color: var(--color-text-faint)' },
+      { selector: '.dropdown-label', colour: 'color: var(--color-text-faint)' },
+      { selector: '.divider-labeled', colour: 'color: var(--color-text-faint)' },
+      { selector: '.list-group-title', colour: 'color: var(--color-text-faint)' },
+    ]);
+  });
+
   it('declares the eyebrow before every text utility, so a size, tracking, face, weight or colour utility beside it wins', () => {
     const textRules = rules(style('utilities/text.css'));
     const eyebrow = textRules.findIndex((rule) => rule.selectors.includes('.eyebrow'));

@@ -7,7 +7,7 @@
 }
 .stat-label {
   font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
 }
 .stat-value {
   font-family: var(--font-display);
