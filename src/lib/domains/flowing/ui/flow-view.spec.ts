@@ -478,6 +478,36 @@ describe('the place a flow book keeps', () => {
     vi.useFakeTimers();
   });
 
+  it('calls onmoved once per relocation', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const heard: (string | null)[] = [];
+    await view.open(novel(world.place), surfaces.show, () =>
+      heard.push(view.location?.cfi ?? null),
+    );
+    const moved = surfaces.openings[0]?.moved;
+
+    moved?.(relocated(SOMEWHERE));
+    moved?.(relocated(FURTHER_ON));
+
+    expect(heard).toEqual([SOMEWHERE, FURTHER_ON]);
+  });
+
+  it('calls no onmoved for a move that arrives after the viewer closed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    let heard = 0;
+    await view.open(novel(world.place), surfaces.show, () => (heard += 1));
+    const moved = surfaces.openings[0]?.moved;
+
+    view.close();
+    moved?.(relocated(SOMEWHERE));
+
+    expect(heard).toBe(0);
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });

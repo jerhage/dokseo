@@ -162,7 +162,7 @@ class FlowView {
     return currentEntryKey(this.contents, this.reported);
   }
 
-  async open(book: FlowBook, show: ShowFlowBook): Promise<void> {
+  async open(book: FlowBook, show: ShowFlowBook, onmoved?: () => void): Promise<void> {
     this.#flushSave();
     const generation = ++this.#generation;
     this.#release();
@@ -210,7 +210,7 @@ class FlowView {
         settings: chosen,
         ink: inked,
         moved: (relocation) => {
-          this.#moved(generation, book.id, relocation);
+          this.#moved(generation, book.id, relocation, onmoved);
         },
       });
     } catch (cause) {
@@ -324,13 +324,19 @@ class FlowView {
     this.#surface?.seek(target);
   }
 
-  #moved(generation: number, id: BookId, relocation: Relocation): void {
+  #moved(
+    generation: number,
+    id: BookId,
+    relocation: Relocation,
+    onmoved: (() => void) | undefined,
+  ): void {
     if (generation !== this.#generation) return;
 
     const here = flowLocation(relocation);
     this.location = here;
     this.reported = relocation.tocItem ?? null;
     this.#forgetArrival(here.cfi);
+    onmoved?.();
     const place = textPlace(here.cfi, here.fraction);
 
     const waiting = this.#saving;

@@ -100,7 +100,6 @@
   const meta = $derived(flowMeta(view.chapter, book.language));
   const turning = $derived(view.direction);
   const marks = $derived(tickOffsets(view.ticks, turning));
-  const reported = $derived(view.location);
   const passages = $derived(passageCfis(anchors));
   const readerFrame = new ReaderFrameView();
   const narrow = $derived(readerFrame.narrow);
@@ -358,10 +357,6 @@
   });
 
   $effect(() => {
-    if (reported !== null) askAboutTheOffer();
-  });
-
-  $effect(() => {
     const host = stage;
     const held = book;
     if (host === null) return;
@@ -375,8 +370,10 @@
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    void view.open(held, (opening) =>
-      openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
+    void view.open(
+      held,
+      (opening) => openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
+      askAboutTheOffer,
     );
     return () => {
       host.removeEventListener('pointerdown', began);
