@@ -26,7 +26,7 @@
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
-  import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABEL } from './drag-mode';
+  import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABELS } from './drag-mode';
   import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
@@ -373,7 +373,7 @@
           class="shrink-0"
           aria-pressed={selecting}
           icon={SquareDashedMousePointer}
-          label={SELECT_MODE_LABEL}
+          label={SELECT_MODE_LABELS[layout]}
           onclick={() => (selecting = !selecting)}
         />
       {/if}
