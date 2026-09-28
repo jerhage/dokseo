@@ -11,17 +11,28 @@
     key?: (item: Item) => string | number;
     inline?: boolean;
     label?: string;
+    moreLabel?: string;
     class?: ClassValue;
   };
 
-  let { items, room, item, name, key, inline = false, label, class: className }: Props = $props();
+  let {
+    items,
+    room,
+    item,
+    name,
+    key,
+    inline = false,
+    label,
+    moreLabel = 'more',
+    class: className,
+  }: Props = $props();
 
   const line = $derived(overflowLine(items, room));
   const more = $derived(hiddenNames(line.hidden, name));
 </script>
 
 {#snippet count()}
-  +{line.hidden.length}<span class="visually-hidden"> more: {more}</span>
+  +{line.hidden.length}<span class="visually-hidden"> {moreLabel}: {more}</span>
 {/snippet}
 
 {#if inline}

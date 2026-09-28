@@ -11,6 +11,7 @@
     hideLabel?: boolean;
     type?: SearchFieldType;
     clearable?: boolean;
+    clearLabel?: string;
     onclear?: () => void;
     value?: string;
     ref?: HTMLInputElement | undefined;
@@ -22,6 +23,7 @@
     hideLabel = false,
     type = 'search',
     clearable = false,
+    clearLabel = CLEAR_LABEL,
     onclear,
     value = $bindable(''),
     ref = $bindable(),
@@ -53,7 +55,7 @@
         variant="ghost"
         size="sm"
         class="search-field-clear"
-        label={CLEAR_LABEL}
+        label={clearLabel}
         tooltip={false}
         onmousedown={keepFocus}
         onclick={clear}
