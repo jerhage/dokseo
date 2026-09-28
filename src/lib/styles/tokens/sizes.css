@@ -4,6 +4,7 @@
   initial-value: 0px;
 }
 :root {
+  --control-h-xs: var(--ds-size-control-xs);
   --control-h-sm: var(--ds-size-control-sm);
   --control-h-md: var(--ds-size-control-md);
   --control-h-lg: var(--ds-size-control-lg);

@@ -135,8 +135,8 @@ a.tag.is-active:hover {
 .tag-remove {
   display: inline-grid;
   place-items: center;
-  inline-size: var(--icon-size-lg);
-  block-size: var(--icon-size-lg);
+  inline-size: var(--control-h-xs);
+  block-size: var(--control-h-xs);
   margin-inline-end: calc(var(--sp-2) * -1);
   padding: 0;
   border: none;
