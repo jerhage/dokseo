@@ -86,7 +86,7 @@
 .dropzone:has(.dropzone-input:disabled) .dropzone-title {
   color: var(--color-disabled);
 }
-.dropzone-browse {
+.dropzone-action {
   color: var(--color-text-link);
   text-decoration: underline;
   text-underline-offset: var(--sp-1);
