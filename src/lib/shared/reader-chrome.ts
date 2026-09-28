@@ -8,12 +8,11 @@ function chromeShown(asked: boolean, held: boolean): boolean {
 }
 
 function chromeHolds(
-  bars: readonly (ChromeBar | null)[],
+  bars: readonly (ChromeBar | undefined)[],
   nodes: readonly (Element | null)[],
 ): boolean {
   return bars.some(
-    (bar) =>
-      bar !== null && !bar.inert && nodes.some((node) => node !== null && bar.contains(node)),
+    (bar) => bar?.inert === false && nodes.some((node) => node !== null && bar.contains(node)),
   );
 }
 

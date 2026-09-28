@@ -168,7 +168,7 @@
           {slop}
           minimum={MINIMUM_PX}
           {accent}
-          label={labelled ? 'Label' : null}
+          label={labelled ? 'Label' : undefined}
           onend={ended}
           onrefuse={(refusal) => hear(refusal.kind)}
           onclick={() => hear('click reported')}

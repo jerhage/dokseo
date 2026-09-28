@@ -49,7 +49,7 @@
 
   const measure = $derived.by(() => {
     const size = captured;
-    if (size === null) return null;
+    if (size === null) return undefined;
     return `${Math.round(size.width)} × ${Math.round(size.height)}`;
   });
 

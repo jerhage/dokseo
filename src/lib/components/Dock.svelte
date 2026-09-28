@@ -13,7 +13,7 @@
 
   type Props = {
     readonly placement: DockPlacement;
-    readonly count?: number | null;
+    readonly count?: number | undefined;
     readonly label: string;
     readonly expandLabel: string;
     readonly collapseLabel: string;
@@ -21,15 +21,7 @@
     readonly ontoggle: () => void;
   };
 
-  let {
-    placement,
-    count = null,
-    label,
-    expandLabel,
-    collapseLabel,
-    children,
-    ontoggle,
-  }: Props = $props();
+  let { placement, count, label, expandLabel, collapseLabel, children, ontoggle }: Props = $props();
 
   const uid = $props.id();
 

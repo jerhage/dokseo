@@ -55,7 +55,7 @@ describe('dockTally', () => {
 
   it('shows no count when there are no captures or none are known', () => {
     expect(dockTally('rail', 0)).toBeNull();
-    expect(dockTally('peek', null)).toBeNull();
+    expect(dockTally('peek', undefined)).toBeNull();
   });
 });
 
@@ -68,6 +68,6 @@ describe('dockName', () => {
   it('names the action alone when no count is shown', () => {
     expect(dockName('rail', 0, WORDS)).toBe('Show captures');
     expect(dockName('side', 3, WORDS)).toBe('Hide captures');
-    expect(dockName('sheet', null, WORDS)).toBe('Hide captures');
+    expect(dockName('sheet', undefined, WORDS)).toBe('Hide captures');
   });
 });

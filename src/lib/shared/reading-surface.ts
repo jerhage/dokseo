@@ -14,7 +14,7 @@ const QUIET_FOCUS: FocusOptions = { preventScroll: true, focusVisible: false };
 
 function returnFocusToPage<T extends FocusHolder>(
   focused: T | null,
-  bars: readonly (Bar<NoInfer<T>> | null)[],
+  bars: readonly (Bar<NoInfer<T>> | undefined)[],
   surface: ReadingSurface | null,
 ): void {
   if (focused === null) return;

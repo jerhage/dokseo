@@ -33,12 +33,12 @@ function dockLabel(placement: DockPlacement, words: DockWords): string {
   return dockToggle(placement).open ? words.collapseLabel : words.expandLabel;
 }
 
-function dockTally(placement: DockPlacement, count: number | null): number | null {
+function dockTally(placement: DockPlacement, count: number | undefined): number | null {
   if (dockToggle(placement).open) return null;
-  return count !== null && count > 0 ? count : null;
+  return count !== undefined && count > 0 ? count : null;
 }
 
-function dockName(placement: DockPlacement, count: number | null, words: DockWords): string {
+function dockName(placement: DockPlacement, count: number | undefined, words: DockWords): string {
   const label = dockLabel(placement, words);
   const tally = dockTally(placement, count);
   return tally === null ? label : `${label}, ${tally}`;

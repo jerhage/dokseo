@@ -7,14 +7,14 @@
     edge: ChromeBarEdge;
     shown: boolean;
     height?: number;
-    ref?: HTMLElement | null;
+    ref?: HTMLElement | undefined;
   };
 
   let {
     edge,
     shown,
     height = $bindable(0),
-    ref = $bindable(null),
+    ref = $bindable(),
     class: className,
     children,
     ...rest

@@ -26,15 +26,15 @@ const PICKER = {} as Element;
 
 describe('chromeHolds', () => {
   it('holds the bars up for a popover opened inside one of them', () => {
-    expect(chromeHolds([bar([PILL]), null], [PILL])).toBe(true);
+    expect(chromeHolds([bar([PILL]), undefined], [PILL])).toBe(true);
   });
 
   it('lets the bars fall for a popover opened outside every one of them', () => {
-    expect(chromeHolds([bar([PILL]), null], [PICKER])).toBe(false);
+    expect(chromeHolds([bar([PILL]), undefined], [PICKER])).toBe(false);
   });
 
   it('holds the bars up for whatever holds focus inside one of them', () => {
-    expect(chromeHolds([null, bar([PILL])], [PILL])).toBe(true);
+    expect(chromeHolds([undefined, bar([PILL])], [PILL])).toBe(true);
   });
 
   it('ignores a bar that is already inert, because nothing in it can be reached', () => {

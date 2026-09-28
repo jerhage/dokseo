@@ -14,7 +14,7 @@ class Harness {
   readonly focus: ChromeFocus;
 
   #queued: (() => void)[] = [];
-  #bars: readonly (ChromeBar | null)[] = [bar([PILL])];
+  #bars: readonly (ChromeBar | undefined)[] = [bar([PILL])];
   #node: Element | null = null;
   #reads = 0;
 
@@ -37,7 +37,7 @@ class Harness {
     this.#node = node;
   }
 
-  showing(bars: readonly (ChromeBar | null)[]): void {
+  showing(bars: readonly (ChromeBar | undefined)[]): void {
     this.#bars = bars;
   }
 
@@ -148,7 +148,7 @@ describe('ChromeFocus', () => {
   it('answers with the bars standing when the turn runs, not the ones standing when it was asked', () => {
     const held = new Harness();
     held.looking(PILL);
-    held.showing([null]);
+    held.showing([undefined]);
 
     held.focus.refresh();
     held.showing([bar([PILL])]);

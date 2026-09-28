@@ -14,7 +14,7 @@
 
   let counted = $state(true);
 
-  const count = $derived(counted ? 3 : null);
+  const count = $derived(counted ? 3 : undefined);
 </script>
 
 <DemoSection

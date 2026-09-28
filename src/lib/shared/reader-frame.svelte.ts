@@ -17,8 +17,8 @@ function openPopovers(): readonly Element[] {
 const FOCUSED_OR_OPEN: FocusedNodes = () => [document.activeElement, ...openPopovers()];
 
 class ReaderFrameView {
-  topBar = $state<HTMLElement | null>(null);
-  bottomBar = $state<HTMLElement | null>(null);
+  topBar = $state<HTMLElement>();
+  bottomBar = $state<HTMLElement>();
   topHeight = $state(0);
   bottomHeight = $state(0);
   bodyWidth = $state(0);
@@ -32,7 +32,7 @@ class ReaderFrameView {
     this.focus = new ChromeFocus(() => this.bars, focused);
   }
 
-  get bars(): readonly (HTMLElement | null)[] {
+  get bars(): readonly (HTMLElement | undefined)[] {
     return [this.topBar, this.bottomBar];
   }
 

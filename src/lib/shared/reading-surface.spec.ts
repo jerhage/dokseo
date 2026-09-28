@@ -59,7 +59,7 @@ describe('returnFocusToPage', () => {
     const log = recorded();
     const editor = log.control('editor');
 
-    returnFocusToPage(editor, [barHolding(log.control('settings')), null], log.surface);
+    returnFocusToPage(editor, [barHolding(log.control('settings')), undefined], log.surface);
 
     expect(log.steps).toEqual([]);
   });

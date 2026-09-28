@@ -83,7 +83,7 @@
     {#if panel !== undefined}
       <Dock
         placement={frame.placement}
-        count={panelCount ?? null}
+        count={panelCount}
         label="Captures"
         expandLabel="Show captures"
         collapseLabel="Hide captures"

@@ -29,7 +29,7 @@
     readonly minimum: number;
     readonly suppressed?: boolean;
     readonly accent?: boolean;
-    readonly label?: string | null;
+    readonly label?: string | undefined;
     readonly onstart?: () => void;
     readonly onend?: (end: MarqueeEnd, stroke: MarqueeStroke) => void;
     readonly onrefuse?: (refusal: MarqueeRefusal) => void;
@@ -44,7 +44,7 @@
     minimum,
     suppressed = false,
     accent = false,
-    label = null,
+    label,
     onstart,
     onend,
     onrefuse,
@@ -273,7 +273,7 @@
       <span
         class="marquee-selection-handle marquee-selection-handle-south marquee-selection-handle-east"
       ></span>
-      {#if label !== null}
+      {#if label !== undefined}
         <p class="marquee-selection-label mono text-xs surface-raised rounded-control px-2 py-1">
           {label}
         </p>
