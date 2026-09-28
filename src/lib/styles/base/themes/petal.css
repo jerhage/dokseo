@@ -10,7 +10,7 @@
   --ds-petal-ink-faint: light-dark(oklch(0.6 0.018 285), oklch(0.6 0.02 290));
   --ds-petal-on-pastel: light-dark(oklch(0.24 0.02 285), oklch(0.2 0.02 285));
   --ds-petal-line: light-dark(oklch(0.92 0.012 295), oklch(0.3 0.02 290));
-  --ds-petal-line-strong: light-dark(oklch(0.84 0.02 295), oklch(0.38 0.03 290));
+  --ds-petal-line-strong: light-dark(oklch(0.64 0.02 295), oklch(0.55 0.03 290));
   --ds-petal-tint-3: light-dark(oklch(0.55 0.08 295 / 0.03), oklch(0.9 0.05 295 / 0.03));
   --ds-petal-tint-5: light-dark(oklch(0.55 0.08 295 / 0.06), oklch(0.9 0.05 295 / 0.06));
   --ds-petal-tint-9: light-dark(oklch(0.55 0.08 295 / 0.1), oklch(0.9 0.05 295 / 0.1));
