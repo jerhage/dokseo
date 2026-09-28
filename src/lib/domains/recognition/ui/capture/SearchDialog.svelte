@@ -69,8 +69,8 @@
   let scope = $state<SearchScope>('book');
   let filter = $state<SearchFilter>('everything');
   let at = $state(NO_MATCH);
-  let list = $state<(HTMLElement | undefined)[]>([]);
-  let field = $state<HTMLInputElement>();
+  let list = $state<(HTMLElement | null | undefined)[]>([]);
+  let field = $state<HTMLInputElement | null>();
   let lastPressed: HTMLElement | null = null;
   let opener: HTMLElement | null = null;
 
@@ -121,7 +121,7 @@
 
   async function selectKeptQuery(): Promise<void> {
     await tick();
-    if (field !== undefined && query !== '') field.select();
+    if (query !== '') field?.select();
   }
 
   export function searchEverything(): void {
@@ -192,7 +192,7 @@
   }
 
   function dragged(): void {
-    if (field !== undefined && document.activeElement === field) field.blur();
+    if (field?.isSameNode(document.activeElement)) field.blur();
   }
 
   function blurOnDrag(resultList: HTMLElement): () => void {

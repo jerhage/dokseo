@@ -8,7 +8,7 @@ function chromeShown(asked: boolean, held: boolean): boolean {
 }
 
 function chromeHolds(
-  bars: readonly (ChromeBar | undefined)[],
+  bars: readonly (ChromeBar | null | undefined)[],
   nodes: readonly (Element | null)[],
 ): boolean {
   return bars.some(

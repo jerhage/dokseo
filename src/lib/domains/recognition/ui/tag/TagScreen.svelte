@@ -46,7 +46,7 @@
   let { view, covers, shelf }: Props = $props();
 
   let walk = $state.raw<Walk | null>(null);
-  let anchors = $state<(HTMLElement | undefined)[]>([]);
+  let anchors = $state<(HTMLElement | null | undefined)[]>([]);
 
   const stage = $derived(
     tagStage({

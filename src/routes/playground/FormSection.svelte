@@ -9,7 +9,7 @@
 
   let email = $state('ada@');
   let role = $state('design');
-  let projectField = $state<HTMLInputElement>();
+  let projectField = $state<HTMLInputElement | null>();
   let rename = $state('');
 
   const emailError = $derived(

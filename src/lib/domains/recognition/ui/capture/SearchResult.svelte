@@ -9,7 +9,7 @@
     readonly row: SearchRow;
     readonly current: boolean;
     readonly onopen: (row: SearchRow) => void;
-    ref?: HTMLElement | undefined;
+    ref?: HTMLElement | null | undefined;
   };
 
   let { row, current, onopen, ref = $bindable() }: Props = $props();

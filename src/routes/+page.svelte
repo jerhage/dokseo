@@ -28,7 +28,7 @@
   );
 
   let query = $state('');
-  let search = $state<ReturnType<typeof SearchDialog>>();
+  let search = $state<ReturnType<typeof SearchDialog> | null>();
 
   export const snapshot: Snapshot<number> = {
     capture: () => scroll.capture(),

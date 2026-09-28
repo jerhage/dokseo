@@ -49,6 +49,11 @@ describe('chromeHolds', () => {
     expect(chromeHolds([bar([PILL])], [PICKER, null, PILL])).toBe(true);
   });
 
+  it('passes over a bar Svelte has torn down to null and holds for the one still standing', () => {
+    expect(chromeHolds([null, bar([PILL])], [PILL])).toBe(true);
+    expect(chromeHolds([null], [PILL])).toBe(false);
+  });
+
   it('lets the bars fall when there are no bars at all', () => {
     expect(chromeHolds([], [PILL])).toBe(false);
   });

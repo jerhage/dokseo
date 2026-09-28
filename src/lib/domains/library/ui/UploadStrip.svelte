@@ -13,7 +13,7 @@
 
   let { busy, compact, onfiles }: Props = $props();
 
-  let filePicker = $state<HTMLInputElement>();
+  let filePicker = $state<HTMLInputElement | null>();
   let dropzone = $state<ReturnType<typeof Dropzone> | null>(null);
 
   export function choose(): void {

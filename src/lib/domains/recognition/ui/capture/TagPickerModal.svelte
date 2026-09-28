@@ -34,7 +34,7 @@
 
   const uid = $props.id();
 
-  let filter = $state<HTMLInputElement>();
+  let filter = $state<HTMLInputElement | null>();
 
   const offers = $derived(pickerOffers(picker.rows, picker.highlighted, uid));
 

@@ -32,7 +32,7 @@
 
   const NOTHING_TO_GLOW: readonly GlowRegion[] = [];
 
-  let search = $state<ReturnType<typeof SearchDialog>>();
+  let search = $state<ReturnType<typeof SearchDialog> | null>();
 
   function mirror(index: ImageIndex): void {
     const moved = urlWithImageIndex(page.url, index);

@@ -9,7 +9,7 @@
   let clearable = $state('harbour');
   let clears = $state(0);
   let filter = $state('');
-  let field = $state<HTMLInputElement>();
+  let field = $state<HTMLInputElement | null>();
 </script>
 
 <DemoSection

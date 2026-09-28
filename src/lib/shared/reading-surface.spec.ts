@@ -51,6 +51,15 @@ describe('returnFocusToPage', () => {
     expect(log.steps).toEqual(['blur next', `focus surface ${JSON.stringify(QUIET_FOCUS)}`]);
   });
 
+  it('passes over a bar Svelte has torn down to null', () => {
+    const log = recorded();
+    const next = log.control('next');
+
+    returnFocusToPage(next, [null, barHolding(next)], log.surface);
+
+    expect(log.steps).toEqual(['blur next', `focus surface ${JSON.stringify(QUIET_FOCUS)}`]);
+  });
+
   it('asks the surface not to scroll and not to show a focus ring', () => {
     expect(QUIET_FOCUS).toEqual({ preventScroll: true, focusVisible: false });
   });

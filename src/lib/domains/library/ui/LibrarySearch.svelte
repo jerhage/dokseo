@@ -15,7 +15,7 @@
 
   const LABEL = 'Filter these titles';
 
-  let field = $state<HTMLInputElement>();
+  let field = $state<HTMLInputElement | null>();
 
   const active = $derived(isSearching(query));
 

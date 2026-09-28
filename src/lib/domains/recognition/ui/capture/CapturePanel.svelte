@@ -76,7 +76,7 @@
     toastNotify(getToaster()),
   );
 
-  let list = $state<HTMLElement>();
+  let list = $state<HTMLElement | null>();
   let tagFrom: FocusTarget | null = null;
 
   $effect(() => {

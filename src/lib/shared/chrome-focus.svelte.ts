@@ -1,7 +1,7 @@
 import { chromeHolds } from './reader-chrome';
 import type { ChromeBar } from './reader-chrome';
 
-type ChromeBars = () => readonly (ChromeBar | undefined)[];
+type ChromeBars = () => readonly (ChromeBar | null | undefined)[];
 
 type FocusedNodes = () => readonly (Element | null)[];
 

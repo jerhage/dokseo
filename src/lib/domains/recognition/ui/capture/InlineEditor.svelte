@@ -25,7 +25,7 @@
     { keys: ['⌘/Ctrl', 'Enter'], does: 'saves' },
   ];
 
-  let area = $state<HTMLTextAreaElement>();
+  let area = $state<HTMLTextAreaElement | null>();
 
   $effect(() => {
     area?.focus();

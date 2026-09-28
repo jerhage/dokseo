@@ -28,7 +28,7 @@
   const formId = `${uid}-form`;
 
   let open = $state(true);
-  let titleField = $state<HTMLInputElement>();
+  let titleField = $state<HTMLInputElement | null>();
   let form = $state(untrack(() => bookForm(book)));
 
   const downward = $derived(form.layoutKind === 'continuous');
