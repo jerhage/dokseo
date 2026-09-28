@@ -185,7 +185,7 @@ const CONTRACT_CLASSES: Readonly<Record<string, readonly string[]>> = {
     'badge-warning',
     'badge-danger',
     'badge-info',
-    'badge-brand',
+    'badge-primary',
     'badge-accent',
     'badge-neutral',
   ],

@@ -9,7 +9,7 @@ type ButtonVariant =
 
 type ControlSize = 'sm' | 'md' | 'lg';
 
-type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'brand' | 'accent';
+type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'accent';
 
 type BadgeEmphasis = 'tinted' | 'solid' | 'quiet';
 
@@ -89,7 +89,7 @@ const BADGE_VARIANTS: Readonly<Record<BadgeVariant, ClassList>> = {
   warning: ['badge-warning'],
   danger: ['badge-danger'],
   info: ['badge-info'],
-  brand: ['badge-brand'],
+  primary: ['badge-primary'],
   accent: ['badge-accent'],
 };
 

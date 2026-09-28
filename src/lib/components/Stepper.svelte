@@ -83,7 +83,7 @@
 
 <div {...rest} class={['stepper', className]}>
   {#if count !== null && countAs === 'badge'}
-    <Badge variant="brand" class="shrink-0">{count}</Badge>
+    <Badge variant="primary" class="shrink-0">{count}</Badge>
   {/if}
   {@render children?.()}
   {#if steps !== null}

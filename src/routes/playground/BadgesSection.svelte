@@ -13,7 +13,7 @@
     'warning',
     'danger',
     'info',
-    'brand',
+    'primary',
     'accent',
     'neutral',
   ];

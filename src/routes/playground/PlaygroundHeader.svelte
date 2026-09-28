@@ -6,7 +6,7 @@
 <header class="layout-app-shell-header wrap">
   <div class="row items-center gap-2">
     <strong class="display">Component library</strong>
-    <Badge variant="brand">dev</Badge>
+    <Badge variant="primary">dev</Badge>
   </div>
   <AppearanceSwitcher />
 </header>

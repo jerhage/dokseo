@@ -77,7 +77,7 @@
           <Button size="sm" pill onclick={() => (busy = !busy)}>{busy ? 'Done' : 'Busy'}</Button>
         </div>
         <div class="layout-overlay-top-start">
-          <Badge variant="brand">top-start</Badge>
+          <Badge variant="primary">top-start</Badge>
         </div>
         <div class="layout-overlay-bottom pass-through col items-start gap-2 p-2">
           <Badge variant="neutral">pass-through</Badge>

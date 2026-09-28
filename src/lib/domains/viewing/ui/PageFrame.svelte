@@ -176,7 +176,7 @@
         <Badge
           class="glow-marker mono"
           emphasis="solid"
-          variant={drawn.origin === 'written' ? 'accent' : 'brand'}>{marker}</Badge
+          variant={drawn.origin === 'written' ? 'accent' : 'primary'}>{marker}</Badge
         >
       {/if}
     </span>

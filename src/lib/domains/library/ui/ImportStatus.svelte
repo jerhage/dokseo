@@ -25,7 +25,7 @@
   aria-live="polite"
 >
   <div class="row wrap items-center gap-2">
-    <Badge variant="brand" dot>Importing</Badge>
+    <Badge variant="primary" dot>Importing</Badge>
     <span class="flex-1 text-sm weight-medium truncate" lang={language}>{title}</span>
     {#if count !== null}<span class="text-xs mono text-muted">{count}</span>{/if}
   </div>

@@ -41,7 +41,7 @@
   --_badge-bg: var(--color-info-bg);
   --_badge-border: var(--color-info-border);
 }
-.badge-brand {
+.badge-primary {
   --_badge-fg: var(--color-brand-text);
   --_badge-bg: var(--color-brand-tint);
   --_badge-border: var(--color-brand-border);

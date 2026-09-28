@@ -108,7 +108,7 @@
               aria-labelledby="{uid}-engine"
             />
             <h2 class="text-base weight-semibold" id="{uid}-engine">On-device</h2>
-            <Badge variant="brand">In use</Badge>
+            <Badge variant="primary">In use</Badge>
             <EngineTrade engine={ON_DEVICE_ENGINE} {model} />
           </div>
           <p><Badge dot variant={statusVariant(state.tone)}>{state.label}</Badge></p>
