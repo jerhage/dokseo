@@ -1950,7 +1950,7 @@ describe('the design system stylesheets', () => {
     }
   });
 
-  it('sweeps the hover fill in from the start of buttons, nav links, tabs, accordion triggers, menu items and command rows', () => {
+  it('sweeps the hover fill in from the start of buttons, nav links, tabs, accordion triggers, menu items, command rows, segmented items, tags and pagination items', () => {
     const swept = [
       ['components/btn.css', '.btn', '.btn:hover'],
       ['components/nav/nav-link.css', '.nav-link', '.nav-link:hover'],
@@ -1958,6 +1958,10 @@ describe('the design system stylesheets', () => {
       ['components/accordion.css', '.accordion-trigger', '.accordion-trigger:hover'],
       ['components/dropdown.css', '.dropdown-item', '.dropdown-item:hover'],
       ['components/command.css', '.command-item', '.command-item:hover'],
+      ['components/segmented.css', '.segmented-item', '.segmented-item:hover'],
+      ['components/tag.css', 'button.tag', 'button.tag:hover'],
+      ['components/tag.css', 'a.tag', 'a.tag:hover'],
+      ['components/nav/pagination.css', '.pagination-item', '.pagination-item:hover'],
     ] as const;
 
     for (const [path, rest, hover] of swept) {
@@ -2036,7 +2040,7 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
-  it('draws a chosen nav link, tab, menu item and command row in the chosen colours, falling back to its own', () => {
+  it('draws a chosen nav link, tab, menu item, command row, segmented item, tag and pagination item in the chosen colours, falling back to its own', () => {
     const chosen = [
       [
         'components/nav/nav-link.css',
@@ -2056,6 +2060,24 @@ describe('the design system stylesheets', () => {
         '.command-item.is-selected',
         'var(--color-brand-text)',
         'var(--color-selected)',
+      ],
+      [
+        'components/segmented.css',
+        '.segmented-item.is-active',
+        'var(--color-text)',
+        'var(--color-surface-raised)',
+      ],
+      [
+        'components/tag.css',
+        '.tag.is-active',
+        'var(--_tag-on, var(--color-brand-text))',
+        'var(--_tag-text, var(--color-selected))',
+      ],
+      [
+        'components/nav/pagination.css',
+        '.pagination-item.is-active',
+        'var(--color-text-on-primary)',
+        'var(--color-primary)',
       ],
     ] as const;
 
@@ -2090,6 +2112,18 @@ describe('the design system stylesheets', () => {
         'components/command.css',
         '.command-item',
         ['.command-item:hover', '.command-item.is-selected'],
+      ],
+      [
+        'components/segmented.css',
+        '.segmented-item',
+        ['.segmented-item:hover', '.segmented-item.is-active'],
+      ],
+      ['components/tag.css', 'button.tag', ['button.tag:hover', '.tag.is-active']],
+      ['components/tag.css', 'a.tag', ['a.tag:hover', '.tag.is-active']],
+      [
+        'components/nav/pagination.css',
+        '.pagination-item',
+        ['.pagination-item:hover', '.pagination-item.is-active'],
       ],
     ] as const;
 

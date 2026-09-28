@@ -21,20 +21,49 @@
 button.tag {
   cursor: pointer;
 }
+button.tag,
+a.tag {
+  position: relative;
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep),
+    border-color var(--transition-ui),
+    color var(--transition-hover-text);
+}
 button.tag:hover,
 a.tag:hover {
-  color: var(--_tag-text, var(--color-text));
+  color: var(--color-hover-text, var(--_tag-text, var(--color-text)));
   border-color: var(--_tag-border, var(--border-color-strong));
-  background-image: linear-gradient(var(--color-hover) 0 0);
+  background-size: 100% 100%;
 }
 .tag.is-active {
-  color: var(--_tag-on, var(--color-brand-text));
-  background-color: var(--_tag-text, var(--color-selected));
+  color: var(--color-chosen-text, var(--_tag-on, var(--color-brand-text)));
+  background-color: var(--color-chosen-fill, var(--_tag-text, var(--color-selected)));
   border-color: var(--_tag-border, var(--color-brand-border-mid));
 }
 button.tag.is-active:hover,
 a.tag.is-active:hover {
-  color: var(--_tag-on, var(--color-text));
+  color: var(--color-hover-text, var(--_tag-on, var(--color-text)));
+}
+button.tag::before,
+a.tag::before {
+  content: '';
+  position: absolute;
+  inset-inline: calc(var(--border-width) * -1);
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width) + var(--border-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+button.tag:hover::before,
+a.tag:hover::before,
+.tag.is-active::before {
+  border-block-color: var(--color-hover-rule);
 }
 .tag-color-slate {
   --_tag-text: var(--color-tag-slate-text);
