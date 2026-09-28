@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { dockLabel, dockName, dockPlacement, dockTally, dockToggle } from './dock';
 import type { DockWords } from './dock';
 
-const WORDS: DockWords = { showLabel: 'Show captures', hideLabel: 'Hide captures' };
+const WORDS: DockWords = { expandLabel: 'Show captures', collapseLabel: 'Hide captures' };
 
 describe('dockPlacement', () => {
   it('opens the panel beside the page on a wide screen until asked otherwise', () => {

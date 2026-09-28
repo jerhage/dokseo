@@ -15,8 +15,8 @@
     readonly placement: DockPlacement;
     readonly count?: number | null;
     readonly label: string;
-    readonly showLabel: string;
-    readonly hideLabel: string;
+    readonly expandLabel: string;
+    readonly collapseLabel: string;
     readonly children: Snippet;
     readonly ontoggle: () => void;
   };
@@ -25,15 +25,15 @@
     placement,
     count = null,
     label,
-    showLabel,
-    hideLabel,
+    expandLabel,
+    collapseLabel,
     children,
     ontoggle,
   }: Props = $props();
 
   const uid = $props.id();
 
-  const words = $derived({ showLabel, hideLabel });
+  const words = $derived({ expandLabel, collapseLabel });
   const toggle = $derived(dockToggle(placement));
   const beside = $derived(placement === 'side' || placement === 'rail');
   const tally = $derived(dockTally(placement, count));

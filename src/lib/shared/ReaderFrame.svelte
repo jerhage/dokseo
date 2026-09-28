@@ -85,8 +85,8 @@
         placement={frame.placement}
         count={panelCount ?? null}
         label="Captures"
-        showLabel="Show captures"
-        hideLabel="Hide captures"
+        expandLabel="Show captures"
+        collapseLabel="Hide captures"
         ontoggle={() => frame.togglePanel()}
       >
         {@render panel()}

@@ -10,8 +10,8 @@ type DockToggle = {
 };
 
 type DockWords = {
-  readonly showLabel: string;
-  readonly hideLabel: string;
+  readonly expandLabel: string;
+  readonly collapseLabel: string;
 };
 
 function dockPlacement(narrow: boolean, asked: boolean | null): DockPlacement {
@@ -30,7 +30,7 @@ function dockToggle(placement: DockPlacement): DockToggle {
 }
 
 function dockLabel(placement: DockPlacement, words: DockWords): string {
-  return dockToggle(placement).open ? words.hideLabel : words.showLabel;
+  return dockToggle(placement).open ? words.collapseLabel : words.expandLabel;
 }
 
 function dockTally(placement: DockPlacement, count: number | null): number | null {

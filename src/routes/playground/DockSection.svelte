@@ -46,8 +46,8 @@
               {placement}
               {count}
               label="Notes"
-              showLabel="Show notes"
-              hideLabel="Hide notes"
+              expandLabel="Show notes"
+              collapseLabel="Hide notes"
               ontoggle={() => (frame.asked = !frame.asked)}
             >
               <div class="col gap-2 flex-1 p-3 overflow-y-auto text-sm">
