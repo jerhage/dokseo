@@ -14,7 +14,7 @@
   let {
     size = 'md',
     shape = 'circle',
-    variant = 'brand',
+    variant = 'primary',
     src,
     alt = '',
     class: className,

@@ -37,7 +37,7 @@ type MenuAlign = 'start' | 'end';
 
 type AvatarShape = 'circle' | 'square';
 
-type AvatarVariant = 'brand' | 'accent';
+type AvatarVariant = 'primary' | 'accent';
 
 type ProgressVariant = 'primary' | 'success' | 'warning' | 'danger' | 'accent';
 
@@ -192,7 +192,7 @@ const AVATAR_SHAPES: Readonly<Record<AvatarShape, ClassList>> = {
 };
 
 const AVATAR_VARIANTS: Readonly<Record<AvatarVariant, ClassList>> = {
-  brand: [],
+  primary: [],
   accent: ['avatar-accent'],
 };
 
