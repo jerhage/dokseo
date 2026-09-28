@@ -1,11 +1,14 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
   import { followAnchor } from './anchor-tracking';
   import { BUTTON_SIZES, BUTTON_VARIANTS } from './classes';
   import type { ButtonVariant, ControlSize, MenuAlign } from './classes';
+  import { iconButtonTitle } from './icon-button';
+  import type { IconButtonTooltip } from './icon-button';
   import ChevronDown from './icons/ChevronDown.svelte';
+  import type { IconProps } from './icons/icon';
   import { menuOpening, provideMenu } from './menu';
   import {
     inlineDirection,
@@ -17,19 +20,31 @@
   import { landOn, menuMove } from './roving';
   import type { Move } from './roving';
 
-  type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
-    trigger: Snippet;
-    children: Snippet;
-    open?: boolean;
-    variant?: ButtonVariant;
-    size?: ControlSize;
-    align?: MenuAlign;
-    square?: boolean;
-    chevron?: boolean;
-  };
+  type Face =
+    | { trigger: Snippet; icon?: undefined; label?: undefined; tooltip?: undefined }
+    | {
+        trigger?: undefined;
+        icon: Component<IconProps>;
+        label: string;
+        tooltip?: IconButtonTooltip;
+      };
+
+  type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
+    Face & {
+      children: Snippet;
+      open?: boolean;
+      variant?: ButtonVariant;
+      size?: ControlSize;
+      align?: MenuAlign;
+      square?: boolean;
+      chevron?: boolean;
+    };
 
   let {
     trigger,
+    icon: Icon,
+    label,
+    tooltip,
     children,
     open = $bindable(false),
     variant = 'default',
@@ -47,6 +62,7 @@
   let menu = $state<HTMLDivElement>();
   let placement = $state<OverlayPlacement>();
   const inset = $derived(menuInset(placement));
+  const title = $derived(label === undefined ? undefined : iconButtonTitle(label, tooltip));
 
   provideMenu({ close: () => close(true) });
 
@@ -150,6 +166,7 @@
     aria-haspopup="menu"
     aria-expanded={open}
     aria-controls="{uid}-menu"
+    {title}
     class={[
       'btn',
       'dropdown-trigger',
@@ -159,7 +176,12 @@
     ]}
     onclick={toggle}
   >
-    {@render trigger()}
+    {#if Icon !== undefined}
+      <Icon class="btn-icon" />
+      <span class="visually-hidden">{label}</span>
+    {:else}
+      {@render trigger?.()}
+    {/if}
     {#if chevron}
       <ChevronDown class="dropdown-icon" />
     {/if}

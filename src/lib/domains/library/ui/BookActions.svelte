@@ -19,11 +19,14 @@
   const reading = $derived(readingState(book));
 </script>
 
-<Dropdown size="sm" variant="ghost" align="end">
-  {#snippet trigger()}
-    <Ellipsis class="btn-icon" />
-    <span class="visually-hidden">Actions for {book.title}</span>
-  {/snippet}
+<Dropdown
+  size="sm"
+  variant="ghost"
+  align="end"
+  icon={Ellipsis}
+  label="Actions for {book.title}"
+  tooltip={false}
+>
   {#if reading !== 'finished'}
     <DropdownItem disabled={busy} onclick={onfinish}>Mark as finished</DropdownItem>
   {/if}

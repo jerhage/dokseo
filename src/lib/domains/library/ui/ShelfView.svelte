@@ -96,11 +96,10 @@
         square
         chevron={false}
         class="layout-app-shell-narrow-only"
+        icon={ArrowUpDown}
+        label="Sort: {sortName(order)}"
+        tooltip={false}
       >
-        {#snippet trigger()}
-          <ArrowUpDown class="btn-icon" />
-          <span class="visually-hidden">Sort: {sortName(order)}</span>
-        {/snippet}
         {@render sortChoices()}
       </Dropdown>
       <IconButton

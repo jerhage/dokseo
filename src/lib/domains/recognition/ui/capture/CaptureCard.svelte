@@ -242,11 +242,16 @@
           onclick={() => oncopy(text)}
         />
       {/if}
-      <Dropdown variant="ghost" size="sm" align="end" square chevron={false}>
-        {#snippet trigger()}
-          <Ellipsis class="btn-icon" />
-          <span class="visually-hidden">More for the capture at {card.place}</span>
-        {/snippet}
+      <Dropdown
+        variant="ghost"
+        size="sm"
+        align="end"
+        square
+        chevron={false}
+        icon={Ellipsis}
+        label="More for the capture at {card.place}"
+        tooltip={false}
+      >
         {#if tools.text.kind === 'tucked'}
           <DropdownItem onclick={(event) => write('text', menuTrigger(event))}>
             Edit the text

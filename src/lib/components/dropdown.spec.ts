@@ -4,6 +4,7 @@ import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import Dropdown from './Dropdown.svelte';
 import DropdownItem from './DropdownItem.svelte';
+import Ellipsis from './icons/Ellipsis.svelte';
 import { MENU } from './menu';
 
 type Attributes = Record<string, unknown>;
@@ -23,6 +24,18 @@ function item(props: Attributes): string {
 
 function dropdown(props: Attributes): string {
   return render(DROPDOWN, { props: { ...props, trigger: NOTHING, children: NOTHING } }).body;
+}
+
+function iconDropdown(props: Attributes): string {
+  return render(DROPDOWN, {
+    props: { icon: Ellipsis, label: 'More actions', chevron: false, ...props, children: NOTHING },
+  })
+    .body.replaceAll(/<!--[^>]*-->/gu, '')
+    .replaceAll(/>\s+</gu, '><');
+}
+
+function trigger(html: string): string {
+  return /<button[^>]*>[\s\S]*?<\/button>/u.exec(html)?.[0] ?? '';
 }
 
 function tag(html: string): string {
@@ -74,5 +87,23 @@ describe('Dropdown', () => {
   it('makes a square trigger only when asked', () => {
     expect(dropdown({ square: true })).toMatch(/class="[^"]*dropdown-trigger[^"]*btn-square/u);
     expect(dropdown({})).not.toContain('btn-square');
+  });
+
+  it('draws an icon trigger named by hidden text, with the name repeated as its tooltip', () => {
+    const button = trigger(iconDropdown({}));
+
+    expect(button).toMatch(/^<button[^>]*\stitle="More actions"/u);
+    expect(button).toMatch(/<svg[^>]*class="lucide lucide-ellipsis btn-icon"/u);
+    expect(button).toMatch(/<\/svg><span class="visually-hidden">More actions<\/span><\/button>$/u);
+    expect(button).not.toContain('aria-label');
+  });
+
+  it('shows the tooltip the caller wrote on an icon trigger, or none when it is turned off', () => {
+    expect(trigger(iconDropdown({ tooltip: 'More' }))).toMatch(/^<button[^>]*\stitle="More"/u);
+    expect(trigger(iconDropdown({ tooltip: false }))).not.toContain('title=');
+  });
+
+  it('gives a trigger snippet no tooltip', () => {
+    expect(trigger(dropdown({}))).not.toContain('title=');
   });
 });

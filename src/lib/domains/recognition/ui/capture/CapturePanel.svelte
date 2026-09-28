@@ -193,11 +193,16 @@
     <Badge>{view.count}</Badge>
     <kbd class="ms-auto" title="Find in captures">⌘K</kbd>
     <DocumentTags tags={view.tags} counts={view.bookCounts} />
-    <Dropdown variant="ghost" size="sm" align="end" square chevron={false}>
-      {#snippet trigger()}
-        <Ellipsis class="btn-icon" />
-        <span class="visually-hidden">Captures menu</span>
-      {/snippet}
+    <Dropdown
+      variant="ghost"
+      size="sm"
+      align="end"
+      square
+      chevron={false}
+      icon={Ellipsis}
+      label="Captures menu"
+      tooltip={false}
+    >
       <DropdownItem danger disabled={view.count === 0} onclick={() => view.askClear()}>
         Delete every capture…
       </DropdownItem>
