@@ -34,6 +34,23 @@ html:has(.modal-backdrop[open][data-page-scrollbar]) {
     display: none;
   }
 }
+@media print {
+  .toast-region,
+  .modal-backdrop,
+  .dropdown-menu,
+  .alert-close,
+  .tag-remove,
+  .file-item-remove {
+    display: none;
+  }
+  .card,
+  .alert,
+  .table-wrapper,
+  .modal {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
 @media (forced-colors: active) {
   .checkbox-input:checked,
   .checkbox-input:indeterminate,

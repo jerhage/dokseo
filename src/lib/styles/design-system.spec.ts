@@ -1212,6 +1212,32 @@ describe('the design system stylesheets', () => {
     ).toContain('scrollbar-gutter: stable');
   });
 
+  it('hides the transient overlays and flattens the framed surfaces when the page is printed', () => {
+    const print = mediaBlock(style('overrides/overrides.css'), 'print');
+    const overlays = [
+      '.toast-region',
+      '.modal-backdrop',
+      '.dropdown-menu',
+      '.alert-close',
+      '.tag-remove',
+      '.file-item-remove',
+    ];
+    const surfaces = ['.card', '.alert', '.table-wrapper', '.modal'];
+
+    for (const selector of overlays) {
+      expect({ selector, printed: everyDeclarationFor(print, selector) }).toEqual({
+        selector,
+        printed: ['display: none'],
+      });
+    }
+    for (const selector of surfaces) {
+      expect({ selector, printed: everyDeclarationFor(print, selector) }).toEqual({
+        selector,
+        printed: ['box-shadow: none', 'break-inside: avoid'],
+      });
+    }
+  });
+
   it('shows, animates and locks the page for a modal through the native [open] alone', () => {
     const sheets = [
       'components/modal/modal.css',
