@@ -114,6 +114,7 @@
   --color-press-fill: var(--ds-press-fill);
   --color-chosen-fill: var(--ds-chosen-fill);
   --color-chosen-text: var(--ds-chosen-text);
+  --color-hover-glow: var(--ds-hover-glow);
   --color-hover-marker: var(--ds-marker);
   --color-hover-rule: var(--ds-hover-rule);
   --color-disabled: var(--ds-disabled);

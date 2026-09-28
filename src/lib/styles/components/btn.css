@@ -66,7 +66,8 @@
   --_btn-tone-hover-border: var(--color-primary-hover);
   --_btn-tone-hover-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
   --_btn-tone-hover-fg: var(--color-hover-text-solid, var(--_btn-fg));
-  --_btn-tone-hover-shadow: 0 0 0 var(--glow-ring-width) var(--color-primary-glow);
+  --_btn-tone-hover-shadow: 0 0 0 var(--glow-ring-width)
+    var(--color-hover-glow, var(--color-primary-glow));
   --_btn-tone-press-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
   --_btn-tone-text: var(--color-brand-text);
   --_btn-tone-line: var(--color-brand-border-mid);
@@ -83,7 +84,8 @@
   --_btn-tone-hover-border: var(--color-accent-hover);
   --_btn-tone-hover-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
   --_btn-tone-hover-fg: var(--color-hover-text-solid, var(--_btn-fg));
-  --_btn-tone-hover-shadow: 0 0 0 var(--glow-ring-width) var(--color-accent-glow);
+  --_btn-tone-hover-shadow: 0 0 0 var(--glow-ring-width)
+    var(--color-hover-glow, var(--color-accent-glow));
   --_btn-tone-press-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
   --_btn-tone-text: var(--color-accent-text);
   --_btn-tone-line: var(--color-accent-border);

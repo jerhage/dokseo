@@ -1978,6 +1978,7 @@ describe('the design system stylesheets', () => {
         solidText: values.get('--ds-hover-text-solid'),
         chosenFill: values.get('--ds-chosen-fill'),
         chosenText: values.get('--ds-chosen-text'),
+        glow: values.get('--ds-hover-glow'),
         rule: values.get('--ds-hover-rule-width'),
         sweep: values.get('--ds-dur-sweep'),
         textDuration: values.get('--ds-dur-hover-text'),
@@ -1991,6 +1992,7 @@ describe('the design system stylesheets', () => {
         solidText: 'initial',
         chosenFill: 'initial',
         chosenText: 'initial',
+        glow: 'initial',
         rule: '0px',
         sweep: '0s',
         textDuration: 'var(--ds-dur-flash)',
@@ -2054,6 +2056,25 @@ describe('the design system stylesheets', () => {
       '0px',
       'var(--ds-khaki-ink)',
     ]);
+    expect({
+      link: values.get('--ds-text-link-hover'),
+      accent: values.get('--ds-accent-hover'),
+      glow: values.get('--ds-hover-glow'),
+    }).toEqual({
+      link: 'var(--ds-khaki-ink-hover)',
+      accent: 'var(--ds-khaki-ink-hover)',
+      glow: 'var(--ds-khaki-glow)',
+    });
+  });
+
+  it('rings a hovered primary or accent button in the hover glow, falling back to its own glow', () => {
+    const btn = style('components/btn.css');
+
+    for (const tone of ['primary', 'accent'] as const) {
+      expect(definitionValues(ruleBody(btn, `.btn-${tone}`)).get('--_btn-tone-hover-shadow')).toBe(
+        `0 0 0 var(--glow-ring-width) var(--color-hover-glow, var(--color-${tone}-glow))`,
+      );
+    }
   });
 
   it('rounds every capsule with the pill radius and every circular mark with the round radius', () => {

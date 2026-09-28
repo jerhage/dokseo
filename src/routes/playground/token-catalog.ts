@@ -117,6 +117,7 @@ const COLOR_GROUPS: readonly TokenGroup[] = [
       '--color-press-fill',
       '--color-chosen-fill',
       '--color-chosen-text',
+      '--color-hover-glow',
       '--color-hover-marker',
       '--color-hover-rule',
     ],

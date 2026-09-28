@@ -145,6 +145,7 @@
   --ds-press-fill: var(--ds-graphite-tint-9);
   --ds-chosen-fill: initial;
   --ds-chosen-text: initial;
+  --ds-hover-glow: initial;
   --ds-dur-sweep: 0s;
   --ds-easing-sweep: linear;
   --ds-dur-hover-text: var(--ds-dur-flash);

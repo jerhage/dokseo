@@ -29,9 +29,7 @@
   --ds-rust-200: light-dark(oklch(0.6 0.12 38 / 0.4), oklch(0.7 0.12 40 / 0.4));
   --ds-rust-300: light-dark(oklch(0.6 0.12 38 / 0.6), oklch(0.7 0.12 40 / 0.6));
   --ds-rust-500: light-dark(oklch(0.53 0.12 38), oklch(0.7 0.12 40));
-  --ds-rust-600: light-dark(oklch(0.47 0.12 36), oklch(0.76 0.1 42));
   --ds-rust-700: light-dark(oklch(0.44 0.11 35), oklch(0.8 0.09 45));
-  --ds-rust-link-hover: light-dark(oklch(0.44 0.11 35), oklch(0.76 0.1 42));
   --ds-rust-on: light-dark(oklch(0.94 0.02 95), oklch(0.2 0.01 85));
   --ds-rust-glow: light-dark(oklch(0.6 0.12 38 / 0.3), oklch(0.7 0.12 40 / 0.3));
 }
@@ -56,7 +54,7 @@
   --ds-brand-text: var(--ds-khaki-ink-deep);
 
   --ds-accent: var(--ds-rust-500);
-  --ds-accent-hover: var(--ds-rust-600);
+  --ds-accent-hover: var(--ds-khaki-ink-hover);
   --ds-accent-surface: var(--ds-rust-50);
   --ds-accent-border: var(--ds-rust-200);
   --ds-accent-mid: var(--ds-rust-300);
@@ -70,7 +68,7 @@
   --ds-text-on-primary: var(--ds-khaki-on-ink);
   --ds-text-on-accent: var(--ds-rust-on);
   --ds-text-link: var(--ds-khaki-ink-deep);
-  --ds-text-link-hover: var(--ds-rust-link-hover);
+  --ds-text-link-hover: var(--ds-khaki-ink-hover);
 
   --ds-hover: var(--ds-khaki-ink-a5);
   --ds-active: var(--ds-khaki-ink-a9);
@@ -146,6 +144,7 @@
   --ds-press-fill: var(--ds-khaki-ink-hover);
   --ds-chosen-fill: var(--ds-khaki-ink);
   --ds-chosen-text: var(--ds-khaki-on-ink);
+  --ds-hover-glow: var(--ds-khaki-glow);
   --ds-dur-sweep: 220ms;
   --ds-easing-sweep: var(--ds-ease-in-out-sharp);
   --ds-dur-hover-text: var(--ds-dur-sweep);
