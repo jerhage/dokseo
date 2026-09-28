@@ -150,8 +150,8 @@
   --ds-easing-sweep: var(--ds-ease-in-out-sharp);
   --ds-dur-hover-text: var(--ds-dur-sweep);
   --ds-easing-hover-text: var(--ds-easing-sweep);
-  --ds-marker-width: 6px;
-  --ds-marker: var(--ds-rust-500);
+  --ds-marker-width: 0px;
+  --ds-marker: var(--ds-yorha-ink);
   --ds-hover-rule-width: var(--ds-border-1);
   --ds-hover-rule-gap: 3px;
   --ds-hover-rule: var(--ds-yorha-ink);

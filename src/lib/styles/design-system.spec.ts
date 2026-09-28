@@ -1993,6 +1993,15 @@ describe('the design system stylesheets', () => {
     ).toContainEqual(expect.stringMatching(marker));
   });
 
+  it('draws no marker bar and no rust in the YoRHa hover', () => {
+    const values = definitionValues(ruleBody(themeSheets(), ":root[data-theme='yorha']"));
+
+    expect([values.get('--ds-marker-width'), values.get('--ds-marker')]).toEqual([
+      '0px',
+      'var(--ds-yorha-ink)',
+    ]);
+  });
+
   it('rounds every capsule with the pill radius and every circular mark with the round radius', () => {
     const shaped = [
       ['components/badge.css', '.badge', 'pill'],
