@@ -124,11 +124,9 @@
   --ds-dur-spring: var(--ds-dur-flash);
   --ds-easing-spring: var(--ds-ease-crisp);
 
-  --ds-page-backdrop: repeating-linear-gradient(
-    0deg,
-    var(--ds-yorha-scan-line) 0 1px,
-    transparent 1px 4px
-  );
+  --ds-page-backdrop:
+    repeating-linear-gradient(0deg, var(--ds-yorha-scan-line) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, var(--ds-yorha-scan-line) 0 1px, transparent 1px 4px);
 
   --ds-motion-overlay-in: kScanIn;
   --ds-motion-overlay-out: kScanOut;

@@ -1833,6 +1833,16 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('draws the YoRHa backdrop as a grid of lines at one spacing in both directions', () => {
+    const backdrop = definitionValues(ruleBody(themeSheets(), ":root[data-theme='yorha']")).get(
+      '--ds-page-backdrop',
+    );
+    const line = (angle: string) =>
+      `repeating-linear-gradient(${angle}, var(--ds-yorha-scan-line) 0 1px, transparent 1px 4px)`;
+
+    expect(backdrop).toBe(`${line('0deg')}, ${line('90deg')}`);
+  });
+
   it('names a declared keyframe, or none, in every motion primitive of every theme', () => {
     const declared = new Set(keyframesIn(style('utilities/animation.css')).concat('none'));
     const named = themeRules(themeSheets()).flatMap((rule) =>
