@@ -124,6 +124,7 @@
   grid-template-rows: auto auto minmax(0, 1fr);
   block-size: 100dvh;
   background-color: var(--color-bg);
+  background-image: var(--page-backdrop);
 }
 .layout-app-shell-embedded {
   block-size: auto;

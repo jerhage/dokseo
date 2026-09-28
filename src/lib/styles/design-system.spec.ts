@@ -1808,6 +1808,31 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
+  it('paints the page backdrop over the page colour on the body, fixed to the viewport, and on the app shell', () => {
+    const body = everyDeclarationFor(style('base/elements.css'), 'body');
+    const shell = everyDeclarationFor(style('utilities/layout.css'), '.layout-app-shell');
+
+    expect(body).toEqual(
+      expect.arrayContaining([
+        'background-color: var(--color-bg)',
+        'background-image: var(--page-backdrop)',
+        'background-attachment: fixed',
+      ]),
+    );
+    expect(shell).toEqual(
+      expect.arrayContaining([
+        'background-color: var(--color-bg)',
+        'background-image: var(--page-backdrop)',
+      ]),
+    );
+  });
+
+  it('sets no page backdrop in the default theme', () => {
+    expect(declarations(ruleBody(themeSheets(), ":root[data-theme='base']"))).toContain(
+      '--ds-page-backdrop: none',
+    );
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',

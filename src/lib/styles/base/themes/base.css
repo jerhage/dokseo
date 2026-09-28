@@ -128,4 +128,6 @@
   --ds-duration-quick: var(--ds-dur-quick);
   --ds-dur-spring: var(--ds-dur-quick);
   --ds-easing-spring: var(--ds-ease-spring);
+
+  --ds-page-backdrop: none;
 }

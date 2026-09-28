@@ -122,4 +122,6 @@
   --ds-duration-quick: 140ms;
   --ds-dur-spring: var(--ds-duration-quick);
   --ds-easing-spring: var(--ds-ease-crisp);
+
+  --ds-page-backdrop: none;
 }

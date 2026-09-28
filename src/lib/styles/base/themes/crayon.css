@@ -126,4 +126,6 @@
   --ds-duration-quick: var(--ds-dur-quick);
   --ds-dur-spring: var(--ds-dur-moderate);
   --ds-easing-spring: cubic-bezier(0.34, 1.8, 0.5, 1);
+
+  --ds-page-backdrop: none;
 }

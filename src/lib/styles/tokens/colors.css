@@ -1,5 +1,6 @@
 :root {
   --color-bg: var(--ds-bg);
+  --page-backdrop: var(--ds-page-backdrop);
   --color-bg-raised: var(--ds-bg-raised);
   --color-surface: var(--ds-surface);
   --color-surface-raised: var(--ds-surface-raised);
