@@ -95,9 +95,9 @@
   --ds-border-width-strong: var(--ds-border-2);
   --ds-icon-stroke: 2;
 
-  --ds-font-display: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --ds-font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --ds-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --ds-font-display: 'Outfit', system-ui, sans-serif;
+  --ds-font-body: 'DM Sans', system-ui, sans-serif;
+  --ds-font-mono: 'DM Mono', ui-monospace, monospace;
   --ds-weight-strong: var(--ds-fw-6);
   --ds-weight-semibold: var(--ds-fw-semibold);
   --ds-tracking-tight: var(--ds-ls-tight);

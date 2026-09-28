@@ -92,9 +92,9 @@
   --ds-border-width-strong: var(--ds-border-2);
   --ds-icon-stroke: 2;
 
-  --ds-font-display: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --ds-font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --ds-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --ds-font-display: 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
+  --ds-font-body: 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
+  --ds-font-mono: 'Share Tech Mono', ui-monospace, monospace;
   --ds-weight-strong: var(--ds-fw-5);
   --ds-weight-semibold: var(--ds-fw-5);
   --ds-tracking-tight: 0.02em;
