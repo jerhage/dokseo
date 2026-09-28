@@ -1799,6 +1799,15 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
+  it('places a top toast region at the top edge, clear of the safe area, and centres it', () => {
+    expect(declarations(ruleBody(style('components/toast.css'), '.toast-region-top'))).toEqual([
+      'inset-block-start: calc(var(--_toast-gutter) + env(safe-area-inset-top, 0px))',
+      'inset-block-end: auto',
+      'inset-inline: 0',
+      'margin-inline: auto',
+    ]);
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',

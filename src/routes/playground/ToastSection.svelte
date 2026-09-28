@@ -19,6 +19,7 @@
   const app = getToaster();
 
   let regionShown = $state(false);
+  let topShown = $state(false);
   let clearing = $state(false);
 
   function fillInline(): void {
@@ -28,10 +29,15 @@
   }
 </script>
 
-<DemoSection id="toast" title="Toast, region and clearance" classes={['toast', 'toast-region']}>
+<DemoSection
+  id="toast"
+  title="Toast, region and clearance"
+  classes={['toast', 'toast-region', 'toast-region-top']}
+>
   <p class="text-sm text-muted">
-    A toast drawn straight into the page from its own toaster, a region bound to a second toaster,
-    and a clearance that lifts the app's toasts above a bar at the bottom of the screen.
+    A toast drawn straight into the page from its own toaster, a region bound to a second toaster, a
+    clearance that lifts the app's toasts above a bar at the bottom of the screen, and a region at
+    the top that takes the toasts placed there.
   </p>
   <div class="grid-2">
     <Card>
@@ -65,11 +71,32 @@
         </Button>
       </div>
     </Card>
+    <Card>
+      <span class="eyebrow text-faint weight-semibold">Top region</span>
+      <Toggle bind:checked={topShown}>Mount a top region for the app's toaster</Toggle>
+      <div class="row wrap items-center gap-3">
+        <Button
+          size="sm"
+          onclick={() =>
+            app.show({
+              title: 'Placed at the top',
+              message: 'With no top region it falls back to the region attached last.',
+              placement: 'top',
+            })}
+        >
+          Show a toast at the top
+        </Button>
+      </div>
+    </Card>
   </div>
 </DemoSection>
 
 {#if regionShown}
   <ToastRegion toaster={separate} dismissLabel="Dismiss" />
+{/if}
+
+{#if topShown}
+  <ToastRegion placement="top" dismissLabel="Dismiss" />
 {/if}
 
 {#if clearing}

@@ -1,7 +1,7 @@
 import { untrack } from 'svelte';
 import { toastDuration } from './toast-duration';
 import type { RequestedDuration, ToastDuration } from './toast-duration';
-import type { StatusVariant } from './classes';
+import type { StatusVariant, ToastPlacement } from './classes';
 
 type ToastId = number;
 
@@ -20,6 +20,7 @@ type ToastOptions = {
   readonly variant?: StatusVariant;
   readonly duration?: RequestedDuration;
   readonly action?: ToastAction;
+  readonly placement?: ToastPlacement;
 };
 
 type Toast = {
@@ -29,7 +30,13 @@ type Toast = {
   readonly variant: StatusVariant;
   readonly duration: ToastDuration;
   readonly action: ToastAction | undefined;
+  readonly placement: ToastPlacement;
   readonly phase: ToastPhase;
+};
+
+type AttachedRegion = {
+  readonly id: RegionId;
+  readonly placement: ToastPlacement;
 };
 
 type Clearance = {
@@ -39,7 +46,7 @@ type Clearance = {
 
 class Toaster {
   #toasts = $state<readonly Toast[]>([]);
-  #regions = $state<readonly RegionId[]>([]);
+  #regions = $state<readonly AttachedRegion[]>([]);
   #clearances = $state<readonly Clearance[]>([]);
   #next: ToastId = 1;
   #nextRegion: RegionId = 1;
@@ -50,7 +57,7 @@ class Toaster {
   }
 
   get activeRegion(): RegionId | undefined {
-    return this.#regions.at(-1);
+    return this.#regions.at(-1)?.id;
   }
 
   get clearance(): number {
@@ -67,6 +74,7 @@ class Toaster {
       variant: options.variant ?? 'info',
       duration: toastDuration(options.duration, options.action !== undefined),
       action: options.action,
+      placement: options.placement ?? 'bottom',
       phase: 'shown',
     };
     this.#toasts = untrack(() => [...this.#toasts, toast]);
@@ -97,15 +105,24 @@ class Toaster {
     this.#toasts = untrack(() => this.#toasts.filter((toast) => toast.id !== id));
   }
 
-  attachRegion(): RegionId {
+  regionFor(placement: ToastPlacement): RegionId | undefined {
+    const placed = this.#regions.findLast((region) => region.placement === placement);
+    return (placed ?? this.#regions.at(-1))?.id;
+  }
+
+  toastsIn(region: RegionId): readonly Toast[] {
+    return this.#toasts.filter((toast) => this.regionFor(toast.placement) === region);
+  }
+
+  attachRegion(placement: ToastPlacement = 'bottom'): RegionId {
     const id = this.#nextRegion;
     this.#nextRegion += 1;
-    this.#regions = untrack(() => [...this.#regions, id]);
+    this.#regions = untrack(() => [...this.#regions, { id, placement }]);
     return id;
   }
 
   detachRegion(id: RegionId): void {
-    this.#regions = untrack(() => this.#regions.filter((region) => region !== id));
+    this.#regions = untrack(() => this.#regions.filter((region) => region.id !== id));
   }
 
   reserveBlockEnd(blockEnd: number): () => void {

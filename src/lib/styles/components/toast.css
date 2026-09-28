@@ -21,6 +21,12 @@
 .toast-region:popover-open {
   display: flex;
 }
+.toast-region-top {
+  inset-block-start: calc(var(--_toast-gutter) + env(safe-area-inset-top, 0px));
+  inset-block-end: auto;
+  inset-inline: 0;
+  margin-inline: auto;
+}
 @media (width < 48rem) {
   .toast-region {
     --_toast-gutter: var(--sp-4);

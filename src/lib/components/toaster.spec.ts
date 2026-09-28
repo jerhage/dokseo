@@ -19,6 +19,7 @@ describe('Toaster', () => {
         variant: 'info',
         duration: { kind: 'default' },
         action: undefined,
+        placement: 'bottom',
         phase: 'shown',
       },
     ]);
@@ -184,6 +185,51 @@ describe('Toaster', () => {
 
   it('reports no active region before one attaches', () => {
     expect(createToaster().activeRegion).toBeUndefined();
+  });
+
+  it('sends a toast to the region attached last at its placement', () => {
+    const toaster = createToaster();
+    const bottom = toaster.attachRegion();
+    const top = toaster.attachRegion('top');
+    toaster.show({ title: 'Below' });
+    toaster.show({ title: 'Above', placement: 'top' });
+
+    expect({
+      bottom: toaster.toastsIn(bottom).map((toast) => toast.title),
+      top: toaster.toastsIn(top).map((toast) => toast.title),
+    }).toEqual({ bottom: ['Below'], top: ['Above'] });
+  });
+
+  it('prefers a later region at the placement over an earlier one', () => {
+    const toaster = createToaster();
+    toaster.attachRegion('top');
+    const later = toaster.attachRegion('top');
+
+    expect(toaster.regionFor('top')).toBe(later);
+  });
+
+  it('sends a toast to the region attached last when none sits at its placement', () => {
+    const toaster = createToaster();
+    toaster.attachRegion('top');
+    const last = toaster.attachRegion('top');
+    toaster.show({ title: 'Below' });
+
+    expect(toaster.toastsIn(last).map((toast) => toast.title)).toEqual(['Below']);
+  });
+
+  it('hands a placement back to the earlier region at it when the later one detaches', () => {
+    const toaster = createToaster();
+    const page = toaster.attachRegion('top');
+    toaster.attachRegion();
+    const later = toaster.attachRegion('top');
+
+    toaster.detachRegion(later);
+
+    expect(toaster.regionFor('top')).toBe(page);
+  });
+
+  it('reports no region for a placement before any region attaches', () => {
+    expect(createToaster().regionFor('top')).toBeUndefined();
   });
 
   it('clears the tallest reserved space at the block end', () => {

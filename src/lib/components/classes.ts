@@ -31,6 +31,8 @@ type ModalSize = 'sm' | 'md' | 'lg';
 
 type ModalPlacement = 'center' | 'top';
 
+type ToastPlacement = 'bottom' | 'top';
+
 type FieldLayout = 'stacked' | 'inline';
 
 type RadioVariant = 'default' | 'tile';
@@ -132,6 +134,11 @@ const TOAST_VARIANTS: Readonly<Record<StatusVariant, ClassList>> = {
   success: ['toast-success'],
   warning: ['toast-warning'],
   danger: ['toast-danger'],
+};
+
+const TOAST_REGION_PLACEMENTS: Readonly<Record<ToastPlacement, ClassList>> = {
+  bottom: [],
+  top: ['toast-region-top'],
 };
 
 const FIELD_LAYOUTS: Readonly<Record<FieldLayout, ClassList>> = {
@@ -301,6 +308,7 @@ export {
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
   TAG_COLOURS,
+  TOAST_REGION_PLACEMENTS,
   TOAST_VARIANTS,
 };
 export type {
@@ -328,4 +336,5 @@ export type {
   TableSize,
   TabsVariant,
   TagColour,
+  ToastPlacement,
 };

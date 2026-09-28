@@ -27,6 +27,7 @@ import {
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
   TAG_COLOURS,
+  TOAST_REGION_PLACEMENTS,
   TOAST_VARIANTS,
 } from './classes';
 import type { ClassList } from './classes';
@@ -69,6 +70,7 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
   TABLE_SIZES,
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
+  TOAST_REGION_PLACEMENTS,
   TOAST_VARIANTS,
 };
 
