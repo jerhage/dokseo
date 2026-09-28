@@ -4,6 +4,10 @@
   initial-value: 0px;
 }
 :root {
+  --control-h-sm: var(--ds-size-control-sm);
+  --control-h-md: var(--ds-size-control-md);
+  --control-h-lg: var(--ds-size-control-lg);
+  --control-h-touch: var(--ds-size-touch);
   --handle-size: var(--ds-size-handle);
   --lift-size: var(--ds-size-touch);
   --layout-list-height: var(--ds-size-list-height);
@@ -27,4 +31,5 @@
   --skeleton-line-sm: var(--ds-size-skeleton-line-sm);
   --skeleton-line-md: var(--ds-size-skeleton-line-md);
   --skeleton-line-lg: var(--ds-size-skeleton-line-lg);
+  --indeterminate-share: var(--ds-share-indeterminate);
 }

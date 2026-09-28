@@ -1004,7 +1004,7 @@ describe('the design system stylesheets', () => {
     expect(
       declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-touch')),
     ).toEqual(['--btn-min-block-size: var(--control-h-touch)']);
-    expect(definitionValues(style('tokens/spacing.css')).get('--control-h-touch')).toBe(
+    expect(definitionValues(style('tokens/sizes.css')).get('--control-h-touch')).toBe(
       'var(--ds-size-touch)',
     );
     expect(definitionValues(style('base/primitives.css')).get('--ds-size-touch')).toBe('2.75rem');

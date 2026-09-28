@@ -95,6 +95,9 @@
   --ds-size-stat: 11rem;
   --ds-size-compact: 43.75rem;
   --ds-size-narrow: 48rem;
+  --ds-size-control-sm: 2rem;
+  --ds-size-control-md: 2.5rem;
+  --ds-size-control-lg: 3rem;
   --ds-size-touch: 2.75rem;
   --ds-size-handle: 0.5rem;
   --ds-size-icon-sm: 0.75rem;
@@ -159,6 +162,8 @@
   --ds-scale-shrink-sm: 0.98;
   --ds-scale-shrink-md: 0.97;
   --ds-scale-shrink-lg: 0.96;
+
+  --ds-share-indeterminate: 0.4;
 
   --ds-opacity-muted: 0.55;
   --ds-opacity-disabled: 0.4;

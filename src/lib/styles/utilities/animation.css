@@ -100,7 +100,7 @@
     transform: translateX(-100%);
   }
   to {
-    transform: translateX(250%);
+    transform: translateX(calc(100% / var(--indeterminate-share)));
   }
 }
 .a-fade-in {
