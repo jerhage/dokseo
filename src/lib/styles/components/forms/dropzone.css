@@ -89,7 +89,7 @@
 .dropzone-action {
   color: var(--color-text-link);
   text-decoration: underline;
-  text-underline-offset: var(--sp-1);
+  text-underline-offset: var(--underline-offset);
 }
 .dropzone-hint {
   font-size: var(--text-xs);

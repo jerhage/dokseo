@@ -19,6 +19,10 @@
   --ease-bounce: var(--ds-ease-bounce);
   --ease-elastic: var(--ds-ease-elastic);
 
+  --scale-shrink-sm: var(--ds-scale-shrink-sm);
+  --scale-shrink-md: var(--ds-scale-shrink-md);
+  --scale-shrink-lg: var(--ds-scale-shrink-lg);
+
   --transition-ui: var(--ds-dur-flash) var(--ds-ease-smooth);
   --transition-spring: var(--ds-dur-spring) var(--ds-easing-spring);
   --transition-enter: var(--ds-duration-quick) var(--ds-ease-out);

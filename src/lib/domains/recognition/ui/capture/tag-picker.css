@@ -4,7 +4,7 @@
       min-block-size: var(--control-h-sm);
     }
     .picks {
-      block-size: var(--layout-list-width);
+      block-size: var(--layout-list-height);
     }
   }
 }

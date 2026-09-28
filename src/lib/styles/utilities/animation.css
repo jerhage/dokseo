@@ -40,7 +40,7 @@
 @keyframes kModalIn {
   from {
     opacity: 0;
-    transform: translateY(var(--sp-4)) scale(0.97);
+    transform: translateY(var(--sp-4)) scale(var(--scale-shrink-md));
   }
   to {
     opacity: 1;
@@ -54,13 +54,13 @@
   }
   to {
     opacity: 0;
-    transform: translateY(var(--sp-2)) scale(0.98);
+    transform: translateY(var(--sp-2)) scale(var(--scale-shrink-sm));
   }
 }
 @keyframes kToastIn {
   from {
     opacity: 0;
-    transform: translateY(var(--sp-4)) scale(0.96);
+    transform: translateY(var(--sp-4)) scale(var(--scale-shrink-lg));
   }
   to {
     opacity: 1;
@@ -88,7 +88,7 @@
 @keyframes kDropIn {
   from {
     opacity: 0;
-    transform: translateY(calc(var(--sp-1) * -1)) scale(0.98);
+    transform: translateY(calc(var(--sp-1) * -1)) scale(var(--scale-shrink-sm));
   }
   to {
     opacity: 1;

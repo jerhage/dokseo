@@ -38,4 +38,6 @@
   --lh-normal: var(--ds-lh-normal);
   --lh-relaxed: var(--ds-lh-relaxed);
   --lh-loose: var(--ds-lh-loose);
+
+  --underline-offset: var(--ds-underline-offset);
 }

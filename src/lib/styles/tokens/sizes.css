@@ -6,6 +6,7 @@
 :root {
   --handle-size: var(--ds-size-handle);
   --lift-size: var(--ds-size-touch);
+  --layout-list-height: var(--ds-size-list-height);
 
   --icon-tile-sm: var(--ds-size-icon-tile-sm);
   --icon-tile-lg: var(--ds-size-icon-tile-lg);

@@ -6,5 +6,5 @@
 }
 .dock .dock-toggle {
   justify-content: flex-start;
-  min-inline-size: var(--sp-8);
+  min-inline-size: var(--control-h-md);
 }

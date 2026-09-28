@@ -51,7 +51,7 @@
   --_btn-bg: var(--color-primary-hover);
   --_btn-border: var(--color-primary-hover);
   background-image: none;
-  box-shadow: 0 0 0 var(--sp-1) var(--color-primary-glow);
+  box-shadow: 0 0 0 var(--glow-ring-width) var(--color-primary-glow);
 }
 .btn-accent {
   --_btn-fg: var(--color-text-on-accent);
@@ -62,7 +62,7 @@
   --_btn-bg: var(--color-accent-hover);
   --_btn-border: var(--color-accent-hover);
   background-image: none;
-  box-shadow: 0 0 0 var(--sp-1) var(--color-accent-glow);
+  box-shadow: 0 0 0 var(--glow-ring-width) var(--color-accent-glow);
 }
 .btn-outline {
   --_btn-fg: var(--color-brand-text);

@@ -2,7 +2,7 @@
   @scope (.page-frame) {
     :scope {
       block-size: 100%;
-      aspect-ratio: var(--page-ratio, 2 / 3);
+      aspect-ratio: var(--page-ratio, var(--ratio-portrait));
     }
     .picture {
       position: absolute;

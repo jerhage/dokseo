@@ -47,7 +47,7 @@ small {
 
 a {
   color: var(--color-text-link);
-  text-underline-offset: var(--sp-1);
+  text-underline-offset: var(--underline-offset);
   transition: color var(--transition-ui);
 }
 a:hover {

@@ -70,6 +70,7 @@
   --ds-border-2: 2px;
   --ds-focus-offset: 2px;
   --ds-glow-ring-width: 0.25rem;
+  --ds-underline-offset: 0.25rem;
 
   --ds-container-prose: 68ch;
   --ds-container-wide: 1280px;
@@ -90,6 +91,7 @@
   --ds-size-grid-min-lg: 24rem;
   --ds-size-sidebar: 15rem;
   --ds-size-list: 18rem;
+  --ds-size-list-height: 18rem;
   --ds-size-stat: 11rem;
   --ds-size-compact: 43.75rem;
   --ds-size-narrow: 48rem;
@@ -153,6 +155,10 @@
     1.005 72%,
     1
   );
+
+  --ds-scale-shrink-sm: 0.98;
+  --ds-scale-shrink-md: 0.97;
+  --ds-scale-shrink-lg: 0.96;
 
   --ds-opacity-muted: 0.55;
   --ds-opacity-disabled: 0.4;
