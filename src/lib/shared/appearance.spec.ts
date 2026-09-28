@@ -11,8 +11,7 @@ function styledThemes(): readonly string[] {
     .map((name) => readFileSync(new URL(name, THEME_SHEETS), 'utf8'))
     .join('\n');
   return Array.from(
-    sheets.matchAll(/\[data-theme='([\w-]+)'\]/gu),
-    (found) => found[1] ?? '',
+    new Set(Array.from(sheets.matchAll(/\[data-theme='([\w-]+)'\]/gu), (found) => found[1] ?? '')),
   ).toSorted();
 }
 

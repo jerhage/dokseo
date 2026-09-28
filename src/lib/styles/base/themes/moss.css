@@ -1,4 +1,4 @@
-:root {
+:root[data-theme='moss'] {
   --ds-parchment-canvas: light-dark(oklch(0.945 0.03 85), oklch(0.17 0.02 140));
   --ds-parchment-paper: light-dark(oklch(0.97 0.022 88), oklch(0.205 0.022 138));
   --ds-parchment-raised: light-dark(oklch(0.985 0.015 90), oklch(0.24 0.024 136));

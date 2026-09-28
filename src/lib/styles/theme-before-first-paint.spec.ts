@@ -40,8 +40,7 @@ function acceptedThemes(): readonly string[] {
 
 function styledThemes(): readonly string[] {
   return Array.from(
-    THEME.matchAll(/\[data-theme='([\w-]+)'\]/gu),
-    (found) => found[1] ?? '',
+    new Set(Array.from(THEME.matchAll(/\[data-theme='([\w-]+)'\]/gu), (found) => found[1] ?? '')),
   ).toSorted();
 }
 

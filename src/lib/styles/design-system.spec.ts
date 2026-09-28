@@ -434,6 +434,26 @@ function themeRules(css: string): readonly Rule[] {
   );
 }
 
+function themeName(path: string): string {
+  return path.slice('base/themes/'.length, -'.css'.length);
+}
+
+function paletteRule(path: string): Rule {
+  const [palette] = rules(style(path));
+  if (palette === undefined) throw new Error(`no palette in ${path}`);
+  return palette;
+}
+
+function roleRule(path: string): Rule {
+  const [, roles] = rules(style(path));
+  if (roles === undefined) throw new Error(`no role primitives in ${path}`);
+  return roles;
+}
+
+function roleBody(theme: string): string {
+  return roleRule(`base/themes/${theme}.css`).body;
+}
+
 function ruleBody(css: string, selector: string): string {
   return ruleFor(css, selector).body;
 }
@@ -582,55 +602,83 @@ describe('the design system stylesheets', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('has every theme assign exactly the custom properties the default theme assigns', () => {
-    const themed = themeRules(themeSheets());
-    const [defaults, ...others] = themed.filter((rule) => rule.selectors.includes(':root'));
-    const expected = definitions(defaults?.body ?? '').toSorted();
-    const assigned = themed.map((rule) => ({
-      theme: rule.selectors.filter((selector) => selector !== ':root').join(', '),
-      names: definitions(rule.body).toSorted(),
+  it('holds a palette and then the role primitives in each theme file, each scoped to its theme', () => {
+    const scoped = themeFiles().map((path) => ({
+      path,
+      selectors: rules(style(path)).map((rule) => rule.selectors),
+    }));
+    const expected = (path: string) =>
+      themeName(path) === 'base'
+        ? [[':root'], [':root', ":root[data-theme='base']"]]
+        : [[`:root[data-theme='${themeName(path)}']`], [`:root[data-theme='${themeName(path)}']`]];
+
+    expect(scoped.length).toBeGreaterThan(1);
+    expect(scoped).toEqual(scoped.map(({ path }) => ({ path, selectors: expected(path) })));
+  });
+
+  it('has every theme assign exactly the role primitives the default theme assigns', () => {
+    const expected = definitions(roleBody('base')).toSorted();
+    const assigned = themeFiles().map((path) => ({
+      path,
+      names: definitions(roleRule(path).body).toSorted(),
     }));
 
-    expect(others).toEqual([]);
     expect(expected.length).toBeGreaterThan(0);
-    expect(themed.length).toBeGreaterThan(1);
-    expect(assigned).toEqual(assigned.map(({ theme }) => ({ theme, names: expected })));
+    expect(assigned.length).toBeGreaterThan(1);
+    expect(assigned).toEqual(assigned.map(({ path }) => ({ path, names: expected })));
   });
 
   it('declares one theme in each theme file, named after the file', () => {
     const declared = themeFiles().map((path) => ({
       path,
-      themes: themeRules(style(path)).flatMap((rule) =>
-        rule.selectors.flatMap((selector) =>
-          Array.from(selector.matchAll(/\[data-theme='([\w-]+)'\]/gu), (found) => group(found, 1)),
+      themes: unique(
+        themeRules(style(path)).flatMap((rule) =>
+          rule.selectors.flatMap((selector) =>
+            Array.from(selector.matchAll(/\[data-theme='([\w-]+)'\]/gu), (found) =>
+              group(found, 1),
+            ),
+          ),
         ),
       ),
     }));
 
     expect(declared.length).toBeGreaterThan(1);
-    expect(declared).toEqual(
-      declared.map(({ path }) => ({
-        path,
-        themes: [path.slice('base/themes/'.length, -'.css'.length)],
-      })),
-    );
+    expect(declared).toEqual(declared.map(({ path }) => ({ path, themes: [themeName(path)] })));
   });
 
-  it('declares each palette name in the palette of one theme file only', () => {
-    const owners = themeFiles().flatMap((path) =>
-      rules(style(path))
-        .filter((rule) => rule.selectors.length === 1 && rule.selectors[0] === ':root')
-        .flatMap((rule) => definitions(rule.body).map((name) => ({ name, path }))),
-    );
-    const shared = unique(owners.map(({ name }) => name))
-      .map((name) => ({
-        name,
-        paths: unique(owners.filter((owner) => owner.name === name).map(({ path }) => path)),
-      }))
-      .filter(({ paths }) => paths.length > 1);
+  it('names no palette primitive after a theme', () => {
+    const themes = new Set(themeFiles().map(themeName));
+    const named = themeFiles()
+      .flatMap((path) => definitions(paletteRule(path).body))
+      .filter((name) =>
+        name
+          .slice('--ds-'.length)
+          .split('-')
+          .some((word) => themes.has(word)),
+      );
 
-    expect(owners.length).toBeGreaterThan(0);
-    expect(shared).toEqual([]);
+    expect(named).toEqual([]);
+  });
+
+  it('gives no palette primitive the name of a shared primitive, a role primitive or a default palette primitive', () => {
+    const shared = new Set(
+      ['base/primitives.css', 'base/scheme.css'].flatMap((path) => definitions(style(path))),
+    );
+    const reserved = new Set([
+      ...shared,
+      ...definitions(roleBody('base')),
+      ...definitions(paletteRule('base/themes/base.css').body),
+    ]);
+    const clashing = themeFiles()
+      .filter((path) => themeName(path) !== 'base')
+      .flatMap((path) => definitions(paletteRule(path).body).map((name) => ({ path, name })))
+      .filter(({ name }) => reserved.has(name));
+    const defaults = definitions(paletteRule('base/themes/base.css').body).filter(
+      (name) => shared.has(name) || definitions(roleBody('base')).includes(name),
+    );
+
+    expect(clashing).toEqual([]);
+    expect(defaults).toEqual([]);
   });
 
   it('lets a bare root render the default theme', () => {
@@ -1646,7 +1694,7 @@ describe('the design system stylesheets', () => {
   });
 
   it('gives every theme an icon stroke', () => {
-    const themed = themeRules(themeSheets());
+    const themed = themeFiles().map(roleRule);
 
     expect(themed.length).toBeGreaterThan(1);
     for (const rule of themed) expect(definitions(rule.body)).toContain('--ds-icon-stroke');
@@ -1834,11 +1882,9 @@ describe('the design system stylesheets', () => {
   });
 
   it('draws the YoRHa backdrop as a grid of lines at one spacing in both directions', () => {
-    const backdrop = definitionValues(ruleBody(themeSheets(), ":root[data-theme='yorha']")).get(
-      '--ds-page-backdrop',
-    );
+    const backdrop = definitionValues(roleBody('yorha')).get('--ds-page-backdrop');
     const line = (angle: string) =>
-      `repeating-linear-gradient(${angle}, var(--ds-yorha-scan-line) 0 1px, transparent 1px 4px)`;
+      `repeating-linear-gradient(${angle}, var(--ds-grid-line) 0 1px, transparent 1px 4px)`;
 
     expect(backdrop).toBe(`${line('0deg')}, ${line('90deg')}`);
   });
@@ -1998,11 +2044,11 @@ describe('the design system stylesheets', () => {
   });
 
   it('draws no marker bar and no rust in the YoRHa hover', () => {
-    const values = definitionValues(ruleBody(themeSheets(), ":root[data-theme='yorha']"));
+    const values = definitionValues(roleBody('yorha'));
 
     expect([values.get('--ds-marker-width'), values.get('--ds-marker')]).toEqual([
       '0px',
-      'var(--ds-yorha-ink)',
+      'var(--ds-khaki-ink)',
     ]);
   });
 

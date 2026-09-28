@@ -1,21 +1,21 @@
-:root {
-  --ds-forge-canvas: light-dark(oklch(0.955 0.003 250), oklch(0.13 0.003 250));
-  --ds-forge-paper: light-dark(oklch(0.985 0.002 250), oklch(0.165 0.004 250));
-  --ds-forge-raised: light-dark(oklch(1 0 0), oklch(0.2 0.005 250));
-  --ds-forge-sunken: light-dark(oklch(0.935 0.004 250), oklch(0.11 0.003 250));
-  --ds-forge-steel: light-dark(oklch(0.18 0.005 250), oklch(0.96 0.002 250));
-  --ds-forge-steel-hover: light-dark(oklch(0.3 0.006 250), oklch(0.86 0.003 250));
-  --ds-forge-on-steel: light-dark(oklch(0.985 0 0), oklch(0.13 0.003 250));
-  --ds-forge-text: light-dark(oklch(0.17 0.005 250), oklch(0.95 0.002 250));
-  --ds-forge-text-muted: light-dark(oklch(0.45 0.008 250), oklch(0.68 0.006 250));
-  --ds-forge-text-faint: light-dark(oklch(0.58 0.008 250), oklch(0.52 0.006 250));
-  --ds-forge-line: light-dark(oklch(0.87 0.004 250), oklch(0.26 0.005 250));
-  --ds-forge-line-strong: light-dark(oklch(0.76 0.006 250), oklch(0.34 0.006 250));
-  --ds-forge-well: light-dark(oklch(0.92 0.004 250), oklch(0.22 0.005 250));
-  --ds-forge-tint-3: light-dark(oklch(0.2 0.005 250 / 0.03), oklch(0.98 0 0 / 0.025));
-  --ds-forge-tint-5: light-dark(oklch(0.2 0.005 250 / 0.05), oklch(0.98 0 0 / 0.05));
-  --ds-forge-tint-9: light-dark(oklch(0.2 0.005 250 / 0.09), oklch(0.98 0 0 / 0.09));
-  --ds-forge-tint-15: light-dark(oklch(0.2 0.005 250 / 0.15), oklch(0.98 0 0 / 0.15));
+:root[data-theme='forge'] {
+  --ds-graphite-canvas: light-dark(oklch(0.955 0.003 250), oklch(0.13 0.003 250));
+  --ds-graphite-paper: light-dark(oklch(0.985 0.002 250), oklch(0.165 0.004 250));
+  --ds-graphite-raised: light-dark(oklch(1 0 0), oklch(0.2 0.005 250));
+  --ds-graphite-sunken: light-dark(oklch(0.935 0.004 250), oklch(0.11 0.003 250));
+  --ds-steel-900: light-dark(oklch(0.18 0.005 250), oklch(0.96 0.002 250));
+  --ds-steel-800: light-dark(oklch(0.3 0.006 250), oklch(0.86 0.003 250));
+  --ds-graphite-on-steel: light-dark(oklch(0.985 0 0), oklch(0.13 0.003 250));
+  --ds-graphite-ink: light-dark(oklch(0.17 0.005 250), oklch(0.95 0.002 250));
+  --ds-graphite-ink-muted: light-dark(oklch(0.45 0.008 250), oklch(0.68 0.006 250));
+  --ds-graphite-ink-faint: light-dark(oklch(0.58 0.008 250), oklch(0.52 0.006 250));
+  --ds-graphite-line: light-dark(oklch(0.87 0.004 250), oklch(0.26 0.005 250));
+  --ds-graphite-line-strong: light-dark(oklch(0.76 0.006 250), oklch(0.34 0.006 250));
+  --ds-graphite-well: light-dark(oklch(0.92 0.004 250), oklch(0.22 0.005 250));
+  --ds-graphite-tint-3: light-dark(oklch(0.2 0.005 250 / 0.03), oklch(0.98 0 0 / 0.025));
+  --ds-graphite-tint-5: light-dark(oklch(0.2 0.005 250 / 0.05), oklch(0.98 0 0 / 0.05));
+  --ds-graphite-tint-9: light-dark(oklch(0.2 0.005 250 / 0.09), oklch(0.98 0 0 / 0.09));
+  --ds-graphite-tint-15: light-dark(oklch(0.2 0.005 250 / 0.15), oklch(0.98 0 0 / 0.15));
 
   --ds-molten-50: light-dark(oklch(0.97 0.03 70), oklch(0.22 0.04 55));
   --ds-molten-100: light-dark(oklch(0.93 0.06 68), oklch(0.27 0.06 55));
@@ -30,19 +30,19 @@
 }
 
 :root[data-theme='forge'] {
-  --ds-bg: var(--ds-forge-canvas);
-  --ds-bg-raised: var(--ds-forge-paper);
-  --ds-surface: var(--ds-forge-paper);
-  --ds-surface-raised: var(--ds-forge-raised);
-  --ds-surface-bright: var(--ds-forge-raised);
-  --ds-surface-sunken: var(--ds-forge-sunken);
+  --ds-bg: var(--ds-graphite-canvas);
+  --ds-bg-raised: var(--ds-graphite-paper);
+  --ds-surface: var(--ds-graphite-paper);
+  --ds-surface-raised: var(--ds-graphite-raised);
+  --ds-surface-bright: var(--ds-graphite-raised);
+  --ds-surface-sunken: var(--ds-graphite-sunken);
 
-  --ds-primary: var(--ds-forge-steel);
-  --ds-primary-hover: var(--ds-forge-steel-hover);
+  --ds-primary: var(--ds-steel-900);
+  --ds-primary-hover: var(--ds-steel-800);
   --ds-primary-subtle: var(--ds-molten-50);
   --ds-primary-soft: var(--ds-molten-100);
-  --ds-primary-muted: var(--ds-forge-text-faint);
-  --ds-primary-glow: var(--ds-forge-tint-9);
+  --ds-primary-muted: var(--ds-graphite-ink-faint);
+  --ds-primary-glow: var(--ds-graphite-tint-9);
   --ds-brand-tint: var(--ds-molten-50);
   --ds-brand-border: var(--ds-molten-200);
   --ds-brand-border-mid: var(--ds-molten-300);
@@ -56,31 +56,31 @@
   --ds-accent-text: var(--ds-molten-700);
   --ds-accent-glow: var(--ds-molten-glow);
 
-  --ds-text: var(--ds-forge-text);
-  --ds-text-muted: var(--ds-forge-text-muted);
-  --ds-text-faint: var(--ds-forge-text-faint);
-  --ds-text-inverse: var(--ds-forge-on-steel);
-  --ds-text-on-primary: var(--ds-forge-on-steel);
+  --ds-text: var(--ds-graphite-ink);
+  --ds-text-muted: var(--ds-graphite-ink-muted);
+  --ds-text-faint: var(--ds-graphite-ink-faint);
+  --ds-text-inverse: var(--ds-graphite-on-steel);
+  --ds-text-on-primary: var(--ds-graphite-on-steel);
   --ds-text-on-accent: var(--ds-molten-ink);
-  --ds-text-link: var(--ds-forge-text);
+  --ds-text-link: var(--ds-graphite-ink);
   --ds-text-link-hover: var(--ds-molten-600);
 
-  --ds-hover: var(--ds-forge-tint-5);
-  --ds-active: var(--ds-forge-tint-9);
+  --ds-hover: var(--ds-graphite-tint-5);
+  --ds-active: var(--ds-graphite-tint-9);
   --ds-selected: var(--ds-molten-a12);
-  --ds-disabled: var(--ds-forge-text-faint);
-  --ds-disabled-bg: var(--ds-forge-well);
+  --ds-disabled: var(--ds-graphite-ink-faint);
+  --ds-disabled-bg: var(--ds-graphite-well);
 
-  --ds-spinner-track: var(--ds-forge-tint-15);
-  --ds-table-stripe: var(--ds-forge-tint-3);
-  --ds-table-row-hover: var(--ds-forge-tint-5);
-  --ds-skeleton-base: var(--ds-forge-well);
-  --ds-skeleton-shine: var(--ds-forge-raised);
-  --ds-code-bg: var(--ds-forge-sunken);
+  --ds-spinner-track: var(--ds-graphite-tint-15);
+  --ds-table-stripe: var(--ds-graphite-tint-3);
+  --ds-table-row-hover: var(--ds-graphite-tint-5);
+  --ds-skeleton-base: var(--ds-graphite-well);
+  --ds-skeleton-shine: var(--ds-graphite-raised);
+  --ds-code-bg: var(--ds-graphite-sunken);
   --ds-code-text: var(--ds-molten-700);
 
-  --ds-border: var(--ds-forge-line);
-  --ds-border-strong: var(--ds-forge-line-strong);
+  --ds-border: var(--ds-graphite-line);
+  --ds-border-strong: var(--ds-graphite-line-strong);
   --ds-border-focus: var(--ds-molten-500);
   --ds-border-width: var(--ds-border-1);
   --ds-border-width-strong: var(--ds-border-2);
@@ -137,12 +137,12 @@
   --ds-dur-exit: var(--ds-dur-flash);
   --ds-easing-exit: var(--ds-ease-in);
 
-  --ds-hover-fill: var(--ds-forge-tint-5);
+  --ds-hover-fill: var(--ds-graphite-tint-5);
   --ds-hover-fill-soft: transparent;
   --ds-hover-fill-solid: transparent;
   --ds-hover-text: initial;
   --ds-hover-text-solid: initial;
-  --ds-press-fill: var(--ds-forge-tint-9);
+  --ds-press-fill: var(--ds-graphite-tint-9);
   --ds-chosen-fill: initial;
   --ds-chosen-text: initial;
   --ds-dur-sweep: 0s;
