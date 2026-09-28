@@ -14,19 +14,32 @@ import type { AlsoTagged, TagSummary } from '../../domain/tag/tag-summary';
 
 type TagViewStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
+type TagSource = {
+  readonly books: readonly SearchedBook[];
+  readonly wanted: string | null;
+};
+
 class TagView {
   tags = $state.raw<readonly Tag[]>([]);
   captures = $state.raw<readonly Capture[]>([]);
-  wanted = $state.raw<string | null>(null);
-  books = $state.raw<readonly SearchedBook[]>([]);
   filter = $state('');
   status = $state<TagViewStatus>('idle');
 
   #container: Container;
+  #source: () => TagSource;
   #generation = 0;
 
-  constructor(container: Container) {
+  constructor(container: Container, source: () => TagSource) {
     this.#container = container;
+    this.#source = source;
+  }
+
+  get books(): readonly SearchedBook[] {
+    return this.#source().books;
+  }
+
+  get wanted(): string | null {
+    return this.#source().wanted;
   }
 
   get chosen(): TagId | null {
@@ -102,4 +115,4 @@ class TagView {
 }
 
 export { TagView };
-export type { TagViewStatus };
+export type { TagSource, TagViewStatus };

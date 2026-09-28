@@ -12,17 +12,16 @@
 
   const container = useContainer();
   const shelf = new LibraryView(container, toastNotify(getToaster()));
-  const view = new TagView(container);
-
-  $effect(() => {
-    view.books = shelf.books.map((book) => ({
+  const books = $derived(
+    shelf.books.map((book) => ({
       id: book.id,
       title: book.title,
       language: book.language,
       direction: effectiveDirection(book.direction, book.layoutKind),
-    }));
-    view.wanted = readTagName(page.url.searchParams.get(TAG_PARAMETER));
-  });
+    })),
+  );
+  const wanted = $derived(readTagName(page.url.searchParams.get(TAG_PARAMETER)));
+  const view = new TagView(container, () => ({ books, wanted }));
 
   $effect(() => {
     untrack(() => {
