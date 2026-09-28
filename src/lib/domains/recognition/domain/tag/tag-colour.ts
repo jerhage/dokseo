@@ -39,6 +39,10 @@ const TAG_COLOURS = [
 
 const FIRST_TAG_COLOUR: TagColour = TAG_COLOURS[0];
 
+function isTagColour(value: unknown): value is TagColour {
+  return TAG_COLOURS.some((colour) => colour === value);
+}
+
 function colourUse(existing: readonly ColouredTag[]): ReadonlyMap<TagColour, number> {
   const used = new Map<TagColour, number>(TAG_COLOURS.map((colour) => [colour, 0]));
   for (const tag of existing) used.set(tag.colour, (used.get(tag.colour) ?? 0) + 1);
@@ -57,5 +61,5 @@ function nextColour(existing: readonly ColouredTag[]): TagColour {
   return fewest;
 }
 
-export { TAG_COLOURS, FIRST_TAG_COLOUR, nextColour };
+export { TAG_COLOURS, FIRST_TAG_COLOUR, isTagColour, nextColour };
 export type { TagColour, ColouredTag };

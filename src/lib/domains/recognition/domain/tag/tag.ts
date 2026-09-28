@@ -1,6 +1,6 @@
 import { foldForSearch } from '$lib/shared/text-search';
 import type { TagId } from '$lib/shared/ids';
-import { FIRST_TAG_COLOUR } from './tag-colour';
+import { FIRST_TAG_COLOUR, isTagColour } from './tag-colour';
 import type { TagColour } from './tag-colour';
 
 type Tag = {
@@ -11,7 +11,7 @@ type Tag = {
 };
 
 type StoredTag = Omit<Tag, 'colour' | 'createdAt'> & {
-  readonly colour?: TagColour;
+  readonly colour?: unknown;
   readonly createdAt?: number | null;
 };
 
@@ -36,7 +36,7 @@ function recolouredTag(tag: Tag, colour: TagColour): Tag {
 function tagFromStored(stored: StoredTag): Tag {
   return {
     ...stored,
-    colour: stored.colour ?? FIRST_TAG_COLOUR,
+    colour: isTagColour(stored.colour) ? stored.colour : FIRST_TAG_COLOUR,
     createdAt: stored.createdAt ?? 0,
   };
 }

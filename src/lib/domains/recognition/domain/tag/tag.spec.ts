@@ -36,6 +36,18 @@ describe('tagFromStored', () => {
     expect(tagFromStored(stored).colour).toBe('slate');
   });
 
+  it('replaces an unknown stored colour with the default', () => {
+    const stored: StoredTag = { id: tagId('one'), name: 'sfx', colour: 'ember' };
+
+    expect(tagFromStored(stored).colour).toBe('slate');
+  });
+
+  it('passes a known stored colour through unchanged', () => {
+    const stored: StoredTag = { id: tagId('one'), name: 'sfx', colour: 'copper' };
+
+    expect(tagFromStored(stored).colour).toBe('copper');
+  });
+
   it('dates a record with no creation time to the beginning', () => {
     const stored: StoredTag = { id: tagId('one'), name: 'sfx' };
 
