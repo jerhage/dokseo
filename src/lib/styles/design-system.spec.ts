@@ -279,7 +279,6 @@ const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
   '.window-dropzone-icon-frame': 'a fixed-size box that centres one icon',
   '.radio-input': 'a fixed-size input that centres its pseudo-element dot',
   '.modal-backdrop[open]': 'centres one dialog whose inline size is contained',
-  '.modal-backdrop.is-open': 'centres one dialog whose inline size is contained',
 };
 
 const RUNTIME_INPUTS = [
@@ -1143,6 +1142,19 @@ describe('the design system stylesheets', () => {
     expect(
       declarations(ruleBody(overrides, 'html:has(.modal-backdrop[open][data-page-scrollbar])')),
     ).toContain('scrollbar-gutter: stable');
+  });
+
+  it('shows, animates and locks the page for a modal through the native [open] alone', () => {
+    const sheets = [
+      'components/modal/modal.css',
+      'components/modal/modal-transitions.css',
+      'overrides/overrides.css',
+    ].map(style);
+
+    for (const sheet of sheets) expect(sheet).not.toContain('.modal-backdrop.is-open');
+    expect(
+      declarations(ruleBody(style('components/modal/modal.css'), '.modal-backdrop[open]')),
+    ).toContain('display: grid');
   });
 
   it('declares every tag colour in the shared scheme as light-dark pairs, and in no theme', () => {

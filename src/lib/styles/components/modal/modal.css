@@ -16,8 +16,7 @@
 .modal-backdrop::backdrop {
   background: transparent;
 }
-.modal-backdrop[open],
-.modal-backdrop.is-open {
+.modal-backdrop[open] {
   display: grid;
 }
 .modal {
