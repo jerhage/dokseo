@@ -36,4 +36,5 @@
   --page-gutter: var(--ds-space-5);
   --overlay-gap: var(--ds-space-1);
   --overlay-edge: var(--ds-space-2);
+  --hover-rule-gap: var(--ds-hover-rule-gap);
 }

@@ -8,4 +8,5 @@
   --border-width-strong: var(--ds-border-width-strong);
   --glow-ring-width: var(--ds-glow-ring-width);
   --hover-marker-width: var(--ds-marker-width);
+  --hover-rule-width: var(--ds-hover-rule-width);
 }

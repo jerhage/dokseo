@@ -1918,6 +1918,7 @@ describe('the design system stylesheets', () => {
         solidText: values.get('--ds-hover-text-solid'),
         chosenFill: values.get('--ds-chosen-fill'),
         chosenText: values.get('--ds-chosen-text'),
+        rule: values.get('--ds-hover-rule-width'),
         sweep: values.get('--ds-dur-sweep'),
         textDuration: values.get('--ds-dur-hover-text'),
         textEasing: values.get('--ds-easing-hover-text'),
@@ -1930,6 +1931,7 @@ describe('the design system stylesheets', () => {
         solidText: 'initial',
         chosenFill: 'initial',
         chosenText: 'initial',
+        rule: '0px',
         sweep: '0s',
         textDuration: 'var(--ds-dur-flash)',
         textEasing: 'var(--ds-ease-smooth)',
@@ -2019,6 +2021,49 @@ describe('the design system stylesheets', () => {
         'background-image: linear-gradient(var(--color-chosen-fill, var(--color-active)) 0 0)',
       ]),
     );
+  });
+
+  it('rules a line above and below a hovered or chosen item, a gap away, in the hover rule colour and timing', () => {
+    const ruled = [
+      ['components/btn.css', '.btn', ['.btn:hover', '.btn.is-active']],
+      ['components/nav/nav-link.css', '.nav-link', ['.nav-link:hover', '.nav-link.is-active']],
+      ['components/accordion.css', '.accordion-trigger', ['.accordion-trigger:hover']],
+      [
+        'components/dropdown.css',
+        '.dropdown-item',
+        ['.dropdown-item:hover', '.dropdown-item.is-active'],
+      ],
+      [
+        'components/command.css',
+        '.command-item',
+        ['.command-item:hover', '.command-item.is-selected'],
+      ],
+    ] as const;
+
+    for (const [path, host, shown] of ruled) {
+      const css = style(path);
+      const line = everyDeclarationFor(css, `${host}::before`);
+
+      expect(everyDeclarationFor(css, host)).toContain('position: relative');
+      expect({ host, line }).toEqual({
+        host,
+        line: expect.arrayContaining([
+          "content: ''",
+          'position: absolute',
+          'border-block: var(--hover-rule-width) solid transparent',
+          'pointer-events: none',
+          'transition: border-color var(--transition-sweep)',
+          expect.stringMatching(
+            /^inset-block: calc\(\(var\(--hover-rule-gap\) \+ var\(--hover-rule-width\)/u,
+          ),
+        ]),
+      });
+      for (const state of shown) {
+        expect(everyDeclarationFor(css, `${state}::before`)).toContain(
+          'border-block-color: var(--color-hover-rule)',
+        );
+      }
+    }
   });
 
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {

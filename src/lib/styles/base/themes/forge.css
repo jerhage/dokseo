@@ -149,4 +149,7 @@
   --ds-easing-hover-text: var(--ds-ease-smooth);
   --ds-marker-width: 0px;
   --ds-marker: var(--ds-molten-500);
+  --ds-hover-rule-width: 0px;
+  --ds-hover-rule-gap: 0px;
+  --ds-hover-rule: transparent;
 }

@@ -141,6 +141,19 @@
   background-image: var(--_btn-press-image, linear-gradient(var(--color-active) 0 0));
   background-size: 100% 100%;
 }
+.btn::before {
+  content: '';
+  position: absolute;
+  inset-inline: calc(var(--border-width) * -1);
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width) + var(--border-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+.btn:hover::before,
+.btn.is-active::before {
+  border-block-color: var(--color-hover-rule);
+}
 .btn-icon {
   inline-size: var(--icon-size-md);
   block-size: var(--icon-size-md);
@@ -183,6 +196,10 @@
   background-image: none;
   box-shadow: none;
   cursor: not-allowed;
+}
+.btn:disabled::before,
+.btn[aria-disabled='true']::before {
+  border-block-color: transparent;
 }
 .btn-loading {
   color: transparent;

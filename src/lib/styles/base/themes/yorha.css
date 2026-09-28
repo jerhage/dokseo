@@ -152,4 +152,7 @@
   --ds-easing-hover-text: var(--ds-easing-sweep);
   --ds-marker-width: 6px;
   --ds-marker: var(--ds-rust-500);
+  --ds-hover-rule-width: var(--ds-border-1);
+  --ds-hover-rule-gap: 3px;
+  --ds-hover-rule: var(--ds-yorha-ink);
 }

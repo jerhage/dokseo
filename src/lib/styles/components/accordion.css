@@ -8,6 +8,7 @@
   border-block-start: var(--border-width) solid var(--border-color);
 }
 .accordion-trigger {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,6 +48,18 @@
 }
 .accordion-trigger:hover > .accordion-icon {
   color: var(--color-hover-text, var(--color-text-muted));
+}
+.accordion-trigger::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+.accordion-trigger:hover::before {
+  border-block-color: var(--color-hover-rule);
 }
 .accordion-trigger:focus-visible {
   outline-offset: calc(var(--focus-ring-offset) * -1);

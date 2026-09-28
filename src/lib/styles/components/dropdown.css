@@ -39,6 +39,7 @@
   --_dropdown-item-sweep: linear-gradient(var(--color-hover-fill) 0 0);
   --_dropdown-item-hover-fg: var(--color-hover-text, var(--color-text));
   --_dropdown-item-marker: var(--color-hover-marker);
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -98,6 +99,24 @@
 .dropdown-item-danger:focus-visible {
   color: var(--color-chosen-text, var(--color-danger));
   background-color: var(--color-chosen-fill, var(--color-danger-muted));
+}
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+.dropdown-item:hover::before,
+.dropdown-item:focus-visible::before,
+.dropdown-item.is-active::before {
+  border-block-color: var(--color-hover-rule);
+}
+.dropdown-item:disabled::before,
+.dropdown-item[aria-disabled='true']::before {
+  border-block-color: transparent;
 }
 .dropdown-item:hover > .dropdown-item-hint {
   color: var(--color-hover-text, var(--color-text-faint));
