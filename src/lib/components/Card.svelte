@@ -67,7 +67,7 @@
     {/if}
     <div class="card-body">
       {#if eyebrow}
-        <span class="card-eyebrow">{@render eyebrow()}</span>
+        <span class="card-eyebrow eyebrow">{@render eyebrow()}</span>
       {/if}
       {#if title}
         <svelte:element this={heading} class="card-title">{@render title()}</svelte:element>

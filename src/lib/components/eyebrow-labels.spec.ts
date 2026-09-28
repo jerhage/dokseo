@@ -2,6 +2,7 @@ import type { Component } from 'svelte';
 import { createRawSnippet } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
+import Card from './Card.svelte';
 import Divider from './Divider.svelte';
 import DropdownLabel from './DropdownLabel.svelte';
 import Stat from './Stat.svelte';
@@ -16,6 +17,12 @@ function markup(component: unknown, props: Record<string, unknown>): string {
 const TEXT = createRawSnippet(() => ({ render: () => '<span>Inbox</span>' }));
 
 describe('the component captions', () => {
+  it('draws the card eyebrow with the eyebrow utility', () => {
+    expect(markup(Card, { eyebrow: TEXT })).toContain(
+      '<span class="card-eyebrow eyebrow"><span>Inbox</span></span>',
+    );
+  });
+
   it('draws the stat label with the eyebrow utility', () => {
     expect(markup(Stat, { label: 'Used', value: '8 kB' })).toContain(
       '<span class="stat-label eyebrow">Used</span>',

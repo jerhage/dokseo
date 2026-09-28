@@ -798,8 +798,9 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
-  it('leaves the eyebrow recipe to the utility in the stat label, the dropdown label, the labelled divider and the table header cell', () => {
+  it('leaves the eyebrow recipe to the utility in the card eyebrow, the stat label, the dropdown label, the labelled divider and the table header cell', () => {
     const copies = [
+      { file: 'components/card.css', selector: '.card-eyebrow' },
       { file: 'components/stat.css', selector: '.stat-label' },
       { file: 'components/dropdown.css', selector: '.dropdown-label' },
       { file: 'components/divider.css', selector: '.divider-labeled' },
@@ -815,6 +816,7 @@ describe('the design system stylesheets', () => {
 
   it('colours every component eyebrow faint', () => {
     const colours = [
+      { file: 'components/card.css', selector: '.card-eyebrow' },
       { file: 'components/stat.css', selector: '.stat-label' },
       { file: 'components/dropdown.css', selector: '.dropdown-label' },
       { file: 'components/divider.css', selector: '.divider-labeled' },
@@ -828,6 +830,7 @@ describe('the design system stylesheets', () => {
     }));
 
     expect(colours).toEqual([
+      { selector: '.card-eyebrow', colour: 'color: var(--color-text-faint)' },
       { selector: '.stat-label', colour: 'color: var(--color-text-faint)' },
       { selector: '.dropdown-label', colour: 'color: var(--color-text-faint)' },
       { selector: '.divider-labeled', colour: 'color: var(--color-text-faint)' },
