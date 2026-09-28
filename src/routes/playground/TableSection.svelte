@@ -1,6 +1,11 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
   import Table from '$lib/components/Table.svelte';
+  import TableBody from '$lib/components/TableBody.svelte';
+  import TableCell from '$lib/components/TableCell.svelte';
+  import TableHeader from '$lib/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/components/TableRow.svelte';
   import type { BadgeVariant } from '$lib/components/classes';
   import DemoSection from './DemoSection.svelte';
 
@@ -39,22 +44,27 @@
 </script>
 
 {#snippet head()}
-  <thead>
-    <tr><th>Invoice</th><th>Customer</th><th>Status</th><th class="table-numeric">Amount</th></tr>
-  </thead>
+  <TableHeader>
+    <TableRow>
+      <TableHeaderCell>Invoice</TableHeaderCell>
+      <TableHeaderCell>Customer</TableHeaderCell>
+      <TableHeaderCell>Status</TableHeaderCell>
+      <TableHeaderCell numeric>Amount</TableHeaderCell>
+    </TableRow>
+  </TableHeader>
 {/snippet}
 
 {#snippet body()}
-  <tbody>
+  <TableBody>
     {#each ROWS as row (row.id)}
-      <tr>
-        <td class="mono">{row.id}</td>
-        <td>{row.customer}</td>
-        <td><Badge variant={row.badge}>{row.status}</Badge></td>
-        <td class="table-numeric">{row.amount}</td>
-      </tr>
+      <TableRow>
+        <TableCell class="mono">{row.id}</TableCell>
+        <TableCell>{row.customer}</TableCell>
+        <TableCell><Badge variant={row.badge}>{row.status}</Badge></TableCell>
+        <TableCell numeric>{row.amount}</TableCell>
+      </TableRow>
     {/each}
-  </tbody>
+  </TableBody>
 {/snippet}
 
 {#snippet richCaption()}

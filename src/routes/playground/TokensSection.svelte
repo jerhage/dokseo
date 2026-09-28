@@ -2,6 +2,11 @@
   import Card from '$lib/components/Card.svelte';
   import Input from '$lib/components/Input.svelte';
   import Table from '$lib/components/Table.svelte';
+  import TableBody from '$lib/components/TableBody.svelte';
+  import TableCell from '$lib/components/TableCell.svelte';
+  import TableHeader from '$lib/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/components/TableRow.svelte';
   import DemoSection from './DemoSection.svelte';
   import {
     COLOR_GROUPS,
@@ -117,16 +122,20 @@
         <Input lang="ja" value="入力欄も" aria-label="A Japanese field" />
       </Card>
       <Table size="sm" caption="Z-index scale">
-        <thead>
-          <tr><th>Token</th><th class="table-numeric">Value</th></tr>
-        </thead>
-        <tbody>
+        <TableHeader>
+          <TableRow>
+            <TableHeaderCell>Token</TableHeaderCell>
+            <TableHeaderCell numeric>Value</TableHeaderCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {#each Z_SCALE as name, index (name)}
-            <tr
-              ><td class="mono">{name}</td><td class="table-numeric">{zValues[index] ?? ''}</td></tr
-            >
+            <TableRow>
+              <TableCell class="mono">{name}</TableCell>
+              <TableCell numeric>{zValues[index] ?? ''}</TableCell>
+            </TableRow>
           {/each}
-        </tbody>
+        </TableBody>
       </Table>
     </div>
   </div>
