@@ -38,7 +38,7 @@ describe('the playground token catalog', () => {
 
   it('shows every spacing step and radius', () => {
     expect(sorted(SPACING)).toEqual(defined('spacing.css', /^--sp-/u));
-    expect(sorted(RADII)).toEqual(defined('spacing.css', /^--radius-/u));
+    expect(sorted(RADII)).toEqual(defined('radius.css', /^--radius-/u));
   });
 
   it('shows every shadow and every z-index step', () => {

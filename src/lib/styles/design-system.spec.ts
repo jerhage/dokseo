@@ -1556,7 +1556,7 @@ describe('the design system stylesheets', () => {
     expect(body).toEqual([
       'padding-inline: clamp(var(--sp-4), (100% - var(--breakpoint-compact)) * 1000, var(--sp-6))',
     ]);
-    expect(definitionValues(style('tokens/spacing.css')).get('--breakpoint-compact')).toBe(
+    expect(definitionValues(style('tokens/layout.css')).get('--breakpoint-compact')).toBe(
       'var(--ds-size-compact)',
     );
     expect(definitionValues(style('base/primitives.css')).get('--ds-size-compact')).toBe(
@@ -1574,7 +1574,7 @@ describe('the design system stylesheets', () => {
       .filter(([, widths]) => widths.length > 0)
       .map(([path, widths]) => [path, widths.length] as const);
 
-    expect(definitionValues(style('tokens/spacing.css')).get('--breakpoint-narrow')).toBe(
+    expect(definitionValues(style('tokens/layout.css')).get('--breakpoint-narrow')).toBe(
       'var(--ds-size-narrow)',
     );
     expect(narrow).toBe('48rem');

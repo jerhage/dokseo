@@ -24,6 +24,9 @@
 @import 'tokens/colors.css' layer(tokens);
 @import 'tokens/typography.css' layer(tokens);
 @import 'tokens/spacing.css' layer(tokens);
+@import 'tokens/radius.css' layer(tokens);
+@import 'tokens/borders.css' layer(tokens);
+@import 'tokens/layout.css' layer(tokens);
 @import 'tokens/sizes.css' layer(tokens);
 @import 'tokens/motion.css' layer(tokens);
 @import 'tokens/elevation.css' layer(tokens);
