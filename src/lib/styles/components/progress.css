@@ -31,7 +31,7 @@
 .progress-lg {
   block-size: var(--sp-3);
 }
-.progress-indeterminate .progress-fill {
+.progress-track.is-indeterminate .progress-fill {
   inline-size: 40%;
   animation: kIndeterminate var(--dur-long) var(--ease-in-out) infinite;
 }

@@ -37,7 +37,7 @@
     'progress-track',
     PROGRESS_VARIANTS[variant],
     PROGRESS_SIZES[size],
-    { 'progress-indeterminate': value === undefined },
+    { 'is-indeterminate': value === undefined },
     className,
   ]}
 >

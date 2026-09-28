@@ -23,7 +23,7 @@
 <DemoSection
   id="progress"
   title="Progress and skeleton"
-  classes={['progress-track', 'progress-fill', 'progress-indeterminate', 'skeleton']}
+  classes={['progress-track', 'progress-fill', 'is-indeterminate', 'skeleton']}
 >
   <div class="grid-2 gap-5">
     <Card>
