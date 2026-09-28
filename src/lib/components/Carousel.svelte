@@ -3,8 +3,8 @@
   import { MediaQuery } from 'svelte/reactivity';
   import type { HTMLAttributes } from 'svelte/elements';
   import {
-    CAROUSEL_GAP_PX,
     CAROUSEL_REST,
+    carouselGap,
     carouselNeighbours,
     carouselShift,
     carouselStep,
@@ -30,7 +30,7 @@
     slides: readonly T[];
     slide: Snippet<[T]>;
     motion?: CarouselMotion;
-    gap?: number;
+    gap?: number | undefined;
     dir?: CarouselDirection;
     driven?: boolean;
     onsettled?: (towards: CarouselSide) => void;
@@ -40,7 +40,7 @@
     slides,
     slide,
     motion = $bindable(CAROUSEL_REST),
-    gap = CAROUSEL_GAP_PX,
+    gap,
     dir = 'ltr',
     driven = false,
     onsettled,
@@ -56,10 +56,15 @@
   let press: Press | null = null;
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
+  function sceneGap(element: HTMLDivElement | null): number {
+    if (gap !== undefined) return gap;
+    return element === null ? 0 : carouselGap(getComputedStyle(element));
+  }
+
   function scene(): CarouselScene {
     return {
       width: root?.getBoundingClientRect().width ?? 0,
-      gap,
+      gap: sceneGap(root),
       direction: dir,
       neighbours: carouselNeighbours(slides),
     };
@@ -164,7 +169,7 @@
       inert={item.beside !== 0}
       style:--carousel-beside={screenSide(item.beside, dir)}
       style:--carousel-shift="{carouselShift(motion)}px"
-      style:--carousel-gap="{gap}px"
+      style:--carousel-gap={gap === undefined ? undefined : `${gap}px`}
       ontransitionend={settled}
     >
       {@render slide(item)}

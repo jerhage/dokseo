@@ -5,6 +5,10 @@
       inline-size: 100%;
       block-size: 100%;
     }
+    .lift {
+      --rect-width: var(--lift-size);
+      --rect-height: var(--lift-size);
+    }
     .lift-button {
       inline-size: 100%;
       block-size: 100%;

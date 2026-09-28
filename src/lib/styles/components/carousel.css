@@ -16,7 +16,7 @@
   container-type: size;
   transition: none;
   transform: translateX(
-    calc(var(--carousel-beside, 0) * (100% + var(--carousel-gap, 0px)) + var(--carousel-shift, 0px))
+    calc(var(--carousel-beside, 0) * (100% + var(--carousel-gap)) + var(--carousel-shift, 0px))
   );
 }
 .carousel-slot.is-beside {

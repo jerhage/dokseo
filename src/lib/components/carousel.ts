@@ -1,4 +1,6 @@
 import { match } from 'ts-pattern';
+import { pixelLength } from './css-length';
+import type { StyleSource } from './css-length';
 
 type CarouselSide = -1 | 1;
 
@@ -26,7 +28,7 @@ type CarouselInput =
   | { readonly kind: 'follow'; readonly travel: number }
   | { readonly kind: 'release'; readonly towards: CarouselSide | null };
 
-const CAROUSEL_GAP_PX = 16;
+const CAROUSEL_GAP_PROPERTY = '--carousel-gap';
 
 const CAROUSEL_RESISTANCE = 0.55;
 
@@ -37,6 +39,10 @@ const SWIPE_SHARE = 0.25;
 const FLICK_PX_PER_MS = 0.4;
 
 const FLICK_MIN_PX = 24;
+
+function carouselGap(style: StyleSource): number {
+  return pixelLength(style, CAROUSEL_GAP_PROPERTY);
+}
 
 function isPositiveFinite(value: number): boolean {
   return Number.isFinite(value) && value > 0;
@@ -144,10 +150,10 @@ function swipeRelease(
 }
 
 export {
-  CAROUSEL_GAP_PX,
   CAROUSEL_RESISTANCE,
   CAROUSEL_REST,
   carouselAround,
+  carouselGap,
   carouselNeighbours,
   carouselOffset,
   carouselShift,

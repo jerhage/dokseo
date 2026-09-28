@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CAROUSEL_GAP_PX,
   CAROUSEL_REST,
   carouselAround,
+  carouselGap,
   carouselNeighbours,
   carouselOffset,
   carouselShift,
@@ -16,11 +16,13 @@ import type { CarouselMotion, CarouselScene } from './carousel';
 
 const WIDTH = 390;
 
-const ACROSS = WIDTH + CAROUSEL_GAP_PX;
+const GAP = 16;
+
+const ACROSS = WIDTH + GAP;
 
 const MIDDLE: CarouselScene = {
   width: WIDTH,
-  gap: CAROUSEL_GAP_PX,
+  gap: GAP,
   direction: 'ltr',
   neighbours: { before: true, after: true },
 };
@@ -227,5 +229,19 @@ describe('swipeRelease', () => {
     expect(swipeRelease(-10, 5, WIDTH, 'ltr')).toBeNull();
     expect(swipeRelease(0, 50, WIDTH, 'ltr')).toBeNull();
     expect(swipeRelease(-200, 50, 0, 'ltr')).toBeNull();
+  });
+});
+
+describe('carouselGap', () => {
+  it('reads the pixels the --carousel-gap token computes to', () => {
+    const style = {
+      getPropertyValue: (property: string) => (property === '--carousel-gap' ? '16px' : ''),
+    };
+
+    expect(carouselGap(style)).toBe(16);
+  });
+
+  it('reads 0 where the token is unset', () => {
+    expect(carouselGap({ getPropertyValue: () => '' })).toBe(0);
   });
 });

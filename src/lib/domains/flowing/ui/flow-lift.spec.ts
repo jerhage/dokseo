@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
-  LIFT_BUTTON_GAP_PX,
-  LIFT_BUTTON_HEIGHT_PX,
-  LIFT_BUTTON_WIDTH_PX,
   QUOTE_CONTEXT_CHARS,
+  liftMetrics,
   liftPlacement,
   liftsAnything,
   offerMove,
   passageQuote,
   rectOnStage,
 } from './flow-lift';
-import type { LiftRect, StageSize } from './flow-lift';
+import type { LiftMetrics, LiftRect, StageSize } from './flow-lift';
 import { FRAME_NOWHERE_ON_THE_STAGE, HOST_VIEWPORT_ORIGIN } from './flow-turn';
 
 const STAGE: StageSize = { width: 414, height: 896 };
+
+const LIFT: LiftMetrics = { size: 44, gap: 8 };
 
 function rect(left: number, top: number, right: number, bottom: number): LiftRect {
   return { left, top, right, bottom };
 }
 
 function centred(left: number, right: number): number {
-  return (left + right) / 2 - LIFT_BUTTON_WIDTH_PX / 2;
+  return (left + right) / 2 - LIFT.size / 2;
 }
 
 describe('passageQuote', () => {
@@ -122,89 +122,95 @@ describe('rectOnStage', () => {
 });
 
 describe('liftPlacement', () => {
+  it('places a lift by the size and the gap it is given', () => {
+    const placed = liftPlacement([rect(100, 300, 260, 330)], STAGE, { size: 60, gap: 12 });
+
+    expect(placed).toEqual({ kind: 'above', left: 150, top: 300 - 12 - 60 });
+  });
+
   it('offers the button above the selection when there is room for it', () => {
-    const placed = liftPlacement([rect(100, 300, 260, 330)], STAGE);
+    const placed = liftPlacement([rect(100, 300, 260, 330)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'above',
       left: centred(100, 260),
-      top: 300 - LIFT_BUTTON_GAP_PX - LIFT_BUTTON_HEIGHT_PX,
+      top: 300 - LIFT.gap - LIFT.size,
     });
   });
 
   it('offers the button below a selection sitting against the top of the page', () => {
-    const placed = liftPlacement([rect(100, 4, 260, 34)], STAGE);
+    const placed = liftPlacement([rect(100, 4, 260, 34)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'below',
       left: centred(100, 260),
-      top: 34 + LIFT_BUTTON_GAP_PX,
+      top: 34 + LIFT.gap,
     });
   });
 
   it('offers the button above a selection one pixel clear of the top', () => {
-    const roomy = LIFT_BUTTON_GAP_PX + LIFT_BUTTON_HEIGHT_PX;
+    const roomy = LIFT.gap + LIFT.size;
 
-    expect(liftPlacement([rect(100, roomy, 260, 400)], STAGE).kind).toBe('above');
-    expect(liftPlacement([rect(100, roomy - 1, 260, 400)], STAGE).kind).toBe('below');
+    expect(liftPlacement([rect(100, roomy, 260, 400)], STAGE, LIFT).kind).toBe('above');
+    expect(liftPlacement([rect(100, roomy - 1, 260, 400)], STAGE, LIFT).kind).toBe('below');
   });
 
   it('keeps the button on the page when the selection runs off the near edge', () => {
-    const placed = liftPlacement([rect(-40, 300, 20, 330)], STAGE);
+    const placed = liftPlacement([rect(-40, 300, 20, 330)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'above',
       left: 0,
-      top: 300 - LIFT_BUTTON_GAP_PX - LIFT_BUTTON_HEIGHT_PX,
+      top: 300 - LIFT.gap - LIFT.size,
     });
   });
 
   it('keeps the button on the page when the selection runs off the far edge', () => {
-    const placed = liftPlacement([rect(400, 300, 460, 330)], STAGE);
+    const placed = liftPlacement([rect(400, 300, 460, 330)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'above',
-      left: STAGE.width - LIFT_BUTTON_WIDTH_PX,
-      top: 300 - LIFT_BUTTON_GAP_PX - LIFT_BUTTON_HEIGHT_PX,
+      left: STAGE.width - LIFT.size,
+      top: 300 - LIFT.gap - LIFT.size,
     });
   });
 
   it('keeps the button on the page for a selection against the bottom', () => {
-    const placed = liftPlacement([rect(100, 0, 260, 896)], STAGE);
+    const placed = liftPlacement([rect(100, 0, 260, 896)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'below',
       left: centred(100, 260),
-      top: STAGE.height - LIFT_BUTTON_HEIGHT_PX,
+      top: STAGE.height - LIFT.size,
     });
   });
 
   it('spans the rects of a selection crossing two paragraphs', () => {
-    const placed = liftPlacement([rect(200, 300, 380, 320), rect(20, 330, 150, 350)], STAGE);
+    const placed = liftPlacement([rect(200, 300, 380, 320), rect(20, 330, 150, 350)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'above',
       left: centred(20, 380),
-      top: 300 - LIFT_BUTTON_GAP_PX - LIFT_BUTTON_HEIGHT_PX,
+      top: 300 - LIFT.gap - LIFT.size,
     });
   });
 
   it('ignores the half of a selection lying on the column the reader cannot see', () => {
-    const placed = liftPlacement([rect(200, 300, 380, 320), rect(900, 40, 1080, 60)], STAGE);
+    const placed = liftPlacement([rect(200, 300, 380, 320), rect(900, 40, 1080, 60)], STAGE, LIFT);
 
     expect(placed).toEqual({
       kind: 'above',
       left: centred(200, 380),
-      top: 300 - LIFT_BUTTON_GAP_PX - LIFT_BUTTON_HEIGHT_PX,
+      top: 300 - LIFT.gap - LIFT.size,
     });
   });
 
   it('offers nothing when every rect sits off the page', () => {
-    expect(liftPlacement([rect(900, 40, 1080, 60)], STAGE).kind).toBe('nowhere');
+    expect(liftPlacement([rect(900, 40, 1080, 60)], STAGE, LIFT).kind).toBe('nowhere');
   });
 
   it('offers nothing when the selection produced no rect at all', () => {
-    expect(liftPlacement([], STAGE).kind).toBe('nowhere');
+    expect(liftPlacement([], STAGE, LIFT).kind).toBe('nowhere');
   });
 
   it('offers nothing for a rect whose frame is nowhere on the stage', () => {
@@ -214,14 +220,16 @@ describe('liftPlacement', () => {
       width: 414,
     });
 
-    expect(liftPlacement([lost], STAGE).kind).toBe('nowhere');
+    expect(liftPlacement([lost], STAGE, LIFT).kind).toBe('nowhere');
   });
 
   it('offers nothing on a stage that has not been laid out', () => {
-    expect(liftPlacement([rect(100, 300, 260, 330)], { width: 0, height: 0 }).kind).toBe('nowhere');
-    expect(liftPlacement([rect(100, 300, 260, 330)], { width: Number.NaN, height: 896 }).kind).toBe(
+    expect(liftPlacement([rect(100, 300, 260, 330)], { width: 0, height: 0 }, LIFT).kind).toBe(
       'nowhere',
     );
+    expect(
+      liftPlacement([rect(100, 300, 260, 330)], { width: Number.NaN, height: 896 }, LIFT).kind,
+    ).toBe('nowhere');
   });
 });
 
@@ -240,5 +248,14 @@ describe('offerMove', () => {
 
   it('leaves the offer where it is while a pointer is still down', () => {
     expect(offerMove({ selected: true, pointerHeld: true })).toEqual({ kind: 'keep' });
+  });
+});
+
+describe('liftMetrics', () => {
+  it('reads the size and the gap from the pixels the lift tokens compute to', () => {
+    const tokens: Readonly<Record<string, string>> = { '--lift-size': '44px', '--lift-gap': '8px' };
+    const style = { getPropertyValue: (property: string) => tokens[property] ?? '' };
+
+    expect(liftMetrics(style)).toEqual({ size: 44, gap: 8 });
   });
 });

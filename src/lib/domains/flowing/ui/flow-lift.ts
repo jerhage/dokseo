@@ -1,3 +1,5 @@
+import { pixelLength } from '$lib/components/css-length';
+import type { StyleSource } from '$lib/components/css-length';
 import type { TextQuote } from '$lib/shared/anchor';
 import { tapOnStage } from './flow-turn';
 import type { Point, StageBox } from './flow-turn';
@@ -12,6 +14,11 @@ type LiftRect = {
 type StageSize = {
   readonly width: number;
   readonly height: number;
+};
+
+type LiftMetrics = {
+  readonly size: number;
+  readonly gap: number;
 };
 
 type LiftPlacement =
@@ -36,11 +43,9 @@ type OfferMove =
 
 const QUOTE_CONTEXT_CHARS = 32;
 
-const LIFT_BUTTON_WIDTH_PX = 44;
+const LIFT_SIZE_PROPERTY = '--lift-size';
 
-const LIFT_BUTTON_HEIGHT_PX = 44;
-
-const LIFT_BUTTON_GAP_PX = 8;
+const LIFT_GAP_PROPERTY = '--lift-gap';
 
 const NOWHERE_TO_OFFER: LiftPlacement = { kind: 'nowhere' };
 
@@ -49,6 +54,13 @@ const LEAVE_THE_OFFER_ALONE: OfferMove = { kind: 'keep' };
 const TAKE_THE_OFFER_AWAY: OfferMove = { kind: 'clear' };
 
 const STAND_THE_OFFER_OVER_IT: OfferMove = { kind: 'place' };
+
+function liftMetrics(style: StyleSource): LiftMetrics {
+  return {
+    size: pixelLength(style, LIFT_SIZE_PROPERTY),
+    gap: pixelLength(style, LIFT_GAP_PROPERTY),
+  };
+}
 
 function offerMove(seen: SelectionSeen): OfferMove {
   if (!seen.selected) return TAKE_THE_OFFER_AWAY;
@@ -109,40 +121,46 @@ function clamped(value: number, low: number, high: number): number {
   return Math.min(Math.max(value, low), high);
 }
 
-function liftPlacement(rects: readonly LiftRect[], stage: StageSize): LiftPlacement {
+function liftPlacement(
+  rects: readonly LiftRect[],
+  stage: StageSize,
+  lift: LiftMetrics,
+): LiftPlacement {
   if (!Number.isFinite(stage.width) || !Number.isFinite(stage.height)) return NOWHERE_TO_OFFER;
   if (stage.width <= 0 || stage.height <= 0) return NOWHERE_TO_OFFER;
 
   const span = spanOf(rects.filter((rect) => showsOnStage(rect, stage)));
   if (span === null) return NOWHERE_TO_OFFER;
 
-  const left = clamped(
-    (span.left + span.right) / 2 - LIFT_BUTTON_WIDTH_PX / 2,
-    0,
-    stage.width - LIFT_BUTTON_WIDTH_PX,
-  );
+  const left = clamped((span.left + span.right) / 2 - lift.size / 2, 0, stage.width - lift.size);
 
-  const above = span.top - LIFT_BUTTON_GAP_PX - LIFT_BUTTON_HEIGHT_PX;
+  const above = span.top - lift.gap - lift.size;
   if (above >= 0) return { kind: 'above', left, top: above };
 
-  const below = clamped(span.bottom + LIFT_BUTTON_GAP_PX, 0, stage.height - LIFT_BUTTON_HEIGHT_PX);
+  const below = clamped(span.bottom + lift.gap, 0, stage.height - lift.size);
 
   return { kind: 'below', left, top: below };
 }
 
 export {
   LEAVE_THE_OFFER_ALONE,
-  LIFT_BUTTON_GAP_PX,
-  LIFT_BUTTON_HEIGHT_PX,
-  LIFT_BUTTON_WIDTH_PX,
   NOWHERE_TO_OFFER,
   QUOTE_CONTEXT_CHARS,
   STAND_THE_OFFER_OVER_IT,
   TAKE_THE_OFFER_AWAY,
+  liftMetrics,
   liftPlacement,
   liftsAnything,
   offerMove,
   passageQuote,
   rectOnStage,
 };
-export type { LiftPlacement, LiftRect, LiftedPassage, OfferMove, SelectionSeen, StageSize };
+export type {
+  LiftMetrics,
+  LiftPlacement,
+  LiftRect,
+  LiftedPassage,
+  OfferMove,
+  SelectionSeen,
+  StageSize,
+};

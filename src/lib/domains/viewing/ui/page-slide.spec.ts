@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CAROUSEL_GAP_PX,
   CAROUSEL_REST,
   carouselNeighbours,
   carouselShift,
@@ -20,7 +19,9 @@ type BookScene = { readonly direction: ReadingDirection; readonly neighbours: Ne
 
 const WIDTH = 390;
 
-const ACROSS = WIDTH + CAROUSEL_GAP_PX;
+const GAP = 16;
+
+const ACROSS = WIDTH + GAP;
 
 const PREVIOUS: PageGroup = [imageIndex(0), imageIndex(1)];
 
@@ -70,7 +71,7 @@ function slideStep(
 ): CarouselMotion {
   const carousel: CarouselScene = {
     width: WIDTH,
-    gap: CAROUSEL_GAP_PX,
+    gap: GAP,
     direction: 'ltr',
     neighbours: carouselNeighbours(slidePanes(CURRENT, scene.neighbours, scene.direction)),
   };

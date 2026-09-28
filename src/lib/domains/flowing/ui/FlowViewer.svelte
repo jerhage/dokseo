@@ -26,13 +26,7 @@
   import { NO_ANCHORS, passageCfis } from './flow-highlight';
   import { FlowGestures } from './flow-gestures';
   import { flowMeta, tickOffsets } from './flow-progress';
-  import {
-    LIFT_BUTTON_HEIGHT_PX,
-    LIFT_BUTTON_WIDTH_PX,
-    liftPlacement,
-    offerMove,
-    rectOnStage,
-  } from './flow-lift';
+  import { liftMetrics, liftPlacement, offerMove, rectOnStage } from './flow-lift';
   import type { LiftPlacement, LiftRect, LiftedPassage } from './flow-lift';
   import { forgetSelection, selectedPassage, shownSelection } from './flow-passage';
   import { openFlowSurface } from './flow-surface';
@@ -283,7 +277,10 @@
     const origin = frameOrigin(chapter.doc);
     const onScreen = { left: box.left, top: box.top, width: box.width };
     const placed = rects.map((rect) => rectOnStage(rect, origin, onScreen));
-    const spot = spotOfferedAt(liftPlacement(placed, { width: box.width, height: box.height }));
+    const stageSize = { width: box.width, height: box.height };
+    const spot = spotOfferedAt(
+      liftPlacement(placed, stageSize, liftMetrics(getComputedStyle(host))),
+    );
 
     return spot === null ? null : { chapter, ...spot };
   }
@@ -419,8 +416,6 @@
         class="lift place-rect z-overlay"
         style:--rect-left="{offer.left}px"
         style:--rect-top="{offer.top}px"
-        style:--rect-width="{LIFT_BUTTON_WIDTH_PX}px"
-        style:--rect-height="{LIFT_BUTTON_HEIGHT_PX}px"
       >
         <IconButton
           variant="accent"

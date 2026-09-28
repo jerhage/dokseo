@@ -285,7 +285,6 @@ const RUNTIME_INPUTS = [
   '--breakpoint-probe-width',
   '--btn-min-block-size',
   '--carousel-beside',
-  '--carousel-gap',
   '--carousel-shift',
   '--indent-depth',
   '--menu-anchor-width',
