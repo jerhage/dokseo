@@ -182,7 +182,7 @@
   {suppressed}
   slop={clickSlop}
   minimum={MIN_SELECTION_PX}
-  note={noting}
+  accent={noting}
   label={measure}
   onstart={forget}
   onend={ended}

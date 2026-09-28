@@ -57,16 +57,18 @@
     <Card>
       <Tabs
         tabs={RANGE}
-        label="Range with tools"
+        label="Range with actions"
         variant="pill"
         onselectedchange={() => (changes += 1)}
         {panel}
       >
-        {#snippet tools()}
+        {#snippet actions()}
           <Button size="sm" variant="ghost">Export</Button>
         {/snippet}
       </Tabs>
-      <p class="text-xs text-faint">tools beside the list · onselectedchange ran {changes} times</p>
+      <p class="text-xs text-faint">
+        actions beside the list · onselectedchange ran {changes} times
+      </p>
     </Card>
   </div>
 </DemoSection>

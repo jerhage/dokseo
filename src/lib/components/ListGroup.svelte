@@ -5,7 +5,7 @@
   import type { ListGroupVariant } from './list-group';
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
-    label?: string | undefined;
+    title?: string | undefined;
     heading?: 'h2' | 'h3' | 'h4';
     variant?: ListGroupVariant;
     children: Snippet;
@@ -13,7 +13,7 @@
   };
 
   let {
-    label,
+    title,
     heading = 'h2',
     variant = 'separated',
     children,
@@ -26,14 +26,14 @@
 </script>
 
 <svelte:element
-  this={label === undefined ? 'div' : 'section'}
+  this={title === undefined ? 'div' : 'section'}
   {...rest}
   class={['list-group', LIST_GROUP_VARIANTS[variant], className]}
-  aria-labelledby={label === undefined ? undefined : `${uid}-label`}
+  aria-labelledby={title === undefined ? undefined : `${uid}-title`}
 >
-  {#if label !== undefined}
-    <svelte:element this={heading} class="list-group-title eyebrow" id="{uid}-label"
-      >{label}</svelte:element
+  {#if title !== undefined}
+    <svelte:element this={heading} class="list-group-title eyebrow" id="{uid}-title"
+      >{title}</svelte:element
     >
   {/if}
   <div class="list-group-box">

@@ -14,7 +14,7 @@
     variant?: TabsVariant;
     onselectedchange?: (id: string) => void;
     panel: Snippet<[TabItem]>;
-    tools?: Snippet;
+    actions?: Snippet;
     headerClass?: ClassValue;
   };
 
@@ -25,7 +25,7 @@
     variant = 'underline',
     onselectedchange,
     panel,
-    tools,
+    actions,
     headerClass,
     class: className,
     ...rest
@@ -81,10 +81,10 @@
 {/snippet}
 
 <div {...rest} class={['tabs', TABS_VARIANTS[variant], className]}>
-  {#if tools}
+  {#if actions}
     <div class={['tabs-header', headerClass]}>
       {@render tabList()}
-      <div class="tabs-actions">{@render tools()}</div>
+      <div class="tabs-actions">{@render actions()}</div>
     </div>
   {:else}
     {@render tabList()}

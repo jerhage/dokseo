@@ -63,7 +63,7 @@ describe('ListGroup', () => {
 
   it('names a labelled group by its heading and puts the summary in a description list', () => {
     const html = markup(LIST_GROUP, {
-      label: 'What takes up space',
+      title: 'What takes up space',
       heading: 'h3',
       variant: 'inset',
       children: ITEM,
@@ -71,7 +71,7 @@ describe('ListGroup', () => {
     });
 
     expect(html).toMatch(
-      /^<section class="list-group list-group-inset" aria-labelledby="([^"]+)-label"><h3 class="list-group-title eyebrow" id="\1-label">What takes up space<\/h3>/u,
+      /^<section class="list-group list-group-inset" aria-labelledby="([^"]+)-title"><h3 class="list-group-title eyebrow" id="\1-title">What takes up space<\/h3>/u,
     );
     expect(html).toContain(
       '<div class="list-group-box"><ul class="list-group-list"><li>One</li></ul><dl class="list-group-summary"><div><dt>Total</dt><dd>8 kB</dd></div></dl></div></section>',

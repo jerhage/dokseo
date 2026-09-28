@@ -41,7 +41,7 @@
     <StorageBreakdown account={state.account} />
   {/if}
 
-  <ListGroup label="Free up space">
+  <ListGroup title="Free up space">
     <ListRow title="Books" description="Books are removed from your library.">
       {#snippet actions()}
         <Button href="/" size="sm" variant="outline">Open your library</Button>

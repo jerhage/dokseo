@@ -28,7 +28,7 @@
     readonly slop: (pointerType: string) => number;
     readonly minimum: number;
     readonly suppressed?: boolean;
-    readonly note?: boolean;
+    readonly accent?: boolean;
     readonly label?: string | null;
     readonly onstart?: () => void;
     readonly onend?: (end: MarqueeEnd, stroke: MarqueeStroke) => void;
@@ -43,7 +43,7 @@
     slop,
     minimum,
     suppressed = false,
-    note = false,
+    accent = false,
     label = null,
     onstart,
     onend,
@@ -254,7 +254,7 @@
     <div
       class={[
         'marquee-selection-box place-rect region-box z-raised',
-        { 'region-box-accent': note },
+        { 'region-box-accent': accent },
       ]}
       style:--rect-left="{box.left}px"
       style:--rect-top="{box.top}px"

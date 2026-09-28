@@ -15,7 +15,7 @@
   const origin = $derived(originFigure(account));
 </script>
 
-<ListGroup label="What takes up space">
+<ListGroup title="What takes up space">
   {#each rows as row (row.key)}
     <ListRow
       title={row.label}

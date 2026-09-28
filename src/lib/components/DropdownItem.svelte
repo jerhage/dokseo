@@ -4,7 +4,7 @@
 
   type Looks = {
     danger?: boolean;
-    shortcut?: string | undefined;
+    hint?: string | undefined;
   };
 
   type ButtonProps = Looks &
@@ -21,7 +21,7 @@
 
   type Props = ButtonProps | LinkProps;
 
-  let { danger = false, shortcut, class: className, children, ...rest }: Props = $props();
+  let { danger = false, hint, class: className, children, ...rest }: Props = $props();
 
   const menu = useMenu();
 
@@ -32,8 +32,8 @@
 
 {#snippet content()}
   {@render children?.()}
-  {#if shortcut !== undefined}
-    <span class="dropdown-item-hint">{shortcut}</span>
+  {#if hint !== undefined}
+    <span class="dropdown-item-hint">{hint}</span>
   {/if}
 {/snippet}
 

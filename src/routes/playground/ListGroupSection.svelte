@@ -25,7 +25,7 @@
 >
   <div class="grid-2">
     <div class="col gap-6">
-      <ListGroup label="Rows with a value, and a summary">
+      <ListGroup title="Rows with a value, and a summary">
         <ListRow title="Photos" description="originals and their previews" value="1.2 GB">
           <Progress label="Photos, share of the space used" value={60} size="sm" />
         </ListRow>
@@ -40,7 +40,7 @@
           <ListRow listed size="sm" strong title="Reported" value="1.3 GB" />
         {/snippet}
       </ListGroup>
-      <ListGroup label="Rows with actions">
+      <ListGroup title="Rows with actions">
         <ListRow title="Downloads" description="Files are removed from the downloads page.">
           {#snippet actions()}
             <Button href="#list-group" size="sm" variant="outline">Open downloads</Button>

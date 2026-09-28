@@ -78,7 +78,7 @@
     headerClass="layout-app-shell-narrow-nowrap"
     bind:selected={() => shelf, (id) => (shelf = toShelf(id))}
   >
-    {#snippet tools()}
+    {#snippet actions()}
       <Dropdown size="sm" variant="ghost" align="end" class="layout-app-shell-wide-only">
         {#snippet trigger()}Sort: {sortName(order)}{/snippet}
         {@render sortChoices()}

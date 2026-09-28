@@ -29,8 +29,8 @@
       <Dropdown>
         {#snippet trigger()}Actions{/snippet}
         <DropdownLabel>File</DropdownLabel>
-        <DropdownItem shortcut="F2" onclick={() => (chosen = 'Rename')}>Rename</DropdownItem>
-        <DropdownItem shortcut="⌘D" onclick={() => (chosen = 'Duplicate')}>Duplicate</DropdownItem>
+        <DropdownItem hint="F2" onclick={() => (chosen = 'Rename')}>Rename</DropdownItem>
+        <DropdownItem hint="⌘D" onclick={() => (chosen = 'Duplicate')}>Duplicate</DropdownItem>
         <DropdownItem disabled>Move to…</DropdownItem>
         <DropdownSeparator />
         <DropdownItem danger onclick={() => (chosen = 'Delete')}>Delete</DropdownItem>

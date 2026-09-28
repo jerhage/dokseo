@@ -13,7 +13,7 @@
 <DemoSection id="eyebrow" title="Eyebrow" classes={['eyebrow']}>
   <p class="text-sm text-muted prose">
     A small upper-case caption over a group. Its colour, face and weight come from the utilities
-    beside it; ListGroup's label applies it too.
+    beside it; ListGroup's title applies it too.
   </p>
   <Card>
     <div class="grid-auto grid-auto-sm gap-4">

@@ -1049,7 +1049,7 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
-  it('keeps the tab tools at their own width, so a row that cannot wrap shrinks the tab list instead', () => {
+  it('keeps the tab actions at their own width, so a row that cannot wrap shrinks the tab list instead', () => {
     expect(declarations(ruleBody(style('components/tabs.css'), '.tabs-actions'))).toContain(
       'flex-shrink: 0',
     );

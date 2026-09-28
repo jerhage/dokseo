@@ -21,7 +21,7 @@
 
   let surface = $state<HTMLDivElement | null>(null);
   let marquee = $state<ReturnType<typeof MarqueeSelection> | null>(null);
-  let note = $state(false);
+  let accent = $state(false);
   let labelled = $state(false);
   let selectMode = $state(false);
   let heard = $state.raw<readonly string[]>([]);
@@ -143,7 +143,7 @@
     reader.
   </p>
   <div class="row wrap gap-4">
-    <Toggle bind:checked={note}>Note</Toggle>
+    <Toggle bind:checked={accent}>Accent</Toggle>
     <Toggle bind:checked={labelled}>Label</Toggle>
     <Toggle bind:checked={selectMode}>Select mode</Toggle>
     <Button size="sm" onclick={() => marquee?.dismiss()}>Dismiss</Button>
@@ -167,7 +167,7 @@
           pointerTypes={DRAWS_WITH}
           {slop}
           minimum={MINIMUM_PX}
-          {note}
+          {accent}
           label={labelled ? 'Label' : null}
           onend={ended}
           onrefuse={(refusal) => hear(refusal.kind)}
