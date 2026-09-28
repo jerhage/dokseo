@@ -274,7 +274,6 @@ function heardThrough(
   const context: GestureContext = {
     pannable: false,
     selectMode: false,
-    doubleTaps: true,
     waitsForDoubleTap: centreZoneWaits(frame, turns),
   };
   let state = GESTURE_IDLE;

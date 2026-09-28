@@ -6,7 +6,7 @@
   type Props = Omit<HTMLButtonAttributes, 'type' | 'aria-pressed'> & {
     pressed?: boolean;
     onpressedchange?: (pressed: boolean) => void;
-    ref?: HTMLButtonElement | undefined;
+    ref?: HTMLButtonElement | null | undefined;
     color?: TagColour;
   };
 

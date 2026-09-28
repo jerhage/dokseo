@@ -19,7 +19,7 @@
     Face & {
       label: string;
       tooltip?: IconButtonTooltip;
-      ref?: HTMLButtonElement | HTMLAnchorElement | undefined;
+      ref?: HTMLButtonElement | HTMLAnchorElement | null | undefined;
     };
 
   let {
@@ -32,8 +32,8 @@
     ...rest
   }: Props = $props();
 
-  let asButton = $state<HTMLButtonElement>();
-  let asLink = $state<HTMLAnchorElement>();
+  let asButton = $state<HTMLButtonElement | null>();
+  let asLink = $state<HTMLAnchorElement | null>();
 
   const title = $derived(iconButtonTitle(label, tooltip));
 </script>

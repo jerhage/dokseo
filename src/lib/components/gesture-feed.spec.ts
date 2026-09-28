@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DOUBLE_TAP_MS, LONG_PRESS_MS } from './gesture';
 import type { GestureContext, GestureIntent, GestureTick } from './gesture';
 import { GestureFeed } from './gesture-feed';
-import type { Clock } from './toast-timer';
+import type { Clock } from './clock';
 
 type Scheduled = { readonly at: number; readonly run: () => void; cancelled: boolean };
 
@@ -35,7 +35,6 @@ class FakeClock implements Clock {
 const CONTEXT: GestureContext = {
   pannable: false,
   selectMode: false,
-  doubleTaps: true,
   waitsForDoubleTap: () => true,
 };
 

@@ -127,7 +127,6 @@
     const step = gestures.step(input, {
       pannable,
       selectMode: false,
-      doubleTaps: true,
       waitsForDoubleTap: () => true,
     });
     acted(step.intent);

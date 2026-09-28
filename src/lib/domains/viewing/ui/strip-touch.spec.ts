@@ -6,7 +6,6 @@ import { holdsTheScroll, stripTouchAction } from './strip-touch';
 const STRIP: GestureContext = {
   pannable: false,
   selectMode: false,
-  doubleTaps: false,
   waitsForDoubleTap: () => false,
 };
 

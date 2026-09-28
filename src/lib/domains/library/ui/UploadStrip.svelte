@@ -1,14 +1,14 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import Dropzone from '$lib/components/Dropzone.svelte';
+  import type { FileSelection } from '$lib/components/file-selection';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from './accepted-formats';
-  import { arrivedFiles } from './chosen-files';
 
   type Props = {
     readonly busy: boolean;
     readonly compact: boolean;
-    readonly onfiles: (files: readonly File[]) => void;
+    readonly onfiles: (selection: FileSelection<File>) => void;
   };
 
   let { busy, compact, onfiles }: Props = $props();
@@ -18,11 +18,6 @@
 
   export function choose(): void {
     filePicker?.click();
-  }
-
-  function deliver(files: readonly File[]): void {
-    if (files.length === 0) return;
-    onfiles(files);
   }
 </script>
 
@@ -38,7 +33,7 @@
     disabled={busy}
     title={busy ? 'Adding…' : DROP_INVITATION}
     hint="pages stay on your device"
-    onfiles={(selection) => deliver(arrivedFiles(selection))}
+    {onfiles}
   />
 
   <div class="row wrap items-center justify-between gap-2">

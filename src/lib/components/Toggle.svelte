@@ -4,7 +4,7 @@
 
   type Props = Omit<HTMLInputAttributes, 'type' | 'role' | 'class' | 'children'> & {
     class?: ClassValue;
-    ref?: HTMLInputElement | undefined;
+    ref?: HTMLInputElement | null | undefined;
     children: Snippet;
   };
 

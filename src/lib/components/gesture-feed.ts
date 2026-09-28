@@ -7,8 +7,8 @@ import type {
   GestureStep,
   GestureTick,
 } from './gesture';
-import { SYSTEM_CLOCK } from './toast-timer';
-import type { Clock } from './toast-timer';
+import { SYSTEM_CLOCK } from './clock';
+import type { Clock } from './clock';
 
 type GesturePointer = {
   readonly pointerId: number;

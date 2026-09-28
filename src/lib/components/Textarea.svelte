@@ -2,7 +2,7 @@
   import type { HTMLTextareaAttributes } from 'svelte/elements';
 
   type Props = Omit<HTMLTextareaAttributes, 'children'> & {
-    ref?: HTMLTextAreaElement | undefined;
+    ref?: HTMLTextAreaElement | null | undefined;
   };
 
   let { value = $bindable(), ref = $bindable(), class: className, ...rest }: Props = $props();

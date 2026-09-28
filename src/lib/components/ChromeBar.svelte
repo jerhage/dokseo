@@ -7,7 +7,7 @@
     edge: ChromeBarEdge;
     shown: boolean;
     height?: number;
-    ref?: HTMLElement | undefined;
+    ref?: HTMLElement | null | undefined;
   };
 
   let {

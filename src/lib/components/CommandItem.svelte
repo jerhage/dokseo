@@ -10,7 +10,7 @@
     Form & {
       selected?: boolean;
       hint?: string | undefined;
-      ref?: HTMLElement | undefined;
+      ref?: HTMLElement | null | undefined;
     };
 
   let {

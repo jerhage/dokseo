@@ -3,7 +3,7 @@
   import ChevronDown from './icons/ChevronDown.svelte';
 
   type Props = HTMLSelectAttributes & {
-    ref?: HTMLSelectElement | undefined;
+    ref?: HTMLSelectElement | null | undefined;
   };
 
   let {

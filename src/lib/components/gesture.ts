@@ -18,7 +18,6 @@ type GestureInput = GestureSample | GestureTick;
 type GestureContext = {
   readonly pannable: boolean;
   readonly selectMode: boolean;
-  readonly doubleTaps: boolean;
   readonly waitsForDoubleTap: (at: Point) => boolean;
 };
 
@@ -248,7 +247,7 @@ function releasePressed(
   }
   if (elapsed >= LONG_PRESS_MS) return still(GESTURE_IDLE);
   if (pending !== null) return { state: GESTURE_IDLE, intent: { kind: 'double-tap', ...at } };
-  if (!context.doubleTaps || !context.waitsForDoubleTap(at)) {
+  if (!context.waitsForDoubleTap(at)) {
     return { state: GESTURE_IDLE, intent: tapAt(at) };
   }
 

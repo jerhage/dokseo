@@ -2,7 +2,7 @@
   import type { HTMLInputAttributes } from 'svelte/elements';
 
   type Props = Omit<HTMLInputAttributes, 'children'> & {
-    ref?: HTMLInputElement | undefined;
+    ref?: HTMLInputElement | null | undefined;
   };
 
   let { value = $bindable(), ref = $bindable(), class: className, ...rest }: Props = $props();

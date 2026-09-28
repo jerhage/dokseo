@@ -424,7 +424,6 @@
     const step = gestures.step(input, {
       pannable,
       selectMode: selecting,
-      doubleTaps: true,
       waitsForDoubleTap: centreZoneWaits(span, turns),
     });
     const action = touchAction(step.intent, {

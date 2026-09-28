@@ -230,7 +230,6 @@
     const step = gestures.step(input, {
       pannable: false,
       selectMode: selecting,
-      doubleTaps: false,
       waitsForDoubleTap: () => false,
     });
     act(stripTouchAction(step.intent));

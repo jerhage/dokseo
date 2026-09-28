@@ -6,7 +6,7 @@
     href: string;
     current?: boolean;
     icon?: Snippet;
-    ref?: HTMLAnchorElement | undefined;
+    ref?: HTMLAnchorElement | null | undefined;
   };
 
   let {

@@ -32,7 +32,7 @@
     invalid?: boolean;
     directory?: boolean;
     readDrop?: DropReader<DataTransfer, File> | undefined;
-    ref?: HTMLInputElement | undefined;
+    ref?: HTMLInputElement | null | undefined;
     onfiles: (selection: FileSelection<File>) => void;
   };
 

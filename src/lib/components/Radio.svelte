@@ -18,7 +18,7 @@
     Labelling & {
       group?: HTMLInputAttributes['value'];
       class?: ClassValue;
-      ref?: HTMLInputElement | undefined;
+      ref?: HTMLInputElement | null | undefined;
     };
 
   let {

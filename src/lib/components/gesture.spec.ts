@@ -24,7 +24,6 @@ function inMiddleThird(at: Point): boolean {
 const FIT: GestureContext = {
   pannable: false,
   selectMode: false,
-  doubleTaps: true,
   waitsForDoubleTap: inMiddleThird,
 };
 
@@ -644,23 +643,7 @@ describe('gestureDeadline', () => {
 });
 
 describe('gestureStep without double taps', () => {
-  const IMMEDIATE: GestureContext = { ...FIT, doubleTaps: false };
-
-  it('never asks whether to wait', () => {
-    const asked: Point[] = [];
-    const context: GestureContext = {
-      ...IMMEDIATE,
-      waitsForDoubleTap: (at) => {
-        asked.push(at);
-        return true;
-      },
-    };
-
-    expect(heard([down(CENTRE, 0), up(CENTRE, 90)], context)).toEqual([
-      { kind: 'tap', x: CENTRE, y: ROW },
-    ]);
-    expect(asked).toEqual([]);
-  });
+  const IMMEDIATE: GestureContext = { ...FIT, waitsForDoubleTap: () => false };
 
   it('taps a centre tap at the release, with nothing left to wait for', () => {
     expect(run([down(CENTRE, 0), up(CENTRE, 90)], IMMEDIATE)).toEqual([

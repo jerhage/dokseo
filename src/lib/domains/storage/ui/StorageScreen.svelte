@@ -1,6 +1,7 @@
 <script lang="ts">
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
   import ListGroup from '$lib/components/ListGroup.svelte';
   import ListRow from '$lib/components/ListRow.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
@@ -29,7 +30,7 @@
 
   {#if state.kind === 'reading'}
     <div class="surface bordered rounded-container col gap-3 p-5" aria-busy="true">
-      <p class="text-sm text-muted" aria-live="polite">Reading what is stored…</p>
+      <EmptyState live message="Reading what is stored…" />
       <Skeleton shape="title" width="40%" />
       <Skeleton shape="text" />
       <Skeleton shape="text" width="70%" />

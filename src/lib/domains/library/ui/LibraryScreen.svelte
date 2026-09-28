@@ -244,7 +244,7 @@
           bind:this={strip}
           busy={view.busy}
           compact={view.books.length > 0}
-          onfiles={upload}
+          onfiles={(selection) => upload(arrivedFiles(selection))}
         />
       </div>
     {/if}

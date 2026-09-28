@@ -1,9 +1,6 @@
 import { match } from 'ts-pattern';
-
-type Clock = {
-  readonly now: () => number;
-  readonly schedule: (run: () => void, ms: number) => () => void;
-};
+import { SYSTEM_CLOCK } from './clock';
+import type { Clock } from './clock';
 
 type PauseReason = 'hover' | 'focus';
 
@@ -17,14 +14,6 @@ type TimerState =
   | { readonly kind: 'paused'; readonly remaining: number }
   | { readonly kind: 'expired' }
   | { readonly kind: 'stopped' };
-
-const SYSTEM_CLOCK: Clock = {
-  now: () => performance.now(),
-  schedule: (run, ms) => {
-    const handle = setTimeout(run, ms);
-    return () => clearTimeout(handle);
-  },
-};
 
 class ToastTimer {
   #clock: Clock;
@@ -83,5 +72,5 @@ class ToastTimer {
   }
 }
 
-export { SYSTEM_CLOCK, ToastTimer };
-export type { Clock, PauseReason, TimerState };
+export { ToastTimer };
+export type { PauseReason, TimerState };

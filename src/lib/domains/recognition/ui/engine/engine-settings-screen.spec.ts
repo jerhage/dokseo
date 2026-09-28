@@ -99,10 +99,11 @@ function aside(over: Partial<Fake>): string {
 }
 
 describe('EngineSettingsScreen', () => {
-  it('says no model is chosen and draws no engine when the view has none', () => {
+  it('draws only the header before the view has chosen a language', () => {
     const html = screen({ chosen: false });
 
-    expect(html).toContain('No recognition model has been chosen for any language yet.');
+    expect(html).toContain('OCR engine');
+    expect(html).not.toContain('No recognition model');
     expect(html).not.toContain('aria-labelledby');
   });
 

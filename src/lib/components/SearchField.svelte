@@ -14,7 +14,7 @@
     clearLabel?: string;
     onclear?: () => void;
     value?: string;
-    ref?: HTMLInputElement | undefined;
+    ref?: HTMLInputElement | null | undefined;
     class?: ClassValue;
   };
 

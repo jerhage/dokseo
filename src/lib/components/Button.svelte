@@ -17,13 +17,13 @@
   type ButtonProps = Looks &
     HTMLButtonAttributes & {
       href?: undefined;
-      ref?: HTMLButtonElement | undefined;
+      ref?: HTMLButtonElement | null | undefined;
     };
 
   type LinkProps = Looks &
     HTMLAnchorAttributes & {
       href: string;
-      ref?: HTMLAnchorElement | undefined;
+      ref?: HTMLAnchorElement | null | undefined;
     };
 
   type Props = ButtonProps | LinkProps;

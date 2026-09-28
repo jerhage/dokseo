@@ -61,7 +61,6 @@
     const step = gestures.step(input, {
       pannable: false,
       selectMode,
-      doubleTaps: false,
       waitsForDoubleTap: () => false,
     });
     const id = selectingId();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ToastTimer } from './toast-timer';
-import type { Clock } from './toast-timer';
+import type { Clock } from './clock';
 
 type Scheduled = { readonly at: number; readonly run: () => void; cancelled: boolean };
 

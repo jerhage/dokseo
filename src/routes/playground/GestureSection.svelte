@@ -42,8 +42,7 @@
     const step = gestures.step(input, {
       pannable,
       selectMode,
-      doubleTaps,
-      waitsForDoubleTap: inMiddleThird,
+      waitsForDoubleTap: (at) => doubleTaps && inMiddleThird(at),
     });
     phase = step.state.kind;
     if (step.intent.kind !== 'none') heard = [described(step.intent), ...heard].slice(0, KEPT);
