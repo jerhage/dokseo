@@ -1755,6 +1755,27 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
+  it('joins every child of an input group the same way and lets the input take the room', () => {
+    const css = style('components/forms/input-group.css');
+
+    expect(declarations(ruleBody(css, '.input-group > :not(:first-child)'))).toEqual([
+      'margin-inline-start: calc(-1 * var(--border-width))',
+      'border-start-start-radius: var(--radius-none)',
+      'border-end-start-radius: var(--radius-none)',
+    ]);
+    expect(declarations(ruleBody(css, '.input-group > :not(:last-child)'))).toEqual([
+      'border-start-end-radius: var(--radius-none)',
+      'border-end-end-radius: var(--radius-none)',
+    ]);
+    expect(declarations(ruleBody(css, '.input-group > .input'))).toEqual([
+      'flex: 1 1 0',
+      'min-inline-size: 0',
+    ]);
+    expect(everyDeclarationFor(css, '.input-group > .input:focus')).toEqual([
+      'z-index: var(--z-raised)',
+    ]);
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',

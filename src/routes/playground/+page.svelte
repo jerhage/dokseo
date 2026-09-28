@@ -29,6 +29,7 @@
   import HighlightSection from './HighlightSection.svelte';
   import IconButtonSection from './IconButtonSection.svelte';
   import IconsSection from './IconsSection.svelte';
+  import InputGroupSection from './InputGroupSection.svelte';
   import KeyHintsSection from './KeyHintsSection.svelte';
   import KeyboardScrollingSection from './KeyboardScrollingSection.svelte';
   import LayoutsIntro from './LayoutsIntro.svelte';
@@ -71,6 +72,7 @@
     ButtonGroupSection,
     BadgesSection,
     FormSection,
+    InputGroupSection,
     SearchFieldSection,
     FileUploadSection,
     ChoicesSection,
