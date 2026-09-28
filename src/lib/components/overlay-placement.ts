@@ -1,3 +1,5 @@
+import { pixelLength } from './css-length';
+import type { StyleSource } from './css-length';
 import type { MenuAlign } from './classes';
 
 type AnchorRect = {
@@ -46,10 +48,6 @@ type MenuInset = {
   readonly maxWidth: string | undefined;
 };
 
-type StyleSource = {
-  getPropertyValue(property: string): string;
-};
-
 const OVERLAY_GAP_PROPERTY = '--overlay-gap';
 
 const OVERLAY_EDGE_PROPERTY = '--overlay-edge';
@@ -67,15 +65,10 @@ function clamp(value: number, least: number, most: number): number {
   return Math.max(least, Math.min(value, most));
 }
 
-function length(value: string): number {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function overlaySpacing(style: StyleSource): OverlaySpacing {
   return {
-    gap: length(style.getPropertyValue(OVERLAY_GAP_PROPERTY)),
-    edge: length(style.getPropertyValue(OVERLAY_EDGE_PROPERTY)),
+    gap: pixelLength(style, OVERLAY_GAP_PROPERTY),
+    edge: pixelLength(style, OVERLAY_EDGE_PROPERTY),
   };
 }
 
