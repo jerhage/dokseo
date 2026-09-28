@@ -123,7 +123,7 @@
         </li>
       {:else}
         <li role="presentation">
-          <CommandItem interactive={false} class="text-muted" aria-hidden="true">
+          <CommandItem element="div" class="text-muted" aria-hidden="true">
             Type a new name to create a tag
           </CommandItem>
         </li>

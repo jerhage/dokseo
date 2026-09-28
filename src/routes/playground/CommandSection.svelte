@@ -81,8 +81,8 @@
   <Card>
     <span class="eyebrow text-faint weight-semibold">In a plain list</span>
     {@render rows(COMMANDS, 1)}
-    <CommandItem interactive={false} class="text-muted" aria-hidden="true">
-      A static row: interactive=false renders a plain element for a placeholder
+    <CommandItem element="div" class="text-muted" aria-hidden="true">
+      A static row: element="div" renders a plain element for a placeholder
     </CommandItem>
   </Card>
   <Card>
