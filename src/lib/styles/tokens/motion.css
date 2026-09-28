@@ -26,7 +26,15 @@
   --transition-ui: var(--ds-dur-flash) var(--ds-ease-smooth);
   --transition-spring: var(--ds-dur-spring) var(--ds-easing-spring);
   --transition-enter: var(--ds-duration-quick) var(--ds-ease-out);
-  --transition-exit: var(--ds-dur-flash) var(--ds-ease-in);
+  --transition-exit: var(--ds-dur-exit) var(--ds-easing-exit);
   --transition-bounce: var(--ds-dur-moderate) var(--ds-ease-bounce);
   --transition-elastic: var(--ds-dur-slow) var(--ds-ease-elastic);
+
+  --motion-overlay-in: var(--ds-motion-overlay-in);
+  --motion-overlay-out: var(--ds-motion-overlay-out);
+  --motion-menu-in: var(--ds-motion-menu-in);
+  --motion-toast-in: var(--ds-motion-toast-in);
+  --motion-toast-out: var(--ds-motion-toast-out);
+  --motion-item-in: var(--ds-motion-item-in);
+  --motion-panel-in: var(--ds-motion-panel-in);
 }

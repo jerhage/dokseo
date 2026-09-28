@@ -27,6 +27,8 @@ html:has(.modal-backdrop[open][data-page-scrollbar]) {
   .modal-backdrop.is-leaving .modal,
   .dropdown.is-open .dropdown-menu,
   .file-item,
+  .tab-panel,
+  .accordion-body,
   .skeleton {
     animation: none;
   }

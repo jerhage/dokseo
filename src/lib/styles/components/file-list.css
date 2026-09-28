@@ -15,7 +15,8 @@
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-container);
-  animation: kSlideUp var(--transition-enter) both;
+  animation: var(--transition-enter) both;
+  animation-name: var(--motion-item-in);
 }
 .file-item-icon-frame {
   display: grid;

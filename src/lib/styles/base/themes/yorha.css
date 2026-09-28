@@ -127,4 +127,14 @@
     var(--ds-yorha-scan-line) 0 1px,
     transparent 1px 4px
   );
+
+  --ds-motion-overlay-in: kScanIn;
+  --ds-motion-overlay-out: kScanOut;
+  --ds-motion-menu-in: kScanIn;
+  --ds-motion-toast-in: kGlitchIn;
+  --ds-motion-toast-out: kGlitchOut;
+  --ds-motion-item-in: kGlitchIn;
+  --ds-motion-panel-in: kFlicker;
+  --ds-dur-exit: var(--ds-dur-moderate);
+  --ds-easing-exit: var(--ds-ease-in-out-sharp);
 }

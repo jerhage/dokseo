@@ -32,7 +32,8 @@
 .dropdown-menu:popover-open {
   display: flex;
   flex-direction: column;
-  animation: kDropIn var(--transition-enter) both;
+  animation: var(--transition-enter) both;
+  animation-name: var(--motion-menu-in);
 }
 .dropdown-item {
   display: flex;

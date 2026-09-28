@@ -49,7 +49,8 @@
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   pointer-events: auto;
-  animation: kToastIn var(--dur-moderate) var(--ease-spring) both;
+  animation: var(--dur-moderate) var(--ease-spring) both;
+  animation-name: var(--motion-toast-in);
 }
 .toast::after {
   content: '';
@@ -72,7 +73,8 @@
   display: none;
 }
 .toast.is-leaving {
-  animation: kToastOut var(--transition-exit) forwards;
+  animation: var(--transition-exit) forwards;
+  animation-name: var(--motion-toast-out);
 }
 .toast-success {
   --_toast-fg: var(--color-success);

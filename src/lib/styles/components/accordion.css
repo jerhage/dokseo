@@ -41,6 +41,10 @@
 .accordion-item[open] > .accordion-trigger > .accordion-icon {
   transform: rotate(180deg);
 }
+.accordion-item[open] > .accordion-body {
+  animation: var(--transition-enter) both;
+  animation-name: var(--motion-panel-in);
+}
 .accordion-body {
   padding: 0 var(--sp-5) var(--sp-5);
   font-size: var(--text-sm);

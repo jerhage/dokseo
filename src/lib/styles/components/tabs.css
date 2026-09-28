@@ -77,6 +77,10 @@
   cursor: not-allowed;
   background-color: transparent;
 }
+.tab-panel:not([hidden]) {
+  animation: var(--transition-enter) both;
+  animation-name: var(--motion-panel-in);
+}
 .tab-panel {
   font-size: var(--text-sm);
   line-height: var(--lh-relaxed);

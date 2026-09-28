@@ -130,4 +130,14 @@
   --ds-easing-spring: var(--ds-ease-spring-gentle);
 
   --ds-page-backdrop: none;
+
+  --ds-motion-overlay-in: kModalIn;
+  --ds-motion-overlay-out: kModalOut;
+  --ds-motion-menu-in: kDropIn;
+  --ds-motion-toast-in: kToastIn;
+  --ds-motion-toast-out: kToastOut;
+  --ds-motion-item-in: kSlideUp;
+  --ds-motion-panel-in: none;
+  --ds-dur-exit: var(--ds-dur-flash);
+  --ds-easing-exit: var(--ds-ease-in);
 }

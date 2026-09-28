@@ -1833,6 +1833,76 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('names a declared keyframe, or none, in every motion primitive of every theme', () => {
+    const declared = new Set(keyframesIn(style('utilities/animation.css')).concat('none'));
+    const named = themeRules(themeSheets()).flatMap((rule) =>
+      Array.from(definitionValues(rule.body)).filter(([name]) => name.startsWith('--ds-motion-')),
+    );
+    const unknown = named.filter(([, value]) => !declared.has(value));
+
+    expect(named.length).toBeGreaterThan(0);
+    expect(unknown).toEqual([]);
+  });
+
+  it('animates overlays, menus, toasts, file items and panels with the keyframe their motion token names, in a longhand a none cannot shift', () => {
+    const animated = [
+      [
+        'components/modal/modal-transitions.css',
+        '.modal-backdrop[open] .modal',
+        'overlay-in',
+        'var(--dur-moderate) var(--ease-spring) both',
+      ],
+      [
+        'components/modal/modal-transitions.css',
+        '.modal-backdrop.is-leaving .modal',
+        'overlay-out',
+        'var(--transition-exit) both',
+      ],
+      [
+        'components/dropdown.css',
+        '.dropdown-menu:popover-open',
+        'menu-in',
+        'var(--transition-enter) both',
+      ],
+      ['components/toast.css', '.toast', 'toast-in', 'var(--dur-moderate) var(--ease-spring) both'],
+      ['components/toast.css', '.toast.is-leaving', 'toast-out', 'var(--transition-exit) forwards'],
+      ['components/file-list.css', '.file-item', 'item-in', 'var(--transition-enter) both'],
+      [
+        'components/tabs.css',
+        '.tab-panel:not([hidden])',
+        'panel-in',
+        'var(--transition-enter) both',
+      ],
+      [
+        'components/accordion.css',
+        '.accordion-item[open] > .accordion-body',
+        'panel-in',
+        'var(--transition-enter) both',
+      ],
+    ] as const;
+
+    for (const [path, selector, motion, timing] of animated) {
+      const lines = everyDeclarationFor(style(path), selector).filter((line) =>
+        line.startsWith('animation'),
+      );
+
+      expect({ selector, lines }).toEqual({
+        selector,
+        lines: [`animation: ${timing}`, `animation-name: var(--motion-${motion})`],
+      });
+    }
+  });
+
+  it('stops the panel entrances when motion is reduced', () => {
+    const reduced = mediaBlock(
+      style('overrides/overrides.css'),
+      '(prefers-reduced-motion: reduce)',
+    );
+    const stopped = rules(reduced).find((rule) => rule.body.includes('animation: none'));
+
+    expect(stopped?.selectors).toEqual(expect.arrayContaining(['.tab-panel', '.accordion-body']));
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',
