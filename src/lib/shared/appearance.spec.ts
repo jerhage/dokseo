@@ -106,6 +106,7 @@ describe('THEMES', () => {
       'mono',
       'moss',
       'petal',
+      'yorha',
     ]);
     expect(THEMES.toSorted()).toEqual(styledThemes());
   });

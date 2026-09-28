@@ -1,0 +1,123 @@
+:root {
+  --ds-yorha-canvas: light-dark(oklch(0.86 0.03 95), oklch(0.27 0.012 85));
+  --ds-yorha-paper: light-dark(oklch(0.89 0.028 95), oklch(0.31 0.013 85));
+  --ds-yorha-raised: light-dark(oklch(0.92 0.022 95), oklch(0.35 0.014 85));
+  --ds-yorha-sunken: light-dark(oklch(0.82 0.032 92), oklch(0.23 0.01 85));
+  --ds-yorha-well: light-dark(oklch(0.79 0.03 92), oklch(0.37 0.014 85));
+
+  --ds-yorha-ink: light-dark(oklch(0.38 0.015 85), oklch(0.86 0.03 95));
+  --ds-yorha-ink-hover: light-dark(oklch(0.3 0.012 85), oklch(0.93 0.022 95));
+  --ds-yorha-ink-deep: light-dark(oklch(0.32 0.014 85), oklch(0.9 0.025 95));
+  --ds-yorha-ink-muted: light-dark(oklch(0.43 0.02 85), oklch(0.76 0.03 95));
+  --ds-yorha-ink-faint: light-dark(oklch(0.52 0.022 85), oklch(0.64 0.025 92));
+  --ds-yorha-on-ink: light-dark(oklch(0.89 0.028 95), oklch(0.27 0.012 85));
+  --ds-yorha-tint-50: light-dark(oklch(0.83 0.03 92), oklch(0.34 0.014 85));
+  --ds-yorha-tint-100: light-dark(oklch(0.8 0.03 92), oklch(0.38 0.016 85));
+  --ds-yorha-line: light-dark(oklch(0.38 0.015 85 / 0.3), oklch(0.86 0.03 95 / 0.22));
+  --ds-yorha-line-strong: light-dark(oklch(0.38 0.015 85 / 0.7), oklch(0.86 0.03 95 / 0.6));
+  --ds-yorha-ink-a3: light-dark(oklch(0.38 0.015 85 / 0.04), oklch(0.86 0.03 95 / 0.04));
+  --ds-yorha-ink-a5: light-dark(oklch(0.38 0.015 85 / 0.1), oklch(0.86 0.03 95 / 0.09));
+  --ds-yorha-ink-a9: light-dark(oklch(0.38 0.015 85 / 0.18), oklch(0.86 0.03 95 / 0.16));
+  --ds-yorha-track: light-dark(oklch(0.38 0.015 85 / 0.26), oklch(0.86 0.03 95 / 0.24));
+  --ds-yorha-glow: light-dark(oklch(0.38 0.015 85 / 0.22), oklch(0.86 0.03 95 / 0.2));
+  --ds-yorha-ink-a35: light-dark(oklch(0.38 0.015 85 / 0.35), oklch(0.86 0.03 95 / 0.3));
+  --ds-yorha-ink-a55: light-dark(oklch(0.38 0.015 85 / 0.55), oklch(0.86 0.03 95 / 0.5));
+  --ds-yorha-selected: light-dark(oklch(0.38 0.015 85 / 0.16), oklch(0.86 0.03 95 / 0.14));
+
+  --ds-rust-50: light-dark(oklch(0.84 0.045 60), oklch(0.33 0.04 45));
+  --ds-rust-200: light-dark(oklch(0.6 0.12 38 / 0.4), oklch(0.7 0.12 40 / 0.4));
+  --ds-rust-300: light-dark(oklch(0.6 0.12 38 / 0.6), oklch(0.7 0.12 40 / 0.6));
+  --ds-rust-500: light-dark(oklch(0.53 0.12 38), oklch(0.7 0.12 40));
+  --ds-rust-600: light-dark(oklch(0.47 0.12 36), oklch(0.76 0.1 42));
+  --ds-rust-700: light-dark(oklch(0.44 0.11 35), oklch(0.8 0.09 45));
+  --ds-rust-link-hover: light-dark(oklch(0.44 0.11 35), oklch(0.76 0.1 42));
+  --ds-rust-on: light-dark(oklch(0.94 0.02 95), oklch(0.2 0.01 85));
+  --ds-rust-glow: light-dark(oklch(0.6 0.12 38 / 0.3), oklch(0.7 0.12 40 / 0.3));
+}
+
+:root[data-theme='yorha'] {
+  --ds-bg: var(--ds-yorha-canvas);
+  --ds-bg-raised: var(--ds-yorha-paper);
+  --ds-surface: var(--ds-yorha-paper);
+  --ds-surface-raised: var(--ds-yorha-raised);
+  --ds-surface-bright: var(--ds-yorha-raised);
+  --ds-surface-sunken: var(--ds-yorha-sunken);
+
+  --ds-primary: var(--ds-yorha-ink);
+  --ds-primary-hover: var(--ds-yorha-ink-hover);
+  --ds-primary-subtle: var(--ds-yorha-tint-50);
+  --ds-primary-soft: var(--ds-yorha-tint-100);
+  --ds-primary-muted: var(--ds-yorha-ink-a55);
+  --ds-primary-glow: var(--ds-yorha-glow);
+  --ds-brand-tint: var(--ds-yorha-tint-50);
+  --ds-brand-border: var(--ds-yorha-ink-a35);
+  --ds-brand-border-mid: var(--ds-yorha-ink-a55);
+  --ds-brand-text: var(--ds-yorha-ink-deep);
+
+  --ds-accent: var(--ds-rust-500);
+  --ds-accent-hover: var(--ds-rust-600);
+  --ds-accent-surface: var(--ds-rust-50);
+  --ds-accent-border: var(--ds-rust-200);
+  --ds-accent-mid: var(--ds-rust-300);
+  --ds-accent-text: var(--ds-rust-700);
+  --ds-accent-glow: var(--ds-rust-glow);
+
+  --ds-text: var(--ds-yorha-ink);
+  --ds-text-muted: var(--ds-yorha-ink-muted);
+  --ds-text-faint: var(--ds-yorha-ink-faint);
+  --ds-text-inverse: var(--ds-yorha-on-ink);
+  --ds-text-on-primary: var(--ds-yorha-on-ink);
+  --ds-text-on-accent: var(--ds-rust-on);
+  --ds-text-link: var(--ds-yorha-ink-deep);
+  --ds-text-link-hover: var(--ds-rust-link-hover);
+
+  --ds-hover: var(--ds-yorha-ink-a5);
+  --ds-active: var(--ds-yorha-ink-a9);
+  --ds-selected: var(--ds-yorha-selected);
+  --ds-disabled: var(--ds-yorha-ink-faint);
+  --ds-disabled-bg: var(--ds-yorha-well);
+
+  --ds-spinner-track: var(--ds-yorha-track);
+  --ds-table-stripe: var(--ds-yorha-ink-a3);
+  --ds-table-row-hover: var(--ds-yorha-ink-a5);
+  --ds-skeleton-base: var(--ds-yorha-well);
+  --ds-skeleton-shine: var(--ds-yorha-raised);
+  --ds-code-bg: var(--ds-yorha-sunken);
+  --ds-code-text: var(--ds-yorha-ink-deep);
+
+  --ds-border: var(--ds-yorha-line);
+  --ds-border-strong: var(--ds-yorha-line-strong);
+  --ds-border-focus: var(--ds-yorha-ink);
+  --ds-border-width: var(--ds-border-1);
+  --ds-border-width-strong: var(--ds-border-2);
+  --ds-icon-stroke: 2;
+
+  --ds-font-display: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ds-font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ds-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  --ds-weight-strong: var(--ds-fw-5);
+  --ds-weight-semibold: var(--ds-fw-5);
+  --ds-tracking-tight: 0.02em;
+  --ds-tracking-wider: 0.16em;
+  --ds-tracking-widest: 0.3em;
+
+  --ds-corner-xs: var(--ds-radius-none);
+  --ds-corner-sm: var(--ds-radius-none);
+  --ds-corner-md: var(--ds-radius-none);
+  --ds-corner-lg: var(--ds-radius-none);
+  --ds-radius-control: var(--ds-radius-none);
+  --ds-radius-container: var(--ds-radius-none);
+  --ds-radius-overlay: var(--ds-radius-none);
+
+  --ds-shadow-1: 2px 2px 0 light-dark(oklch(0.38 0.015 85 / 0.18), oklch(0 0 0 / 0.3));
+  --ds-shadow-2: 4px 4px 0 light-dark(oklch(0.38 0.015 85 / 0.22), oklch(0 0 0 / 0.35));
+  --ds-shadow-3: 6px 6px 0 light-dark(oklch(0.38 0.015 85 / 0.26), oklch(0 0 0 / 0.4));
+  --ds-shadow-4: 6px 6px 0 light-dark(oklch(0.38 0.015 85 / 0.26), oklch(0 0 0 / 0.4));
+
+  --ds-shadow-inset: inset 0 0 0 1px
+    light-dark(oklch(0.38 0.015 85 / 0.12), oklch(0.86 0.03 95 / 0.1));
+
+  --ds-duration-quick: var(--ds-dur-flash);
+  --ds-dur-spring: var(--ds-dur-flash);
+  --ds-easing-spring: var(--ds-ease-crisp);
+}

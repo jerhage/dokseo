@@ -9,7 +9,7 @@ const CONTENT_SECURITY_POLICY: ContentSecurityPolicy = {
   'form-action': ['none'],
   'frame-src': ['blob:'],
   'worker-src': ['self', 'blob:'],
-  'script-src': ['self', 'wasm-unsafe-eval', 'sha256-kbEoQW+NO5W4n3HDNjQ5fFNGCUFoD8qo9dkJe+m9GWk='],
+  'script-src': ['self', 'wasm-unsafe-eval', 'sha256-zt9MSkCzdyugQp42Qq7L4UQ4u5MHRIIkgZyHPQlGxi4='],
   'style-src': ['self', 'unsafe-inline', 'blob:'],
   'img-src': ['self', 'blob:', 'data:'],
   'font-src': ['self', 'blob:', 'data:'],

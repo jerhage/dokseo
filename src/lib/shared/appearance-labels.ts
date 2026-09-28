@@ -8,6 +8,7 @@ const THEME_LABELS: Readonly<Record<Theme, string>> = {
   crayon: 'Crayon',
   moss: 'Moss',
   petal: 'Petal',
+  yorha: 'YoRHa',
 };
 
 const SCHEME_LABELS: Readonly<Record<ColorScheme, string>> = {
