@@ -25,7 +25,7 @@
 
   const uid = $props.id();
 
-  const words = $derived({ expandLabel, collapseLabel });
+  const words = $derived({ label, expandLabel, collapseLabel });
   const toggle = $derived(dockToggle(placement));
   const beside = $derived(placement === 'side' || placement === 'rail');
   const tally = $derived(dockTally(placement, count));

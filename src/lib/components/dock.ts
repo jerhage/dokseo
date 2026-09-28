@@ -10,6 +10,7 @@ type DockToggle = {
 };
 
 type DockWords = {
+  readonly label: string;
   readonly expandLabel: string;
   readonly collapseLabel: string;
 };
@@ -39,9 +40,13 @@ function dockTally(placement: DockPlacement, count: number | undefined): number 
 }
 
 function dockName(placement: DockPlacement, count: number | undefined, words: DockWords): string {
-  const label = dockLabel(placement, words);
   const tally = dockTally(placement, count);
-  return tally === null ? label : `${label}, ${tally}`;
+  const counted = tally === null ? [] : [`${tally}`];
+  const parts =
+    placement === 'peek'
+      ? [words.label, ...counted, words.expandLabel]
+      : [dockLabel(placement, words), ...counted];
+  return parts.join(', ');
 }
 
 export { dockLabel, dockName, dockPlacement, dockTally, dockToggle };

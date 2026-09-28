@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { dockLabel, dockName, dockPlacement, dockTally, dockToggle } from './dock';
 import type { DockWords } from './dock';
 
-const WORDS: DockWords = { expandLabel: 'Show captures', collapseLabel: 'Hide captures' };
+const WORDS: DockWords = {
+  label: 'Captures',
+  expandLabel: 'Show captures',
+  collapseLabel: 'Hide captures',
+};
 
 describe('dockPlacement', () => {
   it('opens the panel beside the page on a wide screen until asked otherwise', () => {
@@ -60,9 +64,13 @@ describe('dockTally', () => {
 });
 
 describe('dockName', () => {
-  it('names the action and the count of a closed panel', () => {
+  it('names the action and the count of a closed rail', () => {
     expect(dockName('rail', 3, WORDS)).toBe('Show captures, 3');
-    expect(dockName('peek', 12, WORDS)).toBe('Show captures, 12');
+  });
+
+  it('starts the peek name with its visible label and count, then names the action', () => {
+    expect(dockName('peek', 12, WORDS)).toBe('Captures, 12, Show captures');
+    expect(dockName('peek', 0, WORDS)).toBe('Captures, Show captures');
   });
 
   it('names the action alone when no count is shown', () => {
