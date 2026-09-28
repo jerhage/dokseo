@@ -143,8 +143,8 @@
 }
 .badge-dot::before {
   content: '';
-  inline-size: var(--sp-2);
-  block-size: var(--sp-2);
+  inline-size: var(--indicator-dot);
+  block-size: var(--indicator-dot);
   border-radius: var(--radius-full);
   background-color: currentColor;
 }

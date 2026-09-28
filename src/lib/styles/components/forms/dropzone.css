@@ -56,8 +56,8 @@
 .window-dropzone-icon-frame {
   display: grid;
   place-items: center;
-  inline-size: var(--control-h-lg);
-  block-size: var(--control-h-lg);
+  inline-size: var(--icon-tile-lg);
+  block-size: var(--icon-tile-lg);
   margin-block-end: var(--sp-1);
   color: var(--color-primary);
   background-color: var(--color-surface);
@@ -105,8 +105,8 @@
 }
 .dropzone-sm .dropzone-icon-frame {
   grid-row: span 2;
-  inline-size: var(--control-h-md);
-  block-size: var(--control-h-md);
+  inline-size: var(--icon-tile-sm);
+  block-size: var(--icon-tile-sm);
   margin: 0;
 }
 .window-dropzone {

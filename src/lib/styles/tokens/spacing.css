@@ -8,11 +8,6 @@
   inherits: true;
   initial-value: 0px;
 }
-@property --lift-size {
-  syntax: '<length>';
-  inherits: true;
-  initial-value: 0px;
-}
 @property --lift-gap {
   syntax: '<length>';
   inherits: true;
@@ -66,8 +61,6 @@
   --control-h-md: var(--ds-space-8);
   --control-h-lg: var(--ds-space-9);
   --control-h-touch: var(--ds-size-touch);
-  --handle-size: var(--ds-size-handle);
-  --lift-size: var(--ds-size-touch);
   --lift-gap: var(--ds-space-2);
   --carousel-gap: var(--ds-space-4);
 

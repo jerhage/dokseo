@@ -16,9 +16,9 @@
 .checkbox-input {
   appearance: none;
   flex: none;
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
-  margin-block-start: calc((1lh - var(--sp-4)) / 2);
+  inline-size: var(--indicator-size);
+  block-size: var(--indicator-size);
+  margin-block-start: calc((1lh - var(--indicator-size)) / 2);
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--border-color-strong);
   border-radius: var(--radius-xs);
@@ -30,7 +30,7 @@
 .checkbox-icon {
   position: absolute;
   inset-block-start: calc((1lh - var(--icon-size-sm)) / 2);
-  inset-inline-start: calc((var(--sp-4) - var(--icon-size-sm)) / 2);
+  inset-inline-start: calc((var(--indicator-size) - var(--icon-size-sm)) / 2);
   inline-size: var(--icon-size-sm);
   block-size: var(--icon-size-sm);
   color: var(--color-text-on-primary);

@@ -1,7 +1,7 @@
 .thumbnail {
   display: block;
   flex-shrink: 0;
-  inline-size: var(--sp-8);
+  inline-size: var(--thumbnail-width-md);
   overflow: hidden;
   background-color: var(--color-surface-sunken);
   border-radius: var(--radius-control);
@@ -12,10 +12,10 @@
   object-fit: cover;
 }
 .thumbnail-sm {
-  inline-size: var(--sp-6);
+  inline-size: var(--thumbnail-width-sm);
 }
 .thumbnail-lg {
-  inline-size: var(--sp-10);
+  inline-size: var(--thumbnail-width-lg);
 }
 .thumbnail-fill {
   inline-size: 100%;

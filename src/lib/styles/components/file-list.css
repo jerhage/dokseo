@@ -20,8 +20,8 @@
 .file-item-icon-frame {
   display: grid;
   place-items: center;
-  inline-size: var(--control-h-md);
-  block-size: var(--control-h-md);
+  inline-size: var(--icon-tile-sm);
+  block-size: var(--icon-tile-sm);
   color: var(--color-brand-text);
   background-color: var(--color-brand-tint);
   border-radius: var(--radius-control);

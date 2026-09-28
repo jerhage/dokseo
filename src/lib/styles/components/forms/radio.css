@@ -26,9 +26,9 @@
   flex: none;
   display: grid;
   place-content: center;
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
-  margin-block-start: calc((1lh - var(--sp-4)) / 2);
+  inline-size: var(--indicator-size);
+  block-size: var(--indicator-size);
+  margin-block-start: calc((1lh - var(--indicator-size)) / 2);
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--border-color-strong);
   border-radius: var(--radius-full);
@@ -42,8 +42,8 @@
   background-color: var(--color-text-on-primary);
   transform: scale(0);
   transition: transform var(--transition-spring);
-  inline-size: var(--sp-2);
-  block-size: var(--sp-2);
+  inline-size: var(--indicator-dot);
+  block-size: var(--indicator-dot);
   border-radius: var(--radius-full);
 }
 .radio-input:hover {

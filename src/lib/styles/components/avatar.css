@@ -1,5 +1,5 @@
 .avatar {
-  --_avatar-size: var(--control-h-md);
+  --_avatar-size: var(--avatar-size-md);
   display: inline-grid;
   place-items: center;
   flex: none;
@@ -21,11 +21,11 @@
   object-fit: cover;
 }
 .avatar-sm {
-  --_avatar-size: var(--control-h-sm);
+  --_avatar-size: var(--avatar-size-sm);
   font-size: var(--text-xs);
 }
 .avatar-lg {
-  --_avatar-size: var(--sp-10);
+  --_avatar-size: var(--avatar-size-lg);
   font-size: var(--text-xl);
 }
 .avatar-square {

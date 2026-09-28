@@ -11,8 +11,8 @@
   appearance: none;
   flex: none;
   position: relative;
-  inline-size: var(--sp-7);
-  block-size: var(--sp-5);
+  inline-size: var(--toggle-track-w);
+  block-size: var(--toggle-track-h);
   border: none;
   border-radius: var(--radius-full);
   background-color: var(--color-text-faint);
@@ -24,8 +24,8 @@
   position: absolute;
   inset-block-start: var(--border-width-strong);
   inset-inline-start: var(--border-width-strong);
-  inline-size: calc(var(--sp-5) - 2 * var(--border-width-strong));
-  block-size: calc(var(--sp-5) - 2 * var(--border-width-strong));
+  inline-size: calc(var(--toggle-track-h) - 2 * var(--border-width-strong));
+  block-size: calc(var(--toggle-track-h) - 2 * var(--border-width-strong));
   border-radius: var(--radius-full);
   background-color: var(--color-text-inverse);
   box-shadow: var(--shadow-sm);
@@ -35,7 +35,7 @@
   background-color: var(--color-primary);
 }
 .toggle-input:checked::before {
-  transform: translateX(calc(var(--sp-7) - var(--sp-5)));
+  transform: translateX(calc(var(--toggle-track-w) - var(--toggle-track-h)));
 }
 .toggle-input:disabled {
   background-color: var(--color-disabled-bg);

@@ -98,6 +98,25 @@
   --ds-size-icon-sm: 0.75rem;
   --ds-size-icon-md: 1rem;
   --ds-size-icon-lg: 1.25rem;
+  --ds-size-icon-tile-sm: 2.5rem;
+  --ds-size-icon-tile-lg: 3rem;
+  --ds-size-avatar-sm: 2rem;
+  --ds-size-avatar-md: 2.5rem;
+  --ds-size-avatar-lg: 4rem;
+  --ds-size-indicator: 1rem;
+  --ds-size-indicator-dot: 0.5rem;
+  --ds-size-toggle-track-w: 2rem;
+  --ds-size-toggle-track-h: 1.25rem;
+  --ds-size-track-sm: 0.25rem;
+  --ds-size-track-md: 0.5rem;
+  --ds-size-track-lg: 0.75rem;
+  --ds-size-thumbnail-sm: 1.5rem;
+  --ds-size-thumbnail-md: 2.5rem;
+  --ds-size-thumbnail-lg: 4rem;
+  --ds-size-textarea-min: 4rem;
+  --ds-size-skeleton-line-sm: 0.75rem;
+  --ds-size-skeleton-line-md: 1rem;
+  --ds-size-skeleton-line-lg: 1.25rem;
 
   --ds-dur-instant: 40ms;
   --ds-dur-flash: 90ms;

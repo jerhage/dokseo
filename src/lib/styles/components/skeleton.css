@@ -1,7 +1,7 @@
 .skeleton {
   display: block;
   inline-size: var(--skeleton-width, auto);
-  block-size: var(--sp-4);
+  block-size: var(--skeleton-line-md);
   background-color: var(--color-skeleton-base);
   background-image: linear-gradient(
     to right,
@@ -15,16 +15,16 @@
   animation: kShimmer var(--dur-long) var(--ease-in-out) infinite;
 }
 .skeleton-text {
-  block-size: var(--sp-3);
+  block-size: var(--skeleton-line-sm);
   border-radius: var(--radius-xs);
 }
 .skeleton-title {
-  block-size: var(--sp-5);
+  block-size: var(--skeleton-line-lg);
   inline-size: var(--skeleton-width, 60%);
 }
 .skeleton-circle {
-  inline-size: var(--control-h-md);
-  block-size: var(--control-h-md);
+  inline-size: var(--avatar-size-md);
+  block-size: var(--avatar-size-md);
   border-radius: var(--radius-full);
 }
 .skeleton-block {

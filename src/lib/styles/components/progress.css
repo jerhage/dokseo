@@ -1,7 +1,7 @@
 .progress-track {
   --_progress-fill: var(--color-primary);
   inline-size: 100%;
-  block-size: var(--sp-2);
+  block-size: var(--track-h-md);
   background-color: var(--color-active);
   border-radius: var(--radius-full);
   overflow: hidden;
@@ -26,10 +26,10 @@
   --_progress-fill: var(--color-accent);
 }
 .progress-sm {
-  block-size: var(--sp-1);
+  block-size: var(--track-h-sm);
 }
 .progress-lg {
-  block-size: var(--sp-3);
+  block-size: var(--track-h-lg);
 }
 .progress-track.is-indeterminate .progress-fill {
   inline-size: 40%;
