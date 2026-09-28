@@ -33,8 +33,8 @@
   --_alert-border: var(--color-info-border);
 }
 .alert-icon {
-  inline-size: var(--sp-5);
-  block-size: var(--sp-5);
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
   color: var(--_alert-fg);
 }
 .alert-content {

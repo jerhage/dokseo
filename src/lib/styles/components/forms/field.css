@@ -31,6 +31,6 @@
 }
 .field-error-icon {
   flex: none;
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
 }

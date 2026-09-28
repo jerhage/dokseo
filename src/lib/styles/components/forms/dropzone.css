@@ -68,8 +68,8 @@
 }
 .dropzone-icon,
 .window-dropzone-icon {
-  inline-size: var(--sp-5);
-  block-size: var(--sp-5);
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
 }
 .dropzone.is-dragover .dropzone-icon-frame {
   transform: translateY(calc(var(--sp-1) * -1));

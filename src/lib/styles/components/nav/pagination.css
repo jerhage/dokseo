@@ -45,8 +45,8 @@
   padding-inline: var(--sp-3);
 }
 .pagination-icon {
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
 }
 .pagination-ellipsis {
   min-inline-size: var(--control-h-sm);

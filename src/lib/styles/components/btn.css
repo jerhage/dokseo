@@ -38,8 +38,8 @@
   background-image: linear-gradient(var(--color-active) 0 0);
 }
 .btn-icon {
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
   flex: none;
 }
 .btn-primary {

@@ -95,6 +95,9 @@
   --ds-size-narrow: 48rem;
   --ds-size-touch: 2.75rem;
   --ds-size-handle: 0.5rem;
+  --ds-size-icon-sm: 0.75rem;
+  --ds-size-icon-md: 1rem;
+  --ds-size-icon-lg: 1.25rem;
 
   --ds-dur-instant: 40ms;
   --ds-dur-flash: 90ms;

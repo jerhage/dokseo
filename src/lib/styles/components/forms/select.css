@@ -12,8 +12,8 @@
   inset-block: 0;
   inset-inline-end: var(--sp-3);
   margin-block: auto;
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
   color: var(--color-text-muted);
   pointer-events: none;
 }

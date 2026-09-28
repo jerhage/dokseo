@@ -27,8 +27,8 @@
   border-radius: var(--radius-control);
 }
 .file-item-icon {
-  inline-size: var(--sp-5);
-  block-size: var(--sp-5);
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
 }
 .file-item-content {
   display: flex;

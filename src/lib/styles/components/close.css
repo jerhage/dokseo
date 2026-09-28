@@ -19,12 +19,12 @@
     color var(--transition-ui);
 }
 .close-icon {
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
 }
 .close-icon-sm {
-  inline-size: var(--sp-3);
-  block-size: var(--sp-3);
+  inline-size: var(--icon-size-sm);
+  block-size: var(--icon-size-sm);
 }
 .alert-close:hover,
 .modal-close:hover,

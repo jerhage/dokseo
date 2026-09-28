@@ -81,8 +81,8 @@
   --_toast-fg: var(--color-info);
 }
 .toast-icon {
-  inline-size: var(--sp-5);
-  block-size: var(--sp-5);
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
   color: var(--_toast-fg);
 }
 .toast-content {

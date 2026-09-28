@@ -3,8 +3,8 @@
   display: inline-block;
 }
 .dropdown-icon {
-  inline-size: var(--sp-4);
-  block-size: var(--sp-4);
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
   transition: transform var(--transition-spring);
 }
 .dropdown.is-open > .dropdown-trigger > .dropdown-icon {
