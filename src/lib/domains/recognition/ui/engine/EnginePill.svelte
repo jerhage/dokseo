@@ -57,8 +57,9 @@
       <p class="eyebrow mono text-faint px-2 pt-1 pb-2">Engine for new captures</p>
       <ul class="list-reset col gap-1">
         {#each OCR_ENGINES as offered (offered.id)}
-          <li class={['p-2 rounded-control', { 'surface-sunken': offered.installed }]}>
+          <li>
             <Radio
+              variant="tile"
               name="{uid}-engine"
               value={offered.id}
               group={installed}

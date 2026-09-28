@@ -67,6 +67,13 @@ describe('EnginePill', () => {
     expect(inputs[0]).not.toMatch(/\sdisabled/u);
   });
 
+  it('draws every engine as a radio tile', () => {
+    const labels = [...markup(IDLE, 'ja').matchAll(/<label[^>]*>/gu)].map((found) => found[0]);
+
+    expect(labels).toHaveLength(3);
+    expect(labels.every((label) => label.includes('class="radio-wrapper radio-tile"'))).toBe(true);
+  });
+
   it('warns when the open session cannot read the book language', () => {
     expect(text(markup(RUNNING, 'ko'))).toContain('does not read Korean');
     expect(text(markup(RUNNING, 'ja'))).not.toContain('does not read');
