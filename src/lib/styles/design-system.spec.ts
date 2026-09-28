@@ -1776,6 +1776,22 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
+  it('sets an inline field label beside its control at the label width, wrapping the control under it when tight', () => {
+    const css = style('components/forms/field.css');
+
+    expect(declarations(ruleBody(css, '.field-inline'))).toEqual(
+      expect.arrayContaining(['display: flex', 'flex-wrap: wrap']),
+    );
+    expect(declarations(ruleBody(css, '.field-inline > .field-label'))).toEqual([
+      'flex: 1 0 var(--field-label-width)',
+    ]);
+    expect(declarations(ruleBody(css, '.field-inline > .field-control'))).toEqual([
+      'flex: 999 1 calc(2 * var(--field-label-width))',
+      'min-inline-size: 0',
+    ]);
+    expect(everyDeclarationFor(css, '.field-inline > .field-error')).toEqual(['flex-basis: 100%']);
+  });
+
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {
     expect(declarations(ruleBody(style('components/thumbnail.css'), '.thumbnail-fill'))).toEqual([
       'inline-size: 100%',

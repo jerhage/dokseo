@@ -31,6 +31,8 @@ type ModalSize = 'sm' | 'md' | 'lg';
 
 type ModalPlacement = 'center' | 'top';
 
+type FieldLayout = 'stacked' | 'inline';
+
 type RadioVariant = 'default' | 'tile';
 
 type MenuAlign = 'start' | 'end';
@@ -130,6 +132,11 @@ const TOAST_VARIANTS: Readonly<Record<StatusVariant, ClassList>> = {
   success: ['toast-success'],
   warning: ['toast-warning'],
   danger: ['toast-danger'],
+};
+
+const FIELD_LAYOUTS: Readonly<Record<FieldLayout, ClassList>> = {
+  stacked: [],
+  inline: ['field-inline'],
 };
 
 const CARD_VARIANTS: Readonly<Record<CardVariant, ClassList>> = {
@@ -280,6 +287,7 @@ export {
   CARD_SIZES,
   CARD_VARIANTS,
   DROPZONE_SIZES,
+  FIELD_LAYOUTS,
   MEDIA_RATIOS,
   MODAL_PLACEMENTS,
   MODAL_SIZES,
@@ -306,6 +314,7 @@ export type {
   ClassList,
   ControlSize,
   DropzoneSize,
+  FieldLayout,
   MediaRatio,
   MenuAlign,
   ModalPlacement,

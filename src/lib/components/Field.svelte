@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
+  import { FIELD_LAYOUTS } from './classes';
+  import type { FieldLayout } from './classes';
   import { fieldControl, fieldIds } from './field';
   import type { FieldControl } from './field';
   import CircleX from './icons/CircleX.svelte';
@@ -11,6 +13,7 @@
     error?: string | undefined;
     hideLabel?: boolean;
     announceError?: boolean;
+    layout?: FieldLayout;
     children: Snippet<[FieldControl]>;
   };
 
@@ -20,6 +23,7 @@
     error,
     hideLabel = false,
     announceError = false,
+    layout = 'stacked',
     class: className,
     children,
     ...rest
@@ -30,7 +34,10 @@
   const control = $derived(fieldControl(ids, hint !== undefined, error !== undefined));
 </script>
 
-<div {...rest} class={['field', { 'is-invalid': error !== undefined }, className]}>
+<div
+  {...rest}
+  class={['field', FIELD_LAYOUTS[layout], { 'is-invalid': error !== undefined }, className]}
+>
   <label class={['field-label', { 'visually-hidden': hideLabel }]} for={ids.control}>{label}</label>
   <div class="field-control">
     {@render children(control)}

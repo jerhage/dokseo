@@ -11,6 +11,8 @@
   let role = $state('design');
   let projectField = $state<HTMLInputElement | null>();
   let rename = $state('');
+  let displayName = $state('Ada Lovelace');
+  let timeZone = $state('utc');
 
   const emailError = $derived(
     /^[^@\s]+@[^@\s]+\.[^@\s]+$/u.test(email) ? undefined : 'Enter a complete email address.',
@@ -22,7 +24,7 @@
 <DemoSection
   id="form"
   title="Form field"
-  classes={['field', 'input', 'select', 'textarea', 'is-invalid']}
+  classes={['field', 'field-inline', 'input', 'select', 'textarea', 'is-invalid']}
 >
   <Card>
     <div class="row">
@@ -85,6 +87,34 @@
       >
         {#snippet children(control)}
           <Input {...control} bind:value={rename} placeholder="hideLabel and announceError" />
+        {/snippet}
+      </Field>
+    </div>
+  </Card>
+  <Card>
+    <span class="eyebrow text-faint weight-semibold">Inline layout</span>
+    <div class="stack-md">
+      <Field label="Display name" layout="inline">
+        {#snippet children(control)}
+          <Input {...control} bind:value={displayName} />
+        {/snippet}
+      </Field>
+      <Field label="Time zone" layout="inline" hint="The label wraps above when the row is tight.">
+        {#snippet children(control)}
+          <Select {...control} bind:value={timeZone}>
+            <option value="utc">UTC</option>
+            <option value="cet">CET</option>
+            <option value="pst">PST</option>
+          </Select>
+        {/snippet}
+      </Field>
+      <Field
+        label="Display name, required"
+        layout="inline"
+        error={displayName.trim() === '' ? 'A name is needed.' : undefined}
+      >
+        {#snippet children(control)}
+          <Input {...control} bind:value={displayName} />
         {/snippet}
       </Field>
     </div>

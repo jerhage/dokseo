@@ -4,6 +4,23 @@
   gap: var(--sp-2);
   min-inline-size: 0;
 }
+.field-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+}
+.field-inline > .field-label {
+  flex: 1 0 var(--field-label-width);
+}
+.field-inline > .field-control {
+  flex: 999 1 calc(2 * var(--field-label-width));
+  min-inline-size: 0;
+}
+.field-inline > .field-hint,
+.field-inline > .field-error {
+  flex-basis: 100%;
+}
 .field-label {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
