@@ -222,6 +222,7 @@
   fillNarrow
   flushBody
   infoFooter
+  wrapFocus
   onclose={gone}
 >
   {#snippet header()}

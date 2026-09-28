@@ -5,6 +5,7 @@
   import type { HTMLDialogAttributes } from 'svelte/elements';
   import { animationsSettled } from './animations';
   import { MODAL_PLACEMENTS, MODAL_SIZES } from './classes';
+  import { tabStops, wrappedStop } from './focus-wrap';
   import X from './icons/X.svelte';
   import type { ModalPlacement, ModalSize } from './classes';
   import { modalHeading, modalLabelledBy } from './modal-heading';
@@ -39,6 +40,7 @@
       closeLabel?: string;
       footer?: Snippet<[() => void]>;
       infoFooter?: boolean;
+      wrapFocus?: boolean;
     };
 
   let {
@@ -53,8 +55,10 @@
     closeLabel = 'Close',
     footer,
     infoFooter = false,
+    wrapFocus = false,
     'aria-labelledby': labelledBy,
     onclose,
+    onkeydown,
     class: className,
     children,
     ...rest
@@ -118,6 +122,19 @@
     onclose?.(event);
   }
 
+  function keydown(
+    event: KeyboardEvent & { currentTarget: EventTarget & HTMLDialogElement },
+  ): void {
+    onkeydown?.(event);
+    if (!wrapFocus || event.key !== 'Tab' || event.defaultPrevented) return;
+    const stops = tabStops(event.currentTarget);
+    const current = stops.findIndex((stop) => stop === document.activeElement);
+    const target = wrappedStop(stops.length, current, event.shiftKey);
+    if (target === null) return;
+    event.preventDefault();
+    stops[target]?.focus();
+  }
+
   function pointerdown(event: PointerEvent): void {
     pressedBackdrop = event.target === dialog;
   }
@@ -139,6 +156,7 @@
   ]}
   oncancel={cancel}
   onclose={closed}
+  onkeydown={keydown}
   onpointerdown={pointerdown}
   onclick={click}
 >
