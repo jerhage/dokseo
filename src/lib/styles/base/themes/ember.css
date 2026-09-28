@@ -107,6 +107,8 @@
   --ds-radius-control: 10px;
   --ds-radius-container: 16px;
   --ds-radius-overlay: 22px;
+  --ds-radius-pill: var(--ds-radius-full);
+  --ds-radius-round: var(--ds-radius-full);
 
   --ds-shadow-1: 0 1px 2px light-dark(oklch(0.35 0.05 45 / 0.08), oklch(0 0 0 / 0.3));
   --ds-shadow-2:

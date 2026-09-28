@@ -187,6 +187,8 @@ const RADII: readonly string[] = [
   '--radius-xl',
   '--radius-2xl',
   '--radius-full',
+  '--radius-pill',
+  '--radius-round',
   '--radius-control',
   '--radius-container',
   '--radius-overlay',

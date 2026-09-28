@@ -1983,6 +1983,40 @@ describe('the design system stylesheets', () => {
     ).toContainEqual(expect.stringMatching(marker));
   });
 
+  it('rounds every capsule with the pill radius and every circular mark with the round radius', () => {
+    const shaped = [
+      ['components/badge.css', '.badge', 'pill'],
+      ['components/tag.css', '.tag', 'pill'],
+      ['components/progress.css', '.progress-track', 'pill'],
+      ['components/forms/toggle.css', '.toggle-input', 'pill'],
+      ['overrides/overrides.css', '.btn.btn-pill', 'pill'],
+      ['components/badge.css', '.badge-dot::before', 'round'],
+      ['components/tag.css', '.tag-remove', 'round'],
+      ['components/forms/toggle.css', '.toggle-input::before', 'round'],
+      ['components/forms/radio.css', '.radio-input', 'round'],
+      ['components/forms/radio.css', '.radio-input::before', 'round'],
+      ['components/avatar.css', '.avatar', 'round'],
+      ['components/skeleton.css', '.skeleton-circle', 'round'],
+      ['components/forms/dropzone.css', '.window-dropzone-icon-frame', 'round'],
+    ] as const;
+
+    for (const [path, selector, shape] of shaped) {
+      expect({ selector, radius: everyDeclarationFor(style(path), selector) }).toEqual({
+        selector,
+        radius: expect.arrayContaining([`border-radius: var(--radius-${shape})`]),
+      });
+    }
+  });
+
+  it('keeps the pill and round radii fully rounded in the default theme', () => {
+    const values = definitionValues(ruleBody(themeSheets(), ":root[data-theme='base']"));
+
+    expect([values.get('--ds-radius-pill'), values.get('--ds-radius-round')]).toEqual([
+      'var(--ds-radius-full)',
+      'var(--ds-radius-full)',
+    ]);
+  });
+
   it('draws a chosen nav link, tab, menu item and command row in the chosen colours, falling back to its own', () => {
     const chosen = [
       [

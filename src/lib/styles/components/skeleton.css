@@ -25,7 +25,7 @@
 .skeleton-circle {
   inline-size: var(--avatar-size-md);
   block-size: var(--avatar-size-md);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-round);
 }
 .skeleton-block {
   block-size: var(--layout-row-height);

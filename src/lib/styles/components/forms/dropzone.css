@@ -62,7 +62,7 @@
   color: var(--color-primary);
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--border-color);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-round);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-spring);
 }

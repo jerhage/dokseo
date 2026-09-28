@@ -14,7 +14,7 @@
   color: var(--_badge-fg);
   background-color: var(--_badge-bg);
   border: var(--border-width) solid var(--_badge-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
 }
 .badge-neutral {
   --_badge-fg: var(--color-text-muted);
@@ -145,6 +145,6 @@
   content: '';
   inline-size: var(--indicator-dot);
   block-size: var(--indicator-dot);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-round);
   background-color: currentColor;
 }

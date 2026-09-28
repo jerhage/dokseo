@@ -12,7 +12,7 @@
   color: var(--_tag-text, var(--color-text-muted));
   background-color: var(--_tag-bg, var(--color-surface));
   border: var(--border-width) solid var(--_tag-border, var(--border-color));
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   transition:
     background-color var(--transition-ui),
     border-color var(--transition-ui),
@@ -140,7 +140,7 @@ a.tag.is-active:hover {
   margin-inline-end: calc(var(--sp-2) * -1);
   padding: 0;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-round);
   background-color: transparent;
   color: inherit;
   cursor: pointer;

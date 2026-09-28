@@ -2,7 +2,7 @@
   display: none;
 }
 .btn.btn-pill {
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
 }
 html:has(.modal-backdrop[open]) {
   overflow: hidden;

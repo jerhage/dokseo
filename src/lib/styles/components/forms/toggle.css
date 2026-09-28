@@ -14,7 +14,7 @@
   inline-size: var(--toggle-track-w);
   block-size: var(--toggle-track-h);
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background-color: var(--color-text-faint);
   cursor: pointer;
   transition: background-color var(--transition-ui);
@@ -26,7 +26,7 @@
   inset-inline-start: var(--border-width-strong);
   inline-size: calc(var(--toggle-track-h) - 2 * var(--border-width-strong));
   block-size: calc(var(--toggle-track-h) - 2 * var(--border-width-strong));
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-round);
   background-color: var(--color-text-inverse);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-spring);

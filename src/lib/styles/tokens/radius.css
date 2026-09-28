@@ -7,6 +7,8 @@
   --radius-xl: var(--ds-radius-xl);
   --radius-2xl: var(--ds-radius-2xl);
   --radius-full: var(--ds-radius-full);
+  --radius-pill: var(--ds-radius-pill);
+  --radius-round: var(--ds-radius-round);
   --radius-control: var(--ds-radius-control);
   --radius-container: var(--ds-radius-container);
   --radius-overlay: var(--ds-radius-overlay);

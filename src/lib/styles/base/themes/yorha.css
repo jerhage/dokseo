@@ -109,6 +109,8 @@
   --ds-radius-control: var(--ds-radius-none);
   --ds-radius-container: var(--ds-radius-none);
   --ds-radius-overlay: var(--ds-radius-none);
+  --ds-radius-pill: var(--ds-radius-none);
+  --ds-radius-round: var(--ds-radius-none);
 
   --ds-shadow-1: 2px 2px 0 light-dark(oklch(0.38 0.015 85 / 0.18), oklch(0 0 0 / 0.3));
   --ds-shadow-2: 4px 4px 0 light-dark(oklch(0.38 0.015 85 / 0.22), oklch(0 0 0 / 0.35));
