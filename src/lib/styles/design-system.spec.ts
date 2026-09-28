@@ -819,6 +819,7 @@ describe('the design system stylesheets', () => {
       { file: 'components/dropdown.css', selector: '.dropdown-label' },
       { file: 'components/divider.css', selector: '.divider-labeled' },
       { file: 'components/list-group.css', selector: '.list-group-title' },
+      { file: 'components/table.css', selector: '.table th' },
     ].map(({ file, selector }) => ({
       selector,
       colour: declarations(ruleBody(style(file), selector)).find((part) =>
@@ -831,6 +832,7 @@ describe('the design system stylesheets', () => {
       { selector: '.dropdown-label', colour: 'color: var(--color-text-faint)' },
       { selector: '.divider-labeled', colour: 'color: var(--color-text-faint)' },
       { selector: '.list-group-title', colour: 'color: var(--color-text-faint)' },
+      { selector: '.table th', colour: 'color: var(--color-text-faint)' },
     ]);
   });
 

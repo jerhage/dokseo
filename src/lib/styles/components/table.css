@@ -24,7 +24,7 @@
   font-weight: var(--weight-semibold);
   text-align: start;
   white-space: nowrap;
-  color: var(--color-text-muted);
+  color: var(--color-text-faint);
   background-color: var(--color-surface-sunken);
   border-block-end: var(--border-width) solid var(--border-color);
 }
