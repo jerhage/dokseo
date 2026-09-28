@@ -201,7 +201,6 @@
       chevron={false}
       icon={Ellipsis}
       label="Captures menu"
-      tooltip={false}
     >
       <DropdownItem danger disabled={view.count === 0} onclick={() => view.askClear()}>
         Delete every capture…

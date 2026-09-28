@@ -17,15 +17,7 @@
   let appearance = $state<Appearance>(readAppearance(document.documentElement));
 </script>
 
-<Dropdown
-  variant="ghost"
-  align="end"
-  square
-  chevron={false}
-  icon={Menu}
-  label="Menu"
-  tooltip={false}
->
+<Dropdown variant="ghost" align="end" square chevron={false} icon={Menu} label="Menu">
   {#each LIBRARY_SECTIONS as section (section.href)}
     <DropdownItem href={section.href} current={section.current}>{section.name}</DropdownItem>
   {/each}

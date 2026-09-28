@@ -250,7 +250,6 @@
         chevron={false}
         icon={Ellipsis}
         label="More for the capture at {card.place}"
-        tooltip={false}
       >
         {#if tools.text.kind === 'tucked'}
           <DropdownItem onclick={(event) => write('text', menuTrigger(event))}>

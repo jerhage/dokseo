@@ -98,7 +98,6 @@
         class="layout-app-shell-narrow-only"
         icon={ArrowUpDown}
         label="Sort: {sortName(order)}"
-        tooltip={false}
       >
         {@render sortChoices()}
       </Dropdown>

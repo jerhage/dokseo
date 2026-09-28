@@ -4,6 +4,7 @@
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import DropdownLabel from '$lib/components/DropdownLabel.svelte';
   import DropdownSeparator from '$lib/components/DropdownSeparator.svelte';
+  import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const SORTS = ['Newest', 'Oldest', 'Name A–Z'];
@@ -47,6 +48,10 @@
         {#snippet trigger()}Small, aligned to the end{/snippet}
         <DropdownItem onclick={() => (chosen = 'Export')}>Export</DropdownItem>
         <DropdownItem onclick={() => (chosen = 'Share')}>Share</DropdownItem>
+      </Dropdown>
+      <Dropdown variant="ghost" square chevron={false} icon={Ellipsis} label="More actions">
+        <DropdownItem onclick={() => (chosen = 'Pin')}>Pin</DropdownItem>
+        <DropdownItem onclick={() => (chosen = 'Archive')}>Archive</DropdownItem>
       </Dropdown>
     </div>
     <p class="text-sm text-muted">Last chosen: {chosen}</p>
