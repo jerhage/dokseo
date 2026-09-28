@@ -59,7 +59,7 @@ type TagColour =
   | 'rose'
   | 'ice'
   | 'ruby'
-  | 'ember'
+  | 'copper'
   | 'olive'
   | 'fern'
   | 'cyan'
@@ -111,7 +111,7 @@ const BADGE_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
   rose: ['badge-color-rose'],
   ice: ['badge-color-ice'],
   ruby: ['badge-color-ruby'],
-  ember: ['badge-color-ember'],
+  copper: ['badge-color-copper'],
   olive: ['badge-color-olive'],
   fern: ['badge-color-fern'],
   cyan: ['badge-color-cyan'],
@@ -251,7 +251,7 @@ const TAG_COLOURS: readonly TagColour[] = [
   'rose',
   'ice',
   'ruby',
-  'ember',
+  'copper',
   'olive',
   'fern',
   'cyan',
@@ -270,7 +270,7 @@ const TAG_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
   rose: ['tag-color-rose'],
   ice: ['tag-color-ice'],
   ruby: ['tag-color-ruby'],
-  ember: ['tag-color-ember'],
+  copper: ['tag-color-copper'],
   olive: ['tag-color-olive'],
   fern: ['tag-color-fern'],
   cyan: ['tag-color-cyan'],

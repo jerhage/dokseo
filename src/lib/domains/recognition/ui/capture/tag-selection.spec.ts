@@ -8,7 +8,7 @@ import type { TagWriting } from './tag-selection.svelte';
 
 const CARD = captureId('c1');
 
-const SPEECH: Tag = namedTag(tagId('tag-1'), 'speech', 'ember', 1);
+const SPEECH: Tag = namedTag(tagId('tag-1'), 'speech', 'copper', 1);
 
 const SIGN: Tag = namedTag(tagId('tag-2'), 'sign', 'sage', 2);
 

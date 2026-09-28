@@ -107,10 +107,10 @@ a.tag:hover::before,
   --_tag-border: var(--color-tag-ruby);
   --_tag-on: var(--color-text-inverse);
 }
-.tag-color-ember {
-  --_tag-text: var(--color-tag-ember-text);
-  --_tag-bg: var(--color-tag-ember-bg);
-  --_tag-border: var(--color-tag-ember);
+.tag-color-copper {
+  --_tag-text: var(--color-tag-copper-text);
+  --_tag-bg: var(--color-tag-copper-bg);
+  --_tag-border: var(--color-tag-copper);
   --_tag-on: var(--color-text-inverse);
 }
 .tag-color-olive {

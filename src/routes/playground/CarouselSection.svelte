@@ -9,7 +9,7 @@
   import type { TagColour } from '$lib/components/classes';
   import DemoSection from './DemoSection.svelte';
 
-  const COLOURS: readonly TagColour[] = ['clay', 'sage', 'sky', 'plum', 'ember'];
+  const COLOURS: readonly TagColour[] = ['clay', 'sage', 'sky', 'plum', 'copper'];
 
   const REACH = 400;
 

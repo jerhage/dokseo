@@ -6,7 +6,7 @@ type TagColour =
   | 'rose'
   | 'ice'
   | 'ruby'
-  | 'ember'
+  | 'copper'
   | 'olive'
   | 'fern'
   | 'cyan'
@@ -26,7 +26,7 @@ const TAG_COLOURS = [
   'rose',
   'ice',
   'ruby',
-  'ember',
+  'copper',
   'olive',
   'fern',
   'cyan',

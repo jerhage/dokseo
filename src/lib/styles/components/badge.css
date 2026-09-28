@@ -86,10 +86,10 @@
   --_badge-bg: var(--color-tag-ruby-bg);
   --_badge-border: var(--color-tag-ruby);
 }
-.badge-color-ember {
-  --_badge-fg: var(--color-tag-ember-text);
-  --_badge-bg: var(--color-tag-ember-bg);
-  --_badge-border: var(--color-tag-ember);
+.badge-color-copper {
+  --_badge-fg: var(--color-tag-copper-text);
+  --_badge-bg: var(--color-tag-copper-bg);
+  --_badge-border: var(--color-tag-copper);
 }
 .badge-color-olive {
   --_badge-fg: var(--color-tag-olive-text);

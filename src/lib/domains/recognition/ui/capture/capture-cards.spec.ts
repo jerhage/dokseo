@@ -14,7 +14,7 @@ import { NOTHING_READ } from './capture-view.svelte';
 
 const BOOK = bookId('book-1');
 
-const TAG: Tag = namedTag(tagId('tag-1'), 'speech', 'ember', 1);
+const TAG: Tag = namedTag(tagId('tag-1'), 'speech', 'copper', 1);
 
 function region(index: number, x: number): ImageRegion {
   return { index: imageIndex(index), rect: imageRect(x, 0, 10, 10) };
@@ -205,7 +205,7 @@ describe('card projection', () => {
     const tagged = { ...read('c1', 'ねこ'), tagIds: [TAG.id] };
     const cards = cardsOf([tagged], { tags: [TAG] }).cards;
 
-    expect(cards[0]?.tags).toEqual([{ id: TAG.id, name: 'speech', colour: 'ember' }]);
+    expect(cards[0]?.tags).toEqual([{ id: TAG.id, name: 'speech', colour: 'copper' }]);
   });
 });
 

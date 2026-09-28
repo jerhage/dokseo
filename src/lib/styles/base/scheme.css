@@ -51,9 +51,9 @@
   --ds-tag-ruby: light-dark(oklch(0.43 0.116 19.6), #c4696b);
   --ds-tag-ruby-ink: light-dark(oklch(0.43 0.116 19.6), oklch(0.77 0.116 19.6));
   --ds-tag-ruby-wash: light-dark(oklch(0.43 0.116 19.6 / 0.12), oklch(0.626 0.116 19.6 / 0.16));
-  --ds-tag-ember: light-dark(oklch(0.43 0.106 46.9), #c47a55);
-  --ds-tag-ember-ink: light-dark(oklch(0.43 0.106 46.9), oklch(0.77 0.106 46.9));
-  --ds-tag-ember-wash: light-dark(oklch(0.43 0.106 46.9 / 0.12), oklch(0.65 0.106 46.9 / 0.16));
+  --ds-tag-copper: light-dark(oklch(0.43 0.106 46.9), #c47a55);
+  --ds-tag-copper-ink: light-dark(oklch(0.43 0.106 46.9), oklch(0.77 0.106 46.9));
+  --ds-tag-copper-wash: light-dark(oklch(0.43 0.106 46.9 / 0.12), oklch(0.65 0.106 46.9 / 0.16));
   --ds-tag-olive: light-dark(oklch(0.43 0.095 112.5), #a7ad5e);
   --ds-tag-olive-ink: light-dark(oklch(0.43 0.095 112.5), oklch(0.77 0.103 112.5));
   --ds-tag-olive-wash: light-dark(oklch(0.43 0.095 112.5 / 0.12), oklch(0.725 0.103 112.5 / 0.16));
