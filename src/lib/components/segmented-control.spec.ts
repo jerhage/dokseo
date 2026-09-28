@@ -103,7 +103,7 @@ describe('SegmentedControl', () => {
     const [covers, list] = buttons(markup({ variant: 'outline' }));
 
     expect(covers).toContain('class="btn btn-sm"');
-    expect(list).toContain('class="btn btn-outline btn-sm is-active"');
+    expect(list).toContain('class="btn btn-outline btn-primary btn-sm is-active"');
   });
 
   it('renders its own items inside the track in the track variant', () => {

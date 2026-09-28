@@ -1011,6 +1011,20 @@ describe('the design system stylesheets', () => {
     expect(layout.replace(narrow, '')).not.toContain('layout-app-shell-narrow-touch');
   });
 
+  it('names no button tone and no button emphasis together in one selector', () => {
+    const named = (selector: string, names: readonly string[]): boolean =>
+      names.some((name) => new RegExp(`\\.${name}(?![\\w-])`, 'u').test(selector));
+    const selectors = rules(style('components/btn.css')).flatMap((rule) => rule.selectors);
+
+    expect(
+      selectors.filter(
+        (selector) =>
+          named(selector, ['btn-primary', 'btn-accent', 'btn-danger']) &&
+          named(selector, ['btn-outline', 'btn-ghost']),
+      ),
+    ).toEqual([]);
+  });
+
   it('lets a touch shell row and a compact shell nav adjust buttons and links only through the custom properties those read', () => {
     const btn = style('components/btn.css');
     const link = style('components/nav/nav-link.css');

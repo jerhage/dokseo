@@ -71,7 +71,7 @@ const BUTTON_VARIANTS: Readonly<Record<ButtonVariant, ClassList>> = {
   default: [],
   primary: ['btn-primary'],
   accent: ['btn-accent'],
-  outline: ['btn-outline'],
+  outline: ['btn-outline', 'btn-primary'],
   ghost: ['btn-ghost'],
   danger: ['btn-danger'],
   'ghost-danger': ['btn-ghost', 'btn-danger'],
