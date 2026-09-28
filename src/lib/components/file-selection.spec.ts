@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ANY_FILE_POLICY,
   acceptRules,
   describeRejection,
   fileVerdict,
@@ -166,6 +167,13 @@ describe('selectFiles', () => {
         { file: selfie, verdict: { kind: 'too-many' } },
       ],
     });
+  });
+
+  it('accepts every file, in order, under the policy for any file', () => {
+    const selection = selectFiles([archive, poster, photo], ANY_FILE_POLICY);
+
+    expect(selection.accepted).toEqual([archive, poster, photo]);
+    expect(selection.rejected).toEqual([]);
   });
 
   it('returns the same file objects it was given', () => {

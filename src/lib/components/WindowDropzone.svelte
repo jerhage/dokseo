@@ -2,6 +2,8 @@
   import type { Snippet } from 'svelte';
   import { readDropped } from './drop-reading';
   import type { DropReader } from './drop-reading';
+  import { ANY_FILE_POLICY, selectFiles } from './file-selection';
+  import type { FileSelection } from './file-selection';
   import Upload from './icons/Upload.svelte';
   import { IDLE_DRAG, carriesFiles, dropped, entered, left } from './window-drag';
   import type { WindowDrag } from './window-drag';
@@ -9,7 +11,7 @@
   type Props = {
     disabled?: boolean;
     readDrop?: DropReader<DataTransfer, File> | undefined;
-    onfiles: (files: readonly File[]) => void;
+    onfiles: (selection: FileSelection<File>) => void;
     children: Snippet;
   };
 
@@ -48,7 +50,7 @@
     if (disabled) return;
     const pending = readDropped(event.dataTransfer, readDrop);
     const files = await pending;
-    if (files.length > 0) onfiles(files);
+    if (files.length > 0) onfiles(selectFiles(files, ANY_FILE_POLICY));
   }
 </script>
 

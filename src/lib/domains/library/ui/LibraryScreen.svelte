@@ -31,6 +31,7 @@
     titledBooks,
   } from './library-overview';
   import BookSettings from './BookSettings.svelte';
+  import { arrivedFiles } from './chosen-files';
   import ContinueReading from './ContinueReading.svelte';
   import ImportStatus from './ImportStatus.svelte';
   import LibraryMenu from './LibraryMenu.svelte';
@@ -272,7 +273,7 @@
 <WindowDropzone
   disabled={view.busy || settingsBook !== null || removeBook !== null}
   readDrop={filesFromDataTransfer}
-  onfiles={upload}
+  onfiles={(selection) => upload(arrivedFiles(selection))}
 >
   Drop to add to your library
 </WindowDropzone>

@@ -204,7 +204,7 @@
   </Card>
   <WindowDropzone
     disabled={!windowDrop}
-    onfiles={(files) => (windowDropped = files.map((file) => file.name))}
+    onfiles={(selection) => (windowDropped = selection.accepted.map((file) => file.name))}
   >
     Drop to log the files
   </WindowDropzone>

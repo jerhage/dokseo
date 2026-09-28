@@ -34,6 +34,8 @@ type FileSelection<F extends FileLike> = {
   readonly arrived: readonly ArrivedFile<F>[];
 };
 
+const ANY_FILE_POLICY: SelectionPolicy = { rules: [], maxSize: undefined, multiple: true };
+
 const KILOBYTE = 1024;
 const MEGABYTE = KILOBYTE * KILOBYTE;
 
@@ -114,7 +116,14 @@ function describeRejection(reason: Rejection): string {
     .exhaustive();
 }
 
-export { acceptRules, describeRejection, fileVerdict, formatFileSize, selectFiles };
+export {
+  ANY_FILE_POLICY,
+  acceptRules,
+  describeRejection,
+  fileVerdict,
+  formatFileSize,
+  selectFiles,
+};
 export type {
   AcceptRule,
   ArrivalVerdict,
