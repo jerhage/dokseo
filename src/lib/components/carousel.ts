@@ -40,8 +40,23 @@ const FLICK_PX_PER_MS = 0.4;
 
 const FLICK_MIN_PX = 24;
 
+const SETTLE_FALLBACK_MARGIN_MS = 220;
+
 function carouselGap(style: StyleSource): number {
   return pixelLength(style, CAROUSEL_GAP_PROPERTY);
+}
+
+function timeMs(time: string): number {
+  const text = time.trim();
+  const amount = Number.parseFloat(text);
+  if (!Number.isFinite(amount) || amount < 0) return 0;
+  if (text.endsWith('ms')) return amount;
+  return text.endsWith('s') ? Math.round(amount * 1000) : 0;
+}
+
+function settleFallbackMs(transitionDuration: string): number {
+  const longest = Math.max(0, ...transitionDuration.split(',').map(timeMs));
+  return longest + SETTLE_FALLBACK_MARGIN_MS;
 }
 
 function isPositiveFinite(value: number): boolean {
@@ -152,6 +167,7 @@ function swipeRelease(
 export {
   CAROUSEL_RESISTANCE,
   CAROUSEL_REST,
+  SETTLE_FALLBACK_MARGIN_MS,
   carouselAround,
   carouselGap,
   carouselNeighbours,
@@ -161,6 +177,7 @@ export {
   holdsSide,
   revealedSide,
   screenSide,
+  settleFallbackMs,
   swipeRelease,
 };
 export type {

@@ -10,6 +10,7 @@
     carouselStep,
     holdsSide,
     screenSide,
+    settleFallbackMs,
     swipeRelease,
   } from './carousel';
   import type {
@@ -48,13 +49,10 @@
     ...attributes
   }: Props = $props();
 
-  const SETTLE_FALLBACK_MS = 400;
-
   const reducedMotion = new MediaQuery('prefers-reduced-motion: reduce');
 
   let root = $state<HTMLDivElement | null>(null);
   let press: Press | null = null;
-  let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
   function sceneGap(element: HTMLDivElement | null): number {
     if (gap !== undefined) return gap;
@@ -70,22 +68,20 @@
     };
   }
 
-  function stopSettleTimer(): void {
-    if (settleTimer !== null) clearTimeout(settleTimer);
-    settleTimer = null;
+  function settlingDuration(element: HTMLDivElement): string {
+    const slot = element.firstElementChild;
+    return slot === null ? '' : getComputedStyle(slot).transitionDuration;
   }
 
   export function finish(): void {
     const settling = motion;
     if (settling.kind !== 'settle') return;
 
-    stopSettleTimer();
     motion = CAROUSEL_REST;
     if (settling.towards !== null) onsettled?.(settling.towards);
   }
 
   export function rest(): void {
-    stopSettleTimer();
     motion = CAROUSEL_REST;
   }
 
@@ -95,12 +91,7 @@
       input.kind === 'follow' && reducedMotion.current ? { kind: 'follow', travel: 0 } : input;
     motion = carouselStep(was, fed, scene());
 
-    const handed = was.kind === 'follow' && motion.kind === 'settle';
-    if (handed) {
-      stopSettleTimer();
-      settleTimer = setTimeout(finish, SETTLE_FALLBACK_MS);
-    }
-    return handed;
+    return was.kind === 'follow' && motion.kind === 'settle';
   }
 
   function settled(event: TransitionEvent): void {
@@ -148,7 +139,13 @@
     drive({ kind: 'release', towards: null });
   }
 
-  $effect(() => stopSettleTimer);
+  $effect(() => {
+    const element = root;
+    if (motion.kind !== 'settle' || element === null) return;
+
+    const fallback = setTimeout(finish, settleFallbackMs(settlingDuration(element)));
+    return () => clearTimeout(fallback);
+  });
 </script>
 
 <div

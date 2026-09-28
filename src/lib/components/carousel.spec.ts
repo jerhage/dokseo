@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CAROUSEL_REST,
+  SETTLE_FALLBACK_MARGIN_MS,
   carouselAround,
   carouselGap,
   carouselNeighbours,
@@ -10,6 +11,7 @@ import {
   holdsSide,
   revealedSide,
   screenSide,
+  settleFallbackMs,
   swipeRelease,
 } from './carousel';
 import type { CarouselMotion, CarouselScene } from './carousel';
@@ -243,5 +245,26 @@ describe('carouselGap', () => {
 
   it('reads 0 where the token is unset', () => {
     expect(carouselGap({ getPropertyValue: () => '' })).toBe(0);
+  });
+});
+
+describe('settleFallbackMs', () => {
+  it('outlasts a transition given in seconds by the margin', () => {
+    expect(settleFallbackMs('0.18s')).toBe(180 + SETTLE_FALLBACK_MARGIN_MS);
+    expect(settleFallbackMs('0.14s')).toBe(140 + SETTLE_FALLBACK_MARGIN_MS);
+  });
+
+  it('outlasts a transition given in milliseconds by the margin', () => {
+    expect(settleFallbackMs('40ms')).toBe(40 + SETTLE_FALLBACK_MARGIN_MS);
+  });
+
+  it('outlasts the longest of several transitions', () => {
+    expect(settleFallbackMs('0.1s, 0.3s, 0s')).toBe(300 + SETTLE_FALLBACK_MARGIN_MS);
+  });
+
+  it('waits the margin alone for no transition or an unreadable one', () => {
+    expect(settleFallbackMs('0s')).toBe(SETTLE_FALLBACK_MARGIN_MS);
+    expect(settleFallbackMs('')).toBe(SETTLE_FALLBACK_MARGIN_MS);
+    expect(settleFallbackMs('soon')).toBe(SETTLE_FALLBACK_MARGIN_MS);
   });
 });
