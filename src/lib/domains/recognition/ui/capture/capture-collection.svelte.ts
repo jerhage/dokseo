@@ -52,6 +52,11 @@ type CaptureLoad =
 
 type WriteOutcome = 'saved' | 'failed';
 
+type NoteEditors = {
+  readonly open: (capture: CaptureId) => void;
+  readonly close: (capture: CaptureId) => void;
+};
+
 type Removed = {
   readonly card: PanelCapture;
   readonly stored: Capture | undefined;
@@ -156,7 +161,6 @@ function takenOf(capture: PanelCapture): Taken {
 
 class CaptureCollection {
   captures = $state.raw<readonly PanelCapture[]>([]);
-  writing = $state.raw<CaptureId | null>(null);
   confirmingClear = $state(false);
   tags = $state.raw<readonly Tag[]>([]);
   libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
@@ -164,13 +168,15 @@ class CaptureCollection {
 
   #container: Container;
   #notify: Notify;
+  #editors: NoteEditors;
   #book = $state.raw<BookId | null>(null);
   #generation = 0;
   #capturesById = new Map<CaptureId, Capture>();
 
-  constructor(container: Container, notify: Notify) {
+  constructor(container: Container, notify: Notify, editors: NoteEditors) {
     this.#container = container;
     this.#notify = notify;
+    this.#editors = editors;
   }
 
   get generation(): number {
@@ -284,7 +290,6 @@ class CaptureCollection {
     this.#book = null;
     this.load = LOADING;
     this.captures = [];
-    this.writing = null;
     this.#capturesById = new Map();
     this.#generation += 1;
     return this.#generation;
@@ -376,25 +381,19 @@ class CaptureCollection {
         edited: false,
       },
     ];
-    this.writing = id;
+    this.#editors.open(id);
 
     const written = await this.#container.recognition
       .writeNote(id, book, anchor)
       .catch(thrownFailure);
     if (generation !== this.#generation) return;
     if (!written.ok) {
-      if (this.writing === id) this.writing = null;
+      this.#editors.close(id);
       this.#unsaved(id, 'The note could not be saved', written.error);
       return;
     }
 
     this.#capturesById.set(written.value.id, written.value);
-  }
-
-  takeWriting(): CaptureId | null {
-    const fresh = this.writing;
-    this.writing = null;
-    return fresh;
   }
 
   async recognizing(

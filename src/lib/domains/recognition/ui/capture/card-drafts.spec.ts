@@ -157,4 +157,13 @@ describe('CardDrafts', () => {
       drafts.holds('note', OTHER),
     ]).toEqual([false, false, true]);
   });
+
+  it('closes every open draft when cleared', () => {
+    const drafts = new CardDrafts();
+    drafts.open('note', CARD, '', null);
+    drafts.open('text', OTHER, 'ねこ', null);
+    drafts.clear();
+
+    expect([drafts.holds('note', CARD), drafts.holds('text', OTHER)]).toEqual([false, false]);
+  });
 });

@@ -30,7 +30,6 @@
   import { clearWarning } from './clearing';
   import { TagSelection } from './tag-selection.svelte';
   import CaptureCard from './CaptureCard.svelte';
-  import { CardDrafts } from './card-drafts.svelte';
   import type { DraftField } from './card-drafts.svelte';
   import DocumentTags from './DocumentTags.svelte';
   import TagPickerModal from './TagPickerModal.svelte';
@@ -69,7 +68,7 @@
     () => ({ tags: view.tags, counts: view.libraryCounts }),
   );
 
-  const drafts = new CardDrafts();
+  const drafts = $derived(view.drafts);
 
   const copying = new TextCopy(
     (text) => navigator.clipboard.writeText(text),
@@ -78,14 +77,6 @@
 
   let list = $state<HTMLElement | null>();
   let tagFrom: FocusTarget | null = null;
-
-  $effect(() => {
-    const fresh = view.writing;
-    if (fresh === null) return;
-
-    view.takeWriting();
-    drafts.open('text', fresh, '', null);
-  });
 
   const mismatch = $derived(engineMismatch(view.session, language));
   const waiting = $derived(view.captures.some((capture) => capture.status === 'pending'));

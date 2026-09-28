@@ -12,6 +12,7 @@ import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
+import { CardDrafts } from './card-drafts.svelte';
 import { CaptureCollection } from './capture-collection.svelte';
 import type { CaptureLoad, PanelCapture, Settled, WriteOutcome } from './capture-collection.svelte';
 import { RecognizerView } from '../engine/recognizer-view.svelte';
@@ -76,10 +77,14 @@ class CaptureView {
   #container: Container;
   #collection: CaptureCollection;
   #recognizer: RecognizerView;
+  #drafts = new CardDrafts();
 
   constructor(container: Container, notify: Notify) {
     this.#container = container;
-    this.#collection = new CaptureCollection(container, notify);
+    this.#collection = new CaptureCollection(container, notify, {
+      open: (capture) => this.#drafts.open('text', capture, '', null),
+      close: (capture) => void this.#drafts.abandon('text', capture),
+    });
     this.#recognizer = new RecognizerView(container, notify, () => this.#collection.generation);
   }
 
@@ -91,8 +96,8 @@ class CaptureView {
     return this.#collection.load;
   }
 
-  get writing(): CaptureId | null {
-    return this.#collection.writing;
+  get drafts(): CardDrafts {
+    return this.#drafts;
   }
 
   get confirmingClear(): boolean {
@@ -176,6 +181,7 @@ class CaptureView {
 
   async open(book: BookId): Promise<void> {
     this.#recognizer.forget();
+    this.#drafts.clear();
     await this.#collection.open(book);
   }
 
@@ -185,6 +191,7 @@ class CaptureView {
 
   close(): void {
     this.#collection.forget();
+    this.#drafts.clear();
     this.#recognizer.close();
   }
 
@@ -232,10 +239,6 @@ class CaptureView {
 
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
     await this.#collection.write(book, regions);
-  }
-
-  takeWriting(): CaptureId | null {
-    return this.#collection.takeWriting();
   }
 
   async recognize(

@@ -1703,11 +1703,12 @@ describe('CaptureView notes', () => {
     await view.open(ONE);
 
     const writing = view.write(ONE, regions(5));
-    expect(view.writing).not.toBeNull();
+    const written = at(view.captures, 0).id;
+    expect(view.drafts.holds('text', written)).toBe(true);
     await writing;
 
     expect(at(view.captures, 0)).toMatchObject({ origin: 'written', status: 'failed' });
-    expect(view.writing).toBeNull();
+    expect(view.drafts.holds('text', written)).toBe(false);
     expect(told(world)).toEqual(['danger: The note could not be saved']);
   });
 
@@ -1732,16 +1733,41 @@ describe('CaptureView notes', () => {
     expect(world.store.rows).toEqual([]);
   });
 
-  it('offers the new note for editing exactly once', async () => {
+  it('opens the draft of a written note at once', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+
+    view.note(regions());
+
+    const written = at(view.captures, 0).id;
+    expect([view.drafts.holds('text', written), view.drafts.draft('text', written)]).toEqual([
+      true,
+      '',
+    ]);
+  });
+
+  it('keeps the draft of a note written while no panel shows open for the panel that comes', async () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
     await view.open(ONE);
 
     await view.write(ONE, regions());
+    await view.write(ONE, regions(5));
 
-    expect(view.writing).toBe(at(view.captures, 0).id);
-    expect(view.takeWriting()).toBe(at(view.captures, 0).id);
-    expect(view.takeWriting()).toBeNull();
+    expect(view.captures.map((card) => view.drafts.holds('text', card.id))).toEqual([true, true]);
+  });
+
+  it('closes the drafts of the book it leaves', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+    await view.write(ONE, regions());
+    const written = at(view.captures, 0).id;
+
+    await view.open(TWO);
+
+    expect(view.drafts.holds('text', written)).toBe(false);
   });
 
   it('empties a note whose text is taken away again', async () => {

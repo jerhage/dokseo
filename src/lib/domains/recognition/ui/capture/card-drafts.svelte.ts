@@ -80,6 +80,10 @@ class CardDrafts {
     return held.from;
   }
 
+  clear(): void {
+    this.#open = new Map();
+  }
+
   forget(capture: CaptureId): void {
     this.#open = new Map([...this.#open].filter(([, held]) => held.capture !== capture));
   }

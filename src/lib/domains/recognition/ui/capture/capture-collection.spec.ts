@@ -21,6 +21,8 @@ import { recognizedText } from '../../domain/engine/recognized-text';
 import { CaptureCollection } from './capture-collection.svelte';
 import type { Settled } from './capture-collection.svelte';
 
+const NO_EDITORS = { open: () => undefined, close: () => undefined };
+
 type Step = {
   readonly label: string;
   readonly name: string;
@@ -187,7 +189,7 @@ describe('CaptureCollection', () => {
     const world = fakes();
     world.store.rows = [storedRow('two', ONE, '後', 2), storedRow('one', ONE, '先', 1)];
     world.store.rows.push(storedRow('other', TWO, '別', 3));
-    const collection = new CaptureCollection(world.container, world.notify);
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
 
     await collection.open(ONE);
 
@@ -196,7 +198,7 @@ describe('CaptureCollection', () => {
 
   it('settles the pending card the recognition returns and stores the text', async () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify);
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.open(ONE);
 
     await collection.recognizing(
@@ -210,7 +212,7 @@ describe('CaptureCollection', () => {
 
   it('stores nothing for a recognition that read no text', async () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify);
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.open(ONE);
 
     await collection.recognizing(regions(), settles({ status: 'empty' }));
@@ -221,7 +223,7 @@ describe('CaptureCollection', () => {
 
   it('stores nothing for a note when no book is open', () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify);
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
 
     collection.note(regions());
 
@@ -233,7 +235,7 @@ describe('CaptureCollection', () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1)];
     world.store.tags = [namedTag(CROWN, 'crown', 'slate', 1)];
-    const collection = new CaptureCollection(world.container, world.notify);
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.open(ONE);
     await collection.loadTagCounts();
 
@@ -247,7 +249,7 @@ describe('CaptureCollection', () => {
   it('empties the list and the store of the open book when it is cleared', async () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1), storedRow('other', TWO, '別', 2)];
-    const collection = new CaptureCollection(world.container, world.notify);
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.open(ONE);
 
     await collection.clear();
