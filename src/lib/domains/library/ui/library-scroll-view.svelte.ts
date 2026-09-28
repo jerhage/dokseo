@@ -1,6 +1,8 @@
+import { untrack } from 'svelte';
 import { match } from 'ts-pattern';
 import type { LibraryBody } from './library-overview';
 import { returnsFromReader, scrollStep, scrollTopFrom } from './library-scroll';
+import type { ScrollStep } from './library-scroll';
 
 type ScrollMemory = { top: number | null };
 
@@ -34,7 +36,12 @@ class LibraryScrollView {
   }
 
   settle(body: LibraryBody): number | null {
-    return match(scrollStep(this.#pending, body))
+    const step = scrollStep(this.#pending, body);
+    return untrack(() => this.#consume(step));
+  }
+
+  #consume(step: ScrollStep): number | null {
+    return match(step)
       .with({ kind: 'wait' }, () => null)
       .with({ kind: 'scroll' }, ({ top }) => this.#finish(top))
       .with({ kind: 'none' }, () => this.#finish(null))

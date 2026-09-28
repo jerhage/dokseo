@@ -20,12 +20,8 @@
   } from './token-catalog';
   import './tokens-section.css';
 
-  let zValues = $state<readonly string[]>([]);
-
-  $effect(() => {
-    const computed = getComputedStyle(document.documentElement);
-    zValues = Z_SCALE.map((name) => computed.getPropertyValue(name).trim());
-  });
+  const computed = getComputedStyle(document.documentElement);
+  const zValues = Z_SCALE.map((name) => computed.getPropertyValue(name).trim());
 </script>
 
 {#snippet label(name: string)}
