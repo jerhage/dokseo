@@ -14,30 +14,53 @@
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color var(--transition-ui);
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep),
+    color var(--transition-hover-text);
 }
 .command-item:hover {
-  color: var(--color-text);
-  background-color: var(--color-hover);
+  color: var(--color-hover-text, var(--color-text));
+  background-size: 100% 100%;
 }
 .command-item:focus-visible {
   outline: none;
-  background-color: var(--color-selected);
+  color: var(--color-chosen-text, var(--color-text));
+  background-color: var(--color-chosen-fill, var(--color-selected));
+  background-size: 0% 100%;
 }
 .command-item.is-selected {
-  color: var(--color-brand-text);
-  background-color: var(--color-selected);
+  color: var(--color-chosen-text, var(--color-brand-text));
+  background-color: var(--color-chosen-fill, var(--color-selected));
+  background-size: 0% 100%;
 }
 .command-item:disabled,
 .command-item[aria-disabled='true'] {
   color: var(--color-disabled);
   background-color: transparent;
+  background-size: 0% 100%;
   cursor: not-allowed;
 }
 .command-item-static,
 .command-item-static:hover {
+  color: var(--color-text);
   background-color: transparent;
+  background-size: 0% 100%;
   cursor: default;
+}
+.command-item:hover > .command-item-hint {
+  color: var(--color-hover-text, var(--color-text-faint));
+}
+.command-item:focus-visible > .command-item-hint,
+.command-item.is-selected > .command-item-hint {
+  color: var(--color-chosen-text, var(--color-text-faint));
+}
+.command-item-static:hover > .command-item-hint {
+  color: var(--color-text-faint);
 }
 .command-item-hint {
   flex-shrink: 0;

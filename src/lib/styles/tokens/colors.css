@@ -106,6 +106,15 @@
   --color-hover: var(--ds-hover);
   --color-active: var(--ds-active);
   --color-selected: var(--ds-selected);
+  --color-hover-fill: var(--ds-hover-fill);
+  --color-hover-fill-soft: var(--ds-hover-fill-soft);
+  --color-hover-fill-solid: var(--ds-hover-fill-solid);
+  --color-hover-text: var(--ds-hover-text);
+  --color-hover-text-solid: var(--ds-hover-text-solid);
+  --color-press-fill: var(--ds-press-fill);
+  --color-chosen-fill: var(--ds-chosen-fill);
+  --color-chosen-text: var(--ds-chosen-text);
+  --color-hover-marker: var(--ds-marker);
   --color-disabled: var(--ds-disabled);
   --color-disabled-bg: var(--ds-disabled-bg);
 

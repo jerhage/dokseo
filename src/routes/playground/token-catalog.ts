@@ -107,6 +107,20 @@ const COLOR_GROUPS: readonly TokenGroup[] = [
     ],
   },
   {
+    title: 'Hover and chosen',
+    tokens: [
+      '--color-hover-fill',
+      '--color-hover-fill-soft',
+      '--color-hover-fill-solid',
+      '--color-hover-text',
+      '--color-hover-text-solid',
+      '--color-press-fill',
+      '--color-chosen-fill',
+      '--color-chosen-text',
+      '--color-hover-marker',
+    ],
+  },
+  {
     title: 'Component surfaces',
     tokens: [
       '--color-table-stripe',

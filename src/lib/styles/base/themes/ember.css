@@ -136,4 +136,19 @@
   --ds-motion-panel-in: none;
   --ds-dur-exit: var(--ds-dur-flash);
   --ds-easing-exit: var(--ds-ease-in);
+
+  --ds-hover-fill: var(--ds-sand-tint-5);
+  --ds-hover-fill-soft: transparent;
+  --ds-hover-fill-solid: transparent;
+  --ds-hover-text: initial;
+  --ds-hover-text-solid: initial;
+  --ds-press-fill: var(--ds-sand-tint-9);
+  --ds-chosen-fill: initial;
+  --ds-chosen-text: initial;
+  --ds-dur-sweep: 0s;
+  --ds-easing-sweep: linear;
+  --ds-dur-hover-text: var(--ds-dur-flash);
+  --ds-easing-hover-text: var(--ds-ease-smooth);
+  --ds-marker-width: 0px;
+  --ds-marker: var(--ds-moss-500);
 }

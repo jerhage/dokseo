@@ -29,6 +29,8 @@
   --transition-exit: var(--ds-dur-exit) var(--ds-easing-exit);
   --transition-bounce: var(--ds-dur-moderate) var(--ds-ease-bounce);
   --transition-elastic: var(--ds-dur-slow) var(--ds-ease-elastic);
+  --transition-sweep: var(--ds-dur-sweep) var(--ds-easing-sweep);
+  --transition-hover-text: var(--ds-dur-hover-text) var(--ds-easing-hover-text);
 
   --motion-overlay-in: var(--ds-motion-overlay-in);
   --motion-overlay-out: var(--ds-motion-overlay-out);

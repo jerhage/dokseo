@@ -1476,7 +1476,7 @@ describe('the design system stylesheets', () => {
     expect(selectors.filter((selector) => !selector.startsWith('.command-item'))).toEqual([]);
     expect(declarations(ruleBody(command, '.command-item'))).toContain('display: flex');
     expect(declarations(ruleBody(command, '.command-item.is-selected'))).toContain(
-      'background-color: var(--color-selected)',
+      'background-color: var(--color-chosen-fill, var(--color-selected))',
     );
     expect(declarations(ruleBody(command, '.command-item-hint'))).toContain(
       'margin-inline-start: auto',
@@ -1901,6 +1901,124 @@ describe('the design system stylesheets', () => {
     const stopped = rules(reduced).find((rule) => rule.body.includes('animation: none'));
 
     expect(stopped?.selectors).toEqual(expect.arrayContaining(['.tab-panel', '.accordion-body']));
+  });
+
+  it('keeps the plain hover of every theme that sets no hover text: its tints, no solid fill, no sweep, no marker', () => {
+    const plain = themeRules(themeSheets())
+      .map((rule) => definitionValues(rule.body))
+      .filter((values) => values.get('--ds-hover-text') === 'initial');
+
+    expect(plain.length).toBeGreaterThan(1);
+    for (const values of plain) {
+      expect({
+        fill: values.get('--ds-hover-fill'),
+        press: values.get('--ds-press-fill'),
+        soft: values.get('--ds-hover-fill-soft'),
+        solid: values.get('--ds-hover-fill-solid'),
+        solidText: values.get('--ds-hover-text-solid'),
+        chosenFill: values.get('--ds-chosen-fill'),
+        chosenText: values.get('--ds-chosen-text'),
+        sweep: values.get('--ds-dur-sweep'),
+        textDuration: values.get('--ds-dur-hover-text'),
+        textEasing: values.get('--ds-easing-hover-text'),
+        marker: values.get('--ds-marker-width'),
+      }).toEqual({
+        fill: values.get('--ds-hover'),
+        press: values.get('--ds-active'),
+        soft: 'transparent',
+        solid: 'transparent',
+        solidText: 'initial',
+        chosenFill: 'initial',
+        chosenText: 'initial',
+        sweep: '0s',
+        textDuration: 'var(--ds-dur-flash)',
+        textEasing: 'var(--ds-ease-smooth)',
+        marker: '0px',
+      });
+    }
+  });
+
+  it('sweeps the hover fill in from the start of buttons, nav links, tabs, accordion triggers, menu items and command rows', () => {
+    const swept = [
+      ['components/btn.css', '.btn', '.btn:hover'],
+      ['components/nav/nav-link.css', '.nav-link', '.nav-link:hover'],
+      ['components/tabs.css', '.tab', '.tab:hover'],
+      ['components/accordion.css', '.accordion-trigger', '.accordion-trigger:hover'],
+      ['components/dropdown.css', '.dropdown-item', '.dropdown-item:hover'],
+      ['components/command.css', '.command-item', '.command-item:hover'],
+    ] as const;
+
+    for (const [path, rest, hover] of swept) {
+      const resting = everyDeclarationFor(style(path), rest);
+
+      expect({ rest, resting }).toEqual({
+        rest,
+        resting: expect.arrayContaining([
+          'background-repeat: no-repeat',
+          'background-position: left center',
+          'background-size: 0% 100%',
+          expect.stringMatching(/^background-image: /u),
+          expect.stringMatching(/^transition: .*background-size var\(--transition-sweep\)/u),
+          expect.stringMatching(/^transition: .*color var\(--transition-hover-text\)/u),
+        ]),
+      });
+      expect(everyDeclarationFor(style(path), hover)).toContain('background-size: 100% 100%');
+    }
+  });
+
+  it('marks a hovered nav link, accordion trigger and menu item with an inline-start bar of the marker width', () => {
+    const marker =
+      /^box-shadow: inset var\(--hover-marker-width\) 0 0 var\(--(?:color-hover-marker|_dropdown-item-marker)\)$/u;
+
+    expect(
+      everyDeclarationFor(style('components/nav/nav-link.css'), '.nav-link:hover'),
+    ).toContainEqual(expect.stringMatching(marker));
+    expect(
+      everyDeclarationFor(style('components/accordion.css'), '.accordion-trigger:hover'),
+    ).toContainEqual(expect.stringMatching(marker));
+    expect(
+      everyDeclarationFor(style('components/dropdown.css'), '.dropdown-item:hover'),
+    ).toContainEqual(expect.stringMatching(marker));
+  });
+
+  it('draws a chosen nav link, tab, menu item and command row in the chosen colours, falling back to its own', () => {
+    const chosen = [
+      [
+        'components/nav/nav-link.css',
+        '.nav-link.is-active',
+        'var(--color-brand-text)',
+        'var(--color-selected)',
+      ],
+      ['components/tabs.css', '.tab.is-active', 'var(--color-text)', 'transparent'],
+      [
+        'components/dropdown.css',
+        '.dropdown-item.is-active',
+        'var(--color-brand-text)',
+        'var(--color-selected)',
+      ],
+      [
+        'components/command.css',
+        '.command-item.is-selected',
+        'var(--color-brand-text)',
+        'var(--color-selected)',
+      ],
+    ] as const;
+
+    for (const [path, selector, text, fill] of chosen) {
+      expect({ selector, lines: everyDeclarationFor(style(path), selector) }).toEqual({
+        selector,
+        lines: expect.arrayContaining([
+          `color: var(--color-chosen-text, ${text})`,
+          `background-color: var(--color-chosen-fill, ${fill})`,
+        ]),
+      });
+    }
+    expect(everyDeclarationFor(style('components/btn.css'), '.btn.is-active')).toEqual(
+      expect.arrayContaining([
+        'color: var(--color-chosen-text, var(--_btn-fg))',
+        'background-image: linear-gradient(var(--color-chosen-fill, var(--color-active)) 0 0)',
+      ]),
+    );
   });
 
   it('leaves the clip, the corners and the placeholder to the parent of a filling thumbnail', () => {

@@ -20,7 +20,15 @@
   list-style: none;
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--transition-ui);
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep),
+    color var(--transition-hover-text),
+    box-shadow var(--transition-sweep);
 }
 .accordion-trigger::-webkit-details-marker {
   display: none;
@@ -33,7 +41,12 @@
   transition: transform var(--transition-spring);
 }
 .accordion-trigger:hover {
-  background-color: var(--color-hover);
+  color: var(--color-hover-text, var(--color-text));
+  background-size: 100% 100%;
+  box-shadow: inset var(--hover-marker-width) 0 0 var(--color-hover-marker);
+}
+.accordion-trigger:hover > .accordion-icon {
+  color: var(--color-hover-text, var(--color-text-muted));
 }
 .accordion-trigger:focus-visible {
   outline-offset: calc(var(--focus-ring-offset) * -1);

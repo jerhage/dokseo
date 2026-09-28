@@ -45,9 +45,14 @@
   border: none;
   border-radius: var(--radius-control) var(--radius-control) 0 0;
   cursor: pointer;
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 100%;
   transition:
-    color var(--transition-ui),
-    background-color var(--transition-ui);
+    color var(--transition-hover-text),
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep);
 }
 .tab::after {
   content: '';
@@ -60,14 +65,15 @@
   transition: transform var(--transition-spring);
 }
 .tab:hover {
-  color: var(--color-text);
-  background-color: var(--color-hover);
+  color: var(--color-hover-text, var(--color-text));
+  background-size: 100% 100%;
 }
 .tab:focus-visible {
   outline-offset: calc(var(--focus-ring-offset) * -1);
 }
 .tab.is-active {
-  color: var(--color-text);
+  color: var(--color-chosen-text, var(--color-text));
+  background-color: var(--color-chosen-fill, transparent);
 }
 .tab.is-active::after {
   transform: scaleX(1);
@@ -76,6 +82,7 @@
   color: var(--color-disabled);
   cursor: not-allowed;
   background-color: transparent;
+  background-size: 0% 100%;
 }
 .tab-panel:not([hidden]) {
   animation: var(--transition-enter) both;
@@ -105,10 +112,8 @@
 .tabs-pill .tab::after {
   display: none;
 }
-.tabs-pill .tab:hover {
-  background-color: var(--color-hover);
-}
 .tabs-pill .tab.is-active {
-  background-color: var(--color-surface-raised);
+  background-color: var(--color-chosen-fill, var(--color-surface-raised));
+  background-size: 0% 100%;
   box-shadow: var(--shadow-sm);
 }

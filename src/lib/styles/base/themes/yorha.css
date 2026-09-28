@@ -137,4 +137,19 @@
   --ds-motion-panel-in: kFlicker;
   --ds-dur-exit: var(--ds-dur-moderate);
   --ds-easing-exit: var(--ds-ease-in-out-sharp);
+
+  --ds-hover-fill: var(--ds-yorha-ink);
+  --ds-hover-fill-soft: var(--ds-yorha-ink);
+  --ds-hover-fill-solid: var(--ds-yorha-on-ink);
+  --ds-hover-text: var(--ds-yorha-on-ink);
+  --ds-hover-text-solid: var(--ds-yorha-ink);
+  --ds-press-fill: var(--ds-yorha-ink-hover);
+  --ds-chosen-fill: var(--ds-yorha-ink);
+  --ds-chosen-text: var(--ds-yorha-on-ink);
+  --ds-dur-sweep: 220ms;
+  --ds-easing-sweep: var(--ds-ease-in-out-sharp);
+  --ds-dur-hover-text: var(--ds-dur-sweep);
+  --ds-easing-hover-text: var(--ds-easing-sweep);
+  --ds-marker-width: 6px;
+  --ds-marker: var(--ds-rust-500);
 }
