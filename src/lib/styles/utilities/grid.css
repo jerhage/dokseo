@@ -75,7 +75,7 @@
   grid-column: span 2;
   grid-row: span 2;
 }
-.span-2-rows {
+.row-span-2 {
   grid-row: span 2;
 }
 @container (max-width: 34rem) {

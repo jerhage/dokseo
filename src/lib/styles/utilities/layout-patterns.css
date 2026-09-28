@@ -115,7 +115,6 @@
   background-image: none;
   background-color: var(--color-overlay);
 }
-.grid-bento,
 .layout-bento {
   container: bento / inline-size;
   display: grid;
@@ -124,9 +123,8 @@
   grid-auto-flow: dense;
   gap: var(--sp-4);
 }
-.layout-bento > :first-child {
-  grid-column: span 2;
-  grid-row: span 2;
+.layout-bento-col-1 {
+  grid-column: span 1;
 }
 .layout-bento-col-2 {
   grid-column: span 2;
@@ -134,49 +132,24 @@
 .layout-bento-col-3 {
   grid-column: span 3;
 }
+.layout-bento-col-full {
+  grid-column: 1 / -1;
+}
 .layout-bento-row-2 {
   grid-row: span 2;
 }
-.tile-sm {
-  grid-column: span 1;
-}
-.tile-md {
-  grid-column: span 2;
-}
-.tile-lg {
-  grid-column: span 2;
-  grid-row: span 2;
-}
-.tile-hero {
-  grid-column: 1 / -1;
-  grid-row: span 2;
-}
-.tile-wide {
-  grid-column: 1 / -1;
-}
-.tile-tall,
-.tile-span-2-row {
-  grid-row: span 2;
-}
 @container bento (max-width: 40rem) {
-  .grid-bento > *,
   .layout-bento > * {
     grid-column: span 2;
   }
   .layout-bento-col-2,
   .layout-bento-col-3,
-  .tile-md,
-  .tile-lg,
-  .tile-wide,
-  .tile-hero,
-  .layout-bento > :first-child {
+  .layout-bento-col-full {
     grid-column: 1 / -1;
   }
 }
 @container bento (max-width: 24rem) {
-  .grid-bento > *,
-  .layout-bento > *,
-  .layout-bento > :first-child {
+  .layout-bento > * {
     grid-column: 1 / -1;
   }
 }

@@ -7,33 +7,40 @@
   id="l-bento"
   title="Bento"
   classes={[
-    'grid-bento',
     'layout-bento',
-    'tile-sm',
-    'tile-md',
-    'tile-lg',
-    'tile-tall',
-    'tile-wide',
+    'layout-bento-col-1',
+    'layout-bento-col-2',
+    'layout-bento-col-3',
+    'layout-bento-col-full',
+    'layout-bento-row-2',
   ]}
 >
-  <div class="grid-bento">
-    <Tile class="tile-lg" variant="feature" label=".tile-lg" />
-    <Tile class="tile-md" label=".tile-md" />
-    <Tile class="tile-sm" label=".tile-sm" />
-    <Tile class="tile-sm" label=".tile-sm" />
-    <Tile class="tile-tall" variant="elevated" label=".tile-tall" />
-    <Tile class="layout-bento-col-3" label=".layout-bento-col-3" />
-    <Tile class="layout-bento-col-3" label=".layout-bento-col-3" />
-    <Tile class="tile-wide" label=".tile-wide" />
-  </div>
-  <span class="eyebrow text-faint weight-semibold"> .layout-bento: the first child is 2 × 2 </span>
   <div class="layout-bento">
-    <Tile variant="feature" label="first child" />
+    <Tile
+      class="layout-bento-col-2 layout-bento-row-2"
+      variant="feature"
+      label=".layout-bento-col-2.layout-bento-row-2"
+    />
+    <Tile class="layout-bento-col-2" label=".layout-bento-col-2" />
+    <Tile class="layout-bento-col-1" label=".layout-bento-col-1" />
+    <Tile class="layout-bento-col-1" label=".layout-bento-col-1" />
+    <Tile class="layout-bento-row-2" variant="elevated" label=".layout-bento-row-2" />
+    <Tile class="layout-bento-col-3" label=".layout-bento-col-3" />
+    <Tile class="layout-bento-col-3" label=".layout-bento-col-3" />
+    <Tile class="layout-bento-col-full" label=".layout-bento-col-full" />
+  </div>
+  <span class="eyebrow text-faint weight-semibold"> .layout-bento: a 2 × 2 lead first </span>
+  <div class="layout-bento">
+    <Tile class="layout-bento-col-2 layout-bento-row-2" variant="feature" label="first child" />
     <Tile label="2" />
     <Tile label="3" />
     <Tile class="layout-bento-col-2" label=".layout-bento-col-2" />
     <Tile class="layout-bento-row-2" label=".layout-bento-row-2" />
-    <Tile class="tile-span-2-row" label=".tile-span-2-row" />
-    <Tile class="tile-hero" variant="elevated" label=".tile-hero" />
+    <Tile class="layout-bento-row-2" label=".layout-bento-row-2" />
+    <Tile
+      class="layout-bento-col-full layout-bento-row-2"
+      variant="elevated"
+      label=".layout-bento-col-full.layout-bento-row-2"
+    />
   </div>
 </DemoSection>
