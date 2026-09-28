@@ -15,6 +15,7 @@ const THEME_OPTIONS: readonly ThemeOption[] = [
   { theme: 'forge', label: 'Forge' },
   { theme: 'crayon', label: 'Crayon' },
   { theme: 'moss', label: 'Moss' },
+  { theme: 'petal', label: 'Petal' },
 ];
 
 const SCHEME_OPTIONS: readonly SchemeOption[] = [

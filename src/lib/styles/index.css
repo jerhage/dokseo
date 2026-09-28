@@ -19,6 +19,7 @@
 @import 'base/themes/forge.css' layer(base);
 @import 'base/themes/crayon.css' layer(base);
 @import 'base/themes/moss.css' layer(base);
+@import 'base/themes/petal.css' layer(base);
 @import 'base/elements.css' layer(base);
 
 @import 'tokens/colors.css' layer(tokens);

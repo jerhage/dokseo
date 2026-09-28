@@ -98,7 +98,15 @@ describe('readAppearance', () => {
 
 describe('THEMES', () => {
   it('lists exactly the themes the stylesheet defines, each once', () => {
-    expect(THEMES.toSorted()).toEqual(['base', 'crayon', 'ember', 'forge', 'mono', 'moss']);
+    expect(THEMES.toSorted()).toEqual([
+      'base',
+      'crayon',
+      'ember',
+      'forge',
+      'mono',
+      'moss',
+      'petal',
+    ]);
     expect(THEMES.toSorted()).toEqual(styledThemes());
   });
 });
