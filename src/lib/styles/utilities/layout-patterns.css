@@ -128,13 +128,13 @@
   grid-column: span 2;
   grid-row: span 2;
 }
-.bento-col-2 {
+.layout-bento-col-2 {
   grid-column: span 2;
 }
-.bento-col-3 {
+.layout-bento-col-3 {
   grid-column: span 3;
 }
-.bento-row-2 {
+.layout-bento-row-2 {
   grid-row: span 2;
 }
 .tile-sm {
@@ -163,8 +163,8 @@
   .layout-bento > * {
     grid-column: span 2;
   }
-  .bento-col-2,
-  .bento-col-3,
+  .layout-bento-col-2,
+  .layout-bento-col-3,
   .tile-md,
   .tile-lg,
   .tile-wide,
@@ -193,31 +193,31 @@
   grid-auto-flow: dense;
   gap: var(--sp-4);
 }
-.mosaic-lead {
+.layout-mosaic-lead {
   grid-area: lead;
 }
-.mosaic-top-right {
+.layout-mosaic-top-right {
   grid-area: tr;
 }
-.mosaic-mid-right {
+.layout-mosaic-mid-right {
   grid-area: mr;
 }
-.mosaic-btm-left {
+.layout-mosaic-btm-left {
   grid-area: bl;
 }
-.mosaic-btm-mid {
+.layout-mosaic-btm-mid {
   grid-area: bm;
 }
-.mosaic-wide {
+.layout-mosaic-wide {
   grid-column: span 4;
 }
-.mosaic-mid {
+.layout-mosaic-mid {
   grid-column: span 3;
 }
-.mosaic-narrow {
+.layout-mosaic-narrow {
   grid-column: span 2;
 }
-.mosaic-tall {
+.layout-mosaic-tall {
   grid-column: span 2;
   grid-row: span 2;
 }
@@ -226,11 +226,11 @@
     grid-area: auto;
     grid-column: span 3;
   }
-  .mosaic-lead,
-  .mosaic-wide {
+  .layout-mosaic-lead,
+  .layout-mosaic-wide {
     grid-column: 1 / -1;
   }
-  .mosaic-tall {
+  .layout-mosaic-tall {
     grid-row: span 2;
   }
 }

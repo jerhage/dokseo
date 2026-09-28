@@ -19,25 +19,31 @@
 <DemoSection
   id="l-split"
   title="Split and split view"
-  classes={['layout-split', 'split-pane', 'split-left', 'split-right', 'layout-split-view']}
+  classes={[
+    'layout-split',
+    'layout-split-pane',
+    'layout-split-left',
+    'layout-split-right',
+    'layout-split-view',
+  ]}
 >
   <div class="surface bordered rounded-container p-5">
     <div class="layout-split">
-      <div class="split-pane split-right">
-        <span class="card-eyebrow">.split-right, first in the DOM</span>
+      <div class="layout-split-pane layout-split-right">
+        <span class="card-eyebrow">.layout-split-right, first in the DOM</span>
         <h3>Content reads first on mobile</h3>
         <p class="text-sm text-muted">
           Placement classes let the visual order differ from the source order; below 40rem the panes
           stack in DOM order.
         </p>
       </div>
-      <div class="split-pane split-left">
+      <div class="layout-split-pane layout-split-left">
         <Skeleton shape="block" />
       </div>
     </div>
   </div>
   <div class="layout-split-view">
-    <div class="split-pane">
+    <div class="layout-split-pane">
       <DropdownLabel>Inbox</DropdownLabel>
       {#each THREADS as name (name)}
         <NavLink href="#l-split" current={thread === name} onclick={() => (thread = name)}
@@ -45,7 +51,7 @@
         >
       {/each}
     </div>
-    <div class="split-pane">
+    <div class="layout-split-pane">
       <div class="row items-center justify-between wrap">
         <h3>{thread}</h3>
         <Badge variant="info">Thread</Badge>

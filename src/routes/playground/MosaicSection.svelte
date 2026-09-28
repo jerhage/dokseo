@@ -3,29 +3,29 @@
   import Tile from './Tile.svelte';
 </script>
 
-<DemoSection id="l-mosaic" title="Mosaic" classes={['layout-mosaic', 'mosaic-*']}>
+<DemoSection id="l-mosaic" title="Mosaic" classes={['layout-mosaic', 'layout-mosaic-*']}>
   <div class="layout-mosaic">
-    <div class="mosaic-lead layout-overlay">
+    <div class="layout-mosaic-lead layout-overlay">
       <div class="layout-overlay-media"></div>
       <div class="layout-overlay-scrim"></div>
       <div class="layout-overlay-content">
-        <span class="text-xs">.mosaic-lead + .layout-overlay</span>
+        <span class="text-xs">.layout-mosaic-lead + .layout-overlay</span>
         <h3>Composes with overlay</h3>
       </div>
     </div>
-    <Tile class="mosaic-top-right" label=".mosaic-top-right" />
-    <Tile class="mosaic-mid-right" variant="feature" label=".mosaic-mid-right" />
-    <Tile class="mosaic-btm-left" label=".mosaic-btm-left" />
-    <Tile class="mosaic-btm-mid" label=".mosaic-btm-mid" />
+    <Tile class="layout-mosaic-top-right" label=".layout-mosaic-top-right" />
+    <Tile class="layout-mosaic-mid-right" variant="feature" label=".layout-mosaic-mid-right" />
+    <Tile class="layout-mosaic-btm-left" label=".layout-mosaic-btm-left" />
+    <Tile class="layout-mosaic-btm-mid" label=".layout-mosaic-btm-mid" />
     <Tile variant="elevated" label="unplaced, fills the gap" />
   </div>
   <div class="layout-mosaic">
-    <Tile class="mosaic-wide" label=".mosaic-wide" />
-    <Tile class="mosaic-narrow" label=".mosaic-narrow" />
-    <Tile class="mosaic-mid" label=".mosaic-mid" />
-    <Tile class="mosaic-mid" label=".mosaic-mid" />
-    <Tile class="mosaic-tall" variant="feature" label=".mosaic-tall" />
-    <Tile class="mosaic-wide" label=".mosaic-wide" />
-    <Tile class="mosaic-wide" label=".mosaic-wide" />
+    <Tile class="layout-mosaic-wide" label=".layout-mosaic-wide" />
+    <Tile class="layout-mosaic-narrow" label=".layout-mosaic-narrow" />
+    <Tile class="layout-mosaic-mid" label=".layout-mosaic-mid" />
+    <Tile class="layout-mosaic-mid" label=".layout-mosaic-mid" />
+    <Tile class="layout-mosaic-tall" variant="feature" label=".layout-mosaic-tall" />
+    <Tile class="layout-mosaic-wide" label=".layout-mosaic-wide" />
+    <Tile class="layout-mosaic-wide" label=".layout-mosaic-wide" />
   </div>
 </DemoSection>

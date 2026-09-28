@@ -351,18 +351,18 @@
 .layout-split-flush {
   gap: 0;
 }
-.split-pane {
+.layout-split-pane {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
   gap: var(--sp-4);
   min-inline-size: 0;
 }
-.split-left {
+.layout-split-left {
   grid-column: 1;
   grid-row: 1;
 }
-.split-right {
+.layout-split-right {
   grid-column: 2;
   grid-row: 1;
 }
@@ -383,20 +383,20 @@
   border-radius: var(--radius-container);
   overflow: hidden;
 }
-.layout-split-view > .split-pane {
+.layout-split-view > .layout-split-pane {
   align-content: start;
   padding: var(--sp-5);
   overflow-y: auto;
 }
-.layout-split-view > .split-pane + .split-pane {
+.layout-split-view > .layout-split-pane + .layout-split-pane {
   border-inline-start: var(--border-width) solid var(--border-color);
 }
 @container split-view (max-width: 40rem) {
-  .layout-split-view > .split-pane {
+  .layout-split-view > .layout-split-pane {
     grid-column: 1 / -1;
     grid-row: auto;
   }
-  .layout-split-view > .split-pane + .split-pane {
+  .layout-split-view > .layout-split-pane + .layout-split-pane {
     border-inline-start: none;
     border-block-start: var(--border-width) solid var(--border-color);
   }
