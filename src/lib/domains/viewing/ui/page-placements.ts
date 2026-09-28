@@ -4,14 +4,12 @@ import { imageIndex } from '$lib/shared/ids';
 import type { PlacedImage } from '../domain/placement';
 
 function naturalSizeOf(element: Element): Size | null {
-  if (element.tagName === 'IMG') {
-    const image = element as HTMLImageElement;
-    return { width: image.naturalWidth, height: image.naturalHeight };
+  if (element instanceof HTMLImageElement) {
+    return { width: element.naturalWidth, height: element.naturalHeight };
   }
 
-  if (element.tagName === 'CANVAS') {
-    const canvas = element as HTMLCanvasElement;
-    return { width: canvas.width, height: canvas.height };
+  if (element instanceof HTMLCanvasElement) {
+    return { width: element.width, height: element.height };
   }
 
   return null;
@@ -21,10 +19,12 @@ function placedImages(elements: Iterable<Element>): readonly PlacedImage[] {
   const placed: PlacedImage[] = [];
 
   for (const element of elements) {
+    if (!(element instanceof HTMLElement)) continue;
+
     const natural = naturalSizeOf(element);
     if (natural === null) continue;
 
-    const index = Number((element as HTMLElement).dataset.imageIndex);
+    const index = Number(element.dataset.imageIndex);
     if (!Number.isInteger(index)) continue;
 
     const box = element.getBoundingClientRect();
