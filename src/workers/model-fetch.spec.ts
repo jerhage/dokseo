@@ -42,11 +42,12 @@ function held() {
   return store;
 }
 
-function ranged(asked: string[]) {
+function ranged(asked: string[], caching: (RequestCache | undefined)[]) {
   return (_input: string, init?: RequestInit): Promise<Response> => {
     const headers = (init?.headers ?? {}) as Record<string, string>;
     const range = headers.Range ?? 'whole';
     asked.push(range);
+    caching.push(init?.cache);
 
     const matched = /bytes=(\d+)-(\d+)/.exec(range);
     const from = Number(matched?.[1] ?? 0);
@@ -62,10 +63,13 @@ function ranged(asked: string[]) {
 
 function world() {
   const passed: string[] = [];
+  const passedWith: unknown[] = [];
   const asked: string[] = [];
+  const caching: (RequestCache | undefined)[] = [];
   const env: Env = {
-    fetch: (input: string | URL) => {
+    fetch: (input: string | URL, init?: unknown) => {
       passed.push(String(input));
+      passedWith.push(init);
       return Promise.resolve(String(input));
     },
   };
@@ -73,11 +77,11 @@ function world() {
   const source = installModelFetch(env, {
     modelId: MODEL,
     store: held(),
-    fetch: ranged(asked),
+    fetch: ranged(asked, caching),
     chunkBytes: 4,
   });
 
-  return { env, source, passed, asked };
+  return { env, source, passed, passedWith, asked, caching };
 }
 
 describe('installModelFetch', () => {
@@ -115,5 +119,41 @@ describe('installModelFetch', () => {
 
     expect(await env.fetch(`${REPO}/config.json`)).toBe(`${REPO}/config.json`);
     expect(source()).toBe('cache');
+  });
+
+  it('asks for every chunk of the weights with the HTTP cache bypassed', async () => {
+    const { env, caching } = world();
+
+    const answered = await env.fetch(`${REPO}/onnx/encoder_model_quantized.onnx`);
+    if (answered instanceof Response) await answered.arrayBuffer();
+
+    expect(caching).toEqual(['no-store', 'no-store', 'no-store']);
+  });
+
+  it('fetches the runtime binary and its loader with the HTTP cache bypassed', async () => {
+    const { env, passedWith } = world();
+    const runtime = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-wasm-simd-threaded';
+
+    await env.fetch(`${runtime}.jsep.wasm`);
+    await env.fetch(`${runtime}.jsep.mjs`);
+
+    expect(passedWith).toEqual([{ cache: 'no-store' }, { cache: 'no-store' }]);
+  });
+
+  it('keeps the range header of a size probe while it bypasses the HTTP cache', async () => {
+    const { env, passedWith } = world();
+    const headers = new Headers({ Range: 'bytes=0-0' });
+
+    await env.fetch(`${REPO}/onnx/encoder_model.onnx`, { headers });
+
+    expect(passedWith).toEqual([{ headers, cache: 'no-store' }]);
+  });
+
+  it('leaves a configuration file to the HTTP cache', async () => {
+    const { env, passedWith } = world();
+
+    await env.fetch(`${REPO}/config.json`, { cache: 'force-cache' });
+
+    expect(passedWith).toEqual([{ cache: 'force-cache' }]);
   });
 });

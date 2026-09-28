@@ -68,7 +68,10 @@ async function requestRange(
   options: ResumableOptions,
 ): Promise<Response> {
   const last = from + chunkBytes - 1;
-  const response = await options.fetch(url, { headers: { Range: `bytes=${from}-${last}` } });
+  const response = await options.fetch(url, {
+    headers: { Range: `bytes=${from}-${last}` },
+    cache: 'no-store',
+  });
   if (response.status === PARTIAL_CONTENT) options.onTransfer?.();
   return response;
 }
@@ -212,7 +215,7 @@ async function fetchResumable(url: string, options: ResumableOptions): Promise<R
     if (opened.status !== PARTIAL_CONTENT) return opened;
 
     await opened.body?.cancel().catch(() => undefined);
-    return await options.fetch(url);
+    return await options.fetch(url, { cache: 'no-store' });
   }
 
   options.onSpan?.(span.total, have);

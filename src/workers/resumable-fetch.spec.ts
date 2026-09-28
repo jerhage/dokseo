@@ -66,11 +66,13 @@ type HostOptions = {
 
 function host(body: Uint8Array, options: HostOptions = {}) {
   const asked: string[] = [];
+  const caching: (RequestCache | undefined)[] = [];
 
   function fetching(_input: string, init?: RequestInit): Promise<Response> {
     const headers = (init?.headers ?? {}) as Record<string, string>;
     const range = headers.Range;
     asked.push(range ?? 'whole');
+    caching.push(init?.cache);
 
     if (range === undefined || options.ranges === false) {
       return Promise.resolve(new Response(body.slice(), { status: 200 }));
@@ -93,7 +95,7 @@ function host(body: Uint8Array, options: HostOptions = {}) {
     );
   }
 
-  return { fetching, asked };
+  return { fetching, asked, caching };
 }
 
 async function bodyOf(response: Response): Promise<Uint8Array> {
@@ -321,5 +323,39 @@ describe('fetchResumable', () => {
     });
 
     expect(transfers).toBe(1);
+  });
+
+  it('bypasses the HTTP cache for every chunk it asks for', async () => {
+    const served = host(weights(10));
+    const { store } = fakeStore();
+
+    const response = await fetchResumable(URL_OF_WEIGHTS, {
+      fetch: served.fetching,
+      store,
+      chunkBytes: CHUNK,
+    });
+    await bodyOf(response);
+
+    expect(served.caching).toEqual(['no-store', 'no-store', 'no-store']);
+  });
+
+  it('bypasses the HTTP cache for the whole file when the host answers another range', async () => {
+    const body = weights(10);
+    const caching: (RequestCache | undefined)[] = [];
+    const { store } = fakeStore(body.slice(0, 4));
+
+    function fromTheStart(_input: string, init?: RequestInit): Promise<Response> {
+      caching.push(init?.cache);
+      return Promise.resolve(
+        new Response(body.slice(0, CHUNK), {
+          status: 206,
+          headers: { 'content-range': `bytes 0-${CHUNK - 1}/${body.length}` },
+        }),
+      );
+    }
+
+    await fetchResumable(URL_OF_WEIGHTS, { fetch: fromTheStart, store, chunkBytes: CHUNK });
+
+    expect(caching).toEqual(['no-store', 'no-store']);
   });
 });

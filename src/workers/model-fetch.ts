@@ -28,6 +28,18 @@ const opfsParts: PartialFiles = {
   remove: (key: string) => parts.remove(key),
 };
 
+const FETCHED_PAST_THE_HTTP_CACHE = ['.onnx', '.wasm', '.mjs'];
+
+function keptByTheApp(url: string): boolean {
+  const path = url.split(/[?#]/)[0] ?? '';
+  return FETCHED_PAST_THE_HTTP_CACHE.some((suffix) => path.endsWith(suffix));
+}
+
+function pastTheHttpCache(init: unknown): RequestInit {
+  if (typeof init !== 'object' || init === null) return { cache: 'no-store' };
+  return { ...init, cache: 'no-store' };
+}
+
 function overTheWire(input: string, init?: RequestInit): Promise<Response> {
   return fetch(input, init);
 }
@@ -52,7 +64,7 @@ function installModelFetch(
   env.fetch = (input, init) => {
     const url = String(input);
     if (!resumesModelWeights({ url, partial: asksForOneRange(init) }, options.modelId)) {
-      return passThrough(input, init);
+      return passThrough(input, keptByTheApp(url) ? pastTheHttpCache(init) : init);
     }
 
     return fetchResumable(url, {
