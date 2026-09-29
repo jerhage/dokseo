@@ -6,6 +6,7 @@ import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
+import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import { effectiveDirection, effectivePairing, imageLayoutKind } from '$lib/shared/layout-kind';
 import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
@@ -60,6 +61,8 @@ const PAIRING_FAILED = 'Could not change the page pairing';
 const DIRECTION_FAILED = 'Could not change the reading direction';
 
 const FIT_FAILED = 'Could not change the page fit';
+
+const LANGUAGE_FAILED = 'Could not change the language';
 
 const PLACE_FAILED = 'Could not save your place';
 
@@ -147,6 +150,10 @@ class ReaderView {
   get direction(): ReadingDirection {
     const book = this.book;
     return book === null ? 'ltr' : effectiveDirection(book.direction, book.layoutKind);
+  }
+
+  get language(): Language | null {
+    return this.book?.language ?? this.flowBook?.language ?? null;
   }
 
   get layout(): ImageLayoutKind | null {
@@ -329,6 +336,12 @@ class ReaderView {
     await this.#edit(book.id, { direction }, DIRECTION_FAILED);
   }
 
+  async setLanguage(language: Language): Promise<void> {
+    const book = this.book ?? this.flowBook;
+    if (book === null || this.saving || book.language === language) return;
+    await this.#edit(book.id, { language }, LANGUAGE_FAILED);
+  }
+
   async setPageFit(fit: PageFit): Promise<void> {
     const book = this.book;
     if (book === null || book.pageFit === fit) return;
@@ -369,8 +382,7 @@ class ReaderView {
         this.#fail(failed, describeEditFailure(saved.error));
         return;
       }
-      this.book = saved.value;
-      this.#regroup(saved.value, this.sizes);
+      this.#hold(saved.value);
     } catch (cause) {
       if (generation !== this.#generation) return;
       this.#fail(failed, describeCause(cause));
@@ -406,6 +418,15 @@ class ReaderView {
     const sizes = this.sizes.map((known, index) => known ?? found[index] ?? null);
     if (sizes.every((size, index) => size === this.sizes[index])) return;
     this.#regroup(book, sizes);
+  }
+
+  #hold(saved: ReaderBook): void {
+    if (imageLayoutKind(saved.layoutKind) === null) {
+      this.flowBook = saved;
+      return;
+    }
+    this.book = saved;
+    this.#regroup(saved, this.sizes);
   }
 
   #regroup(book: ReaderBook, sizes: readonly (Size | null)[]): void {
@@ -508,6 +529,7 @@ class ReaderView {
 export {
   DIRECTION_FAILED,
   FIT_FAILED,
+  LANGUAGE_FAILED,
   LAYOUT_FAILED,
   PAIRING_FAILED,
   PLACE_FAILED,

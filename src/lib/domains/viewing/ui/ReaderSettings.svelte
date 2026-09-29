@@ -6,6 +6,8 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
+  import type { Language } from '$lib/shared/language';
   import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
   import {
     LAYOUT_KIND_CHOICES,
@@ -29,6 +31,7 @@
 
   type Props = {
     open: boolean;
+    readonly language: Language | null;
     readonly layout: ImageLayoutKind | null;
     readonly pairing: PagePairing | null;
     readonly direction: ReadingDirection | null;
@@ -39,6 +42,7 @@
     readonly touchTurns: TouchTurns;
     readonly gestureHints: boolean;
     readonly allCaptures: boolean;
+    readonly onlanguage: (language: Language) => void;
     readonly onlayout: (kind: ImageLayoutKind) => void;
     readonly onpairing: (pairing: PagePairing) => void;
     readonly ondirection: (direction: ReadingDirection) => void;
@@ -49,6 +53,7 @@
 
   let {
     open = $bindable(false),
+    language,
     layout,
     pairing,
     direction,
@@ -59,6 +64,7 @@
     touchTurns,
     gestureHints,
     allCaptures,
+    onlanguage,
     onlayout,
     onpairing,
     ondirection,
@@ -77,6 +83,19 @@
 
 <Modal bind:open title="Reading settings" size="sm">
   <div class="col gap-5">
+    <Fieldset legend={LANGUAGE_LEGEND} disabled={saving}>
+      <div class="col gap-2">
+        {#each LANGUAGES as choice (choice)}
+          <Radio
+            name="{uid}-language"
+            value={choice}
+            group={language}
+            onchange={() => onlanguage(choice)}>{languageName(choice)}</Radio
+          >
+        {/each}
+      </div>
+    </Fieldset>
+
     <Fieldset legend={LAYOUT_KIND_LEGEND_BRIEF} disabled={saving}>
       <div class="col gap-2">
         {#each LAYOUT_KIND_CHOICES as choice (choice.value)}

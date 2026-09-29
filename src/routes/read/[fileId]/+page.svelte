@@ -52,7 +52,7 @@
   const find = new CaptureSearchView(container);
   const flow = new FlowView(container, notify);
   const id = $derived(bookId(page.params.fileId ?? ''));
-  const language = $derived(view.book?.language ?? null);
+  const language = $derived(view.language);
   const flowBook = $derived(view.flowBook);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
@@ -94,7 +94,7 @@
   });
 
   $effect(() => {
-    if (language !== null) void captures.warm(id, language);
+    if (flowBook === null && language !== null) void captures.warm(id, language);
   });
 
   $effect(() => {
@@ -110,6 +110,8 @@
     anchors={captures.anchors}
     onLift={(passage) => captures.lift(passage.cfi, passage.quote, passage.chapter)}
     onsearch={() => search?.searchThisBook()}
+    saving={view.saving}
+    onlanguage={(chosen) => void view.setLanguage(chosen)}
   >
     {#snippet panel()}
       <CapturePanel

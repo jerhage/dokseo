@@ -5,6 +5,8 @@
   import Radio from '$lib/components/Radio.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
+  import type { Language } from '$lib/shared/language';
   import {
     LINE_SPACING_CHOICES,
     LINE_SPACING_LEGEND,
@@ -22,9 +24,20 @@
     readonly settings: ReadingSettings;
     readonly onchoose: (settings: ReadingSettings) => void;
     readonly offersAppearance?: boolean;
+    readonly language?: Language | null;
+    readonly saving?: boolean;
+    readonly onlanguage?: ((language: Language) => void) | undefined;
   };
 
-  let { open = $bindable(false), settings, onchoose, offersAppearance = false }: Props = $props();
+  let {
+    open = $bindable(false),
+    settings,
+    onchoose,
+    offersAppearance = false,
+    language = null,
+    saving = false,
+    onlanguage,
+  }: Props = $props();
 
   const uid = $props.id();
 
@@ -43,6 +56,19 @@
 
 <Modal bind:open title={TEXT_SETTINGS_HEADING} size="sm">
   <div class="col gap-5">
+    <Fieldset legend={LANGUAGE_LEGEND} disabled={saving}>
+      <div class="col gap-2">
+        {#each LANGUAGES as choice (choice)}
+          <Radio
+            name="{uid}-language"
+            value={choice}
+            group={language}
+            onchange={() => onlanguage?.(choice)}>{languageName(choice)}</Radio
+          >
+        {/each}
+      </div>
+    </Fieldset>
+
     <Fieldset legend={TEXT_SIZE_LEGEND}>
       <div class="row wrap gap-3">
         {#each TEXT_SIZE_CHOICES as choice (choice.value)}

@@ -429,6 +429,7 @@
 
 <ReaderSettings
   bind:open={settingsOpen}
+  language={book?.language ?? null}
   {layout}
   pairing={book?.pagePairing ?? null}
   direction={book?.direction ?? null}
@@ -442,6 +443,7 @@
   ongesturehints={chooseHints}
   allCaptures={allCapturesWanted()}
   onallcaptures={chooseAllCaptures}
+  onlanguage={(language) => void view.setLanguage(language)}
   onlayout={(kind) => void view.setLayoutKind(kind)}
   onpairing={(pairing) => void view.setPairing(pairing)}
   ondirection={(direction) => void view.setDirection(direction)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
@@ -10,6 +11,7 @@
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
   import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
   import type { IconProps } from '$lib/components/icons/icon';
+  import type { Language } from '$lib/shared/language';
   import Pencil from '$lib/components/icons/Pencil.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import type { Anchor } from '$lib/shared/anchor';
@@ -56,6 +58,8 @@
     readonly anchors?: readonly Anchor[];
     readonly onLift?: (passage: LiftedPassage) => void;
     readonly onsearch?: (() => void) | undefined;
+    readonly saving?: boolean;
+    readonly onlanguage?: ((language: Language) => void) | undefined;
   };
 
   type LiftOffer = {
@@ -64,7 +68,17 @@
     readonly top: number;
   };
 
-  const { view, book, panel, panelCount, anchors = NO_ANCHORS, onLift, onsearch }: Props = $props();
+  const {
+    view,
+    book,
+    panel,
+    panelCount,
+    anchors = NO_ANCHORS,
+    onLift,
+    onsearch,
+    saving = false,
+    onlanguage,
+  }: Props = $props();
 
   const LIFT_LABEL = 'Save this passage as a capture';
   const SEARCH_BOOK_LABEL = 'Search this book';
@@ -363,7 +377,8 @@
 
   $effect(() => {
     const host = stage;
-    const held = book;
+    void book.id;
+    const held = untrack(() => book);
     if (host === null) return;
 
     const began = (event: PointerEvent): void =>
@@ -534,4 +549,7 @@
   {settings}
   offersAppearance={narrow}
   onchoose={chooseSettings}
+  language={book.language}
+  {saving}
+  {onlanguage}
 />

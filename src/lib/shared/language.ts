@@ -4,6 +4,8 @@ type Language = 'ja' | 'ko' | 'en';
 
 const LANGUAGES: readonly Language[] = ['ja', 'ko', 'en'];
 
+const LANGUAGE_LEGEND = 'Language';
+
 function languageName(language: Language): string {
   return match(language)
     .with('ja', () => 'Japanese')
@@ -12,5 +14,5 @@ function languageName(language: Language): string {
     .exhaustive();
 }
 
-export { LANGUAGES, languageName };
+export { LANGUAGES, LANGUAGE_LEGEND, languageName };
 export type { Language };

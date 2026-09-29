@@ -6,6 +6,7 @@ import { imageRect } from '$lib/shared/geometry';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
+import type { Language } from '$lib/shared/language';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource } from '$lib/shared/page-source';
@@ -19,6 +20,7 @@ import type { Notice, Notify } from '$lib/shared/notice';
 import {
   DIRECTION_FAILED,
   FIT_FAILED,
+  LANGUAGE_FAILED,
   LAYOUT_FAILED,
   PAIRING_FAILED,
   PLACE_FAILED,
@@ -139,6 +141,7 @@ type Edit = {
   readonly pagePairing: PagePairing | undefined;
   readonly direction: ReadingDirection | undefined;
   readonly pageFit: PageFit | undefined;
+  readonly language: Language | undefined;
 };
 
 type Fakes = {
@@ -212,6 +215,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           pagePairing: edit.pagePairing,
           direction: edit.direction,
           pageFit: edit.pageFit,
+          language: edit.language,
         });
         if (world.gate !== null) await world.gate;
         if (world.editing === 'failed') {
@@ -223,6 +227,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           pagePairing: edit.pagePairing ?? world.stored.pagePairing,
           direction: edit.direction ?? world.stored.direction,
           pageFit: edit.pageFit ?? world.stored.pageFit,
+          language: edit.language ?? world.stored.language,
           position: edit.position ?? world.stored.position,
         };
         return ok(world.stored);
@@ -235,6 +240,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           pagePairing: undefined,
           direction: undefined,
           pageFit: undefined,
+          language: undefined,
         });
         if (world.gate !== null) await world.gate;
         if (world.editing === 'failed') {
@@ -686,6 +692,67 @@ describe('ReaderView', () => {
     expect(view.book?.direction).toBe('ltr');
     expect(at(world.edits, 0).direction).toBe('ltr');
     expect(view.message).toBeNull();
+  });
+
+  it('saves a new language', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setLanguage('ko');
+
+    expect(view.book?.language).toBe('ko');
+    expect(at(world.edits, 0).language).toBe('ko');
+    expect(view.message).toBeNull();
+  });
+
+  it('ignores the language already in force', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setLanguage('ja');
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('ignores a language change while a write is in flight', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    let release = (): void => undefined;
+    world.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const first = view.setPairing('single');
+    await view.setLanguage('ko');
+    expect(world.edits).toHaveLength(1);
+
+    release();
+    await first;
+
+    expect(view.book?.language).toBe('ja');
+  });
+
+  it('reports a failed language change and keeps the language', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setLanguage('en');
+
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: LANGUAGE_FAILED,
+        message: 'Local storage failed: the disk went away',
+      },
+    ]);
+    expect(view.book?.language).toBe('ja');
+    expect(view.saving).toBe(false);
   });
 
   it('sets the page fit', async () => {
@@ -1378,6 +1445,47 @@ describe('the reading place in the url', () => {
     await view.open(bookId('one'));
 
     expect(view.flowBook).toEqual(book({ layoutKind: 'flow', imageCount: 0 }));
+  });
+
+  it('saves a new language for a flow book into the flow book', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    world.stored = book({ layoutKind: 'flow', imageCount: 0 });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setLanguage('ko');
+
+    expect(at(world.edits, 0).language).toBe('ko');
+    expect(view.flowBook?.language).toBe('ko');
+    expect(view.book).toBeNull();
+    expect(view.language).toBe('ko');
+  });
+
+  it('reads the language of an open flow book', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.language).toBe('ja');
+  });
+
+  it('reads the language of an open book of images', async () => {
+    const world = fakes({ language: 'ko' });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.language).toBe('ko');
+  });
+
+  it('reports no language with no book open', () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+
+    expect(view.language).toBeNull();
   });
 
   it('forgets the flow book when a book of images opens next', async () => {
