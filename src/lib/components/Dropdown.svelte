@@ -146,8 +146,15 @@
       if (event.target instanceof Node && root?.contains(event.target)) return;
       open = false;
     };
+    const left = (): void => {
+      open = false;
+    };
     document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
+    window.addEventListener('blur', left);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      window.removeEventListener('blur', left);
+    };
   });
 </script>
 

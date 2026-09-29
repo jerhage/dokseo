@@ -59,7 +59,16 @@
 
   $effect(() => {
     if (!open) return;
-    return followAnchor(place);
+    const shown = sheet;
+    const left = (): void => {
+      if (shown?.matches(':popover-open')) shown.hidePopover();
+    };
+    const stop = followAnchor(place);
+    window.addEventListener('blur', left);
+    return () => {
+      stop();
+      window.removeEventListener('blur', left);
+    };
   });
 </script>
 
