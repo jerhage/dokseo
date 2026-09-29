@@ -42,6 +42,7 @@
     readonly tags?: readonly Tag[];
     readonly find: CaptureSearchView;
     readonly onopen?: () => void;
+    readonly onfollowedInBook?: () => void;
   };
 
   const SCOPES: readonly { readonly value: SearchScope; readonly label: string }[] = [
@@ -61,6 +62,7 @@
     tags = [],
     find,
     onopen,
+    onfollowedInBook,
   }: Props = $props();
 
   let shown = $state(false);
@@ -154,7 +156,10 @@
     }
 
     hide();
-    void goto(row.href);
+    const from = book;
+    void goto(row.href).then(() => {
+      if (from !== null && book === from) onfollowedInBook?.();
+    });
   }
 
   function openAtCursor(event: KeyboardEvent, newTab: boolean): void {

@@ -170,4 +170,5 @@
   covers={shelf.covers}
   counts={shelf.imageCounts}
   onopen={() => void shelf.load()}
+  onfollowedInBook={() => arrive(id)}
 />
