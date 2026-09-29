@@ -28,6 +28,8 @@
   import type { Card, CardJump } from './capture-cards.svelte';
   import type { CaptureView } from './capture-view.svelte';
   import { clearWarning } from './clearing';
+  import { emptyPanelText } from './empty-panel';
+  import type { CaptureSource } from './empty-panel';
   import { TagSelection } from './tag-selection.svelte';
   import CaptureCard from './CaptureCard.svelte';
   import type { DraftField } from './card-drafts.svelte';
@@ -40,10 +42,11 @@
     readonly view: CaptureView;
     readonly language: Language | null;
     readonly direction: ReadingDirection;
+    readonly source: CaptureSource;
     readonly onSeek?: (passage: TextAnchor) => void;
   };
 
-  let { view, language, direction, onSeek }: Props = $props();
+  let { view, language, direction, source, onSeek }: Props = $props();
 
   const uid = $props.id();
 
@@ -244,12 +247,7 @@
     <div class="col gap-2 p-3">
       {#if cards.length === 0}
         {#if loadFailure === null}
-          <EmptyState
-            class="p-2"
-            message={searching
-              ? 'No capture or note in this book holds that text.'
-              : 'Drag a box over a speech bubble and the text arrives here.'}
-          />
+          <EmptyState class="p-2" message={emptyPanelText(source, searching)} />
         {/if}
       {:else}
         <ul class="col gap-2 list-reset" aria-label="Captures in this book">

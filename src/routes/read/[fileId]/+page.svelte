@@ -118,6 +118,7 @@
         view={captures}
         {language}
         direction={flow.direction}
+        source="text"
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
     {/snippet}
@@ -141,7 +142,7 @@
       <EnginePill engine={captures.engine} {language} />
     {/snippet}
     {#snippet panel()}
-      <CapturePanel view={captures} {language} direction={view.direction} />
+      <CapturePanel view={captures} {language} direction={view.direction} source="images" />
     {/snippet}
   </ReaderScreen>
 {/if}
