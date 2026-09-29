@@ -9,6 +9,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource } from '$lib/shared/page-source';
+import type { ShownPlace } from '$lib/shared/reader-location';
 import { imagePlace, showsTheEnd, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
@@ -1197,8 +1198,8 @@ describe('the reading place in the url', () => {
 
   it('mirrors no image and saves nothing when the book stopped at a text place', async () => {
     const world = fakes({ position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) });
-    const mirrored: number[] = [];
-    const view = new ReaderView(world.container, world.notify, (index) => mirrored.push(index));
+    const mirrored: ShownPlace[] = [];
+    const view = new ReaderView(world.container, world.notify, (place) => mirrored.push(place));
 
     await view.open(bookId('one'));
 
@@ -1227,20 +1228,31 @@ describe('the reading place in the url', () => {
     expect(view.message).toBe('This book holds 6 images, so it opened at the last one.');
   });
 
-  it('reports the place it opened at to its mirror', async () => {
+  it('reports the place it opened at to its mirror as an arrival', async () => {
     const world = fakes();
-    const mirrored: number[] = [];
-    const view = new ReaderView(world.container, world.notify, (index) => mirrored.push(index));
+    const mirrored: ShownPlace[] = [];
+    const view = new ReaderView(world.container, world.notify, (place) => mirrored.push(place));
 
     await view.open(bookId('one'), imageIndex(4));
 
-    expect(mirrored).toEqual([4]);
+    expect(mirrored).toEqual([{ kind: 'arrived', index: 4 }]);
+  });
+
+  it('reports an arrival inside a spread at the image the url named', async () => {
+    const world = fakes();
+    const mirrored: ShownPlace[] = [];
+    const view = new ReaderView(world.container, world.notify, (place) => mirrored.push(place));
+
+    await view.open(bookId('one'), imageIndex(3));
+
+    expect(view.visiblePages).toEqual([2, 3]);
+    expect(mirrored).toEqual([{ kind: 'arrived', index: 3 }]);
   });
 
   it('mirrors a page turn once the turning settles, without saving twice', async () => {
     const world = fakes();
-    const mirrored: number[] = [];
-    const view = new ReaderView(world.container, world.notify, (index) => mirrored.push(index));
+    const mirrored: ShownPlace[] = [];
+    const view = new ReaderView(world.container, world.notify, (place) => mirrored.push(place));
     await view.open(bookId('one'));
     mirrored.length = 0;
 
@@ -1248,11 +1260,37 @@ describe('the reading place in the url', () => {
     await view.next();
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(mirrored).toEqual([4]);
+    expect(mirrored).toEqual([{ kind: 'moved', index: 4, group: [4, 5] }]);
     expect(world.edits.map((edit) => edit.position)).toEqual([
       imagePlace(imageIndex(2), imageIndex(3)),
       imagePlace(imageIndex(4), imageIndex(5)),
     ]);
+  });
+
+  it('reports a jump into a spread as a move that shows the whole spread', async () => {
+    const world = fakes();
+    const mirrored: ShownPlace[] = [];
+    const view = new ReaderView(world.container, world.notify, (place) => mirrored.push(place));
+    await view.open(bookId('one'));
+    mirrored.length = 0;
+
+    await view.goToImage(bookId('one'), imageIndex(3));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(mirrored).toEqual([{ kind: 'moved', index: 2, group: [2, 3] }]);
+  });
+
+  it('reports a scroll along a continuous strip as a move', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single' });
+    const mirrored: ShownPlace[] = [];
+    const view = new ReaderView(world.container, world.notify, (place) => mirrored.push(place));
+    await view.open(bookId('one'));
+    mirrored.length = 0;
+
+    view.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(4));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(mirrored).toEqual([{ kind: 'moved', index: 3, group: [3] }]);
   });
 
   it('moves to the group holding the image the url asked for', async () => {

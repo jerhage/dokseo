@@ -41,6 +41,10 @@ type MissingBookArrival = {
   readonly cleaned: URL;
 };
 
+type ShownPlace =
+  | { readonly kind: 'arrived'; readonly index: ImageIndex }
+  | { readonly kind: 'moved'; readonly index: ImageIndex; readonly group: readonly ImageIndex[] };
+
 type OpeningPlace = {
   readonly index: ImageIndex;
   readonly asked: boolean;
@@ -84,6 +88,19 @@ function openingPlace(
 function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   const moved = new URL(url);
   moved.searchParams.set(IMAGE_PARAMETER, String(index));
+  return moved.href === url.href ? null : moved;
+}
+
+function urlForShownPlace(url: URL, place: ShownPlace): URL | null {
+  if (place.kind === 'arrived') return urlWithImageIndex(url, place.index);
+
+  const named = readImageIndex(url.searchParams.get(IMAGE_PARAMETER));
+  if (named !== null && place.group.includes(named)) return null;
+
+  const moved = new URL(url);
+  moved.searchParams.set(IMAGE_PARAMETER, String(place.index));
+  moved.searchParams.delete(REGION_PARAMETER);
+  moved.searchParams.delete(FIND_PARAMETER);
   return moved.href === url.href ? null : moved;
 }
 
@@ -199,6 +216,7 @@ export {
   readImageIndex,
   openingPlace,
   urlWithImageIndex,
+  urlForShownPlace,
   readerHref,
   captureHref,
   passageHref,
@@ -209,4 +227,4 @@ export {
   missingBookNotice,
   missingBookArrival,
 };
-export type { MissingBookArrival, ReaderArrival, OpeningPlace };
+export type { MissingBookArrival, ReaderArrival, OpeningPlace, ShownPlace };

@@ -17,6 +17,7 @@ import {
   readImageIndex,
   readRegion,
   regionDistance,
+  urlForShownPlace,
   urlWithImageIndex,
 } from './reader-location';
 import { imagePlace, textPlace } from './reading-place';
@@ -111,6 +112,59 @@ describe('urlWithImageIndex', () => {
 
   it('reports nothing when the url already names that index', () => {
     expect(urlWithImageIndex(new URL('https://r.test/read/one?image=5'), imageIndex(5))).toBeNull();
+  });
+});
+
+describe('urlForShownPlace', () => {
+  const linked = 'https://r.test/read/one?image=3&region=10,20,92,104&find=%E7%8C%AB';
+
+  function moved(index: number, group: readonly number[]) {
+    return { kind: 'moved', index: imageIndex(index), group: group.map(imageIndex) } as const;
+  }
+
+  it('rewrites only the image on arrival and keeps the region and the search', () => {
+    const shown = urlForShownPlace(new URL(linked), { kind: 'arrived', index: imageIndex(5) });
+
+    expect(shown?.searchParams.get(IMAGE_PARAMETER)).toBe('5');
+    expect(shown?.searchParams.get('region')).toBe('10,20,92,104');
+    expect(shown?.searchParams.get('find')).toBe('猫');
+  });
+
+  it('reports nothing on arrival at the image the url already names', () => {
+    const named = new URL('https://r.test/read/one?image=3&find=x');
+
+    expect(urlForShownPlace(named, { kind: 'arrived', index: imageIndex(3) })).toBeNull();
+  });
+
+  it('drops the region and the search when a move shows a group without the named image', () => {
+    const shown = urlForShownPlace(new URL(linked), moved(4, [4, 5]));
+
+    expect(shown?.pathname).toBe('/read/one');
+    expect(shown?.search).toBe('?image=4');
+  });
+
+  it('keeps every other parameter when a move drops the region', () => {
+    const shown = urlForShownPlace(new URL(`${linked}&q=two`), moved(0, [0]));
+
+    expect(shown?.search).toBe('?image=0&q=two');
+  });
+
+  it('leaves the url alone when a move shows a spread holding the named image', () => {
+    expect(urlForShownPlace(new URL(linked), moved(2, [2, 3]))).toBeNull();
+  });
+
+  it('leaves the url alone when a move lands on the named image', () => {
+    expect(urlForShownPlace(new URL(linked), moved(3, [3]))).toBeNull();
+  });
+
+  it('writes the image when a move lands in a url that names none', () => {
+    const shown = urlForShownPlace(new URL('https://r.test/read/one?find=x'), moved(2, [2, 3]));
+
+    expect(shown?.search).toBe('?image=2');
+  });
+
+  it('reports nothing when a move changes nothing in the url', () => {
+    expect(urlForShownPlace(new URL('https://r.test/read/one?image=4'), moved(4, []))).toBeNull();
   });
 });
 

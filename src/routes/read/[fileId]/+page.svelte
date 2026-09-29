@@ -19,7 +19,7 @@
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import type { SoughtPassage } from '$lib/shared/anchor';
   import { bookId } from '$lib/shared/ids';
-  import type { BookId, ImageIndex } from '$lib/shared/ids';
+  import type { BookId } from '$lib/shared/ids';
   import { toastNotify } from '$lib/shared/notice-toast';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
@@ -28,13 +28,14 @@
     arrivalQuery,
     readArrival,
     readImageIndex,
-    urlWithImageIndex,
+    urlForShownPlace,
   } from '$lib/shared/reader-location';
+  import type { ShownPlace } from '$lib/shared/reader-location';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
 
-  function mirror(index: ImageIndex): void {
-    const moved = urlWithImageIndex(page.url, index);
+  function mirror(place: ShownPlace): void {
+    const moved = urlForShownPlace(new URL(location.href), place);
     if (moved !== null) replaceState(moved, page.state);
   }
 

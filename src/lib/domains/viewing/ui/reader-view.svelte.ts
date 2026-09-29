@@ -12,6 +12,7 @@ import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
+import type { ShownPlace } from '$lib/shared/reader-location';
 import { imagePlace, readingStarted, samePlace, showsTheEnd } from '$lib/shared/reading-place';
 import type { ImagePlace, ReadingPlace } from '$lib/shared/reading-place';
 import { groupContaining, pairPages } from '../domain/page-pairing';
@@ -42,7 +43,7 @@ type FlowBook = OpenedFlow['book'];
 
 type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing' | 'flow';
 
-type PlaceMirror = (index: ImageIndex) => void;
+type PlaceMirror = (place: ShownPlace) => void;
 
 const NO_PAGES: PageGroup = [];
 
@@ -230,7 +231,7 @@ class ReaderView {
     if (movedByTheUrl || this.#opensOnAnUnreadEnd(book, saved, showing)) {
       void this.#persist(book.id, showing);
     }
-    this.#mirror?.(place.index);
+    this.#mirror?.({ kind: 'arrived', index: place.index });
   }
 
   async pictureAt(index: ImageIndex): Promise<PagePicture | null> {
@@ -436,6 +437,10 @@ class ReaderView {
     return !recorded;
   }
 
+  #groupHolding(index: ImageIndex): PageGroup {
+    return this.groups[groupContaining(this.groups, index)] ?? NO_PAGES;
+  }
+
   #placeShowing(index: ImageIndex): ImagePlace {
     const group = this.groups[groupContaining(this.groups, index)] ?? NO_PAGES;
     return imagePlace(index, group.at(-1) ?? index);
@@ -447,7 +452,7 @@ class ReaderView {
 
     const timer = setTimeout(() => {
       this.#saving = null;
-      this.#mirror?.(place.index);
+      this.#mirror?.({ kind: 'moved', index: place.index, group: this.#groupHolding(place.index) });
       if (!this.#alreadyPlaced(place)) void this.#persist(id, place);
     }, PLACE_SAVE_DELAY_MS);
 
