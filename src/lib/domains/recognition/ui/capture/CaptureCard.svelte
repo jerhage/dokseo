@@ -24,6 +24,7 @@
   import type { Card } from './capture-cards.svelte';
   import type { CardDrafts, DraftField } from './card-drafts.svelte';
   import { cardTools } from './card-tools';
+  import { GO_TO_PASSAGE } from './capture-place';
   import InlineEditor from './InlineEditor.svelte';
   import { CHIPS_ON_A_CARD } from './chip-line';
   import { noteLines, plainSegments } from './note-lines';
@@ -106,9 +107,18 @@
   }
 </script>
 
+{#snippet chapterEyebrow()}
+  {#if card.chapter !== null}
+    <span class="row"
+      ><span class="truncate" lang={card.chapter.lang}>{card.chapter.text}</span></span
+    >
+  {/if}
+{/snippet}
+
 <CardFrame
   variant={current ? 'feature' : 'default'}
   size="sm"
+  {...card.chapter === null ? {} : { eyebrow: chapterEyebrow }}
   class={{ 'bordered-strong': (writingText || writingNote) && !current }}
   aria-label="Capture at {card.place}"
   aria-current={current ? 'true' : undefined}
@@ -178,14 +188,10 @@
 
   <div class="row items-center gap-1">
     <span class="row items-center gap-1 flex-fill min-w-0 overflow-hidden">
-      {#if card.passage !== null && card.passageButton !== null && onseek !== undefined}
+      {#if card.passage !== null && onseek !== undefined}
         {@const passage = card.passage}
-        {@const button = card.passageButton}
-        <Button variant="ghost" size="sm" class="px-2 min-w-0" onclick={() => onseek(passage)}>
-          <span class="truncate" lang={button.lang}>{button.text}</span>
-          {#if button.kind === 'chapter'}
-            <span class="visually-hidden">Go to the passage</span>
-          {/if}
+        <Button variant="ghost" size="sm" class="px-2 shrink-0" onclick={() => onseek(passage)}>
+          {GO_TO_PASSAGE}
         </Button>
       {:else if card.href === null}
         <span class="px-2 text-xs text-muted mono truncate" lang={card.placeLanguage}

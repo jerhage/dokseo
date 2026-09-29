@@ -5,11 +5,11 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import {
   capturedLabel,
+  cardChapter,
   firstImage,
   GO_TO_PASSAGE,
   NO_CHAPTER,
   NO_PLACE,
-  passageButton,
   passageLabel,
   placeLabel,
   placeLanguage,
@@ -80,7 +80,7 @@ describe('passageLabel', () => {
   });
 });
 
-describe('passageButton', () => {
+describe('cardChapter', () => {
   const passage: TextAnchor = {
     kind: 'text',
     cfi: QUOTED_CFI,
@@ -88,20 +88,18 @@ describe('passageButton', () => {
     chapter: '第三章　海辺',
   };
 
-  it('shows the chapter title in the language of its book', () => {
-    expect(passageButton(passage, 'ja')).toEqual({
-      kind: 'chapter',
-      text: '第三章　海辺',
-      lang: 'ja',
-    });
+  it('names the chapter in the language of its book', () => {
+    expect(cardChapter(passage, 'ja')).toEqual({ text: '第三章　海辺', lang: 'ja' });
   });
 
-  it('falls back to going to the passage, in no language, when the passage names no chapter', () => {
-    expect(passageButton({ ...passage, chapter: null }, 'ja')).toEqual({
-      kind: 'unnamed',
-      text: GO_TO_PASSAGE,
-      lang: null,
-    });
+  it('gives no chapter when the passage names none, or when the capture sits on an image', () => {
+    expect([
+      cardChapter({ ...passage, chapter: null }, 'ja'),
+      cardChapter(regionAnchor([on(4)]), 'ja'),
+    ]).toEqual([null, null]);
+  });
+
+  it('reads Go to passage on the button that seeks a passage', () => {
     expect(GO_TO_PASSAGE).toBe('Go to passage');
   });
 });

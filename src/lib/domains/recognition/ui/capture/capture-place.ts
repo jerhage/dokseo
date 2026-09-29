@@ -8,9 +8,10 @@ const NO_CHAPTER = 'no chapter';
 
 const GO_TO_PASSAGE = 'Go to passage';
 
-type PassageButton =
-  | { readonly kind: 'chapter'; readonly text: string; readonly lang: Language | null }
-  | { readonly kind: 'unnamed'; readonly text: string; readonly lang: null };
+type CardChapter = {
+  readonly text: string;
+  readonly lang: Language | null;
+};
 
 function pageLabel(index: ImageIndex): string {
   return String(index + 1).padStart(3, '0');
@@ -26,10 +27,10 @@ function placeLanguage(anchor: Anchor, language: Language | null): Language | nu
   return language;
 }
 
-function passageButton(anchor: TextAnchor, language: Language | null): PassageButton {
-  if (anchor.chapter === null) return { kind: 'unnamed', text: GO_TO_PASSAGE, lang: null };
+function cardChapter(anchor: Anchor, language: Language | null): CardChapter | null {
+  if (anchor.kind !== 'text' || anchor.chapter === null) return null;
 
-  return { kind: 'chapter', text: anchor.chapter, lang: placeLanguage(anchor, language) };
+  return { text: anchor.chapter, lang: placeLanguage(anchor, language) };
 }
 
 function placeLabel(anchor: Anchor): string {
@@ -76,12 +77,12 @@ export {
   GO_TO_PASSAGE,
   NO_CHAPTER,
   NO_PLACE,
+  cardChapter,
   pageLabel,
-  passageButton,
   passageLabel,
   placeLabel,
   placeLanguage,
   firstImage,
   capturedLabel,
 };
-export type { PassageButton };
+export type { CardChapter };
