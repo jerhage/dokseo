@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import type { HTMLAttributes } from 'svelte/elements';
   import { TOAST_REGION_PLACEMENTS } from './classes';
   import type { ToastPlacement } from './classes';
@@ -34,7 +35,7 @@
     shown !== undefined && region !== undefined && shown.regionFor(placement) === region,
   );
 
-  $effect(() => {
+  const register: Attachment<HTMLDivElement> = () => {
     const host = shown;
     if (host === undefined) return;
     const id = host.attachRegion(placement);
@@ -43,7 +44,7 @@
       host.detachRegion(id);
       region = undefined;
     };
-  });
+  };
 
   function raise(event: Event): void {
     const node = element;
@@ -53,14 +54,13 @@
     node.showPopover();
   }
 
-  $effect(() => {
-    const node = element;
-    if (node === undefined || !active) return;
+  const showWhileActive: Attachment<HTMLDivElement> = (node) => {
+    if (!active) return;
     node.showPopover();
     return () => {
       if (node.matches(':popover-open')) node.hidePopover();
     };
-  });
+  };
 </script>
 
 <svelte:document ontogglecapture={raise} />
@@ -68,6 +68,8 @@
 <div
   {...rest}
   bind:this={element}
+  {@attach register}
+  {@attach showWhileActive}
   popover="manual"
   aria-live="polite"
   class={['toast-region', TOAST_REGION_PLACEMENTS[placement], className]}

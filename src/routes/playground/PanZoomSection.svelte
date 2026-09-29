@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, untrack } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import { P, match } from 'ts-pattern';
   import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
@@ -200,13 +201,34 @@
     doubleTapped(event.clientX, event.clientY);
   }
 
-  $effect(() => {
+  function resized(outer: HTMLElement, inner: HTMLElement): void {
+    const unchanged =
+      outer.clientWidth === frameWidth &&
+      outer.clientHeight === frameHeight &&
+      inner.offsetWidth === contentWidth &&
+      inner.offsetHeight === contentHeight;
+    if (unchanged) return;
+
+    frameWidth = outer.clientWidth;
+    frameHeight = outer.clientHeight;
+    contentWidth = inner.offsetWidth;
+    contentHeight = inner.offsetHeight;
     if (frameWidth <= 0 || frameHeight <= 0 || contentWidth <= 0 || contentHeight <= 0) return;
-    untrack(() => {
-      if (fit === 'free') settle(viewport);
-      else fitTo(fit);
-    });
-  });
+
+    if (fit === 'free') settle(viewport);
+    else fitTo(fit);
+  }
+
+  const measureSizes: Attachment<HTMLDivElement> = (outer) => {
+    const inner = outer.querySelector('.zoom-surface');
+    if (!(inner instanceof HTMLElement)) return;
+
+    const observer = new ResizeObserver(() => resized(outer, inner));
+    observer.observe(outer, { box: 'border-box' });
+    observer.observe(inner, { box: 'border-box' });
+    untrack(() => resized(outer, inner));
+    return () => observer.disconnect();
+  };
 
   onDestroy(() => gestures.stop());
 </script>
@@ -239,8 +261,7 @@
   <Card>
     <div
       bind:this={frame}
-      bind:clientWidth={frameWidth}
-      bind:clientHeight={frameHeight}
+      {@attach measureSizes}
       class={[
         'pan-zoom-section relative overflow-hidden aspect-video surface-sunken rounded-container',
         { 'is-grabbable': grab === null, 'is-grabbing': grab !== null },
@@ -255,8 +276,6 @@
       {ondblclick}
     >
       <div
-        bind:offsetWidth={contentWidth}
-        bind:offsetHeight={contentHeight}
         class="zoom-surface h-full aspect-portrait grid-3-col gap-1 p-2 surface-raised bordered"
         style:--zoom-surface-pan-x="{viewport.panX}px"
         style:--zoom-surface-pan-y="{viewport.panY}px"

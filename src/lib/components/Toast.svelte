@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import { animationsSettled } from './animations';
   import { announcementRole } from './announcement';
   import Button from './Button.svelte';
@@ -22,9 +23,7 @@
   let persistent = $state(false);
   let timer: ToastTimer | undefined;
 
-  $effect(() => {
-    const node = element;
-    if (node === undefined) return;
+  const startTimer: Attachment<HTMLDivElement> = (node) => {
     untrack(() => {
       const css = getComputedStyle(node).getPropertyValue('--toast-duration');
       const ms = toastTimeout(toast.duration, css);
@@ -32,7 +31,7 @@
       else timer = new ToastTimer(ms, () => toaster.dismiss(toast.id));
     });
     return () => timer?.stop();
-  });
+  };
 
   $effect(() => {
     const node = element;
@@ -51,6 +50,7 @@
 
 <div
   bind:this={element}
+  {@attach startTimer}
   role={announcementRole(toast.variant)}
   class={[
     'toast',

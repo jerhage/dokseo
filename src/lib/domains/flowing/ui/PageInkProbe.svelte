@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import type { PageInk } from './flow-styles';
   import { pageInk } from './page-ink';
   import './page-ink-probe.css';
@@ -14,10 +15,6 @@
 
   const APPEARANCE_ATTRIBUTES: readonly string[] = ['data-theme', 'data-color-scheme'];
 
-  let probe = $state<HTMLElement | null>(null);
-  let link = $state<HTMLElement | null>(null);
-  let selection = $state<HTMLElement | null>(null);
-
   function readInk(page: HTMLElement, linked: HTMLElement, selected: HTMLElement): void {
     const around = getComputedStyle(page);
     onink(
@@ -31,11 +28,10 @@
     );
   }
 
-  $effect(() => {
-    const page = probe;
-    const linked = link;
-    const selected = selection;
-    if (page === null || linked === null || selected === null) return;
+  const watchInk: Attachment<HTMLElement> = (page) => {
+    const linked = page.querySelector('.ink-link');
+    const selected = page.querySelector('.ink-selection');
+    if (!(linked instanceof HTMLElement) || !(selected instanceof HTMLElement)) return;
 
     const read = (): void => readInk(page, linked, selected);
     const preference = window.matchMedia(PREFERS_DARK);
@@ -51,10 +47,10 @@
       appearance.disconnect();
       preference.removeEventListener('change', read);
     };
-  });
+  };
 </script>
 
-<span class="page-ink-probe visually-hidden" aria-hidden="true" bind:this={probe}>
-  <span class="ink-link" bind:this={link}></span>
-  <span class="ink-selection" bind:this={selection}></span>
+<span class="page-ink-probe visually-hidden" aria-hidden="true" {@attach watchInk}>
+  <span class="ink-link"></span>
+  <span class="ink-selection"></span>
 </span>

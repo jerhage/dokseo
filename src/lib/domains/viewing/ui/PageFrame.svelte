@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
   import { releasePicture } from '$lib/platform/image/bitmap';
   import type { Size } from '$lib/shared/geometry';
@@ -33,7 +34,6 @@
 
   const selectable = $derived(beside ? undefined : index);
 
-  let frame = $state<HTMLCanvasElement | null>(null);
   let picture = $state.raw<PagePicture | null>(null);
   let phase = $state<Phase>('loading');
   let ratio = $state(2 / 3);
@@ -80,7 +80,7 @@
     show({ width: image.naturalWidth, height: image.naturalHeight });
   }
 
-  $effect(() => {
+  const load: Attachment<HTMLDivElement> = () => {
     const wanted = asked;
 
     let live = true;
@@ -107,12 +107,11 @@
       picture = null;
       if (held !== null) releasePicture(held);
     };
-  });
+  };
 
-  $effect(() => {
-    const canvas = frame;
+  const draw: Attachment<HTMLCanvasElement> = (canvas) => {
     const drawn = picture;
-    if (canvas === null || drawn === null || drawn.kind !== 'drawn') return;
+    if (drawn === null || drawn.kind !== 'drawn') return;
 
     const context = canvas.getContext('bitmaprenderer');
     if (context === null) {
@@ -125,7 +124,7 @@
     canvas.height = size.height;
     context.transferFromImageBitmap(drawn.bitmap);
     show(size);
-  });
+  };
 </script>
 
 <div
@@ -137,6 +136,7 @@
   style:--page-ratio={ratio}
   role="img"
   aria-label={caption}
+  {@attach load}
 >
   {#if picture !== null && picture.kind === 'encoded'}
     <img
@@ -151,7 +151,7 @@
   {:else}
     <canvas
       class="picture w-full h-full"
-      bind:this={frame}
+      {@attach draw}
       width={0}
       height={0}
       data-image-index={selectable}

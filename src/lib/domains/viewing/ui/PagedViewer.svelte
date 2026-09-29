@@ -185,6 +185,7 @@
       if (entry !== undefined) {
         frameSize = { width: entry.contentRect.width, height: entry.contentRect.height };
       }
+      refitWhenFramed();
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -392,9 +393,16 @@
       : { origin: panOrigin, content: sizes.content, frame: sizes.frame };
   }
 
+  function refitWhenFramed(): void {
+    if (frame !== null && strip !== null) reapplyFit();
+  }
+
   function holdStrip(element: HTMLDivElement): () => void {
     strip = element;
+    const observer = new ResizeObserver(() => refitWhenFramed());
+    observer.observe(element);
     return () => {
+      observer.disconnect();
       if (strip === element) strip = null;
     };
   }
@@ -596,18 +604,6 @@
   }
 
   onDestroy(() => gestures.stop());
-
-  $effect(() => {
-    const outer = frame;
-    const inner = strip;
-    if (outer === null || inner === null) return;
-
-    const observer = new ResizeObserver(() => reapplyFit());
-    observer.observe(outer);
-    observer.observe(inner);
-
-    return () => observer.disconnect();
-  });
 
   $effect(() => {
     const group = pages;

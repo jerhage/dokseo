@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
   import type { Component, Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import Alert from '$lib/components/Alert.svelte';
@@ -382,11 +383,9 @@
     view.markPassages(passages);
   });
 
-  $effect(() => {
-    const host = stage;
+  const openOnStage: Attachment<HTMLDivElement> = (host) => {
     void book.id;
     const held = untrack(() => book);
-    if (host === null) return;
 
     const began = (event: PointerEvent): void =>
       press(event, spotOn(host, event, HOST_VIEWPORT_ORIGIN));
@@ -417,7 +416,7 @@
       settingsOpen = false;
       chapters.clear();
     };
-  });
+  };
 </script>
 
 <svelte:window onkeydown={onkey} />
@@ -431,7 +430,7 @@
   {panelCount}
 >
   {#snippet page()}
-    <div class="stage min-h-0" tabindex="-1" bind:this={stage}></div>
+    <div class="stage min-h-0" tabindex="-1" bind:this={stage} {@attach openOnStage}></div>
 
     <PageInkProbe onink={(ink) => view.paint(ink)} />
 
