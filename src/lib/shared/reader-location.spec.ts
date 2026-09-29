@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { imageRect } from './geometry';
 import { bookId, imageIndex } from './ids';
 import {
+  IMAGE_ARRIVAL_NONE,
+  IMAGE_ARRIVAL_SHOWING,
   IMAGE_PARAMETER,
   MISSING_BOOK_NOTICE,
   NO_ARRIVAL,
   REGION_TOLERANCE,
   arrivalQuery,
   captureHref,
+  imageArrivalShows,
+  mirroredPlace,
   missingBookNotice,
   missingBookArrival,
   openingPlace,
@@ -21,6 +25,7 @@ import {
   urlForShownPlace,
   urlWithImageIndex,
 } from './reader-location';
+import type { ShownPlace } from './reader-location';
 import { imagePlace, textPlace } from './reading-place';
 
 describe('readImageIndex', () => {
@@ -202,6 +207,71 @@ describe('urlForShownPlace', () => {
 
   it('reports nothing when a move changes nothing in the url', () => {
     expect(urlForShownPlace(new URL('https://r.test/read/one?image=4'), moved(4, []))).toBeNull();
+  });
+});
+
+describe('mirroredPlace', () => {
+  const linked = 'https://r.test/read/one?image=3&region=10,20,92,104&find=%E7%8C%AB';
+
+  function moved(index: number, group: readonly number[]) {
+    return { kind: 'moved', index: imageIndex(index), group: group.map(imageIndex) } as const;
+  }
+
+  function showsAfter(url: string, place: ShownPlace): boolean {
+    return imageArrivalShows(mirroredPlace(new URL(url), place, IMAGE_ARRIVAL_SHOWING).standing);
+  }
+
+  it('keeps the arrival bar on arrival', () => {
+    expect(showsAfter(linked, { kind: 'arrived', index: imageIndex(5) })).toBe(true);
+  });
+
+  it('keeps the arrival bar when a move lands on the named image', () => {
+    expect(showsAfter(linked, moved(3, [3]))).toBe(true);
+  });
+
+  it('keeps the arrival bar when a move shows a spread holding the named image', () => {
+    expect(showsAfter(linked, moved(2, [2, 3]))).toBe(true);
+  });
+
+  it('ends the arrival bar when a move shows a group without the named image', () => {
+    expect(showsAfter(linked, moved(4, [4, 5]))).toBe(false);
+  });
+
+  it('ends the arrival bar when a move lands in a url that names no image', () => {
+    expect(showsAfter('https://r.test/read/one?find=x', moved(2, [2, 3]))).toBe(false);
+  });
+
+  it('keeps an ended arrival bar ended when a move comes back to the named image', () => {
+    const mirrored = mirroredPlace(new URL(linked), moved(3, [3]), IMAGE_ARRIVAL_NONE);
+
+    expect(imageArrivalShows(mirrored.standing)).toBe(false);
+  });
+
+  it('ends the arrival bar exactly when the url it writes drops the search', () => {
+    const places: readonly ShownPlace[] = [
+      { kind: 'arrived', index: imageIndex(3) },
+      { kind: 'arrived', index: imageIndex(5) },
+      moved(3, [3]),
+      moved(2, [2, 3]),
+      moved(4, [4, 5]),
+      moved(0, [0]),
+      moved(1, []),
+    ];
+
+    for (const place of places) {
+      const mirrored = mirroredPlace(new URL(linked), place, IMAGE_ARRIVAL_SHOWING);
+      const written = mirrored.url ?? new URL(linked);
+
+      expect(imageArrivalShows(mirrored.standing)).toBe(written.searchParams.has('find'));
+    }
+  });
+
+  it('writes the same url as urlForShownPlace', () => {
+    const place = moved(4, [4, 5]);
+
+    expect(mirroredPlace(new URL(linked), place, IMAGE_ARRIVAL_SHOWING).url?.href).toBe(
+      urlForShownPlace(new URL(linked), place)?.href,
+    );
   });
 });
 

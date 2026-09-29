@@ -26,21 +26,29 @@
   import { toastNotify } from '$lib/shared/notice-toast';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
+    IMAGE_ARRIVAL_SHOWING,
     IMAGE_PARAMETER,
     LIBRARY_AFTER_MISSING_BOOK,
     arrivalQuery,
+    imageArrivalShows,
+    mirroredPlace,
     readArrival,
     readImageIndex,
     readerNavigation,
-    urlForShownPlace,
   } from '$lib/shared/reader-location';
-  import type { ReaderRequest, ShownPlace } from '$lib/shared/reader-location';
+  import type {
+    ImageArrivalStanding,
+    ReaderRequest,
+    ShownPlace,
+  } from '$lib/shared/reader-location';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
+  let arrivalStanding = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
 
   function mirror(place: ShownPlace): void {
-    const moved = urlForShownPlace(new URL(location.href), place);
-    if (moved !== null) replaceState(moved, page.state);
+    const mirrored = mirroredPlace(new URL(location.href), place, arrivalStanding);
+    arrivalStanding = mirrored.standing;
+    if (mirrored.url !== null) replaceState(mirrored.url, page.state);
   }
 
   function warm(book: BookId, known: Language): void {
@@ -72,6 +80,7 @@
   const passageHere = $derived(captures.passageArrivalFrom(found, comparePassages));
   const passageStepping = $derived(passageHere?.stepping ?? null);
   const finding = $derived(arrivalQuery(found));
+  const arrivalShows = $derived(imageArrivalShows(arrivalStanding));
   const books = $derived(
     shelf.books.map((held) => ({
       id: held.id,
@@ -100,6 +109,7 @@
   }
 
   afterNavigate(() => {
+    arrivalStanding = IMAGE_ARRIVAL_SHOWING;
     const wanted = { book: id, image: asked };
     const next = readerNavigation(requested, wanted);
     requested = wanted;
@@ -160,7 +170,7 @@
     onsearch={() => search?.searchThisBook()}
   >
     {#snippet arrival()}
-      {#if stepping !== null && finding !== null}
+      {#if stepping !== null && finding !== null && arrivalShows}
         <ArrivalBar book={id} query={finding} {language} {stepping} />
       {/if}
     {/snippet}

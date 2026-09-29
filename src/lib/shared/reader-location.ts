@@ -46,6 +46,13 @@ type ShownPlace =
   | { readonly kind: 'arrived'; readonly index: ImageIndex }
   | { readonly kind: 'moved'; readonly index: ImageIndex; readonly group: readonly ImageIndex[] };
 
+type ImageArrivalStanding = { readonly kind: 'none' } | { readonly kind: 'showing' };
+
+type MirroredPlace = {
+  readonly url: URL | null;
+  readonly standing: ImageArrivalStanding;
+};
+
 type OpeningPlace = {
   readonly index: ImageIndex;
   readonly offset: number;
@@ -54,6 +61,10 @@ type OpeningPlace = {
 };
 
 const NO_ARRIVAL: ReaderArrival = { kind: 'none' };
+
+const IMAGE_ARRIVAL_SHOWING: ImageArrivalStanding = { kind: 'showing' };
+
+const IMAGE_ARRIVAL_NONE: ImageArrivalStanding = { kind: 'none' };
 
 const WHOLE_NUMBER = /^\d+$/;
 
@@ -95,17 +106,33 @@ function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   return moved.href === url.href ? null : moved;
 }
 
-function urlForShownPlace(url: URL, place: ShownPlace): URL | null {
-  if (place.kind === 'arrived') return urlWithImageIndex(url, place.index);
+function turnsAwayFromNamedImage(url: URL, place: ShownPlace): boolean {
+  if (place.kind === 'arrived') return false;
 
   const named = readImageIndex(url.searchParams.get(IMAGE_PARAMETER));
-  if (named !== null && place.group.includes(named)) return null;
+  return named === null || !place.group.includes(named);
+}
+
+function urlForShownPlace(url: URL, place: ShownPlace): URL | null {
+  if (place.kind === 'arrived') return urlWithImageIndex(url, place.index);
+  if (!turnsAwayFromNamedImage(url, place)) return null;
 
   const moved = new URL(url);
   moved.searchParams.set(IMAGE_PARAMETER, String(place.index));
   moved.searchParams.delete(REGION_PARAMETER);
   moved.searchParams.delete(FIND_PARAMETER);
   return moved.href === url.href ? null : moved;
+}
+
+function mirroredPlace(url: URL, place: ShownPlace, standing: ImageArrivalStanding): MirroredPlace {
+  return {
+    url: urlForShownPlace(url, place),
+    standing: turnsAwayFromNamedImage(url, place) ? IMAGE_ARRIVAL_NONE : standing,
+  };
+}
+
+function imageArrivalShows(standing: ImageArrivalStanding): boolean {
+  return standing.kind === 'showing';
 }
 
 function regionCoordinate(value: number): string {
@@ -229,6 +256,8 @@ export {
   REGION_TOLERANCE,
   CFI_PARAMETER,
   NO_ARRIVAL,
+  IMAGE_ARRIVAL_SHOWING,
+  IMAGE_ARRIVAL_NONE,
   MISSING_BOOK_PARAMETER,
   MISSING_BOOK_VALUE,
   MISSING_BOOK_NOTICE,
@@ -237,6 +266,8 @@ export {
   openingPlace,
   urlWithImageIndex,
   urlForShownPlace,
+  mirroredPlace,
+  imageArrivalShows,
   readerHref,
   captureHref,
   passageHref,
@@ -249,6 +280,8 @@ export {
   readerNavigation,
 };
 export type {
+  ImageArrivalStanding,
+  MirroredPlace,
   MissingBookArrival,
   ReaderArrival,
   ReaderNavigation,
