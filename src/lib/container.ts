@@ -32,6 +32,7 @@ import { createFileSourceBuilder } from './domains/library/adapters/file-source-
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { openStoredPageSource } from './domains/library/adapters/stored-page-source';
 import type { Book, BookEdit } from './domains/library/domain/book/book';
+import type { BookMatching } from './domains/library/domain/book/book-matching';
 import type { LibraryError } from './domains/library/domain/book/library-repository';
 import type { UploadReport } from './domains/library/domain/ingest/upload-progress';
 import { editBook } from './domains/library/use-cases/edit-book';
@@ -251,6 +252,7 @@ type Container = {
   readonly library: {
     readonly openFile: (
       files: readonly File[],
+      matching: BookMatching,
       report?: UploadReport,
     ) => Promise<Result<OpenedUpload, OpenFileError>>;
     readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
@@ -428,8 +430,8 @@ function buildContainer(): Container {
   return {
     beginTrace,
     library: {
-      openFile: (files: readonly File[], report?: UploadReport) =>
-        openFile(openFileDeps, files, report),
+      openFile: (files: readonly File[], matching: BookMatching, report?: UploadReport) =>
+        openFile(openFileDeps, files, report, matching),
       openForReading: (id: BookId) => openForReading(openForReadingDeps, id),
       listBooks: () => listBooks(listBooksDeps),
       readBook: (id: BookId) => readBook(readBookDeps, id),

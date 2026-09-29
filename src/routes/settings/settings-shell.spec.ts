@@ -28,6 +28,7 @@ describe('SettingsShell', () => {
     expect(navCurrent(markup({ current: 'storage' }))).toEqual(['/settings/storage']);
     expect(navCurrent(markup({ current: 'engine' }))).toEqual(['/settings']);
     expect(navCurrent(markup({ current: 'appearance' }))).toEqual(['/settings/appearance']);
+    expect(navCurrent(markup({ current: 'library' }))).toEqual(['/settings/library']);
   });
 
   it('links every section beneath the root it is given', () => {
@@ -36,6 +37,7 @@ describe('SettingsShell', () => {
     expect(html).toContain('href="/elsewhere/settings"');
     expect(html).toContain('href="/elsewhere/settings/storage"');
     expect(html).toContain('href="/elsewhere/settings/appearance"');
+    expect(html).toContain('href="/elsewhere/settings/library"');
   });
 
   it('names the current section last in the breadcrumb', () => {
@@ -73,6 +75,7 @@ describe('SettingsShell', () => {
       'Where recognition runs',
       'What this device keeps',
       'Theme and color scheme',
+      'How a file finds its book',
     ]);
   });
 

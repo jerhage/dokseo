@@ -8,6 +8,7 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import type { Book, BookEdit } from '../domain/book/book';
+import type { BookMatching } from '../domain/book/book-matching';
 import type { LibraryError } from '../domain/book/library-repository';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 import type { OpenedUpload, OpenFileError } from '../use-cases/open-file';
@@ -23,6 +24,7 @@ import {
   UPLOAD_FAILED,
 } from './library-view.svelte';
 import type { OpenBook } from './library-view.svelte';
+import { chooseBookMatching } from './book-matching.svelte';
 
 type Deferred<T> = { readonly promise: Promise<T>; readonly settle: (value: T) => void };
 
@@ -73,6 +75,7 @@ type Fakes = {
   readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
   readonly opens: Deferred<Result<OpenedUpload, OpenFileError>>[];
   readonly reports: (UploadReport | undefined)[];
+  readonly matchings: BookMatching[];
   readonly removes: Deferred<Result<void, LibraryError>>[];
   readonly edits: Deferred<Result<Book, LibraryError>>[];
   readonly marks: Mark[];
@@ -89,6 +92,7 @@ function fakes(): Fakes {
   const lists: Deferred<Result<readonly Book[], LibraryError>>[] = [];
   const opens: Deferred<Result<OpenedUpload, OpenFileError>>[] = [];
   const reports: (UploadReport | undefined)[] = [];
+  const matchings: BookMatching[] = [];
   const removes: Deferred<Result<void, LibraryError>>[] = [];
   const edits: Deferred<Result<Book, LibraryError>>[] = [];
   const marks: Mark[] = [];
@@ -107,10 +111,11 @@ function fakes(): Fakes {
   const container: Container = {
     beginTrace: noTrace,
     library: {
-      openFile: (_files, report) => {
+      openFile: (_files, matching, report) => {
         const next = deferred<Result<OpenedUpload, OpenFileError>>();
         opens.push(next);
         reports.push(report);
+        matchings.push(matching);
         return next.promise;
       },
       openForReading: (id) =>
@@ -192,6 +197,7 @@ function fakes(): Fakes {
     lists,
     opens,
     reports,
+    matchings,
     removes,
     edits,
     marks,
@@ -474,6 +480,22 @@ describe('LibraryView', () => {
     expect(world.notices).toEqual([
       { tone: 'danger', title: UPLOAD_FAILED, message: 'That upload could not be read: bad zip' },
     ]);
+  });
+
+  it('passes the chosen book matching to the upload', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    chooseBookMatching('file-name');
+    const first = view.upload([chosen('chapter-1.cbz')], world.open);
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await first;
+    chooseBookMatching('content');
+    const second = view.upload([chosen('chapter-1.cbz')], world.open);
+    at(world.opens, 1).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await second;
+
+    expect(world.matchings).toEqual(['file-name', 'content']);
   });
 
   it('starts an upload at the inspecting stage', async () => {

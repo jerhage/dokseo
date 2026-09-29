@@ -13,6 +13,7 @@ import { INSPECTING } from '../domain/ingest/upload-progress';
 import type { UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenedUpload, OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
+import { bookMatchingChosen } from './book-matching.svelte';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
 import { onShelf } from './library-shelves';
@@ -171,9 +172,13 @@ class LibraryView {
     this.progress = INSPECTING;
 
     try {
-      const opened = await this.#container.library.openFile(files, (stage) => {
-        this.progress = stage;
-      });
+      const opened = await this.#container.library.openFile(
+        files,
+        bookMatchingChosen(),
+        (stage) => {
+          this.progress = stage;
+        },
+      );
       if (!opened.ok) {
         this.#fail(UPLOAD_FAILED, describeOpenFileError(opened.error));
         return;

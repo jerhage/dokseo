@@ -1,10 +1,11 @@
 import type { Component } from 'svelte';
+import File from '$lib/components/icons/File.svelte';
 import HardDrive from '$lib/components/icons/HardDrive.svelte';
 import type { IconProps } from '$lib/components/icons/icon';
 import Palette from '$lib/components/icons/Palette.svelte';
 import ScanText from '$lib/components/icons/ScanText.svelte';
 
-type SettingsSection = 'engine' | 'storage' | 'appearance';
+type SettingsSection = 'engine' | 'storage' | 'appearance' | 'library';
 
 type SectionLink = {
   readonly id: SettingsSection;
@@ -36,6 +37,13 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'Theme and color scheme',
       icon: Palette,
       href: `${root}/appearance`,
+    },
+    {
+      id: 'library',
+      name: 'Library',
+      summary: 'How a file finds its book',
+      icon: File,
+      href: `${root}/library`,
     },
   ];
 }
