@@ -1,3 +1,4 @@
+import type { SourceKind } from './book';
 import { withoutExtension } from '../ingest/entry-path';
 
 type TitleCandidate = { readonly name: string; readonly path: string };
@@ -12,9 +13,10 @@ function firstNonEmpty(...candidates: readonly string[]): string {
   return FALLBACK_TITLE;
 }
 
-function suggestTitle(entries: readonly TitleCandidate[]): string {
+function suggestTitle(sourceKind: SourceKind, entries: readonly TitleCandidate[]): string {
   const first = entries[0];
   if (first === undefined) return FALLBACK_TITLE;
+  if (sourceKind !== 'images') return firstNonEmpty(withoutExtension(first.name));
   const [folder = ''] = first.path.split('/');
   return firstNonEmpty(folder, withoutExtension(first.name));
 }

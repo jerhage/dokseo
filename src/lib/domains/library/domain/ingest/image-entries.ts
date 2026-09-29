@@ -11,25 +11,35 @@ const IMAGE_EXTENSIONS: ReadonlySet<string> = new Set([
   'avif',
 ]);
 
-const JUNK_NAMES: ReadonlySet<string> = new Set(['.ds_store', 'thumbs.db']);
+const JUNK_NAMES: ReadonlySet<string> = new Set(['thumbs.db', 'desktop.ini']);
+
+const JUNK_FOLDER = '__MACOSX';
 
 function isImageEntry(name: string): boolean {
   return IMAGE_EXTENSIONS.has(extensionOf(name));
 }
 
+function isHidden(segment: string): boolean {
+  return segment.startsWith('.') && segment !== '.' && segment !== '..';
+}
+
 function isJunk(name: string): boolean {
-  if (name.split('/').includes('__MACOSX')) return true;
-  const last = basename(name);
-  return last.startsWith('._') || JUNK_NAMES.has(last.toLowerCase());
+  const segments = name.split('/');
+  if (segments.includes(JUNK_FOLDER)) return true;
+  if (segments.some(isHidden)) return true;
+  return JUNK_NAMES.has(basename(name).toLowerCase());
 }
 
 function isDirectory(name: string): boolean {
   return name.endsWith('/');
 }
 
-function selectImageEntries(names: readonly string[]): readonly string[] {
-  const images = names.filter((name) => !isDirectory(name) && !isJunk(name) && isImageEntry(name));
-  return images.toSorted(compareNatural);
+function isPageImage(name: string): boolean {
+  return !isDirectory(name) && !isJunk(name) && isImageEntry(name);
 }
 
-export { isImageEntry, isJunk, selectImageEntries };
+function selectImageEntries(names: readonly string[]): readonly string[] {
+  return names.filter(isPageImage).toSorted(compareNatural);
+}
+
+export { isImageEntry, isJunk, isPageImage, selectImageEntries };

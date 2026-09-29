@@ -40,6 +40,7 @@
   import RemoveBook from './RemoveBook.svelte';
   import ShelfView from './ShelfView.svelte';
   import UploadStrip from './UploadStrip.svelte';
+  import { uploadsInProgressText } from './upload-progress-text';
   import {
     readArrangement,
     saveCollectionView,
@@ -251,7 +252,7 @@
 
     <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
       {#if view.pending !== null}
-        <span class="text-muted" aria-live="polite">1 upload in progress</span>
+        <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.batch)}</span>
       {/if}
       <span class="ms-auto">{space}</span>
       <a

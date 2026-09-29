@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { SourceKind } from '../domain/book/book';
 import {
+  booksLeft,
   uploadCount,
   uploadFraction,
   uploadRemainingSeconds,
@@ -57,4 +58,10 @@ function uploadBatchText(batch: UploadBatch): string | null {
   return `Book ${batch.position.toLocaleString()} of ${batch.total.toLocaleString()}`;
 }
 
-export { uploadBatchText, uploadCountText, uploadStageText };
+function uploadsInProgressText(batch: UploadBatch): string {
+  const left = booksLeft(batch);
+  const noun = left === 1 ? 'upload' : 'uploads';
+  return `${left.toLocaleString()} ${noun} in progress`;
+}
+
+export { uploadBatchText, uploadCountText, uploadStageText, uploadsInProgressText };

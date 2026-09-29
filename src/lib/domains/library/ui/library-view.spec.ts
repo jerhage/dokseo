@@ -575,6 +575,8 @@ describe('LibraryView', () => {
     at(world.reports, 0)?.({ kind: 'covering', imageCount: 12 });
     at(world.opens, 0).settle(ok({ kind: 'added', book: book('one', { title: 'vol-1' }) }));
     await settleMicrotasks();
+    at(world.lists, 0).settle(ok([book('one')]));
+    await settleMicrotasks();
 
     expect(world.uploads.map((files) => files.map((file) => file.name))).toEqual([
       ['vol-1.pdf'],
@@ -587,14 +589,63 @@ describe('LibraryView', () => {
 
     at(world.opens, 1).settle(ok({ kind: 'added', book: book('two', { title: 'vol-2' }) }));
     await settleMicrotasks();
-    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    at(world.lists, 1).settle(ok([book('one'), book('two')]));
     await uploading;
 
-    expect(world.notices.map((notice) => notice.title)).toEqual(['Added vol-1', 'Added vol-2']);
-    expect(world.lists).toHaveLength(1);
+    expect(world.notices).toEqual([{ tone: 'success', title: 'Added 2 books' }]);
+    expect(world.lists).toHaveLength(2);
     expect(view.batch).toEqual({ position: 1, total: 1 });
     expect(view.pending).toBeNull();
     expect(view.busy).toBe(false);
+  });
+
+  it('shows each book of a several-book upload as soon as it is added or matched', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload([chosen('a.pdf'), chosen('b.pdf'), chosen('c.pdf')], world.open);
+    at(world.opens, 0).settle(ok({ kind: 'added', book: book('a') }));
+    await settleMicrotasks();
+    at(world.lists, 0).settle(ok([book('a')]));
+    await settleMicrotasks();
+
+    expect(view.books.map((held) => held.id)).toEqual(['a']);
+    expect(view.busy).toBe(true);
+
+    at(world.opens, 1).settle(ok({ kind: 'already-held', book: book('b') }));
+    await settleMicrotasks();
+    at(world.lists, 1).settle(ok([book('a'), book('b')]));
+    await settleMicrotasks();
+
+    expect(view.books.map((held) => held.id)).toEqual(['a', 'b']);
+
+    at(world.opens, 2).settle(ok({ kind: 'added', book: book('c') }));
+    await settleMicrotasks();
+    at(world.lists, 2).settle(ok([book('a'), book('b'), book('c')]));
+    await uploading;
+
+    expect(view.books.map((held) => held.id)).toEqual(['a', 'b', 'c']);
+    expect(world.notices).toEqual([
+      { tone: 'success', title: 'Added 2 books, 1 already in your library' },
+    ]);
+  });
+
+  it('titles each container in a folder after its own file name while it uploads', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload(
+      [chosen('vol2.pdf', 'Series/vol2.pdf'), chosen('vol1.pdf', 'Series/vol1.pdf')],
+      world.open,
+    );
+    expect(view.pending).toBe('vol1');
+
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await settleMicrotasks();
+    expect(view.pending).toBe('vol2');
+
+    at(world.opens, 1).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
   });
 
   it('passes the loose images beside the containers as one more book', async () => {
@@ -627,19 +678,19 @@ describe('LibraryView', () => {
     await settleMicrotasks();
     at(world.opens, 1).settle(ok({ kind: 'added', book: book('b', { title: 'b' }) }));
     await settleMicrotasks();
+    at(world.lists, 0).settle(ok([book('b')]));
+    await settleMicrotasks();
     at(world.opens, 2).settle(
       err({ kind: 'storage', error: { kind: 'storage-failed', cause: 'disk full' } }),
     );
-    await settleMicrotasks();
-    at(world.lists, 0).settle(ok([book('b')]));
     await uploading;
 
-    expect(world.notices.map(({ tone, title, message }) => ({ tone, title, message }))).toEqual([
-      { tone: 'success', title: 'Added b', message: undefined },
+    expect(world.notices).toEqual([
       {
         tone: 'danger',
         title: 'Could not add 2 of 3 books',
-        message: 'a.pdf could not be read: bad xref · c.cbz: Local storage failed: disk full',
+        message:
+          'Added 1 book · a.pdf could not be read: bad xref · c.cbz: Local storage failed: disk full',
       },
     ]);
     expect(view.books.map((held) => held.id)).toEqual(['b']);

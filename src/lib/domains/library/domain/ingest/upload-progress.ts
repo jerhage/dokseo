@@ -30,6 +30,10 @@ const INSPECTING: UploadStage = { kind: 'inspecting' };
 
 const SINGLE_BOOK: UploadBatch = { position: 1, total: 1 };
 
+function booksLeft(batch: UploadBatch): number {
+  return Math.max(1, batch.total - batch.position + 1);
+}
+
 function uploadCount(stage: UploadStage): UploadCount | null {
   return match(stage)
     .with({ kind: 'inspecting' }, () => null)
@@ -67,5 +71,5 @@ function uploadRemainingSeconds(stage: UploadStage): number | null {
   return Math.max(1, Math.ceil(remaining / 1000));
 }
 
-export { INSPECTING, SINGLE_BOOK, uploadCount, uploadFraction, uploadRemainingSeconds };
+export { INSPECTING, SINGLE_BOOK, booksLeft, uploadCount, uploadFraction, uploadRemainingSeconds };
 export type { UploadBatch, UploadStage, UploadReport, SourceWriteReport, UploadCount };

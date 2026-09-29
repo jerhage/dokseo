@@ -95,6 +95,14 @@ describe('detectSourceKind', () => {
   it('does not treat a directory entry as a container', () => {
     expect(detectSourceKind(['chapter.zip/'])).toBe(null);
   });
+
+  it('returns null for a lone resource fork that looks like a container', () => {
+    expect(detectSourceKind(['Blame/._vol1.pdf'])).toBe(null);
+  });
+
+  it('returns null when the only images are junk', () => {
+    expect(detectSourceKind(['._page1.jpg', '__MACOSX/page2.jpg', '.hidden.png'])).toBe(null);
+  });
 });
 
 function entry(name: string, webkitRelativePath = ''): UploadEntry {
@@ -201,6 +209,18 @@ describe('splitUpload', () => {
       entry('._vol1.pdf', 'Blame/._vol1.pdf'),
       entry('vol1.pdf', 'Blame/vol1.pdf'),
       entry('vol2.zip', '__MACOSX/Blame/vol2.zip'),
+    ];
+
+    expect(shapeOf(splitUpload(upload))).toEqual([['pdf', 'Blame/vol1.pdf']]);
+  });
+
+  it('makes no images book of a folder whose only images are junk', () => {
+    const upload = [
+      entry('vol1.pdf', 'Blame/vol1.pdf'),
+      entry('._page1.jpg', 'Blame/._page1.jpg'),
+      entry('page2.jpg', 'Blame/__MACOSX/page2.jpg'),
+      entry('.cover.png', 'Blame/.cover.png'),
+      entry('.DS_Store', 'Blame/.DS_Store'),
     ];
 
     expect(shapeOf(splitUpload(upload))).toEqual([['pdf', 'Blame/vol1.pdf']]);

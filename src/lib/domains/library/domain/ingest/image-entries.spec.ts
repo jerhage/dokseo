@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isImageEntry, selectImageEntries } from './image-entries';
+import { isImageEntry, isJunk, isPageImage, selectImageEntries } from './image-entries';
 
 describe('isImageEntry', () => {
   it('accepts every supported extension in lower case', () => {
@@ -71,6 +71,16 @@ describe('selectImageEntries', () => {
     ).toEqual([]);
   });
 
+  it('rejects a hidden image file and anything inside a hidden folder', () => {
+    expect(selectImageEntries(['.cover.jpg', 'vol1/.thumbs/page1.jpg', 'vol1/page1.jpg'])).toEqual([
+      'vol1/page1.jpg',
+    ]);
+  });
+
+  it('keeps an image whose path starts at the current folder', () => {
+    expect(selectImageEntries(['./page1.jpg'])).toEqual(['./page1.jpg']);
+  });
+
   it('rejects a directory entry that ends in a slash', () => {
     expect(selectImageEntries(['vol1/', 'weird.jpg/', 'vol1/page1.jpg'])).toEqual([
       'vol1/page1.jpg',
@@ -102,5 +112,35 @@ describe('selectImageEntries', () => {
     const names = ['b.jpg', 'a.jpg'];
     selectImageEntries(names);
     expect(names).toEqual(['b.jpg', 'a.jpg']);
+  });
+});
+
+describe('isJunk', () => {
+  it('names every macOS and Windows leftover as junk, wherever it sits', () => {
+    const junk = [
+      '._vol1.pdf',
+      'Blame/._page1.jpg',
+      '__MACOSX/Blame/page1.jpg',
+      '.DS_Store',
+      'Blame/.DS_Store',
+      'Thumbs.db',
+      'Blame/desktop.ini',
+      'Blame/Desktop.ini',
+      '.hidden.cbz',
+      'Blame/.cache/page1.jpg',
+    ];
+    expect(junk.filter((name) => !isJunk(name))).toEqual([]);
+  });
+
+  it('passes an ordinary file, a dotted name and a relative path', () => {
+    const kept = ['vol1.pdf', 'Blame/page1.jpg', 'Blame/vol.1.cbz', './page1.jpg', '../page1.jpg'];
+    expect(kept.filter(isJunk)).toEqual([]);
+  });
+});
+
+describe('isPageImage', () => {
+  it('passes an image and rejects junk, a directory and a non-image', () => {
+    const names = ['page1.jpg', '._page1.jpg', 'page1.jpg/', 'notes.txt', '.page2.png'];
+    expect(names.filter(isPageImage)).toEqual(['page1.jpg']);
   });
 });

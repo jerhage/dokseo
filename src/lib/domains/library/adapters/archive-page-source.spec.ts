@@ -129,6 +129,25 @@ afterEach(() => {
 });
 
 describe('openArchivePageSource', () => {
+  it('lists no junk entry of a ZIP as a page', async () => {
+    const writer = new ZipWriter(new BlobWriter('application/zip'));
+    for (const name of [
+      '001.jpg',
+      '._001.jpg',
+      '__MACOSX/._001.jpg',
+      '.cover.jpg',
+      '.thumbnails/001.jpg',
+      '002.jpg',
+    ]) {
+      await writer.add(name, new TextReader(name), { level: 0 });
+    }
+    const junky = await openArchivePageSource(await writer.close());
+    if (!junky.ok) throw new Error('the archive could not be opened');
+    using source = junky.value;
+
+    expect(source.count).toBe(2);
+  });
+
   it('hands back an encoded picture without decoding the entry', async () => {
     using source = await opened();
 

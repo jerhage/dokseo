@@ -1,6 +1,6 @@
 import type { SourceKind } from '../book/book';
 import { extensionOf } from './entry-path';
-import { isImageEntry, isJunk } from './image-entries';
+import { isJunk, isPageImage } from './image-entries';
 import { compareNatural } from './natural-order';
 
 type UploadEntry = {
@@ -30,11 +30,11 @@ function containerKind(name: string): ContainerKind | null {
 
 function detectSourceKind(names: readonly string[]): SourceKind | null {
   const [single] = names;
-  if (names.length === 1 && single !== undefined) {
+  if (names.length === 1 && single !== undefined && !isJunk(single)) {
     const only = containerKind(single);
     if (only !== null) return only;
   }
-  if (names.some(isImageEntry)) return 'images';
+  if (names.some(isPageImage)) return 'images';
   return null;
 }
 
@@ -60,7 +60,7 @@ function splitUpload<F extends UploadEntry>(files: readonly F[]): readonly Uploa
   const books = containers
     .toSorted((a, b) => compareNatural(pathOf(a.file), pathOf(b.file)))
     .map(({ file, sourceKind }): UploadBook<F> => ({ sourceKind, files: [file] }));
-  if (!rest.some((file) => isImageEntry(pathOf(file)))) return books;
+  if (!rest.some((file) => isPageImage(pathOf(file)))) return books;
 
   return [...books, { sourceKind: 'images', files: rest }];
 }

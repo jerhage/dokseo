@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { INSPECTING, uploadCount, uploadFraction, uploadRemainingSeconds } from './upload-progress';
+import {
+  INSPECTING,
+  booksLeft,
+  uploadCount,
+  uploadFraction,
+  uploadRemainingSeconds,
+} from './upload-progress';
 import type { UploadStage } from './upload-progress';
 
 function storing(over: Partial<Extract<UploadStage, { kind: 'storing' }>> = {}): UploadStage {
@@ -108,5 +114,16 @@ describe('uploadRemainingSeconds', () => {
         storing({ writtenBytes: 99_000_000, totalBytes: 100_000_000, elapsedMs: 1000 }),
       ),
     ).toBe(1);
+  });
+});
+
+describe('booksLeft', () => {
+  it('counts the current book and every book after it', () => {
+    expect(booksLeft({ position: 1, total: 3 })).toBe(3);
+    expect(booksLeft({ position: 3, total: 3 })).toBe(1);
+  });
+
+  it('never counts fewer than the one book in hand', () => {
+    expect(booksLeft({ position: 4, total: 3 })).toBe(1);
   });
 });

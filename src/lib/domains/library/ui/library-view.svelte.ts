@@ -10,6 +10,7 @@ import type { SourceBuildError } from '../domain/ingest/source-builder';
 import { suggestTitle } from '../domain/book/title';
 import { describeIngestLimit } from '../domain/ingest/ingest-limits';
 import { splitUpload } from '../domain/ingest/source-detection';
+import type { UploadBook } from '../domain/ingest/source-detection';
 import { uploadName } from '../domain/ingest/upload-name';
 import { INSPECTING, SINGLE_BOOK } from '../domain/ingest/upload-progress';
 import type { UploadBatch, UploadStage } from '../domain/ingest/upload-progress';
@@ -19,6 +20,8 @@ import { bookMatchingChosen } from './book-matching.svelte';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
 import { onShelf } from './library-shelves';
+import { uploadSummary } from './upload-summary';
+import type { UploadTally } from './upload-summary';
 import type { Shelf } from './library-shelves';
 
 type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -30,15 +33,6 @@ type OpenBook = (id: BookId) => void;
 type Mark = 'finished' | 'unread';
 
 type FailedBook = { readonly name: string; readonly error: OpenFileError };
-
-type UploadFailures =
-  | { readonly kind: 'none' }
-  | { readonly kind: 'the-only-book'; readonly error: OpenFileError }
-  | {
-      readonly kind: 'some-books';
-      readonly failed: readonly FailedBook[];
-      readonly total: number;
-    };
 
 const UPLOAD_FAILED = 'Could not add that upload';
 
@@ -123,37 +117,25 @@ function describeFailedBook(failed: FailedBook): string {
     .otherwise((error) => `${failed.name}: ${describeOpenFileError(error)}`);
 }
 
-function uploadFailures(failed: readonly FailedBook[], total: number): UploadFailures {
-  const [only] = failed;
-  if (only === undefined) return { kind: 'none' };
-  if (total === 1) return { kind: 'the-only-book', error: only.error };
-  return { kind: 'some-books', failed, total };
+function titleOf(book: UploadBook<File>): string {
+  return suggestTitle(
+    book.sourceKind,
+    book.files.map((file) => ({ name: file.name, path: file.webkitRelativePath })),
+  );
 }
 
-function failuresNotice(failures: UploadFailures): Notice | null {
-  return match(failures)
-    .returnType<Notice | null>()
-    .with({ kind: 'none' }, () => null)
-    .with({ kind: 'the-only-book' }, ({ error }) => ({
-      tone: 'danger',
-      title: UPLOAD_FAILED,
-      message: describeOpenFileError(error),
-    }))
-    .with({ kind: 'some-books' }, ({ failed, total }) => ({
-      tone: 'danger',
-      title: `Could not add ${failed.length} of ${total} books`,
-      message: failed.map(describeFailedBook).join(' · '),
-    }))
-    .exhaustive();
+function nameOf(book: UploadBook<File>): string {
+  const name = uploadName(book.files);
+  return name.length > 0 ? name : titleOf(book);
 }
 
-function titleOf(files: readonly File[]): string {
-  return suggestTitle(files.map((file) => ({ name: file.name, path: file.webkitRelativePath })));
-}
-
-function nameOf(files: readonly File[]): string {
-  const name = uploadName(files);
-  return name.length > 0 ? name : titleOf(files);
+function tallyOf(opened: readonly OpenedUpload[], failed: readonly FailedBook[]): UploadTally {
+  const added = opened.filter((upload) => upload.kind === 'added').length;
+  return {
+    added,
+    held: opened.length - added,
+    failures: failed.map(describeFailedBook),
+  };
 }
 
 function revoke(urls: Iterable<string>): void {
@@ -228,23 +210,26 @@ class LibraryView {
     }
     this.busy = true;
     const matching = bookMatchingChosen();
+    const opened: OpenedUpload[] = [];
     const failed: FailedBook[] = [];
-    let added = false;
+    let lastBookOpened = false;
 
     try {
       for (const [index, book] of books.entries()) {
-        this.pending = titleOf(book.files);
+        this.pending = titleOf(book);
         this.progress = INSPECTING;
         this.batch = { position: index + 1, total: books.length };
-        const opened = await this.#container.library.openFile(book.files, matching, (stage) => {
+        const outcome = await this.#container.library.openFile(book.files, matching, (stage) => {
           this.progress = stage;
         });
-        if (!opened.ok) {
-          failed.push({ name: nameOf(book.files), error: opened.error });
+        if (!outcome.ok) {
+          failed.push({ name: nameOf(book), error: outcome.error });
           continue;
         }
-        added = true;
-        this.#notify(uploadNotice(opened.value, openBook));
+        opened.push(outcome.value);
+        if (books.length === 1) this.#notify(uploadNotice(outcome.value, openBook));
+        lastBookOpened = index === books.length - 1;
+        if (!lastBookOpened) await this.load();
       }
     } finally {
       this.busy = false;
@@ -253,9 +238,8 @@ class LibraryView {
       this.batch = SINGLE_BOOK;
     }
 
-    const notice = failuresNotice(uploadFailures(failed, books.length));
-    if (notice !== null) this.#notify(notice);
-    if (added) await this.load();
+    if (lastBookOpened) await this.load();
+    this.#announceUpload(books.length, opened, failed);
   }
 
   async remove(id: BookId): Promise<ChangeOutcome> {
@@ -358,6 +342,20 @@ class LibraryView {
 
     await this.load();
     return marked;
+  }
+
+  #announceUpload(
+    bookCount: number,
+    opened: readonly OpenedUpload[],
+    failed: readonly FailedBook[],
+  ): void {
+    if (bookCount === 1) {
+      const [only] = failed;
+      if (only !== undefined) this.#fail(UPLOAD_FAILED, describeOpenFileError(only.error));
+      return;
+    }
+    const summary = uploadSummary(tallyOf(opened, failed));
+    if (summary !== null) this.#notify(summary);
   }
 
   #fail(title: string, message: string): void {

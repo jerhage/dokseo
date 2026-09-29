@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { INSPECTING, SINGLE_BOOK } from '../domain/ingest/upload-progress';
 import type { UploadStage } from '../domain/ingest/upload-progress';
-import { uploadBatchText, uploadCountText, uploadStageText } from './upload-progress-text';
+import {
+  uploadBatchText,
+  uploadCountText,
+  uploadStageText,
+  uploadsInProgressText,
+} from './upload-progress-text';
 
 function storing(over: Partial<Extract<UploadStage, { kind: 'storing' }>> = {}): UploadStage {
   return {
@@ -87,5 +92,23 @@ describe('uploadBatchText', () => {
 
   it('states which book of how many is being added', () => {
     expect(uploadBatchText({ position: 2, total: 3 })).toBe('Book 2 of 3');
+  });
+});
+
+describe('uploadsInProgressText', () => {
+  it('counts a single-book upload as one upload', () => {
+    expect(uploadsInProgressText(SINGLE_BOOK)).toBe('1 upload in progress');
+  });
+
+  it('counts the books still to add, the current one included, falling as each finishes', () => {
+    expect(
+      [1, 2, 3, 4, 5].map((position) => uploadsInProgressText({ position, total: 5 })),
+    ).toEqual([
+      '5 uploads in progress',
+      '4 uploads in progress',
+      '3 uploads in progress',
+      '2 uploads in progress',
+      '1 upload in progress',
+    ]);
   });
 });

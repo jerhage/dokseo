@@ -101,7 +101,7 @@ async function buildFrom(
   const opened = await pagesOf(sourceKind, source.value);
   if (!opened.ok) return opened;
 
-  const suggestedTitle = suggestTitle(files.map(titleCandidate));
+  const suggestedTitle = suggestTitle(sourceKind, files.map(titleCandidate));
   if (opened.value.kind === 'unpaged') {
     return ok({
       blob: source.value,
