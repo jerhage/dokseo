@@ -139,6 +139,10 @@
     return marquee?.dragging() ?? false;
   }
 
+  export function followScroll(by: Point): void {
+    marquee?.followScroll(by);
+  }
+
   export function reset(): void {
     marquee?.reset();
     captured = null;

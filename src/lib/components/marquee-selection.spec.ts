@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  NOT_SCROLLED,
+  anchorOnScreen,
+  anchoredRect,
   drawsWith,
   endsInClick,
   marqueeBox,
   marqueeEnd,
   marqueePress,
   marqueeRect,
+  scrolledFurther,
   stayedPut,
 } from './marquee-selection';
 import type { MarqueePressFacts } from './marquee-selection';
@@ -261,5 +265,54 @@ describe('marqueeBox', () => {
       marqueeBox({ x: 10, y: 10 }, { x: 10, y: 60 }, { x: 0, y: 0 }),
       marqueeBox({ x: 10, y: 10 }, { x: 60, y: 10 }, { x: 0, y: 0 }),
     ]).toEqual([null, null]);
+  });
+});
+
+describe('scrolledFurther', () => {
+  it('adds each scroll to the distance travelled so far', () => {
+    const once = scrolledFurther(NOT_SCROLLED, { x: 0, y: 120 });
+
+    expect(scrolledFurther(once, { x: -30, y: 80 })).toEqual({ x: -30, y: 200 });
+  });
+
+  it('ignores a scroll that is not a finite distance', () => {
+    expect(scrolledFurther({ x: 5, y: 40 }, { x: 0, y: Number.NaN })).toEqual({ x: 5, y: 40 });
+  });
+});
+
+describe('anchorOnScreen', () => {
+  it('moves the anchor up the screen by the distance scrolled down', () => {
+    expect(anchorOnScreen({ x: 200, y: 300 }, { x: 10, y: 500 })).toEqual({ x: 190, y: -200 });
+  });
+
+  it('leaves the anchor where it was pressed before any scroll', () => {
+    expect(anchorOnScreen({ x: 200, y: 300 }, NOT_SCROLLED)).toEqual({ x: 200, y: 300 });
+  });
+});
+
+describe('anchoredRect', () => {
+  it('spans from the scrolled anchor to the pointer, taller than the screen', () => {
+    expect(anchoredRect({ x: 100, y: 400 }, { x: 0, y: 1500 }, { x: 300, y: 700 })).toEqual({
+      x: 100,
+      y: -1100,
+      width: 200,
+      height: 1800,
+    });
+  });
+
+  it('flips when a scroll up carries the anchor below the pointer', () => {
+    expect(anchoredRect({ x: 100, y: 200 }, { x: 0, y: -600 }, { x: 300, y: 100 })).toEqual({
+      x: 100,
+      y: 100,
+      width: 200,
+      height: 700,
+    });
+  });
+
+  it('matches the plain rect when nothing has scrolled', () => {
+    const from = { x: 40, y: 60 };
+    const to = { x: 10, y: 200 };
+
+    expect(anchoredRect(from, NOT_SCROLLED, to)).toEqual(marqueeRect(from, to));
   });
 });

@@ -147,6 +147,19 @@ function stripWindow(
     : { first: shown.first - forward, last: shown.last + backward };
 }
 
+function windowReaching(
+  layout: readonly SliceLayout[],
+  range: VisibleRange,
+  pinned: number | null,
+): VisibleRange {
+  if (pinned === null || !Number.isFinite(pinned) || range.last < range.first) return range;
+
+  const at = rangeBetween(layout, pinned, pinned);
+  if (at.last < at.first) return range;
+
+  return { first: Math.min(range.first, at.first), last: Math.max(range.last, at.last) };
+}
+
 function spacersFor(
   layout: readonly SliceLayout[],
   range: VisibleRange,
@@ -269,6 +282,7 @@ export {
   visibleRange,
   travelBetween,
   stripWindow,
+  windowReaching,
   spacersFor,
   positionAtScroll,
   shownThroughAtScroll,

@@ -20,6 +20,7 @@ import {
   stripWindow,
   travelBetween,
   visibleRange,
+  windowReaching,
   windowScrollTop,
 } from './strip';
 import type { SliceLayout } from './strip';
@@ -310,6 +311,45 @@ describe('stripWindow', () => {
     const range = stripWindow(layout, stripHeight(layout) + 10_000, SCREEN, 'up');
 
     expect(range.last).toBeLessThan(range.first);
+  });
+});
+
+describe('windowReaching', () => {
+  const layout = layOutStrip(unmeasured(40), WIDTH);
+
+  it('stretches the window up to the slice holding a pinned point far above it', () => {
+    expect(windowReaching(layout, { first: 20, last: 24 }, ASSUMED_HEIGHT * 3 + 10)).toEqual({
+      first: 3,
+      last: 24,
+    });
+  });
+
+  it('stretches the window down to the slice holding a pinned point below it', () => {
+    expect(windowReaching(layout, { first: 20, last: 24 }, ASSUMED_HEIGHT * 30 + 10)).toEqual({
+      first: 20,
+      last: 30,
+    });
+  });
+
+  it('keeps the window when the pinned point already lies inside it', () => {
+    expect(windowReaching(layout, { first: 20, last: 24 }, ASSUMED_HEIGHT * 22 + 10)).toEqual({
+      first: 20,
+      last: 24,
+    });
+  });
+
+  it('keeps the window when nothing is pinned or the point lies past the strip', () => {
+    const range = { first: 20, last: 24 };
+
+    expect([
+      windowReaching(layout, range, null),
+      windowReaching(layout, range, Number.NaN),
+      windowReaching(layout, range, ASSUMED_HEIGHT * 50),
+    ]).toEqual([range, range, range]);
+  });
+
+  it('leaves an empty window empty', () => {
+    expect(windowReaching(layout, { first: 0, last: -1 }, 10)).toEqual({ first: 0, last: -1 });
   });
 });
 

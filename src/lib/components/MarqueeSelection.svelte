@@ -1,11 +1,14 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import {
+    NOT_SCROLLED,
+    anchorOnScreen,
+    anchoredRect,
     endsInClick,
     marqueeBox,
     marqueeEnd,
     marqueePress,
-    marqueeRect,
+    scrolledFurther,
     stayedPut,
   } from './marquee-selection';
   import type {
@@ -61,6 +64,7 @@
   let corner = $state.raw<MarqueePoint | null>(null);
   let anchor = $state.raw<MarqueePoint | null>(null);
   let pointer = $state.raw<MarqueePoint | null>(null);
+  let travelled = $state.raw<MarqueePoint>(NOT_SCROLLED);
   let held = $state<number | null>(null);
   let kept = $state.raw<MarqueeRect | null>(null);
   let watch = $state.raw<Watch | null>(null);
@@ -71,7 +75,7 @@
     const origin = corner;
     if (from === null || to === null || origin === null) return null;
 
-    return marqueeBox(from, to, origin);
+    return marqueeBox(anchorOnScreen(from, travelled), to, origin);
   });
 
   function pointAt(event: PointerEvent): MarqueePoint {
@@ -93,7 +97,7 @@
 
   function drawTo(from: MarqueePoint, to: MarqueePoint): void {
     pointer = to;
-    ondraw?.(marqueeRect(from, to));
+    ondraw?.(anchoredRect(from, travelled, to));
   }
 
   function stopDrag(): void {
@@ -108,6 +112,7 @@
     const placed = layer.getBoundingClientRect();
     corner = { x: placed.x, y: placed.y };
     anchor = from;
+    travelled = NOT_SCROLLED;
     held = id;
     kept = null;
     onstart?.();
@@ -128,7 +133,7 @@
     }
 
     const surface = within;
-    const from = anchor;
+    const from = anchor === null ? null : anchorOnScreen(anchor, travelled);
     stopDrag();
     if (surface === null || from === null) {
       onrefuse?.({
@@ -146,6 +151,15 @@
 
   export function dragging(): boolean {
     return held !== null;
+  }
+
+  export function followScroll(by: MarqueePoint): void {
+    const from = anchor;
+    const to = pointer;
+    if (held === null || from === null) return;
+
+    travelled = scrolledFurther(travelled, by);
+    if (to !== null) drawTo(from, to);
   }
 
   export function keep(selection: MarqueeRect): void {

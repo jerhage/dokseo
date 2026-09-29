@@ -29,10 +29,12 @@
     stripHeight,
     stripWindow,
     travelBetween,
+    windowReaching,
     windowScrollTop,
   } from '../domain/strip';
   import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
+  import { edgeScrollBy, edgeSpeed } from './edge-scroll';
   import { heldHints, hintsToShow, inputKind, readerHints } from './gesture-hint';
   import type { GestureHint } from './gesture-hint';
   import { handlesOwnKeys } from './keyboard';
@@ -94,6 +96,7 @@
   let frameWidth = $state(0);
   let frameHeight = $state(0);
   let scrolled = $state(0);
+  let scrolledLeft = 0;
   let zoom = $state(FIT_WIDTH_ZOOM);
   let travel = $state<Travel>('down');
   let hold = $state.raw<Hold>({
@@ -109,6 +112,10 @@
   let written: { readonly top: number; readonly left: number } | null = null;
   let reading = $state.raw<StripAnchor | null>(null);
   let lastPointer = '';
+  let pinned = $state<number | null>(null);
+  let edgePointerY: number | null = null;
+  let edgeFrame: number | null = null;
+  let edgeLastFrame: number | null = null;
 
   const coarse = window.matchMedia('(pointer: coarse)').matches;
   const gestures = new GestureFeed(feed);
@@ -116,12 +123,17 @@
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
   const height = $derived(stripHeight(layout));
+  const dragPin = $derived((selection?.dragging() ?? false) ? pinned : null);
   const range = $derived(
-    stripWindow(
+    windowReaching(
       layout,
-      windowScrollTop(layout, width, reading, scrolled, hold),
-      frameHeight,
-      travel,
+      stripWindow(
+        layout,
+        windowScrollTop(layout, width, reading, scrolled, hold),
+        frameHeight,
+        travel,
+      ),
+      dragPin,
     ),
   );
   const spacers = $derived(spacersFor(layout, range, snapToDevicePixels));
@@ -176,6 +188,7 @@
     element.scrollLeft = left;
     written = { top: element.scrollTop, left: element.scrollLeft };
     scrolled = element.scrollTop;
+    scrolledLeft = element.scrollLeft;
   }
 
   function zoomBy(factor: number, x: number, y: number): void {
@@ -235,6 +248,7 @@
       .with({ kind: 'select-begin' }, ({ from, to }) => {
         const touch = gestures.state;
         if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
+        pinDrag(from.y);
       })
       .with({ kind: 'select-move' }, ({ at }) => selection?.extendTo(at))
       .with({ kind: 'select-end' }, ({ at }) => selection?.endAt(at))
@@ -255,6 +269,52 @@
     feed(gestures.sample(kind, event));
   }
 
+  function pinDrag(pointerY: number): void {
+    const element = scroller;
+    if (element === null || !(selection?.dragging() ?? false)) return;
+
+    pinned = element.scrollTop + pointerY - element.getBoundingClientRect().top;
+  }
+
+  function stopEdgeScroll(): void {
+    if (edgeFrame !== null) cancelAnimationFrame(edgeFrame);
+    edgeFrame = null;
+    edgeLastFrame = null;
+    edgePointerY = null;
+  }
+
+  function edgeScrollStep(now: number): void {
+    edgeFrame = null;
+    const element = scroller;
+    const pointerY = edgePointerY;
+    if (element === null || pointerY === null || !(selection?.dragging() ?? false)) {
+      stopEdgeScroll();
+      return;
+    }
+
+    const box = element.getBoundingClientRect();
+    const speed = edgeSpeed(pointerY, { top: box.top, bottom: box.bottom });
+    if (speed === 0) {
+      stopEdgeScroll();
+      return;
+    }
+
+    const last = edgeLastFrame;
+    edgeLastFrame = now;
+    if (last !== null) element.scrollTop += edgeScrollBy(speed, now - last);
+    edgeFrame = requestAnimationFrame(edgeScrollStep);
+  }
+
+  function followEdge(event: PointerEvent): void {
+    if (!(selection?.dragging() ?? false)) {
+      stopEdgeScroll();
+      return;
+    }
+
+    edgePointerY = event.clientY;
+    if (edgeFrame === null) edgeFrame = requestAnimationFrame(edgeScrollStep);
+  }
+
   function onpointerdown(event: PointerEvent): void {
     lastPointer = event.pointerType;
     if (event.pointerType === 'touch') {
@@ -263,18 +323,18 @@
     }
 
     selection?.pointerdown(event);
+    pinDrag(event.clientY);
   }
 
   function onpointermove(event: PointerEvent): void {
-    if (event.pointerType === 'touch') {
-      feedTouch('move', event);
-      return;
-    }
+    if (event.pointerType === 'touch') feedTouch('move', event);
+    else selection?.pointermove(event);
 
-    selection?.pointermove(event);
+    followEdge(event);
   }
 
   function onpointerup(event: PointerEvent): void {
+    stopEdgeScroll();
     if (event.pointerType === 'touch') {
       feedTouch('up', event);
       return;
@@ -284,6 +344,7 @@
   }
 
   function onpointercancel(event: PointerEvent): void {
+    stopEdgeScroll();
     if (event.pointerType === 'touch') {
       feedTouch('cancel', event);
       return;
@@ -346,6 +407,8 @@
 
     const ours = written;
     written = null;
+    const by = { x: left - scrolledLeft, y: top - scrolled };
+    scrolledLeft = left;
     if (
       ours !== null &&
       Math.abs(top - ours.top) < SETTLED_PX &&
@@ -357,7 +420,9 @@
 
     travel = travelBetween(scrolled, top, travel);
     scrolled = top;
-    selection?.reset();
+    const layer = selection;
+    if (layer !== null && layer.dragging()) layer.followScroll(by);
+    else layer?.reset();
     hold = holdAt(top, left);
     reading = anchorOf(layout, width, hold.position.index);
     moveTo(
@@ -369,15 +434,11 @@
   function onwheel(event: WheelEvent): void {
     const element = scroller;
     if (element === null) return;
-
-    if (selection?.dragging() ?? false) {
-      event.preventDefault();
-      return;
-    }
-
     if (!event.ctrlKey && !event.metaKey) return;
 
     event.preventDefault();
+    if (selection?.dragging() ?? false) return;
+
     const box = element.getBoundingClientRect();
     const dy = wheelPixels(event.deltaY, event.deltaMode, box.height);
 
@@ -413,7 +474,10 @@
     }
   }
 
-  onDestroy(() => gestures.stop());
+  onDestroy(() => {
+    gestures.stop();
+    stopEdgeScroll();
+  });
 
   $effect(() => {
     const element = scroller;

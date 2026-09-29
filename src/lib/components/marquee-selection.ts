@@ -48,6 +48,8 @@ type MarqueePress =
 
 const EMPTY_RECT: MarqueeRect = { x: 0, y: 0, width: 0, height: 0 };
 
+const NOT_SCROLLED: MarqueePoint = { x: 0, y: 0 };
+
 function isFinitePoint(point: MarqueePoint): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
@@ -63,6 +65,24 @@ function marqueeRect(from: MarqueePoint, to: MarqueePoint): MarqueeRect {
     width: Math.abs(width),
     height: Math.abs(height),
   };
+}
+
+function scrolledFurther(travelled: MarqueePoint, by: MarqueePoint): MarqueePoint {
+  if (!isFinitePoint(by)) return travelled;
+
+  return { x: travelled.x + by.x, y: travelled.y + by.y };
+}
+
+function anchorOnScreen(anchor: MarqueePoint, travelled: MarqueePoint): MarqueePoint {
+  return { x: anchor.x - travelled.x, y: anchor.y - travelled.y };
+}
+
+function anchoredRect(
+  anchor: MarqueePoint,
+  travelled: MarqueePoint,
+  pointer: MarqueePoint,
+): MarqueeRect {
+  return marqueeRect(anchorOnScreen(anchor, travelled), pointer);
 }
 
 function within(rect: MarqueeRect, limit: number): boolean {
@@ -119,7 +139,19 @@ function endsInClick(end: MarqueeEnd): boolean {
     .exhaustive();
 }
 
-export { drawsWith, endsInClick, marqueeBox, marqueeEnd, marqueePress, marqueeRect, stayedPut };
+export {
+  NOT_SCROLLED,
+  anchorOnScreen,
+  anchoredRect,
+  drawsWith,
+  endsInClick,
+  marqueeBox,
+  marqueeEnd,
+  marqueePress,
+  marqueeRect,
+  scrolledFurther,
+  stayedPut,
+};
 export type {
   MarqueeBox,
   MarqueeEnd,
