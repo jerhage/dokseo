@@ -412,6 +412,20 @@ class ReaderView {
     const layout = imageLayoutKind(book.layoutKind);
     this.groups =
       layout === null ? NO_GROUPS : pairPages(sizes, effectivePairing(book.pagePairing, layout));
+    this.#keepShownThroughCurrent(book);
+  }
+
+  #keepShownThroughCurrent(book: ReaderBook): void {
+    if (imageLayoutKind(book.layoutKind) !== 'paged') return;
+    const recorded = this.#saving?.place ?? this.#placed;
+    const at = this.position.index;
+    if (recorded === null || recorded.index !== at) return;
+
+    const showing = this.#placeShowing(at);
+    if (samePlace(showing, recorded)) return;
+    const readingAt = (place: ImagePlace): boolean =>
+      place.index !== 0 || showsTheEnd(place, book.imageCount);
+    if (readingAt(showing) || readingAt(recorded)) this.#scheduleSave(book.id, showing);
   }
 
   #opensOnAnUnreadEnd(book: ReaderBook, saved: ReadingPlace, showing: ImagePlace): boolean {

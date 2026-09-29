@@ -1070,6 +1070,67 @@ describe('reading to the end', () => {
     expect(world.edits).toEqual([]);
   });
 
+  it('saves the smaller group at once when a wide page splits the spread it shows', async () => {
+    const world = fakes({ position: imagePlace(imageIndex(2), imageIndex(3)) });
+    world.pages.sizes.set(3, LANDSCAPE);
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.pictureAt(imageIndex(3));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(view.visiblePages).toEqual([2]);
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(2)));
+  });
+
+  it('finishes a book at once when a pairing change brings its last page into view', async () => {
+    const world = fakes({ pagePairing: 'single', position: imagePlace(imageIndex(4)) });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setPairing('double');
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(4), imageIndex(5)));
+    expect(showsTheEnd(world.stored.position, 6)).toBe(true);
+  });
+
+  it('corrects a turn still waiting to save when the groups change under it', async () => {
+    const world = fakes();
+    world.pages.sizes.set(3, LANDSCAPE);
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    await view.next();
+
+    await view.pictureAt(imageIndex(3));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(2)));
+  });
+
+  it('takes back the end of a two-page book when its second page turns out wide', async () => {
+    const world = fakes({ imageCount: 2 });
+    world.pages.headers.set(1, LANDSCAPE);
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(view.groups).toEqual([[0], [1]]);
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(0)));
+  });
+
+  it('saves nothing when a regroup changes the first group of a book nobody has read', async () => {
+    const world = fakes({ pagePairing: 'single' });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setPairing('double');
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits.filter((edit) => edit.position !== undefined)).toEqual([]);
+  });
+
   it('saves a place showing the end once a strip shows its short last image', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', imageCount: 5 });
     const view = new ReaderView(world.container, world.notify);
