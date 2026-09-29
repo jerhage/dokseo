@@ -16,8 +16,9 @@
   import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
+  import type { TextAnchor } from '$lib/shared/anchor';
   import { bookId } from '$lib/shared/ids';
-  import type { ImageIndex } from '$lib/shared/ids';
+  import type { BookId, ImageIndex } from '$lib/shared/ids';
   import { glowRegions } from '$lib/shared/image-region';
   import { toastNotify } from '$lib/shared/notice-toast';
   import type { GlowRegion } from '$lib/shared/image-region';
@@ -37,6 +38,11 @@
   function mirror(index: ImageIndex): void {
     const moved = urlWithImageIndex(page.url, index);
     if (moved !== null) replaceState(moved, page.state);
+  }
+
+  function arrive(book: BookId): void {
+    const wanted = passage;
+    if (wanted !== null) flow.arriveAt(book, wanted);
   }
 
   const container = useContainer();
@@ -60,6 +66,10 @@
 
     return glowRegions(anchor.regions, here.at.origin);
   });
+  const passage = $derived.by<TextAnchor | null>(() => {
+    const anchor = here?.at.anchor;
+    return anchor?.kind === 'text' ? anchor : null;
+  });
   const stepping = $derived(here?.stepping ?? null);
   const finding = $derived(found?.query ?? null);
   const books = $derived(
@@ -76,7 +86,7 @@
     const entry = untrack(() => asked);
     untrack(() => {
       void view.open(book, entry);
-      void captures.open(book);
+      void captures.open(book).then(() => arrive(book));
     });
     return () => {
       view.dispose();

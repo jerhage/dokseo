@@ -1,7 +1,7 @@
 import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
-import type { TextQuote } from '$lib/shared/anchor';
+import type { TextAnchor, TextQuote } from '$lib/shared/anchor';
 import { bookId, contentHash } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
@@ -1464,5 +1464,116 @@ describe('FlowView markPassages', () => {
     view.markPassages([SOMEWHERE]);
 
     expect(surfaces.marked).toEqual([]);
+  });
+});
+
+describe('FlowView arriveAt', () => {
+  const PASSAGE: TextAnchor = {
+    kind: 'text',
+    cfi: SOMEWHERE,
+    quote: { exact: '厳重に鍵', prefix: '', suffix: '' },
+  };
+
+  const ELSEWHERE: TextAnchor = { ...PASSAGE, cfi: 'epubcfi(/6/20!/4/2/1:0)' };
+
+  it('takes the open book to the passage a link asked for, and marks it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    expect(surfaces.passages).toEqual([{ cfi: PASSAGE.cfi, quote: PASSAGE.quote }]);
+    expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: PASSAGE.cfi });
+  });
+
+  it('holds a passage asked for before the book opens, and goes there once it has', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+
+    view.arriveAt(book.id, PASSAGE);
+    expect(surfaces.passages).toEqual([]);
+    await view.open(book, surfaces.show);
+    await settled();
+
+    expect(surfaces.passages).toEqual([{ cfi: PASSAGE.cfi, quote: PASSAGE.quote }]);
+  });
+
+  it('holds a passage asked for while the book is still opening', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const gate = held();
+    surfaces.gate = gate.promise;
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    const opening = view.open(book, surfaces.show);
+    await settled();
+
+    view.arriveAt(book.id, PASSAGE);
+    gate.release();
+    await opening;
+    await settled();
+
+    expect(surfaces.passages.map((asked) => asked.cfi)).toEqual([PASSAGE.cfi]);
+  });
+
+  it('leaves a book that opens a passage asked for in another book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+
+    view.arriveAt(bookId('another'), PASSAGE);
+    await view.open(novel(world.place), surfaces.show);
+    await settled();
+
+    expect(surfaces.passages).toEqual([]);
+  });
+
+  it('takes the book there once, however often the same passage is asked for', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+
+    view.arriveAt(book.id, PASSAGE);
+    view.arriveAt(book.id, { ...PASSAGE });
+    await settled();
+
+    expect(surfaces.passages).toHaveLength(1);
+  });
+
+  it('takes the book to a different passage asked for next', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+
+    view.arriveAt(book.id, PASSAGE);
+    view.arriveAt(book.id, ELSEWHERE);
+    await settled();
+
+    expect(surfaces.passages.map((asked) => asked.cfi)).toEqual([PASSAGE.cfi, ELSEWHERE.cfi]);
+  });
+
+  it('takes the book to the same passage again once the book is opened again', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    view.arriveAt(book.id, PASSAGE);
+
+    await view.open(book, surfaces.show);
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    expect(surfaces.passages).toHaveLength(2);
   });
 });

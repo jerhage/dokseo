@@ -1,7 +1,7 @@
 import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import type { TextQuote } from '$lib/shared/anchor';
+import type { TextAnchor, TextQuote } from '$lib/shared/anchor';
 import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
@@ -59,6 +59,11 @@ type PendingSave = {
   readonly id: BookId;
   readonly place: ReadingPlace;
   readonly timer: ReturnType<typeof setTimeout>;
+};
+
+type AskedArrival = {
+  readonly book: BookId;
+  readonly passage: TextAnchor;
 };
 
 const NOT_OPENED: FlowState = { kind: 'idle' };
@@ -138,6 +143,9 @@ class FlowView {
   #placed: ReadingPlace | null = null;
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
+  #arrivedBy: string | null = null;
+  #asked: AskedArrival | null = null;
+  #showing: BookId | null = null;
   #ink: PageInk = INK_FOR_THE_DARK_PAGE;
   #placeFailing = false;
 
@@ -168,6 +176,9 @@ class FlowView {
     this.#release();
     this.state = OPENING;
     this.#marked = NOTHING_ARRIVED_AT;
+    this.#arrivedBy = null;
+    this.#showing = null;
+    if (this.#asked?.book !== book.id) this.#asked = null;
     this.#placed = null;
     this.#placeFailing = false;
     this.location = null;
@@ -234,6 +245,13 @@ class FlowView {
     this.ticks = chapterTicks(surface.ticks);
     this.direction = surface.direction;
     this.state = SHOWING_THE_BOOK;
+    this.#showing = book.id;
+
+    const asked = this.#asked;
+    if (asked === null) return;
+
+    this.#asked = null;
+    this.#arrive(asked.passage);
   }
 
   close(): void {
@@ -241,6 +259,8 @@ class FlowView {
     this.#generation += 1;
     this.#release();
     this.#marked = NOTHING_ARRIVED_AT;
+    this.#arrivedBy = null;
+    this.#showing = null;
     this.state = NOT_OPENED;
     this.location = null;
     this.contents = NO_CONTENTS;
@@ -281,6 +301,15 @@ class FlowView {
     this.notice = passageNotice(arrival);
     this.#marked = passageMark(arrival, this.location?.cfi ?? null);
     surface.mark(this.#passages, this.#marked);
+  }
+
+  arriveAt(book: BookId, passage: TextAnchor): void {
+    if (this.#surface === null || this.#showing !== book) {
+      this.#asked = { book, passage };
+      return;
+    }
+
+    this.#arrive(passage);
   }
 
   markPassages(passages: readonly string[]): void {
@@ -348,6 +377,13 @@ class FlowView {
     }, PLACE_SAVE_DELAY_MS);
 
     this.#saving = { id, place, timer };
+  }
+
+  #arrive(passage: TextAnchor): void {
+    if (this.#arrivedBy === passage.cfi) return;
+
+    this.#arrivedBy = passage.cfi;
+    void this.jumpToPassage(passage.cfi, passage.quote);
   }
 
   #forgetArrival(place: string): void {
