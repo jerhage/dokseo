@@ -9,9 +9,9 @@ const HOW_FAR_IS_NOT_KNOWN: BookProgress = { kind: 'unknown' };
 
 const PAGE_LABEL_DIGITS = 3;
 
-function pagesRead(book: Book, index: ImageIndex): BookProgress {
+function pagesRead(book: Book, shownThrough: ImageIndex): BookProgress {
   const total = Math.max(book.imageCount, 1);
-  const page = Math.min(index + 1, total);
+  const page = Math.min(shownThrough + 1, total);
   const label =
     book.layoutKind === 'continuous'
       ? `${page} / ${book.imageCount} images`
@@ -29,7 +29,7 @@ function textRead(fraction: number | null): BookProgress {
 
 function bookProgress(book: Book): BookProgress {
   const place = book.position;
-  if (place.kind === 'image') return pagesRead(book, place.index);
+  if (place.kind === 'image') return pagesRead(book, place.shownThrough);
 
   return textRead(place.fraction);
 }

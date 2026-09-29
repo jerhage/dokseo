@@ -163,6 +163,15 @@ describe('sortBooks', () => {
     expect(titles(sortBooks(marked, 'progress'))).toEqual(['marked', 'almost']);
   });
 
+  it('ranks a spread book by the last page it showed, not the page it reopens at', () => {
+    const spread = { ...comic('spread', 0, 5), position: imagePlace(imageIndex(3), imageIndex(4)) };
+
+    expect(titles(sortBooks([comic('middle', 3, 5), spread], 'progress'))).toEqual([
+      'spread',
+      'middle',
+    ]);
+  });
+
   it('leaves the given list unchanged', () => {
     sortBooks(books, 'title');
 

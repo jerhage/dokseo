@@ -59,6 +59,18 @@ describe('bookProgress for a book of images', () => {
     expect(bookProgress(paged)).toEqual({ kind: 'known', label: 'p.003 / 3', filled: 100 });
   });
 
+  it('names the last page a finished spread showed and fills the whole bar', () => {
+    const spread = book('paged', 5, imagePlace(imageIndex(3), imageIndex(4)));
+
+    expect(bookProgress(spread)).toEqual({ kind: 'known', label: 'p.005 / 5', filled: 100 });
+  });
+
+  it('counts a strip through the last image whose end it showed', () => {
+    const strip = book('continuous', 40, imagePlace(imageIndex(38), imageIndex(39)));
+
+    expect(bookProgress(strip)).toEqual({ kind: 'known', label: '40 / 40 images', filled: 100 });
+  });
+
   it('fills the whole bar for a book that holds no images at all', () => {
     const broken = book('paged', 0, imagePlace(imageIndex(0)));
 
