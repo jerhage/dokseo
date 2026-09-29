@@ -49,6 +49,7 @@ type Fakes = {
   readonly granted: Set<Language>;
   readonly grants: Language[];
   readonly closes: Language[];
+  readonly opens: Language[];
   readonly notices: Notice[];
   readonly notify: Notify;
 };
@@ -61,6 +62,7 @@ function fakes(granted: readonly Language[] = []): Fakes {
   const calls: Call[] = [];
   const grants: Language[] = [];
   const closes: Language[] = [];
+  const opens: Language[] = [];
   const agreed = new Set(granted);
   const told: Notice[] = [];
   const notify: Notify = (notice) => {
@@ -140,7 +142,8 @@ function fakes(granted: readonly Language[] = []): Fakes {
         Promise.resolve(ok({ model: modelFootprint(language), compute: 'auto' as const })),
       saveRecognizerSetup: unused,
       detectCompute: unused,
-      prepareRecognizer: (_language: Language, notices: RecognitionNotices = {}) => {
+      prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {
+        opens.push(language);
         notices.onSession?.(OPENED_SESSION);
         return Promise.resolve(ok(OPENED_SESSION));
       },
@@ -160,7 +163,7 @@ function fakes(granted: readonly Language[] = []): Fakes {
     },
   };
 
-  return { container, calls, granted: agreed, grants, closes, notices: told, notify };
+  return { container, calls, granted: agreed, grants, closes, opens, notices: told, notify };
 }
 
 const source = {} as PageSource;
@@ -303,6 +306,72 @@ describe('RecognizerView', () => {
     await second;
 
     expect(view.progress).toBeNull();
+  });
+
+  it('warms a second language on the same book', async () => {
+    const world = fakes();
+    const view = new RecognizerView(world.container, world.notify, fixed());
+
+    await view.warm('ja');
+    await view.warm('ko');
+
+    expect(world.opens).toEqual(['ja', 'ko']);
+  });
+
+  it('warms a language once per book', async () => {
+    const world = fakes();
+    const view = new RecognizerView(world.container, world.notify, fixed());
+
+    await view.warm('ja');
+    await view.warm('ja');
+
+    expect(world.opens).toEqual(['ja']);
+  });
+
+  it('closes the recognizer of the old language once and clears its session on a switch', async () => {
+    const world = fakes(['ja', 'ko']);
+    const view = new RecognizerView(world.container, world.notify, fixed());
+    await view.warm('ja');
+
+    const reading = view.read(selection('ko'));
+
+    expect(world.closes).toEqual(['ja']);
+    expect(view.session).toBeNull();
+    expect(view.downloaded).toBe(false);
+
+    (await started(world, 0)).settle(ok(recognizedText('한', null)));
+    await reading;
+
+    expect(world.closes).toEqual(['ja']);
+  });
+
+  it('closes nothing when the language stays the same', async () => {
+    const world = fakes(['ja']);
+    const view = new RecognizerView(world.container, world.notify, fixed());
+    await view.warm('ja');
+
+    const reading = view.read(selection('ja'));
+    (await started(world, 0)).settle(ok(recognizedText('一', null)));
+    await reading;
+
+    expect(world.closes).toEqual([]);
+    expect(view.session).toEqual(OPENED_SESSION);
+  });
+
+  it('closes the recognizer of the old language only once its reading ends', async () => {
+    const world = fakes(['ja', 'ko']);
+    const view = new RecognizerView(world.container, world.notify, fixed());
+    const reading = view.read(selection('ja'));
+    const call = await started(world, 0);
+
+    await view.warm('ko');
+
+    expect(world.closes).toEqual([]);
+
+    call.settle(ok(recognizedText('一', null)));
+    await reading;
+
+    expect(world.closes).toEqual(['ja']);
   });
 
   it('closes the recognizer it opened and forgets the session it reported', async () => {

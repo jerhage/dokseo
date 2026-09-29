@@ -54,6 +54,11 @@ type PendingRecognition = {
   readonly arrangement: Arrangement;
 };
 
+type WarmedFor = {
+  readonly generation: number;
+  readonly language: Language;
+};
+
 class RecognizerView {
   progress = $state.raw<ModelLoad | null>(null);
   session = $state.raw<RecognizerSession | null>(null);
@@ -66,9 +71,10 @@ class RecognizerView {
   #container: Container;
   #notify: Notify;
   #generation: () => number;
-  #warmGeneration = -1;
+  #warmed: WarmedFor | null = null;
   #activeRecognitions = 0;
   #recognizerLanguage: Language | null = null;
+  #retiring = new Set<Language>();
   #pendingRecognition: PendingRecognition | null = null;
   #agreed = new Set<Language>();
   #declined = new Set<Language>();
@@ -95,13 +101,15 @@ class RecognizerView {
 
   async warm(language: Language): Promise<void> {
     const generation = this.#generation();
-    if (this.#warmGeneration === generation) return;
-    this.#warmGeneration = generation;
+    const warmed = this.#warmed;
+    if (warmed !== null && warmed.generation === generation && warmed.language === language) return;
+    this.#warmed = { generation, language };
+    this.#switchTo(language);
 
     const trace = this.#container.beginTrace('engine-warm');
     try {
       const model = await this.#chosenModel(language);
-      if (generation !== this.#generation()) return;
+      if (!this.#stillWarming(generation, language)) return;
       if (model === null) {
         trace.step('stopped', { guard: 'no-model-for-language', language });
         return;
@@ -110,7 +118,7 @@ class RecognizerView {
       const held = await this.#container.recognition
         .readModelStorage(model.modelId)
         .catch(() => null);
-      if (generation !== this.#generation()) return;
+      if (!this.#stillWarming(generation, language)) return;
 
       const snapshot = held !== null && held.ok ? held.value : null;
       this.downloaded = snapshot !== null && isStored(snapshot.report);
@@ -132,6 +140,7 @@ class RecognizerView {
   }
 
   async #openEngine(language: Language, generation: number): Promise<void> {
+    this.#switchTo(language);
     this.opening = true;
     this.engineFailure = null;
     this.#recognizerLanguage = language;
@@ -139,14 +148,14 @@ class RecognizerView {
     try {
       const opened = await this.#container.recognition.prepareRecognizer(language, {
         onProgress: (load) => {
-          if (generation === this.#generation()) this.progress = load;
+          if (this.#serves(generation, language)) this.progress = load;
         },
         onSession: (session) => {
-          if (generation === this.#generation()) this.session = session;
+          if (this.#serves(generation, language)) this.session = session;
         },
       });
 
-      if (generation !== this.#generation()) return;
+      if (!this.#serves(generation, language)) return;
 
       if (opened.ok) {
         this.session = opened.value;
@@ -156,13 +165,48 @@ class RecognizerView {
         this.engineFailure = opened.error.cause;
       }
     } catch (cause) {
-      if (generation === this.#generation()) this.engineFailure = describeCause(cause);
+      if (this.#serves(generation, language)) this.engineFailure = describeCause(cause);
     } finally {
-      if (generation === this.#generation()) {
+      if (this.#serves(generation, language)) {
         this.opening = false;
         if (this.#activeRecognitions === 0) this.progress = null;
       }
     }
+  }
+
+  #stillWarming(generation: number, language: Language): boolean {
+    return generation === this.#generation() && this.#warmed?.language === language;
+  }
+
+  #serves(generation: number, language: Language): boolean {
+    return generation === this.#generation() && this.#recognizerLanguage === language;
+  }
+
+  #switchTo(language: Language): void {
+    this.#retiring.delete(language);
+    const previous = this.#recognizerLanguage;
+    if (previous === null || previous === language) return;
+
+    this.#recognizerLanguage = null;
+    this.session = null;
+    this.progress = null;
+    this.downloaded = false;
+    this.partlyDownloaded = false;
+    this.opening = false;
+    this.engineFailure = null;
+
+    if (this.#activeRecognitions > 0) {
+      this.#retiring.add(previous);
+      return;
+    }
+    void this.#container.recognition.closeRecognizer(previous);
+  }
+
+  #closeRetired(): void {
+    for (const language of this.#retiring) {
+      void this.#container.recognition.closeRecognizer(language);
+    }
+    this.#retiring.clear();
   }
 
   async #chosenModel(language: Language): Promise<ModelFootprint | null> {
@@ -263,6 +307,7 @@ class RecognizerView {
   }
 
   async read(held: PendingRecognition): Promise<Result<RecognizedText, RecognizeRegionError>> {
+    this.#switchTo(held.language);
     this.#recognizerLanguage = held.language;
     this.#activeRecognitions += 1;
 
@@ -274,16 +319,19 @@ class RecognizerView {
         held.arrangement,
         {
           onProgress: (load) => {
-            this.progress = load;
+            if (this.#recognizerLanguage === held.language) this.progress = load;
           },
           onSession: (opened) => {
-            this.session = opened;
+            if (this.#recognizerLanguage === held.language) this.session = opened;
           },
         },
       );
     } finally {
       this.#activeRecognitions -= 1;
-      if (this.#activeRecognitions === 0) this.progress = null;
+      if (this.#activeRecognitions === 0) {
+        this.progress = null;
+        this.#closeRetired();
+      }
     }
   }
 
