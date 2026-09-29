@@ -24,6 +24,7 @@ type Book = {
   readonly pageFit: PageFit;
   readonly sourceKind: SourceKind;
   readonly contentHash: ContentHash;
+  readonly fileName: string;
   readonly imageCount: number;
   readonly addedAt: number;
   readonly position: ReadingPlace;
@@ -53,6 +54,8 @@ type BookEdit = {
   readonly position?: ReadingPlace;
   readonly lastReadAt?: number | null;
   readonly finishedAt?: number | null;
+  readonly contentHash?: ContentHash;
+  readonly fileName?: string;
 };
 
 function editedTitle(book: Book, edit: BookEdit): string {
@@ -75,6 +78,8 @@ function applyEdit(book: Book, edit: BookEdit): Book {
     position: edit.position ?? book.position,
     lastReadAt: edit.lastReadAt === undefined ? book.lastReadAt : edit.lastReadAt,
     finishedAt: edit.finishedAt === undefined ? book.finishedAt : edit.finishedAt,
+    contentHash: edit.contentHash ?? book.contentHash,
+    fileName: edit.fileName ?? book.fileName,
   };
 }
 

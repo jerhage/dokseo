@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { ContentHash } from '$lib/shared/ids';
@@ -9,6 +10,8 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
+import { carriesLegacyHash, DEFAULT_BOOK_MATCHING, joinUpload } from '../domain/book/book-matching';
+import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
@@ -19,6 +22,7 @@ import { languageDeclared } from '../domain/ingest/declared-language';
 import type { EpubPackage } from '../domain/ingest/epub-package';
 import { languageOfTitle } from '../domain/ingest/title-language';
 import { uploadManifest } from '../domain/ingest/upload-manifest';
+import { uploadName } from '../domain/ingest/upload-name';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 
 type OpenFileError =
@@ -36,7 +40,8 @@ type OpenFileDeps = {
   readonly repository: LibraryRepository;
   readonly builder: SourceBuilder;
   readonly inspectEpub: EpubInspector;
-  readonly fingerprint: (blob: Blob) => Promise<string>;
+  readonly partialMd5: (blob: Blob) => Promise<string>;
+  readonly legacyFingerprint: (blob: Blob) => Promise<string>;
   readonly requestPersistence: () => Promise<boolean>;
   readonly now: () => number;
   readonly newId: () => string;
@@ -52,17 +57,68 @@ function hashedPart(files: readonly File[]): Blob {
   return new Blob([uploadManifest(files)]);
 }
 
-async function uploadHash(
-  deps: OpenFileDeps,
-  files: readonly File[],
+async function hashWith(
+  hash: (blob: Blob) => Promise<string>,
+  upload: Blob,
 ): Promise<Result<ContentHash, OpenFileError>> {
   let digest: string;
   try {
-    digest = await deps.fingerprint(hashedPart(files));
+    digest = await hash(upload);
   } catch (cause) {
     return err({ kind: 'fingerprint', cause: describeCause(cause) });
   }
   return ok(contentHash(digest));
+}
+
+async function legacyHashIfHeld(
+  deps: OpenFileDeps,
+  held: readonly Book[],
+  upload: Blob,
+): Promise<Result<ContentHash | null, OpenFileError>> {
+  if (!held.some(carriesLegacyHash)) return ok(null);
+  const legacy = await hashWith(deps.legacyFingerprint, upload);
+  return legacy;
+}
+
+async function uploadIdentity(
+  deps: OpenFileDeps,
+  held: readonly Book[],
+  files: readonly File[],
+): Promise<Result<UploadIdentity, OpenFileError>> {
+  const upload = hashedPart(files);
+  const hashed = await hashWith(deps.partialMd5, upload);
+  if (!hashed.ok) return hashed;
+  const legacy = await legacyHashIfHeld(deps, held, upload);
+  if (!legacy.ok) return legacy;
+  return ok({ contentHash: hashed.value, legacyHash: legacy.value, fileName: uploadName(files) });
+}
+
+async function rejoinLegacy(
+  deps: OpenFileDeps,
+  book: Book,
+  identity: UploadIdentity,
+): Promise<Result<OpenedUpload, OpenFileError>> {
+  const upgraded = await deps.repository.update(book.id, {
+    contentHash: identity.contentHash,
+    fileName: identity.fileName,
+  });
+  if (!upgraded.ok) return err({ kind: 'storage', error: upgraded.error });
+  return ok({ kind: 'already-held', book: upgraded.value });
+}
+
+function joinedBook(
+  deps: OpenFileDeps,
+  join: UploadJoin,
+  identity: UploadIdentity,
+): Promise<Result<OpenedUpload, OpenFileError>> | null {
+  return match(join)
+    .returnType<Promise<Result<OpenedUpload, OpenFileError>> | null>()
+    .with({ kind: 'by-content' }, { kind: 'by-name' }, ({ book }) =>
+      Promise.resolve(ok({ kind: 'already-held', book })),
+    )
+    .with({ kind: 'by-legacy-content' }, ({ book }) => rejoinLegacy(deps, book, identity))
+    .with({ kind: 'new' }, () => null)
+    .exhaustive();
 }
 
 function epubUpload(files: readonly File[]): File | null {
@@ -152,17 +208,21 @@ async function openFile(
   deps: OpenFileDeps,
   files: readonly File[],
   report: UploadReport = () => undefined,
+  matching: BookMatching = DEFAULT_BOOK_MATCHING,
 ): Promise<Result<OpenedUpload, OpenFileError>> {
   await deps.requestPersistence();
 
-  const hashed = await uploadHash(deps, files);
-  if (!hashed.ok) return hashed;
-  const hash = hashed.value;
   const held = await deps.repository.list();
   if (!held.ok) return err({ kind: 'storage', error: held.error });
+  const identified = await uploadIdentity(deps, held.value, files);
+  if (!identified.ok) return identified;
+  const identity = identified.value;
 
-  const known = held.value.find((book) => book.contentHash === hash);
-  if (known !== undefined) return ok({ kind: 'already-held', book: known });
+  const joined = joinedBook(deps, joinUpload(held.value, identity, matching), identity);
+  if (joined !== null) {
+    const outcome = await joined;
+    return outcome;
+  }
 
   const inspection = await inspectUpload(deps, files);
   if (inspection.kind === 'refused') return err({ kind: 'epub', error: inspection.refusal });
@@ -186,7 +246,8 @@ async function openFile(
     pagePairing: DEFAULT_PAGE_PAIRING,
     pageFit: defaultPageFit(layoutKind),
     sourceKind: built.value.sourceKind,
-    contentHash: hash,
+    contentHash: identity.contentHash,
+    fileName: identity.fileName,
     imageCount: content.value.imageCount,
     addedAt: deps.now(),
     position: content.value.position,

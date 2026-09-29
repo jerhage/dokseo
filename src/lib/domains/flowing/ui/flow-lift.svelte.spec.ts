@@ -80,6 +80,7 @@ function novel(): FlowBook {
     pageFit: 'width',
     sourceKind: 'epub',
     contentHash: contentHash('l1'),
+    fileName: 'book.cbz',
     imageCount: 0,
     addedAt: 1758240000000,
     position: START_OF_THE_TEXT,

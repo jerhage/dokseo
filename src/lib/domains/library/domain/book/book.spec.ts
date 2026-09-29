@@ -14,6 +14,7 @@ const book: Book = {
   pageFit: 'height',
   sourceKind: 'archive',
   contentHash: contentHash('a1'),
+  fileName: 'book.cbz',
   imageCount: 182,
   addedAt: 1758240000000,
   position: imagePlace(imageIndex(3)),

@@ -28,6 +28,7 @@ function comic(title: string, page: number, imageCount = 10, addedAt = 0): Book 
     pageFit: 'height',
     sourceKind: 'archive',
     contentHash: contentHash('a1'),
+    fileName: 'book.cbz',
     imageCount,
     addedAt,
     position: imagePlace(imageIndex(page)),

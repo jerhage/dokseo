@@ -1,5 +1,6 @@
 import { match } from 'ts-pattern';
 import { fingerprintOf } from '$lib/platform/crypto/fingerprint';
+import { partialMd5 } from '$lib/platform/crypto/partial-md5';
 import { noticeBoard } from '$lib/platform/events/notice-board';
 import { probeGpu } from '$lib/platform/gpu/adapter-probe';
 import {
@@ -361,7 +362,8 @@ function buildContainer(): Container {
       const { inspectEpubArchive } = await import('./domains/library/adapters/zip-epub-inspector');
       return await inspectEpubArchive(source);
     },
-    fingerprint: fingerprintOf,
+    partialMd5,
+    legacyFingerprint: fingerprintOf,
     requestPersistence,
     now: Date.now,
     newId: () => crypto.randomUUID(),

@@ -79,6 +79,7 @@ function novel(direction: 'ltr' | 'rtl'): FlowBook {
     pageFit: 'width',
     sourceKind: 'epub',
     contentHash: contentHash('t1'),
+    fileName: 'book.cbz',
     imageCount: 0,
     addedAt: 1758240000000,
     position: START_OF_THE_TEXT,

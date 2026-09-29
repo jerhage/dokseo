@@ -10,18 +10,21 @@ import type { Book } from './book';
 
 const NO_CONTENT_HASH = contentHash('');
 
+const NO_FILE_NAME = '';
+
 type StoredPlace =
   | { readonly kind: 'image'; readonly index: ImageIndex; readonly shownThrough?: ImageIndex }
   | { readonly kind: 'text'; readonly cfi: string; readonly fraction?: number | null };
 
 type StoredBook = Omit<
   Book,
-  'pagePairing' | 'pageFit' | 'position' | 'contentHash' | 'lastReadAt' | 'finishedAt'
+  'pagePairing' | 'pageFit' | 'position' | 'contentHash' | 'fileName' | 'lastReadAt' | 'finishedAt'
 > & {
   readonly pagePairing?: PagePairing;
   readonly pageFit?: PageFit;
   readonly position: ImageIndex | StoredPlace;
   readonly contentHash?: ContentHash;
+  readonly fileName?: string;
   readonly lastReadAt?: number | null;
   readonly finishedAt?: number | null;
 };
@@ -41,10 +44,11 @@ function bookFromStored(stored: StoredBook): Book {
     pageFit: stored.pageFit ?? defaultPageFit(stored.layoutKind),
     position: storedPlace(stored.position),
     contentHash: stored.contentHash ?? NO_CONTENT_HASH,
+    fileName: stored.fileName ?? NO_FILE_NAME,
     lastReadAt: stored.lastReadAt ?? null,
     finishedAt: stored.finishedAt ?? null,
   };
 }
 
-export { NO_CONTENT_HASH, bookFromStored };
+export { NO_CONTENT_HASH, NO_FILE_NAME, bookFromStored };
 export type { StoredBook, StoredPlace };

@@ -4,7 +4,7 @@ import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
-import { bookFromStored, NO_CONTENT_HASH } from './stored-book';
+import { bookFromStored, NO_CONTENT_HASH, NO_FILE_NAME } from './stored-book';
 import type { StoredBook } from './stored-book';
 
 const legacy: StoredBook = {
@@ -138,6 +138,17 @@ describe('bookFromStored', () => {
     expect(bookFromStored(stored).contentHash).toBe('9f86d081');
   });
 
+  it('reads a record stored before file names with no file name', () => {
+    expect(bookFromStored(legacy).fileName).toBe(NO_FILE_NAME);
+    expect(NO_FILE_NAME).toBe('');
+  });
+
+  it('keeps a stored file name that is present', () => {
+    expect(bookFromStored({ ...legacy, fileName: 'Yotsuba&! 1.cbz' }).fileName).toBe(
+      'Yotsuba&! 1.cbz',
+    );
+  });
+
   it('leaves every other field exactly as stored', () => {
     const expected: Book = {
       ...legacy,
@@ -145,6 +156,7 @@ describe('bookFromStored', () => {
       pageFit: defaultPageFit(legacy.layoutKind),
       position: imagePlace(imageIndex(3)),
       contentHash: NO_CONTENT_HASH,
+      fileName: NO_FILE_NAME,
       lastReadAt: null,
       finishedAt: null,
     };

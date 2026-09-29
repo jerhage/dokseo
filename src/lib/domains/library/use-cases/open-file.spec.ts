@@ -6,8 +6,8 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
-import type { Book } from '../domain/book/book';
+import { applyEdit, defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
+import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
 import { NO_CONTENT_HASH } from '../domain/book/stored-book';
 import type { EpubInspection, EpubInspectionError } from '../domain/ingest/epub-inspection';
@@ -31,6 +31,8 @@ const NOW = 1758240000000;
 const NEW_ID = 'book-7';
 
 const DIGEST = 'f0e1d2c3';
+
+const LEGACY_DIGEST = 'a'.repeat(64);
 
 const NOT_AN_EPUB: EpubInspection = { kind: 'not-an-epub' };
 
@@ -73,6 +75,7 @@ function heldBook(hash: ContentHash): Book {
     pageFit: defaultPageFit('paged'),
     sourceKind: 'archive',
     contentHash: hash,
+    fileName: 'Yotsuba&! 1.cbz',
     imageCount: 182,
     addedAt: 1758240000000,
     position: imagePlace(imageIndex(9)),
@@ -87,6 +90,7 @@ function fakeRepository(
   held: Result<readonly Book[], LibraryError> = ok([]),
 ) {
   const added: AddCall[] = [];
+  const updated: (readonly [BookId, BookEdit])[] = [];
   const repository: LibraryRepository = {
     list: () => Promise.resolve(held),
     get: (id) => Promise.resolve(notFound(id)),
@@ -96,12 +100,16 @@ function fakeRepository(
       return Promise.resolve(outcome);
     },
     remove: () => Promise.resolve(ok(undefined)),
-    update: (id) => Promise.resolve(notFound(id)),
+    update: (id, edit) => {
+      updated.push([id, edit]);
+      const book = held.ok ? held.value.find((each) => each.id === id) : undefined;
+      return Promise.resolve(book === undefined ? notFound(id) : ok(applyEdit(book, edit)));
+    },
     readSource: (id) => Promise.resolve(notFound(id)),
     readCover: (id) => Promise.resolve(notFound(id)),
     storedBytes: () => Promise.resolve(ok(0)),
   };
-  return { repository, added };
+  return { repository, added, updated };
 }
 
 function fakeBuilder(
@@ -172,7 +180,8 @@ function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
     repository: fakeRepository().repository,
     builder: fakeBuilder(ok(builtSource())).builder,
     inspectEpub: fakeInspector().inspector,
-    fingerprint: () => Promise.resolve(DIGEST),
+    partialMd5: () => Promise.resolve(DIGEST),
+    legacyFingerprint: () => Promise.resolve(LEGACY_DIGEST),
     requestPersistence: () => Promise.resolve(true),
     now: () => NOW,
     newId: () => NEW_ID,
@@ -195,9 +204,14 @@ const files: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.cbz')];
 
 const epub: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.epub')];
 
+function inFolder(file: File, path: string): File {
+  Object.defineProperty(file, 'webkitRelativePath', { value: path });
+  return file;
+}
+
 const folder: readonly File[] = [
-  new File(['0123456789'], '002.png'),
-  new File(['01234'], '001.png'),
+  inFolder(new File(['0123456789'], '002.png'), 'Ch 12/002.png'),
+  inFolder(new File(['01234'], '001.png'), 'Ch 12/001.png'),
 ];
 
 describe('openFile', () => {
@@ -437,7 +451,7 @@ describe('openFile', () => {
   it('fingerprints the one file it was handed', async () => {
     const hashing = fakeFingerprint();
 
-    await openFile(deps({ fingerprint: hashing.fingerprint }), files);
+    await openFile(deps({ partialMd5: hashing.fingerprint }), files);
 
     expect(hashing.hashed).toEqual([at(files, 0)]);
   });
@@ -450,7 +464,7 @@ describe('openFile', () => {
       deps({
         repository: repository.repository,
         builder: builder.builder,
-        fingerprint: () => Promise.reject(new Error('no hashing here.')),
+        partialMd5: () => Promise.reject(new Error('no hashing here.')),
       }),
       files,
     );
@@ -463,7 +477,7 @@ describe('openFile', () => {
   it('fingerprints the sorted names and sizes of a folder of images', async () => {
     const hashing = fakeFingerprint();
 
-    await openFile(deps({ fingerprint: hashing.fingerprint }), folder);
+    await openFile(deps({ partialMd5: hashing.fingerprint }), folder);
 
     expect(await at(hashing.hashed, 0).text()).toBe(uploadManifest(folder));
   });
@@ -472,8 +486,8 @@ describe('openFile', () => {
     const one = fakeFingerprint();
     const other = fakeFingerprint();
 
-    await openFile(deps({ fingerprint: one.fingerprint }), folder);
-    await openFile(deps({ fingerprint: other.fingerprint }), folder.toReversed());
+    await openFile(deps({ partialMd5: one.fingerprint }), folder);
+    await openFile(deps({ partialMd5: other.fingerprint }), folder.toReversed());
 
     expect(await at(one.hashed, 0).text()).toBe(await at(other.hashed, 0).text());
   });
@@ -482,7 +496,7 @@ describe('openFile', () => {
     const repository = fakeRepository();
 
     const result = await openFile(
-      deps({ repository: repository.repository, fingerprint: () => Promise.resolve('beef01') }),
+      deps({ repository: repository.repository, partialMd5: () => Promise.resolve('beef01') }),
       files,
     );
 
@@ -525,6 +539,136 @@ describe('openFile', () => {
 
     expect(repository.added).toHaveLength(1);
     expect(result.ok && result.value.book.id).toBe(NEW_ID);
+  });
+
+  it('computes no legacy fingerprint while no held book carries one', async () => {
+    const legacy = fakeFingerprint(LEGACY_DIGEST);
+    const repository = fakeRepository(ok(undefined), [], ok([heldBook(contentHash('other'))]));
+
+    await openFile(
+      deps({ repository: repository.repository, legacyFingerprint: legacy.fingerprint }),
+      files,
+    );
+
+    expect(legacy.hashed).toEqual([]);
+  });
+
+  it('rejoins a book stored with the legacy fingerprint and upgrades its hash and name', async () => {
+    const known = { ...heldBook(contentHash(LEGACY_DIGEST)), fileName: '' };
+    const repository = fakeRepository(ok(undefined), [], ok([known]));
+    const builder = fakeBuilder(ok(builtSource()));
+
+    const result = await openFile(
+      deps({ repository: repository.repository, builder: builder.builder }),
+      files,
+    );
+
+    expect(repository.updated).toEqual([
+      [known.id, { contentHash: DIGEST, fileName: 'Yotsuba&! 1.cbz' }],
+    ]);
+    expect(result).toEqual(
+      ok({
+        kind: 'already-held',
+        book: { ...known, contentHash: DIGEST, fileName: 'Yotsuba&! 1.cbz' },
+      }),
+    );
+    expect(repository.added).toEqual([]);
+    expect(builder.calls).toEqual([]);
+  });
+
+  it('imports a file whose legacy fingerprint no held book carries', async () => {
+    const repository = fakeRepository(
+      ok(undefined),
+      [],
+      ok([heldBook(contentHash('b'.repeat(64)))]),
+    );
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(repository.added).toHaveLength(1);
+    expect(repository.updated).toEqual([]);
+    expect(result.ok && result.value.kind).toBe('added');
+  });
+
+  it('returns a fingerprint failure when a legacy book is held and no legacy hash can be made', async () => {
+    const repository = fakeRepository(
+      ok(undefined),
+      [],
+      ok([heldBook(contentHash(LEGACY_DIGEST))]),
+    );
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        legacyFingerprint: () => Promise.reject(new Error('no hashing here.')),
+      }),
+      files,
+    );
+
+    expect(result).toEqual(err({ kind: 'fingerprint', cause: 'no hashing here.' }));
+    expect(repository.added).toEqual([]);
+  });
+
+  it('reports a failed upgrade of a legacy hash as a storage error', async () => {
+    const repository = fakeRepository(
+      ok(undefined),
+      [],
+      ok([heldBook(contentHash(LEGACY_DIGEST))]),
+    );
+    const failing: LibraryRepository = {
+      ...repository.repository,
+      update: () => Promise.resolve(err<LibraryError>({ kind: 'storage-unavailable' })),
+    };
+
+    const result = await openFile(deps({ repository: failing }), files);
+
+    expect(result).toEqual(err({ kind: 'storage', error: { kind: 'storage-unavailable' } }));
+  });
+
+  it('stores the uploaded file name on the new book', async () => {
+    const repository = fakeRepository();
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result.ok && result.value.book.fileName).toBe('Yotsuba&! 1.cbz');
+    expect(at(repository.added, 0).book.fileName).toBe('Yotsuba&! 1.cbz');
+  });
+
+  it('stores the folder name on a book made from a folder', async () => {
+    const repository = fakeRepository();
+
+    await openFile(deps({ repository: repository.repository }), folder);
+
+    expect(at(repository.added, 0).book.fileName).toBe('Ch 12');
+  });
+
+  it('joins a book by its file name when matching by file name, although the bytes differ', async () => {
+    const known = heldBook(contentHash('other'));
+    const repository = fakeRepository(ok(undefined), [], ok([known]));
+    const builder = fakeBuilder(ok(builtSource()));
+
+    const result = await openFile(
+      deps({ repository: repository.repository, builder: builder.builder }),
+      files,
+      () => undefined,
+      'file-name',
+    );
+
+    expect(result).toEqual(ok({ kind: 'already-held', book: known }));
+    expect(builder.calls).toEqual([]);
+  });
+
+  it('imports a renamed copy of a file name it holds when matching by content', async () => {
+    const repository = fakeRepository(ok(undefined), [], ok([heldBook(contentHash('other'))]));
+
+    const result = await openFile(
+      deps({ repository: repository.repository }),
+      files,
+      () => undefined,
+      'content',
+    );
+
+    expect(result.ok && result.value.kind).toBe('added');
   });
 
   it('reports a failure to read the library as a storage error', async () => {
