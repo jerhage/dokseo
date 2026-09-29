@@ -83,11 +83,15 @@
   color: var(--color-text-faint);
 }
 .command-item-hint {
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-inline-size: 0;
+  max-inline-size: var(--command-hint-max-width);
   margin-inline-start: auto;
   padding-inline-start: var(--sp-4);
+  overflow: hidden;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-faint);
 }

@@ -46,4 +46,5 @@
   --menu-min-width: var(--ds-size-menu);
   --stat-min-width: var(--ds-size-stat);
   --field-label-width: var(--ds-size-label);
+  --command-hint-max-width: var(--ds-size-hint);
 }
