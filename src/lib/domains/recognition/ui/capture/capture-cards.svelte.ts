@@ -137,7 +137,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
   const tags = chipsOf(capture.tagIds, placing.tags);
   const load = placing.progress;
 
-  return match(capture)
+  return match<PanelCapture, Card>(capture)
     .with({ status: 'pending' }, (running) => ({
       id: running.id,
       place: placeLabel(running.anchor),
@@ -153,7 +153,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       annotationSegments: null,
       noteLabel: null,
       tags,
-      tone: 'pending' as CaptureStatus,
+      tone: 'pending',
       origin: running.origin,
       edited: false,
       editable: false,
@@ -173,7 +173,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       annotationSegments: lines === null ? null : lines.note,
       noteLabel: noteLabelOf(read, placeLabel(read.anchor)),
       tags,
-      tone: 'done' as CaptureStatus,
+      tone: 'done',
       origin: read.origin,
       edited: read.edited,
       editable: true,
@@ -193,7 +193,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       annotationSegments: null,
       noteLabel: null,
       tags,
-      tone: 'empty' as CaptureStatus,
+      tone: 'empty',
       origin: blank.origin,
       edited: false,
       editable: false,
@@ -213,7 +213,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       annotationSegments: null,
       noteLabel: null,
       tags,
-      tone: 'failed' as CaptureStatus,
+      tone: 'failed',
       origin: broken.origin,
       edited: false,
       editable: false,
