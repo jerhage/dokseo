@@ -58,10 +58,12 @@ function matchesInBookOrder<T extends ArrivalCapture>(
   captures: readonly T[],
   query: string,
   direction: ReadingDirection,
+  passages: PassageOrder,
 ): readonly T[] {
   return inBookOrder(
     captures.filter((capture) => captureHolds(capture, query)),
     direction,
+    passages,
   );
 }
 
@@ -69,8 +71,9 @@ function alone<T extends ArrivalCapture>(
   captures: readonly T[],
   direction: ReadingDirection,
   named: ImageRegion,
+  passages: PassageOrder,
 ): Arrival<T> | null {
-  const ordered = inBookOrder(captures, direction);
+  const ordered = inBookOrder(captures, direction, passages);
   const only = ordered[placeOf(ordered, named)];
   return only === undefined ? null : { at: only, stepping: null };
 }
@@ -80,13 +83,16 @@ function arrivalAt<T extends ArrivalCapture>(
   query: string | null,
   direction: ReadingDirection,
   named: ImageRegion,
+  passages: PassageOrder,
 ): Arrival<T> | null {
-  if (query === null || query.trim().length === 0) return alone(captures, direction, named);
+  if (query === null || query.trim().length === 0) {
+    return alone(captures, direction, named, passages);
+  }
 
-  const found = matchesInBookOrder(captures, query, direction);
+  const found = matchesInBookOrder(captures, query, direction, passages);
   const place = placeOf(found, named);
   const here = found[place];
-  if (here === undefined) return alone(captures, direction, named);
+  if (here === undefined) return alone(captures, direction, named, passages);
 
   return arrivalAmong(found, place, here);
 }

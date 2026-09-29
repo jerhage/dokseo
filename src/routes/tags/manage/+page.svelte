@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
+  import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import ManageTagsScreen from '$lib/domains/recognition/ui/tag/ManageTagsScreen.svelte';
   import { ManageTagsView } from '$lib/domains/recognition/ui/tag/manage-tags.svelte';
@@ -20,7 +21,7 @@
       direction: effectiveDirection(book.direction, book.layoutKind),
     })),
   );
-  const view = new TagView(container, () => ({ books, wanted: null }));
+  const view = new TagView(container, () => ({ books, wanted: null }), comparePassages);
   const manage = new ManageTagsView(container, notify, () => view.load());
 
   onMount(() => {

@@ -8,6 +8,7 @@ import { captureHref } from '$lib/shared/reader-location';
 import type { TextSegment } from '$lib/shared/text-search';
 import { firstRegion } from '../../domain/capture/capture-arrival';
 import { inBookOrder } from '../../domain/capture/capture-order';
+import type { PassageOrder } from '../../domain/capture/capture-order';
 import type { SearchedCapture } from '../../domain/capture/capture-results';
 import { NO_MATCH } from '../../domain/capture/match-stepping';
 import type { ModelLoad } from '../../domain/model/model-load';
@@ -52,6 +53,7 @@ type CardSource = {
   readonly language: Language | null;
   readonly progress: ModelLoad | null;
   readonly direction: ReadingDirection;
+  readonly passages: PassageOrder;
   readonly seekable: boolean;
 };
 
@@ -242,7 +244,7 @@ class CaptureCards {
       .map((capture) => hitOf(capture, this.wanted))
       .filter((hit) => hit !== null);
 
-    return inBookOrder(found, held.direction);
+    return inBookOrder(found, held.direction, held.passages);
   });
 
   #cards = $derived.by<readonly Card[]>(() => {

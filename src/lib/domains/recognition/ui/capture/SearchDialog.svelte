@@ -80,7 +80,14 @@
 
   const found = $derived(
     present && query.trim().length > 0
-      ? quickFinds(find.captures, searchedBooks(books, book, scoped), tags, query, filter)
+      ? quickFinds(
+          find.captures,
+          searchedBooks(books, book, scoped),
+          tags,
+          query,
+          filter,
+          find.passages,
+        )
       : NOTHING,
   );
 

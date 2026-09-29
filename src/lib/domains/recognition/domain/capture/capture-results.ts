@@ -5,6 +5,7 @@ import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { matchesQuery } from '$lib/shared/text-search';
 import { inBookOrder } from './capture-order';
+import type { PassageOrder } from './capture-order';
 
 type SearchedBook = {
   readonly id: BookId;
@@ -64,12 +65,16 @@ function heldByBook<T extends Written>(captures: readonly T[]): ReadonlyMap<Book
 function inBooks<T extends Written>(
   found: readonly T[],
   books: readonly SearchedBook[],
+  passages: PassageOrder,
 ): readonly BookMatches<T>[] {
   if (found.length === 0) return [];
 
   const grouped = heldByBook(found);
   return books
-    .map((book) => ({ book, captures: inBookOrder(grouped.get(book.id) ?? [], book.direction) }))
+    .map((book) => ({
+      book,
+      captures: inBookOrder(grouped.get(book.id) ?? [], book.direction, passages),
+    }))
     .filter((matched) => matched.captures.length > 0);
 }
 
@@ -77,10 +82,12 @@ function matchesByBook<T extends Written>(
   captures: readonly T[],
   books: readonly SearchedBook[],
   query: string,
+  passages: PassageOrder,
 ): readonly BookMatches<T>[] {
   return inBooks(
     captures.filter((capture) => captureHolds(capture, query)),
     books,
+    passages,
   );
 }
 
@@ -88,10 +95,12 @@ function taggedByBook<T extends Written & Tagged>(
   captures: readonly T[],
   books: readonly SearchedBook[],
   tag: TagId,
+  passages: PassageOrder,
 ): readonly BookMatches<T>[] {
   return inBooks(
     captures.filter((capture) => capture.tagIds.includes(tag)),
     books,
+    passages,
   );
 }
 

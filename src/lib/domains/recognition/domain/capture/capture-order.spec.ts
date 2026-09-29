@@ -17,8 +17,22 @@ function at(name: string, index: number, x: number, y: number, width = 100, heig
 function quoted(name: string, exact: string): Placed {
   return {
     name,
-    anchor: textAnchor(`epubcfi(/6/14!/4/2/${name})`, { exact, prefix: '', suffix: '' }, null),
+    anchor: textAnchor(cfiOf(name), { exact, prefix: '', suffix: '' }, null),
   };
+}
+
+const LISTED_ORDER = ['first', 'second', 'third'].map(cfiOf);
+
+function cfiOf(name: string): string {
+  return `epubcfi(/6/14!/4/2/${name})`;
+}
+
+function byListedOrder(earlier: string, later: string): number {
+  return LISTED_ORDER.indexOf(earlier) - LISTED_ORDER.indexOf(later);
+}
+
+function byCfi(earlier: string, later: string): number {
+  return earlier.localeCompare(later);
 }
 
 function names(placed: readonly Placed[]): readonly string[] {
@@ -27,43 +41,47 @@ function names(placed: readonly Placed[]): readonly string[] {
 
 describe('inBookOrder', () => {
   it('orders across pages by image index', () => {
-    const ordered = inBookOrder([at('later', 7, 0, 0), at('earlier', 3, 0, 0)], 'ltr');
+    const ordered = inBookOrder([at('later', 7, 0, 0), at('earlier', 3, 0, 0)], 'ltr', byCfi);
 
     expect(names(ordered)).toEqual(['earlier', 'later']);
   });
 
   it('orders across pages by image index whichever way the book reads', () => {
-    const ordered = inBookOrder([at('later', 7, 0, 0), at('earlier', 3, 0, 0)], 'rtl');
+    const ordered = inBookOrder([at('later', 7, 0, 0), at('earlier', 3, 0, 0)], 'rtl', byCfi);
 
     expect(names(ordered)).toEqual(['earlier', 'later']);
   });
 
   it('orders a right-to-left page from the right edge inward', () => {
-    const ordered = inBookOrder([at('left', 1, 20, 500), at('right', 1, 600, 900)], 'rtl');
+    const ordered = inBookOrder([at('left', 1, 20, 500), at('right', 1, 600, 900)], 'rtl', byCfi);
 
     expect(names(ordered)).toEqual(['right', 'left']);
   });
 
   it('orders a left-to-right page from the top down', () => {
-    const ordered = inBookOrder([at('low', 1, 600, 900), at('high', 1, 20, 500)], 'ltr');
+    const ordered = inBookOrder([at('low', 1, 600, 900), at('high', 1, 20, 500)], 'ltr', byCfi);
 
     expect(names(ordered)).toEqual(['high', 'low']);
   });
 
   it('orders a right-to-left column from the top down', () => {
-    const ordered = inBookOrder([at('low', 1, 600, 900), at('high', 1, 600, 100)], 'rtl');
+    const ordered = inBookOrder([at('low', 1, 600, 900), at('high', 1, 600, 100)], 'rtl', byCfi);
 
     expect(names(ordered)).toEqual(['high', 'low']);
   });
 
   it('orders a left-to-right row from the left', () => {
-    const ordered = inBookOrder([at('right', 1, 600, 100), at('left', 1, 20, 100)], 'ltr');
+    const ordered = inBookOrder([at('right', 1, 600, 100), at('left', 1, 20, 100)], 'ltr', byCfi);
 
     expect(names(ordered)).toEqual(['left', 'right']);
   });
 
   it('reads a wider right-to-left region from its right edge, not its left', () => {
-    const ordered = inBookOrder([at('narrow', 1, 400, 0, 100), at('wide', 1, 100, 0, 420)], 'rtl');
+    const ordered = inBookOrder(
+      [at('narrow', 1, 400, 0, 100), at('wide', 1, 100, 0, 420)],
+      'rtl',
+      byCfi,
+    );
 
     expect(names(ordered)).toEqual(['wide', 'narrow']);
   });
@@ -76,14 +94,14 @@ describe('inBookOrder', () => {
         { index: imageIndex(5), rect: imageRect(0, 0, 100, 60) },
       ]),
     };
-    const ordered = inBookOrder([at('single', 5, 0, 0), spanning], 'ltr');
+    const ordered = inBookOrder([at('single', 5, 0, 0), spanning], 'ltr', byCfi);
 
     expect(names(ordered)).toEqual(['spanning', 'single']);
   });
 
   it('sorts a capture holding no regions last', () => {
     const nowhere: Placed = { name: 'nowhere', anchor: regionAnchor([]) };
-    const ordered = inBookOrder([nowhere, at('placed', 9, 0, 0)], 'ltr');
+    const ordered = inBookOrder([nowhere, at('placed', 9, 0, 0)], 'ltr', byCfi);
 
     expect(names(ordered)).toEqual(['placed', 'nowhere']);
   });
@@ -91,27 +109,74 @@ describe('inBookOrder', () => {
   it('keeps two captures holding no regions in the order they arrived', () => {
     const first: Placed = { name: 'first', anchor: regionAnchor([]) };
     const second: Placed = { name: 'second', anchor: regionAnchor([]) };
-    const ordered = inBookOrder([first, second], 'ltr');
+    const ordered = inBookOrder([first, second], 'ltr', byCfi);
 
     expect(names(ordered)).toEqual(['first', 'second']);
   });
 
-  it('leaves text anchors in the order they were given', () => {
-    const ordered = inBookOrder([quoted('later', '海'), quoted('earlier', '山')], 'rtl');
-
-    expect(names(ordered)).toEqual(['later', 'earlier']);
-  });
-
-  it('leaves text anchors in the order they were given whichever way the book reads', () => {
+  it('orders text anchors by the passage order it is given for their cfis', () => {
     const given = [quoted('third', '海'), quoted('first', '山'), quoted('second', '空')];
 
-    expect(names(inBookOrder(given, 'ltr'))).toEqual(['third', 'first', 'second']);
-    expect(names(inBookOrder(given, 'rtl'))).toEqual(['third', 'first', 'second']);
+    expect(names(inBookOrder(given, 'ltr', byListedOrder))).toEqual(['first', 'second', 'third']);
+  });
+
+  it('orders text anchors the same whichever way the book reads', () => {
+    const given = [quoted('second', '空'), quoted('third', '海'), quoted('first', '山')];
+
+    expect(names(inBookOrder(given, 'rtl', byListedOrder))).toEqual(['first', 'second', 'third']);
+  });
+
+  it('keeps two text anchors at the same cfi in the order they arrived', () => {
+    const one: Placed = { name: 'one', anchor: quoted('second', '空').anchor };
+    const two: Placed = { name: 'two', anchor: quoted('second', '海').anchor };
+    const ordered = inBookOrder([quoted('third', '山'), one, two], 'ltr', byListedOrder);
+
+    expect(names(ordered)).toEqual(['one', 'two', 'third']);
+  });
+
+  it('sorts a text anchor with no cfi after every placed passage, and never asks the order about it', () => {
+    const asked: string[] = [];
+    const nowhere: Placed = {
+      name: 'nowhere',
+      anchor: textAnchor('', { exact: '', prefix: '', suffix: '' }, null),
+    };
+    const ordered = inBookOrder(
+      [nowhere, quoted('second', '空'), quoted('first', '山')],
+      'ltr',
+      (earlier, later) => {
+        asked.push(earlier, later);
+        return byListedOrder(earlier, later);
+      },
+    );
+
+    expect(names(ordered)).toEqual(['first', 'second', 'nowhere']);
+    expect(asked).not.toContain('');
+  });
+
+  it('orders region anchors before text anchors, whichever it meets first', () => {
+    const given = [quoted('second', '空'), at('page', 3, 0, 0), quoted('first', '山')];
+
+    expect(names(inBookOrder(given, 'rtl', byListedOrder))).toEqual(['page', 'first', 'second']);
+    expect(names(inBookOrder(given.toReversed(), 'rtl', byListedOrder))).toEqual([
+      'page',
+      'first',
+      'second',
+    ]);
+  });
+
+  it('never asks the passage order about region anchors', () => {
+    let asked = 0;
+    inBookOrder([at('later', 7, 0, 0), at('earlier', 3, 0, 0)], 'ltr', () => {
+      asked += 1;
+      return 0;
+    });
+
+    expect(asked).toBe(0);
   });
 
   it('leaves the captures it was given untouched', () => {
     const given = [at('later', 7, 0, 0), at('earlier', 3, 0, 0)];
-    inBookOrder(given, 'ltr');
+    inBookOrder(given, 'ltr', byCfi);
 
     expect(names(given)).toEqual(['later', 'earlier']);
   });

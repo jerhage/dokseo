@@ -65,14 +65,14 @@
   const view = new ReaderView(container, notify, mirror, warm);
   const captures = new CaptureView(container, notify);
   const shelf = new LibraryView(container, notify);
-  const find = new CaptureSearchView(container);
+  const find = new CaptureSearchView(container, comparePassages);
   const flow = new FlowView(container, notify);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.language);
   const flowBook = $derived(view.flowBook);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
-  const here = $derived(captures.arrivalFrom(found, view.direction));
+  const here = $derived(captures.arrivalFrom(found, view.direction, comparePassages));
   const glow = $derived(arrivalGlow(here));
   const everyGlow = $derived(everyOtherGlow(captures.read, here));
   const passage = $derived<SoughtPassage | null>(captures.passageFrom(found));
@@ -154,6 +154,7 @@
         view={captures}
         {language}
         direction={flow.direction}
+        passages={comparePassages}
         source="text"
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
@@ -178,7 +179,13 @@
       <EnginePill engine={captures.engine} {language} />
     {/snippet}
     {#snippet panel()}
-      <CapturePanel view={captures} {language} direction={view.direction} source="images" />
+      <CapturePanel
+        view={captures}
+        {language}
+        direction={view.direction}
+        passages={comparePassages}
+        source="images"
+      />
     {/snippet}
   </ReaderScreen>
 {/if}

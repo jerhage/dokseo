@@ -2,6 +2,7 @@ import type { Container } from '$lib/container';
 import type { TagId } from '$lib/shared/ids';
 import { matchesQuery } from '$lib/shared/text-search';
 import type { Capture } from '../../domain/capture/capture';
+import type { PassageOrder } from '../../domain/capture/capture-order';
 import { taggedByBook } from '../../domain/capture/capture-results';
 import type { BookMatches, SearchedBook } from '../../domain/capture/capture-results';
 import { tagCounts } from '../../domain/tag/capture-tags';
@@ -27,11 +28,13 @@ class TagView {
 
   #container: Container;
   #source: () => TagSource;
+  #passages: PassageOrder;
   #generation = 0;
 
-  constructor(container: Container, source: () => TagSource) {
+  constructor(container: Container, source: () => TagSource, passages: PassageOrder) {
     this.#container = container;
     this.#source = source;
+    this.#passages = passages;
   }
 
   get books(): readonly SearchedBook[] {
@@ -89,7 +92,7 @@ class TagView {
     const chosen = this.chosen;
     if (chosen === null) return [];
 
-    return taggedByBook(this.known, this.books, chosen);
+    return taggedByBook(this.known, this.books, chosen, this.#passages);
   }
 
   async load(): Promise<void> {

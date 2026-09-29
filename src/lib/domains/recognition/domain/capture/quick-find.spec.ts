@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { regionAnchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
@@ -7,6 +7,10 @@ import { at } from '$lib/shared/testing/at';
 import type { BookMatches, SearchedBook } from './capture-results';
 import { matchedTagIds, quickFinds } from './quick-find';
 import type { Tag } from '../tag/tag';
+
+function byCfi(earlier: string, later: string): number {
+  return earlier.localeCompare(later);
+}
 
 const IMAGERY: TagId = tagId('imagery');
 
@@ -51,6 +55,24 @@ function capture(book: SearchedBook, text: string, tags: readonly TagId[], place
   };
 }
 
+const PASSAGE_ORDER = ['/6/4!/2:0', '/6/14!/2:0', '/6/22!/2:0'];
+
+function byPassageOrder(earlier: string, later: string): number {
+  return PASSAGE_ORDER.indexOf(earlier) - PASSAGE_ORDER.indexOf(later);
+}
+
+function lifted(book: SearchedBook, text: string, cfi: string) {
+  return {
+    origin: 'lifted' as const,
+    bookId: book.id,
+    anchor: textAnchor(cfi, { exact: text, prefix: '', suffix: '' }, null),
+    text,
+    note: null,
+    tagIds: [],
+    createdAt: 0,
+  };
+}
+
 function texts<T extends { readonly text: string }>(
   found: readonly BookMatches<T>[],
 ): readonly string[] {
@@ -62,6 +84,23 @@ function titles(found: readonly SearchedBook[]): readonly string[] {
 }
 
 describe('quickFinds', () => {
+  it('orders the lifted captures inside a book by the passage order it is given', () => {
+    const found = quickFinds(
+      [
+        lifted(ONE, '海の匂い', '/6/22!/2:0'),
+        lifted(ONE, '海が見える', '/6/4!/2:0'),
+        lifted(ONE, '海まであと少し', '/6/14!/2:0'),
+      ],
+      BOOKS,
+      [],
+      '海',
+      'everything',
+      byPassageOrder,
+    );
+
+    expect(texts(found.captures)).toEqual(['海が見える', '海まであと少し', '海の匂い']);
+  });
+
   it('finds nothing for a blank query', () => {
     const found = quickFinds(
       [capture(ONE, '海の音', [IMAGERY])],
@@ -69,6 +108,7 @@ describe('quickFinds', () => {
       [tag(IMAGERY, '海-imagery')],
       '',
       'everything',
+      byCfi,
     );
 
     expect(found.captures).toEqual([]);
@@ -82,6 +122,7 @@ describe('quickFinds', () => {
       [tag(IMAGERY, '海-imagery')],
       '   ',
       'everything',
+      byCfi,
     );
 
     expect(found.captures).toEqual([]);
@@ -95,6 +136,7 @@ describe('quickFinds', () => {
       [],
       '海',
       'everything',
+      byCfi,
     );
 
     expect(texts(found.captures)).toEqual(['海の音']);
@@ -108,6 +150,7 @@ describe('quickFinds', () => {
       [tag(IMAGERY, '海-imagery'), tag(KEIGO, 'keigo')],
       '海',
       'everything',
+      byCfi,
     );
 
     expect(texts(found.captures)).toEqual(['山の音']);
@@ -120,6 +163,7 @@ describe('quickFinds', () => {
       [tag(IMAGERY, '海-imagery')],
       '海',
       'everything',
+      byCfi,
     );
 
     expect(texts(found.captures)).toEqual(['海の音']);
@@ -132,6 +176,7 @@ describe('quickFinds', () => {
       [tag(FAVOURITE, 'favourite-lines'), tag(IMAGERY, '海-imagery')],
       '海',
       'tags',
+      byCfi,
     );
 
     expect(texts(found.captures)).toEqual(['山の音']);
@@ -148,6 +193,7 @@ describe('quickFinds', () => {
       [],
       '海',
       'everything',
+      byCfi,
     );
 
     expect(texts(found.captures)).toEqual(['海 right', '海 left', '海 later page']);
@@ -160,6 +206,7 @@ describe('quickFinds', () => {
       [],
       '海',
       'everything',
+      byCfi,
     );
 
     expect(found.captures.map((book) => book.book.id)).toEqual([ONE.id]);
@@ -172,13 +219,14 @@ describe('quickFinds', () => {
       [tag(IMAGERY, 'ｼｰ-Imagery')],
       'シー-imagery',
       'tags',
+      byCfi,
     );
 
     expect(texts(found.captures)).toEqual(['山']);
   });
 
   it('finds a book whose title matches, in the order it was given', () => {
-    const found = quickFinds([], BOOKS, [], 'volume', 'everything');
+    const found = quickFinds([], BOOKS, [], 'volume', 'everything', byCfi);
 
     expect(titles(found.books)).toEqual(['Volume one', 'Volume two']);
   });
@@ -190,6 +238,7 @@ describe('quickFinds', () => {
       [],
       'volume two',
       'everything',
+      byCfi,
     );
 
     expect(titles(found.books)).toEqual(['Volume two']);
@@ -197,7 +246,14 @@ describe('quickFinds', () => {
   });
 
   it('leaves the captures of a title match out of the results', () => {
-    const found = quickFinds([capture(TWO, '海の音', [])], BOOKS, [], 'volume two', 'everything');
+    const found = quickFinds(
+      [capture(TWO, '海の音', [])],
+      BOOKS,
+      [],
+      'volume two',
+      'everything',
+      byCfi,
+    );
 
     expect(titles(found.books)).toEqual(['Volume two']);
     expect(texts(found.captures)).toEqual([]);
@@ -210,6 +266,7 @@ describe('quickFinds', () => {
       [tag(IMAGERY, 'volume-imagery')],
       'volume',
       'tags',
+      byCfi,
     );
 
     expect(found.books).toEqual([]);
@@ -224,7 +281,7 @@ describe('quickFinds', () => {
       direction: 'ltr',
     };
 
-    const found = quickFinds([], [wide], [], 'シー-volume three', 'everything');
+    const found = quickFinds([], [wide], [], 'シー-volume three', 'everything', byCfi);
 
     expect(titles(found.books)).toEqual(['ｼｰ-Volume Ｔｈｒｅｅ']);
   });

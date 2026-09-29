@@ -63,6 +63,29 @@ function lifted(
   };
 }
 
+function liftedAt(id: string, text: string, cfi: string): PanelCapture {
+  return {
+    id: captureId(id),
+    anchor: textAnchor(cfi, { exact: text, prefix: '', suffix: '' }, null),
+    tagIds: [],
+    origin: 'lifted',
+    note: null,
+    status: 'done',
+    text: recognizedText(text),
+    edited: false,
+  };
+}
+
+const PASSAGE_ORDER = ['/6/4!/2:0', '/6/14!/2:0', '/6/22!/2:0'];
+
+function byPassageOrder(earlier: string, later: string): number {
+  return PASSAGE_ORDER.indexOf(earlier) - PASSAGE_ORDER.indexOf(later);
+}
+
+function byCfi(earlier: string, later: string): number {
+  return earlier.localeCompare(later);
+}
+
 function pending(id: string): PanelCapture {
   return {
     id: captureId(id),
@@ -106,6 +129,7 @@ function source(captures: readonly PanelCapture[], over: Partial<CardSource> = {
     language: 'ja',
     progress: null,
     direction: 'rtl',
+    passages: byCfi,
     seekable: false,
     ...over,
   };
@@ -298,6 +322,34 @@ describe('card search', () => {
     panel.query = 'ねこ';
 
     expect(panel.cards.map((card) => card.id)).toEqual([captureId('c2'), captureId('c1')]);
+  });
+
+  it('orders text matches by the passage order it is given', () => {
+    const panel = cardsOf(
+      [
+        liftedAt('c3', 'ねこの尾', '/6/22!/2:0'),
+        liftedAt('c1', 'ねこが来た', '/6/4!/2:0'),
+        liftedAt('c2', 'ねこの目', '/6/14!/2:0'),
+      ],
+      { passages: byPassageOrder },
+    );
+    panel.query = 'ねこ';
+
+    expect(panel.cards.map((card) => card.id)).toEqual([
+      captureId('c1'),
+      captureId('c2'),
+      captureId('c3'),
+    ]);
+  });
+
+  it('keeps every card newest first while nothing is typed, whatever the passage order', () => {
+    const newest = [
+      liftedAt('c3', 'ねこの尾', '/6/22!/2:0'),
+      liftedAt('c1', 'ねこが来た', '/6/4!/2:0'),
+    ];
+    const panel = cardsOf(newest, { passages: byPassageOrder });
+
+    expect(panel.cards.map((card) => card.id)).toEqual([captureId('c3'), captureId('c1')]);
   });
 
   it('marks the matched run inside the text', () => {

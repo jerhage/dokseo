@@ -173,8 +173,12 @@ class CaptureView {
     return this.#collection.read;
   }
 
-  arrivalFrom(found: ReaderArrival, direction: ReadingDirection): Arrival<ArrivalCapture> | null {
-    return this.#collection.arrivalFrom(found, direction);
+  arrivalFrom(
+    found: ReaderArrival,
+    direction: ReadingDirection,
+    passages: PassageOrder,
+  ): Arrival<ArrivalCapture> | null {
+    return this.#collection.arrivalFrom(found, direction, passages);
   }
 
   passageArrivalFrom(found: ReaderArrival, order: PassageOrder): Arrival<ArrivalCapture> | null {

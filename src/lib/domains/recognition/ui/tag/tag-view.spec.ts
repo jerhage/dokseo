@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from '$lib/container';
-import { regionAnchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
@@ -57,6 +57,19 @@ function capture(
   };
 }
 
+function passage(name: string, id: string, tags: readonly TagId[], cfi: string): Capture {
+  return {
+    ...capture(name, id, tags),
+    anchor: textAnchor(cfi, { exact: name, prefix: '', suffix: '' }, null),
+  };
+}
+
+const PASSAGE_ORDER = ['/6/4!/2:0', '/6/14!/2:0', '/6/22!/2:0'];
+
+function byPassageOrder(earlier: string, later: string): number {
+  return PASSAGE_ORDER.indexOf(earlier) - PASSAGE_ORDER.indexOf(later);
+}
+
 function world(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRARY) {
   const store: Store = { tags, captures, tagsFail: false, capturesFail: false };
   const source: { books: readonly SearchedBook[]; wanted: string | null } = {
@@ -76,7 +89,11 @@ function world(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRARY
   } as unknown as Container;
 
   return {
-    view: new TagView(container, () => ({ books: source.books, wanted: source.wanted })),
+    view: new TagView(
+      container,
+      () => ({ books: source.books, wanted: source.wanted }),
+      byPassageOrder,
+    ),
     store,
     source,
   };
@@ -188,6 +205,21 @@ describe('TagView', () => {
     const grouped = view.groups;
     expect(grouped).toHaveLength(1);
     expect(at(grouped, 0).captures.map((one) => one.text)).toEqual(['right', 'left']);
+  });
+
+  it('groups the passages of a chosen tag in the passage order it is given', async () => {
+    const { view, source } = await loaded([
+      passage('closing', 'one', [SFX.id], '/6/22!/2:0'),
+      passage('opening', 'one', [SFX.id], '/6/4!/2:0'),
+      passage('middle', 'one', [SFX.id], '/6/14!/2:0'),
+    ]);
+    source.wanted = SFX.name;
+
+    expect(at(view.groups, 0).captures.map((one) => one.text)).toEqual([
+      'opening',
+      'middle',
+      'closing',
+    ]);
   });
 
   it('groups nothing while no tag is chosen', async () => {

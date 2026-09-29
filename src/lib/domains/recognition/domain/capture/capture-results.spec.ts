@@ -18,6 +18,10 @@ type Found = {
   readonly note: string | null;
 };
 
+function byCfi(earlier: string, later: string): number {
+  return earlier.localeCompare(later);
+}
+
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
   return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction };
 }
@@ -60,6 +64,14 @@ function liftedCapture(name: string, id: string, text: string, note: string | nu
     text,
     note,
   };
+}
+
+const PASSAGE_ORDER = ['opening', 'middle', 'closing'].map(
+  (name) => `epubcfi(/6/14!/4/2/${name}:0)`,
+);
+
+function byPassageOrder(earlier: string, later: string): number {
+  return PASSAGE_ORDER.indexOf(earlier) - PASSAGE_ORDER.indexOf(later);
 }
 
 function names(
@@ -151,6 +163,7 @@ describe('matchesByBook', () => {
       ],
       [book('one'), book('two')],
       '海',
+      byCfi,
     );
 
     expect(matched.map((one) => one.book.id)).toEqual([bookId('one'), bookId('two')]);
@@ -162,6 +175,7 @@ describe('matchesByBook', () => {
       [capture('later', 'two', '海'), capture('earlier', 'one', '海')],
       [book('two'), book('one')],
       '海',
+      byCfi,
     );
 
     expect(matched.map((one) => one.book.id)).toEqual([bookId('two'), bookId('one')]);
@@ -177,6 +191,7 @@ describe('matchesByBook', () => {
       ],
       [book('one', 'rtl'), book('two', 'ltr')],
       '海',
+      byCfi,
     );
 
     expect(names(matched)).toEqual([
@@ -190,6 +205,7 @@ describe('matchesByBook', () => {
       [capture('later', 'one', '海', 4, 900, 0), capture('earlier', 'one', '海', 1, 0, 900)],
       [book('one')],
       '海',
+      byCfi,
     );
 
     expect(names(matched)).toEqual([['earlier', 'later']]);
@@ -200,6 +216,7 @@ describe('matchesByBook', () => {
       [capture('half', 'one', 'ｺｰﾋｰ'), capture('full', 'two', 'コーヒー')],
       [book('one'), book('two')],
       'こーひー',
+      byCfi,
     );
 
     expect(names(matched)).toEqual([['half'], ['full']]);
@@ -210,6 +227,7 @@ describe('matchesByBook', () => {
       [capture('only', 'one', '海が見える')],
       [book('one')],
       'ラーメン',
+      byCfi,
     );
 
     expect(matched).toEqual([]);
@@ -217,7 +235,7 @@ describe('matchesByBook', () => {
   });
 
   it('reports nothing for a query that is only spaces', () => {
-    expect(matchesByBook([capture('only', 'one', '海')], [book('one')], '   ')).toEqual([]);
+    expect(matchesByBook([capture('only', 'one', '海')], [book('one')], '   ', byCfi)).toEqual([]);
   });
 
   it('drops a match whose book has since been deleted', () => {
@@ -225,6 +243,7 @@ describe('matchesByBook', () => {
       [capture('living', 'one', '海'), capture('orphan', 'gone', '海')],
       [book('one')],
       '海',
+      byCfi,
     );
 
     expect(names(matched)).toEqual([['living']]);
@@ -232,11 +251,18 @@ describe('matchesByBook', () => {
   });
 
   it('reports nothing when every match belongs to a deleted book', () => {
-    expect(matchesByBook([capture('orphan', 'gone', '海')], [book('one')], '海')).toEqual([]);
+    expect(matchesByBook([capture('orphan', 'gone', '海')], [book('one')], '海', byCfi)).toEqual(
+      [],
+    );
   });
 
   it('leaves out a book holding no match', () => {
-    const matched = matchesByBook([capture('only', 'one', '海')], [book('one'), book('two')], '海');
+    const matched = matchesByBook(
+      [capture('only', 'one', '海')],
+      [book('one'), book('two')],
+      '海',
+      byCfi,
+    );
 
     expect(matched).toHaveLength(1);
     expect(at(matched, 0).book.id).toBe(bookId('one'));
@@ -247,6 +273,7 @@ describe('matchesByBook', () => {
       [capture('a', 'one', '海'), capture('b', 'one', '海'), capture('c', 'two', '海')],
       [book('one'), book('two')],
       '海',
+      byCfi,
     );
 
     expect(matchTally(matched)).toBe(3);
@@ -254,7 +281,7 @@ describe('matchesByBook', () => {
 
   it('counts a capture once however many ways it holds the query', () => {
     const many = { ...capture('many', 'one', '海から海へ'), note: '海の音' };
-    const matched = matchesByBook([many], [book('one')], '海');
+    const matched = matchesByBook([many], [book('one')], '海', byCfi);
 
     expect(names(matched)).toEqual([['many']]);
     expect(matchTally(matched)).toBe(1);
@@ -263,7 +290,7 @@ describe('matchesByBook', () => {
   it('counts a capture holding the query in its text and in its note only once', () => {
     const both = { ...capture('both', 'one', '海から海へ'), note: '海の音' };
     const only = { ...capture('noted', 'one', '山の上', 1), note: '海の匂い' };
-    const matched = matchesByBook([both, only], [book('one')], '海');
+    const matched = matchesByBook([both, only], [book('one')], '海', byCfi);
 
     expect(names(matched)).toEqual([['both', 'noted']]);
     expect(matchTally(matched)).toBe(2);
@@ -271,21 +298,51 @@ describe('matchesByBook', () => {
 
   it('counts a lifted capture holding the query in its text and in its note only once', () => {
     const both = liftedCapture('passage', 'one', '海から海へ', '海の音');
-    const matched = matchesByBook([both], [book('one')], '海');
+    const matched = matchesByBook([both], [book('one')], '海', byCfi);
 
     expect(names(matched)).toEqual([['passage']]);
     expect(matchTally(matched)).toBe(1);
   });
 
+  it('orders the lifted captures inside a book by the passage order it is given', () => {
+    const matched = matchesByBook(
+      [
+        liftedCapture('closing', 'one', '海の匂い', null),
+        liftedCapture('opening', 'one', '海が見える', null),
+        liftedCapture('middle', 'one', '海まであと少し', null),
+      ],
+      [book('one')],
+      '海',
+      byPassageOrder,
+    );
+
+    expect(names(matched)).toEqual([['opening', 'middle', 'closing']]);
+  });
+
   it('leaves the captures it was given untouched', () => {
     const given = [capture('later', 'one', '海', 4), capture('earlier', 'one', '海', 1)];
-    matchesByBook(given, [book('one')], '海');
+    matchesByBook(given, [book('one')], '海', byCfi);
 
     expect(given.map((one) => one.name)).toEqual(['later', 'earlier']);
   });
 });
 
 describe('taggedByBook', () => {
+  it('orders the lifted captures inside a book by the passage order it is given', () => {
+    const tagged = taggedByBook(
+      [
+        { ...liftedCapture('middle', 'one', '海まであと少し', null), tagIds: [SFX] },
+        { ...liftedCapture('closing', 'one', '海の匂い', null), tagIds: [SFX] },
+        { ...liftedCapture('opening', 'one', '海が見える', null), tagIds: [SFX] },
+      ],
+      [book('one')],
+      SFX,
+      byPassageOrder,
+    );
+
+    expect(names(tagged)).toEqual([['opening', 'middle', 'closing']]);
+  });
+
   it('groups the captures carrying the tag under the book each was taken from', () => {
     const tagged = taggedByBook(
       [
@@ -296,6 +353,7 @@ describe('taggedByBook', () => {
       ],
       [book('one'), book('two')],
       SFX,
+      byCfi,
     );
 
     expect(tagged.map((one) => one.book.id)).toEqual([bookId('one'), bookId('two')]);
@@ -307,6 +365,7 @@ describe('taggedByBook', () => {
       [held('left', 'one', [SFX], 0, 20, 100), held('right', 'one', [SFX], 0, 600, 100)],
       [book('one', 'rtl')],
       SFX,
+      byCfi,
     );
 
     expect(heldNames(tagged)).toEqual([['right', 'left']]);
@@ -317,6 +376,7 @@ describe('taggedByBook', () => {
       [held('bottom', 'one', [SFX], 0, 20, 900), held('top', 'one', [SFX], 0, 600, 100)],
       [book('one', 'ltr')],
       SFX,
+      byCfi,
     );
 
     expect(heldNames(tagged)).toEqual([['top', 'bottom']]);
@@ -327,6 +387,7 @@ describe('taggedByBook', () => {
       [held('later', 'one', [SFX], 4, 900, 0), held('earlier', 'one', [SFX], 1, 0, 900)],
       [book('one')],
       SFX,
+      byCfi,
     );
 
     expect(heldNames(tagged)).toEqual([['earlier', 'later']]);
@@ -337,6 +398,7 @@ describe('taggedByBook', () => {
       [held('only', 'one', [SFX]), held('elsewhere', 'two', [KEIGO])],
       [book('one'), book('two')],
       SFX,
+      byCfi,
     );
 
     expect(tagged).toHaveLength(1);
@@ -344,7 +406,7 @@ describe('taggedByBook', () => {
   });
 
   it('reports nothing for a tag no capture carries', () => {
-    expect(taggedByBook([held('only', 'one', [SFX])], [book('one')], KEIGO)).toEqual([]);
+    expect(taggedByBook([held('only', 'one', [SFX])], [book('one')], KEIGO, byCfi)).toEqual([]);
   });
 
   it('drops a capture whose book has since been deleted', () => {
@@ -352,6 +414,7 @@ describe('taggedByBook', () => {
       [held('living', 'one', [SFX]), held('orphan', 'gone', [SFX])],
       [book('one')],
       SFX,
+      byCfi,
     );
 
     expect(heldNames(tagged)).toEqual([['living']]);
@@ -360,7 +423,7 @@ describe('taggedByBook', () => {
 
   it('leaves the captures it was given untouched', () => {
     const given = [held('later', 'one', [SFX], 4), held('earlier', 'one', [SFX], 1)];
-    taggedByBook(given, [book('one')], SFX);
+    taggedByBook(given, [book('one')], SFX, byCfi);
 
     expect(given.map((one) => one.name)).toEqual(['later', 'earlier']);
   });

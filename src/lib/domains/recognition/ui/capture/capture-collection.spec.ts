@@ -21,6 +21,10 @@ import { recognizedText } from '../../domain/engine/recognized-text';
 import { CaptureCollection } from './capture-collection.svelte';
 import type { Settled } from './capture-collection.svelte';
 
+function byCfi(earlier: string, later: string): number {
+  return earlier.localeCompare(later);
+}
+
 const NO_EDITORS = { open: () => undefined, close: () => undefined };
 
 type Step = {
@@ -294,6 +298,7 @@ describe('CaptureCollection arrivals', () => {
     const arrival = collection.arrivalFrom(
       { kind: 'image', index: imageIndex(4), region: imageRect(10.67, 12.5, 40, 20), query: null },
       'rtl',
+      byCfi,
     );
 
     expect(arrival?.at.id).toBe(captureId('two'));
@@ -309,12 +314,14 @@ describe('CaptureCollection arrivals', () => {
       collection.arrivalFrom(
         { kind: 'image', index: imageIndex(4), region: null, query: null },
         'rtl',
+        byCfi,
       ),
     ).toBeNull();
     expect(
       collection.arrivalFrom(
         { kind: 'image', index: imageIndex(4), region: null, query: '1' },
         'rtl',
+        byCfi,
       ),
     ).toBeNull();
   });
@@ -325,8 +332,10 @@ describe('CaptureCollection arrivals', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.open(ONE);
 
-    expect(collection.arrivalFrom({ kind: 'passage', cfi: CFI, query: null }, 'rtl')).toBeNull();
-    expect(collection.arrivalFrom({ kind: 'none' }, 'rtl')).toBeNull();
+    expect(
+      collection.arrivalFrom({ kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
+    ).toBeNull();
+    expect(collection.arrivalFrom({ kind: 'none' }, 'rtl', byCfi)).toBeNull();
   });
 
   it('seeks the cfi a url names, with the quote of the passage lifted there', async () => {

@@ -1,5 +1,6 @@
 import type { Container } from '$lib/container';
 import type { Capture } from '../../domain/capture/capture';
+import type { PassageOrder } from '../../domain/capture/capture-order';
 import { matchesByBook, matchTally } from '../../domain/capture/capture-results';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import type { Tag } from '../../domain/tag/tag';
@@ -12,10 +13,16 @@ class CaptureSearchView {
   status = $state<CaptureSearchStatus>('idle');
 
   #container: Container;
+  #passages: PassageOrder;
   #generation = 0;
 
-  constructor(container: Container) {
+  constructor(container: Container, passages: PassageOrder) {
     this.#container = container;
+    this.#passages = passages;
+  }
+
+  get passages(): PassageOrder {
+    return this.#passages;
   }
 
   get count(): number {
@@ -23,7 +30,7 @@ class CaptureSearchView {
   }
 
   matchCount(books: readonly SearchedBook[], query: string): number {
-    return matchTally(matchesByBook(this.captures, books, query));
+    return matchTally(matchesByBook(this.captures, books, query, this.#passages));
   }
 
   async load(): Promise<void> {

@@ -21,6 +21,7 @@
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import { toastNotify } from '$lib/shared/notice-toast';
+  import type { PassageOrder } from '../../domain/capture/capture-order';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
   import { modelLoadAnnouncement } from '../engine/recognizer-view.svelte';
   import type { FocusTarget } from './card-editing.svelte';
@@ -42,11 +43,12 @@
     readonly view: CaptureView;
     readonly language: Language | null;
     readonly direction: ReadingDirection;
+    readonly passages: PassageOrder;
     readonly source: CaptureSource;
     readonly onSeek?: (passage: TextAnchor) => void;
   };
 
-  let { view, language, direction, source, onSeek }: Props = $props();
+  let { view, language, direction, passages, source, onSeek }: Props = $props();
 
   const uid = $props.id();
 
@@ -58,6 +60,7 @@
     language,
     progress: view.progress,
     direction,
+    passages,
     seekable: onSeek !== undefined,
   }));
 

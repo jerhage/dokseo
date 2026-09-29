@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { ImageRect } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -11,14 +12,14 @@ type PassageOrder = (earlier: string, later: string) => number;
 
 type Ordering =
   | { readonly kind: 'by-geometry'; readonly regions: readonly ImageRegion[] }
-  | { readonly kind: 'in-the-order-given' };
+  | { readonly kind: 'by-passage'; readonly cfi: string };
 
-const IN_THE_ORDER_GIVEN: Ordering = { kind: 'in-the-order-given' };
+const EARLIER = -1;
 
-const KEEPS_THE_ORDER_GIVEN = 0;
+const LATER = 1;
 
 function orderingOf(anchor: Anchor): Ordering {
-  if (anchor.kind === 'text') return IN_THE_ORDER_GIVEN;
+  if (anchor.kind === 'text') return { kind: 'by-passage', cfi: anchor.cfi };
 
   return { kind: 'by-geometry', regions: anchor.regions };
 }
@@ -48,21 +49,37 @@ function compareGeometry(
   return acrossReading(first.rect, direction) - acrossReading(second.rect, direction);
 }
 
-function comparePlaces(earlier: Placed, later: Placed, direction: ReadingDirection): number {
-  const first = orderingOf(earlier.anchor);
-  const second = orderingOf(later.anchor);
-  if (first.kind === 'in-the-order-given' || second.kind === 'in-the-order-given') {
-    return KEEPS_THE_ORDER_GIVEN;
-  }
+function comparePassageCfis(earlier: string, later: string, passages: PassageOrder): number {
+  if (earlier.length === 0) return later.length === 0 ? 0 : LATER;
+  if (later.length === 0) return EARLIER;
 
-  return compareGeometry(first.regions, second.regions, direction);
+  return passages(earlier, later);
+}
+
+function comparePlaces(
+  earlier: Placed,
+  later: Placed,
+  direction: ReadingDirection,
+  passages: PassageOrder,
+): number {
+  return match([orderingOf(earlier.anchor), orderingOf(later.anchor)] as const)
+    .with([{ kind: 'by-geometry' }, { kind: 'by-geometry' }], ([first, second]) =>
+      compareGeometry(first.regions, second.regions, direction),
+    )
+    .with([{ kind: 'by-passage' }, { kind: 'by-passage' }], ([first, second]) =>
+      comparePassageCfis(first.cfi, second.cfi, passages),
+    )
+    .with([{ kind: 'by-geometry' }, { kind: 'by-passage' }], () => EARLIER)
+    .with([{ kind: 'by-passage' }, { kind: 'by-geometry' }], () => LATER)
+    .exhaustive();
 }
 
 function inBookOrder<T extends Placed>(
   captures: readonly T[],
   direction: ReadingDirection,
+  passages: PassageOrder,
 ): readonly T[] {
-  return captures.toSorted((earlier, later) => comparePlaces(earlier, later, direction));
+  return captures.toSorted((earlier, later) => comparePlaces(earlier, later, direction, passages));
 }
 
 function inPassageOrder<T extends Passaged>(

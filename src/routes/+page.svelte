@@ -5,6 +5,7 @@
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
+  import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
@@ -17,7 +18,7 @@
   const container = useContainer();
   const notify = toastNotify(getToaster());
   const view = new LibraryView(container, notify);
-  const find = new CaptureSearchView(container);
+  const find = new CaptureSearchView(container, comparePassages);
   const scroll = new LibraryScrollView();
   const books = $derived(
     view.books.map((book) => ({

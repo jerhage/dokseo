@@ -237,15 +237,22 @@ class CaptureCollection {
     return stored?.origin === origin ? stored.note : null;
   }
 
-  arrivalFrom(found: ReaderArrival, direction: ReadingDirection): Arrival<ArrivalCapture> | null {
+  arrivalFrom(
+    found: ReaderArrival,
+    direction: ReadingDirection,
+    passages: PassageOrder,
+  ): Arrival<ArrivalCapture> | null {
     return match(found)
       .with({ kind: 'image' }, (image) =>
         image.region === null
           ? null
-          : arrivalAt(this.read, image.query, direction, {
-              index: image.index,
-              rect: image.region,
-            }),
+          : arrivalAt(
+              this.read,
+              image.query,
+              direction,
+              { index: image.index, rect: image.region },
+              passages,
+            ),
       )
       .with({ kind: 'passage' }, () => null)
       .with({ kind: 'none' }, () => null)

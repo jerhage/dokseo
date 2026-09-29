@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
+  import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
@@ -21,7 +22,7 @@
     })),
   );
   const wanted = $derived(readTagName(page.url.searchParams.get(TAG_PARAMETER)));
-  const view = new TagView(container, () => ({ books, wanted }));
+  const view = new TagView(container, () => ({ books, wanted }), comparePassages);
 
   onMount(() => {
     void shelf.load();

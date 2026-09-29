@@ -2,6 +2,7 @@ import type { TagId } from '$lib/shared/ids';
 import { matchesQuery } from '$lib/shared/text-search';
 import { captureHolds, inBooks } from './capture-results';
 import type { BookMatches, SearchedBook, Tagged, Written } from './capture-results';
+import type { PassageOrder } from './capture-order';
 import type { Tag } from '../tag/tag';
 
 type SearchFilter = 'everything' | 'tags';
@@ -38,6 +39,7 @@ function quickFinds<T extends Written & Tagged>(
   tags: readonly Tag[],
   query: string,
   filter: SearchFilter,
+  passages: PassageOrder,
 ): QuickFinds<T> {
   if (query.trim().length === 0) return { books: [], captures: [] };
 
@@ -48,7 +50,7 @@ function quickFinds<T extends Written & Tagged>(
       (filter === 'everything' && captureHolds(capture, query)),
   );
 
-  return { books: titledBooks(books, query, filter), captures: inBooks(found, books) };
+  return { books: titledBooks(books, query, filter), captures: inBooks(found, books, passages) };
 }
 
 export { quickFinds, matchedTagIds };
