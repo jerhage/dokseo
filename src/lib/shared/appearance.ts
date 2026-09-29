@@ -13,13 +13,13 @@ type RootAttributes = Pick<Element, 'getAttribute' | 'setAttribute' | 'removeAtt
 
 const THEMES: readonly Theme[] = [
   'base',
+  'petal',
+  'yorha',
+  'crayon',
   'ember',
   'mono',
   'forge',
-  'crayon',
   'moss',
-  'petal',
-  'yorha',
 ];
 
 const COLOR_SCHEMES: readonly ColorScheme[] = ['automatic', 'light', 'dark'];

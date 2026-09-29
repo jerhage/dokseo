@@ -1,4 +1,6 @@
+import { COLOR_SCHEMES, THEMES } from '$lib/shared/appearance';
 import type { ColorScheme, Theme } from '$lib/shared/appearance';
+import { SCHEME_LABELS, THEME_LABELS } from '$lib/shared/appearance-labels';
 
 type ThemeOption = { readonly theme: Theme; readonly label: string };
 
@@ -8,26 +10,22 @@ type SchemeOption = {
   readonly hint: string;
 };
 
-const THEME_OPTIONS: readonly ThemeOption[] = [
-  { theme: 'base', label: 'Base' },
-  { theme: 'ember', label: 'Ember' },
-  { theme: 'mono', label: 'Mono' },
-  { theme: 'forge', label: 'Forge' },
-  { theme: 'crayon', label: 'Crayon' },
-  { theme: 'moss', label: 'Moss' },
-  { theme: 'petal', label: 'Petal' },
-  { theme: 'yorha', label: 'YoRHa' },
-];
+const SCHEME_HINTS: Readonly<Record<ColorScheme, string>> = {
+  automatic: 'Follows the light or dark setting of this device',
+  light: 'Always light',
+  dark: 'Always dark',
+};
 
-const SCHEME_OPTIONS: readonly SchemeOption[] = [
-  {
-    colorScheme: 'automatic',
-    label: 'Automatic',
-    hint: 'Follows the light or dark setting of this device',
-  },
-  { colorScheme: 'light', label: 'Light', hint: 'Always light' },
-  { colorScheme: 'dark', label: 'Dark', hint: 'Always dark' },
-];
+const THEME_OPTIONS: readonly ThemeOption[] = THEMES.map((theme) => ({
+  theme,
+  label: THEME_LABELS[theme],
+}));
+
+const SCHEME_OPTIONS: readonly SchemeOption[] = COLOR_SCHEMES.map((colorScheme) => ({
+  colorScheme,
+  label: SCHEME_LABELS[colorScheme],
+  hint: SCHEME_HINTS[colorScheme],
+}));
 
 export { SCHEME_OPTIONS, THEME_OPTIONS };
 export type { SchemeOption, ThemeOption };
