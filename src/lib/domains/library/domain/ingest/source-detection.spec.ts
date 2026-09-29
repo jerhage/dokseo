@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { at } from '$lib/shared/testing/at';
-import { detectSourceKind, splitUpload } from './source-detection';
+import { detectSourceKind, fingerprintedFiles, splitUpload } from './source-detection';
 import type { UploadBook, UploadEntry } from './source-detection';
 
 describe('detectSourceKind', () => {
@@ -232,5 +232,28 @@ describe('splitUpload', () => {
     for (const book of splitUpload(upload)) {
       expect(detectSourceKind(book.files.map((file) => file.name))).toBe(book.sourceKind);
     }
+  });
+});
+
+describe('fingerprintedFiles', () => {
+  it('keeps only the pages of an images book, in the order they came', () => {
+    const pages = [entry('002.png', 'Ch 1/002.png'), entry('001.png', 'Ch 1/001.png')];
+    const upload = [
+      entry('.DS_Store', 'Ch 1/.DS_Store'),
+      at(pages, 0),
+      entry('._002.png', 'Ch 1/._002.png'),
+      entry('Thumbs.db', 'Ch 1/Thumbs.db'),
+      entry('notes.txt', 'Ch 1/notes.txt'),
+      at(pages, 1),
+      entry('001.png', 'Ch 1/__MACOSX/001.png'),
+    ];
+
+    expect(fingerprintedFiles(upload)).toEqual(pages);
+  });
+
+  it('keeps the one file of a container book', () => {
+    const container = [entry('vol1.cbz', 'Series/vol1.cbz')];
+
+    expect(fingerprintedFiles(container)).toEqual(container);
   });
 });

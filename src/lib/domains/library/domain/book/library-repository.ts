@@ -1,6 +1,7 @@
 import type { BookId } from '$lib/shared/ids';
 import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from './book';
+import type { PageList, PageOrder } from './page-list';
 import type { SourceWriteReport } from '../ingest/upload-progress';
 
 type LibraryError =
@@ -15,8 +16,11 @@ interface LibraryRepository {
     book: Book,
     source: Blob,
     cover: Blob | null,
+    order: PageOrder,
     report: SourceWriteReport,
   ): Promise<Result<void, LibraryError>>;
+  readPageList(id: BookId): Promise<Result<PageList, LibraryError>>;
+  savePageList(id: BookId, names: readonly string[]): Promise<Result<void, LibraryError>>;
   remove(id: BookId): Promise<Result<void, LibraryError>>;
   update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>>;
   readSource(id: BookId): Promise<Result<Blob, LibraryError>>;

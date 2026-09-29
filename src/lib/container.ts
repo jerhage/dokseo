@@ -30,7 +30,11 @@ import { saveReadingSettings } from './domains/flowing/use-cases/save-reading-se
 import type { SaveReadingSettingsDeps } from './domains/flowing/use-cases/save-reading-settings';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
-import { openStoredPageSource } from './domains/library/adapters/stored-page-source';
+import {
+  listStoredPageNames,
+  openListedPageSource,
+  openStoredPageSource,
+} from './domains/library/adapters/stored-page-source';
 import type { Book, BookEdit } from './domains/library/domain/book/book';
 import type { BookMatching } from './domains/library/domain/book/book-matching';
 import type { LibraryError } from './domains/library/domain/book/library-repository';
@@ -371,7 +375,12 @@ function buildContainer(): Container {
     newId: () => crypto.randomUUID(),
   };
 
-  const openForReadingDeps: OpenForReadingDeps = { repository, openPages: openStoredPageSource };
+  const openForReadingDeps: OpenForReadingDeps = {
+    repository,
+    openPages: openStoredPageSource,
+    openListedPages: openListedPageSource,
+    listPageNames: listStoredPageNames,
+  };
   const listBooksDeps: ListBooksDeps = { repository };
   const readBookDeps: ReadBookDeps = { repository };
   const readCoverDeps: ReadCoverDeps = { repository };

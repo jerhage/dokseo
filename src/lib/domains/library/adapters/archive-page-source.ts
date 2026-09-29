@@ -9,28 +9,61 @@ import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-
 import { describeCause } from '$lib/shared/cause';
 import { entryImageSizes } from './entry-image-size';
 
-function orderedImages(entries: readonly Entry[]): FileEntry[] {
+function filesByName(entries: readonly Entry[]): Map<string, FileEntry> {
   const byName = new Map<string, FileEntry>();
   for (const entry of entries) {
     if (!entry.directory) byName.set(entry.filename, entry);
   }
-  const ordered: FileEntry[] = [];
-  for (const name of selectImageEntries([...byName.keys()])) {
-    const entry = byName.get(name);
-    if (entry) ordered.push(entry);
-  }
-  return ordered;
+  return byName;
 }
 
-async function openArchivePageSource(source: Blob): Promise<Result<PageSource, PageSourceError>> {
+function listedImages(
+  byName: ReadonlyMap<string, FileEntry>,
+  names: readonly string[],
+): Result<FileEntry[], PageSourceError> {
+  const listed: FileEntry[] = [];
+  for (const name of names) {
+    const entry = byName.get(name);
+    if (entry === undefined) {
+      return err({ kind: 'source-unreadable', cause: `The archive holds no page named "${name}"` });
+    }
+    listed.push(entry);
+  }
+  return ok(listed);
+}
+
+async function listArchivePageNames(
+  source: Blob,
+): Promise<Result<readonly string[], PageSourceError>> {
   const reader = new ZipReader(new BlobReader(source));
-  let images: FileEntry[];
   try {
-    images = orderedImages(await reader.getEntries());
+    const byName = filesByName(await reader.getEntries());
+    return ok(selectImageEntries([...byName.keys()]));
+  } catch (cause) {
+    return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+  } finally {
+    await reader.close().catch(() => undefined);
+  }
+}
+
+async function openArchivePageSource(
+  source: Blob,
+  names: readonly string[],
+): Promise<Result<PageSource, PageSourceError>> {
+  const reader = new ZipReader(new BlobReader(source));
+  let byName: Map<string, FileEntry>;
+  try {
+    byName = filesByName(await reader.getEntries());
   } catch (cause) {
     await reader.close().catch(() => undefined);
     return err({ kind: 'source-unreadable', cause: describeCause(cause) });
   }
+  const listed = listedImages(byName, names);
+  if (!listed.ok) {
+    await reader.close().catch(() => undefined);
+    return listed;
+  }
+  const images = listed.value;
 
   const count = images.length;
   let closed = false;
@@ -91,4 +124,4 @@ async function openArchivePageSource(source: Blob): Promise<Result<PageSource, P
   });
 }
 
-export { openArchivePageSource };
+export { listArchivePageNames, openArchivePageSource };

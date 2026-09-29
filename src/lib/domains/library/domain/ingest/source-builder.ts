@@ -1,11 +1,17 @@
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../book/book';
+import type { PageOrder } from '../book/page-list';
 import type { IngestLimit } from './ingest-limits';
 import type { PageObstacle } from './epub-pages';
 import type { UploadReport } from './upload-progress';
 
 type BuiltPages =
-  | { readonly kind: 'images'; readonly imageCount: number; readonly cover: Blob }
+  | {
+      readonly kind: 'images';
+      readonly imageCount: number;
+      readonly cover: Blob;
+      readonly order: PageOrder;
+    }
   | {
       readonly kind: 'unpaged';
       readonly obstacle: PageObstacle;

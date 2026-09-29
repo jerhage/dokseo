@@ -5,6 +5,8 @@ import { imageIndex } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../domain/book/book';
+import { INTRINSIC_ORDER } from '../domain/book/page-list';
+import type { PageOrder } from '../domain/book/page-list';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { PageObstacle } from '../domain/ingest/epub-pages';
 import { uploadBreach } from '../domain/ingest/ingest-limits';
@@ -14,7 +16,11 @@ import type { UploadReport } from '../domain/ingest/upload-progress';
 import { detectSourceKind } from '../domain/ingest/source-detection';
 import { suggestTitle } from '../domain/book/title';
 import { entryName, titleCandidate } from './file-entry';
-import { openStoredPageSource } from './stored-page-source';
+import {
+  listStoredPageNames,
+  openListedPageSource,
+  openStoredPageSource,
+} from './stored-page-source';
 
 const COVER_MAX_WIDTH = 400;
 
@@ -50,7 +56,7 @@ async function sourceBlobOf(
 }
 
 type OpenedPages =
-  | { readonly kind: 'source'; readonly source: PageSource }
+  | { readonly kind: 'source'; readonly source: PageSource; readonly order: PageOrder }
   | {
       readonly kind: 'unpaged';
       readonly obstacle: PageObstacle;
@@ -64,20 +70,33 @@ async function epubPages(blob: Blob): Promise<Result<OpenedPages, SourceBuildErr
   if (opened.value.kind === 'not-paged') {
     return ok({ kind: 'unpaged', obstacle: opened.value.obstacle, cover: opened.value.cover });
   }
-  return ok({ kind: 'source', source: opened.value.source });
+  return ok({ kind: 'source', source: opened.value.source, order: INTRINSIC_ORDER });
 }
 
-async function pagesOf(
+async function pdfPages(blob: Blob): Promise<Result<OpenedPages, SourceBuildError>> {
+  const opened = await openStoredPageSource('pdf', blob);
+  if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
+  return ok({ kind: 'source', source: opened.value, order: INTRINSIC_ORDER });
+}
+
+async function listedPages(blob: Blob): Promise<Result<OpenedPages, SourceBuildError>> {
+  const listed = await listStoredPageNames(blob);
+  if (!listed.ok) return err({ kind: 'unreadable', cause: describePageSourceError(listed.error) });
+  const names = listed.value;
+  const opened = await openListedPageSource(blob, names);
+  if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
+  return ok({ kind: 'source', source: opened.value, order: { kind: 'listed', names } });
+}
+
+function pagesOf(
   sourceKind: SourceKind,
   blob: Blob,
 ): Promise<Result<OpenedPages, SourceBuildError>> {
-  if (sourceKind === 'epub') {
-    const epub = await epubPages(blob);
-    return epub;
-  }
-  const opened = await openStoredPageSource(sourceKind, blob);
-  if (!opened.ok) return err({ kind: 'unreadable', cause: describePageSourceError(opened.error) });
-  return ok({ kind: 'source', source: opened.value });
+  return match(sourceKind)
+    .with('epub', () => epubPages(blob))
+    .with('pdf', () => pdfPages(blob))
+    .with('images', 'archive', () => listedPages(blob))
+    .exhaustive();
 }
 
 async function buildFrom(
@@ -111,6 +130,7 @@ async function buildFrom(
     });
   }
 
+  const order = opened.value.order;
   using pages = opened.value.source;
   if (pages.count === 0) return err({ kind: 'nothing-usable' });
 
@@ -129,7 +149,7 @@ async function buildFrom(
     blob: source.value,
     sourceKind,
     suggestedTitle,
-    pages: { kind: 'images', imageCount: pages.count, cover },
+    pages: { kind: 'images', imageCount: pages.count, cover, order },
   });
 }
 

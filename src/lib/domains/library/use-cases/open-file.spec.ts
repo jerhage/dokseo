@@ -9,6 +9,7 @@ import { at } from '$lib/shared/testing/at';
 import { applyEdit, defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type { PageOrder } from '../domain/book/page-list';
 import { NO_CONTENT_HASH } from '../domain/book/stored-book';
 import type { EpubInspection, EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
@@ -44,8 +45,10 @@ type BuiltImages = Extract<BuiltPages, { readonly kind: 'images' }>;
 
 const COVER = new Blob(['cover bytes']);
 
+const LISTED: PageOrder = { kind: 'listed', names: ['001.jpg', '002.jpg'] };
+
 function builtImages(overrides: Partial<BuiltImages> = {}): BuiltImages {
-  return { kind: 'images', imageCount: 182, cover: COVER, ...overrides };
+  return { kind: 'images', imageCount: 182, cover: COVER, order: LISTED, ...overrides };
 }
 
 function builtSource(overrides: Partial<BuiltSource> = {}): BuiltSource {
@@ -62,7 +65,12 @@ function builtFlow(obstacle: PageObstacle, cover: Blob | null = null): BuiltSour
   return builtSource({ sourceKind: 'epub', pages: { kind: 'unpaged', obstacle, cover } });
 }
 
-type AddCall = { readonly book: Book; readonly source: Blob; readonly cover: Blob | null };
+type AddCall = {
+  readonly book: Book;
+  readonly source: Blob;
+  readonly cover: Blob | null;
+  readonly order: PageOrder;
+};
 
 function heldBook(hash: ContentHash): Book {
   return {
@@ -94,8 +102,8 @@ function fakeRepository(
   const repository: LibraryRepository = {
     list: () => Promise.resolve(held),
     get: (id) => Promise.resolve(notFound(id)),
-    add: (book, source, cover, report) => {
-      added.push({ book, source, cover });
+    add: (book, source, cover, order, report) => {
+      added.push({ book, source, cover, order });
       for (const [written, total] of writes) report(written, total);
       return Promise.resolve(outcome);
     },
@@ -108,6 +116,8 @@ function fakeRepository(
     readSource: (id) => Promise.resolve(notFound(id)),
     readCover: (id) => Promise.resolve(notFound(id)),
     storedBytes: () => Promise.resolve(ok(0)),
+    readPageList: () => Promise.resolve(ok({ kind: 'unlisted' as const })),
+    savePageList: () => Promise.resolve(ok(undefined)),
   };
   return { repository, added, updated };
 }
@@ -200,14 +210,14 @@ function fakeFingerprint(digest: string = DIGEST) {
   };
 }
 
-const files: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.cbz')];
-
-const epub: readonly File[] = [new File(['bytes'], 'Yotsuba&! 1.epub')];
-
 function inFolder(file: File, path: string): File {
   Object.defineProperty(file, 'webkitRelativePath', { value: path });
   return file;
 }
+
+const files: readonly File[] = [inFolder(new File(['bytes'], 'Yotsuba&! 1.cbz'), '')];
+
+const epub: readonly File[] = [inFolder(new File(['bytes'], 'Yotsuba&! 1.epub'), '')];
 
 const folder: readonly File[] = [
   inFolder(new File(['0123456789'], '002.png'), 'Ch 12/002.png'),
@@ -230,6 +240,14 @@ describe('openFile', () => {
       kind: 'added',
       book: at(repository.added, 0).book,
     });
+  });
+
+  it('stores the page list the builder made with the book', async () => {
+    const repository = fakeRepository();
+
+    await openFile(deps({ repository: repository.repository }), files);
+
+    expect(at(repository.added, 0).order).toEqual(LISTED);
   });
 
   it('stores the source blob and the cover the builder produced', async () => {
@@ -481,6 +499,34 @@ describe('openFile', () => {
     await openFile(deps({ partialMd5: hashing.fingerprint }), folder);
 
     expect(await at(hashing.hashed, 0).text()).toBe(uploadManifest(folder));
+  });
+
+  it('fingerprints a folder of images with junk files beside its pages as it does the pages alone', async () => {
+    const alone = fakeFingerprint();
+    const withJunk = fakeFingerprint();
+    const junk = [
+      inFolder(new File(['finder state'], '.DS_Store'), 'Ch 12/.DS_Store'),
+      inFolder(new File(['fork'], '._001.png'), 'Ch 12/._001.png'),
+      inFolder(new File(['cache'], 'Thumbs.db'), 'Ch 12/Thumbs.db'),
+      inFolder(new File(['credits'], 'notes.txt'), 'Ch 12/notes.txt'),
+    ];
+
+    await openFile(deps({ partialMd5: alone.fingerprint }), folder);
+    await openFile(deps({ partialMd5: withJunk.fingerprint }), [...junk, ...folder]);
+
+    expect(await at(withJunk.hashed, 0).text()).toBe(await at(alone.hashed, 0).text());
+  });
+
+  it('fingerprints the one page of a folder whose other files are junk as that page', async () => {
+    const hashing = fakeFingerprint();
+    const page = inFolder(new File(['01234'], '001.png'), 'Ch 1/001.png');
+
+    await openFile(deps({ partialMd5: hashing.fingerprint }), [
+      inFolder(new File(['finder state'], '.DS_Store'), 'Ch 1/.DS_Store'),
+      page,
+    ]);
+
+    expect(hashing.hashed).toEqual([page]);
   });
 
   it('reads the same manifest whichever order a folder arrives in', async () => {
@@ -846,6 +892,22 @@ describe('openFile', () => {
       fraction: null,
     });
     expect(at(repository.added, 0).cover).toBe(COVER);
+  });
+
+  it('stores a flow book with the order its EPUB gives it, not a page list', async () => {
+    const repository = fakeRepository();
+    const builder = fakeBuilder(ok(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })));
+
+    await openFile(
+      deps({
+        repository: repository.repository,
+        builder: builder.builder,
+        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
+      }),
+      epub,
+    );
+
+    expect(at(repository.added, 0).order).toEqual({ kind: 'intrinsic' });
   });
 
   it('stores a flow book whose EPUB names no cover with none', async () => {

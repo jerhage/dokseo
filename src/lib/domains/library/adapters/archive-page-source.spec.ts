@@ -2,9 +2,14 @@ import { BlobWriter, TextReader, Uint8ArrayReader, ZipWriter } from '@zip.js/zip
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
 import type { PageSource } from '$lib/shared/page-source';
-import { openArchivePageSource } from './archive-page-source';
+import { ok } from '$lib/shared/result';
+import { listArchivePageNames, openArchivePageSource } from './archive-page-source';
 
 const decode = vi.fn();
+
+const PAGES = ['001.jpg', '002.jpg'];
+
+const IMAGE_PAGES = ['001.png', '002.jpg', '003.jpg'];
 
 async function archive(): Promise<Blob> {
   const writer = new ZipWriter(new BlobWriter('application/zip'));
@@ -114,7 +119,7 @@ async function imageArchive(level: number): Promise<CountingBlob> {
 }
 
 async function opened(): Promise<PageSource> {
-  const source = await openArchivePageSource(await archive());
+  const source = await openArchivePageSource(await archive(), PAGES);
   if (!source.ok) throw new Error('the archive could not be opened');
   return source.value;
 }
@@ -128,24 +133,71 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('openArchivePageSource', () => {
+async function archiveOf(names: readonly string[]): Promise<Blob> {
+  const writer = new ZipWriter(new BlobWriter('application/zip'));
+  for (const name of names) {
+    await writer.add(name, new TextReader(name), { level: 0 });
+  }
+  return writer.close();
+}
+
+async function decodedText(source: PageSource, index: number): Promise<string> {
+  decode.mockReset();
+  decode.mockResolvedValue({ close: () => undefined });
+  await source.image(imageIndex(index));
+  const [entry] = decode.mock.lastCall ?? [];
+  if (!(entry instanceof Blob)) throw new Error('nothing was decoded');
+  return entry.text();
+}
+
+describe('listArchivePageNames', () => {
   it('lists no junk entry of a ZIP as a page', async () => {
-    const writer = new ZipWriter(new BlobWriter('application/zip'));
-    for (const name of [
+    const junky = await archiveOf([
       '001.jpg',
       '._001.jpg',
       '__MACOSX/._001.jpg',
       '.cover.jpg',
       '.thumbnails/001.jpg',
       '002.jpg',
-    ]) {
-      await writer.add(name, new TextReader(name), { level: 0 });
-    }
-    const junky = await openArchivePageSource(await writer.close());
-    if (!junky.ok) throw new Error('the archive could not be opened');
-    using source = junky.value;
+    ]);
 
-    expect(source.count).toBe(2);
+    expect(await listArchivePageNames(junky)).toEqual(ok(['001.jpg', '002.jpg']));
+  });
+
+  it('orders the page names naturally, whatever order the archive holds them in', async () => {
+    const shuffled = await archiveOf(['10.jpg', 'notes.txt', '2.jpg', '1.jpg']);
+
+    expect(await listArchivePageNames(shuffled)).toEqual(ok(['1.jpg', '2.jpg', '10.jpg']));
+  });
+});
+
+describe('openArchivePageSource', () => {
+  it('opens the pages in the order of the list it is given', async () => {
+    const opening = await openArchivePageSource(await archive(), ['002.jpg', '001.jpg']);
+    if (!opening.ok) throw new Error('the archive could not be opened');
+    using source = opening.value;
+
+    expect(await decodedText(source, 0)).toBe('second page bytes');
+    expect(await decodedText(source, 1)).toBe('first page bytes');
+  });
+
+  it('keeps every page its list names, though the entry rule now rejects one of them', async () => {
+    const blob = await archiveOf(['.cover.jpg', '001.jpg', '002.jpg']);
+    const opening = await openArchivePageSource(blob, ['.cover.jpg', '001.jpg', '002.jpg']);
+    if (!opening.ok) throw new Error('the archive could not be opened');
+    using source = opening.value;
+
+    expect(source.count).toBe(3);
+    expect(await decodedText(source, 1)).toBe('001.jpg');
+  });
+
+  it('reports the archive unreadable when it lacks a page its list names', async () => {
+    const opening = await openArchivePageSource(await archive(), ['001.jpg', '003.jpg']);
+
+    expect(opening).toEqual({
+      ok: false,
+      error: { kind: 'source-unreadable', cause: expect.stringContaining('"003.jpg"') },
+    });
   });
 
   it('hands back an encoded picture without decoding the entry', async () => {
@@ -159,7 +211,7 @@ describe('openArchivePageSource', () => {
 
   it('reports an unreadable page, not a decode failure, when the entry will not read', async () => {
     const blob = await flaky();
-    const source = await openArchivePageSource(blob);
+    const source = await openArchivePageSource(blob, PAGES);
     if (!source.ok) throw new Error('the archive could not be opened');
     using pages = source.value;
     blob.broken = true;
@@ -220,7 +272,7 @@ describe('openArchivePageSource', () => {
     ['deflated', 6],
   ])('reads each size from the %s entry header, turned as the image is shown', async (_, level) => {
     const blob = await imageArchive(level);
-    const source = await openArchivePageSource(blob);
+    const source = await openArchivePageSource(blob, IMAGE_PAGES);
     if (!source.ok) throw new Error('the archive could not be opened');
     using pages = source.value;
 
@@ -234,7 +286,7 @@ describe('openArchivePageSource', () => {
 
   it('reads the head of a large entry, not the whole of it', async () => {
     const blob = await imageArchive(0);
-    const source = await openArchivePageSource(blob);
+    const source = await openArchivePageSource(blob, IMAGE_PAGES);
     if (!source.ok) throw new Error('the archive could not be opened');
     using pages = source.value;
     blob.read = 0;

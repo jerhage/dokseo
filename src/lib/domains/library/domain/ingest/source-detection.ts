@@ -65,5 +65,10 @@ function splitUpload<F extends UploadEntry>(files: readonly F[]): readonly Uploa
   return [...books, { sourceKind: 'images', files: rest }];
 }
 
-export { detectSourceKind, splitUpload };
+function fingerprintedFiles<F extends UploadEntry>(files: readonly F[]): readonly F[] {
+  if (detectSourceKind(files.map(pathOf)) !== 'images') return files;
+  return files.filter((file) => isPageImage(pathOf(file)));
+}
+
+export { detectSourceKind, fingerprintedFiles, splitUpload };
 export type { UploadBook, UploadEntry };

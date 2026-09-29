@@ -13,10 +13,12 @@ import type { Book } from '../domain/book/book';
 import { carriesLegacyHash, DEFAULT_BOOK_MATCHING, joinUpload } from '../domain/book/book-matching';
 import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import { INTRINSIC_ORDER } from '../domain/book/page-list';
+import type { PageOrder } from '../domain/book/page-list';
 import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
 import type { PageObstacle } from '../domain/ingest/epub-pages';
-import { detectSourceKind } from '../domain/ingest/source-detection';
+import { detectSourceKind, fingerprintedFiles } from '../domain/ingest/source-detection';
 import type { BuiltPages, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { languageDeclared } from '../domain/ingest/declared-language';
 import type { EpubPackage } from '../domain/ingest/epub-package';
@@ -85,10 +87,9 @@ async function uploadIdentity(
   held: readonly Book[],
   files: readonly File[],
 ): Promise<Result<UploadIdentity, OpenFileError>> {
-  const upload = hashedPart(files);
-  const hashed = await hashWith(deps.partialMd5, upload);
+  const hashed = await hashWith(deps.partialMd5, hashedPart(fingerprintedFiles(files)));
   if (!hashed.ok) return hashed;
-  const legacy = await legacyHashIfHeld(deps, held, upload);
+  const legacy = await legacyHashIfHeld(deps, held, hashedPart(files));
   if (!legacy.ok) return legacy;
   return ok({ contentHash: hashed.value, legacyHash: legacy.value, fileName: uploadName(files) });
 }
@@ -153,6 +154,7 @@ type BookContent = {
   readonly imageCount: number;
   readonly cover: Blob | null;
   readonly position: ReadingPlace;
+  readonly order: PageOrder;
 };
 
 const NO_IMAGES = 0;
@@ -163,6 +165,7 @@ function flowContent(cover: Blob | null): BookContent {
     imageCount: NO_IMAGES,
     cover,
     position: START_OF_THE_TEXT,
+    order: INTRINSIC_ORDER,
   };
 }
 
@@ -180,6 +183,7 @@ function contentOf(
       imageCount: pages.imageCount,
       cover: pages.cover,
       position: imagePlace(imageIndex(0)),
+      order: pages.order,
     });
   }
   if (!declaresReflowing(inspection)) return err({ kind: 'not-paged', obstacle: pages.obstacle });
@@ -260,6 +264,7 @@ async function openFile(
     book,
     built.value.blob,
     content.value.cover,
+    content.value.order,
     (writtenBytes, totalBytes) => {
       report({
         kind: 'storing',

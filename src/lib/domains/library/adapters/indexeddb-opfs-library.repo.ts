@@ -13,15 +13,19 @@ import type { Result } from '$lib/shared/result';
 import { applyEdit } from '../domain/book/book';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import { pageListFromStored } from '../domain/book/page-list';
+import type { PageList, PageOrder, StoredPageList } from '../domain/book/page-list';
 import { bookFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
 const DATABASE_NAME = 'reader';
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 const BOOK_STORE = 'books';
+
+const PAGE_LIST_STORE = 'page-lists';
 
 type BlobKeys = { readonly source: string; readonly cover: string };
 
@@ -54,6 +58,9 @@ function notFlat(id: BookId): Result<never, LibraryError> {
 function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(BOOK_STORE)) {
     db.createObjectStore(BOOK_STORE, { keyPath: 'id' });
+  }
+  if (!db.objectStoreNames.contains(PAGE_LIST_STORE)) {
+    db.createObjectStore(PAGE_LIST_STORE, { keyPath: 'id' });
   }
 }
 
@@ -92,6 +99,14 @@ function createLibraryRepository(): LibraryRepository {
     }
   };
 
+  const forgetPageList = async (id: BookId): Promise<void> => {
+    try {
+      await deleteRecord(await database(), PAGE_LIST_STORE, id);
+    } catch {
+      return;
+    }
+  };
+
   return {
     async list(): Promise<Result<readonly Book[], LibraryError>> {
       if (!recordsAvailable()) return unavailable();
@@ -118,6 +133,7 @@ function createLibraryRepository(): LibraryRepository {
       book: Book,
       source: Blob,
       cover: Blob | null,
+      order: PageOrder,
       report: SourceWriteReport = () => undefined,
     ): Promise<Result<void, LibraryError>> {
       if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
@@ -131,10 +147,16 @@ function createLibraryRepository(): LibraryRepository {
         return failed(cause);
       }
       try {
-        await putRecord(await database(), BOOK_STORE, book);
+        const db = await database();
+        if (order.kind === 'listed') {
+          const pageList: StoredPageList = { id: book.id, names: order.names };
+          await putRecord(db, PAGE_LIST_STORE, pageList);
+        }
+        await putRecord(db, BOOK_STORE, book);
         return ok(undefined);
       } catch (cause) {
         await discard(keys);
+        await forgetPageList(book.id);
         return failed(cause);
       }
     },
@@ -144,7 +166,9 @@ function createLibraryRepository(): LibraryRepository {
       const keys = blobKeys(id);
       if (keys === null) return notFlat(id);
       try {
-        await deleteRecord(await database(), BOOK_STORE, id);
+        const db = await database();
+        await deleteRecord(db, BOOK_STORE, id);
+        await deleteRecord(db, PAGE_LIST_STORE, id);
         await blobs.remove(keys.source);
         await blobs.remove(keys.cover);
         return ok(undefined);
@@ -162,6 +186,27 @@ function createLibraryRepository(): LibraryRepository {
         const updated = applyEdit(bookFromStored(record), edit);
         await putRecord(db, BOOK_STORE, updated);
         return ok(updated);
+      } catch (cause) {
+        return failed(cause);
+      }
+    },
+
+    async readPageList(id: BookId): Promise<Result<PageList, LibraryError>> {
+      if (!recordsAvailable()) return unavailable();
+      try {
+        const record = await getRecord<StoredPageList>(await database(), PAGE_LIST_STORE, id);
+        return ok(pageListFromStored(record));
+      } catch (cause) {
+        return failed(cause);
+      }
+    },
+
+    async savePageList(id: BookId, names: readonly string[]): Promise<Result<void, LibraryError>> {
+      if (!recordsAvailable()) return unavailable();
+      const pageList: StoredPageList = { id, names };
+      try {
+        await putRecord(await database(), PAGE_LIST_STORE, pageList);
+        return ok(undefined);
       } catch (cause) {
         return failed(cause);
       }
