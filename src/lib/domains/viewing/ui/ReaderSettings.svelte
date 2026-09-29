@@ -17,6 +17,7 @@
   } from '$lib/shared/layout-choices';
   import type { TouchTurns } from '$lib/shared/page-turn';
   import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from '$lib/shared/touch-turns';
+  import { ALL_CAPTURES_LABEL } from './all-captures-setting';
   import { GESTURE_HINTS_LABEL } from './gesture-hints-setting';
 
   type FitChoice = {
@@ -37,11 +38,13 @@
     readonly offersAppearance: boolean;
     readonly touchTurns: TouchTurns;
     readonly gestureHints: boolean;
+    readonly allCaptures: boolean;
     readonly onlayout: (kind: ImageLayoutKind) => void;
     readonly onpairing: (pairing: PagePairing) => void;
     readonly ondirection: (direction: ReadingDirection) => void;
     readonly ontouchturns: (turns: TouchTurns) => void;
     readonly ongesturehints: (wanted: boolean) => void;
+    readonly onallcaptures: (wanted: boolean) => void;
   };
 
   let {
@@ -55,11 +58,13 @@
     offersAppearance,
     touchTurns,
     gestureHints,
+    allCaptures,
     onlayout,
     onpairing,
     ondirection,
     ontouchturns,
     ongesturehints,
+    onallcaptures,
   }: Props = $props();
 
   const uid = $props.id();
@@ -139,6 +144,10 @@
       checked={gestureHints}
       onchange={(event) => ongesturehints(event.currentTarget.checked)}
       >{GESTURE_HINTS_LABEL}</Checkbox
+    >
+
+    <Checkbox checked={allCaptures} onchange={(event) => onallcaptures(event.currentTarget.checked)}
+      >{ALL_CAPTURES_LABEL}</Checkbox
     >
 
     {#if offersAppearance}

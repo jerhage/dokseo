@@ -37,6 +37,8 @@
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
   import { chooseHints, hintsWanted } from './learned-gestures.svelte';
+  import { allCapturesWanted, chooseAllCaptures } from './all-captures.svelte';
+  import { shownGlow } from './page-glow';
   import { forgetZonesSeen } from './zones-seen.svelte';
   import ReaderSettings from './ReaderSettings.svelte';
   import './reader-screen.css';
@@ -44,6 +46,7 @@
   type Props = {
     readonly view: ReaderView;
     readonly glow?: readonly GlowRegion[];
+    readonly everyGlow?: readonly GlowRegion[];
     readonly panel?: Snippet;
     readonly panelCount?: number;
     readonly engine?: Snippet;
@@ -69,6 +72,7 @@
   let {
     view,
     glow = [],
+    everyGlow = [],
     panel,
     panelCount,
     engine,
@@ -98,6 +102,7 @@
   const shown = $derived(chromeShown(asked, readerFrame.focus.held));
   const makes = $derived(dragOrigin(noting));
   const narrow = $derived(readerFrame.narrow);
+  const lit = $derived(shownGlow(glow, everyGlow, allCapturesWanted()));
 
   function toggleChrome(): void {
     if (shown) {
@@ -294,7 +299,7 @@
         start={view.position}
         pictureAt={(index) => view.pictureAt(index)}
         measured={(index, size) => view.measure(index, size)}
-        {glow}
+        glow={lit}
         {makes}
         chromeShown={shown}
         {selecting}
@@ -313,7 +318,7 @@
           pageFit={book.pageFit}
           pictureAt={(index) => view.pictureAt(index)}
           measured={(index, size) => view.measure(index, size)}
-          {glow}
+          glow={lit}
           {makes}
           chromeShown={shown}
           {selecting}
@@ -435,6 +440,8 @@
   ontouchturns={chooseTouchTurns}
   gestureHints={hintsWanted()}
   ongesturehints={chooseHints}
+  allCaptures={allCapturesWanted()}
+  onallcaptures={chooseAllCaptures}
   onlayout={(kind) => void view.setLayoutKind(kind)}
   onpairing={(pairing) => void view.setPairing(pairing)}
   ondirection={(direction) => void view.setDirection(direction)}

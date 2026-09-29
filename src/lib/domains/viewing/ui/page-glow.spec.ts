@@ -3,7 +3,14 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { glowRegions } from '$lib/shared/image-region';
 import type { GlowRegion } from '$lib/shared/image-region';
-import { glowMarker, glowOn, LIFTED_MARKER, NOTE_MARKER, READING_MARKER } from './page-glow';
+import {
+  glowMarker,
+  glowOn,
+  LIFTED_MARKER,
+  NOTE_MARKER,
+  READING_MARKER,
+  shownGlow,
+} from './page-glow';
 
 function region(index: number, x: number): GlowRegion {
   return { index: imageIndex(index), rect: imageRect(x, 0, 10, 10), origin: 'recognized' };
@@ -54,5 +61,27 @@ describe('glowMarker', () => {
 
   it('names a lifted passage as its own kind', () => {
     expect(glowMarker([{ ...region(0, 0), origin: 'lifted' }])).toBe(LIFTED_MARKER);
+  });
+});
+
+describe('shownGlow', () => {
+  const named = [region(3, 40)];
+  const others = [region(3, 0), region(5, 0)];
+
+  it('shows only the named capture while the setting is off', () => {
+    expect(shownGlow(named, others, false)).toBe(named);
+  });
+
+  it('shows every capture, the named one first, while the setting is on', () => {
+    expect(shownGlow(named, others, true).map((found) => [found.index, found.rect.x])).toEqual([
+      [3, 40],
+      [3, 0],
+      [5, 0],
+    ]);
+  });
+
+  it('shows the other captures when the url names none and the setting is on', () => {
+    expect(shownGlow([], others, true)).toEqual(others);
+    expect(shownGlow([], others, false)).toEqual([]);
   });
 });

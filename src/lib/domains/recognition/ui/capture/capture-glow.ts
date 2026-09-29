@@ -14,4 +14,12 @@ function arrivalGlow(arrival: Arrival<ArrivalCapture> | null): readonly GlowRegi
   return arrival === null ? NOTHING_TO_GLOW : glowOf(arrival.at);
 }
 
-export { arrivalGlow };
+function everyOtherGlow(
+  captures: readonly ArrivalCapture[],
+  arrival: Arrival<ArrivalCapture> | null,
+): readonly GlowRegion[] {
+  const named = arrival?.at.id ?? null;
+  return captures.filter((capture) => capture.id !== named).flatMap(glowOf);
+}
+
+export { arrivalGlow, everyOtherGlow };

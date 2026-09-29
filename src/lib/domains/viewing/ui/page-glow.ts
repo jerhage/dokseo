@@ -13,6 +13,14 @@ function glowOn(glow: readonly GlowRegion[], index: ImageIndex): readonly GlowRe
   return glow.filter((region) => region.index === index);
 }
 
+function shownGlow(
+  named: readonly GlowRegion[],
+  others: readonly GlowRegion[],
+  all: boolean,
+): readonly GlowRegion[] {
+  return all && others.length > 0 ? [...named, ...others] : named;
+}
+
 function markerFor(origin: CaptureOrigin): string {
   return match(origin)
     .with('written', () => NOTE_MARKER)
@@ -28,4 +36,4 @@ function glowMarker(glow: readonly GlowRegion[]): string | null {
   return markerFor(first.origin);
 }
 
-export { LIFTED_MARKER, NOTE_MARKER, READING_MARKER, glowMarker, glowOn };
+export { LIFTED_MARKER, NOTE_MARKER, READING_MARKER, glowMarker, glowOn, shownGlow };

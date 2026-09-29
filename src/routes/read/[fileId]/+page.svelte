@@ -12,7 +12,7 @@
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
-  import { arrivalGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
+  import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
   import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
@@ -57,6 +57,7 @@
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction));
   const glow = $derived(arrivalGlow(here));
+  const everyGlow = $derived(everyOtherGlow(captures.read, here));
   const passage = $derived<SoughtPassage | null>(captures.passageFrom(found));
   const stepping = $derived(here?.stepping ?? null);
   const finding = $derived(arrivalQuery(found));
@@ -122,6 +123,7 @@
   <ReaderScreen
     {view}
     {glow}
+    {everyGlow}
     panelCount={captures.count}
     onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
     onNote={(regions) => captures.note(regions)}
