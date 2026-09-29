@@ -32,7 +32,19 @@ type WorkerScope = {
   addEventListener(kind: 'message', listen: (event: MessageEvent<OcrRequest>) => void): void;
 };
 
-const scope = self as unknown as WorkerScope;
+function workerScope(): WorkerScope {
+  return self as unknown as WorkerScope;
+}
+
+function sessionsOf(opened: Record<string, unknown>): Record<string, InferenceSession | undefined> {
+  return opened as Record<string, InferenceSession | undefined>;
+}
+
+function logitsOf(output: unknown): DecoderLogits {
+  return output as DecoderLogits;
+}
+
+const scope = workerScope();
 
 const post = scope.postMessage.bind(scope);
 
@@ -94,7 +106,7 @@ async function openSession(
     model,
   ]);
 
-  const sessions = running.opened.sessions as Record<string, InferenceSession | undefined>;
+  const sessions = sessionsOf(running.opened.sessions);
   const encoder = sessions.model;
   const decoder = sessions.decoder_model_merged;
   if (encoder === undefined || decoder === undefined) {
@@ -122,7 +134,7 @@ async function openSession(
           encoder_hidden_states: encoded.last_hidden_state,
         });
 
-        const next = mostLikelyToken(step.logits as DecoderLogits);
+        const next = mostLikelyToken(logitsOf(step.logits));
         if (next === END_OF_TEXT_TOKEN) break;
         tokens.push(next);
       }

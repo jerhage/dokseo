@@ -30,8 +30,6 @@ type InferenceSession = {
   run(feeds: Record<string, unknown>): Promise<Record<string, unknown>>;
 };
 
-type TensorOf = new (type: string, data: Float32Array, dims: readonly number[]) => object;
-
 type Session = {
   readonly device: RecognizerDevice;
   read(image: ImageBitmap): Promise<CtcReading>;
@@ -42,7 +40,19 @@ type WorkerScope = {
   addEventListener(kind: 'message', listen: (event: MessageEvent<OcrRequest>) => void): void;
 };
 
-const scope = self as unknown as WorkerScope;
+function workerScope(): WorkerScope {
+  return self as unknown as WorkerScope;
+}
+
+function sessionOf(opened: Record<string, unknown>): InferenceSession | undefined {
+  return opened.model as InferenceSession | undefined;
+}
+
+function ctcLogitsOf(output: unknown): CtcLogits {
+  return output as CtcLogits;
+}
+
+const scope = workerScope();
 
 const post = scope.postMessage.bind(scope);
 
@@ -162,7 +172,7 @@ async function openSession(
     throw new Error(`${modelId} published no character dictionary in ${DICTIONARY_FILE}`);
   }
 
-  const session = running.opened.sessions.model as InferenceSession | undefined;
+  const session = sessionOf(running.opened.sessions);
   if (session === undefined) throw new Error(`${modelId} did not load as a recognition session`);
 
   const output = session.outputNames[0];
@@ -176,8 +186,6 @@ async function openSession(
     fellBackFrom: running.fellBackFrom,
   });
 
-  const tensorOf = Tensor as unknown as TensorOf;
-
   return {
     device: running.device,
     async read(image: ImageBitmap): Promise<CtcReading> {
@@ -189,10 +197,10 @@ async function openSession(
         const geometry = lineGeometry(image.width, height);
         const data = bandPixels(image, band);
         const answer = await session.run({
-          x: new tensorOf('float32', data, [1, CHANNELS, geometry.height, geometry.tensorWidth]),
+          x: new Tensor('float32', data, [1, CHANNELS, geometry.height, geometry.tensorWidth]),
         });
 
-        readings.push(ctcReading(answer[output] as CtcLogits, labels));
+        readings.push(ctcReading(ctcLogitsOf(answer[output]), labels));
       }
 
       return joinedReading(readings);

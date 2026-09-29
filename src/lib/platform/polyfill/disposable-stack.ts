@@ -71,7 +71,7 @@ class StackShim {
   }
 }
 
-function ensureDisposableStack(owner: StackOwner, dispose: symbol): unknown {
+function ensureDisposableStack(owner: object, dispose: symbol): unknown {
   const present: unknown = Reflect.get(StackShim.prototype, dispose);
   if (present === undefined || present === null) {
     Reflect.set(StackShim.prototype, dispose, function disposeStack(this: StackShim): void {
@@ -79,9 +79,12 @@ function ensureDisposableStack(owner: StackOwner, dispose: symbol): unknown {
     });
   }
 
-  owner.DisposableStack ??= StackShim;
+  const native: unknown = Reflect.get(owner, 'DisposableStack');
+  if (native !== undefined && native !== null) return native;
 
-  return owner.DisposableStack;
+  Reflect.set(owner, 'DisposableStack', StackShim);
+
+  return StackShim;
 }
 
 export { StackShim, ensureDisposableStack };
