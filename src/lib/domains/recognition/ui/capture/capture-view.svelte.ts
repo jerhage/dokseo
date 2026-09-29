@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import type { Anchor, TextQuote } from '$lib/shared/anchor';
+import type { Anchor, SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import type { ClearScope } from './clearing';
@@ -172,11 +172,12 @@ class CaptureView {
     return this.#collection.read;
   }
 
-  arrivalFrom(
-    found: ReaderArrival | null,
-    direction: ReadingDirection,
-  ): Arrival<ArrivalCapture> | null {
+  arrivalFrom(found: ReaderArrival, direction: ReadingDirection): Arrival<ArrivalCapture> | null {
     return this.#collection.arrivalFrom(found, direction);
+  }
+
+  passageFrom(found: ReaderArrival): SoughtPassage | null {
+    return this.#collection.passageFrom(found);
   }
 
   async open(book: BookId): Promise<void> {

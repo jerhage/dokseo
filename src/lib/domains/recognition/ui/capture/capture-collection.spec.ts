@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
-import { regionAnchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
@@ -257,5 +257,79 @@ describe('CaptureCollection', () => {
     expect(collection.captures).toEqual([]);
     expect(collection.count).toBe(0);
     expect(world.store.rows.map((row) => row.id)).toEqual([captureId('other')]);
+  });
+});
+
+describe('CaptureCollection arrivals', () => {
+  const CFI = 'epubcfi(/6/4!/4/2,/1:0,/1:2)';
+  const QUOTE = { exact: '灯台', prefix: '', suffix: '' };
+
+  function lifted(id: string, cfi: string): Capture {
+    return {
+      id: captureId(id),
+      bookId: ONE,
+      anchor: textAnchor(cfi, QUOTE),
+      text: '灯台',
+      note: null,
+      origin: 'lifted',
+      createdAt: 5,
+      editedAt: null,
+      tagIds: [],
+    };
+  }
+
+  it('arrives at every stored capture on the image a url names, with no capture id', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('one', ONE, '先', 1), storedRow('two', ONE, '後', 2)];
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    await collection.open(ONE);
+
+    const arrival = collection.arrivalFrom(
+      { kind: 'image', index: imageIndex(4), query: null },
+      'rtl',
+    );
+
+    expect(arrival?.at.map((capture) => capture.id)).toEqual([captureId('one'), captureId('two')]);
+  });
+
+  it('arrives at no capture for a url naming a passage or nothing', async () => {
+    const world = fakes();
+    world.store.rows = [storedRow('one', ONE, '先', 1)];
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    await collection.open(ONE);
+
+    expect(collection.arrivalFrom({ kind: 'passage', cfi: CFI, query: null }, 'rtl')).toBeNull();
+    expect(collection.arrivalFrom({ kind: 'none' }, 'rtl')).toBeNull();
+  });
+
+  it('seeks the cfi a url names, with the quote of the passage lifted there', async () => {
+    const world = fakes();
+    world.store.rows = [lifted('here', CFI)];
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    await collection.open(ONE);
+
+    expect(collection.passageFrom({ kind: 'passage', cfi: CFI, query: '灯' })).toEqual({
+      cfi: CFI,
+      quote: QUOTE,
+    });
+  });
+
+  it('seeks the cfi a url names even when no capture was lifted there', async () => {
+    const world = fakes();
+    world.store.rows = [lifted('elsewhere', 'epubcfi(/6/2)')];
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    await collection.open(ONE);
+
+    expect(collection.passageFrom({ kind: 'passage', cfi: CFI, query: null })).toEqual({
+      cfi: CFI,
+      quote: null,
+    });
+  });
+
+  it('seeks no passage for a url naming an image', () => {
+    const world = fakes();
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+
+    expect(collection.passageFrom({ kind: 'image', index: imageIndex(0), query: null })).toBeNull();
   });
 });

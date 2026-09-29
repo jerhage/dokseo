@@ -1,5 +1,5 @@
-import type { Anchor } from '$lib/shared/anchor';
-import type { CaptureId } from '$lib/shared/ids';
+import type { Anchor, SoughtPassage } from '$lib/shared/anchor';
+import type { CaptureId, ImageIndex } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { inBookOrder } from './capture-order';
 import { captureHolds } from './capture-results';
@@ -11,17 +11,28 @@ type ArrivalCapture = SearchedCapture & {
   readonly anchor: Anchor;
 };
 
-type Stepping<T> = {
+type Stepping = {
   readonly ordinal: number;
   readonly total: number;
-  readonly previous: T;
-  readonly next: T;
+  readonly previous: ImageIndex;
+  readonly next: ImageIndex;
 };
 
 type Arrival<T> = {
-  readonly at: T;
-  readonly stepping: Stepping<T> | null;
+  readonly at: readonly T[];
+  readonly stepping: Stepping | null;
 };
+
+type Stop<T> = {
+  readonly index: ImageIndex;
+  readonly captures: readonly T[];
+};
+
+function startingImage(anchor: Anchor): ImageIndex | null {
+  if (anchor.kind === 'text') return null;
+
+  return anchor.regions[0]?.index ?? null;
+}
 
 function matchesInBookOrder<T extends ArrivalCapture>(
   captures: readonly T[],
@@ -34,41 +45,68 @@ function matchesInBookOrder<T extends ArrivalCapture>(
   );
 }
 
-function alone<T extends ArrivalCapture>(
+function stopsOf<T extends ArrivalCapture>(ordered: readonly T[]): readonly Stop<T>[] {
+  const stops: Stop<T>[] = [];
+  for (const capture of ordered) {
+    const index = startingImage(capture.anchor);
+    if (index === null) continue;
+
+    const last = stops.at(-1);
+    if (last !== undefined && last.index === index) {
+      stops[stops.length - 1] = { index, captures: [...last.captures, capture] };
+      continue;
+    }
+
+    stops.push({ index, captures: [capture] });
+  }
+
+  return stops;
+}
+
+function onImage<T extends ArrivalCapture>(
   captures: readonly T[],
-  wanted: CaptureId,
+  direction: ReadingDirection,
+  index: ImageIndex,
 ): Arrival<T> | null {
-  const only = captures.find((capture) => capture.id === wanted);
-  return only === undefined ? null : { at: only, stepping: null };
+  const here = inBookOrder(
+    captures.filter((capture) => startingImage(capture.anchor) === index),
+    direction,
+  );
+  return here.length === 0 ? null : { at: here, stepping: null };
 }
 
 function arrivalAt<T extends ArrivalCapture>(
   captures: readonly T[],
   query: string | null,
   direction: ReadingDirection,
-  wanted: CaptureId,
+  index: ImageIndex,
 ): Arrival<T> | null {
-  if (query === null || query.trim().length === 0) return alone(captures, wanted);
+  if (query === null || query.trim().length === 0) return onImage(captures, direction, index);
 
-  const found = matchesInBookOrder(captures, query, direction);
-  const place = found.findIndex((capture) => capture.id === wanted);
-  const here = found[place];
-  if (here === undefined) return alone(captures, wanted);
+  const stops = stopsOf(matchesInBookOrder(captures, query, direction));
+  const place = stops.findIndex((stop) => stop.index === index);
+  const here = stops[place];
+  if (here === undefined) return onImage(captures, direction, index);
 
-  const before = found[wrappedIndex(place, -1, found.length)];
-  const after = found[wrappedIndex(place, 1, found.length)];
+  const before = stops[wrappedIndex(place, -1, stops.length)];
+  const after = stops[wrappedIndex(place, 1, stops.length)];
   if (before === undefined || after === undefined) return null;
 
   return {
-    at: here,
+    at: here.captures,
     stepping: {
       ordinal: place + 1,
-      total: found.length,
-      previous: before,
-      next: after,
+      total: stops.length,
+      previous: before.index,
+      next: after.index,
     },
   };
 }
 
-export { matchesInBookOrder, arrivalAt };
+function soughtPassage(anchors: readonly Anchor[], cfi: string): SoughtPassage {
+  const held = anchors.find((anchor) => anchor.kind === 'text' && anchor.cfi === cfi);
+  return { cfi, quote: held?.kind === 'text' ? held.quote : null };
+}
+
+export { matchesInBookOrder, arrivalAt, soughtPassage };
 export type { ArrivalCapture, Stepping, Arrival };

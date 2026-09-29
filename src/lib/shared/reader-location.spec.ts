@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, captureId, imageIndex } from './ids';
+import { bookId, imageIndex } from './ids';
 import {
   IMAGE_PARAMETER,
   MISSING_BOOK_NOTICE,
+  NO_ARRIVAL,
+  arrivalQuery,
   missingBookNotice,
   missingBookArrival,
   openingPlace,
@@ -116,77 +118,113 @@ describe('readerHref', () => {
     expect(readerHref(bookId('a/b?c'), imageIndex(0))).toBe('/read/a%2Fb%3Fc?image=0');
   });
 
-  it('carries the search and the capture that was reached', () => {
-    expect(
-      readerHref(bookId('one'), imageIndex(13), { capture: captureId('c1'), query: '海が' }),
-    ).toBe('/read/one?image=13&find=%E6%B5%B7%E3%81%8C&capture=c1');
+  it('carries the search beside the image and names no capture', () => {
+    expect(readerHref(bookId('one'), imageIndex(13), '海が')).toBe(
+      '/read/one?image=13&find=%E6%B5%B7%E3%81%8C',
+    );
   });
 
-  it('carries a capture reached without a search', () => {
-    expect(
-      readerHref(bookId('one'), imageIndex(13), { capture: captureId('c1'), query: null }),
-    ).toBe('/read/one?image=13&capture=c1');
+  it('names only the image when no search was carried', () => {
+    expect(readerHref(bookId('one'), imageIndex(13), null)).toBe('/read/one?image=13');
   });
 
-  it('keeps the capture when the query is only spaces', () => {
-    expect(
-      readerHref(bookId('one'), imageIndex(1), { capture: captureId('c1'), query: '  ' }),
-    ).toBe('/read/one?image=1&capture=c1');
+  it('drops a search of only spaces', () => {
+    expect(readerHref(bookId('one'), imageIndex(1), '  ')).toBe('/read/one?image=1');
   });
 });
 
 describe('passageHref', () => {
-  it('names the book and the capture, with no image index', () => {
-    expect(passageHref(bookId('one'), { capture: captureId('c1'), query: null })).toBe(
-      '/read/one?capture=c1',
+  const CFI = 'epubcfi(/6/4!/4/2,/1:0,/1:5)';
+
+  it('names the book and the passage by its cfi, with no image and no capture', () => {
+    expect(passageHref(bookId('one'), CFI)).toBe(
+      '/read/one?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A5)',
     );
   });
 
-  it('carries the search beside the capture', () => {
-    expect(passageHref(bookId('a/b'), { capture: captureId('c 1'), query: '海' })).toBe(
-      '/read/a%2Fb?find=%E6%B5%B7&capture=c%201',
+  it('carries the search after the cfi', () => {
+    expect(passageHref(bookId('a/b'), CFI, '海')).toBe(
+      '/read/a%2Fb?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A5)&find=%E6%B5%B7',
     );
   });
 
-  it('reads back as the same arrival', () => {
-    const href = passageHref(bookId('one'), { capture: captureId('c1'), query: '海が' });
+  it('opens the bare book for an empty cfi', () => {
+    expect(passageHref(bookId('one'), '', '海')).toBe('/read/one');
+  });
+
+  it('reads back as the same passage arrival', () => {
+    const href = passageHref(bookId('one'), CFI, '海が');
 
     expect(readArrival(new URL(href, 'https://r.test').searchParams)).toEqual({
-      capture: captureId('c1'),
+      kind: 'passage',
+      cfi: CFI,
       query: '海が',
     });
   });
 });
 
 describe('readArrival', () => {
-  it('reads the search and the capture back out of a url', () => {
-    const arrival = readArrival(
-      new URL('https://r.test/read/one?image=1&find=%E6%B5%B7&capture=c1').searchParams,
-    );
-    expect(arrival).toEqual({ capture: captureId('c1'), query: '海' });
+  it('reads the image and the search back out of a url', () => {
+    expect(
+      readArrival(new URL('https://r.test/read/one?image=1&find=%E6%B5%B7').searchParams),
+    ).toEqual({ kind: 'image', index: imageIndex(1), query: '海' });
   });
 
-  it('reports nothing when only the search is named', () => {
-    expect(readArrival(new URL('https://r.test/read/one?find=%E6%B5%B7').searchParams)).toBeNull();
-  });
-
-  it('reads a capture named without a search', () => {
-    expect(readArrival(new URL('https://r.test/read/one?capture=c1').searchParams)).toEqual({
-      capture: captureId('c1'),
+  it('reads an image named without a search', () => {
+    expect(readArrival(new URL('https://r.test/read/one?image=4').searchParams)).toEqual({
+      kind: 'image',
+      index: imageIndex(4),
       query: null,
     });
   });
 
-  it('drops a search of only spaces and keeps the capture', () => {
+  it('ignores a capture id an old link still carries', () => {
     expect(
-      readArrival(new URL('https://r.test/read/one?find=%20&capture=c1').searchParams),
-    ).toEqual({ capture: captureId('c1'), query: null });
+      readArrival(
+        new URL('https://r.test/read/one?image=2&find=%E6%B5%B7&capture=c1').searchParams,
+      ),
+    ).toEqual({ kind: 'image', index: imageIndex(2), query: '海' });
   });
 
-  it('reports nothing when the capture is empty', () => {
+  it('reports no arrival for an old link naming only a capture', () => {
+    expect(readArrival(new URL('https://r.test/read/one?capture=c1').searchParams)).toEqual(
+      NO_ARRIVAL,
+    );
+  });
+
+  it('reports no arrival when only the search is named', () => {
+    expect(readArrival(new URL('https://r.test/read/one?find=%E6%B5%B7').searchParams)).toEqual(
+      NO_ARRIVAL,
+    );
+  });
+
+  it('drops a search of only spaces and keeps the image', () => {
+    expect(readArrival(new URL('https://r.test/read/one?find=%20&image=3').searchParams)).toEqual({
+      kind: 'image',
+      index: imageIndex(3),
+      query: null,
+    });
+  });
+
+  it('prefers the passage when a url names both a cfi and an image', () => {
     expect(
-      readArrival(new URL('https://r.test/read/one?find=%E6%B5%B7&capture=').searchParams),
-    ).toBeNull();
+      readArrival(new URL('https://r.test/read/one?image=3&cfi=epubcfi(%2F6%2F2)').searchParams),
+    ).toEqual({ kind: 'passage', cfi: 'epubcfi(/6/2)', query: null });
+  });
+
+  it('reports no arrival for an empty cfi and no image', () => {
+    expect(readArrival(new URL('https://r.test/read/one?cfi=').searchParams)).toEqual(NO_ARRIVAL);
+  });
+});
+
+describe('arrivalQuery', () => {
+  it('gives the search an arrival carries', () => {
+    expect(arrivalQuery({ kind: 'passage', cfi: 'epubcfi(/6/2)', query: '海' })).toBe('海');
+    expect(arrivalQuery({ kind: 'image', index: imageIndex(0), query: '山' })).toBe('山');
+  });
+
+  it('gives no search when there is no arrival', () => {
+    expect(arrivalQuery(NO_ARRIVAL)).toBeNull();
   });
 });
 

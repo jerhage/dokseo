@@ -152,15 +152,15 @@ describe('taggedShelves', () => {
     expect(shelvedRows(shelves).map((row) => row.order)).toEqual([0, 1, 2, 3]);
   });
 
-  it('links each row to its page in the reader with the capture', () => {
-    expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4&capture=first');
+  it('links each row to its page in the reader, naming no capture', () => {
+    expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4');
     expect(shelves[0]?.rows[0]?.jump).toBe('Jump to p.005');
     expect(shelves[0]?.rows[0]?.place).toBe('p.005');
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');
   });
 
-  it('links a capture anchored in text to its passage, with no page', () => {
-    expect(shelves[1]?.rows[0]?.href).toBe('/read/two?capture=only%20text');
+  it('links a capture anchored in text to its passage by its cfi, with no page', () => {
+    expect(shelves[1]?.rows[0]?.href).toBe('/read/two?cfi=epubcfi(%2F6%2F2)');
     expect(shelves[1]?.rows[0]?.jump).toBe('Jump to the passage');
     expect(shelves[1]?.rows[0]?.place).toBe('no page');
   });

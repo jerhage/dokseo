@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import type { Anchor, TextQuote } from '$lib/shared/anchor';
+import type { Anchor, SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import { captureId, tagId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
@@ -13,7 +13,7 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
-import { arrivalAt } from '../../domain/capture/capture-arrival';
+import { arrivalAt, soughtPassage } from '../../domain/capture/capture-arrival';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
 import { editedText, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
@@ -236,12 +236,20 @@ class CaptureCollection {
     return stored?.origin === origin ? stored.note : null;
   }
 
-  arrivalFrom(
-    found: ReaderArrival | null,
-    direction: ReadingDirection,
-  ): Arrival<ArrivalCapture> | null {
-    if (found === null) return null;
-    return arrivalAt(this.read, found.query, direction, found.capture);
+  arrivalFrom(found: ReaderArrival, direction: ReadingDirection): Arrival<ArrivalCapture> | null {
+    return match(found)
+      .with({ kind: 'image' }, (image) => arrivalAt(this.read, image.query, direction, image.index))
+      .with({ kind: 'passage' }, () => null)
+      .with({ kind: 'none' }, () => null)
+      .exhaustive();
+  }
+
+  passageFrom(found: ReaderArrival): SoughtPassage | null {
+    return match(found)
+      .with({ kind: 'passage' }, (passage) => soughtPassage(this.anchors, passage.cfi))
+      .with({ kind: 'image' }, () => null)
+      .with({ kind: 'none' }, () => null)
+      .exhaustive();
   }
 
   async open(book: BookId): Promise<void> {

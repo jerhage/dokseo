@@ -16,7 +16,7 @@
   import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
-  import type { TextAnchor } from '$lib/shared/anchor';
+  import type { SoughtPassage } from '$lib/shared/anchor';
   import { bookId } from '$lib/shared/ids';
   import type { BookId, ImageIndex } from '$lib/shared/ids';
   import { glowRegions } from '$lib/shared/image-region';
@@ -26,6 +26,7 @@
   import {
     IMAGE_PARAMETER,
     LIBRARY_AFTER_MISSING_BOOK,
+    arrivalQuery,
     readArrival,
     readImageIndex,
     urlWithImageIndex,
@@ -61,17 +62,13 @@
   const glow = $derived.by<readonly GlowRegion[]>(() => {
     if (here === null) return NOTHING_TO_GLOW;
 
-    const anchor = here.at.anchor;
-    if (anchor.kind === 'text') return NOTHING_TO_GLOW;
-
-    return glowRegions(anchor.regions, here.at.origin);
+    return here.at.flatMap((capture) =>
+      capture.anchor.kind === 'region' ? glowRegions(capture.anchor.regions, capture.origin) : [],
+    );
   });
-  const passage = $derived.by<TextAnchor | null>(() => {
-    const anchor = here?.at.anchor;
-    return anchor?.kind === 'text' ? anchor : null;
-  });
+  const passage = $derived<SoughtPassage | null>(captures.passageFrom(found));
   const stepping = $derived(here?.stepping ?? null);
-  const finding = $derived(found?.query ?? null);
+  const finding = $derived(arrivalQuery(found));
   const books = $derived(
     shelf.books.map((held) => ({
       id: held.id,

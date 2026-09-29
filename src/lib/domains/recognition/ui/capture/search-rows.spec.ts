@@ -126,7 +126,7 @@ describe('searchRows', () => {
     });
   });
 
-  it('jumps to the capture on its first page, carrying the query', () => {
+  it('jumps to the first page of the capture, carrying the query and no capture id', () => {
     const found = {
       books: [],
       captures: [{ book: TWO, captures: [written('c-1', TWO, '海と山', onPage(2))] }],
@@ -134,7 +134,7 @@ describe('searchRows', () => {
 
     const row = captureAt(searchRows(input(found)).rows, 0);
 
-    expect(row.href).toBe('/read/two?image=2&find=%E6%B5%B7&capture=c-1');
+    expect(row.href).toBe('/read/two?image=2&find=%E6%B5%B7');
     expect(row.place).toBe('p.003');
     expect(row.language).toBe('ko');
   });
@@ -148,11 +148,11 @@ describe('searchRows', () => {
 
     const row = captureAt(searchRows(input(found)).rows, 0);
 
-    expect(row.href).toBe('/read/one?find=%E6%B5%B7&capture=t');
+    expect(row.href).toBe('/read/one?cfi=epubcfi(%2F6%2F2)&find=%E6%B5%B7');
     expect(row.place).toBe('no page');
   });
 
-  it('names the lifted capture and no image when it links a passage in the current book', () => {
+  it('names the passage by its cfi, with no capture id and no image, when it links a passage in the current book', () => {
     const anchor = textAnchor('epubcfi(/6/4)', { exact: '海', prefix: '', suffix: '' });
     const found = {
       books: [],
@@ -163,7 +163,8 @@ describe('searchRows', () => {
     const link = new URL(row.href, 'https://reader.test');
 
     expect(link.pathname).toBe('/read/one');
-    expect(link.searchParams.get('capture')).toBe('lifted');
+    expect(link.searchParams.get('cfi')).toBe('epubcfi(/6/4)');
+    expect(link.searchParams.has('capture')).toBe(false);
     expect(link.searchParams.has('image')).toBe(false);
   });
 

@@ -77,12 +77,12 @@ type CardJump =
 
 const NOWHERE: CardJump = { kind: 'nowhere' };
 
-function hrefOf(id: CaptureId, anchor: Anchor, placing: CardPlacing): string | null {
+function hrefOf(anchor: Anchor, placing: CardPlacing): string | null {
   const book = placing.book;
   const index = firstImage(anchor);
   if (book === null || index === null) return null;
 
-  return readerHref(book, index, { capture: id, query: placing.carried });
+  return readerHref(book, index, placing.carried);
 }
 
 function passageOf(anchor: Anchor, seekable: boolean): TextAnchor | null {
@@ -134,7 +134,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'pending' }, (running) => ({
       id: running.id,
       place: placeLabel(running.anchor),
-      href: hrefOf(running.id, running.anchor, placing),
+      href: hrefOf(running.anchor, placing),
       passage: passageOf(running.anchor, placing.seekable),
       stateLabel: 'Reading…',
       text: null,
@@ -152,7 +152,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'done' }, (read) => ({
       id: read.id,
       place: placeLabel(read.anchor),
-      href: hrefOf(read.id, read.anchor, placing),
+      href: hrefOf(read.anchor, placing),
       passage: passageOf(read.anchor, placing.seekable),
       stateLabel: captureState(read.origin),
       text: read.text.text,
@@ -170,7 +170,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'empty' }, (blank) => ({
       id: blank.id,
       place: placeLabel(blank.anchor),
-      href: hrefOf(blank.id, blank.anchor, placing),
+      href: hrefOf(blank.anchor, placing),
       passage: passageOf(blank.anchor, placing.seekable),
       stateLabel: 'No text',
       text: null,
@@ -188,7 +188,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'failed' }, (broken) => ({
       id: broken.id,
       place: placeLabel(broken.anchor),
-      href: hrefOf(broken.id, broken.anchor, placing),
+      href: hrefOf(broken.anchor, placing),
       passage: passageOf(broken.anchor, placing.seekable),
       stateLabel: 'Failed',
       text: null,

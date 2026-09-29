@@ -1,12 +1,13 @@
-import { captureId, imageIndex } from './ids';
-import type { BookId, CaptureId, ImageIndex } from './ids';
+import { match } from 'ts-pattern';
+import { imageIndex } from './ids';
+import type { BookId, ImageIndex } from './ids';
 import type { ReadingPlace } from './reading-place';
 
 const IMAGE_PARAMETER = 'image';
 
 const FIND_PARAMETER = 'find';
 
-const CAPTURE_PARAMETER = 'capture';
+const CFI_PARAMETER = 'cfi';
 
 const MISSING_BOOK_PARAMETER = 'missing';
 
@@ -16,10 +17,10 @@ const MISSING_BOOK_NOTICE = 'That book is no longer in your library.';
 
 const LIBRARY_AFTER_MISSING_BOOK = `/?${MISSING_BOOK_PARAMETER}=${MISSING_BOOK_VALUE}`;
 
-type ReaderArrival = {
-  readonly capture: CaptureId;
-  readonly query: string | null;
-};
+type ReaderArrival =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'image'; readonly index: ImageIndex; readonly query: string | null }
+  | { readonly kind: 'passage'; readonly cfi: string; readonly query: string | null };
 
 type MissingBookArrival = {
   readonly notice: string;
@@ -31,6 +32,8 @@ type OpeningPlace = {
   readonly asked: boolean;
   readonly clamped: boolean;
 };
+
+const NO_ARRIVAL: ReaderArrival = { kind: 'none' };
 
 const WHOLE_NUMBER = /^\d+$/;
 
@@ -68,36 +71,46 @@ function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   return moved.href === url.href ? null : moved;
 }
 
-function arrivalParameters(arrival: ReaderArrival): string {
-  const found = `${CAPTURE_PARAMETER}=${encodeURIComponent(arrival.capture)}`;
-  const query = arrival.query ?? '';
-  if (query.trim().length === 0) return found;
-
-  return `${FIND_PARAMETER}=${encodeURIComponent(query)}&${found}`;
+function searched(query: string | null): string | null {
+  return query === null || query.trim().length === 0 ? null : query;
 }
 
-function readerHref(book: BookId, index: ImageIndex, arrival: ReaderArrival | null = null): string {
-  const place = `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`;
-  if (arrival === null || arrival.capture.length === 0) return place;
+function withSearch(href: string, query: string | null): string {
+  const asked = searched(query);
+  if (asked === null) return href;
 
-  return `${place}&${arrivalParameters(arrival)}`;
+  return `${href}&${FIND_PARAMETER}=${encodeURIComponent(asked)}`;
 }
 
-function passageHref(book: BookId, arrival: ReaderArrival): string {
+function readerHref(book: BookId, index: ImageIndex, query: string | null = null): string {
+  return withSearch(`/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`, query);
+}
+
+function passageHref(book: BookId, cfi: string, query: string | null = null): string {
   const opened = `/read/${encodeURIComponent(book)}`;
-  if (arrival.capture.length === 0) return opened;
+  if (cfi.length === 0) return opened;
 
-  return `${opened}?${arrivalParameters(arrival)}`;
+  return withSearch(`${opened}?${CFI_PARAMETER}=${encodeURIComponent(cfi)}`, query);
 }
 
-function readArrival(parameters: URLSearchParams): ReaderArrival | null {
-  const found = parameters.get(CAPTURE_PARAMETER);
-  if (found === null || found.length === 0) return null;
+function readArrival(parameters: URLSearchParams): ReaderArrival {
+  const query = searched(parameters.get(FIND_PARAMETER));
 
-  const query = parameters.get(FIND_PARAMETER);
-  const asked = query === null || query.trim().length === 0 ? null : query;
+  const cfi = parameters.get(CFI_PARAMETER);
+  if (cfi !== null && cfi.length > 0) return { kind: 'passage', cfi, query };
 
-  return { capture: captureId(found), query: asked };
+  const index = readImageIndex(parameters.get(IMAGE_PARAMETER));
+  if (index !== null) return { kind: 'image', index, query };
+
+  return NO_ARRIVAL;
+}
+
+function arrivalQuery(arrival: ReaderArrival): string | null {
+  return match(arrival)
+    .with({ kind: 'image' }, (image) => image.query)
+    .with({ kind: 'passage' }, (passage) => passage.query)
+    .with({ kind: 'none' }, () => null)
+    .exhaustive();
 }
 
 function missingBookNotice(value: string | null | undefined): string | null {
@@ -116,7 +129,8 @@ function missingBookArrival(url: URL): MissingBookArrival | null {
 export {
   IMAGE_PARAMETER,
   FIND_PARAMETER,
-  CAPTURE_PARAMETER,
+  CFI_PARAMETER,
+  NO_ARRIVAL,
   MISSING_BOOK_PARAMETER,
   MISSING_BOOK_VALUE,
   MISSING_BOOK_NOTICE,
@@ -127,6 +141,7 @@ export {
   readerHref,
   passageHref,
   readArrival,
+  arrivalQuery,
   missingBookNotice,
   missingBookArrival,
 };
