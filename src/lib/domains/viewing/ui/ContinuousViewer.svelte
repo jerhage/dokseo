@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, untrack } from 'svelte';
+  import { MediaQuery } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import type { GestureInput, GestureSample } from '$lib/components/gesture';
@@ -38,6 +39,7 @@
   import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
+  import { scrollMotion } from './scroll-motion';
   import SelectionLayer from './SelectionLayer.svelte';
   import { holdsTheScroll, stripTouchAction } from './strip-touch';
   import type { StripTouchAction } from './strip-touch';
@@ -84,6 +86,8 @@
   const SCREEN_OVERLAP = 0.9;
   const SETTLED_PX = 0.5;
   const DRAG_SELECTS_WITH = ['mouse', 'pen'];
+
+  const reducedMotion = new MediaQuery('prefers-reduced-motion: reduce');
 
   let scroller = $state<HTMLDivElement | null>(null);
   let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
@@ -322,7 +326,10 @@
   export function shift(screens: number): void {
     const element = scroller;
     if (element === null) return;
-    element.scrollBy({ top: element.clientHeight * SCREEN_OVERLAP * screens, behavior: 'smooth' });
+    element.scrollBy({
+      top: element.clientHeight * SCREEN_OVERLAP * screens,
+      behavior: scrollMotion(reducedMotion.current),
+    });
   }
 
   export function canShift(screens: number): boolean {
