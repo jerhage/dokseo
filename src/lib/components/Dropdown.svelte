@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import type { Component, Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import type { HTMLAttributes } from 'svelte/elements';
   import { followAnchor } from './anchor-tracking';
   import { BUTTON_SIZES, BUTTON_VARIANTS } from './classes';
@@ -81,14 +82,36 @@
     if (target !== undefined) all[target]?.focus();
   }
 
+  let unfollow: (() => void) | undefined;
+
+  function reveal(): void {
+    if (unfollow !== undefined || menu === undefined) return;
+    menu.showPopover();
+    place();
+    unfollow = followAnchor(place);
+  }
+
+  function conceal(): void {
+    if (unfollow === undefined) return;
+    unfollow();
+    unfollow = undefined;
+    if (menu?.matches(':popover-open')) menu.hidePopover();
+  }
+
+  function dismiss(): void {
+    open = false;
+    conceal();
+  }
+
   async function show(move: Move | undefined): Promise<void> {
     open = true;
+    reveal();
     await tick();
     if (move !== undefined) focusBy(move);
   }
 
   function close(returnFocus: boolean): void {
-    open = false;
+    dismiss();
     if (returnFocus) button?.focus();
   }
 
@@ -112,7 +135,7 @@
 
   function focusout(event: FocusEvent): void {
     const next = event.relatedTarget;
-    if (next instanceof Node && root !== undefined && !root.contains(next)) open = false;
+    if (next instanceof Node && root !== undefined && !root.contains(next)) dismiss();
   }
 
   function place(): void {
@@ -128,35 +151,31 @@
     );
   }
 
-  $effect(() => {
-    const shown = menu;
-    if (!open || shown === undefined) return;
-    shown.showPopover();
-    place();
-    const stop = followAnchor(place);
-    return () => {
-      stop();
-      if (shown.matches(':popover-open')) shown.hidePopover();
-    };
-  });
+  function outside(event: PointerEvent): void {
+    if (!open) return;
+    if (event.target instanceof Node && root?.contains(event.target)) return;
+    dismiss();
+  }
+
+  function left(): void {
+    if (open) dismiss();
+  }
+
+  const releaseOnDestroy: Attachment<HTMLDivElement> = () => conceal;
+
+  function matchOpenProp(wanted: boolean): void {
+    if (wanted) reveal();
+    else conceal();
+  }
 
   $effect(() => {
-    if (!open) return;
-    const outside = (event: PointerEvent): void => {
-      if (event.target instanceof Node && root?.contains(event.target)) return;
-      open = false;
-    };
-    const left = (): void => {
-      open = false;
-    };
-    document.addEventListener('pointerdown', outside);
-    window.addEventListener('blur', left);
-    return () => {
-      document.removeEventListener('pointerdown', outside);
-      window.removeEventListener('blur', left);
-    };
+    const wanted = open;
+    if (menu !== undefined) untrack(() => matchOpenProp(wanted));
   });
 </script>
+
+<svelte:document onpointerdown={outside} />
+<svelte:window onblur={left} />
 
 <div
   {...rest}
@@ -195,6 +214,7 @@
   </button>
   <div
     bind:this={menu}
+    {@attach releaseOnDestroy}
     id="{uid}-menu"
     role="menu"
     aria-labelledby="{uid}-trigger"

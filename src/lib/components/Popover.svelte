@@ -24,7 +24,7 @@
   const uid = $props.id();
   let sheet = $state<HTMLDivElement>();
   let anchor: HTMLElement | undefined;
-  let open = $state(false);
+  let unfollow: (() => void) | undefined;
   let placement = $state<OverlayPlacement>();
 
   const triggerProps: PopoverTrigger = {
@@ -52,30 +52,35 @@
     );
   }
 
-  function toggled(event: ToggleEvent): void {
-    open = event.newState === 'open';
-    if (open) place();
+  function startFollowing(): void {
+    place();
+    unfollow ??= followAnchor(place);
   }
 
-  $effect(() => {
-    if (!open) return;
-    const shown = sheet;
-    const left = (): void => {
-      if (shown?.matches(':popover-open')) shown.hidePopover();
-    };
-    const stop = followAnchor(place);
-    window.addEventListener('blur', left);
-    return () => {
-      stop();
-      window.removeEventListener('blur', left);
-    };
-  });
+  function stopFollowing(): void {
+    unfollow?.();
+    unfollow = undefined;
+  }
+
+  function toggled(event: ToggleEvent): void {
+    if (event.newState === 'open') startFollowing();
+    else stopFollowing();
+  }
+
+  function left(): void {
+    if (unfollow !== undefined && sheet?.matches(':popover-open')) sheet.hidePopover();
+  }
+
+  const releaseOnDestroy: Attachment<HTMLDivElement> = () => stopFollowing;
 </script>
+
+<svelte:window onblur={left} />
 
 {@render trigger(triggerProps)}
 <div
   {...rest}
   bind:this={sheet}
+  {@attach releaseOnDestroy}
   id="{uid}-popover"
   popover="auto"
   role="dialog"
