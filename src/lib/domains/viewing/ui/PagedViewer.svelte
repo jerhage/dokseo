@@ -25,12 +25,16 @@
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
+  import { dueAfter, showsGuide } from '$lib/shared/guide-kind';
+  import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { PagePicture } from '$lib/shared/page-source';
   import type { PageFit } from '$lib/shared/page-fit';
   import { SIDE_ZONE_SHARE, swipeMayStart } from '$lib/shared/page-turn';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
+  import { guideSeen, markGuideSeen } from '$lib/shared/seen-guides.svelte';
+  import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
   import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
@@ -46,8 +50,7 @@
   import type { Neighbours, SlidePane } from './page-slide';
   import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
   import type { TouchAction } from './touch-action';
-  import { showsZoneOverlay, zoneLabels } from './zone-overlay';
-  import { markZonesSeen, zonesSeen } from './zones-seen.svelte';
+  import { offersTouchGuide, pagedGuide } from './touch-guide';
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
   import './paged-viewer.css';
@@ -142,7 +145,12 @@
     return heldLines;
   });
 
-  const zonesShown = $derived(showsZoneOverlay({ turns, input: pointing, seen: zonesSeen() }));
+  let guideDue = $state(
+    untrack(() => dueAfter({ kind: 'opened', seen: guideSeen(pagedGuide(turns, direction).kind) })),
+  );
+
+  const guide = $derived(pagedGuide(turns, direction));
+  const guideShown = $derived(showsGuide({ offered: offersTouchGuide(pointing), due: guideDue }));
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
@@ -251,6 +259,19 @@
 
   export function surface(): HTMLElement | null {
     return frame;
+  }
+
+  export function offersGuide(): boolean {
+    return offersTouchGuide(pointing);
+  }
+
+  export function showGuide(): void {
+    guideDue = dueAfter({ kind: 'recalled' });
+  }
+
+  function dismissGuide(): void {
+    guideDue = dueAfter({ kind: 'dismissed' });
+    markGuideSeen(guide.kind);
   }
 
   export function activeFit(): Fit {
@@ -587,22 +608,6 @@
     lastPointerType = event.pointerType;
   }
 
-  function holdZones(event: PointerEvent): void {
-    event.stopPropagation();
-    event.preventDefault();
-    if (event.currentTarget instanceof Element)
-      event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function swallow(event: PointerEvent): void {
-    event.stopPropagation();
-  }
-
-  function dismissZones(event: PointerEvent): void {
-    event.stopPropagation();
-    markZonesSeen();
-  }
-
   onDestroy(() => gestures.stop());
 
   $effect(() => {
@@ -700,22 +705,26 @@
       ]}
     />
 
-    {#if zonesShown}
-      <div
-        class="zones scrim z-sticky"
-        style:--side-share={SIDE_ZONE_SHARE}
-        aria-hidden="true"
-        onpointerdown={holdZones}
-        onpointermove={swallow}
-        onpointerup={dismissZones}
-        onpointercancel={dismissZones}
-      >
-        {#each zoneLabels(direction) as zone (zone.zone)}
-          <div class="zone row items-center justify-center">
-            <span class="text-sm weight-medium">{zone.label}</span>
+    {#if guideShown}
+      <LessonScrim class="col gap-0" ondismiss={dismissGuide}>
+        {#if guide.zones.length > 0}
+          <div class="zones flex-1 min-h-0" style:--side-share={SIDE_ZONE_SHARE}>
+            {#each guide.zones as zone (zone.zone)}
+              <div class="zone row items-center justify-center">
+                <span class="text-sm weight-medium">{zone.label}</span>
+              </div>
+            {/each}
           </div>
-        {/each}
-      </div>
+        {/if}
+        <div
+          class={[
+            'row items-center justify-center p-4 text-center',
+            { 'flex-1': guide.zones.length === 0 },
+          ]}
+        >
+          <SwipeLine lesson={guide.swipe} />
+        </div>
+      </LessonScrim>
     {/if}
   </div>
 </div>

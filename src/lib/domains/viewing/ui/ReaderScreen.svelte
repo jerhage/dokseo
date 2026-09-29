@@ -40,7 +40,6 @@
   import { chooseHints, hintsWanted } from './learned-gestures.svelte';
   import { allCapturesWanted, chooseAllCaptures } from './all-captures.svelte';
   import { shownGlow } from './page-glow';
-  import { forgetZonesSeen } from './zones-seen.svelte';
   import ReaderSettings from './ReaderSettings.svelte';
   import './reader-screen.css';
 
@@ -104,6 +103,7 @@
   const makes = $derived(dragOrigin(noting));
   const narrow = $derived(readerFrame.narrow);
   const lit = $derived(shownGlow(glow, everyGlow, allCapturesWanted()));
+  const touchGuide = $derived(paged?.offersGuide() ?? strip?.offersGuide() ?? false);
 
   function toggleChrome(): void {
     if (shown) {
@@ -218,7 +218,6 @@
   function chooseTouchTurns(chosen: TouchTurns): void {
     touchTurns = chosen;
     saveTouchTurns(chosen);
-    if (chosen === 'tap-zones') forgetZonesSeen();
   }
 
   const shownTurns = $derived.by(() => {
@@ -442,6 +441,8 @@
   ontouchturns={chooseTouchTurns}
   gestureHints={hintsWanted()}
   ongesturehints={chooseHints}
+  {touchGuide}
+  ontouchguide={() => (paged ?? strip)?.showGuide()}
   allCaptures={allCapturesWanted()}
   onallcaptures={chooseAllCaptures}
   onlanguage={(language) => void view.setLanguage(language)}

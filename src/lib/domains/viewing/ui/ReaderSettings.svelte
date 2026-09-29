@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from '$lib/components/Button.svelte';
   import Checkbox from '$lib/components/Checkbox.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -6,6 +7,7 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';
   import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
   import type { Language } from '$lib/shared/language';
   import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
@@ -41,6 +43,7 @@
     readonly offersAppearance: boolean;
     readonly touchTurns: TouchTurns;
     readonly gestureHints: boolean;
+    readonly touchGuide: boolean;
     readonly allCaptures: boolean;
     readonly onlanguage: (language: Language) => void;
     readonly onlayout: (kind: ImageLayoutKind) => void;
@@ -48,6 +51,7 @@
     readonly ondirection: (direction: ReadingDirection) => void;
     readonly ontouchturns: (turns: TouchTurns) => void;
     readonly ongesturehints: (wanted: boolean) => void;
+    readonly ontouchguide: () => void;
     readonly onallcaptures: (wanted: boolean) => void;
   };
 
@@ -63,6 +67,7 @@
     offersAppearance,
     touchTurns,
     gestureHints,
+    touchGuide,
     allCaptures,
     onlanguage,
     onlayout,
@@ -70,10 +75,16 @@
     ondirection,
     ontouchturns,
     ongesturehints,
+    ontouchguide,
     onallcaptures,
   }: Props = $props();
 
   const uid = $props.id();
+
+  function showTouchGuide(): void {
+    open = false;
+    ontouchguide();
+  }
 
   const stripHint = $derived(downward ? 'A strip reads top to bottom.' : undefined);
   const fitOptions = $derived(
@@ -164,6 +175,12 @@
       onchange={(event) => ongesturehints(event.currentTarget.checked)}
       >{GESTURE_HINTS_LABEL}</Checkbox
     >
+
+    {#if touchGuide}
+      <div class="row">
+        <Button size="sm" onclick={showTouchGuide}>{TOUCH_GUIDE_LABEL}</Button>
+      </div>
+    {/if}
 
     <Checkbox checked={allCaptures} onchange={(event) => onallcaptures(event.currentTarget.checked)}
       >{ALL_CAPTURES_LABEL}</Checkbox

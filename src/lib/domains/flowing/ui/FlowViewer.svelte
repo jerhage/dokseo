@@ -17,10 +17,14 @@
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import type { Anchor } from '$lib/shared/anchor';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import { dueAfter, showsGuide } from '$lib/shared/guide-kind';
+  import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import PageBar from '$lib/shared/PageBar.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import { guideSeen, markGuideSeen } from '$lib/shared/seen-guides.svelte';
+  import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
@@ -28,6 +32,7 @@
   import type { ContentsEntry } from './flow-contents';
   import { NO_ANCHORS, passageCfis } from './flow-highlight';
   import { FlowGestures } from './flow-gestures';
+  import { flowGuideKind, flowInput, flowSwipeLesson, offersFlowGuide } from './flow-hint';
   import { flowMeta, tickOffsets } from './flow-progress';
   import { liftMetrics, liftPlacement, offerMove, rectOnStage } from './flow-lift';
   import type { LiftPlacement, LiftRect, LiftedPassage } from './flow-lift';
@@ -105,7 +110,10 @@
   let showing: ChapterView | null = null;
   let pointerHeld = false;
   let queued: number | null = null;
+  let lastPointerType = $state<string | null>(null);
+  let guideDue = $state(false);
   const chapters = new Set<Document>();
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
 
   const curtain = $derived(view.curtain);
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
@@ -131,6 +139,26 @@
   );
 
   const awake = $derived(chromeShown(barsAsked, readerFrame.focus.held || dialogOpen));
+
+  const input = $derived(flowInput(lastPointerType, coarse));
+  const guideOffered = $derived(offersFlowGuide({ open: reading, input }));
+  const guideShown = $derived(showsGuide({ offered: guideOffered, due: guideDue }));
+  const guideLesson = $derived(flowSwipeLesson(view.paging));
+
+  function armGuide(): void {
+    if (!reading) return;
+
+    guideDue = dueAfter({ kind: 'opened', seen: guideSeen(flowGuideKind(view.paging)) });
+  }
+
+  function dismissGuide(): void {
+    guideDue = dueAfter({ kind: 'dismissed' });
+    markGuideSeen(flowGuideKind(view.paging));
+  }
+
+  function showGuide(): void {
+    guideDue = dueAfter({ kind: 'recalled' });
+  }
 
   function toggleBars(): void {
     if (awake) readerFrame.releaseBars(document.activeElement, stage);
@@ -239,6 +267,7 @@
   function press(event: PointerEvent, spot: StageTap): void {
     offer = null;
     pointerHeld = true;
+    lastPointerType = event.pointerType;
     gestures?.pressed({
       pointerId: event.pointerId,
       pointerType: event.pointerType,
@@ -398,11 +427,13 @@
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    void view.open(
-      held,
-      (opening) => openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
-      askAboutTheOffer,
-    );
+    void view
+      .open(
+        held,
+        (opening) => openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
+        askAboutTheOffer,
+      )
+      .then(armGuide);
     return () => {
       host.removeEventListener('pointerdown', began);
       host.removeEventListener('pointerup', ended);
@@ -414,6 +445,7 @@
       showing = null;
       pointerHeld = false;
       offer = null;
+      guideDue = false;
       contentsOpen = false;
       settingsOpen = false;
       chapters.clear();
@@ -456,6 +488,15 @@
 
     {#if arrival !== undefined}
       <div class="callout-top-start z-sticky">{@render arrival()}</div>
+    {/if}
+
+    {#if guideShown}
+      <LessonScrim
+        class="row items-center justify-center px-4 text-center"
+        ondismiss={dismissGuide}
+      >
+        <SwipeLine lesson={guideLesson} />
+      </LessonScrim>
     {/if}
   {/snippet}
 
@@ -565,4 +606,6 @@
   language={book.language}
   {saving}
   {onlanguage}
+  touchGuide={guideOffered}
+  ontouchguide={showGuide}
 />

@@ -2,7 +2,6 @@ import { rememberedSet } from '$lib/platform/storage/remembered-set';
 import { isReaderGesture } from './gesture-hint';
 import type { ReaderGesture } from './gesture-hint';
 import { readGestureHints, saveGestureHints } from './gesture-hints-setting';
-import { forgetZonesSeen } from './zones-seen.svelte';
 
 const remembered = rememberedSet('reader.gestures.learned');
 
@@ -31,7 +30,6 @@ function hintsWanted(): boolean {
 function chooseHints(on: boolean): void {
   if (on && !wanted) {
     forgetGestures();
-    forgetZonesSeen();
   }
   wanted = on;
   saveGestureHints(on);

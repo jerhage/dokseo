@@ -1,0 +1,8 @@
+@layer features {
+  @scope (.swipe-line) {
+    .swipe-line-arrow {
+      inline-size: var(--icon-size-md);
+      block-size: var(--icon-size-md);
+    }
+  }
+}

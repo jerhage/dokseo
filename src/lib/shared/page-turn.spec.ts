@@ -4,6 +4,7 @@ import {
   SWIPE_MIN_PX,
   swipeMayStart,
   swipeTurn,
+  swipedSide,
   tapZone,
   towards,
 } from './page-turn';
@@ -43,6 +44,22 @@ describe('tapZone', () => {
     expect(tapZone(10, -390, 'tap-zones')).toBe('centre');
     expect(tapZone(10, Number.NaN, 'tap-zones')).toBe('centre');
     expect(tapZone(Number.NaN, PHONE_WIDTH, 'tap-zones')).toBe('centre');
+  });
+});
+
+describe('swipedSide', () => {
+  it('reports the right side for a finger moving left', () => {
+    expect(swipedSide('left')).toBe('right');
+  });
+
+  it('reports the left side for a finger moving right', () => {
+    expect(swipedSide('right')).toBe('left');
+  });
+
+  it('agrees with a real leftward swipe', () => {
+    expect(swipeTurn(at(300), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only')).toBe(
+      swipedSide('left'),
+    );
   });
 });
 

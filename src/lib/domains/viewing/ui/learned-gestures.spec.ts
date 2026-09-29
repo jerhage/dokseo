@@ -71,19 +71,27 @@ describe('forgetGestures', () => {
 });
 
 describe('chooseHints', () => {
-  it('forgets the learned gestures and the seen zone overlay when turned back on', async () => {
-    storage.setItem('reader.touch.zones-seen', 'seen');
+  it('forgets the learned gestures when turned back on', async () => {
     const gestures = await import('./learned-gestures.svelte');
-    const zones = await import('./zones-seen.svelte');
     gestures.learnGesture('swipe');
 
     gestures.chooseHints(false);
     gestures.chooseHints(true);
 
     expect(gestures.learnedGestures()).toEqual([]);
-    expect(zones.zonesSeen()).toBe(false);
-    expect(storage.entries.has('reader.touch.zones-seen')).toBe(false);
     expect(gestures.hintsWanted()).toBe(true);
+  });
+
+  it('leaves the seen touch guides alone when turned back on', async () => {
+    storage.setItem('reader.touch.guides-seen', JSON.stringify(['swipe-left']));
+    const gestures = await import('./learned-gestures.svelte');
+    const guides = await import('$lib/shared/seen-guides.svelte');
+
+    gestures.chooseHints(false);
+    gestures.chooseHints(true);
+
+    expect(guides.guideSeen('swipe-left')).toBe(true);
+    expect(storage.entries.get('reader.touch.guides-seen')).toBe('["swipe-left"]');
   });
 
   it('keeps the learned gestures when turned off', async () => {
@@ -97,15 +105,12 @@ describe('chooseHints', () => {
   });
 
   it('keeps the learned gestures when chosen on while already on', async () => {
-    storage.setItem('reader.touch.zones-seen', 'seen');
     const gestures = await import('./learned-gestures.svelte');
-    const zones = await import('./zones-seen.svelte');
     gestures.learnGesture('swipe');
 
     gestures.chooseHints(true);
 
     expect(gestures.learnedGestures()).toEqual(['swipe']);
-    expect(zones.zonesSeen()).toBe(true);
   });
 
   it('remembers off for the next visit', async () => {

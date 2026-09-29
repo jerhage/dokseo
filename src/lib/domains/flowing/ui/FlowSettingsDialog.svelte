@@ -1,10 +1,12 @@
 <script lang="ts">
+  import Button from '$lib/components/Button.svelte';
   import Checkbox from '$lib/components/Checkbox.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Radio from '$lib/components/Radio.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';
   import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
   import type { Language } from '$lib/shared/language';
   import {
@@ -27,6 +29,8 @@
     readonly language?: Language | null;
     readonly saving?: boolean;
     readonly onlanguage?: ((language: Language) => void) | undefined;
+    readonly touchGuide?: boolean;
+    readonly ontouchguide?: (() => void) | undefined;
   };
 
   let {
@@ -37,9 +41,16 @@
     language = null,
     saving = false,
     onlanguage,
+    touchGuide = false,
+    ontouchguide,
   }: Props = $props();
 
   const uid = $props.id();
+
+  function showTouchGuide(): void {
+    open = false;
+    ontouchguide?.();
+  }
 
   function chooseSize(size: TextSize): void {
     onchoose(withTextSize(settings, size));
@@ -101,6 +112,12 @@
         onchange={(event) => chooseReadings(event.currentTarget.checked)}>Show</Checkbox
       >
     </Fieldset>
+
+    {#if touchGuide && ontouchguide !== undefined}
+      <div class="row">
+        <Button size="sm" onclick={showTouchGuide}>{TOUCH_GUIDE_LABEL}</Button>
+      </div>
+    {/if}
 
     {#if offersAppearance}
       <SettingsRow label="Appearance">

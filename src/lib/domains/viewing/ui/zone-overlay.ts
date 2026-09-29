@@ -1,16 +1,9 @@
 import { match } from 'ts-pattern';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import type { TapZone, TouchTurns, TurnSide } from '$lib/shared/page-turn';
-import type { InputKind } from './gesture-hint';
+import type { TapZone, TurnSide } from '$lib/shared/page-turn';
 import { moveTowards } from './page-moves';
 
 type ZoneLabel = { readonly zone: TapZone; readonly label: string };
-
-type ZoneOverlayScene = {
-  readonly turns: TouchTurns;
-  readonly input: InputKind;
-  readonly seen: boolean;
-};
 
 function sideLabel(side: TurnSide, direction: ReadingDirection): ZoneLabel {
   const label = match(moveTowards(side, 'paged', direction))
@@ -28,9 +21,5 @@ function zoneLabels(direction: ReadingDirection): readonly ZoneLabel[] {
   ];
 }
 
-function showsZoneOverlay(scene: ZoneOverlayScene): boolean {
-  return scene.turns === 'tap-zones' && scene.input === 'touch' && !scene.seen;
-}
-
-export { showsZoneOverlay, zoneLabels };
-export type { ZoneLabel, ZoneOverlayScene };
+export { zoneLabels };
+export type { ZoneLabel };

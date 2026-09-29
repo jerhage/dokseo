@@ -6,6 +6,8 @@ type TapZone = 'left' | 'centre' | 'right';
 
 type TurnSide = 'left' | 'right';
 
+type SwipeFinger = 'left' | 'right';
+
 type TurnPoint = { readonly x: number; readonly y: number };
 
 type FrameSpan = { readonly left: number; readonly width: number };
@@ -50,6 +52,10 @@ function isFlung(distance: number, elapsedMs: number): boolean {
   return distance / elapsedMs >= SWIPE_MIN_PX_PER_MS;
 }
 
+function swipedSide(finger: SwipeFinger): TurnSide {
+  return finger === 'left' ? 'right' : 'left';
+}
+
 function swipeTurn(
   start: TurnPoint,
   end: TurnPoint,
@@ -68,7 +74,7 @@ function swipeTurn(
   if (across <= SWIPE_AXIS_RATIO * Math.abs(dy)) return null;
   if (!isFlung(across, elapsedMs)) return null;
 
-  return dx < 0 ? 'right' : 'left';
+  return swipedSide(dx < 0 ? 'left' : 'right');
 }
 
 function swipeMayStart(
@@ -95,7 +101,8 @@ export {
   SWIPE_MIN_PX_PER_MS,
   swipeMayStart,
   swipeTurn,
+  swipedSide,
   tapZone,
   towards,
 };
-export type { FrameSpan, TapZone, TouchTurns, TurnPoint, TurnSide };
+export type { FrameSpan, SwipeFinger, TapZone, TouchTurns, TurnPoint, TurnSide };

@@ -16,7 +16,11 @@
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
+  import { dueAfter, showsGuide } from '$lib/shared/guide-kind';
+  import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import type { PagePicture } from '$lib/shared/page-source';
+  import { guideSeen, markGuideSeen } from '$lib/shared/seen-guides.svelte';
+  import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     anchorOf,
@@ -44,6 +48,7 @@
   import { scrollMotion } from './scroll-motion';
   import SelectionLayer from './SelectionLayer.svelte';
   import { holdsTheScroll, stripTouchAction } from './strip-touch';
+  import { STRIP_GUIDE, STRIP_GUIDE_KIND, offersTouchGuide } from './touch-guide';
   import type { StripTouchAction } from './strip-touch';
   import './continuous-viewer.css';
 
@@ -154,6 +159,10 @@
     heldLines = heldHints(heldLines, pending);
     return heldLines;
   });
+
+  let guideDue = $state(dueAfter({ kind: 'opened', seen: guideSeen(STRIP_GUIDE_KIND) }));
+
+  const guideShown = $derived(showsGuide({ offered: offersTouchGuide(pointing), due: guideDue }));
 
   function snapToDevicePixels(value: number): number {
     const ratio = window.devicePixelRatio;
@@ -380,6 +389,19 @@
     return scroller;
   }
 
+  export function offersGuide(): boolean {
+    return offersTouchGuide(pointing);
+  }
+
+  export function showGuide(): void {
+    guideDue = dueAfter({ kind: 'recalled' });
+  }
+
+  function dismissGuide(): void {
+    guideDue = dueAfter({ kind: 'dismissed' });
+    markGuideSeen(STRIP_GUIDE_KIND);
+  }
+
   export function atFitWidth(): boolean {
     return zoom === FIT_WIDTH_ZOOM;
   }
@@ -602,4 +624,10 @@
       { 'is-hushed': pending.length === 0 },
     ]}
   />
+
+  {#if guideShown}
+    <LessonScrim class="row items-center justify-center p-4 text-center" ondismiss={dismissGuide}>
+      <SwipeLine lesson={STRIP_GUIDE} />
+    </LessonScrim>
+  {/if}
 </div>

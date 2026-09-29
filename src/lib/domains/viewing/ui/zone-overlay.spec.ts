@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SIDE_ZONE_SHARE } from '$lib/shared/page-turn';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { touchAction } from './touch-action';
-import { showsZoneOverlay, zoneLabels } from './zone-overlay';
-import type { ZoneOverlayScene } from './zone-overlay';
-
-const FIRST_VISIT: ZoneOverlayScene = { turns: 'tap-zones', input: 'touch', seen: false };
+import { zoneLabels } from './zone-overlay';
 
 const WIDTH = 390;
 
@@ -58,23 +55,5 @@ describe('zoneLabels', () => {
 
   it('agrees that a centre tap brings up the menu', () => {
     expect(tapTurn(WIDTH / 2, 'ltr')).toEqual({ kind: 'toggle-chrome' });
-  });
-});
-
-describe('showsZoneOverlay', () => {
-  it('shows to a touch reader in tap zones who has not dismissed it', () => {
-    expect(showsZoneOverlay(FIRST_VISIT)).toBe(true);
-  });
-
-  it('stays hidden in swipe only', () => {
-    expect(showsZoneOverlay({ ...FIRST_VISIT, turns: 'swipe-only' })).toBe(false);
-  });
-
-  it('stays hidden from a mouse or pen reader', () => {
-    expect(showsZoneOverlay({ ...FIRST_VISIT, input: 'pointer' })).toBe(false);
-  });
-
-  it('stays hidden once dismissed', () => {
-    expect(showsZoneOverlay({ ...FIRST_VISIT, seen: true })).toBe(false);
   });
 });
