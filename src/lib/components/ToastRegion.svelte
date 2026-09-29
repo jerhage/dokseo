@@ -45,22 +45,25 @@
     };
   });
 
+  function raise(event: Event): void {
+    const node = element;
+    if (node === undefined || !active || !node.matches(':popover-open')) return;
+    if (!entersTopLayer(event, node)) return;
+    node.hidePopover();
+    node.showPopover();
+  }
+
   $effect(() => {
     const node = element;
     if (node === undefined || !active) return;
     node.showPopover();
-    const raise = (event: Event): void => {
-      if (!entersTopLayer(event, node)) return;
-      node.hidePopover();
-      node.showPopover();
-    };
-    document.addEventListener('toggle', raise, { capture: true });
     return () => {
-      document.removeEventListener('toggle', raise, { capture: true });
       if (node.matches(':popover-open')) node.hidePopover();
     };
   });
 </script>
+
+<svelte:document ontogglecapture={raise} />
 
 <div
   {...rest}

@@ -34,22 +34,12 @@
     panelCount,
   }: Props = $props();
 
-  $effect(() => {
-    function refresh(): void {
-      frame.focus.refresh();
-    }
-
-    window.addEventListener('focusin', refresh);
-    window.addEventListener('focusout', refresh);
-    window.addEventListener('toggle', refresh, true);
-
-    return () => {
-      window.removeEventListener('focusin', refresh);
-      window.removeEventListener('focusout', refresh);
-      window.removeEventListener('toggle', refresh, true);
-    };
-  });
+  function refresh(): void {
+    frame.focus.refresh();
+  }
 </script>
+
+<svelte:window onfocusin={refresh} onfocusout={refresh} ontogglecapture={refresh} />
 
 <div class={[className, 'col gap-0 h-screen overflow-hidden surface-bg']}>
   {@render notice?.()}

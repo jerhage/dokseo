@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, untrack } from 'svelte';
+  import { tick } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import type { HTMLAttributes } from 'svelte/elements';
@@ -33,7 +33,6 @@
   type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
     Face & {
       children: Snippet;
-      open?: boolean;
       variant?: ButtonVariant;
       size?: ControlSize;
       align?: MenuAlign;
@@ -47,7 +46,6 @@
     label,
     tooltip,
     children,
-    open = $bindable(false),
     variant = 'default',
     size = 'md',
     align = 'start',
@@ -58,6 +56,7 @@
   }: Props = $props();
 
   const uid = $props.id();
+  let open = $state(false);
   let root = $state<HTMLDivElement>();
   let button = $state<HTMLButtonElement>();
   let menu = $state<HTMLDivElement>();
@@ -162,16 +161,6 @@
   }
 
   const releaseOnDestroy: Attachment<HTMLDivElement> = () => conceal;
-
-  function matchOpenProp(wanted: boolean): void {
-    if (wanted) reveal();
-    else conceal();
-  }
-
-  $effect(() => {
-    const wanted = open;
-    if (menu !== undefined) untrack(() => matchOpenProp(wanted));
-  });
 </script>
 
 <svelte:document onpointerdown={outside} />
