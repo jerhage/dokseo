@@ -76,6 +76,20 @@ describe('readingState', () => {
     expect(readingState({ ...comic('a', 0, 2), position: cover })).toBe('unread');
   });
 
+  it('counts a one-image book a reader saved as finished, and one only imported as not started', () => {
+    const only = comic('a', 0, 1);
+
+    expect(readingState(only)).toBe('unread');
+    expect(readingState({ ...only, lastReadAt: 1758300000000 })).toBe('finished');
+  });
+
+  it('counts a two-page spread book a reader saved showing both pages as finished', () => {
+    const spread = { ...comic('a', 0, 2), position: imagePlace(imageIndex(0), imageIndex(1)) };
+
+    expect(readingState(spread)).toBe('unread');
+    expect(readingState({ ...spread, lastReadAt: 1758300000000 })).toBe('finished');
+  });
+
   it('counts a text whose last page reported a rounding short of one as finished', () => {
     const last = textPlace('epubcfi(/6/40!/4/2)', 0.9999999999999999);
     expect(readingState(novel('a', last))).toBe('finished');

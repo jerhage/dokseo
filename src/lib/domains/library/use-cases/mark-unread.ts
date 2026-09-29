@@ -14,6 +14,7 @@ async function markUnread(deps: MarkUnreadDeps, id: BookId): Promise<Result<Book
 
   return deps.repository.update(id, {
     finishedAt: null,
+    lastReadAt: null,
     position: startingPlace(found.value),
   });
 }

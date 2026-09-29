@@ -58,7 +58,7 @@ function fakeRepository(found: Result<Book, LibraryError>, outcome = found) {
 }
 
 describe('markUnread', () => {
-  it('clears the mark and returns an image book to its first image', async () => {
+  it('clears the mark and the last read time, and returns an image book to its first image', async () => {
     const fake = fakeRepository(ok(comic));
 
     await markUnread({ repository: fake.repository }, bookId('book-7'));
@@ -66,7 +66,11 @@ describe('markUnread', () => {
     expect(fake.updates).toEqual([
       {
         id: 'book-7',
-        edit: { finishedAt: null, position: { kind: 'image', index: 0, shownThrough: 0 } },
+        edit: {
+          finishedAt: null,
+          lastReadAt: null,
+          position: { kind: 'image', index: 0, shownThrough: 0 },
+        },
       },
     ]);
   });
@@ -77,7 +81,7 @@ describe('markUnread', () => {
     await markUnread({ repository: fake.repository }, bookId('book-7'));
 
     expect(fake.updates).toEqual([
-      { id: 'book-7', edit: { finishedAt: null, position: START_OF_THE_TEXT } },
+      { id: 'book-7', edit: { finishedAt: null, lastReadAt: null, position: START_OF_THE_TEXT } },
     ]);
   });
 

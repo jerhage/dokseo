@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { imageIndex } from './ids';
 import {
   imagePlace,
+  readingStarted,
   resumedCfi,
   samePlace,
   showsTheEnd,
@@ -175,5 +176,32 @@ describe('showsTheEnd', () => {
 
   it('reports no end for a text that measured no fraction', () => {
     expect(showsTheEnd(textPlace('epubcfi(/6/40!/4/2)', null), 0)).toBe(false);
+  });
+});
+
+describe('readingStarted', () => {
+  const READ_AT = 1758300000000;
+
+  it('counts an image place past the first image as started, read or not', () => {
+    expect(readingStarted(imagePlace(imageIndex(2)), 10, null)).toBe(true);
+  });
+
+  it('reports a book at its first image that no reader saved as not started', () => {
+    expect(readingStarted(imagePlace(imageIndex(0)), 1, null)).toBe(false);
+    expect(readingStarted(imagePlace(imageIndex(0), imageIndex(1)), 2, null)).toBe(false);
+  });
+
+  it('counts a saved first group that shows the last image as started', () => {
+    expect(readingStarted(imagePlace(imageIndex(0)), 1, READ_AT)).toBe(true);
+    expect(readingStarted(imagePlace(imageIndex(0), imageIndex(1)), 2, READ_AT)).toBe(true);
+  });
+
+  it('reports a saved first group short of the end as not started', () => {
+    expect(readingStarted(imagePlace(imageIndex(0), imageIndex(1)), 6, READ_AT)).toBe(false);
+  });
+
+  it('counts a text place as started once it names a place in the text', () => {
+    expect(readingStarted(START_OF_THE_TEXT, 0, READ_AT)).toBe(false);
+    expect(readingStarted(textPlace('epubcfi(/6/4!/2)', null), 0, null)).toBe(true);
   });
 });

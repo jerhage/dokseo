@@ -1021,6 +1021,55 @@ describe('reading to the end', () => {
     expect(world.edits).toEqual([]);
   });
 
+  it('saves the only page of a one-image book as read once it shows it', async () => {
+    const world = fakes({ imageCount: 1 });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(0))]);
+  });
+
+  it('saves both pages of a two-page double book as read once it shows the spread', async () => {
+    const world = fakes({ imageCount: 2 });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(world.edits.map((edit) => edit.position)).toEqual([
+      imagePlace(imageIndex(0), imageIndex(1)),
+    ]);
+    expect(showsTheEnd(world.stored.position, 2)).toBe(true);
+  });
+
+  it('saves nothing on reopening a one-image book a reader already saved', async () => {
+    const world = fakes({ imageCount: 1, lastReadAt: 1758300000000 });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves nothing on opening a book whose first group is not its last', async () => {
+    const world = fakes({ imageCount: 3 });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toEqual([]);
+  });
+
+  it('saves nothing on opening a one-image strip, which records reading by its scroll', async () => {
+    const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', imageCount: 1 });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(world.edits).toEqual([]);
+  });
+
   it('saves a place showing the end once a strip shows its short last image', async () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', imageCount: 5 });
     const view = new ReaderView(world.container, world.notify);

@@ -51,7 +51,7 @@ type BookEdit = {
   readonly pagePairing?: PagePairing;
   readonly pageFit?: PageFit;
   readonly position?: ReadingPlace;
-  readonly lastReadAt?: number;
+  readonly lastReadAt?: number | null;
   readonly finishedAt?: number | null;
 };
 
@@ -73,7 +73,7 @@ function applyEdit(book: Book, edit: BookEdit): Book {
     pagePairing: edit.pagePairing ?? book.pagePairing,
     pageFit,
     position: edit.position ?? book.position,
-    lastReadAt: edit.lastReadAt ?? book.lastReadAt,
+    lastReadAt: edit.lastReadAt === undefined ? book.lastReadAt : edit.lastReadAt,
     finishedAt: edit.finishedAt === undefined ? book.finishedAt : edit.finishedAt,
   };
 }

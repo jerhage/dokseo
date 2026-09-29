@@ -12,8 +12,8 @@ import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
-import { imagePlace, samePlace } from '$lib/shared/reading-place';
-import type { ImagePlace } from '$lib/shared/reading-place';
+import { imagePlace, readingStarted, samePlace, showsTheEnd } from '$lib/shared/reading-place';
+import type { ImagePlace, ReadingPlace } from '$lib/shared/reading-place';
 import { groupContaining, pairPages } from '../domain/page-pairing';
 import type { PageGroup } from '../domain/page-pairing';
 import { groupOf, positionOfGroup, readingPosition } from '../domain/reading-position';
@@ -225,8 +225,10 @@ class ReaderView {
     if (place.clamped) {
       this.message = `This book holds ${book.imageCount} images, so it opened at the last one.`;
     }
-    if (place.asked && saved.kind === 'image' && place.index !== saved.index) {
-      void this.#persist(book.id, this.#placeShowing(place.index));
+    const showing = this.#placeShowing(place.index);
+    const movedByTheUrl = place.asked && saved.kind === 'image' && place.index !== saved.index;
+    if (movedByTheUrl || this.#opensOnAnUnreadEnd(book, saved, showing)) {
+      void this.#persist(book.id, showing);
     }
     this.#mirror?.(place.index);
   }
@@ -410,6 +412,14 @@ class ReaderView {
     const layout = imageLayoutKind(book.layoutKind);
     this.groups =
       layout === null ? NO_GROUPS : pairPages(sizes, effectivePairing(book.pagePairing, layout));
+  }
+
+  #opensOnAnUnreadEnd(book: ReaderBook, saved: ReadingPlace, showing: ImagePlace): boolean {
+    if (imageLayoutKind(book.layoutKind) !== 'paged' || saved.kind !== 'image') return false;
+    if (!showsTheEnd(showing, book.imageCount)) return false;
+    const recorded =
+      samePlace(saved, showing) && readingStarted(saved, book.imageCount, book.lastReadAt);
+    return !recorded;
   }
 
   #placeShowing(index: ImageIndex): ImagePlace {

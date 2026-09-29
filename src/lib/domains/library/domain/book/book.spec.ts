@@ -79,6 +79,11 @@ describe('applyEdit', () => {
     expect(applyEdit(read, { title: 'Blame! 1' }).lastReadAt).toBe(1758300000000);
   });
 
+  it('clears the last read time when the edit gives null', () => {
+    const read: Book = { ...book, lastReadAt: 1758300000000 };
+    expect(applyEdit(read, { lastReadAt: null }).lastReadAt).toBeNull();
+  });
+
   it('marks the book finished at the given time', () => {
     expect(applyEdit(book, { finishedAt: 1758400000000 }).finishedAt).toBe(1758400000000);
   });

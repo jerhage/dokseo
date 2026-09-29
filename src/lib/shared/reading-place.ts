@@ -58,9 +58,20 @@ function showsTheEnd(place: ReadingPlace, imageCount: number): boolean {
   );
 }
 
+function readingStarted(
+  place: ReadingPlace,
+  imageCount: number,
+  lastReadAt: number | null,
+): boolean {
+  if (place.kind === 'text') return resumedCfi(place) !== null;
+
+  return place.index !== 0 || (lastReadAt !== null && showsTheEnd(place, imageCount));
+}
+
 export {
   imagePlace,
   NO_FRACTION_REPORTED,
+  readingStarted,
   resumedCfi,
   samePlace,
   showsTheEnd,
