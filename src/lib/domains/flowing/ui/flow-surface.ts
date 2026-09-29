@@ -4,7 +4,6 @@ import type {
   FoliateBook,
   FractionTarget,
   HighlightStyle,
-  Relocation,
   ResolvedTarget,
   TocItem,
   View,
@@ -16,6 +15,8 @@ import { leaveOutSectionsWithNoBody, sectionWithABody, spineOf } from './flow-sp
 import type { Spine } from './flow-spine';
 import { arrivedBorderWidth, highlightChange, joinedLines, passageColour } from './flow-highlight';
 import type { PassageMark, PassageWeight } from './flow-highlight';
+import { flowRelocation } from './flow-move';
+import type { FlowRelocation } from './flow-move';
 import { flowStyles } from './flow-styles';
 import type { PageInk } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
@@ -46,7 +47,7 @@ type FlowOpening = {
   readonly at: string | null;
   readonly settings: ReadingSettings;
   readonly ink?: PageInk;
-  readonly moved: (at: Relocation) => void;
+  readonly moved: (at: FlowRelocation) => void;
 };
 
 type ChapterView = {
@@ -290,13 +291,16 @@ async function openFlowSurface(
       titles: view,
     });
   });
-  view.addEventListener('relocate', (moved) => {
-    opening.moved(moved.detail);
-  });
   host.append(view);
 
   try {
     await view.open(book);
+    view.renderer.addEventListener('relocate', (moved) => {
+      const here = view.lastLocation;
+      if (here === null) return;
+
+      opening.moved(flowRelocation(here, moved.detail.reason));
+    });
     view.renderer.setStyles(flowStyles(opening.settings, opening.ink));
     const laidOut = await openAt(view, spine, opening.at);
     if (!laidOut) throw new Error('its first section could not be laid out');

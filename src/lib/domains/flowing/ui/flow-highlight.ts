@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import { pixelLength } from '$lib/components/css-length';
 import type { StyleSource } from '$lib/components/css-length';
 import type { Anchor } from '$lib/shared/anchor';
+import type { MoveCause } from './flow-move';
 import type { PassageArrival } from './flow-quote';
 
 type PassageWeight = 'ordinary' | 'arrived';
@@ -58,10 +59,14 @@ function passageMark(arrival: PassageArrival, place: string | null): PassageMark
     .exhaustive();
 }
 
-function markAfterMove(mark: PassageMark, place: string): PassageMark {
+function markAfterMove(mark: PassageMark, place: string, cause: MoveCause): PassageMark {
   if (mark.kind === 'none') return mark;
+  if (mark.place === place) return mark;
 
-  return mark.place === place ? mark : NOTHING_ARRIVED_AT;
+  return match(cause)
+    .with({ kind: 'travel' }, () => NOTHING_ARRIVED_AT)
+    .with({ kind: 'reflow' }, () => ({ ...mark, place }))
+    .exhaustive();
 }
 
 function passageWeight(cfi: string, mark: PassageMark): PassageWeight {

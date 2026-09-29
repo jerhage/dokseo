@@ -1,4 +1,4 @@
-import type { Relocation, TocItem } from 'foliate-js/view.js';
+import type { TocItem } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import type { SoughtPassage, TextAnchor, TextQuote } from '$lib/shared/anchor';
@@ -21,6 +21,8 @@ import {
 } from './flow-quote';
 import { NOTHING_ARRIVED_AT } from './flow-highlight';
 import type { PassageMark } from './flow-highlight';
+import { REFLOWED, TRAVELLED } from './flow-move';
+import type { FlowRelocation } from './flow-move';
 import type { PassageArrival } from './flow-quote';
 import { INK_FOR_THE_DARK_PAGE } from './flow-styles';
 import type { PageInk } from './flow-styles';
@@ -233,8 +235,8 @@ function shows(): Shown {
   return world;
 }
 
-function relocated(cfi: string, at: Partial<Relocation> = {}): Relocation {
-  return { cfi, ...at };
+function relocated(cfi: string, at: Partial<FlowRelocation> = {}): FlowRelocation {
+  return { cfi, cause: TRAVELLED, ...at };
 }
 
 function places(edits: readonly BookEdit[]): readonly (ReadingPlace | undefined)[] {
@@ -1350,6 +1352,38 @@ describe('FlowView jumpToPassage', () => {
     expect(surfaces.arrivals.length).toBe(drawn);
   });
 
+  it('keeps the mark when foliate re-lays the page and reports a different place', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+
+    surfaces.openings[0]?.moved(relocated(ANOTHER_PAGE, { cause: REFLOWED }));
+
+    expect(surfaces.arrivals.at(-1)).toEqual({
+      kind: 'arrived',
+      cfi: SOMEWHERE,
+      place: ANOTHER_PAGE,
+    });
+    expect(view.arrivalStanding).toBe(true);
+  });
+
+  it('takes the mark away when the reader turns the page after a re-layout', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+    await view.jumpToPassage(SOMEWHERE, QUOTE);
+    surfaces.openings[0]?.moved(relocated(ANOTHER_PAGE, { cause: REFLOWED }));
+
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+
+    expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
+  });
+
   it('takes the mark and the notice away when the reader dismisses the arrival', async () => {
     const world = shelf();
     const surfaces = shows();
@@ -1503,6 +1537,20 @@ describe('FlowView arriveAt', () => {
 
     expect(surfaces.passages).toEqual([{ cfi: SOMEWHERE, quote: null }]);
     expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: SOMEWHERE });
+  });
+
+  it('keeps the ring on a passage asked for before the book opened while the page settles', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    view.arriveAt(book.id, PASSAGE);
+    await view.open(book, surfaces.show);
+    await settled();
+
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON, { cause: REFLOWED }));
+
+    expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: PASSAGE.cfi });
   });
 
   it('holds a passage asked for before the book opens, and goes there once it has', async () => {

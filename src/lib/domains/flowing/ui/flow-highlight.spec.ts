@@ -18,6 +18,7 @@ import {
 } from './flow-highlight';
 import type { LineRect } from './flow-highlight';
 import type { PassageMark, PassageWeight } from './flow-highlight';
+import { REFLOWED, TRAVELLED } from './flow-move';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 
 const FIRST = 'epubcfi(/6/14!/4/2/14/1:0)';
@@ -141,19 +142,45 @@ describe('markAfterMove', () => {
   it('keeps the mark while the reader stays on the page it landed on', () => {
     const mark = jumpedTo(FIRST);
 
-    expect(markAfterMove(mark, A_PAGE)).toBe(mark);
+    expect(markAfterMove(mark, A_PAGE, TRAVELLED)).toBe(mark);
   });
 
   it('drops the mark when the reader turns the page', () => {
-    expect(markAfterMove(jumpedTo(FIRST), ANOTHER_PAGE)).toEqual(NOTHING_ARRIVED_AT);
+    expect(markAfterMove(jumpedTo(FIRST), ANOTHER_PAGE, TRAVELLED)).toEqual(NOTHING_ARRIVED_AT);
   });
 
   it('drops the mark when the page it landed on was never reported', () => {
-    expect(markAfterMove(jumpedTo(FIRST, null), A_PAGE)).toEqual(NOTHING_ARRIVED_AT);
+    expect(markAfterMove(jumpedTo(FIRST, null), A_PAGE, TRAVELLED)).toEqual(NOTHING_ARRIVED_AT);
   });
 
-  it('leaves an unmarked book unmarked', () => {
-    expect(markAfterMove(NOTHING_ARRIVED_AT, A_PAGE)).toEqual(NOTHING_ARRIVED_AT);
+  it('keeps the mark when a reflow reports a different place, and remembers that place', () => {
+    expect(markAfterMove(jumpedTo(FIRST), ANOTHER_PAGE, REFLOWED)).toEqual({
+      kind: 'arrived',
+      cfi: FIRST,
+      place: ANOTHER_PAGE,
+    });
+  });
+
+  it('keeps the mark unchanged when a reflow reports the page it landed on', () => {
+    const mark = jumpedTo(FIRST);
+
+    expect(markAfterMove(mark, A_PAGE, REFLOWED)).toBe(mark);
+  });
+
+  it('keeps the mark when a reflow reports a place the jump never learned', () => {
+    expect(markAfterMove(jumpedTo(FIRST, null), A_PAGE, REFLOWED)).toEqual({
+      kind: 'arrived',
+      cfi: FIRST,
+      place: A_PAGE,
+    });
+  });
+
+  it('leaves an unmarked book unmarked after a page turn', () => {
+    expect(markAfterMove(NOTHING_ARRIVED_AT, A_PAGE, TRAVELLED)).toEqual(NOTHING_ARRIVED_AT);
+  });
+
+  it('leaves an unmarked book unmarked after a reflow', () => {
+    expect(markAfterMove(NOTHING_ARRIVED_AT, A_PAGE, REFLOWED)).toEqual(NOTHING_ARRIVED_AT);
   });
 });
 

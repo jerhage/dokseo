@@ -1,4 +1,4 @@
-import type { Relocation, TocItem } from 'foliate-js/view.js';
+import type { TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
@@ -14,6 +14,7 @@ import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
 import { markAfterMove, NO_PASSAGES, NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
 import type { PassageMark } from './flow-highlight';
+import type { FlowRelocation, MoveCause } from './flow-move';
 import {
   chapterTicks,
   flowLocation,
@@ -356,7 +357,7 @@ class FlowView {
   #moved(
     generation: number,
     id: BookId,
-    relocation: Relocation,
+    relocation: FlowRelocation,
     onmoved: (() => void) | undefined,
   ): void {
     if (generation !== this.#generation) return;
@@ -364,7 +365,7 @@ class FlowView {
     const here = flowLocation(relocation);
     this.location = here;
     this.reported = relocation.tocItem ?? null;
-    this.#forgetArrival(here.cfi);
+    this.#forgetArrival(here.cfi, relocation.cause);
     onmoved?.();
     const place = textPlace(here.cfi, here.fraction);
 
@@ -386,8 +387,8 @@ class FlowView {
     void this.jumpToPassage(passage.cfi, passage.quote);
   }
 
-  #forgetArrival(place: string): void {
-    const marked = markAfterMove(this.#marked, place);
+  #forgetArrival(place: string, cause: MoveCause): void {
+    const marked = markAfterMove(this.#marked, place, cause);
     if (marked === this.#marked) return;
 
     this.#marked = marked;

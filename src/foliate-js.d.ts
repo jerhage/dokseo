@@ -81,6 +81,24 @@ declare module 'foliate-js/view.js' {
     tocItem?: TocItem | null;
   }
 
+  type RelocateReason = 'anchor' | 'navigation' | 'selection' | 'page' | 'snap' | 'scroll';
+
+  interface RendererRelocation {
+    readonly reason?: RelocateReason | null;
+  }
+
+  interface RendererEventMap {
+    relocate: CustomEvent<RendererRelocation>;
+  }
+
+  interface Renderer {
+    setStyles(styles: string | readonly [string, string]): void;
+    addEventListener<K extends keyof RendererEventMap>(
+      type: K,
+      listener: (event: RendererEventMap[K]) => void,
+    ): void;
+  }
+
   interface TocProgress {
     tocItem?: TocItem | null;
   }
@@ -114,7 +132,8 @@ declare module 'foliate-js/view.js' {
     addAnnotation(annotation: Annotation): Promise<unknown>;
     deleteAnnotation(annotation: Annotation): Promise<unknown>;
     close(): void;
-    readonly renderer: { setStyles(styles: string | readonly [string, string]): void };
+    readonly renderer: Renderer;
+    readonly lastLocation: Relocation | null;
     addEventListener<K extends keyof ViewEventMap>(
       type: K,
       listener: (this: View, event: ViewEventMap[K]) => void,
@@ -141,7 +160,11 @@ declare module 'foliate-js/view.js' {
     HighlightStyle,
     ManifestItem,
     OverlayCreation,
+    RelocateReason,
     Relocation,
+    Renderer,
+    RendererEventMap,
+    RendererRelocation,
     ResolvedTarget,
     ResourceDetail,
     ResourceEvent,
