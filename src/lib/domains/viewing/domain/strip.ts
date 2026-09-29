@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
@@ -27,6 +28,8 @@ type Relayout =
   | { readonly kind: 'place' }
   | { readonly kind: 'follow' }
   | { readonly kind: 'stay' };
+
+type HeldPlace = { readonly position: ReadingPosition; readonly top: number };
 
 type StripSpacers = {
   readonly before: number;
@@ -239,6 +242,23 @@ function scrollForPosition(layout: readonly SliceLayout[], position: ReadingPosi
   return slice.top + slice.height * readingPosition(position.index, position.offset).offset;
 }
 
+function windowScrollTop(
+  layout: readonly SliceLayout[],
+  width: number,
+  reading: StripAnchor | null,
+  scrolled: number,
+  held: HeldPlace,
+): number {
+  return match(relayoutFor(layout, width, reading))
+    .with({ kind: 'stay' }, () => scrolled)
+    .with(
+      { kind: 'place' },
+      { kind: 'follow' },
+      () => scrollForPosition(layout, held.position) - held.top,
+    )
+    .exhaustive();
+}
+
 export {
   ASSUMED_ASPECT,
   AHEAD_SCREENS,
@@ -255,5 +275,15 @@ export {
   anchorOf,
   relayoutFor,
   scrollForPosition,
+  windowScrollTop,
 };
-export type { SliceLayout, VisibleRange, PlacedSlice, StripSpacers, Travel, StripAnchor, Relayout };
+export type {
+  HeldPlace,
+  SliceLayout,
+  VisibleRange,
+  PlacedSlice,
+  StripSpacers,
+  Travel,
+  StripAnchor,
+  Relayout,
+};

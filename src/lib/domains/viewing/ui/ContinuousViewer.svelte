@@ -28,6 +28,7 @@
     stripHeight,
     stripWindow,
     travelBetween,
+    windowScrollTop,
   } from '../domain/strip';
   import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
@@ -102,7 +103,7 @@
   let heldLines: readonly GestureHint[] = [];
 
   let written: { readonly top: number; readonly left: number } | null = null;
-  let reading: StripAnchor | null = null;
+  let reading = $state.raw<StripAnchor | null>(null);
   let lastPointer = '';
 
   const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -111,7 +112,14 @@
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
   const height = $derived(stripHeight(layout));
-  const range = $derived(stripWindow(layout, scrolled, frameHeight, travel));
+  const range = $derived(
+    stripWindow(
+      layout,
+      windowScrollTop(layout, width, reading, scrolled, hold),
+      frameHeight,
+      travel,
+    ),
+  );
   const spacers = $derived(spacersFor(layout, range, snapToDevicePixels));
   const pointing = $derived(inputKind(lastPointerType, coarse));
   const pending = $derived(
@@ -413,7 +421,7 @@
     return () => element.removeEventListener('touchmove', ontouchmove);
   });
 
-  $effect(() => {
+  $effect.pre(() => {
     const element = scroller;
     if (element === null) return;
 

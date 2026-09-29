@@ -20,6 +20,7 @@ import {
   stripWindow,
   travelBetween,
   visibleRange,
+  windowScrollTop,
 } from './strip';
 import type { SliceLayout } from './strip';
 
@@ -309,6 +310,53 @@ describe('stripWindow', () => {
     const range = stripWindow(layout, stripHeight(layout) + 10_000, SCREEN, 'up');
 
     expect(range.last).toBeLessThan(range.first);
+  });
+});
+
+describe('windowScrollTop', () => {
+  const layout = layOutStrip(unmeasured(40), WIDTH);
+  const held = { position: readingPosition(imageIndex(25), 0), top: 0 };
+  const SCREEN = 900;
+
+  it('takes the window at the held place before the opening scroll is written', () => {
+    const top = windowScrollTop(layout, WIDTH, null, 0, held);
+
+    expect(top).toBe(25 * ASSUMED_HEIGHT);
+    expect(stripWindow(layout, top, SCREEN, 'down').first).toBeGreaterThanOrEqual(24);
+  });
+
+  it('keeps the window off the top of the strip while the strip opens mid-book', () => {
+    const range = stripWindow(
+      layout,
+      windowScrollTop(layout, WIDTH, null, 0, held),
+      SCREEN,
+      'down',
+    );
+
+    expect(range.first).not.toBe(0);
+    expect(range.first).toBeLessThanOrEqual(25);
+    expect(range.last).toBeGreaterThanOrEqual(25);
+  });
+
+  it('takes the window where a follow will scroll once a slice above the anchor is measured', () => {
+    const reading = anchorOf(layout, WIDTH, imageIndex(25));
+    const measured = layOutStrip([tall, ...unmeasured(39)], WIDTH);
+
+    expect(windowScrollTop(measured, WIDTH, reading, 25 * ASSUMED_HEIGHT, held)).toBe(
+      4000 + 24 * ASSUMED_HEIGHT,
+    );
+  });
+
+  it('keeps the scroll the reader is at while the anchor holds', () => {
+    const reading = anchorOf(layout, WIDTH, imageIndex(25));
+
+    expect(windowScrollTop(layout, WIDTH, reading, 12345, held)).toBe(12345);
+  });
+
+  it('subtracts the part of the screen above the held point', () => {
+    const zoomed = { position: readingPosition(imageIndex(25), 0.5), top: 300 };
+
+    expect(windowScrollTop(layout, WIDTH, null, 0, zoomed)).toBe(25.5 * ASSUMED_HEIGHT - 300);
   });
 });
 
