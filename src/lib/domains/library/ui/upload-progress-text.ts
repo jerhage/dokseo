@@ -5,7 +5,7 @@ import {
   uploadFraction,
   uploadRemainingSeconds,
 } from '../domain/ingest/upload-progress';
-import type { UploadStage } from '../domain/ingest/upload-progress';
+import type { UploadBatch, UploadStage } from '../domain/ingest/upload-progress';
 
 const MINUTE_SECONDS = 90;
 
@@ -52,4 +52,9 @@ function uploadStageText(stage: UploadStage): string {
     .exhaustive();
 }
 
-export { uploadCountText, uploadStageText };
+function uploadBatchText(batch: UploadBatch): string | null {
+  if (batch.total <= 1) return null;
+  return `Book ${batch.position.toLocaleString()} of ${batch.total.toLocaleString()}`;
+}
+
+export { uploadBatchText, uploadCountText, uploadStageText };

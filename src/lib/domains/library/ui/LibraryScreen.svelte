@@ -199,7 +199,7 @@
     </div>
 
     {#if view.pending !== null}
-      <ImportStatus title={view.pending} language="ja" stage={view.progress} />
+      <ImportStatus title={view.pending} language="ja" stage={view.progress} batch={view.batch} />
     {/if}
 
     {#if body === 'reading'}

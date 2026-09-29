@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { INSPECTING } from '../domain/ingest/upload-progress';
+import { INSPECTING, SINGLE_BOOK } from '../domain/ingest/upload-progress';
 import type { UploadStage } from '../domain/ingest/upload-progress';
-import { uploadCountText, uploadStageText } from './upload-progress-text';
+import { uploadBatchText, uploadCountText, uploadStageText } from './upload-progress-text';
 
 function storing(over: Partial<Extract<UploadStage, { kind: 'storing' }>> = {}): UploadStage {
   return {
@@ -77,5 +77,15 @@ describe('uploadStageText', () => {
 
   it('states a bare verb for a stage with neither a percentage nor an estimate', () => {
     expect(uploadStageText({ kind: 'packing', packed: 0, total: 0 })).toBe('Packing the images');
+  });
+});
+
+describe('uploadBatchText', () => {
+  it('states nothing when the upload is a single book', () => {
+    expect(uploadBatchText(SINGLE_BOOK)).toBeNull();
+  });
+
+  it('states which book of how many is being added', () => {
+    expect(uploadBatchText({ position: 2, total: 3 })).toBe('Book 2 of 3');
   });
 });

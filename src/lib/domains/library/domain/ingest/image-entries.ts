@@ -32,4 +32,4 @@ function selectImageEntries(names: readonly string[]): readonly string[] {
   return images.toSorted(compareNatural);
 }
 
-export { isImageEntry, selectImageEntries };
+export { isImageEntry, isJunk, selectImageEntries };

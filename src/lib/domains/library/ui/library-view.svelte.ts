@@ -9,8 +9,10 @@ import type { LibraryError } from '../domain/book/library-repository';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
 import { suggestTitle } from '../domain/book/title';
 import { describeIngestLimit } from '../domain/ingest/ingest-limits';
-import { INSPECTING } from '../domain/ingest/upload-progress';
-import type { UploadStage } from '../domain/ingest/upload-progress';
+import { splitUpload } from '../domain/ingest/source-detection';
+import { uploadName } from '../domain/ingest/upload-name';
+import { INSPECTING, SINGLE_BOOK } from '../domain/ingest/upload-progress';
+import type { UploadBatch, UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenedUpload, OpenFileError } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { bookMatchingChosen } from './book-matching.svelte';
@@ -26,6 +28,17 @@ type ChangeOutcome = 'changed' | 'failed' | 'skipped';
 type OpenBook = (id: BookId) => void;
 
 type Mark = 'finished' | 'unread';
+
+type FailedBook = { readonly name: string; readonly error: OpenFileError };
+
+type UploadFailures =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'the-only-book'; readonly error: OpenFileError }
+  | {
+      readonly kind: 'some-books';
+      readonly failed: readonly FailedBook[];
+      readonly total: number;
+    };
 
 const UPLOAD_FAILED = 'Could not add that upload';
 
@@ -101,6 +114,48 @@ function describeFingerprintFailure(cause: string): string {
   return `This page cannot check uploads for duplicates here: ${cause}`;
 }
 
+function describeFailedBook(failed: FailedBook): string {
+  return match(failed.error)
+    .with(
+      { kind: 'source', error: { kind: 'unreadable' } },
+      (unreadable) => `${failed.name} could not be read: ${unreadable.error.cause}`,
+    )
+    .otherwise((error) => `${failed.name}: ${describeOpenFileError(error)}`);
+}
+
+function uploadFailures(failed: readonly FailedBook[], total: number): UploadFailures {
+  const [only] = failed;
+  if (only === undefined) return { kind: 'none' };
+  if (total === 1) return { kind: 'the-only-book', error: only.error };
+  return { kind: 'some-books', failed, total };
+}
+
+function failuresNotice(failures: UploadFailures): Notice | null {
+  return match(failures)
+    .returnType<Notice | null>()
+    .with({ kind: 'none' }, () => null)
+    .with({ kind: 'the-only-book' }, ({ error }) => ({
+      tone: 'danger',
+      title: UPLOAD_FAILED,
+      message: describeOpenFileError(error),
+    }))
+    .with({ kind: 'some-books' }, ({ failed, total }) => ({
+      tone: 'danger',
+      title: `Could not add ${failed.length} of ${total} books`,
+      message: failed.map(describeFailedBook).join(' · '),
+    }))
+    .exhaustive();
+}
+
+function titleOf(files: readonly File[]): string {
+  return suggestTitle(files.map((file) => ({ name: file.name, path: file.webkitRelativePath })));
+}
+
+function nameOf(files: readonly File[]): string {
+  const name = uploadName(files);
+  return name.length > 0 ? name : titleOf(files);
+}
+
 function revoke(urls: Iterable<string>): void {
   for (const url of urls) URL.revokeObjectURL(url);
 }
@@ -117,6 +172,7 @@ class LibraryView {
   busy = $state(false);
   pending = $state.raw<string | null>(null);
   progress = $state.raw<UploadStage>(INSPECTING);
+  batch = $state.raw<UploadBatch>(SINGLE_BOOK);
   removing = $state.raw<BookId | null>(null);
   editing = $state.raw<BookId | null>(null);
   storedBytes = $state.raw<number | null>(null);
@@ -165,32 +221,41 @@ class LibraryView {
 
   async upload(files: readonly File[], openBook: OpenBook): Promise<void> {
     if (files.length === 0) return;
+    const books = splitUpload(files);
+    if (books.length === 0) {
+      this.#fail(UPLOAD_FAILED, describeSourceBuildError({ kind: 'nothing-usable' }));
+      return;
+    }
     this.busy = true;
-    this.pending = suggestTitle(
-      files.map((file) => ({ name: file.name, path: file.webkitRelativePath })),
-    );
-    this.progress = INSPECTING;
+    const matching = bookMatchingChosen();
+    const failed: FailedBook[] = [];
+    let added = false;
 
     try {
-      const opened = await this.#container.library.openFile(
-        files,
-        bookMatchingChosen(),
-        (stage) => {
+      for (const [index, book] of books.entries()) {
+        this.pending = titleOf(book.files);
+        this.progress = INSPECTING;
+        this.batch = { position: index + 1, total: books.length };
+        const opened = await this.#container.library.openFile(book.files, matching, (stage) => {
           this.progress = stage;
-        },
-      );
-      if (!opened.ok) {
-        this.#fail(UPLOAD_FAILED, describeOpenFileError(opened.error));
-        return;
+        });
+        if (!opened.ok) {
+          failed.push({ name: nameOf(book.files), error: opened.error });
+          continue;
+        }
+        added = true;
+        this.#notify(uploadNotice(opened.value, openBook));
       }
-      this.#notify(uploadNotice(opened.value, openBook));
     } finally {
       this.busy = false;
       this.pending = null;
       this.progress = INSPECTING;
+      this.batch = SINGLE_BOOK;
     }
 
-    await this.load();
+    const notice = failuresNotice(uploadFailures(failed, books.length));
+    if (notice !== null) this.#notify(notice);
+    if (added) await this.load();
   }
 
   async remove(id: BookId): Promise<ChangeOutcome> {

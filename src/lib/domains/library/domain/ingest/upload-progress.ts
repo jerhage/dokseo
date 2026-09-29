@@ -20,11 +20,15 @@ type SourceWriteReport = (writtenBytes: number, totalBytes: number) => void;
 
 type UploadCount = { readonly done: number | null; readonly total: number };
 
+type UploadBatch = { readonly position: number; readonly total: number };
+
 const ESTIMATE_MIN_ELAPSED_MS = 600;
 
 const ESTIMATE_MIN_FRACTION = 0.02;
 
 const INSPECTING: UploadStage = { kind: 'inspecting' };
+
+const SINGLE_BOOK: UploadBatch = { position: 1, total: 1 };
 
 function uploadCount(stage: UploadStage): UploadCount | null {
   return match(stage)
@@ -63,5 +67,5 @@ function uploadRemainingSeconds(stage: UploadStage): number | null {
   return Math.max(1, Math.ceil(remaining / 1000));
 }
 
-export { INSPECTING, uploadCount, uploadFraction, uploadRemainingSeconds };
-export type { UploadStage, UploadReport, SourceWriteReport, UploadCount };
+export { INSPECTING, SINGLE_BOOK, uploadCount, uploadFraction, uploadRemainingSeconds };
+export type { UploadBatch, UploadStage, UploadReport, SourceWriteReport, UploadCount };

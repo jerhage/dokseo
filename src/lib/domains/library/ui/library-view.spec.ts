@@ -74,6 +74,7 @@ type Fakes = {
   readonly container: Container;
   readonly lists: Deferred<Result<readonly Book[], LibraryError>>[];
   readonly opens: Deferred<Result<OpenedUpload, OpenFileError>>[];
+  readonly uploads: (readonly File[])[];
   readonly reports: (UploadReport | undefined)[];
   readonly matchings: BookMatching[];
   readonly removes: Deferred<Result<void, LibraryError>>[];
@@ -91,6 +92,7 @@ type Fakes = {
 function fakes(): Fakes {
   const lists: Deferred<Result<readonly Book[], LibraryError>>[] = [];
   const opens: Deferred<Result<OpenedUpload, OpenFileError>>[] = [];
+  const uploads: (readonly File[])[] = [];
   const reports: (UploadReport | undefined)[] = [];
   const matchings: BookMatching[] = [];
   const removes: Deferred<Result<void, LibraryError>>[] = [];
@@ -111,9 +113,10 @@ function fakes(): Fakes {
   const container: Container = {
     beginTrace: noTrace,
     library: {
-      openFile: (_files, matching, report) => {
+      openFile: (files, matching, report) => {
         const next = deferred<Result<OpenedUpload, OpenFileError>>();
         opens.push(next);
+        uploads.push(files);
         reports.push(report);
         matchings.push(matching);
         return next.promise;
@@ -196,6 +199,7 @@ function fakes(): Fakes {
     container,
     lists,
     opens,
+    uploads,
     reports,
     matchings,
     removes,
@@ -557,6 +561,119 @@ describe('LibraryView', () => {
     const view = new LibraryView(world.container, world.notify);
 
     expect(view.pending).toBeNull();
+  });
+
+  it('adds each container of a several-file upload as its own book, one after another', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload([chosen('vol-2.pdf'), chosen('vol-1.pdf')], world.open);
+    expect(world.uploads.map((files) => files.map((file) => file.name))).toEqual([['vol-1.pdf']]);
+    expect(view.pending).toBe('vol-1');
+    expect(view.batch).toEqual({ position: 1, total: 2 });
+
+    at(world.reports, 0)?.({ kind: 'covering', imageCount: 12 });
+    at(world.opens, 0).settle(ok({ kind: 'added', book: book('one', { title: 'vol-1' }) }));
+    await settleMicrotasks();
+
+    expect(world.uploads.map((files) => files.map((file) => file.name))).toEqual([
+      ['vol-1.pdf'],
+      ['vol-2.pdf'],
+    ]);
+    expect(view.pending).toBe('vol-2');
+    expect(view.batch).toEqual({ position: 2, total: 2 });
+    expect(view.progress).toEqual({ kind: 'inspecting' });
+    expect(view.busy).toBe(true);
+
+    at(world.opens, 1).settle(ok({ kind: 'added', book: book('two', { title: 'vol-2' }) }));
+    await settleMicrotasks();
+    at(world.lists, 0).settle(ok([book('one'), book('two')]));
+    await uploading;
+
+    expect(world.notices.map((notice) => notice.title)).toEqual(['Added vol-1', 'Added vol-2']);
+    expect(world.lists).toHaveLength(1);
+    expect(view.batch).toEqual({ position: 1, total: 1 });
+    expect(view.pending).toBeNull();
+    expect(view.busy).toBe(false);
+  });
+
+  it('passes the loose images beside the containers as one more book', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload(
+      [chosen('p1.png'), chosen('one.cbz'), chosen('p2.png')],
+      world.open,
+    );
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await settleMicrotasks();
+    at(world.opens, 1).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
+
+    expect(world.uploads.map((files) => files.map((file) => file.name))).toEqual([
+      ['one.cbz'],
+      ['p1.png', 'p2.png'],
+    ]);
+  });
+
+  it('keeps adding the other books when one fails, and names every failure in one summary', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload([chosen('a.pdf'), chosen('b.epub'), chosen('c.cbz')], world.open);
+    at(world.opens, 0).settle(
+      err({ kind: 'source', error: { kind: 'unreadable', cause: 'bad xref' } }),
+    );
+    await settleMicrotasks();
+    at(world.opens, 1).settle(ok({ kind: 'added', book: book('b', { title: 'b' }) }));
+    await settleMicrotasks();
+    at(world.opens, 2).settle(
+      err({ kind: 'storage', error: { kind: 'storage-failed', cause: 'disk full' } }),
+    );
+    await settleMicrotasks();
+    at(world.lists, 0).settle(ok([book('b')]));
+    await uploading;
+
+    expect(world.notices.map(({ tone, title, message }) => ({ tone, title, message }))).toEqual([
+      { tone: 'success', title: 'Added b', message: undefined },
+      {
+        tone: 'danger',
+        title: 'Could not add 2 of 3 books',
+        message: 'a.pdf could not be read: bad xref · c.cbz: Local storage failed: disk full',
+      },
+    ]);
+    expect(view.books.map((held) => held.id)).toEqual(['b']);
+  });
+
+  it('reloads nothing when every book of the upload fails', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    const uploading = view.upload([chosen('a.pdf'), chosen('b.pdf')], world.open);
+    at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await settleMicrotasks();
+    at(world.opens, 1).settle(err({ kind: 'source', error: { kind: 'empty' } }));
+    await uploading;
+
+    expect(world.lists).toHaveLength(0);
+    expect(world.notices.map((notice) => notice.title)).toEqual(['Could not add 2 of 2 books']);
+  });
+
+  it('reports nothing readable and opens nothing when no file is usable', async () => {
+    const world = fakes();
+    const view = new LibraryView(world.container, world.notify);
+
+    await view.upload([chosen('notes.txt'), chosen('ComicInfo.xml')], world.open);
+
+    expect(world.opens).toHaveLength(0);
+    expect(view.busy).toBe(false);
+    expect(world.notices).toEqual([
+      {
+        tone: 'danger',
+        title: UPLOAD_FAILED,
+        message: 'Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.',
+      },
+    ]);
   });
 
   it('ignores an upload with no files', async () => {
