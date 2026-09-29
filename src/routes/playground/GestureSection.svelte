@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import Card from '$lib/components/Card.svelte';
   import Toggle from '$lib/components/Toggle.svelte';
   import { DOUBLE_TAP_MS, LONG_PRESS_MS, TOUCH_SLOP_PX } from '$lib/components/gesture';
@@ -62,7 +63,7 @@
     if (lastPointer === 'touch') event.preventDefault();
   }
 
-  $effect(() => () => gestures.stop());
+  onDestroy(() => gestures.stop());
 </script>
 
 <DemoSection id="gesture" title="Gesture" classes={[]}>

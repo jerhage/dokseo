@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import { P, match } from 'ts-pattern';
   import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
@@ -208,7 +208,7 @@
     });
   });
 
-  $effect(() => () => gestures.stop());
+  onDestroy(() => gestures.stop());
 </script>
 
 <DemoSection

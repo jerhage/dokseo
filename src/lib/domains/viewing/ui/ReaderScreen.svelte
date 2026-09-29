@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import Alert from '$lib/components/Alert.svelte';
@@ -261,7 +262,7 @@
       .exhaustive();
   });
 
-  $effect(() => lockScrolling(document.documentElement));
+  onMount(() => lockScrolling(document.documentElement));
 
   function onkeydown(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;

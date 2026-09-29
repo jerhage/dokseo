@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
@@ -23,11 +23,9 @@
   const wanted = $derived(readTagName(page.url.searchParams.get(TAG_PARAMETER)));
   const view = new TagView(container, () => ({ books, wanted }));
 
-  $effect(() => {
-    untrack(() => {
-      void shelf.load();
-      void view.load();
-    });
+  onMount(() => {
+    void shelf.load();
+    void view.load();
     return () => shelf.dispose();
   });
 </script>

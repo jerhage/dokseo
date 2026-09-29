@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { flushSync, untrack } from 'svelte';
+  import { flushSync, onDestroy, untrack } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
   import Carousel from '$lib/components/Carousel.svelte';
@@ -595,7 +595,7 @@
     markZonesSeen();
   }
 
-  $effect(() => () => gestures.stop());
+  onDestroy(() => gestures.stop());
 
   $effect(() => {
     const outer = frame;

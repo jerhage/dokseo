@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { match } from 'ts-pattern';
   import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
@@ -121,7 +122,7 @@
     if (lastPointer === 'touch') event.preventDefault();
   }
 
-  $effect(() => () => gestures.stop());
+  onDestroy(() => gestures.stop());
 </script>
 
 <DemoSection

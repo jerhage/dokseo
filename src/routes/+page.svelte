@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import type { Snapshot } from '@sveltejs/kit';
   import { afterNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
@@ -44,8 +44,8 @@
     replaceState(missing.cleaned, page.state);
   });
 
-  $effect(() => {
-    untrack(() => void view.load());
+  onMount(() => {
+    void view.load();
     return () => {
       view.dispose();
       find.dispose();

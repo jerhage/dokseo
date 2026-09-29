@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import Button from '$lib/components/Button.svelte';
   import Card from '$lib/components/Card.svelte';
   import Dropzone from '$lib/components/Dropzone.svelte';
@@ -54,7 +55,7 @@
     attachments = withUploadState(attachments, id, state);
   });
 
-  $effect(() => () => uploads.cancelAll());
+  onDestroy(() => uploads.cancelAll());
 
   function addAttachments(selection: FileSelection<File>): void {
     arrival = selection.arrived.map(({ file, verdict }) => `${file.name} (${verdict.kind})`);

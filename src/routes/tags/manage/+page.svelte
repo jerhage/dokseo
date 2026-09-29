@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
@@ -23,11 +23,9 @@
   const view = new TagView(container, () => ({ books, wanted: null }));
   const manage = new ManageTagsView(container, notify, () => view.load());
 
-  $effect(() => {
-    untrack(() => {
-      void shelf.load();
-      void view.load();
-    });
+  onMount(() => {
+    void shelf.load();
+    void view.load();
     return () => shelf.dispose();
   });
 </script>

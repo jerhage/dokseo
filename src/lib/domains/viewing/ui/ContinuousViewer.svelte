@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import { match } from 'ts-pattern';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import type { GestureInput, GestureSample } from '$lib/components/gesture';
@@ -406,7 +406,7 @@
     }
   }
 
-  $effect(() => () => gestures.stop());
+  onDestroy(() => gestures.stop());
 
   $effect(() => {
     const element = scroller;

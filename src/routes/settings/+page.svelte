@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import EngineAside from '$lib/domains/recognition/ui/engine/EngineAside.svelte';
@@ -10,8 +10,8 @@
 
   const view = new EngineSettingsView(useContainer(), toastNotify(getToaster()));
 
-  $effect(() => {
-    untrack(() => void view.load());
+  onMount(() => {
+    void view.load();
     return () => view.dispose();
   });
 </script>
