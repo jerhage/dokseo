@@ -103,6 +103,7 @@ function source(captures: readonly PanelCapture[], over: Partial<CardSource> = {
     newestFirst: captures,
     tags: [],
     book: BOOK,
+    language: 'ja',
     progress: null,
     direction: 'rtl',
     seekable: false,
@@ -117,6 +118,22 @@ function cardsOf(captures: readonly PanelCapture[], over: Partial<CardSource> = 
 }
 
 describe('card projection', () => {
+  it('marks a chapter place with the book language, and a page or chapterless place with none', () => {
+    const cards = cardsOf([
+      lifted('c1', 'x', null, '第三章　海辺'),
+      lifted('c2', 'y', null),
+      read('c3', 'ねこ'),
+    ]).cards;
+
+    expect(cards.map((card) => card.placeLanguage)).toEqual(['ja', null, null]);
+  });
+
+  it('marks no chapter place with a language when the route knows none', () => {
+    const cards = cardsOf([lifted('c1', 'x', null, '第三章')], { language: null }).cards;
+
+    expect(cards[0]?.placeLanguage).toBeNull();
+  });
+
   it('reads a pending capture as running', () => {
     const cards = cardsOf([pending('c1')]).cards;
 

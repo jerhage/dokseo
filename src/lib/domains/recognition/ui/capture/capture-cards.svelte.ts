@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { captureHref } from '$lib/shared/reader-location';
 import type { TextSegment } from '$lib/shared/text-search';
@@ -14,7 +15,7 @@ import type { Tag } from '../../domain/tag/tag';
 import { captureNote, captureState } from './capture-card';
 import { markedLines } from './capture-lines';
 import type { MarkedLines } from './capture-lines';
-import { placeLabel } from './capture-place';
+import { placeLabel, placeLanguage } from './capture-place';
 import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
 import { NOTHING_READ } from './capture-view.svelte';
 import { modelLoadNote } from '../engine/recognizer-view.svelte';
@@ -24,6 +25,7 @@ import type { TagChip } from './tag-chip';
 type Card = {
   readonly id: CaptureId;
   readonly place: string;
+  readonly placeLanguage: Language | null;
   readonly href: string | null;
   readonly passage: TextAnchor | null;
   readonly stateLabel: string;
@@ -45,6 +47,7 @@ type CardSource = {
   readonly newestFirst: readonly PanelCapture[];
   readonly tags: readonly Tag[];
   readonly book: BookId | null;
+  readonly language: Language | null;
   readonly progress: ModelLoad | null;
   readonly direction: ReadingDirection;
   readonly seekable: boolean;
@@ -53,6 +56,7 @@ type CardSource = {
 type CardPlacing = {
   readonly tags: readonly Tag[];
   readonly book: BookId | null;
+  readonly language: Language | null;
   readonly progress: ModelLoad | null;
   readonly seekable: boolean;
   readonly carried: string | null;
@@ -135,6 +139,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'pending' }, (running) => ({
       id: running.id,
       place: placeLabel(running.anchor),
+      placeLanguage: placeLanguage(running.anchor, placing.language),
       href: hrefOf(running.anchor, placing),
       passage: passageOf(running.anchor, placing.seekable),
       stateLabel: 'Reading…',
@@ -153,6 +158,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'done' }, (read) => ({
       id: read.id,
       place: placeLabel(read.anchor),
+      placeLanguage: placeLanguage(read.anchor, placing.language),
       href: hrefOf(read.anchor, placing),
       passage: passageOf(read.anchor, placing.seekable),
       stateLabel: captureState(read.origin),
@@ -171,6 +177,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'empty' }, (blank) => ({
       id: blank.id,
       place: placeLabel(blank.anchor),
+      placeLanguage: placeLanguage(blank.anchor, placing.language),
       href: hrefOf(blank.anchor, placing),
       passage: passageOf(blank.anchor, placing.seekable),
       stateLabel: 'No text',
@@ -189,6 +196,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
     .with({ status: 'failed' }, (broken) => ({
       id: broken.id,
       place: placeLabel(broken.anchor),
+      placeLanguage: placeLanguage(broken.anchor, placing.language),
       href: hrefOf(broken.anchor, placing),
       passage: passageOf(broken.anchor, placing.seekable),
       stateLabel: 'Failed',
@@ -236,6 +244,7 @@ class CaptureCards {
     const placing: CardPlacing = {
       tags: held.tags,
       book: held.book,
+      language: held.language,
       progress: held.progress,
       seekable: held.seekable,
       carried: this.searching ? this.wanted : null,

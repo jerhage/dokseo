@@ -162,6 +162,29 @@ describe('searchRows', () => {
     expect(captureAt(searchRows(input(found)).rows, 0).place).toBe('第二章');
   });
 
+  it('marks a chapter place with its book language, and a page or chapterless place with none', () => {
+    const quote = { exact: '海', prefix: '', suffix: '' };
+    const found = {
+      books: [],
+      captures: [
+        {
+          book: TWO,
+          captures: [
+            written('chapter', TWO, '海', textAnchor('epubcfi(/6/2)', quote, '第二章')),
+            written('chapterless', TWO, '海', textAnchor('epubcfi(/6/4)', quote, null)),
+            written('page', TWO, '海', onPage(2)),
+          ],
+        },
+      ],
+    };
+
+    const rows = searchRows(input(found)).rows;
+
+    expect(captureAt(rows, 0).placeLanguage).toBe('ko');
+    expect(captureAt(rows, 1).placeLanguage).toBeNull();
+    expect(captureAt(rows, 2).placeLanguage).toBeNull();
+  });
+
   it('names the passage by its cfi, with no capture id and no image, when it links a passage in the current book', () => {
     const anchor = textAnchor('epubcfi(/6/4)', { exact: '海', prefix: '', suffix: '' }, null);
     const found = {

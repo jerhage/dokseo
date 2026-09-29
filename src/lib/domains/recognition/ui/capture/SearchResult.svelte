@@ -27,6 +27,7 @@
   href={row.href}
   selected={current}
   hint={row.kind === 'capture' ? row.place : undefined}
+  hintLang={row.kind === 'capture' ? (row.placeLanguage ?? undefined) : undefined}
   onclick={click}
 >
   <Thumbnail src={row.cover} size="sm" bordered />

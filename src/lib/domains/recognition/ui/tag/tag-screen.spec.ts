@@ -177,6 +177,12 @@ describe('taggedShelves', () => {
     expect(shelves[0]?.rows[1]?.place).toBe('第一章');
   });
 
+  it('marks a chapter place with its book language, and a page or chapterless place with none', () => {
+    expect(shelves[0]?.rows[1]?.placeLanguage).toBe('ja');
+    expect(shelves[0]?.rows[0]?.placeLanguage).toBeNull();
+    expect(shelves[1]?.rows[0]?.placeLanguage).toBeNull();
+  });
+
   it('opens the book for a capture anchored to no region at all', () => {
     const [bare] = taggedShelves({
       groups: [

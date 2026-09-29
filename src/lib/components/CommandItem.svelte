@@ -10,6 +10,7 @@
     Form & {
       selected?: boolean;
       hint?: string | undefined;
+      hintLang?: string | undefined;
       ref?: HTMLElement | null | undefined;
     };
 
@@ -18,6 +19,7 @@
     element: chosen,
     selected = false,
     hint,
+    hintLang,
     ref = $bindable(),
     class: className,
     children,
@@ -38,6 +40,6 @@
 >
   {@render children?.()}
   {#if hint !== undefined}
-    <span class="command-item-hint">{hint}</span>
+    <span class="command-item-hint" lang={hintLang}>{hint}</span>
   {/if}
 </svelte:element>

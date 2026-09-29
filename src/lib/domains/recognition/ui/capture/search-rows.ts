@@ -10,7 +10,7 @@ import type { QuickFinds } from '../../domain/capture/quick-find';
 import type { Tag } from '../../domain/tag/tag';
 import { markedLines } from './capture-lines';
 import { bookHref, captureLink } from './capture-link';
-import { firstImage, NO_PLACE, pageLabel, passageLabel } from './capture-place';
+import { firstImage, NO_PLACE, pageLabel, passageLabel, placeLanguage } from './capture-place';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
 
@@ -33,6 +33,7 @@ type CaptureRow = {
   readonly key: CaptureId;
   readonly href: string;
   readonly place: string;
+  readonly placeLanguage: Language | null;
   readonly title: string | null;
   readonly language: Language;
   readonly cover: string | null;
@@ -104,6 +105,7 @@ function captureRow(shelf: SearchedBook, capture: Capture, input: SearchRowsInpu
     key: capture.id,
     href: captureLink(shelf.id, capture, input.query).href,
     place: rowPlace(capture.anchor),
+    placeLanguage: placeLanguage(capture.anchor, shelf.language),
     title: shelf.id === input.book ? null : shelf.title,
     language: shelf.language,
     cover: input.covers.get(shelf.id) ?? null,

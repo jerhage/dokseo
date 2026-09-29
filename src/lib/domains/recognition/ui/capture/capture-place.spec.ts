@@ -10,6 +10,7 @@ import {
   NO_PLACE,
   passageLabel,
   placeLabel,
+  placeLanguage,
 } from './capture-place';
 
 const NOW = 1_700_000_000_000;
@@ -43,6 +44,25 @@ describe('placeLabel', () => {
 
   it('reports no page for a capture anchored to no region at all', () => {
     expect(placeLabel(regionAnchor([]))).toBe(NO_PLACE);
+  });
+});
+
+describe('placeLanguage', () => {
+  it('gives a chapter title the language of its book', () => {
+    expect(placeLanguage(textAnchor(QUOTED_CFI, QUOTE, '第三章　海辺'), 'ja')).toBe('ja');
+  });
+
+  it('gives a page place no language, since the interface wrote it', () => {
+    expect(placeLanguage(regionAnchor([on(13)]), 'ja')).toBeNull();
+    expect(placeLanguage(regionAnchor([]), 'ja')).toBeNull();
+  });
+
+  it('gives a passage in no chapter no language, since the interface wrote its label', () => {
+    expect(placeLanguage(QUOTED, 'ja')).toBeNull();
+  });
+
+  it('gives a chapter title no language when the book language is unknown', () => {
+    expect(placeLanguage(textAnchor(QUOTED_CFI, QUOTE, '第三章'), null)).toBeNull();
   });
 });
 

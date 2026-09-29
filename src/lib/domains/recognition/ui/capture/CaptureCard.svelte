@@ -184,7 +184,9 @@
           <span class="truncate">Go to passage</span>
         </Button>
       {:else if card.href === null}
-        <span class="px-2 text-xs text-muted mono truncate">{card.place}</span>
+        <span class="px-2 text-xs text-muted mono truncate" lang={card.placeLanguage}
+          >{card.place}</span
+        >
       {:else}
         <Button
           variant="ghost"
@@ -193,7 +195,7 @@
           href={card.href}
           onclick={onfollow}
         >
-          <span class="truncate">{card.place}</span>
+          <span class="truncate" lang={card.placeLanguage}>{card.place}</span>
           <span class="visually-hidden">Open the book at this capture</span>
         </Button>
       {/if}

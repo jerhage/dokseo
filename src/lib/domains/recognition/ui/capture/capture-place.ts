@@ -1,5 +1,6 @@
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { ImageIndex } from '$lib/shared/ids';
+import type { Language } from '$lib/shared/language';
 
 const NO_PLACE = 'no page';
 
@@ -11,6 +12,12 @@ function pageLabel(index: ImageIndex): string {
 
 function passageLabel(anchor: TextAnchor): string {
   return anchor.chapter ?? NO_CHAPTER;
+}
+
+function placeLanguage(anchor: Anchor, language: Language | null): Language | null {
+  if (anchor.kind !== 'text' || anchor.chapter === null) return null;
+
+  return language;
 }
 
 function placeLabel(anchor: Anchor): string {
@@ -53,4 +60,13 @@ function capturedLabel(createdAt: number, now: number): string | null {
   return `captured ${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-export { NO_CHAPTER, NO_PLACE, pageLabel, passageLabel, placeLabel, firstImage, capturedLabel };
+export {
+  NO_CHAPTER,
+  NO_PLACE,
+  pageLabel,
+  passageLabel,
+  placeLabel,
+  placeLanguage,
+  firstImage,
+  capturedLabel,
+};

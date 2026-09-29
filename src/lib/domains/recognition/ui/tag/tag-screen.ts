@@ -8,7 +8,7 @@ import type { Tag } from '../../domain/tag/tag';
 import type { TagColour } from '../../domain/tag/tag-colour';
 import type { AlsoTagged, TagSummary } from '../../domain/tag/tag-summary';
 import { captureLink } from '../capture/capture-link';
-import { capturedLabel, placeLabel } from '../capture/capture-place';
+import { capturedLabel, placeLabel, placeLanguage } from '../capture/capture-place';
 import { chipsOf } from '../capture/tag-chip';
 import type { TagChip } from '../capture/tag-chip';
 import type { TagViewStatus } from './tag-view.svelte';
@@ -27,6 +27,7 @@ type TaggedRow = {
   readonly href: string;
   readonly jump: string;
   readonly place: string;
+  readonly placeLanguage: Language | null;
   readonly when: string | null;
   readonly text: string;
   readonly chips: readonly TagChip[];
@@ -122,6 +123,7 @@ function taggedShelves(input: ShelfInput): readonly TaggedShelf[] {
           href: link.href,
           jump: link.jump,
           place: placeLabel(capture.anchor),
+          placeLanguage: placeLanguage(capture.anchor, group.book.language),
           when: capturedLabel(capture.createdAt, input.now),
           text: capture.text,
           chips: chipsOf(

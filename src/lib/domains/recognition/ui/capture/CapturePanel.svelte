@@ -52,6 +52,7 @@
     newestFirst: view.newestFirst,
     tags: view.tags,
     book: view.book,
+    language,
     progress: view.progress,
     direction,
     seekable: onSeek !== undefined,
