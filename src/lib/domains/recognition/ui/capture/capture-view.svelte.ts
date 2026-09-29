@@ -18,6 +18,7 @@ import type { CaptureLoad, PanelCapture, Settled, WriteOutcome } from './capture
 import { RecognizerView } from '../engine/recognizer-view.svelte';
 import type { ConsentRequest, PendingRecognition } from '../engine/recognizer-view.svelte';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
+import type { PassageOrder } from '../../domain/capture/capture-order';
 import type { Tag } from '../../domain/tag/tag';
 import type { ModelLoad } from '../../domain/model/model-load';
 import type { EngineState } from '../../domain/engine/ocr-engine';
@@ -174,6 +175,10 @@ class CaptureView {
 
   arrivalFrom(found: ReaderArrival, direction: ReadingDirection): Arrival<ArrivalCapture> | null {
     return this.#collection.arrivalFrom(found, direction);
+  }
+
+  passageArrivalFrom(found: ReaderArrival, order: PassageOrder): Arrival<ArrivalCapture> | null {
+    return this.#collection.passageArrivalFrom(found, order);
   }
 
   passageFrom(found: ReaderArrival): SoughtPassage | null {

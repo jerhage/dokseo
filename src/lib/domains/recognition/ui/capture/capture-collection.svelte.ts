@@ -13,8 +13,9 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
-import { arrivalAt, soughtPassage } from '../../domain/capture/capture-arrival';
+import { arrivalAt, passageArrivalAt, soughtPassage } from '../../domain/capture/capture-arrival';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
+import type { PassageOrder } from '../../domain/capture/capture-order';
 import { editedText, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import { tagCounts } from '../../domain/tag/capture-tags';
@@ -247,6 +248,16 @@ class CaptureCollection {
             }),
       )
       .with({ kind: 'passage' }, () => null)
+      .with({ kind: 'none' }, () => null)
+      .exhaustive();
+  }
+
+  passageArrivalFrom(found: ReaderArrival, order: PassageOrder): Arrival<ArrivalCapture> | null {
+    return match(found)
+      .with({ kind: 'passage' }, (passage) =>
+        passageArrivalAt(this.read, passage.query, passage.cfi, order),
+      )
+      .with({ kind: 'image' }, () => null)
       .with({ kind: 'none' }, () => null)
       .exhaustive();
   }

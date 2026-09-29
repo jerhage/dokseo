@@ -10,6 +10,14 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
+import {
+  arrivingAt,
+  landedAt,
+  NOT_STANDING,
+  standingAfterMove,
+  standingHolds,
+} from './flow-arrival';
+import type { ArrivalStanding, Arriving } from './flow-arrival';
 import { currentEntryKey, flowContents, NO_CONTENTS } from './flow-contents';
 import type { ContentsEntry, FlowContents } from './flow-contents';
 import { markAfterMove, NO_PASSAGES, NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
@@ -145,6 +153,7 @@ class FlowView {
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
   #arrivedBy: string | null = null;
+  #standing = $state.raw<ArrivalStanding>(NOT_STANDING);
   #asked: AskedArrival | null = null;
   #showing: BookId | null = null;
   #ink: PageInk = INK_FOR_THE_DARK_PAGE;
@@ -178,6 +187,7 @@ class FlowView {
     this.state = OPENING;
     this.#marked = NOTHING_ARRIVED_AT;
     this.#arrivedBy = null;
+    this.#standing = NOT_STANDING;
     this.#showing = null;
     if (this.#asked?.book !== book.id) this.#asked = null;
     this.#placed = null;
@@ -261,6 +271,7 @@ class FlowView {
     this.#release();
     this.#marked = NOTHING_ARRIVED_AT;
     this.#arrivedBy = null;
+    this.#standing = NOT_STANDING;
     this.#showing = null;
     this.state = NOT_OPENED;
     this.location = null;
@@ -318,6 +329,10 @@ class FlowView {
     this.#surface?.mark(passages, this.#marked);
   }
 
+  get arrivalHolds(): boolean {
+    return standingHolds(this.#standing);
+  }
+
   get arrivalStanding(): boolean {
     return this.notice !== null || this.#marked.kind === 'arrived';
   }
@@ -366,6 +381,7 @@ class FlowView {
     this.location = here;
     this.reported = relocation.tocItem ?? null;
     this.#forgetArrival(here.cfi, relocation.cause);
+    this.#standing = standingAfterMove(this.#standing, here.cfi, relocation.cause);
     onmoved?.();
     const place = textPlace(here.cfi, here.fraction);
 
@@ -384,7 +400,15 @@ class FlowView {
     if (this.#arrivedBy === passage.cfi) return;
 
     this.#arrivedBy = passage.cfi;
-    void this.jumpToPassage(passage.cfi, passage.quote);
+    const arriving = arrivingAt(passage.cfi);
+    this.#standing = arriving;
+    void this.jumpToPassage(passage.cfi, passage.quote).then(() => this.#landed(arriving));
+  }
+
+  #landed(arriving: Arriving): void {
+    if (this.#standing !== arriving) return;
+
+    this.#standing = landedAt(arriving.cfi, this.location?.cfi ?? null);
   }
 
   #forgetArrival(place: string, cause: MoveCause): void {

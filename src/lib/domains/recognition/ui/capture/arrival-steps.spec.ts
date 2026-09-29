@@ -60,10 +60,25 @@ describe('arrivalSteps', () => {
     expect(steps.next).toBe('/read/book-1?image=1&region=60,20.5,10,30.13&find=%E3%81%AD%E3%81%93');
   });
 
-  it('gives no link to a neighbour that sits on no image', () => {
-    const stepping = { ordinal: 1, total: 2, previous: IN_TEXT, next: onImage('b', 3, 0) };
+  it('links a neighbour anchored in text to its passage with the query carried and no capture id', () => {
+    const stepping = { ordinal: 1, total: 2, previous: IN_TEXT, next: IN_TEXT };
     const steps = arrivalSteps(BOOK, 'ねこ', stepping);
 
-    expect([steps.previous === null, steps.next === null]).toEqual([true, false]);
+    expect(steps.previous).toBe(
+      '/read/book-1?cfi=epubcfi(%2F6%2F4!%2F4%2F2%2C%2F1%3A0%2C%2F1%3A2)&find=%E3%81%AD%E3%81%93',
+    );
+    expect(steps.next).toBe(steps.previous);
+  });
+
+  it('gives no link to a neighbour that names no place', () => {
+    const nowhere: ArrivalCapture = { ...onImage('n', 0, 0), anchor: regionAnchor([]) };
+    const unplaced: ArrivalCapture = {
+      ...IN_TEXT,
+      anchor: textAnchor('', { exact: 'ねこ', prefix: '', suffix: '' }, null),
+    };
+    const stepping = { ordinal: 1, total: 3, previous: nowhere, next: unplaced };
+    const steps = arrivalSteps(BOOK, 'ねこ', stepping);
+
+    expect([steps.previous, steps.next]).toEqual([null, null]);
   });
 });

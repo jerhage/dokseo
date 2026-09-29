@@ -5,7 +5,13 @@ import { imageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import { arrivalAt, firstRegion, matchesInBookOrder, soughtPassage } from './capture-arrival';
+import {
+  arrivalAt,
+  firstRegion,
+  matchesInBookOrder,
+  passageArrivalAt,
+  soughtPassage,
+} from './capture-arrival';
 
 type Row = {
   readonly origin: 'written';
@@ -175,5 +181,76 @@ describe('soughtPassage', () => {
       cfi: CFI,
       quote: null,
     });
+  });
+});
+
+describe('passageArrivalAt', () => {
+  const READING_ORDER = ['cfi-1', 'cfi-2', 'cfi-3', 'cfi-4'];
+
+  function byReadingOrder(earlier: string, later: string): number {
+    return READING_ORDER.indexOf(earlier) - READING_ORDER.indexOf(later);
+  }
+
+  function passage(cfi: string, exact: string): Anchor {
+    return textAnchor(cfi, { exact, prefix: '', suffix: '' }, null);
+  }
+
+  const OPENING = row('p1', '海が見える', passage('cfi-1', '海が見える'));
+  const MOUNTAIN = row('p2', '山の上', passage('cfi-2', '山の上'));
+  const MIDDLE = row('p3', '海まであと少し', passage('cfi-3', '海まであと少し'));
+  const CLOSING = row('p4', '海の匂い', passage('cfi-4', '海の匂い'));
+  const UNPLACED = row('p5', '海のない場所', passage('', '海のない場所'));
+  const ON_A_PAGE = row('r1', '海の絵', at(2, 10, 10));
+
+  const LIFTED = [CLOSING, UNPLACED, MOUNTAIN, MIDDLE, ON_A_PAGE, OPENING];
+
+  it('counts the passage among the matching passages in book order', () => {
+    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-3', byReadingOrder);
+
+    expect(arrival?.at.id).toBe(MIDDLE.id);
+    expect([arrival?.stepping?.ordinal, arrival?.stepping?.total]).toEqual([2, 3]);
+  });
+
+  it('names the passages before and after it in book order', () => {
+    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-3', byReadingOrder);
+
+    expect([arrival?.stepping?.previous.id, arrival?.stepping?.next.id]).toEqual([
+      OPENING.id,
+      CLOSING.id,
+    ]);
+  });
+
+  it('wraps from the last passage back to the first', () => {
+    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-4', byReadingOrder);
+
+    expect(arrival?.stepping?.next.id).toBe(OPENING.id);
+  });
+
+  it('wraps from the first passage back to the last', () => {
+    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-1', byReadingOrder);
+
+    expect(arrival?.stepping?.previous.id).toBe(CLOSING.id);
+  });
+
+  it('steps over a capture on a page and a capture that names no passage', () => {
+    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-1', byReadingOrder);
+
+    expect(arrival?.stepping?.total).toBe(3);
+  });
+
+  it('offers no stepping for a passage reached without a query', () => {
+    const arrival = passageArrivalAt(LIFTED, null, 'cfi-2', byReadingOrder);
+
+    expect(arrival).toEqual({ at: MOUNTAIN, stepping: null });
+  });
+
+  it('offers no stepping for a passage the query does not match', () => {
+    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-2', byReadingOrder);
+
+    expect(arrival).toEqual({ at: MOUNTAIN, stepping: null });
+  });
+
+  it('reports nothing for a cfi no capture was lifted at', () => {
+    expect(passageArrivalAt(LIFTED, '海', 'cfi-9', byReadingOrder)).toBeNull();
   });
 });

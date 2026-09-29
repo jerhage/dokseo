@@ -161,6 +161,7 @@ function highlightChange(
 
 export {
   ARRIVED_BORDER_WIDTH_PROPERTY,
+  arrivedAt,
   arrivedBorderWidth,
   joinedLines,
   NO_ANCHORS,

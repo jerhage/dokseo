@@ -1,5 +1,5 @@
 import type { BookId } from '$lib/shared/ids';
-import { captureHref } from '$lib/shared/reader-location';
+import { captureHref, passageHref } from '$lib/shared/reader-location';
 import { firstRegion } from '../../domain/capture/capture-arrival';
 import type { ArrivalCapture, Stepping } from '../../domain/capture/capture-arrival';
 import { matchOfTotal } from '../../domain/capture/match-stepping';
@@ -11,7 +11,12 @@ type ArrivalSteps = {
 };
 
 function stepHref(book: BookId, query: string, capture: ArrivalCapture): string | null {
-  const region = firstRegion(capture.anchor);
+  const anchor = capture.anchor;
+  if (anchor.kind === 'text') {
+    return anchor.cfi.length === 0 ? null : passageHref(book, anchor.cfi, query);
+  }
+
+  const region = firstRegion(anchor);
   return region === null ? null : captureHref(book, region, query);
 }
 

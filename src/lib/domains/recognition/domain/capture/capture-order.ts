@@ -1,9 +1,13 @@
-import type { Anchor } from '$lib/shared/anchor';
+import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { ImageRect } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 
 type Placed = { readonly anchor: Anchor };
+
+type Passaged = { readonly anchor: TextAnchor };
+
+type PassageOrder = (earlier: string, later: string) => number;
 
 type Ordering =
   | { readonly kind: 'by-geometry'; readonly regions: readonly ImageRegion[] }
@@ -61,4 +65,12 @@ function inBookOrder<T extends Placed>(
   return captures.toSorted((earlier, later) => comparePlaces(earlier, later, direction));
 }
 
-export { inBookOrder };
+function inPassageOrder<T extends Passaged>(
+  captures: readonly T[],
+  order: PassageOrder,
+): readonly T[] {
+  return captures.toSorted((earlier, later) => order(earlier.anchor.cfi, later.anchor.cfi));
+}
+
+export { inBookOrder, inPassageOrder };
+export type { PassageOrder };

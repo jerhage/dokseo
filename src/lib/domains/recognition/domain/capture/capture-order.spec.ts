@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import type { Anchor } from '$lib/shared/anchor';
+import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
-import { inBookOrder } from './capture-order';
+import { inBookOrder, inPassageOrder } from './capture-order';
 
 type Placed = { readonly name: string; readonly anchor: Anchor };
 
@@ -112,6 +112,48 @@ describe('inBookOrder', () => {
   it('leaves the captures it was given untouched', () => {
     const given = [at('later', 7, 0, 0), at('earlier', 3, 0, 0)];
     inBookOrder(given, 'ltr');
+
+    expect(names(given)).toEqual(['later', 'earlier']);
+  });
+});
+
+describe('inPassageOrder', () => {
+  type Lifted = { readonly name: string; readonly anchor: TextAnchor };
+
+  function lifted(name: string, cfi: string): Lifted {
+    return {
+      name,
+      anchor: { kind: 'text', cfi, quote: { exact: name, prefix: '', suffix: '' }, chapter: null },
+    };
+  }
+
+  const READING_ORDER = ['c1', 'c2', 'c3'];
+
+  function byReadingOrder(earlier: string, later: string): number {
+    return READING_ORDER.indexOf(earlier) - READING_ORDER.indexOf(later);
+  }
+
+  it('orders passages by the order it is given for their cfis', () => {
+    const ordered = inPassageOrder(
+      [lifted('third', 'c3'), lifted('first', 'c1'), lifted('second', 'c2')],
+      byReadingOrder,
+    );
+
+    expect(names(ordered)).toEqual(['first', 'second', 'third']);
+  });
+
+  it('keeps two passages at the same cfi in the order they arrived', () => {
+    const ordered = inPassageOrder(
+      [lifted('later', 'c3'), lifted('one', 'c1'), lifted('two', 'c1')],
+      byReadingOrder,
+    );
+
+    expect(names(ordered)).toEqual(['one', 'two', 'later']);
+  });
+
+  it('leaves the passages it was given untouched', () => {
+    const given = [lifted('later', 'c2'), lifted('earlier', 'c1')];
+    inPassageOrder(given, byReadingOrder);
 
     expect(names(given)).toEqual(['later', 'earlier']);
   });

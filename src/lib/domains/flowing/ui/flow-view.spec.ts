@@ -1639,4 +1639,142 @@ describe('FlowView arriveAt', () => {
 
     expect(surfaces.passages).toHaveLength(2);
   });
+
+  it('holds no arrival before a passage was asked for', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(view.arrivalHolds).toBe(false);
+  });
+
+  it('holds the arrival through the move its own jump makes', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON));
+
+    view.arriveAt(book.id, PASSAGE);
+    surfaces.openings[0]?.moved(relocated(LATER_STILL));
+    await settled();
+
+    expect(view.arrivalHolds).toBe(true);
+  });
+
+  it('holds the arrival while foliate re-lays the page it landed on', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON));
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    surfaces.openings[0]?.moved(relocated(LATER_STILL, { cause: REFLOWED }));
+
+    expect(view.arrivalHolds).toBe(true);
+  });
+
+  it('ends the arrival when the reader travels off the page it landed on', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON));
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    surfaces.openings[0]?.moved(relocated(LATER_STILL));
+
+    expect(view.arrivalHolds).toBe(false);
+  });
+
+  it('holds the arrival after the reader dismisses its ring', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    view.dismissArrival();
+
+    expect(view.arrivalHolds).toBe(true);
+  });
+
+  it('holds the arrival when a passage it could not find leaves the reader where they were', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = THE_PASSAGE_IS_LOST;
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON));
+
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    expect(view.arrivalHolds).toBe(true);
+  });
+
+  it('holds the next arrival through a step taken before the last one landed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(FURTHER_ON));
+
+    view.arriveAt(book.id, PASSAGE);
+    view.arriveAt(book.id, ELSEWHERE);
+    surfaces.openings[0]?.moved(relocated(LATER_STILL));
+    await settled();
+
+    expect(view.arrivalHolds).toBe(true);
+  });
+
+  it('holds no arrival for a passage the reader jumped to from a capture', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+
+    await view.jumpToPassage(PASSAGE.cfi, PASSAGE.quote);
+
+    expect(view.arrivalHolds).toBe(false);
+  });
+
+  it('forgets the arrival when the reader leaves the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+    view.arriveAt(book.id, PASSAGE);
+    await settled();
+
+    view.close();
+
+    expect(view.arrivalHolds).toBe(false);
+  });
+
+  it('holds nothing for an arrival that lands after the reader left the book', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+
+    view.arriveAt(book.id, PASSAGE);
+    view.close();
+    await settled();
+
+    expect(view.arrivalHolds).toBe(false);
+  });
 });

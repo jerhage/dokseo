@@ -11,9 +11,10 @@
     readonly query: string;
     readonly language: Language | null;
     readonly stepping: Stepping<ArrivalCapture>;
+    readonly onfollowed?: () => void;
   };
 
-  let { book, query, language, stepping }: Props = $props();
+  let { book, query, language, stepping, onfollowed }: Props = $props();
 
   const steps = $derived(arrivalSteps(book, query, stepping));
 
@@ -21,7 +22,9 @@
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
     event.preventDefault();
-    void goto(href, { replaceState: true, keepFocus: true, noScroll: true });
+    void goto(href, { replaceState: true, keepFocus: true, noScroll: true }).then(() =>
+      onfollowed?.(),
+    );
   }
 </script>
 

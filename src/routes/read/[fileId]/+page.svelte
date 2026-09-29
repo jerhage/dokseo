@@ -15,6 +15,7 @@
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
   import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
+  import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
@@ -68,6 +69,8 @@
   const everyGlow = $derived(everyOtherGlow(captures.read, here));
   const passage = $derived<SoughtPassage | null>(captures.passageFrom(found));
   const stepping = $derived(here?.stepping ?? null);
+  const passageHere = $derived(captures.passageArrivalFrom(found, comparePassages));
+  const passageStepping = $derived(passageHere?.stepping ?? null);
   const finding = $derived(arrivalQuery(found));
   const books = $derived(
     shelf.books.map((held) => ({
@@ -125,6 +128,17 @@
     saving={view.saving}
     onlanguage={(chosen) => void view.setLanguage(chosen)}
   >
+    {#snippet arrival()}
+      {#if passageStepping !== null && finding !== null && flow.arrivalHolds}
+        <ArrivalBar
+          book={id}
+          query={finding}
+          {language}
+          stepping={passageStepping}
+          onfollowed={() => arrive(id)}
+        />
+      {/if}
+    {/snippet}
     {#snippet panel()}
       <CapturePanel
         view={captures}

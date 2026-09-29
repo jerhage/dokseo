@@ -55,6 +55,7 @@
     readonly view: FlowView;
     readonly book: FlowBook;
     readonly panel?: Snippet;
+    readonly arrival?: Snippet;
     readonly panelCount?: number;
     readonly anchors?: readonly Anchor[];
     readonly onLift?: (passage: LiftedPassage) => void;
@@ -73,6 +74,7 @@
     view,
     book,
     panel,
+    arrival,
     panelCount,
     anchors = NO_ANCHORS,
     onLift,
@@ -450,6 +452,10 @@
           onclick={takeLift}
         />
       </div>
+    {/if}
+
+    {#if arrival !== undefined}
+      <div class="callout-top-start z-sticky">{@render arrival()}</div>
     {/if}
   {/snippet}
 
