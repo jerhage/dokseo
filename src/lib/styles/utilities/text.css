@@ -67,7 +67,9 @@
   letter-spacing: var(--ls-wider);
 }
 .truncate {
-  overflow: hidden;
+  min-inline-size: 0;
+  min-block-size: 0;
+  overflow: clip visible;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
