@@ -1,7 +1,7 @@
 import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import type { TextAnchor, TextQuote } from '$lib/shared/anchor';
+import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
@@ -63,7 +63,7 @@ type PendingSave = {
 
 type AskedArrival = {
   readonly book: BookId;
-  readonly passage: TextAnchor;
+  readonly passage: SoughtPassage;
 };
 
 const NOT_OPENED: FlowState = { kind: 'idle' };
@@ -283,7 +283,7 @@ class FlowView {
     this.#surface?.jump(entry.href);
   }
 
-  async jumpToPassage(cfi: string, quote: TextQuote): Promise<void> {
+  async jumpToPassage(cfi: string, quote: TextQuote | null): Promise<void> {
     const surface = this.#surface;
     if (surface === null) return;
 
@@ -303,7 +303,7 @@ class FlowView {
     surface.mark(this.#passages, this.#marked);
   }
 
-  arriveAt(book: BookId, passage: TextAnchor): void {
+  arriveAt(book: BookId, passage: SoughtPassage): void {
     if (this.#surface === null || this.#showing !== book) {
       this.#asked = { book, passage };
       return;
@@ -379,7 +379,7 @@ class FlowView {
     this.#saving = { id, place, timer };
   }
 
-  #arrive(passage: TextAnchor): void {
+  #arrive(passage: SoughtPassage): void {
     if (this.#arrivedBy === passage.cfi) return;
 
     this.#arrivedBy = passage.cfi;

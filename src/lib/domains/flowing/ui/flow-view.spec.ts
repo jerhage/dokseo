@@ -1,7 +1,7 @@
 import type { Relocation, TocItem } from 'foliate-js/view.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
-import type { TextAnchor, TextQuote } from '$lib/shared/anchor';
+import type { SoughtPassage, TextAnchor, TextQuote } from '$lib/shared/anchor';
 import { bookId, contentHash } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
@@ -12,7 +12,6 @@ import { err, ok } from '$lib/shared/result';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
 import type { ContentsEntry } from './flow-contents';
-import type { LiftedPassage } from './flow-lift';
 import {
   arrivedAtTheCfi,
   foundByItsText,
@@ -148,7 +147,7 @@ type Shown = {
   readonly jumped: string[];
   readonly restyled: ReadingSettings[];
   readonly inked: PageInk[];
-  readonly passages: LiftedPassage[];
+  readonly passages: SoughtPassage[];
   readonly marked: (readonly string[])[];
   readonly arrivals: PassageMark[];
   arrival: PassageArrival;
@@ -167,7 +166,7 @@ function shows(): Shown {
   const jumped: string[] = [];
   const restyled: ReadingSettings[] = [];
   const inked: PageInk[] = [];
-  const passages: LiftedPassage[] = [];
+  const passages: SoughtPassage[] = [];
   const marked: (readonly string[])[] = [];
   const arrivals: PassageMark[] = [];
 
@@ -216,7 +215,7 @@ function shows(): Shown {
         marked.push(asked);
         arrivals.push(arrived);
       },
-      goToPassage: (passage: LiftedPassage) => {
+      goToPassage: (passage: SoughtPassage) => {
         passages.push(passage);
         return Promise.resolve(world.arrival);
       },
@@ -1488,6 +1487,20 @@ describe('FlowView arriveAt', () => {
 
     expect(surfaces.passages).toEqual([{ cfi: PASSAGE.cfi, quote: PASSAGE.quote }]);
     expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: PASSAGE.cfi });
+  });
+
+  it('takes the open book to a cfi a url named with no capture behind it, and rings it', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify);
+    const book = novel(world.place);
+    await view.open(book, surfaces.show);
+
+    view.arriveAt(book.id, { cfi: SOMEWHERE, quote: null });
+    await settled();
+
+    expect(surfaces.passages).toEqual([{ cfi: SOMEWHERE, quote: null }]);
+    expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: SOMEWHERE });
   });
 
   it('holds a passage asked for before the book opens, and goes there once it has', async () => {

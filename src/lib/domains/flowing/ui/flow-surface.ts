@@ -20,8 +20,7 @@ import { flowStyles } from './flow-styles';
 import type { PageInk } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import type { TextQuote } from '$lib/shared/anchor';
-import type { LiftedPassage } from './flow-lift';
+import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import { quoteRange } from './flow-passage';
 import type { ChapterCfis } from './flow-passage';
 import { match } from 'ts-pattern';
@@ -36,7 +35,7 @@ type FlowSurface = {
   readonly ticks: readonly number[];
   seek(fraction: number): void;
   jump(href: string): void;
-  goToPassage(passage: LiftedPassage): Promise<PassageArrival>;
+  goToPassage(passage: SoughtPassage): Promise<PassageArrival>;
   mark(passages: readonly string[], arrived: PassageMark): void;
   restyle(settings: ReadingSettings, ink: PageInk): void;
   destroy(): void;
@@ -180,10 +179,11 @@ async function goToPassage(
   view: Navigable,
   spine: Spine,
   find: FindPassage,
-  passage: LiftedPassage,
+  passage: SoughtPassage,
 ): Promise<PassageArrival> {
   const stored = await navigate(view, spine, passage.cfi);
   if (reached(stored)) return arrivedAtTheCfi(passage.cfi);
+  if (passage.quote === null) return THE_PASSAGE_IS_LOST;
 
   const fresh = await find(passage.quote);
   if (fresh === null) return THE_PASSAGE_IS_LOST;
@@ -312,7 +312,7 @@ async function openFlowSurface(
     mark: (passages: readonly string[], arrived: PassageMark) => {
       markPassages(view, shown, passages, arrived);
     },
-    goToPassage: (passage: LiftedPassage) =>
+    goToPassage: (passage: SoughtPassage) =>
       goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),
     restyle: (settings: ReadingSettings, ink: PageInk) => {
       view.renderer.setStyles(flowStyles(settings, ink));

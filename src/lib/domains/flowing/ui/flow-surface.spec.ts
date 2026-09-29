@@ -395,6 +395,24 @@ describe('goToPassage', () => {
     expect(view.targets).toEqual([SOMEWHERE]);
   });
 
+  it('goes to a cfi sought with no quote, as a link names it', async () => {
+    const view = stage();
+
+    await expect(
+      goToPassage(view, everySectionHasABody(3), never, { cfi: SOMEWHERE, quote: null }),
+    ).resolves.toEqual(arrivedAtTheCfi(SOMEWHERE));
+    expect(view.targets).toEqual([SOMEWHERE]);
+  });
+
+  it('reports a cfi sought with no quote lost when it no longer resolves, without searching', async () => {
+    const view = stage({ refuses: [SOMEWHERE] });
+
+    await expect(
+      goToPassage(view, everySectionHasABody(3), never, { cfi: SOMEWHERE, quote: null }),
+    ).resolves.toEqual(THE_PASSAGE_IS_LOST);
+    expect(view.targets).toEqual([SOMEWHERE]);
+  });
+
   it('re-finds the passage by its text when its stored place names no file in the book', async () => {
     const view = stage({ unknown: [UNKNOWN_HREF] });
 

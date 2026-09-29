@@ -12,6 +12,11 @@ type TextAnchor = {
   readonly quote: TextQuote;
 };
 
+type SoughtPassage = {
+  readonly cfi: string;
+  readonly quote: TextQuote | null;
+};
+
 type Anchor = { readonly kind: 'region'; readonly regions: readonly ImageRegion[] } | TextAnchor;
 
 function regionAnchor(regions: readonly ImageRegion[]): Anchor {
@@ -27,4 +32,4 @@ function sameAnchorKind(left: Anchor, right: Anchor): boolean {
 }
 
 export { regionAnchor, sameAnchorKind, textAnchor };
-export type { Anchor, TextAnchor, TextQuote };
+export type { Anchor, SoughtPassage, TextAnchor, TextQuote };
