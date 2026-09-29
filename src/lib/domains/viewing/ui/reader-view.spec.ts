@@ -1512,3 +1512,85 @@ describe('the reading place in the url', () => {
     expect(view.message).toBe('That book is no longer in your library.');
   });
 });
+
+describe('ReaderView language hook', () => {
+  type Known = { readonly book: BookId; readonly language: Language };
+
+  function watched(world: Fakes): { view: ReaderView; known: Known[] } {
+    const known: Known[] = [];
+    const view = new ReaderView(world.container, world.notify, null, (opened, language) =>
+      known.push({ book: opened, language }),
+    );
+    return { view, known };
+  }
+
+  it('reports the language once an image book opens', async () => {
+    const { view, known } = watched(fakes());
+
+    await view.open(bookId('one'));
+
+    expect(known).toEqual([{ book: bookId('one'), language: 'ja' }]);
+  });
+
+  it('reports a language the reader chooses', async () => {
+    const { view, known } = watched(fakes());
+    await view.open(bookId('one'));
+
+    await view.setLanguage('ko');
+
+    expect(known).toEqual([
+      { book: bookId('one'), language: 'ja' },
+      { book: bookId('one'), language: 'ko' },
+    ]);
+  });
+
+  it('reports nothing for an edit that keeps the language', async () => {
+    const { view, known } = watched(fakes());
+    await view.open(bookId('one'));
+
+    await view.setPairing('single');
+
+    expect(known).toHaveLength(1);
+  });
+
+  it('reports nothing for a failed language change', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    const { view, known } = watched(world);
+    await view.open(bookId('one'));
+
+    await view.setLanguage('en');
+
+    expect(known).toHaveLength(1);
+  });
+
+  it('reports no language for a flowing book', async () => {
+    const world = fakes();
+    world.opening = 'flow';
+    const { view, known } = watched(world);
+
+    await view.open(bookId('one'));
+
+    expect(known).toEqual([]);
+  });
+
+  it('reports no language for a missing book', async () => {
+    const world = fakes();
+    world.opening = 'missing';
+    const { view, known } = watched(world);
+
+    await view.open(bookId('one'));
+
+    expect(known).toEqual([]);
+  });
+
+  it('reports again when the same book opens afresh', async () => {
+    const { view, known } = watched(fakes());
+    await view.open(bookId('one'));
+    view.dispose();
+
+    await view.open(bookId('one'));
+
+    expect(known).toHaveLength(2);
+  });
+});

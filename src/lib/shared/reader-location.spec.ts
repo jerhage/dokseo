@@ -13,6 +13,7 @@ import {
   openingPlace,
   readArrival,
   readerHref,
+  readerNavigation,
   passageHref,
   readImageIndex,
   readRegion,
@@ -366,5 +367,65 @@ describe('missingBookArrival', () => {
   it('answers nothing for an address without the missing-book parameter', () => {
     expect(missingBookArrival(new URL('https://r.test/'))).toBeNull();
     expect(missingBookArrival(new URL('https://r.test/?missing=page'))).toBeNull();
+  });
+});
+
+describe('readerNavigation', () => {
+  const one = bookId('one');
+  const two = bookId('two');
+
+  it('enters the first book asked for, at the image the url names', () => {
+    expect(readerNavigation(null, { book: one, image: imageIndex(3) })).toEqual({
+      kind: 'enter',
+      book: one,
+      image: 3,
+    });
+  });
+
+  it('enters with no image when the url names none', () => {
+    expect(readerNavigation(null, { book: one, image: null })).toEqual({
+      kind: 'enter',
+      book: one,
+      image: null,
+    });
+  });
+
+  it('switches to another book, carrying its image', () => {
+    const before = { book: one, image: imageIndex(3) };
+    expect(readerNavigation(before, { book: two, image: imageIndex(3) })).toEqual({
+      kind: 'switch',
+      book: two,
+      image: 3,
+    });
+  });
+
+  it('goes to a new image in the same book', () => {
+    const before = { book: one, image: imageIndex(3) };
+    expect(readerNavigation(before, { book: one, image: imageIndex(7) })).toEqual({
+      kind: 'go-to-image',
+      book: one,
+      image: 7,
+    });
+  });
+
+  it('goes to an image the url names for the first time', () => {
+    const before = { book: one, image: null };
+    expect(readerNavigation(before, { book: one, image: imageIndex(0) })).toEqual({
+      kind: 'go-to-image',
+      book: one,
+      image: 0,
+    });
+  });
+
+  it('stays when the same book keeps the same image', () => {
+    const before = { book: one, image: imageIndex(3) };
+    expect(readerNavigation(before, { book: one, image: imageIndex(3) })).toEqual({
+      kind: 'stay',
+    });
+  });
+
+  it('stays when the url stops naming an image', () => {
+    const before = { book: one, image: imageIndex(3) };
+    expect(readerNavigation(before, { book: one, image: null })).toEqual({ kind: 'stay' });
   });
 });

@@ -46,6 +46,8 @@ type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing
 
 type PlaceMirror = (place: ShownPlace) => void;
 
+type LanguageKnown = (book: BookId, language: Language) => void;
+
 const NO_PAGES: PageGroup = [];
 
 const NO_GROUPS: readonly PageGroup[] = [];
@@ -131,16 +133,23 @@ class ReaderView {
   #container: Container;
   #notify: Notify;
   #mirror: PlaceMirror | null;
+  #languageKnown: LanguageKnown | null;
   #source: PageSource | null = null;
   #generation = 0;
   #saving: PendingSave | null = null;
   #placed: ImagePlace | null = null;
   #placeFailing = false;
 
-  constructor(container: Container, notify: Notify, mirror: PlaceMirror | null = null) {
+  constructor(
+    container: Container,
+    notify: Notify,
+    mirror: PlaceMirror | null = null,
+    languageKnown: LanguageKnown | null = null,
+  ) {
     this.#container = container;
     this.#notify = notify;
     this.#mirror = mirror;
+    this.#languageKnown = languageKnown;
   }
 
   get source(): PageSource | null {
@@ -220,6 +229,7 @@ class ReaderView {
     const { book, pages } = opened.value;
     this.#source = pages;
     this.book = book;
+    this.#languageKnown?.(book.id, book.language);
     this.#regroup(book, unmeasured(book.imageCount));
     void this.#seedSizes(pages, generation);
     const saved = book.position;
@@ -425,7 +435,11 @@ class ReaderView {
       this.flowBook = saved;
       return;
     }
+    const before = this.book?.language ?? null;
     this.book = saved;
+    if (this.flowBook === null && saved.language !== before) {
+      this.#languageKnown?.(saved.id, saved.language);
+    }
     this.#regroup(saved, this.sizes);
   }
 
@@ -536,4 +550,4 @@ export {
   PLACE_SAVE_DELAY_MS,
   ReaderView,
 };
-export type { ReaderBook, ReaderStatus, PlaceMirror };
+export type { LanguageKnown, ReaderBook, ReaderStatus, PlaceMirror };

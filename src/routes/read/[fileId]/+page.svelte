@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
-  import { goto, replaceState } from '$app/navigation';
+  import { onDestroy } from 'svelte';
+  import { match } from 'ts-pattern';
+  import { afterNavigate, goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
@@ -19,7 +20,8 @@
   import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
   import type { SoughtPassage } from '$lib/shared/anchor';
   import { bookId } from '$lib/shared/ids';
-  import type { BookId } from '$lib/shared/ids';
+  import type { BookId, ImageIndex } from '$lib/shared/ids';
+  import type { Language } from '$lib/shared/language';
   import { toastNotify } from '$lib/shared/notice-toast';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
@@ -28,15 +30,20 @@
     arrivalQuery,
     readArrival,
     readImageIndex,
+    readerNavigation,
     urlForShownPlace,
   } from '$lib/shared/reader-location';
-  import type { ShownPlace } from '$lib/shared/reader-location';
+  import type { ReaderRequest, ShownPlace } from '$lib/shared/reader-location';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
 
   function mirror(place: ShownPlace): void {
     const moved = urlForShownPlace(new URL(location.href), place);
     if (moved !== null) replaceState(moved, page.state);
+  }
+
+  function warm(book: BookId, known: Language): void {
+    void captures.warm(book, known);
   }
 
   function arrive(book: BookId): void {
@@ -46,7 +53,7 @@
 
   const container = useContainer();
   const notify = toastNotify(getToaster());
-  const view = new ReaderView(container, notify, mirror);
+  const view = new ReaderView(container, notify, mirror, warm);
   const captures = new CaptureView(container, notify);
   const shelf = new LibraryView(container, notify);
   const find = new CaptureSearchView(container);
@@ -71,35 +78,40 @@
     })),
   );
 
-  $effect(() => {
-    const book = id;
-    const entry = untrack(() => asked);
-    untrack(() => {
-      void view.open(book, entry);
-      void captures.open(book).then(() => arrive(book));
-    });
-    return () => {
-      view.dispose();
-      captures.close();
-      shelf.dispose();
-      find.dispose();
-    };
-  });
+  let requested: ReaderRequest | null = null;
 
-  $effect(() => {
-    const at = asked;
-    const book = id;
-    if (at === null) return;
-    untrack(() => void view.goToImage(book, at));
-  });
-
-  $effect(() => {
-    if (flowBook === null && language !== null) void captures.warm(id, language);
-  });
-
-  $effect(() => {
+  function leaveIfMissing(): void {
     if (view.status === 'missing') void goto(LIBRARY_AFTER_MISSING_BOOK, { replaceState: true });
+  }
+
+  function openBook(book: BookId, image: ImageIndex | null): void {
+    void view.open(book, image).then(leaveIfMissing);
+    void captures.open(book).then(() => arrive(book));
+  }
+
+  function closeBook(): void {
+    view.dispose();
+    captures.close();
+    shelf.dispose();
+    find.dispose();
+  }
+
+  afterNavigate(() => {
+    const wanted = { book: id, image: asked };
+    const next = readerNavigation(requested, wanted);
+    requested = wanted;
+    match(next)
+      .with({ kind: 'enter' }, ({ book, image }) => openBook(book, image))
+      .with({ kind: 'switch' }, ({ book, image }) => {
+        closeBook();
+        openBook(book, image);
+      })
+      .with({ kind: 'go-to-image' }, ({ book, image }) => void view.goToImage(book, image))
+      .with({ kind: 'stay' }, () => undefined)
+      .exhaustive();
   });
+
+  onDestroy(closeBook);
 </script>
 
 {#if flowBook !== null}

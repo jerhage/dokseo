@@ -193,6 +193,22 @@ function missingBookNotice(value: string | null | undefined): string | null {
   return value === MISSING_BOOK_VALUE ? MISSING_BOOK_NOTICE : null;
 }
 
+type ReaderRequest = { readonly book: BookId; readonly image: ImageIndex | null };
+
+type ReaderNavigation =
+  | { readonly kind: 'enter'; readonly book: BookId; readonly image: ImageIndex | null }
+  | { readonly kind: 'switch'; readonly book: BookId; readonly image: ImageIndex | null }
+  | { readonly kind: 'go-to-image'; readonly book: BookId; readonly image: ImageIndex }
+  | { readonly kind: 'stay' };
+
+function readerNavigation(before: ReaderRequest | null, wanted: ReaderRequest): ReaderNavigation {
+  if (before === null) return { kind: 'enter', book: wanted.book, image: wanted.image };
+  if (before.book !== wanted.book)
+    return { kind: 'switch', book: wanted.book, image: wanted.image };
+  if (wanted.image === null || wanted.image === before.image) return { kind: 'stay' };
+  return { kind: 'go-to-image', book: wanted.book, image: wanted.image };
+}
+
 function missingBookArrival(url: URL): MissingBookArrival | null {
   const notice = missingBookNotice(url.searchParams.get(MISSING_BOOK_PARAMETER));
   if (notice === null) return null;
@@ -226,5 +242,13 @@ export {
   arrivalQuery,
   missingBookNotice,
   missingBookArrival,
+  readerNavigation,
 };
-export type { MissingBookArrival, ReaderArrival, OpeningPlace, ShownPlace };
+export type {
+  MissingBookArrival,
+  ReaderArrival,
+  ReaderNavigation,
+  ReaderRequest,
+  OpeningPlace,
+  ShownPlace,
+};
