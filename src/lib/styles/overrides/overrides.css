@@ -14,7 +14,8 @@ html:has(.modal-backdrop[open][data-page-scrollbar]) {
   *,
   *::before,
   *::after {
-    transition-duration: var(--dur-instant);
+    transition-duration: 0s;
+    transition-delay: 0s;
     scroll-behavior: auto;
   }
   .a-fade-in,

@@ -1953,6 +1953,17 @@ describe('the design system stylesheets', () => {
     }
   });
 
+  it('makes every transition instant and undelayed when motion is reduced', () => {
+    const reduced = mediaBlock(
+      style('overrides/overrides.css'),
+      '(prefers-reduced-motion: reduce)',
+    );
+    const everything = rules(reduced).find((rule) => rule.selectors.includes('*'));
+
+    expect(everything?.body).toContain('transition-duration: 0s;');
+    expect(everything?.body).toContain('transition-delay: 0s;');
+  });
+
   it('stops the panel entrances when motion is reduced', () => {
     const reduced = mediaBlock(
       style('overrides/overrides.css'),
