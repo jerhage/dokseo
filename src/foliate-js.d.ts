@@ -27,6 +27,7 @@ declare module 'foliate-js/view.js' {
   }
 
   interface BookResources {
+    readonly opf?: Document | null;
     getItemByHref(href: string): ManifestItem | undefined;
   }
 
@@ -34,6 +35,8 @@ declare module 'foliate-js/view.js' {
     id: string;
     linear?: string | null;
     createDocument?: () => Promise<Document>;
+    load?: () => Promise<string | null>;
+    unload?: () => void;
   }
 
   interface FoliateBook {

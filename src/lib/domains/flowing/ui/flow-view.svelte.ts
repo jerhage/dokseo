@@ -38,6 +38,8 @@ import type { PassageArrival } from './flow-quote';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { moveForTurn, turnPage } from './flow-turn';
 import type { FlowTurn } from './flow-turn';
+import { LEFT_TO_RIGHT_PAGES } from './flow-writing-mode';
+import type { BookPaging } from './flow-writing-mode';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
@@ -140,6 +142,7 @@ class FlowView {
   contents = $state.raw<FlowContents>(NO_CONTENTS);
   ticks = $state.raw<readonly number[]>(NO_CHAPTER_TICKS);
   direction = $state.raw<ReadingDirection>(BEFORE_THE_BOOK_SAYS);
+  paging = $state.raw<BookPaging>(LEFT_TO_RIGHT_PAGES);
   reported = $state.raw<TocItem | null>(null);
   settings = $state.raw<ReadingSettings>(DEFAULT_READING_SETTINGS);
   notice = $state.raw<string | null>(null);
@@ -196,6 +199,7 @@ class FlowView {
     this.contents = NO_CONTENTS;
     this.ticks = NO_CHAPTER_TICKS;
     this.direction = BEFORE_THE_BOOK_SAYS;
+    this.paging = LEFT_TO_RIGHT_PAGES;
     this.reported = null;
     this.notice = null;
 
@@ -255,6 +259,7 @@ class FlowView {
     this.contents = flowContents(surface.toc);
     this.ticks = chapterTicks(surface.ticks);
     this.direction = surface.direction;
+    this.paging = surface.paging;
     this.state = SHOWING_THE_BOOK;
     this.#showing = book.id;
 
@@ -278,6 +283,7 @@ class FlowView {
     this.contents = NO_CONTENTS;
     this.ticks = NO_CHAPTER_TICKS;
     this.direction = BEFORE_THE_BOOK_SAYS;
+    this.paging = LEFT_TO_RIGHT_PAGES;
     this.reported = null;
     this.notice = null;
   }

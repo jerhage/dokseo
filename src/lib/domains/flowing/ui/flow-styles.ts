@@ -1,5 +1,7 @@
 import { lineSpacingHeight, textSizePercent } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
+import { HORIZONTAL, onePagingAxis } from './flow-writing-mode';
+import type { WritingMode } from './flow-writing-mode';
 
 type PageScheme = 'light' | 'dark';
 
@@ -84,12 +86,13 @@ function sizedForTheReader(settings: ReadingSettings): string {
 function flowStyles(
   settings: ReadingSettings,
   ink: PageInk = INK_FOR_THE_DARK_PAGE,
+  mode: WritingMode = HORIZONTAL,
 ): readonly [string, string] {
   const readings = settings.showPhoneticReadings ? '' : THE_READINGS_ARE_PUT_AWAY;
 
   return [
     readableOnThePage(ink),
-    `${overridesABookThatForcesItsOwnInk(ink)}${aSelectionIsSeenWhereverFocusIs(ink)}${sizedForTheReader(settings)}${readings}`,
+    `${overridesABookThatForcesItsOwnInk(ink)}${aSelectionIsSeenWhereverFocusIs(ink)}${sizedForTheReader(settings)}${readings}${onePagingAxis(mode)}`,
   ];
 }
 

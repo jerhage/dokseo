@@ -23,6 +23,7 @@ import { NOTHING_ARRIVED_AT } from './flow-highlight';
 import type { PassageMark } from './flow-highlight';
 import { REFLOWED, TRAVELLED } from './flow-move';
 import type { FlowRelocation } from './flow-move';
+import type { BookPaging } from './flow-writing-mode';
 import type { PassageArrival } from './flow-quote';
 import { INK_FOR_THE_DARK_PAGE } from './flow-styles';
 import type { PageInk } from './flow-styles';
@@ -159,6 +160,7 @@ type Shown = {
   gate: Promise<void> | null;
   failure: string | null;
   direction: ReadingDirection;
+  paging: BookPaging;
 };
 
 function shows(): Shown {
@@ -190,6 +192,7 @@ function shows(): Shown {
     gate: null as Promise<void> | null,
     failure: null as string | null,
     direction: 'ltr' as ReadingDirection,
+    paging: { axis: 'horizontal', direction: 'ltr' } as BookPaging,
     show: (() => Promise.reject(new Error('not built'))) as ShowFlowBook,
   };
 
@@ -200,6 +203,7 @@ function shows(): Shown {
     if (world.failure !== null) throw new Error(world.failure);
     return {
       direction: world.direction,
+      paging: world.paging,
       pages: {
         goLeft: () => turned.push('goLeft'),
         goRight: () => turned.push('goRight'),
@@ -271,6 +275,37 @@ describe('FlowView direction', () => {
     view.close();
 
     expect(view.direction).toBe('ltr');
+  });
+});
+
+describe('FlowView paging', () => {
+  it('takes the paging the opened book reports', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.paging = { axis: 'horizontal', direction: 'rtl' };
+    const view = new FlowView(world.container, world.notify);
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(view.paging).toEqual({ axis: 'horizontal', direction: 'rtl' });
+  });
+
+  it('reads left-to-right pages before a book has opened', () => {
+    const view = new FlowView(shelf().container, IGNORED);
+
+    expect(view.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
+  });
+
+  it('forgets the paging of a book the viewer closed', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.paging = { axis: 'vertical', mode: 'vertical-rl' };
+    const view = new FlowView(world.container, world.notify);
+    await view.open(novel(world.place), surfaces.show);
+
+    view.close();
+
+    expect(view.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
   });
 });
 

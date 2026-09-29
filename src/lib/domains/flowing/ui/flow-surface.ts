@@ -28,10 +28,14 @@ import { match } from 'ts-pattern';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 import type { PassageArrival } from './flow-quote';
 import type { PageTurner } from './flow-turn';
+import { bookPaging, pagingWritingMode } from './flow-writing-mode';
+import type { BookPaging } from './flow-writing-mode';
+import { chapterProbe, declaredWritingMode } from './writing-mode-probe';
 
 type FlowSurface = {
   readonly pages: PageTurner;
   readonly direction: ReadingDirection;
+  readonly paging: BookPaging;
   readonly toc: readonly TocItem[] | null;
   readonly ticks: readonly number[];
   seek(fraction: number): void;
@@ -265,6 +269,8 @@ async function openFlowSurface(
 
   const spine = spineOf(book);
   leaveOutSectionsWithNoBody(book, spine);
+  const paging = await bookPaging(declaredWritingMode(book), chapterProbe(host, book));
+  const mode = pagingWritingMode(paging);
 
   const view = new FoliateView();
   const shown = new Map<string, PassageWeight>();
@@ -301,7 +307,7 @@ async function openFlowSurface(
 
       opening.moved(flowRelocation(here, moved.detail.reason));
     });
-    view.renderer.setStyles(flowStyles(opening.settings, opening.ink));
+    view.renderer.setStyles(flowStyles(opening.settings, opening.ink, mode));
     const laidOut = await openAt(view, spine, opening.at);
     if (!laidOut) throw new Error('its first section could not be laid out');
   } catch (cause) {
@@ -312,6 +318,7 @@ async function openFlowSurface(
   return {
     pages: view,
     direction: bookDirection(book),
+    paging,
     toc: book.toc ?? null,
     ticks: view.getSectionFractions(),
     seek: (fraction: number) => {
@@ -326,7 +333,7 @@ async function openFlowSurface(
     goToPassage: (passage: SoughtPassage) =>
       goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),
     restyle: (settings: ReadingSettings, ink: PageInk) => {
-      view.renderer.setStyles(flowStyles(settings, ink));
+      view.renderer.setStyles(flowStyles(settings, ink, mode));
     },
     destroy: () => {
       tearDown(view, book);

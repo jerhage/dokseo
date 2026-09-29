@@ -33,6 +33,26 @@ describe('flowStyles', () => {
     expect(injected(SMALL_AND_TIGHT)).toContain(`line-height: ${lineSpacingHeight('tight')}`);
   });
 
+  it("lays every chapter of a vertical book out in the book's writing mode", () => {
+    const [prepended, appended] = flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, 'vertical-rl');
+
+    expect(prepended).not.toContain('writing-mode');
+    expect(appended).toMatch(/html, body \{\s*writing-mode: vertical-rl !important;/u);
+  });
+
+  it('keeps the left-to-right vertical mode a book declares', () => {
+    expect(flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, 'vertical-lr')[1]).toContain(
+      'writing-mode: vertical-lr !important',
+    );
+  });
+
+  it('leaves the writing mode of a horizontal book to the book', () => {
+    const styles = flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, 'horizontal');
+
+    expect(styles.join('')).not.toContain('writing-mode');
+    expect(styles).toEqual(flowStyles(SMALL_AND_TIGHT));
+  });
+
   it('outranks a book that sizes its own text', () => {
     const styles = injected(BIG_AND_LOOSE);
 
