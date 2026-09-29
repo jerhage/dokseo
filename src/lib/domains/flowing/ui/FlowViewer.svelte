@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
@@ -95,6 +95,7 @@
   let stage = $state<HTMLElement | null>(null);
   let barsAsked = $state(false);
   let contentsOpen = $state(false);
+  let contentsDialog = $state<ReturnType<typeof FlowContentsDialog> | null>(null);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
   let offer = $state.raw<LiftOffer | null>(null);
@@ -176,6 +177,12 @@
     }
 
     return false;
+  }
+
+  async function showContents(): Promise<void> {
+    contentsOpen = true;
+    await tick();
+    contentsDialog?.revealCurrent();
   }
 
   function pickEntry(entry: ContentsEntry): void {
@@ -456,7 +463,7 @@
           size="sm"
           class="shrink-0"
           aria-haspopup="dialog"
-          onclick={() => (contentsOpen = true)}
+          onclick={() => void showContents()}
         >
           {CONTENTS_LABEL}
         </Button>
@@ -536,6 +543,7 @@
 
 {#if contents.kind === 'listed'}
   <FlowContentsDialog
+    bind:this={contentsDialog}
     bind:open={contentsOpen}
     entries={contents.entries}
     language={book.language}

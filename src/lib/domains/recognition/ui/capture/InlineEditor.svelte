@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
   import Button from '$lib/components/Button.svelte';
   import type { KeyHint } from '$lib/components/key-hints';
@@ -25,11 +26,7 @@
     { keys: ['⌘/Ctrl', 'Enter'], does: 'saves' },
   ];
 
-  let area = $state<HTMLTextAreaElement | null>();
-
-  $effect(() => {
-    area?.focus();
-  });
+  const focusOnMount: Attachment<HTMLTextAreaElement> = (node) => node.focus();
 
   function commit(event: SubmitEvent): void {
     event.preventDefault();
@@ -53,7 +50,7 @@
 
 <form class={['col gap-2', { 'accent-start': note }]} onsubmit={commit}>
   <Textarea
-    bind:ref={area}
+    {@attach focusOnMount}
     {id}
     {value}
     rows={3}

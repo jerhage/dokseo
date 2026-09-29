@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, untrack } from 'svelte';
+  import { untrack } from 'svelte';
   import Button from '$lib/components/Button.svelte';
   import Field from '$lib/components/Field.svelte';
   import Fieldset from '$lib/components/Fieldset.svelte';
@@ -28,19 +28,9 @@
   const formId = `${uid}-form`;
 
   let open = $state(true);
-  let titleField = $state<HTMLInputElement | null>();
   let form = $state(untrack(() => bookForm(book)));
 
   const downward = $derived(form.layoutKind === 'continuous');
-
-  $effect(() => {
-    void focusTitle();
-  });
-
-  async function focusTitle(): Promise<void> {
-    await tick();
-    titleField?.focus();
-  }
 
   function requestOpen(next: boolean): void {
     if (saving) return;
@@ -60,7 +50,7 @@
       {#snippet children(control)}
         <Input
           {...control}
-          bind:ref={titleField}
+          autofocus
           name="title"
           type="text"
           lang={form.language}

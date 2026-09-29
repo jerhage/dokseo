@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import type { Language } from '$lib/shared/language';
@@ -18,17 +17,13 @@
 
   let list = $state<HTMLElement | null>(null);
 
-  $effect(() => {
-    if (!open) return;
+  export function revealCurrent(): void {
+    const here = list?.querySelector('[aria-current="true"]');
+    if (!(here instanceof HTMLElement)) return;
 
-    void tick().then(() => {
-      const here = list?.querySelector('[aria-current="true"]');
-      if (!(here instanceof HTMLElement)) return;
-
-      here.focus();
-      here.scrollIntoView({ block: 'center' });
-    });
-  });
+    here.focus();
+    here.scrollIntoView({ block: 'center' });
+  }
 
   function pick(entry: ContentsEntry): void {
     onpick(entry);
