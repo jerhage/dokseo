@@ -1,4 +1,5 @@
 <script lang="ts" generics="T extends CarouselSlide">
+  import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import type { HTMLAttributes } from 'svelte/elements';
@@ -11,6 +12,7 @@
     holdsSide,
     screenSide,
     settleFallbackMs,
+    SETTLES_AT_ONCE,
     swipeRelease,
   } from './carousel';
   import type {
@@ -143,7 +145,13 @@
     const element = root;
     if (motion.kind !== 'settle' || element === null) return;
 
-    const fallback = setTimeout(finish, settleFallbackMs(settlingDuration(element)));
+    const wait = settleFallbackMs(settlingDuration(element));
+    if (wait === SETTLES_AT_ONCE) {
+      untrack(finish);
+      return;
+    }
+
+    const fallback = setTimeout(finish, wait);
     return () => clearTimeout(fallback);
   });
 </script>

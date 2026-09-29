@@ -12,6 +12,7 @@ import {
   revealedSide,
   screenSide,
   settleFallbackMs,
+  SETTLES_AT_ONCE,
   swipeRelease,
 } from './carousel';
 import type { CarouselMotion, CarouselScene } from './carousel';
@@ -262,8 +263,12 @@ describe('settleFallbackMs', () => {
     expect(settleFallbackMs('0.1s, 0.3s, 0s')).toBe(300 + SETTLE_FALLBACK_MARGIN_MS);
   });
 
-  it('waits the margin alone for no transition or an unreadable one', () => {
-    expect(settleFallbackMs('0s')).toBe(SETTLE_FALLBACK_MARGIN_MS);
+  it('finishes a settle at once when the transition takes no time', () => {
+    expect(settleFallbackMs('0s')).toBe(SETTLES_AT_ONCE);
+    expect(settleFallbackMs('0ms, 0s')).toBe(SETTLES_AT_ONCE);
+  });
+
+  it('waits the margin alone for an unreadable transition', () => {
     expect(settleFallbackMs('')).toBe(SETTLE_FALLBACK_MARGIN_MS);
     expect(settleFallbackMs('soon')).toBe(SETTLE_FALLBACK_MARGIN_MS);
   });

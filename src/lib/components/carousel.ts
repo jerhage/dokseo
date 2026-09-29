@@ -46,16 +46,21 @@ function carouselGap(style: StyleSource): number {
   return pixelLength(style, CAROUSEL_GAP_PROPERTY);
 }
 
-function timeMs(time: string): number {
+const SETTLES_AT_ONCE = 0;
+
+function timeMs(time: string): number | null {
   const text = time.trim();
   const amount = Number.parseFloat(text);
-  if (!Number.isFinite(amount) || amount < 0) return 0;
+  if (!Number.isFinite(amount) || amount < 0) return null;
   if (text.endsWith('ms')) return amount;
-  return text.endsWith('s') ? Math.round(amount * 1000) : 0;
+  return text.endsWith('s') ? Math.round(amount * 1000) : null;
 }
 
 function settleFallbackMs(transitionDuration: string): number {
-  const longest = Math.max(0, ...transitionDuration.split(',').map(timeMs));
+  const times = transitionDuration.split(',').map(timeMs);
+  const readable = times.filter((time) => time !== null);
+  const longest = Math.max(0, ...readable);
+  if (readable.length === times.length && longest === 0) return SETTLES_AT_ONCE;
   return longest + SETTLE_FALLBACK_MARGIN_MS;
 }
 
@@ -168,6 +173,7 @@ export {
   CAROUSEL_RESISTANCE,
   CAROUSEL_REST,
   SETTLE_FALLBACK_MARGIN_MS,
+  SETTLES_AT_ONCE,
   carouselAround,
   carouselGap,
   carouselNeighbours,
