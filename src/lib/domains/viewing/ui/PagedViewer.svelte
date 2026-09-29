@@ -36,8 +36,8 @@
   import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
   import type { Framing } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
-  import { heldHints, hintsToShow, inputKind, readerHints } from './gesture-hint';
-  import type { GestureHint } from './gesture-hint';
+  import { heldHints, hintsToShow, inputKind, readerHints, recallAfterPress } from './gesture-hint';
+  import type { GestureHint, HintRecall } from './gesture-hint';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
@@ -110,7 +110,7 @@
   let grab = $state.raw<Grab | null>(null);
   let spaceHeld = $state(false);
   let pannable = $state(false);
-  let revealed = $state(false);
+  let recall = $state<HintRecall>('earned');
   let heldLines: readonly GestureHint[] = [];
   let motion = $state.raw<CarouselMotion>(CAROUSEL_REST);
   let lastPointerType = $state<string | null>(null);
@@ -134,7 +134,7 @@
     hintsToShow(
       readerHints({ input: pointing, layoutKind: 'paged', pannable, turns }),
       learnedGestures(),
-      { chromeShown, wanted: hintsWanted(), revealed, input: pointing },
+      { chromeShown, wanted: hintsWanted(), recall, input: pointing },
     ),
   );
   const hintLines = $derived.by(() => {
@@ -537,7 +537,7 @@
 
     if (event.key === '?') {
       event.preventDefault();
-      revealed = !revealed;
+      recall = recallAfterPress(pending);
       return;
     }
 

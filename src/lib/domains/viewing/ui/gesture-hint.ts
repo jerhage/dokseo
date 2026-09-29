@@ -15,6 +15,8 @@ type ReaderGesture =
 
 type InputKind = 'touch' | 'pointer';
 
+type HintRecall = 'earned' | 'hidden' | 'revealed';
+
 type GestureHint = {
   readonly keys: readonly string[];
   readonly does: string;
@@ -24,7 +26,7 @@ type GestureHint = {
 type HintShowing = {
   readonly chromeShown: boolean;
   readonly wanted: boolean;
-  readonly revealed: boolean;
+  readonly recall: HintRecall;
   readonly input: InputKind;
 };
 
@@ -124,11 +126,26 @@ function hintsToShow(
   showing: HintShowing,
 ): readonly GestureHint[] {
   if (!showing.chromeShown || !showing.wanted) return [];
-  if (showing.revealed) return withRecall(hints, showing.input);
 
+  return match(showing.recall)
+    .with('hidden', () => [])
+    .with('revealed', () => withRecall(hints, showing.input))
+    .with('earned', () => earnedHints(hints, learned, showing.input))
+    .exhaustive();
+}
+
+function earnedHints(
+  hints: readonly GestureHint[],
+  learned: readonly ReaderGesture[],
+  input: InputKind,
+): readonly GestureHint[] {
   const pending = hints.filter((hint) => hint.teaches !== null && !learned.includes(hint.teaches));
 
-  return pending.length === 0 ? [] : withRecall(pending, showing.input);
+  return pending.length === 0 ? [] : withRecall(pending, input);
+}
+
+function recallAfterPress(shown: readonly GestureHint[]): HintRecall {
+  return shown.length > 0 ? 'hidden' : 'revealed';
 }
 
 function heldHints(
@@ -138,5 +155,13 @@ function heldHints(
   return pending.length > 0 ? pending : previous;
 }
 
-export { heldHints, hintsToShow, inputKind, isReaderGesture, pagedHints, readerHints };
-export type { GestureHint, HintScene, HintShowing, InputKind, ReaderGesture };
+export {
+  heldHints,
+  hintsToShow,
+  inputKind,
+  isReaderGesture,
+  pagedHints,
+  readerHints,
+  recallAfterPress,
+};
+export type { GestureHint, HintRecall, HintScene, HintShowing, InputKind, ReaderGesture };

@@ -131,7 +131,7 @@
         turns: 'swipe-only',
       }),
       learnedGestures(),
-      { chromeShown, wanted: hintsWanted(), revealed: false, input: pointing },
+      { chromeShown, wanted: hintsWanted(), recall: 'earned', input: pointing },
     ),
   );
   const hintLines = $derived.by(() => {

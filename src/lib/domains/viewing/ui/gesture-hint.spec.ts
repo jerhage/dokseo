@@ -6,17 +6,18 @@ import {
   isReaderGesture,
   pagedHints,
   readerHints,
+  recallAfterPress,
 } from './gesture-hint';
-import type { GestureHint, HintScene, InputKind, ReaderGesture } from './gesture-hint';
+import type { GestureHint, HintRecall, HintScene, InputKind, ReaderGesture } from './gesture-hint';
 
 function visible(
   chromeShown: boolean,
   hints: readonly GestureHint[],
   learned: readonly ReaderGesture[],
-  revealed: boolean,
+  recall: HintRecall,
   input: InputKind,
 ): readonly GestureHint[] {
-  return hintsToShow(hints, learned, { chromeShown, wanted: true, revealed, input });
+  return hintsToShow(hints, learned, { chromeShown, wanted: true, recall, input });
 }
 
 function taught(hints: readonly GestureHint[]): readonly (ReaderGesture | null)[] {
@@ -35,31 +36,31 @@ describe('pagedHints', () => {
 
 describe('hintsToShow', () => {
   it('teaches every gesture to a reader who has performed none', () => {
-    const shown = visible(true, pagedHints(true), [], false, 'pointer');
+    const shown = visible(true, pagedHints(true), [], 'earned', 'pointer');
 
     expect(taught(shown)).toEqual(['select', 'space-pan', 'middle-pan', null]);
   });
 
   it('drops a gesture the reader has already performed', () => {
-    const shown = visible(true, pagedHints(true), ['select'], false, 'pointer');
+    const shown = visible(true, pagedHints(true), ['select'], 'earned', 'pointer');
 
     expect(taught(shown)).toEqual(['space-pan', 'middle-pan', null]);
   });
 
   it('closes with the key that brings it back', () => {
-    const shown = visible(true, pagedHints(false), ['select'], false, 'pointer');
+    const shown = visible(true, pagedHints(false), ['select'], 'earned', 'pointer');
 
     expect(shown.at(-1)).toEqual({ keys: ['?'], does: 'show or hide this', teaches: null });
   });
 
   it('shows nothing once every gesture on offer is learned', () => {
-    expect(visible(true, pagedHints(false), ['select', 'zoom-to-pan'], false, 'pointer')).toEqual(
-      [],
-    );
+    expect(
+      visible(true, pagedHints(false), ['select', 'zoom-to-pan'], 'earned', 'pointer'),
+    ).toEqual([]);
   });
 
   it('keeps teaching a gesture the reader learned in the other state', () => {
-    const shown = visible(true, pagedHints(true), ['zoom-to-pan'], false, 'pointer');
+    const shown = visible(true, pagedHints(true), ['zoom-to-pan'], 'earned', 'pointer');
 
     expect(taught(shown)).toEqual(['select', 'space-pan', 'middle-pan', null]);
   });
@@ -69,7 +70,7 @@ describe('hintsToShow', () => {
       true,
       pagedHints(true),
       ['select', 'space-pan', 'middle-pan'],
-      true,
+      'revealed',
       'pointer',
     );
 
@@ -77,11 +78,11 @@ describe('hintsToShow', () => {
   });
 
   it('shows nothing while the chrome is hidden, however little the reader has learned', () => {
-    expect(visible(false, pagedHints(true), [], false, 'pointer')).toEqual([]);
+    expect(visible(false, pagedHints(true), [], 'earned', 'pointer')).toEqual([]);
   });
 
   it('shows nothing while the chrome is hidden, even once the reader asked them back', () => {
-    expect(visible(false, pagedHints(true), [], true, 'pointer')).toEqual([]);
+    expect(visible(false, pagedHints(true), [], 'revealed', 'pointer')).toEqual([]);
   });
 });
 
@@ -168,13 +169,13 @@ describe('readerHints', () => {
 
 describe('hintsToShow for touch', () => {
   it('leaves out the ? line, since a phone has no ? key', () => {
-    const shown = visible(true, readerHints(TOUCH_PAGED), [], false, 'touch');
+    const shown = visible(true, readerHints(TOUCH_PAGED), [], 'earned', 'touch');
 
     expect(taught(shown)).toEqual(['swipe', 'touch-select', 'pinch', 'double-tap']);
   });
 
   it('drops a touch gesture the reader has performed', () => {
-    const shown = visible(true, readerHints(TOUCH_PAGED), ['swipe', 'pinch'], false, 'touch');
+    const shown = visible(true, readerHints(TOUCH_PAGED), ['swipe', 'pinch'], 'earned', 'touch');
 
     expect(taught(shown)).toEqual(['touch-select', 'double-tap']);
   });
@@ -182,24 +183,24 @@ describe('hintsToShow for touch', () => {
   it('shows nothing once every touch gesture is learned', () => {
     const learned: readonly ReaderGesture[] = ['swipe', 'touch-select', 'pinch', 'double-tap'];
 
-    expect(visible(true, readerHints(TOUCH_PAGED), learned, false, 'touch')).toEqual([]);
+    expect(visible(true, readerHints(TOUCH_PAGED), learned, 'earned', 'touch')).toEqual([]);
   });
 
   it('shows every touch line without the ? line when revealed', () => {
     const learned: readonly ReaderGesture[] = ['swipe', 'touch-select', 'pinch', 'double-tap'];
-    const shown = visible(true, readerHints(TOUCH_PAGED), learned, true, 'touch');
+    const shown = visible(true, readerHints(TOUCH_PAGED), learned, 'revealed', 'touch');
 
     expect(taught(shown)).toEqual(['swipe', 'touch-select', 'pinch', 'double-tap']);
   });
 
   it('keeps teaching the touch lines to a reader who learned only the mouse ones', () => {
-    const shown = visible(true, readerHints(TOUCH_PAGED), ['select'], false, 'touch');
+    const shown = visible(true, readerHints(TOUCH_PAGED), ['select'], 'earned', 'touch');
 
     expect(taught(shown)).toEqual(['swipe', 'touch-select', 'pinch', 'double-tap']);
   });
 
   it('shows nothing while the chrome is hidden', () => {
-    expect(visible(false, readerHints(TOUCH_PAGED), [], false, 'touch')).toEqual([]);
+    expect(visible(false, readerHints(TOUCH_PAGED), [], 'earned', 'touch')).toEqual([]);
   });
 });
 
@@ -208,7 +209,7 @@ describe('hintsToShow with hints turned off', () => {
     const shown = hintsToShow(pagedHints(true), [], {
       chromeShown: true,
       wanted: false,
-      revealed: false,
+      recall: 'earned',
       input: 'pointer',
     });
 
@@ -219,7 +220,7 @@ describe('hintsToShow with hints turned off', () => {
     const shown = hintsToShow(readerHints(TOUCH_PAGED), [], {
       chromeShown: true,
       wanted: false,
-      revealed: false,
+      recall: 'earned',
       input: 'touch',
     });
 
@@ -230,11 +231,92 @@ describe('hintsToShow with hints turned off', () => {
     const shown = hintsToShow(pagedHints(true), [], {
       chromeShown: true,
       wanted: false,
-      revealed: true,
+      recall: 'revealed',
       input: 'pointer',
     });
 
     expect(shown).toEqual([]);
+  });
+
+  it('shows nothing in any recall, for either input', () => {
+    const recalls: readonly HintRecall[] = ['earned', 'hidden', 'revealed'];
+    const inputs: readonly InputKind[] = ['pointer', 'touch'];
+
+    for (const recall of recalls) {
+      for (const input of inputs) {
+        const hints = readerHints({ ...TOUCH_PAGED, input, pannable: true });
+        const shown = hintsToShow(hints, [], { chromeShown: true, wanted: false, recall, input });
+
+        expect(shown).toEqual([]);
+      }
+    }
+  });
+});
+
+describe('hintsToShow when hidden', () => {
+  it('shows no line to a mouse reader who has learned nothing', () => {
+    expect(visible(true, pagedHints(true), [], 'hidden', 'pointer')).toEqual([]);
+  });
+
+  it('shows no line to a touch reader who has learned nothing', () => {
+    expect(visible(true, readerHints(TOUCH_PAGED), [], 'hidden', 'touch')).toEqual([]);
+  });
+});
+
+describe('hintsToShow when revealed', () => {
+  it('shows every mouse line and the ? line to a reader who has learned nothing', () => {
+    const shown = visible(true, pagedHints(false), [], 'revealed', 'pointer');
+
+    expect(taught(shown)).toEqual(['select', 'zoom-to-pan', null]);
+  });
+
+  it('shows every touch line to a reader who has learned some', () => {
+    const shown = visible(true, readerHints(TOUCH_PAGED), ['swipe'], 'revealed', 'touch');
+
+    expect(taught(shown)).toEqual(['swipe', 'touch-select', 'pinch', 'double-tap']);
+  });
+});
+
+describe('recallAfterPress', () => {
+  it('hides the line while it is visible', () => {
+    const shown = visible(true, pagedHints(true), [], 'earned', 'pointer');
+
+    expect(recallAfterPress(shown)).toBe('hidden');
+  });
+
+  it('reveals every line once none is visible', () => {
+    const learned: readonly ReaderGesture[] = ['select', 'space-pan', 'middle-pan'];
+    const shown = visible(true, pagedHints(true), learned, 'earned', 'pointer');
+
+    expect(recallAfterPress(shown)).toBe('revealed');
+  });
+
+  it('changes what a reader who has learned nothing sees, on every press', () => {
+    const presses: HintRecall[] = [];
+    let recall: HintRecall = 'earned';
+    let shown = visible(true, pagedHints(true), [], recall, 'pointer');
+    const seen = [taught(shown)];
+
+    for (let press = 0; press < 3; press += 1) {
+      recall = recallAfterPress(shown);
+      presses.push(recall);
+      shown = visible(true, pagedHints(true), [], recall, 'pointer');
+      seen.push(taught(shown));
+    }
+
+    expect(presses).toEqual(['hidden', 'revealed', 'hidden']);
+    expect(seen).toEqual([
+      ['select', 'space-pan', 'middle-pan', null],
+      [],
+      ['select', 'space-pan', 'middle-pan', null],
+      [],
+    ]);
+  });
+
+  it('hides a revealed line', () => {
+    const shown = visible(true, pagedHints(true), [], 'revealed', 'pointer');
+
+    expect(recallAfterPress(shown)).toBe('hidden');
   });
 });
 
