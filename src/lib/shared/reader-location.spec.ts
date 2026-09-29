@@ -8,6 +8,7 @@ import {
   openingPlace,
   readArrival,
   readerHref,
+  passageHref,
   readImageIndex,
   urlWithImageIndex,
 } from './reader-location';
@@ -131,6 +132,29 @@ describe('readerHref', () => {
     expect(
       readerHref(bookId('one'), imageIndex(1), { capture: captureId('c1'), query: '  ' }),
     ).toBe('/read/one?image=1&capture=c1');
+  });
+});
+
+describe('passageHref', () => {
+  it('names the book and the capture, with no image index', () => {
+    expect(passageHref(bookId('one'), { capture: captureId('c1'), query: null })).toBe(
+      '/read/one?capture=c1',
+    );
+  });
+
+  it('carries the search beside the capture', () => {
+    expect(passageHref(bookId('a/b'), { capture: captureId('c 1'), query: '海' })).toBe(
+      '/read/a%2Fb?find=%E6%B5%B7&capture=c%201',
+    );
+  });
+
+  it('reads back as the same arrival', () => {
+    const href = passageHref(bookId('one'), { capture: captureId('c1'), query: '海が' });
+
+    expect(readArrival(new URL(href, 'https://r.test').searchParams)).toEqual({
+      capture: captureId('c1'),
+      query: '海が',
+    });
   });
 });
 

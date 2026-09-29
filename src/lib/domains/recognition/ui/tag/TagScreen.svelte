@@ -225,7 +225,7 @@
                           </OverflowList>
                         </span>
                       </span>
-                      <span class="visually-hidden">Jump to p.{row.page}</span>
+                      <span class="visually-hidden">{row.jump}</span>
                     </CommandItem>
                   </li>
                 {/each}

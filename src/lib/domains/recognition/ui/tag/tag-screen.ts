@@ -1,14 +1,14 @@
 import { match } from 'ts-pattern';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
-import { readerHref } from '$lib/shared/reader-location';
 import type { Capture } from '../../domain/capture/capture';
 import type { BookMatches } from '../../domain/capture/capture-results';
 import { NO_MATCH } from '../../domain/capture/match-stepping';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagColour } from '../../domain/tag/tag-colour';
 import type { AlsoTagged, TagSummary } from '../../domain/tag/tag-summary';
-import { capturedLabel, firstImage, pageLabel, placeLabel } from '../capture/capture-place';
+import { captureLink } from '../capture/capture-link';
+import { capturedLabel, placeLabel } from '../capture/capture-place';
 import { chipsOf } from '../capture/tag-chip';
 import type { TagChip } from '../capture/tag-chip';
 import type { TagViewStatus } from './tag-view.svelte';
@@ -25,7 +25,7 @@ type TaggedRow = {
   readonly id: CaptureId;
   readonly order: number;
   readonly href: string;
-  readonly page: string;
+  readonly jump: string;
   readonly place: string;
   readonly when: string | null;
   readonly text: string;
@@ -113,26 +113,23 @@ function taggedShelves(input: ShelfInput): readonly TaggedShelf[] {
       title: group.book.title,
       language: group.book.language,
       cover: input.covers.get(group.book.id) ?? null,
-      rows: group.captures
-        .map((capture): TaggedRow | null => {
-          const index = firstImage(capture.anchor);
-          if (index === null) return null;
+      rows: group.captures.map((capture): TaggedRow => {
+        const link = captureLink(group.book.id, capture, null);
 
-          return {
-            id: capture.id,
-            order: order++,
-            href: readerHref(group.book.id, index, { capture: capture.id, query: null }),
-            page: pageLabel(index),
-            place: placeLabel(capture.anchor),
-            when: capturedLabel(capture.createdAt, input.now),
-            text: capture.text,
-            chips: chipsOf(
-              capture.tagIds.filter((carried) => carried !== input.chosen),
-              input.tags,
-            ),
-          };
-        })
-        .filter((row) => row !== null),
+        return {
+          id: capture.id,
+          order: order++,
+          href: link.href,
+          jump: link.jump,
+          place: placeLabel(capture.anchor),
+          when: capturedLabel(capture.createdAt, input.now),
+          text: capture.text,
+          chips: chipsOf(
+            capture.tagIds.filter((carried) => carried !== input.chosen),
+            input.tags,
+          ),
+        };
+      }),
     }))
     .filter((shelf) => shelf.rows.length > 0);
 }

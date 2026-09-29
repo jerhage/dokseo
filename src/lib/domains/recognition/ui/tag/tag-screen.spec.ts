@@ -142,20 +142,45 @@ describe('taggedShelves', () => {
     now: NOW,
   });
 
-  it('drops a capture with no page and a book left with no rows', () => {
-    expect(shelves.map((shelf) => String(shelf.id))).toEqual(['one', 'three']);
-    expect(shelves[0]?.rows.map((row) => row.text)).toEqual(['first']);
+  it('lists a capture anchored in text beside the ones anchored on a page', () => {
+    expect(shelves.map((shelf) => String(shelf.id))).toEqual(['one', 'two', 'three']);
+    expect(shelves[0]?.rows.map((row) => row.text)).toEqual(['first', 'flowing']);
+    expect(shelves[1]?.rows.map((row) => row.text)).toEqual(['only text']);
   });
 
   it('numbers the rows across every book in order', () => {
-    expect(shelvedRows(shelves).map((row) => row.order)).toEqual([0, 1]);
+    expect(shelvedRows(shelves).map((row) => row.order)).toEqual([0, 1, 2, 3]);
   });
 
   it('links each row to its page in the reader with the capture', () => {
     expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4&capture=first');
-    expect(shelves[0]?.rows[0]?.page).toBe('005');
+    expect(shelves[0]?.rows[0]?.jump).toBe('Jump to p.005');
     expect(shelves[0]?.rows[0]?.place).toBe('p.005');
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');
+  });
+
+  it('links a capture anchored in text to its passage, with no page', () => {
+    expect(shelves[1]?.rows[0]?.href).toBe('/read/two?capture=only%20text');
+    expect(shelves[1]?.rows[0]?.jump).toBe('Jump to the passage');
+    expect(shelves[1]?.rows[0]?.place).toBe('no page');
+  });
+
+  it('opens the book for a capture anchored to no region at all', () => {
+    const [bare] = taggedShelves({
+      groups: [
+        {
+          book: book('four'),
+          captures: [{ ...regional('bare', 'four', [SFX.id]), anchor: regionAnchor([]) }],
+        },
+      ],
+      covers: new Map(),
+      chosen: SFX.id,
+      tags: TAGS,
+      now: NOW,
+    });
+
+    expect(bare?.rows[0]?.href).toBe('/read/four');
+    expect(bare?.rows[0]?.jump).toBe('Open the book');
   });
 
   it('carries every tag on a row except the chosen one', () => {
@@ -163,7 +188,7 @@ describe('taggedShelves', () => {
   });
 
   it('gives a book its cover, or none', () => {
-    expect(shelves.map((shelf) => shelf.cover)).toEqual(['blob:cover', null]);
+    expect(shelves.map((shelf) => shelf.cover)).toEqual(['blob:cover', null, null]);
   });
 });
 

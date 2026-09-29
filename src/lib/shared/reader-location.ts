@@ -68,15 +68,26 @@ function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   return moved.href === url.href ? null : moved;
 }
 
+function arrivalParameters(arrival: ReaderArrival): string {
+  const found = `${CAPTURE_PARAMETER}=${encodeURIComponent(arrival.capture)}`;
+  const query = arrival.query ?? '';
+  if (query.trim().length === 0) return found;
+
+  return `${FIND_PARAMETER}=${encodeURIComponent(query)}&${found}`;
+}
+
 function readerHref(book: BookId, index: ImageIndex, arrival: ReaderArrival | null = null): string {
   const place = `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`;
   if (arrival === null || arrival.capture.length === 0) return place;
 
-  const found = `${CAPTURE_PARAMETER}=${encodeURIComponent(arrival.capture)}`;
-  const query = arrival.query ?? '';
-  if (query.trim().length === 0) return `${place}&${found}`;
+  return `${place}&${arrivalParameters(arrival)}`;
+}
 
-  return `${place}&${FIND_PARAMETER}=${encodeURIComponent(query)}&${found}`;
+function passageHref(book: BookId, arrival: ReaderArrival): string {
+  const opened = `/read/${encodeURIComponent(book)}`;
+  if (arrival.capture.length === 0) return opened;
+
+  return `${opened}?${arrivalParameters(arrival)}`;
 }
 
 function readArrival(parameters: URLSearchParams): ReaderArrival | null {
@@ -114,6 +125,7 @@ export {
   openingPlace,
   urlWithImageIndex,
   readerHref,
+  passageHref,
   readArrival,
   missingBookNotice,
   missingBookArrival,
