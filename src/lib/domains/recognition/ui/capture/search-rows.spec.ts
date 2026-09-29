@@ -139,7 +139,7 @@ describe('searchRows', () => {
     expect(row.language).toBe('ko');
   });
 
-  it('opens the book with no page for a capture anchored in text', () => {
+  it('opens the book at the passage for a capture anchored in text, carrying the search', () => {
     const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' });
     const found = {
       books: [],
@@ -148,8 +148,23 @@ describe('searchRows', () => {
 
     const row = captureAt(searchRows(input(found)).rows, 0);
 
-    expect(row.href).toBe('/read/one');
+    expect(row.href).toBe('/read/one?find=%E6%B5%B7&capture=t');
     expect(row.place).toBe('no page');
+  });
+
+  it('names the lifted capture and no image when it links a passage in the current book', () => {
+    const anchor = textAnchor('epubcfi(/6/4)', { exact: '海', prefix: '', suffix: '' });
+    const found = {
+      books: [],
+      captures: [{ book: ONE, captures: [written('lifted', ONE, '海', anchor)] }],
+    };
+
+    const row = captureAt(searchRows(input(found, { scope: 'book', book: ONE.id })).rows, 0);
+    const link = new URL(row.href, 'https://reader.test');
+
+    expect(link.pathname).toBe('/read/one');
+    expect(link.searchParams.get('capture')).toBe('lifted');
+    expect(link.searchParams.has('image')).toBe(false);
   });
 
   it('names the book only when the capture is outside the current one', () => {

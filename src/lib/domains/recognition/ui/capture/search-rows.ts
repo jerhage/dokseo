@@ -1,6 +1,5 @@
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
-import { readerHref } from '$lib/shared/reader-location';
 import { segmentsOf, textMatches } from '$lib/shared/text-search';
 import type { TextSegment } from '$lib/shared/text-search';
 import type { Capture } from '../../domain/capture/capture';
@@ -9,6 +8,7 @@ import { matchedTagIds } from '../../domain/capture/quick-find';
 import type { QuickFinds } from '../../domain/capture/quick-find';
 import type { Tag } from '../../domain/tag/tag';
 import { markedLines } from './capture-lines';
+import { bookHref, captureLink } from './capture-link';
 import { firstImage, NO_PLACE, pageLabel } from './capture-place';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
@@ -63,10 +63,6 @@ type SearchRows = {
   readonly sections: readonly SearchSection[];
 };
 
-function bookHref(id: BookId): string {
-  return `/read/${encodeURIComponent(id)}`;
-}
-
 function effectiveScope(book: BookId | null, scope: SearchScope): SearchScope {
   return book === null ? 'all' : scope;
 }
@@ -99,10 +95,7 @@ function captureRow(shelf: SearchedBook, capture: Capture, input: SearchRowsInpu
   return {
     kind: 'capture',
     key: capture.id,
-    href:
-      index === null
-        ? bookHref(shelf.id)
-        : readerHref(shelf.id, index, { capture: capture.id, query: input.query }),
+    href: captureLink(shelf.id, capture, input.query).href,
     place: index === null ? NO_PLACE : `p.${pageLabel(index)}`,
     title: shelf.id === input.book ? null : shelf.title,
     language: shelf.language,
@@ -133,7 +126,7 @@ function searchRows(input: SearchRowsInput): SearchRows {
   return { rows: [...bookRows, ...captureRows], sections };
 }
 
-export { bookHref, effectiveScope, searchRows, searchedBooks };
+export { effectiveScope, searchRows, searchedBooks };
 export type {
   BookRow,
   CaptureRow,
