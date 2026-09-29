@@ -59,6 +59,22 @@ describe('filesFromDataTransfer', () => {
     expect(files.map((f) => f.webkitRelativePath)).toEqual(['Ch 12/a.png', 'Ch 12/inner/b.png']);
   });
 
+  it('skips an entry that says it is a file but has no file method', async () => {
+    const claimant = {
+      isFile: true,
+      isDirectory: false,
+      name: 'ghost.png',
+    } as unknown as FileSystemEntry;
+    const transfer = {
+      items: [{ kind: 'file', webkitGetAsEntry: () => claimant }],
+      files: [],
+    } as unknown as DataTransfer;
+
+    const files = await filesFromDataTransfer(transfer);
+
+    expect(files).toEqual([]);
+  });
+
   it('falls back to the plain file list when no entry is available', async () => {
     const fallback = [new File(['bytes'], 'chapter.cbz')];
     const transfer = { items: [], files: fallback } as unknown as DataTransfer;

@@ -2,13 +2,19 @@ type Disposer = () => void;
 
 type StackOwner = { DisposableStack?: unknown };
 
+function disposeMethodOf(value: unknown): unknown {
+  if (typeof value !== 'object' && typeof value !== 'function') return undefined;
+  if (value === null || !(Symbol.dispose in value)) return undefined;
+
+  return value[Symbol.dispose];
+}
+
 function disposerOf(value: unknown): Disposer {
-  const held = value as { [Symbol.dispose]?: unknown };
-  const dispose = held[Symbol.dispose];
+  const dispose = disposeMethodOf(value);
   if (typeof dispose !== 'function') throw new TypeError('Object is not disposable.');
 
   return () => {
-    (dispose as Disposer).call(value);
+    dispose.call(value);
   };
 }
 
@@ -66,10 +72,12 @@ class StackShim {
 }
 
 function ensureDisposableStack(owner: StackOwner, dispose: symbol): unknown {
-  const prototype = StackShim.prototype as unknown as Record<symbol, unknown>;
-  prototype[dispose] ??= function disposeStack(this: StackShim): void {
-    this.dispose();
-  };
+  const present: unknown = Reflect.get(StackShim.prototype, dispose);
+  if (present === undefined || present === null) {
+    Reflect.set(StackShim.prototype, dispose, function disposeStack(this: StackShim): void {
+      this.dispose();
+    });
+  }
 
   owner.DisposableStack ??= StackShim;
 

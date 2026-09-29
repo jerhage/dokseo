@@ -22,16 +22,24 @@ function located(file: File, path: string): File {
   return file;
 }
 
+function isFileEntry(entry: FileSystemEntry): entry is FileSystemFileEntry {
+  return entry.isFile && 'file' in entry && typeof entry.file === 'function';
+}
+
+function isDirectoryEntry(entry: FileSystemEntry): entry is FileSystemDirectoryEntry {
+  return entry.isDirectory && 'createReader' in entry && typeof entry.createReader === 'function';
+}
+
 async function collect(entry: FileSystemEntry, prefix: string, into: File[]): Promise<void> {
-  if (entry.isFile) {
-    const file = await fileOf(entry as FileSystemFileEntry);
+  if (isFileEntry(entry)) {
+    const file = await fileOf(entry);
     if (file === null) return;
     into.push(prefix === '' ? file : located(file, `${prefix}${entry.name}`));
     return;
   }
-  if (!entry.isDirectory) return;
+  if (!isDirectoryEntry(entry)) return;
 
-  const reader = (entry as FileSystemDirectoryEntry).createReader();
+  const reader = entry.createReader();
   const nested = `${prefix}${entry.name}/`;
   for (;;) {
     const batch = await batchOf(reader);

@@ -4,10 +4,9 @@ import type { ModelLoadSource } from '$lib/domains/recognition/domain/model/mode
 type Fetching = (input: string | URL, init?: unknown) => Promise<unknown>;
 
 function asksForOneRange(init: unknown): boolean {
-  if (typeof init !== 'object' || init === null) return false;
+  if (typeof init !== 'object' || init === null || !('headers' in init)) return false;
 
-  const headers = (init as { headers?: unknown }).headers;
-  return headers instanceof Headers && headers.has('Range');
+  return init.headers instanceof Headers && init.headers.has('Range');
 }
 
 function watchModelLoadSource(env: { fetch: Fetching }): () => ModelLoadSource {

@@ -69,6 +69,25 @@ describe('StackShim', () => {
     expect(() => new StackShim().use({})).toThrow(/not disposable/u);
   });
 
+  it('refuses a primitive, which carries no dispose method', () => {
+    expect(() => new StackShim().use(7)).toThrow(/not disposable/u);
+  });
+
+  it('disposes a function that carries its own dispose method', () => {
+    const closed: string[] = [];
+    const held = Object.assign((): void => undefined, {
+      [Symbol.dispose]: (): void => {
+        closed.push('function');
+      },
+    });
+
+    const stack = new StackShim();
+    stack.use(held);
+    stack.dispose();
+
+    expect(closed).toEqual(['function']);
+  });
+
   it('adopts a value that disposes some other way', () => {
     const closed: string[] = [];
     const stack = new StackShim();
