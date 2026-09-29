@@ -36,7 +36,7 @@ function reportedFraction(fraction: number | undefined): number | null {
 function reportedChapter(label: string | null | undefined): string | null {
   if (label === undefined || label === null) return null;
 
-  const named = label.replace(/\s+/gu, ' ').trim();
+  const named = label.replace(/[^\S\u3000]+/gu, ' ').trim();
   return named.length === 0 ? null : named;
 }
 

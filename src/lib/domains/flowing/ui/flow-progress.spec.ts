@@ -8,6 +8,7 @@ import {
   MAX_CHAPTER_TICKS,
   progressLabel,
   PROGRESS_UNKNOWN_LABEL,
+  reportedChapter,
   scrubbedFraction,
   TICK_EDGE_MARGIN,
   tickOffsets,
@@ -61,6 +62,21 @@ describe('flowLocation', () => {
     expect(flowLocation(at({ tocItem: { label: '\n  第一章\n  上\n' } })).chapter).toBe(
       '第一章 上',
     );
+  });
+});
+
+describe('reportedChapter', () => {
+  it('keeps an ideographic space inside a chapter label', () => {
+    expect(reportedChapter('第三章\u3000海辺')).toBe('第三章\u3000海辺');
+  });
+
+  it('collapses runs of other whitespace around a kept ideographic space', () => {
+    expect(reportedChapter('第三章\u3000海辺 \n\t 上')).toBe('第三章\u3000海辺 上');
+  });
+
+  it('trims ideographic and other spaces from both ends of a chapter label', () => {
+    expect(reportedChapter('\u3000\n 第三章\u3000海辺 \u3000')).toBe('第三章\u3000海辺');
+    expect(reportedChapter('\u3000\u3000')).toBeNull();
   });
 });
 
