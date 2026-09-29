@@ -1009,7 +1009,73 @@ describe('the reading place of a continuous strip', () => {
 
     view.dispose();
 
-    expect(world.edits.map((edit) => edit.position)).toEqual([imagePlace(imageIndex(5))]);
+    expect(world.edits.map((edit) => edit.position)).toEqual([
+      imagePlace(imageIndex(5), imageIndex(5), 0.5),
+    ]);
+  });
+
+  it('saves a move within the slice it already holds once the scrolling settles', async () => {
+    const world = fakes({
+      layoutKind: 'continuous',
+      pagePairing: 'single',
+      direction: 'ltr',
+      position: imagePlace(imageIndex(2), imageIndex(2), 0.25),
+    });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(2), 0.4), imageIndex(2));
+    view.moveTo(readingPosition(imageIndex(2), 0.5), imageIndex(2));
+    expect(world.edits).toEqual([]);
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits.map((edit) => edit.position)).toEqual([
+      imagePlace(imageIndex(2), imageIndex(2), 0.5),
+    ]);
+  });
+
+  it('opens at the fraction down the slice the reader left', async () => {
+    const world = fakes({
+      layoutKind: 'continuous',
+      pagePairing: 'single',
+      direction: 'ltr',
+      position: imagePlace(imageIndex(3), imageIndex(3), 0.4),
+    });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.position).toEqual({ index: 3, offset: 0.4 });
+  });
+
+  it('opens at the top of a slice the url names that is not the one the reader left', async () => {
+    const world = fakes({
+      layoutKind: 'continuous',
+      pagePairing: 'single',
+      direction: 'ltr',
+      position: imagePlace(imageIndex(3), imageIndex(3), 0.4),
+    });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'), imageIndex(1));
+
+    expect(view.position).toEqual({ index: 1, offset: 0 });
+  });
+
+  it('saves nothing when the strip reports the fraction it opened at', async () => {
+    const world = fakes({
+      layoutKind: 'continuous',
+      pagePairing: 'single',
+      direction: 'ltr',
+      position: imagePlace(imageIndex(3), imageIndex(3), 0.4),
+    });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    view.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(3));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
+
+    expect(world.edits).toEqual([]);
   });
 
   it('saves nothing for a move to the place it already holds', async () => {
@@ -1208,7 +1274,7 @@ describe('reading to the end', () => {
     view.moveTo(readingPosition(imageIndex(3), 0.6), imageIndex(4));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(world.stored.position).toEqual(imagePlace(imageIndex(3), imageIndex(4)));
+    expect(world.stored.position).toEqual(imagePlace(imageIndex(3), imageIndex(4), 0.6));
     expect(showsTheEnd(world.stored.position, 5)).toBe(true);
   });
 

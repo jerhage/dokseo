@@ -262,6 +262,7 @@ describe('openFile', () => {
       kind: 'image',
       index: 0,
       shownThrough: 0,
+      offset: 0,
     });
   });
 
@@ -393,7 +394,7 @@ describe('openFile', () => {
   it('leaves the reading position typed as a reading place', async () => {
     const result = await openFile(deps(), files);
     const position: ReadingPlace | undefined = result.ok ? result.value.book.position : undefined;
-    expect(position).toEqual({ kind: 'image', index: 0, shownThrough: 0 });
+    expect(position).toEqual({ kind: 'image', index: 0, shownThrough: 0, offset: 0 });
   });
 
   it('forwards every stage the builder reported', async () => {
@@ -892,6 +893,7 @@ describe('openFile', () => {
       kind: 'image',
       index: 0,
       shownThrough: 0,
+      offset: 0,
     });
   });
 

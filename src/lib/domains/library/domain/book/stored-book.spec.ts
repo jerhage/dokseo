@@ -44,22 +44,81 @@ describe('bookFromStored', () => {
   });
 
   it('reads a stored number as the image it names', () => {
-    expect(bookFromStored(legacy).position).toEqual({ kind: 'image', index: 3, shownThrough: 3 });
+    expect(bookFromStored(legacy).position).toEqual({
+      kind: 'image',
+      index: 3,
+      shownThrough: 3,
+      offset: 0,
+    });
   });
 
   it('reads a stored image place back whole', () => {
     const stored: StoredBook = { ...legacy, position: imagePlace(imageIndex(12)) };
-    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 12, shownThrough: 12 });
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'image',
+      index: 12,
+      shownThrough: 12,
+      offset: 0,
+    });
   });
 
   it('reads a stored image place back with the last image it showed', () => {
     const stored: StoredBook = { ...legacy, position: imagePlace(imageIndex(3), imageIndex(4)) };
-    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 3, shownThrough: 4 });
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'image',
+      index: 3,
+      shownThrough: 4,
+      offset: 0,
+    });
   });
 
   it('reads an image place stored before the last shown image as showing its own image', () => {
     const stored: StoredBook = { ...legacy, position: { kind: 'image', index: imageIndex(12) } };
-    expect(bookFromStored(stored).position).toEqual({ kind: 'image', index: 12, shownThrough: 12 });
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'image',
+      index: 12,
+      shownThrough: 12,
+      offset: 0,
+    });
+  });
+
+  it('reads a stored image place back with the fraction down the image it was left at', () => {
+    const stored: StoredBook = {
+      ...legacy,
+      position: imagePlace(imageIndex(3), imageIndex(4), 0.35),
+    };
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'image',
+      index: 3,
+      shownThrough: 4,
+      offset: 0.35,
+    });
+  });
+
+  it('reads an image place stored before the offset as the top of its image', () => {
+    const stored: StoredBook = {
+      ...legacy,
+      position: { kind: 'image', index: imageIndex(12), shownThrough: imageIndex(13) },
+    };
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'image',
+      index: 12,
+      shownThrough: 13,
+      offset: 0,
+    });
+  });
+
+  it('reads a stored offset outside the image back inside it', () => {
+    const stored: StoredBook = {
+      ...legacy,
+      position: { kind: 'image', index: imageIndex(12), shownThrough: imageIndex(12), offset: 7 },
+    };
+    expect(bookFromStored(stored).position).toEqual({
+      kind: 'image',
+      index: 12,
+      shownThrough: 12,
+      offset: 1,
+    });
   });
 
   it('reads a stored text place back whole', () => {
@@ -121,6 +180,7 @@ describe('bookFromStored', () => {
       kind: 'image',
       index: 0,
       shownThrough: 0,
+      offset: 0,
     });
   });
 

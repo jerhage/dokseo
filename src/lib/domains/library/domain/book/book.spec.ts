@@ -28,6 +28,7 @@ describe('applyEdit', () => {
       kind: 'image',
       index: 7,
       shownThrough: 7,
+      offset: 0,
     });
   });
 
@@ -36,6 +37,7 @@ describe('applyEdit', () => {
       kind: 'image',
       index: 0,
       shownThrough: 0,
+      offset: 0,
     });
   });
 
@@ -68,7 +70,7 @@ describe('applyEdit', () => {
     const edited = applyEdit(book, { title: 'Blame! 1', position: imagePlace(imageIndex(7)) });
     expect(edited).not.toBe(book);
     expect(book.title).toBe('Yotsuba&! 1');
-    expect(book.position).toEqual({ kind: 'image', index: 3, shownThrough: 3 });
+    expect(book.position).toEqual({ kind: 'image', index: 3, shownThrough: 3, offset: 0 });
   });
 
   it('stamps the time the book was last read', () => {
@@ -190,7 +192,7 @@ describe('defaultPageFit', () => {
 
 describe('startingPlace', () => {
   it('starts a paged book on its first image', () => {
-    expect(startingPlace(book)).toEqual({ kind: 'image', index: 0, shownThrough: 0 });
+    expect(startingPlace(book)).toEqual({ kind: 'image', index: 0, shownThrough: 0, offset: 0 });
   });
 
   it('starts a continuous book on its first image', () => {
@@ -198,6 +200,7 @@ describe('startingPlace', () => {
       kind: 'image',
       index: 0,
       shownThrough: 0,
+      offset: 0,
     });
   });
 

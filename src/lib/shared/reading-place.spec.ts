@@ -13,11 +13,21 @@ import type { ReadingPlace } from './reading-place';
 
 describe('imagePlace', () => {
   it('holds the image index it was given', () => {
-    expect(imagePlace(imageIndex(7))).toEqual({ kind: 'image', index: 7, shownThrough: 7 });
+    expect(imagePlace(imageIndex(7))).toEqual({
+      kind: 'image',
+      index: 7,
+      shownThrough: 7,
+      offset: 0,
+    });
   });
 
   it('holds the first image without treating it as absent', () => {
-    expect(imagePlace(imageIndex(0))).toEqual({ kind: 'image', index: 0, shownThrough: 0 });
+    expect(imagePlace(imageIndex(0))).toEqual({
+      kind: 'image',
+      index: 0,
+      shownThrough: 0,
+      offset: 0,
+    });
   });
 
   it('holds the last image shown beside the image the place opens at', () => {
@@ -25,6 +35,7 @@ describe('imagePlace', () => {
       kind: 'image',
       index: 3,
       shownThrough: 4,
+      offset: 0,
     });
   });
 
@@ -33,7 +44,31 @@ describe('imagePlace', () => {
       kind: 'image',
       index: 5,
       shownThrough: 5,
+      offset: 0,
     });
+  });
+});
+
+describe('the offset an image place carries', () => {
+  it('holds the top of the image when it is given no offset', () => {
+    expect(imagePlace(imageIndex(3)).offset).toBe(0);
+  });
+
+  it('holds the fraction down the image it was given', () => {
+    expect(imagePlace(imageIndex(3), imageIndex(3), 0.42).offset).toBe(0.42);
+  });
+
+  it('pulls an offset past the bottom of the image back to the bottom', () => {
+    expect(imagePlace(imageIndex(3), imageIndex(3), 1.5).offset).toBe(1);
+  });
+
+  it('pulls an offset above the top of the image back to the top', () => {
+    expect(imagePlace(imageIndex(3), imageIndex(3), -0.2).offset).toBe(0);
+  });
+
+  it('holds the top of the image for an offset that could not be measured', () => {
+    expect(imagePlace(imageIndex(3), imageIndex(3), Number.NaN).offset).toBe(0);
+    expect(imagePlace(imageIndex(3), imageIndex(3), Number.POSITIVE_INFINITY).offset).toBe(0);
   });
 });
 
@@ -133,6 +168,24 @@ describe('samePlace', () => {
 
   it('matches two image places at the same index', () => {
     expect(samePlace(imagePlace(imageIndex(7)), imagePlace(imageIndex(7)))).toBe(true);
+  });
+
+  it('separates two image places at the same index that sit at different offsets', () => {
+    expect(
+      samePlace(
+        imagePlace(imageIndex(7), imageIndex(7), 0.2),
+        imagePlace(imageIndex(7), imageIndex(7), 0.6),
+      ),
+    ).toBe(false);
+  });
+
+  it('matches two image places at the same index and the same offset', () => {
+    expect(
+      samePlace(
+        imagePlace(imageIndex(7), imageIndex(7), 0.6),
+        imagePlace(imageIndex(7), imageIndex(7), 0.6),
+      ),
+    ).toBe(true);
   });
 
   it('separates two image places at different indexes', () => {

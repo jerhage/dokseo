@@ -237,7 +237,7 @@ class ReaderView {
     this.status = this.groups.length === 0 ? 'empty' : 'ready';
     if (place === null) return;
 
-    this.position = readingPosition(place.index, 0);
+    this.position = readingPosition(place.index, place.offset);
     this.#placed =
       saved.kind === 'image' && saved.index === place.index ? saved : imagePlace(place.index);
     if (place.clamped) {
@@ -323,7 +323,7 @@ class ReaderView {
     if (position.index === held.index && position.offset === held.offset) return;
 
     this.position = position;
-    this.#scheduleSave(book.id, imagePlace(position.index, shownThrough));
+    this.#scheduleSave(book.id, imagePlace(position.index, shownThrough, position.offset));
   }
 
   async setLayoutKind(kind: ImageLayoutKind): Promise<void> {

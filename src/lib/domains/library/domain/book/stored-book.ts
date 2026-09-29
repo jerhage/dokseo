@@ -3,7 +3,12 @@ import { contentHash } from '$lib/shared/ids';
 import type { ContentHash, ImageIndex } from '$lib/shared/ids';
 import type { PagePairing } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
-import { imagePlace, NO_FRACTION_REPORTED, textPlace } from '$lib/shared/reading-place';
+import {
+  imagePlace,
+  NO_FRACTION_REPORTED,
+  textPlace,
+  TOP_OF_THE_IMAGE,
+} from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
@@ -13,7 +18,12 @@ const NO_CONTENT_HASH = contentHash('');
 const NO_FILE_NAME = '';
 
 type StoredPlace =
-  | { readonly kind: 'image'; readonly index: ImageIndex; readonly shownThrough?: ImageIndex }
+  | {
+      readonly kind: 'image';
+      readonly index: ImageIndex;
+      readonly shownThrough?: ImageIndex;
+      readonly offset?: number;
+    }
   | { readonly kind: 'text'; readonly cfi: string; readonly fraction?: number | null };
 
 type StoredBook = Omit<
@@ -32,7 +42,9 @@ type StoredBook = Omit<
 function storedPlace(position: ImageIndex | StoredPlace): ReadingPlace {
   return match(position)
     .with(P.number, (index) => imagePlace(index))
-    .with({ kind: 'image' }, (at) => imagePlace(at.index, at.shownThrough ?? at.index))
+    .with({ kind: 'image' }, (at) =>
+      imagePlace(at.index, at.shownThrough ?? at.index, at.offset ?? TOP_OF_THE_IMAGE),
+    )
     .with({ kind: 'text' }, (at) => textPlace(at.cfi, at.fraction ?? NO_FRACTION_REPORTED))
     .exhaustive();
 }

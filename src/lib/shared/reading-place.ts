@@ -5,6 +5,7 @@ type ImagePlace = {
   readonly kind: 'image';
   readonly index: ImageIndex;
   readonly shownThrough: ImageIndex;
+  readonly offset: number;
 };
 
 type TextPlace = { readonly kind: 'text'; readonly cfi: string; readonly fraction: number | null };
@@ -13,14 +14,33 @@ type ReadingPlace = ImagePlace | TextPlace;
 
 const WHEREVER_THE_BOOK_STARTS = '';
 
+const TOP_OF_THE_IMAGE = 0;
+
+const BOTTOM_OF_THE_IMAGE = 1;
+
 const NO_FRACTION_REPORTED = null;
 
 const THE_END_OF_THE_TEXT = 1;
 
 const ROUNDING_SHORT_OF_THE_END = 1e-9;
 
-function imagePlace(index: ImageIndex, shownThrough: ImageIndex = index): ImagePlace {
-  return { kind: 'image', index, shownThrough: imageIndex(Math.max(index, shownThrough)) };
+function withinTheImage(offset: number): number {
+  if (!Number.isFinite(offset)) return TOP_OF_THE_IMAGE;
+
+  return Math.min(BOTTOM_OF_THE_IMAGE, Math.max(TOP_OF_THE_IMAGE, offset));
+}
+
+function imagePlace(
+  index: ImageIndex,
+  shownThrough: ImageIndex = index,
+  offset: number = TOP_OF_THE_IMAGE,
+): ImagePlace {
+  return {
+    kind: 'image',
+    index,
+    shownThrough: imageIndex(Math.max(index, shownThrough)),
+    offset: withinTheImage(offset),
+  };
 }
 
 function withinTheBook(fraction: number | null): number | null {
@@ -43,7 +63,10 @@ function resumedCfi(place: ReadingPlace): string | null {
 function samePlace(one: ReadingPlace, other: ReadingPlace): boolean {
   if (one.kind === 'image') {
     return (
-      other.kind === 'image' && one.index === other.index && one.shownThrough === other.shownThrough
+      other.kind === 'image' &&
+      one.index === other.index &&
+      one.shownThrough === other.shownThrough &&
+      one.offset === other.offset
     );
   }
 
@@ -77,5 +100,6 @@ export {
   showsTheEnd,
   START_OF_THE_TEXT,
   textPlace,
+  TOP_OF_THE_IMAGE,
 };
 export type { ImagePlace, ReadingPlace };

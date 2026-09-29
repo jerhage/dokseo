@@ -56,6 +56,7 @@ describe('openingPlace', () => {
   it('opens at the saved place when the url asks for nothing', () => {
     expect(openingPlace(null, imagePlace(imageIndex(12)), 40)).toEqual({
       index: 12,
+      offset: 0,
       asked: false,
       clamped: false,
     });
@@ -64,6 +65,7 @@ describe('openingPlace', () => {
   it('prefers the url over the saved place', () => {
     expect(openingPlace(imageIndex(3), imagePlace(imageIndex(12)), 40)).toEqual({
       index: 3,
+      offset: 0,
       asked: true,
       clamped: false,
     });
@@ -72,6 +74,7 @@ describe('openingPlace', () => {
   it('clamps an index past the end to the last image', () => {
     expect(openingPlace(imageIndex(99), imagePlace(imageIndex(12)), 40)).toEqual({
       index: 39,
+      offset: 0,
       asked: true,
       clamped: true,
     });
@@ -80,9 +83,41 @@ describe('openingPlace', () => {
   it('clamps a saved place past the end without calling it a url clamp', () => {
     expect(openingPlace(null, imagePlace(imageIndex(99)), 40)).toEqual({
       index: 39,
+      offset: 0,
       asked: false,
       clamped: false,
     });
+  });
+
+  it('opens at the offset the saved place holds when the url asks for nothing', () => {
+    expect(openingPlace(null, imagePlace(imageIndex(12), imageIndex(12), 0.6), 40)).toEqual({
+      index: 12,
+      offset: 0.6,
+      asked: false,
+      clamped: false,
+    });
+  });
+
+  it('opens at the offset the saved place holds when the url names the same image', () => {
+    expect(
+      openingPlace(imageIndex(12), imagePlace(imageIndex(12), imageIndex(12), 0.6), 40)?.offset,
+    ).toBe(0.6);
+  });
+
+  it('opens at the top of an image the url names that is not the saved one', () => {
+    expect(
+      openingPlace(imageIndex(3), imagePlace(imageIndex(12), imageIndex(12), 0.6), 40)?.offset,
+    ).toBe(0);
+  });
+
+  it('opens at the top of the last image when a saved place past the end is clamped', () => {
+    expect(openingPlace(null, imagePlace(imageIndex(99), imageIndex(99), 0.6), 40)?.offset).toBe(0);
+  });
+
+  it('opens at the top of an image the url names when the book stopped at a text place', () => {
+    expect(
+      openingPlace(imageIndex(3), textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.5), 40)?.offset,
+    ).toBe(0);
   });
 
   it('reports no place for a book holding no images', () => {
@@ -96,6 +131,7 @@ describe('openingPlace', () => {
   it('opens at the url when the book stopped at a text place', () => {
     expect(openingPlace(imageIndex(3), textPlace('epubcfi(/6/14!/4/2/14/1:0)', null), 40)).toEqual({
       index: 3,
+      offset: 0,
       asked: true,
       clamped: false,
     });

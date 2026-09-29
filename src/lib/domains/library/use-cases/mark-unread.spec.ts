@@ -70,7 +70,7 @@ describe('markUnread', () => {
         edit: {
           finishedAt: null,
           lastReadAt: null,
-          position: { kind: 'image', index: 0, shownThrough: 0 },
+          position: { kind: 'image', index: 0, shownThrough: 0, offset: 0 },
         },
       },
     ]);

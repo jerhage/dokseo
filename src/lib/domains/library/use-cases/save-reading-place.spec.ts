@@ -65,7 +65,10 @@ describe('saveReadingPlace', () => {
     expect(fake.updates).toEqual([
       {
         id: 'book-7',
-        edit: { position: { kind: 'image', index: 12, shownThrough: 12 }, lastReadAt: NOW },
+        edit: {
+          position: { kind: 'image', index: 12, shownThrough: 12, offset: 0 },
+          lastReadAt: NOW,
+        },
       },
     ]);
   });

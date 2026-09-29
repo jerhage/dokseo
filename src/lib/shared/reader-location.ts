@@ -4,6 +4,7 @@ import type { ImageRect } from './geometry';
 import { imageIndex } from './ids';
 import type { BookId, ImageIndex } from './ids';
 import type { ImageRegion } from './image-region';
+import { TOP_OF_THE_IMAGE } from './reading-place';
 import type { ReadingPlace } from './reading-place';
 
 const IMAGE_PARAMETER = 'image';
@@ -47,6 +48,7 @@ type ShownPlace =
 
 type OpeningPlace = {
   readonly index: ImageIndex;
+  readonly offset: number;
   readonly asked: boolean;
   readonly clamped: boolean;
 };
@@ -78,8 +80,10 @@ function openingPlace(
   const wanted = asked ?? (saved.kind === 'image' ? saved.index : null);
   if (wanted === null) return null;
 
+  const index = imageIndex(Math.min(Math.max(wanted, 0), last));
   return {
-    index: imageIndex(Math.min(Math.max(wanted, 0), last)),
+    index,
+    offset: saved.kind === 'image' && saved.index === index ? saved.offset : TOP_OF_THE_IMAGE,
     asked: asked !== null,
     clamped: asked !== null && asked > last,
   };
