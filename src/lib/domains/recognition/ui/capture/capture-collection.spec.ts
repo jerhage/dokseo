@@ -268,7 +268,7 @@ describe('CaptureCollection arrivals', () => {
     return {
       id: captureId(id),
       bookId: ONE,
-      anchor: textAnchor(cfi, QUOTE),
+      anchor: textAnchor(cfi, QUOTE, null),
       text: '灯台',
       note: null,
       origin: 'lifted',

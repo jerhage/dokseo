@@ -22,7 +22,7 @@ const LIFTED: ArrivalCapture = {
   origin: 'lifted',
   text: '海',
   note: null,
-  anchor: textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }),
+  anchor: textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }, null),
 };
 
 describe('arrivalGlow', () => {

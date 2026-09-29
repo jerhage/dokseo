@@ -49,10 +49,15 @@ function regional(name: string, id: string, tags: readonly TagId[], index = 0): 
   };
 }
 
-function textual(name: string, id: string, tags: readonly TagId[]): Capture {
+function textual(
+  name: string,
+  id: string,
+  tags: readonly TagId[],
+  chapter: string | null = null,
+): Capture {
   return {
     ...regional(name, id, tags),
-    anchor: textAnchor('epubcfi(/6/2)', { exact: name, prefix: '', suffix: '' }),
+    anchor: textAnchor('epubcfi(/6/2)', { exact: name, prefix: '', suffix: '' }, chapter),
   };
 }
 
@@ -128,7 +133,10 @@ describe('taggedShelves', () => {
   const groups: readonly BookMatches<Capture>[] = [
     {
       book: book('one'),
-      captures: [regional('first', 'one', [SFX.id, KEIGO.id], 4), textual('flowing', 'one', [])],
+      captures: [
+        regional('first', 'one', [SFX.id, KEIGO.id], 4),
+        textual('flowing', 'one', [], '第一章'),
+      ],
     },
     { book: book('two'), captures: [textual('only text', 'two', [SFX.id])] },
     { book: book('three'), captures: [regional('second', 'three', [SFX.id], 0)] },
@@ -159,10 +167,14 @@ describe('taggedShelves', () => {
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');
   });
 
-  it('links a capture anchored in text to its passage by its cfi, with no page', () => {
+  it('links a capture anchored in text to its passage by its cfi, in no chapter', () => {
     expect(shelves[1]?.rows[0]?.href).toBe('/read/two?cfi=epubcfi(%2F6%2F2)');
     expect(shelves[1]?.rows[0]?.jump).toBe('Jump to the passage');
-    expect(shelves[1]?.rows[0]?.place).toBe('no page');
+    expect(shelves[1]?.rows[0]?.place).toBe('no chapter');
+  });
+
+  it('shows the chapter a capture anchored in text was lifted from as its place', () => {
+    expect(shelves[0]?.rows[1]?.place).toBe('第一章');
   });
 
   it('opens the book for a capture anchored to no region at all', () => {

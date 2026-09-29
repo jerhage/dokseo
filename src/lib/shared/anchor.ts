@@ -10,6 +10,7 @@ type TextAnchor = {
   readonly kind: 'text';
   readonly cfi: string;
   readonly quote: TextQuote;
+  readonly chapter: string | null;
 };
 
 type SoughtPassage = {
@@ -23,8 +24,8 @@ function regionAnchor(regions: readonly ImageRegion[]): Anchor {
   return { kind: 'region', regions };
 }
 
-function textAnchor(cfi: string, quote: TextQuote): Anchor {
-  return { kind: 'text', cfi, quote };
+function textAnchor(cfi: string, quote: TextQuote, chapter: string | null): Anchor {
+  return { kind: 'text', cfi, quote, chapter };
 }
 
 function sameAnchorKind(left: Anchor, right: Anchor): boolean {

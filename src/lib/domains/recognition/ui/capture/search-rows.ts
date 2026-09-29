@@ -1,3 +1,4 @@
+import type { Anchor } from '$lib/shared/anchor';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import { segmentsOf, textMatches } from '$lib/shared/text-search';
@@ -9,7 +10,7 @@ import type { QuickFinds } from '../../domain/capture/quick-find';
 import type { Tag } from '../../domain/tag/tag';
 import { markedLines } from './capture-lines';
 import { bookHref, captureLink } from './capture-link';
-import { firstImage, NO_PLACE, pageLabel } from './capture-place';
+import { firstImage, NO_PLACE, pageLabel, passageLabel } from './capture-place';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
 
@@ -87,8 +88,14 @@ function bookRow(shelf: SearchedBook, input: SearchRowsInput): BookRow {
   };
 }
 
+function rowPlace(anchor: Anchor): string {
+  if (anchor.kind === 'text') return passageLabel(anchor);
+
+  const index = firstImage(anchor);
+  return index === null ? NO_PLACE : `p.${pageLabel(index)}`;
+}
+
 function captureRow(shelf: SearchedBook, capture: Capture, input: SearchRowsInput): CaptureRow {
-  const index = firstImage(capture.anchor);
   const lit = new Set(matchedTagIds(capture, input.tags, input.query));
   const lines = markedLines(capture, input.query);
 
@@ -96,7 +103,7 @@ function captureRow(shelf: SearchedBook, capture: Capture, input: SearchRowsInpu
     kind: 'capture',
     key: capture.id,
     href: captureLink(shelf.id, capture, input.query).href,
-    place: index === null ? NO_PLACE : `p.${pageLabel(index)}`,
+    place: rowPlace(capture.anchor),
     title: shelf.id === input.book ? null : shelf.title,
     language: shelf.language,
     cover: input.covers.get(shelf.id) ?? null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import type { Anchor } from '$lib/shared/anchor';
+import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -28,11 +28,9 @@ const REGIONS: readonly ImageRegion[] = [
 
 const ANCHOR: Anchor = regionAnchor(REGIONS);
 
-const QUOTED: Anchor = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', {
-  exact: 'こっちに来て',
-  prefix: 'そして',
-  suffix: 'と言った',
-});
+const QUOTE: TextQuote = { exact: 'こっちに来て', prefix: 'そして', suffix: 'と言った' };
+
+const QUOTED: Anchor = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', QUOTE, null);
 
 function draft(id: string, confidence: number | null = null): CaptureDraft {
   return {
@@ -207,6 +205,30 @@ describe('captureFromStored', () => {
     };
 
     expect(captureFromStored(stored).anchor).toEqual(QUOTED);
+  });
+
+  it('reads back the chapter a stored text anchor names', () => {
+    const named = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', QUOTE, '第一章');
+    const stored: StoredCapture = { id: captureId('a'), bookId: BOOK, anchor: named, text: '海' };
+
+    expect(captureFromStored(stored).anchor).toEqual(named);
+  });
+
+  it('reads a text anchor stored before chapters were kept as naming no chapter', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE },
+      text: 'こっちに来て',
+      createdAt: 42,
+    };
+
+    expect(captureFromStored(stored).anchor).toEqual({
+      kind: 'text',
+      cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)',
+      quote: QUOTE,
+      chapter: null,
+    });
   });
 
   it('prefers the anchor a record carries over the regions beside it', () => {

@@ -34,11 +34,11 @@ describe('regionAnchor', () => {
 
 describe('textAnchor', () => {
   it('builds an anchor of the text kind', () => {
-    expect(textAnchor('epubcfi(/6/4!/4/2/2/1:0)', quote).kind).toBe('text');
+    expect(textAnchor('epubcfi(/6/4!/4/2/2/1:0)', quote, null).kind).toBe('text');
   });
 
   it('keeps the cfi and the quote it was given', () => {
-    const anchor = textAnchor('epubcfi(/6/4!/4/2/2/1:0)', quote);
+    const anchor = textAnchor('epubcfi(/6/4!/4/2/2/1:0)', quote, null);
     if (anchor.kind !== 'text') throw new Error('expected a text anchor');
 
     expect(anchor.cfi).toBe('epubcfi(/6/4!/4/2/2/1:0)');
@@ -52,11 +52,11 @@ describe('sameAnchorKind', () => {
   });
 
   it('agrees for two text anchors', () => {
-    expect(sameAnchorKind(textAnchor('a', quote), textAnchor('b', quote))).toBe(true);
+    expect(sameAnchorKind(textAnchor('a', quote, null), textAnchor('b', quote, null))).toBe(true);
   });
 
   it('disagrees across the two kinds', () => {
-    expect(sameAnchorKind(regionAnchor([region(0)]), textAnchor('a', quote))).toBe(false);
-    expect(sameAnchorKind(textAnchor('a', quote), regionAnchor([region(0)]))).toBe(false);
+    expect(sameAnchorKind(regionAnchor([region(0)]), textAnchor('a', quote, null))).toBe(false);
+    expect(sameAnchorKind(textAnchor('a', quote, null), regionAnchor([region(0)]))).toBe(false);
   });
 });

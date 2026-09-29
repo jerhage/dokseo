@@ -1,17 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import type { Anchor } from '$lib/shared/anchor';
+import type { Anchor, TextAnchor, TextQuote } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
-import { capturedLabel, firstImage, NO_PLACE, placeLabel } from './capture-place';
+import {
+  capturedLabel,
+  firstImage,
+  NO_CHAPTER,
+  NO_PLACE,
+  passageLabel,
+  placeLabel,
+} from './capture-place';
 
 const NOW = 1_700_000_000_000;
 
-const QUOTED: Anchor = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', {
-  exact: 'こっちに来て',
-  prefix: 'そして',
-  suffix: 'と言った',
-});
+const QUOTED_CFI = 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)';
+
+const QUOTE: TextQuote = { exact: 'こっちに来て', prefix: 'そして', suffix: 'と言った' };
+
+const QUOTED: Anchor = textAnchor(QUOTED_CFI, QUOTE, null);
 
 function on(index: number) {
   return { index: imageIndex(index), rect: imageRect(0, 0, 100, 60) };
@@ -26,12 +33,28 @@ describe('placeLabel', () => {
     expect(placeLabel(regionAnchor([on(13), on(14)]))).toBe('p.014–015 · 2 regions');
   });
 
-  it('reports no page for a capture anchored to text', () => {
-    expect(placeLabel(QUOTED)).toBe(NO_PLACE);
+  it('names the chapter a capture anchored to text was lifted from', () => {
+    expect(placeLabel(textAnchor(QUOTED_CFI, QUOTE, '第三章　海辺'))).toBe('第三章　海辺');
+  });
+
+  it('reports no chapter for a capture anchored to text in no chapter', () => {
+    expect(placeLabel(QUOTED)).toBe(NO_CHAPTER);
   });
 
   it('reports no page for a capture anchored to no region at all', () => {
     expect(placeLabel(regionAnchor([]))).toBe(NO_PLACE);
+  });
+});
+
+describe('passageLabel', () => {
+  const passage: TextAnchor = { kind: 'text', cfi: QUOTED_CFI, quote: QUOTE, chapter: '제1장' };
+
+  it('shows the chapter title of the passage', () => {
+    expect(passageLabel(passage)).toBe('제1장');
+  });
+
+  it('falls back to no chapter when the passage names none', () => {
+    expect(passageLabel({ ...passage, chapter: null })).toBe('no chapter');
   });
 });
 

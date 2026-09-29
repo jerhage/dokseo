@@ -45,10 +45,15 @@ function written(id: string, text: string): PanelCapture {
   };
 }
 
-function lifted(id: string, text: string, note: string | null): PanelCapture {
+function lifted(
+  id: string,
+  text: string,
+  note: string | null,
+  chapter: string | null = null,
+): PanelCapture {
   return {
     id: captureId(id),
-    anchor: textAnchor('/6/4!/2', { exact: text, prefix: '', suffix: '' }),
+    anchor: textAnchor('/6/4!/2', { exact: text, prefix: '', suffix: '' }, chapter),
     tagIds: [],
     origin: 'lifted',
     note,
@@ -174,6 +179,12 @@ describe('card projection', () => {
     const cards = cardsOf([lifted('c1', 'ねこ', null)]).cards;
 
     expect(cards[0]?.href).toBeNull();
+  });
+
+  it('shows the chapter a lifted capture came from as its place', () => {
+    const cards = cardsOf([lifted('c1', 'ねこ', null, '第一章'), lifted('c2', 'いぬ', null)]).cards;
+
+    expect(cards.map((card) => card.place)).toEqual(['第一章', 'no chapter']);
   });
 
   it('offers a passage only when the panel can seek', () => {

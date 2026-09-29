@@ -52,7 +52,11 @@ function liftedCapture(name: string, id: string, text: string, note: string | nu
     name,
     origin: 'lifted',
     bookId: bookId(id),
-    anchor: textAnchor(`epubcfi(/6/14!/4/2/${name}:0)`, { exact: text, prefix: '', suffix: '' }),
+    anchor: textAnchor(
+      `epubcfi(/6/14!/4/2/${name}:0)`,
+      { exact: text, prefix: '', suffix: '' },
+      null,
+    ),
     text,
     note,
   };

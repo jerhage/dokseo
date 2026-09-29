@@ -29,6 +29,7 @@ type LiftPlacement =
 type LiftedPassage = {
   readonly cfi: string;
   readonly quote: TextQuote;
+  readonly chapter: string | null;
 };
 
 type SelectionSeen = {

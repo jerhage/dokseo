@@ -108,7 +108,7 @@
     book={flowBook}
     panelCount={captures.count}
     anchors={captures.anchors}
-    onLift={(passage) => captures.lift(passage.cfi, passage.quote)}
+    onLift={(passage) => captures.lift(passage.cfi, passage.quote, passage.chapter)}
     onsearch={() => search?.searchThisBook()}
   >
     {#snippet panel()}

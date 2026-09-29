@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
-import { regionAnchor } from '$lib/shared/anchor';
-import type { Anchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
+import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -49,11 +49,17 @@ type Capture = RecognizedCapture | WrittenCapture | LiftedCapture;
 
 type NotableCapture = RecognizedCapture | LiftedCapture;
 
+type StoredTextAnchor = Omit<TextAnchor, 'chapter'> & {
+  readonly chapter?: string | null;
+};
+
+type StoredAnchor = Exclude<Anchor, TextAnchor> | StoredTextAnchor;
+
 type StoredCapture = {
   readonly id: CaptureId;
   readonly bookId: BookId;
   readonly text: string;
-  readonly anchor?: Anchor;
+  readonly anchor?: StoredAnchor;
   readonly regions?: readonly ImageRegion[];
   readonly note?: string | null;
   readonly confidence?: number | null;
@@ -73,8 +79,16 @@ function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
     .exhaustive();
 }
 
+function anchorFromStored(anchor: StoredAnchor): Anchor {
+  if (anchor.kind === 'region') return anchor;
+
+  return textAnchor(anchor.cfi, anchor.quote, anchor.chapter ?? null);
+}
+
 function storedAnchor(stored: StoredCapture): Anchor {
-  return stored.anchor ?? regionAnchor(stored.regions ?? []);
+  if (stored.anchor === undefined) return regionAnchor(stored.regions ?? []);
+
+  return anchorFromStored(stored.anchor);
 }
 
 function storedOrigin(stored: StoredCapture): CaptureOrigin {
@@ -144,5 +158,6 @@ export type {
   NotableCapture,
   RecognizedCapture,
   WrittenCapture,
+  StoredAnchor,
   StoredCapture,
 };

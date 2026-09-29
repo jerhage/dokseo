@@ -230,12 +230,17 @@ class CaptureView {
     this.#collection.note(regions);
   }
 
-  lift(cfi: string, quote: TextQuote): void {
-    this.#collection.lift(cfi, quote);
+  lift(cfi: string, quote: TextQuote, chapter: string | null): void {
+    this.#collection.lift(cfi, quote, chapter);
   }
 
-  async keepLifted(book: BookId, cfi: string, quote: TextQuote): Promise<void> {
-    await this.#collection.keepLifted(book, cfi, quote);
+  async keepLifted(
+    book: BookId,
+    cfi: string,
+    quote: TextQuote,
+    chapter: string | null,
+  ): Promise<void> {
+    await this.#collection.keepLifted(book, cfi, quote, chapter);
   }
 
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {

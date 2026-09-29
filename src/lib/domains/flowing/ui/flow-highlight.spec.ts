@@ -39,7 +39,7 @@ function drawn(passages: Readonly<Record<string, PassageWeight>>): Map<string, P
 }
 
 function lifted(cfi: string): Anchor {
-  return textAnchor(cfi, QUOTE);
+  return textAnchor(cfi, QUOTE, null);
 }
 
 function onAPage(): Anchor {

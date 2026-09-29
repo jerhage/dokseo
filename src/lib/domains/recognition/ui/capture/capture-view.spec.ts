@@ -1832,23 +1832,23 @@ describe('CaptureView lifted passages', () => {
     suffix: 'と言った',
   };
 
-  it('puts a lifted passage in the panel and in the store, anchored to its cfi', async () => {
+  it('puts a lifted passage in the panel and in the store, anchored to its cfi and chapter', async () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
     await view.open(ONE);
 
-    await view.keepLifted(ONE, CFI, QUOTE);
+    await view.keepLifted(ONE, CFI, QUOTE, '第一章');
 
     const card = at(view.captures, 0);
     expect(card.origin).toBe('lifted');
     expect(card.status === 'done' ? card.text.text : null).toBe('こっちに来て');
-    expect(card.anchor).toEqual(textAnchor(CFI, QUOTE));
+    expect(card.anchor).toEqual(textAnchor(CFI, QUOTE, '第一章'));
 
     const row = at(world.store.rows, 0);
     expect(row.origin).toBe('lifted');
     expect(row.text).toBe('こっちに来て');
     expect(row.bookId).toBe(ONE);
-    expect(row.anchor).toEqual(textAnchor(CFI, QUOTE));
+    expect(row.anchor).toEqual(textAnchor(CFI, QUOTE, '第一章'));
   });
 
   it('marks a lifted passage it could not store as failed and reports it once', async () => {
@@ -1857,7 +1857,7 @@ describe('CaptureView lifted passages', () => {
     const view = new CaptureView(world.container, world.notify);
     await view.open(ONE);
 
-    await view.keepLifted(ONE, CFI, QUOTE);
+    await view.keepLifted(ONE, CFI, QUOTE, null);
 
     expect(at(view.captures, 0)).toMatchObject({ origin: 'lifted', status: 'failed' });
     expect(told(world)).toEqual(['danger: The capture could not be saved']);
@@ -1867,7 +1867,7 @@ describe('CaptureView lifted passages', () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
 
-    view.lift(CFI, QUOTE);
+    view.lift(CFI, QUOTE, null);
 
     expect(view.captures).toEqual([]);
     expect(world.store.rows).toEqual([]);
@@ -1878,7 +1878,7 @@ describe('CaptureView lifted passages', () => {
     const view = new CaptureView(world.container, world.notify);
     await view.open(ONE);
 
-    view.lift(CFI, { exact: '  \n ', prefix: '', suffix: '' });
+    view.lift(CFI, { exact: '  \n ', prefix: '', suffix: '' }, null);
 
     expect(view.captures).toEqual([]);
     expect(world.store.rows).toEqual([]);
@@ -1888,7 +1888,7 @@ describe('CaptureView lifted passages', () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
     await view.open(ONE);
-    await view.keepLifted(ONE, CFI, QUOTE);
+    await view.keepLifted(ONE, CFI, QUOTE, null);
     const lifted = at(view.captures, 0).id;
 
     await view.annotate(lifted, 'he means his sister');
@@ -1903,7 +1903,7 @@ describe('CaptureView lifted passages', () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
     await view.open(ONE);
-    await view.keepLifted(ONE, CFI, QUOTE);
+    await view.keepLifted(ONE, CFI, QUOTE, null);
     const lifted = at(view.captures, 0).id;
     await view.annotate(lifted, '海の音');
 

@@ -1472,6 +1472,7 @@ describe('FlowView arriveAt', () => {
     kind: 'text',
     cfi: SOMEWHERE,
     quote: { exact: '厳重に鍵', prefix: '', suffix: '' },
+    chapter: null,
   };
 
   const ELSEWHERE: TextAnchor = { ...PASSAGE, cfi: 'epubcfi(/6/20!/4/2/1:0)' };

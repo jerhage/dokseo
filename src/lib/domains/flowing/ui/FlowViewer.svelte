@@ -318,7 +318,12 @@
     offer = null;
     if (held === null) return;
 
-    const passage = selectedPassage(held.chapter.doc, held.chapter.index, held.chapter.cfis);
+    const passage = selectedPassage(
+      held.chapter.doc,
+      held.chapter.index,
+      held.chapter.cfis,
+      held.chapter.titles,
+    );
     for (const doc of chapters) forgetSelection(doc);
     if (passage === null) return;
 

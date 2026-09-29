@@ -331,7 +331,7 @@ class CaptureCollection {
     }
   }
 
-  lift(cfi: string, quote: TextQuote): void {
+  lift(cfi: string, quote: TextQuote, chapter: string | null): void {
     const book = this.#book;
     const trace = this.#container.beginTrace('lift');
     try {
@@ -346,16 +346,21 @@ class CaptureCollection {
       }
 
       trace.step('dispatched', { characters: quote.exact.length });
-      void this.keepLifted(book, cfi, quote);
+      void this.keepLifted(book, cfi, quote, chapter);
     } finally {
       trace.end();
     }
   }
 
-  async keepLifted(book: BookId, cfi: string, quote: TextQuote): Promise<void> {
+  async keepLifted(
+    book: BookId,
+    cfi: string,
+    quote: TextQuote,
+    chapter: string | null,
+  ): Promise<void> {
     const generation = this.#generation;
     const id = captureId(crypto.randomUUID());
-    const anchor = textAnchor(cfi, quote);
+    const anchor = textAnchor(cfi, quote, chapter);
     const text = recognizedText(quote.exact, null);
     this.captures = [
       ...this.captures,

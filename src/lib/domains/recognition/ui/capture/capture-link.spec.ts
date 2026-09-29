@@ -4,7 +4,7 @@ import { imageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { captureLink } from './capture-link';
 
-const PASSAGE = textAnchor('epubcfi(/6/4!/4/2/1:0)', { exact: '海', prefix: '', suffix: '' });
+const PASSAGE = textAnchor('epubcfi(/6/4!/4/2/1:0)', { exact: '海', prefix: '', suffix: '' }, null);
 
 const PAGE = regionAnchor([{ index: imageIndex(6), rect: imageRect(0, 0, 10, 10) }]);
 

@@ -17,7 +17,7 @@ function at(name: string, index: number, x: number, y: number, width = 100, heig
 function quoted(name: string, exact: string): Placed {
   return {
     name,
-    anchor: textAnchor(`epubcfi(/6/14!/4/2/${name})`, { exact, prefix: '', suffix: '' }),
+    anchor: textAnchor(`epubcfi(/6/14!/4/2/${name})`, { exact, prefix: '', suffix: '' }, null),
   };
 }
 

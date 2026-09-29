@@ -1,10 +1,16 @@
+import type { TocProgress } from 'foliate-js/view.js';
 import type { TextQuote } from '$lib/shared/anchor';
 import { liftsAnything, passageQuote } from './flow-lift';
 import type { LiftRect, LiftedPassage } from './flow-lift';
+import { reportedChapter } from './flow-progress';
 import { locateQuote, pointIn } from './flow-quote';
 
 type ChapterCfis = {
   getCFI(index: number, range: Range): string;
+};
+
+type ChapterTitles = {
+  getProgressOf(index: number, range: Range): TocProgress;
 };
 
 const RUBY_READINGS = 'rt, rp';
@@ -53,7 +59,20 @@ function shownSelection(doc: Document): readonly LiftRect[] {
   return [...range.getClientRects()];
 }
 
-function selectedPassage(doc: Document, index: number, cfis: ChapterCfis): LiftedPassage | null {
+function passageChapter(titles: ChapterTitles, index: number, range: Range): string | null {
+  try {
+    return reportedChapter(titles.getProgressOf(index, range).tocItem?.label);
+  } catch {
+    return null;
+  }
+}
+
+function selectedPassage(
+  doc: Document,
+  index: number,
+  cfis: ChapterCfis,
+  titles: ChapterTitles,
+): LiftedPassage | null {
   const range = selectedRange(doc);
   if (range === null) return null;
 
@@ -61,7 +80,7 @@ function selectedPassage(doc: Document, index: number, cfis: ChapterCfis): Lifte
     const quote = quoteAround(doc, range);
     if (!liftsAnything(quote.exact)) return null;
 
-    return { cfi: cfis.getCFI(index, range), quote };
+    return { cfi: cfis.getCFI(index, range), quote, chapter: passageChapter(titles, index, range) };
   } catch {
     return null;
   }
@@ -114,5 +133,12 @@ function forgetSelection(doc: Document): void {
   doc.getSelection()?.removeAllRanges();
 }
 
-export { NOTHING_IS_SELECTED, forgetSelection, quoteRange, selectedPassage, shownSelection };
-export type { ChapterCfis };
+export {
+  NOTHING_IS_SELECTED,
+  forgetSelection,
+  passageChapter,
+  quoteRange,
+  selectedPassage,
+  shownSelection,
+};
+export type { ChapterCfis, ChapterTitles };

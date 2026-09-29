@@ -164,14 +164,14 @@ describe('soughtPassage', () => {
   const QUOTE = { exact: '灯台', prefix: 'あの', suffix: 'へ' };
 
   it('seeks the cfi with the quote of a passage lifted at exactly that cfi', () => {
-    expect(soughtPassage([at(0, 0, 0), textAnchor(CFI, QUOTE)], CFI)).toEqual({
+    expect(soughtPassage([at(0, 0, 0), textAnchor(CFI, QUOTE, null)], CFI)).toEqual({
       cfi: CFI,
       quote: QUOTE,
     });
   });
 
   it('seeks the cfi alone when no capture was lifted there', () => {
-    expect(soughtPassage([textAnchor('epubcfi(/6/2)', QUOTE)], CFI)).toEqual({
+    expect(soughtPassage([textAnchor('epubcfi(/6/2)', QUOTE, null)], CFI)).toEqual({
       cfi: CFI,
       quote: null,
     });

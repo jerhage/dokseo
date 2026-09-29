@@ -22,7 +22,7 @@ import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import { quoteRange } from './flow-passage';
-import type { ChapterCfis } from './flow-passage';
+import type { ChapterCfis, ChapterTitles } from './flow-passage';
 import { match } from 'ts-pattern';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 import type { PassageArrival } from './flow-quote';
@@ -54,6 +54,7 @@ type ChapterView = {
   readonly index: number;
   readonly pages: PageTurner;
   readonly cfis: ChapterCfis;
+  readonly titles: ChapterTitles;
 };
 
 type BindChapter = (chapter: ChapterView) => void;
@@ -281,7 +282,13 @@ async function openFlowSurface(
     });
   });
   view.addEventListener('load', (loaded) => {
-    bind({ doc: loaded.detail.doc, index: loaded.detail.index, pages: view, cfis: view });
+    bind({
+      doc: loaded.detail.doc,
+      index: loaded.detail.index,
+      pages: view,
+      cfis: view,
+      titles: view,
+    });
   });
   view.addEventListener('relocate', (moved) => {
     opening.moved(moved.detail);

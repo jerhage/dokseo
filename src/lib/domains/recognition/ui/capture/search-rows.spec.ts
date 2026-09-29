@@ -140,7 +140,7 @@ describe('searchRows', () => {
   });
 
   it('opens the book at the passage for a capture anchored in text, carrying the search', () => {
-    const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' });
+    const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }, null);
     const found = {
       books: [],
       captures: [{ book: ONE, captures: [written('t', ONE, '海', anchor)] }],
@@ -149,11 +149,21 @@ describe('searchRows', () => {
     const row = captureAt(searchRows(input(found)).rows, 0);
 
     expect(row.href).toBe('/read/one?cfi=epubcfi(%2F6%2F2)&find=%E6%B5%B7');
-    expect(row.place).toBe('no page');
+    expect(row.place).toBe('no chapter');
+  });
+
+  it('shows the chapter a capture anchored in text was lifted from as its place', () => {
+    const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }, '第二章');
+    const found = {
+      books: [],
+      captures: [{ book: ONE, captures: [written('t', ONE, '海', anchor)] }],
+    };
+
+    expect(captureAt(searchRows(input(found)).rows, 0).place).toBe('第二章');
   });
 
   it('names the passage by its cfi, with no capture id and no image, when it links a passage in the current book', () => {
-    const anchor = textAnchor('epubcfi(/6/4)', { exact: '海', prefix: '', suffix: '' });
+    const anchor = textAnchor('epubcfi(/6/4)', { exact: '海', prefix: '', suffix: '' }, null);
     const found = {
       books: [],
       captures: [{ book: ONE, captures: [written('lifted', ONE, '海', anchor)] }],

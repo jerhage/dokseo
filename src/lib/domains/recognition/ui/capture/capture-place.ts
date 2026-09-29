@@ -1,14 +1,20 @@
-import type { Anchor } from '$lib/shared/anchor';
+import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { ImageIndex } from '$lib/shared/ids';
 
 const NO_PLACE = 'no page';
+
+const NO_CHAPTER = 'no chapter';
 
 function pageLabel(index: ImageIndex): string {
   return String(index + 1).padStart(3, '0');
 }
 
+function passageLabel(anchor: TextAnchor): string {
+  return anchor.chapter ?? NO_CHAPTER;
+}
+
 function placeLabel(anchor: Anchor): string {
-  if (anchor.kind === 'text') return NO_PLACE;
+  if (anchor.kind === 'text') return passageLabel(anchor);
 
   const regions = anchor.regions;
   const first = regions[0];
@@ -47,4 +53,4 @@ function capturedLabel(createdAt: number, now: number): string | null {
   return `captured ${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-export { NO_PLACE, pageLabel, placeLabel, firstImage, capturedLabel };
+export { NO_CHAPTER, NO_PLACE, pageLabel, passageLabel, placeLabel, firstImage, capturedLabel };

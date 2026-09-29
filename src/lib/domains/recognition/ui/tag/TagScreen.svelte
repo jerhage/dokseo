@@ -208,7 +208,7 @@
                       <span class="col gap-1 flex-1">
                         <span class="text-base" lang={shelf.language}>{row.text}</span>
                         <span class="row wrap items-center gap-2 text-xs text-muted">
-                          <span class="mono">{row.place}</span>
+                          <span class="mono truncate min-w-0">{row.place}</span>
                           {#if row.when !== null}
                             <span>{row.when}</span>
                           {/if}

@@ -81,6 +81,10 @@ declare module 'foliate-js/view.js' {
     tocItem?: TocItem | null;
   }
 
+  interface TocProgress {
+    tocItem?: TocItem | null;
+  }
+
   interface FractionTarget {
     fraction: number;
   }
@@ -100,6 +104,7 @@ declare module 'foliate-js/view.js' {
     open(book: FoliateBook): Promise<void>;
     goTo(target: number | string | FractionTarget): Promise<unknown>;
     getCFI(index: number, range?: Range): string;
+    getProgressOf(index: number, range?: Range): TocProgress;
     resolveNavigation(target: number | string | FractionTarget): ResolvedTarget | null | undefined;
     goLeft(): Promise<void>;
     goRight(): Promise<void>;
@@ -141,6 +146,7 @@ declare module 'foliate-js/view.js' {
     ResourceDetail,
     ResourceEvent,
     TocItem,
+    TocProgress,
     TransformTarget,
     ViewEventMap,
   };

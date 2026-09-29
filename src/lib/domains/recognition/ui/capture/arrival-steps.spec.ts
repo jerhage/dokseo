@@ -22,11 +22,15 @@ const IN_TEXT: ArrivalCapture = {
   origin: 'lifted',
   text: 'ねこ',
   note: null,
-  anchor: textAnchor('epubcfi(/6/4!/4/2,/1:0,/1:2)', {
-    exact: 'ねこ',
-    prefix: '',
-    suffix: '',
-  }),
+  anchor: textAnchor(
+    'epubcfi(/6/4!/4/2,/1:0,/1:2)',
+    {
+      exact: 'ねこ',
+      prefix: '',
+      suffix: '',
+    },
+    null,
+  ),
 };
 
 describe('arrivalSteps', () => {
