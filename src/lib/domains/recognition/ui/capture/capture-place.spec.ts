@@ -6,8 +6,10 @@ import { imageIndex } from '$lib/shared/ids';
 import {
   capturedLabel,
   firstImage,
+  GO_TO_PASSAGE,
   NO_CHAPTER,
   NO_PLACE,
+  passageButton,
   passageLabel,
   placeLabel,
   placeLanguage,
@@ -75,6 +77,32 @@ describe('passageLabel', () => {
 
   it('falls back to no chapter when the passage names none', () => {
     expect(passageLabel({ ...passage, chapter: null })).toBe('no chapter');
+  });
+});
+
+describe('passageButton', () => {
+  const passage: TextAnchor = {
+    kind: 'text',
+    cfi: QUOTED_CFI,
+    quote: QUOTE,
+    chapter: '第三章　海辺',
+  };
+
+  it('shows the chapter title in the language of its book', () => {
+    expect(passageButton(passage, 'ja')).toEqual({
+      kind: 'chapter',
+      text: '第三章　海辺',
+      lang: 'ja',
+    });
+  });
+
+  it('falls back to going to the passage, in no language, when the passage names no chapter', () => {
+    expect(passageButton({ ...passage, chapter: null }, 'ja')).toEqual({
+      kind: 'unnamed',
+      text: GO_TO_PASSAGE,
+      lang: null,
+    });
+    expect(GO_TO_PASSAGE).toBe('Go to passage');
   });
 });
 

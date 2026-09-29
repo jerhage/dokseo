@@ -178,10 +178,14 @@
 
   <div class="row items-center gap-1">
     <span class="row items-center gap-1 flex-fill min-w-0 overflow-hidden">
-      {#if card.passage !== null && onseek !== undefined}
+      {#if card.passage !== null && card.passageButton !== null && onseek !== undefined}
         {@const passage = card.passage}
+        {@const button = card.passageButton}
         <Button variant="ghost" size="sm" class="px-2 min-w-0" onclick={() => onseek(passage)}>
-          <span class="truncate">Go to passage</span>
+          <span class="truncate" lang={button.lang}>{button.text}</span>
+          {#if button.kind === 'chapter'}
+            <span class="visually-hidden">Go to the passage</span>
+          {/if}
         </Button>
       {:else if card.href === null}
         <span class="px-2 text-xs text-muted mono truncate" lang={card.placeLanguage}

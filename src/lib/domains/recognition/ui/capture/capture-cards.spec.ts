@@ -211,6 +211,30 @@ describe('card projection', () => {
     expect([away[0]?.passage, seeking[0]?.passage?.cfi]).toEqual([null, '/6/4!/2']);
   });
 
+  it('labels the passage button with the chapter in the book language, or with going to the passage', () => {
+    const cards = cardsOf([lifted('c1', 'ねこ', null, '第一章'), lifted('c2', 'いぬ', null)], {
+      seekable: true,
+    }).cards;
+
+    expect(cards.map((card) => card.passageButton)).toEqual([
+      { kind: 'chapter', text: '第一章', lang: 'ja' },
+      { kind: 'unnamed', text: 'Go to passage', lang: null },
+    ]);
+  });
+
+  it('gives an image capture no passage button, and keeps its place and link', () => {
+    const cards = cardsOf([read('c1', 'ねこ')], { seekable: true }).cards;
+
+    expect(cards[0]).toMatchObject({ passage: null, passageButton: null, place: 'p.003' });
+    expect(cards[0]?.href).not.toBeNull();
+  });
+
+  it('offers no passage button when the panel cannot seek', () => {
+    const cards = cardsOf([lifted('c1', 'ねこ', null, '第一章')]).cards;
+
+    expect(cards[0]?.passageButton).toBeNull();
+  });
+
   it('asks to add a note when the capture carries none', () => {
     const cards = cardsOf([read('c1', 'ねこ')]).cards;
 

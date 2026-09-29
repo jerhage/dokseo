@@ -15,7 +15,8 @@ import type { Tag } from '../../domain/tag/tag';
 import { captureNote, captureState } from './capture-card';
 import { markedLines } from './capture-lines';
 import type { MarkedLines } from './capture-lines';
-import { placeLabel, placeLanguage } from './capture-place';
+import { passageButton, placeLabel, placeLanguage } from './capture-place';
+import type { PassageButton } from './capture-place';
 import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
 import { NOTHING_READ } from './capture-view.svelte';
 import { modelLoadNote } from '../engine/recognizer-view.svelte';
@@ -28,6 +29,7 @@ type Card = {
   readonly placeLanguage: Language | null;
   readonly href: string | null;
   readonly passage: TextAnchor | null;
+  readonly passageButton: PassageButton | null;
   readonly stateLabel: string;
   readonly text: string | null;
   readonly segments: readonly TextSegment[] | null;
@@ -96,6 +98,13 @@ function passageOf(anchor: Anchor, seekable: boolean): TextAnchor | null {
   return anchor;
 }
 
+function passageButtonOf(anchor: Anchor, placing: CardPlacing): PassageButton | null {
+  const passage = passageOf(anchor, placing.seekable);
+  if (passage === null) return null;
+
+  return passageButton(passage, placing.language);
+}
+
 function annotationOf(capture: PanelCapture): string | null {
   return match(capture)
     .with({ origin: 'written' }, () => null)
@@ -142,6 +151,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       placeLanguage: placeLanguage(running.anchor, placing.language),
       href: hrefOf(running.anchor, placing),
       passage: passageOf(running.anchor, placing.seekable),
+      passageButton: passageButtonOf(running.anchor, placing),
       stateLabel: 'Reading…',
       text: null,
       segments: null,
@@ -161,6 +171,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       placeLanguage: placeLanguage(read.anchor, placing.language),
       href: hrefOf(read.anchor, placing),
       passage: passageOf(read.anchor, placing.seekable),
+      passageButton: passageButtonOf(read.anchor, placing),
       stateLabel: captureState(read.origin),
       text: read.text.text,
       segments: lines === null ? null : lines.text,
@@ -180,6 +191,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       placeLanguage: placeLanguage(blank.anchor, placing.language),
       href: hrefOf(blank.anchor, placing),
       passage: passageOf(blank.anchor, placing.seekable),
+      passageButton: passageButtonOf(blank.anchor, placing),
       stateLabel: 'No text',
       text: null,
       segments: null,
@@ -199,6 +211,7 @@ function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardP
       placeLanguage: placeLanguage(broken.anchor, placing.language),
       href: hrefOf(broken.anchor, placing),
       passage: passageOf(broken.anchor, placing.seekable),
+      passageButton: passageButtonOf(broken.anchor, placing),
       stateLabel: 'Failed',
       text: null,
       segments: null,
