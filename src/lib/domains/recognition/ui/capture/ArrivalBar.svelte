@@ -3,14 +3,14 @@
   import Stepper from '$lib/components/Stepper.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
-  import type { Stepping } from '../../domain/capture/capture-arrival';
+  import type { ArrivalCapture, Stepping } from '../../domain/capture/capture-arrival';
   import { arrivalSteps } from './arrival-steps';
 
   type Props = {
     readonly book: BookId;
     readonly query: string;
     readonly language: Language | null;
-    readonly stepping: Stepping;
+    readonly stepping: Stepping<ArrivalCapture>;
   };
 
   let { book, query, language, stepping }: Props = $props();

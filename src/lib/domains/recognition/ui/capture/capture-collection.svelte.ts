@@ -238,7 +238,14 @@ class CaptureCollection {
 
   arrivalFrom(found: ReaderArrival, direction: ReadingDirection): Arrival<ArrivalCapture> | null {
     return match(found)
-      .with({ kind: 'image' }, (image) => arrivalAt(this.read, image.query, direction, image.index))
+      .with({ kind: 'image' }, (image) =>
+        image.region === null
+          ? null
+          : arrivalAt(this.read, image.query, direction, {
+              index: image.index,
+              rect: image.region,
+            }),
+      )
       .with({ kind: 'passage' }, () => null)
       .with({ kind: 'none' }, () => null)
       .exhaustive();

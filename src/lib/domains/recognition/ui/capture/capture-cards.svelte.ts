@@ -3,8 +3,9 @@ import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import { readerHref } from '$lib/shared/reader-location';
+import { captureHref } from '$lib/shared/reader-location';
 import type { TextSegment } from '$lib/shared/text-search';
+import { firstRegion } from '../../domain/capture/capture-arrival';
 import { inBookOrder } from '../../domain/capture/capture-order';
 import type { SearchedCapture } from '../../domain/capture/capture-results';
 import { NO_MATCH } from '../../domain/capture/match-stepping';
@@ -13,7 +14,7 @@ import type { Tag } from '../../domain/tag/tag';
 import { captureNote, captureState } from './capture-card';
 import { markedLines } from './capture-lines';
 import type { MarkedLines } from './capture-lines';
-import { firstImage, placeLabel } from './capture-place';
+import { placeLabel } from './capture-place';
 import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
 import { NOTHING_READ } from './capture-view.svelte';
 import { modelLoadNote } from '../engine/recognizer-view.svelte';
@@ -79,10 +80,10 @@ const NOWHERE: CardJump = { kind: 'nowhere' };
 
 function hrefOf(anchor: Anchor, placing: CardPlacing): string | null {
   const book = placing.book;
-  const index = firstImage(anchor);
-  if (book === null || index === null) return null;
+  const region = firstRegion(anchor);
+  if (book === null || region === null) return null;
 
-  return readerHref(book, index, placing.carried);
+  return captureHref(book, region, placing.carried);
 }
 
 function passageOf(anchor: Anchor, seekable: boolean): TextAnchor | null {

@@ -4,7 +4,8 @@ import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
-import { arrivalAt, matchesInBookOrder, soughtPassage } from './capture-arrival';
+import type { ImageRegion } from '$lib/shared/image-region';
+import { arrivalAt, firstRegion, matchesInBookOrder, soughtPassage } from './capture-arrival';
 
 type Row = {
   readonly origin: 'written';
@@ -51,70 +52,85 @@ describe('matchesInBookOrder', () => {
 });
 
 describe('arrivalAt', () => {
-  const FOURTH = row('e', '海辺', at(5, 10, 10));
-  const MORE = [THIRD, FOURTH, OTHER, SECOND, FIRST];
-
-  function ids(found: readonly Row[] | undefined): readonly CaptureId[] | undefined {
-    return found?.map((capture) => capture.id);
+  function position(capture: Row): ImageRegion {
+    const region = firstRegion(capture.anchor);
+    if (region === null) throw new Error('the fixture sits on no image');
+    return region;
   }
 
-  it('arrives at every match on the image, in reading order', () => {
-    expect(ids(arrivalAt(MORE, '海', 'rtl', imageIndex(3))?.at)).toEqual([FIRST.id, SECOND.id]);
+  function near(index: number, x: number, y: number): ImageRegion {
+    return { index: imageIndex(index), rect: imageRect(x, y, 10, 10) };
+  }
+
+  it('arrives at the one capture the position names when two sit on its image', () => {
+    expect(arrivalAt(ALL, '海', 'rtl', position(SECOND))?.at.id).toBe(SECOND.id);
+    expect(arrivalAt(ALL, null, 'rtl', position(SECOND))?.at.id).toBe(SECOND.id);
+    expect(arrivalAt(ALL, null, 'rtl', position(FIRST))?.at.id).toBe(FIRST.id);
   });
 
-  it('counts the images holding matches, not the matches', () => {
-    const arrival = arrivalAt(MORE, '海', 'rtl', imageIndex(5));
+  it('counts the arrival among the matching captures in book order', () => {
+    const arrival = arrivalAt(ALL, '海', 'rtl', position(SECOND));
     expect(arrival?.stepping?.ordinal).toBe(2);
     expect(arrival?.stepping?.total).toBe(3);
   });
 
-  it('names the neighbouring images that hold matches', () => {
-    const arrival = arrivalAt(MORE, '海', 'rtl', imageIndex(5));
-    expect(arrival?.stepping?.previous).toBe(imageIndex(3));
-    expect(arrival?.stepping?.next).toBe(imageIndex(9));
+  it('names the neighbouring captures, one step per capture on the same image', () => {
+    const arrival = arrivalAt(ALL, '海', 'rtl', position(SECOND));
+    expect(arrival?.stepping?.previous.id).toBe(FIRST.id);
+    expect(arrival?.stepping?.next.id).toBe(THIRD.id);
+    expect(arrivalAt(ALL, '海', 'rtl', position(FIRST))?.stepping?.next.id).toBe(SECOND.id);
   });
 
-  it('steps past every match on the image at once', () => {
-    expect(arrivalAt(MORE, '海', 'rtl', imageIndex(3))?.stepping?.next).toBe(imageIndex(5));
+  it('wraps from the last match back to the first', () => {
+    expect(arrivalAt(ALL, '海', 'rtl', position(THIRD))?.stepping?.next.id).toBe(FIRST.id);
   });
 
-  it('wraps from the last image back to the first', () => {
-    expect(arrivalAt(MORE, '海', 'rtl', imageIndex(9))?.stepping?.next).toBe(imageIndex(3));
+  it('wraps from the first match back to the last', () => {
+    expect(arrivalAt(ALL, '海', 'rtl', position(FIRST))?.stepping?.previous.id).toBe(THIRD.id);
   });
 
-  it('wraps from the first image back to the last', () => {
-    expect(arrivalAt(MORE, '海', 'rtl', imageIndex(3))?.stepping?.previous).toBe(imageIndex(9));
-  });
-
-  it('arrives at the one capture on an image holding one match, as a capture id once did', () => {
-    const arrival = arrivalAt(MORE, '海', 'rtl', imageIndex(9));
-    expect(ids(arrival?.at)).toEqual([THIRD.id]);
-    expect(arrival?.stepping?.ordinal).toBe(3);
-  });
-
-  it('stands on its own when its image holds the only match', () => {
-    const only = arrivalAt([OTHER], '山', 'rtl', imageIndex(1));
+  it('stands on its own when it is the only match', () => {
+    const only = arrivalAt([OTHER], '山', 'rtl', position(OTHER));
     expect(only?.stepping?.ordinal).toBe(1);
-    expect(only?.stepping?.previous).toBe(imageIndex(1));
-    expect(only?.stepping?.next).toBe(imageIndex(1));
+    expect(only?.stepping?.previous.id).toBe(OTHER.id);
+    expect(only?.stepping?.next.id).toBe(OTHER.id);
   });
 
-  it('arrives at every capture on the image without a query, and offers no stepping', () => {
-    const arrival = arrivalAt(MORE, null, 'rtl', imageIndex(3));
-    expect(ids(arrival?.at)).toEqual([FIRST.id, SECOND.id]);
+  it('reaches a capture named without a query and offers no stepping', () => {
+    const arrival = arrivalAt(ALL, null, 'rtl', position(OTHER));
+    expect(arrival?.at.id).toBe(OTHER.id);
     expect(arrival?.stepping).toBeNull();
   });
 
   it('treats a query of only spaces as no query at all', () => {
-    expect(arrivalAt(MORE, '  ', 'rtl', imageIndex(3))?.stepping).toBeNull();
+    expect(arrivalAt(ALL, '  ', 'rtl', position(SECOND))?.stepping).toBeNull();
   });
 
-  it('reports nothing for an image that holds no capture', () => {
-    expect(arrivalAt(MORE, null, 'rtl', imageIndex(2))).toBeNull();
-    expect(arrivalAt(MORE, '海', 'rtl', imageIndex(2))).toBeNull();
+  it('reports nothing for a position where this book holds no capture', () => {
+    expect(arrivalAt([FIRST, SECOND], null, 'rtl', position(THIRD))).toBeNull();
+    expect(arrivalAt(ALL, '海', 'rtl', near(3, 50, 10))).toBeNull();
   });
 
-  it('places a capture on the image its first region sits on', () => {
+  it('matches a position rounded to hundredths of a pixel back to the stored rect', () => {
+    const exact = row('x', '海', at(4, 12.3456789, 98.7654321));
+
+    expect(arrivalAt([exact], null, 'rtl', near(4, 12.35, 98.77))?.at.id).toBe(exact.id);
+  });
+
+  it('rejects a position more than a hundredth of a pixel from every stored rect', () => {
+    const exact = row('x', '海', at(4, 12.3456789, 98.7654321));
+
+    expect(arrivalAt([exact], null, 'rtl', near(4, 12.4, 98.77))).toBeNull();
+  });
+
+  it('picks the nearer of two captures within the tolerance', () => {
+    const left = row('l', '海', at(4, 20, 20));
+    const right = row('r', '海', at(4, 20.004, 20));
+
+    expect(arrivalAt([left, right], null, 'rtl', near(4, 20.004, 20))?.at.id).toBe(right.id);
+  });
+
+  it('names a capture by the image its first region sits on', () => {
     const spread = row(
       's',
       '海',
@@ -124,23 +140,22 @@ describe('arrivalAt', () => {
       ]),
     );
 
-    expect(ids(arrivalAt([spread], '海', 'rtl', imageIndex(6))?.at)).toEqual([spread.id]);
-    expect(arrivalAt([spread], '海', 'rtl', imageIndex(7))).toBeNull();
+    expect(arrivalAt([spread], '海', 'rtl', near(6, 0, 0))?.at.id).toBe(spread.id);
+    expect(arrivalAt([spread], '海', 'rtl', near(7, 0, 0))).toBeNull();
   });
 });
 
-describe('arrivalAt on an image the query never matched', () => {
+describe('arrivalAt for a capture the query never matched', () => {
   const wanted = row('tagged', 'この坂を上れば', at(0, 10, 10));
   const other = row('other', '海が見える', at(1, 10, 10));
+  const place = { index: imageIndex(0), rect: imageRect(10, 10, 10, 10) };
 
-  it('arrives at the captures there even though none holds the query, so the box is drawn', () => {
-    expect(arrivalAt([other, wanted], '海', 'rtl', imageIndex(0))?.at.map((c) => c.id)).toEqual([
-      wanted.id,
-    ]);
+  it('arrives at a capture whose text holds none of the query, so the box is drawn', () => {
+    expect(arrivalAt([other, wanted], '海', 'rtl', place)?.at.id).toBe(wanted.id);
   });
 
   it('offers no stepping there, because it is not one of the query matches', () => {
-    expect(arrivalAt([other, wanted], '海', 'rtl', imageIndex(0))?.stepping).toBeNull();
+    expect(arrivalAt([other, wanted], '海', 'rtl', place)?.stepping).toBeNull();
   });
 });
 

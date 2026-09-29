@@ -158,10 +158,10 @@ describe('card projection', () => {
     });
   });
 
-  it('links a card to the page it was taken from, naming no capture', () => {
+  it('links a card to the image and region it was taken from, naming no capture id', () => {
     const cards = cardsOf([read('c1', 'ねこ')]).cards;
 
-    expect(cards[0]?.href).toBe('/read/book-1?image=2');
+    expect(cards[0]?.href).toBe('/read/book-1?image=2&region=0,0,10,10');
   });
 
   it('links nowhere when no book is open', () => {
@@ -258,7 +258,9 @@ describe('card search', () => {
     const panel = cardsOf([read('c1', 'ねこ')]);
     panel.query = 'ねこ';
 
-    expect(panel.cards[0]?.href).toBe('/read/book-1?image=2&find=%E3%81%AD%E3%81%93');
+    expect(panel.cards[0]?.href).toBe(
+      '/read/book-1?image=2&region=0,0,10,10&find=%E3%81%AD%E3%81%93',
+    );
   });
 
   it('trims the typed query before searching', () => {
@@ -276,7 +278,7 @@ describe('card stepping', () => {
 
     expect(panel.jumpTo(0)).toEqual({
       kind: 'fresh',
-      href: '/read/book-1?image=2&find=%E3%81%AD%E3%81%93',
+      href: '/read/book-1?image=2&region=0,0,10,10&find=%E3%81%AD%E3%81%93',
     });
   });
 

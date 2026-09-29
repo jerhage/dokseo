@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { imageRect } from './geometry';
 import { bookId, imageIndex } from './ids';
 import {
   IMAGE_PARAMETER,
   MISSING_BOOK_NOTICE,
   NO_ARRIVAL,
+  REGION_TOLERANCE,
   arrivalQuery,
+  captureHref,
   missingBookNotice,
   missingBookArrival,
   openingPlace,
@@ -12,6 +15,8 @@ import {
   readerHref,
   passageHref,
   readImageIndex,
+  readRegion,
+  regionDistance,
   urlWithImageIndex,
 } from './reader-location';
 import { imagePlace, textPlace } from './reading-place';
@@ -133,6 +138,46 @@ describe('readerHref', () => {
   });
 });
 
+describe('captureHref', () => {
+  const REGION = { index: imageIndex(7), rect: imageRect(12.3456, 0.004, 300, 88.125) };
+
+  it('names the image and the region in image pixels to hundredths', () => {
+    expect(captureHref(bookId('one'), REGION)).toBe('/read/one?image=7&region=12.35,0,300,88.13');
+  });
+
+  it('carries the search after the region', () => {
+    expect(captureHref(bookId('one'), REGION, '海')).toBe(
+      '/read/one?image=7&region=12.35,0,300,88.13&find=%E6%B5%B7',
+    );
+  });
+
+  it('reads back as the same image, with the region within a hundredth of a pixel', () => {
+    const found = readArrival(
+      new URL(captureHref(bookId('one'), REGION, '海'), 'https://r.test').searchParams,
+    );
+
+    if (found.kind !== 'image' || found.region === null) throw new Error('no region read back');
+    expect(found.index).toBe(REGION.index);
+    expect(regionDistance(found.region, REGION.rect)).toBeLessThanOrEqual(REGION_TOLERANCE);
+  });
+});
+
+describe('readRegion', () => {
+  it('reads four comma separated coordinates', () => {
+    expect(readRegion('0,1.25,2,3')).toEqual(imageRect(0, 1.25, 2, 3));
+  });
+
+  it('treats a malformed region as absent', () => {
+    expect(readRegion(null)).toBeNull();
+    expect(readRegion('')).toBeNull();
+    expect(readRegion('1,2,3')).toBeNull();
+    expect(readRegion('1,2,3,4,5')).toBeNull();
+    expect(readRegion('1,2,-3,4')).toBeNull();
+    expect(readRegion('1,2,x,4')).toBeNull();
+    expect(readRegion('1,2,1e3,4')).toBeNull();
+  });
+});
+
 describe('passageHref', () => {
   const CFI = 'epubcfi(/6/4!/4/2,/1:0,/1:5)';
 
@@ -167,23 +212,37 @@ describe('readArrival', () => {
   it('reads the image and the search back out of a url', () => {
     expect(
       readArrival(new URL('https://r.test/read/one?image=1&find=%E6%B5%B7').searchParams),
-    ).toEqual({ kind: 'image', index: imageIndex(1), query: '海' });
+    ).toEqual({ kind: 'image', index: imageIndex(1), region: null, query: '海' });
   });
 
-  it('reads an image named without a search', () => {
+  it('reads an image named without a search or a region', () => {
     expect(readArrival(new URL('https://r.test/read/one?image=4').searchParams)).toEqual({
       kind: 'image',
       index: imageIndex(4),
+      region: null,
       query: null,
     });
   });
 
-  it('ignores a capture id an old link still carries', () => {
+  it('reads the region a capture link names beside its image', () => {
+    expect(
+      readArrival(
+        new URL('https://r.test/read/one?image=4&region=1.5,2,30.25,40&find=a').searchParams,
+      ),
+    ).toEqual({
+      kind: 'image',
+      index: imageIndex(4),
+      region: imageRect(1.5, 2, 30.25, 40),
+      query: 'a',
+    });
+  });
+
+  it('ignores a capture id an old link still carries, and names no region', () => {
     expect(
       readArrival(
         new URL('https://r.test/read/one?image=2&find=%E6%B5%B7&capture=c1').searchParams,
       ),
-    ).toEqual({ kind: 'image', index: imageIndex(2), query: '海' });
+    ).toEqual({ kind: 'image', index: imageIndex(2), region: null, query: '海' });
   });
 
   it('reports no arrival for an old link naming only a capture', () => {
@@ -202,6 +261,7 @@ describe('readArrival', () => {
     expect(readArrival(new URL('https://r.test/read/one?find=%20&image=3').searchParams)).toEqual({
       kind: 'image',
       index: imageIndex(3),
+      region: null,
       query: null,
     });
   });
@@ -220,7 +280,9 @@ describe('readArrival', () => {
 describe('arrivalQuery', () => {
   it('gives the search an arrival carries', () => {
     expect(arrivalQuery({ kind: 'passage', cfi: 'epubcfi(/6/2)', query: '海' })).toBe('海');
-    expect(arrivalQuery({ kind: 'image', index: imageIndex(0), query: '山' })).toBe('山');
+    expect(arrivalQuery({ kind: 'image', index: imageIndex(0), region: null, query: '山' })).toBe(
+      '山',
+    );
   });
 
   it('gives no search when there is no arrival', () => {

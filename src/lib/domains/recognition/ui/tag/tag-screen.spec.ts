@@ -152,8 +152,8 @@ describe('taggedShelves', () => {
     expect(shelvedRows(shelves).map((row) => row.order)).toEqual([0, 1, 2, 3]);
   });
 
-  it('links each row to its page in the reader, naming no capture', () => {
-    expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4');
+  it('links each row to its image and region in the reader, naming no capture id', () => {
+    expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4&region=0,0,100,60');
     expect(shelves[0]?.rows[0]?.jump).toBe('Jump to p.005');
     expect(shelves[0]?.rows[0]?.place).toBe('p.005');
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');

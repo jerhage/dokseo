@@ -126,7 +126,7 @@ describe('searchRows', () => {
     });
   });
 
-  it('jumps to the first page of the capture, carrying the query and no capture id', () => {
+  it('jumps to the first region of the capture, carrying the query and no capture id', () => {
     const found = {
       books: [],
       captures: [{ book: TWO, captures: [written('c-1', TWO, '海と山', onPage(2))] }],
@@ -134,7 +134,7 @@ describe('searchRows', () => {
 
     const row = captureAt(searchRows(input(found)).rows, 0);
 
-    expect(row.href).toBe('/read/two?image=2&find=%E6%B5%B7');
+    expect(row.href).toBe('/read/two?image=2&region=0,0,10,10&find=%E6%B5%B7');
     expect(row.place).toBe('p.003');
     expect(row.language).toBe('ko');
   });

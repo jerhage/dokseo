@@ -1,11 +1,20 @@
 import { match } from 'ts-pattern';
+import { imageRect } from './geometry';
+import type { ImageRect } from './geometry';
 import { imageIndex } from './ids';
 import type { BookId, ImageIndex } from './ids';
+import type { ImageRegion } from './image-region';
 import type { ReadingPlace } from './reading-place';
 
 const IMAGE_PARAMETER = 'image';
 
 const FIND_PARAMETER = 'find';
+
+const REGION_PARAMETER = 'region';
+
+const REGION_DECIMALS = 2;
+
+const REGION_TOLERANCE = 0.01;
 
 const CFI_PARAMETER = 'cfi';
 
@@ -19,7 +28,12 @@ const LIBRARY_AFTER_MISSING_BOOK = `/?${MISSING_BOOK_PARAMETER}=${MISSING_BOOK_V
 
 type ReaderArrival =
   | { readonly kind: 'none' }
-  | { readonly kind: 'image'; readonly index: ImageIndex; readonly query: string | null }
+  | {
+      readonly kind: 'image';
+      readonly index: ImageIndex;
+      readonly region: ImageRect | null;
+      readonly query: string | null;
+    }
   | { readonly kind: 'passage'; readonly cfi: string; readonly query: string | null };
 
 type MissingBookArrival = {
@@ -36,6 +50,8 @@ type OpeningPlace = {
 const NO_ARRIVAL: ReaderArrival = { kind: 'none' };
 
 const WHOLE_NUMBER = /^\d+$/;
+
+const COORDINATE = /^\d+(\.\d+)?$/;
 
 function readImageIndex(value: string | null | undefined): ImageIndex | null {
   if (value === null || value === undefined) return null;
@@ -71,6 +87,43 @@ function urlWithImageIndex(url: URL, index: ImageIndex): URL | null {
   return moved.href === url.href ? null : moved;
 }
 
+function regionCoordinate(value: number): string {
+  return String(Number(value.toFixed(REGION_DECIMALS)));
+}
+
+function regionValue(rect: ImageRect): string {
+  return [rect.x, rect.y, rect.width, rect.height].map(regionCoordinate).join(',');
+}
+
+function readCoordinate(value: string): number | null {
+  const trimmed = value.trim();
+  if (!COORDINATE.test(trimmed)) return null;
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readRegion(value: string | null | undefined): ImageRect | null {
+  if (value === null || value === undefined) return null;
+
+  const parts = value.split(',');
+  if (parts.length !== 4) return null;
+
+  const [x = null, y = null, width = null, height = null] = parts.map(readCoordinate);
+  if (x === null || y === null || width === null || height === null) return null;
+
+  return imageRect(x, y, width, height);
+}
+
+function regionDistance(named: ImageRect, stored: ImageRect): number {
+  return Math.max(
+    Math.abs(named.x - stored.x),
+    Math.abs(named.y - stored.y),
+    Math.abs(named.width - stored.width),
+    Math.abs(named.height - stored.height),
+  );
+}
+
 function searched(query: string | null): string | null {
   return query === null || query.trim().length === 0 ? null : query;
 }
@@ -84,6 +137,11 @@ function withSearch(href: string, query: string | null): string {
 
 function readerHref(book: BookId, index: ImageIndex, query: string | null = null): string {
   return withSearch(`/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${index}`, query);
+}
+
+function captureHref(book: BookId, region: ImageRegion, query: string | null = null): string {
+  const place = `/read/${encodeURIComponent(book)}?${IMAGE_PARAMETER}=${region.index}`;
+  return withSearch(`${place}&${REGION_PARAMETER}=${regionValue(region.rect)}`, query);
 }
 
 function passageHref(book: BookId, cfi: string, query: string | null = null): string {
@@ -100,9 +158,10 @@ function readArrival(parameters: URLSearchParams): ReaderArrival {
   if (cfi !== null && cfi.length > 0) return { kind: 'passage', cfi, query };
 
   const index = readImageIndex(parameters.get(IMAGE_PARAMETER));
-  if (index !== null) return { kind: 'image', index, query };
+  if (index === null) return NO_ARRIVAL;
 
-  return NO_ARRIVAL;
+  const region = readRegion(parameters.get(REGION_PARAMETER));
+  return { kind: 'image', index, region, query };
 }
 
 function arrivalQuery(arrival: ReaderArrival): string | null {
@@ -129,6 +188,8 @@ function missingBookArrival(url: URL): MissingBookArrival | null {
 export {
   IMAGE_PARAMETER,
   FIND_PARAMETER,
+  REGION_PARAMETER,
+  REGION_TOLERANCE,
   CFI_PARAMETER,
   NO_ARRIVAL,
   MISSING_BOOK_PARAMETER,
@@ -139,7 +200,10 @@ export {
   openingPlace,
   urlWithImageIndex,
   readerHref,
+  captureHref,
   passageHref,
+  readRegion,
+  regionDistance,
   readArrival,
   arrivalQuery,
   missingBookNotice,

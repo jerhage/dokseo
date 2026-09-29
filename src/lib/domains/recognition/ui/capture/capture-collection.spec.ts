@@ -278,18 +278,45 @@ describe('CaptureCollection arrivals', () => {
     };
   }
 
-  it('arrives at every stored capture on the image a url names, with no capture id', async () => {
+  function storedAt(id: string, x: number): Capture {
+    return {
+      ...storedRow(id, ONE, id, 1),
+      anchor: regionAnchor([{ index: imageIndex(4), rect: imageRect(x, 12.5, 40, 20) }]),
+    };
+  }
+
+  it('arrives at only the stored capture at the image and region a url names', async () => {
     const world = fakes();
-    world.store.rows = [storedRow('one', ONE, '先', 1), storedRow('two', ONE, '後', 2)];
+    world.store.rows = [storedAt('one', 100.333), storedAt('two', 10.666)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.open(ONE);
 
     const arrival = collection.arrivalFrom(
-      { kind: 'image', index: imageIndex(4), query: null },
+      { kind: 'image', index: imageIndex(4), region: imageRect(10.67, 12.5, 40, 20), query: null },
       'rtl',
     );
 
-    expect(arrival?.at.map((capture) => capture.id)).toEqual([captureId('one'), captureId('two')]);
+    expect(arrival?.at.id).toBe(captureId('two'));
+  });
+
+  it('arrives at no capture for a url naming an image without a region', async () => {
+    const world = fakes();
+    world.store.rows = [storedAt('one', 100), storedAt('two', 10)];
+    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    await collection.open(ONE);
+
+    expect(
+      collection.arrivalFrom(
+        { kind: 'image', index: imageIndex(4), region: null, query: null },
+        'rtl',
+      ),
+    ).toBeNull();
+    expect(
+      collection.arrivalFrom(
+        { kind: 'image', index: imageIndex(4), region: null, query: '1' },
+        'rtl',
+      ),
+    ).toBeNull();
   });
 
   it('arrives at no capture for a url naming a passage or nothing', async () => {
@@ -330,6 +357,8 @@ describe('CaptureCollection arrivals', () => {
     const world = fakes();
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
 
-    expect(collection.passageFrom({ kind: 'image', index: imageIndex(0), query: null })).toBeNull();
+    expect(
+      collection.passageFrom({ kind: 'image', index: imageIndex(0), region: null, query: null }),
+    ).toBeNull();
   });
 });

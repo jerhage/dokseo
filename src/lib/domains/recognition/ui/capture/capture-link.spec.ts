@@ -8,12 +8,23 @@ const PASSAGE = textAnchor('epubcfi(/6/4!/4/2/1:0)', { exact: '海', prefix: '',
 
 const PAGE = regionAnchor([{ index: imageIndex(6), rect: imageRect(0, 0, 10, 10) }]);
 
+const BESIDE = regionAnchor([
+  { index: imageIndex(6), rect: imageRect(120.4567, 33.3333, 48.5, 90.125) },
+  { index: imageIndex(7), rect: imageRect(0, 0, 10, 10) },
+]);
+
 describe('captureLink', () => {
-  it('opens an image book at the page of a capture anchored on it, naming no capture', () => {
+  it('opens an image book at the image and region of a capture anchored on it, naming no capture id', () => {
     expect(captureLink(bookId('one'), { anchor: PAGE }, null)).toEqual({
-      href: '/read/one?image=6',
+      href: '/read/one?image=6&region=0,0,10,10',
       jump: 'Jump to p.007',
     });
+  });
+
+  it('names the second capture on an image by its own first region', () => {
+    expect(captureLink(bookId('one'), { anchor: BESIDE }, '海').href).toBe(
+      '/read/one?image=6&region=120.46,33.33,48.5,90.13&find=%E6%B5%B7',
+    );
   });
 
   it('opens a flow book at the passage of a capture anchored in text, by its cfi', () => {

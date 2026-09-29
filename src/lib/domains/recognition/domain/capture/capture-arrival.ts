@@ -1,6 +1,8 @@
 import type { Anchor, SoughtPassage } from '$lib/shared/anchor';
-import type { CaptureId, ImageIndex } from '$lib/shared/ids';
+import type { CaptureId } from '$lib/shared/ids';
+import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import { REGION_TOLERANCE, regionDistance } from '$lib/shared/reader-location';
 import { inBookOrder } from './capture-order';
 import { captureHolds } from './capture-results';
 import type { SearchedCapture } from './capture-results';
@@ -11,27 +13,44 @@ type ArrivalCapture = SearchedCapture & {
   readonly anchor: Anchor;
 };
 
-type Stepping = {
+type Stepping<T> = {
   readonly ordinal: number;
   readonly total: number;
-  readonly previous: ImageIndex;
-  readonly next: ImageIndex;
+  readonly previous: T;
+  readonly next: T;
 };
 
 type Arrival<T> = {
-  readonly at: readonly T[];
-  readonly stepping: Stepping | null;
+  readonly at: T;
+  readonly stepping: Stepping<T> | null;
 };
 
-type Stop<T> = {
-  readonly index: ImageIndex;
-  readonly captures: readonly T[];
-};
-
-function startingImage(anchor: Anchor): ImageIndex | null {
+function firstRegion(anchor: Anchor): ImageRegion | null {
   if (anchor.kind === 'text') return null;
 
-  return anchor.regions[0]?.index ?? null;
+  return anchor.regions[0] ?? null;
+}
+
+function distanceFrom(capture: ArrivalCapture, named: ImageRegion): number | null {
+  const region = firstRegion(capture.anchor);
+  if (region === null || region.index !== named.index) return null;
+
+  const distance = regionDistance(named.rect, region.rect);
+  return distance <= REGION_TOLERANCE ? distance : null;
+}
+
+function placeOf<T extends ArrivalCapture>(ordered: readonly T[], named: ImageRegion): number {
+  let place = -1;
+  let closest = Number.POSITIVE_INFINITY;
+  ordered.forEach((capture, index) => {
+    const distance = distanceFrom(capture, named);
+    if (distance === null || distance >= closest) return;
+
+    place = index;
+    closest = distance;
+  });
+
+  return place;
 }
 
 function matchesInBookOrder<T extends ArrivalCapture>(
@@ -45,60 +64,40 @@ function matchesInBookOrder<T extends ArrivalCapture>(
   );
 }
 
-function stopsOf<T extends ArrivalCapture>(ordered: readonly T[]): readonly Stop<T>[] {
-  const stops: Stop<T>[] = [];
-  for (const capture of ordered) {
-    const index = startingImage(capture.anchor);
-    if (index === null) continue;
-
-    const last = stops.at(-1);
-    if (last !== undefined && last.index === index) {
-      stops[stops.length - 1] = { index, captures: [...last.captures, capture] };
-      continue;
-    }
-
-    stops.push({ index, captures: [capture] });
-  }
-
-  return stops;
-}
-
-function onImage<T extends ArrivalCapture>(
+function alone<T extends ArrivalCapture>(
   captures: readonly T[],
   direction: ReadingDirection,
-  index: ImageIndex,
+  named: ImageRegion,
 ): Arrival<T> | null {
-  const here = inBookOrder(
-    captures.filter((capture) => startingImage(capture.anchor) === index),
-    direction,
-  );
-  return here.length === 0 ? null : { at: here, stepping: null };
+  const ordered = inBookOrder(captures, direction);
+  const only = ordered[placeOf(ordered, named)];
+  return only === undefined ? null : { at: only, stepping: null };
 }
 
 function arrivalAt<T extends ArrivalCapture>(
   captures: readonly T[],
   query: string | null,
   direction: ReadingDirection,
-  index: ImageIndex,
+  named: ImageRegion,
 ): Arrival<T> | null {
-  if (query === null || query.trim().length === 0) return onImage(captures, direction, index);
+  if (query === null || query.trim().length === 0) return alone(captures, direction, named);
 
-  const stops = stopsOf(matchesInBookOrder(captures, query, direction));
-  const place = stops.findIndex((stop) => stop.index === index);
-  const here = stops[place];
-  if (here === undefined) return onImage(captures, direction, index);
+  const found = matchesInBookOrder(captures, query, direction);
+  const place = placeOf(found, named);
+  const here = found[place];
+  if (here === undefined) return alone(captures, direction, named);
 
-  const before = stops[wrappedIndex(place, -1, stops.length)];
-  const after = stops[wrappedIndex(place, 1, stops.length)];
+  const before = found[wrappedIndex(place, -1, found.length)];
+  const after = found[wrappedIndex(place, 1, found.length)];
   if (before === undefined || after === undefined) return null;
 
   return {
-    at: here.captures,
+    at: here,
     stepping: {
       ordinal: place + 1,
-      total: stops.length,
-      previous: before.index,
-      next: after.index,
+      total: found.length,
+      previous: before,
+      next: after,
     },
   };
 }
@@ -108,5 +107,5 @@ function soughtPassage(anchors: readonly Anchor[], cfi: string): SoughtPassage {
   return { cfi, quote: held?.kind === 'text' ? held.quote : null };
 }
 
-export { matchesInBookOrder, arrivalAt, soughtPassage };
+export { firstRegion, matchesInBookOrder, arrivalAt, soughtPassage };
 export type { ArrivalCapture, Stepping, Arrival };

@@ -12,6 +12,7 @@
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
+  import { arrivalGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
   import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
@@ -19,9 +20,7 @@
   import type { SoughtPassage } from '$lib/shared/anchor';
   import { bookId } from '$lib/shared/ids';
   import type { BookId, ImageIndex } from '$lib/shared/ids';
-  import { glowRegions } from '$lib/shared/image-region';
   import { toastNotify } from '$lib/shared/notice-toast';
-  import type { GlowRegion } from '$lib/shared/image-region';
   import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     IMAGE_PARAMETER,
@@ -31,8 +30,6 @@
     readImageIndex,
     urlWithImageIndex,
   } from '$lib/shared/reader-location';
-
-  const NOTHING_TO_GLOW: readonly GlowRegion[] = [];
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
 
@@ -59,13 +56,7 @@
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction));
-  const glow = $derived.by<readonly GlowRegion[]>(() => {
-    if (here === null) return NOTHING_TO_GLOW;
-
-    return here.at.flatMap((capture) =>
-      capture.anchor.kind === 'region' ? glowRegions(capture.anchor.regions, capture.origin) : [],
-    );
-  });
+  const glow = $derived(arrivalGlow(here));
   const passage = $derived<SoughtPassage | null>(captures.passageFrom(found));
   const stepping = $derived(here?.stepping ?? null);
   const finding = $derived(arrivalQuery(found));
