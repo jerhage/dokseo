@@ -1,14 +1,12 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
   import { releasePicture } from '$lib/platform/image/bitmap';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion } from '$lib/shared/image-region';
   import type { PagePicture } from '$lib/shared/page-source';
   import { toPageFraction } from '../domain/placement';
-  import { glowMarker } from './page-glow';
   import './page-frame.css';
 
   type Phase = 'loading' | 'shown' | 'failed';
@@ -34,8 +32,6 @@
   }: Props = $props();
 
   const selectable = $derived(beside ? undefined : index);
-
-  const marker = $derived(glowMarker(glow));
 
   let frame = $state<HTMLCanvasElement | null>(null);
   let picture = $state.raw<PagePicture | null>(null);
@@ -171,15 +167,7 @@
       style:--rect-top="{drawn.box.top}%"
       style:--rect-width="{drawn.box.width}%"
       style:--rect-height="{drawn.box.height}%"
-    >
-      {#if marker !== null && order === 0}
-        <Badge
-          class="glow-marker mono"
-          emphasis="solid"
-          variant={drawn.origin === 'written' ? 'accent' : 'primary'}>{marker}</Badge
-        >
-      {/if}
-    </span>
+    ></span>
   {/each}
   {#if notice !== null}
     <p class="notice col items-center justify-center p-3 text-xs text-faint" aria-hidden="true">
