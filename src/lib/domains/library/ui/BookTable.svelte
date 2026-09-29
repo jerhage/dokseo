@@ -31,7 +31,9 @@
       <TableHeaderCell scope="col">Title</TableHeaderCell>
       <TableHeaderCell scope="col">Position</TableHeaderCell>
       <TableHeaderCell scope="col">Details</TableHeaderCell>
-      <TableHeaderCell scope="col"><span class="visually-hidden">Actions</span></TableHeaderCell>
+      <TableHeaderCell scope="col" actions>
+        <span class="visually-hidden">Actions</span>
+      </TableHeaderCell>
     </TableRow>
   </TableHeader>
   <TableBody>
@@ -56,7 +58,7 @@
           {/if}
         </TableCell>
         <TableCell class="text-xs text-muted">{bookFacts(book)}</TableCell>
-        <TableCell>
+        <TableCell actions>
           <BookActions
             {book}
             busy={busy(book.id)}

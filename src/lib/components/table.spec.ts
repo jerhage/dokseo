@@ -28,6 +28,13 @@ describe('the table cells', () => {
     expect(markup(TableCell, { numeric: true, children: TEXT })).toContain('class="table-numeric"');
   });
 
+  it('shrinks and end-aligns an actions header cell and an actions data cell with the table-actions modifier', () => {
+    expect(markup(TableHeaderCell, { actions: true, children: TEXT })).toContain(
+      'class="eyebrow table-actions"',
+    );
+    expect(markup(TableCell, { actions: true, children: TEXT })).toContain('class="table-actions"');
+  });
+
   it('keeps the caller class beside its own and adds none to a plain data cell', () => {
     expect(markup(TableHeaderCell, { class: 'text-muted', children: TEXT })).toContain(
       'class="eyebrow text-muted"',

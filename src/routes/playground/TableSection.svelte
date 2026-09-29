@@ -1,5 +1,8 @@
 <script lang="ts">
   import Badge from '$lib/components/Badge.svelte';
+  import Dropdown from '$lib/components/Dropdown.svelte';
+  import DropdownItem from '$lib/components/DropdownItem.svelte';
+  import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import Table from '$lib/components/Table.svelte';
   import TableBody from '$lib/components/TableBody.svelte';
   import TableCell from '$lib/components/TableCell.svelte';
@@ -50,6 +53,7 @@
       <TableHeaderCell>Customer</TableHeaderCell>
       <TableHeaderCell>Status</TableHeaderCell>
       <TableHeaderCell numeric>Amount</TableHeaderCell>
+      <TableHeaderCell actions><span class="visually-hidden">Actions</span></TableHeaderCell>
     </TableRow>
   </TableHeader>
 {/snippet}
@@ -62,6 +66,18 @@
         <TableCell>{row.customer}</TableCell>
         <TableCell><Badge variant={row.badge}>{row.status}</Badge></TableCell>
         <TableCell numeric>{row.amount}</TableCell>
+        <TableCell actions>
+          <Dropdown
+            size="sm"
+            variant="ghost"
+            align="end"
+            icon={Ellipsis}
+            label="Actions for {row.id}"
+          >
+            <DropdownItem>Open</DropdownItem>
+            <DropdownItem danger>Void</DropdownItem>
+          </Dropdown>
+        </TableCell>
       </TableRow>
     {/each}
   </TableBody>
@@ -74,7 +90,14 @@
 <DemoSection
   id="table"
   title="Table"
-  classes={['table-wrapper', 'table', 'table-striped', 'table-sm', 'table-numeric']}
+  classes={[
+    'table-wrapper',
+    'table',
+    'table-striped',
+    'table-sm',
+    'table-numeric',
+    'table-actions',
+  ]}
 >
   <Table caption="Default">
     {@render head()}

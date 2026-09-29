@@ -3,11 +3,12 @@
 
   type Props = HTMLTdAttributes & {
     numeric?: boolean;
+    actions?: boolean;
   };
 
-  let { numeric = false, class: className, children, ...rest }: Props = $props();
+  let { numeric = false, actions = false, class: className, children, ...rest }: Props = $props();
 </script>
 
-<td {...rest} class={[{ 'table-numeric': numeric }, className]}>
+<td {...rest} class={[{ 'table-numeric': numeric, 'table-actions': actions }, className]}>
   {@render children?.()}
 </td>

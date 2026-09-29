@@ -3,11 +3,15 @@
 
   type Props = HTMLThAttributes & {
     numeric?: boolean;
+    actions?: boolean;
   };
 
-  let { numeric = false, class: className, children, ...rest }: Props = $props();
+  let { numeric = false, actions = false, class: className, children, ...rest }: Props = $props();
 </script>
 
-<th {...rest} class={['eyebrow', { 'table-numeric': numeric }, className]}>
+<th
+  {...rest}
+  class={['eyebrow', { 'table-numeric': numeric, 'table-actions': actions }, className]}
+>
   {@render children?.()}
 </th>

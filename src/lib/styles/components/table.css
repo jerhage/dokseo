@@ -57,3 +57,6 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+.table .table-actions {
+  text-align: end;
+}
