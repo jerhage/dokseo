@@ -169,6 +169,10 @@ class CaptureView {
     return this.#collection.newestFirst;
   }
 
+  get latest(): CaptureId | null {
+    return this.#collection.latest;
+  }
+
   get read(): readonly ArrivalCapture[] {
     return this.#collection.read;
   }

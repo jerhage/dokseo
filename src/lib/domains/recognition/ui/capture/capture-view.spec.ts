@@ -1851,6 +1851,26 @@ describe('CaptureView lifted passages', () => {
     expect(row.anchor).toEqual(textAnchor(CFI, QUOTE, '第一章'));
   });
 
+  it('names each capture the reader makes as the latest, and forgets it with the book', async () => {
+    const world = fakes();
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+
+    await view.keepLifted(ONE, CFI, QUOTE, null);
+    const lifted = view.latest;
+    await view.write(ONE, regions(5));
+    const written = view.latest;
+    const running = view.recognize(source, 'ja', regions(2), 'row');
+    const call = await started(world, 0);
+    const reading = view.latest;
+    call.settle(ok(recognizedText('ねこ')));
+    await running;
+
+    expect([lifted, written, reading]).toEqual(view.captures.map((capture) => capture.id));
+    await view.open(TWO);
+    expect(view.latest).toBeNull();
+  });
+
   it('marks a lifted passage it could not store as failed and reports it once', async () => {
     const world = fakes();
     world.store.saveFails = true;

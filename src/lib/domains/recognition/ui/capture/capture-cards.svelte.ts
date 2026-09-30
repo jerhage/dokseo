@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { LocateStore } from '$lib/platform/storage/remembered-string';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import type { BookId, CaptureId } from '$lib/shared/ids';
@@ -19,6 +20,8 @@ import type { MarkedLines } from './capture-lines';
 import { cardChapter, placeLabel, placeLanguage } from './capture-place';
 import type { CardChapter } from './capture-place';
 import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
+import { readCaptureSort, saveCaptureSort } from './capture-sort';
+import type { CaptureSort } from './capture-sort';
 import { NOTHING_READ } from './capture-view.svelte';
 import { modelLoadNote } from '../engine/recognizer-view.svelte';
 import { chipsOf } from './tag-chip';
@@ -234,17 +237,26 @@ class CaptureCards {
   query = $state('');
 
   #source: () => CardSource;
+  #locate: LocateStore | undefined;
+  #sort = $state<CaptureSort>('book');
   #stepped = $state.raw<MatchStep | null>(null);
+  #revealed: CaptureId | null = null;
+
+  #ordered = $derived.by<readonly PanelCapture[]>(() => {
+    const held = this.#source();
+
+    return match(this.#sort)
+      .with('book', () => inBookOrder(held.captures, held.direction, held.passages))
+      .with('newest', () => held.newestFirst)
+      .exhaustive();
+  });
 
   #hits = $derived.by<readonly Hit[] | null>(() => {
     if (!this.searching) return null;
 
-    const held = this.#source();
-    const found = held.captures
+    return this.#ordered
       .map((capture) => hitOf(capture, this.wanted))
       .filter((hit) => hit !== null);
-
-    return inBookOrder(found, held.direction, held.passages);
   });
 
   #cards = $derived.by<readonly Card[]>(() => {
@@ -260,7 +272,7 @@ class CaptureCards {
 
     const found = this.#hits;
     return found === null
-      ? held.newestFirst.map((capture) => cardOf(capture, null, placing))
+      ? this.#ordered.map((capture) => cardOf(capture, null, placing))
       : found.map((hit) => cardOf(hit.capture, hit.lines, placing));
   });
 
@@ -271,8 +283,26 @@ class CaptureCards {
     return stepped.at;
   });
 
-  constructor(source: () => CardSource) {
+  constructor(source: () => CardSource, locate?: LocateStore) {
     this.#source = source;
+    this.#locate = locate;
+    this.#sort = readCaptureSort(locate);
+  }
+
+  get sort(): CaptureSort {
+    return this.#sort;
+  }
+
+  sortBy(sort: CaptureSort): void {
+    this.#sort = sort;
+    saveCaptureSort(sort, this.#locate);
+  }
+
+  reveals(id: CaptureId, latest: CaptureId | null): boolean {
+    if (latest !== id || this.#revealed === id) return false;
+
+    this.#revealed = id;
+    return true;
   }
 
   get wanted(): string {

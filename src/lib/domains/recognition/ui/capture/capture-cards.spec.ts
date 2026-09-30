@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { StringStore } from '$lib/platform/storage/remembered-string';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
@@ -10,9 +11,26 @@ import { EMPTY_NOTE } from './capture-card';
 import { CaptureCards } from './capture-cards.svelte';
 import type { CardSource } from './capture-cards.svelte';
 import type { PanelCapture } from './capture-collection.svelte';
+import { CAPTURE_SORT_KEY } from './capture-sort';
 import { NOTHING_READ } from './capture-view.svelte';
 
 const BOOK = bookId('book-1');
+
+class FakeStore implements StringStore {
+  readonly entries = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.entries.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.entries.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.entries.delete(key);
+  }
+}
 
 const TAG: Tag = namedTag(tagId('tag-1'), 'speech', 'copper', 1);
 
@@ -86,10 +104,10 @@ function byCfi(earlier: string, later: string): number {
   return earlier.localeCompare(later);
 }
 
-function pending(id: string): PanelCapture {
+function pending(id: string, x = 0): PanelCapture {
   return {
     id: captureId(id),
-    anchor: regionAnchor([region(2, 0)]),
+    anchor: regionAnchor([region(2, x)]),
     tagIds: [],
     origin: 'recognized',
     note: null,
@@ -123,7 +141,7 @@ function broken(id: string, message: string): PanelCapture {
 function source(captures: readonly PanelCapture[], over: Partial<CardSource> = {}): CardSource {
   return {
     captures,
-    newestFirst: captures,
+    newestFirst: captures.toReversed(),
     tags: [],
     book: BOOK,
     language: 'ja',
@@ -135,10 +153,27 @@ function source(captures: readonly PanelCapture[], over: Partial<CardSource> = {
   };
 }
 
-function cardsOf(captures: readonly PanelCapture[], over: Partial<CardSource> = {}): CaptureCards {
+function cardsOf(
+  captures: readonly PanelCapture[],
+  over: Partial<CardSource> = {},
+  store: StringStore = new FakeStore(),
+): CaptureCards {
   const held = source(captures, over);
 
-  return new CaptureCards(() => held);
+  return new CaptureCards(
+    () => held,
+    () => store,
+  );
+}
+
+function newestChosen(): FakeStore {
+  const store = new FakeStore();
+  store.setItem(CAPTURE_SORT_KEY, 'newest');
+  return store;
+}
+
+function idsOf(panel: CaptureCards): readonly string[] {
+  return panel.cards.map((card) => card.id);
 }
 
 describe('card projection', () => {
@@ -149,7 +184,11 @@ describe('card projection', () => {
       read('c3', 'ねこ'),
     ]).cards;
 
-    expect(cards.map((card) => card.placeLanguage)).toEqual(['ja', null, null]);
+    expect(cards.map((card) => [card.id, card.placeLanguage])).toEqual([
+      ['c3', null],
+      ['c1', 'ja'],
+      ['c2', null],
+    ]);
   });
 
   it('marks no chapter place with a language when the route knows none', () => {
@@ -342,14 +381,15 @@ describe('card search', () => {
     ]);
   });
 
-  it('keeps every card newest first while nothing is typed, whatever the passage order', () => {
-    const newest = [
-      liftedAt('c3', 'ねこの尾', '/6/22!/2:0'),
-      liftedAt('c1', 'ねこが来た', '/6/4!/2:0'),
-    ];
-    const panel = cardsOf(newest, { passages: byPassageOrder });
+  it('lists matches newest first when the reader sorts by newest', () => {
+    const panel = cardsOf(
+      [read('c1', 'ねこ', null, 100), read('c2', 'いぬ', null, 50), read('c3', 'ねこ', null, 0)],
+      {},
+      newestChosen(),
+    );
+    panel.query = 'ねこ';
 
-    expect(panel.cards.map((card) => card.id)).toEqual([captureId('c3'), captureId('c1')]);
+    expect(idsOf(panel)).toEqual(['c3', 'c1']);
   });
 
   it('marks the matched run inside the text', () => {
@@ -376,6 +416,95 @@ describe('card search', () => {
     panel.query = '  ねこ  ';
 
     expect([panel.wanted, panel.cards.length]).toEqual(['ねこ', 1]);
+  });
+});
+
+describe('card order', () => {
+  it('lists image captures in book order while nothing is typed', () => {
+    const panel = cardsOf([
+      read('c1', 'ねこ', null, 0),
+      read('c2', 'いぬ', null, 100),
+      read('c3', 'とり', null, 50),
+    ]);
+
+    expect(idsOf(panel)).toEqual(['c2', 'c3', 'c1']);
+  });
+
+  it('lists text captures in the passage order it is given while nothing is typed', () => {
+    const panel = cardsOf(
+      [
+        liftedAt('c3', 'ねこの尾', '/6/22!/2:0'),
+        liftedAt('c1', 'いぬが来た', '/6/4!/2:0'),
+        liftedAt('c2', 'とりの目', '/6/14!/2:0'),
+      ],
+      { passages: byPassageOrder },
+    );
+
+    expect(idsOf(panel)).toEqual(['c1', 'c2', 'c3']);
+  });
+
+  it('places a capture still being read at its place in the book, not at the top', () => {
+    const panel = cardsOf([
+      read('c1', 'ねこ', null, 100),
+      read('c2', 'いぬ', null, 0),
+      pending('c3', 50),
+    ]);
+
+    expect(idsOf(panel)).toEqual(['c1', 'c3', 'c2']);
+  });
+
+  it('lists every capture newest first when the reader sorts by newest', () => {
+    const panel = cardsOf(
+      [liftedAt('c1', 'いぬが来た', '/6/4!/2:0'), liftedAt('c3', 'ねこの尾', '/6/22!/2:0')],
+      { passages: byPassageOrder },
+      newestChosen(),
+    );
+
+    expect(idsOf(panel)).toEqual(['c3', 'c1']);
+  });
+
+  it('starts in book order when the stored choice is unknown', () => {
+    const store = new FakeStore();
+    store.setItem(CAPTURE_SORT_KEY, 'oldest');
+
+    expect(cardsOf([], {}, store).sort).toBe('book');
+  });
+
+  it('reorders the cards and stores the choice when the reader sorts', () => {
+    const store = new FakeStore();
+    const panel = cardsOf([read('c1', 'ねこ', null, 100), read('c2', 'いぬ', null, 0)], {}, store);
+    panel.sortBy('newest');
+
+    expect([idsOf(panel), store.getItem(CAPTURE_SORT_KEY)]).toEqual([['c2', 'c1'], 'newest']);
+    expect(cardsOf([], {}, store).sort).toBe('newest');
+  });
+});
+
+describe('card reveal', () => {
+  it('reveals the capture just made once, wherever it sits', () => {
+    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
+    const made = captureId('c2');
+
+    expect([panel.reveals(made, made), panel.reveals(made, made)]).toEqual([true, false]);
+  });
+
+  it('reveals no capture other than the one just made', () => {
+    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
+
+    expect(panel.reveals(captureId('c1'), captureId('c2'))).toBe(false);
+  });
+
+  it('reveals nothing when no capture was made while the book is open', () => {
+    const panel = cardsOf([read('c1', 'ねこ')]);
+
+    expect(panel.reveals(captureId('c1'), null)).toBe(false);
+  });
+
+  it('reveals the next capture made after one it has revealed', () => {
+    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
+    panel.reveals(captureId('c1'), captureId('c1'));
+
+    expect(panel.reveals(captureId('c2'), captureId('c2'))).toBe(true);
   });
 });
 

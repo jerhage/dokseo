@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
   import Alert from '$lib/components/Alert.svelte';
@@ -12,6 +13,7 @@
   import SearchField from '$lib/components/SearchField.svelte';
   import Stepper from '$lib/components/Stepper.svelte';
   import type { StepperSteps } from '$lib/components/stepper';
+  import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import Trash from '$lib/components/icons/Trash.svelte';
   import { getToaster } from '$lib/components/toast-context';
@@ -28,6 +30,7 @@
   import { CaptureCards } from './capture-cards.svelte';
   import type { Card, CardJump } from './capture-cards.svelte';
   import type { CaptureView } from './capture-view.svelte';
+  import { CAPTURE_SORTS, CAPTURE_SORT_LABEL, captureSortName } from './capture-sort';
   import { clearWarning } from './clearing';
   import { emptyPanelText } from './empty-panel';
   import type { CaptureSource } from './empty-panel';
@@ -176,6 +179,12 @@
     selection.open(capture);
   }
 
+  function revealIfLatest(id: CaptureId): Attachment<HTMLElement> {
+    return (node) => {
+      if (panel.reveals(id, view.latest)) node.scrollIntoView({ block: 'nearest' });
+    };
+  }
+
   function closeTags(): void {
     if (selection.picker.capture === null) return;
 
@@ -191,6 +200,21 @@
     <Badge>{view.count}</Badge>
     <kbd class="ms-auto" title="Find in captures">⌘K</kbd>
     <DocumentTags tags={view.tags} counts={view.bookCounts} />
+    <Dropdown
+      variant="ghost"
+      size="sm"
+      align="end"
+      square
+      chevron={false}
+      icon={ArrowUpDown}
+      label={CAPTURE_SORT_LABEL}
+    >
+      {#each CAPTURE_SORTS as choice (choice)}
+        <DropdownItem selected={panel.sort === choice} onclick={() => panel.sortBy(choice)}>
+          {captureSortName(choice)}
+        </DropdownItem>
+      {/each}
+    </Dropdown>
     <Dropdown
       variant="ghost"
       size="sm"
@@ -255,7 +279,7 @@
       {:else}
         <ul class="col gap-2 list-reset" aria-label="Captures in this book">
           {#each cards as card, order (card.id)}
-            <li>
+            <li {@attach revealIfLatest(card.id)}>
               <CaptureCard
                 {card}
                 {language}

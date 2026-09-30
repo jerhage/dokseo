@@ -166,6 +166,7 @@ class CaptureCollection {
   tags = $state.raw<readonly Tag[]>([]);
   libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
   load = $state.raw<CaptureLoad>(LOADING);
+  latest = $state.raw<CaptureId | null>(null);
 
   #container: Container;
   #notify: Notify;
@@ -323,6 +324,7 @@ class CaptureCollection {
     this.#book = null;
     this.load = LOADING;
     this.captures = [];
+    this.latest = null;
     this.#capturesById = new Map();
     this.#generation += 1;
     return this.#generation;
@@ -393,6 +395,7 @@ class CaptureCollection {
         edited: false,
       },
     ];
+    this.latest = id;
 
     await this.#keep(generation, {
       id,
@@ -419,6 +422,7 @@ class CaptureCollection {
         edited: false,
       },
     ];
+    this.latest = id;
     this.#editors.open(id);
 
     const written = await this.#container.recognition
@@ -453,6 +457,7 @@ class CaptureCollection {
         status: 'pending',
       },
     ];
+    this.latest = id;
 
     const settled = await reading();
 
