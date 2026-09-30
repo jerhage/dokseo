@@ -1,3 +1,6 @@
+const LEAF_DOMAINS = ['library', 'viewing', 'flowing', 'recognition'];
+const LEAF_DOMAIN_PATH = `^src/lib/domains/(${LEAF_DOMAINS.join('|')})/`;
+
 module.exports = {
   forbidden: [
     {
@@ -55,12 +58,27 @@ module.exports = {
     {
       name: 'leaf-domains-are-independent',
       comment:
-        "Domains form a directed acyclic graph, and this rule is what makes the cycle impossible rather than merely discouraged. library, viewing, flowing, recognition and lexicon are leaves: each imports no other domain at all. reading (the selection-to-lookup flow) and storage (what the origin holds, which needs recognition to tell a model's cached files from the runtime's) are the non-leaves, and each may import a leaf's domain/ and use-cases/, so nothing ever points back at them. cross-domain-contract-only is not enough on its own, because it permits library -> recognition and recognition -> library at the same time, and no-circular cannot see that: a cycle between two DOMAINS need not be a cycle between two MODULES, since library/domain/x -> recognition/domain/y and recognition/use-cases/z -> library/domain/w are two acyclic module edges and one cyclic domain relationship. The back-reference exempts a leaf from itself, so a sibling import inside one domain stays legal. When a screen needs two domains, the route composes them and passes a snippet as a prop; a domain never reaches for another domain to render it.",
+        "Domains form a directed acyclic graph, and this rule is what makes the cycle impossible rather than merely discouraged. library, viewing, flowing and recognition are leaves, named once in LEAF_DOMAINS at the top of this file: each imports no other domain at all. storage (what the origin holds, which needs recognition to tell a model's cached files from the runtime's) is the non-leaf, and it may import a leaf's domain/ and use-cases/, so nothing ever points back at it. cross-domain-contract-only is not enough on its own, because it permits library -> recognition and recognition -> library at the same time, and no-circular cannot see that: a cycle between two DOMAINS need not be a cycle between two MODULES, since library/domain/x -> recognition/domain/y and recognition/use-cases/z -> library/domain/w are two acyclic module edges and one cyclic domain relationship. The back-reference exempts a leaf from itself, so a sibling import inside one domain stays legal. When a screen needs two domains, the route composes them and passes a snippet as a prop; a domain never reaches for another domain to render it.",
       severity: 'error',
-      from: { path: '^src/lib/domains/(library|viewing|flowing|recognition|lexicon)/' },
+      from: { path: LEAF_DOMAIN_PATH },
       to: {
         path: '^src/lib/domains/',
         pathNot: '^src/lib/domains/$1/',
+      },
+    },
+
+    {
+      name: 'non-leaves-import-only-leaves',
+      comment:
+        "The other half of the domain DAG. leaf-domains-are-independent stops a leaf from importing any domain, but on its own it says nothing about a non-leaf importing another non-leaf, so a second non-leaf beside storage could import storage while storage imported it: a domain cycle that no-circular cannot see, for the same reason as above. A file in a non-leaf domain may therefore import only its own domain and the leaves. Every domain folder not listed in LEAF_DOMAINS counts as a non-leaf, so a new domain is held to this rule until it is deliberately added to the leaf list. With both rules, every domain edge runs from a non-leaf to a leaf and no edge ends at a non-leaf, so a domain cycle is impossible. The back-reference $1 is the importing non-leaf's own name, captured by from.path, so a sibling import inside one domain stays legal.",
+      severity: 'error',
+      from: {
+        path: '^src/lib/domains/([^/]+)/',
+        pathNot: LEAF_DOMAIN_PATH,
+      },
+      to: {
+        path: '^src/lib/domains/',
+        pathNot: ['^src/lib/domains/$1/', LEAF_DOMAIN_PATH],
       },
     },
 
