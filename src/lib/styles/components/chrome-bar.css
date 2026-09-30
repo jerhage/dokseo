@@ -17,6 +17,6 @@
   box-shadow: var(--shadow-sm);
 }
 .chrome-bar-bottom {
-  inset-block-end: 0;
+  inset-block-end: var(--chrome-bar-lift, 0px);
   border-block-start: var(--border-width) solid var(--border-color);
 }

@@ -20,11 +20,25 @@
 <DemoSection
   id="dock"
   title="Dock"
-  classes={['dock', 'dock-side', 'dock-rail', 'dock-sheet', 'dock-peek', 'dock-panel']}
+  classes={[
+    'dock',
+    'dock-side',
+    'dock-rail',
+    'dock-sheet',
+    'dock-peek',
+    'dock-panel',
+    'dock-drawer',
+    'dock-handle',
+    'dock-handle-grip',
+    'dock-probe',
+  ]}
 >
   <p class="text-sm text-muted">
     A panel beside the page on a wide screen, or below it on a narrow one. Its arrow toggle hides it
-    to a rail or a peek, which shows a count while it is closed.
+    to a rail or a peek, which shows a count while it is closed. The sheet's handle drags it taller
+    or shorter, settling at its standard or tall height, and closes it when dragged below the
+    standard one; Enter or Space switches the two heights, and the up and down arrows step between
+    them.
   </p>
   <Toggle bind:checked={counted}>With a count</Toggle>
   <div class="grid-2">
@@ -48,6 +62,7 @@
               label="Notes"
               expandLabel="Show notes"
               collapseLabel="Hide notes"
+              resizeLabel="Resize notes"
               ontoggle={() => (frame.asked = !frame.asked)}
             >
               <div class="col gap-2 flex-1 p-3 overflow-y-auto text-sm">

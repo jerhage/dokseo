@@ -25,6 +25,7 @@ class ReaderFrameView {
   bodyHeight = $state(0);
   pageHeight = $state(0);
   compactWidth = $state(0);
+  sheetCover = $state(0);
   readonly focus: ChromeFocus;
   #panelAsked = $state<boolean | null>(null);
 
@@ -52,8 +53,12 @@ class ReaderFrameView {
     this.#panelAsked = askedAfterCapture(this.narrow, this.#panelAsked);
   }
 
+  pinLift(shown: boolean): number {
+    return (shown ? this.bottomHeight : 0) + this.sheetCover;
+  }
+
   toastClearance(shown: boolean): number {
-    return this.bodyHeight - this.pageHeight + (shown ? this.bottomHeight : 0);
+    return this.bodyHeight - this.pageHeight + this.pinLift(shown);
   }
 
   releaseBars(focused: Element | null, surface: ReadingSurface | null): void {

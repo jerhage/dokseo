@@ -4,6 +4,7 @@
   --layout-hero-height: var(--ds-layout-hero-height);
   --layout-row-height: var(--ds-layout-row-height);
   --layout-sheet-height: var(--ds-layout-sheet-height);
+  --layout-sheet-height-tall: var(--ds-layout-sheet-height-tall);
   --layout-sidebar-width: var(--ds-size-sidebar);
   --layout-list-width: var(--ds-size-list);
   --layout-list-height: var(--ds-size-list-height);

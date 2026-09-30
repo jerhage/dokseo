@@ -55,7 +55,8 @@
       class={['relative flex-1 min-h-0 overflow-hidden', pageClass]}
       bind:clientHeight={frame.pageHeight}
       style:--pin-drop="{shown ? frame.topHeight : 0}px"
-      style:--pin-lift="{shown ? frame.bottomHeight : 0}px"
+      style:--pin-lift="{frame.pinLift(shown)}px"
+      style:--chrome-bar-lift="{frame.sheetCover}px"
     >
       {@render page()}
 
@@ -77,7 +78,9 @@
         label="Captures"
         expandLabel="Show captures"
         collapseLabel="Hide captures"
+        resizeLabel="Resize captures"
         ontoggle={() => frame.togglePanel()}
+        bind:cover={frame.sheetCover}
       >
         {@render panel()}
       </Dock>

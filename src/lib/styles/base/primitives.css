@@ -77,6 +77,7 @@
   --ds-layout-hero-height: 32rem;
   --ds-layout-row-height: 12rem;
   --ds-layout-sheet-height: 40dvh;
+  --ds-layout-sheet-height-tall: 75dvh;
   --ds-ratio-portrait: 2 / 3;
   --ds-ratio-square: 1 / 1;
   --ds-ratio-video: 16 / 9;

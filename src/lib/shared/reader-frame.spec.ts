@@ -55,4 +55,17 @@ describe('ReaderFrameView', () => {
     expect(frame.toastClearance(false)).toBe(40);
     expect(frame.toastClearance(true)).toBe(88);
   });
+
+  it('lifts the pins and clears toasts of the sheet that covers the page', () => {
+    const frame = measured(390, 640);
+    frame.bodyHeight = 664;
+    frame.pageHeight = 631;
+    frame.bottomHeight = 49;
+    frame.sheetCover = 298;
+
+    expect(frame.pinLift(false)).toBe(298);
+    expect(frame.pinLift(true)).toBe(347);
+    expect(frame.toastClearance(false)).toBe(331);
+    expect(frame.toastClearance(true)).toBe(380);
+  });
 });
