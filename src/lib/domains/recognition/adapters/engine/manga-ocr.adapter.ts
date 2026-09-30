@@ -14,6 +14,7 @@ function createMangaOcrRecognizer(options: MangaOcrOptions): TextRecognizer {
   return createWorkerRecognizer({
     ...options,
     id: 'manga-ocr',
+    runtime: 'manga-ocr',
     startWorker: options.startWorker ?? startOcrWorker,
   });
 }

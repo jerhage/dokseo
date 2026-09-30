@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
 import type { ImageRect } from '$lib/shared/geometry';
-import { cropFrom, pillowLuma } from './pixels';
+import { cropFrom, lumaPlane, pillowLuma } from './pixels';
 
 const PAGE_WIDTH = 100;
 
@@ -124,5 +124,21 @@ describe('pillowLuma', () => {
     for (let level = 0; level <= 255; level += 1) {
       expect(pillowLuma(level, level, level)).toBe(level);
     }
+  });
+});
+
+describe('lumaPlane', () => {
+  it('gives one Pillow luma per pixel from the colour channels', () => {
+    const rgba = new Uint8ClampedArray([
+      255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 200, 100, 50, 255,
+    ]);
+
+    expect(Array.from(lumaPlane(rgba))).toEqual([76, 150, 29, 124]);
+  });
+
+  it('ignores alpha', () => {
+    const rgba = new Uint8ClampedArray([255, 255, 0, 0, 255, 255, 0, 128]);
+
+    expect(Array.from(lumaPlane(rgba))).toEqual([226, 226]);
   });
 });

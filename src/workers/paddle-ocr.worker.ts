@@ -7,23 +7,19 @@ import type { ComputeChoice } from '$lib/domains/recognition/domain/engine/compu
 import { ctcReading, joinedReading } from '$lib/domains/recognition/domain/engine/ctc-reading';
 import type { CtcLogits, CtcReading } from '$lib/domains/recognition/domain/engine/ctc-reading';
 import { lineGeometry } from '$lib/domains/recognition/domain/engine/line-geometry';
+import { LINE_CHANNELS, lineTensorData } from '$lib/domains/recognition/domain/engine/line-tensor';
 import { SINGLE_GRAPH_FILE } from '$lib/domains/recognition/domain/model/model-weights';
 import type { RecognizerDevice } from '$lib/domains/recognition/domain/engine/recognizer-session';
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 import { textLineBands } from '$lib/domains/recognition/domain/engine/text-line-bands';
 import type { TextBand } from '$lib/domains/recognition/domain/engine/text-line-bands';
+import { lumaPlane } from '$lib/platform/image/pixels';
 import { describeCause } from '$lib/shared/cause';
 import { guardFirstGpuRun, openOnDevice, reopenOnCpu } from './device-fallback';
 import { installModelFetch } from './model-fetch';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
 const DICTIONARY_FILE = 'inference.yml';
-
-const CHANNELS = 3;
-
-const MID_LEVEL = 0.5;
-
-const FULL_LEVEL = 255;
 
 type InferenceSession = {
   readonly outputNames: readonly string[];
@@ -82,11 +78,7 @@ function lumaOf(image: ImageBitmap): Uint8ClampedArray {
   const context = surfaceOf(image.width, image.height);
   context.drawImage(image, 0, 0);
 
-  const pixels = context.getImageData(0, 0, image.width, image.height).data;
-  const luma = new Uint8ClampedArray(image.width * image.height);
-  for (let at = 0; at < luma.length; at += 1) luma[at] = pixels[at * 4] ?? 0;
-
-  return luma;
+  return lumaPlane(context.getImageData(0, 0, image.width, image.height).data);
 }
 
 function bandPixels(image: ImageBitmap, band: TextBand): Float32Array {
@@ -108,23 +100,7 @@ function bandPixels(image: ImageBitmap, band: TextBand): Float32Array {
   );
 
   const pixels = context.getImageData(0, 0, geometry.drawnWidth, geometry.height).data;
-  const plane = geometry.height * geometry.tensorWidth;
-  const data = new Float32Array(CHANNELS * plane);
-
-  for (let row = 0; row < geometry.height; row += 1) {
-    for (let column = 0; column < geometry.drawnWidth; column += 1) {
-      const from = (row * geometry.drawnWidth + column) * 4;
-      const to = row * geometry.tensorWidth + column;
-      const red = (pixels[from] ?? 0) / FULL_LEVEL;
-      const green = (pixels[from + 1] ?? 0) / FULL_LEVEL;
-      const blue = (pixels[from + 2] ?? 0) / FULL_LEVEL;
-      data[to] = (blue - MID_LEVEL) / MID_LEVEL;
-      data[plane + to] = (green - MID_LEVEL) / MID_LEVEL;
-      data[2 * plane + to] = (red - MID_LEVEL) / MID_LEVEL;
-    }
-  }
-
-  return data;
+  return lineTensorData(pixels, geometry);
 }
 
 function dictionaryUrl(remoteHost: string, template: string, modelId: string): string {
@@ -197,7 +173,7 @@ async function openSession(
         const geometry = lineGeometry(image.width, height);
         const data = bandPixels(image, band);
         const answer = await session.run({
-          x: new Tensor('float32', data, [1, CHANNELS, geometry.height, geometry.tensorWidth]),
+          x: new Tensor('float32', data, [1, LINE_CHANNELS, geometry.height, geometry.tensorWidth]),
         });
 
         readings.push(ctcReading(ctcLogitsOf(answer[output]), labels));

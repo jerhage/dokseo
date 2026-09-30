@@ -14,6 +14,7 @@ function createPaddleOcrRecognizer(options: PaddleOcrOptions): TextRecognizer {
   return createWorkerRecognizer({
     ...options,
     id: 'paddle-ocr',
+    runtime: 'paddle-ocr',
     startWorker: options.startWorker ?? startPaddleOcrWorker,
   });
 }

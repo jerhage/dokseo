@@ -3,9 +3,12 @@ import { own } from '$lib/platform/image/bitmap';
 import type { OwnedBitmap } from '$lib/platform/image/bitmap';
 import { scaleBy, toGrayscale } from '$lib/platform/image/pixels';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
-import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import type { Trace, TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import { describeCause } from '$lib/shared/cause';
+import { inputPreparationFor } from '../../domain/engine/input-preparation';
+import type { InputPreparation } from '../../domain/engine/input-preparation';
 import { downscaleFor } from '../../domain/engine/model-input';
+import type { ModelRuntime } from '../../domain/engine/model-runtime';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
@@ -26,6 +29,7 @@ type WorkerOcrOptions = {
 
 type WorkerRecognizerOptions = WorkerOcrOptions & {
   readonly id: string;
+  readonly runtime: ModelRuntime;
   readonly startWorker: () => Worker;
 };
 
@@ -39,11 +43,24 @@ const NOT_CONFIGURED = 'No recognition model is configured for this language';
 
 const CANCELLED = 'The recognition model load was cancelled';
 
-function preparedFor(begin: TraceFactory, image: ImageBitmap): OwnedBitmap {
+function greyscaled(trace: Trace, bitmap: ImageBitmap): OwnedBitmap {
+  const grey = toGrayscale(bitmap);
+  trace.step('greyscale', {
+    width: grey.bitmap.width,
+    height: grey.bitmap.height,
+  });
+  return grey;
+}
+
+function preparedFor(
+  begin: TraceFactory,
+  image: ImageBitmap,
+  preparation: InputPreparation,
+): OwnedBitmap {
   const trace = begin('prepare-input');
 
   try {
-    const factor = downscaleFor(image);
+    const factor = downscaleFor(image, preparation.maxEdge);
     using capped = scaleBy(image, factor);
     trace.step('capped', {
       factor,
@@ -51,14 +68,13 @@ function preparedFor(begin: TraceFactory, image: ImageBitmap): OwnedBitmap {
       height: capped.bitmap.height,
     });
 
-    using grey = toGrayscale(capped.bitmap);
-    trace.step('greyscale', {
-      width: grey.bitmap.width,
-      height: grey.bitmap.height,
-    });
+    using prepared = match(preparation)
+      .with({ kind: 'pillow-grey' }, () => greyscaled(trace, capped.bitmap))
+      .with({ kind: 'colour' }, () => own(capped.release()))
+      .exhaustive();
 
-    trace.image('input', grey.bitmap);
-    return own(grey.release());
+    trace.image('input', prepared.bitmap);
+    return own(prepared.release());
   } finally {
     trace.end();
   }
@@ -91,6 +107,7 @@ function unreadable(error: ModelLoadError): RecognitionError {
 function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognizer {
   const start = options.startWorker;
   const beginTrace = options.beginTrace ?? noTrace;
+  const preparation = inputPreparationFor(options.runtime);
   const pending = new Map<number, Settle>();
 
   let worker: Worker | null = null;
@@ -221,7 +238,7 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
     if (target === null) return err({ kind: 'model-unavailable', cause: CANCELLED });
 
     try {
-      using prepared = preparedFor(beginTrace, image);
+      using prepared = preparedFor(beginTrace, image, preparation);
 
       lastId += 1;
       const id = lastId;

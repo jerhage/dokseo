@@ -44,6 +44,11 @@ describe('downscaleFor', () => {
     expect(3000 * factor).toBeLessThan(MAX_MODEL_INPUT_EDGE);
   });
 
+  it('reduces to a limit it is given', () => {
+    expect(downscaleFor({ width: 1000, height: 400 }, 500)).toBeCloseTo(0.5);
+    expect(downscaleFor({ width: 400, height: 300 }, 500)).toBe(1);
+  });
+
   it('leaves a degenerate size alone', () => {
     expect(downscaleFor({ width: 0, height: 0 })).toBe(1);
     expect(downscaleFor({ width: -40, height: -10 })).toBe(1);

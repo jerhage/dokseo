@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAX_MODEL_INPUT_EDGE } from '../../domain/engine/model-input';
 import type { Trace, TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import type { ModelRuntime } from '../../domain/engine/model-runtime';
 import type { RecognizerSetup } from '../../domain/engine/recognizer-setup';
 import type { TextRecognizer } from '../../domain/engine/text-recognizer';
 import { createWorkerRecognizer } from './worker-recognizer';
@@ -122,9 +123,14 @@ function tick(): Promise<void> {
   });
 }
 
-function recognizerOver(fake: FakeWorker, beginTrace?: TraceFactory): TextRecognizer {
+function recognizerOver(
+  fake: FakeWorker,
+  beginTrace?: TraceFactory,
+  runtime: ModelRuntime = 'manga-ocr',
+): TextRecognizer {
   return createWorkerRecognizer({
     id: 'stub-ocr',
+    runtime,
     readSetup: () => Promise.resolve(SETUP),
     startWorker: () => fake.worker,
     ...(beginTrace === undefined ? {} : { beginTrace }),
@@ -222,6 +228,23 @@ describe('createWorkerRecognizer', () => {
       width: MAX_MODEL_INPUT_EDGE,
       height: Math.round((900 * MAX_MODEL_INPUT_EDGE) / 6000),
     });
+    expect(trace.images).toEqual([['input', crop.image]]);
+    expect(trace.ends()).toBe(1);
+  });
+
+  it('sends a PaddleOCR model the capped crop in colour, never greyscaled', async () => {
+    stubOffscreenCanvas();
+    const fake = fakeWorker();
+    const trace = stubTrace();
+    const recognizer = recognizerOver(fake, trace.begin, 'paddle-ocr');
+
+    void recognizer.recognize(stubBitmap(6000, 900).bitmap);
+    await openedOver(fake);
+
+    const crop = cropSent(fake);
+    expect(trace.steps.map(([name]) => name)).toEqual(['capped']);
+    expect(crop.image.width).toBe(MAX_MODEL_INPUT_EDGE);
+    expect(crop.transfer).toEqual([crop.image]);
     expect(trace.images).toEqual([['input', crop.image]]);
     expect(trace.ends()).toBe(1);
   });

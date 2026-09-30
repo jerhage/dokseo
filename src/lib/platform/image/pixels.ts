@@ -53,6 +53,12 @@ function lumaAt(data: Uint8ClampedArray, offset: number): number {
   return pillowLuma(data[offset] ?? 0, data[offset + 1] ?? 0, data[offset + 2] ?? 0);
 }
 
+function lumaPlane(rgba: Uint8ClampedArray): Uint8ClampedArray {
+  const luma = new Uint8ClampedArray(Math.floor(rgba.length / 4));
+  for (let at = 0; at < luma.length; at += 1) luma[at] = lumaAt(rgba, at * 4);
+  return luma;
+}
+
 async function cropFrom(bitmap: ImageBitmap, rect: ImageRect): Promise<OwnedBitmap> {
   const bounds = imageRect(0, 0, bitmap.width, bitmap.height);
   const area = wholePixels(clampTo(normalize(rect), bounds));
@@ -129,4 +135,4 @@ function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
   return own(context.canvas.transferToImageBitmap());
 }
 
-export { cropFrom, pillowLuma, stitch, scaleBy, toGrayscale };
+export { cropFrom, lumaPlane, pillowLuma, stitch, scaleBy, toGrayscale };
