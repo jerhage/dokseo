@@ -8,6 +8,7 @@
   import type { OverlayPlacement } from './overlay-placement';
 
   type PopoverTrigger = {
+    readonly type: 'button';
     readonly popovertarget: string;
     readonly 'aria-haspopup': 'dialog';
     readonly [attach: symbol]: Attachment<HTMLElement>;
@@ -28,6 +29,7 @@
   let placement = $state<OverlayPlacement>();
 
   const triggerProps: PopoverTrigger = {
+    type: 'button',
     popovertarget: `${uid}-popover`,
     'aria-haspopup': 'dialog',
     [createAttachmentKey()]: (element: HTMLElement) => {
