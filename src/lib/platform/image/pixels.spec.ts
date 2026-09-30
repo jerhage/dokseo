@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { imageRect } from '$lib/shared/geometry';
 import type { ImageRect } from '$lib/shared/geometry';
-import { cropFrom } from './pixels';
+import { cropFrom, pillowLuma } from './pixels';
 
 const PAGE_WIDTH = 100;
 
@@ -94,5 +94,35 @@ describe('cropFrom', () => {
     expect(area).toEqual({ x: 98, y: 78, width: 2, height: 2 });
     expect(area.x + area.width).toBeLessThanOrEqual(PAGE_WIDTH);
     expect(area.y + area.height).toBeLessThanOrEqual(PAGE_HEIGHT);
+  });
+});
+
+describe('pillowLuma', () => {
+  const pixels: readonly {
+    readonly name: string;
+    readonly rgb: readonly [number, number, number];
+    readonly luma: number;
+  }[] = [
+    { name: 'black', rgb: [0, 0, 0], luma: 0 },
+    { name: 'white', rgb: [255, 255, 255], luma: 255 },
+    { name: 'pure red', rgb: [255, 0, 0], luma: 76 },
+    { name: 'pure green', rgb: [0, 255, 0], luma: 150 },
+    { name: 'pure blue', rgb: [0, 0, 255], luma: 29 },
+    { name: 'mid grey', rgb: [128, 128, 128], luma: 128 },
+    { name: 'burnt orange', rgb: [200, 100, 50], luma: 124 },
+    { name: 'navy', rgb: [12, 34, 56], luma: 30 },
+    { name: 'salmon', rgb: [250, 128, 114], luma: 163 },
+    { name: 'turquoise', rgb: [64, 224, 208], luma: 174 },
+    { name: 'yellow', rgb: [255, 255, 0], luma: 226 },
+  ];
+
+  it.each(pixels)('gives $name the luma of Pillow convert("L")', ({ rgb, luma }) => {
+    expect(pillowLuma(...rgb)).toBe(luma);
+  });
+
+  it('keeps every grey level unchanged', () => {
+    for (let level = 0; level <= 255; level += 1) {
+      expect(pillowLuma(level, level, level)).toBe(level);
+    }
   });
 });

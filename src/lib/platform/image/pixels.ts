@@ -4,11 +4,15 @@ import type { ImageRect } from '$lib/shared/geometry';
 import { own } from './bitmap';
 import type { OwnedBitmap } from './bitmap';
 
-const RED_WEIGHT = 0.2126;
+const REC_601_RED_FIXED = 19595;
 
-const GREEN_WEIGHT = 0.7152;
+const REC_601_GREEN_FIXED = 38470;
 
-const BLUE_WEIGHT = 0.0722;
+const REC_601_BLUE_FIXED = 7471;
+
+const FIXED_POINT_HALF = 0x8000;
+
+const FIXED_POINT_SHIFT = 16;
 
 const GROUND = '#ffffff';
 
@@ -35,12 +39,18 @@ function usable(value: number): boolean {
   return Number.isFinite(value) && value >= 1;
 }
 
-function lumaAt(data: Uint8ClampedArray, offset: number): number {
+function pillowLuma(red: number, green: number, blue: number): number {
   return (
-    RED_WEIGHT * (data[offset] ?? 0) +
-    GREEN_WEIGHT * (data[offset + 1] ?? 0) +
-    BLUE_WEIGHT * (data[offset + 2] ?? 0)
+    (red * REC_601_RED_FIXED +
+      green * REC_601_GREEN_FIXED +
+      blue * REC_601_BLUE_FIXED +
+      FIXED_POINT_HALF) >>
+    FIXED_POINT_SHIFT
   );
+}
+
+function lumaAt(data: Uint8ClampedArray, offset: number): number {
+  return pillowLuma(data[offset] ?? 0, data[offset + 1] ?? 0, data[offset + 2] ?? 0);
 }
 
 async function cropFrom(bitmap: ImageBitmap, rect: ImageRect): Promise<OwnedBitmap> {
@@ -119,4 +129,4 @@ function toGrayscale(bitmap: ImageBitmap): OwnedBitmap {
   return own(context.canvas.transferToImageBitmap());
 }
 
-export { cropFrom, stitch, scaleBy, toGrayscale };
+export { cropFrom, pillowLuma, stitch, scaleBy, toGrayscale };
