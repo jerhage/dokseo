@@ -154,6 +154,10 @@ function carouselShift(motion: CarouselMotion): number {
     .exhaustive();
 }
 
+function isFlick(distance: number, elapsedMs: number): boolean {
+  return distance >= FLICK_MIN_PX && elapsedMs > 0 && distance / elapsedMs >= FLICK_PX_PER_MS;
+}
+
 function swipeRelease(
   travel: number,
   elapsedMs: number,
@@ -164,9 +168,7 @@ function swipeRelease(
 
   const distance = Math.abs(travel);
   const far = distance >= width * SWIPE_SHARE;
-  const flicked =
-    distance >= FLICK_MIN_PX && elapsedMs > 0 && distance / elapsedMs >= FLICK_PX_PER_MS;
-  return far || flicked ? revealedSide(travel, direction) : null;
+  return far || isFlick(distance, elapsedMs) ? revealedSide(travel, direction) : null;
 }
 
 export {
@@ -181,6 +183,7 @@ export {
   carouselShift,
   carouselStep,
   holdsSide,
+  isFlick,
   revealedSide,
   screenSide,
   settleFallbackMs,
