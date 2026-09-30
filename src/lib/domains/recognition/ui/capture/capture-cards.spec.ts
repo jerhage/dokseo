@@ -485,26 +485,50 @@ describe('card reveal', () => {
     const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
     const made = captureId('c2');
 
-    expect([panel.reveals(made, made), panel.reveals(made, made)]).toEqual([true, false]);
+    expect([panel.reveals(made, made, true), panel.reveals(made, made, true)]).toEqual([
+      true,
+      false,
+    ]);
   });
 
   it('reveals no capture other than the one just made', () => {
     const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
 
-    expect(panel.reveals(captureId('c1'), captureId('c2'))).toBe(false);
+    expect(panel.reveals(captureId('c1'), captureId('c2'), true)).toBe(false);
   });
 
   it('reveals nothing when no capture was made while the book is open', () => {
     const panel = cardsOf([read('c1', 'ねこ')]);
 
-    expect(panel.reveals(captureId('c1'), null)).toBe(false);
+    expect(panel.reveals(captureId('c1'), null, true)).toBe(false);
   });
 
   it('reveals the next capture made after one it has revealed', () => {
     const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
-    panel.reveals(captureId('c1'), captureId('c1'));
+    panel.reveals(captureId('c1'), captureId('c1'), true);
 
-    expect(panel.reveals(captureId('c2'), captureId('c2'))).toBe(true);
+    expect(panel.reveals(captureId('c2'), captureId('c2'), true)).toBe(true);
+  });
+
+  it('holds the capture just made while the panel is hidden and reveals it when the panel shows', () => {
+    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
+    const made = captureId('c2');
+
+    expect([
+      panel.reveals(made, made, false),
+      panel.reveals(made, made, false),
+      panel.reveals(made, made, true),
+      panel.reveals(made, made, true),
+    ]).toEqual([false, false, true, false]);
+  });
+
+  it('reveals a capture held while hidden after the reader sorts, at its new place', () => {
+    const panel = cardsOf([read('c1', 'ねこ', null, 0), pending('c2', 100)]);
+    const made = captureId('c2');
+    panel.reveals(made, made, false);
+    panel.sortBy('newest');
+
+    expect([idsOf(panel), panel.reveals(made, made, true)]).toEqual([['c2', 'c1'], true]);
   });
 });
 

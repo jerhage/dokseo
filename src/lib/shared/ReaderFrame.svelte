@@ -16,7 +16,7 @@
     readonly header: Snippet;
     readonly footer: Snippet;
     readonly overlay?: Snippet;
-    readonly panel?: Snippet | undefined;
+    readonly panel?: Snippet<[boolean]> | undefined;
     readonly panelCount?: number | undefined;
   };
 
@@ -82,7 +82,7 @@
         ontoggle={() => frame.togglePanel()}
         bind:cover={frame.sheetCover}
       >
-        {@render panel()}
+        {@render panel(frame.panelOpen)}
       </Dock>
     {/if}
   </div>

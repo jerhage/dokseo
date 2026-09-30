@@ -45,6 +45,10 @@ class ReaderFrameView {
     return dockPlacement(this.narrow, this.#panelAsked);
   }
 
+  get panelOpen(): boolean {
+    return dockToggle(this.placement).open;
+  }
+
   togglePanel(): void {
     this.#panelAsked = !dockToggle(this.placement).open;
   }

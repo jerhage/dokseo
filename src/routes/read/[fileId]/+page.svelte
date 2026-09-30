@@ -149,13 +149,14 @@
         />
       {/if}
     {/snippet}
-    {#snippet panel()}
+    {#snippet panel(visible)}
       <CapturePanel
         view={captures}
         {language}
         direction={flow.direction}
         passages={comparePassages}
         source="text"
+        {visible}
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
     {/snippet}
@@ -178,13 +179,14 @@
     {#snippet engine()}
       <EnginePill engine={captures.engine} {language} />
     {/snippet}
-    {#snippet panel()}
+    {#snippet panel(visible)}
       <CapturePanel
         view={captures}
         {language}
         direction={view.direction}
         passages={comparePassages}
         source="images"
+        {visible}
       />
     {/snippet}
   </ReaderScreen>

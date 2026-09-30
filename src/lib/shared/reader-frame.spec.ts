@@ -46,6 +46,23 @@ describe('ReaderFrameView', () => {
     expect(narrow.placement).toBe('peek');
   });
 
+  it('reports the panel shown beside a wide page and hidden under a narrow one until toggled', () => {
+    const wide = measured(1440, 640);
+    const narrow = measured(390, 640);
+    const hidden = [wide.panelOpen, narrow.panelOpen];
+    wide.togglePanel();
+    narrow.togglePanel();
+
+    expect([...hidden, wide.panelOpen, narrow.panelOpen]).toEqual([true, false, false, true]);
+  });
+
+  it('reports the panel still hidden after a capture under a narrow page', () => {
+    const narrow = measured(390, 640);
+    narrow.panelAfterCapture();
+
+    expect(narrow.panelOpen).toBe(false);
+  });
+
   it('clears toasts of what sits under the page, and of the bottom bar only while it shows', () => {
     const frame = measured(1440, 640);
     frame.bodyHeight = 900;

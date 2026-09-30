@@ -47,7 +47,7 @@
     readonly view: ReaderView;
     readonly glow?: readonly GlowRegion[];
     readonly everyGlow?: readonly GlowRegion[];
-    readonly panel?: Snippet;
+    readonly panel?: Snippet<[boolean]>;
     readonly panelCount?: number;
     readonly engine?: Snippet;
     readonly arrival?: Snippet;

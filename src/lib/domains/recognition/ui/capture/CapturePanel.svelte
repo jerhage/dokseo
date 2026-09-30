@@ -48,10 +48,11 @@
     readonly direction: ReadingDirection;
     readonly passages: PassageOrder;
     readonly source: CaptureSource;
+    readonly visible: boolean;
     readonly onSeek?: (passage: TextAnchor) => void;
   };
 
-  let { view, language, direction, passages, source, onSeek }: Props = $props();
+  let { view, language, direction, passages, source, visible, onSeek }: Props = $props();
 
   const uid = $props.id();
 
@@ -181,7 +182,7 @@
 
   function revealIfLatest(id: CaptureId): Attachment<HTMLElement> {
     return (node) => {
-      if (panel.reveals(id, view.latest)) node.scrollIntoView({ block: 'nearest' });
+      if (panel.reveals(id, view.latest, visible)) node.scrollIntoView({ block: 'nearest' });
     };
   }
 

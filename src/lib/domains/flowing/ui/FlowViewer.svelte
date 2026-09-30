@@ -59,7 +59,7 @@
   type Props = {
     readonly view: FlowView;
     readonly book: FlowBook;
-    readonly panel?: Snippet;
+    readonly panel?: Snippet<[boolean]>;
     readonly arrival?: Snippet;
     readonly panelCount?: number;
     readonly anchors?: readonly Anchor[];

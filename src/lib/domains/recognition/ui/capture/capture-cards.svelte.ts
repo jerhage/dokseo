@@ -20,6 +20,8 @@ import type { MarkedLines } from './capture-lines';
 import { cardChapter, placeLabel, placeLanguage } from './capture-place';
 import type { CardChapter } from './capture-place';
 import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
+import { NO_REVEAL, revealCard } from './capture-reveal';
+import type { CaptureReveal } from './capture-reveal';
 import { readCaptureSort, saveCaptureSort } from './capture-sort';
 import type { CaptureSort } from './capture-sort';
 import { NOTHING_READ } from './capture-view.svelte';
@@ -240,7 +242,7 @@ class CaptureCards {
   #locate: LocateStore | undefined;
   #sort = $state<CaptureSort>('book');
   #stepped = $state.raw<MatchStep | null>(null);
-  #revealed: CaptureId | null = null;
+  #reveal: CaptureReveal = NO_REVEAL;
 
   #ordered = $derived.by<readonly PanelCapture[]>(() => {
     const held = this.#source();
@@ -298,11 +300,10 @@ class CaptureCards {
     saveCaptureSort(sort, this.#locate);
   }
 
-  reveals(id: CaptureId, latest: CaptureId | null): boolean {
-    if (latest !== id || this.#revealed === id) return false;
-
-    this.#revealed = id;
-    return true;
+  reveals(id: CaptureId, latest: CaptureId | null, visible: boolean): boolean {
+    const step = revealCard(this.#reveal, id, latest, visible);
+    this.#reveal = step.state;
+    return step.scroll;
   }
 
   get wanted(): string {
