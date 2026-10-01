@@ -1,9 +1,16 @@
-import type { Container } from '$lib/container';
+import type { QueryClient } from '@tanstack/svelte-query';
 import { megabytes } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
-import { storageFailureNote } from '../../queries/engine-queries';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { ModelStorageReport } from '../../domain/model/model-cache';
+import type { ModelStorageError } from '../../domain/model/model-storage';
+import { deleteModelMutation, storageFailureNote } from '../../queries/engine-queries';
+import type { EngineWrites, ModelTarget } from '../../queries/engine-queries';
+import { recognitionKeys } from '../../queries/recognition-keys';
 import type { OperationClock } from './operation-clock';
 
 const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
@@ -19,16 +26,26 @@ class ModelRemoval {
   confirming = $state(false);
   message = $state.raw<string | null>(null);
 
-  #container: Container;
   #notify: Notify;
   #clock: OperationClock;
   #joins: RemovalJoins;
+  #deleting: WriteQuery<Result<ModelStorageReport, ModelStorageError>, ModelTarget>;
 
-  constructor(container: Container, notify: Notify, clock: OperationClock, joins: RemovalJoins) {
-    this.#container = container;
+  constructor(
+    recognition: Pick<EngineWrites, 'cancelModelLoad' | 'deleteModel'>,
+    notify: Notify,
+    clock: OperationClock,
+    joins: RemovalJoins,
+    client: QueryClient,
+  ) {
     this.#notify = notify;
     this.#clock = clock;
     this.#joins = joins;
+    this.#deleting = writeQuery(() => ({
+      ...deleteModelMutation(recognition),
+      onSettled: (_removed, _cause, { modelId }) =>
+        client.invalidateQueries({ queryKey: recognitionKeys.modelStorage(modelId) }),
+    }));
   }
 
   ask(stored: boolean): void {
@@ -54,8 +71,7 @@ class ModelRemoval {
     this.message = null;
 
     try {
-      await this.#container.recognition.cancelModelLoad(language, modelId);
-      const removed = await this.#container.recognition.deleteModel(language, modelId);
+      const removed = await this.#deleting.run({ language, modelId });
       if (generation !== this.#clock.current) return;
 
       this.#joins.settled();

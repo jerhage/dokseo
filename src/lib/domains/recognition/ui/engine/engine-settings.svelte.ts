@@ -4,16 +4,21 @@ import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { ComputeChoice } from '../../domain/engine/compute-choice';
+import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import { isStored } from '../../domain/model/model-cache';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { PartialReport } from '../../domain/model/model-partial';
+import type { DownloadState } from '../../domain/model/model-download';
 import type { ModelLoad } from '../../domain/model/model-load';
-import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type { SetupError } from '../../domain/engine/recognizer-setup';
 import type { EngineState } from '../../domain/engine/ocr-engine';
-import type { LanguageSetup } from '../../queries/engine-queries';
+import { saveSetupMutation } from '../../queries/engine-queries';
+import type { LanguageSetup, SetupChange } from '../../queries/engine-queries';
 import { recognitionKeys } from '../../queries/recognition-keys';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { engineLanguages, shownModel } from './engine-setup.svelte';
@@ -78,38 +83,57 @@ function storedFigure(report: ModelStorageReport): string {
   return isStored(report) ? held : `${held}, but not the weights`;
 }
 
+function engineStateOf(
+  download: DownloadState,
+  session: RecognizerSession | null,
+  storage: ModelStorageSnapshot | null,
+): EngineState {
+  return {
+    stored: isModelStored(storage),
+    opening: download.kind === 'loading',
+    load: download.kind === 'loading' ? download.load : null,
+    session: download.kind === 'ready' ? download.session : session,
+    failure: download.kind === 'failed' ? download.cause : null,
+    paused: download.kind === 'paused',
+    cancelled: download.kind === 'cancelled',
+    partlyDownloaded: isResumable(storage),
+  };
+}
+
 class EngineSettingsView {
   readonly download: ModelDownload;
   readonly removal: ModelRemoval;
   language = $state.raw<Language | null>(engineLanguages()[0] ?? null);
 
-  #container: Container;
   #notify: Notify;
-  #client: QueryClient;
   #clock = new OperationClock();
+  #saving: WriteQuery<Result<void, SetupError>, SetupChange>;
 
   constructor(container: Container, notify: Notify, client: QueryClient) {
-    this.#container = container;
+    const recognition = container.recognition;
     this.#notify = notify;
-    this.#client = client;
-    this.download = new ModelDownload(container, notify, this.#clock);
-    this.removal = new ModelRemoval(container, notify, this.#clock, {
-      settled: () => this.download.reset(),
-    });
+    this.download = new ModelDownload(recognition, notify, this.#clock, client);
+    this.removal = new ModelRemoval(
+      recognition,
+      notify,
+      this.#clock,
+      { settled: () => this.download.reset() },
+      client,
+    );
+    this.#saving = writeQuery(() => ({
+      ...saveSetupMutation(recognition),
+      onMutate: async ({ setup }) => {
+        const queryKey = recognitionKeys.setup(setup.language);
+        await client.cancelQueries({ queryKey });
+        client.setQueryData<LanguageSetup>(queryKey, setup);
+      },
+      onSettled: (_saved, _cause, { modelId }) =>
+        client.invalidateQueries({ queryKey: recognitionKeys.modelStorage(modelId) }),
+    }));
   }
 
   engine(storage: ModelStorageSnapshot | null): EngineState {
-    const download = this.download.state;
-    return {
-      stored: isModelStored(storage),
-      opening: download.kind === 'loading',
-      load: download.kind === 'loading' ? download.load : null,
-      session: download.kind === 'ready' ? download.session : this.download.session,
-      failure: download.kind === 'failed' ? download.cause : null,
-      paused: download.kind === 'paused',
-      cancelled: download.kind === 'cancelled',
-      partlyDownloaded: isResumable(storage),
-    };
+    return engineStateOf(this.download.state, this.download.session, storage);
   }
 
   chooseLanguage(language: Language): void {
@@ -144,73 +168,53 @@ class EngineSettingsView {
     const generation = this.#clock.next();
     this.removal.clearMessage();
     await this.download.start(choice.language, generation);
-    await this.#refreshStorage(shownModel(choice), generation);
   }
 
   async pause(choice: LanguageSetup): Promise<void> {
     if (!this.download.loading) return;
 
-    const generation = this.#clock.next();
+    this.#clock.next();
     await this.download.pause(choice.language);
-    await this.#refreshStorage(shownModel(choice), generation);
   }
 
   async stop(choice: LanguageSetup): Promise<void> {
-    const model = shownModel(choice);
-    const generation = this.#clock.next();
-    await this.download.stop(choice.language, model.modelId);
-    await this.#refreshStorage(model, generation);
+    this.#clock.next();
+    await this.download.stop(choice.language, shownModel(choice).modelId);
   }
 
   async remove(choice: LanguageSetup): Promise<void> {
     this.removal.dismiss();
     if (this.removal.removing) return;
 
-    const model = shownModel(choice);
     const generation = this.#clock.next();
-    await this.removal.remove(choice.language, model.modelId, generation);
-    await this.#refreshStorage(model, generation);
+    await this.removal.remove(choice.language, shownModel(choice).modelId, generation);
   }
 
   async #applySetup(choice: LanguageSetup, abandoned: string | null): Promise<void> {
-    const language = choice.language;
-    const model = shownModel(choice);
     const generation = this.#clock.next();
     this.download.reset();
 
-    const setupKey = recognitionKeys.setup(language);
-    await this.#client.cancelQueries({ queryKey: setupKey });
-    this.#client.setQueryData<LanguageSetup>(setupKey, {
-      language,
+    const setup = {
+      language: choice.language,
       models: choice.models,
       selected: choice.selected,
       compute: choice.compute,
-    });
-
-    const saved = await this.#container.recognition.saveRecognizerSetup(language, {
-      modelId: model.modelId,
-      compute: choice.compute,
+    };
+    const saved = await this.#saving.run({
+      setup,
+      modelId: shownModel(choice).modelId,
+      abandoned,
     });
     if (!saved.ok && generation === this.#clock.current) {
       this.#notify({ tone: 'danger', title: SETUP_FAILED, message: setupFailureNote(saved.error) });
     }
-
-    if (abandoned === null) await this.#container.recognition.pauseModelLoad(language);
-    else await this.#container.recognition.cancelModelLoad(language, abandoned);
-
-    await this.#container.recognition.closeRecognizer(language);
-
-    await this.#refreshStorage(model, generation);
-  }
-
-  async #refreshStorage(model: ModelFootprint, generation: number): Promise<void> {
-    if (generation !== this.#clock.current) return;
-    await this.#client.invalidateQueries({ queryKey: recognitionKeys.modelStorage(model.modelId) });
   }
 }
 
 export {
   SETUP_FAILED,
+  engineStateOf,
+  setupFailureNote,
   loadFigure,
   cancelHint,
   partialFigure,

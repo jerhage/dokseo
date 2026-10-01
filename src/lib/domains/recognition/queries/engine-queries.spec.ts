@@ -1,3 +1,4 @@
+import { MutationObserver } from '@tanstack/svelte-query';
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
 import { QueryFailure } from '$lib/shared/query-failure';
@@ -13,13 +14,20 @@ import type { ModelStorageError } from '../domain/model/model-storage';
 import type { ModelStorageSnapshot } from '../use-cases/model/read-model-storage';
 import {
   NO_MODEL,
+  cancelDownloadMutation,
   computeQuery,
+  deleteModelMutation,
+  grantConsentMutation,
   modelStorageQuery,
   offeredModels,
+  pauseDownloadMutation,
+  prepareRecognizerMutation,
   recognizerSetupQuery,
+  saveSetupMutation,
   setupReadNote,
   storageFailureNote,
 } from './engine-queries';
+import type { LanguageSetup, OfferedModels } from './engine-queries';
 import { recognitionKeys } from './recognition-keys';
 
 const DETECTED: GpuDetection = { available: true, description: 'Test GPU' };
@@ -247,5 +255,169 @@ describe('storageFailureNote', () => {
 
   it('says the browser exposes no cache at all', () => {
     expect(storageFailureNote({ kind: 'cache-unavailable' })).toContain('no cache');
+  });
+});
+
+const SETUP: LanguageSetup = {
+  language: 'ja',
+  models: offeredModels('ja') as OfferedModels,
+  selected: null,
+  compute: 'gpu',
+};
+
+function setupWrites(saving: Result<void, SetupError>) {
+  const steps: string[] = [];
+  return {
+    steps,
+    recognition: {
+      saveRecognizerSetup: (language: Language, setup: { modelId: string; compute: string }) => {
+        steps.push(`save ${language} ${setup.modelId} ${setup.compute}`);
+        return Promise.resolve(saving);
+      },
+      pauseModelLoad: (language: Language) => {
+        steps.push(`pause ${language}`);
+        return Promise.resolve();
+      },
+      cancelModelLoad: (language: Language, modelId: string) => {
+        steps.push(`cancel ${language} ${modelId}`);
+        return Promise.resolve(null);
+      },
+      closeRecognizer: (language: Language) => {
+        steps.push(`close ${language}`);
+        return Promise.resolve();
+      },
+    },
+  };
+}
+
+describe('saveSetupMutation', () => {
+  it('saves the model and compute, pauses the load, then closes the recognizer', async () => {
+    const { steps, recognition } = setupWrites(ok(undefined));
+    const saving = new MutationObserver(createTestQueryClient(), saveSetupMutation(recognition));
+
+    await saving.mutate({ setup: SETUP, modelId: SECOND.modelId, abandoned: null });
+
+    expect(steps).toEqual([`save ja ${SECOND.modelId} gpu`, 'pause ja', 'close ja']);
+  });
+
+  it('cancels the abandoned model in place of a pause', async () => {
+    const { steps, recognition } = setupWrites(ok(undefined));
+    const saving = new MutationObserver(createTestQueryClient(), saveSetupMutation(recognition));
+
+    await saving.mutate({ setup: SETUP, modelId: SECOND.modelId, abandoned: 'old-model' });
+
+    expect(steps).toEqual([`save ja ${SECOND.modelId} gpu`, 'cancel ja old-model', 'close ja']);
+  });
+
+  it('answers a refused save as data, after closing the recognizer all the same', async () => {
+    const refused = err({ kind: 'storage-unavailable' } as const);
+    const { steps, recognition } = setupWrites(refused);
+    const saving = new MutationObserver(createTestQueryClient(), saveSetupMutation(recognition));
+
+    await expect(
+      saving.mutate({ setup: SETUP, modelId: SECOND.modelId, abandoned: null }),
+    ).resolves.toEqual(refused);
+    expect(steps.at(-1)).toBe('close ja');
+  });
+});
+
+describe('download mutations', () => {
+  it('grants the consent of the language it is given', async () => {
+    const granted: Language[] = [];
+    const granting = new MutationObserver(
+      createTestQueryClient(),
+      grantConsentMutation({
+        grantModelConsent: (language) => {
+          granted.push(language);
+          return Promise.resolve(ok(undefined));
+        },
+      }),
+    );
+
+    await granting.mutate('ko');
+
+    expect(granted).toEqual(['ko']);
+  });
+
+  it('prepares the recognizer with the progress callback it is given', async () => {
+    const reported: number[] = [];
+    const preparing = new MutationObserver(
+      createTestQueryClient(),
+      prepareRecognizerMutation({
+        prepareRecognizer: (_language, notices) => {
+          notices?.onProgress?.({
+            fraction: 0.5,
+            source: 'network',
+            loadedBytes: 1,
+            totalBytes: 2,
+          });
+          return Promise.resolve(err({ kind: 'cancelled' }));
+        },
+      }),
+    );
+
+    await expect(
+      preparing.mutate({ language: 'ja', onProgress: (load) => reported.push(load.fraction) }),
+    ).resolves.toEqual(err({ kind: 'cancelled' }));
+    expect(reported).toEqual([0.5]);
+  });
+
+  it('pauses and cancels the load it names', async () => {
+    const steps: string[] = [];
+    const client = createTestQueryClient();
+    const pausing = new MutationObserver(
+      client,
+      pauseDownloadMutation({
+        pauseModelLoad: (language) => {
+          steps.push(`pause ${language}`);
+          return Promise.resolve();
+        },
+      }),
+    );
+    const cancelling = new MutationObserver(
+      client,
+      cancelDownloadMutation({
+        cancelModelLoad: (language, modelId) => {
+          steps.push(`cancel ${language} ${modelId}`);
+          return Promise.resolve(null);
+        },
+      }),
+    );
+
+    await pausing.mutate('ja');
+    await cancelling.mutate({ language: 'ja', modelId: 'model' });
+
+    expect(steps).toEqual(['pause ja', 'cancel ja model']);
+  });
+});
+
+describe('deleteModelMutation', () => {
+  it('cancels the load before it deletes, and answers the deletion as data', async () => {
+    const steps: string[] = [];
+    const refused = err({ kind: 'cache-unavailable' } as const);
+    const deleting = new MutationObserver(
+      createTestQueryClient(),
+      deleteModelMutation({
+        cancelModelLoad: (_language, modelId) => {
+          steps.push(`cancel ${modelId}`);
+          return Promise.resolve(null);
+        },
+        deleteModel: (_language, modelId) => {
+          steps.push(`delete ${modelId}`);
+          return Promise.resolve(refused);
+        },
+      }),
+    );
+
+    await expect(deleting.mutate({ language: 'ja', modelId: 'model' })).resolves.toEqual(refused);
+    expect(steps).toEqual(['cancel model', 'delete model']);
+  });
+});
+
+describe('recognitionKeys.modelStorages', () => {
+  it('holds every model storage key below it', () => {
+    expect(recognitionKeys.modelStorage('model').slice(0, 2)).toEqual(
+      recognitionKeys.modelStorages(),
+    );
   });
 });

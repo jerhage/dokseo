@@ -1,14 +1,24 @@
-import { queryOptions } from '@tanstack/svelte-query';
+import { mutationOptions, queryOptions } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import { QueryFailure, unwrap } from '$lib/shared/query-failure';
 import type { Result } from '$lib/shared/result';
 import type { ComputeChoice, GpuDetection } from '../domain/engine/compute-choice';
-import type { RecognizerChoice, SetupError } from '../domain/engine/recognizer-setup';
+import type { RecognizerSession } from '../domain/engine/recognizer-session';
+import type {
+  RecognizerChoice,
+  RecognizerSetup,
+  SetupError,
+} from '../domain/engine/recognizer-setup';
+import type { ModelStorageReport } from '../domain/model/model-cache';
+import type { ModelConsentError } from '../domain/model/model-consent';
 import { modelsFor } from '../domain/model/model-footprint';
 import type { ModelFootprint } from '../domain/model/model-footprint';
+import type { ModelLoad, ModelLoadError } from '../domain/model/model-load';
+import type { PartialReport } from '../domain/model/model-partial';
 import type { ModelStorageError } from '../domain/model/model-storage';
+import type { PartialError } from '../domain/model/partial-downloads';
 import type { ModelStorageSnapshot } from '../use-cases/model/read-model-storage';
 import { recognitionKeys } from './recognition-keys';
 
@@ -29,6 +39,41 @@ type EngineReads = {
   readonly readModelStorage: (
     modelId: string,
   ) => Promise<Result<ModelStorageSnapshot, ModelStorageError>>;
+};
+
+type EngineWrites = {
+  readonly saveRecognizerSetup: (
+    language: Language,
+    setup: RecognizerSetup,
+  ) => Promise<Result<void, SetupError>>;
+  readonly grantModelConsent: (language: Language) => Promise<Result<void, ModelConsentError>>;
+  readonly prepareRecognizer: (
+    language: Language,
+    notices?: { readonly onProgress?: (load: ModelLoad) => void },
+  ) => Promise<Result<RecognizerSession, ModelLoadError>>;
+  readonly pauseModelLoad: (language: Language) => Promise<void>;
+  readonly cancelModelLoad: (
+    language: Language,
+    modelId: string,
+  ) => Promise<Result<PartialReport, PartialError> | null>;
+  readonly closeRecognizer: (language: Language) => Promise<void>;
+  readonly deleteModel: (
+    language: Language,
+    modelId: string,
+  ) => Promise<Result<ModelStorageReport, ModelStorageError>>;
+};
+
+type SetupChange = {
+  readonly setup: LanguageSetup;
+  readonly modelId: string;
+  readonly abandoned: string | null;
+};
+
+type ModelTarget = { readonly language: Language; readonly modelId: string };
+
+type DownloadRequest = {
+  readonly language: Language;
+  readonly onProgress: (load: ModelLoad) => void;
 };
 
 const NO_MODEL = 'No recognition model reads this language.';
@@ -109,13 +154,83 @@ function modelStorageQuery(recognition: Pick<EngineReads, 'readModelStorage'>, m
   });
 }
 
+function saveSetupMutation(
+  recognition: Pick<
+    EngineWrites,
+    'saveRecognizerSetup' | 'pauseModelLoad' | 'cancelModelLoad' | 'closeRecognizer'
+  >,
+) {
+  return mutationOptions({
+    mutationFn: async ({ setup, modelId, abandoned }: SetupChange) => {
+      const language = setup.language;
+      const saved = await recognition.saveRecognizerSetup(language, {
+        modelId,
+        compute: setup.compute,
+      });
+      if (abandoned === null) await recognition.pauseModelLoad(language);
+      else await recognition.cancelModelLoad(language, abandoned);
+      await recognition.closeRecognizer(language);
+      return saved;
+    },
+  });
+}
+
+function grantConsentMutation(recognition: Pick<EngineWrites, 'grantModelConsent'>) {
+  return mutationOptions({
+    mutationFn: (language: Language) => recognition.grantModelConsent(language),
+  });
+}
+
+function prepareRecognizerMutation(recognition: Pick<EngineWrites, 'prepareRecognizer'>) {
+  return mutationOptions({
+    mutationFn: ({ language, onProgress }: DownloadRequest) =>
+      recognition.prepareRecognizer(language, { onProgress }),
+  });
+}
+
+function pauseDownloadMutation(recognition: Pick<EngineWrites, 'pauseModelLoad'>) {
+  return mutationOptions({
+    mutationFn: (language: Language) => recognition.pauseModelLoad(language),
+  });
+}
+
+function cancelDownloadMutation(recognition: Pick<EngineWrites, 'cancelModelLoad'>) {
+  return mutationOptions({
+    mutationFn: ({ language, modelId }: ModelTarget) =>
+      recognition.cancelModelLoad(language, modelId),
+  });
+}
+
+function deleteModelMutation(recognition: Pick<EngineWrites, 'cancelModelLoad' | 'deleteModel'>) {
+  return mutationOptions({
+    mutationFn: async ({ language, modelId }: ModelTarget) => {
+      await recognition.cancelModelLoad(language, modelId);
+      return recognition.deleteModel(language, modelId);
+    },
+  });
+}
+
 export {
   NO_MODEL,
+  cancelDownloadMutation,
   computeQuery,
+  deleteModelMutation,
+  grantConsentMutation,
   modelStorageQuery,
   offeredModels,
+  pauseDownloadMutation,
+  prepareRecognizerMutation,
   recognizerSetupQuery,
+  saveSetupMutation,
   setupReadNote,
   storageFailureNote,
 };
-export type { EngineReads, LanguageSetup, OfferedModels };
+export type {
+  DownloadRequest,
+  EngineReads,
+  EngineWrites,
+  LanguageSetup,
+  ModelTarget,
+  OfferedModels,
+  SetupChange,
+};

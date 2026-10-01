@@ -27,6 +27,15 @@ vi.mock('$lib/shared/read-query.svelte', () => ({
   }),
 }));
 
+vi.mock('$lib/shared/write-query.svelte', () => ({
+  writeQuery: () => ({
+    state: { kind: 'idle' },
+    submit: () => undefined,
+    run: () => new Promise(() => undefined),
+    reset: () => undefined,
+  }),
+}));
+
 type Fake = {
   readonly download: DownloadState;
   readonly storage: ModelStorageSnapshot | null;
