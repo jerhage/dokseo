@@ -55,16 +55,32 @@
   onDestroy(() => session.close());
 </script>
 
+{#snippet flowPanel(visible: boolean)}
+  <CapturePanel
+    view={captures}
+    panel={session.flowPanel}
+    {language}
+    source="text"
+    {visible}
+    onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
+  />
+{/snippet}
+
 <BookData library={container.library} {id}>
   {#snippet children(read)}
     {@const flowing = flowingBook(read)}
     {#if flowing !== null}
-      <ReadingSettingsData flowing={container.flowing}>
+      <ReadingSettingsData
+        flowing={container.flowing}
+        panel={flowPanel}
+        panelCount={captures.list.count}
+      >
         {#snippet children(storedSettings)}
           <FlowViewer
             view={flow}
             book={flowing}
             {storedSettings}
+            panel={flowPanel}
             panelCount={captures.list.count}
             anchors={captures.list.anchors}
             onLift={(passage) =>
@@ -83,16 +99,6 @@
                   onfollowed={() => session.arrive(id)}
                 />
               {/if}
-            {/snippet}
-            {#snippet panel(visible)}
-              <CapturePanel
-                view={captures}
-                panel={session.flowPanel}
-                {language}
-                source="text"
-                {visible}
-                onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
-              />
             {/snippet}
           </FlowViewer>
         {/snippet}

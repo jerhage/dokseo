@@ -6,7 +6,6 @@
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
@@ -53,6 +52,7 @@
   import type { FlowAction, FlowTurn, Point, StageTap } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
   import FlowContentsDialog from './FlowContentsDialog.svelte';
+  import FlowCurtain from './FlowCurtain.svelte';
   import FlowSettingsDialog from './FlowSettingsDialog.svelte';
   import PageInkProbe from './PageInkProbe.svelte';
   import { flowScrub, scrubbedFractionAt, scrubMarker } from './flow-scrub';
@@ -114,7 +114,6 @@
   const coarse = window.matchMedia('(pointer: coarse)').matches;
 
   const curtain = $derived(view.curtain);
-  const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
   const dialogOpen = $derived(contentsOpen || settingsOpen);
   const reading = $derived(view.state.kind === 'ready');
   const contents = $derived(view.navigation.contents);
@@ -462,25 +461,7 @@
       </div>
     {/if}
 
-    {#if curtain.kind === 'opening'}
-      <EmptyState
-        variant="fill"
-        live
-        message="Opening this book…"
-        class="layout-overlay-fill z-overlay surface-bg text-center"
-      />
-    {:else if message !== null}
-      <EmptyState
-        variant="fill"
-        live
-        {message}
-        class="layout-overlay-fill z-overlay surface-bg text-center"
-      >
-        {#snippet action()}
-          <Button href="/" variant="primary" size="sm">Back to your library</Button>
-        {/snippet}
-      </EmptyState>
-    {/if}
+    <FlowCurtain {curtain} />
   {/snippet}
 </ReaderFrame>
 
