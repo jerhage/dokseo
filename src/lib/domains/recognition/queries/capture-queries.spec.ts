@@ -4,6 +4,7 @@ import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import { observedRead } from '$lib/shared/testing/observed-read';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { notedCapture } from '../domain/capture/capture';
 import type { Capture, NotableCapture } from '../domain/capture/capture';
@@ -47,32 +48,33 @@ const READ_CAPTURE: NotableCapture = {
 };
 
 describe('everyCaptureQuery', () => {
-  it('resolves every capture in the library', async () => {
+  it('readies every capture in the library', async () => {
     const read = everyCaptureQuery({
       listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [CAPTURE] }),
     });
 
-    await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'success',
-      captures: [CAPTURE],
-    });
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readReady({ kind: 'success', captures: [CAPTURE] }),
+    );
   });
 
-  it('resolves a store the browser blocks as an answer', async () => {
+  it('readies a store the browser blocks as an answer', async () => {
     const read = everyCaptureQuery({
       listEveryCapture: () => Promise.resolve(STORAGE_UNAVAILABLE),
     });
 
-    await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'storage-unavailable',
-    });
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readReady({ kind: 'storage-unavailable' }),
+    );
   });
 
-  it('rejects with the error a failed store throws', async () => {
+  it('fails with the cause of a store that threw', async () => {
     const broken = new Error('locked');
     const read = everyCaptureQuery({ listEveryCapture: () => Promise.reject(broken) });
 
-    await expect(createTestQueryClient().fetchQuery(read)).rejects.toBe(broken);
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readFailed('Something went wrong: locked'),
+    );
   });
 
   it('files the read under the recognition root, stale at once', () => {
@@ -87,7 +89,7 @@ describe('everyCaptureQuery', () => {
 });
 
 describe('capturesQuery', () => {
-  it('resolves the captures of the book it names', async () => {
+  it('readies the captures of the book it names', async () => {
     const asked: string[] = [];
     const read = capturesQuery(
       {
@@ -99,14 +101,13 @@ describe('capturesQuery', () => {
       bookId('one'),
     );
 
-    await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'success',
-      captures: [CAPTURE],
-    });
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readReady({ kind: 'success', captures: [CAPTURE] }),
+    );
     expect(asked).toEqual(['one']);
   });
 
-  it('resolves a store the browser blocks as an answer and rejects a failed store', async () => {
+  it('readies a store the browser blocks as an answer and fails a store that threw', async () => {
     const blocked = capturesQuery(
       { listCaptures: () => Promise.resolve(STORAGE_UNAVAILABLE) },
       bookId('one'),
@@ -116,10 +117,12 @@ describe('capturesQuery', () => {
       bookId('one'),
     );
 
-    await expect(createTestQueryClient().fetchQuery(blocked)).resolves.toEqual({
-      kind: 'storage-unavailable',
-    });
-    await expect(createTestQueryClient().fetchQuery(broken)).rejects.toThrow('locked');
+    expect(await observedRead(createTestQueryClient(), blocked)).toEqual(
+      readReady({ kind: 'storage-unavailable' }),
+    );
+    expect(await observedRead(createTestQueryClient(), broken)).toEqual(
+      readFailed('Something went wrong: locked'),
+    );
   });
 
   it('files each book under its own key below the recognition root, stale at once', () => {

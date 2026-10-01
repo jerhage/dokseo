@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFailed, readReady } from '$lib/shared/read-state';
+import { observedRead } from '$lib/shared/testing/observed-read';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { accountOf } from '../domain/storage-parts';
 import { storageKeys } from './storage-keys';
@@ -11,27 +13,29 @@ const ACCOUNT = accountOf(
 );
 
 describe('storageAccountQuery', () => {
-  it('resolves the account the use case reads', async () => {
+  it('readies the account the use case reads', async () => {
     const client = createTestQueryClient();
 
-    const read = await client.fetchQuery(
+    const read = await observedRead(
+      client,
       storageAccountQuery({
         readStorageAccount: () => Promise.resolve({ kind: 'success', account: ACCOUNT }),
       }),
     );
 
-    expect(read).toBe(ACCOUNT);
+    expect(read).toEqual(readReady(ACCOUNT));
   });
 
-  it('rejects with the error a failed survey throws', async () => {
+  it('fails with the cause of a survey that threw', async () => {
     const client = createTestQueryClient();
     const broken = new Error('denied');
 
-    const fetched = client.fetchQuery(
+    const read = await observedRead(
+      client,
       storageAccountQuery({ readStorageAccount: () => Promise.reject(broken) }),
     );
 
-    await expect(fetched).rejects.toBe(broken);
+    expect(read).toEqual(readFailed('Something went wrong: denied'));
   });
 
   it('files the account under the storage root key', () => {

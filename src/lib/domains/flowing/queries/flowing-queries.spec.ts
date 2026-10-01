@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { textPlace } from '$lib/shared/reading-place';
+import { readReady } from '$lib/shared/read-state';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import { observedRead } from '$lib/shared/testing/observed-read';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
@@ -18,15 +20,15 @@ import {
 const LARGE: ReadingSettings = { ...DEFAULT_READING_SETTINGS, textSize: 'large' };
 
 describe('readingSettingsQuery', () => {
-  it('resolves the stored settings under the flowing settings key', async () => {
+  it('readies the stored settings under the flowing settings key', async () => {
     const client = createTestQueryClient();
     const options = readingSettingsQuery({
       readReadingSettings: () => Promise.resolve({ kind: 'success', settings: LARGE }),
     });
 
-    const read = await client.fetchQuery(options);
+    const read = await observedRead(client, options);
 
-    expect(read).toEqual(LARGE);
+    expect(read).toEqual(readReady(LARGE));
     expect(options.queryKey).toEqual(flowingKeys.settings());
     expect(options.queryKey.slice(0, 1)).toEqual(flowingKeys.all());
   });

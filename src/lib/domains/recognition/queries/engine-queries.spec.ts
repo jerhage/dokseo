@@ -4,6 +4,7 @@ import type { Language } from '$lib/shared/language';
 import { QueryFailure } from '$lib/shared/query-failure';
 import { readFailed, readReady, LOADING } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import { observedRead } from '$lib/shared/testing/observed-read';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { at } from '$lib/shared/testing/at';
 import type { GpuDetection } from '../domain/engine/compute-choice';
@@ -78,16 +79,21 @@ describe('recognizerSetupQuery', () => {
       }),
     );
 
-    const setup = await createTestQueryClient().fetchQuery(
+    const setup = await observedRead(
+      createTestQueryClient(),
       recognizerSetupQuery(reads.recognition, 'ja'),
     );
 
     expect(reads.asked).toEqual(['ja']);
-    expect(setup).toEqual({
-      kind: 'success',
-      setup: { language: 'ja', models: JAPANESE, selected: SECOND.modelId, compute: 'gpu' },
-    });
-    expect(setup.kind === 'success' && at(setup.setup.models, 1)).toBe(SECOND);
+    expect(setup).toEqual(
+      readReady({
+        kind: 'success',
+        setup: { language: 'ja', models: JAPANESE, selected: SECOND.modelId, compute: 'gpu' },
+      }),
+    );
+    expect(
+      setup.kind === 'ready' && setup.value.kind === 'success' && at(setup.value.setup.models, 1),
+    ).toBe(SECOND);
   });
 
   it('reads the language it is given', async () => {
@@ -95,44 +101,51 @@ describe('recognizerSetupQuery', () => {
       Promise.resolve({ kind: 'success', choice: setupChoice(language, null) }),
     );
 
-    const setup = await createTestQueryClient().fetchQuery(
+    const setup = await observedRead(
+      createTestQueryClient(),
       recognizerSetupQuery(reads.recognition, 'ko'),
     );
 
     expect(reads.asked).toEqual(['ko']);
-    expect(setup.kind === 'success' && setup.setup.language).toBe('ko');
+    expect(
+      setup.kind === 'ready' && setup.value.kind === 'success' && setup.value.setup.language,
+    ).toBe('ko');
   });
 
-  it('resolves a blocked store as an answer, and offers no default', async () => {
+  it('readies a blocked store as an answer, and offers no default', async () => {
     const reads = setupReads(() => Promise.resolve(STORAGE_UNAVAILABLE));
 
-    const setup = await createTestQueryClient().fetchQuery(
+    const setup = await observedRead(
+      createTestQueryClient(),
       recognizerSetupQuery(reads.recognition, 'ja'),
     );
 
-    expect(setup).toEqual(STORAGE_UNAVAILABLE);
+    expect(setup).toEqual(readReady(STORAGE_UNAVAILABLE));
   });
 
-  it('rejects a read that threw with its cause under a lead-in', async () => {
+  it('fails a read that threw with its cause under a lead-in', async () => {
     const reads = setupReads(() => Promise.reject(new Error('blocked')));
 
-    const fetched = createTestQueryClient().fetchQuery(
+    const setup = await observedRead(
+      createTestQueryClient(),
       recognizerSetupQuery(reads.recognition, 'ja'),
     );
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow(/^The engine choice could not be read: blocked$/u);
+    expect(setup).toEqual(readFailed('The engine choice could not be read: blocked'));
   });
 
   it('keeps the thrown error as the failure cause', async () => {
     const thrown = new Error('blocked');
     const reads = setupReads(() => Promise.reject(thrown));
 
-    const fetched = createTestQueryClient().fetchQuery(
-      recognizerSetupQuery(reads.recognition, 'ja'),
-    );
+    const client = createTestQueryClient();
+    const options = recognizerSetupQuery(reads.recognition, 'ja');
 
-    await expect(fetched).rejects.toHaveProperty('cause', thrown);
+    await observedRead(client, options);
+
+    const failure = client.getQueryState(options.queryKey)?.error;
+    expect(failure).toBeInstanceOf(QueryFailure);
+    expect(failure).toHaveProperty('cause', thrown);
   });
 
   it('files each language under its own setup key', () => {
@@ -152,7 +165,7 @@ describe('recognizerSetupQuery', () => {
 });
 
 describe('computeQuery', () => {
-  it('resolves the detection and keeps it for the session', async () => {
+  it('readies the detection and keeps it for the session', async () => {
     let probes = 0;
     const client = createTestQueryClient();
     const options = computeQuery({
@@ -162,56 +175,59 @@ describe('computeQuery', () => {
       },
     });
 
-    const first = await client.fetchQuery(options);
-    await client.fetchQuery(options);
+    const first = await observedRead(client, options);
+    await observedRead(client, options);
 
-    expect(first).toBe(DETECTED);
+    expect(first).toEqual(readReady(DETECTED));
     expect(probes).toBe(1);
     expect(options.queryKey).toEqual(['recognition', 'compute']);
   });
 
-  it('rejects a probe that threw with its cause', async () => {
-    const fetched = createTestQueryClient().fetchQuery(
+  it('fails a probe that threw with its cause', async () => {
+    const detected = await observedRead(
+      createTestQueryClient(),
       computeQuery({ detectCompute: () => Promise.reject(new Error('lost')) }),
     );
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow(/^lost$/u);
+    expect(detected).toEqual(readFailed('lost'));
   });
 });
 
 describe('modelStorageQuery', () => {
-  it('resolves what the model occupies', async () => {
-    const read = await createTestQueryClient().fetchQuery(
+  it('readies what the model occupies', async () => {
+    const read = await observedRead(
+      createTestQueryClient(),
       modelStorageQuery(
         storageReads(() => Promise.resolve({ kind: 'success', snapshot: SNAPSHOT })),
         JAPANESE_OCR_MODEL.modelId,
       ),
     );
 
-    expect(read).toEqual({ kind: 'success', snapshot: SNAPSHOT });
+    expect(read).toEqual(readReady({ kind: 'success', snapshot: SNAPSHOT }));
   });
 
-  it('resolves a browser with no cache as an answer', async () => {
-    const read = await createTestQueryClient().fetchQuery(
+  it('readies a browser with no cache as an answer', async () => {
+    const read = await observedRead(
+      createTestQueryClient(),
       modelStorageQuery(
         storageReads(() => Promise.resolve({ kind: 'cache-unavailable' })),
         JAPANESE_OCR_MODEL.modelId,
       ),
     );
 
-    expect(read).toEqual({ kind: 'cache-unavailable' });
+    expect(read).toEqual(readReady({ kind: 'cache-unavailable' }));
   });
 
   it('names the cause of a read that threw', async () => {
-    const fetched = createTestQueryClient().fetchQuery(
+    const read = await observedRead(
+      createTestQueryClient(),
       modelStorageQuery(
         storageReads(() => Promise.reject(new Error('gone'))),
         JAPANESE_OCR_MODEL.modelId,
       ),
     );
 
-    await expect(fetched).rejects.toThrow('What the model occupies could not be read: gone');
+    expect(read).toEqual(readFailed('What the model occupies could not be read: gone'));
   });
 
   it('files each model under its own key below the recognition root', () => {

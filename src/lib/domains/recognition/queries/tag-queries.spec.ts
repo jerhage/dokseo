@@ -4,8 +4,10 @@ import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
+import { readFailed, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
+import { observedRead } from '$lib/shared/testing/observed-read';
 import type { Capture } from '../domain/capture/capture';
 import { taggedCapture, untaggedCapture } from '../domain/tag/capture-tags';
 import { namedTag, recolouredTag, renamedTag } from '../domain/tag/tag';
@@ -35,30 +37,31 @@ const CAPTURE: Capture = {
 };
 
 describe('tagsQuery', () => {
-  it('resolves every tag', async () => {
+  it('readies every tag', async () => {
     const read = tagsQuery({ listTags: () => Promise.resolve({ kind: 'success', tags: [SFX] }) });
 
-    await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'success',
-      tags: [SFX],
-    });
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readReady({ kind: 'success', tags: [SFX] }),
+    );
   });
 
-  it('resolves a store the browser blocks as an answer', async () => {
+  it('readies a store the browser blocks as an answer', async () => {
     const read = tagsQuery({
       listTags: () => Promise.resolve(STORAGE_UNAVAILABLE),
     });
 
-    await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'storage-unavailable',
-    });
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readReady({ kind: 'storage-unavailable' }),
+    );
   });
 
-  it('rejects with the error a failed store throws', async () => {
+  it('fails with the cause of a store that threw', async () => {
     const broken = new Error('locked');
     const read = tagsQuery({ listTags: () => Promise.reject(broken) });
 
-    await expect(createTestQueryClient().fetchQuery(read)).rejects.toBe(broken);
+    expect(await observedRead(createTestQueryClient(), read)).toEqual(
+      readFailed('Something went wrong: locked'),
+    );
   });
 
   it('files the tags under the recognition root, stale at once', () => {
