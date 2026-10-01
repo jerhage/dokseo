@@ -1,19 +1,14 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
+import type { TextQuote } from '$lib/shared/anchor';
 import { captureId, tagId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { err } from '$lib/shared/result';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { Result } from '$lib/shared/result';
-import type { ReaderArrival } from '$lib/shared/reader-location';
-import { arrivalAt, passageArrivalAt, soughtPassage } from '../../domain/capture/capture-arrival';
-import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
-import type { PassageOrder } from '../../domain/capture/capture-order';
 import { editedText } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import { tagCounts } from '../../domain/tag/capture-tags';
@@ -100,46 +95,6 @@ class CaptureCollection {
 
   get bookCounts(): ReadonlyMap<TagId, number> {
     return tagCounts(this.list.captures);
-  }
-
-  arrivalFrom(
-    found: ReaderArrival,
-    direction: ReadingDirection,
-    passages: PassageOrder,
-  ): Arrival<ArrivalCapture> | null {
-    return match(found)
-      .with({ kind: 'image' }, (image) =>
-        image.region === null
-          ? null
-          : arrivalAt(
-              this.list.read,
-              image.query,
-              direction,
-              { index: image.index, rect: image.region },
-              passages,
-            ),
-      )
-      .with({ kind: 'passage' }, () => null)
-      .with({ kind: 'none' }, () => null)
-      .exhaustive();
-  }
-
-  passageArrivalFrom(found: ReaderArrival, order: PassageOrder): Arrival<ArrivalCapture> | null {
-    return match(found)
-      .with({ kind: 'passage' }, (passage) =>
-        passageArrivalAt(this.list.read, passage.query, passage.cfi, order),
-      )
-      .with({ kind: 'image' }, () => null)
-      .with({ kind: 'none' }, () => null)
-      .exhaustive();
-  }
-
-  passageFrom(found: ReaderArrival): SoughtPassage | null {
-    return match(found)
-      .with({ kind: 'passage' }, (passage) => soughtPassage(this.list.anchors, passage.cfi))
-      .with({ kind: 'image' }, () => null)
-      .with({ kind: 'none' }, () => null)
-      .exhaustive();
   }
 
   note(regions: readonly ImageRegion[]): void {

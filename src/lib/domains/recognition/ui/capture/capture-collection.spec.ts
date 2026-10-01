@@ -18,6 +18,7 @@ import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagError } from '../../domain/tag/tag-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
+import { arrivalFrom, passageFrom } from './capture-arrivals';
 import { CaptureCollection } from './capture-collection.svelte';
 import type { Settled } from './panel-capture';
 
@@ -295,7 +296,8 @@ describe('CaptureCollection arrivals', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
 
-    const arrival = collection.arrivalFrom(
+    const arrival = arrivalFrom(
+      collection.list.read,
       { kind: 'image', index: imageIndex(4), region: imageRect(10.67, 12.5, 40, 20), query: null },
       'rtl',
       byCfi,
@@ -311,14 +313,16 @@ describe('CaptureCollection arrivals', () => {
     await collection.list.open(ONE);
 
     expect(
-      collection.arrivalFrom(
+      arrivalFrom(
+        collection.list.read,
         { kind: 'image', index: imageIndex(4), region: null, query: null },
         'rtl',
         byCfi,
       ),
     ).toBeNull();
     expect(
-      collection.arrivalFrom(
+      arrivalFrom(
+        collection.list.read,
         { kind: 'image', index: imageIndex(4), region: null, query: '1' },
         'rtl',
         byCfi,
@@ -333,9 +337,9 @@ describe('CaptureCollection arrivals', () => {
     await collection.list.open(ONE);
 
     expect(
-      collection.arrivalFrom({ kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
+      arrivalFrom(collection.list.read, { kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
     ).toBeNull();
-    expect(collection.arrivalFrom({ kind: 'none' }, 'rtl', byCfi)).toBeNull();
+    expect(arrivalFrom(collection.list.read, { kind: 'none' }, 'rtl', byCfi)).toBeNull();
   });
 
   it('seeks the cfi a url names, with the quote of the passage lifted there', async () => {
@@ -344,7 +348,9 @@ describe('CaptureCollection arrivals', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
 
-    expect(collection.passageFrom({ kind: 'passage', cfi: CFI, query: '灯' })).toEqual({
+    expect(
+      passageFrom(collection.list.anchors, { kind: 'passage', cfi: CFI, query: '灯' }),
+    ).toEqual({
       cfi: CFI,
       quote: QUOTE,
     });
@@ -356,7 +362,9 @@ describe('CaptureCollection arrivals', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
 
-    expect(collection.passageFrom({ kind: 'passage', cfi: CFI, query: null })).toEqual({
+    expect(
+      passageFrom(collection.list.anchors, { kind: 'passage', cfi: CFI, query: null }),
+    ).toEqual({
       cfi: CFI,
       quote: null,
     });
@@ -367,7 +375,12 @@ describe('CaptureCollection arrivals', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
 
     expect(
-      collection.passageFrom({ kind: 'image', index: imageIndex(0), region: null, query: null }),
+      passageFrom(collection.list.anchors, {
+        kind: 'image',
+        index: imageIndex(0),
+        region: null,
+        query: null,
+      }),
     ).toBeNull();
   });
 });

@@ -12,6 +12,7 @@ import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
+import { arrivalFrom, passageArrivalFrom, passageFrom } from './capture-arrivals';
 import { CardDrafts } from './card-drafts.svelte';
 import { CaptureCollection } from './capture-collection.svelte';
 import type { WriteOutcome } from './capture-collection.svelte';
@@ -188,15 +189,15 @@ class CaptureView {
     direction: ReadingDirection,
     passages: PassageOrder,
   ): Arrival<ArrivalCapture> | null {
-    return this.#collection.arrivalFrom(found, direction, passages);
+    return arrivalFrom(this.#collection.list.read, found, direction, passages);
   }
 
   passageArrivalFrom(found: ReaderArrival, order: PassageOrder): Arrival<ArrivalCapture> | null {
-    return this.#collection.passageArrivalFrom(found, order);
+    return passageArrivalFrom(this.#collection.list.read, found, order);
   }
 
   passageFrom(found: ReaderArrival): SoughtPassage | null {
-    return this.#collection.passageFrom(found);
+    return passageFrom(this.#collection.list.anchors, found);
   }
 
   async open(book: BookId): Promise<void> {
