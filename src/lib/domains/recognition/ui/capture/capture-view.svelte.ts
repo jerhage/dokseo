@@ -108,7 +108,7 @@ class CaptureView {
   }
 
   get confirmingClear(): boolean {
-    return this.#collection.confirmingClear;
+    return this.#collection.clearAll.confirming;
   }
 
   get tags(): readonly Tag[] {
@@ -152,7 +152,7 @@ class CaptureView {
   }
 
   get clearing(): ClearScope {
-    return this.#collection.clearing;
+    return this.#collection.clearAll.scope;
   }
 
   get count(): number {
@@ -337,15 +337,15 @@ class CaptureView {
   }
 
   askClear(): void {
-    this.#collection.askClear();
+    this.#collection.clearAll.ask();
   }
 
   dismissClear(): void {
-    this.#collection.dismissClear();
+    this.#collection.clearAll.dismiss();
   }
 
   async clear(): Promise<void> {
-    await this.#collection.clear();
+    await this.#collection.clearAll.clear();
   }
 }
 

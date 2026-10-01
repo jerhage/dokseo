@@ -6,8 +6,6 @@ import { captureId, tagId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { err } from '$lib/shared/result';
-import { clearScope } from './clearing';
-import type { ClearScope } from './clearing';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -22,9 +20,10 @@ import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
-import { NOT_STORED, describeStorageFailure, thrownFailure } from './storage-failure';
+import { NOT_STORED, describeStorageFailure, refuse, thrownFailure } from './storage-failure';
 import type { StorageFailure } from './storage-failure';
 import { CaptureList } from './capture-list.svelte';
+import { ClearAll } from './clear-all.svelte';
 import type { Removed } from './capture-list.svelte';
 import type { Settled } from './panel-capture';
 
@@ -81,7 +80,7 @@ function countsAfter(
 
 class CaptureCollection {
   readonly list: CaptureList;
-  confirmingClear = $state(false);
+  readonly clearAll: ClearAll;
   tags = $state.raw<readonly Tag[]>([]);
   libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
 
@@ -96,10 +95,7 @@ class CaptureCollection {
     this.list = new CaptureList(container, (tags) => {
       this.tags = tags;
     });
-  }
-
-  get clearing(): ClearScope {
-    return clearScope(this.list.captures);
+    this.clearAll = new ClearAll(container, notify, this.list);
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
@@ -451,29 +447,6 @@ class CaptureCollection {
     this.list.change(id, (capture) => ({ ...capture, tagIds: after }));
   }
 
-  askClear(): void {
-    if (this.list.count === 0) return;
-    this.confirmingClear = true;
-  }
-
-  dismissClear(): void {
-    this.confirmingClear = false;
-  }
-
-  async clear(): Promise<void> {
-    const book = this.list.book;
-    this.confirmingClear = false;
-    const held = this.list.empty();
-    const generation = this.list.generation;
-    if (book === null) return;
-
-    const cleared = await this.#container.recognition.clearCaptures(book).catch(thrownFailure);
-    if (cleared.ok || generation !== this.list.generation) return;
-
-    this.list.restore(held);
-    this.#refuse('Your captures could not be deleted', cleared.error);
-  }
-
   async #keep(generation: number, draft: CaptureDraft): Promise<void> {
     const kept = await this.#container.recognition.saveCapture(draft).catch(thrownFailure);
     if (generation !== this.list.generation) return;
@@ -492,8 +465,7 @@ class CaptureCollection {
   }
 
   #refuse(title: string, failure: StorageFailure): 'failed' {
-    this.#notify({ tone: 'danger', title, message: describeStorageFailure(failure) });
-    return 'failed';
+    return refuse(this.#notify, title, failure);
   }
 }
 

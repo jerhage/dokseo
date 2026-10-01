@@ -256,7 +256,7 @@ describe('CaptureCollection', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
 
-    await collection.clear();
+    await collection.clearAll.clear();
 
     expect(collection.list.captures).toEqual([]);
     expect(collection.list.count).toBe(0);
