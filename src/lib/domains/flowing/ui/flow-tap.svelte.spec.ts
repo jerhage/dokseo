@@ -5,7 +5,6 @@ import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
 import type { Container } from '$lib/container';
 import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
-import { ok } from '$lib/shared/result';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import '$lib/styles/index.css';
 import FlowViewer from './FlowViewer.svelte';
@@ -94,8 +93,8 @@ function novel(direction: 'ltr' | 'rtl'): FlowBook {
 function shelf(source: Blob, book: FlowBook): Container {
   return {
     library: {
-      readSource: () => Promise.resolve(ok(source)),
-      saveReadingPlace: () => Promise.resolve(ok(book)),
+      readSource: () => Promise.resolve({ kind: 'success', source }),
+      saveReadingPlace: () => Promise.resolve({ kind: 'success', book }),
     },
     flowing: {
       readReadingSettings: () =>

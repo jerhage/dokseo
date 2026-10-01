@@ -37,16 +37,25 @@ describe('bookReadOf', () => {
     });
   });
 
-  it('lifts a missing answer beside loading and failed', () => {
-    expect(bookReadOf({ kind: 'ready', value: { kind: 'missing' } })).toEqual({
-      kind: 'missing',
+  it('names a blocked store as a failed read', () => {
+    expect(bookReadOf({ kind: 'ready', value: { kind: 'storage-unavailable' } })).toEqual({
+      kind: 'failed',
+      message: 'This browser blocks local storage, so uploads cannot be kept.',
     });
+  });
+
+  it('lifts a not-found answer beside loading and failed', () => {
+    expect(bookReadOf({ kind: 'ready', value: { kind: 'not-found', id: bookId('gone') } })).toEqual(
+      {
+        kind: 'missing',
+      },
+    );
   });
 
   it('hands the found book as ready', () => {
     const found = book('paged');
 
-    expect(bookReadOf({ kind: 'ready', value: { kind: 'found', book: found } })).toEqual({
+    expect(bookReadOf({ kind: 'ready', value: { kind: 'success', book: found } })).toEqual({
       kind: 'ready',
       book: found,
     });

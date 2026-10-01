@@ -4,7 +4,7 @@ import type { QueryClient } from '@tanstack/svelte-query';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notice, Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
+import { failureMessage } from '$lib/shared/query-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
@@ -15,12 +15,12 @@ import type { UploadBook } from '../domain/ingest/source-detection';
 import { uploadName } from '../domain/ingest/upload-name';
 import { INSPECTING, SINGLE_BOOK } from '../domain/ingest/upload-progress';
 import type { UploadBatch, UploadStage } from '../domain/ingest/upload-progress';
-import type { OpenedUpload, OpenFileError } from '../use-cases/open-file';
+import type { OpenedUpload, OpenFileFailure, OpenFileResult } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { bookMatchingChosen } from './book-matching.svelte';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
-import { describeLibraryError } from '../queries/library-error-text';
+import { describeLibraryRefusal } from '../queries/library-error-text';
 import { openFileMutation } from '../queries/library-queries';
 import type { LibraryWrites, UploadRequest } from '../queries/library-queries';
 import { refreshLibrary } from './library-refresh';
@@ -29,7 +29,9 @@ import type { UploadTally } from './upload-summary';
 
 type OpenBook = (id: BookId) => void;
 
-type FailedBook = { readonly name: string; readonly error: OpenFileError };
+type UploadFailure = OpenFileFailure | { readonly kind: 'threw'; readonly cause: unknown };
+
+type FailedBook = { readonly name: string; readonly failure: UploadFailure };
 
 type UploadState =
   | { readonly kind: 'idle' }
@@ -77,13 +79,14 @@ function describeSourceBuildError(error: SourceBuildError): string {
     .exhaustive();
 }
 
-function describeOpenFileError(error: OpenFileError): string {
-  return match(error)
-    .with({ kind: 'source' }, (source) => describeSourceBuildError(source.error))
-    .with({ kind: 'storage' }, (storage) => describeLibraryError(storage.error))
-    .with({ kind: 'epub' }, (epub) => describeEpubRefusal(epub.error))
+function describeOpenFileError(failure: UploadFailure): string {
+  return match(failure)
+    .with({ kind: 'source' }, (source) => describeSourceBuildError(source.failure))
+    .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, describeLibraryRefusal)
+    .with({ kind: 'epub' }, (epub) => describeEpubRefusal(epub.failure))
     .with({ kind: 'not-paged' }, (blocked) => describePageObstacle(blocked.obstacle))
     .with({ kind: 'fingerprint' }, (failed) => describeFingerprintFailure(failed.cause))
+    .with({ kind: 'threw' }, (threw) => failureMessage(threw.cause))
     .exhaustive();
 }
 
@@ -92,12 +95,12 @@ function describeFingerprintFailure(cause: string): string {
 }
 
 function describeFailedBook(failed: FailedBook): string {
-  return match(failed.error)
+  return match(failed.failure)
     .with(
-      { kind: 'source', error: { kind: 'unreadable' } },
-      (unreadable) => `${failed.name} could not be read: ${unreadable.error.cause}`,
+      { kind: 'source', failure: { kind: 'unreadable' } },
+      (unreadable) => `${failed.name} could not be read: ${unreadable.failure.cause}`,
     )
-    .otherwise((error) => `${failed.name}: ${describeOpenFileError(error)}`);
+    .otherwise((failure) => `${failed.name}: ${describeOpenFileError(failure)}`);
 }
 
 function titleOf(book: UploadBook<File>): string {
@@ -138,7 +141,7 @@ class BookUpload {
   #state = $state.raw<UploadState>(NOT_UPLOADING);
   #notify: Notify;
   #client: QueryClient;
-  #opening: WriteQuery<Result<OpenedUpload, OpenFileError>, UploadRequest>;
+  #opening: WriteQuery<OpenFileResult, UploadRequest>;
 
   constructor(library: Pick<LibraryWrites, 'openFile'>, notify: Notify) {
     this.#notify = notify;
@@ -177,19 +180,21 @@ class BookUpload {
     try {
       for (const [index, book] of books.entries()) {
         this.#state = uploadingBook(book, index, books.length);
-        const outcome = await this.#opening.run({
-          files: book.files,
-          matching,
-          report: (stage) => {
-            this.#state = stageReached(this.#state, stage);
-          },
-        });
-        if (!outcome.ok) {
-          failed.push({ name: nameOf(book), error: outcome.error });
+        const outcome = await this.#opening
+          .run({
+            files: book.files,
+            matching,
+            report: (stage) => {
+              this.#state = stageReached(this.#state, stage);
+            },
+          })
+          .catch((cause: unknown): UploadFailure => ({ kind: 'threw', cause }));
+        if (outcome.kind !== 'added' && outcome.kind !== 'already-held') {
+          failed.push({ name: nameOf(book), failure: outcome });
           continue;
         }
-        opened.push(outcome.value);
-        if (books.length === 1) this.#notify(uploadNotice(outcome.value, openBook));
+        opened.push(outcome);
+        if (books.length === 1) this.#notify(uploadNotice(outcome, openBook));
         lastBookOpened = index === books.length - 1;
         if (!lastBookOpened) await refreshLibrary(this.#client);
       }
@@ -208,7 +213,7 @@ class BookUpload {
   ): void {
     if (bookCount === 1) {
       const [only] = failed;
-      if (only !== undefined) this.#fail(describeOpenFileError(only.error));
+      if (only !== undefined) this.#fail(describeOpenFileError(only.failure));
       return;
     }
     const summary = uploadSummary(tallyOf(opened, failed));

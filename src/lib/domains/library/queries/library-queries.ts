@@ -1,21 +1,25 @@
 import { keepPreviousData, mutationOptions, queryOptions, skipToken } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
-import { QueryFailure, unwrap } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { BookMatching } from '../domain/book/book-matching';
-import type { LibraryError } from '../domain/book/library-repository';
 import type { UploadReport } from '../domain/ingest/upload-progress';
-import type { OpenedUpload, OpenFileError } from '../use-cases/open-file';
-import { describeLibraryError } from './library-error-text';
+import type { EditBookResult } from '../use-cases/edit-book';
+import type { ListBooksResult } from '../use-cases/list-books';
+import type { MarkFinishedResult } from '../use-cases/mark-finished';
+import type { MarkUnreadResult } from '../use-cases/mark-unread';
+import type { OpenFileResult } from '../use-cases/open-file';
+import type { ReadBookResult } from '../use-cases/read-book';
+import type { ReadCoverResult } from '../use-cases/read-cover';
+import type { ReadLibrarySizeResult } from '../use-cases/read-library-size';
+import type { RemoveBookResult } from '../use-cases/remove-book';
 import { libraryKeys } from './library-keys';
 
 type LibraryReads = {
-  readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
-  readonly readBook: (id: BookId) => Promise<Result<Book, LibraryError>>;
-  readonly readCover: (id: BookId) => Promise<Result<Blob | null, LibraryError>>;
-  readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
+  readonly listBooks: () => Promise<ListBooksResult>;
+  readonly readBook: (id: BookId) => Promise<ReadBookResult>;
+  readonly readCover: (id: BookId) => Promise<ReadCoverResult>;
+  readonly readLibrarySize: () => Promise<ReadLibrarySizeResult>;
 };
 
 type LibraryWrites = {
@@ -23,14 +27,12 @@ type LibraryWrites = {
     files: readonly File[],
     matching: BookMatching,
     report?: UploadReport,
-  ) => Promise<Result<OpenedUpload, OpenFileError>>;
-  readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError>>;
-  readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
-  readonly markFinished: (id: BookId) => Promise<Result<Book, LibraryError>>;
-  readonly markUnread: (id: BookId) => Promise<Result<Book, LibraryError>>;
+  ) => Promise<OpenFileResult>;
+  readonly removeBook: (id: BookId) => Promise<RemoveBookResult>;
+  readonly editBook: (id: BookId, edit: BookEdit) => Promise<EditBookResult>;
+  readonly markFinished: (id: BookId) => Promise<MarkFinishedResult>;
+  readonly markUnread: (id: BookId) => Promise<MarkUnreadResult>;
 };
-
-type BookAnswer = { readonly kind: 'found'; readonly book: Book } | { readonly kind: 'missing' };
 
 type BookMark = 'finished' | 'unread';
 
@@ -44,29 +46,31 @@ type EditRequest = { readonly id: BookId; readonly edit: BookEdit };
 
 type MarkRequest = { readonly id: BookId; readonly mark: BookMark };
 
-const BOOK_MISSING: BookAnswer = { kind: 'missing' };
-
-function bookAnswer(read: Result<Book, LibraryError>): BookAnswer {
-  if (read.ok) return { kind: 'found', book: read.value };
-  return match(read.error)
-    .with({ kind: 'not-found' }, () => BOOK_MISSING)
-    .with({ kind: 'storage-unavailable' }, { kind: 'storage-failed' }, (failed) => {
-      throw new QueryFailure(describeLibraryError(failed), { cause: failed });
-    })
-    .exhaustive();
-}
-
 function newestFirst(books: readonly Book[]): readonly Book[] {
   return books.toSorted((a, b) => b.addedAt - a.addedAt);
 }
 
-function heldCover(cover: Result<Blob | null, LibraryError>): Blob | null {
-  if (cover.ok) return cover.value;
-  return match(cover.error)
-    .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, () => null)
-    .with({ kind: 'storage-failed' }, (failed) => {
-      throw new QueryFailure(describeLibraryError(failed), { cause: failed });
-    })
+function sortedListing(listed: ListBooksResult): ListBooksResult {
+  return match(listed)
+    .with({ kind: 'success' }, ({ books }): ListBooksResult => ({
+      kind: 'success',
+      books: newestFirst(books),
+    }))
+    .with({ kind: 'storage-unavailable' }, (blocked) => blocked)
+    .exhaustive();
+}
+
+function heldCover(cover: ReadCoverResult): Blob | null {
+  return match(cover)
+    .with({ kind: 'success' }, (read) => read.cover)
+    .with({ kind: 'storage-unavailable' }, () => null)
+    .exhaustive();
+}
+
+function measuredSize(size: ReadLibrarySizeResult): number | null {
+  return match(size)
+    .with({ kind: 'success' }, ({ bytes }) => bytes)
+    .with({ kind: 'storage-unavailable' }, () => null)
     .exhaustive();
 }
 
@@ -87,7 +91,7 @@ function booksQuery(library: Pick<LibraryReads, 'listBooks'>) {
     queryKey: libraryKeys.books(),
     queryFn: async () => {
       const listed = await library.listBooks();
-      return newestFirst(unwrap(listed, describeLibraryError));
+      return sortedListing(listed);
     },
     staleTime: 0,
   });
@@ -96,13 +100,7 @@ function booksQuery(library: Pick<LibraryReads, 'listBooks'>) {
 function bookQuery(library: Pick<LibraryReads, 'readBook'>, id: BookId | null) {
   return queryOptions({
     queryKey: libraryKeys.book(id),
-    queryFn:
-      id === null
-        ? skipToken
-        : async () => {
-            const read = await library.readBook(id);
-            return bookAnswer(read);
-          },
+    queryFn: id === null ? skipToken : () => library.readBook(id),
     staleTime: 0,
   });
 }
@@ -121,7 +119,7 @@ function librarySizeQuery(library: Pick<LibraryReads, 'readLibrarySize'>) {
     queryKey: libraryKeys.size(),
     queryFn: async () => {
       const size = await library.readLibrarySize();
-      return size.ok ? size.value : null;
+      return measuredSize(size);
     },
     staleTime: 0,
   });
@@ -154,8 +152,6 @@ function markBookMutation(library: Pick<LibraryWrites, 'markFinished' | 'markUnr
 }
 
 export {
-  BOOK_MISSING,
-  bookAnswer,
   bookQuery,
   booksQuery,
   coversQuery,
@@ -166,12 +162,4 @@ export {
   openFileMutation,
   removeBookMutation,
 };
-export type {
-  BookAnswer,
-  BookMark,
-  EditRequest,
-  LibraryReads,
-  LibraryWrites,
-  MarkRequest,
-  UploadRequest,
-};
+export type { BookMark, EditRequest, LibraryReads, LibraryWrites, MarkRequest, UploadRequest };

@@ -5,7 +5,8 @@ import type { Container } from '$lib/container';
 import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
-import { PlaceKeeper } from '$lib/shared/place-keeper';
+import { PLACE_KEPT, PlaceKeeper } from '$lib/shared/place-keeper';
+import type { PlaceSaved } from '$lib/shared/place-keeper';
 import { failureMessage } from '$lib/shared/query-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
@@ -50,17 +51,15 @@ import type { BookPaging } from './flow-writing-mode';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
-type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
-
-type FlowBook = Extract<OpenedBook, { readonly kind: 'flow' }>['book'];
+type FlowBook = Extract<OpenOutcome, { readonly kind: 'flow' }>['book'];
 
 type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
 
-type SourceFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
+type SourceFailure = Exclude<SourceOutcome, { readonly kind: 'success' }>;
 
 type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
 
-type LibraryFailure = Extract<PlaceOutcome, { readonly ok: false }>['error'];
+type LibraryFailure = Exclude<PlaceOutcome, { readonly kind: 'success' }>;
 
 type BookChanged = () => void;
 
@@ -99,13 +98,11 @@ const SOURCE_MISSING =
 
 function describeSourceFailure(error: SourceFailure): string {
   return match(error)
-    .with({ kind: 'not-found' }, () => 'That book is no longer stored on this device.')
     .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
     .with(
       { kind: 'storage-unavailable' },
       () => 'This browser blocks local storage, so that book cannot be read.',
     )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
     .exhaustive();
 }
 
@@ -116,7 +113,6 @@ function describePlaceFailure(error: LibraryFailure): string {
       { kind: 'storage-unavailable' },
       () => 'This browser blocks local storage, so your place cannot be kept.',
     )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
     .exhaustive();
 }
 
@@ -151,7 +147,7 @@ class FlowView {
   #bookChanged: BookChanged | null;
   #generation = 0;
   #surface: FlowSurface | null = null;
-  #places: PlaceKeeper<ReadingPlace, LibraryFailure>;
+  #places: PlaceKeeper<ReadingPlace>;
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
   #arrivedBy: string | null = null;
@@ -183,7 +179,6 @@ class FlowView {
     }));
     this.#places = new PlaceKeeper({
       save: (id, place) => this.#savePlace(id, place),
-      describe: describePlaceFailure,
       notify,
       afterFailure: 'forgets-place',
     });
@@ -235,8 +230,8 @@ class FlowView {
 
     if (generation !== this.#generation) return;
 
-    if (!stored.ok) {
-      this.state = { kind: 'failed', message: describeSourceFailure(stored.error) };
+    if (stored.kind !== 'success') {
+      this.state = { kind: 'failed', message: describeSourceFailure(stored) };
       return;
     }
 
@@ -254,7 +249,7 @@ class FlowView {
     let surface: FlowSurface;
     try {
       surface = await show({
-        source: stored.value,
+        source: stored.source,
         at,
         settings: chosen,
         ink: inked,
@@ -448,10 +443,11 @@ class FlowView {
     this.#surface = null;
   }
 
-  async #savePlace(id: BookId, place: ReadingPlace): Promise<PlaceOutcome> {
+  async #savePlace(id: BookId, place: ReadingPlace): Promise<PlaceSaved> {
     const saved = await this.#container.library.saveReadingPlace(id, place);
-    if (saved.ok) this.#bookChanged?.();
-    return saved;
+    if (saved.kind !== 'success') return { kind: 'refused', message: describePlaceFailure(saved) };
+    this.#bookChanged?.();
+    return PLACE_KEPT;
   }
 }
 

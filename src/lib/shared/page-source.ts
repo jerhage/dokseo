@@ -1,6 +1,5 @@
 import type { Size } from './geometry';
 import type { ImageIndex } from './ids';
-import type { Result } from './result';
 
 type PageSourceError =
   | { readonly kind: 'out-of-range'; readonly index: number; readonly count: number }
@@ -13,13 +12,36 @@ type PagePicture =
   | { readonly kind: 'encoded'; readonly url: string }
   | { readonly kind: 'drawn'; readonly bitmap: ImageBitmap };
 
+type PictureRead = { readonly kind: 'success'; readonly picture: PagePicture } | PageSourceError;
+
+type ImageRead = { readonly kind: 'success'; readonly image: ImageBitmap } | PageSourceError;
+
+type SizesRead =
+  | { readonly kind: 'success'; readonly sizes: readonly (Size | null)[] }
+  | PageSourceError;
+
+type PageNamesRead =
+  | { readonly kind: 'success'; readonly names: readonly string[] }
+  | PageSourceError;
+
 interface PageSource {
   readonly count: number;
-  picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>>;
-  image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>>;
-  sizes(): Promise<Result<readonly (Size | null)[], PageSourceError>>;
+  picture(index: ImageIndex): Promise<PictureRead>;
+  image(index: ImageIndex): Promise<ImageRead>;
+  sizes(): Promise<SizesRead>;
   close(): void;
   [Symbol.dispose](): void;
 }
 
-export type { PageSourceError, PagePicture, PageSource };
+type PageSourceOpening = { readonly kind: 'success'; readonly pages: PageSource } | PageSourceError;
+
+export type {
+  ImageRead,
+  PageNamesRead,
+  PagePicture,
+  PageSource,
+  PageSourceError,
+  PageSourceOpening,
+  PictureRead,
+  SizesRead,
+};

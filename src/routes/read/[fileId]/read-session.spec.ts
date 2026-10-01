@@ -4,7 +4,7 @@ import type { Container } from '$lib/container';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
-import { err, ok } from '$lib/shared/result';
+import { ok } from '$lib/shared/result';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { ReadSession } from './read-session.svelte';
 
@@ -45,9 +45,9 @@ function world(address: string): World {
       openForReading: (id: BookId) => {
         opened.push(id);
         if (id === MISSING) {
-          return Promise.resolve(err({ kind: 'library', error: { kind: 'not-found', id } }));
+          return Promise.resolve({ kind: 'not-found', id });
         }
-        return Promise.resolve(ok({ kind: 'flow', book: flowBook(id) }));
+        return Promise.resolve({ kind: 'flow', book: flowBook(id) });
       },
     },
     recognition: {

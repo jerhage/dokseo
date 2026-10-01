@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, imagePlace, textPlace } from '$lib/shared/reading-place';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from '../domain/book/book';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type {
+  BookLookup,
+  LibraryRepository,
+  LibraryWrite,
+} from '../domain/book/library-repository';
 import { markUnread } from './mark-unread';
 
 type UpdateCall = { readonly id: BookId; readonly edit: BookEdit };
-
-function notFound(id: BookId): Result<never, LibraryError> {
-  return err({ kind: 'not-found', id });
-}
 
 const comic: Book = {
   id: bookId('book-7'),
@@ -40,29 +39,33 @@ const novel: Book = {
   position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', 1),
 };
 
-function fakeRepository(found: Result<Book, LibraryError>, outcome = found) {
+const WRITTEN: LibraryWrite = { kind: 'success' };
+
+const NO_BOOK: BookLookup = { kind: 'success', book: null };
+
+function fakeRepository(found: BookLookup, outcome = found) {
   const updates: UpdateCall[] = [];
   const repository: LibraryRepository = {
-    list: () => Promise.resolve(ok([])),
+    list: () => Promise.resolve({ kind: 'success', books: [] }),
     get: () => Promise.resolve(found),
-    add: () => Promise.resolve(ok(undefined)),
-    remove: () => Promise.resolve(ok(undefined)),
+    add: () => Promise.resolve(WRITTEN),
+    remove: () => Promise.resolve(WRITTEN),
     update: (id, edit) => {
       updates.push({ id, edit });
       return Promise.resolve(outcome);
     },
-    readSource: (id) => Promise.resolve(notFound(id)),
-    readCover: (id) => Promise.resolve(notFound(id)),
-    storedBytes: () => Promise.resolve(ok(0)),
-    readPageList: () => Promise.resolve(ok({ kind: 'unlisted' as const })),
-    savePageList: () => Promise.resolve(ok(undefined)),
+    readSource: () => Promise.resolve({ kind: 'success', file: null }),
+    readCover: () => Promise.resolve({ kind: 'success', file: null }),
+    storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
+    readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
+    savePageList: () => Promise.resolve(WRITTEN),
   };
   return { repository, updates };
 }
 
 describe('markUnread', () => {
   it('clears the mark and the last read time, and returns an image book to its first image', async () => {
-    const fake = fakeRepository(ok(comic));
+    const fake = fakeRepository({ kind: 'success', book: comic });
 
     await markUnread({ repository: fake.repository }, bookId('book-7'));
 
@@ -79,7 +82,7 @@ describe('markUnread', () => {
   });
 
   it('returns a text book to the start of the text', async () => {
-    const fake = fakeRepository(ok(novel));
+    const fake = fakeRepository({ kind: 'success', book: novel });
 
     await markUnread({ repository: fake.repository }, bookId('book-7'));
 
@@ -89,21 +92,40 @@ describe('markUnread', () => {
   });
 
   it('changes nothing and reports a book it cannot find', async () => {
-    const missing = notFound(bookId('book-7'));
-    const fake = fakeRepository(missing);
+    const fake = fakeRepository(NO_BOOK);
 
     const result = await markUnread({ repository: fake.repository }, bookId('book-7'));
 
-    expect(result).toEqual(missing);
+    expect(result).toEqual({ kind: 'not-found', id: 'book-7' });
     expect(fake.updates).toEqual([]);
   });
 
-  it('returns what the update returned', async () => {
-    const failed = err({ kind: 'storage-failed', cause: 'the disk went away' } as const);
-    const fake = fakeRepository(ok(comic), failed);
+  it('returns the book the update stored', async () => {
+    const marked = { ...comic, finishedAt: null, lastReadAt: null };
+    const fake = fakeRepository(
+      { kind: 'success', book: comic },
+      { kind: 'success', book: marked },
+    );
 
     const result = await markUnread({ repository: fake.repository }, bookId('book-7'));
 
-    expect(result).toEqual(failed);
+    expect(result).toEqual({ kind: 'success', book: marked });
+  });
+
+  it('answers not-found for a book removed between the read and the update', async () => {
+    const fake = fakeRepository({ kind: 'success', book: comic }, NO_BOOK);
+
+    const result = await markUnread({ repository: fake.repository }, bookId('book-7'));
+
+    expect(result).toEqual({ kind: 'not-found', id: 'book-7' });
+  });
+
+  it('passes a blocked store through', async () => {
+    const fake = fakeRepository(STORAGE_UNAVAILABLE);
+
+    const result = await markUnread({ repository: fake.repository }, bookId('book-7'));
+
+    expect(result).toEqual(STORAGE_UNAVAILABLE);
+    expect(fake.updates).toEqual([]);
   });
 });

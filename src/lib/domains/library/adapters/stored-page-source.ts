@@ -1,12 +1,11 @@
 import { match } from 'ts-pattern';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import type { Result } from '$lib/shared/result';
+import type { PageNamesRead, PageSourceOpening } from '$lib/shared/page-source';
 import type { IntrinsicSourceKind } from '../domain/book/page-list';
 
 async function openStoredPageSource(
   sourceKind: IntrinsicSourceKind,
   blob: Blob,
-): Promise<Result<PageSource, PageSourceError>> {
+): Promise<PageSourceOpening> {
   return match(sourceKind)
     .with('pdf', async () => {
       const { openPdfPageSource } = await import('./pdf-page-source');
@@ -22,14 +21,12 @@ async function openStoredPageSource(
 async function openListedPageSource(
   blob: Blob,
   names: readonly string[],
-): Promise<Result<PageSource, PageSourceError>> {
+): Promise<PageSourceOpening> {
   const { openArchivePageSource } = await import('./archive-page-source');
   return openArchivePageSource(blob, names);
 }
 
-async function listStoredPageNames(
-  blob: Blob,
-): Promise<Result<readonly string[], PageSourceError>> {
+async function listStoredPageNames(blob: Blob): Promise<PageNamesRead> {
   const { listArchivePageNames } = await import('./archive-page-source');
   return listArchivePageNames(blob);
 }

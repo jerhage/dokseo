@@ -1,23 +1,32 @@
 import type { BookId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { startingPlace } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type { LibraryRepository } from '../domain/book/library-repository';
+
+type MarkUnreadResult =
+  | { readonly kind: 'success'; readonly book: Book }
+  | { readonly kind: 'not-found'; readonly id: BookId }
+  | StorageUnavailable;
 
 type MarkUnreadDeps = {
   readonly repository: LibraryRepository;
 };
 
-async function markUnread(deps: MarkUnreadDeps, id: BookId): Promise<Result<Book, LibraryError>> {
+async function markUnread(deps: MarkUnreadDeps, id: BookId): Promise<MarkUnreadResult> {
   const found = await deps.repository.get(id);
-  if (!found.ok) return found;
+  if (found.kind !== 'success') return found;
+  if (found.book === null) return { kind: 'not-found', id };
 
-  return deps.repository.update(id, {
+  const updated = await deps.repository.update(id, {
     finishedAt: null,
     lastReadAt: null,
-    position: startingPlace(found.value),
+    position: startingPlace(found.book),
   });
+  if (updated.kind !== 'success') return updated;
+  if (updated.book === null) return { kind: 'not-found', id };
+  return { kind: 'success', book: updated.book };
 }
 
 export { markUnread };
-export type { MarkUnreadDeps };
+export type { MarkUnreadDeps, MarkUnreadResult };

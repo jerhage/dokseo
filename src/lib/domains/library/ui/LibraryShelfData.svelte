@@ -7,7 +7,14 @@
   import { booksQuery, coversQuery, librarySizeQuery } from '../queries/library-queries';
   import type { LibraryReads } from '../queries/library-queries';
   import { CoverUrls } from './cover-urls';
-  import { failureOf, imageCountsOf, listedOf, shelfOf, shelfState } from './library-shelf';
+  import {
+    failureOf,
+    imageCountsOf,
+    listedBooks,
+    listedOf,
+    shelfOf,
+    shelfState,
+  } from './library-shelf';
   import type { ShelfRead } from './library-shelf';
 
   type Props = {
@@ -18,14 +25,13 @@
 
   let { library, lazy = false, children }: Props = $props();
 
-  const NO_BOOKS: readonly Book[] = [];
   const NO_COVERS: ReadonlyMap<BookId, Blob> = new Map();
 
   let asked = $state(false);
   const wanted = $derived(!lazy || asked);
 
   const listing = readQuery(() => ({ ...booksQuery(library), enabled: wanted }));
-  const books = $derived(listing.state.kind === 'ready' ? listing.state.value : NO_BOOKS);
+  const books: readonly Book[] = $derived(listedBooks(listing.state));
   const ids = $derived(books.map((held) => held.id));
   const coverRead = readQuery(() => ({
     ...coversQuery(library, ids),

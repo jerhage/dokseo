@@ -13,7 +13,7 @@ import type { PagePicture, PageSource } from '$lib/shared/page-source';
 import type { ShownPlace } from '$lib/shared/reader-location';
 import { imagePlace, showsTheEnd, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import { err, ok } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { readingPosition } from '../domain/reading-position';
 import type { Notice, Notify } from '$lib/shared/notice';
@@ -105,24 +105,37 @@ function fakeSource(count: number): FakeSource {
       asked.push(index);
       await state.held;
       if (broken.has(index)) {
-        return err({ kind: 'decode-failed', index, cause: 'torn page' } as const);
+        return { kind: 'decode-failed', index, cause: 'torn page' } as const;
       }
-      if (state.kind === 'encoded')
-        return ok({ kind: 'encoded', url: `blob:page-${index}` } as const);
-      return ok({ kind: 'drawn', bitmap: bitmap(sizes.get(index) ?? PORTRAIT) } as const);
+      if (state.kind === 'encoded') {
+        return {
+          kind: 'success',
+          picture: { kind: 'encoded', url: `blob:page-${index}` },
+        } as const;
+      }
+      return {
+        kind: 'success',
+        picture: { kind: 'drawn', bitmap: bitmap(sizes.get(index) ?? PORTRAIT) },
+      } as const;
     },
     image: (index: ImageIndex) => {
       asked.push(index);
       if (broken.has(index)) {
-        return Promise.resolve(err({ kind: 'decode-failed', index, cause: 'torn page' } as const));
+        return Promise.resolve({ kind: 'decode-failed', index, cause: 'torn page' } as const);
       }
-      return Promise.resolve(ok(bitmap(sizes.get(index) ?? PORTRAIT)));
+      return Promise.resolve({
+        kind: 'success',
+        image: bitmap(sizes.get(index) ?? PORTRAIT),
+      } as const);
     },
     sizes: async () => {
       const known = new Map(headers);
       await state.headersRead;
-      if (state.headersFail) return err({ kind: 'source-unreadable', cause: 'bad zip' } as const);
-      return ok(Array.from({ length: count }, (_, index) => known.get(index) ?? null));
+      if (state.headersFail) return { kind: 'source-unreadable', cause: 'bad zip' } as const;
+      return {
+        kind: 'success',
+        sizes: Array.from({ length: count }, (_, index) => known.get(index) ?? null),
+      } as const;
     },
     close: () => {
       state.closed += 1;
@@ -185,27 +198,28 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       openFile: () => Promise.reject(new Error('not used')),
       openForReading: () => {
         if (world.opening === 'missing') {
-          return Promise.resolve(
-            err({ kind: 'library', error: { kind: 'not-found', id: bookId('one') } } as const),
-          );
+          return Promise.resolve({ kind: 'not-found', id: bookId('one') } as const);
         }
         if (world.opening === 'no-file') {
-          return Promise.resolve(err({ kind: 'source-missing', id: bookId('one') } as const));
+          return Promise.resolve({ kind: 'source-missing', id: bookId('one') } as const);
         }
         if (world.opening === 'unreadable') {
-          return Promise.resolve(
-            err({
-              kind: 'source',
-              error: { kind: 'source-unreadable', cause: 'bad zip' },
-            } as const),
-          );
+          return Promise.resolve({
+            kind: 'unreadable',
+            failure: { kind: 'source-unreadable', cause: 'bad zip' },
+          } as const);
         }
         if (world.opening === 'flow') {
-          return Promise.resolve(
-            ok({ kind: 'flow', book: book({ layoutKind: 'flow', imageCount: 0 }) } as const),
-          );
+          return Promise.resolve({
+            kind: 'flow',
+            book: book({ layoutKind: 'flow', imageCount: 0 }),
+          } as const);
         }
-        return Promise.resolve(ok({ kind: 'images', book: world.opening, pages: pages.source }));
+        return Promise.resolve({
+          kind: 'images',
+          book: world.opening,
+          pages: pages.source,
+        } as const);
       },
       listBooks: () => Promise.reject(new Error('not used')),
       readBook: () => Promise.reject(new Error('not used')),
@@ -224,9 +238,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           language: edit.language,
         });
         if (world.gate !== null) await world.gate;
-        if (world.editing === 'failed') {
-          return err({ kind: 'storage-failed', cause: 'the disk went away' });
-        }
+        if (world.editing === 'failed') return STORAGE_UNAVAILABLE;
         world.stored = {
           ...world.stored,
           layoutKind: edit.layoutKind ?? world.stored.layoutKind,
@@ -236,7 +248,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           language: edit.language ?? world.stored.language,
           position: edit.position ?? world.stored.position,
         };
-        return ok(world.stored);
+        return { kind: 'success', book: world.stored };
       },
       saveReadingPlace: async (id, place) => {
         edits.push({
@@ -249,15 +261,13 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           language: undefined,
         });
         if (world.gate !== null) await world.gate;
-        if (world.editing === 'failed') {
-          return err({ kind: 'storage-failed', cause: 'the disk went away' });
-        }
+        if (world.editing === 'failed') return STORAGE_UNAVAILABLE;
         world.stored = { ...world.stored, position: place };
-        return ok(world.stored);
+        return { kind: 'success', book: world.stored };
       },
       markFinished: () => Promise.reject(new Error('not used')),
       markUnread: () => Promise.reject(new Error('not used')),
-      readLibrarySize: () => Promise.resolve(ok(0)),
+      readLibrarySize: () => Promise.resolve({ kind: 'success', bytes: 0 }),
       readPageSizes: (source) => source.sizes(),
     },
     recognition: {
@@ -353,7 +363,7 @@ describe('ReaderView', () => {
 
     const first = view.open(bookId('one'));
     view.dispose();
-    answer(ok({ kind: 'images', book: book(), pages: world.pages.source }));
+    answer({ kind: 'images', book: book(), pages: world.pages.source });
     await first;
 
     expect(view.opening).toEqual({ kind: 'idle' });
@@ -809,7 +819,7 @@ describe('ReaderView', () => {
       {
         tone: 'danger',
         title: LANGUAGE_FAILED,
-        message: 'Local storage failed: the disk went away',
+        message: 'This browser blocks local storage, so your place cannot be kept.',
       },
     ]);
     expect(view.book?.language).toBe('ja');
@@ -883,7 +893,7 @@ describe('ReaderView', () => {
       {
         tone: 'danger',
         title: PAIRING_FAILED,
-        message: 'Local storage failed: the disk went away',
+        message: 'This browser blocks local storage, so your place cannot be kept.',
       },
     ]);
     expect(readingNotice(view.opening)).toBeNull();
@@ -927,7 +937,7 @@ describe('ReaderView', () => {
       {
         tone: 'danger',
         title: PLACE_FAILED,
-        message: 'Local storage failed: the disk went away',
+        message: 'This browser blocks local storage, so your place cannot be kept.',
       },
     ]);
     expect(readingNotice(view.opening)).toBeNull();

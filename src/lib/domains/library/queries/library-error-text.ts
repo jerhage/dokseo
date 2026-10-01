@@ -1,15 +1,17 @@
 import { match } from 'ts-pattern';
-import type { LibraryError } from '../domain/book/library-repository';
+import type { BookId } from '$lib/shared/ids';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 
-function describeLibraryError(error: LibraryError): string {
-  return match(error)
+type LibraryRefusal = { readonly kind: 'not-found'; readonly id: BookId } | StorageUnavailable;
+
+const LIBRARY_UNAVAILABLE = 'This browser blocks local storage, so uploads cannot be kept.';
+
+function describeLibraryRefusal(refusal: LibraryRefusal): string {
+  return match(refusal)
     .with({ kind: 'not-found' }, () => 'That upload is no longer in your library.')
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so uploads cannot be kept.',
-    )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
+    .with({ kind: 'storage-unavailable' }, () => LIBRARY_UNAVAILABLE)
     .exhaustive();
 }
 
-export { describeLibraryError };
+export { describeLibraryRefusal, LIBRARY_UNAVAILABLE };
+export type { LibraryRefusal };

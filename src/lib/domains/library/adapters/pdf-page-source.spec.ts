@@ -101,8 +101,8 @@ class FakeOffscreenCanvas {
 async function opened(): Promise<PageSource> {
   const { openPdfPageSource } = await import('./pdf-page-source');
   const source = await openPdfPageSource(new Blob(['%PDF-1.7 pretend bytes']));
-  if (!source.ok) throw new Error('the document could not be opened');
-  return source.value;
+  if (source.kind !== 'success') throw new Error('the document could not be opened');
+  return source.pages;
 }
 
 beforeEach(() => {
@@ -128,8 +128,8 @@ describe('openPdfPageSource', () => {
     const picture = await source.picture(imageIndex(1));
 
     expect(picture).toEqual({
-      ok: true,
-      value: { kind: 'drawn', bitmap: expect.objectContaining({ width: 613, height: 792 }) },
+      kind: 'success',
+      picture: { kind: 'drawn', bitmap: expect.objectContaining({ width: 613, height: 792 }) },
     });
     expect(document.rendered).toEqual([2]);
   });
@@ -139,7 +139,7 @@ describe('openPdfPageSource', () => {
 
     const picture = await source.picture(imageIndex(9));
 
-    expect(picture).toEqual({ ok: false, error: { kind: 'out-of-range', index: 9, count: 3 } });
+    expect(picture).toEqual({ kind: 'out-of-range', index: 9, count: 3 });
     expect(document.rendered).toEqual([]);
   });
 
@@ -149,10 +149,7 @@ describe('openPdfPageSource', () => {
 
     const picture = await source.picture(imageIndex(0));
 
-    expect(picture).toEqual({
-      ok: false,
-      error: { kind: 'source-unreadable', cause: 'The document is closed' },
-    });
+    expect(picture).toEqual({ kind: 'source-unreadable', cause: 'The document is closed' });
   });
 
   it('reports a render failure, not a decode failure, when a page will not draw', async () => {
@@ -162,12 +159,9 @@ describe('openPdfPageSource', () => {
     const picture = await source.picture(imageIndex(0));
 
     expect(picture).toEqual({
-      ok: false,
-      error: {
-        kind: 'render-failed',
-        index: 0,
-        cause: expect.stringContaining('the page is damaged'),
-      },
+      kind: 'render-failed',
+      index: 0,
+      cause: expect.stringContaining('the page is damaged'),
     });
   });
 
@@ -183,17 +177,17 @@ describe('openPdfPageSource', () => {
     const picture = await source.picture(imageIndex(0));
     const image = await source.image(imageIndex(0));
 
-    if (!picture.ok) throw new Error('the page did not draw');
-    if (picture.value.kind !== 'drawn') throw new Error('the picture was not drawn');
-    if (!image.ok) throw new Error('the page did not render');
+    if (picture.kind !== 'success') throw new Error('the page did not draw');
+    if (picture.picture.kind !== 'drawn') throw new Error('the picture was not drawn');
+    if (image.kind !== 'success') throw new Error('the page did not render');
     const expected = {
       width: Math.ceil(size.width * RENDER_SCALE),
       height: Math.ceil(size.height * RENDER_SCALE),
     };
-    expect({ width: picture.value.bitmap.width, height: picture.value.bitmap.height }).toEqual(
+    expect({ width: picture.picture.bitmap.width, height: picture.picture.bitmap.height }).toEqual(
       expected,
     );
-    expect({ width: image.value.width, height: image.value.height }).toEqual(expected);
+    expect({ width: image.image.width, height: image.image.height }).toEqual(expected);
   });
 
   it.each(geometries)(
@@ -205,10 +199,12 @@ describe('openPdfPageSource', () => {
       const sizes = await source.sizes();
       const picture = await source.picture(imageIndex(0));
 
-      if (!sizes.ok) throw new Error('the pages were not sized');
-      if (!picture.ok || picture.value.kind !== 'drawn') throw new Error('the page did not draw');
-      const drawn = { width: picture.value.bitmap.width, height: picture.value.bitmap.height };
-      expect(sizes.value).toEqual([drawn, drawn, drawn]);
+      if (sizes.kind !== 'success') throw new Error('the pages were not sized');
+      if (picture.kind !== 'success' || picture.picture.kind !== 'drawn') {
+        throw new Error('the page did not draw');
+      }
+      const drawn = { width: picture.picture.bitmap.width, height: picture.picture.bitmap.height };
+      expect(sizes.sizes).toEqual([drawn, drawn, drawn]);
       expect(document.rendered).toEqual([1]);
     },
   );
@@ -219,10 +215,7 @@ describe('openPdfPageSource', () => {
 
     const sizes = await source.sizes();
 
-    expect(sizes).toEqual({
-      ok: false,
-      error: { kind: 'source-unreadable', cause: 'The document is closed' },
-    });
+    expect(sizes).toEqual({ kind: 'source-unreadable', cause: 'The document is closed' });
   });
 
   it('opens the document with the modern build and its worker when the browser has every API', async () => {

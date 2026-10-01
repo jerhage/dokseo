@@ -2,19 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from '../domain/book/book';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type {
+  BookLookup,
+  LibraryRepository,
+  LibraryWrite,
+} from '../domain/book/library-repository';
 import { markFinished } from './mark-finished';
 
 type UpdateCall = { readonly id: BookId; readonly edit: BookEdit };
 
 const NOW = 1758400000000;
-
-function notFound(id: BookId): Result<never, LibraryError> {
-  return err({ kind: 'not-found', id });
-}
 
 const stored: Book = {
   id: bookId('book-7'),
@@ -34,44 +33,70 @@ const stored: Book = {
   finishedAt: null,
 };
 
-function fakeRepository(outcome: Result<Book, LibraryError>) {
+const WRITTEN: LibraryWrite = { kind: 'success' };
+
+const NO_BOOK: BookLookup = { kind: 'success', book: null };
+
+function fakeRepository(outcome: BookLookup) {
   const updates: UpdateCall[] = [];
   const repository: LibraryRepository = {
-    list: () => Promise.resolve(ok([])),
-    get: (id) => Promise.resolve(notFound(id)),
-    add: () => Promise.resolve(ok(undefined)),
-    remove: () => Promise.resolve(ok(undefined)),
+    list: () => Promise.resolve({ kind: 'success', books: [] }),
+    get: () => Promise.resolve(NO_BOOK),
+    add: () => Promise.resolve(WRITTEN),
+    remove: () => Promise.resolve(WRITTEN),
     update: (id, edit) => {
       updates.push({ id, edit });
       return Promise.resolve(outcome);
     },
-    readSource: (id) => Promise.resolve(notFound(id)),
-    readCover: (id) => Promise.resolve(notFound(id)),
-    storedBytes: () => Promise.resolve(ok(0)),
-    readPageList: () => Promise.resolve(ok({ kind: 'unlisted' as const })),
-    savePageList: () => Promise.resolve(ok(undefined)),
+    readSource: () => Promise.resolve({ kind: 'success', file: null }),
+    readCover: () => Promise.resolve({ kind: 'success', file: null }),
+    storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
+    readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
+    savePageList: () => Promise.resolve(WRITTEN),
   };
   return { repository, updates };
 }
 
 describe('markFinished', () => {
   it('marks the book finished now and leaves its place and last read time alone', async () => {
-    const fake = fakeRepository(ok({ ...stored, finishedAt: NOW }));
+    const fake = fakeRepository({ kind: 'success', book: { ...stored, finishedAt: NOW } });
 
     await markFinished({ repository: fake.repository, now: () => NOW }, bookId('book-7'));
 
     expect(fake.updates).toEqual([{ id: 'book-7', edit: { finishedAt: NOW } }]);
   });
 
-  it('returns what the repository returned', async () => {
-    const failed = err({ kind: 'not-found', id: bookId('book-7') } as const);
-    const fake = fakeRepository(failed);
+  it('returns the marked book', async () => {
+    const marked = { ...stored, finishedAt: NOW };
+    const fake = fakeRepository({ kind: 'success', book: marked });
 
     const result = await markFinished(
       { repository: fake.repository, now: () => NOW },
       bookId('book-7'),
     );
 
-    expect(result).toEqual(failed);
+    expect(result).toEqual({ kind: 'success', book: marked });
+  });
+
+  it('answers not-found for a book the repository no longer holds', async () => {
+    const fake = fakeRepository(NO_BOOK);
+
+    const result = await markFinished(
+      { repository: fake.repository, now: () => NOW },
+      bookId('book-7'),
+    );
+
+    expect(result).toEqual({ kind: 'not-found', id: 'book-7' });
+  });
+
+  it('passes a blocked store through', async () => {
+    const fake = fakeRepository(STORAGE_UNAVAILABLE);
+
+    const result = await markFinished(
+      { repository: fake.repository, now: () => NOW },
+      bookId('book-7'),
+    );
+
+    expect(result).toEqual(STORAGE_UNAVAILABLE);
   });
 });

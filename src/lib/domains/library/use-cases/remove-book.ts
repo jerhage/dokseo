@@ -1,14 +1,16 @@
 import type { BookId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { LibraryRepository } from '../domain/book/library-repository';
+
+type RemoveBookResult = { readonly kind: 'success' } | StorageUnavailable;
 
 type RemoveBookDeps = {
   readonly repository: LibraryRepository;
 };
 
-function removeBook(deps: RemoveBookDeps, id: BookId): Promise<Result<void, LibraryError>> {
+function removeBook(deps: RemoveBookDeps, id: BookId): Promise<RemoveBookResult> {
   return deps.repository.remove(id);
 }
 
 export { removeBook };
-export type { RemoveBookDeps };
+export type { RemoveBookDeps, RemoveBookResult };

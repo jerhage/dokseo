@@ -1,97 +1,97 @@
 import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import { imageLayoutKind } from '$lib/shared/layout-kind';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type {
+  PageNamesRead,
+  PageSource,
+  PageSourceError,
+  PageSourceOpening,
+} from '$lib/shared/page-source';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book } from '../domain/book/book';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type { LibraryRepository } from '../domain/book/library-repository';
 import type { IntrinsicSourceKind } from '../domain/book/page-list';
 import { savePageList } from './save-page-list';
 
 type OpenForReadingDeps = {
   readonly repository: LibraryRepository;
-  readonly openPages: (
-    sourceKind: IntrinsicSourceKind,
-    blob: Blob,
-  ) => Promise<Result<PageSource, PageSourceError>>;
-  readonly openListedPages: (
-    blob: Blob,
-    names: readonly string[],
-  ) => Promise<Result<PageSource, PageSourceError>>;
-  readonly listPageNames: (blob: Blob) => Promise<Result<readonly string[], PageSourceError>>;
+  readonly openPages: (sourceKind: IntrinsicSourceKind, blob: Blob) => Promise<PageSourceOpening>;
+  readonly openListedPages: (blob: Blob, names: readonly string[]) => Promise<PageSourceOpening>;
+  readonly listPageNames: (blob: Blob) => Promise<PageNamesRead>;
 };
 
-type OpenedBook =
+type OpenForReadingResult =
   | { readonly kind: 'images'; readonly book: Book; readonly pages: PageSource }
-  | { readonly kind: 'flow'; readonly book: Book };
+  | { readonly kind: 'flow'; readonly book: Book }
+  | { readonly kind: 'not-found'; readonly id: BookId }
+  | { readonly kind: 'source-missing'; readonly id: BookId }
+  | { readonly kind: 'unreadable'; readonly failure: PageSourceError }
+  | StorageUnavailable;
 
-type OpenForReadingError =
-  | { readonly kind: 'library'; readonly error: LibraryError }
-  | { readonly kind: 'source'; readonly error: PageSourceError }
-  | { readonly kind: 'source-missing'; readonly id: BookId };
+type PagesOpened =
+  | { readonly kind: 'success'; readonly pages: PageSource }
+  | { readonly kind: 'unreadable'; readonly failure: PageSourceError }
+  | StorageUnavailable;
 
-async function pageNamesOf(
-  deps: OpenForReadingDeps,
-  id: BookId,
-  blob: Blob,
-): Promise<Result<readonly string[], OpenForReadingError>> {
-  const stored = await deps.repository.readPageList(id);
-  if (!stored.ok) return err({ kind: 'library', error: stored.error });
-  if (stored.value.kind === 'listed') return ok(stored.value.names);
+type PageNames =
+  | { readonly kind: 'success'; readonly names: readonly string[] }
+  | { readonly kind: 'unreadable'; readonly failure: PageSourceError }
+  | StorageUnavailable;
 
-  const listed = await deps.listPageNames(blob);
-  if (!listed.ok) return err({ kind: 'source', error: listed.error });
-  const saved = await savePageList(deps, id, listed.value);
-  if (!saved.ok) return err({ kind: 'library', error: saved.error });
-  return ok(listed.value);
+function opened(opening: PageSourceOpening): PagesOpened {
+  if (opening.kind !== 'success') return { kind: 'unreadable', failure: opening };
+  return opening;
 }
 
-async function openListed(
-  deps: OpenForReadingDeps,
-  id: BookId,
-  blob: Blob,
-): Promise<Result<PageSource, OpenForReadingError>> {
+async function pageNamesOf(deps: OpenForReadingDeps, id: BookId, blob: Blob): Promise<PageNames> {
+  const stored = await deps.repository.readPageList(id);
+  if (stored.kind !== 'success') return stored;
+  if (stored.pageList.kind === 'listed') return { kind: 'success', names: stored.pageList.names };
+
+  const listed = await deps.listPageNames(blob);
+  if (listed.kind !== 'success') return { kind: 'unreadable', failure: listed };
+  const saved = await savePageList(deps, id, listed.names);
+  if (saved.kind !== 'success') return saved;
+  return { kind: 'success', names: listed.names };
+}
+
+async function openListed(deps: OpenForReadingDeps, id: BookId, blob: Blob): Promise<PagesOpened> {
   const names = await pageNamesOf(deps, id, blob);
-  if (!names.ok) return names;
-  const opened = await deps.openListedPages(blob, names.value);
-  if (!opened.ok) return err({ kind: 'source', error: opened.error });
-  return opened;
+  if (names.kind !== 'success') return names;
+  const opening = await deps.openListedPages(blob, names.names);
+  return opened(opening);
 }
 
 async function openIntrinsic(
   deps: OpenForReadingDeps,
   sourceKind: IntrinsicSourceKind,
   blob: Blob,
-): Promise<Result<PageSource, OpenForReadingError>> {
-  const opened = await deps.openPages(sourceKind, blob);
-  if (!opened.ok) return err({ kind: 'source', error: opened.error });
-  return opened;
+): Promise<PagesOpened> {
+  const opening = await deps.openPages(sourceKind, blob);
+  return opened(opening);
 }
 
-async function openForReading(
-  deps: OpenForReadingDeps,
-  id: BookId,
-): Promise<Result<OpenedBook, OpenForReadingError>> {
+async function openForReading(deps: OpenForReadingDeps, id: BookId): Promise<OpenForReadingResult> {
   const found = await deps.repository.get(id);
-  if (!found.ok) return err({ kind: 'library', error: found.error });
+  if (found.kind !== 'success') return found;
+  const book = found.book;
+  if (book === null) return { kind: 'not-found', id };
 
-  const book = found.value;
-  if (imageLayoutKind(book.layoutKind) === null) return ok({ kind: 'flow', book });
+  if (imageLayoutKind(book.layoutKind) === null) return { kind: 'flow', book };
 
   const source = await deps.repository.readSource(id);
-  if (!source.ok) return err({ kind: 'library', error: source.error });
-  if (source.value === null) return err({ kind: 'source-missing', id });
-  const blob = source.value;
+  if (source.kind !== 'success') return source;
+  const blob = source.file;
+  if (blob === null) return { kind: 'source-missing', id };
 
-  const opened = await match(book.sourceKind)
+  const pages = await match(book.sourceKind)
     .with('pdf', 'epub', (sourceKind) => openIntrinsic(deps, sourceKind, blob))
     .with('images', 'archive', () => openListed(deps, id, blob))
     .exhaustive();
-  if (!opened.ok) return opened;
+  if (pages.kind !== 'success') return pages;
 
-  return ok({ kind: 'images', book, pages: opened.value });
+  return { kind: 'images', book, pages: pages.pages };
 }
 
 export { openForReading };
-export type { OpenForReadingDeps, OpenedBook, OpenForReadingError };
+export type { OpenForReadingDeps, OpenForReadingResult };

@@ -2,7 +2,6 @@ import { BlobWriter, TextReader, Uint8ArrayReader, ZipWriter } from '@zip.js/zip
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
 import type { PageSource } from '$lib/shared/page-source';
-import { ok } from '$lib/shared/result';
 import { listArchivePageNames, openArchivePageSource } from './archive-page-source';
 
 const decode = vi.fn();
@@ -120,8 +119,8 @@ async function imageArchive(level: number): Promise<CountingBlob> {
 
 async function opened(): Promise<PageSource> {
   const source = await openArchivePageSource(await archive(), PAGES);
-  if (!source.ok) throw new Error('the archive could not be opened');
-  return source.value;
+  if (source.kind !== 'success') throw new Error('the archive could not be opened');
+  return source.pages;
 }
 
 beforeEach(() => {
@@ -161,21 +160,27 @@ describe('listArchivePageNames', () => {
       '002.jpg',
     ]);
 
-    expect(await listArchivePageNames(junky)).toEqual(ok(['001.jpg', '002.jpg']));
+    expect(await listArchivePageNames(junky)).toEqual({
+      kind: 'success',
+      names: ['001.jpg', '002.jpg'],
+    });
   });
 
   it('orders the page names naturally, whatever order the archive holds them in', async () => {
     const shuffled = await archiveOf(['10.jpg', 'notes.txt', '2.jpg', '1.jpg']);
 
-    expect(await listArchivePageNames(shuffled)).toEqual(ok(['1.jpg', '2.jpg', '10.jpg']));
+    expect(await listArchivePageNames(shuffled)).toEqual({
+      kind: 'success',
+      names: ['1.jpg', '2.jpg', '10.jpg'],
+    });
   });
 });
 
 describe('openArchivePageSource', () => {
   it('opens the pages in the order of the list it is given', async () => {
     const opening = await openArchivePageSource(await archive(), ['002.jpg', '001.jpg']);
-    if (!opening.ok) throw new Error('the archive could not be opened');
-    using source = opening.value;
+    if (opening.kind !== 'success') throw new Error('the archive could not be opened');
+    using source = opening.pages;
 
     expect(await decodedText(source, 0)).toBe('second page bytes');
     expect(await decodedText(source, 1)).toBe('first page bytes');
@@ -184,8 +189,8 @@ describe('openArchivePageSource', () => {
   it('keeps every page its list names, though the entry rule now rejects one of them', async () => {
     const blob = await archiveOf(['.cover.jpg', '001.jpg', '002.jpg']);
     const opening = await openArchivePageSource(blob, ['.cover.jpg', '001.jpg', '002.jpg']);
-    if (!opening.ok) throw new Error('the archive could not be opened');
-    using source = opening.value;
+    if (opening.kind !== 'success') throw new Error('the archive could not be opened');
+    using source = opening.pages;
 
     expect(source.count).toBe(3);
     expect(await decodedText(source, 1)).toBe('001.jpg');
@@ -195,8 +200,8 @@ describe('openArchivePageSource', () => {
     const opening = await openArchivePageSource(await archive(), ['001.jpg', '003.jpg']);
 
     expect(opening).toEqual({
-      ok: false,
-      error: { kind: 'source-unreadable', cause: expect.stringContaining('"003.jpg"') },
+      kind: 'source-unreadable',
+      cause: expect.stringContaining('"003.jpg"'),
     });
   });
 
@@ -205,23 +210,23 @@ describe('openArchivePageSource', () => {
 
     const picture = await source.picture(imageIndex(0));
 
-    expect(picture).toEqual({ ok: true, value: { kind: 'encoded', url: expect.any(String) } });
+    expect(picture).toEqual({
+      kind: 'success',
+      picture: { kind: 'encoded', url: expect.any(String) },
+    });
     expect(decode).not.toHaveBeenCalled();
   });
 
   it('reports an unreadable page, not a decode failure, when the entry will not read', async () => {
     const blob = await flaky();
     const source = await openArchivePageSource(blob, PAGES);
-    if (!source.ok) throw new Error('the archive could not be opened');
-    using pages = source.value;
+    if (source.kind !== 'success') throw new Error('the archive could not be opened');
+    using pages = source.pages;
     blob.broken = true;
 
     const picture = await pages.picture(imageIndex(0));
 
-    expect(picture).toEqual({
-      ok: false,
-      error: { kind: 'page-unreadable', index: 0, cause: expect.any(String) },
-    });
+    expect(picture).toEqual({ kind: 'page-unreadable', index: 0, cause: expect.any(String) });
     expect(decode).not.toHaveBeenCalled();
   });
 
@@ -232,8 +237,9 @@ describe('openArchivePageSource', () => {
     const image = await source.image(imageIndex(0));
 
     expect(image).toEqual({
-      ok: false,
-      error: { kind: 'decode-failed', index: 0, cause: expect.stringContaining('not an image') },
+      kind: 'decode-failed',
+      index: 0,
+      cause: expect.stringContaining('not an image'),
     });
   });
 
@@ -243,8 +249,10 @@ describe('openArchivePageSource', () => {
     const first = await source.picture(imageIndex(0));
     const second = await source.picture(imageIndex(0));
 
-    expect(first.ok && second.ok).toBe(true);
-    expect(first.ok ? first.value : null).not.toEqual(second.ok ? second.value : null);
+    expect(first.kind === 'success' && second.kind === 'success').toBe(true);
+    expect(first.kind === 'success' ? first.picture : null).not.toEqual(
+      second.kind === 'success' ? second.picture : null,
+    );
   });
 
   it('rejects a picture outside the archive', async () => {
@@ -252,7 +260,7 @@ describe('openArchivePageSource', () => {
 
     const picture = await source.picture(imageIndex(7));
 
-    expect(picture).toEqual({ ok: false, error: { kind: 'out-of-range', index: 7, count: 2 } });
+    expect(picture).toEqual({ kind: 'out-of-range', index: 7, count: 2 });
   });
 
   it('rejects a picture once the archive is closed', async () => {
@@ -261,10 +269,7 @@ describe('openArchivePageSource', () => {
 
     const picture = await source.picture(imageIndex(0));
 
-    expect(picture).toEqual({
-      ok: false,
-      error: { kind: 'source-unreadable', cause: 'The archive is closed' },
-    });
+    expect(picture).toEqual({ kind: 'source-unreadable', cause: 'The archive is closed' });
   });
 
   it.each([
@@ -273,22 +278,22 @@ describe('openArchivePageSource', () => {
   ])('reads each size from the %s entry header, turned as the image is shown', async (_, level) => {
     const blob = await imageArchive(level);
     const source = await openArchivePageSource(blob, IMAGE_PAGES);
-    if (!source.ok) throw new Error('the archive could not be opened');
-    using pages = source.value;
+    if (source.kind !== 'success') throw new Error('the archive could not be opened');
+    using pages = source.pages;
 
     const sizes = await pages.sizes();
 
     expect(sizes).toEqual({
-      ok: true,
-      value: [{ width: 800, height: 2400 }, { width: 600, height: 800 }, null],
+      kind: 'success',
+      sizes: [{ width: 800, height: 2400 }, { width: 600, height: 800 }, null],
     });
   });
 
   it('reads the head of a large entry, not the whole of it', async () => {
     const blob = await imageArchive(0);
     const source = await openArchivePageSource(blob, IMAGE_PAGES);
-    if (!source.ok) throw new Error('the archive could not be opened');
-    using pages = source.value;
+    if (source.kind !== 'success') throw new Error('the archive could not be opened');
+    using pages = source.pages;
     blob.read = 0;
 
     await pages.sizes();
@@ -303,9 +308,6 @@ describe('openArchivePageSource', () => {
 
     const sizes = await source.sizes();
 
-    expect(sizes).toEqual({
-      ok: false,
-      error: { kind: 'source-unreadable', cause: 'The archive is closed' },
-    });
+    expect(sizes).toEqual({ kind: 'source-unreadable', cause: 'The archive is closed' });
   });
 });

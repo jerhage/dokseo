@@ -6,16 +6,24 @@ import {
   putRecord,
 } from '$lib/platform/idb/connection';
 import * as blobs from '$lib/platform/opfs/blob-store';
-import { describeCause } from '$lib/shared/cause';
+import { isPrivateWindowRefusal } from '$lib/platform/opfs/directory';
 import { parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { applyEdit } from '../domain/book/book';
 import type { Book, BookEdit } from '../domain/book/book';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type {
+  BookListing,
+  BookLookup,
+  ByteCount,
+  FileLookup,
+  LibraryRepository,
+  LibraryWrite,
+  PageListLookup,
+} from '../domain/book/library-repository';
 import { pageListFromStored } from '../domain/book/page-list';
-import type { PageList, PageOrder, StoredPageList } from '../domain/book/page-list';
+import type { PageOrder, StoredPageList } from '../domain/book/page-list';
 import { bookFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
@@ -28,27 +36,27 @@ const BOOK_STORE = 'books';
 
 const PAGE_LIST_STORE = 'page-lists';
 
+const WRITTEN: LibraryWrite = { kind: 'success' };
+
 type BlobKeys = { readonly source: string; readonly cover: string };
 
 function recordsAvailable(): boolean {
   return typeof indexedDB !== 'undefined';
 }
 
-function unavailable(): Result<never, LibraryError> {
-  return err({ kind: 'storage-unavailable' });
-}
-
-function failed(cause: unknown): Result<never, LibraryError> {
-  return err({ kind: 'storage-failed', cause: describeCause(cause) });
-}
-
-function missing(id: BookId): Result<never, LibraryError> {
-  return err({ kind: 'not-found', id });
-}
-
 function blobKeys(id: BookId): BlobKeys {
   if (parsedBookId(id) === null) throw new Error(`Book id "${id}" is not a flat storage key`);
   return { source: `${id}.src`, cover: `${id}.cover` };
+}
+
+async function unlessRefused<T>(work: () => Promise<T>): Promise<T | StorageUnavailable> {
+  try {
+    const done = await work();
+    return done;
+  } catch (cause) {
+    if (isPrivateWindowRefusal(cause)) return STORAGE_UNAVAILABLE;
+    throw cause;
+  }
 }
 
 function upgrade(db: IDBDatabase): void {
@@ -79,18 +87,13 @@ function createLibraryRepository(): LibraryRepository {
     return connection;
   };
 
-  const readBlob = async (
-    id: BookId,
-    pick: (keys: BlobKeys) => string,
-  ): Promise<Result<Blob | null, LibraryError>> => {
-    if (!blobs.isAvailable()) return unavailable();
-    const keys = blobKeys(id);
-    try {
-      const blob = await blobs.get(pick(keys));
-      return ok(blob);
-    } catch (cause) {
-      return failed(cause);
-    }
+  const readBlob = async (id: BookId, pick: (keys: BlobKeys) => string): Promise<FileLookup> => {
+    if (!blobs.isAvailable()) return STORAGE_UNAVAILABLE;
+    const key = pick(blobKeys(id));
+    return unlessRefused<FileLookup>(async () => {
+      const file = await blobs.get(key);
+      return { kind: 'success', file };
+    });
   };
 
   const forgetPageList = async (id: BookId): Promise<void> => {
@@ -101,26 +104,34 @@ function createLibraryRepository(): LibraryRepository {
     }
   };
 
+  const writeBlobs = async (
+    keys: BlobKeys,
+    source: Blob,
+    cover: Blob | null,
+    report: SourceWriteReport,
+  ): Promise<LibraryWrite> => {
+    try {
+      await blobs.put(keys.source, source, report);
+      if (cover !== null) await blobs.put(keys.cover, cover);
+      return WRITTEN;
+    } catch (cause) {
+      await discard(keys);
+      if (isPrivateWindowRefusal(cause)) return STORAGE_UNAVAILABLE;
+      throw cause;
+    }
+  };
+
   return {
-    async list(): Promise<Result<readonly Book[], LibraryError>> {
-      if (!recordsAvailable()) return unavailable();
-      try {
-        const records = await listRecords<StoredBook>(await database(), BOOK_STORE);
-        return ok(records.map(bookFromStored));
-      } catch (cause) {
-        return failed(cause);
-      }
+    async list(): Promise<BookListing> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const records = await listRecords<StoredBook>(await database(), BOOK_STORE);
+      return { kind: 'success', books: records.map(bookFromStored) };
     },
 
-    async get(id: BookId): Promise<Result<Book, LibraryError>> {
-      if (!recordsAvailable()) return unavailable();
-      try {
-        const record = await getRecord<StoredBook>(await database(), BOOK_STORE, id);
-        if (record === undefined) return missing(id);
-        return ok(bookFromStored(record));
-      } catch (cause) {
-        return failed(cause);
-      }
+    async get(id: BookId): Promise<BookLookup> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const record = await getRecord<StoredBook>(await database(), BOOK_STORE, id);
+      return { kind: 'success', book: record === undefined ? null : bookFromStored(record) };
     },
 
     async add(
@@ -129,16 +140,11 @@ function createLibraryRepository(): LibraryRepository {
       cover: Blob | null,
       order: PageOrder,
       report: SourceWriteReport = () => undefined,
-    ): Promise<Result<void, LibraryError>> {
-      if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
+    ): Promise<LibraryWrite> {
+      if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
       const keys = blobKeys(book.id);
-      try {
-        await blobs.put(keys.source, source, report);
-        if (cover !== null) await blobs.put(keys.cover, cover);
-      } catch (cause) {
-        await discard(keys);
-        return failed(cause);
-      }
+      const written = await writeBlobs(keys, source, cover, report);
+      if (written.kind !== 'success') return written;
       try {
         const db = await database();
         if (order.kind === 'listed') {
@@ -146,80 +152,64 @@ function createLibraryRepository(): LibraryRepository {
           await putRecord(db, PAGE_LIST_STORE, pageList);
         }
         await putRecord(db, BOOK_STORE, book);
-        return ok(undefined);
       } catch (cause) {
         await discard(keys);
         await forgetPageList(book.id);
-        return failed(cause);
+        throw cause;
       }
+      return WRITTEN;
     },
 
-    async remove(id: BookId): Promise<Result<void, LibraryError>> {
-      if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
+    async remove(id: BookId): Promise<LibraryWrite> {
+      if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
       const keys = blobKeys(id);
-      try {
-        const db = await database();
-        await deleteRecord(db, BOOK_STORE, id);
-        await deleteRecord(db, PAGE_LIST_STORE, id);
+      const db = await database();
+      await deleteRecord(db, BOOK_STORE, id);
+      await deleteRecord(db, PAGE_LIST_STORE, id);
+      return unlessRefused<LibraryWrite>(async () => {
         await blobs.remove(keys.source);
         await blobs.remove(keys.cover);
-        return ok(undefined);
-      } catch (cause) {
-        return failed(cause);
-      }
+        return WRITTEN;
+      });
     },
 
-    async update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>> {
-      if (!recordsAvailable()) return unavailable();
-      try {
-        const db = await database();
-        const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
-        if (record === undefined) return missing(id);
-        const updated = applyEdit(bookFromStored(record), edit);
-        await putRecord(db, BOOK_STORE, updated);
-        return ok(updated);
-      } catch (cause) {
-        return failed(cause);
-      }
+    async update(id: BookId, edit: BookEdit): Promise<BookLookup> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const db = await database();
+      const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
+      if (record === undefined) return { kind: 'success', book: null };
+      const updated = applyEdit(bookFromStored(record), edit);
+      await putRecord(db, BOOK_STORE, updated);
+      return { kind: 'success', book: updated };
     },
 
-    async readPageList(id: BookId): Promise<Result<PageList, LibraryError>> {
-      if (!recordsAvailable()) return unavailable();
-      try {
-        const record = await getRecord<StoredPageList>(await database(), PAGE_LIST_STORE, id);
-        return ok(pageListFromStored(record));
-      } catch (cause) {
-        return failed(cause);
-      }
+    async readPageList(id: BookId): Promise<PageListLookup> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const record = await getRecord<StoredPageList>(await database(), PAGE_LIST_STORE, id);
+      return { kind: 'success', pageList: pageListFromStored(record) };
     },
 
-    async savePageList(id: BookId, names: readonly string[]): Promise<Result<void, LibraryError>> {
-      if (!recordsAvailable()) return unavailable();
+    async savePageList(id: BookId, names: readonly string[]): Promise<LibraryWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       const pageList: StoredPageList = { id, names };
-      try {
-        await putRecord(await database(), PAGE_LIST_STORE, pageList);
-        return ok(undefined);
-      } catch (cause) {
-        return failed(cause);
-      }
+      await putRecord(await database(), PAGE_LIST_STORE, pageList);
+      return WRITTEN;
     },
 
-    readSource(id: BookId): Promise<Result<Blob | null, LibraryError>> {
+    readSource(id: BookId): Promise<FileLookup> {
       return readBlob(id, (keys) => keys.source);
     },
 
-    readCover(id: BookId): Promise<Result<Blob | null, LibraryError>> {
+    readCover(id: BookId): Promise<FileLookup> {
       return readBlob(id, (keys) => keys.cover);
     },
 
-    async storedBytes(): Promise<Result<number, LibraryError>> {
-      if (!blobs.isAvailable()) return unavailable();
-      try {
+    async storedBytes(): Promise<ByteCount> {
+      if (!blobs.isAvailable()) return STORAGE_UNAVAILABLE;
+      return unlessRefused<ByteCount>(async () => {
         const bytes = await blobs.totalBytes();
-        return ok(bytes);
-      } catch (cause) {
-        return failed(cause);
-      }
+        return { kind: 'success', bytes };
+      });
     },
   };
 }

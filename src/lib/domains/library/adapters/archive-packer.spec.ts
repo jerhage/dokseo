@@ -27,17 +27,14 @@ describe('packImagesIntoArchive', () => {
       chosen('Blame/Thumbs.db'),
       chosen('Blame/002.jpg'),
     ]);
-    if (!packed.ok) throw new Error('the images could not be packed');
+    if (packed.kind !== 'success') throw new Error('the images could not be packed');
 
-    expect(await entryNames(packed.value)).toEqual(['Blame/001.jpg', 'Blame/002.jpg']);
+    expect(await entryNames(packed.archive)).toEqual(['Blame/001.jpg', 'Blame/002.jpg']);
   });
 
   it('reports no images when every image is junk', async () => {
     const packed = await packImagesIntoArchive([chosen('Blame/._001.jpg'), chosen('.p.png')]);
 
-    expect(packed).toEqual({
-      ok: false,
-      error: { kind: 'source-unreadable', cause: 'No image files were found' },
-    });
+    expect(packed).toEqual({ kind: 'source-unreadable', cause: 'No image files were found' });
   });
 });

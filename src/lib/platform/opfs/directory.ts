@@ -22,6 +22,10 @@ function isRefused(cause: unknown): boolean {
   return cause instanceof Error && cause.name === 'SecurityError';
 }
 
+function isPrivateWindowRefusal(cause: unknown): boolean {
+  return cause instanceof Error && cause.message === PRIVATE_WINDOW;
+}
+
 async function storageRoot(): Promise<FileSystemDirectoryHandle> {
   try {
     return await navigator.storage.getDirectory();
@@ -43,6 +47,7 @@ export {
   flatName,
   isAvailable,
   isMissing,
+  isPrivateWindowRefusal,
   NO_FILE_SYSTEM,
   PRIVATE_WINDOW,
   storageRoot,

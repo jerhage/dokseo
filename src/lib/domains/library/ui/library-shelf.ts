@@ -5,6 +5,8 @@ import { effectiveDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadState } from '$lib/shared/read-state';
 import type { Book } from '../domain/book/book';
+import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
+import type { ListBooksResult } from '../use-cases/list-books';
 
 type LibraryBody = 'reading' | 'failed' | 'empty' | 'listed';
 
@@ -42,17 +44,25 @@ function failureOf(state: ReadState<LibraryShelf>): string | null {
   return state.kind === 'failed' ? state.message : null;
 }
 
+function listedBooks(books: ReadState<ListBooksResult>): readonly Book[] {
+  return books.kind === 'ready' && books.value.kind === 'success' ? books.value.books : [];
+}
+
 function shelfState(
-  books: ReadState<readonly Book[]>,
+  books: ReadState<ListBooksResult>,
   covers: ReadonlyMap<BookId, string>,
   storedBytes: number | null,
 ): ReadState<LibraryShelf> {
   return match(books)
     .with({ kind: 'loading' }, { kind: 'failed' }, (unread): ReadState<LibraryShelf> => unread)
-    .with({ kind: 'ready' }, (ready): ReadState<LibraryShelf> => ({
-      ...ready,
-      value: { books: ready.value, covers, storedBytes },
+    .with({ kind: 'ready', value: { kind: 'success' } }, ({ value }): ReadState<LibraryShelf> => ({
+      kind: 'ready',
+      value: { books: value.books, covers, storedBytes },
     }))
+    .with(
+      { kind: 'ready', value: { kind: 'storage-unavailable' } },
+      (): ReadState<LibraryShelf> => ({ kind: 'failed', message: LIBRARY_UNAVAILABLE }),
+    )
     .exhaustive();
 }
 
@@ -78,5 +88,14 @@ function libraryBody(state: ReadState<LibraryShelf>, importing: boolean): Librar
     .exhaustive();
 }
 
-export { EMPTY_SHELF, failureOf, imageCountsOf, libraryBody, listedOf, shelfOf, shelfState };
+export {
+  EMPTY_SHELF,
+  failureOf,
+  imageCountsOf,
+  libraryBody,
+  listedBooks,
+  listedOf,
+  shelfOf,
+  shelfState,
+};
 export type { LibraryBody, LibraryShelf, ListedBook, ShelfRead };

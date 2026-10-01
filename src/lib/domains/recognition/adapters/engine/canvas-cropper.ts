@@ -31,9 +31,11 @@ async function cropOne(
   region: ImageRegion,
 ): Promise<Result<OwnedBitmap, CropError>> {
   const image = await source.image(region.index);
-  if (!image.ok) return err({ kind: 'unreadable', cause: describeSourceError(image.error) });
+  if (image.kind !== 'success') {
+    return err({ kind: 'unreadable', cause: describeSourceError(image) });
+  }
 
-  using page = own(image.value);
+  using page = own(image.image);
   const cropped = await cropFrom(page.bitmap, region.rect);
   return ok(cropped);
 }

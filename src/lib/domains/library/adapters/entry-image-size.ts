@@ -2,9 +2,7 @@ import type { FileEntry } from '@zip.js/zip.js';
 import { readImageHeader } from '$lib/platform/image/image-header';
 import type { HeaderReading } from '$lib/platform/image/image-header';
 import type { Size } from '$lib/shared/geometry';
-import type { PageSourceError } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { SizesRead } from '$lib/shared/page-source';
 
 type HeaderRead = { reading: HeaderReading; bytes: Uint8Array };
 
@@ -89,13 +87,13 @@ async function entryImageSizes(
   entries: readonly FileEntry[],
   closed: () => boolean,
   closedCause: string,
-): Promise<Result<readonly (Size | null)[], PageSourceError>> {
+): Promise<SizesRead> {
   const sizes: (Size | null)[] = [];
   for (const entry of entries) {
-    if (closed()) return err({ kind: 'source-unreadable', cause: closedCause });
+    if (closed()) return { kind: 'source-unreadable', cause: closedCause };
     sizes.push(await entryImageSize(archive, entry));
   }
-  return ok(sizes);
+  return { kind: 'success', sizes };
 }
 
 export { entryImageSizes };

@@ -1,18 +1,17 @@
 import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
-import type { ContentHash } from '$lib/shared/ids';
+import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
 import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
 import { carriesLegacyHash, DEFAULT_BOOK_MATCHING, joinUpload } from '../domain/book/book-matching';
 import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import type { LibraryRepository } from '../domain/book/library-repository';
 import { INTRINSIC_ORDER } from '../domain/book/page-list';
 import type { PageOrder } from '../domain/book/page-list';
 import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
@@ -27,16 +26,29 @@ import { uploadManifest } from '../domain/ingest/upload-manifest';
 import { uploadName } from '../domain/ingest/upload-name';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 
-type OpenFileError =
-  | { readonly kind: 'source'; readonly error: SourceBuildError }
-  | { readonly kind: 'storage'; readonly error: LibraryError }
-  | { readonly kind: 'epub'; readonly error: EpubInspectionError }
-  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle }
-  | { readonly kind: 'fingerprint'; readonly cause: string };
-
 type OpenedUpload =
   | { readonly kind: 'added'; readonly book: Book }
   | { readonly kind: 'already-held'; readonly book: Book };
+
+type OpenFileFailure =
+  | { readonly kind: 'source'; readonly failure: SourceBuildError }
+  | { readonly kind: 'epub'; readonly failure: EpubInspectionError }
+  | { readonly kind: 'not-paged'; readonly obstacle: PageObstacle }
+  | { readonly kind: 'fingerprint'; readonly cause: string }
+  | { readonly kind: 'not-found'; readonly id: BookId }
+  | StorageUnavailable;
+
+type OpenFileResult = OpenedUpload | OpenFileFailure;
+
+type Hashed = { readonly kind: 'success'; readonly hash: ContentHash } | OpenFileFailure;
+
+type LegacyHashed =
+  | { readonly kind: 'success'; readonly hash: ContentHash | null }
+  | OpenFileFailure;
+
+type Identified = { readonly kind: 'success'; readonly identity: UploadIdentity } | OpenFileFailure;
+
+type ContentRead = { readonly kind: 'success'; readonly content: BookContent } | OpenFileFailure;
 
 type OpenFileDeps = {
   readonly repository: LibraryRepository;
@@ -59,25 +71,22 @@ function hashedPart(files: readonly File[]): Blob {
   return new Blob([uploadManifest(files)]);
 }
 
-async function hashWith(
-  hash: (blob: Blob) => Promise<string>,
-  upload: Blob,
-): Promise<Result<ContentHash, OpenFileError>> {
+async function hashWith(hash: (blob: Blob) => Promise<string>, upload: Blob): Promise<Hashed> {
   let digest: string;
   try {
     digest = await hash(upload);
   } catch (cause) {
-    return err({ kind: 'fingerprint', cause: describeCause(cause) });
+    return { kind: 'fingerprint', cause: describeCause(cause) };
   }
-  return ok(contentHash(digest));
+  return { kind: 'success', hash: contentHash(digest) };
 }
 
 async function legacyHashIfHeld(
   deps: OpenFileDeps,
   held: readonly Book[],
   upload: Blob,
-): Promise<Result<ContentHash | null, OpenFileError>> {
-  if (!held.some(carriesLegacyHash)) return ok(null);
+): Promise<LegacyHashed> {
+  if (!held.some(carriesLegacyHash)) return { kind: 'success', hash: null };
   const legacy = await hashWith(deps.legacyFingerprint, upload);
   return legacy;
 }
@@ -86,36 +95,40 @@ async function uploadIdentity(
   deps: OpenFileDeps,
   held: readonly Book[],
   files: readonly File[],
-): Promise<Result<UploadIdentity, OpenFileError>> {
+): Promise<Identified> {
   const hashed = await hashWith(deps.partialMd5, hashedPart(fingerprintedFiles(files)));
-  if (!hashed.ok) return hashed;
+  if (hashed.kind !== 'success') return hashed;
   const legacy = await legacyHashIfHeld(deps, held, hashedPart(files));
-  if (!legacy.ok) return legacy;
-  return ok({ contentHash: hashed.value, legacyHash: legacy.value, fileName: uploadName(files) });
+  if (legacy.kind !== 'success') return legacy;
+  return {
+    kind: 'success',
+    identity: { contentHash: hashed.hash, legacyHash: legacy.hash, fileName: uploadName(files) },
+  };
 }
 
 async function rejoinLegacy(
   deps: OpenFileDeps,
   book: Book,
   identity: UploadIdentity,
-): Promise<Result<OpenedUpload, OpenFileError>> {
+): Promise<OpenFileResult> {
   const upgraded = await deps.repository.update(book.id, {
     contentHash: identity.contentHash,
     fileName: identity.fileName,
   });
-  if (!upgraded.ok) return err({ kind: 'storage', error: upgraded.error });
-  return ok({ kind: 'already-held', book: upgraded.value });
+  if (upgraded.kind !== 'success') return upgraded;
+  if (upgraded.book === null) return { kind: 'not-found', id: book.id };
+  return { kind: 'already-held', book: upgraded.book };
 }
 
 function joinedBook(
   deps: OpenFileDeps,
   join: UploadJoin,
   identity: UploadIdentity,
-): Promise<Result<OpenedUpload, OpenFileError>> | null {
+): Promise<OpenFileResult> | null {
   return match(join)
-    .returnType<Promise<Result<OpenedUpload, OpenFileError>> | null>()
+    .returnType<Promise<OpenFileResult> | null>()
     .with({ kind: 'by-content' }, { kind: 'by-name' }, ({ book }) =>
-      Promise.resolve(ok({ kind: 'already-held', book })),
+      Promise.resolve({ kind: 'already-held', book }),
     )
     .with({ kind: 'by-legacy-content' }, ({ book }) => rejoinLegacy(deps, book, identity))
     .with({ kind: 'new' }, () => null)
@@ -143,10 +156,10 @@ async function inspectUpload(
   if (epub === null) return NOT_AN_EPUB;
 
   const inspected = await deps.inspectEpub(epub);
-  if (!inspected.ok) return { kind: 'refused', refusal: inspected.error };
-  if (inspected.value.kind === 'not-an-epub') return NOT_AN_EPUB;
+  if (inspected.kind !== 'success') return { kind: 'refused', refusal: inspected };
+  if (inspected.inspection.kind === 'not-an-epub') return NOT_AN_EPUB;
 
-  return { kind: 'epub', packageDocument: inspected.value.packageDocument };
+  return { kind: 'epub', packageDocument: inspected.inspection.packageDocument };
 }
 
 type BookContent = {
@@ -173,22 +186,22 @@ function declaresReflowing(inspection: UploadInspection): boolean {
   return inspection.kind === 'epub' && inspection.packageDocument.layout === 'reflowable';
 }
 
-function contentOf(
-  inspection: UploadInspection,
-  pages: BuiltPages,
-): Result<BookContent, OpenFileError> {
+function contentOf(inspection: UploadInspection, pages: BuiltPages): ContentRead {
   if (pages.kind === 'images') {
-    return ok({
-      layoutKind: 'paged',
-      imageCount: pages.imageCount,
-      cover: pages.cover,
-      position: imagePlace(imageIndex(0)),
-      order: pages.order,
-    });
+    return {
+      kind: 'success',
+      content: {
+        layoutKind: 'paged',
+        imageCount: pages.imageCount,
+        cover: pages.cover,
+        position: imagePlace(imageIndex(0)),
+        order: pages.order,
+      },
+    };
   }
-  if (!declaresReflowing(inspection)) return err({ kind: 'not-paged', obstacle: pages.obstacle });
+  if (!declaresReflowing(inspection)) return { kind: 'not-paged', obstacle: pages.obstacle };
 
-  return ok(flowContent(pages.cover));
+  return { kind: 'success', content: flowContent(pages.cover) };
 }
 
 function declaredLanguage(inspection: UploadInspection): Language | null {
@@ -213,33 +226,36 @@ async function openFile(
   files: readonly File[],
   report: UploadReport = () => undefined,
   matching: BookMatching = DEFAULT_BOOK_MATCHING,
-): Promise<Result<OpenedUpload, OpenFileError>> {
+): Promise<OpenFileResult> {
   await deps.requestPersistence();
 
-  const held = await deps.repository.list();
-  if (!held.ok) return err({ kind: 'storage', error: held.error });
-  const identified = await uploadIdentity(deps, held.value, files);
-  if (!identified.ok) return identified;
-  const identity = identified.value;
+  const listed = await deps.repository.list();
+  if (listed.kind !== 'success') return listed;
+  const held = listed.books;
+  const identified = await uploadIdentity(deps, held, files);
+  if (identified.kind !== 'success') return identified;
+  const identity = identified.identity;
 
-  const joined = joinedBook(deps, joinUpload(held.value, identity, matching), identity);
+  const joined = joinedBook(deps, joinUpload(held, identity, matching), identity);
   if (joined !== null) {
     const outcome = await joined;
     return outcome;
   }
 
   const inspection = await inspectUpload(deps, files);
-  if (inspection.kind === 'refused') return err({ kind: 'epub', error: inspection.refusal });
+  if (inspection.kind === 'refused') return { kind: 'epub', failure: inspection.refusal };
 
-  const built = await deps.builder.build(files, report);
-  if (!built.ok) return err({ kind: 'source', error: built.error });
+  const building = await deps.builder.build(files, report);
+  if (building.kind !== 'success') return { kind: 'source', failure: building };
+  const built = building.source;
 
-  const content = contentOf(inspection, built.value.pages);
-  if (!content.ok) return content;
+  const read = contentOf(inspection, built.pages);
+  if (read.kind !== 'success') return read;
+  const content = read.content;
 
-  const layoutKind = content.value.layoutKind;
+  const layoutKind = content.layoutKind;
 
-  const title = built.value.suggestedTitle;
+  const title = built.suggestedTitle;
 
   const book: Book = {
     id: bookId(deps.newId()),
@@ -249,12 +265,12 @@ async function openFile(
     direction: declaredDirection(inspection),
     pagePairing: DEFAULT_PAGE_PAIRING,
     pageFit: defaultPageFit(layoutKind),
-    sourceKind: built.value.sourceKind,
+    sourceKind: built.sourceKind,
     contentHash: identity.contentHash,
     fileName: identity.fileName,
-    imageCount: content.value.imageCount,
+    imageCount: content.imageCount,
     addedAt: deps.now(),
-    position: content.value.position,
+    position: content.position,
     lastReadAt: null,
     finishedAt: null,
   };
@@ -262,23 +278,23 @@ async function openFile(
   const startedAt = deps.now();
   const stored = await deps.repository.add(
     book,
-    built.value.blob,
-    content.value.cover,
-    content.value.order,
+    built.blob,
+    content.cover,
+    content.order,
     (writtenBytes, totalBytes) => {
       report({
         kind: 'storing',
-        imageCount: content.value.imageCount,
+        imageCount: content.imageCount,
         writtenBytes,
         totalBytes,
         elapsedMs: deps.now() - startedAt,
       });
     },
   );
-  if (!stored.ok) return err({ kind: 'storage', error: stored.error });
+  if (stored.kind !== 'success') return stored;
 
-  return ok({ kind: 'added', book });
+  return { kind: 'added', book };
 }
 
 export { openFile };
-export type { OpenFileError, OpenFileDeps, OpenedUpload };
+export type { OpenFileDeps, OpenFileFailure, OpenFileResult, OpenedUpload };

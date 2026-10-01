@@ -5,7 +5,7 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PageSource } from '$lib/shared/page-source';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { recognizedText } from '../../domain/engine/recognized-text';
@@ -39,13 +39,13 @@ function stubBitmap(): StubBitmap {
 function fakePageSource(): PageSource {
   const close = (): void => undefined;
   const missing = (index: ImageIndex) =>
-    Promise.resolve(err<PageSourceError>({ kind: 'out-of-range', index, count: 1 }));
+    Promise.resolve({ kind: 'out-of-range' as const, index, count: 1 });
 
   return {
     count: 1,
     picture: missing,
     image: missing,
-    sizes: () => Promise.resolve(ok([])),
+    sizes: () => Promise.resolve({ kind: 'success' as const, sizes: [] }),
     close,
     [Symbol.dispose]: close,
   };

@@ -1,38 +1,41 @@
 import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type { LibraryError, LibraryRepository } from '../domain/book/library-repository';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import type {
+  BookLookup,
+  LibraryRepository,
+  LibraryWrite,
+} from '../domain/book/library-repository';
 import { removeBook } from './remove-book';
 
-function notFound(id: BookId): Result<never, LibraryError> {
-  return err({ kind: 'not-found', id });
-}
+const WRITTEN: LibraryWrite = { kind: 'success' };
 
-function fakeRepository(outcome: Result<void, LibraryError>) {
+const NO_BOOK: BookLookup = { kind: 'success', book: null };
+
+function fakeRepository(outcome: LibraryWrite) {
   const removed: BookId[] = [];
   const repository: LibraryRepository = {
-    list: () => Promise.resolve(ok([])),
-    get: (id) => Promise.resolve(notFound(id)),
-    add: () => Promise.resolve(ok(undefined)),
+    list: () => Promise.resolve({ kind: 'success', books: [] }),
+    get: () => Promise.resolve(NO_BOOK),
+    add: () => Promise.resolve(WRITTEN),
     remove: (id) => {
       removed.push(id);
       return Promise.resolve(outcome);
     },
-    update: (id) => Promise.resolve(notFound(id)),
-    readSource: (id) => Promise.resolve(notFound(id)),
-    readCover: (id) => Promise.resolve(notFound(id)),
-    storedBytes: () => Promise.resolve(ok(0)),
-    readPageList: () => Promise.resolve(ok({ kind: 'unlisted' as const })),
-    savePageList: () => Promise.resolve(ok(undefined)),
+    update: () => Promise.resolve(NO_BOOK),
+    readSource: () => Promise.resolve({ kind: 'success', file: null }),
+    readCover: () => Promise.resolve({ kind: 'success', file: null }),
+    storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
+    readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
+    savePageList: () => Promise.resolve(WRITTEN),
   };
   return { repository, removed };
 }
 
 describe('removeBook', () => {
   it('passes the id to the repository and returns what the repository returned', async () => {
-    const outcome = err<LibraryError>({ kind: 'storage-failed', cause: 'the disk went away' });
+    const outcome = STORAGE_UNAVAILABLE;
     const repository = fakeRepository(outcome);
     const result = await removeBook({ repository: repository.repository }, bookId('book-7'));
     expect(repository.removed).toEqual(['book-7']);

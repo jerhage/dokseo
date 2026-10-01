@@ -14,7 +14,8 @@ import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
 import type { ShownPlace } from '$lib/shared/reader-location';
-import { PlaceKeeper } from '$lib/shared/place-keeper';
+import { PLACE_KEPT, PlaceKeeper } from '$lib/shared/place-keeper';
+import type { PlaceSaved } from '$lib/shared/place-keeper';
 import { imagePlace, readingStarted, samePlace, showsTheEnd } from '$lib/shared/reading-place';
 import type { ImagePlace, ReadingPlace } from '$lib/shared/reading-place';
 import { groupContaining, pairPages } from '../domain/page-pairing';
@@ -29,9 +30,9 @@ type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
 
 type BookEdit = Parameters<Container['library']['editBook']>[1];
 
-type OpenFailure = Extract<OpenOutcome, { readonly ok: false }>['error'];
+type OpenFailure = Exclude<OpenOutcome, { readonly kind: 'images' | 'flow' }>;
 
-type EditFailure = Extract<EditOutcome, { readonly ok: false }>['error'];
+type EditFailure = Exclude<EditOutcome, { readonly kind: 'success' }>;
 
 type PlaceMirror = (place: ShownPlace) => void;
 
@@ -65,7 +66,6 @@ function describeEditFailure(error: EditFailure): string {
       { kind: 'storage-unavailable' },
       () => 'This browser blocks local storage, so your place cannot be kept.',
     )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
     .exhaustive();
 }
 
@@ -89,13 +89,13 @@ function describeSourceFailure(error: PageSourceError): string {
 }
 
 function lostBook(error: OpenFailure): boolean {
-  return error.kind === 'library' && error.error.kind === 'not-found';
+  return error.kind === 'not-found';
 }
 
 function describeOpenFailure(error: OpenFailure): string {
   return match(error)
-    .with({ kind: 'source' }, (failed) => describeSourceFailure(failed.error))
-    .with({ kind: 'library' }, (failed) => describeEditFailure(failed.error))
+    .with({ kind: 'unreadable' }, (failed) => describeSourceFailure(failed.failure))
+    .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, describeEditFailure)
     .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
     .exhaustive();
 }
@@ -119,7 +119,7 @@ class ReaderView {
   #bookChanged: BookChanged | null;
   #source: PageSource | null = null;
   #generation = 0;
-  #places: PlaceKeeper<ImagePlace, EditFailure>;
+  #places: PlaceKeeper<ImagePlace>;
 
   constructor(
     container: Container,
@@ -135,7 +135,6 @@ class ReaderView {
     this.#bookChanged = bookChanged;
     this.#places = new PlaceKeeper({
       save: (id, place) => this.#savePlace(id, place),
-      describe: describeEditFailure,
       notify,
       afterFailure: 'keeps-place',
       generation: () => this.#generation,
@@ -205,22 +204,22 @@ class ReaderView {
     }
 
     if (generation !== this.#generation) {
-      if (opened.ok && opened.value.kind === 'images') opened.value.pages.close();
+      if (opened.kind === 'images') opened.pages.close();
       return;
     }
 
-    if (!opened.ok) {
-      const message = describeOpenFailure(opened.error);
-      this.opening = { kind: lostBook(opened.error) ? 'missing' : 'failed', message };
+    if (opened.kind === 'flow') {
+      this.opening = { kind: 'flow', book: opened.book };
       return;
     }
 
-    if (opened.value.kind === 'flow') {
-      this.opening = { kind: 'flow', book: opened.value.book };
+    if (opened.kind !== 'images') {
+      const message = describeOpenFailure(opened);
+      this.opening = { kind: lostBook(opened) ? 'missing' : 'failed', message };
       return;
     }
 
-    const { book, pages } = opened.value;
+    const { book, pages } = opened;
     this.#source = pages;
     this.opening = { kind: 'images', book, notice: null };
     this.#languageKnown?.(book.id, book.language);
@@ -260,13 +259,13 @@ class ReaderView {
     }
 
     if (generation !== this.#generation) {
-      if (got.ok) releasePicture(got.value);
+      if (got.kind === 'success') releasePicture(got.picture);
       return null;
     }
 
-    if (!got.ok) return null;
+    if (got.kind !== 'success') return null;
 
-    const picture = got.value;
+    const picture = got.picture;
     if (picture.kind === 'drawn') {
       this.measure(index, { width: picture.bitmap.width, height: picture.bitmap.height });
     }
@@ -374,10 +373,11 @@ class ReaderView {
     this.#places.assumeStored(null);
   }
 
-  async #savePlace(id: BookId, place: ImagePlace): Promise<EditOutcome> {
+  async #savePlace(id: BookId, place: ImagePlace): Promise<PlaceSaved> {
     const saved = await this.#container.library.saveReadingPlace(id, place);
-    if (saved.ok) this.#bookChanged?.();
-    return saved;
+    if (saved.kind !== 'success') return { kind: 'refused', message: describeEditFailure(saved) };
+    this.#bookChanged?.();
+    return PLACE_KEPT;
   }
 
   async #edit(id: BookId, edit: BookEdit, failed: string): Promise<void> {
@@ -386,13 +386,13 @@ class ReaderView {
 
     try {
       const saved = await this.#container.library.editBook(id, edit);
-      if (saved.ok) this.#bookChanged?.();
+      if (saved.kind === 'success') this.#bookChanged?.();
       if (generation !== this.#generation) return;
-      if (!saved.ok) {
-        this.#fail(failed, describeEditFailure(saved.error));
+      if (saved.kind !== 'success') {
+        this.#fail(failed, describeEditFailure(saved));
         return;
       }
-      this.#hold(saved.value);
+      this.#hold(saved.book);
     } catch (cause) {
       if (generation !== this.#generation) return;
       this.#fail(failed, describeCause(cause));
@@ -422,9 +422,9 @@ class ReaderView {
     }
 
     const book = this.book;
-    if (generation !== this.#generation || book === null || !read.ok) return;
+    if (generation !== this.#generation || book === null || read.kind !== 'success') return;
 
-    const found = read.value;
+    const found = read.sizes;
     const sizes = this.sizes.map((known, index) => known ?? found[index] ?? null);
     if (sizes.every((size, index) => size === this.sizes[index])) return;
     this.#regroup(book, sizes);

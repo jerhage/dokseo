@@ -6,9 +6,8 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { ImageRead, PageSource } from '$lib/shared/page-source';
+import { err } from '$lib/shared/result';
 import { createCanvasCropper } from './canvas-cropper';
 
 const REGIONS: readonly ImageRegion[] = [
@@ -63,29 +62,29 @@ function stubTrace() {
   return { begin, end, labels };
 }
 
-function pageSource(answer: () => Result<ImageBitmap, PageSourceError>): PageSource {
+function pageSource(answer: () => ImageRead): PageSource {
   const close = (): void => undefined;
   return {
     count: 1,
     picture: (_index: ImageIndex) =>
-      Promise.resolve(err<PageSourceError>({ kind: 'source-unreadable', cause: 'not asked for' })),
+      Promise.resolve({ kind: 'source-unreadable', cause: 'not asked for' }),
     image: (_index: ImageIndex) => Promise.resolve(answer()),
-    sizes: () => Promise.resolve(ok([])),
+    sizes: () => Promise.resolve({ kind: 'success', sizes: [] }),
     close,
     [Symbol.dispose]: close,
   };
 }
 
 function unreadableSource(): PageSource {
-  return pageSource(() => err({ kind: 'source-unreadable', cause: 'the file went away' }));
+  return pageSource(() => ({ kind: 'source-unreadable', cause: 'the file went away' }));
 }
 
 function decodedSource(): PageSource {
-  return pageSource(() => ok(stubBitmap(200, 80)));
+  return pageSource(() => ({ kind: 'success', image: stubBitmap(200, 80) }));
 }
 
 function wideSource(): PageSource {
-  return pageSource(() => ok(stubBitmap(6000, 900)));
+  return pageSource(() => ({ kind: 'success', image: stubBitmap(6000, 900) }));
 }
 
 afterEach(() => {

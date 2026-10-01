@@ -3,14 +3,17 @@ import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Book, BookEdit } from '../domain/book/book';
-import type { LibraryError } from '../domain/book/library-repository';
-import { describeLibraryError } from '../queries/library-error-text';
+import { describeLibraryRefusal } from '../queries/library-error-text';
+import type { LibraryRefusal } from '../queries/library-error-text';
 import { editBookMutation, markBookMutation, removeBookMutation } from '../queries/library-queries';
 import type { BookMark, EditRequest, LibraryWrites, MarkRequest } from '../queries/library-queries';
+import type { EditBookResult } from '../use-cases/edit-book';
+import type { MarkFinishedResult } from '../use-cases/mark-finished';
+import type { MarkUnreadResult } from '../use-cases/mark-unread';
+import type { RemoveBookResult } from '../use-cases/remove-book';
 import { refreshLibrary } from './library-refresh';
 import { onShelf } from './library-shelves';
 import type { Shelf } from './library-shelves';
@@ -57,10 +60,10 @@ class BookChanges {
   #state = $state.raw<BookChange>(NO_CHANGE);
   #notify: Notify;
   #uploading: () => boolean;
-  #removal: WriteQuery<Result<void, LibraryError>, BookId>;
-  #editing: WriteQuery<Result<Book, LibraryError>, EditRequest>;
-  #marking: WriteQuery<Result<Book, LibraryError>, MarkRequest>;
-  #undoing: WriteQuery<Result<Book, LibraryError>, EditRequest>;
+  #removal: WriteQuery<RemoveBookResult, BookId>;
+  #editing: WriteQuery<EditBookResult, EditRequest>;
+  #marking: WriteQuery<MarkFinishedResult | MarkUnreadResult, MarkRequest>;
+  #undoing: WriteQuery<EditBookResult, EditRequest>;
 
   constructor(library: LibraryWrites, notify: Notify, uploading: () => boolean) {
     const client = useQueryClient();
@@ -131,7 +134,7 @@ class BookChanges {
       this.#marking.run({ id, mark }),
     );
     if (marked === null || before === undefined) return;
-    const title = undoOffer(mark, before, marked.value, shelf);
+    const title = undoOffer(mark, before, marked.book, shelf);
     if (title === null) return;
 
     this.#notify({
@@ -150,16 +153,16 @@ class BookChanges {
     );
   }
 
-  async #change<T>(
+  async #change<S extends { readonly kind: 'success' }>(
     change: BookChange,
     title: string,
-    run: () => Promise<Result<T, LibraryError>>,
-  ): Promise<{ readonly value: T } | null> {
+    run: () => Promise<S | LibraryRefusal>,
+  ): Promise<S | null> {
     this.#state = change;
     try {
       const changed = await run();
-      if (changed.ok) return { value: changed.value };
-      this.#fail(title, describeLibraryError(changed.error));
+      if (changed.kind === 'success') return changed;
+      this.#fail(title, describeLibraryRefusal(changed));
       return null;
     } catch {
       return null;

@@ -3,13 +3,15 @@ import type { BookId } from './ids';
 import type { Notify } from './notice';
 import { samePlace } from './reading-place';
 import type { ReadingPlace } from './reading-place';
-import type { Result } from './result';
 
 type AfterFailure = 'keeps-place' | 'forgets-place';
 
-type PlaceKeeperOptions<P extends ReadingPlace, E> = {
-  readonly save: (id: BookId, place: P) => Promise<Result<unknown, E>>;
-  readonly describe: (error: E) => string;
+type PlaceSaved =
+  | { readonly kind: 'kept' }
+  | { readonly kind: 'refused'; readonly message: string };
+
+type PlaceKeeperOptions<P extends ReadingPlace> = {
+  readonly save: (id: BookId, place: P) => Promise<PlaceSaved>;
   readonly notify: Notify;
   readonly afterFailure: AfterFailure;
   readonly generation?: () => number;
@@ -26,18 +28,20 @@ const PLACE_SAVE_DELAY_MS = 500;
 
 const PLACE_FAILED = 'Could not save your place';
 
+const PLACE_KEPT: PlaceSaved = { kind: 'kept' };
+
 function unchanging(): number {
   return 0;
 }
 
-class PlaceKeeper<P extends ReadingPlace, E> {
-  #options: PlaceKeeperOptions<P, E>;
+class PlaceKeeper<P extends ReadingPlace> {
+  #options: PlaceKeeperOptions<P>;
   #generation: () => number;
   #saving: PendingSave<P> | null = null;
   #stored: P | null = null;
   #failing = false;
 
-  constructor(options: PlaceKeeperOptions<P, E>) {
+  constructor(options: PlaceKeeperOptions<P>) {
     this.#options = options;
     this.#generation = options.generation ?? unchanging;
   }
@@ -82,7 +86,7 @@ class PlaceKeeper<P extends ReadingPlace, E> {
     const generation = this.#generation();
     this.#stored = place;
 
-    let saved: Result<unknown, E>;
+    let saved: PlaceSaved;
     try {
       saved = await this.#options.save(id, place);
     } catch (cause) {
@@ -92,11 +96,11 @@ class PlaceKeeper<P extends ReadingPlace, E> {
     }
 
     if (generation !== this.#generation()) return;
-    if (saved.ok) {
+    if (saved.kind === 'kept') {
       this.#failing = false;
       return;
     }
-    this.#failed(place, this.#options.describe(saved.error));
+    this.#failed(place, saved.message);
   }
 
   #alreadyStored(place: P): boolean {
@@ -114,5 +118,5 @@ class PlaceKeeper<P extends ReadingPlace, E> {
   }
 }
 
-export { PLACE_FAILED, PLACE_SAVE_DELAY_MS, PlaceKeeper };
-export type { AfterFailure, PlaceKeeperOptions };
+export { PLACE_FAILED, PLACE_KEPT, PLACE_SAVE_DELAY_MS, PlaceKeeper };
+export type { AfterFailure, PlaceKeeperOptions, PlaceSaved };

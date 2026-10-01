@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { directoryNamed, NO_FILE_SYSTEM, PRIVATE_WINDOW, storageRoot } from './directory';
+import {
+  directoryNamed,
+  isPrivateWindowRefusal,
+  NO_FILE_SYSTEM,
+  PRIVATE_WINDOW,
+  storageRoot,
+} from './directory';
 
 function refusing(name: string): () => Promise<never> {
   return () => {
@@ -49,5 +55,24 @@ describe('directoryNamed', () => {
     storageThat(refusing('SecurityError'));
 
     await expect(directoryNamed('books')).rejects.toThrow(PRIVATE_WINDOW);
+  });
+});
+
+describe('isPrivateWindowRefusal', () => {
+  it('recognises the refusal the root raises in a private window', async () => {
+    storageThat(refusing('SecurityError'));
+
+    const refusal = await storageRoot().catch((cause: unknown) => cause);
+
+    expect(isPrivateWindowRefusal(refusal)).toBe(true);
+  });
+
+  it('passes over any other refusal', async () => {
+    storageThat(refusing('InvalidStateError'));
+
+    const refusal = await storageRoot().catch((cause: unknown) => cause);
+
+    expect(isPrivateWindowRefusal(refusal)).toBe(false);
+    expect(isPrivateWindowRefusal(PRIVATE_WINDOW)).toBe(false);
   });
 });

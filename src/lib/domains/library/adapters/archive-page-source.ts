@@ -2,12 +2,20 @@ import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 import type { Entry, FileEntry } from '@zip.js/zip.js';
 import { decodeImage } from '$lib/platform/image/decode';
 import type { ImageIndex } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import { selectImageEntries } from '../domain/ingest/image-entries';
-import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
+import type {
+  ImageRead,
+  PageNamesRead,
+  PageSourceError,
+  PageSourceOpening,
+  PictureRead,
+} from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 import { entryImageSizes } from './entry-image-size';
+
+type ListedImages = { readonly kind: 'success'; readonly images: FileEntry[] } | PageSourceError;
+
+type FoundEntry = { readonly kind: 'success'; readonly entry: FileEntry } | PageSourceError;
 
 function filesByName(entries: readonly Entry[]): Map<string, FileEntry> {
   const byName = new Map<string, FileEntry>();
@@ -20,27 +28,25 @@ function filesByName(entries: readonly Entry[]): Map<string, FileEntry> {
 function listedImages(
   byName: ReadonlyMap<string, FileEntry>,
   names: readonly string[],
-): Result<FileEntry[], PageSourceError> {
+): ListedImages {
   const listed: FileEntry[] = [];
   for (const name of names) {
     const entry = byName.get(name);
     if (entry === undefined) {
-      return err({ kind: 'source-unreadable', cause: `The archive holds no page named "${name}"` });
+      return { kind: 'source-unreadable', cause: `The archive holds no page named "${name}"` };
     }
     listed.push(entry);
   }
-  return ok(listed);
+  return { kind: 'success', images: listed };
 }
 
-async function listArchivePageNames(
-  source: Blob,
-): Promise<Result<readonly string[], PageSourceError>> {
+async function listArchivePageNames(source: Blob): Promise<PageNamesRead> {
   const reader = new ZipReader(new BlobReader(source));
   try {
     const byName = filesByName(await reader.getEntries());
-    return ok(selectImageEntries([...byName.keys()]));
+    return { kind: 'success', names: selectImageEntries([...byName.keys()]) };
   } catch (cause) {
-    return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+    return { kind: 'source-unreadable', cause: describeCause(cause) };
   } finally {
     await reader.close().catch(() => undefined);
   }
@@ -49,21 +55,21 @@ async function listArchivePageNames(
 async function openArchivePageSource(
   source: Blob,
   names: readonly string[],
-): Promise<Result<PageSource, PageSourceError>> {
+): Promise<PageSourceOpening> {
   const reader = new ZipReader(new BlobReader(source));
   let byName: Map<string, FileEntry>;
   try {
     byName = filesByName(await reader.getEntries());
   } catch (cause) {
     await reader.close().catch(() => undefined);
-    return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+    return { kind: 'source-unreadable', cause: describeCause(cause) };
   }
   const listed = listedImages(byName, names);
-  if (!listed.ok) {
+  if (listed.kind !== 'success') {
     await reader.close().catch(() => undefined);
     return listed;
   }
-  const images = listed.value;
+  const images = listed.images;
 
   const count = images.length;
   let closed = false;
@@ -74,54 +80,58 @@ async function openArchivePageSource(
     void reader.close().catch(() => undefined);
   };
 
-  const entryAt = (index: ImageIndex): Result<FileEntry, PageSourceError> => {
-    if (closed) return err({ kind: 'source-unreadable', cause: 'The archive is closed' });
+  const entryAt = (index: ImageIndex): FoundEntry => {
+    if (closed) return { kind: 'source-unreadable', cause: 'The archive is closed' };
     if (!Number.isInteger(index) || index < 0 || index >= count) {
-      return err({ kind: 'out-of-range', index, count });
+      return { kind: 'out-of-range', index, count };
     }
     const image = images[index];
-    if (image === undefined) return err({ kind: 'out-of-range', index, count });
-    return ok(image);
+    if (image === undefined) return { kind: 'out-of-range', index, count };
+    return { kind: 'success', entry: image };
   };
 
-  return ok({
-    count,
+  return {
+    kind: 'success',
+    pages: {
+      count,
 
-    async picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>> {
-      const found = entryAt(index);
-      if (!found.ok) return found;
-      try {
-        const entry = await found.value.getData(new BlobWriter());
-        const url = URL.createObjectURL(entry);
-        return ok({ kind: 'encoded', url });
-      } catch (cause) {
-        return err({ kind: 'page-unreadable', index, cause: describeCause(cause) });
-      }
+      async picture(index: ImageIndex): Promise<PictureRead> {
+        const found = entryAt(index);
+        if (found.kind !== 'success') return found;
+        try {
+          const entry = await found.entry.getData(new BlobWriter());
+          const url = URL.createObjectURL(entry);
+          return { kind: 'success', picture: { kind: 'encoded', url } };
+        } catch (cause) {
+          return { kind: 'page-unreadable', index, cause: describeCause(cause) };
+        }
+      },
+
+      async image(index: ImageIndex): Promise<ImageRead> {
+        const found = entryAt(index);
+        if (found.kind !== 'success') return found;
+
+        let entry: Blob;
+        try {
+          entry = await found.entry.getData(new BlobWriter());
+        } catch (cause) {
+          return { kind: 'page-unreadable', index, cause: describeCause(cause) };
+        }
+
+        try {
+          const bitmap = await decodeImage(entry);
+          return { kind: 'success', image: bitmap };
+        } catch (cause) {
+          return { kind: 'decode-failed', index, cause: describeCause(cause) };
+        }
+      },
+
+      sizes: () => entryImageSizes(source, images, () => closed, 'The archive is closed'),
+
+      close,
+      [Symbol.dispose]: close,
     },
-
-    async image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> {
-      const found = entryAt(index);
-      if (!found.ok) return found;
-
-      let entry: Blob;
-      try {
-        entry = await found.value.getData(new BlobWriter());
-      } catch (cause) {
-        return err({ kind: 'page-unreadable', index, cause: describeCause(cause) });
-      }
-
-      try {
-        return ok(await decodeImage(entry));
-      } catch (cause) {
-        return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
-      }
-    },
-
-    sizes: () => entryImageSizes(source, images, () => closed, 'The archive is closed'),
-
-    close,
-    [Symbol.dispose]: close,
-  });
+  };
 }
 
 export { listArchivePageNames, openArchivePageSource };

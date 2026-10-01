@@ -8,7 +8,7 @@ import type { BookId } from '$lib/shared/ids';
 import { showsTheEnd, START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Notice, Notify } from '$lib/shared/notice';
-import { err, ok } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ContentsEntry } from './flow-contents';
@@ -52,10 +52,6 @@ type Edits = Awaited<ReturnType<Container['library']['editBook']>>;
 type Keeps = Awaited<ReturnType<Container['flowing']['saveReadingSettings']>>;
 
 type BookEdit = Parameters<Container['library']['editBook']>[1];
-
-type SourceFailure = Extract<Reads, { readonly ok: false }>['error'];
-
-type PlaceFailure = Extract<Edits, { readonly ok: false }>['error'];
 
 function novel(position: ReadingPlace): FlowBook {
   return {
@@ -109,8 +105,8 @@ function shelf(): Shelf {
     place: START_OF_THE_TEXT,
     stored: DEFAULT_READING_SETTINGS,
     keep: () => Promise.resolve({ kind: 'success' }),
-    read: () => Promise.resolve(ok(SOURCE)),
-    save: () => Promise.resolve(ok(novel(world.place))),
+    read: () => Promise.resolve({ kind: 'success', source: SOURCE }),
+    save: () => Promise.resolve({ kind: 'success', book: novel(world.place) }),
   };
 
   world.container = {
@@ -377,25 +373,10 @@ describe('FlowView', () => {
     expect(view.curtain).toEqual({ kind: 'none' });
   });
 
-  it('reports a source that is no longer stored', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    world.read = () => Promise.resolve(err<SourceFailure>({ kind: 'not-found', id: NOVEL }));
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), surfaces.show);
-
-    expect(surfaces.openings).toEqual([]);
-    expect(view.curtain).toEqual({
-      kind: 'notice',
-      message: 'That book is no longer stored on this device.',
-    });
-  });
-
   it('reports a book whose file is gone apart from a removed book', async () => {
     const world = shelf();
     const surfaces = shows();
-    world.read = () => Promise.resolve(err<SourceFailure>({ kind: 'source-missing', id: NOVEL }));
+    world.read = () => Promise.resolve({ kind: 'source-missing', id: NOVEL });
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     await view.open(novel(world.place), surfaces.show);
@@ -406,7 +387,7 @@ describe('FlowView', () => {
 
   it('reports storage that the browser refuses', async () => {
     const world = shelf();
-    world.read = () => Promise.resolve(err<SourceFailure>({ kind: 'storage-unavailable' }));
+    world.read = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     await view.open(novel(world.place), shows().show);
@@ -492,7 +473,7 @@ describe('FlowView', () => {
     const gate = held();
     world.read = async () => {
       await gate.promise;
-      return err<SourceFailure>({ kind: 'storage-failed', cause: 'quota' });
+      return STORAGE_UNAVAILABLE;
     };
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
@@ -626,8 +607,7 @@ describe('the place a flow book keeps', () => {
   it('tells nothing when a place save fails', async () => {
     const world = shelf();
     const surfaces = shows();
-    world.save = () =>
-      Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+    world.save = () => Promise.resolve(STORAGE_UNAVAILABLE);
     let changed = 0;
     const view = new FlowView(world.container, world.notify, createTestQueryClient(), () => {
       changed += 1;
@@ -774,7 +754,7 @@ describe('the place a flow book keeps', () => {
   it('keeps showing the book when a place cannot be saved', async () => {
     const world = shelf();
     const surfaces = shows();
-    world.save = () => Promise.resolve(err<PlaceFailure>({ kind: 'storage-failed', cause: 'io' }));
+    world.save = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), surfaces.show);
 
@@ -783,7 +763,11 @@ describe('the place a flow book keeps', () => {
 
     expect(view.state).toEqual({ kind: 'ready' });
     expect(world.notices).toEqual([
-      { tone: 'danger', title: PLACE_FAILED, message: 'Local storage failed: io' },
+      {
+        tone: 'danger',
+        title: PLACE_FAILED,
+        message: 'This browser blocks local storage, so your place cannot be kept.',
+      },
     ]);
   });
 
@@ -803,7 +787,7 @@ describe('the place a flow book keeps', () => {
       { tone: 'danger', title: PLACE_FAILED, message: 'the disk went away' },
     ]);
 
-    world.save = () => Promise.resolve(ok(novel(world.place)));
+    world.save = () => Promise.resolve({ kind: 'success', book: novel(world.place) });
     moved?.(relocated(LATER_STILL));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
     world.save = () => Promise.reject(new Error('the disk went away'));
@@ -829,7 +813,7 @@ describe('the place a flow book keeps', () => {
   it('saves the same place again at the next turn after a save failed', async () => {
     const world = shelf();
     const surfaces = shows();
-    world.save = () => Promise.resolve(err<PlaceFailure>({ kind: 'storage-failed', cause: 'io' }));
+    world.save = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), surfaces.show);
     const moved = surfaces.openings[0]?.moved;

@@ -12,11 +12,10 @@ import { beginTrace } from '$lib/platform/trace/pipeline-trace';
 import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Anchor } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
-import type { Size } from '$lib/shared/geometry';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
-import type { PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PageSource } from '$lib/shared/page-source';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Result } from '$lib/shared/result';
 import { createReadingSettingsStore } from './domains/flowing/adapters/indexeddb-reading-settings';
@@ -38,41 +37,45 @@ import {
   openListedPageSource,
   openStoredPageSource,
 } from './domains/library/adapters/stored-page-source';
-import type { Book, BookEdit } from './domains/library/domain/book/book';
+import type { BookEdit } from './domains/library/domain/book/book';
 import type { BookMatching } from './domains/library/domain/book/book-matching';
-import type { LibraryError } from './domains/library/domain/book/library-repository';
 import type { UploadReport } from './domains/library/domain/ingest/upload-progress';
 import { editBook } from './domains/library/use-cases/edit-book';
-import type { EditBookDeps } from './domains/library/use-cases/edit-book';
+import type { EditBookDeps, EditBookResult } from './domains/library/use-cases/edit-book';
 import { listBooks } from './domains/library/use-cases/list-books';
-import type { ListBooksDeps } from './domains/library/use-cases/list-books';
+import type { ListBooksDeps, ListBooksResult } from './domains/library/use-cases/list-books';
 import { markFinished } from './domains/library/use-cases/mark-finished';
-import type { MarkFinishedDeps } from './domains/library/use-cases/mark-finished';
-import { markUnread } from './domains/library/use-cases/mark-unread';
-import type { MarkUnreadDeps } from './domains/library/use-cases/mark-unread';
-import { openFile } from './domains/library/use-cases/open-file';
 import type {
-  OpenFileDeps,
-  OpenFileError,
-  OpenedUpload,
-} from './domains/library/use-cases/open-file';
+  MarkFinishedDeps,
+  MarkFinishedResult,
+} from './domains/library/use-cases/mark-finished';
+import { markUnread } from './domains/library/use-cases/mark-unread';
+import type { MarkUnreadDeps, MarkUnreadResult } from './domains/library/use-cases/mark-unread';
+import { openFile } from './domains/library/use-cases/open-file';
+import type { OpenFileDeps, OpenFileResult } from './domains/library/use-cases/open-file';
 import { openForReading } from './domains/library/use-cases/open-for-reading';
 import type {
-  OpenedBook,
   OpenForReadingDeps,
-  OpenForReadingError,
+  OpenForReadingResult,
 } from './domains/library/use-cases/open-for-reading';
 import { readBook } from './domains/library/use-cases/read-book';
-import type { ReadBookDeps } from './domains/library/use-cases/read-book';
+import type { ReadBookDeps, ReadBookResult } from './domains/library/use-cases/read-book';
 import { readCover } from './domains/library/use-cases/read-cover';
-import type { ReadCoverDeps } from './domains/library/use-cases/read-cover';
+import type { ReadCoverDeps, ReadCoverResult } from './domains/library/use-cases/read-cover';
 import { readLibrarySize } from './domains/library/use-cases/read-library-size';
-import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
+import type {
+  ReadLibrarySizeDeps,
+  ReadLibrarySizeResult,
+} from './domains/library/use-cases/read-library-size';
 import { readPageSizes } from './domains/library/use-cases/read-page-sizes';
+import type { ReadPageSizesResult } from './domains/library/use-cases/read-page-sizes';
 import { readSource } from './domains/library/use-cases/read-source';
-import type { ReadSourceDeps, ReadSourceError } from './domains/library/use-cases/read-source';
+import type { ReadSourceDeps, ReadSourceResult } from './domains/library/use-cases/read-source';
 import { saveReadingPlace } from './domains/library/use-cases/save-reading-place';
-import type { SaveReadingPlaceDeps } from './domains/library/use-cases/save-reading-place';
+import type {
+  SaveReadingPlaceDeps,
+  SaveReadingPlaceResult,
+} from './domains/library/use-cases/save-reading-place';
 import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
 import { createModelStorage } from './domains/recognition/adapters/model/cache-api-model-storage';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
@@ -172,7 +175,10 @@ import type {
   ReadStorageAccountResult,
 } from './domains/storage/use-cases/read-storage-account';
 import { removeBookAndCaptures } from './domains/storage/use-cases/remove-book-and-captures';
-import type { RemoveBookAndCapturesDeps } from './domains/storage/use-cases/remove-book-and-captures';
+import type {
+  RemoveBookAndCapturesDeps,
+  RemoveBookAndCapturesResult,
+} from './domains/storage/use-cases/remove-book-and-captures';
 
 type RecognitionProgress = (load: ModelLoad) => void;
 
@@ -264,24 +270,19 @@ type Container = {
       files: readonly File[],
       matching: BookMatching,
       report?: UploadReport,
-    ) => Promise<Result<OpenedUpload, OpenFileError>>;
-    readonly openForReading: (id: BookId) => Promise<Result<OpenedBook, OpenForReadingError>>;
-    readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
-    readonly readBook: (id: BookId) => Promise<Result<Book, LibraryError>>;
-    readonly readCover: (id: BookId) => Promise<Result<Blob | null, LibraryError>>;
-    readonly readSource: (id: BookId) => Promise<Result<Blob, ReadSourceError>>;
-    readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError | CaptureError>>;
-    readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
-    readonly saveReadingPlace: (
-      id: BookId,
-      place: ReadingPlace,
-    ) => Promise<Result<Book, LibraryError>>;
-    readonly markFinished: (id: BookId) => Promise<Result<Book, LibraryError>>;
-    readonly markUnread: (id: BookId) => Promise<Result<Book, LibraryError>>;
-    readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
-    readonly readPageSizes: (
-      source: PageSource,
-    ) => Promise<Result<readonly (Size | null)[], PageSourceError>>;
+    ) => Promise<OpenFileResult>;
+    readonly openForReading: (id: BookId) => Promise<OpenForReadingResult>;
+    readonly listBooks: () => Promise<ListBooksResult>;
+    readonly readBook: (id: BookId) => Promise<ReadBookResult>;
+    readonly readCover: (id: BookId) => Promise<ReadCoverResult>;
+    readonly readSource: (id: BookId) => Promise<ReadSourceResult>;
+    readonly removeBook: (id: BookId) => Promise<RemoveBookAndCapturesResult>;
+    readonly editBook: (id: BookId, edit: BookEdit) => Promise<EditBookResult>;
+    readonly saveReadingPlace: (id: BookId, place: ReadingPlace) => Promise<SaveReadingPlaceResult>;
+    readonly markFinished: (id: BookId) => Promise<MarkFinishedResult>;
+    readonly markUnread: (id: BookId) => Promise<MarkUnreadResult>;
+    readonly readLibrarySize: () => Promise<ReadLibrarySizeResult>;
+    readonly readPageSizes: (source: PageSource) => Promise<ReadPageSizesResult>;
   };
   readonly flowing: {
     readonly readReadingSettings: () => Promise<ReadReadingSettingsResult>;

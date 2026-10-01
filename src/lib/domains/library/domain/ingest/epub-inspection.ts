@@ -18,4 +18,8 @@ type EpubInspectionError =
   | { readonly kind: 'archive-unreadable'; readonly cause: string }
   | { readonly kind: 'too-large'; readonly limit: IngestLimit };
 
-export type { EpubInspection, EpubInspectionError };
+type EpubInspectionAnswer =
+  | { readonly kind: 'success'; readonly inspection: EpubInspection }
+  | EpubInspectionError;
+
+export type { EpubInspection, EpubInspectionAnswer, EpubInspectionError };

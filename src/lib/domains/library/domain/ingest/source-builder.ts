@@ -1,4 +1,3 @@
-import type { Result } from '$lib/shared/result';
 import type { SourceKind } from '../book/book';
 import type { PageOrder } from '../book/page-list';
 import type { IngestLimit } from './ingest-limits';
@@ -31,11 +30,10 @@ type SourceBuildError =
   | { readonly kind: 'empty' }
   | { readonly kind: 'refused'; readonly limit: IngestLimit };
 
+type SourceBuild = { readonly kind: 'success'; readonly source: BuiltSource } | SourceBuildError;
+
 interface SourceBuilder {
-  build(
-    files: readonly File[],
-    report: UploadReport,
-  ): Promise<Result<BuiltSource, SourceBuildError>>;
+  build(files: readonly File[], report: UploadReport): Promise<SourceBuild>;
 }
 
-export type { BuiltPages, BuiltSource, SourceBuildError, SourceBuilder };
+export type { BuiltPages, BuiltSource, SourceBuild, SourceBuildError, SourceBuilder };

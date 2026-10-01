@@ -8,6 +8,7 @@ import {
   failureOf,
   imageCountsOf,
   libraryBody,
+  listedBooks,
   listedOf,
   shelfOf,
   shelfState,
@@ -78,14 +79,28 @@ describe('shelfState', () => {
   it('puts the covers and the size beside the books once they are read', () => {
     const covers = new Map([[BOOK.id, 'blob:cover']]);
 
-    expect(shelfState(readReady([BOOK]), covers, 10)).toEqual(
+    expect(shelfState(readReady({ kind: 'success', books: [BOOK] }), covers, 10)).toEqual(
       readReady({ books: [BOOK], covers, storedBytes: 10 }),
+    );
+  });
+
+  it('names a blocked store as a failed read', () => {
+    expect(shelfState(readReady({ kind: 'storage-unavailable' }), new Map(), null)).toEqual(
+      readFailed('This browser blocks local storage, so uploads cannot be kept.'),
     );
   });
 
   it('keeps a loading or failed read as it is', () => {
     expect(shelfState(LOADING, new Map(), 10)).toBe(LOADING);
     expect(shelfState(readFailed('denied'), new Map(), null)).toEqual(readFailed('denied'));
+  });
+});
+
+describe('listedBooks', () => {
+  it('lists the books of a read listing, and none otherwise', () => {
+    expect(listedBooks(readReady({ kind: 'success', books: [BOOK] }))).toEqual([BOOK]);
+    expect(listedBooks(readReady({ kind: 'storage-unavailable' }))).toEqual([]);
+    expect(listedBooks(LOADING)).toEqual([]);
   });
 });
 

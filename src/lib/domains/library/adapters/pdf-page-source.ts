@@ -2,9 +2,7 @@ import type * as PdfJs from 'pdfjs-dist';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PageViewport } from 'pdfjs-dist';
 import type { Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { ImageRead, PageSourceOpening, PictureRead, SizesRead } from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 import { RANGE_CHUNK_BYTES, clampRange, initialChunkSize } from './pdf-ranges';
 import { choosePdfBuild } from './pdf-build';
@@ -122,7 +120,7 @@ async function renderToBitmap(pdf: PDFDocumentProxy, pageNumber: number): Promis
   return canvas.transferToImageBitmap();
 }
 
-async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageSourceError>> {
+async function openPdfPageSource(source: Blob): Promise<PageSourceOpening> {
   let task: PDFDocumentLoadingTask | undefined;
   let transport: BlobRangeTransport;
   let pdf: PDFDocumentProxy;
@@ -139,7 +137,7 @@ async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageS
     pdf = await Promise.race([task.promise, transport.failure]);
   } catch (cause) {
     void task?.destroy().catch(() => undefined);
-    return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+    return { kind: 'source-unreadable', cause: describeCause(cause) };
   }
 
   const loading = task;
@@ -152,43 +150,46 @@ async function openPdfPageSource(source: Blob): Promise<Result<PageSource, PageS
     void loading.destroy().catch(() => undefined);
   };
 
-  const render = async (index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> => {
-    if (closed) return err({ kind: 'source-unreadable', cause: 'The document is closed' });
+  const render = async (index: ImageIndex): Promise<ImageRead> => {
+    if (closed) return { kind: 'source-unreadable', cause: 'The document is closed' };
     if (!Number.isInteger(index) || index < 0 || index >= count) {
-      return err({ kind: 'out-of-range', index, count });
+      return { kind: 'out-of-range', index, count };
     }
     try {
       const bitmap = await Promise.race([renderToBitmap(pdf, index + 1), transport.failure]);
-      return ok(bitmap);
+      return { kind: 'success', image: bitmap };
     } catch (cause) {
-      return err({ kind: 'render-failed', index, cause: describeCause(cause) });
+      return { kind: 'render-failed', index, cause: describeCause(cause) };
     }
   };
 
-  return ok({
-    count,
+  return {
+    kind: 'success',
+    pages: {
+      count,
 
-    async picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>> {
-      const drawn = await render(index);
-      if (!drawn.ok) return drawn;
-      return ok({ kind: 'drawn', bitmap: drawn.value });
+      async picture(index: ImageIndex): Promise<PictureRead> {
+        const drawn = await render(index);
+        if (drawn.kind !== 'success') return drawn;
+        return { kind: 'success', picture: { kind: 'drawn', bitmap: drawn.image } };
+      },
+
+      image: render,
+
+      async sizes(): Promise<SizesRead> {
+        if (closed) return { kind: 'source-unreadable', cause: 'The document is closed' };
+        try {
+          const sizes = await Promise.race([pageSizes(pdf), transport.failure]);
+          return { kind: 'success', sizes };
+        } catch (cause) {
+          return { kind: 'source-unreadable', cause: describeCause(cause) };
+        }
+      },
+
+      close,
+      [Symbol.dispose]: close,
     },
-
-    image: render,
-
-    async sizes(): Promise<Result<readonly (Size | null)[], PageSourceError>> {
-      if (closed) return err({ kind: 'source-unreadable', cause: 'The document is closed' });
-      try {
-        const sizes = await Promise.race([pageSizes(pdf), transport.failure]);
-        return ok(sizes);
-      } catch (cause) {
-        return err({ kind: 'source-unreadable', cause: describeCause(cause) });
-      }
-    },
-
-    close,
-    [Symbol.dispose]: close,
-  });
+  };
 }
 
 export { openPdfPageSource };

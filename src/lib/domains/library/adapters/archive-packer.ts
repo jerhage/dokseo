@@ -1,6 +1,4 @@
 import { BlobReader, BlobWriter, ZipWriter } from '@zip.js/zip.js';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import { isPageImage } from '../domain/ingest/image-entries';
 import { entryName } from './file-entry';
 import type { PageSourceError } from '$lib/shared/page-source';
@@ -8,13 +6,15 @@ import { describeCause } from '$lib/shared/cause';
 
 type PackReport = (packed: number, total: number) => void;
 
+type PackedArchive = { readonly kind: 'success'; readonly archive: Blob } | PageSourceError;
+
 async function packImagesIntoArchive(
   files: readonly File[],
   report: PackReport = () => undefined,
-): Promise<Result<Blob, PageSourceError>> {
+): Promise<PackedArchive> {
   const images = files.filter((file) => isPageImage(entryName(file)));
   if (images.length === 0) {
-    return err({ kind: 'source-unreadable', cause: 'No image files were found' });
+    return { kind: 'source-unreadable', cause: 'No image files were found' };
   }
 
   const writer = new ZipWriter(new BlobWriter('application/zip'));
@@ -25,12 +25,12 @@ async function packImagesIntoArchive(
       report(position + 1, images.length);
     }
     const archive = await writer.close();
-    return ok(archive);
+    return { kind: 'success', archive };
   } catch (cause) {
     await writer.close().catch(() => undefined);
-    return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+    return { kind: 'source-unreadable', cause: describeCause(cause) };
   }
 }
 
 export { packImagesIntoArchive };
-export type { PackReport };
+export type { PackedArchive, PackReport };

@@ -76,14 +76,17 @@ describe('uploadNotice', () => {
 
 describe('describeOpenFileError', () => {
   it('names why an upload was refused', () => {
-    expect(describeOpenFileError({ kind: 'source', error: { kind: 'nothing-usable' } })).toBe(
+    expect(describeOpenFileError({ kind: 'source', failure: { kind: 'nothing-usable' } })).toBe(
       'Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.',
     );
-    expect(describeOpenFileError({ kind: 'storage', error: { kind: 'storage-unavailable' } })).toBe(
+    expect(describeOpenFileError({ kind: 'storage-unavailable' })).toBe(
       'This browser blocks local storage, so uploads cannot be kept.',
     );
     expect(describeOpenFileError({ kind: 'fingerprint', cause: 'no hashing here.' })).toBe(
       'This page cannot check uploads for duplicates here: no hashing here.',
+    );
+    expect(describeOpenFileError({ kind: 'threw', cause: new Error('disk full') })).toBe(
+      'Something went wrong: disk full',
     );
   });
 });
@@ -93,15 +96,15 @@ describe('describeFailedBook', () => {
     expect(
       describeFailedBook({
         name: 'a.pdf',
-        error: { kind: 'source', error: { kind: 'unreadable', cause: 'bad xref' } },
+        failure: { kind: 'source', failure: { kind: 'unreadable', cause: 'bad xref' } },
       }),
     ).toBe('a.pdf could not be read: bad xref');
     expect(
       describeFailedBook({
         name: 'c.cbz',
-        error: { kind: 'storage', error: { kind: 'storage-failed', cause: 'disk full' } },
+        failure: { kind: 'threw', cause: new Error('disk full') },
       }),
-    ).toBe('c.cbz: Local storage failed: disk full');
+    ).toBe('c.cbz: Something went wrong: disk full');
   });
 });
 
@@ -113,7 +116,7 @@ describe('tallyOf', () => {
           { kind: 'added', book: book('a', 'a') },
           { kind: 'already-held', book: book('b', 'b') },
         ],
-        [{ name: 'c.cbz', error: { kind: 'source', error: { kind: 'empty' } } }],
+        [{ name: 'c.cbz', failure: { kind: 'source', failure: { kind: 'empty' } } }],
       ),
     ).toEqual({
       added: 1,

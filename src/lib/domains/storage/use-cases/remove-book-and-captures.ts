@@ -1,11 +1,12 @@
-import type { LibraryError } from '$lib/domains/library/domain/book/library-repository';
 import { removeBook } from '$lib/domains/library/use-cases/remove-book';
 import type { RemoveBookDeps } from '$lib/domains/library/use-cases/remove-book';
-import type { CaptureError } from '$lib/domains/recognition/domain/capture/capture-repository';
 import { clearCaptures } from '$lib/domains/recognition/use-cases/capture/clear-captures';
 import type { ClearCapturesDeps } from '$lib/domains/recognition/use-cases/capture/clear-captures';
 import type { BookId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+
+type RemoveBookAndCapturesResult = { readonly kind: 'success' } | StorageUnavailable;
 
 type RemoveBookAndCapturesDeps = {
   readonly clearing: ClearCapturesDeps;
@@ -15,12 +16,15 @@ type RemoveBookAndCapturesDeps = {
 async function removeBookAndCaptures(
   deps: RemoveBookAndCapturesDeps,
   id: BookId,
-): Promise<Result<void, LibraryError | CaptureError>> {
+): Promise<RemoveBookAndCapturesResult> {
   const cleared = await clearCaptures(deps.clearing, id);
-  if (!cleared.ok) return cleared;
+  if (!cleared.ok) {
+    if (cleared.error.kind === 'storage-unavailable') return STORAGE_UNAVAILABLE;
+    throw new Error(cleared.error.cause);
+  }
 
   return removeBook(deps.removal, id);
 }
 
 export { removeBookAndCaptures };
-export type { RemoveBookAndCapturesDeps };
+export type { RemoveBookAndCapturesDeps, RemoveBookAndCapturesResult };

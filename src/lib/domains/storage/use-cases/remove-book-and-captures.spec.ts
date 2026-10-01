@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  LibraryError,
   LibraryRepository,
+  LibraryWrite,
 } from '$lib/domains/library/domain/book/library-repository';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type {
@@ -12,20 +12,17 @@ import { bookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { removeBookAndCaptures } from './remove-book-and-captures';
 import type { RemoveBookAndCapturesDeps } from './remove-book-and-captures';
 
-const DISK_GONE: LibraryError = { kind: 'storage-failed', cause: 'the disk went away' };
+const CAPTURES_BLOCKED: CaptureError = { kind: 'storage-unavailable' };
 
-const CAPTURES_GONE: CaptureError = { kind: 'storage-failed', cause: 'the captures went away' };
-
-function notFound(id: BookId): Result<never, LibraryError> {
-  return err({ kind: 'not-found', id });
-}
+const WRITTEN: LibraryWrite = { kind: 'success' };
 
 type Outcomes = {
   readonly clearing?: Result<void, CaptureError>;
-  readonly removal?: Result<void, LibraryError>;
+  readonly removal?: LibraryWrite;
 };
 
 type World = {
@@ -57,20 +54,20 @@ function world(outcomes: Outcomes = {}): World {
   };
 
   const repository: LibraryRepository = {
-    list: () => Promise.resolve(ok([])),
-    get: (id) => Promise.resolve(notFound(id)),
+    list: () => Promise.resolve({ kind: 'success', books: [] }),
+    get: () => Promise.resolve({ kind: 'success', book: null }),
     add: () => Promise.reject(new Error('not used')),
     remove: (id) => {
       steps.push('removed');
       removed.push(id);
-      return Promise.resolve(outcomes.removal ?? ok(undefined));
+      return Promise.resolve(outcomes.removal ?? WRITTEN);
     },
-    update: (id) => Promise.resolve(notFound(id)),
-    readSource: (id) => Promise.resolve(notFound(id)),
-    readCover: (id) => Promise.resolve(notFound(id)),
-    storedBytes: () => Promise.resolve(ok(0)),
-    readPageList: () => Promise.resolve(ok({ kind: 'unlisted' as const })),
-    savePageList: () => Promise.resolve(ok(undefined)),
+    update: () => Promise.resolve({ kind: 'success', book: null }),
+    readSource: () => Promise.resolve({ kind: 'success', file: null }),
+    readCover: () => Promise.resolve({ kind: 'success', file: null }),
+    storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
+    readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
+    savePageList: () => Promise.resolve(WRITTEN),
   };
 
   return {
@@ -88,7 +85,7 @@ describe('removeBookAndCaptures', () => {
 
     const result = await removeBookAndCaptures(origin.deps, bookId('book-1'));
 
-    expect(result).toEqual(ok(undefined));
+    expect(result).toEqual(WRITTEN);
     expect(origin.cleared).toEqual(['book-1']);
     expect(origin.removed).toEqual(['book-1']);
   });
@@ -102,20 +99,20 @@ describe('removeBookAndCaptures', () => {
   });
 
   it('keeps the book when its captures cannot be cleared', async () => {
-    const origin = world({ clearing: err(CAPTURES_GONE) });
+    const origin = world({ clearing: err(CAPTURES_BLOCKED) });
 
     const result = await removeBookAndCaptures(origin.deps, bookId('book-1'));
 
-    expect(result).toEqual(err(CAPTURES_GONE));
+    expect(result).toEqual(STORAGE_UNAVAILABLE);
     expect(origin.removed).toEqual([]);
   });
 
-  it('reports a failure to remove the book', async () => {
-    const origin = world({ removal: err(DISK_GONE) });
+  it('passes a blocked store through when the book cannot be removed', async () => {
+    const origin = world({ removal: STORAGE_UNAVAILABLE });
 
     const result = await removeBookAndCaptures(origin.deps, bookId('book-1'));
 
-    expect(result).toEqual(err(DISK_GONE));
+    expect(result).toEqual(STORAGE_UNAVAILABLE);
     expect(origin.cleared).toEqual(['book-1']);
   });
 

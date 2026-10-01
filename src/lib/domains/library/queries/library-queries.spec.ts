@@ -2,14 +2,12 @@ import { MutationObserver } from '@tanstack/svelte-query';
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { QueryFailure } from '$lib/shared/query-failure';
 import { imagePlace } from '$lib/shared/reading-place';
-import { err, ok } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { Book } from '../domain/book/book';
 import { libraryKeys } from './library-keys';
 import {
-  BOOK_MISSING,
   bookQuery,
   booksQuery,
   coversQuery,
@@ -20,7 +18,7 @@ import {
   removeBookMutation,
 } from './library-queries';
 
-const DENIED = { kind: 'storage-failed', cause: 'denied' } as const;
+const BROKEN = new Error('denied');
 
 function book(id: string, addedAt: number): Book {
   return {
@@ -46,59 +44,74 @@ describe('booksQuery', () => {
   it('orders the newest upload first', async () => {
     const client = createTestQueryClient();
 
-    const books = await client.fetchQuery(
-      booksQuery({ listBooks: () => Promise.resolve(ok([book('old', 1), book('new', 2)])) }),
+    const listed = await client.fetchQuery(
+      booksQuery({
+        listBooks: () =>
+          Promise.resolve({ kind: 'success', books: [book('old', 1), book('new', 2)] }),
+      }),
     );
 
-    expect(books.map((held) => held.id)).toEqual(['new', 'old']);
+    expect(listed.kind === 'success' && listed.books.map((held) => held.id)).toEqual([
+      'new',
+      'old',
+    ]);
   });
 
-  it('rejects a failed listing with the described message', async () => {
+  it('resolves a blocked store as an answer, so the shelf can name it', async () => {
     const client = createTestQueryClient();
 
-    const fetched = client.fetchQuery(
-      booksQuery({ listBooks: () => Promise.resolve(err(DENIED)) }),
+    const listed = await client.fetchQuery(
+      booksQuery({ listBooks: () => Promise.resolve(STORAGE_UNAVAILABLE) }),
     );
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow('Local storage failed: denied');
+    expect(listed).toEqual(STORAGE_UNAVAILABLE);
+  });
+
+  it('rejects with the error a failed listing throws', async () => {
+    const client = createTestQueryClient();
+
+    const fetched = client.fetchQuery(booksQuery({ listBooks: () => Promise.reject(BROKEN) }));
+
+    await expect(fetched).rejects.toBe(BROKEN);
   });
 });
 
 describe('bookQuery', () => {
-  it('resolves the stored book as found', async () => {
+  it('resolves the stored book', async () => {
     const client = createTestQueryClient();
     const stored = book('one', 1);
 
     const answer = await client.fetchQuery(
-      bookQuery({ readBook: () => Promise.resolve(ok(stored)) }, bookId('one')),
+      bookQuery(
+        { readBook: () => Promise.resolve({ kind: 'success', book: stored }) },
+        bookId('one'),
+      ),
     );
 
-    expect(answer).toEqual({ kind: 'found', book: stored });
+    expect(answer).toEqual({ kind: 'success', book: stored });
   });
 
-  it('resolves a book the store does not hold as missing, so the answer is cached', async () => {
+  it('resolves a book the store does not hold as not-found, so the answer is cached', async () => {
     const client = createTestQueryClient();
     const options = bookQuery(
-      { readBook: (id) => Promise.resolve(err({ kind: 'not-found', id })) },
+      { readBook: (id) => Promise.resolve({ kind: 'not-found', id }) },
       bookId('gone'),
     );
 
     const answer = await client.fetchQuery(options);
 
-    expect(answer).toBe(BOOK_MISSING);
+    expect(answer).toEqual({ kind: 'not-found', id: 'gone' });
     expect(client.getQueryState(options.queryKey)?.status).toBe('success');
   });
 
-  it('rejects a failed read with the described message', async () => {
+  it('rejects with the error a failed read throws', async () => {
     const client = createTestQueryClient();
 
     const fetched = client.fetchQuery(
-      bookQuery({ readBook: () => Promise.resolve(err(DENIED)) }, bookId('one')),
+      bookQuery({ readBook: () => Promise.reject(BROKEN) }, bookId('one')),
     );
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow('Local storage failed: denied');
+    await expect(fetched).rejects.toBe(BROKEN);
   });
 
   it('reads nothing while no book is named', async () => {
@@ -108,7 +121,7 @@ describe('bookQuery', () => {
       {
         readBook: (id) => {
           asked.push(id);
-          return Promise.resolve(err({ kind: 'not-found', id }));
+          return Promise.resolve({ kind: 'not-found', id });
         },
       },
       null,
@@ -123,7 +136,8 @@ describe('coversQuery', () => {
   it('maps each book to its cover and leaves out a book with no cover', async () => {
     const client = createTestQueryClient();
     const cover = new Blob(['cover']);
-    const readCover = (id: BookId) => Promise.resolve(ok(id === 'one' ? cover : null));
+    const readCover = (id: BookId) =>
+      Promise.resolve({ kind: 'success' as const, cover: id === 'one' ? cover : null });
 
     const covers = await client.fetchQuery(
       coversQuery({ readCover }, [bookId('one'), bookId('two')]),
@@ -132,14 +146,9 @@ describe('coversQuery', () => {
     expect(covers).toEqual(new Map([[bookId('one'), cover]]));
   });
 
-  it('resolves no cover for a blocked store or a book the store no longer holds', async () => {
+  it('resolves no cover for a blocked store', async () => {
     const client = createTestQueryClient();
-    const readCover = (id: BookId) =>
-      Promise.resolve(
-        id === 'one'
-          ? err({ kind: 'storage-unavailable' } as const)
-          : err({ kind: 'not-found', id } as const),
-      );
+    const readCover = () => Promise.resolve(STORAGE_UNAVAILABLE);
 
     const covers = await client.fetchQuery(
       coversQuery({ readCover }, [bookId('one'), bookId('two')]),
@@ -151,13 +160,13 @@ describe('coversQuery', () => {
   it('rejects a failed cover read, so no empty cover is cached', async () => {
     const client = createTestQueryClient();
     const cover = new Blob(['cover']);
-    const readCover = (id: BookId) => Promise.resolve(id === 'one' ? ok(cover) : err(DENIED));
+    const readCover = (id: BookId) =>
+      id === 'one' ? Promise.resolve({ kind: 'success' as const, cover }) : Promise.reject(BROKEN);
     const options = coversQuery({ readCover }, [bookId('one'), bookId('two')]);
 
     const fetched = client.fetchQuery(options);
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow('Local storage failed: denied');
+    await expect(fetched).rejects.toBe(BROKEN);
     expect(client.getQueryData(options.queryKey)).toBeUndefined();
   });
 });
@@ -167,17 +176,19 @@ describe('librarySizeQuery', () => {
     const client = createTestQueryClient();
 
     const size = await client.fetchQuery(
-      librarySizeQuery({ readLibrarySize: () => Promise.resolve(ok(2048)) }),
+      librarySizeQuery({
+        readLibrarySize: () => Promise.resolve({ kind: 'success', bytes: 2048 }),
+      }),
     );
 
     expect(size).toBe(2048);
   });
 
-  it('resolves no size when the uploads cannot be measured', async () => {
+  it('resolves no size when the browser blocks the store', async () => {
     const client = createTestQueryClient();
 
     const size = await client.fetchQuery(
-      librarySizeQuery({ readLibrarySize: () => Promise.resolve(err(DENIED)) }),
+      librarySizeQuery({ readLibrarySize: () => Promise.resolve(STORAGE_UNAVAILABLE) }),
     );
 
     expect(size).toBeNull();
@@ -206,19 +217,18 @@ describe('libraryKeys', () => {
 describe('library mutations', () => {
   it('resolves a refused removal as an answer, not a rejection', async () => {
     const client = createTestQueryClient();
-    const refused = err(DENIED);
     const removal = new MutationObserver(
       client,
-      removeBookMutation({ removeBook: () => Promise.resolve(refused) }),
+      removeBookMutation({ removeBook: () => Promise.resolve(STORAGE_UNAVAILABLE) }),
     );
 
-    await expect(removal.mutate(bookId('one'))).resolves.toBe(refused);
+    await expect(removal.mutate(bookId('one'))).resolves.toBe(STORAGE_UNAVAILABLE);
   });
 
   it('resolves the edit answer, a missing book included', async () => {
     const client = createTestQueryClient();
-    const edited = ok(book('one', 1));
-    const missing = err({ kind: 'not-found', id: bookId('gone') } as const);
+    const edited = { kind: 'success', book: book('one', 1) } as const;
+    const missing = { kind: 'not-found', id: bookId('gone') } as const;
     const editing = new MutationObserver(
       client,
       editBookMutation({ editBook: (id) => Promise.resolve(id === 'gone' ? missing : edited) }),
@@ -243,8 +253,8 @@ describe('library mutations', () => {
 
   it('marks through the write the mark names', async () => {
     const client = createTestQueryClient();
-    const finished = ok(book('finished', 1));
-    const unread = ok(book('unread', 1));
+    const finished = { kind: 'success', book: book('finished', 1) } as const;
+    const unread = { kind: 'success', book: book('unread', 1) } as const;
     const marking = new MutationObserver(
       client,
       markBookMutation({
@@ -259,7 +269,7 @@ describe('library mutations', () => {
 
   it('resolves a refused upload as an answer, not a rejection', async () => {
     const client = createTestQueryClient();
-    const refused = err({ kind: 'source', error: { kind: 'empty' } } as const);
+    const refused = { kind: 'source', failure: { kind: 'empty' } } as const;
     const opening = new MutationObserver(
       client,
       openFileMutation({ openFile: () => Promise.resolve(refused) }),

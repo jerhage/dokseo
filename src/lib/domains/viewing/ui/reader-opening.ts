@@ -3,11 +3,9 @@ import type { Container } from '$lib/container';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
-type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
+type ReaderBook = Extract<OpenOutcome, { readonly kind: 'images' }>['book'];
 
-type ReaderBook = Extract<OpenedBook, { readonly kind: 'images' }>['book'];
-
-type FlowBook = Extract<OpenedBook, { readonly kind: 'flow' }>['book'];
+type FlowBook = Extract<OpenOutcome, { readonly kind: 'flow' }>['book'];
 
 type ReaderOpening =
   | { readonly kind: 'idle' }

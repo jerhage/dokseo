@@ -1,6 +1,5 @@
-import type { Result } from '$lib/shared/result';
-import type { EpubInspection, EpubInspectionError } from './epub-inspection';
+import type { EpubInspectionAnswer } from './epub-inspection';
 
-type EpubInspector = (source: Blob) => Promise<Result<EpubInspection, EpubInspectionError>>;
+type EpubInspector = (source: Blob) => Promise<EpubInspectionAnswer>;
 
 export type { EpubInspector };

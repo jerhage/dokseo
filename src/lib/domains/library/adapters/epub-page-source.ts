@@ -1,11 +1,16 @@
+import { match } from 'ts-pattern';
 import { BlobReader, BlobWriter, TextWriter, ZipReader } from '@zip.js/zip.js';
 import type { Entry, FileEntry } from '@zip.js/zip.js';
 import { decodeImage } from '$lib/platform/image/decode';
 import { describeCause } from '$lib/shared/cause';
 import type { ImageIndex } from '$lib/shared/ids';
-import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type {
+  ImageRead,
+  PageSource,
+  PageSourceError,
+  PageSourceOpening,
+  PictureRead,
+} from '$lib/shared/page-source';
 import { CONTAINER_ENTRY, packagePathFromContainer } from '../domain/ingest/epub-container';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { resolveEpubPages } from '../domain/ingest/epub-pages';
@@ -23,7 +28,19 @@ type OpenedEpub =
       readonly cover: Blob | null;
     };
 
+type EpubOpening = OpenedEpub | PageSourceError;
+
 type PackageDocument = { readonly path: string; readonly xml: string };
+
+type PackageRead =
+  | { readonly kind: 'success'; readonly document: PackageDocument }
+  | PageSourceError;
+
+type ImageEntries =
+  | { readonly kind: 'success'; readonly entries: readonly FileEntry[] }
+  | { readonly kind: 'obstacle'; readonly obstacle: PageObstacle };
+
+type FoundEntry = { readonly kind: 'success'; readonly entry: FileEntry } | PageSourceError;
 
 function filesByName(entries: readonly Entry[]): ReadonlyMap<string, FileEntry> {
   const files = new Map<string, FileEntry>();
@@ -47,13 +64,11 @@ async function textOf(entry: FileEntry): Promise<string> {
   return await entry.getData(new TextWriter());
 }
 
-function unreadable(cause: string): Result<never, PageSourceError> {
-  return err({ kind: 'source-unreadable', cause });
+function unreadable(cause: string): PageSourceError {
+  return { kind: 'source-unreadable', cause };
 }
 
-async function packageOf(
-  files: ReadonlyMap<string, FileEntry>,
-): Promise<Result<PackageDocument, PageSourceError>> {
+async function packageOf(files: ReadonlyMap<string, FileEntry>): Promise<PackageRead> {
   const container = fileNamed(files, CONTAINER_ENTRY);
   if (container === null) return unreadable('That file is not an EPUB');
 
@@ -65,7 +80,8 @@ async function packageOf(
     return unreadable(`The EPUB has no package document at ${path}`);
   }
 
-  return ok({ path, xml: await textOf(packageEntry) });
+  const xml = await textOf(packageEntry);
+  return { kind: 'success', document: { path, xml } };
 }
 
 function coverEntries(files: ReadonlyMap<string, FileEntry>): (path: string) => CoverEntry | null {
@@ -90,16 +106,19 @@ function spineDocuments(files: ReadonlyMap<string, FileEntry>): PageDocumentRead
 function imageEntries(
   files: ReadonlyMap<string, FileEntry>,
   images: readonly PageImage[],
-): Result<readonly FileEntry[], PageObstacle> {
+): ImageEntries {
   const entries: FileEntry[] = [];
   for (const page of images) {
     const entry = fileNamed(files, page.image);
     if (entry === null) {
-      return err({ kind: 'image-missing', path: page.page, image: page.image });
+      return {
+        kind: 'obstacle',
+        obstacle: { kind: 'image-missing', path: page.page, image: page.image },
+      };
     }
     entries.push(entry);
   }
-  return ok(entries);
+  return { kind: 'success', entries };
 }
 
 function pageSourceOver(
@@ -116,46 +135,47 @@ function pageSourceOver(
     void reader.close().catch(() => undefined);
   };
 
-  const entryAt = (index: ImageIndex): Result<FileEntry, PageSourceError> => {
-    if (closed) return err({ kind: 'source-unreadable', cause: 'The EPUB is closed' });
+  const entryAt = (index: ImageIndex): FoundEntry => {
+    if (closed) return { kind: 'source-unreadable', cause: 'The EPUB is closed' };
     if (!Number.isInteger(index) || index < 0 || index >= count) {
-      return err({ kind: 'out-of-range', index, count });
+      return { kind: 'out-of-range', index, count };
     }
     const image = images[index];
-    if (image === undefined) return err({ kind: 'out-of-range', index, count });
-    return ok(image);
+    if (image === undefined) return { kind: 'out-of-range', index, count };
+    return { kind: 'success', entry: image };
   };
 
   return {
     count,
 
-    async picture(index: ImageIndex): Promise<Result<PagePicture, PageSourceError>> {
+    async picture(index: ImageIndex): Promise<PictureRead> {
       const found = entryAt(index);
-      if (!found.ok) return found;
+      if (found.kind !== 'success') return found;
       try {
-        const entry = await found.value.getData(new BlobWriter());
+        const entry = await found.entry.getData(new BlobWriter());
         const url = URL.createObjectURL(entry);
-        return ok({ kind: 'encoded', url });
+        return { kind: 'success', picture: { kind: 'encoded', url } };
       } catch (cause) {
-        return err({ kind: 'page-unreadable', index, cause: describeCause(cause) });
+        return { kind: 'page-unreadable', index, cause: describeCause(cause) };
       }
     },
 
-    async image(index: ImageIndex): Promise<Result<ImageBitmap, PageSourceError>> {
+    async image(index: ImageIndex): Promise<ImageRead> {
       const found = entryAt(index);
-      if (!found.ok) return found;
+      if (found.kind !== 'success') return found;
 
       let entry: Blob;
       try {
-        entry = await found.value.getData(new BlobWriter());
+        entry = await found.entry.getData(new BlobWriter());
       } catch (cause) {
-        return err({ kind: 'page-unreadable', index, cause: describeCause(cause) });
+        return { kind: 'page-unreadable', index, cause: describeCause(cause) };
       }
 
       try {
-        return ok(await decodeImage(entry));
+        const bitmap = await decodeImage(entry);
+        return { kind: 'success', image: bitmap };
       } catch (cause) {
-        return err({ kind: 'decode-failed', index, cause: describeCause(cause) });
+        return { kind: 'decode-failed', index, cause: describeCause(cause) };
       }
     },
 
@@ -166,22 +186,19 @@ function pageSourceOver(
   };
 }
 
-async function readEpub(
-  archive: Blob,
-  reader: ZipReader<Blob>,
-): Promise<Result<OpenedEpub, PageSourceError>> {
+async function readEpub(archive: Blob, reader: ZipReader<Blob>): Promise<EpubOpening> {
   const files = filesByName(await reader.getEntries());
 
   const packaged = await packageOf(files);
-  if (!packaged.ok) return packaged;
+  if (packaged.kind !== 'success') return packaged;
+  const { xml, path } = packaged.document;
 
-  const notPaged = async (obstacle: PageObstacle): Promise<Result<OpenedEpub, PageSourceError>> => {
-    const { xml, path } = packaged.value;
+  const notPaged = async (obstacle: PageObstacle): Promise<EpubOpening> => {
     const cover = await epubCoverImage(xml, path, coverEntries(files));
-    return ok({ kind: 'not-paged', obstacle, cover });
+    return { kind: 'not-paged', obstacle, cover };
   };
 
-  const spine = readEpubSpine(packaged.value.xml, packaged.value.path);
+  const spine = readEpubSpine(xml, path);
   const pages = await resolveEpubPages(spine, spineDocuments(files));
   if (pages.kind === 'not-paged') {
     const unpaged = await notPaged(pages.obstacle);
@@ -189,39 +206,45 @@ async function readEpub(
   }
 
   const entries = imageEntries(files, pages.images);
-  if (!entries.ok) {
-    const unpaged = await notPaged(entries.error);
+  if (entries.kind === 'obstacle') {
+    const unpaged = await notPaged(entries.obstacle);
     return unpaged;
   }
 
-  return ok({ kind: 'paged', source: pageSourceOver(archive, reader, entries.value) });
+  return { kind: 'paged', source: pageSourceOver(archive, reader, entries.entries) };
 }
 
-async function openEpubBook(source: Blob): Promise<Result<OpenedEpub, PageSourceError>> {
+async function openEpubBook(source: Blob): Promise<EpubOpening> {
   const reader = new ZipReader(new BlobReader(source));
 
-  let opened: Result<OpenedEpub, PageSourceError>;
+  let opened: EpubOpening;
   try {
     opened = await readEpub(source, reader);
   } catch (cause) {
     await reader.close().catch(() => undefined);
-    return err({ kind: 'source-unreadable', cause: describeCause(cause) });
+    return { kind: 'source-unreadable', cause: describeCause(cause) };
   }
 
-  if (!opened.ok || opened.value.kind === 'not-paged') {
-    await reader.close().catch(() => undefined);
-  }
+  if (opened.kind !== 'paged') await reader.close().catch(() => undefined);
   return opened;
 }
 
-async function openEpubPageSource(source: Blob): Promise<Result<PageSource, PageSourceError>> {
+async function openEpubPageSource(source: Blob): Promise<PageSourceOpening> {
   const opened = await openEpubBook(source);
-  if (!opened.ok) return opened;
-  if (opened.value.kind === 'not-paged') {
-    return unreadable(describePageObstacle(opened.value.obstacle));
-  }
-  return ok(opened.value.source);
+  return match(opened)
+    .returnType<PageSourceOpening>()
+    .with({ kind: 'paged' }, ({ source: pages }) => ({ kind: 'success', pages }))
+    .with({ kind: 'not-paged' }, ({ obstacle }) => unreadable(describePageObstacle(obstacle)))
+    .with(
+      { kind: 'out-of-range' },
+      { kind: 'page-unreadable' },
+      { kind: 'decode-failed' },
+      { kind: 'render-failed' },
+      { kind: 'source-unreadable' },
+      (failure) => failure,
+    )
+    .exhaustive();
 }
 
 export { openEpubBook, openEpubPageSource };
-export type { OpenedEpub };
+export type { EpubOpening, OpenedEpub };

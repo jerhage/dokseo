@@ -1,25 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bookId, imageIndex } from './ids';
 import type { Notice } from './notice';
-import { PLACE_FAILED, PLACE_SAVE_DELAY_MS, PlaceKeeper } from './place-keeper';
-import type { AfterFailure } from './place-keeper';
+import { PLACE_FAILED, PLACE_KEPT, PLACE_SAVE_DELAY_MS, PlaceKeeper } from './place-keeper';
+import type { AfterFailure, PlaceSaved } from './place-keeper';
 import { imagePlace, textPlace } from './reading-place';
 import type { ImagePlace } from './reading-place';
-import { err, ok } from './result';
-import type { Result } from './result';
-
-type Outcome = Result<unknown, string>;
-
 type Bench = {
-  readonly keeper: PlaceKeeper<ImagePlace, string>;
+  readonly keeper: PlaceKeeper<ImagePlace>;
   readonly saved: ImagePlace[];
   readonly settled: ImagePlace[];
   readonly notices: Notice[];
-  answer: () => Promise<Outcome>;
+  answer: () => Promise<PlaceSaved>;
   generation: number;
 };
 
 const BOOK = bookId('one');
+
+const REFUSED: PlaceSaved = { kind: 'refused', message: 'described denied' };
 
 function place(index: number): ImagePlace {
   return imagePlace(imageIndex(index));
@@ -33,14 +30,13 @@ function bench(afterFailure: AfterFailure = 'keeps-place'): Bench {
     saved,
     settled,
     notices,
-    answer: () => Promise.resolve(ok(undefined)),
+    answer: () => Promise.resolve(PLACE_KEPT),
     generation: 0,
-    keeper: new PlaceKeeper<ImagePlace, string>({
+    keeper: new PlaceKeeper<ImagePlace>({
       save: (_id, at) => {
         saved.push(at);
         return held.answer();
       },
-      describe: (error) => `described ${error}`,
       notify: (notice) => notices.push(notice),
       afterFailure,
       generation: () => held.generation,
@@ -104,7 +100,7 @@ describe('PlaceKeeper', () => {
 
   it('reports a run of failures once, and again after a save succeeds', async () => {
     const run = bench();
-    run.answer = () => Promise.resolve(err('denied'));
+    run.answer = () => Promise.resolve(REFUSED);
 
     await run.keeper.persist(BOOK, place(1));
     await run.keeper.persist(BOOK, place(2));
@@ -112,7 +108,7 @@ describe('PlaceKeeper', () => {
       { tone: 'danger', title: PLACE_FAILED, message: 'described denied' },
     ]);
 
-    run.answer = () => Promise.resolve(ok(undefined));
+    run.answer = () => Promise.resolve(PLACE_KEPT);
     await run.keeper.persist(BOOK, place(3));
     run.answer = () => Promise.reject(new Error('gone'));
     await run.keeper.persist(BOOK, place(4));
@@ -123,7 +119,7 @@ describe('PlaceKeeper', () => {
 
   it('reports the failures again after a restart', async () => {
     const run = bench();
-    run.answer = () => Promise.resolve(err('denied'));
+    run.answer = () => Promise.resolve(REFUSED);
     await run.keeper.persist(BOOK, place(1));
 
     run.keeper.restart();
@@ -134,7 +130,7 @@ describe('PlaceKeeper', () => {
 
   it('ignores the answer to a save the owner has moved past', async () => {
     const run = bench();
-    run.answer = () => Promise.resolve(err('denied'));
+    run.answer = () => Promise.resolve(REFUSED);
 
     const saving = run.keeper.persist(BOOK, place(1));
     run.generation += 1;
@@ -145,7 +141,7 @@ describe('PlaceKeeper', () => {
 
   it('keeps a place that failed to save as stored when told to keep it', async () => {
     const run = bench('keeps-place');
-    run.answer = () => Promise.resolve(err('denied'));
+    run.answer = () => Promise.resolve(REFUSED);
     await run.keeper.persist(BOOK, place(5));
 
     run.keeper.schedule(BOOK, place(5));
@@ -156,7 +152,7 @@ describe('PlaceKeeper', () => {
 
   it('forgets a place that failed to save when told to, so the next save of it retries', async () => {
     const run = bench('forgets-place');
-    run.answer = () => Promise.resolve(err('denied'));
+    run.answer = () => Promise.resolve(REFUSED);
     await run.keeper.persist(BOOK, place(5));
 
     run.keeper.schedule(BOOK, place(5));
@@ -170,9 +166,8 @@ describe('PlaceKeeper', () => {
     const keeper = new PlaceKeeper({
       save: (_id, at) => {
         saved.push(at);
-        return Promise.resolve(ok(undefined));
+        return Promise.resolve(PLACE_KEPT);
       },
-      describe: (error: string) => error,
       notify: () => undefined,
       afterFailure: 'forgets-place',
     });

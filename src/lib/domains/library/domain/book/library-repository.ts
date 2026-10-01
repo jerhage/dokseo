@@ -1,31 +1,50 @@
 import type { BookId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from './book';
 import type { PageList, PageOrder } from './page-list';
 import type { SourceWriteReport } from '../ingest/upload-progress';
 
-type LibraryError =
-  | { readonly kind: 'not-found'; readonly id: BookId }
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string };
+type LibraryWrite = { readonly kind: 'success' } | StorageUnavailable;
+
+type BookListing =
+  | { readonly kind: 'success'; readonly books: readonly Book[] }
+  | StorageUnavailable;
+
+type BookLookup = { readonly kind: 'success'; readonly book: Book | null } | StorageUnavailable;
+
+type PageListLookup =
+  | { readonly kind: 'success'; readonly pageList: PageList }
+  | StorageUnavailable;
+
+type FileLookup = { readonly kind: 'success'; readonly file: Blob | null } | StorageUnavailable;
+
+type ByteCount = { readonly kind: 'success'; readonly bytes: number } | StorageUnavailable;
 
 interface LibraryRepository {
-  list(): Promise<Result<readonly Book[], LibraryError>>;
-  get(id: BookId): Promise<Result<Book, LibraryError>>;
+  list(): Promise<BookListing>;
+  get(id: BookId): Promise<BookLookup>;
   add(
     book: Book,
     source: Blob,
     cover: Blob | null,
     order: PageOrder,
     report: SourceWriteReport,
-  ): Promise<Result<void, LibraryError>>;
-  readPageList(id: BookId): Promise<Result<PageList, LibraryError>>;
-  savePageList(id: BookId, names: readonly string[]): Promise<Result<void, LibraryError>>;
-  remove(id: BookId): Promise<Result<void, LibraryError>>;
-  update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>>;
-  readSource(id: BookId): Promise<Result<Blob | null, LibraryError>>;
-  readCover(id: BookId): Promise<Result<Blob | null, LibraryError>>;
-  storedBytes(): Promise<Result<number, LibraryError>>;
+  ): Promise<LibraryWrite>;
+  readPageList(id: BookId): Promise<PageListLookup>;
+  savePageList(id: BookId, names: readonly string[]): Promise<LibraryWrite>;
+  remove(id: BookId): Promise<LibraryWrite>;
+  update(id: BookId, edit: BookEdit): Promise<BookLookup>;
+  readSource(id: BookId): Promise<FileLookup>;
+  readCover(id: BookId): Promise<FileLookup>;
+  storedBytes(): Promise<ByteCount>;
 }
 
-export type { LibraryError, LibraryRepository };
+export type {
+  BookListing,
+  BookLookup,
+  ByteCount,
+  FileLookup,
+  LibraryRepository,
+  LibraryWrite,
+  PageListLookup,
+};
