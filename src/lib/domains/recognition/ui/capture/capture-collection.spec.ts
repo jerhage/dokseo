@@ -242,13 +242,13 @@ describe('CaptureCollection', () => {
     world.store.tags = [namedTag(CROWN, 'crown', 'slate', 1)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
-    await collection.loadTagCounts();
+    await collection.tagging.loadTagCounts();
 
-    await collection.addTag(captureId('one'), CROWN);
+    await collection.tagging.addTag(captureId('one'), CROWN);
 
     expect(collection.list.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
-    expect(collection.libraryCounts.get(CROWN)).toBe(1);
-    expect(collection.bookCounts.get(CROWN)).toBe(1);
+    expect(collection.tagging.libraryCounts.get(CROWN)).toBe(1);
+    expect(collection.tagging.bookCounts.get(CROWN)).toBe(1);
   });
 
   it('empties the list and the store of the open book when it is cleared', async () => {

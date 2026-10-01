@@ -1,22 +1,18 @@
-import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { TextQuote } from '$lib/shared/anchor';
-import { captureId, tagId } from '$lib/shared/ids';
+import { captureId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
-import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
+import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import type { Result } from '$lib/shared/result';
 import type { CaptureDraft } from '../../domain/capture/capture';
-import { tagCounts } from '../../domain/tag/capture-tags';
-import type { Tag } from '../../domain/tag/tag';
 import { recognizedText } from '../../domain/engine/recognized-text';
-import type { CreateTagError } from '../../use-cases/tag/create-tag';
-import { NOT_STORED, describeStorageFailure, refuse, thrownFailure } from './storage-failure';
+import { describeStorageFailure, thrownFailure } from './storage-failure';
 import type { StorageFailure } from './storage-failure';
 import { CaptureList } from './capture-list.svelte';
 import { CaptureEdits } from './capture-edits.svelte';
 import { CaptureRemoval } from './capture-removal.svelte';
+import { CaptureTags } from './capture-tags.svelte';
 import { ClearAll } from './clear-all.svelte';
 import type { Settled } from './panel-capture';
 
@@ -25,53 +21,12 @@ type NoteEditors = {
   readonly close: (capture: CaptureId) => void;
 };
 
-type TagOutcome =
-  | { readonly kind: 'created'; readonly tag: Tag }
-  | { readonly kind: 'existing'; readonly tag: Tag }
-  | { readonly kind: 'failed'; readonly failure: StorageFailure };
-
-function tagOutcome(created: Result<Tag, CreateTagError | StorageFailure>): TagOutcome {
-  if (created.ok) return { kind: 'created', tag: created.value };
-
-  return match(created.error)
-    .with({ kind: 'name-taken' }, (taken) => ({ kind: 'existing', tag: taken.tag }) as const)
-    .with(
-      { kind: 'storage-unavailable' },
-      { kind: 'storage-failed' },
-      { kind: 'not-stored' },
-      (failure) => ({ kind: 'failed', failure }) as const,
-    )
-    .exhaustive();
-}
-
-function withTag(tags: readonly Tag[], tag: Tag): readonly Tag[] {
-  return tags.some((held) => held.id === tag.id) ? tags : [...tags, tag];
-}
-
-function countsAfter(
-  counts: ReadonlyMap<TagId, number>,
-  before: readonly TagId[],
-  after: readonly TagId[],
-): ReadonlyMap<TagId, number> {
-  const moved = new Map(counts);
-
-  for (const tag of before) {
-    if (!after.includes(tag)) moved.set(tag, Math.max((moved.get(tag) ?? 0) - 1, 0));
-  }
-  for (const tag of after) {
-    if (!before.includes(tag)) moved.set(tag, (moved.get(tag) ?? 0) + 1);
-  }
-
-  return moved;
-}
-
 class CaptureCollection {
   readonly list: CaptureList;
   readonly clearAll: ClearAll;
   readonly removal: CaptureRemoval;
   readonly edits: CaptureEdits;
-  tags = $state.raw<readonly Tag[]>([]);
-  libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
+  readonly tagging: CaptureTags;
 
   #container: Container;
   #notify: Notify;
@@ -81,16 +36,11 @@ class CaptureCollection {
     this.#container = container;
     this.#notify = notify;
     this.#editors = editors;
-    this.list = new CaptureList(container, (tags) => {
-      this.tags = tags;
-    });
+    this.list = new CaptureList(container, (tags) => this.tagging.adopt(tags));
     this.clearAll = new ClearAll(container, notify, this.list);
     this.removal = new CaptureRemoval(container, notify, this.list);
     this.edits = new CaptureEdits(container, notify, this.list);
-  }
-
-  get bookCounts(): ReadonlyMap<TagId, number> {
-    return tagCounts(this.list.captures);
+    this.tagging = new CaptureTags(container, notify, this.list);
   }
 
   note(regions: readonly ImageRegion[]): void {
@@ -225,98 +175,6 @@ class CaptureCollection {
     });
   }
 
-  async loadTags(): Promise<void> {
-    const generation = this.list.generation;
-    const named = await this.#container.recognition.listTags().catch(() => null);
-
-    if (generation !== this.list.generation || named === null || !named.ok) return;
-
-    this.tags = named.value;
-  }
-
-  async loadTagCounts(): Promise<void> {
-    const generation = this.list.generation;
-    const everywhere = await this.#container.recognition.listEveryCapture().catch(() => null);
-
-    if (generation !== this.list.generation || everywhere === null || !everywhere.ok) return;
-
-    this.libraryCounts = tagCounts(everywhere.value);
-  }
-
-  async addTag(id: CaptureId, tag: TagId): Promise<void> {
-    const stored = this.list.stored(id);
-    if (stored === undefined) {
-      this.#refuse('The tag could not be added', NOT_STORED);
-      return;
-    }
-
-    const generation = this.list.generation;
-    const written = await this.#container.recognition
-      .addTagToCapture(stored, tag)
-      .catch(thrownFailure);
-
-    if (generation !== this.list.generation) return;
-    if (!written.ok) {
-      this.#refuse('The tag could not be added', written.error);
-      return;
-    }
-
-    this.list.keep(written.value);
-    this.#retag(id, stored.tagIds, written.value.tagIds);
-  }
-
-  async removeTag(id: CaptureId, tag: TagId): Promise<void> {
-    const stored = this.list.stored(id);
-    if (stored === undefined) {
-      this.#refuse('The tag could not be removed', NOT_STORED);
-      return;
-    }
-
-    const generation = this.list.generation;
-    const written = await this.#container.recognition
-      .removeTagFromCapture(stored, tag)
-      .catch(thrownFailure);
-
-    if (generation !== this.list.generation) return;
-    if (!written.ok) {
-      this.#refuse('The tag could not be removed', written.error);
-      return;
-    }
-
-    this.list.keep(written.value);
-    this.#retag(id, stored.tagIds, written.value.tagIds);
-  }
-
-  async createTag(id: CaptureId, name: string): Promise<void> {
-    if (this.list.stored(id) === undefined) {
-      this.#refuse('The tag could not be added', NOT_STORED);
-      return;
-    }
-
-    const generation = this.list.generation;
-    const created = await this.#container.recognition
-      .createTag(tagId(crypto.randomUUID()), name)
-      .catch(thrownFailure);
-
-    if (generation !== this.list.generation) return;
-
-    const outcome = tagOutcome(created);
-    if (outcome.kind === 'failed') {
-      this.#refuse('The tag could not be created', outcome.failure);
-      return;
-    }
-
-    const minted = outcome.tag;
-
-    this.tags = withTag(this.tags, minted);
-    await this.addTag(id, minted.id);
-  }
-
-  #retag(id: CaptureId, before: readonly TagId[], after: readonly TagId[]): void {
-    this.libraryCounts = countsAfter(this.libraryCounts, before, after);
-    this.list.change(id, (capture) => ({ ...capture, tagIds: after }));
-  }
-
   async #keep(generation: number, draft: CaptureDraft): Promise<void> {
     const kept = await this.#container.recognition.saveCapture(draft).catch(thrownFailure);
     if (generation !== this.list.generation) return;
@@ -332,10 +190,6 @@ class CaptureCollection {
     const reason = describeStorageFailure(failure);
     this.list.settle(id, { status: 'failed', message: `Not saved. ${reason}` });
     this.#notify({ tone: 'danger', title, message: reason });
-  }
-
-  #refuse(title: string, failure: StorageFailure): 'failed' {
-    return refuse(this.#notify, title, failure);
   }
 }
 

@@ -113,11 +113,11 @@ class CaptureView {
   }
 
   get tags(): readonly Tag[] {
-    return this.#collection.tags;
+    return this.#collection.tagging.tags;
   }
 
   get libraryCounts(): ReadonlyMap<TagId, number> {
-    return this.#collection.libraryCounts;
+    return this.#collection.tagging.libraryCounts;
   }
 
   get progress(): ModelLoad | null {
@@ -165,7 +165,7 @@ class CaptureView {
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
-    return this.#collection.bookCounts;
+    return this.#collection.tagging.bookCounts;
   }
 
   get anchors(): readonly Anchor[] {
@@ -318,23 +318,23 @@ class CaptureView {
   }
 
   async loadTags(): Promise<void> {
-    await this.#collection.loadTags();
+    await this.#collection.tagging.loadTags();
   }
 
   async loadTagCounts(): Promise<void> {
-    await this.#collection.loadTagCounts();
+    await this.#collection.tagging.loadTagCounts();
   }
 
   async addTag(id: CaptureId, tag: TagId): Promise<void> {
-    await this.#collection.addTag(id, tag);
+    await this.#collection.tagging.addTag(id, tag);
   }
 
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
-    await this.#collection.removeTag(id, tag);
+    await this.#collection.tagging.removeTag(id, tag);
   }
 
   async createTag(id: CaptureId, name: string): Promise<void> {
-    await this.#collection.createTag(id, name);
+    await this.#collection.tagging.createTag(id, name);
   }
 
   askClear(): void {
