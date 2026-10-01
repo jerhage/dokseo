@@ -1,0 +1,165 @@
+import { match } from 'ts-pattern';
+import type { Container } from '$lib/container';
+import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
+import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
+import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
+import {
+  arrivalFrom,
+  passageArrivalFrom,
+  passageFrom,
+} from '$lib/domains/recognition/ui/capture/capture-arrivals';
+import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
+import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
+import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
+import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
+import { bookId } from '$lib/shared/ids';
+import type { BookId, ImageIndex } from '$lib/shared/ids';
+import type { GlowRegion } from '$lib/shared/image-region';
+import type { Language } from '$lib/shared/language';
+import type { Notify } from '$lib/shared/notice';
+import {
+  IMAGE_ARRIVAL_SHOWING,
+  IMAGE_PARAMETER,
+  LIBRARY_AFTER_MISSING_BOOK,
+  arrivalQuery,
+  imageArrivalShows,
+  mirroredPlace,
+  readArrival,
+  readImageIndex,
+  readerNavigation,
+} from '$lib/shared/reader-location';
+import type { ImageArrivalStanding, ReaderRequest, ShownPlace } from '$lib/shared/reader-location';
+
+type ReadAddress = {
+  readonly fileId: () => string | undefined;
+  readonly requested: () => URL;
+  readonly shown: () => URL;
+  readonly replace: (url: URL) => void;
+  readonly leave: (path: string) => void;
+};
+
+class ReadSession {
+  readonly reader: ReaderView;
+  readonly captures: CaptureView;
+  readonly shelf: LibraryBooks;
+  readonly find: CaptureSearchView;
+  readonly flow: FlowView;
+
+  #address: ReadAddress;
+  #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
+  #requested: ReaderRequest | null = null;
+  #id = $derived.by(() => bookId(this.#address.fileId() ?? ''));
+  #asked = $derived.by(() =>
+    readImageIndex(this.#address.requested().searchParams.get(IMAGE_PARAMETER)),
+  );
+  #found = $derived.by(() => readArrival(this.#address.requested().searchParams));
+  #here = $derived.by(() =>
+    arrivalFrom(this.captures.list.read, this.#found, this.reader.direction, comparePassages),
+  );
+  #glow = $derived(arrivalGlow(this.#here));
+  #everyGlow = $derived.by(() => everyOtherGlow(this.captures.list.read, this.#here));
+  #passage = $derived.by(() => passageFrom(this.captures.list.anchors, this.#found));
+  #stepping = $derived(this.#here?.stepping ?? null);
+  #passageHere = $derived.by(() =>
+    passageArrivalFrom(this.captures.list.read, this.#found, comparePassages),
+  );
+  #passageStepping = $derived(this.#passageHere?.stepping ?? null);
+  #finding = $derived(arrivalQuery(this.#found));
+  #arrivalShows = $derived(imageArrivalShows(this.#standing));
+
+  constructor(container: Container, notify: Notify, address: ReadAddress) {
+    this.#address = address;
+    this.reader = new ReaderView(
+      container,
+      notify,
+      (place) => this.mirror(place),
+      (book, known) => this.#warm(book, known),
+    );
+    this.captures = new CaptureView(container, notify);
+    this.shelf = new LibraryBooks(container);
+    this.find = new CaptureSearchView(container, comparePassages);
+    this.flow = new FlowView(container, notify);
+  }
+
+  get id(): BookId {
+    return this.#id;
+  }
+
+  get language(): Language | null {
+    return this.reader.language;
+  }
+
+  get glow(): readonly GlowRegion[] {
+    return this.#glow;
+  }
+
+  get everyGlow(): readonly GlowRegion[] {
+    return this.#everyGlow;
+  }
+
+  get stepping() {
+    return this.#stepping;
+  }
+
+  get passageStepping() {
+    return this.#passageStepping;
+  }
+
+  get finding(): string | null {
+    return this.#finding;
+  }
+
+  get arrivalShows(): boolean {
+    return this.#arrivalShows;
+  }
+
+  mirror(place: ShownPlace): void {
+    const mirrored = mirroredPlace(this.#address.shown(), place, this.#standing);
+    this.#standing = mirrored.standing;
+    if (mirrored.url !== null) this.#address.replace(mirrored.url);
+  }
+
+  arrive(book: BookId): void {
+    const wanted = this.#passage;
+    if (wanted !== null) this.flow.arriveAt(book, wanted);
+  }
+
+  navigate(): void {
+    this.#standing = IMAGE_ARRIVAL_SHOWING;
+    const wanted = { book: this.#id, image: this.#asked };
+    const next = readerNavigation(this.#requested, wanted);
+    this.#requested = wanted;
+    match(next)
+      .with({ kind: 'enter' }, ({ book, image }) => this.#open(book, image))
+      .with({ kind: 'switch' }, ({ book, image }) => {
+        this.close();
+        this.#open(book, image);
+      })
+      .with({ kind: 'go-to-image' }, ({ book, image }) => void this.reader.goToImage(book, image))
+      .with({ kind: 'stay' }, () => undefined)
+      .exhaustive();
+  }
+
+  close(): void {
+    this.reader.dispose();
+    this.captures.close();
+    this.shelf.dispose();
+    this.find.dispose();
+  }
+
+  #warm(book: BookId, known: Language): void {
+    void this.captures.warm(book, known);
+  }
+
+  #open(book: BookId, image: ImageIndex | null): void {
+    void this.reader.open(book, image).then(() => this.#leaveIfMissing());
+    void this.captures.open(book).then(() => this.arrive(book));
+  }
+
+  #leaveIfMissing(): void {
+    if (this.reader.opening.kind === 'missing') this.#address.leave(LIBRARY_AFTER_MISSING_BOOK);
+  }
+}
+
+export { ReadSession };
+export type { ReadAddress };

@@ -1,127 +1,37 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import { match } from 'ts-pattern';
   import { afterNavigate, goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
-  import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
-  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
-  import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
-  import {
-    arrivalFrom,
-    passageArrivalFrom,
-    passageFrom,
-  } from '$lib/domains/recognition/ui/capture/capture-arrivals';
-  import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
-  import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
-  import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
-  import type { SoughtPassage } from '$lib/shared/anchor';
-  import { bookId } from '$lib/shared/ids';
-  import type { BookId, ImageIndex } from '$lib/shared/ids';
-  import type { Language } from '$lib/shared/language';
   import { toastNotify } from '$lib/shared/notice-toast';
-  import {
-    IMAGE_ARRIVAL_SHOWING,
-    IMAGE_PARAMETER,
-    LIBRARY_AFTER_MISSING_BOOK,
-    arrivalQuery,
-    imageArrivalShows,
-    mirroredPlace,
-    readArrival,
-    readImageIndex,
-    readerNavigation,
-  } from '$lib/shared/reader-location';
-  import type {
-    ImageArrivalStanding,
-    ReaderRequest,
-    ShownPlace,
-  } from '$lib/shared/reader-location';
+  import { ReadSession } from './read-session.svelte';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
-  let arrivalStanding = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
 
-  function mirror(place: ShownPlace): void {
-    const mirrored = mirroredPlace(new URL(location.href), place, arrivalStanding);
-    arrivalStanding = mirrored.standing;
-    if (mirrored.url !== null) replaceState(mirrored.url, page.state);
-  }
-
-  function warm(book: BookId, known: Language): void {
-    void captures.warm(book, known);
-  }
-
-  function arrive(book: BookId): void {
-    const wanted = passage;
-    if (wanted !== null) flow.arriveAt(book, wanted);
-  }
-
-  const container = useContainer();
-  const notify = toastNotify(getToaster());
-  const view = new ReaderView(container, notify, mirror, warm);
-  const captures = new CaptureView(container, notify);
-  const shelf = new LibraryBooks(container);
-  const find = new CaptureSearchView(container, comparePassages);
-  const flow = new FlowView(container, notify);
-  const id = $derived(bookId(page.params.fileId ?? ''));
-  const language = $derived(view.language);
-  const opening = $derived(view.opening);
-  const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
-  const found = $derived(readArrival(page.url.searchParams));
-  const here = $derived(arrivalFrom(captures.list.read, found, view.direction, comparePassages));
-  const glow = $derived(arrivalGlow(here));
-  const everyGlow = $derived(everyOtherGlow(captures.list.read, here));
-  const passage = $derived<SoughtPassage | null>(passageFrom(captures.list.anchors, found));
-  const stepping = $derived(here?.stepping ?? null);
-  const passageHere = $derived(passageArrivalFrom(captures.list.read, found, comparePassages));
-  const passageStepping = $derived(passageHere?.stepping ?? null);
-  const finding = $derived(arrivalQuery(found));
-  const arrivalShows = $derived(imageArrivalShows(arrivalStanding));
-
-  let requested: ReaderRequest | null = null;
-
-  function leaveIfMissing(): void {
-    if (view.opening.kind === 'missing')
-      void goto(LIBRARY_AFTER_MISSING_BOOK, { replaceState: true });
-  }
-
-  function openBook(book: BookId, image: ImageIndex | null): void {
-    void view.open(book, image).then(leaveIfMissing);
-    void captures.open(book).then(() => arrive(book));
-  }
-
-  function closeBook(): void {
-    view.dispose();
-    captures.close();
-    shelf.dispose();
-    find.dispose();
-  }
-
-  afterNavigate(() => {
-    arrivalStanding = IMAGE_ARRIVAL_SHOWING;
-    const wanted = { book: id, image: asked };
-    const next = readerNavigation(requested, wanted);
-    requested = wanted;
-    match(next)
-      .with({ kind: 'enter' }, ({ book, image }) => openBook(book, image))
-      .with({ kind: 'switch' }, ({ book, image }) => {
-        closeBook();
-        openBook(book, image);
-      })
-      .with({ kind: 'go-to-image' }, ({ book, image }) => void view.goToImage(book, image))
-      .with({ kind: 'stay' }, () => undefined)
-      .exhaustive();
+  const session = new ReadSession(useContainer(), toastNotify(getToaster()), {
+    fileId: () => page.params.fileId,
+    requested: () => page.url,
+    shown: () => new URL(location.href),
+    replace: (url) => replaceState(url, page.state),
+    leave: (path) => void goto(path, { replaceState: true }),
   });
+  const { reader, captures, shelf, find, flow } = session;
+  const id = $derived(session.id);
+  const language = $derived(session.language);
+  const opening = $derived(reader.opening);
 
-  onDestroy(closeBook);
+  afterNavigate(() => session.navigate());
+
+  onDestroy(() => session.close());
 </script>
 
 {#if opening.kind === 'flow'}
@@ -132,17 +42,17 @@
     anchors={captures.list.anchors}
     onLift={(passage) => captures.recording.lift(passage.cfi, passage.quote, passage.chapter)}
     onsearch={() => search?.searchThisBook()}
-    saving={view.saving}
-    onlanguage={(chosen) => void view.setLanguage(chosen)}
+    saving={reader.saving}
+    onlanguage={(chosen) => void reader.setLanguage(chosen)}
   >
     {#snippet arrival()}
-      {#if passageStepping !== null && finding !== null && flow.arrivalHolds}
+      {#if session.passageStepping !== null && session.finding !== null && flow.arrivalHolds}
         <ArrivalBar
           book={id}
-          query={finding}
+          query={session.finding}
           {language}
-          stepping={passageStepping}
-          onfollowed={() => arrive(id)}
+          stepping={session.passageStepping}
+          onfollowed={() => session.arrive(id)}
         />
       {/if}
     {/snippet}
@@ -160,17 +70,17 @@
   </FlowViewer>
 {:else}
   <ReaderScreen
-    {view}
-    {glow}
-    {everyGlow}
+    view={reader}
+    glow={session.glow}
+    everyGlow={session.everyGlow}
     panelCount={captures.list.count}
-    onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
+    onSelect={(regions, laidOut) => captures.capture(reader.source, language, regions, laidOut)}
     onNote={(regions) => captures.recording.note(regions)}
     onsearch={() => search?.searchThisBook()}
   >
     {#snippet arrival()}
-      {#if stepping !== null && finding !== null && arrivalShows}
-        <ArrivalBar book={id} query={finding} {language} {stepping} />
+      {#if session.stepping !== null && session.finding !== null && session.arrivalShows}
+        <ArrivalBar book={id} query={session.finding} {language} stepping={session.stepping} />
       {/if}
     {/snippet}
     {#snippet engine()}
@@ -180,7 +90,7 @@
       <CapturePanel
         view={captures}
         {language}
-        direction={view.direction}
+        direction={reader.direction}
         passages={comparePassages}
         source="images"
         {visible}
@@ -206,5 +116,5 @@
   covers={shelf.covers}
   counts={shelf.imageCounts}
   onopen={() => void shelf.load()}
-  onfollowedInBook={() => arrive(id)}
+  onfollowedInBook={() => session.arrive(id)}
 />
