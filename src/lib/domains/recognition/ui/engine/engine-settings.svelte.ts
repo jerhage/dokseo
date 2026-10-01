@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
@@ -12,10 +13,13 @@ import type { ModelLoad } from '../../domain/model/model-load';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type { SetupError } from '../../domain/engine/recognizer-setup';
 import type { EngineState } from '../../domain/engine/ocr-engine';
-import { EngineSetup, shownModel } from './engine-setup.svelte';
+import type { LanguageSetup } from '../../queries/engine-queries';
+import { recognitionKeys } from '../../queries/recognition-keys';
+import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import { engineLanguages, shownModel } from './engine-setup.svelte';
 import { ModelDownload } from './model-download.svelte';
 import { ModelRemoval } from './model-removal.svelte';
-import { ModelStorage } from './model-storage.svelte';
+import { isModelStored, isResumable } from './model-storage.svelte';
 import { OperationClock } from './operation-clock';
 
 const FULL_PERCENT = 100;
@@ -75,134 +79,113 @@ function storedFigure(report: ModelStorageReport): string {
 }
 
 class EngineSettingsView {
-  readonly setup: EngineSetup;
-  readonly storage: ModelStorage;
   readonly download: ModelDownload;
   readonly removal: ModelRemoval;
+  language = $state.raw<Language | null>(engineLanguages()[0] ?? null);
 
   #container: Container;
   #notify: Notify;
+  #client: QueryClient;
   #clock = new OperationClock();
 
-  constructor(container: Container, notify: Notify) {
+  constructor(container: Container, notify: Notify, client: QueryClient) {
     this.#container = container;
     this.#notify = notify;
-    this.setup = new EngineSetup(container, () => this.#clock.current);
-    this.storage = new ModelStorage(container, this.#clock);
+    this.#client = client;
     this.download = new ModelDownload(container, notify, this.#clock);
     this.removal = new ModelRemoval(container, notify, this.#clock, {
-      stored: () => this.storage.stored,
       settled: () => this.download.reset(),
     });
   }
 
-  get language(): Language | null {
-    return this.setup.choice?.language ?? null;
-  }
-
-  get model(): ModelFootprint | null {
-    return this.setup.model;
-  }
-
-  get engine(): EngineState {
+  engine(storage: ModelStorageSnapshot | null): EngineState {
     const download = this.download.state;
     return {
-      stored: this.storage.stored,
+      stored: isModelStored(storage),
       opening: download.kind === 'loading',
       load: download.kind === 'loading' ? download.load : null,
       session: download.kind === 'ready' ? download.session : this.download.session,
       failure: download.kind === 'failed' ? download.cause : null,
       paused: download.kind === 'paused',
       cancelled: download.kind === 'cancelled',
-      partlyDownloaded: this.storage.resumable,
+      partlyDownloaded: isResumable(storage),
     };
   }
 
-  async load(): Promise<void> {
-    const generation = this.#clock.next();
-    await this.setup.load(generation);
-    await this.storage.measure(this.model, generation);
-  }
+  chooseLanguage(language: Language): void {
+    if (this.language === language) return;
 
-  async chooseLanguage(language: Language): Promise<void> {
-    if (this.setup.language === language) return;
-
-    this.setup.language = language;
+    this.language = language;
+    this.#clock.next();
     this.download.reset();
-    this.storage.forget();
     this.removal.forget();
-
-    await this.load();
   }
 
   dispose(): void {
     this.#clock.next();
   }
 
-  async chooseModel(modelId: string): Promise<void> {
-    const choice = this.setup.choice;
-    if (choice === null || choice.selected === modelId) return;
+  async chooseModel(choice: LanguageSetup, modelId: string): Promise<void> {
+    if (choice.selected === modelId) return;
 
     const abandoned = shownModel(choice);
-    this.setup.select(modelId);
-    await this.#applySetup(abandoned.modelId);
+    await this.#applySetup({ ...choice, selected: modelId }, abandoned.modelId);
   }
 
-  async chooseCompute(compute: ComputeChoice): Promise<void> {
-    if (this.setup.choice?.compute === compute) return;
+  async chooseCompute(choice: LanguageSetup, compute: ComputeChoice): Promise<void> {
+    if (choice.compute === compute) return;
 
-    this.setup.setCompute(compute);
-    await this.#applySetup(null);
+    await this.#applySetup({ ...choice, compute }, null);
   }
 
-  async start(): Promise<void> {
-    const language = this.language;
-    if (language === null || this.download.loading) return;
+  async start(choice: LanguageSetup): Promise<void> {
+    if (this.download.loading) return;
 
     const generation = this.#clock.next();
     this.removal.clearMessage();
-    const settled = await this.download.start(language, generation);
-    if (settled) await this.storage.measure(this.model, generation);
+    await this.download.start(choice.language, generation);
+    await this.#refreshStorage(shownModel(choice), generation);
   }
 
-  async pause(): Promise<void> {
-    const language = this.language;
-    if (language === null || !this.download.loading) return;
+  async pause(choice: LanguageSetup): Promise<void> {
+    if (!this.download.loading) return;
 
     const generation = this.#clock.next();
-    await this.download.pause(language);
-    await this.storage.measure(this.model, generation);
+    await this.download.pause(choice.language);
+    await this.#refreshStorage(shownModel(choice), generation);
   }
 
-  async stop(): Promise<void> {
-    const language = this.language;
-    const model = this.model;
-    if (language === null || model === null) return;
-
+  async stop(choice: LanguageSetup): Promise<void> {
+    const model = shownModel(choice);
     const generation = this.#clock.next();
-    await this.download.stop(language, model.modelId);
-    await this.storage.measure(model, generation);
+    await this.download.stop(choice.language, model.modelId);
+    await this.#refreshStorage(model, generation);
   }
 
-  async remove(): Promise<void> {
-    const language = this.language;
-    const model = this.model;
+  async remove(choice: LanguageSetup): Promise<void> {
     this.removal.dismiss();
-    if (language === null || model === null || this.removal.removing) return;
+    if (this.removal.removing) return;
 
+    const model = shownModel(choice);
     const generation = this.#clock.next();
-    await this.removal.remove(language, model.modelId, generation);
-    await this.storage.measure(model, generation);
+    await this.removal.remove(choice.language, model.modelId, generation);
+    await this.#refreshStorage(model, generation);
   }
 
-  async #applySetup(abandoned: string | null): Promise<void> {
-    const choice = this.setup.choice;
-    if (choice === null) return;
-
+  async #applySetup(choice: LanguageSetup, abandoned: string | null): Promise<void> {
     const language = choice.language;
     const model = shownModel(choice);
     const generation = this.#clock.next();
     this.download.reset();
+
+    const setupKey = recognitionKeys.setup(language);
+    await this.#client.cancelQueries({ queryKey: setupKey });
+    this.#client.setQueryData<LanguageSetup>(setupKey, {
+      language,
+      models: choice.models,
+      selected: choice.selected,
+      compute: choice.compute,
+    });
 
     const saved = await this.#container.recognition.saveRecognizerSetup(language, {
       modelId: model.modelId,
@@ -217,8 +200,12 @@ class EngineSettingsView {
 
     await this.#container.recognition.closeRecognizer(language);
 
+    await this.#refreshStorage(model, generation);
+  }
+
+  async #refreshStorage(model: ModelFootprint, generation: number): Promise<void> {
     if (generation !== this.#clock.current) return;
-    await this.storage.measure(model, generation);
+    await this.#client.invalidateQueries({ queryKey: recognitionKeys.modelStorage(model.modelId) });
   }
 }
 

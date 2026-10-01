@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useQueryClient } from '@tanstack/svelte-query';
   import { onMount } from 'svelte';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
@@ -8,17 +9,19 @@
   import SettingsShell from './SettingsShell.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
 
-  const view = new EngineSettingsView(useContainer(), toastNotify(getToaster()));
+  const container = useContainer();
+  const view = new EngineSettingsView(container, toastNotify(getToaster()), useQueryClient());
 
-  onMount(() => {
-    void view.load();
-    return () => view.dispose();
-  });
+  onMount(() => () => view.dispose());
 </script>
 
 <SettingsShell current="engine" flush>
   {#snippet aside()}
-    <EngineAside {view} />
+    <EngineAside recognition={container.recognition} {view} />
   {/snippet}
-  <EngineSettingsScreen {view} storageHref="/settings/storage" />
+  <EngineSettingsScreen
+    recognition={container.recognition}
+    {view}
+    storageHref="/settings/storage"
+  />
 </SettingsShell>

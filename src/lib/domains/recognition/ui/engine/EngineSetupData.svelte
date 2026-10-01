@@ -4,17 +4,31 @@
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
-  import type { ReadState } from '$lib/shared/read-state';
+  import type { Language } from '$lib/shared/language';
+  import { readQuery } from '$lib/shared/read-query.svelte';
+  import { readBoth } from '$lib/shared/read-state';
   import { unreachable } from '$lib/shared/unreachable';
+  import { computeQuery, recognizerSetupQuery } from '../../queries/engine-queries';
+  import type { EngineReads } from '../../queries/engine-queries';
+  import { engineChoiceOf } from './engine-setup.svelte';
   import type { EngineChoice } from './engine-setup.svelte';
 
   type Props = {
-    readonly state: ReadState<EngineChoice>;
-    readonly onretry: () => void;
+    readonly recognition: EngineReads;
+    readonly language: Language | null;
     readonly children: Snippet<[EngineChoice]>;
   };
 
-  let { state, onretry, children }: Props = $props();
+  let { recognition, language, children }: Props = $props();
+
+  const setup = readQuery(() => recognizerSetupQuery(recognition, language));
+  const compute = readQuery(() => computeQuery(recognition));
+  const state = $derived(readBoth(setup.state, compute.state, engineChoiceOf));
+
+  function retry(): void {
+    setup.reload();
+    compute.reload();
+  }
 </script>
 
 {#if state.kind === 'loading'}
@@ -28,7 +42,7 @@
   <Alert variant="danger" title="Engine settings could not be read">
     {state.message}
     {#snippet actions()}
-      <Button size="sm" onclick={onretry}>Try again</Button>
+      <Button size="sm" onclick={retry}>Try again</Button>
     {/snippet}
   </Alert>
 {:else if state.kind === 'ready'}

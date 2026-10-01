@@ -5,6 +5,7 @@ import type { Container } from '$lib/container';
 import { TOASTER } from '$lib/components/toast-context';
 import { createToaster } from '$lib/components/toaster.svelte';
 import type { Language } from '$lib/shared/language';
+import WithQueryClient from '$lib/shared/testing/WithQueryClient.svelte';
 import SettingsPage from './+page.svelte';
 
 const calls = vi.hoisted(() => ({ setups: [] as string[], probes: 0 }));
@@ -38,7 +39,10 @@ afterEach(() => {
 });
 
 async function mounted(): Promise<void> {
-  await render(SettingsPage, { context: new Map([[TOASTER, createToaster()]]) });
+  await render(WithQueryClient, {
+    props: { screen: SettingsPage },
+    context: new Map([[TOASTER, createToaster()]]),
+  });
   await expect.poll(() => calls.probes).toBeGreaterThan(0);
   await new Promise((settle) => setTimeout(settle, 50));
 }
@@ -49,14 +53,14 @@ test('reads the recognizer setup and probes the compute once when the route moun
   expect({ setups: calls.setups, probes: calls.probes }).toEqual({ setups: ['ja'], probes: 1 });
 });
 
-test('reads the setup of a chosen language and probes the compute once', async () => {
+test('reads the setup of a chosen language once and keeps the compute it probed', async () => {
   await mounted();
   calls.setups = [];
   calls.probes = 0;
 
   await page.getByRole('button', { name: 'Korean' }).click();
-  await expect.poll(() => calls.probes).toBeGreaterThan(0);
+  await expect.poll(() => calls.setups.length).toBeGreaterThan(0);
   await new Promise((settle) => setTimeout(settle, 50));
 
-  expect({ setups: calls.setups, probes: calls.probes }).toEqual({ setups: ['ko'], probes: 1 });
+  expect({ setups: calls.setups, probes: calls.probes }).toEqual({ setups: ['ko'], probes: 0 });
 });

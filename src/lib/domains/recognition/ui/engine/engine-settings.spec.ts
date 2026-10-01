@@ -1,19 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import type { QueryClient } from '@tanstack/svelte-query';
+import { describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import type { Language } from '$lib/shared/language';
 import type { Notice } from '$lib/shared/notice';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
 import type { PartialReport } from '../../domain/model/model-partial';
 import { JAPANESE_OCR_MODEL, modelsFor } from '../../domain/model/model-footprint';
 import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
-import { setupChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import type { ModelStorageError } from '../../domain/model/model-storage';
-import type { RecognizerChoice, SetupError } from '../../domain/engine/recognizer-setup';
+import type { SetupError } from '../../domain/engine/recognizer-setup';
+import { offeredModels } from '../../queries/engine-queries';
+import type { LanguageSetup, OfferedModels } from '../../queries/engine-queries';
+import { recognitionKeys } from '../../queries/recognition-keys';
 import { at } from '$lib/shared/testing/at';
 import {
   cancelHint,
@@ -26,14 +30,23 @@ import {
 } from './engine-settings.svelte';
 import { LOAD_FAILED } from './model-download.svelte';
 import { REMOVAL_WARNING, REMOVE_FAILED } from './model-removal.svelte';
-import { storageFailureNote } from './model-storage.svelte';
 import { engineLanguages } from './engine-setup.svelte';
+import type { EngineChoice } from './engine-setup.svelte';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
 const MODEL = JAPANESE_OCR_MODEL.modelId;
 
 const OPENED: RecognizerSession = { modelId: MODEL, device: 'webgpu', fellBackFrom: null };
+
+const SECOND = at(modelsFor('ja'), 1).modelId;
+
+const CHOICE: LanguageSetup = {
+  language: 'ja',
+  models: offeredModels('ja') as OfferedModels,
+  selected: null,
+  compute: 'auto',
+};
 
 function report(over: Partial<ModelStorageReport> = {}): ModelStorageReport {
   return {
@@ -53,20 +66,19 @@ type Attempt = {
 
 type World = {
   view: EngineSettingsView;
+  readonly client: QueryClient;
   readonly attempts: Attempt[];
   readonly pauses: Language[];
   readonly cancels: string[];
   readonly grants: Language[];
   readonly closes: Language[];
   readonly notices: Notice[];
-  snapshot: ModelStorageSnapshot;
-  saving: Result<void, SetupError>;
-  reading: Result<RecognizerChoice, SetupError>;
-  readonly measured: string[];
   readonly saved: string[];
+  saving: Result<void, SetupError>;
   deletes: number;
   saveGate: Promise<void> | null;
   deleting: Result<ModelStorageReport, ModelStorageError>;
+  refreshed(): unknown[];
 };
 
 function snapshotOf(
@@ -90,105 +102,75 @@ function snapshotOf(
   };
 }
 
-function unused(): never {
-  throw new Error('The engine settings screen does not use this');
-}
-
-function world(snapshot: ModelStorageSnapshot): World {
-  const attempts: Attempt[] = [];
-  const pauses: Language[] = [];
-  const cancels: string[] = [];
-  const grants: Language[] = [];
-  const closes: Language[] = [];
-  const notices: Notice[] = [];
+function world(): World {
+  const client = createTestQueryClient();
+  const invalidations = vi.spyOn(client, 'invalidateQueries');
 
   const built: World = {
     view: undefined as unknown as EngineSettingsView,
-    attempts,
-    pauses,
-    cancels,
-    grants,
-    closes,
-    notices,
-    snapshot,
-    saving: ok(undefined),
-    reading: ok(setupChoice('ja', null)),
-    measured: [],
-    saved: [],
+    client,
+    attempts: [] as Attempt[],
+    pauses: [] as Language[],
+    cancels: [] as string[],
+    grants: [] as Language[],
+    closes: [] as Language[],
+    notices: [] as Notice[],
+    saved: [] as string[],
+    saving: ok(undefined) as Result<void, SetupError>,
     deletes: 0,
-    saveGate: null,
-    deleting: ok(report({ files: 7, bytes: 120_000_000 })),
+    saveGate: null as Promise<void> | null,
+    deleting: ok(report({ files: 7, bytes: 120_000_000 })) as Result<
+      ModelStorageReport,
+      ModelStorageError
+    >,
+    refreshed: () => invalidations.mock.calls.map(([filters]) => filters?.queryKey),
   };
 
   const container = {
-    beginTrace: unused,
-    library: {
-      openFile: unused,
-      openForReading: unused,
-      listBooks: unused,
-      readCover: unused,
-      readSource: unused,
-      removeBook: unused,
-      editBook: unused,
-      saveReadingPlace: unused,
-      markFinished: unused,
-      markUnread: unused,
-      readLibrarySize: unused,
-    },
     recognition: {
-      readModelConsent: unused,
       grantModelConsent: (language: Language) => {
-        grants.push(language);
+        built.grants.push(language);
         return Promise.resolve(ok(undefined));
-      },
-      recognizeRegion: unused,
-      listCaptures: unused,
-      listEveryCapture: unused,
-      saveCapture: unused,
-      editCaptureText: unused,
-      removeCapture: unused,
-      restoreCapture: unused,
-      clearCaptures: unused,
-      readModelStorage: (modelId: string) => {
-        built.measured.push(modelId);
-        return Promise.resolve(ok(built.snapshot));
       },
       deleteModel: () => {
         built.deletes += 1;
         return Promise.resolve(built.deleting);
       },
-      readRecognizerSetup: (language: Language) =>
-        Promise.resolve(built.reading.ok ? ok(setupChoice(language, null)) : built.reading),
       saveRecognizerSetup: (_language: Language, setup: { readonly modelId: string }) => {
         built.saved.push(setup.modelId);
         const gate = built.saveGate ?? Promise.resolve();
         return gate.then(() => built.saving);
       },
-      detectCompute: () => Promise.resolve(GPU_UNDETECTED),
       prepareRecognizer: () =>
         new Promise<Result<RecognizerSession, ModelLoadError>>((resolve) => {
-          attempts.push({ settle: resolve });
+          built.attempts.push({ settle: resolve });
         }),
       pauseModelLoad: (language: Language) => {
-        pauses.push(language);
+        built.pauses.push(language);
         return Promise.resolve();
       },
       cancelModelLoad: (_language: Language, modelId: string) => {
-        cancels.push(modelId);
+        built.cancels.push(modelId);
         return Promise.resolve(null);
       },
       closeRecognizer: (language: Language) => {
-        closes.push(language);
+        built.closes.push(language);
         return Promise.resolve();
       },
     },
   } as unknown as Container;
 
-  built.view = new EngineSettingsView(container, (notice) => {
-    notices.push(notice);
-  });
+  built.view = new EngineSettingsView(
+    container,
+    (notice) => {
+      built.notices.push(notice);
+    },
+    client,
+  );
   return built;
 }
+
+const STORAGE_KEY = recognitionKeys.modelStorage(MODEL);
 
 async function settled(): Promise<void> {
   for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
@@ -308,125 +290,235 @@ describe('storedFigure', () => {
 });
 
 describe('EngineSettingsView', () => {
-  it('starts no second download while one runs', async () => {
-    const built = world(snapshotOf([], 0, 0));
-    await built.view.load();
+  it('asks first for the first language a model reads', () => {
+    expect(world().view.language).toBe(engineLanguages()[0]);
+  });
 
-    void built.view.start();
+  it('starts no second download while one runs', async () => {
+    const built = world();
+
+    void built.view.start(CHOICE);
     await settled();
-    void built.view.start();
+    void built.view.start(CHOICE);
     await settled();
 
     expect(built.attempts.length).toBe(1);
   });
 
   it('clears what a deletion said when a download starts', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
-    await built.view.remove();
+    const built = world();
+    await built.view.remove(CHOICE);
 
-    void built.view.start();
+    void built.view.start(CHOICE);
 
     expect(built.view.removal.message).toBeNull();
   });
 
-  it('measures nothing more for a download answered after it was paused', async () => {
-    const built = world(snapshotOf([], 50_000_000, 5));
-    await built.view.load();
-    const starting = built.view.start();
+  it('refreshes the storage of the shown model once a download settles', async () => {
+    const built = world();
+    const starting = built.view.start(CHOICE);
     await settled();
-    await built.view.pause();
-    const before = built.measured.length;
 
     at(built.attempts, 0).settle(ok(OPENED));
     await starting;
 
-    expect(built.measured.length).toBe(before);
+    expect(built.refreshed()).toEqual([STORAGE_KEY]);
+  });
+
+  it('refreshes nothing more for a download answered after it was paused', async () => {
+    const built = world();
+    const starting = built.view.start(CHOICE);
+    await settled();
+    await built.view.pause(CHOICE);
+    const before = built.refreshed().length;
+
+    at(built.attempts, 0).settle(ok(OPENED));
+    await starting;
+
+    expect(before).toBe(1);
+    expect(built.refreshed().length).toBe(before);
   });
 
   it('pauses nothing while no download runs', async () => {
-    const built = world(snapshotOf([], 0, 0));
-    await built.view.load();
+    const built = world();
 
-    await built.view.pause();
+    await built.view.pause(CHOICE);
 
     expect(built.pauses).toEqual([]);
+    expect(built.refreshed()).toEqual([]);
   });
 
-  it('forgets the download, the measure and the deletion note of the language it leaves', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+  it('forgets the download and the deletion note of the language it leaves', () => {
+    const built = world();
     built.view.download.session = OPENED;
     built.view.removal.message = 'Freed 1 MB.';
-    built.view.removal.ask();
+    built.view.removal.ask(true);
 
-    const choosing = built.view.chooseLanguage('ko');
-    const during = {
+    built.view.chooseLanguage('ko');
+
+    expect({
+      language: built.view.language,
       session: built.view.download.session,
-      snapshot: built.view.storage.snapshot,
       message: built.view.removal.message,
       confirming: built.view.removal.confirming,
-    };
-    await choosing;
+    }).toEqual({ language: 'ko', session: null, message: null, confirming: false });
+  });
 
-    expect(during).toEqual({ session: null, snapshot: null, message: null, confirming: false });
+  it('forgets nothing when the shown language is chosen', () => {
+    const built = world();
+    built.view.download.session = OPENED;
+    built.view.removal.message = 'Freed 1 MB.';
+
+    built.view.chooseLanguage('ja');
+
+    expect(built.view.download.session).toBe(OPENED);
+    expect(built.view.removal.message).toBe('Freed 1 MB.');
+  });
+
+  it('drops a download answered after the language changed', async () => {
+    const built = world();
+    const starting = built.view.start(CHOICE);
+    await settled();
+
+    built.view.chooseLanguage('ko');
+    at(built.attempts, 0).settle(ok(OPENED));
+    await starting;
+
+    expect(built.view.download.session).toBeNull();
+    expect(built.refreshed()).toEqual([]);
   });
 
   it('drops the open session when the compute choice changes', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+    const built = world();
     built.view.download.session = OPENED;
 
-    await built.view.chooseCompute('gpu');
+    await built.view.chooseCompute(CHOICE, 'gpu');
 
     expect(built.view.download.session).toBeNull();
   });
 
-  it('reports nothing and measures nothing for a choice answered after the screen closed', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+  it('records the chosen model in the cached setup before the save answers', async () => {
+    const built = world();
+    built.client.setQueryData(recognitionKeys.setup('ja'), CHOICE);
+    let open: () => void = () => undefined;
+    built.saveGate = new Promise<void>((resolve) => {
+      open = resolve;
+    });
+
+    const choosing = built.view.chooseModel(CHOICE, SECOND);
+    await settled();
+    const during = built.client.getQueryData(recognitionKeys.setup('ja'));
+    open();
+    await choosing;
+
+    expect(during).toEqual({ ...CHOICE, selected: SECOND });
+    expect(built.saved).toEqual([SECOND]);
+  });
+
+  it('records the chosen compute in the cached setup, and nothing beyond the setup', async () => {
+    const built = world();
+
+    const shown: EngineChoice = { ...CHOICE, detection: GPU_UNDETECTED };
+
+    await built.view.chooseCompute(shown, 'cpu');
+
+    expect(built.client.getQueryData(recognitionKeys.setup('ja'))).toEqual({
+      ...CHOICE,
+      compute: 'cpu',
+    });
+  });
+
+  it('keeps the chosen model when a setup read in flight answers afterwards', async () => {
+    const built = world();
+    built.client.setQueryData(recognitionKeys.setup('ja'), CHOICE);
+    let answer: (setup: LanguageSetup) => void = () => undefined;
+    void built.client
+      .fetchQuery({
+        queryKey: recognitionKeys.setup('ja'),
+        queryFn: () =>
+          new Promise<LanguageSetup>((resolve) => {
+            answer = resolve;
+          }),
+        staleTime: 0,
+      })
+      .catch(() => undefined);
+
+    await built.view.chooseModel(CHOICE, SECOND);
+    answer(CHOICE);
+    await settled();
+
+    expect(built.client.getQueryData(recognitionKeys.setup('ja'))).toEqual({
+      ...CHOICE,
+      selected: SECOND,
+    });
+  });
+
+  it('refreshes the storage of the newly chosen model after a setup change', async () => {
+    const built = world();
+
+    await built.view.chooseModel(CHOICE, SECOND);
+
+    expect(built.refreshed()).toEqual([recognitionKeys.modelStorage(SECOND)]);
+  });
+
+  it('marks the cached storage for a fresh read once it refreshes', async () => {
+    const built = world();
+    built.client.setQueryData(STORAGE_KEY, snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+
+    await built.view.chooseCompute(CHOICE, 'gpu');
+
+    expect(built.client.getQueryState(STORAGE_KEY)?.isInvalidated).toBe(true);
+  });
+
+  it('reports nothing and refreshes nothing for a choice answered after the screen closed', async () => {
+    const built = world();
     let open: () => void = () => undefined;
     built.saveGate = new Promise<void>((resolve) => {
       open = resolve;
     });
     built.saving = err({ kind: 'storage-unavailable' });
-    const before = built.measured.length;
 
-    const choosing = built.view.chooseCompute('gpu');
+    const choosing = built.view.chooseCompute(CHOICE, 'gpu');
+    await settled();
     built.view.dispose();
     open();
     await choosing;
 
     expect(built.notices).toEqual([]);
-    expect(built.measured.length).toBe(before);
+    expect(built.refreshed()).toEqual([]);
   });
 
   it('deletes once when asked twice at once', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+    const built = world();
 
-    await Promise.all([built.view.remove(), built.view.remove()]);
+    await Promise.all([built.view.remove(CHOICE), built.view.remove(CHOICE)]);
 
     expect(built.deletes).toBe(1);
     expect(built.view.removal.message).toBe(`Freed 120 MB. ${REMOVAL_WARNING}`);
   });
 
-  it('closes the confirmation and measures again once a deletion is asked', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
-    built.view.removal.ask();
-    const before = built.measured.length;
+  it('closes the confirmation and refreshes the storage once a deletion is asked', async () => {
+    const built = world();
+    built.view.removal.ask(true);
 
-    await built.view.remove();
+    await built.view.remove(CHOICE);
 
     expect(built.view.removal.confirming).toBe(false);
-    expect(built.measured.length).toBe(before + 1);
+    expect(built.refreshed()).toEqual([STORAGE_KEY]);
+  });
+
+  it('refreshes the storage after a stop', async () => {
+    const built = world();
+
+    await built.view.stop(CHOICE);
+
+    expect(built.cancels).toEqual([MODEL]);
+    expect(built.refreshed()).toEqual([STORAGE_KEY]);
   });
 
   it('ignores a download answered after the screen closed', async () => {
-    const built = world(snapshotOf([], 0, 0));
-    await built.view.load();
-    const starting = built.view.start();
+    const built = world();
+    const starting = built.view.start(CHOICE);
     await settled();
 
     built.view.dispose();
@@ -436,65 +528,37 @@ describe('EngineSettingsView', () => {
     expect(built.view.download.session).toBeNull();
   });
 
-  it('measures nothing and shows no model when the setup cannot be read', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    built.reading = err({ kind: 'storage-unavailable' });
-
-    await built.view.load();
-
-    expect(built.view.setup.state.kind).toBe('failed');
-    expect(built.view.model).toBeNull();
-    expect(built.measured).toEqual([]);
-  });
-
-  it('measures the shown model once the setup is read', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-
-    await built.view.load();
-
-    expect(built.measured).toEqual([MODEL]);
-    expect(built.view.storage.stored).toBe(true);
-  });
-
-  it('reads the setup of a new language, which shows as a read meanwhile', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
-
-    const choosing = built.view.chooseLanguage('ko');
-    const during = built.view.setup.state.kind;
-    await choosing;
-
-    expect(during).toBe('loading');
-    expect(built.view.language).toBe('ko');
-    expect(built.view.storage.snapshot).toEqual(built.snapshot);
-  });
-
   it('saves nothing when the selected model is chosen again', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+    const built = world();
 
-    const second = at(modelsFor('ja'), 1).modelId;
+    await built.view.chooseModel(CHOICE, SECOND);
+    await built.view.chooseModel({ ...CHOICE, selected: SECOND }, SECOND);
 
-    await built.view.chooseModel(second);
-    await built.view.chooseModel(second);
-
-    expect(built.saved).toEqual([second]);
+    expect(built.saved).toEqual([SECOND]);
   });
 
-  it('reads nothing again when the shown language is chosen', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+  it('saves nothing when the chosen compute is chosen again', async () => {
+    const built = world();
 
-    await built.view.chooseLanguage('ja');
+    await built.view.chooseCompute(CHOICE, 'auto');
 
-    expect(built.measured).toEqual([MODEL]);
+    expect(built.saved).toEqual([]);
+  });
+
+  it('cancels the abandoned model when another model is chosen', async () => {
+    const built = world();
+
+    await built.view.chooseModel(CHOICE, SECOND);
+
+    expect(built.cancels).toEqual([MODEL]);
+    expect(built.pauses).toEqual([]);
+    expect(built.closes).toEqual(['ja']);
   });
 
   it('drops the cached recognizer when the compute choice changes', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+    const built = world();
 
-    await built.view.chooseCompute('gpu');
+    await built.view.chooseCompute(CHOICE, 'gpu');
     await settled();
 
     expect(built.pauses).toEqual(['ja']);
@@ -502,11 +566,10 @@ describe('EngineSettingsView', () => {
   });
 
   it('reports a compute choice that storage refused to keep', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    const built = world();
     built.saving = err({ kind: 'storage-failed', cause: 'quota' });
-    await built.view.load();
 
-    await built.view.chooseCompute('gpu');
+    await built.view.chooseCompute(CHOICE, 'gpu');
 
     expect(built.notices).toEqual([
       { tone: 'danger', title: SETUP_FAILED, message: 'Local storage failed: quota' },
@@ -514,11 +577,10 @@ describe('EngineSettingsView', () => {
   });
 
   it('reports a model choice that storage refused to keep', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    const built = world();
     built.saving = err({ kind: 'storage-unavailable' });
-    await built.view.load();
 
-    await built.view.chooseModel('another-model');
+    await built.view.chooseModel(CHOICE, 'another-model');
 
     expect(built.notices.map((notice) => [notice.tone, notice.title])).toEqual([
       ['danger', SETUP_FAILED],
@@ -526,19 +588,17 @@ describe('EngineSettingsView', () => {
   });
 
   it('reports nothing when a compute choice is kept', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+    const built = world();
 
-    await built.view.chooseCompute('gpu');
+    await built.view.chooseCompute(CHOICE, 'gpu');
 
     expect(built.notices).toEqual([]);
   });
 
   it('reports a download that failed, naming the cause', async () => {
-    const built = world(snapshotOf([], 0, 0));
-    await built.view.load();
+    const built = world();
 
-    const starting = built.view.start();
+    const starting = built.view.start(CHOICE);
     await settled();
     at(built.attempts, 0).settle(err({ kind: 'unavailable', cause: 'network down' }));
     await starting;
@@ -550,15 +610,14 @@ describe('EngineSettingsView', () => {
   });
 
   it('reports nothing for a download that opened or was cancelled', async () => {
-    const built = world(snapshotOf([], 0, 0));
-    await built.view.load();
+    const built = world();
 
-    const opening = built.view.start();
+    const opening = built.view.start(CHOICE);
     await settled();
     at(built.attempts, 0).settle(ok(OPENED));
     await opening;
 
-    const cancelling = built.view.start();
+    const cancelling = built.view.start(CHOICE);
     await settled();
     at(built.attempts, 1).settle(err({ kind: 'cancelled' }));
     await cancelling;
@@ -567,11 +626,10 @@ describe('EngineSettingsView', () => {
   });
 
   it('reports a model that could not be deleted', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    const built = world();
     built.deleting = err({ kind: 'cache-failed', cause: 'locked' });
-    await built.view.load();
 
-    await built.view.remove();
+    await built.view.remove(CHOICE);
 
     expect(built.notices).toEqual([
       {
@@ -584,95 +642,104 @@ describe('EngineSettingsView', () => {
   });
 
   it('says what a deletion freed, next to its button, without a toast', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+    const built = world();
 
-    await built.view.remove();
+    await built.view.remove(CHOICE);
 
     expect(built.view.removal.message).toBe(`Freed 120 MB. ${REMOVAL_WARNING}`);
     expect(built.notices).toEqual([]);
   });
 
-  it('offers a resume when the configuration is cached and the weights are not', async () => {
-    const built = world(snapshotOf([], 50_000_000, 5));
-    await built.view.load();
+  it('offers a resume when the configuration is cached and the weights are not', () => {
+    const engine = world().view.engine(snapshotOf([], 50_000_000, 5));
 
-    expect(built.view.storage.stored).toBe(false);
-    expect(built.view.storage.resumable).toBe(true);
-    expect(built.view.engine.partlyDownloaded).toBe(true);
+    expect(engine.stored).toBe(false);
+    expect(engine.partlyDownloaded).toBe(true);
   });
 
-  it('offers no resume once both weight files are cached', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
+  it('offers no resume once both weight files are cached', () => {
+    const engine = world().view.engine(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
 
-    expect(built.view.storage.stored).toBe(true);
-    expect(built.view.storage.resumable).toBe(false);
+    expect(engine.stored).toBe(true);
+    expect(engine.partlyDownloaded).toBe(false);
   });
 
-  it('offers a resume while one of the two weight files is still missing', async () => {
-    const built = world(snapshotOf([REQUIRED_WEIGHTS[0] ?? ''], 0, 6));
-    await built.view.load();
+  it('offers a resume while one of the two weight files is still missing', () => {
+    const engine = world().view.engine(snapshotOf([REQUIRED_WEIGHTS[0] ?? ''], 0, 6));
 
-    expect(built.view.storage.stored).toBe(false);
-    expect(built.view.storage.resumable).toBe(true);
+    expect(engine.stored).toBe(false);
+    expect(engine.partlyDownloaded).toBe(true);
+  });
+
+  it('reports nothing stored before the storage is read', () => {
+    const engine = world().view.engine(null);
+
+    expect(engine.stored).toBe(false);
+    expect(engine.partlyDownloaded).toBe(false);
+  });
+
+  it('reports the download in the engine state', async () => {
+    const built = world();
+    const starting = built.view.start(CHOICE);
+    await settled();
+    const opening = built.view.engine(null);
+    at(built.attempts, 0).settle(err({ kind: 'unavailable', cause: 'no memory' }));
+    await starting;
+    const failed = built.view.engine(null);
+    built.view.download.reset();
+    built.view.download.session = OPENED;
+
+    expect(opening).toMatchObject({ opening: true, load: null, failure: null });
+    expect(failed).toMatchObject({ opening: false, failure: 'no memory' });
+    expect(built.view.engine(null).session).toBe(OPENED);
   });
 
   it('records the grant for the chosen model before the download starts', async () => {
-    const built = world(snapshotOf([], 0, 0));
-    await built.view.load();
+    const built = world();
 
     expect(built.grants).toEqual([]);
 
-    void built.view.start();
+    void built.view.start(CHOICE);
     await settled();
 
     expect(built.grants).toEqual(['ja']);
-    expect(built.view.model?.modelId).toBe(MODEL);
     expect(built.attempts.length).toBe(1);
   });
 
   it('records the grant again for a download resumed from the settings screen', async () => {
-    const built = world(snapshotOf([], 50_000_000, 5));
-    await built.view.load();
+    const built = world();
 
-    void built.view.start();
+    void built.view.start(CHOICE);
+    await settled();
+    await built.view.pause(CHOICE);
+    void built.view.start(CHOICE);
     await settled();
 
-    expect(built.grants).toEqual(['ja']);
-  });
-
-  it('records no grant for merely reporting what the browser holds', async () => {
-    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
-    await built.view.load();
-
-    expect(built.grants).toEqual([]);
+    expect(built.grants).toEqual(['ja', 'ja']);
   });
 
   it('holds a paused download paused when the abandoned load resolves afterwards', async () => {
-    const built = world(snapshotOf([], 50_000_000, 5));
-    await built.view.load();
+    const built = world();
 
-    void built.view.start();
+    void built.view.start(CHOICE);
     await settled();
-    await built.view.pause();
+    await built.view.pause(CHOICE);
 
     built.attempts[0]?.settle({ ok: false, error: { kind: 'cancelled' } });
     await settled();
 
     expect(built.view.download.state.kind).toBe('paused');
-    expect(built.view.storage.resumable).toBe(true);
+    expect(built.view.engine(snapshotOf([], 50_000_000, 5)).paused).toBe(true);
   });
 
   it('keeps a resumed download running when the first attempt resolves afterwards', async () => {
-    const built = world(snapshotOf([], 50_000_000, 5));
-    await built.view.load();
+    const built = world();
 
-    void built.view.start();
+    void built.view.start(CHOICE);
     await settled();
-    await built.view.pause();
+    await built.view.pause(CHOICE);
 
-    void built.view.start();
+    void built.view.start(CHOICE);
     await settled();
 
     built.attempts[0]?.settle({ ok: false, error: { kind: 'cancelled' } });
@@ -682,30 +749,17 @@ describe('EngineSettingsView', () => {
   });
 
   it('leaves a discarded download cancelled when the abandoned load resolves afterwards', async () => {
-    const built = world(snapshotOf([], 50_000_000, 5));
-    await built.view.load();
+    const built = world();
 
-    void built.view.start();
+    void built.view.start(CHOICE);
     await settled();
-    await built.view.stop();
+    await built.view.stop(CHOICE);
 
     built.attempts[0]?.settle({ ok: true, value: OPENED });
     await settled();
 
     expect(built.view.download.state.kind).toBe('cancelled');
     expect(built.view.download.session).toBeNull();
-  });
-});
-
-describe('storageFailureNote', () => {
-  it('names the cause when the cache could be opened but not read', () => {
-    expect(storageFailureNote({ kind: 'cache-failed', cause: 'quota exceeded' })).toContain(
-      'quota exceeded',
-    );
-  });
-
-  it('says the browser exposes no cache at all', () => {
-    expect(storageFailureNote({ kind: 'cache-unavailable' })).toContain('no cache');
   });
 });
 

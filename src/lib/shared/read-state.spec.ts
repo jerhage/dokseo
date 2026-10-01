@@ -1,7 +1,15 @@
 import { QueryObserver } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryFailure } from './query-failure';
-import { LOADING, readFailed, readReady, readStateOf, reloadFailed, reloading } from './read-state';
+import {
+  LOADING,
+  readBoth,
+  readFailed,
+  readReady,
+  readStateOf,
+  reloadFailed,
+  reloading,
+} from './read-state';
 import type { ReadState } from './read-state';
 import { createTestQueryClient } from './testing/query-client';
 
@@ -49,6 +57,27 @@ describe('reloadFailed', () => {
 
   it('fails the read when it holds no value', () => {
     expect(reloadFailed(LOADING, 'denied')).toEqual({ kind: 'failed', message: 'denied' });
+  });
+});
+
+describe('readBoth', () => {
+  const pair = (one: number, two: string): string => `${one}:${two}`;
+
+  it('joins two ready values into one ready value', () => {
+    expect(readBoth(readReady(1), readReady('a'), pair)).toEqual(readReady('1:a'));
+  });
+
+  it('fails with the first failure, before the second and before a load', () => {
+    expect(readBoth(readFailed('one'), readFailed('two'), pair)).toEqual(readFailed('one'));
+    expect(readBoth(readFailed('one'), LOADING, pair)).toEqual(readFailed('one'));
+    expect(readBoth(LOADING, readFailed('two'), pair)).toEqual(readFailed('two'));
+    expect(readBoth(readReady(1), readFailed('two'), pair)).toEqual(readFailed('two'));
+  });
+
+  it('loads while either read loads and neither failed', () => {
+    expect(readBoth(LOADING, readReady('a'), pair)).toEqual(LOADING);
+    expect(readBoth(readReady(1), LOADING, pair)).toEqual(LOADING);
+    expect(readBoth(LOADING, LOADING, pair)).toEqual(LOADING);
   });
 });
 

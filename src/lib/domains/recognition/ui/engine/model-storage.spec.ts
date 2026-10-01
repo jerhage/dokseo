@@ -1,19 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Container } from '$lib/container';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
-import type { ModelStorageError } from '../../domain/model/model-storage';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-import { ModelStorage } from './model-storage.svelte';
-import { OperationClock } from './operation-clock';
+import { isModelStored, isResumable, shownStorage } from './model-storage.svelte';
 
 const WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
-
-type Answer = {
-  readonly settle: (read: Result<ModelStorageSnapshot, ModelStorageError>) => void;
-  readonly fail: (cause: unknown) => void;
-};
 
 function snapshot(
   weights: readonly string[],
@@ -40,103 +31,48 @@ function snapshot(
   };
 }
 
-function world(): { storage: ModelStorage; clock: OperationClock; answers: Answer[] } {
-  const answers: Answer[] = [];
-  const container = {
-    recognition: {
-      readModelStorage: () =>
-        new Promise<Result<ModelStorageSnapshot, ModelStorageError>>((resolve, reject) => {
-          answers.push({ settle: resolve, fail: reject });
-        }),
-    },
-  } as unknown as Container;
-  const clock = new OperationClock();
-  return { storage: new ModelStorage(container, clock), clock, answers };
-}
-
-async function measured(
-  held: ReturnType<typeof world>,
-  answer: (each: Answer) => void,
-): Promise<void> {
-  const measuring = held.storage.measure(JAPANESE_OCR_MODEL, held.clock.current);
-  answer(held.answers[held.answers.length - 1] as Answer);
-  await measuring;
-}
-
-describe('ModelStorage', () => {
-  it('holds what was read and clears the note of an earlier failure', async () => {
-    const held = world();
-    await measured(held, (each) => each.settle(err({ kind: 'cache-unavailable' })));
-
-    await measured(held, (each) => each.settle(ok(snapshot(WEIGHTS, 7))));
-
-    expect(held.storage.snapshot).toEqual(snapshot(WEIGHTS, 7));
-    expect(held.storage.message).toBeNull();
+describe('shownStorage', () => {
+  it('shows nothing and says nothing while the storage is read', () => {
+    expect(shownStorage(LOADING)).toEqual({ snapshot: null, message: null });
   });
 
-  it('names the cause of a read that threw', async () => {
-    const held = world();
-
-    await measured(held, (each) => each.fail(new Error('gone')));
-
-    expect(held.storage.snapshot).toBeNull();
-    expect(held.storage.message).toBe('What the model occupies could not be read: gone');
-  });
-
-  it('drops a read that answers after a newer operation began', async () => {
-    const held = world();
-
-    await measured(held, (each) => {
-      held.clock.next();
-      each.settle(ok(snapshot(WEIGHTS, 7)));
+  it('shows the failure in place of a snapshot', () => {
+    expect(shownStorage(readFailed('The cache could not be read: x'))).toEqual({
+      snapshot: null,
+      message: 'The cache could not be read: x',
     });
-
-    expect(held.storage.snapshot).toBeNull();
   });
 
-  it('drops a throw that answers after a newer operation began', async () => {
-    const held = world();
+  it('shows what was read with no message', () => {
+    const read = snapshot(WEIGHTS, 7);
 
-    await measured(held, (each) => {
-      held.clock.next();
-      each.fail(new Error('gone'));
-    });
+    expect(shownStorage(readReady(read))).toEqual({ snapshot: read, message: null });
+  });
+});
 
-    expect(held.storage.message).toBeNull();
+describe('isModelStored', () => {
+  it('counts a model stored only once every weight file is cached', () => {
+    expect(isModelStored(snapshot(WEIGHTS, 7))).toBe(true);
+    expect(isModelStored(snapshot([WEIGHTS[0] ?? ''], 6))).toBe(false);
+    expect(isModelStored(null)).toBe(false);
+  });
+});
+
+describe('isResumable', () => {
+  it('offers no resume for a stored model, even beside a leftover part', () => {
+    expect(isResumable(snapshot(WEIGHTS, 7, 5_000_000))).toBe(false);
   });
 
-  it('reads nothing without a model', async () => {
-    const held = world();
-
-    await held.storage.measure(null, held.clock.current);
-
-    expect(held.answers).toEqual([]);
+  it('offers a resume for a part-downloaded file alone', () => {
+    expect(isResumable(snapshot([], 0, 5_000_000))).toBe(true);
   });
 
-  it('forgets what it read and its note', async () => {
-    const held = world();
-    await measured(held, (each) => each.settle(ok(snapshot(WEIGHTS, 7))));
-
-    held.storage.forget();
-
-    expect(held.storage.snapshot).toBeNull();
-    expect(held.storage.message).toBeNull();
+  it('offers a resume while one of the weight files is still missing', () => {
+    expect(isResumable(snapshot([WEIGHTS[0] ?? ''], 6))).toBe(true);
   });
 
-  it('offers no resume for a stored model, even beside a leftover part', async () => {
-    const held = world();
-
-    await measured(held, (each) => each.settle(ok(snapshot(WEIGHTS, 7, 5_000_000))));
-
-    expect(held.storage.stored).toBe(true);
-    expect(held.storage.resumable).toBe(false);
-  });
-
-  it('offers a resume for a part-downloaded file alone', async () => {
-    const held = world();
-
-    await measured(held, (each) => each.settle(ok(snapshot([], 0, 5_000_000))));
-
-    expect(held.storage.resumable).toBe(true);
+  it('offers no resume when nothing is held or nothing was read', () => {
+    expect(isResumable(snapshot([], 0))).toBe(false);
+    expect(isResumable(null)).toBe(false);
   });
 });

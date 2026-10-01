@@ -1,28 +1,37 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { Container } from '$lib/container';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { ComputeChoice } from '../../domain/engine/compute-choice';
 import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
-import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { DownloadState } from '../../domain/model/model-download';
 import { IDLE } from '../../domain/model/model-download';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import type { ReadState } from '$lib/shared/read-state';
-import { offeredModels } from './engine-setup.svelte';
-import type { EngineChoice, OfferedModels } from './engine-setup.svelte';
+import { offeredModels } from '../../queries/engine-queries';
+import type { LanguageSetup, OfferedModels } from '../../queries/engine-queries';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import { EngineSettingsView } from './engine-settings.svelte';
 import EngineAside from './EngineAside.svelte';
 import EngineSettingsScreen from './EngineSettingsScreen.svelte';
+
+const reads = vi.hoisted(() => ({ answers: new Map<string, unknown>() }));
+
+vi.mock('$lib/shared/read-query.svelte', () => ({
+  readQuery: (options: () => { readonly queryKey: readonly unknown[] }) => ({
+    state: reads.answers.get(String(options().queryKey[1])),
+    reload: () => undefined,
+  }),
+}));
 
 type Fake = {
   readonly download: DownloadState;
   readonly storage: ModelStorageSnapshot | null;
   readonly session: RecognizerSession | null;
   readonly compute: ComputeChoice;
-  readonly stored: boolean;
-  readonly resumable: boolean;
   readonly confirmingRemoval: boolean;
   readonly removing: boolean;
   readonly message: string | null;
@@ -44,8 +53,6 @@ const BASE: Fake = {
   storage: null,
   session: null,
   compute: 'auto',
-  stored: false,
-  resumable: false,
   confirmingRemoval: false,
   removing: false,
   message: null,
@@ -53,7 +60,7 @@ const BASE: Fake = {
   setup: 'ready',
 };
 
-function snapshot(files: number, persisted = true): ModelStorageSnapshot {
+function snapshot(files: number, persisted = true, partialBytes = 0): ModelStorageSnapshot {
   return {
     report: {
       modelId: JAPANESE_OCR_MODEL.modelId,
@@ -63,14 +70,14 @@ function snapshot(files: number, persisted = true): ModelStorageSnapshot {
       required: ['a', 'b'],
       weights: files > 0 ? ['a', 'b'] : [],
     },
-    partial: null,
+    partial: { modelId: JAPANESE_OCR_MODEL.modelId, files: 1, bytes: partialBytes },
     usage: null,
     quota: null,
     persisted,
   };
 }
 
-function setupOf(fake: Fake): ReadState<EngineChoice> {
+function setupOf(fake: Fake): ReadState<LanguageSetup> {
   if (fake.setup === 'loading') return LOADING;
   if (fake.setup === 'failed') return readFailed('Local storage failed: locked');
   return readReady({
@@ -78,51 +85,35 @@ function setupOf(fake: Fake): ReadState<EngineChoice> {
     models: offeredModels('ja') as OfferedModels,
     selected: null,
     compute: fake.compute,
-    detection: GPU_UNDETECTED,
   });
 }
 
-function viewOf(over: Partial<Fake>): Record<string, unknown> {
+function storageOf(fake: Fake): ReadState<ModelStorageSnapshot> {
+  if (fake.storageMessage !== null) return readFailed(fake.storageMessage);
+  return fake.storage === null ? LOADING : readReady(fake.storage);
+}
+
+function viewOf(over: Partial<Fake>): EngineSettingsView {
   const fake = { ...BASE, ...over };
-  const ready = fake.setup === 'ready';
-  const download = fake.download;
-  const engine: EngineState = {
-    stored: fake.stored,
-    opening: download.kind === 'loading',
-    load: download.kind === 'loading' ? download.load : null,
-    session: download.kind === 'ready' ? download.session : fake.session,
-    failure: download.kind === 'failed' ? download.cause : null,
-    paused: download.kind === 'paused',
-    cancelled: download.kind === 'cancelled',
-    partlyDownloaded: fake.resumable,
-  };
-  return {
-    setup: { state: setupOf(fake) },
-    storage: {
-      snapshot: fake.storage,
-      message: fake.storageMessage,
-      stored: fake.stored,
-      resumable: fake.resumable,
-      partial: fake.storage?.partial ?? null,
-    },
-    download: { state: fake.download, session: fake.session },
-    removal: {
-      removing: fake.removing,
-      confirming: fake.confirmingRemoval,
-      message: fake.message,
-    },
-    language: ready ? 'ja' : null,
-    model: ready ? JAPANESE_OCR_MODEL : null,
-    engine,
-  };
+  reads.answers.set('setup', setupOf(fake));
+  reads.answers.set('compute', readReady(GPU_UNDETECTED));
+  reads.answers.set('model-storage', storageOf(fake));
+
+  const view = new EngineSettingsView({} as Container, () => undefined, createTestQueryClient());
+  view.download.state = fake.download;
+  view.download.session = fake.session;
+  view.removal.removing = fake.removing;
+  view.removal.confirming = fake.confirmingRemoval;
+  view.removal.message = fake.message;
+  return view;
 }
 
 function screen(over: Partial<Fake>): string {
-  return render(SCREEN, { props: { view: viewOf(over) } }).body;
+  return render(SCREEN, { props: { recognition: {}, view: viewOf(over) } }).body;
 }
 
 function aside(over: Partial<Fake>): string {
-  return render(ASIDE, { props: { view: viewOf(over) } }).body;
+  return render(ASIDE, { props: { recognition: {}, view: viewOf(over) } }).body;
 }
 
 describe('EngineSettingsScreen', () => {
@@ -178,7 +169,10 @@ describe('EngineSettingsScreen', () => {
   });
 
   it('offers a resume and a discard when part of the weights is here', () => {
-    const html = screen({ resumable: true, download: { kind: 'paused', load: null } });
+    const html = screen({
+      storage: snapshot(0, true, 50_000_000),
+      download: { kind: 'paused', load: null },
+    });
 
     expect(html).toContain('Paused');
     expect(html).toContain('Resume the download');
@@ -186,7 +180,7 @@ describe('EngineSettingsScreen', () => {
   });
 
   it('names the device and offers the delete once the engine is ready', () => {
-    const html = screen({ stored: true, storage: snapshot(7), session: OPENED });
+    const html = screen({ storage: snapshot(7), session: OPENED });
 
     expect(html).toContain('Ready');
     expect(html).toContain('This session opened on the GPU.');
@@ -195,7 +189,7 @@ describe('EngineSettingsScreen', () => {
   });
 
   it('asks before deleting, with the measured size and both answers', () => {
-    const html = screen({ stored: true, storage: snapshot(7), confirmingRemoval: true });
+    const html = screen({ storage: snapshot(7), confirmingRemoval: true });
 
     expect(html).toContain('Delete about 205 MB of weights?');
     expect(html).toContain('Keep it');
@@ -203,7 +197,7 @@ describe('EngineSettingsScreen', () => {
   });
 
   it('disables the delete and says so while the model is being removed', () => {
-    const html = screen({ stored: true, storage: snapshot(7), removing: true });
+    const html = screen({ storage: snapshot(7), removing: true });
 
     expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:<!---->)?Deleting…/u);
   });
@@ -235,6 +229,13 @@ describe('EngineSettingsScreen', () => {
     expect(screen({ storage: snapshot(7, true) })).not.toContain('has not granted persistence');
   });
 
+  it('says the storage is read until it answers', () => {
+    const html = screen({});
+
+    expect(html).toContain('Reading what is stored…');
+    expect(html).toContain('Download now');
+  });
+
   it('shows the storage failure in place of the figure', () => {
     expect(screen({ storageMessage: 'The cache could not be read: x' })).toContain(
       'The cache could not be read: x',
@@ -248,7 +249,7 @@ describe('EngineSettingsScreen', () => {
   it('links to the storage section it is given', () => {
     expect(screen({})).toContain('href="/settings/storage"');
     const html = render(SCREEN, {
-      props: { view: viewOf({}), storageHref: '/elsewhere/storage' },
+      props: { recognition: {}, view: viewOf({}), storageHref: '/elsewhere/storage' },
     }).body;
     expect(html).toContain('href="/elsewhere/storage"');
   });
@@ -268,5 +269,10 @@ describe('EngineAside', () => {
 
   it('names no engine when no model is chosen', () => {
     expect(aside({ setup: 'loading' })).toContain('None');
+    expect(aside({ setup: 'failed' })).toContain('None');
+  });
+
+  it('names the stored status once the storage is read', () => {
+    expect(aside({ storage: snapshot(7) })).toContain('Downloaded');
   });
 });

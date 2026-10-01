@@ -3,7 +3,7 @@ import { megabytes } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
-import { storageFailureNote } from './model-storage.svelte';
+import { storageFailureNote } from '../../queries/engine-queries';
 import type { OperationClock } from './operation-clock';
 
 const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
@@ -11,7 +11,6 @@ const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing
 const REMOVE_FAILED = 'Could not delete the model';
 
 type RemovalJoins = {
-  readonly stored: () => boolean;
   readonly settled: () => void;
 };
 
@@ -32,8 +31,8 @@ class ModelRemoval {
     this.#joins = joins;
   }
 
-  ask(): void {
-    if (!this.#joins.stored()) return;
+  ask(stored: boolean): void {
+    if (!stored) return;
     this.confirming = true;
   }
 

@@ -1,4 +1,4 @@
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import { failureMessage } from './query-failure';
 
 type Refresh =
@@ -59,5 +59,20 @@ function readStateOf<T>(snapshot: ReadSnapshot<T>): ReadState<T> {
     .exhaustive();
 }
 
-export { LOADING, readFailed, readReady, readStateOf, reloadFailed, reloading };
+function readBoth<A, B, T>(
+  first: ReadState<A>,
+  second: ReadState<B>,
+  join: (first: A, second: B) => T,
+): ReadState<T> {
+  return match<readonly [ReadState<A>, ReadState<B>], ReadState<T>>([first, second])
+    .with([{ kind: 'failed' }, P._], ([failed]) => failed)
+    .with([P._, { kind: 'failed' }], ([, failed]) => failed)
+    .with([{ kind: 'loading' }, P._], [P._, { kind: 'loading' }], () => LOADING)
+    .with([{ kind: 'ready' }, { kind: 'ready' }], ([one, two]) =>
+      readReady(join(one.value, two.value)),
+    )
+    .exhaustive();
+}
+
+export { LOADING, readBoth, readFailed, readReady, readStateOf, reloadFailed, reloading };
 export type { ReadSnapshot, ReadState, Refresh };

@@ -29,7 +29,6 @@ type World = {
   }[];
   readonly notices: Notice[];
   settles: number;
-  stored: boolean;
 };
 
 function world(): World {
@@ -47,7 +46,6 @@ function world(): World {
   const clock = new OperationClock();
   const held: World = {
     removal: new ModelRemoval(container, (notice) => notices.push(notice), clock, {
-      stored: () => held.stored,
       settled: () => {
         held.settles += 1;
       },
@@ -56,7 +54,6 @@ function world(): World {
     deletes,
     notices,
     settles: 0,
-    stored: true,
   };
   return held;
 }
@@ -68,12 +65,10 @@ async function settled(): Promise<void> {
 describe('ModelRemoval', () => {
   it('asks for a confirmation only when the model is stored', () => {
     const held = world();
-    held.stored = false;
-    held.removal.ask();
+    held.removal.ask(false);
     const unstored = held.removal.confirming;
-    held.stored = true;
 
-    held.removal.ask();
+    held.removal.ask(true);
 
     expect(unstored).toBe(false);
     expect(held.removal.confirming).toBe(true);
@@ -141,7 +136,7 @@ describe('ModelRemoval', () => {
 
   it('forgets its message and its confirmation', () => {
     const held = world();
-    held.removal.ask();
+    held.removal.ask(true);
     held.removal.message = 'Freed 1 MB.';
 
     held.removal.forget();
