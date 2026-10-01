@@ -306,11 +306,11 @@ class CaptureView {
   }
 
   edit(id: CaptureId, text: string): Promise<WriteOutcome> {
-    return this.#collection.edit(id, text);
+    return this.#collection.edits.edit(id, text);
   }
 
   annotate(id: CaptureId, note: string): Promise<WriteOutcome> {
-    return this.#collection.annotate(id, note);
+    return this.#collection.edits.annotate(id, note);
   }
 
   remove(id: CaptureId): Promise<WriteOutcome> {

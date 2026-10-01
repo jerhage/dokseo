@@ -4,19 +4,18 @@ import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { TextQuote } from '$lib/shared/anchor';
 import { captureId, tagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
-import { err } from '$lib/shared/result';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Result } from '$lib/shared/result';
-import { editedText } from '../../domain/capture/capture';
 import type { CaptureDraft } from '../../domain/capture/capture';
 import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
 import { NOT_STORED, describeStorageFailure, refuse, thrownFailure } from './storage-failure';
-import type { StorageFailure, WriteOutcome } from './storage-failure';
+import type { StorageFailure } from './storage-failure';
 import { CaptureList } from './capture-list.svelte';
+import { CaptureEdits } from './capture-edits.svelte';
 import { CaptureRemoval } from './capture-removal.svelte';
 import { ClearAll } from './clear-all.svelte';
 import type { Settled } from './panel-capture';
@@ -70,6 +69,7 @@ class CaptureCollection {
   readonly list: CaptureList;
   readonly clearAll: ClearAll;
   readonly removal: CaptureRemoval;
+  readonly edits: CaptureEdits;
   tags = $state.raw<readonly Tag[]>([]);
   libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
 
@@ -86,6 +86,7 @@ class CaptureCollection {
     });
     this.clearAll = new ClearAll(container, notify, this.list);
     this.removal = new CaptureRemoval(container, notify, this.list);
+    this.edits = new CaptureEdits(container, notify, this.list);
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
@@ -222,54 +223,6 @@ class CaptureCollection {
       confidence: settled.text.confidence,
       origin: 'recognized',
     });
-  }
-
-  async edit(id: CaptureId, text: string): Promise<WriteOutcome> {
-    const card = this.list.captures.find((capture) => capture.id === id);
-    if (card === undefined || card.status !== 'done') return 'saved';
-
-    const settled = editedText(card.text.text, text, card.origin);
-    if (settled === card.text.text) return 'saved';
-
-    const generation = this.list.generation;
-    const stored = this.list.stored(id);
-    const written =
-      stored === undefined
-        ? err(NOT_STORED)
-        : await this.#container.recognition.editCaptureText(stored, settled).catch(thrownFailure);
-
-    if (generation !== this.list.generation) return 'saved';
-    if (!written.ok) return this.#refuse('The text could not be saved', written.error);
-
-    this.list.keep(written.value);
-    this.list.change(id, (capture) =>
-      capture.status === 'done'
-        ? { ...capture, text: recognizedText(settled, capture.text.confidence), edited: true }
-        : capture,
-    );
-    return 'saved';
-  }
-
-  async annotate(id: CaptureId, note: string): Promise<WriteOutcome> {
-    const stored = this.list.stored(id);
-    if (stored?.origin === 'written') return 'saved';
-    if (!this.list.captures.some((capture) => capture.id === id)) return 'saved';
-
-    const generation = this.list.generation;
-    const written =
-      stored === undefined
-        ? err(NOT_STORED)
-        : await this.#container.recognition.writeCaptureNote(stored, note).catch(thrownFailure);
-
-    if (generation !== this.list.generation) return 'saved';
-    if (!written.ok) return this.#refuse('The note could not be saved', written.error);
-
-    this.list.keep(written.value);
-    const kept = written.value.note;
-    this.list.change(id, (capture) =>
-      capture.origin !== 'written' ? { ...capture, note: kept } : capture,
-    );
-    return 'saved';
   }
 
   async loadTags(): Promise<void> {
