@@ -24,7 +24,7 @@
   import { toastNotify } from '$lib/shared/notice-toast';
   import type { PassageOrder } from '../../domain/capture/capture-order';
   import { engineMismatch } from '../../domain/engine/ocr-engine';
-  import { modelLoadAnnouncement } from '../engine/recognizer-view.svelte';
+  import { modelLoadAnnouncement } from '../engine/engine-warmup.svelte';
   import type { FocusTarget } from './card-editing.svelte';
   import { CaptureCards } from './capture-cards.svelte';
   import type { Card, CardJump } from './capture-cards.svelte';
@@ -62,7 +62,7 @@
     tags: view.tagging.tags,
     book: view.list.book,
     language,
-    progress: view.recognizer.progress,
+    progress: view.warmup.progress,
     direction,
     passages,
     seekable: onSeek !== undefined,
@@ -89,9 +89,9 @@
   let list = $state<HTMLElement | null>();
   let tagFrom: FocusTarget | null = null;
 
-  const mismatch = $derived(engineMismatch(view.recognizer.session, language));
+  const mismatch = $derived(engineMismatch(view.warmup.session, language));
   const waiting = $derived(view.list.captures.some((capture) => capture.status === 'pending'));
-  const announcement = $derived(waiting ? modelLoadAnnouncement(view.recognizer.progress) : '');
+  const announcement = $derived(waiting ? modelLoadAnnouncement(view.warmup.progress) : '');
   const cards = $derived(panel.cards);
   const searching = $derived(panel.searching);
   const steps = $derived(searchSteps(panel.cursor, cards.length, view.list.count));

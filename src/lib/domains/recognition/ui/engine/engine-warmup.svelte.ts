@@ -1,16 +1,12 @@
+import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
-import { ACTION_NOTICE_MS } from '$lib/shared/notice';
-import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
-import { downloadMb } from '../../domain/model/model-footprint';
-import type { ModelFootprint } from '../../domain/model/model-footprint';
 import { loadVerb } from '../../domain/model/model-load';
 import type { ModelLoad } from '../../domain/model/model-load';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
@@ -18,14 +14,10 @@ import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import { readChosenFootprint } from './chosen-footprint';
 
 const READING_SELECTION = 'Reading the selection.';
-
-const RECOGNITION_OFF = 'Text recognition is off';
-
-const RECOGNITION_OFF_REASON = 'You chose not to download the recognition model.';
-
-const TURN_ON = 'Turn on';
 
 const FULL_PERCENT = 100;
 
@@ -42,11 +34,6 @@ function modelLoadAnnouncement(load: ModelLoad | null): string {
   return `${loadVerb(load.source)} the recognition model, ${loadPercent(load)} percent.`;
 }
 
-type ConsentRequest = {
-  readonly language: Language;
-  readonly footprint: ModelFootprint;
-};
-
 type PendingRecognition = {
   readonly source: PageSource;
   readonly language: Language;
@@ -54,49 +41,82 @@ type PendingRecognition = {
   readonly arrangement: Arrangement;
 };
 
+type EngineWarmth =
+  | { readonly kind: 'unchecked' }
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'partial' }
+  | { readonly kind: 'stored' }
+  | { readonly kind: 'opening' }
+  | { readonly kind: 'failed'; readonly cause: string };
+
+const UNCHECKED: EngineWarmth = { kind: 'unchecked' };
+
+const STORED: EngineWarmth = { kind: 'stored' };
+
+function warmthOf(snapshot: ModelStorageSnapshot | null): EngineWarmth {
+  if (snapshot === null) return UNCHECKED;
+  if (isStored(snapshot.report)) return STORED;
+  if (isPartlyStored(snapshot.report) || isPartlyDownloaded(snapshot.partial)) {
+    return { kind: 'partial' };
+  }
+  return { kind: 'missing' };
+}
+
+function engineStateOf(
+  warmth: EngineWarmth,
+  load: ModelLoad | null,
+  session: RecognizerSession | null,
+): EngineState {
+  const quiet = {
+    stored: false,
+    opening: false,
+    load,
+    session,
+    failure: null,
+    paused: false,
+    cancelled: false,
+    partlyDownloaded: false,
+  };
+
+  return match(warmth)
+    .with({ kind: 'unchecked' }, { kind: 'missing' }, () => quiet)
+    .with({ kind: 'partial' }, () => ({ ...quiet, partlyDownloaded: true }))
+    .with({ kind: 'stored' }, () => ({ ...quiet, stored: true }))
+    .with({ kind: 'opening' }, () => ({ ...quiet, stored: true, opening: true }))
+    .with({ kind: 'failed' }, (failed) => ({ ...quiet, stored: true, failure: failed.cause }))
+    .exhaustive();
+}
+
 type WarmedFor = {
   readonly generation: number;
   readonly language: Language;
 };
 
-class RecognizerView {
+type WarmupJoins = {
+  readonly stored: (language: Language) => void;
+};
+
+class EngineWarmup {
+  warmth = $state.raw<EngineWarmth>(UNCHECKED);
   progress = $state.raw<ModelLoad | null>(null);
   session = $state.raw<RecognizerSession | null>(null);
-  downloaded = $state.raw(false);
-  partlyDownloaded = $state.raw(false);
-  opening = $state.raw(false);
-  engineFailure = $state.raw<string | null>(null);
-  consentRequest = $state.raw<ConsentRequest | null>(null);
 
   #container: Container;
-  #notify: Notify;
   #generation: () => number;
+  #joins: WarmupJoins;
   #warmed: WarmedFor | null = null;
   #activeRecognitions = 0;
   #recognizerLanguage: Language | null = null;
   #retiring = new Set<Language>();
-  #pendingRecognition: PendingRecognition | null = null;
-  #agreed = new Set<Language>();
-  #declined = new Set<Language>();
-  #toldDeclined = new Set<Language>();
 
-  constructor(container: Container, notify: Notify, generation: () => number) {
+  constructor(container: Container, generation: () => number, joins: WarmupJoins) {
     this.#container = container;
-    this.#notify = notify;
     this.#generation = generation;
+    this.#joins = joins;
   }
 
   get engine(): EngineState {
-    return {
-      stored: this.downloaded,
-      opening: this.opening,
-      load: this.progress,
-      session: this.session,
-      failure: this.engineFailure,
-      paused: false,
-      cancelled: false,
-      partlyDownloaded: this.partlyDownloaded,
-    };
+    return engineStateOf(this.warmth, this.progress, this.session);
   }
 
   async warm(language: Language): Promise<void> {
@@ -108,7 +128,7 @@ class RecognizerView {
 
     const trace = this.#container.beginTrace('engine-warm');
     try {
-      const model = await this.#chosenModel(language);
+      const model = await readChosenFootprint(this.#container, language);
       if (!this.#stillWarming(generation, language)) return;
       if (model === null) {
         trace.step('stopped', { guard: 'no-model-for-language', language });
@@ -120,18 +140,13 @@ class RecognizerView {
         .catch(() => null);
       if (!this.#stillWarming(generation, language)) return;
 
-      const snapshot = held !== null && held.ok ? held.value : null;
-      this.downloaded = snapshot !== null && isStored(snapshot.report);
-      this.partlyDownloaded =
-        snapshot !== null &&
-        !this.downloaded &&
-        (isPartlyStored(snapshot.report) || isPartlyDownloaded(snapshot.partial));
-      if (!this.downloaded) {
+      this.warmth = warmthOf(held !== null && held.ok ? held.value : null);
+      if (this.warmth.kind !== 'stored') {
         trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
         return;
       }
 
-      this.#agreed.add(language);
+      this.#joins.stored(language);
       trace.step('opening', { language, modelId: model.modelId });
       await this.#openEngine(language, generation);
     } finally {
@@ -141,8 +156,7 @@ class RecognizerView {
 
   async #openEngine(language: Language, generation: number): Promise<void> {
     this.#switchTo(language);
-    this.opening = true;
-    this.engineFailure = null;
+    this.warmth = { kind: 'opening' };
     this.#recognizerLanguage = language;
 
     try {
@@ -159,16 +173,16 @@ class RecognizerView {
 
       if (opened.ok) {
         this.session = opened.value;
-        this.downloaded = true;
-        this.partlyDownloaded = false;
       } else if (opened.error.kind === 'unavailable') {
-        this.engineFailure = opened.error.cause;
+        this.warmth = { kind: 'failed', cause: opened.error.cause };
       }
     } catch (cause) {
-      if (this.#serves(generation, language)) this.engineFailure = describeCause(cause);
+      if (this.#serves(generation, language)) {
+        this.warmth = { kind: 'failed', cause: describeCause(cause) };
+      }
     } finally {
       if (this.#serves(generation, language)) {
-        this.opening = false;
+        if (this.warmth.kind === 'opening') this.warmth = STORED;
         if (this.#activeRecognitions === 0) this.progress = null;
       }
     }
@@ -187,13 +201,7 @@ class RecognizerView {
     const previous = this.#recognizerLanguage;
     if (previous === null || previous === language) return;
 
-    this.#recognizerLanguage = null;
-    this.session = null;
-    this.progress = null;
-    this.downloaded = false;
-    this.partlyDownloaded = false;
-    this.opening = false;
-    this.engineFailure = null;
+    this.forget();
 
     if (this.#activeRecognitions > 0) {
       this.#retiring.add(previous);
@@ -207,103 +215,6 @@ class RecognizerView {
       void this.#container.recognition.closeRecognizer(language);
     }
     this.#retiring.clear();
-  }
-
-  async #chosenModel(language: Language): Promise<ModelFootprint | null> {
-    const choice = await this.#container.recognition
-      .readRecognizerSetup(language)
-      .catch(() => null);
-
-    return choice !== null && choice.ok ? choice.value.model : null;
-  }
-
-  async admits(held: PendingRecognition): Promise<boolean> {
-    const trace = this.#container.beginTrace('capture-gate');
-    const admitted = await this.#admits(trace, held);
-    trace.end();
-    return admitted;
-  }
-
-  async #admits(trace: Trace, held: PendingRecognition): Promise<boolean> {
-    const language = held.language;
-    if (held.regions.length === 0) {
-      trace.step('stopped', { guard: 'no-regions' });
-      return false;
-    }
-
-    if (this.#agreed.has(language)) {
-      trace.step('reading', { gate: 'agreed-this-session', language });
-      return true;
-    }
-
-    const footprint = await this.#chosenModel(language);
-    if (footprint === null) {
-      trace.step('reading', { gate: 'nothing-to-download', language });
-      return true;
-    }
-
-    const decision = await this.#container.recognition.readModelConsent(language);
-    if (decision.ok && decision.value === 'granted') {
-      this.#agreed.add(language);
-      trace.step('reading', { gate: 'consent-stored', language });
-      return true;
-    }
-
-    if (this.#declined.has(language)) {
-      trace.step('stopped', { guard: 'declined-this-session', language });
-      this.#tellDeclined(held, footprint);
-      return false;
-    }
-
-    this.#pendingRecognition = held;
-    this.consentRequest = { language, footprint };
-    trace.step('asking', { gate: 'consent-dialog', language, downloadMb: downloadMb(footprint) });
-    return false;
-  }
-
-  #tellDeclined(held: PendingRecognition, footprint: ModelFootprint): void {
-    if (this.#toldDeclined.has(held.language)) return;
-    this.#toldDeclined.add(held.language);
-
-    const generation = this.#generation();
-    this.#notify({
-      tone: 'info',
-      title: RECOGNITION_OFF,
-      message: RECOGNITION_OFF_REASON,
-      action: { label: TURN_ON, run: () => this.#askAgain(held, footprint, generation) },
-      duration: ACTION_NOTICE_MS,
-    });
-  }
-
-  #askAgain(held: PendingRecognition, footprint: ModelFootprint, generation: number): void {
-    if (generation !== this.#generation() || this.consentRequest !== null) return;
-
-    this.#pendingRecognition = held;
-    this.consentRequest = { language: held.language, footprint };
-  }
-
-  async agree(): Promise<PendingRecognition | null> {
-    const held = this.#takePending();
-    if (held === null) return null;
-
-    this.#agreed.add(held.language);
-    await this.#container.recognition.grantModelConsent(held.language);
-    return held;
-  }
-
-  decline(): void {
-    const held = this.#takePending();
-    if (held === null) return;
-
-    this.#declined.add(held.language);
-    this.#toldDeclined.delete(held.language);
-  }
-
-  #takePending(): PendingRecognition | null {
-    const held = this.#pendingRecognition;
-    this.#pendingRecognition = null;
-    this.consentRequest = null;
-    return held;
   }
 
   async read(held: PendingRecognition): Promise<Result<RecognizedText, RecognizeRegionError>> {
@@ -336,15 +247,10 @@ class RecognizerView {
   }
 
   forget(): void {
-    this.#pendingRecognition = null;
     this.#recognizerLanguage = null;
     this.session = null;
     this.progress = null;
-    this.downloaded = false;
-    this.partlyDownloaded = false;
-    this.opening = false;
-    this.engineFailure = null;
-    this.consentRequest = null;
+    this.warmth = UNCHECKED;
   }
 
   close(): void {
@@ -358,10 +264,10 @@ class RecognizerView {
 
 export {
   READING_SELECTION,
-  RECOGNITION_OFF,
-  TURN_ON,
   modelLoadNote,
   modelLoadAnnouncement,
-  RecognizerView,
+  warmthOf,
+  engineStateOf,
+  EngineWarmup,
 };
-export type { ConsentRequest, PendingRecognition };
+export type { PendingRecognition, EngineWarmth, WarmupJoins };

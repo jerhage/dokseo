@@ -84,7 +84,7 @@
       {/if}
     {/snippet}
     {#snippet engine()}
-      <EnginePill engine={captures.recognizer.engine} {language} />
+      <EnginePill engine={captures.warmup.engine} {language} />
     {/snippet}
     {#snippet panel(visible)}
       <CapturePanel
@@ -99,11 +99,11 @@
   </ReaderScreen>
 {/if}
 
-{#if captures.recognizer.consentRequest !== null}
+{#if captures.consent.request !== null}
   <ModelConsentDialog
-    request={captures.recognizer.consentRequest}
+    request={captures.consent.request}
     onagree={() => void captures.agree()}
-    ondecline={() => captures.recognizer.decline()}
+    ondecline={() => captures.consent.decline()}
   />
 {/if}
 

@@ -5,7 +5,7 @@
   import { megabytes } from '$lib/shared/bytes';
   import { languageName } from '$lib/shared/language';
   import { downloadMb, onDiskMb } from '../../domain/model/model-footprint';
-  import type { ConsentRequest } from './recognizer-view.svelte';
+  import type { ConsentRequest } from './consent-gate.svelte';
 
   type Props = {
     readonly request: ConsentRequest;

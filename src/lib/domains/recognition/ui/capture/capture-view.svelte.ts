@@ -16,8 +16,9 @@ import { CaptureRemoval } from './capture-removal.svelte';
 import { CaptureTags } from './capture-tags.svelte';
 import { ClearAll } from './clear-all.svelte';
 import type { Settled } from './panel-capture';
-import { RecognizerView } from '../engine/recognizer-view.svelte';
-import type { PendingRecognition } from '../engine/recognizer-view.svelte';
+import { ConsentGate } from '../engine/consent-gate.svelte';
+import { EngineWarmup } from '../engine/engine-warmup.svelte';
+import type { PendingRecognition } from '../engine/engine-warmup.svelte';
 import { hasNoText } from '../../domain/engine/recognized-text';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { CropError } from '../../domain/engine/region-cropper';
@@ -76,7 +77,8 @@ class CaptureView {
   readonly edits: CaptureEdits;
   readonly tagging: CaptureTags;
   readonly recording: CaptureRecording;
-  readonly recognizer: RecognizerView;
+  readonly consent: ConsentGate;
+  readonly warmup: EngineWarmup;
   readonly drafts = new CardDrafts();
   #container: Container;
 
@@ -91,11 +93,15 @@ class CaptureView {
       open: (capture) => this.drafts.open('text', capture, '', null),
       close: (capture) => void this.drafts.abandon('text', capture),
     });
-    this.recognizer = new RecognizerView(container, notify, () => this.list.generation);
+    this.consent = new ConsentGate(container, notify, () => this.list.generation);
+    this.warmup = new EngineWarmup(container, () => this.list.generation, {
+      stored: (language) => this.consent.takeAsAgreed(language),
+    });
   }
 
   async open(book: BookId): Promise<void> {
-    this.recognizer.forget();
+    this.consent.forget();
+    this.warmup.forget();
     this.drafts.clear();
     await this.list.open(book);
   }
@@ -103,13 +109,14 @@ class CaptureView {
   close(): void {
     this.list.forget();
     this.drafts.clear();
-    this.recognizer.close();
+    this.consent.forget();
+    this.warmup.close();
   }
 
   async warm(book: BookId, language: Language): Promise<void> {
     if (this.list.book !== book) return;
 
-    await this.recognizer.warm(language);
+    await this.warmup.warm(language);
   }
 
   capture(
@@ -144,12 +151,12 @@ class CaptureView {
   ): Promise<void> {
     const held: PendingRecognition = { source, language, regions, arrangement };
 
-    const admitted = await this.recognizer.admits(held);
+    const admitted = await this.consent.admits(held);
     if (admitted) await this.#read(held);
   }
 
   async agree(): Promise<void> {
-    const held = await this.recognizer.agree();
+    const held = await this.consent.agree();
     if (held === null) return;
 
     await this.#read(held);
@@ -161,7 +168,7 @@ class CaptureView {
 
   async #settlement(held: PendingRecognition): Promise<Settled> {
     try {
-      return settlementOf(await this.recognizer.read(held));
+      return settlementOf(await this.warmup.read(held));
     } catch (cause) {
       return {
         status: 'failed',

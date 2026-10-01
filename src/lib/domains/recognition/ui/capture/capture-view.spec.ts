@@ -579,12 +579,12 @@ describe('CaptureView', () => {
   it('stores the load progress and clears it when the recognition settles', async () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
-    expect(view.recognizer.progress).toBeNull();
+    expect(view.warmup.progress).toBeNull();
 
     const running = read(view);
     const call = await started(world, 0);
     call.notices.onProgress?.({ fraction: 0.42, source: 'network', loadedBytes: 0, totalBytes: 0 });
-    expect(view.recognizer.progress).toEqual({
+    expect(view.warmup.progress).toEqual({
       fraction: 0.42,
       source: 'network',
       loadedBytes: 0,
@@ -593,7 +593,7 @@ describe('CaptureView', () => {
 
     call.settle(ok(recognizedText('done')));
     await running;
-    expect(view.recognizer.progress).toBeNull();
+    expect(view.warmup.progress).toBeNull();
   });
 
   it('holds the load progress until the last capture in flight settles', async () => {
@@ -611,7 +611,7 @@ describe('CaptureView', () => {
 
     (await started(world, 0)).settle(ok(recognizedText('first')));
     await first;
-    expect(view.recognizer.progress).toEqual({
+    expect(view.warmup.progress).toEqual({
       fraction: 0.5,
       source: 'cache',
       loadedBytes: 0,
@@ -620,21 +620,21 @@ describe('CaptureView', () => {
 
     (await started(world, 1)).settle(ok(recognizedText('second')));
     await second;
-    expect(view.recognizer.progress).toBeNull();
+    expect(view.warmup.progress).toBeNull();
   });
 
   it('holds no session until the recognizer reports one', async () => {
     const world = fakes();
     const view = new CaptureView(world.container, world.notify);
-    expect(view.recognizer.session).toBeNull();
+    expect(view.warmup.session).toBeNull();
 
     const running = read(view);
     const call = await started(world, 0);
-    expect(view.recognizer.session).toBeNull();
+    expect(view.warmup.session).toBeNull();
 
     call.settle(ok(recognizedText('done')));
     await running;
-    expect(view.recognizer.session).toBeNull();
+    expect(view.warmup.session).toBeNull();
   });
 
   it('records the model and the device the recognizer opened its session on', async () => {
@@ -651,7 +651,7 @@ describe('CaptureView', () => {
 
     call.settle(ok(recognizedText('done')));
     await running;
-    expect(view.recognizer.session).toEqual({
+    expect(view.warmup.session).toEqual({
       modelId: 'DigitalLarynx/manga-ocr-onnx',
       device: 'webgpu',
       fellBackFrom: null,
@@ -673,7 +673,7 @@ describe('CaptureView', () => {
     await running;
 
     await view.open(TWO);
-    expect(view.recognizer.session).toBeNull();
+    expect(view.warmup.session).toBeNull();
   });
 
   it('clears the list', async () => {
@@ -722,7 +722,7 @@ describe('CaptureView', () => {
     const world = fakes([]);
     const view = new CaptureView(world.container, world.notify);
 
-    expect(view.recognizer.consentRequest).toBeNull();
+    expect(view.consent.request).toBeNull();
     expect(world.consent.reads).toEqual([]);
     expect(world.consent.grants).toEqual([]);
   });
@@ -735,8 +735,8 @@ describe('CaptureView', () => {
 
     expect(world.calls).toEqual([]);
     expect(view.list.captures).toEqual([]);
-    expect(view.recognizer.consentRequest?.language).toBe('ja');
-    expect(view.recognizer.consentRequest?.footprint).toEqual(modelFootprint('ja'));
+    expect(view.consent.request?.language).toBe('ja');
+    expect(view.consent.request?.footprint).toEqual(modelFootprint('ja'));
   });
 
   it('asks before a selection fetches weights this device does not have', async () => {
@@ -749,7 +749,7 @@ describe('CaptureView', () => {
 
     expect(world.engine.prepares).toEqual([]);
     expect(world.calls).toEqual([]);
-    expect(view.recognizer.consentRequest?.language).toBe('ja');
+    expect(view.consent.request?.language).toBe('ja');
   });
 
   it('recognizes the selection it was holding when the reader agreed', async () => {
@@ -766,7 +766,7 @@ describe('CaptureView', () => {
     call.settle(ok(recognizedText('held')));
     await running;
 
-    expect(view.recognizer.consentRequest).toBeNull();
+    expect(view.consent.request).toBeNull();
     expect(world.consent.grants).toEqual(['ja']);
     expect(at(view.list.captures, 0).anchor).toEqual(regionAnchor(regions(7)));
   });
@@ -776,17 +776,41 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container, world.notify);
 
     await read(view);
-    view.recognizer.decline();
+    view.consent.decline();
 
-    expect(view.recognizer.consentRequest).toBeNull();
+    expect(view.consent.request).toBeNull();
     expect(world.calls).toEqual([]);
     expect(view.list.captures).toEqual([]);
     expect(world.consent.grants).toEqual([]);
 
     await read(view);
 
-    expect(view.recognizer.consentRequest).toBeNull();
+    expect(view.consent.request).toBeNull();
     expect(world.calls).toEqual([]);
+  });
+
+  it('drops the consent request when the reader opens another book', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container, world.notify);
+    await read(view);
+
+    await view.open(TWO);
+
+    expect(view.consent.request).toBeNull();
+  });
+
+  it('asks nothing when Turn on is pressed after the reader opened another book', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+    await read(view);
+    view.consent.decline();
+    await read(view);
+
+    await view.open(TWO);
+    at(world.notices, 0).action?.run();
+
+    expect(view.consent.request).toBeNull();
   });
 
   it('asks once and recognizes a later selection without asking again', async () => {
@@ -803,7 +827,7 @@ describe('CaptureView', () => {
     (await started(world, 1)).settle(ok(recognizedText('second')));
     await running;
 
-    expect(later.recognizer.consentRequest).toBeNull();
+    expect(later.consent.request).toBeNull();
     expect(world.consent.grants).toEqual(['ja']);
     expect(at(later.list.captures, 0).status).toBe('done');
   });
@@ -815,7 +839,7 @@ describe('CaptureView', () => {
     const view = new CaptureView(world.container, world.notify);
 
     await read(view);
-    expect(view.recognizer.consentRequest?.language).toBe('ja');
+    expect(view.consent.request?.language).toBe('ja');
 
     const running = view.agree();
     (await started(world, 0)).settle(ok(recognizedText('read anyway')));
@@ -853,7 +877,7 @@ describe('CaptureView', () => {
 
     await view.recognize(source, 'ja', [], 'row');
     await read(view);
-    view.recognizer.decline();
+    view.consent.decline();
     await read(view);
 
     expect(gates(world)).toEqual([
@@ -883,8 +907,8 @@ describe('CaptureView', () => {
 
     await view.recognize(source, 'ko', regions(), 'column');
 
-    expect(view.recognizer.consentRequest?.language).toBe('ko');
-    expect(view.recognizer.consentRequest?.footprint).toEqual(modelFootprint('ko'));
+    expect(view.consent.request?.language).toBe('ko');
+    expect(view.consent.request?.footprint).toEqual(modelFootprint('ko'));
     expect(world.calls).toEqual([]);
   });
 
@@ -1538,8 +1562,8 @@ describe('CaptureView.warm', () => {
     await view.warm(ONE, 'ja');
 
     expect(world.engine.prepares).toEqual(['ja']);
-    expect(view.recognizer.session).toEqual(OPENED_SESSION);
-    expect(view.recognizer.engine.stored).toBe(true);
+    expect(view.warmup.session).toEqual(OPENED_SESSION);
+    expect(view.warmup.engine.stored).toBe(true);
   });
 
   it('opens nothing when the weights are not on this device', async () => {
@@ -1550,8 +1574,8 @@ describe('CaptureView.warm', () => {
     await view.warm(ONE, 'ja');
 
     expect(world.engine.prepares).toEqual([]);
-    expect(view.recognizer.session).toBeNull();
-    expect(view.recognizer.engine.stored).toBe(false);
+    expect(view.warmup.session).toBeNull();
+    expect(view.warmup.engine.stored).toBe(false);
   });
 
   it('opens the engine on weights that are here although no grant was ever recorded', async () => {
@@ -1563,8 +1587,8 @@ describe('CaptureView.warm', () => {
     await view.warm(ONE, 'ja');
 
     expect(world.engine.prepares).toEqual(['ja']);
-    expect(view.recognizer.session).toEqual(OPENED_SESSION);
-    expect(view.recognizer.engine.stored).toBe(true);
+    expect(view.warmup.session).toEqual(OPENED_SESSION);
+    expect(view.warmup.engine.stored).toBe(true);
   });
 
   it('reads no consent record on the way to opening weights that are here', async () => {
@@ -1587,7 +1611,7 @@ describe('CaptureView.warm', () => {
     await view.warm(ONE, 'ja');
 
     expect(world.engine.prepares).toEqual([]);
-    expect(view.recognizer.engine.stored).toBe(false);
+    expect(view.warmup.engine.stored).toBe(false);
   });
 
   it('asks for no agreement on a later selection once it has opened the engine', async () => {
@@ -1601,7 +1625,7 @@ describe('CaptureView.warm', () => {
     void view.recognize(source, 'ja', regions(3), 'row');
     const call = await started(world, 0);
 
-    expect(view.recognizer.consentRequest).toBeNull();
+    expect(view.consent.request).toBeNull();
     expect(call.regions).toEqual(regions(3));
   });
 
@@ -1626,8 +1650,8 @@ describe('CaptureView.warm', () => {
     await view.open(ONE);
     await view.warm(ONE, 'ja');
 
-    expect(view.recognizer.session).toBeNull();
-    expect(view.recognizer.engineFailure).toBe('the worker died');
+    expect(view.warmup.session).toBeNull();
+    expect(view.warmup.engine.failure).toBe('the worker died');
   });
 
   it('opens no engine for a book other than the one open', async () => {
@@ -1639,7 +1663,7 @@ describe('CaptureView.warm', () => {
     await view.warm(TWO, 'ja');
 
     expect(world.engine.prepares).toEqual([]);
-    expect(view.recognizer.session).toBeNull();
+    expect(view.warmup.session).toBeNull();
   });
 });
 
@@ -1654,8 +1678,19 @@ describe('CaptureView.close', () => {
     view.close();
 
     expect(world.engine.closes).toEqual(['ja']);
-    expect(view.recognizer.session).toBeNull();
-    expect(view.recognizer.engine.stored).toBe(false);
+    expect(view.warmup.session).toBeNull();
+    expect(view.warmup.engine.stored).toBe(false);
+  });
+
+  it('drops the consent request when the reader leaves the book', async () => {
+    const world = fakes([]);
+    const view = new CaptureView(world.container, world.notify);
+    await view.open(ONE);
+    await read(view);
+
+    view.close();
+
+    expect(view.consent.request).toBeNull();
   });
 
   it('closes nothing when no engine was ever opened', async () => {
@@ -1683,7 +1718,7 @@ describe('CaptureView.close', () => {
 
     expect(world.engine.closes).toEqual(['ja']);
     expect(world.engine.prepares).toEqual(['ja', 'ja']);
-    expect(view.recognizer.session).toEqual(OPENED_SESSION);
+    expect(view.warmup.session).toEqual(OPENED_SESSION);
   });
 
   it('drops every open draft when the reader leaves the book', async () => {

@@ -26,7 +26,7 @@ import type { CaptureReveal } from './capture-reveal';
 import { readCaptureSort, saveCaptureSort } from './capture-sort';
 import type { CaptureSort } from './capture-sort';
 import { NOTHING_READ } from './capture-view.svelte';
-import { modelLoadNote } from '../engine/recognizer-view.svelte';
+import { modelLoadNote } from '../engine/engine-warmup.svelte';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
 
