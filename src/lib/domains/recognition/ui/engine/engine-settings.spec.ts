@@ -7,17 +7,16 @@ import type { Result } from '$lib/shared/result';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
 import type { PartialReport } from '../../domain/model/model-partial';
-import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import { JAPANESE_OCR_MODEL, modelsFor } from '../../domain/model/model-footprint';
 import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
 import { setupChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import type { ModelStorageError } from '../../domain/model/model-storage';
-import type { SetupError } from '../../domain/engine/recognizer-setup';
+import type { RecognizerChoice, SetupError } from '../../domain/engine/recognizer-setup';
 import { at } from '$lib/shared/testing/at';
 import {
   cancelHint,
-  engineLanguages,
   EngineSettingsView,
   LOAD_FAILED,
   loadFigure,
@@ -29,6 +28,7 @@ import {
   storageFailureNote,
   storedFigure,
 } from './engine-settings.svelte';
+import { engineLanguages } from './engine-setup.svelte';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
@@ -62,6 +62,9 @@ type World = {
   readonly notices: Notice[];
   snapshot: ModelStorageSnapshot;
   saving: Result<void, SetupError>;
+  reading: Result<RecognizerChoice, SetupError>;
+  readonly measured: string[];
+  readonly saved: string[];
   deleting: Result<ModelStorageReport, ModelStorageError>;
 };
 
@@ -108,6 +111,9 @@ function world(snapshot: ModelStorageSnapshot): World {
     notices,
     snapshot,
     saving: ok(undefined),
+    reading: ok(setupChoice('ja', null)),
+    measured: [],
+    saved: [],
     deleting: ok(report({ files: 7, bytes: 120_000_000 })),
   };
 
@@ -140,10 +146,17 @@ function world(snapshot: ModelStorageSnapshot): World {
       removeCapture: unused,
       restoreCapture: unused,
       clearCaptures: unused,
-      readModelStorage: () => Promise.resolve(ok(built.snapshot)),
+      readModelStorage: (modelId: string) => {
+        built.measured.push(modelId);
+        return Promise.resolve(ok(built.snapshot));
+      },
       deleteModel: () => Promise.resolve(built.deleting),
-      readRecognizerSetup: (language: Language) => Promise.resolve(ok(setupChoice(language, null))),
-      saveRecognizerSetup: () => Promise.resolve(built.saving),
+      readRecognizerSetup: (language: Language) =>
+        Promise.resolve(built.reading.ok ? ok(setupChoice(language, null)) : built.reading),
+      saveRecognizerSetup: (_language: Language, setup: { readonly modelId: string }) => {
+        built.saved.push(setup.modelId);
+        return Promise.resolve(built.saving);
+      },
       detectCompute: () => Promise.resolve(GPU_UNDETECTED),
       prepareRecognizer: () =>
         new Promise<Result<RecognizerSession, ModelLoadError>>((resolve) => {
@@ -288,6 +301,60 @@ describe('storedFigure', () => {
 });
 
 describe('EngineSettingsView', () => {
+  it('measures nothing and shows no model when the setup cannot be read', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    built.reading = err({ kind: 'storage-unavailable' });
+
+    await built.view.load();
+
+    expect(built.view.setup.state.kind).toBe('failed');
+    expect(built.view.model).toBeNull();
+    expect(built.measured).toEqual([]);
+  });
+
+  it('measures the shown model once the setup is read', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+
+    await built.view.load();
+
+    expect(built.measured).toEqual([MODEL]);
+    expect(built.view.stored).toBe(true);
+  });
+
+  it('reads the setup of a new language, which shows as a read meanwhile', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    const choosing = built.view.chooseLanguage('ko');
+    const during = built.view.setup.state.kind;
+    await choosing;
+
+    expect(during).toBe('loading');
+    expect(built.view.language).toBe('ko');
+    expect(built.view.storage).toEqual(built.snapshot);
+  });
+
+  it('saves nothing when the selected model is chosen again', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    const second = at(modelsFor('ja'), 1).modelId;
+
+    await built.view.chooseModel(second);
+    await built.view.chooseModel(second);
+
+    expect(built.saved).toEqual([second]);
+  });
+
+  it('reads nothing again when the shown language is chosen', async () => {
+    const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
+    await built.view.load();
+
+    await built.view.chooseLanguage('ja');
+
+    expect(built.measured).toEqual([MODEL]);
+  });
+
   it('drops the cached recognizer when the compute choice changes', async () => {
     const built = world(snapshotOf(REQUIRED_WEIGHTS, 0, 7));
     await built.view.load();

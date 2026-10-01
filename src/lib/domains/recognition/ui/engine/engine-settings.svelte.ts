@@ -2,12 +2,10 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
-import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import type { Result } from '$lib/shared/result';
-import type { ComputeChoice, GpuDetection } from '../../domain/engine/compute-choice';
-import { GPU_UNDETECTED } from '../../domain/engine/compute-choice';
+import type { ComputeChoice } from '../../domain/engine/compute-choice';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
@@ -15,13 +13,13 @@ import type { PartialReport } from '../../domain/model/model-partial';
 import { downloadStep, IDLE } from '../../domain/model/model-download';
 import type { DownloadEvent, DownloadState } from '../../domain/model/model-download';
 import type { ModelLoad } from '../../domain/model/model-load';
-import { modelsFor } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type { ModelStorageError } from '../../domain/model/model-storage';
 import type { SetupError } from '../../domain/engine/recognizer-setup';
 import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import { EngineSetup, shownModel } from './engine-setup.svelte';
 
 const FULL_PERCENT = 100;
 
@@ -95,16 +93,7 @@ function storedFigure(report: ModelStorageReport): string {
   return isStored(report) ? held : `${held}, but not the weights`;
 }
 
-function engineLanguages(): readonly Language[] {
-  return LANGUAGES.filter((language) => modelsFor(language).length > 0);
-}
-
 class EngineSettingsView {
-  language = $state.raw<Language | null>(null);
-  models = $state.raw<readonly ModelFootprint[]>([]);
-  selected = $state.raw<string | null>(null);
-  compute = $state.raw<ComputeChoice>('auto');
-  detection = $state.raw<GpuDetection>(GPU_UNDETECTED);
   storage = $state.raw<ModelStorageSnapshot | null>(null);
   storageMessage = $state.raw<string | null>(null);
   download = $state.raw<DownloadState>(IDLE);
@@ -113,6 +102,8 @@ class EngineSettingsView {
   confirmingRemoval = $state(false);
   message = $state.raw<string | null>(null);
 
+  readonly setup: EngineSetup;
+
   #container: Container;
   #notify: Notify;
   #generation = 0;
@@ -120,10 +111,15 @@ class EngineSettingsView {
   constructor(container: Container, notify: Notify) {
     this.#container = container;
     this.#notify = notify;
+    this.setup = new EngineSetup(container, () => this.#generation);
+  }
+
+  get language(): Language | null {
+    return this.setup.choice?.language ?? null;
   }
 
   get model(): ModelFootprint | null {
-    return this.models.find((known) => known.modelId === this.selected) ?? this.models[0] ?? null;
+    return this.setup.model;
   }
 
   get stored(): boolean {
@@ -160,33 +156,14 @@ class EngineSettingsView {
 
   async load(): Promise<void> {
     const generation = this.#bump();
-    const language = this.language ?? engineLanguages()[0] ?? null;
-    this.language = language;
-    this.models = language === null ? [] : modelsFor(language);
-    if (language === null) return;
-
-    const [choice, detected] = await Promise.all([
-      this.#container.recognition.readRecognizerSetup(language),
-      this.#container.recognition.detectCompute(),
-    ]);
-
-    if (generation !== this.#generation) return;
-
-    if (choice.ok) {
-      this.selected = choice.value.model?.modelId ?? null;
-      this.compute = choice.value.compute;
-    }
-    this.detection = detected;
-
+    await this.setup.load(generation);
     await this.measure(generation);
   }
 
   async chooseLanguage(language: Language): Promise<void> {
-    if (this.language === language) return;
+    if (this.setup.language === language) return;
 
-    this.language = language;
-    this.models = modelsFor(language);
-    this.selected = null;
+    this.setup.language = language;
     this.session = null;
     this.download = IDLE;
     this.storage = null;
@@ -202,17 +179,18 @@ class EngineSettingsView {
   }
 
   async chooseModel(modelId: string): Promise<void> {
-    if (this.selected === modelId) return;
+    const choice = this.setup.choice;
+    if (choice === null || choice.selected === modelId) return;
 
-    const abandoned = this.model;
-    this.selected = modelId;
-    await this.#applySetup(abandoned?.modelId ?? null);
+    const abandoned = shownModel(choice);
+    this.setup.select(modelId);
+    await this.#applySetup(abandoned.modelId);
   }
 
   async chooseCompute(compute: ComputeChoice): Promise<void> {
-    if (this.compute === compute) return;
+    if (this.setup.choice?.compute === compute) return;
 
-    this.compute = compute;
+    this.setup.setCompute(compute);
     await this.#applySetup(null);
   }
 
@@ -334,17 +312,18 @@ class EngineSettingsView {
   }
 
   async #applySetup(abandoned: string | null): Promise<void> {
-    const language = this.language;
-    const model = this.model;
-    if (language === null || model === null) return;
+    const choice = this.setup.choice;
+    if (choice === null) return;
 
+    const language = choice.language;
+    const model = shownModel(choice);
     const generation = this.#bump();
     this.session = null;
     this.download = IDLE;
 
     const saved = await this.#container.recognition.saveRecognizerSetup(language, {
       modelId: model.modelId,
-      compute: this.compute,
+      compute: choice.compute,
     });
     if (!saved.ok && generation === this.#generation) {
       this.#fail(SETUP_FAILED, setupFailureNote(saved.error));
@@ -384,6 +363,5 @@ export {
   partialFigure,
   resumeLabel,
   storedFigure,
-  engineLanguages,
   EngineSettingsView,
 };

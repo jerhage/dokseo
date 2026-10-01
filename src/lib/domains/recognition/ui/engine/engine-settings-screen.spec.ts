@@ -7,7 +7,11 @@ import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { DownloadState } from '../../domain/model/model-download';
 import { IDLE } from '../../domain/model/model-download';
-import { JAPANESE_OCR_MODEL, modelsFor } from '../../domain/model/model-footprint';
+import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
+import type { ReadState } from '$lib/shared/read-state';
+import { offeredModels } from './engine-setup.svelte';
+import type { EngineChoice, OfferedModels } from './engine-setup.svelte';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import EngineAside from './EngineAside.svelte';
 import EngineSettingsScreen from './EngineSettingsScreen.svelte';
@@ -23,7 +27,7 @@ type Fake = {
   readonly removing: boolean;
   readonly message: string | null;
   readonly storageMessage: string | null;
-  readonly chosen: boolean;
+  readonly setup: 'loading' | 'failed' | 'ready';
 };
 
 const SCREEN = EngineSettingsScreen as unknown as Component<Record<string, unknown>>;
@@ -46,7 +50,7 @@ const BASE: Fake = {
   removing: false,
   message: null,
   storageMessage: null,
-  chosen: true,
+  setup: 'ready',
 };
 
 function snapshot(files: number, persisted = true): ModelStorageSnapshot {
@@ -66,8 +70,21 @@ function snapshot(files: number, persisted = true): ModelStorageSnapshot {
   };
 }
 
+function setupOf(fake: Fake): ReadState<EngineChoice> {
+  if (fake.setup === 'loading') return LOADING;
+  if (fake.setup === 'failed') return readFailed('Local storage failed: locked');
+  return readReady({
+    language: 'ja',
+    models: offeredModels('ja') as OfferedModels,
+    selected: null,
+    compute: fake.compute,
+    detection: GPU_UNDETECTED,
+  });
+}
+
 function viewOf(over: Partial<Fake>): Record<string, unknown> {
   const fake = { ...BASE, ...over };
+  const ready = fake.setup === 'ready';
   const download = fake.download;
   const engine: EngineState = {
     stored: fake.stored,
@@ -81,10 +98,9 @@ function viewOf(over: Partial<Fake>): Record<string, unknown> {
   };
   return {
     ...fake,
-    language: fake.chosen ? 'ja' : null,
-    model: fake.chosen ? JAPANESE_OCR_MODEL : null,
-    models: fake.chosen ? modelsFor('ja') : [],
-    detection: GPU_UNDETECTED,
+    setup: { state: setupOf(fake) },
+    language: ready ? 'ja' : null,
+    model: ready ? JAPANESE_OCR_MODEL : null,
     partial: fake.storage?.partial ?? null,
     engine,
   };
@@ -99,11 +115,21 @@ function aside(over: Partial<Fake>): string {
 }
 
 describe('EngineSettingsScreen', () => {
-  it('draws only the header before the view has chosen a language', () => {
-    const html = screen({ chosen: false });
+  it('draws the header and a reading note while the engine settings are read', () => {
+    const html = screen({ setup: 'loading' });
 
     expect(html).toContain('OCR engine');
-    expect(html).not.toContain('No recognition model');
+    expect(html).toContain('Reading your engine settings…');
+    expect(html).toContain('aria-busy="true"');
+    expect(html).not.toContain('aria-labelledby');
+  });
+
+  it('draws the failure with its cause and a retry in place of the engines', () => {
+    const html = screen({ setup: 'failed' });
+
+    expect(html).toContain('Engine settings could not be read');
+    expect(html).toContain('Local storage failed: locked');
+    expect(html).toContain('Try again');
     expect(html).not.toContain('aria-labelledby');
   });
 
@@ -230,6 +256,6 @@ describe('EngineAside', () => {
   });
 
   it('names no engine when no model is chosen', () => {
-    expect(aside({ chosen: false })).toContain('None');
+    expect(aside({ setup: 'loading' })).toContain('None');
   });
 });

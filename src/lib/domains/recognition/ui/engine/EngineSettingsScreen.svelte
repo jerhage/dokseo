@@ -18,7 +18,6 @@
   import { deviceName } from '../../domain/engine/recognizer-session';
   import {
     cancelHint,
-    engineLanguages,
     loadFigure,
     partialFigure,
     REMOVAL_WARNING,
@@ -26,6 +25,8 @@
     storedFigure,
   } from './engine-settings.svelte';
   import type { EngineSettingsView } from './engine-settings.svelte';
+  import { engineLanguages, shownModel } from './engine-setup.svelte';
+  import EngineSetupData from './EngineSetupData.svelte';
   import EngineTrade from './EngineTrade.svelte';
   import {
     engineActionOf,
@@ -43,14 +44,10 @@
 
   const uid = $props.id();
 
-  const model = $derived(view.model);
-  const language = $derived(view.language);
   const download = $derived(view.download);
   const loading = $derived(download.kind === 'loading');
   const storage = $derived(view.storage);
   const session = $derived(view.session);
-  const gpuWarning = $derived(computeGpuWarning(view.compute));
-  const cpuNote = $derived(computeCpuNote(view.compute));
 
   const state = $derived(engineStatus(view.engine));
   const partial = $derived(partialFigure(view.partial, view.stored));
@@ -86,193 +83,198 @@
   </p>
 </header>
 
-{#if model !== null && language !== null}
-  <div class="col gap-4 px-responsive pt-4 pb-6">
-    <section
-      class="surface bordered rounded-container overflow-hidden"
-      aria-labelledby="{uid}-engine"
-    >
-      <div class="col gap-2 p-4 surface-raised">
-        <div class="row wrap items-center justify-between gap-2">
-          <div class="row wrap items-center gap-2">
-            <Radio
-              name="{uid}-engine-choice"
-              value={ON_DEVICE_ENGINE.id}
-              group={ON_DEVICE_ENGINE.id}
-              aria-labelledby="{uid}-engine"
-            />
-            <h2 class="text-base weight-semibold" id="{uid}-engine">On-device</h2>
-            <Badge variant="primary">In use</Badge>
-            <EngineTrade engine={ON_DEVICE_ENGINE} {model} />
-          </div>
-          <p><Badge dot variant={statusVariant(state.tone)}>{state.label}</Badge></p>
-        </div>
-        <p class="prose text-sm text-muted">
-          Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
-          download of about {weightsMb(model)} MB of weights and about {runtimeMb(model)} MB of runtime,
-          about {onDiskMb(model)} MB on disk.
-        </p>
-        <p class="text-xs text-faint">{state.note}</p>
-      </div>
-
-      {#if loading}
-        <div class="col gap-2 p-4 border-t">
+<div class="col gap-4 px-responsive pt-4 pb-6">
+  <EngineSetupData state={view.setup.state} onretry={() => void view.load()}>
+    {#snippet children(choice)}
+      {@const model = shownModel(choice)}
+      {@const gpuWarning = computeGpuWarning(choice.compute)}
+      {@const cpuNote = computeCpuNote(choice.compute)}
+      <section
+        class="surface bordered rounded-container overflow-hidden"
+        aria-labelledby="{uid}-engine"
+      >
+        <div class="col gap-2 p-4 surface-raised">
           <div class="row wrap items-center justify-between gap-2">
-            <span class="text-sm">{model.label} weights</span>
-            <span class="mono text-xs text-muted">{loadFigure(progress)}</span>
+            <div class="row wrap items-center gap-2">
+              <Radio
+                name="{uid}-engine-choice"
+                value={ON_DEVICE_ENGINE.id}
+                group={ON_DEVICE_ENGINE.id}
+                aria-labelledby="{uid}-engine"
+              />
+              <h2 class="text-base weight-semibold" id="{uid}-engine">On-device</h2>
+              <Badge variant="primary">In use</Badge>
+              <EngineTrade engine={ON_DEVICE_ENGINE} {model} />
+            </div>
+            <p><Badge dot variant={statusVariant(state.tone)}>{state.label}</Badge></p>
           </div>
-          <Progress label="{state.label} the recognition model" value={percent} />
-          <div class="row wrap items-center gap-2">
-            <span class="flex-fill text-xs text-muted">{cancelHint(progress)}</span>
-            <Button size="sm" onclick={() => void view.pause()}>Pause</Button>
-            <Button size="sm" onclick={() => void view.stop()}>Cancel</Button>
-          </div>
-        </div>
-      {/if}
-
-      <div class="grid-2 p-4 border-t">
-        <div class="col gap-2">
-          <p class={caption} id="{uid}-language">Language</p>
-          <SegmentedControl
-            variant="outline"
-            aria-labelledby="{uid}-language"
-            class="grid-3 grid-auto-sm"
-            options={languageOptions}
-            value={language}
-            onvaluechange={(offered) => void view.chooseLanguage(offered)}
-          />
-          <p class={caption} id="{uid}-model">Model</p>
-          <ul class="list-reset col gap-2" aria-labelledby="{uid}-model">
-            {#each view.models as offered (offered.modelId)}
-              <li class="col gap-1">
-                <Radio
-                  name="{uid}-model-choice"
-                  value={offered.modelId}
-                  group={model.modelId}
-                  hint={weightsFigure(offered)}
-                  variant="tile"
-                  class="bordered"
-                  onchange={() => void view.chooseModel(offered.modelId)}
-                >
-                  {offered.label}
-                </Radio>
-                <p class="text-xs text-muted">{modelFootnote(offered)}</p>
-              </li>
-            {/each}
-          </ul>
-        </div>
-
-        <div class="col gap-2">
-          <p class={caption} id="{uid}-compute">Compute</p>
-          <SegmentedControl
-            variant="outline"
-            aria-labelledby="{uid}-compute"
-            class="grid-3 grid-auto-sm"
-            options={computeOptions}
-            value={view.compute}
-            onvaluechange={(choice) => void view.chooseCompute(choice)}
-          />
-          <p class={note}>{computeDetectionNote(view.detection, view.compute)}</p>
-          {#if cpuNote !== null}
-            <p class={note}>{cpuNote}</p>
-          {/if}
-          {#if gpuWarning !== null}
-            <Alert variant="warning" role="alert">{gpuWarning}</Alert>
-          {/if}
-          {#if session !== null}
-            <p class={note}>This session opened on the {deviceName(session.device)}.</p>
-          {/if}
-        </div>
-      </div>
-
-      <div class="col gap-2 p-4 border-t">
-        <p class={caption}>Stored on this device</p>
-        <p class="mono text-sm">
-          {storage === null
-            ? (view.storageMessage ?? 'Reading what is stored…')
-            : storedFigure(storage.report)}
-        </p>
-        {#if partial !== null}
-          <p class="text-xs text-muted">{partial}</p>
-        {/if}
-        <p class="text-xs text-muted">
-          This is what the model occupies, not what the app does.
-          <a href={storageHref}>Storage</a>
-          accounts for every megabyte on this device.
-        </p>
-        {#if storage !== null && !storage.persisted}
-          <p class="text-xs text-muted">
-            The browser has not granted persistence, so it may reclaim this space on its own.
+          <p class="prose text-sm text-muted">
+            Runs {model.engine} in this app. Works offline once the weights are here; it costs a one-time
+            download of about {weightsMb(model)} MB of weights and about {runtimeMb(model)} MB of runtime,
+            about {onDiskMb(model)} MB on disk.
           </p>
+          <p class="text-xs text-faint">{state.note}</p>
+        </div>
+
+        {#if loading}
+          <div class="col gap-2 p-4 border-t">
+            <div class="row wrap items-center justify-between gap-2">
+              <span class="text-sm">{model.label} weights</span>
+              <span class="mono text-xs text-muted">{loadFigure(progress)}</span>
+            </div>
+            <Progress label="{state.label} the recognition model" value={percent} />
+            <div class="row wrap items-center gap-2">
+              <span class="flex-fill text-xs text-muted">{cancelHint(progress)}</span>
+              <Button size="sm" onclick={() => void view.pause()}>Pause</Button>
+              <Button size="sm" onclick={() => void view.stop()}>Cancel</Button>
+            </div>
+          </div>
         {/if}
 
-        {#if action.kind !== 'none'}
-          <div class="row wrap gap-2 mt-1">
-            {#if action.kind === 'resume'}
-              <Button variant="primary" size="sm" onclick={() => void view.start()}>
-                {resumeLabel(view.partial)}
-              </Button>
-              <Button size="sm" onclick={() => void view.stop()}>Discard what was fetched</Button>
-            {:else if action.kind === 'download'}
-              <Button variant="primary" size="sm" onclick={() => void view.start()}>
-                Download now
-              </Button>
-            {:else}
-              <Button
-                variant="ghost-danger"
-                size="sm"
-                disabled={view.removing}
-                onclick={() => view.askRemoval()}
-              >
-                {view.removing ? 'Deleting…' : 'Delete the model'}
-              </Button>
+        <div class="grid-2 p-4 border-t">
+          <div class="col gap-2">
+            <p class={caption} id="{uid}-language">Language</p>
+            <SegmentedControl
+              variant="outline"
+              aria-labelledby="{uid}-language"
+              class="grid-3 grid-auto-sm"
+              options={languageOptions}
+              value={choice.language}
+              onvaluechange={(offered) => void view.chooseLanguage(offered)}
+            />
+            <p class={caption} id="{uid}-model">Model</p>
+            <ul class="list-reset col gap-2" aria-labelledby="{uid}-model">
+              {#each choice.models as offered (offered.modelId)}
+                <li class="col gap-1">
+                  <Radio
+                    name="{uid}-model-choice"
+                    value={offered.modelId}
+                    group={model.modelId}
+                    hint={weightsFigure(offered)}
+                    variant="tile"
+                    class="bordered"
+                    onchange={() => void view.chooseModel(offered.modelId)}
+                  >
+                    {offered.label}
+                  </Radio>
+                  <p class="text-xs text-muted">{modelFootnote(offered)}</p>
+                </li>
+              {/each}
+            </ul>
+          </div>
+
+          <div class="col gap-2">
+            <p class={caption} id="{uid}-compute">Compute</p>
+            <SegmentedControl
+              variant="outline"
+              aria-labelledby="{uid}-compute"
+              class="grid-3 grid-auto-sm"
+              options={computeOptions}
+              value={choice.compute}
+              onvaluechange={(choice) => void view.chooseCompute(choice)}
+            />
+            <p class={note}>{computeDetectionNote(choice.detection, choice.compute)}</p>
+            {#if cpuNote !== null}
+              <p class={note}>{cpuNote}</p>
+            {/if}
+            {#if gpuWarning !== null}
+              <Alert variant="warning" role="alert">{gpuWarning}</Alert>
+            {/if}
+            {#if session !== null}
+              <p class={note}>This session opened on the {deviceName(session.device)}.</p>
             {/if}
           </div>
-        {/if}
-
-        {#if view.confirmingRemoval}
-          <Alert variant="warning" role={undefined}>
-            Delete about {removalMb(storage, model)} MB of weights? {REMOVAL_WARNING}
-            {#snippet actions()}
-              <Button size="sm" onclick={() => view.dismissRemoval()}>Keep it</Button>
-              <Button variant="danger" size="sm" onclick={() => void view.remove()}>
-                Delete the model
-              </Button>
-            {/snippet}
-          </Alert>
-        {/if}
-
-        {#if view.message !== null}
-          <p class="text-xs text-muted" role="status">{view.message}</p>
-        {/if}
-      </div>
-    </section>
-
-    {#each UNBUILT_ENGINES as offered (offered.id)}
-      <section
-        class="col gap-2 p-4 surface-sunken bordered rounded-container"
-        aria-labelledby="{uid}-{offered.id}"
-      >
-        <div class="row wrap items-center justify-between gap-2">
-          <div class="row wrap items-center gap-2">
-            <Radio
-              name="{uid}-engine-choice"
-              value={offered.id}
-              group={ON_DEVICE_ENGINE.id}
-              disabled
-              aria-labelledby="{uid}-{offered.id}"
-            />
-            <h2 class="text-base weight-semibold" id="{uid}-{offered.id}">{offered.name}</h2>
-            <Badge>{offered.kind}</Badge>
-            <EngineTrade engine={offered} {model} />
-          </div>
-          <p>
-            <Badge dot variant={statusVariant(NOT_INSTALLED.tone)}>{NOT_INSTALLED.label}</Badge>
-          </p>
         </div>
-        <p class="prose text-sm text-muted">{offered.summary}</p>
-        <p class="text-xs text-faint">{NOT_INSTALLED.note}</p>
+
+        <div class="col gap-2 p-4 border-t">
+          <p class={caption}>Stored on this device</p>
+          <p class="mono text-sm">
+            {storage === null
+              ? (view.storageMessage ?? 'Reading what is stored…')
+              : storedFigure(storage.report)}
+          </p>
+          {#if partial !== null}
+            <p class="text-xs text-muted">{partial}</p>
+          {/if}
+          <p class="text-xs text-muted">
+            This is what the model occupies, not what the app does.
+            <a href={storageHref}>Storage</a>
+            accounts for every megabyte on this device.
+          </p>
+          {#if storage !== null && !storage.persisted}
+            <p class="text-xs text-muted">
+              The browser has not granted persistence, so it may reclaim this space on its own.
+            </p>
+          {/if}
+
+          {#if action.kind !== 'none'}
+            <div class="row wrap gap-2 mt-1">
+              {#if action.kind === 'resume'}
+                <Button variant="primary" size="sm" onclick={() => void view.start()}>
+                  {resumeLabel(view.partial)}
+                </Button>
+                <Button size="sm" onclick={() => void view.stop()}>Discard what was fetched</Button>
+              {:else if action.kind === 'download'}
+                <Button variant="primary" size="sm" onclick={() => void view.start()}>
+                  Download now
+                </Button>
+              {:else}
+                <Button
+                  variant="ghost-danger"
+                  size="sm"
+                  disabled={view.removing}
+                  onclick={() => view.askRemoval()}
+                >
+                  {view.removing ? 'Deleting…' : 'Delete the model'}
+                </Button>
+              {/if}
+            </div>
+          {/if}
+
+          {#if view.confirmingRemoval}
+            <Alert variant="warning" role={undefined}>
+              Delete about {removalMb(storage, model)} MB of weights? {REMOVAL_WARNING}
+              {#snippet actions()}
+                <Button size="sm" onclick={() => view.dismissRemoval()}>Keep it</Button>
+                <Button variant="danger" size="sm" onclick={() => void view.remove()}>
+                  Delete the model
+                </Button>
+              {/snippet}
+            </Alert>
+          {/if}
+
+          {#if view.message !== null}
+            <p class="text-xs text-muted" role="status">{view.message}</p>
+          {/if}
+        </div>
       </section>
-    {/each}
-  </div>
-{/if}
+
+      {#each UNBUILT_ENGINES as offered (offered.id)}
+        <section
+          class="col gap-2 p-4 surface-sunken bordered rounded-container"
+          aria-labelledby="{uid}-{offered.id}"
+        >
+          <div class="row wrap items-center justify-between gap-2">
+            <div class="row wrap items-center gap-2">
+              <Radio
+                name="{uid}-engine-choice"
+                value={offered.id}
+                group={ON_DEVICE_ENGINE.id}
+                disabled
+                aria-labelledby="{uid}-{offered.id}"
+              />
+              <h2 class="text-base weight-semibold" id="{uid}-{offered.id}">{offered.name}</h2>
+              <Badge>{offered.kind}</Badge>
+              <EngineTrade engine={offered} {model} />
+            </div>
+            <p>
+              <Badge dot variant={statusVariant(NOT_INSTALLED.tone)}>{NOT_INSTALLED.label}</Badge>
+            </p>
+          </div>
+          <p class="prose text-sm text-muted">{offered.summary}</p>
+          <p class="text-xs text-faint">{NOT_INSTALLED.note}</p>
+        </section>
+      {/each}
+    {/snippet}
+  </EngineSetupData>
+</div>
