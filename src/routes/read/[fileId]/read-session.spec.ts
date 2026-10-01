@@ -17,7 +17,7 @@ type World = {
   readonly session: ReadSession;
   readonly url: SvelteURL;
   readonly opened: BookId[];
-  readonly listed: BookId[];
+  readonly listed: () => readonly BookId[];
   readonly replaced: string[];
   readonly left: string[];
   readonly copied: string[];
@@ -34,7 +34,6 @@ const NO_COUNTING = { counts: () => new Map(), ask: () => undefined };
 function world(address: string): World {
   const url = new SvelteURL(`${ORIGIN}${address}`);
   const opened: BookId[] = [];
-  const listed: BookId[] = [];
   const replaced: string[] = [];
   const left: string[] = [];
   const copied: string[] = [];
@@ -49,40 +48,36 @@ function world(address: string): World {
         return Promise.resolve({ kind: 'flow', book: flowBook(id) });
       },
     },
-    recognition: {
-      listCaptures: (book: BookId) => {
-        listed.push(book);
-        return Promise.resolve({ kind: 'success', captures: [] });
-      },
-      listTags: () => Promise.resolve({ kind: 'success', tags: [] }),
-    },
   } as unknown as Container;
+  const session = new ReadSession(
+    container,
+    createTestQueryClient(),
+    () => undefined,
+    {
+      fileId: () => decodeURIComponent(url.pathname.split('/').at(-1) ?? ''),
+      requested: () => url,
+      shown: () => new URL(held.shown),
+      replace: (next) => {
+        replaced.push(next.href);
+      },
+      leave: (path) => {
+        left.push(path);
+      },
+    },
+    (text) => {
+      copied.push(text);
+      return Promise.resolve();
+    },
+    NO_COUNTING,
+    () => undefined,
+    () => undefined,
+  );
+  const opens = vi.spyOn(session.captures, 'open');
   const held: World = {
-    session: new ReadSession(
-      container,
-      createTestQueryClient(),
-      () => undefined,
-      {
-        fileId: () => decodeURIComponent(url.pathname.split('/').at(-1) ?? ''),
-        requested: () => url,
-        shown: () => new URL(held.shown),
-        replace: (next) => {
-          replaced.push(next.href);
-        },
-        leave: (path) => {
-          left.push(path);
-        },
-      },
-      (text) => {
-        copied.push(text);
-        return Promise.resolve();
-      },
-      NO_COUNTING,
-      () => undefined,
-    ),
+    session,
     url,
     opened,
-    listed,
+    listed: () => opens.mock.calls.map(([book]) => book),
     replaced,
     left,
     copied,
@@ -127,14 +122,14 @@ afterEach(() => {
 });
 
 describe('ReadSession', () => {
-  it('opens the book and its captures on entering', async () => {
+  it('opens the book and points the capture list at it on entering', async () => {
     const held = world('/read/one');
 
     held.session.navigate();
     await settled();
 
     expect(held.opened).toEqual([bookId('one')]);
-    expect(held.listed).toEqual([bookId('one')]);
+    expect(held.listed()).toEqual([bookId('one')]);
   });
 
   it('closes every part before opening the next book on a switch', async () => {
@@ -151,7 +146,7 @@ describe('ReadSession', () => {
 
     expect(closed.map((spy) => spy.mock.calls.length)).toEqual([1, 1]);
     expect(held.opened).toEqual([bookId('one'), bookId('two')]);
-    expect(held.listed).toEqual([bookId('one'), bookId('two')]);
+    expect(held.listed()).toEqual([bookId('one'), bookId('two')]);
   });
 
   it('moves to an asked image within the open book without opening it again', async () => {
@@ -196,7 +191,7 @@ describe('ReadSession', () => {
 
     expect(held.session.id).toBeNull();
     expect(held.opened).toEqual([]);
-    expect(held.listed).toEqual([]);
+    expect(held.listed()).toEqual([]);
     expect(held.left).toEqual([LIBRARY_AFTER_MISSING_BOOK]);
   });
 
@@ -246,19 +241,47 @@ describe('ReadSession', () => {
   it('asks the ebook reader for the sought passage once the captures are read', async () => {
     const held = world('/read/one?cfi=epubcfi(/6/4)');
     const arriving = vi.spyOn(held.session.flow.arrivals, 'arriveAt');
+    held.session.navigate();
+    await settled();
+    expect(arriving).not.toHaveBeenCalled();
 
+    held.session.capturesRead(bookId('one'));
+
+    expect(arriving).toHaveBeenCalledWith(bookId('one'), { cfi: 'epubcfi(/6/4)', quote: null });
+  });
+
+  it('asks the ebook reader once however often the captures are read again', async () => {
+    const held = world('/read/one?cfi=epubcfi(/6/4)');
+    const arriving = vi.spyOn(held.session.flow.arrivals, 'arriveAt');
     held.session.navigate();
     await settled();
 
-    expect(arriving).toHaveBeenCalledWith(bookId('one'), { cfi: 'epubcfi(/6/4)', quote: null });
+    held.session.capturesRead(bookId('one'));
+    held.session.capturesRead(bookId('one'));
+
+    expect(arriving).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the ebook reader nothing for the captures of a book it left', async () => {
+    const held = world('/read/one?cfi=epubcfi(/6/4)');
+    const arriving = vi.spyOn(held.session.flow.arrivals, 'arriveAt');
+    held.session.navigate();
+    await settled();
+    go(held, '/read/two?cfi=epubcfi(/6/4)');
+    await settled();
+
+    held.session.capturesRead(bookId('one'));
+
+    expect(arriving).not.toHaveBeenCalled();
   });
 
   it('asks the ebook reader for nothing when the address seeks no passage', async () => {
     const held = world('/read/one?image=2');
     const arriving = vi.spyOn(held.session.flow.arrivals, 'arriveAt');
-
     held.session.navigate();
     await settled();
+
+    held.session.capturesRead(bookId('one'));
 
     expect(arriving).not.toHaveBeenCalled();
   });
@@ -360,6 +383,7 @@ describe('ReadSession', () => {
       },
       () => Promise.reject(new Error('the clipboard is locked')),
       NO_COUNTING,
+      () => undefined,
       () => undefined,
     );
 

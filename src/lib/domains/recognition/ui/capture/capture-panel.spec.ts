@@ -210,6 +210,7 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
       tags: store.tags,
       reload: () => undefined,
     }),
+    () => undefined,
   );
   const source = {
     current: {

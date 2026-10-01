@@ -111,7 +111,6 @@ function shelf(): Shelf {
 
   world.container = {
     flowing: {
-      readReadingSettings: () => Promise.resolve({ kind: 'success', settings: world.stored }),
       saveReadingSettings: (settings: ReadingSettings) => {
         world.chosen.push(settings);
         return world.keep();
@@ -256,7 +255,7 @@ describe('FlowView direction', () => {
     surfaces.direction = 'rtl';
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.navigation.direction).toBe('rtl');
   });
@@ -272,7 +271,7 @@ describe('FlowView direction', () => {
     const surfaces = shows();
     surfaces.direction = 'rtl';
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.close();
 
@@ -287,7 +286,7 @@ describe('FlowView paging', () => {
     surfaces.paging = { axis: 'horizontal', direction: 'rtl' };
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'rtl' });
   });
@@ -303,7 +302,7 @@ describe('FlowView paging', () => {
     const surfaces = shows();
     surfaces.paging = { axis: 'vertical', mode: 'vertical-rl' };
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.close();
 
@@ -318,7 +317,7 @@ describe('FlowView ticks', () => {
     surfaces.ticks = [Number.EPSILON, 0.5, 0.25];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.navigation.ticks).toEqual([0.25, 0.5]);
   });
@@ -334,7 +333,7 @@ describe('FlowView ticks', () => {
     const surfaces = shows();
     surfaces.ticks = [0.25, 0.5];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.close();
 
@@ -348,7 +347,7 @@ describe('FlowView', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(world.reads).toEqual([NOVEL]);
     expect(surfaces.openings.map((opening) => opening.source)).toEqual([SOURCE]);
@@ -363,7 +362,7 @@ describe('FlowView', () => {
     surfaces.gate = gate.promise;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    const opening = view.open(novel(world.place), surfaces.show);
+    const opening = view.open(novel(world.place), world.stored, surfaces.show);
     await Promise.resolve();
     await Promise.resolve();
     expect(view.curtain).toEqual({ kind: 'opening' });
@@ -379,7 +378,7 @@ describe('FlowView', () => {
     world.read = () => Promise.resolve({ kind: 'source-missing', id: NOVEL });
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings).toEqual([]);
     expect(view.curtain).toEqual({ kind: 'notice', message: SOURCE_MISSING });
@@ -390,7 +389,7 @@ describe('FlowView', () => {
     world.read = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), shows().show);
+    await view.open(novel(world.place), world.stored, shows().show);
 
     expect(view.curtain).toEqual({
       kind: 'notice',
@@ -403,7 +402,7 @@ describe('FlowView', () => {
     world.read = () => Promise.reject(new Error('disk gone'));
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), shows().show);
+    await view.open(novel(world.place), world.stored, shows().show);
 
     expect(view.curtain).toEqual({
       kind: 'notice',
@@ -417,7 +416,7 @@ describe('FlowView', () => {
     surfaces.failure = 'not a zip';
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.state).toEqual({
       kind: 'failed',
@@ -430,7 +429,7 @@ describe('FlowView', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     view.close();
 
     expect(surfaces.destroyed).toEqual([0]);
@@ -442,8 +441,8 @@ describe('FlowView', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
-    await view.open({ ...novel(world.place), id: bookId('two') }, surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
+    await view.open({ ...novel(world.place), id: bookId('two') }, world.stored, surfaces.show);
 
     expect(surfaces.destroyed).toEqual([0]);
     expect(view.state).toEqual({ kind: 'ready' });
@@ -456,7 +455,7 @@ describe('FlowView', () => {
     surfaces.gate = gate.promise;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    const opening = view.open(novel(world.place), surfaces.show);
+    const opening = view.open(novel(world.place), world.stored, surfaces.show);
     await settled();
     expect(surfaces.openings).toHaveLength(1);
 
@@ -477,7 +476,7 @@ describe('FlowView', () => {
     };
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    const opening = view.open(novel(world.place), shows().show);
+    const opening = view.open(novel(world.place), world.stored, shows().show);
     view.close();
     gate.release();
     await opening;
@@ -493,7 +492,7 @@ describe('the place a flow book opens at', () => {
     world.place = textPlace(SOMEWHERE, null);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.at)).toEqual([SOMEWHERE]);
   });
@@ -503,7 +502,7 @@ describe('the place a flow book opens at', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.at)).toEqual([null]);
   });
@@ -519,7 +518,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const heard: (string | null)[] = [];
-    await view.open(novel(world.place), surfaces.show, () =>
+    await view.open(novel(world.place), world.stored, surfaces.show, () =>
       heard.push(view.navigation.location?.cfi ?? null),
     );
     const moved = surfaces.openings[0]?.moved;
@@ -535,7 +534,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     let heard = 0;
-    await view.open(novel(world.place), surfaces.show, () => (heard += 1));
+    await view.open(novel(world.place), world.stored, surfaces.show, () => (heard += 1));
     const moved = surfaces.openings[0]?.moved;
 
     view.close();
@@ -552,7 +551,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     moved?.(relocated(SOMEWHERE));
@@ -567,7 +566,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS - 1);
@@ -579,7 +578,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     expect(world.edits).toEqual([]);
 
@@ -596,7 +595,7 @@ describe('the place a flow book keeps', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient(), () => {
       changed += 1;
     });
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
     view.close();
@@ -613,7 +612,7 @@ describe('the place a flow book keeps', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient(), () => {
       changed += 1;
     });
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
     view.close();
@@ -627,7 +626,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, null);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -639,7 +638,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -651,7 +650,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(LATER_STILL, { fraction: 0.9999999999999999 }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -665,7 +664,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(FURTHER_ON, { fraction: 2 / 3 }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -679,7 +678,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: Number.NaN }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -692,7 +691,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, null);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -705,7 +704,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, 0.37);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -718,7 +717,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.place = textPlace(SOMEWHERE, 0.37);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.41 }));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -730,7 +729,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
 
     view.close();
@@ -743,7 +742,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     view.close();
@@ -758,7 +757,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.save = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -778,7 +777,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.save = () => Promise.reject(new Error('the disk went away'));
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     moved?.(relocated(SOMEWHERE));
@@ -803,7 +802,7 @@ describe('the place a flow book keeps', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
@@ -817,7 +816,7 @@ describe('the place a flow book keeps', () => {
     const surfaces = shows();
     world.save = () => Promise.resolve(STORAGE_UNAVAILABLE);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     moved?.(relocated(SOMEWHERE));
@@ -834,7 +833,7 @@ describe('the progress a flow book reports', () => {
     const world = shelf();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), shows().show);
+    await view.open(novel(world.place), world.stored, shows().show);
 
     expect(view.navigation.progress).toEqual({ kind: 'unknown' });
     expect(view.navigation.chapter).toBeNull();
@@ -844,7 +843,7 @@ describe('the progress a flow book reports', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(
       relocated(SOMEWHERE, { fraction: 0.375, tocItem: { label: ' Chapter Two ' } }),
@@ -858,7 +857,7 @@ describe('the progress a flow book reports', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
@@ -869,7 +868,7 @@ describe('the progress a flow book reports', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.5 }));
 
     view.close();
@@ -881,7 +880,7 @@ describe('the progress a flow book reports', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     const moved = surfaces.openings[0]?.moved;
 
     view.close();
@@ -896,7 +895,7 @@ describe('the controls a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.navigation.turn('previous');
     view.navigation.turn('next');
@@ -917,7 +916,7 @@ describe('the controls a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
     view.navigation.seek(0.6);
@@ -929,7 +928,7 @@ describe('the controls a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
     view.navigation.seek(4);
@@ -942,7 +941,7 @@ describe('the controls a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
     view.navigation.seek(0.6);
@@ -954,7 +953,7 @@ describe('the controls a flow book offers', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
     view.navigation.seek(Number.NaN);
@@ -979,7 +978,7 @@ describe('the contents a flow book offers', () => {
     surfaces.toc = [CHAPTER_ONE, CHAPTER_TWO];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(entries(view).map((entry) => (entry.kind === 'link' ? entry.href : null))).toEqual([
       'ch1.xhtml',
@@ -992,7 +991,7 @@ describe('the contents a flow book offers', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.navigation.contents).toEqual({ kind: 'absent' });
     expect(view.navigation.currentKey).toBeNull();
@@ -1003,7 +1002,7 @@ describe('the contents a flow book offers', () => {
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE, CHAPTER_TWO];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { tocItem: CHAPTER_TWO }));
 
@@ -1015,7 +1014,7 @@ describe('the contents a flow book offers', () => {
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     const [entry] = entries(view);
     if (entry !== undefined) view.navigation.jumpTo(entry);
@@ -1028,7 +1027,7 @@ describe('the contents a flow book offers', () => {
     const surfaces = shows();
     surfaces.toc = [{ label: 'Part One' }];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     const [entry] = entries(view);
     if (entry !== undefined) view.navigation.jumpTo(entry);
@@ -1041,7 +1040,7 @@ describe('the contents a flow book offers', () => {
     const surfaces = shows();
     surfaces.toc = [CHAPTER_ONE];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.close();
 
@@ -1050,36 +1049,16 @@ describe('the contents a flow book offers', () => {
 });
 
 describe('FlowView reading settings', () => {
-  it('opens the book at the size and spacing the reader stored', async () => {
+  it('opens the book at the size and spacing it is handed', async () => {
     const world = shelf();
     world.stored = { textSize: 'largest', lineSpacing: 'loose', showPhoneticReadings: true };
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.settings)).toEqual([world.stored]);
     expect(view.appearance.settings).toEqual(world.stored);
-  });
-
-  it('opens the book at the defaults when the settings read throws', async () => {
-    const world = shelf();
-    world.container = {
-      ...world.container,
-      flowing: {
-        ...world.container.flowing,
-        readReadingSettings: () => Promise.reject(new Error('the disk went away')),
-      },
-    };
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), surfaces.show);
-
-    expect(surfaces.openings.map((opening) => opening.settings)).toEqual([
-      DEFAULT_READING_SETTINGS,
-    ]);
-    expect(view.state).toEqual({ kind: 'ready' });
   });
 
   it('reads the defaults for a reader who has chosen nothing', async () => {
@@ -1092,7 +1071,7 @@ describe('FlowView reading settings', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.restyle({
       textSize: 'large',
@@ -1111,7 +1090,7 @@ describe('FlowView reading settings', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.restyle({
       textSize: 'smallest',
@@ -1128,7 +1107,7 @@ describe('FlowView reading settings', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.restyle({
       textSize: 'small',
@@ -1163,7 +1142,7 @@ describe('FlowView reading settings', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.restyle({ ...view.appearance.settings, showPhoneticReadings: false });
     await settled();
@@ -1190,7 +1169,7 @@ describe('FlowView page ink', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.ink)).toEqual([INK_FOR_THE_DARK_PAGE]);
   });
@@ -1201,7 +1180,7 @@ describe('FlowView page ink', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     view.appearance.paint(PAPER);
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings.map((opening) => opening.ink)).toEqual([PAPER]);
     expect(surfaces.restyled).toEqual([]);
@@ -1212,7 +1191,7 @@ describe('FlowView page ink', () => {
     world.stored = { textSize: 'large', lineSpacing: 'loose', showPhoneticReadings: false };
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.paint(PAPER);
 
@@ -1226,7 +1205,7 @@ describe('FlowView page ink', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     view.appearance.paint(PAPER);
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.paint({ ...PAPER });
 
@@ -1237,7 +1216,7 @@ describe('FlowView page ink', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.paint(PAPER);
     await settled();
@@ -1250,7 +1229,7 @@ describe('FlowView page ink', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     view.appearance.paint(PAPER);
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.appearance.restyle({
       textSize: 'small',
@@ -1267,7 +1246,7 @@ describe('FlowView page ink', () => {
     const gate = held();
     surfaces.gate = gate.promise;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    const opening = view.open(novel(world.place), surfaces.show);
+    const opening = view.open(novel(world.place), world.stored, surfaces.show);
     await settled();
 
     view.appearance.paint(PAPER);
@@ -1290,7 +1269,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1309,7 +1288,7 @@ describe('FlowView jumpToPassage', () => {
     const surfaces = shows();
     surfaces.arrival = foundByItsText(REFOUND);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1321,7 +1300,7 @@ describe('FlowView jumpToPassage', () => {
     const surfaces = shows();
     surfaces.arrival = THE_PASSAGE_IS_LOST;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1333,7 +1312,7 @@ describe('FlowView jumpToPassage', () => {
     const surfaces = shows();
     surfaces.arrival = THE_PASSAGE_IS_LOST;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
     view.arrivals.dismissNotice();
@@ -1355,7 +1334,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1372,7 +1351,7 @@ describe('FlowView jumpToPassage', () => {
     const surfaces = shows();
     surfaces.arrival = foundByItsText(REFOUND);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1385,7 +1364,7 @@ describe('FlowView jumpToPassage', () => {
     const surfaces = shows();
     surfaces.arrival = THE_PASSAGE_IS_LOST;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1397,7 +1376,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1410,7 +1389,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
     const drawn = surfaces.arrivals.length;
@@ -1424,7 +1403,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1442,7 +1421,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
     surfaces.openings[0]?.moved(relocated(ANOTHER_PAGE, { cause: REFLOWED }));
@@ -1456,7 +1435,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1470,7 +1449,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
     view.arrivals.dismissArrival();
@@ -1485,7 +1464,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1496,7 +1475,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1509,7 +1488,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.arrivals.arrivalStanding).toBe(false);
   });
@@ -1519,7 +1498,7 @@ describe('FlowView jumpToPassage', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     view.arrivals.markPassages([SOMEWHERE]);
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
@@ -1542,7 +1521,7 @@ describe('FlowView markPassages', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     view.arrivals.markPassages([SOMEWHERE]);
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.marked).toEqual([[SOMEWHERE]]);
   });
@@ -1551,7 +1530,7 @@ describe('FlowView markPassages', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     view.arrivals.markPassages([SOMEWHERE, ANOTHER]);
 
@@ -1584,7 +1563,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
 
     view.arrivals.arriveAt(book.id, PASSAGE);
     await settled();
@@ -1598,7 +1577,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
 
     view.arrivals.arriveAt(book.id, { cfi: SOMEWHERE, quote: null });
     await settled();
@@ -1613,7 +1592,7 @@ describe('FlowView arriveAt', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
     view.arrivals.arriveAt(book.id, PASSAGE);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     await settled();
 
     surfaces.openings[0]?.moved(relocated(FURTHER_ON, { cause: REFLOWED }));
@@ -1629,7 +1608,7 @@ describe('FlowView arriveAt', () => {
 
     view.arrivals.arriveAt(book.id, PASSAGE);
     expect(surfaces.passages).toEqual([]);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     await settled();
 
     expect(surfaces.passages).toEqual([{ cfi: PASSAGE.cfi, quote: PASSAGE.quote }]);
@@ -1642,7 +1621,7 @@ describe('FlowView arriveAt', () => {
     surfaces.gate = gate.promise;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    const opening = view.open(book, surfaces.show);
+    const opening = view.open(book, world.stored, surfaces.show);
     await settled();
 
     view.arrivals.arriveAt(book.id, PASSAGE);
@@ -1659,7 +1638,7 @@ describe('FlowView arriveAt', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     view.arrivals.arriveAt(bookId('another'), PASSAGE);
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
     await settled();
 
     expect(surfaces.passages).toEqual([]);
@@ -1670,7 +1649,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
 
     view.arrivals.arriveAt(book.id, PASSAGE);
     view.arrivals.arriveAt(book.id, { ...PASSAGE });
@@ -1684,7 +1663,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
 
     view.arrivals.arriveAt(book.id, PASSAGE);
     view.arrivals.arriveAt(book.id, ELSEWHERE);
@@ -1698,10 +1677,10 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     view.arrivals.arriveAt(book.id, PASSAGE);
 
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     view.arrivals.arriveAt(book.id, PASSAGE);
     await settled();
 
@@ -1712,7 +1691,7 @@ describe('FlowView arriveAt', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(view.arrivals.arrivalHolds).toBe(false);
   });
@@ -1722,7 +1701,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(FURTHER_ON));
 
     view.arrivals.arriveAt(book.id, PASSAGE);
@@ -1737,7 +1716,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(FURTHER_ON));
     view.arrivals.arriveAt(book.id, PASSAGE);
     await settled();
@@ -1752,7 +1731,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(FURTHER_ON));
     view.arrivals.arriveAt(book.id, PASSAGE);
     await settled();
@@ -1767,7 +1746,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     view.arrivals.arriveAt(book.id, PASSAGE);
     await settled();
 
@@ -1782,7 +1761,7 @@ describe('FlowView arriveAt', () => {
     surfaces.arrival = THE_PASSAGE_IS_LOST;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(FURTHER_ON));
 
     view.arrivals.arriveAt(book.id, PASSAGE);
@@ -1796,7 +1775,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(FURTHER_ON));
 
     view.arrivals.arriveAt(book.id, PASSAGE);
@@ -1811,7 +1790,7 @@ describe('FlowView arriveAt', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), surfaces.show);
+    await view.open(novel(world.place), world.stored, surfaces.show);
 
     await view.arrivals.jumpToPassage(PASSAGE.cfi, PASSAGE.quote);
 
@@ -1823,7 +1802,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
     view.arrivals.arriveAt(book.id, PASSAGE);
     await settled();
 
@@ -1837,7 +1816,7 @@ describe('FlowView arriveAt', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
-    await view.open(book, surfaces.show);
+    await view.open(book, world.stored, surfaces.show);
 
     view.arrivals.arriveAt(book.id, PASSAGE);
     view.close();

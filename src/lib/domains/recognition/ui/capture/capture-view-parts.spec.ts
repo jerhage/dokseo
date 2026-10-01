@@ -189,6 +189,7 @@ function viewOf(world: Fakes): CaptureView {
       tags: world.store.tags,
       reload: () => undefined,
     }),
+    () => undefined,
   );
   return view;
 }

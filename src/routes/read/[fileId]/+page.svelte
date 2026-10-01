@@ -12,11 +12,13 @@
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
+  import EngineGateData from '$lib/domains/recognition/ui/engine/EngineGateData.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import BookData from '$lib/domains/library/ui/BookData.svelte';
   import { flowingBook } from '$lib/domains/library/ui/book-read';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
+  import ReadingSettingsData from '$lib/domains/flowing/ui/ReadingSettingsData.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
@@ -25,6 +27,7 @@
   let search = $state<ReturnType<typeof SearchDialog> | null>();
   let found = $state<ReturnType<typeof CaptureFindData> | null>(null);
   let listed = $state<ReturnType<typeof BookCapturesData> | null>(null);
+  let engine = $state<ReturnType<typeof EngineGateData> | null>(null);
 
   const container = useContainer();
   const session = new ReadSession(
@@ -41,6 +44,7 @@
     (text) => navigator.clipboard.writeText(text),
     tagCountingOf(() => found?.read()),
     () => listed?.read(),
+    () => engine?.read(),
   );
   const { reader, captures, flow } = session;
   const id = $derived(session.id);
@@ -55,38 +59,44 @@
   {#snippet children(read)}
     {@const flowing = flowingBook(read)}
     {#if flowing !== null}
-      <FlowViewer
-        view={flow}
-        book={flowing}
-        panelCount={captures.list.count}
-        anchors={captures.list.anchors}
-        onLift={(passage) => captures.recording.lift(passage.cfi, passage.quote, passage.chapter)}
-        onsearch={() => search?.searchThisBook()}
-        saving={reader.preferences.saving}
-        onlanguage={(chosen) => void reader.preferences.setLanguage(chosen)}
-      >
-        {#snippet arrival()}
-          {#if id !== null && session.passageStepping !== null && session.finding !== null && flow.arrivals.arrivalHolds}
-            <ArrivalBar
-              book={id}
-              query={session.finding}
-              {language}
-              stepping={session.passageStepping}
-              onfollowed={() => session.arrive(id)}
-            />
-          {/if}
+      <ReadingSettingsData flowing={container.flowing}>
+        {#snippet children(storedSettings)}
+          <FlowViewer
+            view={flow}
+            book={flowing}
+            {storedSettings}
+            panelCount={captures.list.count}
+            anchors={captures.list.anchors}
+            onLift={(passage) =>
+              captures.recording.lift(passage.cfi, passage.quote, passage.chapter)}
+            onsearch={() => search?.searchThisBook()}
+            saving={reader.preferences.saving}
+            onlanguage={(chosen) => void reader.preferences.setLanguage(chosen)}
+          >
+            {#snippet arrival()}
+              {#if id !== null && session.passageStepping !== null && session.finding !== null && flow.arrivals.arrivalHolds}
+                <ArrivalBar
+                  book={id}
+                  query={session.finding}
+                  {language}
+                  stepping={session.passageStepping}
+                  onfollowed={() => session.arrive(id)}
+                />
+              {/if}
+            {/snippet}
+            {#snippet panel(visible)}
+              <CapturePanel
+                view={captures}
+                panel={session.flowPanel}
+                {language}
+                source="text"
+                {visible}
+                onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
+              />
+            {/snippet}
+          </FlowViewer>
         {/snippet}
-        {#snippet panel(visible)}
-          <CapturePanel
-            view={captures}
-            panel={session.flowPanel}
-            {language}
-            source="text"
-            {visible}
-            onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
-          />
-        {/snippet}
-      </FlowViewer>
+      </ReadingSettingsData>
     {:else}
       <ReaderScreen
         view={reader}
@@ -131,6 +141,14 @@
   bind:this={listed}
   recognition={container.recognition}
   book={captures.list.book}
+  onread={(book) => session.capturesRead(book)}
+/>
+
+<EngineGateData
+  bind:this={engine}
+  recognition={container.recognition}
+  {language}
+  onread={(read) => void captures.engineRead(read)}
 />
 
 <LibraryShelfData library={container.library} lazy>

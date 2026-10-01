@@ -61,6 +61,7 @@
   type Props = {
     readonly view: FlowView;
     readonly book: FlowBook;
+    readonly storedSettings: ReadingSettings;
     readonly panel?: Snippet<[boolean]>;
     readonly arrival?: Snippet;
     readonly panelCount?: number;
@@ -74,6 +75,7 @@
   const {
     view,
     book,
+    storedSettings,
     panel,
     arrival,
     panelCount,
@@ -314,6 +316,7 @@
   const openOnStage: Attachment<HTMLDivElement> = (host) => {
     void book.id;
     const held = untrack(() => book);
+    const opensWith = untrack(() => storedSettings);
 
     const began = (event: PointerEvent): void =>
       press(event, spotOn(host, event, HOST_VIEWPORT_ORIGIN));
@@ -327,6 +330,7 @@
     void view
       .open(
         held,
+        opensWith,
         (opening) => openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
         () => lift.ask(),
       )

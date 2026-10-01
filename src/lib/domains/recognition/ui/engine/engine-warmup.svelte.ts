@@ -1,6 +1,6 @@
-import type { QueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
+import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -13,8 +13,8 @@ import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-import { modelStorageQuery } from '../../queries/engine-queries';
-import { readChosenFootprint } from './chosen-footprint';
+import { warmStep } from './engine-gate';
+import type { EngineSource, WarmStep } from './engine-gate';
 
 type PendingRecognition = {
   readonly source: PageSource;
@@ -84,22 +84,23 @@ class EngineWarmup {
   session = $state.raw<RecognizerSession | null>(null);
 
   #container: Container;
-  #client: QueryClient;
+  #engine: EngineSource;
   #generation: () => number;
   #joins: WarmupJoins;
   #warmed: WarmedFor | null = null;
+  #waiting: WarmedFor | null = null;
   #activeRecognitions = 0;
   #recognizerLanguage: Language | null = null;
   #retiring = new Set<Language>();
 
   constructor(
     container: Container,
-    client: QueryClient,
+    engine: EngineSource,
     generation: () => number,
     joins: WarmupJoins,
   ) {
     this.#container = container;
-    this.#client = client;
+    this.#engine = engine;
     this.#generation = generation;
     this.#joins = joins;
   }
@@ -113,35 +114,54 @@ class EngineWarmup {
     const warmed = this.#warmed;
     if (warmed !== null && warmed.generation === generation && warmed.language === language) return;
     this.#warmed = { generation, language };
+    this.#waiting = null;
     this.#switchTo(language);
 
     const trace = this.#container.beginTrace('engine-warm');
     try {
-      const recognition = this.#container.recognition;
-      const model = await readChosenFootprint(this.#client, recognition, language);
-      if (!this.#stillWarming(generation, language)) return;
-      if (model === null) {
-        trace.step('stopped', { guard: 'no-model-for-language', language });
-        return;
-      }
-
-      const held = await this.#client
-        .fetchQuery(modelStorageQuery(recognition, model.modelId))
-        .catch(() => null);
-      if (!this.#stillWarming(generation, language)) return;
-
-      this.warmth = warmthOf(held?.kind === 'success' ? held.snapshot : null);
-      if (this.warmth.kind !== 'stored') {
-        trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
-        return;
-      }
-
-      this.#joins.stored(language);
-      trace.step('opening', { language, modelId: model.modelId });
-      await this.#openEngine(language, generation);
+      const opens = this.#opens(trace, { generation, language }, warmStep(this.#engine(language)));
+      if (opens) await this.#openEngine(language, generation);
     } finally {
       trace.end();
     }
+  }
+
+  async resume(language: Language): Promise<void> {
+    const waiting = this.#waiting;
+    if (waiting === null || waiting.language !== language) return;
+    this.#waiting = null;
+    if (waiting.generation === this.#generation()) await this.warm(language);
+  }
+
+  #opens(trace: Trace, asked: WarmedFor, step: WarmStep): boolean {
+    const language = asked.language;
+    return match(step)
+      .with({ kind: 'waiting' }, () => {
+        this.#warmed = null;
+        this.#waiting = asked;
+        trace.step('waiting', { gate: 'engine-reads', language });
+        return false;
+      })
+      .with({ kind: 'failed' }, () => {
+        trace.step('stopped', { guard: 'engine-reads-failed', language });
+        return false;
+      })
+      .with({ kind: 'no-model' }, () => {
+        trace.step('stopped', { guard: 'no-model-for-language', language });
+        return false;
+      })
+      .with({ kind: 'read' }, ({ modelId, snapshot }) => {
+        this.warmth = warmthOf(snapshot);
+        if (this.warmth.kind !== 'stored') {
+          trace.step('stopped', { guard: 'weights-not-on-disk', modelId });
+          return false;
+        }
+
+        this.#joins.stored(language);
+        trace.step('opening', { language, modelId });
+        return true;
+      })
+      .exhaustive();
   }
 
   async #openEngine(language: Language, generation: number): Promise<void> {
@@ -180,10 +200,6 @@ class EngineWarmup {
         if (this.#activeRecognitions === 0) this.progress = null;
       }
     }
-  }
-
-  #stillWarming(generation: number, language: Language): boolean {
-    return generation === this.#generation() && this.#warmed?.language === language;
   }
 
   #serves(generation: number, language: Language): boolean {

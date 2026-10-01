@@ -10,6 +10,7 @@ import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { ReadingSettings } from '../domain/reading-settings';
 import { saveReadingPlaceMutation } from '../queries/flowing-queries';
 import type { PlaceRequest } from '../queries/flowing-queries';
 import { FlowAppearance } from './flow-appearance.svelte';
@@ -127,7 +128,12 @@ class FlowView {
     return curtainFor(this.state);
   }
 
-  async open(book: FlowBook, show: ShowFlowBook, onmoved?: () => void): Promise<void> {
+  async open(
+    book: FlowBook,
+    settings: ReadingSettings,
+    show: ShowFlowBook,
+    onmoved?: () => void,
+  ): Promise<void> {
     this.#places.flush();
     const generation = ++this.#generation;
     this.#release();
@@ -158,10 +164,7 @@ class FlowView {
     const at = resumedCfi(book.position);
     this.#places.assumeStored(book.position);
 
-    const chosen = await this.appearance.chosen();
-    if (generation !== this.#generation) return;
-
-    this.appearance.settings = chosen;
+    this.appearance.settings = settings;
 
     const inked = this.appearance.ink;
     let surface: FlowSurface;
@@ -169,7 +172,7 @@ class FlowView {
       surface = await show({
         source: stored.source,
         at,
-        settings: chosen,
+        settings,
         ink: inked,
         moved: (relocation) => {
           this.#moved(generation, book.id, relocation, onmoved);

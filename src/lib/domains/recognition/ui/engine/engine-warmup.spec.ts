@@ -4,6 +4,8 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
+import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
+import type { ReadState } from '$lib/shared/read-state';
 import { at } from '$lib/shared/testing/at';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
@@ -15,7 +17,6 @@ import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-reg
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { engineStateOf, EngineWarmup, warmthOf } from './engine-warmup.svelte';
 import type { EngineWarmth, PendingRecognition } from './engine-warmup.svelte';
-import { createTestQueryClient } from '$lib/shared/testing/query-client';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
@@ -49,8 +50,9 @@ type Setup = {
   readonly weights: number;
   readonly partialBytes: number;
   readonly prepare: 'answers' | 'waits';
-  readonly storage: 'answers' | 'waits';
 };
+
+type Reads = 'ready' | 'loading' | 'failed';
 
 type World = {
   readonly warmup: EngineWarmup;
@@ -60,8 +62,9 @@ type World = {
   readonly closes: Language[];
   readonly stored: Language[];
   readonly storageReads: string[];
-  readonly storageAnswers: (() => void)[];
   readonly bump: () => void;
+  setupReads: Reads;
+  storageReadsAs: Reads;
 };
 
 const STORED_SETUP: Setup = {
@@ -69,7 +72,6 @@ const STORED_SETUP: Setup = {
   weights: REQUIRED_WEIGHTS.length,
   partialBytes: 0,
   prepare: 'answers',
-  storage: 'answers',
 };
 
 function snapshot(modelId: string, weights: number, partialBytes: number): ModelStorageSnapshot {
@@ -97,25 +99,11 @@ function fakes(setup: Partial<Setup> = {}): World {
   const closes: Language[] = [];
   const stored: Language[] = [];
   const storageReads: string[] = [];
-  const storageAnswers: (() => void)[] = [];
   let generation = 0;
 
   const container = {
     beginTrace: () => ({ step: () => undefined, image: () => undefined, end: () => undefined }),
     recognition: {
-      readRecognizerSetup: () =>
-        Promise.resolve({ kind: 'success', choice: { model: chosen.model, compute: 'auto' } }),
-      readModelStorage: (modelId: string) => {
-        storageReads.push(modelId);
-        const held = {
-          kind: 'success',
-          snapshot: snapshot(modelId, chosen.weights, chosen.partialBytes),
-        };
-        if (chosen.storage === 'answers') return Promise.resolve(held);
-        return new Promise((resolve) => {
-          storageAnswers.push(() => resolve(held));
-        });
-      },
       prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {
         opens.push(language);
         if (chosen.prepare === 'waits') {
@@ -143,22 +131,42 @@ function fakes(setup: Partial<Setup> = {}): World {
     },
   } as unknown as Container;
 
-  const warmup = new EngineWarmup(container, createTestQueryClient(), () => generation, {
-    stored: (language) => stored.push(language),
-  });
-  return {
-    warmup,
+  const world: World = {
+    warmup: new EngineWarmup(
+      container,
+      () => {
+        const answered = <T>(reads: Reads, value: T): ReadState<T> =>
+          reads === 'ready' ? readReady(value) : reads === 'failed' ? readFailed('gone') : LOADING;
+        return {
+          chosen: answered(world.setupReads, chosen.model),
+          consent: LOADING,
+          get storage() {
+            const modelId = chosen.model?.modelId ?? 'none';
+            storageReads.push(modelId);
+            return answered(world.storageReadsAs, {
+              kind: 'success' as const,
+              snapshot: snapshot(modelId, chosen.weights, chosen.partialBytes),
+            });
+          },
+          reload: () => undefined,
+        };
+      },
+      () => generation,
+      { stored: (language) => stored.push(language) },
+    ),
     calls,
     prepares,
     opens,
     closes,
     stored,
     storageReads,
-    storageAnswers,
     bump: () => {
       generation += 1;
     },
+    setupReads: 'ready',
+    storageReadsAs: 'ready',
   };
+  return world;
 }
 
 const source = {} as PageSource;
@@ -361,36 +369,79 @@ describe('EngineWarmup', () => {
     await reading;
   });
 
-  it('stops warming when the book changes while the setup reads', async () => {
+  it('opens a stored model once the reads settle after a warm asked too early', async () => {
     const world = fakes();
+    world.storageReadsAs = 'loading';
 
-    const warming = world.warmup.warm('ja');
-    world.bump();
-    await warming;
+    await world.warmup.warm('ja');
+    expect(world.opens).toEqual([]);
+    expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
 
-    expect(world.storageReads).toEqual([]);
+    world.storageReadsAs = 'ready';
+    await world.warmup.resume('ja');
+
+    expect(world.opens).toEqual(['ja']);
+    expect(world.stored).toEqual(['ja']);
   });
 
-  it('stops warming when the book changes while the storage reads', async () => {
-    const world = fakes({ storage: 'waits' });
-    const warming = world.warmup.warm('ja');
-    await settled();
+  it('opens nothing and reads no storage when the setup read failed', async () => {
+    const world = fakes();
+    world.setupReads = 'failed';
+
+    await world.warmup.warm('ja');
+    await world.warmup.resume('ja');
+
+    expect(world.storageReads).toEqual([]);
+    expect(world.opens).toEqual([]);
+    expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
+  });
+
+  it('opens nothing when the storage read failed', async () => {
+    const world = fakes();
+    world.storageReadsAs = 'failed';
+
+    await world.warmup.warm('ja');
+
+    expect(world.opens).toEqual([]);
+    expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
+  });
+
+  it('stops warming when the book changes before the setup is read', async () => {
+    const world = fakes();
+    world.setupReads = 'loading';
+    await world.warmup.warm('ja');
 
     world.bump();
-    at(world.storageAnswers, 0)();
-    await warming;
+    world.setupReads = 'ready';
+    await world.warmup.resume('ja');
+
+    expect(world.storageReads).toEqual([]);
+    expect(world.opens).toEqual([]);
+  });
+
+  it('stops warming when the book changes before the storage is read', async () => {
+    const world = fakes();
+    world.storageReadsAs = 'loading';
+    await world.warmup.warm('ja');
+
+    world.bump();
+    world.storageReadsAs = 'ready';
+    await world.warmup.resume('ja');
 
     expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
     expect(world.opens).toEqual([]);
     expect(world.stored).toEqual([]);
   });
 
-  it('stops warming a language another warm replaced', async () => {
+  it('warms only the language asked last once the reads settle', async () => {
     const world = fakes();
+    world.setupReads = 'loading';
+    await world.warmup.warm('ja');
+    await world.warmup.warm('ko');
 
-    const first = world.warmup.warm('ja');
-    const second = world.warmup.warm('ko');
-    await Promise.all([first, second]);
+    world.setupReads = 'ready';
+    await world.warmup.resume('ja');
+    await world.warmup.resume('ko');
 
     expect(world.opens).toEqual(['ko']);
   });

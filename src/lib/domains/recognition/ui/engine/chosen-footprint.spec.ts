@@ -1,69 +1,43 @@
 import { describe, expect, it } from 'vitest';
+import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { createTestQueryClient } from '$lib/shared/testing/query-client';
-import { recognitionKeys } from '../../queries/recognition-keys';
-import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
-import type { ReadRecognizerSetupResult } from '../../use-cases/engine/read-recognizer-setup';
-import { readChosenFootprint } from './chosen-footprint';
+import { at } from '$lib/shared/testing/at';
+import { JAPANESE_OCR_MODEL, modelsFor } from '../../domain/model/model-footprint';
+import { offeredModels } from '../../queries/engine-queries';
+import type { LanguageSetupRead } from '../../queries/engine-queries';
+import { chosenFootprint } from './chosen-footprint';
 
-type SetupRead = () => Promise<ReadRecognizerSetupResult>;
+const SECOND = at(modelsFor('ja'), 1);
 
-function reading(answer: SetupRead) {
-  return { readRecognizerSetup: answer };
+function stored(selected: string | null): LanguageSetupRead {
+  return {
+    kind: 'success',
+    setup: { language: 'ja', models: offeredModels('ja'), selected, compute: 'auto' },
+  };
 }
 
-describe('readChosenFootprint', () => {
-  it('answers the model of the stored setup', async () => {
-    const recognition = reading(() =>
-      Promise.resolve({
-        kind: 'success',
-        choice: { model: modelFootprint('ja'), compute: 'auto' },
-      }),
-    );
+describe('chosenFootprint', () => {
+  it('answers the model of the stored setup', () => {
+    expect(chosenFootprint('ja', readReady(stored(SECOND.modelId)))).toEqual(readReady(SECOND));
+  });
 
-    expect(await readChosenFootprint(createTestQueryClient(), recognition, 'ja')).toEqual(
-      modelFootprint('ja'),
+  it('answers the default model of the language when the browser blocks the setup read', () => {
+    expect(chosenFootprint('ja', readReady(STORAGE_UNAVAILABLE))).toEqual(
+      readReady(JAPANESE_OCR_MODEL),
     );
   });
 
-  it('answers the default model of the language when the browser blocks the setup read', async () => {
-    const recognition = reading(() => Promise.resolve(STORAGE_UNAVAILABLE));
+  it('answers nothing when the stored setup names no model to download', () => {
+    expect(chosenFootprint('ja', readReady(stored(null)))).toEqual(readReady(null));
+  });
 
-    expect(await readChosenFootprint(createTestQueryClient(), recognition, 'ja')).toEqual(
-      JAPANESE_OCR_MODEL,
+  it('passes a setup read that failed on as a failure, not a default model', () => {
+    expect(chosenFootprint('ja', readFailed('The engine choice could not be read: gone'))).toEqual(
+      readFailed('The engine choice could not be read: gone'),
     );
   });
 
-  it('answers the default model of the language when the setup read throws', async () => {
-    const recognition = reading(() => Promise.reject(new Error('gone')));
-
-    expect(await readChosenFootprint(createTestQueryClient(), recognition, 'ja')).toEqual(
-      JAPANESE_OCR_MODEL,
-    );
-  });
-
-  it('answers nothing when the stored setup names no model to download', async () => {
-    const recognition = reading(() =>
-      Promise.resolve({ kind: 'success', choice: { model: null, compute: 'auto' } }),
-    );
-
-    expect(await readChosenFootprint(createTestQueryClient(), recognition, 'ja')).toBeNull();
-  });
-
-  it('reads through the setup key the settings screen reads', async () => {
-    const client = createTestQueryClient();
-    const recognition = reading(() =>
-      Promise.resolve({
-        kind: 'success',
-        choice: { model: modelFootprint('ja'), compute: 'auto' },
-      }),
-    );
-
-    await readChosenFootprint(client, recognition, 'ja');
-
-    expect(client.getQueryData(recognitionKeys.setup('ja'))).toMatchObject({
-      kind: 'success',
-      setup: { language: 'ja', selected: modelFootprint('ja')?.modelId },
-    });
+  it('passes a setup still being read on as loading', () => {
+    expect(chosenFootprint('ja', LOADING)).toEqual(LOADING);
   });
 });

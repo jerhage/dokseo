@@ -97,8 +97,6 @@ function shelf(source: Blob, book: FlowBook): Container {
       saveReadingPlace: () => Promise.resolve({ kind: 'success', book }),
     },
     flowing: {
-      readReadingSettings: () =>
-        Promise.resolve({ kind: 'success', settings: DEFAULT_READING_SETTINGS }),
       saveReadingSettings: () => Promise.resolve({ kind: 'success' }),
     },
   } as unknown as Container;
@@ -187,6 +185,7 @@ async function opened(direction: 'ltr' | 'rtl', mode: string): Promise<Document>
   render(FlowViewer, {
     view: new FlowView(shelf(source, book), () => undefined, createTestQueryClient()),
     book,
+    storedSettings: DEFAULT_READING_SETTINGS,
   });
 
   await expect.poll(() => paginator().pages, { timeout: LAID_OUT_WITHIN_MS }).toBeGreaterThan(2);

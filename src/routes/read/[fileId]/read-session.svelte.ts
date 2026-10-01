@@ -16,6 +16,7 @@ import type {
 import type { CaptureListing } from '$lib/domains/recognition/ui/capture/capture-read';
 import type { ClipboardWrite } from '$lib/domains/recognition/ui/capture/text-copy.svelte';
 import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
+import type { EngineGateRead } from '$lib/domains/recognition/ui/engine/engine-gate';
 import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
 import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
 import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
@@ -59,6 +60,7 @@ class ReadSession {
   #flowPanel = $state.raw(this.#flowPanelBuilt());
   #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
   #requested: ReaderRequest | null = null;
+  #arriving: BookId | null = null;
   #id = $derived.by(() => parsedBookId(this.#address.fileId() ?? ''));
   #asked = $derived.by(() =>
     readImageIndex(this.#address.requested().searchParams.get(IMAGE_PARAMETER)),
@@ -86,6 +88,7 @@ class ReadSession {
     copyText: ClipboardWrite,
     counting: TagCounting,
     listing: () => CaptureListing | undefined,
+    engine: () => EngineGateRead | undefined,
   ) {
     this.#client = client;
     this.#address = address;
@@ -99,7 +102,7 @@ class ReadSession {
       (book, known) => this.#warm(book, known),
       () => this.#bookChanged(),
     );
-    this.captures = new CaptureView(container, notify, client, listing);
+    this.captures = new CaptureView(container, notify, client, listing, engine);
     this.flow = new FlowView(container, notify, client, () => this.#bookChanged());
   }
 
@@ -152,6 +155,12 @@ class ReadSession {
   arrive(book: BookId): void {
     const wanted = this.#passage;
     if (wanted !== null) this.flow.arrivals.arriveAt(book, wanted);
+  }
+
+  capturesRead(book: BookId): void {
+    if (this.#arriving !== book) return;
+    this.#arriving = null;
+    this.arrive(book);
   }
 
   navigate(): void {
@@ -225,7 +234,8 @@ class ReadSession {
 
   #open(book: BookId, image: ImageIndex | null): void {
     void this.reader.open(book, image).then(() => this.#leaveIfMissing());
-    void this.captures.open(book).then(() => this.arrive(book));
+    this.#arriving = book;
+    this.captures.open(book);
   }
 
   #leaveIfMissing(): void {

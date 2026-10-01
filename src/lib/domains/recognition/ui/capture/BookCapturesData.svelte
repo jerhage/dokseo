@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { BookId } from '$lib/shared/ids';
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { capturesQuery } from '../../queries/capture-queries';
@@ -13,9 +14,10 @@
   type Props = {
     readonly recognition: BookCaptureReads & TagReads;
     readonly book: BookId | null;
+    readonly onread?: (book: BookId) => void;
   };
 
-  let { recognition, book }: Props = $props();
+  let { recognition, book, onread }: Props = $props();
 
   const listed = readQuery(() => capturesQuery(recognition, book));
   const tagList = readQuery(() => tagsQuery(recognition));
@@ -24,6 +26,12 @@
   const held = $derived(captureReadOf(captures, tags));
   const rows = $derived(foundCaptures(captures));
   const named = $derived(foundTags(tags));
+  const settled = $derived(book !== null && listed.state.kind !== 'loading' ? book : null);
+
+  $effect(() => {
+    const ready = settled;
+    if (ready !== null) untrack(() => onread?.(ready));
+  });
 
   function reload(): void {
     if (book !== null) listed.reload();
