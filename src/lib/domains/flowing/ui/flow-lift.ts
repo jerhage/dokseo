@@ -1,6 +1,7 @@
 import { pixelLength } from '$lib/components/css-length';
 import type { StyleSource } from '$lib/components/css-length';
 import type { TextQuote } from '$lib/shared/anchor';
+import { match } from 'ts-pattern';
 import { tapOnStage } from './flow-turn';
 import type { Point, StageBox } from './flow-turn';
 
@@ -25,6 +26,13 @@ type LiftPlacement =
   | { readonly kind: 'nowhere' }
   | { readonly kind: 'above'; readonly left: number; readonly top: number }
   | { readonly kind: 'below'; readonly left: number; readonly top: number };
+
+type StageRect = StageBox & StageSize;
+
+type LiftSpot = {
+  readonly left: number;
+  readonly top: number;
+};
 
 type LiftedPassage = {
   readonly cfi: string;
@@ -143,6 +151,26 @@ function liftPlacement(
   return { kind: 'below', left, top: below };
 }
 
+function spotOf(placed: LiftPlacement): LiftSpot | null {
+  return match(placed)
+    .with({ kind: 'nowhere' }, () => null)
+    .with({ kind: 'above' }, (above) => ({ left: above.left, top: above.top }))
+    .with({ kind: 'below' }, (below) => ({ left: below.left, top: below.top }))
+    .exhaustive();
+}
+
+function liftSpot(
+  rects: readonly LiftRect[],
+  origin: Point,
+  box: StageRect,
+  lift: LiftMetrics,
+): LiftSpot | null {
+  const onScreen = { left: box.left, top: box.top, width: box.width };
+  const placed = rects.map((rect) => rectOnStage(rect, origin, onScreen));
+  const stageSize = { width: box.width, height: box.height };
+  return spotOf(liftPlacement(placed, stageSize, lift));
+}
+
 export {
   LEAVE_THE_OFFER_ALONE,
   NOWHERE_TO_OFFER,
@@ -151,6 +179,7 @@ export {
   TAKE_THE_OFFER_AWAY,
   liftMetrics,
   liftPlacement,
+  liftSpot,
   liftsAnything,
   offerMove,
   passageQuote,
@@ -160,8 +189,10 @@ export type {
   LiftMetrics,
   LiftPlacement,
   LiftRect,
+  LiftSpot,
   LiftedPassage,
   OfferMove,
   SelectionSeen,
+  StageRect,
   StageSize,
 };

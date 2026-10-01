@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { EDGE_TOP_SPEED_PX_PER_S, EDGE_ZONE_PX, LONGEST_EDGE_FRAME_MS } from './edge-scroll';
 import type { EdgeBand } from './edge-scroll';
 import { EdgeScroll } from './edge-scroll-loop';
-import type { EdgeSurface, FrameClock } from './edge-scroll-loop';
+import type { EdgeSurface } from './edge-scroll-loop';
+import type { FrameClock } from '$lib/shared/frame-clock';
 
 type Clock = FrameClock & {
   readonly pending: Map<number, (now: number) => void>;

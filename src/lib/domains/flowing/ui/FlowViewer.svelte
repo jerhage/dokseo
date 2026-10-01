@@ -33,8 +33,10 @@
   import { FlowGestures } from './flow-gestures';
   import { flowGuideKind, flowInput, flowSwipeLesson, offersFlowGuide } from './flow-hint';
   import { flowMeta, tickOffsets } from './flow-progress';
-  import { liftMetrics, liftPlacement, offerMove, rectOnStage } from './flow-lift';
-  import type { LiftPlacement, LiftRect, LiftedPassage } from './flow-lift';
+  import { liftMetrics } from './flow-lift';
+  import type { LiftedPassage } from './flow-lift';
+  import { LiftOffer } from './lift-offer.svelte';
+  import type { LiftStage } from './lift-offer.svelte';
   import { forgetSelection, selectedPassage, shownSelection } from './flow-passage';
   import { openFlowSurface } from './flow-surface';
   import type { ChapterView } from './flow-surface';
@@ -68,12 +70,6 @@
     readonly onlanguage?: ((language: Language) => void) | undefined;
   };
 
-  type LiftOffer = {
-    readonly chapter: ChapterView;
-    readonly left: number;
-    readonly top: number;
-  };
-
   const {
     view,
     book,
@@ -104,11 +100,12 @@
   let contentsDialog = $state<ReturnType<typeof FlowContentsDialog> | null>(null);
   let settingsOpen = $state(false);
   let gestures: FlowGestures | null = null;
-  let offer = $state.raw<LiftOffer | null>(null);
-  let showing: ChapterView | null = null;
-  let pointerHeld = false;
-  let queued: number | null = null;
   let lastPointerType = $state<string | null>(null);
+  const lift = new LiftOffer<ChapterView>({
+    stage: liftStage,
+    selection: (chapter) => shownSelection(chapter.doc),
+    origin: (chapter) => frameOrigin(chapter.doc),
+  });
   const touchGuide = new TouchGuide(() => flowGuideKind(view.paging));
   const chapters = new Set<Document>();
   const coarse = window.matchMedia('(pointer: coarse)').matches;
@@ -211,8 +208,7 @@
   function onkey(event: KeyboardEvent): void {
     if (event.defaultPrevented || dialogOpen || gestures === null) return;
 
-    if (event.key === 'Escape' && offer !== null) {
-      offer = null;
+    if (event.key === 'Escape' && lift.dismiss()) {
       event.preventDefault();
       return;
     }
@@ -249,8 +245,7 @@
   }
 
   function press(event: PointerEvent, spot: StageTap): void {
-    offer = null;
-    pointerHeld = true;
+    lift.press();
     lastPointerType = event.pointerType;
     gestures?.pressed({
       pointerId: event.pointerId,
@@ -268,15 +263,13 @@
       turns: touchTurns.value,
       chromeShown: awake,
     });
-    pointerHeld = false;
-    askAboutTheOffer();
+    lift.release();
     if (action !== undefined) apply(action);
   }
 
   function cancel(event: PointerEvent): void {
     gestures?.cancelled(event.pointerId);
-    pointerHeld = false;
-    askAboutTheOffer();
+    lift.release();
   }
 
   function frameOrigin(doc: Document): Point {
@@ -296,63 +289,18 @@
     });
   }
 
-  function spotOfferedAt(placed: LiftPlacement): Omit<LiftOffer, 'chapter'> | null {
-    return match(placed)
-      .with({ kind: 'nowhere' }, () => null)
-      .with({ kind: 'above' }, (above) => ({ left: above.left, top: above.top }))
-      .with({ kind: 'below' }, (below) => ({ left: below.left, top: below.top }))
-      .exhaustive();
-  }
-
-  function placedOffer(
-    host: HTMLElement,
-    chapter: ChapterView,
-    rects: readonly LiftRect[],
-  ): LiftOffer | null {
-    const box = host.getBoundingClientRect();
-    const origin = frameOrigin(chapter.doc);
-    const onScreen = { left: box.left, top: box.top, width: box.width };
-    const placed = rects.map((rect) => rectOnStage(rect, origin, onScreen));
-    const stageSize = { width: box.width, height: box.height };
-    const spot = spotOfferedAt(
-      liftPlacement(placed, stageSize, liftMetrics(getComputedStyle(host))),
-    );
-
-    return spot === null ? null : { chapter, ...spot };
-  }
-
-  function followTheSelection(): void {
+  function liftStage(): LiftStage | null {
     const host = stage;
-    const chapter = showing;
-    if (host === null || chapter === null) {
-      offer = null;
-      return;
-    }
+    if (host === null) return null;
 
-    const rects = shownSelection(chapter.doc);
-    match(offerMove({ selected: rects.length > 0, pointerHeld }))
-      .with({ kind: 'keep' }, () => undefined)
-      .with({ kind: 'clear' }, () => {
-        offer = null;
-      })
-      .with({ kind: 'place' }, () => {
-        offer = placedOffer(host, chapter, rects);
-      })
-      .exhaustive();
-  }
-
-  function askAboutTheOffer(): void {
-    if (queued !== null) return;
-
-    queued = requestAnimationFrame(() => {
-      queued = null;
-      followTheSelection();
-    });
+    return {
+      box: () => host.getBoundingClientRect(),
+      metrics: () => liftMetrics(getComputedStyle(host)),
+    };
   }
 
   function takeLift(): void {
-    const held = offer;
-    offer = null;
+    const held = lift.take();
     if (held === null) return;
 
     const passage = selectedPassage(
@@ -380,11 +328,11 @@
     const doc = chapter.doc;
     gestures ??= new FlowGestures(chapter.pages);
     chapters.add(doc);
-    showing = chapter;
+    lift.show(chapter);
 
     doc.addEventListener('keydown', onkey);
     relayKeydownsTo(window, doc);
-    doc.addEventListener('selectionchange', askAboutTheOffer);
+    doc.addEventListener('selectionchange', () => lift.ask());
     doc.addEventListener('pointerdown', (event) =>
       press(event, spotOn(host, event, frameOrigin(doc))),
     );
@@ -415,7 +363,7 @@
       .open(
         held,
         (opening) => openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
-        askAboutTheOffer,
+        () => lift.ask(),
       )
       .then(armGuide);
     return () => {
@@ -423,12 +371,8 @@
       host.removeEventListener('pointerup', ended);
       host.removeEventListener('pointercancel', cancel);
       view.close();
-      if (queued !== null) cancelAnimationFrame(queued);
-      queued = null;
+      lift.close();
       gestures = null;
-      showing = null;
-      pointerHeld = false;
-      offer = null;
       touchGuide.close();
       contentsOpen = false;
       settingsOpen = false;
@@ -452,11 +396,11 @@
 
     <PageInkProbe onink={(ink) => view.paint(ink)} />
 
-    {#if offer !== null}
+    {#if lift.offer !== null}
       <div
         class="lift place-rect z-overlay"
-        style:--rect-left="{offer.left}px"
-        style:--rect-top="{offer.top}px"
+        style:--rect-left="{lift.offer.left}px"
+        style:--rect-top="{lift.offer.top}px"
       >
         <IconButton
           variant="accent"

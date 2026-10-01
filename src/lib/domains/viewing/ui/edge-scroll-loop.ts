@@ -1,3 +1,5 @@
+import { ANIMATION_FRAMES } from '$lib/shared/frame-clock';
+import type { FrameClock } from '$lib/shared/frame-clock';
 import { edgeScrollBy, edgeSpeed } from './edge-scroll';
 import type { EdgeBand } from './edge-scroll';
 
@@ -9,16 +11,6 @@ type EdgeSurface = {
 type EdgeTarget = {
   readonly surface: () => EdgeSurface | null;
   readonly dragging: () => boolean;
-};
-
-type FrameClock = {
-  readonly request: (step: (now: number) => void) => number;
-  readonly cancel: (frame: number) => void;
-};
-
-const ANIMATION_FRAMES: FrameClock = {
-  request: (step) => requestAnimationFrame(step),
-  cancel: (frame) => cancelAnimationFrame(frame),
 };
 
 class EdgeScroll {
@@ -77,5 +69,5 @@ class EdgeScroll {
   }
 }
 
-export { ANIMATION_FRAMES, EdgeScroll };
-export type { EdgeSurface, EdgeTarget, FrameClock };
+export { EdgeScroll };
+export type { EdgeSurface, EdgeTarget };

@@ -3,6 +3,7 @@ import {
   QUOTE_CONTEXT_CHARS,
   liftMetrics,
   liftPlacement,
+  liftSpot,
   liftsAnything,
   offerMove,
   passageQuote,
@@ -257,5 +258,51 @@ describe('liftMetrics', () => {
     const style = { getPropertyValue: (property: string) => tokens[property] ?? '' };
 
     expect(liftMetrics(style)).toEqual({ size: 44, gap: 8 });
+  });
+});
+
+describe('liftSpot', () => {
+  it('places the lift over a chapter rect moved onto the stage, above it when there is room', () => {
+    const spot = liftSpot(
+      [rect(110, 360, 270, 390)],
+      { x: -10, y: 0 },
+      { left: 0, top: 60, width: 414, height: 896 },
+      LIFT,
+    );
+
+    expect(spot).toEqual({ left: centred(100, 260), top: 300 - LIFT.gap - LIFT.size });
+  });
+
+  it('places the lift below a selection against the top of the stage', () => {
+    const spot = liftSpot(
+      [rect(100, 4, 260, 34)],
+      HOST_VIEWPORT_ORIGIN,
+      { left: 0, top: 0, width: 414, height: 896 },
+      LIFT,
+    );
+
+    expect(spot).toEqual({ left: centred(100, 260), top: 34 + LIFT.gap });
+  });
+
+  it('measures the stage by the height it is given', () => {
+    const spot = liftSpot(
+      [rect(100, 4, 260, 34)],
+      HOST_VIEWPORT_ORIGIN,
+      { left: 0, top: 0, width: 414, height: 60 },
+      LIFT,
+    );
+
+    expect(spot).toEqual({ left: centred(100, 260), top: 60 - LIFT.size });
+  });
+
+  it('offers no spot for a selection off the stage', () => {
+    const spot = liftSpot(
+      [rect(100, 300, 260, 330)],
+      FRAME_NOWHERE_ON_THE_STAGE,
+      { left: 0, top: 0, width: 414, height: 896 },
+      LIFT,
+    );
+
+    expect(spot).toBeNull();
   });
 });
