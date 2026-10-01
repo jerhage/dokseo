@@ -19,9 +19,8 @@
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import PageBar from '$lib/shared/PageBar.svelte';
-  import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
-  import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import { FOCUSED_OR_OPEN, ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
@@ -101,7 +100,6 @@
   };
 
   let stage = $state<HTMLElement | null>(null);
-  let barsAsked = $state(false);
   let contentsOpen = $state(false);
   let contentsDialog = $state<ReturnType<typeof FlowContentsDialog> | null>(null);
   let settingsOpen = $state(false);
@@ -127,7 +125,7 @@
   const turning = $derived(view.direction);
   const marks = $derived(tickOffsets(view.ticks, turning));
   const passages = $derived(passageCfis(anchors));
-  const readerFrame = new ReaderFrameView();
+  const readerFrame = new ReaderFrameView(FOCUSED_OR_OPEN, () => dialogOpen);
   const narrow = $derived(readerFrame.narrow);
   const turns = $derived(
     turnOrder(turning).map((turn, slot) => ({
@@ -138,7 +136,7 @@
     })),
   );
 
-  const awake = $derived(chromeShown(barsAsked, readerFrame.focus.held || dialogOpen));
+  const awake = $derived(readerFrame.barsShown);
 
   const input = $derived(flowInput(lastPointerType, coarse));
   const guideOffered = $derived(offersFlowGuide({ open: reading, input }));
@@ -149,11 +147,6 @@
     if (!reading) return;
 
     touchGuide.open();
-  }
-
-  function toggleBars(): void {
-    if (awake) readerFrame.releaseBars(document.activeElement, stage);
-    barsAsked = !awake;
   }
 
   function isEditable(target: EventTarget): boolean {
@@ -250,7 +243,7 @@
       .with({ kind: 'nothing' }, () => undefined)
       .with({ kind: 'turn' }, () => undefined)
       .with({ kind: 'chrome' }, () => {
-        toggleBars();
+        readerFrame.toggleBars(document.activeElement, stage);
       })
       .exhaustive();
   }

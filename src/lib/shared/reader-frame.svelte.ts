@@ -3,6 +3,7 @@ import type { DockPlacement } from '$lib/components/dock';
 import { ChromeFocus } from './chrome-focus.svelte';
 import type { FocusedNodes } from './chrome-focus.svelte';
 import { askedAfterCapture, isNarrow } from './panel-dock';
+import { chromeShown } from './reader-chrome';
 import { returnFocusToPage } from './reading-surface';
 import type { ReadingSurface } from './reading-surface';
 
@@ -16,6 +17,8 @@ function openPopovers(): readonly Element[] {
 
 const FOCUSED_OR_OPEN: FocusedNodes = () => [document.activeElement, ...openPopovers()];
 
+const NOTHING_HOLDS: () => boolean = () => false;
+
 class ReaderFrameView {
   topBar = $state<HTMLElement | null>();
   bottomBar = $state<HTMLElement | null>();
@@ -28,9 +31,22 @@ class ReaderFrameView {
   sheetCover = $state(0);
   readonly focus: ChromeFocus;
   #panelAsked = $state<boolean | null>(null);
+  #barsAsked = $state(false);
+  #holdsBars: () => boolean;
 
-  constructor(focused: FocusedNodes = FOCUSED_OR_OPEN) {
+  constructor(focused: FocusedNodes = FOCUSED_OR_OPEN, holdsBars: () => boolean = NOTHING_HOLDS) {
     this.focus = new ChromeFocus(() => this.bars, focused);
+    this.#holdsBars = holdsBars;
+  }
+
+  get barsShown(): boolean {
+    return chromeShown(this.#barsAsked, this.focus.held || this.#holdsBars());
+  }
+
+  toggleBars(focused: Element | null, surface: ReadingSurface | null): void {
+    const shown = this.barsShown;
+    if (shown) this.releaseBars(focused, surface);
+    this.#barsAsked = !shown;
   }
 
   get bars(): readonly (HTMLElement | null | undefined)[] {
@@ -71,4 +87,4 @@ class ReaderFrameView {
   }
 }
 
-export { ReaderFrameView };
+export { FOCUSED_OR_OPEN, ReaderFrameView };

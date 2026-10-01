@@ -24,7 +24,6 @@
   import type { TouchTurns } from '$lib/shared/page-turn';
   import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
   import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
-  import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABELS } from './drag-mode';
@@ -92,7 +91,6 @@
 
   let paged = $state<ReturnType<typeof PagedViewer> | null>(null);
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
-  let asked = $state(false);
   let noting = $state(false);
   let selecting = $state(false);
   const touchTurns = new RememberedChoice<TouchTurns>(readTouchTurns, saveTouchTurns);
@@ -100,17 +98,14 @@
 
   const readerFrame = new ReaderFrameView();
 
-  const shown = $derived(chromeShown(asked, readerFrame.focus.held));
+  const shown = $derived(readerFrame.barsShown);
   const makes = $derived(dragOrigin(noting));
   const narrow = $derived(readerFrame.narrow);
   const lit = $derived(shownGlow(glow, everyGlow, allCapturesWanted()));
   const touchGuide = $derived(paged?.offersGuide() ?? strip?.offersGuide() ?? false);
 
   function toggleChrome(): void {
-    if (shown) {
-      readerFrame.releaseBars(document.activeElement, paged?.surface() ?? strip?.surface() ?? null);
-    }
-    asked = !shown;
+    readerFrame.toggleBars(document.activeElement, paged?.surface() ?? strip?.surface() ?? null);
   }
 
   const book = $derived(view.book);
