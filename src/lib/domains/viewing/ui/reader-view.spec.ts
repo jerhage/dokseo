@@ -17,14 +17,13 @@ import { err, ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { readingPosition } from '../domain/reading-position';
 import type { Notice, Notify } from '$lib/shared/notice';
+import { PLACE_FAILED, PLACE_SAVE_DELAY_MS } from '$lib/shared/place-keeper';
 import {
   DIRECTION_FAILED,
   FIT_FAILED,
   LANGUAGE_FAILED,
   LAYOUT_FAILED,
   PAIRING_FAILED,
-  PLACE_FAILED,
-  PLACE_SAVE_DELAY_MS,
   ReaderView,
 } from './reader-view.svelte';
 import type { ReaderBook } from './reader-view.svelte';

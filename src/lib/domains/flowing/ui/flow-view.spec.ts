@@ -28,7 +28,8 @@ import type { PassageArrival } from './flow-quote';
 import { INK_FOR_THE_DARK_PAGE } from './flow-styles';
 import type { PageInk } from './flow-styles';
 import type { FlowOpening, FlowSurface } from './flow-surface';
-import { FlowView, PLACE_FAILED, PLACE_SAVE_DELAY_MS, SETTINGS_FAILED } from './flow-view.svelte';
+import { PLACE_FAILED, PLACE_SAVE_DELAY_MS } from '$lib/shared/place-keeper';
+import { FlowView, SETTINGS_FAILED } from './flow-view.svelte';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
 
 const NOVEL: BookId = bookId('one');

@@ -5,7 +5,8 @@ import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
-import { resumedCfi, samePlace, textPlace } from '$lib/shared/reading-place';
+import { PlaceKeeper } from '$lib/shared/place-keeper';
+import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
@@ -49,8 +50,6 @@ type FlowBook = Extract<OpenedBook, { readonly kind: 'flow' }>['book'];
 
 type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
 
-type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
-
 type LibraryFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
 
 type ShowFlowBook = (opening: FlowOpening) => Promise<FlowSurface>;
@@ -65,12 +64,6 @@ type FlowCurtain =
   | { readonly kind: 'none' }
   | { readonly kind: 'opening' }
   | { readonly kind: 'notice'; readonly message: string };
-
-type PendingSave = {
-  readonly id: BookId;
-  readonly place: ReadingPlace;
-  readonly timer: ReturnType<typeof setTimeout>;
-};
 
 type AskedArrival = {
   readonly book: BookId;
@@ -87,11 +80,7 @@ const NOTHING_OVER_THE_BOOK: FlowCurtain = { kind: 'none' };
 
 const WAITING_FOR_THE_BOOK: FlowCurtain = { kind: 'opening' };
 
-const PLACE_SAVE_DELAY_MS = 500;
-
 const SETTINGS_FAILED = 'Could not save the text settings';
-
-const PLACE_FAILED = 'Could not save your place';
 
 function describeLibraryFailure(error: LibraryFailure): string {
   return match(error)
@@ -151,8 +140,7 @@ class FlowView {
   #notify: Notify;
   #generation = 0;
   #surface: FlowSurface | null = null;
-  #saving: PendingSave | null = null;
-  #placed: ReadingPlace | null = null;
+  #places: PlaceKeeper<ReadingPlace, LibraryFailure>;
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
   #arrivedBy: string | null = null;
@@ -160,11 +148,16 @@ class FlowView {
   #asked: AskedArrival | null = null;
   #showing: BookId | null = null;
   #ink: PageInk = INK_FOR_THE_DARK_PAGE;
-  #placeFailing = false;
 
   constructor(container: Container, notify: Notify) {
     this.#container = container;
     this.#notify = notify;
+    this.#places = new PlaceKeeper({
+      save: (id, place) => this.#container.library.saveReadingPlace(id, place),
+      describe: describePlaceFailure,
+      notify,
+      afterFailure: 'forgets-place',
+    });
   }
 
   get curtain(): FlowCurtain {
@@ -184,7 +177,7 @@ class FlowView {
   }
 
   async open(book: FlowBook, show: ShowFlowBook, onmoved?: () => void): Promise<void> {
-    this.#flushSave();
+    this.#places.flush();
     const generation = ++this.#generation;
     this.#release();
     this.state = OPENING;
@@ -193,8 +186,7 @@ class FlowView {
     this.#standing = NOT_STANDING;
     this.#showing = null;
     if (this.#asked?.book !== book.id) this.#asked = null;
-    this.#placed = null;
-    this.#placeFailing = false;
+    this.#places.restart();
     this.location = null;
     this.contents = NO_CONTENTS;
     this.ticks = NO_CHAPTER_TICKS;
@@ -220,7 +212,7 @@ class FlowView {
     }
 
     const at = resumedCfi(book.position);
-    this.#placed = book.position;
+    this.#places.assumeStored(book.position);
 
     const chosen = await this.#container.flowing.readReadingSettings();
     if (generation !== this.#generation) return;
@@ -271,7 +263,7 @@ class FlowView {
   }
 
   close(): void {
-    this.#flushSave();
+    this.#places.flush();
     this.#generation += 1;
     this.#release();
     this.#marked = NOTHING_ARRIVED_AT;
@@ -390,16 +382,7 @@ class FlowView {
     this.#standing = standingAfterMove(this.#standing, here.cfi, relocation.cause);
     onmoved?.();
     const place = textPlace(here.cfi, here.fraction);
-
-    const waiting = this.#saving;
-    if (waiting !== null) clearTimeout(waiting.timer);
-
-    const timer = setTimeout(() => {
-      this.#saving = null;
-      if (!this.#alreadyStored(place)) void this.#persist(id, place);
-    }, PLACE_SAVE_DELAY_MS);
-
-    this.#saving = { id, place, timer };
+    this.#places.schedule(id, place);
   }
 
   #arrive(passage: SoughtPassage): void {
@@ -425,11 +408,6 @@ class FlowView {
     this.#surface?.mark(this.#passages, marked);
   }
 
-  #alreadyStored(place: ReadingPlace): boolean {
-    const placed = this.#placed;
-    return placed !== null && samePlace(placed, place);
-  }
-
   async #remember(settings: ReadingSettings): Promise<void> {
     let saved: Awaited<ReturnType<Container['flowing']['saveReadingSettings']>>;
     try {
@@ -442,49 +420,8 @@ class FlowView {
     if (!saved.ok) this.#fail(SETTINGS_FAILED, describeSettingsFailure(saved.error));
   }
 
-  #flushSave(): void {
-    const waiting = this.#saving;
-    if (waiting === null) return;
-
-    clearTimeout(waiting.timer);
-    this.#saving = null;
-    if (this.#alreadyStored(waiting.place)) return;
-    void this.#persist(waiting.id, waiting.place);
-  }
-
-  async #persist(id: BookId, place: ReadingPlace): Promise<void> {
-    this.#placed = place;
-
-    let saved: EditOutcome;
-    try {
-      saved = await this.#container.library.saveReadingPlace(id, place);
-    } catch (cause) {
-      this.#forget(place);
-      this.#failPlace(describeCause(cause));
-      return;
-    }
-
-    if (saved.ok) {
-      this.#placeFailing = false;
-      return;
-    }
-
-    this.#forget(place);
-    this.#failPlace(describePlaceFailure(saved.error));
-  }
-
-  #failPlace(message: string): void {
-    if (this.#placeFailing) return;
-    this.#placeFailing = true;
-    this.#fail(PLACE_FAILED, message);
-  }
-
   #fail(title: string, message: string): void {
     this.#notify({ tone: 'danger', title, message });
-  }
-
-  #forget(place: ReadingPlace): void {
-    if (this.#alreadyStored(place)) this.#placed = null;
   }
 
   #release(): void {
@@ -493,5 +430,5 @@ class FlowView {
   }
 }
 
-export { FlowView, PLACE_FAILED, PLACE_SAVE_DELAY_MS, SETTINGS_FAILED };
+export { FlowView, SETTINGS_FAILED };
 export type { FlowBook, FlowCurtain, FlowState, ShowFlowBook };
