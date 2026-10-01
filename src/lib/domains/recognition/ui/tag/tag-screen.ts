@@ -62,20 +62,12 @@ type WalkKey =
   | { readonly kind: 'open' }
   | { readonly kind: 'open-in-new-tab' };
 
-type ShelfStatus = 'idle' | 'loading' | 'ready' | 'failed';
-
-type Shelf = {
-  readonly status: ShelfStatus;
-  readonly loadFailure: string | null;
-  load(): Promise<void>;
-};
-
 type StageInput = {
   readonly tag: Tag | undefined;
   readonly summary: TagSummary | null;
   readonly tags: number;
   readonly status: TagViewStatus;
-  readonly shelf: ShelfStatus;
+  readonly libraryFailed: boolean;
 };
 
 type ShelfInput = {
@@ -90,7 +82,7 @@ function tagStage(input: StageInput): TagStage {
   const { tag, summary } = input;
 
   if (tag !== undefined && summary !== null) {
-    if (input.shelf === 'failed') return { kind: 'unshelved', tag };
+    if (input.libraryFailed) return { kind: 'unshelved', tag };
 
     return summary.captures === 0
       ? { kind: 'empty', tag, summary }
@@ -191,4 +183,4 @@ export {
   taggedShelves,
   walkKey,
 };
-export type { Neighbour, Shelf, ShelfStatus, TagStage, TaggedRow, TaggedShelf, WalkKey, WalkPress };
+export type { Neighbour, TagStage, TaggedRow, TaggedShelf, WalkKey, WalkPress };

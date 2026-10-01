@@ -39,6 +39,8 @@ describe('StorageData', () => {
   });
 
   it('hands the child the account once it is read', () => {
-    expect(markup({ kind: 'ready', value: ACCOUNT })).toContain('<p>measured 205000000</p>');
+    expect(markup({ kind: 'ready', value: ACCOUNT, refresh: { kind: 'settled' } })).toContain(
+      '<p>measured 205000000</p>',
+    );
   });
 });

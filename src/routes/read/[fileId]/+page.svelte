@@ -5,7 +5,7 @@
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
-  import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
@@ -24,7 +24,6 @@
   import type { BookId, ImageIndex } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import { toastNotify } from '$lib/shared/notice-toast';
-  import { effectiveDirection } from '$lib/shared/layout-kind';
   import {
     IMAGE_ARRIVAL_SHOWING,
     IMAGE_PARAMETER,
@@ -64,7 +63,7 @@
   const notify = toastNotify(getToaster());
   const view = new ReaderView(container, notify, mirror, warm);
   const captures = new CaptureView(container, notify);
-  const shelf = new LibraryView(container, notify);
+  const shelf = new LibraryBooks(container);
   const find = new CaptureSearchView(container, comparePassages);
   const flow = new FlowView(container, notify);
   const id = $derived(bookId(page.params.fileId ?? ''));
@@ -81,14 +80,6 @@
   const passageStepping = $derived(passageHere?.stepping ?? null);
   const finding = $derived(arrivalQuery(found));
   const arrivalShows = $derived(imageArrivalShows(arrivalStanding));
-  const books = $derived(
-    shelf.books.map((held) => ({
-      id: held.id,
-      title: held.title,
-      language: held.language,
-      direction: effectiveDirection(held.direction, held.layoutKind),
-    })),
-  );
 
   let requested: ReaderRequest | null = null;
 
@@ -203,7 +194,7 @@
 <SearchDialog
   bind:this={search}
   book={id}
-  {books}
+  books={shelf.searchedBooks}
   {find}
   tags={captures.tags}
   covers={shelf.covers}

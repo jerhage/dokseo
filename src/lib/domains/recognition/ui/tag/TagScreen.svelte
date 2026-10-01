@@ -25,14 +25,14 @@
     taggedShelves,
     walkKey,
   } from './tag-screen';
-  import type { Shelf } from './tag-screen';
   import type { TagView } from './tag-view.svelte';
   import TagsShell from './TagsShell.svelte';
 
   type Props = {
     readonly view: TagView;
     readonly covers: ReadonlyMap<BookId, string>;
-    readonly shelf: Shelf;
+    readonly libraryFailure: string | null;
+    readonly onretrylibrary: () => void;
   };
 
   type Walk = { readonly tag: TagId | null; readonly at: number };
@@ -43,7 +43,7 @@
     { keys: ['⌘↵'], does: 'new tab' },
   ];
 
-  let { view, covers, shelf }: Props = $props();
+  let { view, covers, libraryFailure, onretrylibrary }: Props = $props();
 
   let walk = $state.raw<Walk | null>(null);
   let anchors = $state<(HTMLElement | null | undefined)[]>([]);
@@ -54,7 +54,7 @@
       summary: view.summary,
       tags: view.tags.length,
       status: view.status,
-      shelf: shelf.status,
+      libraryFailed: libraryFailure !== null,
     }),
   );
 
@@ -117,11 +117,11 @@
       <Alert variant="danger" role="alert">Your tags could not be read.</Alert>
     {/if}
 
-    {#if shelf.status === 'failed'}
+    {#if libraryFailure !== null}
       <Alert variant="danger" role="alert" title="Your library could not be read">
-        {shelf.loadFailure ?? 'The captures under your tags cannot be shown.'}
+        {libraryFailure}
         {#snippet actions()}
-          <Button size="sm" onclick={() => void shelf.load()}>Try again</Button>
+          <Button size="sm" onclick={onretrylibrary}>Try again</Button>
         {/snippet}
       </Alert>
     {/if}

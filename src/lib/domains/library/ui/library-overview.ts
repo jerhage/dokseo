@@ -4,9 +4,6 @@ import type { KeyHint } from '$lib/components/key-hints';
 import type { ComposingSignals } from '$lib/shared/composing-key';
 import type { Book } from '../domain/book/book';
 import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';
-import type { LibraryStatus } from './library-view.svelte';
-
-type LibraryBody = 'reading' | 'failed' | 'empty' | 'listed';
 
 type FilterKey = 'clear' | 'ignore';
 
@@ -75,15 +72,6 @@ function filterKey(press: FilterPress, query: string): FilterKey {
   return clearsSearch(press.key, query) ? 'clear' : 'ignore';
 }
 
-function libraryBody(status: LibraryStatus, bookCount: number, importing: boolean): LibraryBody {
-  const settling = status !== 'ready' && status !== 'failed';
-  const nothing = bookCount === 0 && !importing;
-  if (settling && nothing) return 'reading';
-  if (status === 'failed') return 'failed';
-  if (nothing) return 'empty';
-  return 'listed';
-}
-
 export {
   GITHUB_MARK,
   SEARCH_EVERYTHING_HINTS,
@@ -93,10 +81,9 @@ export {
   filterKey,
   formatBytes,
   isSearching,
-  libraryBody,
   librarySummary,
   matchedText,
   storageText,
   titledBooks,
 };
-export type { FilterKey, FilterPress, LibraryBody };
+export type { FilterKey, FilterPress };

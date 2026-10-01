@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { LibraryBody } from './library-overview';
+import type { LibraryBody } from './library-shelf';
 
 type ScrollStep =
   | { readonly kind: 'wait' }

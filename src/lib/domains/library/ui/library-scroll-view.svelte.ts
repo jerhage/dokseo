@@ -1,6 +1,6 @@
 import { untrack } from 'svelte';
 import { match } from 'ts-pattern';
-import type { LibraryBody } from './library-overview';
+import type { LibraryBody } from './library-shelf';
 import { returnsFromReader, scrollStep, scrollTopFrom } from './library-scroll';
 import type { ScrollStep } from './library-scroll';
 

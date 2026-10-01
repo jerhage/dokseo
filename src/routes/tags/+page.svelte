@@ -1,28 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
-  import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
-  import { effectiveDirection } from '$lib/shared/layout-kind';
   import { readTagName, TAG_PARAMETER } from '$lib/shared/tag-location';
-  import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
-  const shelf = new LibraryView(container, toastNotify(getToaster()));
-  const books = $derived(
-    shelf.books.map((book) => ({
-      id: book.id,
-      title: book.title,
-      language: book.language,
-      direction: effectiveDirection(book.direction, book.layoutKind),
-    })),
-  );
+  const shelf = new LibraryBooks(container);
   const wanted = $derived(readTagName(page.url.searchParams.get(TAG_PARAMETER)));
-  const view = new TagView(container, () => ({ books, wanted }), comparePassages);
+  const view = new TagView(
+    container,
+    () => ({ books: shelf.searchedBooks, wanted }),
+    comparePassages,
+  );
 
   onMount(() => {
     void shelf.load();
@@ -31,4 +24,9 @@
   });
 </script>
 
-<TagScreen {view} covers={shelf.covers} {shelf} />
+<TagScreen
+  {view}
+  covers={shelf.covers}
+  libraryFailure={shelf.failure}
+  onretrylibrary={() => void shelf.load()}
+/>

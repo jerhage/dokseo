@@ -251,161 +251,11 @@ afterEach(() => {
 });
 
 describe('LibraryView', () => {
-  it('moves from idle to loading to ready and exposes the books', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-    expect(view.status).toBe('idle');
-
-    const running = view.load();
-    expect(view.status).toBe('loading');
-
-    at(world.lists, 0).settle(ok([book('one'), book('two')]));
-    await running;
-
-    expect(view.status).toBe('ready');
-    expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
-    expect(view.covers.size).toBe(2);
-    expect(world.notices).toEqual([]);
-  });
-
-  it('exposes the bytes the uploads occupy once the library has loaded', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-    expect(view.storedBytes).toBeNull();
-
-    const running = view.load();
-    at(world.lists, 0).settle(ok([book('one')]));
-    await running;
-
-    expect(view.storedBytes).toBe(2048);
-  });
-
-  it('reports no size when the uploads cannot be measured', async () => {
-    const world = fakes();
-    world.size.outcome = err({ kind: 'storage-unavailable' });
-    const view = new LibraryView(world.container, world.notify);
-
-    const running = view.load();
-    at(world.lists, 0).settle(ok([book('one')]));
-    await running;
-
-    expect(view.status).toBe('ready');
-    expect(view.storedBytes).toBeNull();
-  });
-
-  it('orders the newest upload first', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-
-    const running = view.load();
-    at(world.lists, 0).settle(ok([book('older', { addedAt: 1 }), book('newer', { addedAt: 2 })]));
-    await running;
-
-    expect(view.books.map((b) => b.id)).toEqual(['newer', 'older']);
-  });
-
-  it('lands a repository failure in the failed status without throwing', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-
-    const running = view.load();
-    at(world.lists, 0).settle(err({ kind: 'storage-failed', cause: 'quota exceeded' }));
-    await expect(running).resolves.toBeUndefined();
-
-    expect(view.status).toBe('failed');
-    expect(view.loadFailure).toBe('Local storage failed: quota exceeded');
-    expect(world.notices).toEqual([]);
-    expect(view.books).toEqual([]);
-  });
-
-  it('keeps a book whose cover cannot be read', async () => {
-    const world = fakes();
-    world.cover.outcome = err({ kind: 'not-found', id: bookId('one') });
-    const view = new LibraryView(world.container, world.notify);
-
-    const running = view.load();
-    at(world.lists, 0).settle(ok([book('one')]));
-    await running;
-
-    expect(view.status).toBe('ready');
-    expect(view.books).toHaveLength(1);
-    expect(view.covers.size).toBe(0);
-  });
-
-  it('revokes every object URL it created when disposed', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-
-    const running = view.load();
-    at(world.lists, 0).settle(ok([book('one'), book('two')]));
-    await running;
-
-    view.dispose();
-
-    expect(revoked).toEqual(created);
-    expect(view.covers.size).toBe(0);
-  });
-
-  it('revokes the replaced object URLs on a second load', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-
-    const first = view.load();
-    at(world.lists, 0).settle(ok([book('one')]));
-    await first;
-
-    const second = view.load();
-    at(world.lists, 1).settle(ok([book('one')]));
-    await second;
-
-    expect(revoked).toEqual([created[0]]);
-    expect(view.covers.get(bookId('one'))).toBe(created[1]);
-  });
-
-  it('lets the later of two overlapping loads win', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-
-    const first = view.load();
-    const second = view.load();
-
-    at(world.lists, 1).settle(ok([book('late')]));
-    await second;
-    at(world.lists, 0).settle(ok([book('early')]));
-    await first;
-
-    expect(view.books.map((b) => b.id)).toEqual(['late']);
-    expect(view.status).toBe('ready');
-  });
-
-  it('revokes the covers a stale load created', async () => {
-    const world = fakes();
-    const view = new LibraryView(world.container, world.notify);
-    const held = deferred<void>();
-    world.cover.gate = () => held.promise;
-
-    const first = view.load();
-    at(world.lists, 0).settle(ok([book('early')]));
-    await settleMicrotasks();
-
-    world.cover.gate = () => Promise.resolve();
-    const second = view.load();
-    at(world.lists, 1).settle(ok([book('late')]));
-    await second;
-
-    held.settle();
-    await first;
-
-    expect(view.books.map((b) => b.id)).toEqual(['late']);
-    expect(view.covers.size).toBe(1);
-    expect(revoked).toEqual([created[1]]);
-  });
-
   it('reports an upload failure and keeps the books it already has', async () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -423,15 +273,15 @@ describe('LibraryView', () => {
         message: 'Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.',
       },
     ]);
-    expect(view.books.map((b) => b.id)).toEqual(['one']);
-    expect(view.status).toBe('ready');
+    expect(view.library.books.map((b) => b.id)).toEqual(['one']);
+    expect(view.library.state.kind).toBe('ready');
   });
 
   it('reloads the library after a successful upload', async () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -442,7 +292,7 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('one'), book('two')]));
     await uploading;
 
-    expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(world.notices.map((notice) => notice.tone)).toEqual(['success']);
   });
 
@@ -450,7 +300,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -465,7 +315,7 @@ describe('LibraryView', () => {
     await uploading;
 
     expect(view.pending).toBeNull();
-    expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['one', 'two']);
   });
 
   it('clears the pending title when the upload fails', async () => {
@@ -609,7 +459,7 @@ describe('LibraryView', () => {
     at(world.lists, 0).settle(ok([book('a')]));
     await settleMicrotasks();
 
-    expect(view.books.map((held) => held.id)).toEqual(['a']);
+    expect(view.library.books.map((held) => held.id)).toEqual(['a']);
     expect(view.busy).toBe(true);
 
     at(world.opens, 1).settle(ok({ kind: 'already-held', book: book('b') }));
@@ -617,14 +467,14 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('a'), book('b')]));
     await settleMicrotasks();
 
-    expect(view.books.map((held) => held.id)).toEqual(['a', 'b']);
+    expect(view.library.books.map((held) => held.id)).toEqual(['a', 'b']);
 
     at(world.opens, 2).settle(ok({ kind: 'added', book: book('c') }));
     await settleMicrotasks();
     at(world.lists, 2).settle(ok([book('a'), book('b'), book('c')]));
     await uploading;
 
-    expect(view.books.map((held) => held.id)).toEqual(['a', 'b', 'c']);
+    expect(view.library.books.map((held) => held.id)).toEqual(['a', 'b', 'c']);
     expect(world.notices).toEqual([
       { tone: 'success', title: 'Added 2 books, 1 already in your library' },
     ]);
@@ -693,7 +543,7 @@ describe('LibraryView', () => {
           'Added 1 book · a.pdf could not be read: bad xref · c.cbz: Local storage failed: disk full',
       },
     ]);
-    expect(view.books.map((held) => held.id)).toEqual(['b']);
+    expect(view.library.books.map((held) => held.id)).toEqual(['b']);
   });
 
   it('reloads nothing when every book of the upload fails', async () => {
@@ -741,7 +591,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -751,8 +601,8 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('two')]));
     await removing;
 
-    expect(view.books.map((b) => b.id)).toEqual(['two']);
-    expect(view.status).toBe('ready');
+    expect(view.library.books.map((b) => b.id)).toEqual(['two']);
+    expect(view.library.state.kind).toBe('ready');
     expect(world.notices).toEqual([]);
   });
 
@@ -760,7 +610,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -781,7 +631,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -793,7 +643,7 @@ describe('LibraryView', () => {
     expect(world.notices).toEqual([
       { tone: 'danger', title: REMOVE_FAILED, message: 'Local storage failed: the disk went away' },
     ]);
-    expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(world.lists).toHaveLength(1);
   });
 
@@ -801,7 +651,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -816,14 +666,14 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('two')]));
     await first;
 
-    expect(view.books.map((b) => b.id)).toEqual(['two']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['two']);
   });
 
   it('ignores a remove while an upload is running', async () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -836,14 +686,14 @@ describe('LibraryView', () => {
     at(world.opens, 0).settle(err({ kind: 'source', error: { kind: 'empty' } }));
     await uploading;
 
-    expect(view.books.map((b) => b.id)).toEqual(['one']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['one']);
   });
 
   it('edits a book and reloads the list', async () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -853,8 +703,8 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('one', { title: 'Blame! 1' }), book('two')]));
     await editing;
 
-    expect(view.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
-    expect(view.status).toBe('ready');
+    expect(view.library.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
+    expect(view.library.state.kind).toBe('ready');
     expect(world.notices).toEqual([]);
   });
 
@@ -862,7 +712,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -883,7 +733,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -895,7 +745,7 @@ describe('LibraryView', () => {
     expect(world.notices).toEqual([
       { tone: 'danger', title: EDIT_FAILED, message: 'Local storage failed: the disk went away' },
     ]);
-    expect(view.books.map((b) => b.id)).toEqual(['one', 'two']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['one', 'two']);
     expect(world.lists).toHaveLength(1);
   });
 
@@ -903,7 +753,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -919,14 +769,14 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('two')]));
     await removing;
 
-    expect(view.books.map((b) => b.id)).toEqual(['two']);
+    expect(view.library.books.map((b) => b.id)).toEqual(['two']);
   });
 
   it('ignores a removal while an edit is running', async () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -942,14 +792,14 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('one', { title: 'Blame! 1' }), book('two')]));
     await editing;
 
-    expect(view.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
+    expect(view.library.books.map((b) => b.title)).toEqual(['Blame! 1', 'two']);
   });
 
   it('marks a book finished and reloads the list', async () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -963,7 +813,7 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('one', { finishedAt: 5 }), book('two')]));
     await marking;
 
-    expect(view.books.map((b) => b.finishedAt)).toEqual([5, null]);
+    expect(view.library.books.map((b) => b.finishedAt)).toEqual([5, null]);
     expect(world.notices).toEqual([]);
   });
 
@@ -971,7 +821,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one', { finishedAt: 5 })]));
     await loading;
 
@@ -984,7 +834,7 @@ describe('LibraryView', () => {
     at(world.lists, 1).settle(ok([book('one')]));
     await marking;
 
-    expect(view.books.map((b) => b.finishedAt)).toEqual([null]);
+    expect(view.library.books.map((b) => b.finishedAt)).toEqual([null]);
     expect(view.editing).toBeNull();
   });
 
@@ -992,7 +842,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -1011,7 +861,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -1032,7 +882,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two')]));
     await loading;
 
@@ -1056,7 +906,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one', { finishedAt: 5 })]));
     await loading;
 
@@ -1095,7 +945,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -1116,7 +966,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -1184,7 +1034,7 @@ describe('LibraryView', () => {
     const view = new LibraryView(world.container, world.notify);
     const reading = book('one', { title: 'Blame! 1', position: imagePlace(imageIndex(40)) });
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([reading]));
     await loading;
 
@@ -1212,7 +1062,7 @@ describe('LibraryView', () => {
     at(world.lists, 2).settle(ok([reading]));
     await settleMicrotasks();
 
-    expect(view.books.map((b) => b.finishedAt)).toEqual([null]);
+    expect(view.library.books.map((b) => b.finishedAt)).toEqual([null]);
     expect(world.notices).toHaveLength(1);
   });
 
@@ -1221,7 +1071,7 @@ describe('LibraryView', () => {
     const view = new LibraryView(world.container, world.notify);
     const finished = book('one', { title: 'Blame! 1', finishedAt: 5 });
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([finished]));
     await loading;
 
@@ -1246,7 +1096,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one'), book('two', { finishedAt: 5 })]));
     await loading;
 
@@ -1269,7 +1119,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 
@@ -1286,7 +1136,7 @@ describe('LibraryView', () => {
     const world = fakes();
     const view = new LibraryView(world.container, world.notify);
 
-    const loading = view.load();
+    const loading = view.library.load();
     at(world.lists, 0).settle(ok([book('one')]));
     await loading;
 

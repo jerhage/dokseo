@@ -99,7 +99,7 @@ describe('StorageSettingsView', () => {
 
     await view.load();
 
-    expect(view.state).toEqual({ kind: 'ready', value: read });
+    expect(view.state).toEqual({ kind: 'ready', value: read, refresh: { kind: 'settled' } });
   });
 
   it('starts loading before any read', () => {
@@ -165,6 +165,6 @@ describe('StorageSettingsView', () => {
     answerEarlier(earlier);
     await first;
 
-    expect(view.state).toEqual({ kind: 'ready', value: later });
+    expect(view.state).toEqual({ kind: 'ready', value: later, refresh: { kind: 'settled' } });
   });
 });

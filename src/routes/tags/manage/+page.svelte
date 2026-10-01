@@ -3,25 +3,20 @@
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
-  import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
   import ManageTagsScreen from '$lib/domains/recognition/ui/tag/ManageTagsScreen.svelte';
   import { ManageTagsView } from '$lib/domains/recognition/ui/tag/manage-tags.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
-  import { effectiveDirection } from '$lib/shared/layout-kind';
   import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
   const notify = toastNotify(getToaster());
-  const shelf = new LibraryView(container, notify);
-  const books = $derived(
-    shelf.books.map((book) => ({
-      id: book.id,
-      title: book.title,
-      language: book.language,
-      direction: effectiveDirection(book.direction, book.layoutKind),
-    })),
+  const shelf = new LibraryBooks(container);
+  const view = new TagView(
+    container,
+    () => ({ books: shelf.searchedBooks, wanted: null }),
+    comparePassages,
   );
-  const view = new TagView(container, () => ({ books, wanted: null }), comparePassages);
   const manage = new ManageTagsView(container, notify, () => view.load());
 
   onMount(() => {

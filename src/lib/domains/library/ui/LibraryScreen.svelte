@@ -1,9 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
   import Avatar from '$lib/components/Avatar.svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import UploadIcon from '$lib/components/icons/Upload.svelte';
@@ -15,7 +13,6 @@
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
-  import { DROP_INVITATION } from './accepted-formats';
   import type { LibraryScrollView } from './library-scroll-view.svelte';
   import type { LibraryView } from './library-view.svelte';
   import {
@@ -24,7 +21,6 @@
     SOURCE_LABEL,
     SOURCE_URL,
     isSearching,
-    libraryBody,
     librarySummary,
     matchedText,
     storageText,
@@ -34,8 +30,10 @@
   import { arrivedFiles } from './chosen-files';
   import ContinueReading from './ContinueReading.svelte';
   import ImportStatus from './ImportStatus.svelte';
+  import LibraryBooksData from './LibraryBooksData.svelte';
   import LibraryMenu from './LibraryMenu.svelte';
   import { LIBRARY_SECTIONS } from './library-sections';
+  import { libraryBody } from './library-shelf';
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
   import ShelfView from './ShelfView.svelte';
@@ -84,8 +82,10 @@
     saveCollectionView(next);
   }
 
-  const settingsBook = $derived(view.books.find((book) => book.id === openSettingsFor) ?? null);
-  const removeBook = $derived(view.books.find((book) => book.id === removeFor) ?? null);
+  const settingsBook = $derived(
+    view.library.books.find((book) => book.id === openSettingsFor) ?? null,
+  );
+  const removeBook = $derived(view.library.books.find((book) => book.id === removeFor) ?? null);
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
     const outcome = await view.edit(id, edit);
@@ -106,13 +106,13 @@
   }
 
   const searching = $derived(isSearching(query));
-  const titled = $derived(titledBooks(view.books, query));
-  const space = $derived(storageText(view.storedBytes));
-  const summary = $derived(librarySummary(view.books, view.storedBytes));
-  const body = $derived(libraryBody(view.status, view.books.length, view.pending !== null));
+  const titled = $derived(titledBooks(view.library.books, query));
+  const space = $derived(storageText(view.library.storedBytes));
+  const summary = $derived(librarySummary(view.library.books, view.library.storedBytes));
+  const body = $derived(libraryBody(view.library.state, view.pending !== null));
   const shown = $derived(sortBooks(shelfBooks(titled, shelf), order));
   const matched = $derived(matchedText(shown.length));
-  const resumable = $derived(searching ? [] : continueReading(view.books));
+  const resumable = $derived(searching ? [] : continueReading(view.library.books));
 
   $effect(() => {
     const top = scroll.settle(body);
@@ -203,52 +203,43 @@
       <ImportStatus title={view.pending} language="ja" stage={view.progress} batch={view.batch} />
     {/if}
 
-    {#if body === 'reading'}
-      <EmptyState live message="Reading your library…" />
-    {:else}
-      {#if body === 'failed'}
-        <Alert variant="danger" title="Your library could not be read.">
-          {#if view.loadFailure !== null}
-            {view.loadFailure}
-          {/if}
-          {#snippet actions()}
-            <Button size="sm" onclick={() => void view.load()}>Try again</Button>
-          {/snippet}
-        </Alert>
-      {:else if body === 'empty'}
-        <EmptyState message="No uploads yet. {DROP_INVITATION.toLowerCase()} to start." />
-      {/if}
+    <LibraryBooksData
+      state={view.library.state}
+      importing={view.pending !== null}
+      onretry={() => void view.library.load()}
+    >
+      {#snippet children(library)}
+        {#if resumable.length > 0}
+          <ContinueReading books={resumable} covers={library.covers} />
+        {/if}
 
-      {#if resumable.length > 0}
-        <ContinueReading books={resumable} covers={view.covers} />
-      {/if}
+        {#if library.books.length > 0}
+          <ShelfView
+            books={titled}
+            {shown}
+            covers={library.covers}
+            {searching}
+            bind:shelf={() => shelf, chooseShelf}
+            bind:order={() => order, chooseOrder}
+            bind:layout={() => layout, chooseLayout}
+            busy={(id) => view.removing === id || view.editing === id}
+            onedit={(id) => (openSettingsFor = id)}
+            onremove={(id) => (removeFor = id)}
+            onfinish={(id) => void view.markFinished(id, shelf)}
+            onunread={(id) => void view.markUnread(id, shelf)}
+          />
+        {/if}
 
-      {#if view.books.length > 0}
-        <ShelfView
-          books={titled}
-          {shown}
-          covers={view.covers}
-          {searching}
-          bind:shelf={() => shelf, chooseShelf}
-          bind:order={() => order, chooseOrder}
-          bind:layout={() => layout, chooseLayout}
-          busy={(id) => view.removing === id || view.editing === id}
-          onedit={(id) => (openSettingsFor = id)}
-          onremove={(id) => (removeFor = id)}
-          onfinish={(id) => void view.markFinished(id, shelf)}
-          onunread={(id) => void view.markUnread(id, shelf)}
-        />
-      {/if}
-
-      <div hidden={searching}>
-        <UploadStrip
-          bind:this={strip}
-          busy={view.busy}
-          compact={view.books.length > 0}
-          onfiles={(selection) => upload(arrivedFiles(selection))}
-        />
-      </div>
-    {/if}
+        <div hidden={searching}>
+          <UploadStrip
+            bind:this={strip}
+            busy={view.busy}
+            compact={library.books.length > 0}
+            onfiles={(selection) => upload(arrivedFiles(selection))}
+          />
+        </div>
+      {/snippet}
+    </LibraryBooksData>
 
     <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
       {#if view.pending !== null}

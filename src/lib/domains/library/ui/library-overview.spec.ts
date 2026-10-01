@@ -7,7 +7,6 @@ import {
   filterKey,
   formatBytes,
   isSearching,
-  libraryBody,
   librarySummary,
   matchedText,
   storageText,
@@ -144,31 +143,5 @@ describe('filterKey', () => {
 
   it('ignores an Escape on the IME process key code 229 that Safari sends', () => {
     expect(filterKey(press('Escape', { keyCode: 229 }), 'yotsuba')).toBe('ignore');
-  });
-});
-
-describe('libraryBody', () => {
-  it('reads the library while it settles with nothing to show', () => {
-    expect(libraryBody('idle', 0, false)).toBe('reading');
-    expect(libraryBody('loading', 0, false)).toBe('reading');
-  });
-
-  it('lists what it already holds while a reload settles', () => {
-    expect(libraryBody('loading', 2, false)).toBe('listed');
-    expect(libraryBody('loading', 0, true)).toBe('listed');
-  });
-
-  it('reports a failed read even with books on screen', () => {
-    expect(libraryBody('failed', 0, false)).toBe('failed');
-    expect(libraryBody('failed', 3, false)).toBe('failed');
-  });
-
-  it('invites a first upload when the ready library is empty', () => {
-    expect(libraryBody('ready', 0, false)).toBe('empty');
-  });
-
-  it('lists a ready library that holds books or an import', () => {
-    expect(libraryBody('ready', 1, false)).toBe('listed');
-    expect(libraryBody('ready', 0, true)).toBe('listed');
   });
 });

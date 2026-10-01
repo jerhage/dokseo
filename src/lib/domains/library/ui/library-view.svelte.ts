@@ -19,12 +19,12 @@ import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { bookMatchingChosen } from './book-matching.svelte';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
+import { LibraryBooks } from './library-books.svelte';
+import { describeLibraryError } from './library-error-text';
 import { onShelf } from './library-shelves';
 import { uploadSummary } from './upload-summary';
 import type { UploadTally } from './upload-summary';
 import type { Shelf } from './library-shelves';
-
-type LibraryStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
 type ChangeOutcome = 'changed' | 'failed' | 'skipped';
 
@@ -69,17 +69,6 @@ function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
 
 function markedTitle(mark: Mark, book: Book): string {
   return mark === 'finished' ? `Marked ${book.title} finished` : `Marked ${book.title} unread`;
-}
-
-function describeLibraryError(error: LibraryError): string {
-  return match(error)
-    .with({ kind: 'not-found' }, () => 'That upload is no longer in your library.')
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so uploads cannot be kept.',
-    )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
-    .exhaustive();
 }
 
 function describeSourceBuildError(error: SourceBuildError): string {
@@ -138,67 +127,22 @@ function tallyOf(opened: readonly OpenedUpload[], failed: readonly FailedBook[])
   };
 }
 
-function revoke(urls: Iterable<string>): void {
-  for (const url of urls) URL.revokeObjectURL(url);
-}
-
-function newestFirst(books: readonly Book[]): readonly Book[] {
-  return books.toSorted((a, b) => b.addedAt - a.addedAt);
-}
-
 class LibraryView {
-  books = $state.raw<readonly Book[]>([]);
-  covers = $state.raw<ReadonlyMap<BookId, string>>(new Map());
-  status = $state<LibraryStatus>('idle');
-  loadFailure = $state<string | null>(null);
+  readonly library: LibraryBooks;
   busy = $state(false);
   pending = $state.raw<string | null>(null);
   progress = $state.raw<UploadStage>(INSPECTING);
   batch = $state.raw<UploadBatch>(SINGLE_BOOK);
   removing = $state.raw<BookId | null>(null);
   editing = $state.raw<BookId | null>(null);
-  storedBytes = $state.raw<number | null>(null);
 
   #container: Container;
   #notify: Notify;
-  #created = new Map<BookId, string>();
-  #generation = 0;
 
   constructor(container: Container, notify: Notify) {
     this.#container = container;
     this.#notify = notify;
-  }
-
-  get imageCounts(): ReadonlyMap<BookId, number> {
-    return new Map(this.books.map((held) => [held.id, held.imageCount]));
-  }
-
-  async load(): Promise<void> {
-    const generation = ++this.#generation;
-    this.status = 'loading';
-    this.loadFailure = null;
-
-    const listed = await this.#container.library.listBooks();
-    if (generation !== this.#generation) return;
-    if (!listed.ok) {
-      this.status = 'failed';
-      this.loadFailure = describeLibraryError(listed.error);
-      return;
-    }
-
-    this.books = newestFirst(listed.value);
-    this.status = 'ready';
-
-    const covers = await this.#readCovers(this.books);
-    if (generation !== this.#generation) {
-      revoke(covers.values());
-      return;
-    }
-    this.#adopt(covers);
-
-    const size = await this.#container.library.readLibrarySize();
-    if (generation !== this.#generation) return;
-    this.storedBytes = size.ok ? size.value : null;
+    this.library = new LibraryBooks(container);
   }
 
   async upload(files: readonly File[], openBook: OpenBook): Promise<void> {
@@ -229,7 +173,7 @@ class LibraryView {
         opened.push(outcome.value);
         if (books.length === 1) this.#notify(uploadNotice(outcome.value, openBook));
         lastBookOpened = index === books.length - 1;
-        if (!lastBookOpened) await this.load();
+        if (!lastBookOpened) await this.library.load();
       }
     } finally {
       this.busy = false;
@@ -238,7 +182,7 @@ class LibraryView {
       this.batch = SINGLE_BOOK;
     }
 
-    if (lastBookOpened) await this.load();
+    if (lastBookOpened) await this.library.load();
     this.#announceUpload(books.length, opened, failed);
   }
 
@@ -256,7 +200,7 @@ class LibraryView {
       this.removing = null;
     }
 
-    await this.load();
+    await this.library.load();
     return 'changed';
   }
 
@@ -274,7 +218,7 @@ class LibraryView {
       this.editing = null;
     }
 
-    await this.load();
+    await this.library.load();
     return 'changed';
   }
 
@@ -286,15 +230,8 @@ class LibraryView {
     await this.#markOn(id, shelf, 'unread');
   }
 
-  dispose(): void {
-    this.#generation += 1;
-    revoke(this.#created.values());
-    this.#created = new Map();
-    this.covers = new Map();
-  }
-
   async #markOn(id: BookId, shelf: Shelf, mark: Mark): Promise<void> {
-    const before = this.books.find((held) => held.id === id);
+    const before = this.library.books.find((held) => held.id === id);
     const marked = await this.#mark(id, mark === 'finished' ? FINISH_FAILED : UNREAD_FAILED, () =>
       mark === 'finished'
         ? this.#container.library.markFinished(id)
@@ -340,7 +277,7 @@ class LibraryView {
       this.editing = null;
     }
 
-    await this.load();
+    await this.library.load();
     return marked;
   }
 
@@ -361,21 +298,6 @@ class LibraryView {
   #fail(title: string, message: string): void {
     this.#notify({ tone: 'danger', title, message });
   }
-
-  async #readCovers(books: readonly Book[]): Promise<Map<BookId, string>> {
-    const read = books.map(async (book) => {
-      const cover = await this.#container.library.readCover(book.id);
-      return cover.ok ? ([book.id, URL.createObjectURL(cover.value)] as const) : null;
-    });
-    const found = await Promise.all(read);
-    return new Map(found.filter((entry) => entry !== null));
-  }
-
-  #adopt(covers: Map<BookId, string>): void {
-    revoke(this.#created.values());
-    this.#created = covers;
-    this.covers = new Map(covers);
-  }
 }
 
 export {
@@ -388,4 +310,4 @@ export {
   UNREAD_FAILED,
   UPLOAD_FAILED,
 };
-export type { ChangeOutcome, LibraryStatus, OpenBook };
+export type { ChangeOutcome, OpenBook };

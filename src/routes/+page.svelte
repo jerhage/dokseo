@@ -11,7 +11,6 @@
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
-  import { effectiveDirection } from '$lib/shared/layout-kind';
   import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
 
@@ -20,14 +19,6 @@
   const view = new LibraryView(container, notify);
   const find = new CaptureSearchView(container, comparePassages);
   const scroll = new LibraryScrollView();
-  const books = $derived(
-    view.books.map((book) => ({
-      id: book.id,
-      title: book.title,
-      language: book.language,
-      direction: effectiveDirection(book.direction, book.layoutKind),
-    })),
-  );
 
   let query = $state('');
   let search = $state<ReturnType<typeof SearchDialog> | null>();
@@ -46,9 +37,9 @@
   });
 
   onMount(() => {
-    void view.load();
+    void view.library.load();
     return () => {
-      view.dispose();
+      view.library.dispose();
       find.dispose();
     };
   });
@@ -59,9 +50,9 @@
 <SearchDialog
   bind:this={search}
   book={null}
-  {books}
+  books={view.library.searchedBooks}
   {find}
   tags={find.tags}
-  covers={view.covers}
-  counts={view.imageCounts}
+  covers={view.library.covers}
+  counts={view.library.imageCounts}
 />
