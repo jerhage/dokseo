@@ -40,6 +40,42 @@ module.exports = {
     },
 
     {
+      name: 'queries-know-no-ui-or-wiring',
+      comment:
+        "A domain's queries/ folder holds its query keys and the factories that return queryOptions: a key and a call to a use case the caller hands in. It sits between use-cases/ and ui/, so it may import its own domain/ for types, shared/ and npm, and it may not import any ui/ (its own included, since ui/ imports queries/), any adapters/, container.ts or context.ts. A factory types its parameter structurally as the use cases it calls, so a spec passes a plain object and the composition root stays above it.",
+      severity: 'error',
+      from: { path: '^src/lib/domains/[^/]+/queries/' },
+      to: {
+        path: [
+          '^src/lib/domains/[^/]+/(ui|adapters)/',
+          '^src/lib/container\\.ts$',
+          '^src/lib/context\\.ts$',
+        ],
+      },
+    },
+
+    {
+      name: 'queries-call-use-cases-they-are-handed',
+      comment:
+        "A query factory calls a use case through the parameter it is given, never by importing the use case's module, so the container stays the one place a use case is wired to its dependencies. A type-only import from use-cases/ (an error type a use case declares) is allowed.",
+      severity: 'error',
+      from: { path: '^src/lib/domains/[^/]+/queries/' },
+      to: {
+        path: '^src/lib/domains/[^/]+/use-cases/',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+
+    {
+      name: 'only-ui-reads-queries',
+      comment:
+        "queries/ sits above use-cases/ and below ui/, so only a ui/ module (and another file in queries/) may import it. A domain/, use-cases/ or adapters/ file that imported a query would point the layering upward. Another domain's queries/ is already refused by cross-domain-contract-only, and a route's by routes-are-thin.",
+      severity: 'error',
+      from: { path: '^src/lib/domains/[^/]+/(domain|use-cases|adapters)/' },
+      to: { path: '^src/lib/domains/[^/]+/queries/' },
+    },
+
+    {
       name: 'cross-domain-contract-only',
       comment:
         "Another domain's contract is its domain/ folder and its use-cases/ folder: the types it speaks in and the operations it offers. Its adapters/ and its ui/ are internals, and importing one couples you to how that domain happens to be built today. The back-reference exempts a domain from itself — inside one domain every folder is fair game, subject to the other rules.",

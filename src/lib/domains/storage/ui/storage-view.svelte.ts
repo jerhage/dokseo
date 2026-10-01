@@ -1,16 +1,7 @@
-import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
-import { describeCause } from '$lib/shared/cause';
-import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
-import type { ReadState } from '$lib/shared/read-state';
-import type { OriginStoresError } from '../domain/origin-stores';
 import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 
 const UNMEASURABLE = 'not measurable';
-
-function failureNote(error: OriginStoresError): string {
-  return `What this app stores could not be read: ${error.cause}`;
-}
 
 function partFigure(part: StoragePart): string {
   return part.bytes === null ? UNMEASURABLE : storedSize(part.bytes);
@@ -59,42 +50,7 @@ function persistenceNote(account: StorageAccount): string {
     : 'The browser has not granted persistence, so it may reclaim this space on its own.';
 }
 
-class StorageSettingsView {
-  state = $state.raw<ReadState<StorageAccount>>(LOADING);
-
-  #container: Container;
-  #generation = 0;
-
-  constructor(container: Container) {
-    this.#container = container;
-  }
-
-  async load(): Promise<void> {
-    const generation = this.#bump();
-
-    try {
-      const read = await this.#container.storage.readStorageAccount();
-      if (generation !== this.#generation) return;
-
-      this.state = read.ok ? readReady(read.value) : readFailed(failureNote(read.error));
-    } catch (cause) {
-      if (generation !== this.#generation) return;
-      this.state = readFailed(`What this app stores could not be read: ${describeCause(cause)}`);
-    }
-  }
-
-  dispose(): void {
-    this.#bump();
-  }
-
-  #bump(): number {
-    this.#generation += 1;
-    return this.#generation;
-  }
-}
-
 export {
-  failureNote,
   partFigure,
   measuredFigure,
   originFigure,
@@ -102,5 +58,4 @@ export {
   unnamedNote,
   allowanceNote,
   persistenceNote,
-  StorageSettingsView,
 };

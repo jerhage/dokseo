@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { Container } from '$lib/container';
-import { err, ok } from '$lib/shared/result';
 import { accountOf } from '../domain/storage-parts';
 import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 import {
@@ -8,7 +6,6 @@ import {
   measuredFigure,
   partFigure,
   persistenceNote,
-  StorageSettingsView,
   unnamedFigure,
   unnamedNote,
 } from './storage-view.svelte';
@@ -29,10 +26,6 @@ const RECORDS: StoragePart = {
 
 function account(parts: readonly StoragePart[], usage: number | null): StorageAccount {
   return accountOf(parts, usage === null ? null : { usage, quota: 11_133_000_000 }, false);
-}
-
-function containerReading(read: Container['storage']['readStorageAccount']): Container {
-  return { storage: { readStorageAccount: read } } as unknown as Container;
 }
 
 describe('partFigure', () => {
@@ -89,82 +82,5 @@ describe('allowanceNote', () => {
 describe('persistenceNote', () => {
   it('warns that the browser may reclaim the space without a grant', () => {
     expect(persistenceNote(account([MODEL], 395_000_000))).toContain('may reclaim');
-  });
-});
-
-describe('StorageSettingsView', () => {
-  it('holds the account the container reports', async () => {
-    const read = account([MODEL], 395_000_000);
-    const view = new StorageSettingsView(containerReading(() => Promise.resolve(ok(read))));
-
-    await view.load();
-
-    expect(view.state).toEqual({ kind: 'ready', value: read, refresh: { kind: 'settled' } });
-  });
-
-  it('starts loading before any read', () => {
-    const view = new StorageSettingsView(containerReading(() => new Promise(() => {})));
-
-    expect(view.state).toEqual({ kind: 'loading' });
-  });
-
-  it('reports why the survey failed and holds no account', async () => {
-    const view = new StorageSettingsView(
-      containerReading(() =>
-        Promise.resolve(err({ kind: 'survey-failed' as const, cause: 'denied' })),
-      ),
-    );
-
-    await view.load();
-
-    expect(view.state).toEqual({
-      kind: 'failed',
-      message: 'What this app stores could not be read: denied',
-    });
-  });
-
-  it('reports a thrown failure rather than leaving the screen reading', async () => {
-    const view = new StorageSettingsView(
-      containerReading(() => Promise.reject(new Error('no storage manager'))),
-    );
-
-    await view.load();
-
-    expect(view.state).toEqual({
-      kind: 'failed',
-      message: 'What this app stores could not be read: no storage manager',
-    });
-  });
-
-  it('drops a reading that a dispose has abandoned', async () => {
-    const view = new StorageSettingsView(
-      containerReading(() => Promise.resolve(ok(account([MODEL], 1)))),
-    );
-
-    const reading = view.load();
-    view.dispose();
-    await reading;
-
-    expect(view.state).toEqual({ kind: 'loading' });
-  });
-
-  it('keeps the later of two loads when the earlier one answers last', async () => {
-    const earlier = account([MODEL], 1);
-    const later = account([MODEL], 2);
-    let answerEarlier: (read: StorageAccount) => void = () => {};
-    const answers = [
-      new Promise<Awaited<ReturnType<Container['storage']['readStorageAccount']>>>((resolve) => {
-        answerEarlier = (read) => resolve(ok(read));
-      }),
-      Promise.resolve(ok(later)),
-    ];
-    const view = new StorageSettingsView(containerReading(() => answers.shift()!));
-
-    const first = view.load();
-    await view.load();
-    answerEarlier(earlier);
-    await first;
-
-    expect(view.state).toEqual({ kind: 'ready', value: later, refresh: { kind: 'settled' } });
   });
 });

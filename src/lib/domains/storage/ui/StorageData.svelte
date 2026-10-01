@@ -3,16 +3,21 @@
   import Alert from '$lib/components/Alert.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import Skeleton from '$lib/components/Skeleton.svelte';
-  import type { ReadState } from '$lib/shared/read-state';
+  import { readQuery } from '$lib/shared/read-query.svelte';
   import { unreachable } from '$lib/shared/unreachable';
   import type { StorageAccount } from '../domain/storage-parts';
+  import { storageAccountQuery } from '../queries/storage-queries';
+  import type { StorageReads } from '../queries/storage-queries';
 
   type Props = {
-    readonly state: ReadState<StorageAccount>;
+    readonly storage: StorageReads;
     readonly children: Snippet<[StorageAccount]>;
   };
 
-  let { state, children }: Props = $props();
+  let { storage, children }: Props = $props();
+
+  const account = readQuery(() => storageAccountQuery(storage));
+  const state = $derived(account.state);
 </script>
 
 {#if state.kind === 'loading'}

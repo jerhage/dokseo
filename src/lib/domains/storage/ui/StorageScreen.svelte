@@ -2,15 +2,14 @@
   import Button from '$lib/components/Button.svelte';
   import ListGroup from '$lib/components/ListGroup.svelte';
   import ListRow from '$lib/components/ListRow.svelte';
-  import type { ReadState } from '$lib/shared/read-state';
-  import type { StorageAccount } from '../domain/storage-parts';
+  import type { StorageReads } from '../queries/storage-queries';
   import StorageBreakdown from './StorageBreakdown.svelte';
   import StorageData from './StorageData.svelte';
   import StorageSummary from './StorageSummary.svelte';
 
-  type Props = { readonly state: ReadState<StorageAccount>; readonly engineHref?: string };
+  type Props = { readonly storage: StorageReads; readonly engineHref?: string };
 
-  let { state, engineHref = '/settings' }: Props = $props();
+  let { storage, engineHref = '/settings' }: Props = $props();
 </script>
 
 <div class="col gap-6 prose">
@@ -23,7 +22,7 @@
     </p>
   </header>
 
-  <StorageData {state}>
+  <StorageData {storage}>
     {#snippet children(account)}
       <StorageSummary {account} />
       <StorageBreakdown {account} />
