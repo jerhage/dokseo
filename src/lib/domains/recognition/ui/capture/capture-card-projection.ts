@@ -1,0 +1,206 @@
+import { match } from 'ts-pattern';
+import type { Anchor, TextAnchor } from '$lib/shared/anchor';
+import type { CaptureOrigin } from '$lib/shared/capture-origin';
+import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { Language } from '$lib/shared/language';
+import { captureHref } from '$lib/shared/reader-location';
+import type { TextSegment } from '$lib/shared/text-search';
+import { firstRegion } from '../../domain/capture/capture-arrival';
+import type { SearchedCapture } from '../../domain/capture/capture-results';
+import type { ModelLoad } from '../../domain/model/model-load';
+import type { Tag } from '../../domain/tag/tag';
+import { captureNote, captureState } from './capture-card';
+import { markedLines } from './capture-lines';
+import type { MarkedLines } from './capture-lines';
+import { cardChapter, placeLabel, placeLanguage } from './capture-place';
+import type { CardChapter } from './capture-place';
+import type { CaptureStatus, PanelCapture } from './panel-capture';
+import { NOTHING_READ } from './capture-view.svelte';
+import { modelLoadNote } from '../engine/engine-warmup.svelte';
+import { chipsOf } from './tag-chip';
+import type { TagChip } from './tag-chip';
+
+type Card = {
+  readonly id: CaptureId;
+  readonly place: string;
+  readonly placeLanguage: Language | null;
+  readonly href: string | null;
+  readonly passage: TextAnchor | null;
+  readonly chapter: CardChapter | null;
+  readonly stateLabel: string;
+  readonly text: string | null;
+  readonly segments: readonly TextSegment[] | null;
+  readonly note: string | null;
+  readonly annotation: string | null;
+  readonly annotationSegments: readonly TextSegment[] | null;
+  readonly noteLabel: string | null;
+  readonly tags: readonly TagChip[];
+  readonly tone: CaptureStatus;
+  readonly origin: CaptureOrigin;
+  readonly edited: boolean;
+  readonly editable: boolean;
+};
+
+type CardPlacing = {
+  readonly tags: readonly Tag[];
+  readonly book: BookId | null;
+  readonly language: Language | null;
+  readonly progress: ModelLoad | null;
+  readonly seekable: boolean;
+  readonly carried: string | null;
+};
+
+type Done = Extract<PanelCapture, { status: 'done' }>;
+
+type Hit = {
+  readonly capture: Done;
+  readonly anchor: Anchor;
+  readonly lines: MarkedLines;
+};
+
+function hrefOf(anchor: Anchor, placing: CardPlacing): string | null {
+  const book = placing.book;
+  const region = firstRegion(anchor);
+  if (book === null || region === null) return null;
+
+  return captureHref(book, region, placing.carried);
+}
+
+function passageOf(anchor: Anchor, seekable: boolean): TextAnchor | null {
+  if (!seekable || anchor.kind !== 'text') return null;
+
+  return anchor;
+}
+
+function annotationOf(capture: PanelCapture): string | null {
+  return match(capture)
+    .with({ origin: 'written' }, () => null)
+    .with({ origin: 'recognized' }, (read) => read.note)
+    .with({ origin: 'lifted' }, (lifted) => lifted.note)
+    .exhaustive();
+}
+
+function noteLabelOf(capture: PanelCapture, place: string): string | null {
+  if (capture.origin === 'written') return null;
+
+  return annotationOf(capture) === null
+    ? `Add a note to the capture at ${place}`
+    : `Edit the note on the capture at ${place}`;
+}
+
+function searchedOf(capture: Done): SearchedCapture {
+  return match(capture)
+    .with({ origin: 'written' }, (note) => ({
+      origin: 'written' as const,
+      text: note.text.text,
+    }))
+    .with({ origin: 'recognized' }, (read) => ({
+      origin: 'recognized' as const,
+      text: read.text.text,
+      note: read.note,
+    }))
+    .with({ origin: 'lifted' }, (lifted) => ({
+      origin: 'lifted' as const,
+      text: lifted.text.text,
+      note: lifted.note,
+    }))
+    .exhaustive();
+}
+
+function cardOf(capture: PanelCapture, lines: MarkedLines | null, placing: CardPlacing): Card {
+  const tags = chipsOf(capture.tagIds, placing.tags);
+  const load = placing.progress;
+
+  return match<PanelCapture, Card>(capture)
+    .with({ status: 'pending' }, (running) => ({
+      id: running.id,
+      place: placeLabel(running.anchor),
+      placeLanguage: placeLanguage(running.anchor, placing.language),
+      href: hrefOf(running.anchor, placing),
+      passage: passageOf(running.anchor, placing.seekable),
+      chapter: null,
+      stateLabel: 'Reading…',
+      text: null,
+      segments: null,
+      note: load === null ? null : modelLoadNote(load),
+      annotation: null,
+      annotationSegments: null,
+      noteLabel: null,
+      tags,
+      tone: 'pending',
+      origin: running.origin,
+      edited: false,
+      editable: false,
+    }))
+    .with({ status: 'done' }, (read) => ({
+      id: read.id,
+      place: placeLabel(read.anchor),
+      placeLanguage: placeLanguage(read.anchor, placing.language),
+      href: hrefOf(read.anchor, placing),
+      passage: passageOf(read.anchor, placing.seekable),
+      chapter: cardChapter(read.anchor, placing.language),
+      stateLabel: captureState(read.origin),
+      text: read.text.text,
+      segments: lines === null ? null : lines.text,
+      note: captureNote(read.origin, read.text.text),
+      annotation: annotationOf(read),
+      annotationSegments: lines === null ? null : lines.note,
+      noteLabel: noteLabelOf(read, placeLabel(read.anchor)),
+      tags,
+      tone: 'done',
+      origin: read.origin,
+      edited: read.edited,
+      editable: true,
+    }))
+    .with({ status: 'empty' }, (blank) => ({
+      id: blank.id,
+      place: placeLabel(blank.anchor),
+      placeLanguage: placeLanguage(blank.anchor, placing.language),
+      href: hrefOf(blank.anchor, placing),
+      passage: passageOf(blank.anchor, placing.seekable),
+      chapter: cardChapter(blank.anchor, placing.language),
+      stateLabel: 'No text',
+      text: null,
+      segments: null,
+      note: NOTHING_READ,
+      annotation: null,
+      annotationSegments: null,
+      noteLabel: null,
+      tags,
+      tone: 'empty',
+      origin: blank.origin,
+      edited: false,
+      editable: false,
+    }))
+    .with({ status: 'failed' }, (broken) => ({
+      id: broken.id,
+      place: placeLabel(broken.anchor),
+      placeLanguage: placeLanguage(broken.anchor, placing.language),
+      href: hrefOf(broken.anchor, placing),
+      passage: passageOf(broken.anchor, placing.seekable),
+      chapter: cardChapter(broken.anchor, placing.language),
+      stateLabel: 'Failed',
+      text: null,
+      segments: null,
+      note: broken.message,
+      annotation: null,
+      annotationSegments: null,
+      noteLabel: null,
+      tags,
+      tone: 'failed',
+      origin: broken.origin,
+      edited: false,
+      editable: false,
+    }))
+    .exhaustive();
+}
+
+function hitOf(capture: PanelCapture, wanted: string): Hit | null {
+  if (capture.status !== 'done') return null;
+
+  const lines = markedLines(searchedOf(capture), wanted);
+  return lines.matched ? { capture, anchor: capture.anchor, lines } : null;
+}
+
+export { cardOf, hitOf };
+export type { Card, CardPlacing, Hit };

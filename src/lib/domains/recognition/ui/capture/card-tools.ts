@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { Card } from './capture-cards.svelte';
+import type { Card } from './capture-card-projection';
 
 type NoteTool =
   | { readonly kind: 'none' }

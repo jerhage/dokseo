@@ -21,7 +21,7 @@
   import type { Language } from '$lib/shared/language';
   import type { BadgeVariant } from '$lib/components/classes';
   import type { FocusTarget } from './card-editing.svelte';
-  import type { Card } from './capture-cards.svelte';
+  import type { Card } from './capture-card-projection';
   import type { CardDrafts, DraftField } from './card-drafts.svelte';
   import { cardTools } from './card-tools';
   import { GO_TO_PASSAGE } from './capture-place';

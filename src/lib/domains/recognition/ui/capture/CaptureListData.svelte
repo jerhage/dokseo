@@ -4,7 +4,7 @@
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import { unreachable } from '$lib/shared/unreachable';
-  import type { Card } from './capture-cards.svelte';
+  import type { Card } from './capture-card-projection';
   import { captureListBody } from './capture-read';
   import type { CaptureRead } from './capture-read';
 
