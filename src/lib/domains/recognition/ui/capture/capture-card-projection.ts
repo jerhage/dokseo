@@ -15,8 +15,8 @@ import type { MarkedLines } from './capture-lines';
 import { cardChapter, placeLabel, placeLanguage } from './capture-place';
 import type { CardChapter } from './capture-place';
 import type { CaptureStatus, PanelCapture } from './panel-capture';
-import { NOTHING_READ } from './capture-view.svelte';
-import { modelLoadNote } from '../engine/engine-warmup.svelte';
+import { NOTHING_READ } from './nothing-read';
+import { modelLoadNote } from '../engine/model-load-text';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
 

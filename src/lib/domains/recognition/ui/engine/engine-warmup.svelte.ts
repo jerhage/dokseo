@@ -7,7 +7,6 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
-import { loadVerb } from '../../domain/model/model-load';
 import type { ModelLoad } from '../../domain/model/model-load';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { EngineState } from '../../domain/engine/ocr-engine';
@@ -16,23 +15,6 @@ import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-reg
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { modelStorageQuery } from '../../queries/engine-queries';
 import { readChosenFootprint } from './chosen-footprint';
-
-const READING_SELECTION = 'Reading the selection.';
-
-const FULL_PERCENT = 100;
-
-function loadPercent(load: ModelLoad): number {
-  return Math.round(load.fraction * FULL_PERCENT);
-}
-
-function modelLoadNote(load: ModelLoad): string {
-  return `${loadVerb(load.source)} the model · ${loadPercent(load)}%`;
-}
-
-function modelLoadAnnouncement(load: ModelLoad | null): string {
-  if (load === null) return READING_SELECTION;
-  return `${loadVerb(load.source)} the recognition model, ${loadPercent(load)} percent.`;
-}
 
 type PendingRecognition = {
   readonly source: PageSource;
@@ -274,12 +256,5 @@ class EngineWarmup {
   }
 }
 
-export {
-  READING_SELECTION,
-  modelLoadNote,
-  modelLoadAnnouncement,
-  warmthOf,
-  engineStateOf,
-  EngineWarmup,
-};
+export { warmthOf, engineStateOf, EngineWarmup };
 export type { PendingRecognition, EngineWarmth, WarmupJoins };

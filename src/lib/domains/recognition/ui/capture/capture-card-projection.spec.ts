@@ -9,7 +9,7 @@ import { EMPTY_NOTE } from './capture-card';
 import { cardOf, hitOf } from './capture-card-projection';
 import type { Card, CardPlacing } from './capture-card-projection';
 import type { PanelCapture } from './panel-capture';
-import { NOTHING_READ } from './capture-view.svelte';
+import { NOTHING_READ } from './nothing-read';
 
 const TAG: Tag = namedTag(tagId('tag-1'), 'speech', 'copper', 1);
 

@@ -11,6 +11,7 @@ import type { PageSource } from '$lib/shared/page-source';
 import { capturesQuery } from '../../queries/capture-queries';
 import { CaptureCache } from './capture-cache';
 import { CardDrafts } from './card-drafts.svelte';
+import { NOTHING_READ } from './nothing-read';
 import { CaptureEdits } from './capture-edits.svelte';
 import { CaptureList } from './capture-list.svelte';
 import type { CaptureListing } from './capture-read';
@@ -25,8 +26,6 @@ import type { PendingRecognition } from '../engine/engine-warmup.svelte';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
 import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
-
-const NOTHING_READ = 'Nothing was read in that selection.';
 
 function describeCropFailure(error: CropError): string {
   return match(error)
@@ -191,4 +190,4 @@ class CaptureView {
   }
 }
 
-export { NOTHING_READ, CaptureView };
+export { CaptureView };

@@ -6,7 +6,7 @@ import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { Notify } from '$lib/shared/notice';
 import type { PassageOrder } from '../../domain/capture/capture-order';
 import { engineMismatch } from '../../domain/engine/ocr-engine';
-import { modelLoadAnnouncement } from '../engine/engine-warmup.svelte';
+import { modelLoadAnnouncement } from '../engine/model-load-text';
 import type { FocusTarget } from './card-editing.svelte';
 import type { DraftField, DraftSave } from './card-drafts.svelte';
 import { CaptureCards } from './capture-cards.svelte';
