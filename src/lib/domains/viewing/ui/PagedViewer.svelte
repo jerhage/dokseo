@@ -40,6 +40,7 @@
   import type { Framing } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
   import { inputKind } from './gesture-hint';
+  import { GrabPan } from './grab-pan.svelte';
   import { HintLines } from './hint-lines.svelte';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnGesture } from './learned-gestures.svelte';
@@ -55,13 +56,6 @@
   import './paged-viewer.css';
 
   type Fit = PageFit | 'free';
-
-  type Grab = {
-    readonly id: number;
-    readonly x: number;
-    readonly y: number;
-    readonly bySpace: boolean;
-  };
 
   const NO_NEIGHBOURS: Neighbours = { decrement: null, increment: null };
 
@@ -109,8 +103,6 @@
   let carousel = $state<ReturnType<typeof Carousel<SlidePane>> | null>(null);
   let viewport = $state.raw<Viewport>({ zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 });
   let fit = $state.raw<Fit>(untrack(() => pageFit));
-  let grab = $state.raw<Grab | null>(null);
-  let spaceHeld = $state(false);
   let pannable = $state(false);
   let motion = $state.raw<CarouselMotion>(CAROUSEL_REST);
   let lastPointerType = $state<string | null>(null);
@@ -118,6 +110,7 @@
 
   const contents = new SvelteMap<ImageIndex, Size>();
   const gestures = new GestureFeed(feed);
+  const pan = new GrabPan(() => frame);
 
   let shownPages: PageGroup | null = null;
   let panOrigin: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
@@ -319,29 +312,6 @@
     zoomed(zoomAt(viewport, factor, sizes.frame.width / 2, sizes.frame.height / 2));
   }
 
-  function release(id: number): void {
-    const element = frame;
-    if (element !== null && element.hasPointerCapture(id)) element.releasePointerCapture(id);
-  }
-
-  function stopGrab(): void {
-    const moving = grab;
-    if (moving === null) return;
-    release(moving.id);
-    grab = null;
-  }
-
-  function startGrab(element: HTMLElement, event: PointerEvent, bySpace: boolean): void {
-    grab = { id: event.pointerId, x: event.clientX, y: event.clientY, bySpace };
-    element.setPointerCapture(event.pointerId);
-    event.preventDefault();
-  }
-
-  function dropSpace(): void {
-    spaceHeld = false;
-    if (grab !== null && grab.bySpace) stopGrab();
-  }
-
   function onwheel(event: WheelEvent): void {
     const element = frame;
     if (element === null) return;
@@ -476,19 +446,14 @@
       return;
     }
 
-    if (event.button === 1) {
-      startGrab(element, event, false);
-      return;
-    }
-
-    if (!event.isPrimary || event.button !== 0) return;
-
-    if (spaceHeld) {
-      startGrab(element, event, true);
-      return;
-    }
-
-    selection?.pointerdown(event);
+    match(pan.press(event))
+      .with({ kind: 'grab' }, ({ bySpace }) => {
+        pan.start(element, event, bySpace);
+        event.preventDefault();
+      })
+      .with({ kind: 'ignore' }, () => undefined)
+      .with({ kind: 'select' }, () => selection?.pointerdown(event))
+      .exhaustive();
   }
 
   function onpointermove(event: PointerEvent): void {
@@ -497,11 +462,10 @@
       return;
     }
 
-    const moving = grab;
-    if (moving !== null && moving.id === event.pointerId) {
-      learnGesture(moving.bySpace ? 'space-pan' : 'middle-pan');
-      grab = { id: moving.id, x: event.clientX, y: event.clientY, bySpace: moving.bySpace };
-      settle(panBy(viewport, event.clientX - moving.x, event.clientY - moving.y));
+    const step = pan.move(event);
+    if (step !== null) {
+      learnGesture(step.bySpace ? 'space-pan' : 'middle-pan');
+      settle(panBy(viewport, step.dx, step.dy));
       return;
     }
 
@@ -514,8 +478,8 @@
       return;
     }
 
-    if (grab !== null && grab.id === event.pointerId) {
-      stopGrab();
+    if (pan.owns(event.pointerId)) {
+      pan.stop();
       return;
     }
 
@@ -528,8 +492,8 @@
       return;
     }
 
-    if (grab !== null && grab.id === event.pointerId) {
-      stopGrab();
+    if (pan.owns(event.pointerId)) {
+      pan.stop();
       return;
     }
 
@@ -556,7 +520,7 @@
     if (event.key === ' ') {
       if (handlesOwnSpace(event.target)) return;
       event.preventDefault();
-      spaceHeld = true;
+      pan.holdSpace();
       return;
     }
 
@@ -580,11 +544,11 @@
 
   function onkeyup(event: KeyboardEvent): void {
     if (event.key !== ' ') return;
-    dropSpace();
+    pan.dropSpace();
   }
 
   function onblur(): void {
-    dropSpace();
+    pan.dropSpace();
   }
 
   function noticePointer(event: PointerEvent): void {
@@ -602,7 +566,7 @@
       shownPages = group;
       carousel?.rest();
       selection?.reset();
-      stopGrab();
+      pan.stop();
       arrive(group[0]);
     });
   });
@@ -615,8 +579,8 @@
     class={[
       'frame relative row gap-0 flex-1 min-h-0 overflow-hidden',
       {
-        'is-grabbable': spaceHeld && grab === null && !(selection?.dragging() ?? false),
-        'is-grabbing': grab !== null,
+        'is-grabbable': pan.grabbable(() => selection?.dragging() ?? false),
+        'is-grabbing': pan.grabbing,
       },
     ]}
     role="group"
@@ -672,7 +636,7 @@
       arrangement="row"
       pointerTypes="any"
       {makes}
-      suppressed={spaceHeld}
+      suppressed={pan.spaceHeld}
       select={selected}
       {clear}
       tap={onTap}
