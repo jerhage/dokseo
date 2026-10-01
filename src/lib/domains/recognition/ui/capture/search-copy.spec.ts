@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { readFailed, readReady } from '$lib/shared/read-state';
 import { searchInvite, searchNote, searchNothing, resultCount } from './search-copy';
 import type { SearchNoteInput } from './search-copy';
+
+const UNREAD = readFailed('Local storage failed: gone');
 
 describe('searchInvite', () => {
   it('invites a tag name under the tags filter in either scope and room', () => {
@@ -34,7 +37,7 @@ describe('searchNothing', () => {
 
 describe('searchNote', () => {
   const TYPED: SearchNoteInput = {
-    status: 'ready',
+    read: readReady([]),
     query: '鍵',
     rows: 0,
     filter: 'everything',
@@ -42,15 +45,15 @@ describe('searchNote', () => {
   };
 
   it('reports captures that could not be read instead of saying nothing matched', () => {
-    expect(searchNote({ ...TYPED, status: 'failed' })).toEqual({ kind: 'unread' });
+    expect(searchNote({ ...TYPED, read: UNREAD })).toEqual({ kind: 'unread' });
   });
 
   it('reports captures that could not be read before anything is typed', () => {
-    expect(searchNote({ ...TYPED, status: 'failed', query: '' })).toEqual({ kind: 'unread' });
+    expect(searchNote({ ...TYPED, read: UNREAD, query: '' })).toEqual({ kind: 'unread' });
   });
 
   it('reports captures that could not be read while titles still match', () => {
-    expect(searchNote({ ...TYPED, status: 'failed', rows: 2 })).toEqual({ kind: 'unread' });
+    expect(searchNote({ ...TYPED, read: UNREAD, rows: 2 })).toEqual({ kind: 'unread' });
   });
 
   it('says nothing matched once the captures were read', () => {

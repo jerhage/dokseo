@@ -60,7 +60,7 @@
     tags,
     captures: find.captures,
     passages: find.passages,
-    status: find.status,
+    read: find.state,
     room: narrowScreen.current ? 'narrow' : 'wide',
   }));
 

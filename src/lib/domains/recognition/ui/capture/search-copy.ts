@@ -1,7 +1,7 @@
 import type { KeyHint } from '$lib/components/key-hints';
 import type { SearchFilter } from '../../domain/capture/quick-find';
 import type { SearchScope } from './search-rows';
-import type { CaptureSearchStatus } from './capture-search.svelte';
+import type { CaptureFind } from './capture-search.svelte';
 
 type SearchNote =
   | { readonly kind: 'none' }
@@ -11,7 +11,7 @@ type SearchNote =
 type SearchRoom = 'wide' | 'narrow';
 
 type SearchNoteInput = {
-  readonly status: CaptureSearchStatus;
+  readonly read: CaptureFind;
   readonly query: string;
   readonly rows: number;
   readonly filter: SearchFilter;
@@ -53,7 +53,7 @@ function searchNothing(filter: SearchFilter, scope: SearchScope): string {
 }
 
 function searchNote(input: SearchNoteInput): SearchNote {
-  if (input.status === 'failed') return CAPTURES_UNREAD;
+  if (input.read.kind === 'failed') return CAPTURES_UNREAD;
   if (input.rows > 0 || input.query.trim().length === 0) return NO_NOTE;
 
   return { kind: 'nothing', message: searchNothing(input.filter, input.scope) };

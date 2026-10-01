@@ -1,16 +1,26 @@
 import type { Container } from '$lib/container';
+import { LOADING, readFailed, readReady, reloading } from '$lib/shared/read-state';
+import type { ReadState } from '$lib/shared/read-state';
 import type { Capture } from '../../domain/capture/capture';
 import type { PassageOrder } from '../../domain/capture/capture-order';
 import { matchesByBook, matchTally } from '../../domain/capture/capture-results';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import type { Tag } from '../../domain/tag/tag';
+import { describeStorageFailure, thrownFailure } from './storage-failure';
 
-type CaptureSearchStatus = 'idle' | 'loading' | 'ready' | 'failed';
+type CaptureFind = { readonly kind: 'idle' } | ReadState<readonly Capture[]>;
+
+const IDLE: CaptureFind = { kind: 'idle' };
+
+const NO_CAPTURES: readonly Capture[] = [];
+
+function foundCaptures(find: CaptureFind): readonly Capture[] {
+  return find.kind === 'ready' ? find.value : NO_CAPTURES;
+}
 
 class CaptureSearchView {
-  captures = $state.raw<readonly Capture[]>([]);
+  state = $state.raw<CaptureFind>(IDLE);
   tags = $state.raw<readonly Tag[]>([]);
-  status = $state<CaptureSearchStatus>('idle');
 
   #container: Container;
   #passages: PassageOrder;
@@ -19,6 +29,10 @@ class CaptureSearchView {
   constructor(container: Container, passages: PassageOrder) {
     this.#container = container;
     this.#passages = passages;
+  }
+
+  get captures(): readonly Capture[] {
+    return foundCaptures(this.state);
   }
 
   get passages(): PassageOrder {
@@ -35,33 +49,26 @@ class CaptureSearchView {
 
   async load(): Promise<void> {
     const generation = ++this.#generation;
-    this.status = 'loading';
+    this.state = this.state.kind === 'idle' ? LOADING : reloading(this.state);
 
     const [listed, named] = await Promise.all([
-      this.#container.recognition.listEveryCapture().catch(() => null),
-      this.#container.recognition.listTags().catch(() => null),
+      this.#container.recognition.listEveryCapture().catch(thrownFailure),
+      this.#container.recognition.listTags().catch(thrownFailure),
     ]);
     if (generation !== this.#generation) return;
 
-    this.tags = named !== null && named.ok ? named.value : [];
-
-    if (listed === null || !listed.ok) {
-      this.captures = [];
-      this.status = 'failed';
-      return;
-    }
-
-    this.captures = listed.value;
-    this.status = 'ready';
+    this.tags = named.ok ? named.value : [];
+    this.state = listed.ok
+      ? readReady(listed.value)
+      : readFailed(describeStorageFailure(listed.error));
   }
 
   dispose(): void {
     this.#generation += 1;
-    this.captures = [];
+    this.state = IDLE;
     this.tags = [];
-    this.status = 'idle';
   }
 }
 
-export { CaptureSearchView };
-export type { CaptureSearchStatus };
+export { foundCaptures, CaptureSearchView };
+export type { CaptureFind };

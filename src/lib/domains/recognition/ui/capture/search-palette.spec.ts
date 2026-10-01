@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFailed, readReady } from '$lib/shared/read-state';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
@@ -7,9 +8,13 @@ import type { Capture } from '../../domain/capture/capture';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import { NO_MATCH } from '../../domain/capture/match-stepping';
 import type { Tag } from '../../domain/tag/tag';
-import type { CaptureSearchStatus } from './capture-search.svelte';
+import type { CaptureFind } from './capture-search.svelte';
 import type { SearchRoom } from './search-copy';
 import { SearchPalette } from './search-palette.svelte';
+
+const READY: CaptureFind = readReady([]);
+
+const UNREAD: CaptureFind = readFailed('Local storage failed: gone');
 
 const ONE: SearchedBook = { id: bookId('one'), title: '海の本', language: 'ja', direction: 'rtl' };
 const TWO: SearchedBook = { id: bookId('two'), title: '山の本', language: 'ja', direction: 'rtl' };
@@ -45,11 +50,11 @@ const CAPTURES: readonly Capture[] = [
 
 type Held = {
   book: BookId | null;
-  status: CaptureSearchStatus;
+  read: CaptureFind;
   room: SearchRoom;
 };
 
-function palette(held: Held = { book: ONE.id, status: 'ready', room: 'wide' }): SearchPalette {
+function palette(held: Held = { book: ONE.id, read: READY, room: 'wide' }): SearchPalette {
   return new SearchPalette(() => ({
     book: held.book,
     books: [ONE, TWO],
@@ -58,7 +63,7 @@ function palette(held: Held = { book: ONE.id, status: 'ready', room: 'wide' }): 
     tags: TAGS,
     captures: CAPTURES,
     passages: (a, b) => a.localeCompare(b),
-    status: held.status,
+    read: held.read,
     room: held.room,
   }));
 }
@@ -109,7 +114,7 @@ describe('SearchPalette', () => {
   });
 
   it('searches every book when no book is open, even in the book scope', () => {
-    const found = palette({ book: null, status: 'ready', room: 'wide' });
+    const found = palette({ book: null, read: READY, room: 'wide' });
     found.reveal('book');
     found.query = '海';
 
@@ -240,7 +245,7 @@ describe('SearchPalette', () => {
     const inBook = palette();
     inBook.reveal('book');
     inBook.query = 'zzz';
-    const everywhere = palette({ book: null, status: 'ready', room: 'wide' });
+    const everywhere = palette({ book: null, read: READY, room: 'wide' });
     everywhere.reveal('book');
     everywhere.query = 'zzz';
 
@@ -261,7 +266,7 @@ describe('SearchPalette', () => {
   });
 
   it('invites by the room and the effective scope', () => {
-    const held: Held = { book: ONE.id, status: 'ready', room: 'narrow' };
+    const held: Held = { book: ONE.id, read: READY, room: 'narrow' };
     const found = palette(held);
     found.reveal('book');
     expect(found.invite).toBe('Text, tags, notes');
@@ -272,12 +277,12 @@ describe('SearchPalette', () => {
   });
 
   it('notes a failed read and an empty search', () => {
-    const held: Held = { book: ONE.id, status: 'failed', room: 'wide' };
+    const held: Held = { book: ONE.id, read: UNREAD, room: 'wide' };
     const found = palette(held);
     found.reveal('book');
     expect(found.note).toEqual({ kind: 'unread' });
 
-    held.status = 'ready';
+    held.read = READY;
     found.query = 'zzz';
     expect(found.note.kind).toBe('nothing');
 
@@ -286,7 +291,7 @@ describe('SearchPalette', () => {
   });
 
   it('reads the shortcut against its own state and the open book', () => {
-    const held: Held = { book: ONE.id, status: 'ready', room: 'wide' };
+    const held: Held = { book: ONE.id, read: READY, room: 'wide' };
     const found = palette(held);
 
     expect(found.keyFor(shortcut())).toEqual({ kind: 'reveal', scope: 'book' });
