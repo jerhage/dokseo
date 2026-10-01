@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Arrangement } from '$lib/shared/arrangement';
@@ -8,9 +9,12 @@ import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
+import { capturesQuery } from '../../queries/capture-queries';
+import { CaptureCache } from './capture-cache';
 import { CardDrafts } from './card-drafts.svelte';
 import { CaptureEdits } from './capture-edits.svelte';
 import { CaptureList } from './capture-list.svelte';
+import type { CaptureListing } from './capture-read';
 import { CaptureRecording } from './capture-recording.svelte';
 import { CaptureRemoval } from './capture-removal.svelte';
 import { CaptureTags } from './capture-tags.svelte';
@@ -81,32 +85,47 @@ class CaptureView {
   readonly warmup: EngineWarmup;
   readonly drafts = new CardDrafts();
   #container: Container;
+  #client: QueryClient;
+  #visits = 0;
 
-  constructor(container: Container, notify: Notify) {
+  constructor(
+    container: Container,
+    notify: Notify,
+    client: QueryClient,
+    listing: () => CaptureListing | undefined,
+  ) {
+    const recognition = container.recognition;
+    const cache = new CaptureCache(client);
     this.#container = container;
-    this.list = new CaptureList(container, (tags) => this.tagging.adopt(tags));
-    this.clearAll = new ClearAll(container, notify, this.list);
-    this.removal = new CaptureRemoval(container, notify, this.list);
-    this.edits = new CaptureEdits(container, notify, this.list);
-    this.tagging = new CaptureTags(container, notify, this.list);
-    this.recording = new CaptureRecording(container, notify, this.list, {
+    this.#client = client;
+    this.list = new CaptureList(listing);
+    this.clearAll = new ClearAll(recognition, notify, this.list, cache);
+    this.removal = new CaptureRemoval(recognition, notify, this.list, cache);
+    this.edits = new CaptureEdits(recognition, notify, this.list, cache);
+    this.tagging = new CaptureTags(recognition, notify, this.list, cache);
+    this.recording = new CaptureRecording(container, notify, this.list, cache, {
       open: (capture) => this.drafts.open('text', capture, '', null),
       close: (capture) => void this.drafts.abandon('text', capture),
     });
-    this.consent = new ConsentGate(container, notify, () => this.list.generation);
-    this.warmup = new EngineWarmup(container, () => this.list.generation, {
+    this.consent = new ConsentGate(container, notify, () => this.#visits);
+    this.warmup = new EngineWarmup(container, () => this.#visits, {
       stored: (language) => this.consent.takeAsAgreed(language),
     });
   }
 
   async open(book: BookId): Promise<void> {
+    this.#visits += 1;
     this.consent.forget();
     this.warmup.forget();
     this.drafts.clear();
-    await this.list.open(book);
+    this.list.open(book);
+    await this.#client
+      .fetchQuery(capturesQuery(this.#container.recognition, book))
+      .catch(() => undefined);
   }
 
   close(): void {
+    this.#visits += 1;
     this.list.forget();
     this.drafts.clear();
     this.consent.forget();

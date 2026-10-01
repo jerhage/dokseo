@@ -163,10 +163,10 @@
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <CaptureListData
-      state={view.list.state}
+      state={view.list.listing.state}
       {cards}
       invitation={emptyPanelText(source, searching)}
-      onretry={() => void view.list.reload()}
+      onretry={() => view.list.listing.reload()}
     >
       {#snippet above()}
         {#if view.list.count > 0}

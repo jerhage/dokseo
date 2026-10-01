@@ -1,8 +1,5 @@
 import { match } from 'ts-pattern';
-import { describeCause } from '$lib/shared/cause';
-import { err } from '$lib/shared/result';
 import type { Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
 
 type WriteOutcome = 'saved' | 'failed';
 
@@ -21,14 +18,10 @@ function describeStorageFailure(failure: StorageFailure): string {
     .exhaustive();
 }
 
-function thrownFailure(cause: unknown): Result<never, StorageFailure> {
-  return err({ kind: 'storage-failed', cause: describeCause(cause) });
-}
-
 function refuse(notify: Notify, title: string, failure: StorageFailure): 'failed' {
   notify({ tone: 'danger', title, message: describeStorageFailure(failure) });
   return 'failed';
 }
 
-export { NOT_STORED, describeStorageFailure, refuse, thrownFailure };
+export { NOT_STORED, describeStorageFailure, refuse };
 export type { StorageFailure, WriteOutcome };

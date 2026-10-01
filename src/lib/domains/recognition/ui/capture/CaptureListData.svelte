@@ -38,6 +38,8 @@
 <div class="col gap-2 p-3">
   {#if body === 'cards'}
     {@render children(cards)}
+  {:else if body === 'reading'}
+    <EmptyState class="p-2" live message="Reading captures…" />
   {:else if body === 'invitation'}
     <EmptyState class="p-2" message={invitation} />
   {:else if body === 'nothing'}{:else}

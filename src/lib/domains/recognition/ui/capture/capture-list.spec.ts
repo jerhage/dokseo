@@ -1,35 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import type { Container } from '$lib/container';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
 import type { Capture } from '../../domain/capture/capture';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { CaptureList } from './capture-list.svelte';
+import { READ, READING } from './capture-read';
+import type { CaptureListing } from './capture-read';
 import type { PanelCapture } from './panel-capture';
 
 const ONE = bookId('book-one');
 
 const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 40, 20) }]);
 
-type Store = {
-  rows: Capture[];
-  listFails: boolean;
-  waiting: (() => void)[];
-};
-
-function storedRow(id: string, text: string): Capture {
+function storedRow(id: string, text: string, createdAt: number, note: string | null): Capture {
   return {
     id: captureId(id),
     bookId: ONE,
     anchor: ANCHOR,
     text,
-    note: null,
+    note,
     confidence: null,
     origin: 'recognized',
-    createdAt: 1,
+    createdAt,
     editedAt: null,
     tagIds: [],
   };
@@ -47,76 +41,85 @@ function card(id: string): PanelCapture {
   };
 }
 
-function containerOver(store: Store): Container {
-  const answer = () =>
-    store.listFails ? err({ kind: 'storage-unavailable' }) : ok([...store.rows]);
-  return {
-    recognition: {
-      listCaptures: () => new Promise((resolve) => store.waiting.push(() => resolve(answer()))),
-      listTags: () => Promise.resolve(ok([])),
-    },
-  } as unknown as Container;
-}
-
 function ids(list: CaptureList): readonly CaptureId[] {
   return list.captures.map((held) => held.id);
 }
 
-function release(store: Store): void {
-  for (const answer of store.waiting.splice(0)) answer();
+function listOver(listing: { current: CaptureListing | undefined }): CaptureList {
+  return new CaptureList(() => listing.current);
 }
 
 describe('CaptureList', () => {
-  it('reads as loading until the listing answers, and keeps a card made meanwhile', async () => {
-    const store: Store = { rows: [storedRow('stored', 'old')], listFails: false, waiting: [] };
-    const list = new CaptureList(containerOver(store), () => undefined);
+  it('shows a card made while the list is read, and the stored rows ahead of it once read', () => {
+    const listing: { current: CaptureListing | undefined } = { current: undefined };
+    const list = listOver(listing);
+    list.open(ONE);
+    list.unsaved.put(card('made'));
 
-    const opening = list.open(ONE);
-    list.put(card('made'));
-
-    expect(list.state).toEqual({ kind: 'loading' });
+    expect(list.listing.state).toEqual(READING);
     expect(ids(list)).toEqual([captureId('made')]);
 
-    release(store);
-    await opening;
+    listing.current = {
+      state: READ,
+      captures: [storedRow('stored', 'old', 1, null)],
+      tags: [],
+      reload: () => undefined,
+    };
 
-    expect(list.state).toEqual({ kind: 'ready' });
     expect(ids(list)).toEqual([captureId('stored'), captureId('made')]);
+    expect(list.count).toBe(2);
+    expect(list.newestFirst.map((held) => held.id)).toEqual([
+      captureId('made'),
+      captureId('stored'),
+    ]);
   });
 
-  it('keeps its cards on show while a second try reads the list again', async () => {
-    const store: Store = { rows: [], listFails: true, waiting: [] };
-    const list = new CaptureList(containerOver(store), () => undefined);
-    const opening = list.open(ONE);
-    release(store);
-    await opening;
-    list.put(card('made'));
+  it('answers the stored row of a capture and nothing for an unsaved card', () => {
+    const row = storedRow('stored', 'old', 1, null);
+    const list = listOver({
+      current: { state: READ, captures: [row], tags: [], reload: () => undefined },
+    });
+    list.unsaved.put(card('made'));
 
-    const again = list.reload();
-
-    expect(list.state).toEqual({ kind: 'loading' });
-    expect(ids(list)).toEqual([captureId('made')]);
-
-    store.listFails = false;
-    release(store);
-    await again;
-
-    expect(list.state).toEqual({ kind: 'ready' });
+    expect(list.stored(captureId('stored'))).toBe(row);
+    expect(list.stored(captureId('made'))).toBeUndefined();
   });
 
-  it('puts emptied cards back ahead of the cards made since', () => {
-    const list = new CaptureList(
-      containerOver({ rows: [], listFails: false, waiting: [] }),
-      () => undefined,
-    );
-    list.put(card('first'));
-    const before = list.generation;
+  it('marks the read captures with the notes their rows keep', () => {
+    const list = listOver({
+      current: {
+        state: READ,
+        captures: [storedRow('stored', '海', 1, 'the sea')],
+        tags: [],
+        reload: () => undefined,
+      },
+    });
 
-    const emptied = list.empty();
-    list.put(card('later'));
-    list.restore(emptied);
+    expect(list.read.map((held) => (held.origin === 'written' ? null : held.note))).toEqual([
+      'the sea',
+    ]);
+  });
 
-    expect(list.generation).toBe(before + 1);
-    expect(ids(list)).toEqual([captureId('first'), captureId('later')]);
+  it('forgets the book, the unsaved cards and the latest card when the reader leaves', () => {
+    const list = listOver({ current: undefined });
+    list.open(ONE);
+    list.unsaved.put(card('made'));
+
+    list.forget();
+
+    expect(list.book).toBeNull();
+    expect(list.captures).toEqual([]);
+    expect(list.latest).toBeNull();
+  });
+
+  it('starts each book with no unsaved card', () => {
+    const list = listOver({ current: undefined });
+    list.open(ONE);
+    list.unsaved.put(card('made'));
+
+    list.open(bookId('book-two'));
+
+    expect(list.captures).toEqual([]);
+    expect(list.book).toBe(bookId('book-two'));
   });
 });

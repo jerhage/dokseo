@@ -17,16 +17,13 @@ import { taggedCapture } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagError } from '../../domain/tag/tag-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { arrivalFrom, passageFrom } from './capture-arrivals';
+import { READ } from './capture-read';
 import { CaptureView } from './capture-view.svelte';
 import type { Settled } from './panel-capture';
 
-vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
-
-vi.mock('@tanstack/svelte-query', async (original) => ({
-  ...(await original<object>()),
-  useQueryClient: () => ({}),
-}));
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unrun-write-query'));
 
 function byCfi(earlier: string, later: string): number {
   return earlier.localeCompare(later);
@@ -187,6 +184,21 @@ function panelTexts(view: CaptureView): readonly string[] {
   );
 }
 
+function viewOf(world: Fakes): CaptureView {
+  const view: CaptureView = new CaptureView(
+    world.container,
+    world.notify,
+    createTestQueryClient(),
+    () => ({
+      state: READ,
+      captures: world.store.rows.filter((row) => row.bookId === view.list.book),
+      tags: world.store.tags,
+      reload: () => undefined,
+    }),
+  );
+  return view;
+}
+
 function settles(settled: Settled): () => Promise<Settled> {
   return () => Promise.resolve(settled);
 }
@@ -196,17 +208,17 @@ describe('CaptureView parts', () => {
     const world = fakes();
     world.store.rows = [storedRow('two', ONE, '後', 2), storedRow('one', ONE, '先', 1)];
     world.store.rows.push(storedRow('other', TWO, '別', 3));
-    const view = new CaptureView(world.container, world.notify);
+    const view = viewOf(world);
 
-    await view.list.open(ONE);
+    view.list.open(ONE);
 
     expect(panelTexts(view)).toEqual(['先', '後']);
   });
 
-  it('settles the pending card the recognition returns and stores the text', async () => {
+  it('settles the pending card the recognition returns', async () => {
     const world = fakes();
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     await view.recording.recognizing(
       regions(),
@@ -214,13 +226,12 @@ describe('CaptureView parts', () => {
     );
 
     expect(panelTexts(view)).toEqual(['読']);
-    expect(world.store.rows.map((row) => row.text)).toEqual(['読']);
   });
 
   it('stores nothing for a recognition that read no text', async () => {
     const world = fakes();
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     await view.recording.recognizing(regions(), settles({ status: 'empty' }));
 
@@ -230,25 +241,12 @@ describe('CaptureView parts', () => {
 
   it('stores nothing for a note when no book is open', () => {
     const world = fakes();
-    const view = new CaptureView(world.container, world.notify);
+    const view = viewOf(world);
 
     view.recording.note(regions());
 
     expect(view.list.captures).toEqual([]);
     expect(world.steps.map((step) => step.detail.guard)).toEqual(['no-open-book']);
-  });
-
-  it('empties the list and the store of the open book when it is cleared', async () => {
-    const world = fakes();
-    world.store.rows = [storedRow('one', ONE, '先', 1), storedRow('other', TWO, '別', 2)];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
-
-    await view.clearAll.clear();
-
-    expect(view.list.captures).toEqual([]);
-    expect(view.list.count).toBe(0);
-    expect(world.store.rows.map((row) => row.id)).toEqual([captureId('other')]);
   });
 });
 
@@ -280,8 +278,8 @@ describe('CaptureView arrivals', () => {
   it('arrives at only the stored capture at the image and region a url names', async () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 100.333), storedAt('two', 10.666)];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     const arrival = arrivalFrom(
       view.list.read,
@@ -296,8 +294,8 @@ describe('CaptureView arrivals', () => {
   it('arrives at no capture for a url naming an image without a region', async () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 100), storedAt('two', 10)];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     expect(
       arrivalFrom(
@@ -320,8 +318,8 @@ describe('CaptureView arrivals', () => {
   it('arrives at no capture for a url naming a passage or nothing', async () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1)];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     expect(
       arrivalFrom(view.list.read, { kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
@@ -332,8 +330,8 @@ describe('CaptureView arrivals', () => {
   it('seeks the cfi a url names, with the quote of the passage lifted there', async () => {
     const world = fakes();
     world.store.rows = [lifted('here', CFI)];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     expect(passageFrom(view.list.anchors, { kind: 'passage', cfi: CFI, query: '灯' })).toEqual({
       cfi: CFI,
@@ -344,8 +342,8 @@ describe('CaptureView arrivals', () => {
   it('seeks the cfi a url names even when no capture was lifted there', async () => {
     const world = fakes();
     world.store.rows = [lifted('elsewhere', 'epubcfi(/6/2)')];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
+    const view = viewOf(world);
+    view.list.open(ONE);
 
     expect(passageFrom(view.list.anchors, { kind: 'passage', cfi: CFI, query: null })).toEqual({
       cfi: CFI,
@@ -355,7 +353,7 @@ describe('CaptureView arrivals', () => {
 
   it('seeks no passage for a url naming an image', () => {
     const world = fakes();
-    const view = new CaptureView(world.container, world.notify);
+    const view = viewOf(world);
 
     expect(
       passageFrom(view.list.anchors, {

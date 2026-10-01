@@ -10,11 +10,6 @@ import { ReadSession } from './read-session.svelte';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
 
-vi.mock('@tanstack/svelte-query', async (original) => ({
-  ...(await original<object>()),
-  useQueryClient: () => ({}),
-}));
-
 const ORIGIN = 'https://reader.test';
 
 const MISSING = bookId('gone');
@@ -84,6 +79,7 @@ function world(address: string): World {
         return Promise.resolve();
       },
       NO_COUNTING,
+      () => undefined,
     ),
     url,
     opened,
@@ -308,7 +304,7 @@ describe('ReadSession', () => {
 
   it('links passages from the ebook panel and not from the image panel', async () => {
     const held = world('/read/one');
-    held.session.captures.list.put({
+    held.session.captures.list.unsaved.put({
       id: captureId('lifted'),
       anchor: {
         kind: 'text',
@@ -353,6 +349,7 @@ describe('ReadSession', () => {
       },
       () => Promise.reject(new Error('the clipboard is locked')),
       NO_COUNTING,
+      () => undefined,
     );
 
     await refusing.flowPanel.copying.copy(captureId('a'), '海');
@@ -366,7 +363,7 @@ describe('ReadSession', () => {
       ['left', 0],
       ['right', 200],
     ] as const) {
-      held.session.captures.list.put({
+      held.session.captures.list.unsaved.put({
         id: captureId(id),
         anchor: {
           kind: 'region',
@@ -391,7 +388,7 @@ describe('ReadSession', () => {
     const held = world('/read/one');
     held.session.navigate();
     await settled();
-    held.session.captures.list.put({
+    held.session.captures.list.unsaved.put({
       id: captureId('lifted'),
       anchor: {
         kind: 'text',

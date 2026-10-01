@@ -6,6 +6,7 @@
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
+  import BookCapturesData from '$lib/domains/recognition/ui/capture/BookCapturesData.svelte';
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import { tagCountingOf } from '$lib/domains/recognition/ui/capture/capture-find';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
@@ -21,6 +22,7 @@
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
   let found = $state<ReturnType<typeof CaptureFindData> | null>(null);
+  let listed = $state<ReturnType<typeof BookCapturesData> | null>(null);
 
   const container = useContainer();
   const session = new ReadSession(
@@ -36,6 +38,7 @@
     },
     (text) => navigator.clipboard.writeText(text),
     tagCountingOf(() => found?.read()),
+    () => listed?.read(),
   );
   const { reader, captures, flow } = session;
   const id = $derived(session.id);
@@ -117,6 +120,12 @@
     ondecline={() => captures.consent.decline()}
   />
 {/if}
+
+<BookCapturesData
+  bind:this={listed}
+  recognition={container.recognition}
+  book={captures.list.book}
+/>
 
 <LibraryShelfData library={container.library} lazy>
   {#snippet children(shelf)}

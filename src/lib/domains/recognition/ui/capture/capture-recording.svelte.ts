@@ -5,12 +5,23 @@ import { captureId } from '$lib/shared/ids';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Notify } from '$lib/shared/notice';
-import type { CaptureDraft } from '../../domain/capture/capture';
+import { failureMessage } from '$lib/shared/query-failure';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { Capture, CaptureDraft } from '../../domain/capture/capture';
+import type { CaptureError } from '../../domain/capture/capture-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
+import { saveCaptureMutation, writeNoteMutation } from '../../queries/capture-queries';
+import type { NoteRequest } from '../../queries/capture-queries';
+import type { CaptureCache } from './capture-cache';
 import type { CaptureList } from './capture-list.svelte';
 import type { Settled } from './panel-capture';
-import { describeStorageFailure, thrownFailure } from './storage-failure';
-import type { StorageFailure } from './storage-failure';
+import { describeStorageFailure } from './storage-failure';
+
+const CAPTURE_NOT_SAVED = 'The capture could not be saved';
+
+const NOTE_NOT_WRITTEN = 'The note could not be saved';
 
 type NoteEditors = {
   readonly open: (capture: CaptureId) => void;
@@ -21,13 +32,42 @@ class CaptureRecording {
   #container: Container;
   #notify: Notify;
   #list: CaptureList;
+  #cache: CaptureCache;
   #editors: NoteEditors;
+  #saving: WriteQuery<Result<Capture, CaptureError>, CaptureDraft>;
+  #writing: WriteQuery<Result<Capture, CaptureError>, NoteRequest>;
 
-  constructor(container: Container, notify: Notify, list: CaptureList, editors: NoteEditors) {
+  constructor(
+    container: Container,
+    notify: Notify,
+    list: CaptureList,
+    cache: CaptureCache,
+    editors: NoteEditors,
+  ) {
+    const recognition = container.recognition;
     this.#container = container;
     this.#notify = notify;
     this.#list = list;
+    this.#cache = cache;
     this.#editors = editors;
+    this.#saving = writeQuery(() => ({
+      ...saveCaptureMutation(recognition),
+      onSuccess: (kept, { id }) => {
+        if (kept.ok) this.#stored(kept.value);
+        else this.#unsaved(id, CAPTURE_NOT_SAVED, describeStorageFailure(kept.error));
+      },
+      onError: (cause, { id }) => this.#unsaved(id, CAPTURE_NOT_SAVED, failureMessage(cause)),
+      onSettled: (_kept, _cause, { bookId }) => cache.refresh(bookId),
+    }));
+    this.#writing = writeQuery(() => ({
+      ...writeNoteMutation(recognition),
+      onSuccess: (written, { id }) => {
+        if (written.ok) this.#stored(written.value);
+        else this.#noteUnsaved(id, describeStorageFailure(written.error));
+      },
+      onError: (cause, { id }) => this.#noteUnsaved(id, failureMessage(cause)),
+      onSettled: (_written, _cause, { book }) => cache.refresh(book),
+    }));
   }
 
   note(regions: readonly ImageRegion[]): void {
@@ -78,11 +118,10 @@ class CaptureRecording {
     quote: TextQuote,
     chapter: string | null,
   ): Promise<void> {
-    const generation = this.#list.generation;
     const id = captureId(crypto.randomUUID());
     const anchor = textAnchor(cfi, quote, chapter);
     const text = recognizedText(quote.exact, null);
-    this.#list.put({
+    this.#list.unsaved.put({
       id,
       anchor,
       origin: 'lifted',
@@ -93,20 +132,13 @@ class CaptureRecording {
       edited: false,
     });
 
-    await this.#keep(generation, {
-      id,
-      bookId: book,
-      anchor,
-      text: text.text,
-      origin: 'lifted',
-    });
+    await this.#keep({ id, bookId: book, anchor, text: text.text, origin: 'lifted' });
   }
 
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
-    const generation = this.#list.generation;
     const id = captureId(crypto.randomUUID());
     const anchor = regionAnchor(regions);
-    this.#list.put({
+    this.#list.unsaved.put({
       id,
       anchor,
       origin: 'written',
@@ -117,17 +149,7 @@ class CaptureRecording {
     });
     this.#editors.open(id);
 
-    const written = await this.#container.recognition
-      .writeNote(id, book, anchor)
-      .catch(thrownFailure);
-    if (generation !== this.#list.generation) return;
-    if (!written.ok) {
-      this.#editors.close(id);
-      this.#unsaved(id, 'The note could not be saved', written.error);
-      return;
-    }
-
-    this.#list.keep(written.value);
+    await this.#writing.run({ id, book, anchor }).catch(() => null);
   }
 
   async recognizing(
@@ -135,10 +157,9 @@ class CaptureRecording {
     reading: () => Promise<Settled>,
   ): Promise<void> {
     const book = this.#list.book;
-    const generation = this.#list.generation;
     const id = captureId(crypto.randomUUID());
     const anchor = regionAnchor(regions);
-    this.#list.put({
+    this.#list.unsaved.put({
       id,
       anchor,
       origin: 'recognized',
@@ -149,10 +170,10 @@ class CaptureRecording {
 
     const settled = await reading();
 
-    this.#list.settle(id, settled);
+    this.#list.unsaved.settle(id, settled);
     if (book === null || settled.status !== 'done') return;
 
-    await this.#keep(generation, {
+    await this.#keep({
       id,
       bookId: book,
       anchor,
@@ -162,20 +183,26 @@ class CaptureRecording {
     });
   }
 
-  async #keep(generation: number, draft: CaptureDraft): Promise<void> {
-    const kept = await this.#container.recognition.saveCapture(draft).catch(thrownFailure);
-    if (generation !== this.#list.generation) return;
-    if (!kept.ok) {
-      this.#unsaved(draft.id, 'The capture could not be saved', kept.error);
-      return;
-    }
-
-    this.#list.keep(kept.value);
+  async #keep(draft: CaptureDraft): Promise<void> {
+    await this.#saving.run(draft).catch(() => null);
   }
 
-  #unsaved(id: CaptureId, title: string, failure: StorageFailure): void {
-    const reason = describeStorageFailure(failure);
-    this.#list.settle(id, { status: 'failed', message: `Not saved. ${reason}` });
+  #stored(capture: Capture): void {
+    this.#cache.put(capture);
+    if (this.#cache.holds(capture)) this.#list.unsaved.drop(capture.id);
+  }
+
+  #noteUnsaved(id: CaptureId, reason: string): void {
+    if (!this.#list.unsaved.holds(id)) return;
+
+    this.#editors.close(id);
+    this.#unsaved(id, NOTE_NOT_WRITTEN, reason);
+  }
+
+  #unsaved(id: CaptureId, title: string, reason: string): void {
+    if (!this.#list.unsaved.holds(id)) return;
+
+    this.#list.unsaved.settle(id, { status: 'failed', message: `Not saved. ${reason}` });
     this.#notify({ tone: 'danger', title, message: reason });
   }
 }

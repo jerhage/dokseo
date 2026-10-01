@@ -1,6 +1,4 @@
-import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
-import type { Container } from '$lib/container';
 import { tagId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
@@ -12,10 +10,10 @@ import type { Capture } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
 import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
-import { recognitionKeys } from '../../queries/recognition-keys';
 import { addTagMutation, createTagMutation, removeTagMutation } from '../../queries/tag-queries';
-import type { CaptureTagging, NewTag } from '../../queries/tag-queries';
+import type { CaptureTagging, NewTag, TagWrites } from '../../queries/tag-queries';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
+import type { CaptureCache } from './capture-cache';
 import type { CaptureList } from './capture-list.svelte';
 import { NOT_STORED, refuse } from './storage-failure';
 import type { StorageFailure } from './storage-failure';
@@ -45,59 +43,54 @@ function tagOutcome(created: Result<Tag, CreateTagError | StorageFailure>): TagO
     .exhaustive();
 }
 
-function withTag(tags: readonly Tag[], tag: Tag): readonly Tag[] {
-  return tags.some((held) => held.id === tag.id) ? tags : [...tags, tag];
-}
-
 class CaptureTags {
   #notify: Notify;
   #list: CaptureList;
-  #tags = $state.raw<readonly Tag[]>([]);
+  #cache: CaptureCache;
   #adding: WriteQuery<Result<Capture, CaptureError>, CaptureTagging>;
   #removing: WriteQuery<Result<Capture, CaptureError>, CaptureTagging>;
   #creating: WriteQuery<Result<Tag, CreateTagError>, NewTag>;
 
-  constructor(container: Container, notify: Notify, list: CaptureList) {
-    const client = useQueryClient();
-    const recognition = container.recognition;
-    const refresh = (queryKey: readonly unknown[]) => {
-      void client.invalidateQueries({ queryKey });
-    };
+  constructor(
+    recognition: Pick<TagWrites, 'addTagToCapture' | 'removeTagFromCapture' | 'createTag'>,
+    notify: Notify,
+    list: CaptureList,
+    cache: CaptureCache,
+  ) {
     this.#notify = notify;
     this.#list = list;
+    this.#cache = cache;
     this.#adding = writeQuery(() => ({
       ...addTagMutation(recognition),
       onSuccess: (written) => {
-        if (written.ok) refresh(recognitionKeys.everyCapture());
+        if (written.ok) cache.put(written.value);
       },
       onError: (cause) => this.#fail(TAG_NOT_ADDED, cause),
+      onSettled: (_written, _cause, { capture }) => cache.refresh(capture.bookId),
     }));
     this.#removing = writeQuery(() => ({
       ...removeTagMutation(recognition),
       onSuccess: (written) => {
-        if (written.ok) refresh(recognitionKeys.everyCapture());
+        if (written.ok) cache.put(written.value);
       },
       onError: (cause) => this.#fail(TAG_NOT_REMOVED, cause),
+      onSettled: (_written, _cause, { capture }) => cache.refresh(capture.bookId),
     }));
     this.#creating = writeQuery(() => ({
       ...createTagMutation(recognition),
       onSuccess: (created) => {
-        if (created.ok) refresh(recognitionKeys.tags());
+        if (created.ok) void cache.refreshTags();
       },
       onError: (cause) => this.#fail(TAG_NOT_CREATED, cause),
     }));
   }
 
   get tags(): readonly Tag[] {
-    return this.#tags;
+    return this.#list.tags;
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
     return tagCounts(this.#list.captures);
-  }
-
-  adopt(tags: readonly Tag[]): void {
-    this.#tags = tags;
   }
 
   async addTag(id: CaptureId, tag: TagId): Promise<void> {
@@ -107,17 +100,8 @@ class CaptureTags {
       return;
     }
 
-    const generation = this.#list.generation;
     const written = await this.#adding.run({ capture: stored, tag }).catch(() => null);
-
-    if (generation !== this.#list.generation || written === null) return;
-    if (!written.ok) {
-      refuse(this.#notify, TAG_NOT_ADDED, written.error);
-      return;
-    }
-
-    this.#list.keep(written.value);
-    this.#retag(id, written.value.tagIds);
+    if (written !== null && !written.ok) refuse(this.#notify, TAG_NOT_ADDED, written.error);
   }
 
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
@@ -127,17 +111,8 @@ class CaptureTags {
       return;
     }
 
-    const generation = this.#list.generation;
     const written = await this.#removing.run({ capture: stored, tag }).catch(() => null);
-
-    if (generation !== this.#list.generation || written === null) return;
-    if (!written.ok) {
-      refuse(this.#notify, TAG_NOT_REMOVED, written.error);
-      return;
-    }
-
-    this.#list.keep(written.value);
-    this.#retag(id, written.value.tagIds);
+    if (written !== null && !written.ok) refuse(this.#notify, TAG_NOT_REMOVED, written.error);
   }
 
   async createTag(id: CaptureId, name: string): Promise<void> {
@@ -146,12 +121,10 @@ class CaptureTags {
       return;
     }
 
-    const generation = this.#list.generation;
     const created = await this.#creating
       .run({ id: tagId(crypto.randomUUID()), name })
       .catch(() => null);
-
-    if (generation !== this.#list.generation || created === null) return;
+    if (created === null) return;
 
     const outcome = tagOutcome(created);
     if (outcome.kind === 'failed') {
@@ -161,18 +134,14 @@ class CaptureTags {
 
     const minted = outcome.tag;
 
-    this.#tags = withTag(this.#tags, minted);
+    this.#cache.name(minted);
     await this.addTag(id, minted.id);
   }
 
   #fail(title: string, cause: unknown): void {
     this.#notify({ tone: 'danger', title, message: failureMessage(cause) });
   }
-
-  #retag(id: CaptureId, after: readonly TagId[]): void {
-    this.#list.change(id, (capture) => ({ ...capture, tagIds: after }));
-  }
 }
 
-export { CaptureTags, tagOutcome, withTag };
+export { CaptureTags, tagOutcome };
 export type { TagOutcome };

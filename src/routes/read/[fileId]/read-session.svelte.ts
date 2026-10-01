@@ -13,6 +13,7 @@ import type {
   PanelSource,
   TagCounting,
 } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
+import type { CaptureListing } from '$lib/domains/recognition/ui/capture/capture-read';
 import type { ClipboardWrite } from '$lib/domains/recognition/ui/capture/text-copy.svelte';
 import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
 import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
@@ -84,6 +85,7 @@ class ReadSession {
     address: ReadAddress,
     copyText: ClipboardWrite,
     counting: TagCounting,
+    listing: () => CaptureListing | undefined,
   ) {
     this.#client = client;
     this.#address = address;
@@ -97,7 +99,7 @@ class ReadSession {
       (book, known) => this.#warm(book, known),
       () => this.#bookChanged(),
     );
-    this.captures = new CaptureView(container, notify);
+    this.captures = new CaptureView(container, notify, client, listing);
     this.flow = new FlowView(container, notify, () => this.#bookChanged());
   }
 

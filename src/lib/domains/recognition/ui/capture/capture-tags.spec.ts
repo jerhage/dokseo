@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import { namedTag } from '../../domain/tag/tag';
-import { tagOutcome, withTag } from './capture-tags.svelte';
+import { tagOutcome } from './capture-tags.svelte';
 
 const CROWN_TAG = namedTag(tagId('tag-crown'), 'crown', 'slate', 1);
 
@@ -29,17 +29,5 @@ describe('tagOutcome', () => {
       kind: 'failed',
       failure: { kind: 'not-stored' },
     });
-  });
-});
-
-describe('withTag', () => {
-  it('adds a tag it does not hold at the end', () => {
-    expect(withTag([CROWN_TAG], SWORD_TAG)).toEqual([CROWN_TAG, SWORD_TAG]);
-  });
-
-  it('holds a tag it already holds once', () => {
-    const held = [CROWN_TAG];
-
-    expect(withTag(held, CROWN_TAG)).toBe(held);
   });
 });
