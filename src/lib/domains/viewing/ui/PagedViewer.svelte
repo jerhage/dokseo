@@ -20,7 +20,6 @@
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
-  import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
   import type { ViewportFit } from '../domain/viewport';
   import { inputKind } from './gesture-hint';
@@ -53,7 +52,7 @@
     readonly makes?: CaptureOrigin;
     readonly chromeShown: boolean;
     readonly selecting?: boolean;
-    readonly turns?: TouchTurns;
+    readonly turns: TouchTurns;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
     readonly onTap: () => void;
@@ -72,7 +71,7 @@
     makes = 'recognized',
     chromeShown,
     selecting = false,
-    turns = readTouchTurns(),
+    turns,
     select,
     clear,
     onTap,

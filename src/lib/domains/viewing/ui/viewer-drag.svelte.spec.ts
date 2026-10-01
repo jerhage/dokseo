@@ -93,6 +93,7 @@ test('reports a finished drag in a spread as a selection and never as a tap', as
       pictureAt,
       measured: (_index: ImageIndex) => undefined,
       chromeShown: false,
+      turns: 'swipe-only' as const,
       select,
       clear: () => undefined,
       onTap,
