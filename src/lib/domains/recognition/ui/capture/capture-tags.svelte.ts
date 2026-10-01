@@ -1,11 +1,19 @@
+import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { tagId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { Capture } from '../../domain/capture/capture';
+import type { CaptureError } from '../../domain/capture/capture-repository';
 import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
+import { recognitionKeys } from '../../queries/recognition-keys';
+import { addTagMutation, createTagMutation, removeTagMutation } from '../../queries/tag-queries';
+import type { CaptureTagging, NewTag } from '../../queries/tag-queries';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
 import type { CaptureList } from './capture-list.svelte';
 import { NOT_STORED, refuse, thrownFailure } from './storage-failure';
@@ -34,42 +42,44 @@ function withTag(tags: readonly Tag[], tag: Tag): readonly Tag[] {
   return tags.some((held) => held.id === tag.id) ? tags : [...tags, tag];
 }
 
-function countsAfter(
-  counts: ReadonlyMap<TagId, number>,
-  before: readonly TagId[],
-  after: readonly TagId[],
-): ReadonlyMap<TagId, number> {
-  const moved = new Map(counts);
-
-  for (const tag of before) {
-    if (!after.includes(tag)) moved.set(tag, Math.max((moved.get(tag) ?? 0) - 1, 0));
-  }
-  for (const tag of after) {
-    if (!before.includes(tag)) moved.set(tag, (moved.get(tag) ?? 0) + 1);
-  }
-
-  return moved;
-}
-
 class CaptureTags {
-  #container: Container;
   #notify: Notify;
   #list: CaptureList;
   #tags = $state.raw<readonly Tag[]>([]);
-  #libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
+  #adding: WriteQuery<Result<Capture, CaptureError>, CaptureTagging>;
+  #removing: WriteQuery<Result<Capture, CaptureError>, CaptureTagging>;
+  #creating: WriteQuery<Result<Tag, CreateTagError>, NewTag>;
 
   constructor(container: Container, notify: Notify, list: CaptureList) {
-    this.#container = container;
+    const client = useQueryClient();
+    const recognition = container.recognition;
+    const refresh = (queryKey: readonly unknown[]) => {
+      void client.invalidateQueries({ queryKey });
+    };
     this.#notify = notify;
     this.#list = list;
+    this.#adding = writeQuery(() => ({
+      ...addTagMutation(recognition),
+      onSuccess: (written) => {
+        if (written.ok) refresh(recognitionKeys.everyCapture());
+      },
+    }));
+    this.#removing = writeQuery(() => ({
+      ...removeTagMutation(recognition),
+      onSuccess: (written) => {
+        if (written.ok) refresh(recognitionKeys.everyCapture());
+      },
+    }));
+    this.#creating = writeQuery(() => ({
+      ...createTagMutation(recognition),
+      onSuccess: (created) => {
+        if (created.ok) refresh(recognitionKeys.tags());
+      },
+    }));
   }
 
   get tags(): readonly Tag[] {
     return this.#tags;
-  }
-
-  get libraryCounts(): ReadonlyMap<TagId, number> {
-    return this.#libraryCounts;
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
@@ -80,24 +90,6 @@ class CaptureTags {
     this.#tags = tags;
   }
 
-  async loadTags(): Promise<void> {
-    const generation = this.#list.generation;
-    const named = await this.#container.recognition.listTags().catch(() => null);
-
-    if (generation !== this.#list.generation || named === null || !named.ok) return;
-
-    this.#tags = named.value;
-  }
-
-  async loadTagCounts(): Promise<void> {
-    const generation = this.#list.generation;
-    const everywhere = await this.#container.recognition.listEveryCapture().catch(() => null);
-
-    if (generation !== this.#list.generation || everywhere === null || !everywhere.ok) return;
-
-    this.#libraryCounts = tagCounts(everywhere.value);
-  }
-
   async addTag(id: CaptureId, tag: TagId): Promise<void> {
     const stored = this.#list.stored(id);
     if (stored === undefined) {
@@ -106,9 +98,7 @@ class CaptureTags {
     }
 
     const generation = this.#list.generation;
-    const written = await this.#container.recognition
-      .addTagToCapture(stored, tag)
-      .catch(thrownFailure);
+    const written = await this.#adding.run({ capture: stored, tag }).catch(thrownFailure);
 
     if (generation !== this.#list.generation) return;
     if (!written.ok) {
@@ -117,7 +107,7 @@ class CaptureTags {
     }
 
     this.#list.keep(written.value);
-    this.#retag(id, stored.tagIds, written.value.tagIds);
+    this.#retag(id, written.value.tagIds);
   }
 
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
@@ -128,9 +118,7 @@ class CaptureTags {
     }
 
     const generation = this.#list.generation;
-    const written = await this.#container.recognition
-      .removeTagFromCapture(stored, tag)
-      .catch(thrownFailure);
+    const written = await this.#removing.run({ capture: stored, tag }).catch(thrownFailure);
 
     if (generation !== this.#list.generation) return;
     if (!written.ok) {
@@ -139,7 +127,7 @@ class CaptureTags {
     }
 
     this.#list.keep(written.value);
-    this.#retag(id, stored.tagIds, written.value.tagIds);
+    this.#retag(id, written.value.tagIds);
   }
 
   async createTag(id: CaptureId, name: string): Promise<void> {
@@ -149,8 +137,8 @@ class CaptureTags {
     }
 
     const generation = this.#list.generation;
-    const created = await this.#container.recognition
-      .createTag(tagId(crypto.randomUUID()), name)
+    const created = await this.#creating
+      .run({ id: tagId(crypto.randomUUID()), name })
       .catch(thrownFailure);
 
     if (generation !== this.#list.generation) return;
@@ -167,10 +155,10 @@ class CaptureTags {
     await this.addTag(id, minted.id);
   }
 
-  #retag(id: CaptureId, before: readonly TagId[], after: readonly TagId[]): void {
-    this.#libraryCounts = countsAfter(this.#libraryCounts, before, after);
+  #retag(id: CaptureId, after: readonly TagId[]): void {
     this.#list.change(id, (capture) => ({ ...capture, tagIds: after }));
   }
 }
 
-export { CaptureTags };
+export { CaptureTags, tagOutcome, withTag };
+export type { TagOutcome };

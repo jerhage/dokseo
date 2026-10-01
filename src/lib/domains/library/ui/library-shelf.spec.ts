@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
-import { LOADING, readFailed, readReady, reloadFailed, reloading } from '$lib/shared/read-state';
+import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import {
@@ -37,17 +37,15 @@ const HELD: LibraryShelf = { books: [BOOK], covers: new Map(), storedBytes: 10 }
 describe('libraryBody', () => {
   it('reads the library while it settles with nothing to show', () => {
     expect(libraryBody(LOADING, false)).toBe('reading');
-    expect(libraryBody(reloading(readReady(EMPTY_SHELF)), false)).toBe('reading');
   });
 
-  it('lists what it already holds while a reload settles', () => {
-    expect(libraryBody(reloading(readReady(HELD)), false)).toBe('listed');
+  it('lists the import it holds while the first read settles', () => {
     expect(libraryBody(LOADING, true)).toBe('listed');
   });
 
-  it('reports a failed read even with books on screen', () => {
+  it('reports a failed read even with an import on screen', () => {
     expect(libraryBody(readFailed('denied'), false)).toBe('failed');
-    expect(libraryBody(reloadFailed(reloading(readReady(HELD)), 'denied'), false)).toBe('failed');
+    expect(libraryBody(readFailed('denied'), true)).toBe('failed');
   });
 
   it('invites a first upload when the ready library is empty', () => {
@@ -62,17 +60,16 @@ describe('libraryBody', () => {
 
 describe('shelfOf', () => {
   it('gives the held shelf once read, and an empty one before', () => {
-    expect(shelfOf(reloading(readReady(HELD)))).toBe(HELD);
+    expect(shelfOf(readReady(HELD))).toBe(HELD);
     expect(shelfOf(LOADING)).toBe(EMPTY_SHELF);
     expect(shelfOf(readFailed('denied'))).toBe(EMPTY_SHELF);
   });
 });
 
 describe('failureOf', () => {
-  it('reports the failure of a first read and of a reload, and nothing otherwise', () => {
+  it('reports the failure of a read, and nothing otherwise', () => {
     expect(failureOf(readFailed('denied'))).toBe('denied');
-    expect(failureOf(reloadFailed(readReady(HELD), 'gone'))).toBe('gone');
-    expect(failureOf(reloading(readReady(HELD)))).toBeNull();
+    expect(failureOf(readReady(HELD))).toBeNull();
     expect(failureOf(LOADING)).toBeNull();
   });
 });

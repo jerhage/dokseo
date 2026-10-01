@@ -1,5 +1,6 @@
-import type { Container } from '$lib/container';
+import { match } from 'ts-pattern';
 import type { TagId } from '$lib/shared/ids';
+import type { ReadState } from '$lib/shared/read-state';
 import { matchesQuery } from '$lib/shared/text-search';
 import type { Capture } from '../../domain/capture/capture';
 import type { PassageOrder } from '../../domain/capture/capture-order';
@@ -15,26 +16,58 @@ import type { AlsoTagged, TagSummary } from '../../domain/tag/tag-summary';
 
 type TagViewStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
+type TaggedCaptures = {
+  readonly tags: readonly Tag[];
+  readonly captures: readonly Capture[];
+};
+
 type TagSource = {
   readonly books: readonly SearchedBook[];
   readonly wanted: string | null;
+  readonly tagged: ReadState<TaggedCaptures> | null;
 };
 
-class TagView {
-  tags = $state.raw<readonly Tag[]>([]);
-  captures = $state.raw<readonly Capture[]>([]);
-  filter = $state('');
-  status = $state<TagViewStatus>('idle');
+const NOTHING_TAGGED: TaggedCaptures = { tags: [], captures: [] };
 
-  #container: Container;
+function taggedCapturesOf(tags: readonly Tag[], captures: readonly Capture[]): TaggedCaptures {
+  return { tags, captures };
+}
+
+function heldTagged(tagged: ReadState<TaggedCaptures> | null): TaggedCaptures {
+  return tagged?.kind === 'ready' ? tagged.value : NOTHING_TAGGED;
+}
+
+function tagViewStatus(tagged: ReadState<TaggedCaptures> | null): TagViewStatus {
+  if (tagged === null) return 'idle';
+
+  return match(tagged)
+    .with({ kind: 'loading' }, (): TagViewStatus => 'loading')
+    .with({ kind: 'failed' }, (): TagViewStatus => 'failed')
+    .with({ kind: 'ready' }, (): TagViewStatus => 'ready')
+    .exhaustive();
+}
+
+class TagView {
+  filter = $state('');
+
   #source: () => TagSource;
   #passages: PassageOrder;
-  #generation = 0;
 
-  constructor(container: Container, source: () => TagSource, passages: PassageOrder) {
-    this.#container = container;
+  constructor(source: () => TagSource, passages: PassageOrder) {
     this.#source = source;
     this.#passages = passages;
+  }
+
+  get tags(): readonly Tag[] {
+    return heldTagged(this.#source().tagged).tags;
+  }
+
+  get captures(): readonly Capture[] {
+    return heldTagged(this.#source().tagged).captures;
+  }
+
+  get status(): TagViewStatus {
+    return tagViewStatus(this.#source().tagged);
   }
 
   get books(): readonly SearchedBook[] {
@@ -94,28 +127,7 @@ class TagView {
 
     return taggedByBook(this.known, this.books, chosen, this.#passages);
   }
-
-  async load(): Promise<void> {
-    const generation = ++this.#generation;
-    this.status = 'loading';
-
-    const [named, listed] = await Promise.all([
-      this.#container.recognition.listTags().catch(() => null),
-      this.#container.recognition.listEveryCapture().catch(() => null),
-    ]);
-
-    if (generation !== this.#generation) return;
-
-    if (named === null || !named.ok || listed === null || !listed.ok) {
-      this.status = 'failed';
-      return;
-    }
-
-    this.tags = named.value;
-    this.captures = listed.value;
-    this.status = 'ready';
-  }
 }
 
-export { TagView };
-export type { TagSource, TagViewStatus };
+export { TagView, heldTagged, tagViewStatus, taggedCapturesOf };
+export type { TagSource, TagViewStatus, TaggedCaptures };

@@ -1,15 +1,7 @@
 import { QueryObserver } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryFailure } from './query-failure';
-import {
-  LOADING,
-  readBoth,
-  readFailed,
-  readReady,
-  readStateOf,
-  reloadFailed,
-  reloading,
-} from './read-state';
+import { LOADING, readBoth, readFailed, readReady, readStateOf } from './read-state';
 import type { ReadState } from './read-state';
 import { createTestQueryClient } from './testing/query-client';
 
@@ -24,39 +16,10 @@ describe('read states', () => {
     expect(readFailed('denied')).toEqual({ kind: 'failed', message: 'denied' });
   });
 
-  it('carries the value on a settled ready variant', () => {
+  it('carries the value on the ready variant and nothing beside it', () => {
     const value = { books: 3 };
 
-    expect(readReady(value)).toEqual({ kind: 'ready', value, refresh: { kind: 'settled' } });
-  });
-});
-
-describe('reloading', () => {
-  it('keeps the value it already holds and marks it refreshing', () => {
-    expect(reloading(readReady(3))).toEqual({
-      kind: 'ready',
-      value: 3,
-      refresh: { kind: 'refreshing' },
-    });
-  });
-
-  it('loads afresh when it holds no value', () => {
-    expect(reloading(LOADING)).toEqual({ kind: 'loading' });
-    expect(reloading(readFailed('denied'))).toEqual({ kind: 'loading' });
-  });
-});
-
-describe('reloadFailed', () => {
-  it('keeps the value it already holds and carries the failure on the refresh', () => {
-    expect(reloadFailed(reloading(readReady(3)), 'denied')).toEqual({
-      kind: 'ready',
-      value: 3,
-      refresh: { kind: 'failed', message: 'denied' },
-    });
-  });
-
-  it('fails the read when it holds no value', () => {
-    expect(reloadFailed(LOADING, 'denied')).toEqual({ kind: 'failed', message: 'denied' });
+    expect(readReady(value)).toEqual({ kind: 'ready', value });
   });
 });
 

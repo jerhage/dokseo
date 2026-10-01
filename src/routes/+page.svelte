@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import type { Snapshot } from '@sveltejs/kit';
   import { afterNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
@@ -10,15 +9,14 @@
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
-  import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
 
   const container = useContainer();
   const notify = toastNotify(getToaster());
   const view = new LibraryView(container.library, notify);
-  const find = new CaptureSearchView(container, comparePassages);
   const scroll = new LibraryScrollView();
 
   let query = $state('');
@@ -36,8 +34,6 @@
     notify({ tone: 'warning', title: missing.notice });
     replaceState(missing.cleaned, page.state);
   });
-
-  onMount(() => () => find.dispose());
 </script>
 
 <LibraryShelfData library={container.library}>
@@ -50,14 +46,19 @@
       bind:query
     />
 
-    <SearchDialog
-      bind:this={search}
-      book={null}
-      books={shelf.searched}
-      {find}
-      tags={find.tags}
-      covers={shelf.covers}
-      counts={shelf.counts}
-    />
+    <CaptureFindData recognition={container.recognition}>
+      {#snippet children(find)}
+        <SearchDialog
+          bind:this={search}
+          book={null}
+          books={shelf.searched}
+          {find}
+          passages={comparePassages}
+          tags={find.tags}
+          covers={shelf.covers}
+          counts={shelf.counts}
+        />
+      {/snippet}
+    </CaptureFindData>
   {/snippet}
 </LibraryShelfData>

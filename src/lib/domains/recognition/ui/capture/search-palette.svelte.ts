@@ -6,7 +6,7 @@ import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
 import { quickFinds } from '../../domain/capture/quick-find';
 import type { QuickFinds, SearchFilter } from '../../domain/capture/quick-find';
 import type { Tag } from '../../domain/tag/tag';
-import type { CaptureFind } from './capture-search.svelte';
+import type { CaptureFind } from './capture-find';
 import { searchInvite, searchNote } from './search-copy';
 import type { SearchNote, SearchRoom } from './search-copy';
 import { searchKey } from './search-keys';

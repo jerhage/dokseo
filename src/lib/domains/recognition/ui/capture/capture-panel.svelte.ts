@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { LocateStore } from '$lib/platform/storage/remembered-string';
-import type { CaptureId } from '$lib/shared/ids';
+import type { CaptureId, TagId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { Notify } from '$lib/shared/notice';
@@ -25,6 +25,11 @@ type PanelSource = {
   readonly direction: ReadingDirection;
   readonly passages: PassageOrder;
   readonly seekable: boolean;
+};
+
+type TagCounting = {
+  readonly counts: () => ReadonlyMap<TagId, number>;
+  readonly ask: () => void;
 };
 
 function writtenIn(field: DraftField, card: Card): string {
@@ -62,6 +67,7 @@ class CapturePanelView {
 
   constructor(
     source: () => PanelSource,
+    counting: TagCounting,
     write: ClipboardWrite,
     notify: Notify,
     locate?: LocateStore,
@@ -87,12 +93,12 @@ class CapturePanelView {
     this.selection = new TagSelection(
       {
         tagsOn: (id) => view().list.captures.find((capture) => capture.id === id)?.tagIds ?? [],
-        loadCounts: () => view().tagging.loadTagCounts(),
+        loadCounts: () => counting.ask(),
         add: (id, tag) => view().tagging.addTag(id, tag),
         remove: (id, tag) => view().tagging.removeTag(id, tag),
         create: (id, name) => view().tagging.createTag(id, name),
       },
-      () => ({ tags: view().tagging.tags, counts: view().tagging.libraryCounts }),
+      () => ({ tags: view().tagging.tags, counts: counting.counts() }),
     );
 
     this.copying = new TextCopy(write, notify);
@@ -169,4 +175,4 @@ class CapturePanelView {
 }
 
 export { CapturePanelView, writtenIn };
-export type { PanelSource };
+export type { PanelSource, TagCounting };

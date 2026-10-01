@@ -39,9 +39,7 @@ function shelfOf(state: ReadState<LibraryShelf>): LibraryShelf {
 }
 
 function failureOf(state: ReadState<LibraryShelf>): string | null {
-  if (state.kind === 'failed') return state.message;
-  if (state.kind === 'ready' && state.refresh.kind === 'failed') return state.refresh.message;
-  return null;
+  return state.kind === 'failed' ? state.message : null;
 }
 
 function shelfState(
@@ -76,13 +74,7 @@ function libraryBody(state: ReadState<LibraryShelf>, importing: boolean): Librar
   return match(state)
     .with({ kind: 'loading' }, (): LibraryBody => (nothing ? 'reading' : 'listed'))
     .with({ kind: 'failed' }, (): LibraryBody => 'failed')
-    .with({ kind: 'ready', refresh: { kind: 'settled' } }, (): LibraryBody =>
-      nothing ? 'empty' : 'listed',
-    )
-    .with({ kind: 'ready', refresh: { kind: 'refreshing' } }, (): LibraryBody =>
-      nothing ? 'reading' : 'listed',
-    )
-    .with({ kind: 'ready', refresh: { kind: 'failed' } }, (): LibraryBody => 'failed')
+    .with({ kind: 'ready' }, (): LibraryBody => (nothing ? 'empty' : 'listed'))
     .exhaustive();
 }
 

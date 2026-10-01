@@ -8,7 +8,7 @@ import type { Capture } from '../../domain/capture/capture';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import { NO_MATCH } from '../../domain/capture/match-stepping';
 import type { Tag } from '../../domain/tag/tag';
-import type { CaptureFind } from './capture-search.svelte';
+import type { CaptureFind } from './capture-find';
 import type { SearchRoom } from './search-copy';
 import { SearchPalette } from './search-palette.svelte';
 

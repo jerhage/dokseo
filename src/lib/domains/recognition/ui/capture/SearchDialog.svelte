@@ -14,9 +14,10 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
   import type { BookId } from '$lib/shared/ids';
+  import type { PassageOrder } from '../../domain/capture/capture-order';
   import type { SearchedBook } from '../../domain/capture/capture-results';
   import type { Tag } from '../../domain/tag/tag';
-  import type { CaptureSearchView } from './capture-search.svelte';
+  import type { CaptureFindRead } from './capture-find';
   import { CAPTURES_UNREAD_MESSAGE, PALETTE_KEYS, resultCount } from './search-copy';
   import { openerOf } from './search-opener';
   import { SearchPalette } from './search-palette.svelte';
@@ -29,7 +30,8 @@
     readonly covers?: ReadonlyMap<BookId, string>;
     readonly counts?: ReadonlyMap<BookId, number>;
     readonly tags?: readonly Tag[];
-    readonly find: CaptureSearchView;
+    readonly find: CaptureFindRead;
+    readonly passages: PassageOrder;
     readonly onopen?: () => void;
     readonly onfollowedInBook?: () => void;
   };
@@ -48,6 +50,7 @@
     counts = new Map(),
     tags = [],
     find,
+    passages,
     onopen,
     onfollowedInBook,
   }: Props = $props();
@@ -59,7 +62,7 @@
     counts,
     tags,
     captures: find.captures,
-    passages: find.passages,
+    passages,
     read: find.state,
     room: narrowScreen.current ? 'narrow' : 'wide',
   }));
@@ -82,7 +85,7 @@
     const focused = document.activeElement;
     opener = openerOf(focused instanceof HTMLElement ? focused : null, lastPressed, document.body);
     palette.reveal(chosen);
-    void find.load();
+    find.reload();
     onopen?.();
     void selectKeptQuery();
   }
@@ -234,7 +237,7 @@
       <Alert variant="danger">
         {CAPTURES_UNREAD_MESSAGE}
         {#snippet actions()}
-          <Button size="sm" onclick={() => void find.load()}>Try again</Button>
+          <Button size="sm" onclick={() => find.reload()}>Try again</Button>
         {/snippet}
       </Alert>
     </div>

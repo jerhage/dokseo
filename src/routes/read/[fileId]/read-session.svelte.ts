@@ -3,14 +3,16 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
 import { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
-import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
 import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
 import {
   arrivalFrom,
   passageArrivalFrom,
   passageFrom,
 } from '$lib/domains/recognition/ui/capture/capture-arrivals';
-import type { PanelSource } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
+import type {
+  PanelSource,
+  TagCounting,
+} from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
 import type { ClipboardWrite } from '$lib/domains/recognition/ui/capture/text-copy.svelte';
 import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
 import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
@@ -45,13 +47,13 @@ type ReadAddress = {
 class ReadSession {
   readonly reader: ReaderView;
   readonly captures: CaptureView;
-  readonly find: CaptureSearchView;
   readonly flow: FlowView;
 
   #client: QueryClient;
   #address: ReadAddress;
   #notify: Notify;
   #copyText: ClipboardWrite;
+  #counting: TagCounting;
   #imagePanel = $state.raw(this.#imagePanelBuilt());
   #flowPanel = $state.raw(this.#flowPanelBuilt());
   #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
@@ -81,11 +83,13 @@ class ReadSession {
     notify: Notify,
     address: ReadAddress,
     copyText: ClipboardWrite,
+    counting: TagCounting,
   ) {
     this.#client = client;
     this.#address = address;
     this.#notify = notify;
     this.#copyText = copyText;
+    this.#counting = counting;
     this.reader = new ReaderView(
       container,
       notify,
@@ -94,7 +98,6 @@ class ReadSession {
       () => this.#bookChanged(),
     );
     this.captures = new CaptureView(container, notify);
-    this.find = new CaptureSearchView(container, comparePassages);
     this.flow = new FlowView(container, notify, () => this.#bookChanged());
   }
 
@@ -171,7 +174,6 @@ class ReadSession {
   close(): void {
     this.reader.dispose();
     this.captures.close();
-    this.find.dispose();
   }
 
   #imagePanelBuilt(): CapturePanelView {
@@ -197,6 +199,7 @@ class ReadSession {
   #panelBuilt(source: () => PanelSource): CapturePanelView {
     return new CapturePanelView(
       source,
+      { counts: () => this.#counting.counts(), ask: () => this.#counting.ask() },
       (text) => this.#copyText(text),
       (notice) => this.#notify(notice),
     );

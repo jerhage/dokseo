@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import type { Result } from '$lib/shared/result';
+import { readFailed, readReady } from '$lib/shared/read-state';
+import type { ReadState } from '$lib/shared/read-state';
 import { at } from '$lib/shared/testing/at';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError } from '../../domain/tag/tag-repository';
-import { TagView } from './tag-view.svelte';
+import { heldTagged, TagView, tagViewStatus } from './tag-view.svelte';
+import type { TaggedCaptures } from './tag-view.svelte';
 
 const SFX: Tag = namedTag(tagId('sfx'), 'sfx', 'slate', 1);
 
@@ -27,8 +25,6 @@ const LIBRARY: readonly Tag[] = [SFX, KEIGO, SLANG];
 type Store = {
   tags: readonly Tag[];
   captures: readonly Capture[];
-  tagsFail: boolean;
-  capturesFail: boolean;
 };
 
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
@@ -71,47 +67,36 @@ function byPassageOrder(earlier: string, later: string): number {
 }
 
 function world(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRARY) {
-  const store: Store = { tags, captures, tagsFail: false, capturesFail: false };
-  const source: { books: readonly SearchedBook[]; wanted: string | null } = {
-    books: [],
-    wanted: null,
-  };
-
-  const container = {
-    recognition: {
-      listTags: (): Promise<Result<readonly Tag[], TagError>> =>
-        Promise.resolve(store.tagsFail ? err({ kind: 'storage-unavailable' }) : ok(store.tags)),
-      listEveryCapture: (): Promise<Result<readonly Capture[], CaptureError>> =>
-        Promise.resolve(
-          store.capturesFail ? err({ kind: 'storage-unavailable' }) : ok(store.captures),
-        ),
-    },
-  } as unknown as Container;
+  const store: Store = { tags, captures };
+  const source: {
+    books: readonly SearchedBook[];
+    wanted: string | null;
+    tagged: ReadState<TaggedCaptures> | null;
+  } = { books: [], wanted: null, tagged: null };
 
   return {
-    view: new TagView(
-      container,
-      () => ({ books: source.books, wanted: source.wanted }),
-      byPassageOrder,
-    ),
+    view: new TagView(() => source, byPassageOrder),
     store,
     source,
+    load: () => {
+      source.tagged = readReady({ tags: store.tags, captures: store.captures });
+    },
   };
 }
 
-async function loaded(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRARY) {
+function loaded(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRARY) {
   const made = world(captures, tags);
   made.source.books = [...new Set(captures.map((held) => String(held.bookId)))].map((id) =>
     book(id),
   );
-  await made.view.load();
+  made.load();
 
   return made;
 }
 
 describe('TagView', () => {
-  it('reads books from its source on each access', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('reads books from its source on each access', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.books = [book('one'), book('two')];
     source.wanted = SFX.name;
 
@@ -121,16 +106,16 @@ describe('TagView', () => {
     ]);
   });
 
-  it('holds every tag and every capture once the load settles', async () => {
-    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('holds every tag and every capture once the load settles', () => {
+    const { view } = loaded([capture('first', 'one', [SFX.id])]);
 
     expect(view.tags).toEqual(LIBRARY);
     expect(view.captures).toHaveLength(1);
     expect(view.status).toBe('ready');
   });
 
-  it('counts each tag across the whole library', async () => {
-    const { view } = await loaded([
+  it('counts each tag across the whole library', () => {
+    const { view } = loaded([
       capture('first', 'one', [SFX.id]),
       capture('second', 'two', [SFX.id, KEIGO.id]),
     ]);
@@ -139,8 +124,8 @@ describe('TagView', () => {
     expect(view.counts.get(KEIGO.id)).toBe(1);
   });
 
-  it('orders the column by count descending and then by name', async () => {
-    const { view } = await loaded([
+  it('orders the column by count descending and then by name', () => {
+    const { view } = loaded([
       capture('first', 'one', [SFX.id, SLANG.id]),
       capture('second', 'one', [SFX.id]),
       capture('third', 'one', [KEIGO.id]),
@@ -149,28 +134,28 @@ describe('TagView', () => {
     expect(view.column.map((option) => option.tag.name)).toEqual(['sfx', 'keigo', 'slang']);
   });
 
-  it('keeps only the tags whose name matches the filter', async () => {
-    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('keeps only the tags whose name matches the filter', () => {
+    const { view } = loaded([capture('first', 'one', [SFX.id])]);
     view.filter = 'la';
 
     expect(view.column.map((option) => option.tag.name)).toEqual(['slang']);
   });
 
-  it('offers every tag again when the filter is only spaces', async () => {
-    const { view } = await loaded();
+  it('offers every tag again when the filter is only spaces', () => {
+    const { view } = loaded();
     view.filter = '   ';
 
     expect(view.column).toHaveLength(LIBRARY.length);
   });
 
-  it('names a tag by its id for a chip or a co-occurrent row', async () => {
-    const { view } = await loaded();
+  it('names a tag by its id for a chip or a co-occurrent row', () => {
+    const { view } = loaded();
 
     expect(view.tagsById.get(KEIGO.id)).toEqual(KEIGO);
   });
 
-  it('summarizes the chosen tag across the library', async () => {
-    const { view, source } = await loaded([
+  it('summarizes the chosen tag across the library', () => {
+    const { view, source } = loaded([
       capture('first', 'one', [SFX.id], 0, 0, 10),
       capture('second', 'two', [SFX.id], 0, 0, 40),
       capture('third', 'two', [KEIGO.id], 0, 0, 90),
@@ -180,22 +165,22 @@ describe('TagView', () => {
     expect(view.summary).toEqual({ captures: 2, documents: 2, lastAdded: 40 });
   });
 
-  it('reports no summary and no co-occurrent tag while nothing is chosen', async () => {
-    const { view } = await loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
+  it('reports no summary and no co-occurrent tag while nothing is chosen', () => {
+    const { view } = loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
 
     expect(view.summary).toBeNull();
     expect(view.also).toEqual([]);
   });
 
-  it('reports the tags sharing a capture with the chosen one', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
+  it('reports the tags sharing a capture with the chosen one', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
     source.wanted = SFX.name;
 
     expect(view.also).toEqual([{ id: KEIGO.id, count: 1 }]);
   });
 
-  it('groups the chosen tag under the books it was given, in book order', async () => {
-    const { view, source } = await loaded([
+  it('groups the chosen tag under the books it was given, in book order', () => {
+    const { view, source } = loaded([
       capture('left', 'one', [SFX.id], 0, 20),
       capture('right', 'one', [SFX.id], 0, 600),
       capture('elsewhere', 'two', [KEIGO.id]),
@@ -207,8 +192,8 @@ describe('TagView', () => {
     expect(at(grouped, 0).captures.map((one) => one.text)).toEqual(['right', 'left']);
   });
 
-  it('groups the passages of a chosen tag in the passage order it is given', async () => {
-    const { view, source } = await loaded([
+  it('groups the passages of a chosen tag in the passage order it is given', () => {
+    const { view, source } = loaded([
       passage('closing', 'one', [SFX.id], '/6/22!/2:0'),
       passage('opening', 'one', [SFX.id], '/6/4!/2:0'),
       passage('middle', 'one', [SFX.id], '/6/14!/2:0'),
@@ -222,54 +207,25 @@ describe('TagView', () => {
     ]);
   });
 
-  it('groups nothing while no tag is chosen', async () => {
-    const { view } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('groups nothing while no tag is chosen', () => {
+    const { view } = loaded([capture('first', 'one', [SFX.id])]);
 
     expect(view.groups).toEqual([]);
   });
 
-  it('groups nothing again once the chosen tag is cleared', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('groups nothing again once the chosen tag is cleared', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = SFX.name;
     source.wanted = null;
 
     expect(view.groups).toEqual([]);
     expect(view.summary).toBeNull();
   });
-
-  it('keeps the tags and captures it already holds when a later load fails', async () => {
-    const { view, store } = await loaded([capture('first', 'one', [SFX.id])]);
-    store.capturesFail = true;
-    await view.load();
-
-    expect(view.tags).toEqual(LIBRARY);
-    expect(view.captures).toHaveLength(1);
-    expect(view.status).toBe('failed');
-  });
-
-  it('keeps the held state when the tag list is the read that fails', async () => {
-    const { view, store } = await loaded([capture('first', 'one', [SFX.id])]);
-    store.tagsFail = true;
-    await view.load();
-
-    expect(view.tags).toEqual(LIBRARY);
-    expect(view.captures).toHaveLength(1);
-  });
-
-  it('ignores a load that a newer one has overtaken', async () => {
-    const { view, store } = await loaded([capture('first', 'one', [SFX.id])]);
-    store.captures = [];
-    const stale = view.load();
-    store.captures = [capture('first', 'one', [SFX.id]), capture('second', 'two', [KEIGO.id])];
-    await Promise.all([stale, view.load()]);
-
-    expect(view.captures).toHaveLength(2);
-  });
 });
 
 describe('TagView and a book the library no longer holds', () => {
-  it('counts no capture of a book the library no longer holds', async () => {
-    const { view, source } = await loaded([
+  it('counts no capture of a book the library no longer holds', () => {
+    const { view, source } = loaded([
       capture('kept', 'one', [SFX.id]),
       capture('orphan', 'gone', [SFX.id]),
     ]);
@@ -279,8 +235,8 @@ describe('TagView and a book the library no longer holds', () => {
     expect(view.counts.get(SFX.id)).toBe(1);
   });
 
-  it('reports the same number of documents as it renders groups', async () => {
-    const { view, source } = await loaded([
+  it('reports the same number of documents as it renders groups', () => {
+    const { view, source } = loaded([
       capture('kept', 'one', [SFX.id]),
       capture('orphan', 'gone', [SFX.id]),
     ]);
@@ -291,8 +247,8 @@ describe('TagView and a book the library no longer holds', () => {
     expect(view.summary?.captures).toBe(1);
   });
 
-  it('leaves a co-occurrent tag of an orphaned capture out of the tally', async () => {
-    const { view, source } = await loaded([
+  it('leaves a co-occurrent tag of an orphaned capture out of the tally', () => {
+    const { view, source } = loaded([
       capture('kept', 'one', [SFX.id]),
       capture('orphan', 'gone', [SFX.id, KEIGO.id]),
     ]);
@@ -304,22 +260,22 @@ describe('TagView and a book the library no longer holds', () => {
 });
 
 describe('TagView chosen by name', () => {
-  it('resolves a wanted name to its tag', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('resolves a wanted name to its tag', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = SFX.name;
 
     expect(view.chosen).toBe(SFX.id);
   });
 
-  it('resolves a name the reader spelled in another case', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('resolves a name the reader spelled in another case', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = SFX.name.toUpperCase();
 
     expect(view.chosen).toBe(SFX.id);
   });
 
-  it('resolves a name the reader spelled full width', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('resolves a name the reader spelled full width', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = 'ｓｆｘ';
 
     expect(view.chosen).toBe(SFX.id);
@@ -332,19 +288,50 @@ describe('TagView chosen by name', () => {
     expect(view.chosen).toBeNull();
   });
 
-  it('chooses the tag as soon as the tags arrive, without being asked again', async () => {
+  it('chooses the tag as soon as the tags arrive, without being asked again', () => {
     const made = world([capture('first', 'one', [SFX.id])], LIBRARY);
     made.source.wanted = SFX.name;
     made.source.books = [book('one')];
-    await made.view.load();
+    made.load();
 
     expect(made.view.chosen).toBe(SFX.id);
   });
 
-  it('chooses nothing for a name no tag answers to', async () => {
-    const { view, source } = await loaded([capture('first', 'one', [SFX.id])]);
+  it('chooses nothing for a name no tag answers to', () => {
+    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = 'a name nobody made';
 
     expect(view.chosen).toBeNull();
+  });
+});
+
+describe('tagViewStatus', () => {
+  it('names each stage of the read, and idle before there is one', () => {
+    expect(tagViewStatus(null)).toBe('idle');
+    expect(tagViewStatus({ kind: 'loading' })).toBe('loading');
+    expect(tagViewStatus(readFailed('locked'))).toBe('failed');
+    expect(tagViewStatus(readReady({ tags: [], captures: [] }))).toBe('ready');
+  });
+});
+
+describe('heldTagged', () => {
+  it('holds the tags and captures of a ready read only', () => {
+    const held = { tags: LIBRARY, captures: [capture('first', 'one', [SFX.id])] };
+
+    expect(heldTagged(readReady(held))).toBe(held);
+    expect(heldTagged(readFailed('locked'))).toEqual({ tags: [], captures: [] });
+    expect(heldTagged({ kind: 'loading' })).toEqual({ tags: [], captures: [] });
+    expect(heldTagged(null)).toEqual({ tags: [], captures: [] });
+  });
+});
+
+describe('TagView status', () => {
+  it('reports a failed read with nothing held', () => {
+    const { view, source } = world([capture('first', 'one', [SFX.id])]);
+    source.tagged = readFailed('locked');
+
+    expect(view.status).toBe('failed');
+    expect(view.tags).toEqual([]);
+    expect(view.captures).toEqual([]);
   });
 });

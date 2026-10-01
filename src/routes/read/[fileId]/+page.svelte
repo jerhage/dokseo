@@ -6,17 +6,21 @@
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
+  import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
+  import { tagCountingOf } from '$lib/domains/recognition/ui/capture/capture-find';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
+  import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
   import { ReadSession } from './read-session.svelte';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
+  let found = $state<ReturnType<typeof CaptureFindData> | null>(null);
 
   const container = useContainer();
   const session = new ReadSession(
@@ -31,8 +35,9 @@
       leave: (path) => void goto(path, { replaceState: true }),
     },
     (text) => navigator.clipboard.writeText(text),
+    tagCountingOf(() => found?.read()),
   );
-  const { reader, captures, find, flow } = session;
+  const { reader, captures, flow } = session;
   const id = $derived(session.id);
   const language = $derived(session.language);
   const opening = $derived(reader.opening);
@@ -115,16 +120,21 @@
 
 <LibraryShelfData library={container.library} lazy>
   {#snippet children(shelf)}
-    <SearchDialog
-      bind:this={search}
-      book={id}
-      books={shelf.searched}
-      {find}
-      tags={captures.tagging.tags}
-      covers={shelf.covers}
-      counts={shelf.counts}
-      onopen={shelf.reload}
-      onfollowedInBook={() => session.arrive(id)}
-    />
+    <CaptureFindData bind:this={found} recognition={container.recognition}>
+      {#snippet children(find)}
+        <SearchDialog
+          bind:this={search}
+          book={id}
+          books={shelf.searched}
+          {find}
+          passages={comparePassages}
+          tags={captures.tagging.tags}
+          covers={shelf.covers}
+          counts={shelf.counts}
+          onopen={shelf.reload}
+          onfollowedInBook={() => session.arrive(id)}
+        />
+      {/snippet}
+    </CaptureFindData>
   {/snippet}
 </LibraryShelfData>

@@ -4,7 +4,7 @@ import type { PickerRow, PickerTags } from './tag-picker.svelte';
 
 type TagWriting = {
   readonly tagsOn: (capture: CaptureId) => readonly TagId[];
-  readonly loadCounts: () => Promise<void>;
+  readonly loadCounts: () => void;
   readonly add: (capture: CaptureId, tag: TagId) => Promise<void>;
   readonly remove: (capture: CaptureId, tag: TagId) => Promise<void>;
   readonly create: (capture: CaptureId, name: string) => Promise<void>;
@@ -31,7 +31,7 @@ class TagSelection {
   open(capture: CaptureId): void {
     if (!this.#countsAsked) {
       this.#countsAsked = true;
-      void this.#writing.loadCounts();
+      this.#writing.loadCounts();
     }
 
     this.#picker.open(capture, this.#writing.tagsOn(capture));

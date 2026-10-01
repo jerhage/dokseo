@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { StringStore } from '$lib/platform/storage/remembered-string';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
@@ -15,7 +15,7 @@ import { at } from '$lib/shared/testing/at';
 import { editedCapture, notedCapture } from '../../domain/capture/capture';
 import type { Capture, NotableCapture } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
-import { taggedCapture, untaggedCapture } from '../../domain/tag/capture-tags';
+import { tagCounts, taggedCapture, untaggedCapture } from '../../domain/tag/capture-tags';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagError } from '../../domain/tag/tag-repository';
@@ -26,6 +26,13 @@ import { CapturePanelView, writtenIn } from './capture-panel.svelte';
 import type { PanelSource } from './capture-panel.svelte';
 import { CaptureView } from './capture-view.svelte';
 import { CAPTURE_REMOVED } from './capture-removal.svelte';
+
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
+
+vi.mock('@tanstack/svelte-query', async (original) => ({
+  ...(await original<object>()),
+  useQueryClient: () => ({}),
+}));
 
 type Store = {
   rows: Capture[];
@@ -210,8 +217,16 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
       seekable: false,
     },
   };
+  let counted: ReadonlyMap<TagId, number> = new Map();
   const panel = new CapturePanelView(
     () => ({ view, ...source.current }),
+    {
+      counts: () => counted,
+      ask: () => {
+        store.everyRead += 1;
+        counted = tagCounts(store.rows);
+      },
+    },
     (text) => {
       if (store.copyFails) return Promise.reject(new Error('the clipboard is locked'));
       store.copied.push(text);
@@ -434,15 +449,6 @@ describe('CapturePanelView', () => {
     expect(world.panel.tagging?.id).toBe(captureId('b'));
   });
 
-  it('adds a chosen tag to the capture the picker is open on', async () => {
-    const world = await opened([storedRow('a', '先生', 1)], [CROWN_TAG]);
-    world.panel.openTags(captureId('a'), target());
-
-    await world.panel.selection.choose({ kind: 'tag', tag: CROWN_TAG, count: 0 });
-
-    expect(world.view.list.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
-  });
-
   it('steps from the cursor of the current search', async () => {
     const world = await opened([storedRow('a', '先生', 1), storedRow('b', '先', 2)]);
     world.panel.cards.query = '先';
@@ -539,24 +545,6 @@ describe('CapturePanelView', () => {
     await Promise.resolve();
 
     expect(world.panel.selection.picker.rows).toEqual([{ kind: 'tag', tag: CROWN_TAG, count: 1 }]);
-  });
-
-  it('drops a tag from a capture', async () => {
-    const world = await opened([taggedCapture(storedRow('a', '先生', 1), CROWN)], [CROWN_TAG]);
-
-    await world.panel.selection.drop(captureId('a'), CROWN);
-
-    expect(world.view.list.captures.map((capture) => capture.tagIds)).toEqual([[]]);
-  });
-
-  it('creates a tag and puts it on the capture the picker is open on', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    world.panel.openTags(captureId('a'), target());
-
-    await world.panel.selection.choose({ kind: 'create', name: 'keigo' });
-
-    expect(world.view.tagging.tags.map((tag) => tag.name)).toEqual(['keigo']);
-    expect(at(world.view.list.captures, 0).tagIds).toHaveLength(1);
   });
 
   it('counts the search steps from the cursor once a match is stepped to', async () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionNotices } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
@@ -31,6 +31,13 @@ import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
 import { CAPTURE_REMOVED, RESTORE_FAILED } from './capture-removal.svelte';
 import { CaptureView } from './capture-view.svelte';
+
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
+
+vi.mock('@tanstack/svelte-query', async (original) => ({
+  ...(await original<object>()),
+  useQueryClient: () => ({}),
+}));
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
@@ -1885,7 +1892,6 @@ async function tagging(world: Fakes, carried: readonly TagId[] = []): Promise<Ca
   world.store.rows = [taggedRow('a', ONE, carried)];
   const view = new CaptureView(world.container, world.notify);
   await view.open(ONE);
-  await view.tagging.loadTagCounts();
 
   return view;
 }
@@ -2003,16 +2009,6 @@ describe('CaptureView lifted passages', () => {
 });
 
 describe('CaptureView tags', () => {
-  it('lists every tag', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = new CaptureView(world.container, world.notify);
-
-    await view.tagging.loadTags();
-
-    expect(view.tagging.tags.map((tag) => tag.name)).toEqual(['sfx']);
-  });
-
   it('holds the tags as soon as the book opens, so a tagged card shows its chips', async () => {
     const world = fakes();
     world.tags.rows = [sfxTag()];
@@ -2022,169 +2018,6 @@ describe('CaptureView tags', () => {
     await view.open(ONE);
 
     expect(view.tagging.tags.map((tag) => tag.name)).toEqual(['sfx']);
-  });
-
-  it('reads no library-wide count until one is asked for', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    world.store.rows = [taggedRow('a', ONE, [SFX]), taggedRow('b', TWO, [SFX])];
-    const view = new CaptureView(world.container, world.notify);
-
-    await view.open(ONE);
-
-    expect(view.tagging.libraryCounts.size).toBe(0);
-  });
-
-  it('counts how often the whole library carries each tag when asked', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    world.store.rows = [taggedRow('a', ONE, [SFX]), taggedRow('b', TWO, [SFX])];
-    const view = new CaptureView(world.container, world.notify);
-
-    await view.tagging.loadTagCounts();
-
-    expect(view.tagging.libraryCounts.get(SFX)).toBe(2);
-  });
-
-  it('keeps the tags it holds when the listing fails', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = new CaptureView(world.container, world.notify);
-    await view.tagging.loadTags();
-
-    world.tags.listFails = true;
-    world.tags.rows = [];
-    await view.tagging.loadTags();
-
-    expect(view.tagging.tags.map((tag) => tag.name)).toEqual(['sfx']);
-  });
-
-  it('keeps the counts it holds when the capture listing fails', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    world.store.rows = [taggedRow('a', ONE, [SFX])];
-    const view = new CaptureView(world.container, world.notify);
-    await view.tagging.loadTagCounts();
-
-    world.store.listFails = true;
-    await view.tagging.loadTagCounts();
-
-    expect(view.tagging.libraryCounts.get(SFX)).toBe(1);
-  });
-
-  it('puts a tag on the capture, on its card and in the counts', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = await tagging(world);
-
-    await view.tagging.addTag(captureId('a'), SFX);
-
-    expect(carriedBy(view)).toEqual([SFX]);
-    expect(at(world.store.rows, 0).tagIds).toEqual([SFX]);
-    expect(view.tagging.libraryCounts.get(SFX)).toBe(1);
-    expect(world.notices).toEqual([]);
-  });
-
-  it('takes a tag off the capture, off its card and out of the counts', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = await tagging(world, [SFX]);
-
-    await view.tagging.removeTag(captureId('a'), SFX);
-
-    expect(carriedBy(view)).toEqual([]);
-    expect(at(world.store.rows, 0).tagIds).toEqual([]);
-    expect(view.tagging.libraryCounts.get(SFX)).toBe(0);
-    expect(world.notices).toEqual([]);
-  });
-
-  it('keeps the moment the reader last edited the text when a tag arrives', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = await tagging(world);
-
-    await view.tagging.addTag(captureId('a'), SFX);
-
-    expect(at(world.store.rows, 0).editedAt).toBeNull();
-    expect(world.store.edits).toEqual([]);
-  });
-
-  it('mints a tag and puts it straight on the capture', async () => {
-    const world = fakes();
-    const view = await tagging(world);
-
-    await view.tagging.createTag(captureId('a'), 'grammar  to ask');
-
-    const made = at(world.tags.created, 0);
-    expect(made.name).toBe('grammar to ask');
-    expect(carriedBy(view)).toEqual([made.id]);
-    expect(view.tagging.tags.map((tag) => tag.id)).toEqual([made.id]);
-    expect(view.tagging.libraryCounts.get(made.id)).toBe(1);
-    expect(world.notices).toEqual([]);
-  });
-
-  it('adds the tag a taken name already belongs to and mints nothing', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = await tagging(world);
-
-    await view.tagging.createTag(captureId('a'), 'SFX');
-
-    expect(carriedBy(view)).toEqual([SFX]);
-    expect(world.tags.created).toEqual([]);
-    expect(world.tags.rows).toHaveLength(1);
-  });
-
-  it('leaves the card as stored and reports it when storing an added tag fails', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = await tagging(world);
-    world.tags.attachFails = true;
-
-    await view.tagging.addTag(captureId('a'), SFX);
-
-    expect(carriedBy(view)).toEqual([]);
-    expect(carriedBy(view)).toEqual(at(world.store.rows, 0).tagIds);
-    expect(view.tagging.libraryCounts.get(SFX)).toBeUndefined();
-    expect(told(world)).toEqual(['danger: The tag could not be added']);
-  });
-
-  it('leaves the card as stored and reports it when storing a removed tag fails', async () => {
-    const world = fakes();
-    world.tags.rows = [sfxTag()];
-    const view = await tagging(world, [SFX]);
-    world.tags.attachFails = true;
-
-    await view.tagging.removeTag(captureId('a'), SFX);
-
-    expect(carriedBy(view)).toEqual([SFX]);
-    expect(carriedBy(view)).toEqual(at(world.store.rows, 0).tagIds);
-    expect(view.tagging.libraryCounts.get(SFX)).toBe(1);
-    expect(told(world)).toEqual(['danger: The tag could not be removed']);
-  });
-
-  it('leaves the card as stored and reports it when minting a tag fails', async () => {
-    const world = fakes();
-    const view = await tagging(world);
-    world.tags.createFails = true;
-
-    await view.tagging.createTag(captureId('a'), 'grammar');
-
-    expect(carriedBy(view)).toEqual([]);
-    expect(view.tagging.tags).toEqual([]);
-    expect(told(world)).toEqual(['danger: The tag could not be created']);
-  });
-
-  it('reports the failed add once when a minted tag cannot be put on the capture', async () => {
-    const world = fakes();
-    const view = await tagging(world);
-    world.tags.attachFails = true;
-
-    await view.tagging.createTag(captureId('a'), 'grammar');
-
-    expect(carriedBy(view)).toEqual([]);
-    expect(view.tagging.tags.map((tag) => tag.name)).toEqual(['grammar']);
-    expect(told(world)).toEqual(['danger: The tag could not be added']);
   });
 
   it('tags nothing and reports it when the capture was never stored', async () => {
@@ -2216,10 +2049,8 @@ describe('CaptureView tags', () => {
     const view = new CaptureView(world.container, world.notify);
 
     await view.open(ONE);
-    await view.tagging.loadTagCounts();
 
     expect(view.tagging.bookCounts.get(SFX)).toBe(2);
     expect(view.tagging.bookCounts.get(KEIGO)).toBe(1);
-    expect(view.tagging.libraryCounts.get(SFX)).toBe(3);
   });
 });

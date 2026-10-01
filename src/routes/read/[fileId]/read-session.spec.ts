@@ -8,6 +8,13 @@ import { err, ok } from '$lib/shared/result';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { ReadSession } from './read-session.svelte';
 
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
+
+vi.mock('@tanstack/svelte-query', async (original) => ({
+  ...(await original<object>()),
+  useQueryClient: () => ({}),
+}));
+
 const ORIGIN = 'https://reader.test';
 
 const MISSING = bookId('gone');
@@ -27,6 +34,8 @@ type World = {
 function flowBook(id: BookId): unknown {
   return { id, title: 'Kokoro', language: 'ja', layoutKind: 'flow', imageCount: 0 };
 }
+
+const NO_COUNTING = { counts: () => new Map(), ask: () => undefined };
 
 function world(address: string): World {
   const url = new SvelteURL(`${ORIGIN}${address}`);
@@ -74,6 +83,7 @@ function world(address: string): World {
         copied.push(text);
         return Promise.resolve();
       },
+      NO_COUNTING,
     ),
     url,
     opened,
@@ -139,13 +149,12 @@ describe('ReadSession', () => {
     const closed = [
       vi.spyOn(held.session.reader, 'dispose'),
       vi.spyOn(held.session.captures, 'close'),
-      vi.spyOn(held.session.find, 'dispose'),
     ];
 
     go(held, '/read/two');
     await settled();
 
-    expect(closed.map((spy) => spy.mock.calls.length)).toEqual([1, 1, 1]);
+    expect(closed.map((spy) => spy.mock.calls.length)).toEqual([1, 1]);
     expect(held.opened).toEqual([bookId('one'), bookId('two')]);
     expect(held.listed).toEqual([bookId('one'), bookId('two')]);
   });
@@ -343,6 +352,7 @@ describe('ReadSession', () => {
         leave: () => undefined,
       },
       () => Promise.reject(new Error('the clipboard is locked')),
+      NO_COUNTING,
     );
 
     await refusing.flowPanel.copying.copy(captureId('a'), '海');

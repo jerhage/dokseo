@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Notice, Notify } from '$lib/shared/notice';
@@ -14,13 +14,19 @@ import { takenCapture } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import type { CaptureError } from '../../domain/capture/capture-repository';
 import { taggedCapture } from '../../domain/tag/capture-tags';
-import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagError } from '../../domain/tag/tag-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { arrivalFrom, passageFrom } from './capture-arrivals';
 import { CaptureView } from './capture-view.svelte';
 import type { Settled } from './panel-capture';
+
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
+
+vi.mock('@tanstack/svelte-query', async (original) => ({
+  ...(await original<object>()),
+  useQueryClient: () => ({}),
+}));
 
 function byCfi(earlier: string, later: string): number {
   return earlier.localeCompare(later);
@@ -156,8 +162,6 @@ const ONE = bookId('book-one');
 
 const TWO = bookId('book-two');
 
-const CROWN = tagId('tag-crown');
-
 function regions(index = 13): readonly ImageRegion[] {
   return [{ index: imageIndex(index), rect: imageRect(0, 0, 40, 20) }];
 }
@@ -232,21 +236,6 @@ describe('CaptureView parts', () => {
 
     expect(view.list.captures).toEqual([]);
     expect(world.steps.map((step) => step.detail.guard)).toEqual(['no-open-book']);
-  });
-
-  it('puts a tag on the capture, on its card and in the library counts', async () => {
-    const world = fakes();
-    world.store.rows = [storedRow('one', ONE, '先', 1)];
-    world.store.tags = [namedTag(CROWN, 'crown', 'slate', 1)];
-    const view = new CaptureView(world.container, world.notify);
-    await view.list.open(ONE);
-    await view.tagging.loadTagCounts();
-
-    await view.tagging.addTag(captureId('one'), CROWN);
-
-    expect(view.list.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
-    expect(view.tagging.libraryCounts.get(CROWN)).toBe(1);
-    expect(view.tagging.bookCounts.get(CROWN)).toBe(1);
   });
 
   it('empties the list and the store of the open book when it is cleared', async () => {

@@ -1,7 +1,7 @@
 import type { KeyHint } from '$lib/components/key-hints';
 import type { SearchFilter } from '../../domain/capture/quick-find';
 import type { SearchScope } from './search-rows';
-import type { CaptureFind } from './capture-search.svelte';
+import type { CaptureFind } from './capture-find';
 
 type SearchNote =
   | { readonly kind: 'none' }

@@ -1,11 +1,23 @@
+import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
-import type { Container } from '$lib/container';
 import type { TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { CaptureError } from '../../domain/capture/capture-repository';
 import { tagName } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagColour } from '../../domain/tag/tag-colour';
 import type { TagError } from '../../domain/tag/tag-repository';
+import { recognitionKeys } from '../../queries/recognition-keys';
+import {
+  deleteTagMutation,
+  recolourTagMutation,
+  renameTagMutation,
+} from '../../queries/tag-queries';
+import type { TagRecolour, TagRename, TagWrites } from '../../queries/tag-queries';
+import type { RenameTagError } from '../../use-cases/tag/rename-tag';
 
 const NAMELESS = 'A tag needs a name.';
 
@@ -33,15 +45,29 @@ class ManageTagsView {
   confirming = $state.raw<TagId | null>(null);
   invalid = $state.raw<string | null>(null);
 
-  #container: Container;
   #notify: Notify;
-  #reload: () => Promise<void>;
   #generation = 0;
+  #renaming: WriteQuery<Result<Tag, RenameTagError>, TagRename>;
+  #recolouring: WriteQuery<Result<Tag, TagError>, TagRecolour>;
+  #removing: WriteQuery<Result<number, TagError | CaptureError>, TagId>;
 
-  constructor(container: Container, notify: Notify, reload: () => Promise<void>) {
-    this.#container = container;
+  constructor(
+    recognition: Pick<TagWrites, 'renameTag' | 'recolourTag' | 'deleteTag'>,
+    notify: Notify,
+  ) {
+    const client = useQueryClient();
+    const refresh = (written: Result<unknown, unknown>): void => {
+      if (!written.ok) return;
+      void client.invalidateQueries({ queryKey: recognitionKeys.tags() });
+      void client.invalidateQueries({ queryKey: recognitionKeys.everyCapture() });
+    };
     this.#notify = notify;
-    this.#reload = reload;
+    this.#renaming = writeQuery(() => ({ ...renameTagMutation(recognition), onSuccess: refresh }));
+    this.#recolouring = writeQuery(() => ({
+      ...recolourTagMutation(recognition),
+      onSuccess: refresh,
+    }));
+    this.#removing = writeQuery(() => ({ ...deleteTagMutation(recognition), onSuccess: refresh }));
   }
 
   startRename(tag: Tag): void {
@@ -75,7 +101,7 @@ class ManageTagsView {
     }
 
     const generation = ++this.#generation;
-    const written = await this.#container.recognition.renameTag(tag, this.draft).catch(() => null);
+    const written = await this.#renaming.run({ tag, name: this.draft }).catch(() => null);
 
     if (generation !== this.#generation) return;
 
@@ -99,12 +125,11 @@ class ManageTagsView {
     this.renaming = null;
     this.draft = '';
     this.invalid = null;
-    await this.#reload();
   }
 
   async recolour(tag: Tag, colour: TagColour): Promise<void> {
     const generation = ++this.#generation;
-    const written = await this.#container.recognition.recolourTag(tag, colour).catch(() => null);
+    const written = await this.#recolouring.run({ tag, colour }).catch(() => null);
 
     if (generation !== this.#generation) return;
 
@@ -119,12 +144,11 @@ class ManageTagsView {
     }
 
     this.invalid = null;
-    await this.#reload();
   }
 
   async remove(tag: Tag): Promise<void> {
     const generation = ++this.#generation;
-    const stripped = await this.#container.recognition.deleteTag(tag.id).catch(() => null);
+    const stripped = await this.#removing.run(tag.id).catch(() => null);
 
     if (generation !== this.#generation) return;
 
@@ -140,7 +164,6 @@ class ManageTagsView {
 
     this.confirming = null;
     this.invalid = null;
-    await this.#reload();
   }
 
   #fail(title: string, message: string): void {
@@ -148,4 +171,11 @@ class ManageTagsView {
   }
 }
 
-export { ManageTagsView, NAMELESS, RENAME_FAILED, RECOLOUR_FAILED, REMOVE_FAILED };
+export {
+  ManageTagsView,
+  NAMELESS,
+  RENAME_FAILED,
+  RECOLOUR_FAILED,
+  REMOVE_FAILED,
+  describeTagStorage,
+};
