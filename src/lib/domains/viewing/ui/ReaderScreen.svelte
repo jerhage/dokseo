@@ -110,8 +110,8 @@
 
   const book = $derived(view.book);
   const total = $derived(book?.imageCount ?? 0);
-  const groupCount = $derived(view.groups.length);
-  const group = $derived(view.group);
+  const groupCount = $derived(view.grouping.groups.length);
+  const group = $derived(view.navigation.group);
   const layout = $derived(view.layout);
   const downward = $derived(layout === 'continuous');
   const forwardKey = $derived(view.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight');
@@ -126,9 +126,9 @@
       ? null
       : {
           layout,
-          groups: view.groups,
+          groups: view.grouping.groups,
           group,
-          index: view.position.index,
+          index: view.navigation.position.index,
           total,
         },
   );
@@ -144,13 +144,13 @@
     if (opened === null || layout === null) return;
 
     match(layout)
-      .with('paged', () => void view.goToGroup(step))
-      .with('continuous', () => void view.goToImage(opened.id, imageIndex(step)))
+      .with('paged', () => void view.navigation.goToGroup(step))
+      .with('continuous', () => void view.navigation.goToImage(opened.id, imageIndex(step)))
       .exhaustive();
   }
 
   function commit(regions: readonly ImageRegion[], arrangement: Arrangement): void {
-    view.select(regions);
+    view.selection.select(regions);
     if (panel !== undefined) readerFrame.panelAfterCapture();
     if (makes === 'written') onNote?.(regions);
     else onSelect?.(regions, arrangement);
@@ -164,12 +164,12 @@
         decrement: {
           label: 'Previous page',
           enabled: stage === 'reading' && group > 0,
-          go: () => void view.previous(),
+          go: () => void view.navigation.previous(),
         },
         increment: {
           label: 'Next page',
           enabled: stage === 'reading' && group + 1 < groupCount,
-          go: () => void view.next(),
+          go: () => void view.navigation.next(),
         },
       }))
       .with('continuous', () => ({
@@ -242,8 +242,8 @@
     if (handlesOwnKeys(event.target)) return;
 
     event.preventDefault();
-    if (event.key === forwardKey) void view.next();
-    else void view.previous();
+    if (event.key === forwardKey) void view.navigation.next();
+    else void view.navigation.previous();
   }
 </script>
 
@@ -269,38 +269,38 @@
         {#if layout === 'continuous'}
           <ContinuousViewer
             bind:this={strip}
-            sizes={view.sizes}
-            start={view.position}
+            sizes={view.grouping.sizes}
+            start={view.navigation.position}
             pictureAt={(index) => view.pictureAt(index)}
-            measured={(index, size) => view.measure(index, size)}
+            measured={(index, size) => view.grouping.measure(index, size)}
             glow={lit}
             {makes}
             chromeShown={shown}
             {selecting}
-            moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
+            moveTo={(position, shownThrough) => view.navigation.moveTo(position, shownThrough)}
             select={(regions) => commit(regions, 'column')}
-            clear={() => view.clearSelection()}
+            clear={() => view.selection.clear()}
             onTap={toggleChrome}
           />
         {:else}
           {#key ready.book.id}
             <PagedViewer
               bind:this={paged}
-              pages={view.visiblePages}
-              beside={view.besidePages}
+              pages={view.navigation.visiblePages}
+              beside={view.navigation.besidePages}
               direction={ready.book.direction}
               pageFit={ready.book.pageFit}
               pictureAt={(index) => view.pictureAt(index)}
-              measured={(index, size) => view.measure(index, size)}
+              measured={(index, size) => view.grouping.measure(index, size)}
               glow={lit}
               {makes}
               chromeShown={shown}
               {selecting}
               turns={touchTurns.value}
               select={(regions) => commit(regions, 'row')}
-              clear={() => view.clearSelection()}
+              clear={() => view.selection.clear()}
               onTap={toggleChrome}
-              onFit={(fit) => void view.setPageFit(fit)}
+              onFit={(fit) => void view.preferences.setPageFit(fit)}
               onTurn={turnTowards}
             />
           {/key}
@@ -396,7 +396,7 @@
   {layout}
   pairing={book?.pagePairing ?? null}
   direction={book?.direction ?? null}
-  saving={view.saving}
+  saving={view.preferences.saving}
   {downward}
   {fits}
   offersAppearance={narrow}
@@ -408,8 +408,8 @@
   ontouchguide={() => (paged ?? strip)?.showGuide()}
   allCaptures={allCapturesWanted()}
   onallcaptures={chooseAllCaptures}
-  onlanguage={(language) => void view.setLanguage(language)}
-  onlayout={(kind) => void view.setLayoutKind(kind)}
-  onpairing={(pairing) => void view.setPairing(pairing)}
-  ondirection={(direction) => void view.setDirection(direction)}
+  onlanguage={(language) => void view.preferences.setLanguage(language)}
+  onlayout={(kind) => void view.preferences.setLayoutKind(kind)}
+  onpairing={(pairing) => void view.preferences.setPairing(pairing)}
+  ondirection={(direction) => void view.preferences.setDirection(direction)}
 />

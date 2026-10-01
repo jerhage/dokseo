@@ -62,8 +62,8 @@
         anchors={captures.list.anchors}
         onLift={(passage) => captures.recording.lift(passage.cfi, passage.quote, passage.chapter)}
         onsearch={() => search?.searchThisBook()}
-        saving={reader.saving}
-        onlanguage={(chosen) => void reader.setLanguage(chosen)}
+        saving={reader.preferences.saving}
+        onlanguage={(chosen) => void reader.preferences.setLanguage(chosen)}
       >
         {#snippet arrival()}
           {#if id !== null && session.passageStepping !== null && session.finding !== null && flow.arrivalHolds}

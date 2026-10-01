@@ -158,7 +158,7 @@ describe('ReadSession', () => {
     const held = world('/read/one');
     held.session.navigate();
     await settled();
-    const moved = vi.spyOn(held.session.reader, 'goToImage');
+    const moved = vi.spyOn(held.session.reader.navigation, 'goToImage');
 
     go(held, '/read/one?image=3');
 
@@ -170,7 +170,7 @@ describe('ReadSession', () => {
     const held = world('/read/one?image=3');
     held.session.navigate();
     await settled();
-    const moved = vi.spyOn(held.session.reader, 'goToImage');
+    const moved = vi.spyOn(held.session.reader.navigation, 'goToImage');
 
     go(held, '/read/one?image=3');
     await settled();

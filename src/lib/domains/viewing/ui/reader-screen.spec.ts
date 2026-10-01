@@ -31,7 +31,7 @@ const BOOK: ReaderBook = {
 function markup(opening: ReaderOpening): string {
   const view = new ReaderView({} as Container, () => undefined);
   view.opening = opening;
-  view.groups = [[imageIndex(0), imageIndex(1)]];
+  view.grouping.groups = [[imageIndex(0), imageIndex(1)]];
   return render(SCREEN, { props: { view } }).body;
 }
 
