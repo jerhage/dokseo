@@ -151,7 +151,7 @@ class ReadSession {
 
   arrive(book: BookId): void {
     const wanted = this.#passage;
-    if (wanted !== null) this.flow.arriveAt(book, wanted);
+    if (wanted !== null) this.flow.arrivals.arriveAt(book, wanted);
   }
 
   navigate(): void {
@@ -200,7 +200,7 @@ class ReadSession {
     return this.#panelBuilt(() => ({
       view: this.captures,
       language: this.language,
-      direction: this.flow.direction,
+      direction: this.flow.navigation.direction,
       passages: comparePassages,
       seekable: true,
     }));

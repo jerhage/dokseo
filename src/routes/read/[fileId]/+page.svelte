@@ -66,7 +66,7 @@
         onlanguage={(chosen) => void reader.preferences.setLanguage(chosen)}
       >
         {#snippet arrival()}
-          {#if id !== null && session.passageStepping !== null && session.finding !== null && flow.arrivalHolds}
+          {#if id !== null && session.passageStepping !== null && session.finding !== null && flow.arrivals.arrivalHolds}
             <ArrivalBar
               book={id}
               query={session.finding}
@@ -83,7 +83,7 @@
             {language}
             source="text"
             {visible}
-            onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
+            onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
           />
         {/snippet}
       </FlowViewer>

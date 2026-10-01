@@ -245,7 +245,7 @@ describe('ReadSession', () => {
 
   it('asks the ebook reader for the sought passage once the captures are read', async () => {
     const held = world('/read/one?cfi=epubcfi(/6/4)');
-    const arriving = vi.spyOn(held.session.flow, 'arriveAt');
+    const arriving = vi.spyOn(held.session.flow.arrivals, 'arriveAt');
 
     held.session.navigate();
     await settled();
@@ -255,7 +255,7 @@ describe('ReadSession', () => {
 
   it('asks the ebook reader for nothing when the address seeks no passage', async () => {
     const held = world('/read/one?image=2');
-    const arriving = vi.spyOn(held.session.flow, 'arriveAt');
+    const arriving = vi.spyOn(held.session.flow.arrivals, 'arriveAt');
 
     held.session.navigate();
     await settled();
@@ -386,9 +386,9 @@ describe('ReadSession', () => {
         status: 'pending',
       } as never);
     }
-    held.session.flow.direction = 'ltr';
+    held.session.flow.navigation.direction = 'ltr';
     const flowingRight = held.session.flowPanel.cards.cards.map((card) => card.id);
-    held.session.flow.direction = 'rtl';
+    held.session.flow.navigation.direction = 'rtl';
 
     expect(held.session.imagePanel.cards.cards.map((card) => card.id)).toEqual(['left', 'right']);
     expect(flowingRight).toEqual(['left', 'right']);

@@ -107,7 +107,7 @@
     selection: (chapter) => shownSelection(chapter.doc),
     origin: (chapter) => frameOrigin(chapter.doc),
   });
-  const touchGuide = new TouchGuide(() => flowGuideKind(view.paging));
+  const touchGuide = new TouchGuide(() => flowGuideKind(view.navigation.paging));
   const chapters = new Set<Document>();
   const coarse = window.matchMedia('(pointer: coarse)').matches;
 
@@ -115,13 +115,13 @@
   const message = $derived(curtain.kind === 'notice' ? curtain.message : null);
   const dialogOpen = $derived(contentsOpen || settingsOpen);
   const reading = $derived(view.state.kind === 'ready');
-  const contents = $derived(view.contents);
-  const settings = $derived(view.settings);
-  const progress = $derived(view.progress);
+  const contents = $derived(view.navigation.contents);
+  const settings = $derived(view.appearance.settings);
+  const progress = $derived(view.navigation.progress);
   const scrub = $derived(flowScrub(progress));
-  const meta = $derived(flowMeta(view.chapter, book.language));
-  const turning = $derived(view.direction);
-  const marks = $derived(tickOffsets(view.ticks, turning));
+  const meta = $derived(flowMeta(view.navigation.chapter, book.language));
+  const turning = $derived(view.navigation.direction);
+  const marks = $derived(tickOffsets(view.navigation.ticks, turning));
   const passages = $derived(passageCfis(anchors));
   const readerFrame = new ReaderFrameView(FOCUSED_OR_OPEN, () => dialogOpen);
   const narrow = $derived(readerFrame.narrow);
@@ -130,7 +130,7 @@
       icon: ICONS[slot] ?? ChevronRight,
       label: TURN_LABELS[turn],
       enabled: reading,
-      go: () => view.turn(turn),
+      go: () => view.navigation.turn(turn),
     })),
   );
 
@@ -139,7 +139,7 @@
   const input = $derived(flowInput(lastPointerType, coarse));
   const guideOffered = $derived(offersFlowGuide({ open: reading, input }));
   const guideShown = $derived(touchGuide.shownWhen(guideOffered));
-  const guideLesson = $derived(flowSwipeLesson(view.paging));
+  const guideLesson = $derived(flowSwipeLesson(view.navigation.paging));
 
   function armGuide(): void {
     if (!reading) return;
@@ -163,11 +163,11 @@
   }
 
   function pickEntry(entry: ContentsEntry): void {
-    view.jumpTo(entry);
+    view.navigation.jumpTo(entry);
   }
 
   function chooseSettings(chosen: ReadingSettings): void {
-    view.restyle(chosen);
+    view.appearance.restyle(chosen);
   }
 
   function onkey(event: KeyboardEvent): void {
@@ -178,8 +178,8 @@
       return;
     }
 
-    if (event.key === 'Escape' && view.arrivalStanding) {
-      view.dismissArrival();
+    if (event.key === 'Escape' && view.arrivals.arrivalStanding) {
+      view.arrivals.dismissArrival();
       event.preventDefault();
       return;
     }
@@ -198,7 +198,7 @@
   }
 
   function apply(action: FlowAction): void {
-    if (dismissesTheArrival(action)) view.dismissArrival();
+    if (dismissesTheArrival(action)) view.arrivals.dismissArrival();
 
     match(action)
       .with({ kind: 'nothing' }, () => undefined)
@@ -286,7 +286,7 @@
   }
 
   function scrubTo(step: number): void {
-    view.seek(scrubbedFractionAt(step));
+    view.navigation.seek(scrubbedFractionAt(step));
   }
 
   function bind(host: HTMLElement, chapter: ChapterView): void {
@@ -308,7 +308,7 @@
   }
 
   $effect(() => {
-    view.markPassages(passages);
+    view.arrivals.markPassages(passages);
   });
 
   const openOnStage: Attachment<HTMLDivElement> = (host) => {
@@ -359,7 +359,7 @@
   {#snippet page()}
     <div class="stage min-h-0" tabindex="-1" bind:this={stage} {@attach openOnStage}></div>
 
-    <PageInkProbe onink={(ink) => view.paint(ink)} />
+    <PageInkProbe onink={(ink) => view.appearance.paint(ink)} />
 
     {#if lift.offer !== null}
       <div
@@ -450,10 +450,10 @@
   {/snippet}
 
   {#snippet overlay()}
-    {#if view.notice !== null}
+    {#if view.arrivals.notice !== null}
       <div class="callout-top-center z-sticky">
-        <Alert dismissLabel="Hide this message" ondismiss={() => view.dismissNotice()}>
-          {view.notice}
+        <Alert dismissLabel="Hide this message" ondismiss={() => view.arrivals.dismissNotice()}>
+          {view.arrivals.notice}
         </Alert>
       </div>
     {/if}
@@ -486,7 +486,7 @@
     bind:open={contentsOpen}
     entries={contents.entries}
     language={book.language}
-    currentKey={view.currentKey}
+    currentKey={view.navigation.currentKey}
     onpick={pickEntry}
   />
 {/if}
