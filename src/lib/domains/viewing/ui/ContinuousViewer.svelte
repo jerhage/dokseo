@@ -5,13 +5,7 @@
   import KeyHints from '$lib/components/KeyHints.svelte';
   import type { GestureInput, GestureSample } from '$lib/components/gesture';
   import { GestureFeed } from '$lib/components/gesture-feed';
-  import {
-    ZOOM_STEP,
-    clampZoom,
-    pinchZoom,
-    wheelPixels,
-    wheelZoomFactor,
-  } from '$lib/components/pan-zoom';
+  import { ZOOM_STEP, wheelPixels, wheelZoomFactor } from '$lib/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -22,11 +16,7 @@
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
-    anchorOf,
-    layOutStrip,
-    positionAtScroll,
     relayoutFor,
-    scrollForPosition,
     shownThroughAtScroll,
     spacersFor,
     stripHeight,
@@ -35,7 +25,7 @@
     windowReaching,
     windowScrollTop,
   } from '../domain/strip';
-  import type { StripAnchor, Travel } from '../domain/strip';
+  import type { Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
   import { EdgeScroll } from './edge-scroll-loop';
   import { inputKind } from './gesture-hint';
@@ -47,16 +37,10 @@
   import { scrollMotion } from './scroll-motion';
   import SelectionLayer from './SelectionLayer.svelte';
   import { holdsTheScroll, stripTouchAction } from './strip-touch';
+  import { StripZoom } from './strip-zoom.svelte';
   import { STRIP_GUIDE, STRIP_GUIDE_KIND, offersTouchGuide } from './touch-guide';
   import type { StripTouchAction } from './strip-touch';
   import './continuous-viewer.css';
-
-  type Hold = {
-    readonly position: ReadingPosition;
-    readonly top: number;
-    readonly across: number;
-    readonly left: number;
-  };
 
   type Props = {
     readonly sizes: readonly (Size | null)[];
@@ -88,7 +72,6 @@
     onTap,
   }: Props = $props();
 
-  const FIT_WIDTH_ZOOM = 1;
   const SCREEN_OVERLAP = 0.9;
   const SETTLED_PX = 0.5;
   const DRAG_SELECTS_WITH = ['mouse', 'pen'];
@@ -101,19 +84,11 @@
   let frameHeight = $state(0);
   let scrolled = $state(0);
   let scrolledLeft = 0;
-  let zoom = $state(FIT_WIDTH_ZOOM);
   let travel = $state<Travel>('down');
-  let hold = $state.raw<Hold>({
-    position: untrack(() => start),
-    top: 0,
-    across: 0,
-    left: 0,
-  });
 
   let lastPointerType = $state<string | null>(null);
 
   let written: { readonly top: number; readonly left: number } | null = null;
-  let reading = $state.raw<StripAnchor | null>(null);
   let lastPointer = '';
   let pinned = $state<number | null>(null);
 
@@ -124,8 +99,12 @@
     dragging: () => selection?.dragging() ?? false,
   });
 
-  const width = $derived(frameWidth * zoom);
-  const layout = $derived(layOutStrip(sizes, width));
+  const strip = new StripZoom(
+    () => ({ sizes, frameWidth }),
+    untrack(() => start),
+  );
+  const width = $derived(strip.width);
+  const layout = $derived(strip.layout);
   const height = $derived(stripHeight(layout));
   const dragPin = $derived((selection?.dragging() ?? false) ? pinned : null);
   const range = $derived(
@@ -133,7 +112,7 @@
       layout,
       stripWindow(
         layout,
-        windowScrollTop(layout, width, reading, scrolled, hold),
+        windowScrollTop(layout, width, strip.reading, scrolled, strip.hold),
         frameHeight,
         travel,
       ),
@@ -161,18 +140,8 @@
     return String(index + 1).padStart(3, '0');
   }
 
-  function holdAt(top: number, left: number): Hold {
-    return {
-      position: positionAtScroll(layout, top) ?? hold.position,
-      top: 0,
-      across: width > 0 ? left / width : 0,
-      left: 0,
-    };
-  }
-
-  function apply(element: HTMLElement, anchor: Hold): void {
-    const top = scrollForPosition(layout, anchor.position) - anchor.top;
-    const left = width * anchor.across - anchor.left;
+  function apply(element: HTMLElement): void {
+    const { top, left } = strip.target;
     if (
       Math.abs(element.scrollTop - top) < SETTLED_PX &&
       Math.abs(element.scrollLeft - left) < SETTLED_PX
@@ -191,20 +160,7 @@
     const element = scroller;
     if (element === null) return;
 
-    const next = clampZoom(zoom * factor);
-    if (next === zoom) return;
-
-    const top = element.scrollTop;
-    const left = element.scrollLeft;
-
-    reading = null;
-    hold = {
-      position: positionAtScroll(layout, top + y) ?? hold.position,
-      top: y,
-      across: width > 0 ? (left + x) / width : 0,
-      left: x,
-    };
-    zoom = next;
+    strip.zoomBy(factor, { top: element.scrollTop, left: element.scrollLeft }, { x, y });
   }
 
   function pinchBy(scale: number, from: Point, to: Point): void {
@@ -214,23 +170,9 @@
     const box = element.getBoundingClientRect();
     const was = { x: from.x - box.left, y: from.y - box.top };
     const now = { x: to.x - box.left, y: to.y - box.top };
-    const top = element.scrollTop;
-    const left = element.scrollLeft;
+    const scroll = { top: element.scrollTop, left: element.scrollLeft };
 
-    reading = null;
-    hold = {
-      position: positionAtScroll(layout, top + was.y) ?? hold.position,
-      top: now.y,
-      across: width > 0 ? (left + was.x) / width : 0,
-      left: now.x,
-    };
-
-    const next = pinchZoom(zoom, scale, FIT_WIDTH_ZOOM);
-    if (next === zoom) {
-      apply(element, hold);
-      return;
-    }
-    zoom = next;
+    if (!strip.pinch(scale, scroll, was, now)) apply(element);
   }
 
   function act(action: StripTouchAction): void {
@@ -330,7 +272,7 @@
   }
 
   export function fitWidth(): void {
-    zoomFromCentre(FIT_WIDTH_ZOOM / zoom);
+    zoomFromCentre(strip.toFitWidth);
   }
 
   export function surface(): HTMLElement | null {
@@ -346,7 +288,7 @@
   }
 
   export function atFitWidth(): boolean {
-    return zoom === FIT_WIDTH_ZOOM;
+    return strip.atFitWidth;
   }
 
   export function shift(screens: number): void {
@@ -388,11 +330,10 @@
     const layer = selection;
     if (layer !== null && layer.dragging()) layer.followScroll(by);
     else layer?.reset();
-    hold = holdAt(top, left);
-    reading = anchorOf(layout, width, hold.position.index);
+    strip.settleAt({ top, left });
     moveTo(
-      hold.position,
-      shownThroughAtScroll(layout, top, element.clientHeight) ?? hold.position.index,
+      strip.hold.position,
+      shownThroughAtScroll(layout, top, element.clientHeight) ?? strip.hold.position.index,
     );
   }
 
@@ -479,19 +420,18 @@
     if (element === null || placed.length === 0) return;
 
     untrack(() =>
-      match(relayoutFor(placed, width, reading))
-        .with({ kind: 'place' }, () => apply(element, hold))
+      match(relayoutFor(placed, width, strip.reading))
+        .with({ kind: 'place' }, () => apply(element))
         .with({ kind: 'follow' }, () => {
-          apply(element, hold);
-          reading = anchorOf(placed, width, hold.position.index);
+          apply(element);
+          strip.follow();
         })
         .with({ kind: 'stay' }, () => {
           const top = element.scrollTop;
-          hold = holdAt(top, element.scrollLeft);
-          reading = anchorOf(placed, width, hold.position.index);
+          strip.settleAt({ top, left: element.scrollLeft });
           moveTo(
-            hold.position,
-            shownThroughAtScroll(placed, top, element.clientHeight) ?? hold.position.index,
+            strip.hold.position,
+            shownThroughAtScroll(placed, top, element.clientHeight) ?? strip.hold.position.index,
           );
         })
         .exhaustive(),
@@ -504,11 +444,9 @@
     untrack(() => {
       const element = scroller;
       if (element === null || layout.length === 0) return;
-      if (asked.index === hold.position.index) return;
+      if (!strip.goTo(asked)) return;
 
-      reading = null;
-      hold = { position: asked, top: 0, across: hold.across, left: 0 };
-      apply(element, hold);
+      apply(element);
     });
   });
 </script>
