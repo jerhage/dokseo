@@ -97,11 +97,22 @@ function viewOf(over: Partial<Fake>): Record<string, unknown> {
     partlyDownloaded: fake.resumable,
   };
   return {
-    ...fake,
     setup: { state: setupOf(fake) },
+    storage: {
+      snapshot: fake.storage,
+      message: fake.storageMessage,
+      stored: fake.stored,
+      resumable: fake.resumable,
+      partial: fake.storage?.partial ?? null,
+    },
+    download: { state: fake.download, session: fake.session },
+    removal: {
+      removing: fake.removing,
+      confirming: fake.confirmingRemoval,
+      message: fake.message,
+    },
     language: ready ? 'ja' : null,
     model: ready ? JAPANESE_OCR_MODEL : null,
-    partial: fake.storage?.partial ?? null,
     engine,
   };
 }

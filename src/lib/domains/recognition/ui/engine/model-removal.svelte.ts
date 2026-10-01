@@ -1,0 +1,79 @@
+import type { Container } from '$lib/container';
+import { megabytes } from '$lib/shared/bytes';
+import { describeCause } from '$lib/shared/cause';
+import type { Language } from '$lib/shared/language';
+import type { Notify } from '$lib/shared/notice';
+import { storageFailureNote } from './model-storage.svelte';
+import type { OperationClock } from './operation-clock';
+
+const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
+
+const REMOVE_FAILED = 'Could not delete the model';
+
+type RemovalJoins = {
+  readonly stored: () => boolean;
+  readonly settled: () => void;
+};
+
+class ModelRemoval {
+  removing = $state(false);
+  confirming = $state(false);
+  message = $state.raw<string | null>(null);
+
+  #container: Container;
+  #notify: Notify;
+  #clock: OperationClock;
+  #joins: RemovalJoins;
+
+  constructor(container: Container, notify: Notify, clock: OperationClock, joins: RemovalJoins) {
+    this.#container = container;
+    this.#notify = notify;
+    this.#clock = clock;
+    this.#joins = joins;
+  }
+
+  ask(): void {
+    if (!this.#joins.stored()) return;
+    this.confirming = true;
+  }
+
+  dismiss(): void {
+    this.confirming = false;
+  }
+
+  clearMessage(): void {
+    this.message = null;
+  }
+
+  forget(): void {
+    this.message = null;
+    this.confirming = false;
+  }
+
+  async remove(language: Language, modelId: string, generation: number): Promise<void> {
+    this.removing = true;
+    this.message = null;
+
+    try {
+      await this.#container.recognition.cancelModelLoad(language, modelId);
+      const removed = await this.#container.recognition.deleteModel(language, modelId);
+      if (generation !== this.#clock.current) return;
+
+      this.#joins.settled();
+      if (removed.ok)
+        this.message = `Freed ${megabytes(removed.value.bytes)} MB. ${REMOVAL_WARNING}`;
+      else this.#fail(storageFailureNote(removed.error));
+    } catch (cause) {
+      if (generation === this.#clock.current) this.#fail(describeCause(cause));
+    } finally {
+      if (generation === this.#clock.current) this.removing = false;
+    }
+  }
+
+  #fail(message: string): void {
+    this.#notify({ tone: 'danger', title: REMOVE_FAILED, message });
+  }
+}
+
+export { REMOVAL_WARNING, REMOVE_FAILED, ModelRemoval };
+export type { RemovalJoins };

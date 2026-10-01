@@ -20,11 +20,11 @@
     cancelHint,
     loadFigure,
     partialFigure,
-    REMOVAL_WARNING,
     resumeLabel,
     storedFigure,
   } from './engine-settings.svelte';
   import type { EngineSettingsView } from './engine-settings.svelte';
+  import { REMOVAL_WARNING } from './model-removal.svelte';
   import { engineLanguages, shownModel } from './engine-setup.svelte';
   import EngineSetupData from './EngineSetupData.svelte';
   import EngineTrade from './EngineTrade.svelte';
@@ -44,19 +44,19 @@
 
   const uid = $props.id();
 
-  const download = $derived(view.download);
+  const download = $derived(view.download.state);
   const loading = $derived(download.kind === 'loading');
-  const storage = $derived(view.storage);
-  const session = $derived(view.session);
+  const storage = $derived(view.storage.snapshot);
+  const session = $derived(view.download.session);
 
   const state = $derived(engineStatus(view.engine));
-  const partial = $derived(partialFigure(view.partial, view.stored));
+  const partial = $derived(partialFigure(view.storage.partial, view.storage.stored));
   const action = $derived(
     engineActionOf({
       loading,
-      stored: view.stored,
-      resumable: view.resumable,
-      confirmingRemoval: view.confirmingRemoval,
+      stored: view.storage.stored,
+      resumable: view.storage.resumable,
+      confirmingRemoval: view.removal.confirming,
     }),
   );
 
@@ -190,7 +190,7 @@
           <p class={caption}>Stored on this device</p>
           <p class="mono text-sm">
             {storage === null
-              ? (view.storageMessage ?? 'Reading what is stored…')
+              ? (view.storage.message ?? 'Reading what is stored…')
               : storedFigure(storage.report)}
           </p>
           {#if partial !== null}
@@ -211,7 +211,7 @@
             <div class="row wrap gap-2 mt-1">
               {#if action.kind === 'resume'}
                 <Button variant="primary" size="sm" onclick={() => void view.start()}>
-                  {resumeLabel(view.partial)}
+                  {resumeLabel(view.storage.partial)}
                 </Button>
                 <Button size="sm" onclick={() => void view.stop()}>Discard what was fetched</Button>
               {:else if action.kind === 'download'}
@@ -222,20 +222,20 @@
                 <Button
                   variant="ghost-danger"
                   size="sm"
-                  disabled={view.removing}
-                  onclick={() => view.askRemoval()}
+                  disabled={view.removal.removing}
+                  onclick={() => view.removal.ask()}
                 >
-                  {view.removing ? 'Deleting…' : 'Delete the model'}
+                  {view.removal.removing ? 'Deleting…' : 'Delete the model'}
                 </Button>
               {/if}
             </div>
           {/if}
 
-          {#if view.confirmingRemoval}
+          {#if view.removal.confirming}
             <Alert variant="warning" role={undefined}>
               Delete about {removalMb(storage, model)} MB of weights? {REMOVAL_WARNING}
               {#snippet actions()}
-                <Button size="sm" onclick={() => view.dismissRemoval()}>Keep it</Button>
+                <Button size="sm" onclick={() => view.removal.dismiss()}>Keep it</Button>
                 <Button variant="danger" size="sm" onclick={() => void view.remove()}>
                   Delete the model
                 </Button>
@@ -243,8 +243,8 @@
             </Alert>
           {/if}
 
-          {#if view.message !== null}
-            <p class="text-xs text-muted" role="status">{view.message}</p>
+          {#if view.removal.message !== null}
+            <p class="text-xs text-muted" role="status">{view.removal.message}</p>
           {/if}
         </div>
       </section>

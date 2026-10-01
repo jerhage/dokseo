@@ -1,35 +1,26 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
-import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
 import type { ComputeChoice } from '../../domain/engine/compute-choice';
-import { isPartlyStored, isStored } from '../../domain/model/model-cache';
+import { isStored } from '../../domain/model/model-cache';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { PartialReport } from '../../domain/model/model-partial';
-import { downloadStep, IDLE } from '../../domain/model/model-download';
-import type { DownloadEvent, DownloadState } from '../../domain/model/model-download';
 import type { ModelLoad } from '../../domain/model/model-load';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
-import type { ModelStorageError } from '../../domain/model/model-storage';
 import type { SetupError } from '../../domain/engine/recognizer-setup';
 import type { EngineState } from '../../domain/engine/ocr-engine';
-import type { RecognizerSession } from '../../domain/engine/recognizer-session';
-import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { EngineSetup, shownModel } from './engine-setup.svelte';
+import { ModelDownload } from './model-download.svelte';
+import { ModelRemoval } from './model-removal.svelte';
+import { ModelStorage } from './model-storage.svelte';
+import { OperationClock } from './operation-clock';
 
 const FULL_PERCENT = 100;
 
-const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
-
 const SETUP_FAILED = 'Could not save the engine choice';
-
-const LOAD_FAILED = 'Could not load the model';
-
-const REMOVE_FAILED = 'Could not delete the model';
 
 function setupFailureNote(error: SetupError): string {
   return match(error)
@@ -38,16 +29,6 @@ function setupFailureNote(error: SetupError): string {
       () => 'This browser blocks local storage, so the choice was not kept.',
     )
     .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
-    .exhaustive();
-}
-
-function storageFailureNote(error: ModelStorageError): string {
-  return match(error)
-    .with(
-      { kind: 'cache-unavailable' },
-      () => 'This browser exposes no cache, so what the model occupies cannot be read.',
-    )
-    .with({ kind: 'cache-failed' }, (failed) => `The cache could not be read: ${failed.cause}`)
     .exhaustive();
 }
 
@@ -94,24 +75,25 @@ function storedFigure(report: ModelStorageReport): string {
 }
 
 class EngineSettingsView {
-  storage = $state.raw<ModelStorageSnapshot | null>(null);
-  storageMessage = $state.raw<string | null>(null);
-  download = $state.raw<DownloadState>(IDLE);
-  session = $state.raw<RecognizerSession | null>(null);
-  removing = $state(false);
-  confirmingRemoval = $state(false);
-  message = $state.raw<string | null>(null);
-
   readonly setup: EngineSetup;
+  readonly storage: ModelStorage;
+  readonly download: ModelDownload;
+  readonly removal: ModelRemoval;
 
   #container: Container;
   #notify: Notify;
-  #generation = 0;
+  #clock = new OperationClock();
 
   constructor(container: Container, notify: Notify) {
     this.#container = container;
     this.#notify = notify;
-    this.setup = new EngineSetup(container, () => this.#generation);
+    this.setup = new EngineSetup(container, () => this.#clock.current);
+    this.storage = new ModelStorage(container, this.#clock);
+    this.download = new ModelDownload(container, notify, this.#clock);
+    this.removal = new ModelRemoval(container, notify, this.#clock, {
+      stored: () => this.storage.stored,
+      settled: () => this.download.reset(),
+    });
   }
 
   get language(): Language | null {
@@ -122,60 +104,39 @@ class EngineSettingsView {
     return this.setup.model;
   }
 
-  get stored(): boolean {
-    const report = this.storage?.report;
-    return report !== undefined && isStored(report);
-  }
-
-  get partial(): PartialReport | null {
-    return this.storage?.partial ?? null;
-  }
-
-  get partlyStored(): boolean {
-    const report = this.storage?.report;
-    return report !== undefined && isPartlyStored(report);
-  }
-
-  get resumable(): boolean {
-    return !this.stored && (this.partlyStored || isPartlyDownloaded(this.partial));
-  }
-
   get engine(): EngineState {
-    const download = this.download;
+    const download = this.download.state;
     return {
-      stored: this.stored,
+      stored: this.storage.stored,
       opening: download.kind === 'loading',
       load: download.kind === 'loading' ? download.load : null,
-      session: download.kind === 'ready' ? download.session : this.session,
+      session: download.kind === 'ready' ? download.session : this.download.session,
       failure: download.kind === 'failed' ? download.cause : null,
       paused: download.kind === 'paused',
       cancelled: download.kind === 'cancelled',
-      partlyDownloaded: this.resumable,
+      partlyDownloaded: this.storage.resumable,
     };
   }
 
   async load(): Promise<void> {
-    const generation = this.#bump();
+    const generation = this.#clock.next();
     await this.setup.load(generation);
-    await this.measure(generation);
+    await this.storage.measure(this.model, generation);
   }
 
   async chooseLanguage(language: Language): Promise<void> {
     if (this.setup.language === language) return;
 
     this.setup.language = language;
-    this.session = null;
-    this.download = IDLE;
-    this.storage = null;
-    this.storageMessage = null;
-    this.message = null;
-    this.confirmingRemoval = false;
+    this.download.reset();
+    this.storage.forget();
+    this.removal.forget();
 
     await this.load();
   }
 
   dispose(): void {
-    this.#bump();
+    this.#clock.next();
   }
 
   async chooseModel(modelId: string): Promise<void> {
@@ -196,44 +157,21 @@ class EngineSettingsView {
 
   async start(): Promise<void> {
     const language = this.language;
-    if (language === null || this.download.kind === 'loading') return;
+    if (language === null || this.download.loading) return;
 
-    const generation = this.#bump();
-    this.message = null;
-    this.#step({ kind: 'started' });
-
-    await this.#container.recognition.grantModelConsent(language);
-    if (generation !== this.#generation) return;
-
-    const opened = await this.#container.recognition.prepareRecognizer(language, {
-      onProgress: (load) => {
-        if (generation === this.#generation) this.#step({ kind: 'advanced', load });
-      },
-    });
-
-    if (generation !== this.#generation) return;
-
-    if (opened.ok) {
-      this.session = opened.value;
-      this.#step({ kind: 'opened', session: opened.value });
-    } else {
-      this.#step({ kind: 'settled', error: opened.error });
-      const settled = this.download;
-      if (settled.kind === 'failed') this.#fail(LOAD_FAILED, settled.cause);
-    }
-
-    await this.measure(generation);
+    const generation = this.#clock.next();
+    this.removal.clearMessage();
+    const settled = await this.download.start(language, generation);
+    if (settled) await this.storage.measure(this.model, generation);
   }
 
   async pause(): Promise<void> {
     const language = this.language;
-    if (language === null || this.download.kind !== 'loading') return;
+    if (language === null || !this.download.loading) return;
 
-    const generation = this.#bump();
-    this.#step({ kind: 'held' });
-    this.session = null;
-    await this.#container.recognition.pauseModelLoad(language);
-    await this.measure(generation);
+    const generation = this.#clock.next();
+    await this.download.pause(language);
+    await this.storage.measure(this.model, generation);
   }
 
   async stop(): Promise<void> {
@@ -241,74 +179,20 @@ class EngineSettingsView {
     const model = this.model;
     if (language === null || model === null) return;
 
-    const generation = this.#bump();
-    this.#step({ kind: 'stopped' });
-    this.session = null;
-    await this.#container.recognition.cancelModelLoad(language, model.modelId);
-    await this.measure(generation);
-  }
-
-  askRemoval(): void {
-    if (!this.stored) return;
-    this.confirmingRemoval = true;
-  }
-
-  dismissRemoval(): void {
-    this.confirmingRemoval = false;
+    const generation = this.#clock.next();
+    await this.download.stop(language, model.modelId);
+    await this.storage.measure(model, generation);
   }
 
   async remove(): Promise<void> {
     const language = this.language;
     const model = this.model;
-    this.confirmingRemoval = false;
-    if (language === null || model === null || this.removing) return;
+    this.removal.dismiss();
+    if (language === null || model === null || this.removal.removing) return;
 
-    const generation = this.#bump();
-    this.removing = true;
-    this.message = null;
-
-    try {
-      await this.#container.recognition.cancelModelLoad(language, model.modelId);
-      const removed = await this.#container.recognition.deleteModel(language, model.modelId);
-      if (generation !== this.#generation) return;
-
-      this.session = null;
-      this.download = IDLE;
-      if (removed.ok)
-        this.message = `Freed ${megabytes(removed.value.bytes)} MB. ${REMOVAL_WARNING}`;
-      else this.#fail(REMOVE_FAILED, storageFailureNote(removed.error));
-    } catch (cause) {
-      if (generation === this.#generation) this.#fail(REMOVE_FAILED, describeCause(cause));
-    } finally {
-      if (generation === this.#generation) this.removing = false;
-    }
-
-    await this.measure(generation);
-  }
-
-  async measure(generation: number = this.#generation): Promise<void> {
-    const model = this.model;
-    if (model === null) return;
-
-    let read: Result<ModelStorageSnapshot, ModelStorageError>;
-    try {
-      read = await this.#container.recognition.readModelStorage(model.modelId);
-    } catch (cause) {
-      if (generation !== this.#generation) return;
-      this.storage = null;
-      this.storageMessage = `What the model occupies could not be read: ${describeCause(cause)}`;
-      return;
-    }
-
-    if (generation !== this.#generation) return;
-
-    if (read.ok) {
-      this.storage = read.value;
-      this.storageMessage = null;
-    } else {
-      this.storage = null;
-      this.storageMessage = storageFailureNote(read.error);
-    }
+    const generation = this.#clock.next();
+    await this.removal.remove(language, model.modelId, generation);
+    await this.storage.measure(model, generation);
   }
 
   async #applySetup(abandoned: string | null): Promise<void> {
@@ -317,16 +201,15 @@ class EngineSettingsView {
 
     const language = choice.language;
     const model = shownModel(choice);
-    const generation = this.#bump();
-    this.session = null;
-    this.download = IDLE;
+    const generation = this.#clock.next();
+    this.download.reset();
 
     const saved = await this.#container.recognition.saveRecognizerSetup(language, {
       modelId: model.modelId,
       compute: choice.compute,
     });
-    if (!saved.ok && generation === this.#generation) {
-      this.#fail(SETUP_FAILED, setupFailureNote(saved.error));
+    if (!saved.ok && generation === this.#clock.current) {
+      this.#notify({ tone: 'danger', title: SETUP_FAILED, message: setupFailureNote(saved.error) });
     }
 
     if (abandoned === null) await this.#container.recognition.pauseModelLoad(language);
@@ -334,30 +217,13 @@ class EngineSettingsView {
 
     await this.#container.recognition.closeRecognizer(language);
 
-    if (generation !== this.#generation) return;
-    await this.measure(generation);
-  }
-
-  #fail(title: string, message: string): void {
-    this.#notify({ tone: 'danger', title, message });
-  }
-
-  #step(event: DownloadEvent): void {
-    this.download = downloadStep(this.download, event);
-  }
-
-  #bump(): number {
-    this.#generation += 1;
-    return this.#generation;
+    if (generation !== this.#clock.current) return;
+    await this.storage.measure(model, generation);
   }
 }
 
 export {
-  LOAD_FAILED,
-  REMOVAL_WARNING,
-  REMOVE_FAILED,
   SETUP_FAILED,
-  storageFailureNote,
   loadFigure,
   cancelHint,
   partialFigure,
