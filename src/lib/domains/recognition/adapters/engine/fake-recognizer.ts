@@ -1,10 +1,9 @@
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type { ModelLoadError } from '../../domain/model/model-load';
 import { recognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizerSession } from '../../domain/engine/recognizer-session';
-import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
+import type {
+  Recognition,
+  RecognizerOpening,
+  TextRecognizer,
+} from '../../domain/engine/text-recognizer';
 
 const LINES = [
   'どうしたんだ',
@@ -25,14 +24,15 @@ function lineFor(width: number, height: number): string {
   return LINES[(mixed >>> 0) % LINES.length] ?? LINES[0];
 }
 
-function recognizeSize(image: ImageBitmap): Promise<Result<RecognizedText, RecognitionError>> {
-  return Promise.resolve(ok(recognizedText(lineFor(image.width, image.height))));
+function recognizeSize(image: ImageBitmap): Promise<Recognition> {
+  return Promise.resolve({
+    kind: 'success',
+    text: recognizedText(lineFor(image.width, image.height)),
+  });
 }
 
-function noSession(): Promise<Result<RecognizerSession, ModelLoadError>> {
-  return Promise.resolve(
-    err({ kind: 'unavailable', cause: 'The fake recognizer opens no session' }),
-  );
+function noSession(): Promise<RecognizerOpening> {
+  return Promise.resolve({ kind: 'unavailable', cause: 'The fake recognizer opens no session' });
 }
 
 function createFakeRecognizer(): TextRecognizer {

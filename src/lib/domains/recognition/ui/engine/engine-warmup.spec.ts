@@ -4,16 +4,14 @@ import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
-import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
+import type { ModelLoad } from '../../domain/model/model-load';
 import { recognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
-import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import type { PrepareRecognizerResult } from '../../use-cases/engine/prepare-recognizer';
+import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import {
   engineStateOf,
@@ -38,9 +36,9 @@ const STALE_SESSION: RecognizerSession = { ...OPENED_SESSION, device: 'wasm' };
 
 const LOAD: ModelLoad = { fraction: 0.4, source: 'network', loadedBytes: 0, totalBytes: 0 };
 
-type Reading = Result<RecognizedText, RecognizeRegionError>;
+type Reading = RecognizeRegionResult;
 
-type Opening = Result<RecognizerSession, ModelLoadError>;
+type Opening = PrepareRecognizerResult;
 
 type Call = {
   readonly notices: RecognitionNotices;
@@ -112,10 +110,14 @@ function fakes(setup: Partial<Setup> = {}): World {
   const container = {
     beginTrace: () => ({ step: () => undefined, image: () => undefined, end: () => undefined }),
     recognition: {
-      readRecognizerSetup: () => Promise.resolve(ok({ model: chosen.model, compute: 'auto' })),
+      readRecognizerSetup: () =>
+        Promise.resolve({ kind: 'success', choice: { model: chosen.model, compute: 'auto' } }),
       readModelStorage: (modelId: string) => {
         storageReads.push(modelId);
-        const held = ok(snapshot(modelId, chosen.weights, chosen.partialBytes));
+        const held = {
+          kind: 'success',
+          snapshot: snapshot(modelId, chosen.weights, chosen.partialBytes),
+        };
         if (chosen.storage === 'answers') return Promise.resolve(held);
         return new Promise((resolve) => {
           storageAnswers.push(() => resolve(held));
@@ -129,7 +131,7 @@ function fakes(setup: Partial<Setup> = {}): World {
           });
         }
         notices.onSession?.(OPENED_SESSION);
-        return Promise.resolve(ok(OPENED_SESSION));
+        return Promise.resolve({ kind: 'success', session: OPENED_SESSION });
       },
       recognizeRegion: (
         _language: Language,
@@ -280,7 +282,7 @@ describe('EngineWarmup', () => {
     expect(world.warmup.warmth).toEqual({ kind: 'opening' });
     expect(world.warmup.progress).toEqual(LOAD);
 
-    at(world.prepares, 0).settle(ok(OPENED_SESSION));
+    at(world.prepares, 0).settle({ kind: 'success', session: OPENED_SESSION });
     await warming;
 
     expect(world.warmup.warmth).toEqual({ kind: 'stored' });
@@ -293,7 +295,7 @@ describe('EngineWarmup', () => {
     const warming = world.warmup.warm('ja');
     await settled();
 
-    at(world.prepares, 0).settle(err({ kind: 'unavailable', cause: 'no wasm' }));
+    at(world.prepares, 0).settle({ kind: 'unavailable', cause: 'no wasm' });
     await warming;
 
     expect(world.warmup.warmth).toEqual({ kind: 'failed', cause: 'no wasm' });
@@ -315,7 +317,7 @@ describe('EngineWarmup', () => {
     const warming = world.warmup.warm('ja');
     await settled();
 
-    at(world.prepares, 0).settle(err({ kind: 'cancelled' }));
+    at(world.prepares, 0).settle({ kind: 'cancelled' });
     await warming;
 
     expect(world.warmup.warmth).toEqual({ kind: 'stored' });
@@ -330,7 +332,7 @@ describe('EngineWarmup', () => {
     world.bump();
     at(world.prepares, 0).notices.onProgress?.(LOAD);
     at(world.prepares, 0).notices.onSession?.(OPENED_SESSION);
-    at(world.prepares, 0).settle(ok(OPENED_SESSION));
+    at(world.prepares, 0).settle({ kind: 'success', session: OPENED_SESSION });
     await warming;
 
     expect(world.warmup.session).toBeNull();
@@ -357,12 +359,12 @@ describe('EngineWarmup', () => {
 
     const reading = world.warmup.read(selection('ko'));
     at(world.prepares, 0).notices.onSession?.(STALE_SESSION);
-    at(world.prepares, 0).settle(ok(STALE_SESSION));
+    at(world.prepares, 0).settle({ kind: 'success', session: STALE_SESSION });
     await warming;
 
     expect(world.warmup.session).toBeNull();
     expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
-    (await started(world.calls, 0)).settle(ok(recognizedText('한', null)));
+    (await started(world.calls, 0)).settle({ kind: 'success', text: recognizedText('한', null) });
     await reading;
   });
 
@@ -416,12 +418,12 @@ describe('EngineWarmup', () => {
     const second = world.warmup.read(selection());
 
     (await started(world.calls, 0)).notices.onProgress?.(LOAD);
-    (await started(world.calls, 0)).settle(ok(recognizedText('一', null)));
+    (await started(world.calls, 0)).settle({ kind: 'success', text: recognizedText('一', null) });
     await first;
 
     expect(world.warmup.progress).toEqual(LOAD);
 
-    (await started(world.calls, 1)).settle(ok(recognizedText('二', null)));
+    (await started(world.calls, 1)).settle({ kind: 'success', text: recognizedText('二', null) });
     await second;
 
     expect(world.warmup.progress).toBeNull();
@@ -434,12 +436,12 @@ describe('EngineWarmup', () => {
     await settled();
     (await started(world.calls, 0)).notices.onProgress?.(LOAD);
 
-    at(world.prepares, 0).settle(ok(OPENED_SESSION));
+    at(world.prepares, 0).settle({ kind: 'success', session: OPENED_SESSION });
     await warming;
 
     expect(world.warmup.progress).toEqual(LOAD);
 
-    at(world.calls, 0).settle(ok(recognizedText('一', null)));
+    at(world.calls, 0).settle({ kind: 'success', text: recognizedText('一', null) });
     await reading;
   });
 
@@ -450,7 +452,7 @@ describe('EngineWarmup', () => {
     (await started(world.calls, 0)).notices.onSession?.(OPENED_SESSION);
 
     expect(world.warmup.session).toEqual(OPENED_SESSION);
-    at(world.calls, 0).settle(ok(recognizedText('一', null)));
+    at(world.calls, 0).settle({ kind: 'success', text: recognizedText('一', null) });
     await reading;
   });
 
@@ -482,7 +484,7 @@ describe('EngineWarmup', () => {
     expect(world.warmup.session).toBeNull();
     expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
 
-    (await started(world.calls, 0)).settle(ok(recognizedText('한', null)));
+    (await started(world.calls, 0)).settle({ kind: 'success', text: recognizedText('한', null) });
     await reading;
 
     expect(world.closes).toEqual(['ja']);
@@ -493,7 +495,7 @@ describe('EngineWarmup', () => {
     await world.warmup.warm('ja');
 
     const reading = world.warmup.read(selection('ja'));
-    (await started(world.calls, 0)).settle(ok(recognizedText('一', null)));
+    (await started(world.calls, 0)).settle({ kind: 'success', text: recognizedText('一', null) });
     await reading;
 
     expect(world.closes).toEqual([]);
@@ -509,13 +511,13 @@ describe('EngineWarmup', () => {
 
     expect(world.closes).toEqual([]);
 
-    call.settle(ok(recognizedText('一', null)));
+    call.settle({ kind: 'success', text: recognizedText('一', null) });
     await reading;
 
     expect(world.closes).toEqual(['ja']);
 
     const later = world.warmup.read(selection('ko'));
-    (await started(world.calls, 1)).settle(ok(recognizedText('한', null)));
+    (await started(world.calls, 1)).settle({ kind: 'success', text: recognizedText('한', null) });
     await later;
 
     expect(world.closes).toEqual(['ja']);
@@ -528,8 +530,8 @@ describe('EngineWarmup', () => {
     await world.warmup.warm('ko');
 
     const back = world.warmup.read(selection('ja'));
-    at(world.calls, 0).settle(ok(recognizedText('一', null)));
-    (await started(world.calls, 1)).settle(ok(recognizedText('二', null)));
+    at(world.calls, 0).settle({ kind: 'success', text: recognizedText('一', null) });
+    (await started(world.calls, 1)).settle({ kind: 'success', text: recognizedText('二', null) });
     await Promise.all([first, back]);
 
     expect(world.closes).toEqual(['ko']);
@@ -546,7 +548,7 @@ describe('EngineWarmup', () => {
 
     expect(world.warmup.progress).toBeNull();
     expect(world.warmup.session).toEqual(OPENED_SESSION);
-    call.settle(ok(recognizedText('一', null)));
+    call.settle({ kind: 'success', text: recognizedText('一', null) });
     await reading;
   });
 
@@ -563,7 +565,7 @@ describe('EngineWarmup', () => {
     expect(world.warmup.session).toBeNull();
     expect(world.warmup.progress).toBeNull();
     expect(world.closes).toEqual([]);
-    at(world.prepares, 0).settle(ok(OPENED_SESSION));
+    at(world.prepares, 0).settle({ kind: 'success', session: OPENED_SESSION });
     await warming;
   });
 

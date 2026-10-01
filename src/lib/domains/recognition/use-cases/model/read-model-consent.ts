@@ -1,12 +1,12 @@
 import type { Language } from '$lib/shared/language';
-import type { Result } from '$lib/shared/result';
-import type {
-  ModelConsentDecision,
-  ModelConsentError,
-  ModelConsentStore,
-} from '../../domain/model/model-consent';
-import { setupChoice } from '../../domain/engine/recognizer-setup';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { ModelConsentDecision, ModelConsentStore } from '../../domain/model/model-consent';
+import { storedChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
+
+type ReadModelConsentResult =
+  | { readonly kind: 'success'; readonly decision: ModelConsentDecision }
+  | StorageUnavailable;
 
 type ReadModelConsentDeps = {
   readonly consent: ModelConsentStore;
@@ -16,12 +16,13 @@ type ReadModelConsentDeps = {
 async function readModelConsent(
   deps: ReadModelConsentDeps,
   language: Language,
-): Promise<Result<ModelConsentDecision, ModelConsentError>> {
+): Promise<ReadModelConsentResult> {
   const record = await deps.setups.read(language);
-  const chosen = setupChoice(language, record.ok ? record.value : null);
+  const chosen = storedChoice(language, record);
 
-  return await deps.consent.decisionFor(language, chosen.model);
+  const decided = await deps.consent.decisionFor(language, chosen.model);
+  return decided;
 }
 
 export { readModelConsent };
-export type { ReadModelConsentDeps };
+export type { ReadModelConsentDeps, ReadModelConsentResult };

@@ -203,9 +203,9 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const result = await recognition;
-    if (!result.ok) throw new Error('The recognizer failed');
-    expect(result.value.text).toBe('ちょっと待って');
-    expect(result.value.confidence).toBeNull();
+    if (result.kind !== 'success') throw new Error('The recognizer failed');
+    expect(result.text.text).toBe('ちょっと待って');
+    expect(result.text.confidence).toBeNull();
   });
 
   it('keeps two recognitions apart when the worker replies out of order', async () => {
@@ -221,9 +221,9 @@ describe('createMangaOcrRecognizer', () => {
     fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: 'こっちに来て', confidence: null });
 
     const [one, two] = await Promise.all([first, second]);
-    if (!one.ok || !two.ok) throw new Error('The recognizer failed');
-    expect(one.value.text).toBe('こっちに来て');
-    expect(two.value.text).toBe('早く逃げろ');
+    if (one.kind !== 'success' || two.kind !== 'success') throw new Error('The recognizer failed');
+    expect(one.text.text).toBe('こっちに来て');
+    expect(two.text.text).toBe('早く逃げろ');
   });
 
   it('maps a failure to open the session onto model-unavailable', async () => {
@@ -240,8 +240,8 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const result = await recognition;
-    if (result.ok) throw new Error('The recognizer succeeded');
-    expect(result.error).toEqual({
+    if (result.kind === 'success') throw new Error('The recognizer succeeded');
+    expect(result).toEqual({
       kind: 'model-unavailable',
       cause: 'the weights did not download',
     });
@@ -261,8 +261,8 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const result = await recognition;
-    if (result.ok) throw new Error('The recognizer succeeded');
-    expect(result.error).toEqual({ kind: 'recognition-failed', cause: 'the decoder threw' });
+    if (result.kind === 'success') throw new Error('The recognizer succeeded');
+    expect(result).toEqual({ kind: 'recognition-failed', cause: 'the decoder threw' });
   });
 
   it('maps generated text of only whitespace onto no-text', async () => {
@@ -274,8 +274,8 @@ describe('createMangaOcrRecognizer', () => {
     fake.reply({ kind: 'recognized', id: cropId(fake, 0), text: '   ', confidence: null });
 
     const result = await recognition;
-    if (result.ok) throw new Error('The recognizer succeeded');
-    expect(result.error).toEqual({ kind: 'no-text' });
+    if (result.kind === 'success') throw new Error('The recognizer succeeded');
+    expect(result).toEqual({ kind: 'no-text' });
   });
 
   it('settles every pending recognition when the worker reports an error', async () => {
@@ -289,9 +289,10 @@ describe('createMangaOcrRecognizer', () => {
     fake.fail('the worker died');
 
     const [one, two] = await Promise.all([first, second]);
-    if (one.ok || two.ok) throw new Error('The recognizer succeeded');
-    expect(one.error).toEqual({ kind: 'recognition-failed', cause: 'the worker died' });
-    expect(two.error).toEqual({ kind: 'recognition-failed', cause: 'the worker died' });
+    if (one.kind === 'success' || two.kind === 'success')
+      throw new Error('The recognizer succeeded');
+    expect(one).toEqual({ kind: 'recognition-failed', cause: 'the worker died' });
+    expect(two).toEqual({ kind: 'recognition-failed', cause: 'the worker died' });
     expect(fake.wasTerminated()).toBe(true);
   });
 
@@ -304,8 +305,8 @@ describe('createMangaOcrRecognizer', () => {
     fake.breakMessage();
 
     const result = await recognition;
-    if (result.ok) throw new Error('The recognizer succeeded');
-    expect(result.error.kind).toBe('recognition-failed');
+    if (result.kind === 'success') throw new Error('The recognizer succeeded');
+    expect(result.kind).toBe('recognition-failed');
   });
 
   it('starts a new worker after the previous one died', async () => {
@@ -397,8 +398,8 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const opened = await opening;
-    if (!opened.ok) throw new Error('The session did not open');
-    expect(opened.value).toEqual({
+    if (opened.kind !== 'success') throw new Error('The session did not open');
+    expect(opened.session).toEqual({
       modelId: SETUP.modelId,
       device: 'webgpu',
       fellBackFrom: null,
@@ -419,8 +420,8 @@ describe('createMangaOcrRecognizer', () => {
     });
 
     const opened = await recognizer.prepare();
-    if (opened.ok) throw new Error('A session opened without a model');
-    expect(opened.error.kind).toBe('unavailable');
+    if (opened.kind === 'success') throw new Error('A session opened without a model');
+    expect(opened.kind).toBe('unavailable');
     expect(started).toBe(0);
   });
 
@@ -433,8 +434,8 @@ describe('createMangaOcrRecognizer', () => {
     recognizer.cancel();
 
     const opened = await opening;
-    if (opened.ok) throw new Error('The cancelled load opened a session');
-    expect(opened.error).toEqual({ kind: 'cancelled' });
+    if (opened.kind === 'success') throw new Error('The cancelled load opened a session');
+    expect(opened).toEqual({ kind: 'cancelled' });
     expect(fake.wasTerminated()).toBe(true);
   });
 

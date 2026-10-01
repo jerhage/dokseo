@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type {
-  ModelConsentDecision,
-  ModelConsentError,
-  ModelConsentStore,
-} from '../../domain/model/model-consent';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import type { ModelConsentStore } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
-  SetupError,
   StoredRecognizerSetup,
 } from '../../domain/engine/recognizer-setup';
 import { grantModelConsent } from './grant-model-consent';
@@ -43,32 +37,29 @@ function world(
       return Promise.resolve(options.persisted ?? true);
     },
     setups: {
-      read: (language: Language): Promise<Result<StoredRecognizerSetup | null, SetupError>> => {
+      read: (language: Language) => {
         steps.push(`setup ${language}`);
-        return Promise.resolve(ok(options.stored ?? null));
+        return Promise.resolve({ kind: 'success', stored: options.stored ?? null });
       },
-      write: () => Promise.resolve(ok(undefined)),
+      write: () => Promise.resolve({ kind: 'success' }),
     },
     consent: {
-      decisionFor(language: Language): Promise<Result<ModelConsentDecision, ModelConsentError>> {
-        return Promise.resolve(ok(granted.has(language) ? 'granted' : 'undecided'));
-      },
-      recordGrant(
-        language: Language,
-        model: ModelFootprint | null,
-      ): Promise<Result<void, ModelConsentError>> {
+      decisionFor: (language: Language) =>
+        Promise.resolve({
+          kind: 'success',
+          decision: granted.has(language) ? 'granted' : 'undecided',
+        }),
+      recordGrant: (language: Language, model: ModelFootprint | null) => {
         steps.push(`record ${language}`);
         recorded.push(model);
-        if (options.failed === true) {
-          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the store is blocked' }));
-        }
+        if (options.failed === true) return Promise.resolve(STORAGE_UNAVAILABLE);
         granted.add(language);
-        return Promise.resolve(ok(undefined));
+        return Promise.resolve({ kind: 'success' });
       },
-      forgetGrant(language: Language): Promise<Result<void, ModelConsentError>> {
+      forgetGrant: (language: Language) => {
         steps.push(`forget ${language}`);
         granted.delete(language);
-        return Promise.resolve(ok(undefined));
+        return Promise.resolve({ kind: 'success' });
       },
     },
   };
@@ -80,7 +71,7 @@ describe('grantModelConsent', () => {
 
     const recorded = await grantModelConsent(fakes, 'ja');
 
-    expect(recorded).toEqual(ok(undefined));
+    expect(recorded).toEqual({ kind: 'success' });
     expect(fakes.steps).toEqual(['setup ja', 'persistence', 'record ja']);
   });
 
@@ -115,8 +106,14 @@ describe('grantModelConsent', () => {
 
     await grantModelConsent(fakes, 'ja');
 
-    expect(await fakes.consent.decisionFor('ja', JAPANESE_OCR_MODEL)).toEqual(ok('granted'));
-    expect(await fakes.consent.decisionFor('ko', null)).toEqual(ok('undecided'));
+    expect(await fakes.consent.decisionFor('ja', JAPANESE_OCR_MODEL)).toEqual({
+      kind: 'success',
+      decision: 'granted',
+    });
+    expect(await fakes.consent.decisionFor('ko', null)).toEqual({
+      kind: 'success',
+      decision: 'undecided',
+    });
   });
 
   it('records the grant even when the browser refuses persistence', async () => {
@@ -124,16 +121,19 @@ describe('grantModelConsent', () => {
 
     const recorded = await grantModelConsent(fakes, 'ja');
 
-    expect(recorded).toEqual(ok(undefined));
-    expect(await fakes.consent.decisionFor('ja', JAPANESE_OCR_MODEL)).toEqual(ok('granted'));
+    expect(recorded).toEqual({ kind: 'success' });
+    expect(await fakes.consent.decisionFor('ja', JAPANESE_OCR_MODEL)).toEqual({
+      kind: 'success',
+      decision: 'granted',
+    });
   });
 
-  it('reports a storage failure after it has already requested persistence', async () => {
+  it('reports a blocked store after it has already requested persistence', async () => {
     const fakes = world({ failed: true });
 
     const recorded = await grantModelConsent(fakes, 'ja');
 
-    expect(recorded).toEqual(err({ kind: 'storage-failed', cause: 'the store is blocked' }));
+    expect(recorded).toEqual(STORAGE_UNAVAILABLE);
     expect(fakes.steps).toEqual(['setup ja', 'persistence', 'record ja']);
   });
 });

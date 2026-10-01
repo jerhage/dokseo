@@ -3,14 +3,12 @@ import { megabytes } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
-import type { ModelStorageReport } from '../../domain/model/model-cache';
-import type { ModelStorageError } from '../../domain/model/model-storage';
-import { deleteModelMutation, storageFailureNote } from '../../queries/engine-queries';
+import { CACHE_UNREADABLE, deleteModelMutation } from '../../queries/engine-queries';
 import type { EngineWrites, ModelTarget } from '../../queries/engine-queries';
 import { recognitionKeys } from '../../queries/recognition-keys';
+import type { DeleteModelResult } from '../../use-cases/model/delete-model';
 import type { OperationClock } from './operation-clock';
 
 const REMOVAL_WARNING = 'The next selection you read downloads it again. Nothing else is deleted.';
@@ -29,7 +27,7 @@ class ModelRemoval {
   #notify: Notify;
   #clock: OperationClock;
   #joins: RemovalJoins;
-  #deleting: WriteQuery<Result<ModelStorageReport, ModelStorageError>, ModelTarget>;
+  #deleting: WriteQuery<DeleteModelResult, ModelTarget>;
 
   constructor(
     recognition: Pick<EngineWrites, 'cancelModelLoad' | 'deleteModel'>,
@@ -75,9 +73,9 @@ class ModelRemoval {
       if (generation !== this.#clock.current) return;
 
       this.#joins.settled();
-      if (removed.ok)
-        this.message = `Freed ${megabytes(removed.value.bytes)} MB. ${REMOVAL_WARNING}`;
-      else this.#fail(storageFailureNote(removed.error));
+      if (removed.kind === 'success') {
+        this.message = `Freed ${megabytes(removed.report.bytes)} MB. ${REMOVAL_WARNING}`;
+      } else this.#fail(CACHE_UNREADABLE);
     } catch (cause) {
       if (generation === this.#clock.current) this.#fail(describeCause(cause));
     } finally {

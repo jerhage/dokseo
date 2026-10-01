@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { err, ok } from '$lib/shared/result';
 import type { PartialReport } from '../../domain/model/model-partial';
 import type { PartialDownloads } from '../../domain/model/partial-downloads';
 import type { TextRecognizer } from '../../domain/engine/text-recognizer';
@@ -22,11 +21,13 @@ function world(options: { readonly failing?: boolean } = {}) {
   };
 
   const partials: PartialDownloads = {
-    measure: () => Promise.resolve(ok(DISCARDED)),
+    measure: () => Promise.resolve({ kind: 'success', report: DISCARDED }),
     discard: (modelId: string) => {
       steps.push(`discard ${modelId}`);
       return Promise.resolve(
-        options.failing === true ? err({ kind: 'partials-unavailable' as const }) : ok(DISCARDED),
+        options.failing === true
+          ? { kind: 'partials-unavailable' as const }
+          : { kind: 'success' as const, report: DISCARDED },
       );
     },
   };
@@ -39,8 +40,7 @@ describe('cancelModelLoad', () => {
     const { deps } = world();
     const discarded = await cancelModelLoad(deps, MODEL);
 
-    if (!discarded.ok) throw new Error('The part-download was not discarded');
-    expect(discarded.value).toEqual(DISCARDED);
+    expect(discarded).toEqual({ kind: 'success', report: DISCARDED });
   });
 
   it('stops the worker before it deletes what the worker was writing', async () => {
@@ -54,6 +54,6 @@ describe('cancelModelLoad', () => {
     const { deps } = world({ failing: true });
     const discarded = await cancelModelLoad(deps, MODEL);
 
-    expect(discarded.ok).toBe(false);
+    expect(discarded).toEqual({ kind: 'partials-unavailable' });
   });
 });

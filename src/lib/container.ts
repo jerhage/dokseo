@@ -17,7 +17,6 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import type { Result } from '$lib/shared/result';
 import { createReadingSettingsStore } from './domains/flowing/adapters/indexeddb-reading-settings';
 import type { ReadingSettings } from './domains/flowing/domain/reading-settings';
 import { readReadingSettings } from './domains/flowing/use-cases/read-reading-settings';
@@ -91,23 +90,10 @@ import type {
 import type { GpuDetection } from './domains/recognition/domain/engine/compute-choice';
 import type { ModelRuntime } from './domains/recognition/domain/engine/model-runtime';
 import { chosenModel } from './domains/recognition/domain/model/model-footprint';
-import type { ModelStorageReport } from './domains/recognition/domain/model/model-cache';
-import type {
-  ModelConsentDecision,
-  ModelConsentError,
-} from './domains/recognition/domain/model/model-consent';
-import type { ModelLoad, ModelLoadError } from './domains/recognition/domain/model/model-load';
-import type { PartialReport } from './domains/recognition/domain/model/model-partial';
-import type { ModelStorageError } from './domains/recognition/domain/model/model-storage';
-import type { PartialError } from './domains/recognition/domain/model/partial-downloads';
-import type { RecognizedText } from './domains/recognition/domain/engine/recognized-text';
+import type { ModelLoad } from './domains/recognition/domain/model/model-load';
 import type { RecognizerSession } from './domains/recognition/domain/engine/recognizer-session';
 import { setupChoice } from './domains/recognition/domain/engine/recognizer-setup';
-import type {
-  RecognizerChoice,
-  RecognizerSetup,
-  SetupError,
-} from './domains/recognition/domain/engine/recognizer-setup';
+import type { RecognizerSetup } from './domains/recognition/domain/engine/recognizer-setup';
 import type { TextRecognizer } from './domains/recognition/domain/engine/text-recognizer';
 import type { Tag } from './domains/recognition/domain/tag/tag';
 import type { TagColour } from './domains/recognition/domain/tag/tag-colour';
@@ -117,6 +103,7 @@ import type {
   AddTagToCaptureResult,
 } from './domains/recognition/use-cases/tag/add-tag-to-capture';
 import { cancelModelLoad } from './domains/recognition/use-cases/model/cancel-model-load';
+import type { CancelModelLoadResult } from './domains/recognition/use-cases/model/cancel-model-load';
 import { closeRecognizer } from './domains/recognition/use-cases/engine/close-recognizer';
 import { clearCaptures } from './domains/recognition/use-cases/capture/clear-captures';
 import type {
@@ -134,7 +121,10 @@ import type {
   DeleteTagResult,
 } from './domains/recognition/use-cases/tag/delete-tag';
 import { deleteModel } from './domains/recognition/use-cases/model/delete-model';
-import type { DeleteModelDeps } from './domains/recognition/use-cases/model/delete-model';
+import type {
+  DeleteModelDeps,
+  DeleteModelResult,
+} from './domains/recognition/use-cases/model/delete-model';
 import { detectCompute } from './domains/recognition/use-cases/engine/detect-compute';
 import type { DetectComputeDeps } from './domains/recognition/use-cases/engine/detect-compute';
 import { editCaptureText } from './domains/recognition/use-cases/capture/edit-capture-text';
@@ -148,7 +138,10 @@ import type {
   WriteCaptureNoteResult,
 } from './domains/recognition/use-cases/capture/write-capture-note';
 import { grantModelConsent } from './domains/recognition/use-cases/model/grant-model-consent';
-import type { GrantModelConsentDeps } from './domains/recognition/use-cases/model/grant-model-consent';
+import type {
+  GrantModelConsentDeps,
+  GrantModelConsentResult,
+} from './domains/recognition/use-cases/model/grant-model-consent';
 import { listCaptures } from './domains/recognition/use-cases/capture/list-captures';
 import type {
   ListCapturesDeps,
@@ -163,17 +156,24 @@ import { listTags } from './domains/recognition/use-cases/tag/list-tags';
 import type { ListTagsDeps, ListTagsResult } from './domains/recognition/use-cases/tag/list-tags';
 import { pauseModelLoad } from './domains/recognition/use-cases/model/pause-model-load';
 import { prepareRecognizer } from './domains/recognition/use-cases/engine/prepare-recognizer';
+import type { PrepareRecognizerResult } from './domains/recognition/use-cases/engine/prepare-recognizer';
 import { readModelConsent } from './domains/recognition/use-cases/model/read-model-consent';
-import type { ReadModelConsentDeps } from './domains/recognition/use-cases/model/read-model-consent';
+import type {
+  ReadModelConsentDeps,
+  ReadModelConsentResult,
+} from './domains/recognition/use-cases/model/read-model-consent';
 import { readModelStorage } from './domains/recognition/use-cases/model/read-model-storage';
 import type {
-  ModelStorageSnapshot,
   ReadModelStorageDeps,
+  ReadModelStorageResult,
 } from './domains/recognition/use-cases/model/read-model-storage';
 import { readRecognizerSetup } from './domains/recognition/use-cases/engine/read-recognizer-setup';
-import type { ReadRecognizerSetupDeps } from './domains/recognition/use-cases/engine/read-recognizer-setup';
+import type {
+  ReadRecognizerSetupDeps,
+  ReadRecognizerSetupResult,
+} from './domains/recognition/use-cases/engine/read-recognizer-setup';
 import { recognizeRegion } from './domains/recognition/use-cases/engine/recognize-region';
-import type { RecognizeRegionError } from './domains/recognition/use-cases/engine/recognize-region';
+import type { RecognizeRegionResult } from './domains/recognition/use-cases/engine/recognize-region';
 import { removeCapture } from './domains/recognition/use-cases/capture/remove-capture';
 import type {
   RemoveCaptureDeps,
@@ -205,7 +205,10 @@ import type {
   SaveCaptureResult,
 } from './domains/recognition/use-cases/capture/save-capture';
 import { saveRecognizerSetup } from './domains/recognition/use-cases/engine/save-recognizer-setup';
-import type { SaveRecognizerSetupDeps } from './domains/recognition/use-cases/engine/save-recognizer-setup';
+import type {
+  SaveRecognizerSetupDeps,
+  SaveRecognizerSetupResult,
+} from './domains/recognition/use-cases/engine/save-recognizer-setup';
 import { writeNote } from './domains/recognition/use-cases/capture/write-note';
 import type {
   WriteNoteDeps,
@@ -242,7 +245,7 @@ const readRecognizerSetupDeps: ReadRecognizerSetupDeps = { setups };
 
 async function setupFor(language: Language): Promise<RecognizerSetup | null> {
   const read = await readRecognizerSetup(readRecognizerSetupDeps, language);
-  const choice = read.ok ? read.value : setupChoice(language, null);
+  const choice = read.kind === 'success' ? read.choice : setupChoice(language, null);
   if (choice.model === null) return null;
   return { modelId: choice.model.modelId, compute: choice.compute };
 }
@@ -332,17 +335,15 @@ type Container = {
     readonly saveReadingSettings: (settings: ReadingSettings) => Promise<SaveReadingSettingsResult>;
   };
   readonly recognition: {
-    readonly readModelConsent: (
-      language: Language,
-    ) => Promise<Result<ModelConsentDecision, ModelConsentError>>;
-    readonly grantModelConsent: (language: Language) => Promise<Result<void, ModelConsentError>>;
+    readonly readModelConsent: (language: Language) => Promise<ReadModelConsentResult>;
+    readonly grantModelConsent: (language: Language) => Promise<GrantModelConsentResult>;
     readonly recognizeRegion: (
       language: Language,
       source: PageSource,
       regions: readonly ImageRegion[],
       arrangement: Arrangement,
       notices?: RecognitionNotices,
-    ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
+    ) => Promise<RecognizeRegionResult>;
     readonly listCaptures: (book: BookId) => Promise<ListCapturesResult>;
     readonly listEveryCapture: () => Promise<ListEveryCaptureResult>;
     readonly saveCapture: (draft: CaptureDraft) => Promise<SaveCaptureResult>;
@@ -365,30 +366,23 @@ type Container = {
     readonly renameTag: (tag: Tag, name: string) => Promise<RenameTagResult>;
     readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<RecolourTagResult>;
     readonly deleteTag: (tag: TagId) => Promise<DeleteTagResult>;
-    readonly readModelStorage: (
-      modelId: string,
-    ) => Promise<Result<ModelStorageSnapshot, ModelStorageError>>;
-    readonly deleteModel: (
-      language: Language,
-      modelId: string,
-    ) => Promise<Result<ModelStorageReport, ModelStorageError>>;
-    readonly readRecognizerSetup: (
-      language: Language,
-    ) => Promise<Result<RecognizerChoice, SetupError>>;
+    readonly readModelStorage: (modelId: string) => Promise<ReadModelStorageResult>;
+    readonly deleteModel: (language: Language, modelId: string) => Promise<DeleteModelResult>;
+    readonly readRecognizerSetup: (language: Language) => Promise<ReadRecognizerSetupResult>;
     readonly saveRecognizerSetup: (
       language: Language,
       setup: RecognizerSetup,
-    ) => Promise<Result<void, SetupError>>;
+    ) => Promise<SaveRecognizerSetupResult>;
     readonly detectCompute: () => Promise<GpuDetection>;
     readonly prepareRecognizer: (
       language: Language,
       notices?: RecognitionNotices,
-    ) => Promise<Result<RecognizerSession, ModelLoadError>>;
+    ) => Promise<PrepareRecognizerResult>;
     readonly pauseModelLoad: (language: Language) => Promise<void>;
     readonly cancelModelLoad: (
       language: Language,
       modelId: string,
-    ) => Promise<Result<PartialReport, PartialError> | null>;
+    ) => Promise<CancelModelLoadResult | null>;
     readonly closeRecognizer: (language: Language) => Promise<void>;
   };
   readonly storage: {

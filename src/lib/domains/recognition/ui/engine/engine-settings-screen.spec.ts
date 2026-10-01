@@ -12,8 +12,11 @@ import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import type { ReadState } from '$lib/shared/read-state';
 import { offeredModels } from '../../queries/engine-queries';
-import type { LanguageSetup, OfferedModels } from '../../queries/engine-queries';
-import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import type { LanguageSetupRead, OfferedModels } from '../../queries/engine-queries';
+import type {
+  ModelStorageSnapshot,
+  ReadModelStorageResult,
+} from '../../use-cases/model/read-model-storage';
 import { EngineSettingsView } from './engine-settings.svelte';
 import EngineAside from './EngineAside.svelte';
 import EngineSettingsScreen from './EngineSettingsScreen.svelte';
@@ -86,20 +89,23 @@ function snapshot(files: number, persisted = true, partialBytes = 0): ModelStora
   };
 }
 
-function setupOf(fake: Fake): ReadState<LanguageSetup> {
+function setupOf(fake: Fake): ReadState<LanguageSetupRead> {
   if (fake.setup === 'loading') return LOADING;
   if (fake.setup === 'failed') return readFailed('Local storage failed: locked');
   return readReady({
-    language: 'ja',
-    models: offeredModels('ja') as OfferedModels,
-    selected: null,
-    compute: fake.compute,
+    kind: 'success',
+    setup: {
+      language: 'ja',
+      models: offeredModels('ja') as OfferedModels,
+      selected: null,
+      compute: fake.compute,
+    },
   });
 }
 
-function storageOf(fake: Fake): ReadState<ModelStorageSnapshot> {
+function storageOf(fake: Fake): ReadState<ReadModelStorageResult> {
   if (fake.storageMessage !== null) return readFailed(fake.storageMessage);
-  return fake.storage === null ? LOADING : readReady(fake.storage);
+  return fake.storage === null ? LOADING : readReady({ kind: 'success', snapshot: fake.storage });
 }
 
 function viewOf(over: Partial<Fake>): EngineSettingsView {

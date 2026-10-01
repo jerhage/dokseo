@@ -6,12 +6,9 @@ import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import { recognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
-import type { CropError, RegionCropper } from '../../domain/engine/region-cropper';
-import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
+import type { Cropping, RegionCropper } from '../../domain/engine/region-cropper';
+import type { Recognition, TextRecognizer } from '../../domain/engine/text-recognizer';
 import { recognizeRegion } from './recognize-region';
 import type { RecognizeRegionDeps } from './recognize-region';
 
@@ -51,7 +48,11 @@ function fakePageSource(): PageSource {
   };
 }
 
-function fakeCropper(outcome: Result<ImageBitmap, CropError>) {
+function cropped(bitmap: ImageBitmap): Cropping {
+  return { kind: 'success', crop: bitmap };
+}
+
+function fakeCropper(outcome: Cropping) {
   let calls = 0;
   const cropper: RegionCropper = {
     crop: () => {
@@ -63,12 +64,12 @@ function fakeCropper(outcome: Result<ImageBitmap, CropError>) {
 }
 
 function fakeRecognizer(
-  outcome: Result<RecognizedText, RecognitionError> = ok(recognizedText('こっちに来て')),
+  outcome: Recognition = { kind: 'success', text: recognizedText('こっちに来て') },
 ) {
   let calls = 0;
   const recognizer: TextRecognizer = {
     id: 'stub',
-    prepare: () => Promise.resolve(err({ kind: 'unavailable', cause: 'not used' })),
+    prepare: () => Promise.resolve({ kind: 'unavailable', cause: 'not used' }),
     cancel: () => undefined,
     recognize: () => {
       calls += 1;
@@ -81,7 +82,7 @@ function fakeRecognizer(
 function throwingRecognizer(): TextRecognizer {
   return {
     id: 'stub',
-    prepare: () => Promise.resolve(err({ kind: 'unavailable', cause: 'not used' })),
+    prepare: () => Promise.resolve({ kind: 'unavailable', cause: 'not used' }),
     cancel: () => undefined,
     recognize: () => Promise.reject(new Error('the model fell over')),
   };
@@ -107,17 +108,17 @@ function run(deps: RecognizeRegionDeps) {
 describe('recognizeRegion', () => {
   it('returns the recognized text', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
     const { recognizer } = fakeRecognizer();
 
     const result = await run({ cropper, recognizer });
 
-    expect(result).toEqual(ok(recognizedText('こっちに来て')));
+    expect(result).toEqual({ kind: 'success', text: recognizedText('こっちに来て') });
   });
 
   it('closes the crop after a successful recognition', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
     const { recognizer } = fakeRecognizer();
 
     await run({ cropper, recognizer });
@@ -125,17 +126,17 @@ describe('recognizeRegion', () => {
     expect(crop.wasClosed()).toBe(true);
   });
 
-  it('wraps a crop failure', async () => {
-    const { cropper } = fakeCropper(err({ kind: 'nothing-selected' }));
+  it('passes a crop failure through', async () => {
+    const { cropper } = fakeCropper({ kind: 'nothing-selected' });
     const { recognizer } = fakeRecognizer();
 
     const result = await run({ cropper, recognizer });
 
-    expect(result).toEqual(err({ kind: 'crop', error: { kind: 'nothing-selected' } }));
+    expect(result).toEqual({ kind: 'nothing-selected' });
   });
 
   it('does not recognize when the crop fails', async () => {
-    const { cropper } = fakeCropper(err({ kind: 'unreadable', cause: 'no page' }));
+    const { cropper } = fakeCropper({ kind: 'unreadable', cause: 'no page' });
     const { recognizer, callCount } = fakeRecognizer();
 
     await run({ cropper, recognizer });
@@ -143,22 +144,23 @@ describe('recognizeRegion', () => {
     expect(callCount()).toBe(0);
   });
 
-  it('wraps a recognition failure', async () => {
+  it('passes a recognition failure through', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
-    const { recognizer } = fakeRecognizer(err({ kind: 'no-text' }));
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
+    const { recognizer } = fakeRecognizer({ kind: 'no-text' });
 
     const result = await run({ cropper, recognizer });
 
-    expect(result).toEqual(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    expect(result).toEqual({ kind: 'no-text' });
   });
 
   it('closes the crop after a recognition failure', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
-    const { recognizer } = fakeRecognizer(
-      err({ kind: 'model-unavailable', cause: 'no weights cached' }),
-    );
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
+    const { recognizer } = fakeRecognizer({
+      kind: 'model-unavailable',
+      cause: 'no weights cached',
+    });
 
     await run({ cropper, recognizer });
 
@@ -167,7 +169,7 @@ describe('recognizeRegion', () => {
 
   it('closes the crop when the recognizer throws', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
 
     await expect(run({ cropper, recognizer: throwingRecognizer() })).rejects.toThrow(
       'the model fell over',
@@ -177,7 +179,7 @@ describe('recognizeRegion', () => {
 
   it('ends the trace after a successful recognition', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
     const { recognizer } = fakeRecognizer();
     const { beginTrace, end, steps } = stubTrace();
 
@@ -188,7 +190,7 @@ describe('recognizeRegion', () => {
   });
 
   it('ends the trace after a crop failure', async () => {
-    const { cropper } = fakeCropper(err({ kind: 'nothing-selected' }));
+    const { cropper } = fakeCropper({ kind: 'nothing-selected' });
     const { recognizer } = fakeRecognizer();
     const { beginTrace, end, steps } = stubTrace();
 
@@ -200,7 +202,7 @@ describe('recognizeRegion', () => {
 
   it('ends the trace when the recognizer throws', async () => {
     const crop = stubBitmap();
-    const { cropper } = fakeCropper(ok(crop.bitmap));
+    const { cropper } = fakeCropper(cropped(crop.bitmap));
     const { beginTrace, end } = stubTrace();
 
     await expect(run({ cropper, recognizer: throwingRecognizer(), beginTrace })).rejects.toThrow(
@@ -211,7 +213,7 @@ describe('recognizeRegion', () => {
 
   it('crops once per call', async () => {
     const crop = stubBitmap();
-    const { cropper, callCount } = fakeCropper(ok(crop.bitmap));
+    const { cropper, callCount } = fakeCropper(cropped(crop.bitmap));
     const { recognizer } = fakeRecognizer();
 
     await run({ cropper, recognizer });

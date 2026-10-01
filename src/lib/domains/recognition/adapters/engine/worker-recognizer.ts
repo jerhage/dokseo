@@ -9,14 +9,16 @@ import { inputPreparationFor } from '../../domain/engine/input-preparation';
 import type { InputPreparation } from '../../domain/engine/input-preparation';
 import { downscaleFor } from '../../domain/engine/model-input';
 import type { ModelRuntime } from '../../domain/engine/model-runtime';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import type { ModelLoad, ModelLoadError } from '../../domain/model/model-load';
 import { hasNoText, recognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizerSetup } from '../../domain/engine/recognizer-setup';
-import type { RecognitionError, TextRecognizer } from '../../domain/engine/text-recognizer';
+import type {
+  Recognition,
+  RecognitionError,
+  RecognizerOpening,
+  TextRecognizer,
+} from '../../domain/engine/text-recognizer';
 import type { OcrFailure, OcrReply, OcrRequest } from '../../../../../workers/ocr-worker-protocol';
 
 type WorkerOcrOptions = {
@@ -32,10 +34,6 @@ type WorkerRecognizerOptions = WorkerOcrOptions & {
   readonly runtime: ModelRuntime;
   readonly startWorker: () => Worker;
 };
-
-type Recognition = Result<RecognizedText, RecognitionError>;
-
-type Opening = Result<RecognizerSession, ModelLoadError>;
 
 type Settle = (recognition: Recognition) => void;
 
@@ -88,7 +86,7 @@ function errorFor(failure: OcrFailure, cause: string): RecognitionError {
 
 function recognitionOf(text: string, confidence: number | null): Recognition {
   const recognized = recognizedText(text, confidence);
-  return hasNoText(recognized) ? err({ kind: 'no-text' }) : ok(recognized);
+  return hasNoText(recognized) ? { kind: 'no-text' } : { kind: 'success', text: recognized };
 }
 
 function unreadable(error: ModelLoadError): RecognitionError {
@@ -111,8 +109,8 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
   const pending = new Map<number, Settle>();
 
   let worker: Worker | null = null;
-  let starting: Promise<Opening> | null = null;
-  let settleOpening: ((opened: Opening) => void) | null = null;
+  let starting: Promise<RecognizerOpening> | null = null;
+  let settleOpening: ((opened: RecognizerOpening) => void) | null = null;
   let openId = 0;
   let lastId = 0;
 
@@ -141,28 +139,28 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
           fellBackFrom: opened.fellBackFrom,
         };
         options.onSession?.(session);
-        if (opened.id === openId) finishOpening(ok(session));
+        if (opened.id === openId) finishOpening({ kind: 'success', session });
       })
       .with({ kind: 'recognized' }, (recognized) => {
         settle(recognized.id, recognitionOf(recognized.text, recognized.confidence));
       })
       .with({ kind: 'failed' }, (failed) => {
         if (failed.id === openId && settleOpening !== null) {
-          finishOpening(err({ kind: 'unavailable', cause: failed.cause }));
+          finishOpening({ kind: 'unavailable', cause: failed.cause });
           return;
         }
 
-        settle(failed.id, err(errorFor(failed.failure, failed.cause)));
+        settle(failed.id, errorFor(failed.failure, failed.cause));
       })
       .exhaustive();
   }
 
-  function finishOpening(opened: Opening): void {
+  function finishOpening(opened: RecognizerOpening): void {
     const waiting = settleOpening;
     settleOpening = null;
     if (waiting === null) return;
 
-    if (!opened.ok) forget(null);
+    if (opened.kind !== 'success') forget(null);
     waiting(opened);
   }
 
@@ -174,27 +172,27 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
     if (cause !== null) {
       const waiting = [...pending.values()];
       pending.clear();
-      for (const settleOne of waiting) settleOne(err({ kind: 'recognition-failed', cause }));
+      for (const settleOne of waiting) settleOne({ kind: 'recognition-failed', cause });
     }
 
     running?.terminate();
   }
 
   function discard(cause: string): void {
-    finishOpening(err({ kind: 'unavailable', cause }));
+    finishOpening({ kind: 'unavailable', cause });
     forget(cause);
   }
 
-  async function begin(): Promise<Opening> {
+  async function begin(): Promise<RecognizerOpening> {
     const setup = await options.readSetup();
-    if (setup === null) return err({ kind: 'unavailable', cause: NOT_CONFIGURED });
+    if (setup === null) return { kind: 'unavailable', cause: NOT_CONFIGURED };
 
     let started: Worker;
     try {
       started = start();
     } catch (cause) {
       starting = null;
-      return err({ kind: 'unavailable', cause: describeCause(cause) });
+      return { kind: 'unavailable', cause: describeCause(cause) };
     }
 
     started.addEventListener('message', (event: MessageEvent<OcrReply>) => {
@@ -211,7 +209,7 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
     lastId += 1;
     openId = lastId;
 
-    const opened = new Promise<Opening>((resolve) => {
+    const opened = new Promise<RecognizerOpening>((resolve) => {
       settleOpening = resolve;
     });
 
@@ -220,22 +218,22 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
     return await opened;
   }
 
-  function prepare(): Promise<Opening> {
+  function prepare(): Promise<RecognizerOpening> {
     starting ??= begin();
     return starting;
   }
 
   function cancel(): void {
-    finishOpening(err({ kind: 'cancelled' }));
+    finishOpening({ kind: 'cancelled' });
     forget(CANCELLED);
   }
 
   async function recognize(image: ImageBitmap): Promise<Recognition> {
     const opened = await prepare();
-    if (!opened.ok) return err(unreadable(opened.error));
+    if (opened.kind !== 'success') return unreadable(opened);
 
     const target = worker;
-    if (target === null) return err({ kind: 'model-unavailable', cause: CANCELLED });
+    if (target === null) return { kind: 'model-unavailable', cause: CANCELLED };
 
     try {
       using prepared = preparedFor(beginTrace, image, preparation);
@@ -251,7 +249,7 @@ function createWorkerRecognizer(options: WorkerRecognizerOptions): TextRecognize
         pending.set(id, resolve);
       });
     } catch (cause) {
-      return err({ kind: 'recognition-failed', cause: describeCause(cause) });
+      return { kind: 'recognition-failed', cause: describeCause(cause) };
     }
   }
 

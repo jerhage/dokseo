@@ -8,7 +8,7 @@
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { readBoth } from '$lib/shared/read-state';
   import { unreachable } from '$lib/shared/unreachable';
-  import { computeQuery, recognizerSetupQuery } from '../../queries/engine-queries';
+  import { computeQuery, recognizerSetupQuery, setupState } from '../../queries/engine-queries';
   import type { EngineReads } from '../../queries/engine-queries';
   import { engineChoiceOf } from './engine-setup.svelte';
   import type { EngineChoice } from './engine-setup.svelte';
@@ -23,7 +23,7 @@
 
   const setup = readQuery(() => recognizerSetupQuery(recognition, language));
   const compute = readQuery(() => computeQuery(recognition));
-  const state = $derived(readBoth(setup.state, compute.state, engineChoiceOf));
+  const state = $derived(readBoth(setupState(setup.state), compute.state, engineChoiceOf));
 
   function retry(): void {
     setup.reload();

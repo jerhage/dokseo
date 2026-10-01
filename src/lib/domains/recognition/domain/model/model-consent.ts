@@ -1,13 +1,15 @@
 import type { Language } from '$lib/shared/language';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { reads } from './model-footprint';
 import type { ModelFootprint } from './model-footprint';
 
 type ModelConsentDecision = 'granted' | 'undecided';
 
-type ModelConsentError =
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string };
+type ConsentLookup =
+  | { readonly kind: 'success'; readonly decision: ModelConsentDecision }
+  | StorageUnavailable;
+
+type ConsentWrite = { readonly kind: 'success' } | StorageUnavailable;
 
 type StoredModelConsent = {
   readonly language: Language;
@@ -55,21 +57,16 @@ function decisionOf(
 }
 
 interface ModelConsentStore {
-  decisionFor(
-    language: Language,
-    model: ModelFootprint | null,
-  ): Promise<Result<ModelConsentDecision, ModelConsentError>>;
-  recordGrant(
-    language: Language,
-    model: ModelFootprint | null,
-  ): Promise<Result<void, ModelConsentError>>;
-  forgetGrant(language: Language): Promise<Result<void, ModelConsentError>>;
+  decisionFor(language: Language, model: ModelFootprint | null): Promise<ConsentLookup>;
+  recordGrant(language: Language, model: ModelFootprint | null): Promise<ConsentWrite>;
+  forgetGrant(language: Language): Promise<ConsentWrite>;
 }
 
 export { consentFromStored, grantedConsent, decisionOf };
 export type {
+  ConsentLookup,
+  ConsentWrite,
   ModelConsentDecision,
-  ModelConsentError,
   StoredModelConsent,
   ModelConsent,
   ModelConsentStore,

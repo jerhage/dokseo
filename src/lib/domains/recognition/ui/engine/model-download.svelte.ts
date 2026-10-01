@@ -1,16 +1,11 @@
 import type { QueryClient } from '@tanstack/svelte-query';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { downloadStep, IDLE } from '../../domain/model/model-download';
 import type { DownloadEvent, DownloadState } from '../../domain/model/model-download';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
-import type { ModelConsentError } from '../../domain/model/model-consent';
-import type { ModelLoadError } from '../../domain/model/model-load';
-import type { PartialReport } from '../../domain/model/model-partial';
-import type { PartialError } from '../../domain/model/partial-downloads';
 import {
   cancelDownloadMutation,
   grantConsentMutation,
@@ -19,6 +14,9 @@ import {
 } from '../../queries/engine-queries';
 import type { DownloadRequest, EngineWrites, ModelTarget } from '../../queries/engine-queries';
 import { recognitionKeys } from '../../queries/recognition-keys';
+import type { PrepareRecognizerResult } from '../../use-cases/engine/prepare-recognizer';
+import type { CancelModelLoadResult } from '../../use-cases/model/cancel-model-load';
+import type { GrantModelConsentResult } from '../../use-cases/model/grant-model-consent';
 import type { OperationClock } from './operation-clock';
 
 const LOAD_FAILED = 'Could not load the model';
@@ -29,10 +27,10 @@ class ModelDownload {
 
   #notify: Notify;
   #clock: OperationClock;
-  #granting: WriteQuery<Result<void, ModelConsentError>, Language>;
-  #preparing: WriteQuery<Result<RecognizerSession, ModelLoadError>, DownloadRequest>;
+  #granting: WriteQuery<GrantModelConsentResult, Language>;
+  #preparing: WriteQuery<PrepareRecognizerResult, DownloadRequest>;
   #pausing: WriteQuery<void, Language>;
-  #cancelling: WriteQuery<Result<PartialReport, PartialError> | null, ModelTarget>;
+  #cancelling: WriteQuery<CancelModelLoadResult | null, ModelTarget>;
 
   constructor(
     recognition: Pick<
@@ -78,7 +76,7 @@ class ModelDownload {
   async start(language: Language, generation: number): Promise<boolean> {
     this.#step({ kind: 'started' });
 
-    await this.#granting.run(language);
+    await this.#granting.run(language).catch(() => null);
     if (generation !== this.#clock.current) return false;
 
     const opened = await this.#preparing.run({
@@ -90,11 +88,11 @@ class ModelDownload {
 
     if (generation !== this.#clock.current) return false;
 
-    if (opened.ok) {
-      this.session = opened.value;
-      this.#step({ kind: 'opened', session: opened.value });
+    if (opened.kind === 'success') {
+      this.session = opened.session;
+      this.#step({ kind: 'opened', session: opened.session });
     } else {
-      this.#step({ kind: 'settled', error: opened.error });
+      this.#step({ kind: 'settled', error: opened });
       const settled = this.state;
       if (settled.kind === 'failed') {
         this.#notify({ tone: 'danger', title: LOAD_FAILED, message: settled.cause });
@@ -112,7 +110,7 @@ class ModelDownload {
   async stop(language: Language, modelId: string): Promise<void> {
     this.#step({ kind: 'stopped' });
     this.session = null;
-    await this.#cancelling.run({ language, modelId });
+    await this.#cancelling.run({ language, modelId }).catch(() => null);
   }
 
   #step(event: DownloadEvent): void {

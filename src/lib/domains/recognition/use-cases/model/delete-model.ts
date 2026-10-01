@@ -1,9 +1,12 @@
 import type { Language } from '$lib/shared/language';
-import type { Result } from '$lib/shared/result';
 import type { ModelConsentStore } from '../../domain/model/model-consent';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
-import type { ModelStorage, ModelStorageError } from '../../domain/model/model-storage';
+import type { ModelStorage } from '../../domain/model/model-storage';
 import type { PartialDownloads } from '../../domain/model/partial-downloads';
+
+type DeleteModelResult =
+  | { readonly kind: 'success'; readonly report: ModelStorageReport }
+  | { readonly kind: 'cache-unavailable' };
 
 type DeleteModelDeps = {
   readonly storage: ModelStorage;
@@ -15,9 +18,9 @@ async function deleteModel(
   deps: DeleteModelDeps,
   language: Language,
   modelId: string,
-): Promise<Result<ModelStorageReport, ModelStorageError>> {
+): Promise<DeleteModelResult> {
   const removed = await deps.storage.remove(modelId);
-  if (!removed.ok) return removed;
+  if (removed.kind !== 'success') return removed;
 
   await deps.partials.discard(modelId);
   await deps.consent.forgetGrant(language);
@@ -25,4 +28,4 @@ async function deleteModel(
 }
 
 export { deleteModel };
-export type { DeleteModelDeps };
+export type { DeleteModelDeps, DeleteModelResult };

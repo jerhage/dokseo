@@ -1,5 +1,6 @@
+import { match } from 'ts-pattern';
 import type { Language } from '$lib/shared/language';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { computeChoiceOf } from './compute-choice';
 import type { ComputeChoice } from './compute-choice';
 import { chosenModel } from '../model/model-footprint';
@@ -14,10 +15,6 @@ type RecognizerChoice = {
   readonly model: ModelFootprint | null;
   readonly compute: ComputeChoice;
 };
-
-type SetupError =
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string };
 
 type StoredRecognizerSetup = {
   readonly language: Language;
@@ -36,16 +33,30 @@ function setupChoice(language: Language, stored: StoredRecognizerSetup | null): 
   };
 }
 
-interface RecognizerSetupStore {
-  read(language: Language): Promise<Result<StoredRecognizerSetup | null, SetupError>>;
-  write(language: Language, setup: RecognizerSetup): Promise<Result<void, SetupError>>;
+type SetupLookup =
+  | { readonly kind: 'success'; readonly stored: StoredRecognizerSetup | null }
+  | StorageUnavailable;
+
+type SetupWrite = { readonly kind: 'success' } | StorageUnavailable;
+
+function storedChoice(language: Language, record: SetupLookup): RecognizerChoice {
+  return match(record)
+    .with({ kind: 'success' }, ({ stored }) => setupChoice(language, stored))
+    .with({ kind: 'storage-unavailable' }, () => setupChoice(language, null))
+    .exhaustive();
 }
 
-export { storedSetup, setupChoice };
+interface RecognizerSetupStore {
+  read(language: Language): Promise<SetupLookup>;
+  write(language: Language, setup: RecognizerSetup): Promise<SetupWrite>;
+}
+
+export { storedChoice, storedSetup, setupChoice };
 export type {
   RecognizerSetup,
   RecognizerChoice,
-  SetupError,
+  SetupLookup,
+  SetupWrite,
   StoredRecognizerSetup,
   RecognizerSetupStore,
 };

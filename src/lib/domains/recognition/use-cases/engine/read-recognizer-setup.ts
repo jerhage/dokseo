@@ -1,12 +1,11 @@
 import type { Language } from '$lib/shared/language';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { setupChoice } from '../../domain/engine/recognizer-setup';
-import type {
-  RecognizerChoice,
-  RecognizerSetupStore,
-  SetupError,
-} from '../../domain/engine/recognizer-setup';
+import type { RecognizerChoice, RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
+
+type ReadRecognizerSetupResult =
+  | { readonly kind: 'success'; readonly choice: RecognizerChoice }
+  | StorageUnavailable;
 
 type ReadRecognizerSetupDeps = {
   readonly setups: RecognizerSetupStore;
@@ -15,12 +14,12 @@ type ReadRecognizerSetupDeps = {
 async function readRecognizerSetup(
   deps: ReadRecognizerSetupDeps,
   language: Language,
-): Promise<Result<RecognizerChoice, SetupError>> {
+): Promise<ReadRecognizerSetupResult> {
   const record = await deps.setups.read(language);
-  if (!record.ok) return record;
+  if (record.kind !== 'success') return record;
 
-  return ok(setupChoice(language, record.value));
+  return { kind: 'success', choice: setupChoice(language, record.stored) };
 }
 
 export { readRecognizerSetup };
-export type { ReadRecognizerSetupDeps };
+export type { ReadRecognizerSetupDeps, ReadRecognizerSetupResult };

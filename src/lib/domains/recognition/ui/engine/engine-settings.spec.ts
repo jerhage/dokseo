@@ -12,7 +12,6 @@ import {
   loadFigure,
   partialFigure,
   resumeLabel,
-  setupFailureNote,
   storedFigure,
 } from './engine-settings.svelte';
 import { engineLanguages } from './engine-setup.svelte';
@@ -227,20 +226,6 @@ describe('engineStateOf', () => {
       paused: false,
       cancelled: true,
     });
-  });
-});
-
-describe('setupFailureNote', () => {
-  it('says the browser blocks storage, so the choice was not kept', () => {
-    expect(setupFailureNote({ kind: 'storage-unavailable' })).toBe(
-      'This browser blocks local storage, so the choice was not kept.',
-    );
-  });
-
-  it('names the cause of a refused save', () => {
-    expect(setupFailureNote({ kind: 'storage-failed', cause: 'quota' })).toBe(
-      'Local storage failed: quota',
-    );
   });
 });
 

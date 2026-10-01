@@ -10,18 +10,15 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { Notice, Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import type { Capture } from '../../domain/capture/capture';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { ModelConsentDecision, ModelConsentError } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import { recognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { askedWrites } from '$lib/shared/testing/unrun-write-query';
 import { READ } from './capture-read';
@@ -36,7 +33,7 @@ beforeEach(() => {
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
-type Reading = Result<RecognizedText, RecognizeRegionError>;
+type Reading = RecognizeRegionResult;
 
 type Call = {
   readonly language: Language;
@@ -145,14 +142,13 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       readPageSizes: unused,
     },
     recognition: {
-      readModelConsent: (
-        language: Language,
-      ): Promise<Result<ModelConsentDecision, ModelConsentError>> => {
+      readModelConsent: (language: Language) => {
         consent.reads.push(language);
-        if (consent.readFails) {
-          return Promise.resolve(err({ kind: 'storage-failed', cause: 'the store is blocked' }));
-        }
-        return Promise.resolve(ok(consent.granted.has(language) ? 'granted' : 'undecided'));
+        if (consent.readFails) return Promise.resolve(STORAGE_UNAVAILABLE);
+        return Promise.resolve({
+          kind: 'success',
+          decision: consent.granted.has(language) ? 'granted' : 'undecided',
+        });
       },
       grantModelConsent: unused,
       recognizeRegion: (language, _source, taken, _arrangement, notices = {}) =>
@@ -180,8 +176,9 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       recolourTag: unused,
       deleteTag: unused,
       readModelStorage: (modelId: string) =>
-        Promise.resolve(
-          ok({
+        Promise.resolve({
+          kind: 'success',
+          snapshot: {
             report: {
               modelId,
               files: engine.files,
@@ -194,23 +191,27 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
             usage: null,
             quota: null,
             persisted: false,
-          }),
-        ),
+          },
+        }),
       deleteModel: unused,
       readRecognizerSetup: (language: Language) =>
-        Promise.resolve(
-          ok({ model: engine.noModel ? null : modelFootprint(language), compute: 'auto' as const }),
-        ),
+        Promise.resolve({
+          kind: 'success',
+          choice: {
+            model: engine.noModel ? null : modelFootprint(language),
+            compute: 'auto' as const,
+          },
+        }),
       saveRecognizerSetup: unused,
       detectCompute: unused,
       prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {
         engine.prepares.push(language);
         if (engine.failure !== null) {
-          return Promise.resolve(err({ kind: 'unavailable' as const, cause: engine.failure }));
+          return Promise.resolve({ kind: 'unavailable' as const, cause: engine.failure });
         }
 
         notices.onSession?.(OPENED_SESSION);
-        return Promise.resolve(ok(OPENED_SESSION));
+        return Promise.resolve({ kind: 'success', session: OPENED_SESSION });
       },
       pauseModelLoad: unused,
       cancelModelLoad: unused,
@@ -331,7 +332,7 @@ describe('CaptureView', () => {
     expect(view.list.captures.map((capture) => capture.status)).toEqual(['pending']);
     expect(at(view.list.captures, 0).anchor).toEqual(regionAnchor(regions()));
 
-    call.settle(ok(recognizedText('どうしたんだ')));
+    call.settle({ kind: 'success', text: recognizedText('どうしたんだ') });
     await running;
 
     const settled = at(view.list.captures, 0);
@@ -347,9 +348,9 @@ describe('CaptureView', () => {
     const first = view.recognize(source, 'ja', regions(1), 'row');
     const second = view.recognize(source, 'ja', regions(2), 'row');
 
-    (await started(world, 1)).settle(ok(recognizedText('second')));
+    (await started(world, 1)).settle({ kind: 'success', text: recognizedText('second') });
     await second;
-    (await started(world, 0)).settle(ok(recognizedText('first')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('first') });
     await first;
 
     const texts = view.list.captures.map((capture) =>
@@ -362,28 +363,28 @@ describe('CaptureView', () => {
     const world = fakes();
     const view = viewOf(world);
 
-    const failures: readonly [RecognizeRegionError, string][] = [
+    const failures: readonly [RecognizeRegionResult, string][] = [
       [
-        { kind: 'crop', error: { kind: 'nothing-selected' } },
+        { kind: 'nothing-selected' },
         'That box covered no part of a page, so there was nothing to crop.',
       ],
       [
-        { kind: 'crop', error: { kind: 'unreadable', cause: 'the canvas was tainted' } },
+        { kind: 'unreadable', cause: 'the canvas was tainted' },
         'That page could not be cropped: the canvas was tainted',
       ],
       [
-        { kind: 'recognition', error: { kind: 'model-unavailable', cause: 'the worker died' } },
+        { kind: 'model-unavailable', cause: 'the worker died' },
         'The recognition model could not be loaded: the worker died',
       ],
       [
-        { kind: 'recognition', error: { kind: 'recognition-failed', cause: 'onnx blew up' } },
+        { kind: 'recognition-failed', cause: 'onnx blew up' },
         'The recognizer failed: onnx blew up',
       ],
     ];
 
     for (const [index, [failure, sentence]] of failures.entries()) {
       const running = read(view);
-      (await started(world, index)).settle(err(failure));
+      (await started(world, index)).settle(failure);
       await running;
 
       const capture = at(view.list.captures, index);
@@ -397,7 +398,7 @@ describe('CaptureView', () => {
     const view = viewOf(world);
 
     const running = read(view);
-    (await started(world, 0)).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    (await started(world, 0)).settle({ kind: 'no-text' });
     await running;
 
     expect(at(view.list.captures, 0).status).toBe('empty');
@@ -408,7 +409,7 @@ describe('CaptureView', () => {
     const view = viewOf(world);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('   ')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('   ') });
     await running;
 
     expect(at(view.list.captures, 0).status).toBe('empty');
@@ -429,7 +430,7 @@ describe('CaptureView', () => {
       totalBytes: 0,
     });
 
-    call.settle(ok(recognizedText('done')));
+    call.settle({ kind: 'success', text: recognizedText('done') });
     await running;
     expect(view.warmup.progress).toBeNull();
   });
@@ -447,7 +448,7 @@ describe('CaptureView', () => {
       totalBytes: 0,
     });
 
-    (await started(world, 0)).settle(ok(recognizedText('first')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('first') });
     await first;
     expect(view.warmup.progress).toEqual({
       fraction: 0.5,
@@ -456,7 +457,7 @@ describe('CaptureView', () => {
       totalBytes: 0,
     });
 
-    (await started(world, 1)).settle(ok(recognizedText('second')));
+    (await started(world, 1)).settle({ kind: 'success', text: recognizedText('second') });
     await second;
     expect(view.warmup.progress).toBeNull();
   });
@@ -470,7 +471,7 @@ describe('CaptureView', () => {
     const call = await started(world, 0);
     expect(view.warmup.session).toBeNull();
 
-    call.settle(ok(recognizedText('done')));
+    call.settle({ kind: 'success', text: recognizedText('done') });
     await running;
     expect(view.warmup.session).toBeNull();
   });
@@ -487,7 +488,7 @@ describe('CaptureView', () => {
       fellBackFrom: null,
     });
 
-    call.settle(ok(recognizedText('done')));
+    call.settle({ kind: 'success', text: recognizedText('done') });
     await running;
     expect(view.warmup.session).toEqual({
       modelId: 'DigitalLarynx/manga-ocr-onnx',
@@ -507,7 +508,7 @@ describe('CaptureView', () => {
       device: 'wasm',
       fellBackFrom: null,
     });
-    call.settle(ok(recognizedText('done')));
+    call.settle({ kind: 'success', text: recognizedText('done') });
     await running;
 
     await view.open(TWO);
@@ -529,11 +530,11 @@ describe('CaptureView', () => {
     const view = viewOf(world);
 
     const first = view.recognize(source, 'ja', regions(1), 'row');
-    (await started(world, 0)).settle(ok(recognizedText('older')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('older') });
     await first;
 
     const second = view.recognize(source, 'ja', regions(2), 'row');
-    (await started(world, 1)).settle(ok(recognizedText('newer')));
+    (await started(world, 1)).settle({ kind: 'success', text: recognizedText('newer') });
     await second;
 
     const shown = view.list.newestFirst.map((capture) =>
@@ -587,7 +588,7 @@ describe('CaptureView', () => {
     const call = await started(world, 0);
     expect(call.regions).toEqual(regions(7));
 
-    call.settle(ok(recognizedText('held')));
+    call.settle({ kind: 'success', text: recognizedText('held') });
     await running;
 
     expect(view.consent.request).toBeNull();
@@ -643,14 +644,14 @@ describe('CaptureView', () => {
 
     await read(asked);
     const granting = asked.agree();
-    (await started(world, 0)).settle(ok(recognizedText('first')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('first') });
     await granting;
     expect(askedWrites).toContain('ja');
     world.consent.granted.add('ja');
 
     const later = viewOf(world);
     const running = read(later);
-    (await started(world, 1)).settle(ok(recognizedText('second')));
+    (await started(world, 1)).settle({ kind: 'success', text: recognizedText('second') });
     await running;
 
     expect(later.consent.request).toBeNull();
@@ -666,7 +667,7 @@ describe('CaptureView', () => {
     expect(view.consent.request?.language).toBe('ja');
 
     const running = view.agree();
-    (await started(world, 0)).settle(ok(recognizedText('read anyway')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('read anyway') });
     await running;
 
     expect(at(view.list.captures, 0).status).toBe('done');
@@ -677,18 +678,18 @@ describe('CaptureView', () => {
     const view = viewOf(stored);
 
     const first = read(view);
-    (await started(stored, 0)).settle(ok(recognizedText('first')));
+    (await started(stored, 0)).settle({ kind: 'success', text: recognizedText('first') });
     await first;
 
     const second = read(view);
-    (await started(stored, 1)).settle(ok(recognizedText('second')));
+    (await started(stored, 1)).settle({ kind: 'success', text: recognizedText('second') });
     await second;
 
     const unnamed = fakes([]);
     unnamed.engine.noModel = true;
     const unreadable = viewOf(unnamed);
     const running = unreadable.recognize(source, 'ko', regions(), 'column');
-    (await started(unnamed, 0)).settle(ok(recognizedText('안녕')));
+    (await started(unnamed, 0)).settle({ kind: 'success', text: recognizedText('안녕') });
     await running;
 
     expect(gates(stored)).toEqual(['reading consent-stored', 'reading agreed-this-session']);
@@ -721,7 +722,7 @@ describe('CaptureView', () => {
 
     expect(world.ended).toEqual(['capture-gate']);
 
-    at(world.calls, 0).settle(ok(recognizedText('done')));
+    at(world.calls, 0).settle({ kind: 'success', text: recognizedText('done') });
     await running;
   });
 
@@ -757,7 +758,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(err({ kind: 'crop', error: { kind: 'nothing-selected' } }));
+    (await started(world, 0)).settle({ kind: 'nothing-selected' });
     await running;
 
     expect(at(view.list.captures, 0).status).toBe('failed');
@@ -770,7 +771,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    (await started(world, 0)).settle({ kind: 'no-text' });
     await running;
 
     expect(at(view.list.captures, 0).status).toBe('empty');
@@ -783,7 +784,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('これは保存される')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('これは保存される') });
     await running;
 
     expect(askedWrites).toEqual([
@@ -803,7 +804,7 @@ describe('CaptureView', () => {
     const view = viewOf(world);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('どこにも')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('どこにも') });
     await running;
 
     expect(at(view.list.captures, 0).status).toBe('done');
@@ -816,7 +817,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('保存できた')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('保存できた') });
     await running;
 
     expect(world.notices).toEqual([]);
@@ -860,7 +861,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(err({ kind: 'recognition', error: { kind: 'no-text' } }));
+    (await started(world, 0)).settle({ kind: 'no-text' });
     await running;
 
     expect(await view.edits.edit(at(view.list.captures, 0).id, 'typed over a blank card')).toBe(
@@ -888,7 +889,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('保存できなかった')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('保存できなかった') });
     await running;
 
     askedWrites.splice(0);
@@ -904,7 +905,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('保存できなかった')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('保存できなかった') });
     await running;
 
     await view.removal.remove(at(view.list.captures, 0).id);
@@ -1203,7 +1204,7 @@ describe('CaptureView notes', () => {
     await view.open(ONE);
 
     const running = read(view);
-    (await started(world, 0)).settle(ok(recognizedText('どうしたんだ')));
+    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('どうしたんだ') });
     await running;
     await view.recording.write(ONE, regions(2));
 
@@ -1278,7 +1279,7 @@ describe('CaptureView lifted passages', () => {
     const running = view.recognize(source, 'ja', regions(2), 'row');
     const call = await started(world, 0);
     const reading = view.list.latest;
-    call.settle(ok(recognizedText('ねこ')));
+    call.settle({ kind: 'success', text: recognizedText('ねこ') });
     await running;
 
     expect([lifted, written, reading]).toEqual(view.list.captures.map((capture) => capture.id));

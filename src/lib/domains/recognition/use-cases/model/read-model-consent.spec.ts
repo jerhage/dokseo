@@ -1,71 +1,49 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type {
-  ModelConsentDecision,
-  ModelConsentError,
-  ModelConsentStore,
-} from '../../domain/model/model-consent';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import type { ModelConsentStore } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
-  SetupError,
   StoredRecognizerSetup,
 } from '../../domain/engine/recognizer-setup';
 import { readModelConsent } from './read-model-consent';
 
 function setupsHolding(record: StoredRecognizerSetup | null): RecognizerSetupStore {
   return {
-    read: (): Promise<Result<StoredRecognizerSetup | null, SetupError>> =>
-      Promise.resolve(ok(record)),
-    write: () => Promise.resolve(ok(undefined)),
+    read: () => Promise.resolve({ kind: 'success', stored: record }),
+    write: () => Promise.resolve({ kind: 'success' }),
   };
 }
 
 function storeHolding(granted: readonly Language[]): ModelConsentStore {
   return {
-    decisionFor(language: Language): Promise<Result<ModelConsentDecision, ModelConsentError>> {
-      return Promise.resolve(ok(granted.includes(language) ? 'granted' : 'undecided'));
-    },
-    recordGrant(): Promise<Result<void, ModelConsentError>> {
-      return Promise.resolve(ok(undefined));
-    },
-    forgetGrant(): Promise<Result<void, ModelConsentError>> {
-      return Promise.resolve(ok(undefined));
-    },
+    decisionFor: (language: Language) =>
+      Promise.resolve({
+        kind: 'success',
+        decision: granted.includes(language) ? 'granted' : 'undecided',
+      }),
+    recordGrant: () => Promise.resolve({ kind: 'success' }),
+    forgetGrant: () => Promise.resolve({ kind: 'success' }),
   };
 }
 
 function storeRecording(seen: (ModelFootprint | null)[]): ModelConsentStore {
   return {
-    decisionFor(
-      _language: Language,
-      model: ModelFootprint | null,
-    ): Promise<Result<ModelConsentDecision, ModelConsentError>> {
+    decisionFor: (_language: Language, model: ModelFootprint | null) => {
       seen.push(model);
-      return Promise.resolve(ok('undecided'));
+      return Promise.resolve({ kind: 'success', decision: 'undecided' });
     },
-    recordGrant(): Promise<Result<void, ModelConsentError>> {
-      return Promise.resolve(ok(undefined));
-    },
-    forgetGrant(): Promise<Result<void, ModelConsentError>> {
-      return Promise.resolve(ok(undefined));
-    },
+    recordGrant: () => Promise.resolve({ kind: 'success' }),
+    forgetGrant: () => Promise.resolve({ kind: 'success' }),
   };
 }
 
 const blocked: ModelConsentStore = {
-  decisionFor(): Promise<Result<ModelConsentDecision, ModelConsentError>> {
-    return Promise.resolve(err({ kind: 'storage-unavailable' }));
-  },
-  recordGrant(): Promise<Result<void, ModelConsentError>> {
-    return Promise.resolve(err({ kind: 'storage-unavailable' }));
-  },
-  forgetGrant(): Promise<Result<void, ModelConsentError>> {
-    return Promise.resolve(err({ kind: 'storage-unavailable' }));
-  },
+  decisionFor: () => Promise.resolve(STORAGE_UNAVAILABLE),
+  recordGrant: () => Promise.resolve(STORAGE_UNAVAILABLE),
+  forgetGrant: () => Promise.resolve(STORAGE_UNAVAILABLE),
 };
 
 describe('readModelConsent', () => {
@@ -75,7 +53,7 @@ describe('readModelConsent', () => {
       'ja',
     );
 
-    expect(decision).toEqual(ok('granted'));
+    expect(decision).toEqual({ kind: 'success', decision: 'granted' });
   });
 
   it('reports a language with no record as undecided', async () => {
@@ -84,7 +62,7 @@ describe('readModelConsent', () => {
       'ko',
     );
 
-    expect(decision).toEqual(ok('undecided'));
+    expect(decision).toEqual({ kind: 'success', decision: 'undecided' });
   });
 
   it('asks about the model the reader chose, not the language default', async () => {
@@ -111,12 +89,12 @@ describe('readModelConsent', () => {
     ]);
   });
 
-  it('passes a storage failure through rather than guessing a decision', async () => {
+  it('passes a blocked store through rather than guessing a decision', async () => {
     const decision = await readModelConsent(
       { consent: blocked, setups: setupsHolding(null) },
       'ja',
     );
 
-    expect(decision).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(decision).toEqual(STORAGE_UNAVAILABLE);
   });
 });

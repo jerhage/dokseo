@@ -8,7 +8,6 @@ import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
-import type { Result } from '$lib/shared/result';
 import { capturesQuery } from '../../queries/capture-queries';
 import { CaptureCache } from './capture-cache';
 import { CardDrafts } from './card-drafts.svelte';
@@ -24,10 +23,9 @@ import { ConsentGate } from '../engine/consent-gate.svelte';
 import { EngineWarmup } from '../engine/engine-warmup.svelte';
 import type { PendingRecognition } from '../engine/engine-warmup.svelte';
 import { hasNoText } from '../../domain/engine/recognized-text';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
-import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
 
 const NOTHING_READ = 'Nothing was read in that selection.';
 
@@ -55,23 +53,22 @@ function describeRecognitionFailure(error: RecognitionError): string {
     .exhaustive();
 }
 
-function describeRecognizeFailure(error: RecognizeRegionError): string {
-  return match(error)
-    .with({ kind: 'crop' }, (cropped) => describeCropFailure(cropped.error))
-    .with({ kind: 'recognition' }, (read) => describeRecognitionFailure(read.error))
+function settlementOf(read: RecognizeRegionResult): Settled {
+  return match(read)
+    .returnType<Settled>()
+    .with({ kind: 'success' }, ({ text }) =>
+      hasNoText(text) ? { status: 'empty' } : { status: 'done', text, edited: false },
+    )
+    .with({ kind: 'no-text' }, () => ({ status: 'empty' }))
+    .with({ kind: 'nothing-selected' }, { kind: 'unreadable' }, (failure) => ({
+      status: 'failed',
+      message: describeCropFailure(failure),
+    }))
+    .with({ kind: 'model-unavailable' }, { kind: 'recognition-failed' }, (failure) => ({
+      status: 'failed',
+      message: describeRecognitionFailure(failure),
+    }))
     .exhaustive();
-}
-
-function settlementOf(read: Result<RecognizedText, RecognizeRegionError>): Settled {
-  if (!read.ok) {
-    return read.error.kind === 'recognition' && read.error.error.kind === 'no-text'
-      ? { status: 'empty' }
-      : { status: 'failed', message: describeRecognizeFailure(read.error) };
-  }
-
-  return hasNoText(read.value)
-    ? { status: 'empty' }
-    : { status: 'done', text: read.value, edited: false };
 }
 
 class CaptureView {

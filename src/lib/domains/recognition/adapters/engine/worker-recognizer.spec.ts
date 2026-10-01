@@ -260,8 +260,8 @@ describe('createWorkerRecognizer', () => {
     fake.reply({ kind: 'recognized', id: crop.id, text: 'こんにちは', confidence: null });
 
     const result = await recognition;
-    if (!result.ok) throw new Error('The recognizer failed');
-    expect(result.value.text).toBe('こんにちは');
+    if (result.kind !== 'success') throw new Error('The recognizer failed');
+    expect(result.text.text).toBe('こんにちは');
   });
 
   it('reports a preparation that throws as a failed recognition', async () => {
@@ -272,8 +272,8 @@ describe('createWorkerRecognizer', () => {
     await openedOver(fake);
 
     const result = await recognition;
-    if (result.ok) throw new Error('The recognizer succeeded');
-    expect(result.error.kind).toBe('recognition-failed');
+    if (result.kind === 'success') throw new Error('The recognizer succeeded');
+    expect(result.kind).toBe('recognition-failed');
     expect(fake.sent.filter((one) => one.request.kind === 'recognize')).toHaveLength(0);
   });
 });

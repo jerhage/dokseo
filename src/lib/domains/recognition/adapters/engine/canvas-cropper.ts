@@ -9,9 +9,9 @@ import { describeCause } from '$lib/shared/cause';
 import { isEmpty, normalize } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type { CropError, RegionCropper } from '../../domain/engine/region-cropper';
+import type { CropError, Cropping, RegionCropper } from '../../domain/engine/region-cropper';
+
+type RegionCrop = { readonly kind: 'success'; readonly part: OwnedBitmap } | CropError;
 
 function describeSourceError(error: PageSourceError): string {
   return match(error)
@@ -26,18 +26,15 @@ function describeSourceError(error: PageSourceError): string {
     .exhaustive();
 }
 
-async function cropOne(
-  source: PageSource,
-  region: ImageRegion,
-): Promise<Result<OwnedBitmap, CropError>> {
+async function cropOne(source: PageSource, region: ImageRegion): Promise<RegionCrop> {
   const image = await source.image(region.index);
   if (image.kind !== 'success') {
-    return err({ kind: 'unreadable', cause: describeSourceError(image) });
+    return { kind: 'unreadable', cause: describeSourceError(image) };
   }
 
   using page = own(image.image);
   const cropped = await cropFrom(page.bitmap, region.rect);
-  return ok(cropped);
+  return { kind: 'success', part: cropped };
 }
 
 async function cropTraced(
@@ -45,18 +42,18 @@ async function cropTraced(
   source: PageSource,
   regions: readonly ImageRegion[],
   arrangement: Arrangement,
-): Promise<Result<ImageBitmap, CropError>> {
+): Promise<Cropping> {
   const wanted = regions.filter((region) => !isEmpty(normalize(region.rect)));
-  if (wanted.length === 0) return err({ kind: 'nothing-selected' });
+  if (wanted.length === 0) return { kind: 'nothing-selected' };
 
   try {
     using held = new DisposableStack();
     const parts: ImageBitmap[] = [];
     for (const [order, region] of wanted.entries()) {
       const part = await cropOne(source, region);
-      if (!part.ok) return part;
+      if (part.kind !== 'success') return part;
 
-      const cropped = held.use(part.value).bitmap;
+      const cropped = held.use(part.part).bitmap;
       trace.step('region', {
         order,
         index: region.index,
@@ -76,9 +73,9 @@ async function cropTraced(
     });
 
     trace.image('crop', stitched.bitmap);
-    return ok(stitched.release());
+    return { kind: 'success', crop: stitched.release() };
   } catch (cause) {
-    return err({ kind: 'unreadable', cause: describeCause(cause) });
+    return { kind: 'unreadable', cause: describeCause(cause) };
   }
 }
 
@@ -87,7 +84,7 @@ async function cropRegions(
   source: PageSource,
   regions: readonly ImageRegion[],
   arrangement: Arrangement,
-): Promise<Result<ImageBitmap, CropError>> {
+): Promise<Cropping> {
   try {
     return await cropTraced(trace, source, regions, arrangement);
   } finally {

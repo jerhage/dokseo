@@ -7,7 +7,6 @@ import type { Language } from '$lib/shared/language';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notice } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
-import { ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { askedWrites } from '$lib/shared/testing/unrun-write-query';
@@ -42,10 +41,13 @@ function fakes(
     beginTrace: () => ({ step: () => undefined, image: () => undefined, end: () => undefined }),
     recognition: {
       readRecognizerSetup: (language: Language) =>
-        Promise.resolve(ok({ model: model(language), compute: 'auto' })),
+        Promise.resolve({ kind: 'success', choice: { model: model(language), compute: 'auto' } }),
       readModelConsent: (language: Language) => {
         consentReads.push(language);
-        return Promise.resolve(ok(agreed.has(language) ? 'granted' : 'undecided'));
+        return Promise.resolve({
+          kind: 'success',
+          decision: agreed.has(language) ? 'granted' : 'undecided',
+        });
       },
     },
   } as unknown as Container;

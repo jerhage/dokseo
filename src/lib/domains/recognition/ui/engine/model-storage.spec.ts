@@ -46,7 +46,17 @@ describe('shownStorage', () => {
   it('shows what was read with no message', () => {
     const read = snapshot(WEIGHTS, 7);
 
-    expect(shownStorage(readReady(read))).toEqual({ snapshot: read, message: null });
+    expect(shownStorage(readReady({ kind: 'success', snapshot: read }))).toEqual({
+      snapshot: read,
+      message: null,
+    });
+  });
+
+  it('shows a browser with no cache as a message', () => {
+    expect(shownStorage(readReady({ kind: 'cache-unavailable' }))).toEqual({
+      snapshot: null,
+      message: 'This browser exposes no cache, so what the model occupies cannot be read.',
+    });
   });
 });
 

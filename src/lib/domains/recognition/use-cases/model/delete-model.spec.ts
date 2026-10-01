@@ -1,16 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type {
-  ModelConsentDecision,
-  ModelConsentError,
-  ModelConsentStore,
-} from '../../domain/model/model-consent';
+import type { ModelConsentStore } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type { ModelStorageReport } from '../../domain/model/model-cache';
 import type { PartialReport } from '../../domain/model/model-partial';
-import type { ModelStorage, ModelStorageError } from '../../domain/model/model-storage';
+import type { ModelCacheRead, ModelStorage } from '../../domain/model/model-storage';
 import type { PartialDownloads } from '../../domain/model/partial-downloads';
 import { deleteModel } from './delete-model';
 
@@ -27,36 +21,41 @@ const REMOVED: ModelStorageReport = {
   weights: REQUIRED_WEIGHTS,
 };
 
-function world(options: { readonly removal?: Result<ModelStorageReport, ModelStorageError> } = {}) {
+const REMOVED_READ: ModelCacheRead = { kind: 'success', report: REMOVED };
+
+function world(options: { readonly removal?: ModelCacheRead } = {}) {
   const steps: string[] = [];
   const granted = new Set<Language>(['ja']);
 
   const storage: ModelStorage = {
-    measure: () => Promise.resolve(ok(REMOVED)),
+    measure: () => Promise.resolve(REMOVED_READ),
     remove: (modelId: string) => {
       steps.push(`remove ${modelId}`);
-      return Promise.resolve(options.removal ?? ok(REMOVED));
+      return Promise.resolve(options.removal ?? REMOVED_READ);
     },
   };
 
   const partial: PartialReport = { modelId: MODEL, files: 1, bytes: 62_000_000 };
 
   const partials: PartialDownloads = {
-    measure: () => Promise.resolve(ok(partial)),
+    measure: () => Promise.resolve({ kind: 'success', report: partial }),
     discard: (modelId: string) => {
       steps.push(`discard ${modelId}`);
-      return Promise.resolve(ok(partial));
+      return Promise.resolve({ kind: 'success', report: partial });
     },
   };
 
   const consent: ModelConsentStore = {
-    decisionFor: (language: Language): Promise<Result<ModelConsentDecision, ModelConsentError>> =>
-      Promise.resolve(ok(granted.has(language) ? 'granted' : 'undecided')),
-    recordGrant: () => Promise.resolve(ok(undefined)),
+    decisionFor: (language: Language) =>
+      Promise.resolve({
+        kind: 'success',
+        decision: granted.has(language) ? 'granted' : 'undecided',
+      }),
+    recordGrant: () => Promise.resolve({ kind: 'success' }),
     forgetGrant: (language: Language) => {
       steps.push(`forget ${language}`);
       granted.delete(language);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' });
     },
   };
 
@@ -68,8 +67,7 @@ describe('deleteModel', () => {
     const { deps } = world();
     const removed = await deleteModel(deps, 'ja', MODEL);
 
-    if (!removed.ok) throw new Error('The removal failed');
-    expect(removed.value).toEqual(REMOVED);
+    expect(removed).toEqual({ kind: 'success', report: REMOVED });
   });
 
   it('withdraws the grant, so the next download is agreed to again', async () => {
@@ -77,8 +75,7 @@ describe('deleteModel', () => {
     await deleteModel(deps, 'ja', MODEL);
 
     const decision = await consent.decisionFor('ja', null);
-    if (!decision.ok) throw new Error('The decision could not be read');
-    expect(decision.value).toBe('undecided');
+    expect(decision).toEqual({ kind: 'success', decision: 'undecided' });
   });
 
   it('frees the space before it withdraws the grant', async () => {
@@ -96,10 +93,10 @@ describe('deleteModel', () => {
   });
 
   it('keeps the grant when nothing could be removed', async () => {
-    const { deps, steps } = world({ removal: err({ kind: 'cache-unavailable' }) });
+    const { deps, steps } = world({ removal: { kind: 'cache-unavailable' } });
     const removed = await deleteModel(deps, 'ja', MODEL);
 
-    expect(removed.ok).toBe(false);
+    expect(removed).toEqual({ kind: 'cache-unavailable' });
     expect(steps).toEqual([`remove ${MODEL}`]);
   });
 });

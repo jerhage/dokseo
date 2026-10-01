@@ -21,7 +21,7 @@ vi.mock('$lib/context', () => ({
       recognition: {
         readRecognizerSetup: (language: Language) => {
           calls.setups.push(language);
-          return Promise.resolve({ ok: true, value: { model: null, compute: 'auto' } });
+          return Promise.resolve({ kind: 'success', choice: { model: null, compute: 'auto' } });
         },
         detectCompute: () => {
           calls.probes += 1;

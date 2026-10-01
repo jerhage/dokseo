@@ -2,16 +2,19 @@ import { MutationObserver } from '@tanstack/svelte-query';
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
 import { QueryFailure } from '$lib/shared/query-failure';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { readFailed, readReady, LOADING } from '$lib/shared/read-state';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { at } from '$lib/shared/testing/at';
 import type { GpuDetection } from '../domain/engine/compute-choice';
 import { setupChoice } from '../domain/engine/recognizer-setup';
-import type { RecognizerChoice, SetupError } from '../domain/engine/recognizer-setup';
 import { JAPANESE_OCR_MODEL, modelsFor } from '../domain/model/model-footprint';
-import type { ModelStorageError } from '../domain/model/model-storage';
-import type { ModelStorageSnapshot } from '../use-cases/model/read-model-storage';
+import type { ReadRecognizerSetupResult } from '../use-cases/engine/read-recognizer-setup';
+import type { SaveRecognizerSetupResult } from '../use-cases/engine/save-recognizer-setup';
+import type {
+  ModelStorageSnapshot,
+  ReadModelStorageResult,
+} from '../use-cases/model/read-model-storage';
 import {
   NO_MODEL,
   cancelDownloadMutation,
@@ -24,10 +27,9 @@ import {
   prepareRecognizerMutation,
   recognizerSetupQuery,
   saveSetupMutation,
-  setupReadNote,
-  storageFailureNote,
+  setupState,
 } from './engine-queries';
-import type { LanguageSetup, OfferedModels } from './engine-queries';
+import type { LanguageSetup, LanguageSetupRead, OfferedModels } from './engine-queries';
 import { recognitionKeys } from './recognition-keys';
 
 const DETECTED: GpuDetection = { available: true, description: 'Test GPU' };
@@ -51,7 +53,7 @@ const SNAPSHOT: ModelStorageSnapshot = {
   persisted: true,
 };
 
-function setupReads(answer: (language: Language) => Promise<Result<RecognizerChoice, SetupError>>) {
+function setupReads(answer: (language: Language) => Promise<ReadRecognizerSetupResult>) {
   const asked: Language[] = [];
   return {
     asked,
@@ -64,16 +66,17 @@ function setupReads(answer: (language: Language) => Promise<Result<RecognizerCho
   };
 }
 
-function storageReads(answer: () => Promise<Result<ModelStorageSnapshot, ModelStorageError>>) {
+function storageReads(answer: () => Promise<ReadModelStorageResult>) {
   return { readModelStorage: answer };
 }
 
 describe('recognizerSetupQuery', () => {
   it('reads the asked language and offers its models with the stored choice', async () => {
     const reads = setupReads((language) =>
-      Promise.resolve(
-        ok(setupChoice(language, { language, modelId: SECOND.modelId, compute: 'gpu' })),
-      ),
+      Promise.resolve({
+        kind: 'success',
+        choice: setupChoice(language, { language, modelId: SECOND.modelId, compute: 'gpu' }),
+      }),
     );
 
     const setup = await createTestQueryClient().fetchQuery(
@@ -82,36 +85,33 @@ describe('recognizerSetupQuery', () => {
 
     expect(reads.asked).toEqual(['ja']);
     expect(setup).toEqual({
-      language: 'ja',
-      models: JAPANESE,
-      selected: SECOND.modelId,
-      compute: 'gpu',
+      kind: 'success',
+      setup: { language: 'ja', models: JAPANESE, selected: SECOND.modelId, compute: 'gpu' },
     });
-    expect(at(setup.models, 1)).toBe(SECOND);
+    expect(setup.kind === 'success' && at(setup.setup.models, 1)).toBe(SECOND);
   });
 
   it('reads the language it is given', async () => {
-    const reads = setupReads((language) => Promise.resolve(ok(setupChoice(language, null))));
+    const reads = setupReads((language) =>
+      Promise.resolve({ kind: 'success', choice: setupChoice(language, null) }),
+    );
 
     const setup = await createTestQueryClient().fetchQuery(
       recognizerSetupQuery(reads.recognition, 'ko'),
     );
 
     expect(reads.asked).toEqual(['ko']);
-    expect(setup.language).toBe('ko');
+    expect(setup.kind === 'success' && setup.setup.language).toBe('ko');
   });
 
-  it('rejects a refused read with the note, and offers no default', async () => {
-    const reads = setupReads(() =>
-      Promise.resolve(err({ kind: 'storage-failed', cause: 'locked' })),
-    );
+  it('resolves a blocked store as an answer, and offers no default', async () => {
+    const reads = setupReads(() => Promise.resolve(STORAGE_UNAVAILABLE));
 
-    const fetched = createTestQueryClient().fetchQuery(
+    const setup = await createTestQueryClient().fetchQuery(
       recognizerSetupQuery(reads.recognition, 'ja'),
     );
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow('Local storage failed: locked');
+    expect(setup).toEqual(STORAGE_UNAVAILABLE);
   });
 
   it('rejects a read that threw with its cause alone', async () => {
@@ -137,7 +137,9 @@ describe('recognizerSetupQuery', () => {
   });
 
   it('rejects without reading when no language is asked', async () => {
-    const reads = setupReads(() => Promise.resolve(ok(setupChoice('ja', null))));
+    const reads = setupReads(() =>
+      Promise.resolve({ kind: 'success', choice: setupChoice('ja', null) }),
+    );
 
     const fetched = createTestQueryClient().fetchQuery(
       recognizerSetupQuery(reads.recognition, null),
@@ -196,24 +198,23 @@ describe('modelStorageQuery', () => {
   it('resolves what the model occupies', async () => {
     const read = await createTestQueryClient().fetchQuery(
       modelStorageQuery(
-        storageReads(() => Promise.resolve(ok(SNAPSHOT))),
+        storageReads(() => Promise.resolve({ kind: 'success', snapshot: SNAPSHOT })),
         JAPANESE_OCR_MODEL.modelId,
       ),
     );
 
-    expect(read).toBe(SNAPSHOT);
+    expect(read).toEqual({ kind: 'success', snapshot: SNAPSHOT });
   });
 
-  it('rejects a refused read with the described note', async () => {
-    const fetched = createTestQueryClient().fetchQuery(
+  it('resolves a browser with no cache as an answer', async () => {
+    const read = await createTestQueryClient().fetchQuery(
       modelStorageQuery(
-        storageReads(() => Promise.resolve(err({ kind: 'cache-failed', cause: 'locked' }))),
+        storageReads(() => Promise.resolve({ kind: 'cache-unavailable' })),
         JAPANESE_OCR_MODEL.modelId,
       ),
     );
 
-    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow('The cache could not be read: locked');
+    expect(read).toEqual({ kind: 'cache-unavailable' });
   });
 
   it('names the cause of a read that threw', async () => {
@@ -245,30 +246,6 @@ describe('offeredModels', () => {
   });
 });
 
-describe('setupReadNote', () => {
-  it('says the browser blocks storage', () => {
-    expect(setupReadNote({ kind: 'storage-unavailable' })).toContain('blocks local storage');
-  });
-
-  it('names the cause of a failed read', () => {
-    expect(setupReadNote({ kind: 'storage-failed', cause: 'locked' })).toBe(
-      'Local storage failed: locked',
-    );
-  });
-});
-
-describe('storageFailureNote', () => {
-  it('names the cause when the cache could be opened but not read', () => {
-    expect(storageFailureNote({ kind: 'cache-failed', cause: 'quota exceeded' })).toContain(
-      'quota exceeded',
-    );
-  });
-
-  it('says the browser exposes no cache at all', () => {
-    expect(storageFailureNote({ kind: 'cache-unavailable' })).toContain('no cache');
-  });
-});
-
 const SETUP: LanguageSetup = {
   language: 'ja',
   models: offeredModels('ja') as OfferedModels,
@@ -276,7 +253,26 @@ const SETUP: LanguageSetup = {
   compute: 'gpu',
 };
 
-function setupWrites(saving: Result<void, SetupError>) {
+describe('setupState', () => {
+  const HELD: LanguageSetupRead = { kind: 'success', setup: SETUP };
+
+  it('passes a load and a failure through', () => {
+    expect(setupState(LOADING)).toEqual(LOADING);
+    expect(setupState(readFailed('broke'))).toEqual(readFailed('broke'));
+  });
+
+  it('readies the setup that was read', () => {
+    expect(setupState(readReady(HELD))).toEqual(readReady(SETUP));
+  });
+
+  it('fails a blocked store with the note the screen showed before', () => {
+    expect(setupState(readReady(STORAGE_UNAVAILABLE))).toEqual(
+      readFailed('This browser blocks local storage, so the engine choice cannot be read.'),
+    );
+  });
+});
+
+function setupWrites(saving: SaveRecognizerSetupResult) {
   const steps: string[] = [];
   return {
     steps,
@@ -303,7 +299,7 @@ function setupWrites(saving: Result<void, SetupError>) {
 
 describe('saveSetupMutation', () => {
   it('saves the model and compute, pauses the load, then closes the recognizer', async () => {
-    const { steps, recognition } = setupWrites(ok(undefined));
+    const { steps, recognition } = setupWrites({ kind: 'success' });
     const saving = new MutationObserver(createTestQueryClient(), saveSetupMutation(recognition));
 
     await saving.mutate({ setup: SETUP, modelId: SECOND.modelId, abandoned: null });
@@ -312,7 +308,7 @@ describe('saveSetupMutation', () => {
   });
 
   it('cancels the abandoned model in place of a pause', async () => {
-    const { steps, recognition } = setupWrites(ok(undefined));
+    const { steps, recognition } = setupWrites({ kind: 'success' });
     const saving = new MutationObserver(createTestQueryClient(), saveSetupMutation(recognition));
 
     await saving.mutate({ setup: SETUP, modelId: SECOND.modelId, abandoned: 'old-model' });
@@ -321,7 +317,7 @@ describe('saveSetupMutation', () => {
   });
 
   it('answers a refused save as data, after closing the recognizer all the same', async () => {
-    const refused = err({ kind: 'storage-unavailable' } as const);
+    const refused = STORAGE_UNAVAILABLE;
     const { steps, recognition } = setupWrites(refused);
     const saving = new MutationObserver(createTestQueryClient(), saveSetupMutation(recognition));
 
@@ -340,7 +336,7 @@ describe('download mutations', () => {
       grantConsentMutation({
         grantModelConsent: (language) => {
           granted.push(language);
-          return Promise.resolve(ok(undefined));
+          return Promise.resolve({ kind: 'success' });
         },
       }),
     );
@@ -362,14 +358,14 @@ describe('download mutations', () => {
             loadedBytes: 1,
             totalBytes: 2,
           });
-          return Promise.resolve(err({ kind: 'cancelled' }));
+          return Promise.resolve({ kind: 'cancelled' });
         },
       }),
     );
 
     await expect(
       preparing.mutate({ language: 'ja', onProgress: (load) => reported.push(load.fraction) }),
-    ).resolves.toEqual(err({ kind: 'cancelled' }));
+    ).resolves.toEqual({ kind: 'cancelled' });
     expect(reported).toEqual([0.5]);
   });
 
@@ -405,7 +401,7 @@ describe('download mutations', () => {
 describe('deleteModelMutation', () => {
   it('cancels the load before it deletes, and answers the deletion as data', async () => {
     const steps: string[] = [];
-    const refused = err({ kind: 'cache-unavailable' } as const);
+    const refused = { kind: 'cache-unavailable' } as const;
     const deleting = new MutationObserver(
       createTestQueryClient(),
       deleteModelMutation({

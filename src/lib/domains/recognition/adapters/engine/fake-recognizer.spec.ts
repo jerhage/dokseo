@@ -18,8 +18,8 @@ function stubBitmap(width: number, height: number): StubBitmap {
 
 async function textOf(width: number, height: number): Promise<string> {
   const recognized = await createFakeRecognizer().recognize(stubBitmap(width, height).bitmap);
-  if (!recognized.ok) throw new Error('The fake recognizer failed');
-  return recognized.value.text;
+  if (recognized.kind !== 'success') throw new Error('The fake recognizer failed');
+  return recognized.text.text;
 }
 
 describe('createFakeRecognizer', () => {
@@ -37,9 +37,9 @@ describe('createFakeRecognizer', () => {
 
   it('returns text and no confidence', async () => {
     const recognized = await createFakeRecognizer().recognize(stubBitmap(300, 80).bitmap);
-    if (!recognized.ok) throw new Error('The fake recognizer failed');
-    expect(recognized.value.text.length).toBeGreaterThan(0);
-    expect(recognized.value.confidence).toBeNull();
+    if (recognized.kind !== 'success') throw new Error('The fake recognizer failed');
+    expect(recognized.text.text.length).toBeGreaterThan(0);
+    expect(recognized.text.confidence).toBeNull();
   });
 
   it('leaves the input bitmap open', async () => {

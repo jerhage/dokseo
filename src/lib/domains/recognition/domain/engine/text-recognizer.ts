@@ -1,4 +1,3 @@
-import type { Result } from '$lib/shared/result';
 import type { ModelLoadError } from '../model/model-load';
 import type { RecognizedText } from './recognized-text';
 import type { RecognizerSession } from './recognizer-session';
@@ -8,11 +7,17 @@ type RecognitionError =
   | { readonly kind: 'model-unavailable'; readonly cause: string }
   | { readonly kind: 'recognition-failed'; readonly cause: string };
 
+type RecognizerOpening =
+  | { readonly kind: 'success'; readonly session: RecognizerSession }
+  | ModelLoadError;
+
+type Recognition = { readonly kind: 'success'; readonly text: RecognizedText } | RecognitionError;
+
 interface TextRecognizer {
   readonly id: string;
-  prepare(): Promise<Result<RecognizerSession, ModelLoadError>>;
+  prepare(): Promise<RecognizerOpening>;
   cancel(): void;
-  recognize(image: ImageBitmap): Promise<Result<RecognizedText, RecognitionError>>;
+  recognize(image: ImageBitmap): Promise<Recognition>;
 }
 
-export type { RecognitionError, TextRecognizer };
+export type { Recognition, RecognitionError, RecognizerOpening, TextRecognizer };

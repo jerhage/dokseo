@@ -2,7 +2,7 @@
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { readBoth } from '$lib/shared/read-state';
   import { engineStatus } from '../../domain/engine/ocr-engine';
-  import { computeQuery, recognizerSetupQuery } from '../../queries/engine-queries';
+  import { computeQuery, recognizerSetupQuery, setupState } from '../../queries/engine-queries';
   import type { EngineReads } from '../../queries/engine-queries';
   import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
   import type { EngineSettingsView } from './engine-settings.svelte';
@@ -16,7 +16,7 @@
 
   const setup = readQuery(() => recognizerSetupQuery(recognition, view.language));
   const compute = readQuery(() => computeQuery(recognition));
-  const choice = $derived(readBoth(setup.state, compute.state, engineChoiceOf));
+  const choice = $derived(readBoth(setupState(setup.state), compute.state, engineChoiceOf));
   const model = $derived(choice.kind === 'ready' ? shownModel(choice.value) : null);
 </script>
 

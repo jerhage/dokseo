@@ -1,30 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
-  SetupError,
+  SetupLookup,
   StoredRecognizerSetup,
 } from '../../domain/engine/recognizer-setup';
 import { readRecognizerSetup } from './read-recognizer-setup';
 
-function storeHolding(
-  record: StoredRecognizerSetup | null,
-  failure: SetupError | null = null,
-): RecognizerSetupStore {
+function storeAnswering(read: SetupLookup): RecognizerSetupStore {
   return {
-    read: (): Promise<Result<StoredRecognizerSetup | null, SetupError>> =>
-      Promise.resolve(failure === null ? ok(record) : err(failure)),
-    write: () => Promise.resolve(ok(undefined)),
+    read: () => Promise.resolve(read),
+    write: () => Promise.resolve({ kind: 'success' }),
   };
+}
+
+function storeHolding(record: StoredRecognizerSetup | null): RecognizerSetupStore {
+  return storeAnswering({ kind: 'success', stored: record });
 }
 
 async function choiceFrom(record: StoredRecognizerSetup | null, language: Language = 'ja') {
   const read = await readRecognizerSetup({ setups: storeHolding(record) }, language);
-  if (!read.ok) throw new Error('The setup could not be read');
-  return read.value;
+  if (read.kind !== 'success') throw new Error('The setup could not be read');
+  return read.choice;
 }
 
 describe('readRecognizerSetup', () => {
@@ -52,13 +51,10 @@ describe('readRecognizerSetup', () => {
     expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
   });
 
-  it('passes on the failure of a store that cannot be read', async () => {
-    const read = await readRecognizerSetup(
-      { setups: storeHolding(null, { kind: 'storage-unavailable' }) },
-      'ja',
-    );
+  it('passes a blocked store through', async () => {
+    const read = await readRecognizerSetup({ setups: storeAnswering(STORAGE_UNAVAILABLE) }, 'ja');
 
-    expect(read).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(read).toEqual(STORAGE_UNAVAILABLE);
   });
 
   it('defaults each language to a model that can read it', async () => {

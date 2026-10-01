@@ -1,8 +1,10 @@
 import type { Language } from '$lib/shared/language';
-import type { Result } from '$lib/shared/result';
-import type { ModelConsentError, ModelConsentStore } from '../../domain/model/model-consent';
-import { setupChoice } from '../../domain/engine/recognizer-setup';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { ModelConsentStore } from '../../domain/model/model-consent';
+import { storedChoice } from '../../domain/engine/recognizer-setup';
 import type { RecognizerSetupStore } from '../../domain/engine/recognizer-setup';
+
+type GrantModelConsentResult = { readonly kind: 'success' } | StorageUnavailable;
 
 type GrantModelConsentDeps = {
   readonly consent: ModelConsentStore;
@@ -13,13 +15,14 @@ type GrantModelConsentDeps = {
 async function grantModelConsent(
   deps: GrantModelConsentDeps,
   language: Language,
-): Promise<Result<void, ModelConsentError>> {
+): Promise<GrantModelConsentResult> {
   const record = await deps.setups.read(language);
-  const chosen = setupChoice(language, record.ok ? record.value : null);
+  const chosen = storedChoice(language, record);
 
   await deps.requestPersistence();
-  return await deps.consent.recordGrant(language, chosen.model);
+  const recorded = await deps.consent.recordGrant(language, chosen.model);
+  return recorded;
 }
 
 export { grantModelConsent };
-export type { GrantModelConsentDeps };
+export type { GrantModelConsentDeps, GrantModelConsentResult };

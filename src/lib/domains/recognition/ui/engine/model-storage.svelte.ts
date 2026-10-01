@@ -2,19 +2,30 @@ import { match } from 'ts-pattern';
 import type { ReadState } from '$lib/shared/read-state';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
-import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import { CACHE_UNREADABLE } from '../../queries/engine-queries';
+import type {
+  ModelStorageSnapshot,
+  ReadModelStorageResult,
+} from '../../use-cases/model/read-model-storage';
 
 type ShownStorage = {
   readonly snapshot: ModelStorageSnapshot | null;
   readonly message: string | null;
 };
 
-function shownStorage(state: ReadState<ModelStorageSnapshot>): ShownStorage {
+function shownStorage(state: ReadState<ReadModelStorageResult>): ShownStorage {
   return match(state)
     .returnType<ShownStorage>()
     .with({ kind: 'loading' }, () => ({ snapshot: null, message: null }))
     .with({ kind: 'failed' }, (failed) => ({ snapshot: null, message: failed.message }))
-    .with({ kind: 'ready' }, (ready) => ({ snapshot: ready.value, message: null }))
+    .with({ kind: 'ready', value: { kind: 'success' } }, ({ value }) => ({
+      snapshot: value.snapshot,
+      message: null,
+    }))
+    .with({ kind: 'ready', value: { kind: 'cache-unavailable' } }, () => ({
+      snapshot: null,
+      message: CACHE_UNREADABLE,
+    }))
     .exhaustive();
 }
 

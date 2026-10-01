@@ -6,15 +6,13 @@ import { describeCause } from '$lib/shared/cause';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
-import type { Result } from '$lib/shared/result';
 import { isPartlyStored, isStored } from '../../domain/model/model-cache';
 import { loadVerb } from '../../domain/model/model-load';
 import type { ModelLoad } from '../../domain/model/model-load';
 import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { EngineState } from '../../domain/engine/ocr-engine';
-import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
-import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
+import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { modelStorageQuery } from '../../queries/engine-queries';
 import { readChosenFootprint } from './chosen-footprint';
@@ -150,7 +148,7 @@ class EngineWarmup {
         .catch(() => null);
       if (!this.#stillWarming(generation, language)) return;
 
-      this.warmth = warmthOf(held);
+      this.warmth = warmthOf(held?.kind === 'success' ? held.snapshot : null);
       if (this.warmth.kind !== 'stored') {
         trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
         return;
@@ -181,11 +179,15 @@ class EngineWarmup {
 
       if (!this.#serves(generation, language)) return;
 
-      if (opened.ok) {
-        this.session = opened.value;
-      } else if (opened.error.kind === 'unavailable') {
-        this.warmth = { kind: 'failed', cause: opened.error.cause };
-      }
+      match(opened)
+        .with({ kind: 'success' }, ({ session }) => {
+          this.session = session;
+        })
+        .with({ kind: 'unavailable' }, ({ cause }) => {
+          this.warmth = { kind: 'failed', cause };
+        })
+        .with({ kind: 'cancelled' }, () => undefined)
+        .exhaustive();
     } catch (cause) {
       if (this.#serves(generation, language)) {
         this.warmth = { kind: 'failed', cause: describeCause(cause) };
@@ -227,7 +229,7 @@ class EngineWarmup {
     this.#retiring.clear();
   }
 
-  async read(held: PendingRecognition): Promise<Result<RecognizedText, RecognizeRegionError>> {
+  async read(held: PendingRecognition): Promise<RecognizeRegionResult> {
     this.#switchTo(held.language);
     this.#recognizerLanguage = held.language;
     this.#activeRecognitions += 1;

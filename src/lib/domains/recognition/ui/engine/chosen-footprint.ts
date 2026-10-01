@@ -14,8 +14,8 @@ async function readChosenFootprint(
     .fetchQuery(recognizerSetupQuery(recognition, language))
     .catch(() => null);
 
-  if (setup === null) return chosenModel(language, null);
-  return setup.selected === null ? null : chosenModel(language, setup.selected);
+  if (setup === null || setup.kind !== 'success') return chosenModel(language, null);
+  return setup.setup.selected === null ? null : chosenModel(language, setup.setup.selected);
 }
 
 export { readChosenFootprint };

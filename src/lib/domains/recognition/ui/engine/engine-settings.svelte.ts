@@ -1,10 +1,9 @@
 import type { QueryClient } from '@tanstack/svelte-query';
-import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
+import { failureMessage } from '$lib/shared/query-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { ComputeChoice } from '../../domain/engine/compute-choice';
@@ -15,11 +14,11 @@ import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { PartialReport } from '../../domain/model/model-partial';
 import type { DownloadState } from '../../domain/model/model-download';
 import type { ModelLoad } from '../../domain/model/model-load';
-import type { SetupError } from '../../domain/engine/recognizer-setup';
 import type { EngineState } from '../../domain/engine/ocr-engine';
 import { saveSetupMutation } from '../../queries/engine-queries';
-import type { LanguageSetup, SetupChange } from '../../queries/engine-queries';
+import type { LanguageSetup, LanguageSetupRead, SetupChange } from '../../queries/engine-queries';
 import { recognitionKeys } from '../../queries/recognition-keys';
+import type { SaveRecognizerSetupResult } from '../../use-cases/engine/save-recognizer-setup';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { engineLanguages, shownModel } from './engine-setup.svelte';
 import { ModelDownload } from './model-download.svelte';
@@ -31,15 +30,7 @@ const FULL_PERCENT = 100;
 
 const SETUP_FAILED = 'Could not save the engine choice';
 
-function setupFailureNote(error: SetupError): string {
-  return match(error)
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so the choice was not kept.',
-    )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
-    .exhaustive();
-}
+const SETUP_UNKEPT = 'This browser blocks local storage, so the choice was not kept.';
 
 function loadFigure(load: ModelLoad | null): string {
   if (load === null) return 'starting…';
@@ -107,7 +98,7 @@ class EngineSettingsView {
 
   #notify: Notify;
   #clock = new OperationClock();
-  #saving: WriteQuery<Result<void, SetupError>, SetupChange>;
+  #saving: WriteQuery<SaveRecognizerSetupResult, SetupChange>;
 
   constructor(container: Container, notify: Notify, client: QueryClient) {
     const recognition = container.recognition;
@@ -125,8 +116,11 @@ class EngineSettingsView {
       onMutate: async ({ setup }) => {
         const queryKey = recognitionKeys.setup(setup.language);
         await client.cancelQueries({ queryKey });
-        client.setQueryData<LanguageSetup>(queryKey, setup);
+        const held: LanguageSetupRead = { kind: 'success', setup };
+        client.setQueryData<LanguageSetupRead>(queryKey, held);
       },
+      onError: (cause) =>
+        this.#notify({ tone: 'danger', title: SETUP_FAILED, message: failureMessage(cause) }),
       onSettled: (_saved, _cause, { modelId }) =>
         client.invalidateQueries({ queryKey: recognitionKeys.modelStorage(modelId) }),
     }));
@@ -200,21 +194,20 @@ class EngineSettingsView {
       selected: choice.selected,
       compute: choice.compute,
     };
-    const saved = await this.#saving.run({
-      setup,
-      modelId: shownModel(choice).modelId,
-      abandoned,
-    });
-    if (!saved.ok && generation === this.#clock.current) {
-      this.#notify({ tone: 'danger', title: SETUP_FAILED, message: setupFailureNote(saved.error) });
+    const saved = await this.#saving
+      .run({ setup, modelId: shownModel(choice).modelId, abandoned })
+      .catch(() => null);
+    if (saved === null) return;
+    if (saved.kind !== 'success' && generation === this.#clock.current) {
+      this.#notify({ tone: 'danger', title: SETUP_FAILED, message: SETUP_UNKEPT });
     }
   }
 }
 
 export {
   SETUP_FAILED,
+  SETUP_UNKEPT,
   engineStateOf,
-  setupFailureNote,
   loadFigure,
   cancelHint,
   partialFigure,

@@ -1,13 +1,12 @@
-import type { Result } from '$lib/shared/result';
 import type { PartialReport } from './model-partial';
 
-type PartialError =
-  | { readonly kind: 'partials-unavailable' }
-  | { readonly kind: 'partials-failed'; readonly cause: string };
+type PartialsRead =
+  | { readonly kind: 'success'; readonly report: PartialReport }
+  | { readonly kind: 'partials-unavailable' };
 
 interface PartialDownloads {
-  measure(modelId: string): Promise<Result<PartialReport, PartialError>>;
-  discard(modelId: string): Promise<Result<PartialReport, PartialError>>;
+  measure(modelId: string): Promise<PartialsRead>;
+  discard(modelId: string): Promise<PartialsRead>;
 }
 
-export type { PartialError, PartialDownloads };
+export type { PartialDownloads, PartialsRead };

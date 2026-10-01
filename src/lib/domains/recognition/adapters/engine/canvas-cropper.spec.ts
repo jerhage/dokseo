@@ -7,7 +7,6 @@ import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ImageRead, PageSource } from '$lib/shared/page-source';
-import { err } from '$lib/shared/result';
 import { createCanvasCropper } from './canvas-cropper';
 
 const REGIONS: readonly ImageRegion[] = [
@@ -97,7 +96,7 @@ describe('createCanvasCropper', () => {
 
     const result = await createCanvasCropper(begin).crop(unreadableSource(), [], ARRANGEMENT);
 
-    expect(result).toEqual(err({ kind: 'nothing-selected' }));
+    expect(result).toEqual({ kind: 'nothing-selected' });
     expect(end).toHaveBeenCalledTimes(1);
   });
 
@@ -106,7 +105,7 @@ describe('createCanvasCropper', () => {
 
     const result = await createCanvasCropper(begin).crop(unreadableSource(), REGIONS, ARRANGEMENT);
 
-    expect(result.ok).toBe(false);
+    expect(result.kind).toBe('unreadable');
     expect(end).toHaveBeenCalledTimes(1);
   });
 
@@ -115,7 +114,7 @@ describe('createCanvasCropper', () => {
 
     const result = await createCanvasCropper(begin).crop(decodedSource(), REGIONS, ARRANGEMENT);
 
-    expect(result.ok).toBe(false);
+    expect(result.kind).toBe('unreadable');
     expect(end).toHaveBeenCalledTimes(1);
   });
 
@@ -135,15 +134,15 @@ describe('createCanvasCropper', () => {
 
     const result = await createCanvasCropper(begin).crop(wideSource(), WIDE_REGIONS, ARRANGEMENT);
 
-    if (!result.ok) throw new Error('The crop failed');
-    expect(result.value.width).toBe(6000);
-    expect(result.value.height).toBe(900);
-    expect(result.value.width).toBeGreaterThan(MAX_MODEL_INPUT_EDGE);
+    if (result.kind !== 'success') throw new Error('The crop failed');
+    expect(result.crop.width).toBe(6000);
+    expect(result.crop.height).toBe(900);
+    expect(result.crop.width).toBeGreaterThan(MAX_MODEL_INPUT_EDGE);
   });
 
   it('crops without a trace factory', async () => {
     const result = await createCanvasCropper().crop(unreadableSource(), [], ARRANGEMENT);
 
-    expect(result).toEqual(err({ kind: 'nothing-selected' }));
+    expect(result).toEqual({ kind: 'nothing-selected' });
   });
 });
