@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { ok } from '$lib/shared/result';
 import type { OriginStores, OriginSurvey } from '../domain/origin-stores';
 import { measuredBytes } from '../domain/storage-parts';
 import type { StorageAccount } from '../domain/storage-parts';
@@ -14,7 +13,7 @@ const RUNTIME_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers/dist
 const USAGE = 395_000_000;
 
 function stores(survey: OriginSurvey): OriginStores {
-  return { survey: () => Promise.resolve(ok(survey)) };
+  return { survey: () => Promise.resolve(survey) };
 }
 
 async function accountOf(survey: OriginSurvey): Promise<StorageAccount> {
@@ -24,8 +23,7 @@ async function accountOf(survey: OriginSurvey): Promise<StorageAccount> {
     persisted: () => Promise.resolve(true),
   });
 
-  if (!read.ok) throw new Error('The survey succeeded');
-  return read.value;
+  return read.account;
 }
 
 function fullSurvey(): OriginSurvey {

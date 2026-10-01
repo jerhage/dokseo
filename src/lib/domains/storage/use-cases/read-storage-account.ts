@@ -4,14 +4,7 @@ import {
   reportOf,
 } from '$lib/domains/recognition/domain/model/model-cache';
 import { everyModel } from '$lib/domains/recognition/domain/model/model-footprint';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type {
-  CachedFile,
-  OriginStores,
-  OriginStoresError,
-  StoredFile,
-} from '../domain/origin-stores';
+import type { CachedFile, OriginStores, StoredFile } from '../domain/origin-stores';
 import { accountOf, filesAt, filesElsewhere, tallyDetail, tallyOf } from '../domain/storage-parts';
 import type { StorageAccount, StoragePart, Tally } from '../domain/storage-parts';
 
@@ -44,6 +37,8 @@ const RECORDS: StoragePart = {
 function describing(what: string, tally: Tally): string {
   return `${what} · ${tallyDetail(tally)}`;
 }
+
+type ReadStorageAccountResult = { readonly kind: 'success'; readonly account: StorageAccount };
 
 type ReadStorageAccountDeps = {
   readonly stores: OriginStores;
@@ -140,13 +135,8 @@ function storedParts(files: readonly StoredFile[]): readonly StoragePart[] {
   ];
 }
 
-async function readStorageAccount(
-  deps: ReadStorageAccountDeps,
-): Promise<Result<StorageAccount, OriginStoresError>> {
-  const surveyed = await deps.stores.survey();
-  if (!surveyed.ok) return surveyed;
-
-  const { cached, files } = surveyed.value;
+async function readStorageAccount(deps: ReadStorageAccountDeps): Promise<ReadStorageAccountResult> {
+  const { cached, files } = await deps.stores.survey();
   const parts = [
     ...(cached === null ? [CACHE_UNREADABLE] : cachedParts(cached)),
     ...(files === null ? [FILES_UNREADABLE] : storedParts(files)),
@@ -154,8 +144,8 @@ async function readStorageAccount(
   ];
 
   const [space, persisted] = await Promise.all([deps.estimate(), deps.persisted()]);
-  return ok(accountOf(parts, space, persisted));
+  return { kind: 'success', account: accountOf(parts, space, persisted) };
 }
 
 export { readStorageAccount };
-export type { ReadStorageAccountDeps };
+export type { ReadStorageAccountDeps, ReadStorageAccountResult };

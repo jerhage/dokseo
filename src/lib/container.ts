@@ -163,10 +163,11 @@ import type { SaveRecognizerSetupDeps } from './domains/recognition/use-cases/en
 import { writeNote } from './domains/recognition/use-cases/capture/write-note';
 import type { WriteNoteDeps } from './domains/recognition/use-cases/capture/write-note';
 import { createOriginStores } from './domains/storage/adapters/browser-origin-stores';
-import type { OriginStoresError } from './domains/storage/domain/origin-stores';
-import type { StorageAccount } from './domains/storage/domain/storage-parts';
 import { readStorageAccount } from './domains/storage/use-cases/read-storage-account';
-import type { ReadStorageAccountDeps } from './domains/storage/use-cases/read-storage-account';
+import type {
+  ReadStorageAccountDeps,
+  ReadStorageAccountResult,
+} from './domains/storage/use-cases/read-storage-account';
 import { removeBookAndCaptures } from './domains/storage/use-cases/remove-book-and-captures';
 import type { RemoveBookAndCapturesDeps } from './domains/storage/use-cases/remove-book-and-captures';
 
@@ -356,7 +357,7 @@ type Container = {
     readonly closeRecognizer: (language: Language) => Promise<void>;
   };
   readonly storage: {
-    readonly readStorageAccount: () => Promise<Result<StorageAccount, OriginStoresError>>;
+    readonly readStorageAccount: () => Promise<ReadStorageAccountResult>;
   };
 };
 
