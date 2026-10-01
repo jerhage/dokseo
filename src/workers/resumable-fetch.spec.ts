@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { partialName } from '$lib/domains/recognition/domain/model/model-partial';
+import { HttpError } from '$lib/platform/http/http-error';
 import { fetchResumable } from './resumable-fetch';
 import type { PartAppend, PartialFiles } from './resumable-fetch';
 
@@ -289,6 +290,47 @@ describe('fetchResumable', () => {
     expect(response.status).toBe(200);
     expect(await bodyOf(response)).toEqual(body);
     expect(files.size).toBe(0);
+  });
+
+  it('rejects with an HttpError for a status the range request does not expect', async () => {
+    const { store } = fakeStore();
+    const missing = () => Promise.resolve(new Response(null, { status: 404 }));
+
+    const fetching = fetchResumable(URL_OF_WEIGHTS, { fetch: missing, store, chunkBytes: CHUNK });
+
+    await expect(fetching).rejects.toBeInstanceOf(HttpError);
+    await expect(fetching).rejects.toHaveProperty('status', 404);
+  });
+
+  it('rejects with an HttpError when the host refuses a range although nothing is held', async () => {
+    const served = host(weights(0));
+    const { store } = fakeStore();
+
+    const fetching = fetchResumable(URL_OF_WEIGHTS, {
+      fetch: served.fetching,
+      store,
+      chunkBytes: CHUNK,
+    });
+
+    await expect(fetching).rejects.toHaveProperty('status', 416);
+  });
+
+  it('fails the body with an HttpError when a later chunk answers a server error', async () => {
+    const served = host(weights(10));
+    const { store, files } = fakeStore();
+    const failing = (input: string, init?: RequestInit): Promise<Response> =>
+      served.asked.length === 0
+        ? served.fetching(input, init)
+        : Promise.resolve(new Response(null, { status: 503 }));
+
+    const response = await fetchResumable(URL_OF_WEIGHTS, {
+      fetch: failing,
+      store,
+      chunkBytes: CHUNK,
+    });
+
+    await expect(bodyOf(response)).rejects.toHaveProperty('status', 503);
+    expect(files.get(KEY)).toEqual(weights(10).slice(0, 4));
   });
 
   it('stores nothing for a payload that fits in a single chunk', async () => {

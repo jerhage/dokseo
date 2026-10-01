@@ -1,10 +1,15 @@
 import { partialName } from '$lib/domains/recognition/domain/model/model-partial';
+import { checkedResponse } from '$lib/platform/http/http-error';
 
 const DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024;
 
 const PARTIAL_CONTENT = 206;
 
 const RANGE_NOT_SATISFIABLE = 416;
+
+const NO_REFUSAL_EXPECTED: readonly number[] = [];
+
+const HELD_RANGE_REFUSED: readonly number[] = [RANGE_NOT_SATISFIABLE];
 
 type PartAppend = {
   write(bytes: Uint8Array): void;
@@ -66,12 +71,14 @@ async function requestRange(
   from: number,
   chunkBytes: number,
   options: ResumableOptions,
+  expected: readonly number[] = NO_REFUSAL_EXPECTED,
 ): Promise<Response> {
   const last = from + chunkBytes - 1;
-  const response = await options.fetch(url, {
+  const answered = await options.fetch(url, {
     headers: { Range: `bytes=${from}-${last}` },
     cache: 'no-store',
   });
+  const response = checkedResponse(answered, 'GET', url, expected);
   if (response.status === PARTIAL_CONTENT) options.onTransfer?.();
   return response;
 }
@@ -201,7 +208,13 @@ async function fetchResumable(url: string, options: ResumableOptions): Promise<R
   const store = options.store;
 
   let have = await store.sizeOf(key);
-  let opened = await requestRange(url, have, chunkBytes, options);
+  let opened = await requestRange(
+    url,
+    have,
+    chunkBytes,
+    options,
+    have > 0 ? HELD_RANGE_REFUSED : NO_REFUSAL_EXPECTED,
+  );
 
   if (opened.status === RANGE_NOT_SATISFIABLE && have > 0) {
     await store.remove(key);
@@ -215,7 +228,8 @@ async function fetchResumable(url: string, options: ResumableOptions): Promise<R
     if (opened.status !== PARTIAL_CONTENT) return opened;
 
     await opened.body?.cancel().catch(() => undefined);
-    return await options.fetch(url, { cache: 'no-store' });
+    const whole = await options.fetch(url, { cache: 'no-store' });
+    return checkedResponse(whole, 'GET', url);
   }
 
   options.onSpan?.(span.total, have);

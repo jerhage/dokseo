@@ -13,6 +13,7 @@ import type { RecognizerDevice } from '$lib/domains/recognition/domain/engine/re
 import type { RecognizerSetup } from '$lib/domains/recognition/domain/engine/recognizer-setup';
 import { textLineBands } from '$lib/domains/recognition/domain/engine/text-line-bands';
 import type { TextBand } from '$lib/domains/recognition/domain/engine/text-line-bands';
+import { checkedResponse } from '$lib/platform/http/http-error';
 import { lumaPlane } from '$lib/platform/image/pixels';
 import { describeCause } from '$lib/shared/cause';
 import { guardFirstGpuRun, openOnDevice, reopenOnCpu } from './device-fallback';
@@ -139,7 +140,9 @@ async function openSession(
     refused === null ? openOnDevice(await deviceFor(setup.compute), build) : reopenOnCpu(build);
 
   const [config, running] = await Promise.all([
-    env.fetch(url, { cache: 'force-cache' }).then((answer: Response) => answer.text()),
+    env
+      .fetch(url, { cache: 'force-cache' })
+      .then((answer: Response) => checkedResponse(answer, 'GET', url).text()),
     model,
   ]);
 
