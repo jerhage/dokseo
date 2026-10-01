@@ -37,7 +37,7 @@
   } from '../domain/strip';
   import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
-  import { edgeScrollBy, edgeSpeed } from './edge-scroll';
+  import { EdgeScroll } from './edge-scroll-loop';
   import { inputKind } from './gesture-hint';
   import { HintLines } from './hint-lines.svelte';
   import { handlesOwnKeys } from './keyboard';
@@ -116,12 +116,13 @@
   let reading = $state.raw<StripAnchor | null>(null);
   let lastPointer = '';
   let pinned = $state<number | null>(null);
-  let edgePointerY: number | null = null;
-  let edgeFrame: number | null = null;
-  let edgeLastFrame: number | null = null;
 
   const coarse = window.matchMedia('(pointer: coarse)').matches;
   const gestures = new GestureFeed(feed);
+  const edgeScroll = new EdgeScroll({
+    surface: () => scroller,
+    dragging: () => selection?.dragging() ?? false,
+  });
 
   const width = $derived(frameWidth * zoom);
   const layout = $derived(layOutStrip(sizes, width));
@@ -271,45 +272,6 @@
     pinned = element.scrollTop + pointerY - element.getBoundingClientRect().top;
   }
 
-  function stopEdgeScroll(): void {
-    if (edgeFrame !== null) cancelAnimationFrame(edgeFrame);
-    edgeFrame = null;
-    edgeLastFrame = null;
-    edgePointerY = null;
-  }
-
-  function edgeScrollStep(now: number): void {
-    edgeFrame = null;
-    const element = scroller;
-    const pointerY = edgePointerY;
-    if (element === null || pointerY === null || !(selection?.dragging() ?? false)) {
-      stopEdgeScroll();
-      return;
-    }
-
-    const box = element.getBoundingClientRect();
-    const speed = edgeSpeed(pointerY, { top: box.top, bottom: box.bottom });
-    if (speed === 0) {
-      stopEdgeScroll();
-      return;
-    }
-
-    const last = edgeLastFrame;
-    edgeLastFrame = now;
-    if (last !== null) element.scrollTop += edgeScrollBy(speed, now - last);
-    edgeFrame = requestAnimationFrame(edgeScrollStep);
-  }
-
-  function followEdge(event: PointerEvent): void {
-    if (!(selection?.dragging() ?? false)) {
-      stopEdgeScroll();
-      return;
-    }
-
-    edgePointerY = event.clientY;
-    if (edgeFrame === null) edgeFrame = requestAnimationFrame(edgeScrollStep);
-  }
-
   function onpointerdown(event: PointerEvent): void {
     lastPointer = event.pointerType;
     if (event.pointerType === 'touch') {
@@ -325,11 +287,11 @@
     if (event.pointerType === 'touch') feedTouch('move', event);
     else selection?.pointermove(event);
 
-    followEdge(event);
+    edgeScroll.follow(event.clientY);
   }
 
   function onpointerup(event: PointerEvent): void {
-    stopEdgeScroll();
+    edgeScroll.stop();
     if (event.pointerType === 'touch') {
       feedTouch('up', event);
       return;
@@ -339,7 +301,7 @@
   }
 
   function onpointercancel(event: PointerEvent): void {
-    stopEdgeScroll();
+    edgeScroll.stop();
     if (event.pointerType === 'touch') {
       feedTouch('cancel', event);
       return;
@@ -479,7 +441,7 @@
 
   onDestroy(() => {
     gestures.stop();
-    stopEdgeScroll();
+    edgeScroll.stop();
   });
 
   $effect(() => {
