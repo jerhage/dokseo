@@ -18,6 +18,7 @@ import type { PrepareRecognizerResult } from '../../use-cases/engine/prepare-rec
 import type { CancelModelLoadResult } from '../../use-cases/model/cancel-model-load';
 import type { GrantModelConsentResult } from '../../use-cases/model/grant-model-consent';
 import type { OperationClock } from './operation-clock';
+import { logUnexpected } from '$lib/shared/unexpected-failure';
 
 const LOAD_FAILED = 'Could not load the model';
 
@@ -47,6 +48,7 @@ class ModelDownload {
       client.invalidateQueries({ queryKey: recognitionKeys.modelStorages() });
     this.#granting = writeQuery(() => ({
       ...grantConsentMutation(recognition),
+      onError: (cause) => logUnexpected('write', cause),
       onSettled: (_granted, _cause, language) =>
         client.invalidateQueries({ queryKey: recognitionKeys.consent(language) }),
     }));

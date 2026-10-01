@@ -10,8 +10,9 @@ function createQueryClient(): QueryClient {
         gcTime: GC_TIME_MS,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        networkMode: 'always',
       },
-      mutations: { retry: 0 },
+      mutations: { retry: 0, networkMode: 'always' },
     },
   });
 }

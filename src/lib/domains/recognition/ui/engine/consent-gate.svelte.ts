@@ -4,6 +4,7 @@ import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Language } from '$lib/shared/language';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
+import { logUnexpected } from '$lib/shared/unexpected-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { downloadMb } from '../../domain/model/model-footprint';
@@ -45,6 +46,7 @@ class ConsentGate {
     this.#generation = generation;
     this.#granting = writeQuery(() => ({
       ...grantConsentMutation(container.recognition),
+      onError: (cause) => logUnexpected('write', cause),
       onSettled: (_granted, _cause, language) =>
         client.invalidateQueries({ queryKey: recognitionKeys.consent(language) }),
     }));
