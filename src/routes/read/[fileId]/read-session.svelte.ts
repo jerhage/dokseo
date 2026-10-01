@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
+import { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
 import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
 import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
 import {
@@ -8,6 +9,8 @@ import {
   passageArrivalFrom,
   passageFrom,
 } from '$lib/domains/recognition/ui/capture/capture-arrivals';
+import type { PanelSource } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
+import type { ClipboardWrite } from '$lib/domains/recognition/ui/capture/text-copy.svelte';
 import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
 import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
 import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
@@ -46,6 +49,10 @@ class ReadSession {
   readonly flow: FlowView;
 
   #address: ReadAddress;
+  #notify: Notify;
+  #copyText: ClipboardWrite;
+  #imagePanel = $state.raw(this.#imagePanelBuilt());
+  #flowPanel = $state.raw(this.#flowPanelBuilt());
   #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
   #requested: ReaderRequest | null = null;
   #id = $derived.by(() => bookId(this.#address.fileId() ?? ''));
@@ -67,8 +74,15 @@ class ReadSession {
   #finding = $derived(arrivalQuery(this.#found));
   #arrivalShows = $derived(imageArrivalShows(this.#standing));
 
-  constructor(container: Container, notify: Notify, address: ReadAddress) {
+  constructor(
+    container: Container,
+    notify: Notify,
+    address: ReadAddress,
+    copyText: ClipboardWrite,
+  ) {
     this.#address = address;
+    this.#notify = notify;
+    this.#copyText = copyText;
     this.reader = new ReaderView(
       container,
       notify,
@@ -79,6 +93,14 @@ class ReadSession {
     this.shelf = new LibraryBooks(container);
     this.find = new CaptureSearchView(container, comparePassages);
     this.flow = new FlowView(container, notify);
+  }
+
+  get imagePanel(): CapturePanelView {
+    return this.#imagePanel;
+  }
+
+  get flowPanel(): CapturePanelView {
+    return this.#flowPanel;
   }
 
   get id(): BookId {
@@ -132,7 +154,10 @@ class ReadSession {
     match(next)
       .with({ kind: 'enter' }, ({ book, image }) => this.#open(book, image))
       .with({ kind: 'switch' }, ({ book, image }) => {
+        const leavingFlow = this.reader.opening.kind === 'flow';
         this.close();
+        this.#flowPanel = this.#flowPanelBuilt();
+        if (leavingFlow) this.#imagePanel = this.#imagePanelBuilt();
         this.#open(book, image);
       })
       .with({ kind: 'go-to-image' }, ({ book, image }) => void this.reader.goToImage(book, image))
@@ -145,6 +170,34 @@ class ReadSession {
     this.captures.close();
     this.shelf.dispose();
     this.find.dispose();
+  }
+
+  #imagePanelBuilt(): CapturePanelView {
+    return this.#panelBuilt(() => ({
+      view: this.captures,
+      language: this.language,
+      direction: this.reader.direction,
+      passages: comparePassages,
+      seekable: false,
+    }));
+  }
+
+  #flowPanelBuilt(): CapturePanelView {
+    return this.#panelBuilt(() => ({
+      view: this.captures,
+      language: this.language,
+      direction: this.flow.direction,
+      passages: comparePassages,
+      seekable: true,
+    }));
+  }
+
+  #panelBuilt(source: () => PanelSource): CapturePanelView {
+    return new CapturePanelView(
+      source,
+      (text) => this.#copyText(text),
+      (notice) => this.#notify(notice),
+    );
   }
 
   #warm(book: BookId, known: Language): void {

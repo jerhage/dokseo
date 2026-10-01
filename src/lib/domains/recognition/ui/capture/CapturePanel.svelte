@@ -19,12 +19,9 @@
   import { isComposingKey } from '$lib/shared/composing-key';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
-  import type { ReadingDirection } from '$lib/shared/layout-kind';
-  import type { Notify } from '$lib/shared/notice';
-  import type { PassageOrder } from '../../domain/capture/capture-order';
   import type { FocusTarget } from './card-editing.svelte';
   import type { CardJump } from './capture-cards.svelte';
-  import { CapturePanelView } from './capture-panel.svelte';
+  import type { CapturePanelView } from './capture-panel.svelte';
   import type { CaptureView } from './capture-view.svelte';
   import { CAPTURE_SORTS, CAPTURE_SORT_LABEL, captureSortName } from './capture-sort';
   import { emptyPanelText } from './empty-panel';
@@ -34,30 +31,19 @@
   import type { DraftField } from './card-drafts.svelte';
   import DocumentTags from './DocumentTags.svelte';
   import TagPickerModal from './TagPickerModal.svelte';
-  import type { ClipboardWrite } from './text-copy.svelte';
 
   type Props = {
     readonly view: CaptureView;
+    readonly panel: CapturePanelView;
     readonly language: Language | null;
-    readonly direction: ReadingDirection;
-    readonly passages: PassageOrder;
     readonly source: CaptureSource;
     readonly visible: boolean;
-    readonly copyText: ClipboardWrite;
-    readonly notify: Notify;
     readonly onSeek?: (passage: TextAnchor) => void;
   };
 
-  let { view, language, direction, passages, source, visible, copyText, notify, onSeek }: Props =
-    $props();
+  let { view, panel, language, source, visible, onSeek }: Props = $props();
 
   const uid = $props.id();
-
-  const panel = new CapturePanelView(
-    () => ({ view, language, direction, passages, seekable: onSeek !== undefined }),
-    (text) => copyText(text),
-    (notice) => notify(notice),
-  );
 
   const drafts = $derived(view.drafts);
 

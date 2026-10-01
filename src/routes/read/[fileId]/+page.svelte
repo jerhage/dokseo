@@ -10,22 +10,24 @@
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
-  import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
   import { ReadSession } from './read-session.svelte';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
 
-  const notify = toastNotify(getToaster());
-  const copyText = (text: string): Promise<void> => navigator.clipboard.writeText(text);
-  const session = new ReadSession(useContainer(), notify, {
-    fileId: () => page.params.fileId,
-    requested: () => page.url,
-    shown: () => new URL(location.href),
-    replace: (url) => replaceState(url, page.state),
-    leave: (path) => void goto(path, { replaceState: true }),
-  });
+  const session = new ReadSession(
+    useContainer(),
+    toastNotify(getToaster()),
+    {
+      fileId: () => page.params.fileId,
+      requested: () => page.url,
+      shown: () => new URL(location.href),
+      replace: (url) => replaceState(url, page.state),
+      leave: (path) => void goto(path, { replaceState: true }),
+    },
+    (text) => navigator.clipboard.writeText(text),
+  );
   const { reader, captures, shelf, find, flow } = session;
   const id = $derived(session.id);
   const language = $derived(session.language);
@@ -61,13 +63,10 @@
     {#snippet panel(visible)}
       <CapturePanel
         view={captures}
+        panel={session.flowPanel}
         {language}
-        direction={flow.direction}
-        passages={comparePassages}
         source="text"
         {visible}
-        {copyText}
-        {notify}
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
     {/snippet}
@@ -93,13 +92,10 @@
     {#snippet panel(visible)}
       <CapturePanel
         view={captures}
+        panel={session.imagePanel}
         {language}
-        direction={reader.direction}
-        passages={comparePassages}
         source="images"
         {visible}
-        {copyText}
-        {notify}
       />
     {/snippet}
   </ReaderScreen>
