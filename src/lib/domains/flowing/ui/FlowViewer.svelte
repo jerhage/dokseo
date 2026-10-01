@@ -31,6 +31,7 @@
   import type { ContentsEntry } from './flow-contents';
   import { NO_ANCHORS, passageCfis } from './flow-highlight';
   import { FlowGestures } from './flow-gestures';
+  import { keyTarget } from './flow-keys';
   import { flowGuideKind, flowInput, flowSwipeLesson, offersFlowGuide } from './flow-hint';
   import { flowMeta, tickOffsets } from './flow-progress';
   import { liftMetrics } from './flow-lift';
@@ -49,7 +50,7 @@
     tapOnStage,
     turnOrder,
   } from './flow-turn';
-  import type { FlowAction, FlowTurn, KeyTarget, Point, StageTap } from './flow-turn';
+  import type { FlowAction, FlowTurn, Point, StageTap } from './flow-turn';
   import type { FlowBook, FlowView } from './flow-view.svelte';
   import FlowContentsDialog from './FlowContentsDialog.svelte';
   import FlowSettingsDialog from './FlowSettingsDialog.svelte';
@@ -144,42 +145,6 @@
     if (!reading) return;
 
     touchGuide.open();
-  }
-
-  function isEditable(target: EventTarget): boolean {
-    if (!('isContentEditable' in target)) return false;
-
-    const editable = target.isContentEditable;
-    return typeof editable === 'boolean' && editable;
-  }
-
-  function controlType(target: EventTarget): string | null {
-    if (!('type' in target)) return null;
-
-    const kind = target.type;
-    return typeof kind === 'string' ? kind : null;
-  }
-
-  function controlRole(target: EventTarget): string | null {
-    if (!('role' in target)) return null;
-
-    const named = target.role;
-    return typeof named === 'string' ? named : null;
-  }
-
-  function keyTarget(target: EventTarget | null): KeyTarget | null {
-    if (target === null) return null;
-    if (!('tagName' in target)) return null;
-
-    const tagName = target.tagName;
-    if (typeof tagName !== 'string') return null;
-
-    return {
-      tagName,
-      type: controlType(target),
-      role: controlRole(target),
-      editable: isEditable(target),
-    };
   }
 
   function textSelected(): boolean {
