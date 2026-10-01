@@ -8,6 +8,8 @@ import type { ReaderBook, ReaderOpening } from './reader-opening';
 import { ReaderView } from './reader-view.svelte';
 import ReaderScreen from './ReaderScreen.svelte';
 
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
+
 const SCREEN = ReaderScreen as unknown as Component<Record<string, unknown>>;
 
 const BOOK: ReaderBook = {

@@ -14,7 +14,11 @@ import { PLACE_KEPT, PlaceKeeper } from '$lib/shared/place-keeper';
 import type { PlaceSaved } from '$lib/shared/place-keeper';
 import { imagePlace, readingStarted, samePlace, showsTheEnd } from '$lib/shared/reading-place';
 import type { ImagePlace, ReadingPlace } from '$lib/shared/reading-place';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { readingPosition } from '../domain/reading-position';
+import { saveReadingPlaceMutation } from '../queries/viewing-queries';
+import type { PlaceRequest } from '../queries/viewing-queries';
 import { BookPreferences, describeEditFailure } from './book-preferences.svelte';
 import type { BookChanged } from './book-preferences.svelte';
 import { PageGrouping } from './page-grouping.svelte';
@@ -24,6 +28,8 @@ import type { OpenOutcome, ReaderBook, ReaderOpening } from './reader-opening';
 import { RegionSelection } from './region-selection.svelte';
 
 type OpenFailure = Exclude<OpenOutcome, { readonly kind: 'images' | 'flow' }>;
+
+type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
 
 type PlaceMirror = (place: ShownPlace) => void;
 
@@ -73,7 +79,7 @@ class ReaderView {
   #container: Container;
   #mirror: PlaceMirror | null;
   #languageKnown: LanguageKnown | null;
-  #bookChanged: BookChanged | null;
+  #placing: WriteQuery<PlaceOutcome, PlaceRequest>;
   #source: PageSource | null = null;
   #generation = 0;
   #places: PlaceKeeper<ImagePlace>;
@@ -88,7 +94,12 @@ class ReaderView {
     this.#container = container;
     this.#mirror = mirror;
     this.#languageKnown = languageKnown;
-    this.#bookChanged = bookChanged;
+    this.#placing = writeQuery(() => ({
+      ...saveReadingPlaceMutation(container.library),
+      onSuccess: (saved) => {
+        if (saved.kind === 'success') bookChanged?.();
+      },
+    }));
     const book = (): ReaderBook | null => this.book;
     const generation = (): number => this.#generation;
     this.#places = new PlaceKeeper({
@@ -244,9 +255,8 @@ class ReaderView {
   }
 
   async #savePlace(id: BookId, place: ImagePlace): Promise<PlaceSaved> {
-    const saved = await this.#container.library.saveReadingPlace(id, place);
+    const saved = await this.#placing.run({ id, place });
     if (saved.kind !== 'success') return { kind: 'refused', message: describeEditFailure(saved) };
-    this.#bookChanged?.();
     return PLACE_KEPT;
   }
 

@@ -6,6 +6,10 @@ import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared
 import type { Notify } from '$lib/shared/notice';
 import type { PageFit } from '$lib/shared/page-fit';
 import { unexpectedMessage } from '$lib/shared/unexpected-failure';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import { editBookMutation } from '../queries/viewing-queries';
+import type { BookEditRequest } from '../queries/viewing-queries';
 import { heldBook, shownBook } from './reader-opening';
 import type { ReaderBook, ReaderOpening } from './reader-opening';
 import type { RegionSelection } from './region-selection.svelte';
@@ -43,13 +47,12 @@ function describeEditFailure(error: EditFailure): string {
 class BookPreferences {
   saving = $state(false);
 
-  #container: Container;
   #notify: Notify;
   #opening: () => ReaderOpening;
   #generation: () => number;
   #selection: RegionSelection;
   #held: BookHeld;
-  #bookChanged: BookChanged | null;
+  #editing: WriteQuery<EditOutcome, BookEditRequest<BookEdit>>;
 
   constructor(
     container: Container,
@@ -60,13 +63,17 @@ class BookPreferences {
     held: BookHeld,
     bookChanged: BookChanged | null,
   ) {
-    this.#container = container;
     this.#notify = notify;
     this.#opening = opening;
     this.#generation = generation;
     this.#selection = selection;
     this.#held = held;
-    this.#bookChanged = bookChanged;
+    this.#editing = writeQuery(() => ({
+      ...editBookMutation(container.library),
+      onSuccess: (saved) => {
+        if (saved.kind === 'success') bookChanged?.();
+      },
+    }));
   }
 
   async setLayoutKind(kind: ImageLayoutKind): Promise<void> {
@@ -106,8 +113,7 @@ class BookPreferences {
     this.saving = true;
 
     try {
-      const saved = await this.#container.library.editBook(id, edit);
-      if (saved.kind === 'success') this.#bookChanged?.();
+      const saved = await this.#editing.run({ id, edit });
       if (generation !== this.#generation()) return;
       if (saved.kind !== 'success') {
         this.#fail(failed, describeEditFailure(saved));

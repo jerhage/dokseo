@@ -29,6 +29,8 @@ import { SOURCE_MISSING, ReaderView } from './reader-view.svelte';
 import { heldBook, readingNotice } from './reader-opening';
 import type { ReaderBook } from './reader-opening';
 
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/running-write-query'));
+
 const PORTRAIT: Size = { width: 1000, height: 1500 };
 
 const LANDSCAPE: Size = { width: 2400, height: 1600 };
@@ -806,6 +808,54 @@ describe('ReaderView', () => {
     expect(view.book?.language).toBe('ja');
   });
 
+  it('clears the saving flag on dispose while a setting is still saving', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    world.gate = new Promise<void>(() => undefined);
+
+    void view.preferences.setDirection('ltr');
+    expect(view.preferences.saving).toBe(true);
+    view.dispose();
+
+    expect(view.preferences.saving).toBe(false);
+  });
+
+  it('keeps a setting that answers after another book opened off the book now shown', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    let release = (): void => undefined;
+    world.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const changing = view.preferences.setLanguage('ko');
+    await view.open(bookId('one'));
+    release();
+    await changing;
+
+    expect(view.book?.language).toBe('ja');
+  });
+
+  it('reports nothing for a failed setting that answers after another book opened', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    let release = (): void => undefined;
+    world.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    world.editing = 'failed';
+
+    const changing = view.preferences.setDirection('ltr');
+    await view.open(bookId('one'));
+    release();
+    await changing;
+
+    expect(world.notices).toEqual([]);
+  });
+
   it('reports a failed language change and keeps the language', async () => {
     const world = fakes();
     world.editing = 'failed';
@@ -1140,6 +1190,7 @@ describe('the reading place of a continuous strip', () => {
     expect(world.edits).toEqual([]);
 
     view.dispose();
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(world.edits.map((edit) => edit.position)).toEqual([
       imagePlace(imageIndex(5), imageIndex(5), 0.5),
