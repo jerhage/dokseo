@@ -15,8 +15,8 @@ interface WriteQuery<R, V> {
   reset(): void;
 }
 
-function writeQuery<R, V>(
-  options: Accessor<CreateMutationOptions<R, DefaultError, V>>,
+function writeQuery<R, V, C = unknown>(
+  options: Accessor<CreateMutationOptions<R, DefaultError, V, C>>,
   client?: Accessor<QueryClient>,
 ): WriteQuery<R, V> {
   const mutation = createMutation(options, client);
