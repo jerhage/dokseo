@@ -17,7 +17,9 @@
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
 
-  const session = new ReadSession(useContainer(), toastNotify(getToaster()), {
+  const notify = toastNotify(getToaster());
+  const copyText = (text: string): Promise<void> => navigator.clipboard.writeText(text);
+  const session = new ReadSession(useContainer(), notify, {
     fileId: () => page.params.fileId,
     requested: () => page.url,
     shown: () => new URL(location.href),
@@ -64,6 +66,8 @@
         passages={comparePassages}
         source="text"
         {visible}
+        {copyText}
+        {notify}
         onSeek={(passage) => void flow.jumpToPassage(passage.cfi, passage.quote)}
       />
     {/snippet}
@@ -94,6 +98,8 @@
         passages={comparePassages}
         source="images"
         {visible}
+        {copyText}
+        {notify}
       />
     {/snippet}
   </ReaderScreen>

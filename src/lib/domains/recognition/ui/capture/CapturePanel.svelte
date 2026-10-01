@@ -15,32 +15,26 @@
   import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import Trash from '$lib/components/icons/Trash.svelte';
-  import { getToaster } from '$lib/components/toast-context';
   import type { TextAnchor } from '$lib/shared/anchor';
   import { isComposingKey } from '$lib/shared/composing-key';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
-  import { toastNotify } from '$lib/shared/notice-toast';
+  import type { Notify } from '$lib/shared/notice';
   import type { PassageOrder } from '../../domain/capture/capture-order';
-  import { engineMismatch } from '../../domain/engine/ocr-engine';
-  import { modelLoadAnnouncement } from '../engine/engine-warmup.svelte';
   import type { FocusTarget } from './card-editing.svelte';
-  import { CaptureCards } from './capture-cards.svelte';
-  import type { Card, CardJump } from './capture-cards.svelte';
+  import type { CardJump } from './capture-cards.svelte';
+  import { CapturePanelView } from './capture-panel.svelte';
   import type { CaptureView } from './capture-view.svelte';
   import { CAPTURE_SORTS, CAPTURE_SORT_LABEL, captureSortName } from './capture-sort';
-  import { clearWarning } from './clearing';
   import { emptyPanelText } from './empty-panel';
   import type { CaptureSource } from './empty-panel';
-  import { TagSelection } from './tag-selection.svelte';
   import CaptureCard from './CaptureCard.svelte';
   import CaptureListData from './CaptureListData.svelte';
   import type { DraftField } from './card-drafts.svelte';
   import DocumentTags from './DocumentTags.svelte';
   import TagPickerModal from './TagPickerModal.svelte';
-  import { searchSteps } from './panel-search';
-  import { TextCopy } from './text-copy.svelte';
+  import type { ClipboardWrite } from './text-copy.svelte';
 
   type Props = {
     readonly view: CaptureView;
@@ -49,63 +43,37 @@
     readonly passages: PassageOrder;
     readonly source: CaptureSource;
     readonly visible: boolean;
+    readonly copyText: ClipboardWrite;
+    readonly notify: Notify;
     readonly onSeek?: (passage: TextAnchor) => void;
   };
 
-  let { view, language, direction, passages, source, visible, onSeek }: Props = $props();
+  let { view, language, direction, passages, source, visible, copyText, notify, onSeek }: Props =
+    $props();
 
   const uid = $props.id();
 
-  const panel = new CaptureCards(() => ({
-    captures: view.list.captures,
-    newestFirst: view.list.newestFirst,
-    tags: view.tagging.tags,
-    book: view.list.book,
-    language,
-    progress: view.warmup.progress,
-    direction,
-    passages,
-    seekable: onSeek !== undefined,
-  }));
-
-  const selection = new TagSelection(
-    {
-      tagsOn: (id) => view.list.captures.find((capture) => capture.id === id)?.tagIds ?? [],
-      loadCounts: () => view.tagging.loadTagCounts(),
-      add: (id, tag) => view.tagging.addTag(id, tag),
-      remove: (id, tag) => view.tagging.removeTag(id, tag),
-      create: (id, name) => view.tagging.createTag(id, name),
-    },
-    () => ({ tags: view.tagging.tags, counts: view.tagging.libraryCounts }),
+  const panel = new CapturePanelView(
+    () => ({ view, language, direction, passages, seekable: onSeek !== undefined }),
+    (text) => copyText(text),
+    (notice) => notify(notice),
   );
 
   const drafts = $derived(view.drafts);
 
-  const copying = new TextCopy(
-    (text) => navigator.clipboard.writeText(text),
-    toastNotify(getToaster()),
-  );
-
   let list = $state<HTMLElement | null>();
-  let tagFrom: FocusTarget | null = null;
 
-  const mismatch = $derived(engineMismatch(view.warmup.session, language));
-  const waiting = $derived(view.list.captures.some((capture) => capture.status === 'pending'));
-  const announcement = $derived(waiting ? modelLoadAnnouncement(view.warmup.progress) : '');
-  const cards = $derived(panel.cards);
-  const searching = $derived(panel.searching);
-  const steps = $derived(searchSteps(panel.cursor, cards.length, view.list.count));
+  const cards = $derived(panel.cards.cards);
+  const searching = $derived(panel.cards.searching);
   const stepping = $derived<StepperSteps | null>(
     searching
       ? {
-          previous: steps.previous ? () => stepBy(-1) : null,
-          next: steps.next ? () => stepBy(1) : null,
-          count: steps.tally,
+          previous: panel.steps.previous ? () => stepBy(-1) : null,
+          next: panel.steps.next ? () => stepBy(1) : null,
+          count: panel.steps.tally,
         }
       : null,
   );
-  const warning = $derived(view.clearAll.confirming ? clearWarning(view.clearAll.scope) : null);
-  const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
 
   function openHref(href: string, replace: boolean): void {
     void goto(href, { replaceState: replace, keepFocus: true, noScroll: true });
@@ -122,7 +90,7 @@
   function follow(event: MouseEvent, at: number): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-    const jump = panel.jumpTo(at);
+    const jump = panel.cards.jumpTo(at);
     if (jump.kind === 'nowhere') return;
 
     event.preventDefault();
@@ -130,7 +98,7 @@
   }
 
   function stepBy(by: number): void {
-    navigate(panel.jumpTo(panel.cursor + by));
+    navigate(panel.stepBy(by));
   }
 
   function stepOnEnter(event: KeyboardEvent): void {
@@ -146,51 +114,22 @@
     from?.focus();
   }
 
-  function openDraft(field: DraftField, card: Card, from: FocusTarget | null): void {
-    const written = field === 'note' ? (card.annotation ?? '') : (card.text ?? '');
-    drafts.open(field, card.id, written, from);
-  }
-
-  function abandon(field: DraftField, capture: CaptureId): void {
-    void restore(drafts.abandon(field, capture));
-  }
-
   async function save(field: DraftField, capture: CaptureId): Promise<void> {
-    const saved = await drafts.save(field, capture, (written) =>
-      match(field)
-        .with('text', () => view.edits.edit(capture, written))
-        .with('note', () => view.edits.annotate(capture, written))
-        .exhaustive(),
-    );
-
+    const saved = await panel.save(field, capture);
     if (saved.kind === 'closed') await restore(saved.from);
   }
 
   async function remove(capture: CaptureId): Promise<void> {
-    if (selection.opened(capture)) selection.close();
-    const removed = view.removal.remove(capture);
+    const removed = panel.remove(capture);
     await tick();
     list?.focus({ preventScroll: true });
-    if ((await removed) === 'saved') drafts.forget(capture);
-  }
-
-  function openTags(capture: CaptureId, from: FocusTarget): void {
-    tagFrom = from;
-    selection.open(capture);
+    await removed;
   }
 
   function revealIfLatest(id: CaptureId): Attachment<HTMLElement> {
     return (node) => {
-      if (panel.reveals(id, view.list.latest, visible)) node.scrollIntoView({ block: 'nearest' });
+      if (panel.reveals(id, visible)) node.scrollIntoView({ block: 'nearest' });
     };
-  }
-
-  function closeTags(): void {
-    if (selection.picker.capture === null) return;
-
-    selection.close();
-    void restore(tagFrom);
-    tagFrom = null;
   }
 </script>
 
@@ -210,7 +149,10 @@
       label={CAPTURE_SORT_LABEL}
     >
       {#each CAPTURE_SORTS as choice (choice)}
-        <DropdownItem selected={panel.sort === choice} onclick={() => panel.sortBy(choice)}>
+        <DropdownItem
+          selected={panel.cards.sort === choice}
+          onclick={() => panel.cards.sortBy(choice)}
+        >
           {captureSortName(choice)}
         </DropdownItem>
       {/each}
@@ -230,8 +172,8 @@
     </Dropdown>
   </header>
 
-  <p class="visually-hidden" role="status">{announcement}</p>
-  <p class="visually-hidden" role="status">{copying.told}</p>
+  <p class="visually-hidden" role="status">{panel.announcement}</p>
+  <p class="visually-hidden" role="status">{panel.copying.told}</p>
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <CaptureListData
@@ -252,7 +194,7 @@
             class="gap-1"
           >
             <SearchField
-              bind:value={panel.query}
+              bind:value={panel.cards.query}
               label="Search this book's captures and notes"
               hideLabel
               class="flex-fill min-w-0"
@@ -263,8 +205,8 @@
           </Stepper>
         {/if}
 
-        {#if mismatch !== null}
-          <Alert variant="warning">{mismatch}</Alert>
+        {#if panel.mismatch !== null}
+          <Alert variant="warning">{panel.mismatch}</Alert>
         {/if}
       {/snippet}
 
@@ -275,16 +217,16 @@
               <CaptureCard
                 {card}
                 {language}
-                current={searching && order === panel.cursor}
+                current={searching && order === panel.cards.cursor}
                 {drafts}
-                copied={copying.copied === card.id}
+                copied={panel.copying.copied === card.id}
                 onseek={onSeek}
                 onfollow={(event) => follow(event, order)}
-                onwrite={(field, from) => openDraft(field, card, from)}
+                onwrite={(field, from) => panel.openDraft(field, card, from)}
                 onsave={(field) => void save(field, card.id)}
-                onabandon={(field) => abandon(field, card.id)}
-                ontag={(from) => openTags(card.id, from)}
-                oncopy={(text) => void copying.copy(card.id, text)}
+                onabandon={(field) => void restore(panel.abandon(field, card.id))}
+                ontag={(from) => panel.openTags(card.id, from)}
+                oncopy={(text) => void panel.copying.copy(card.id, text)}
                 onremove={(capture) => void remove(capture)}
               />
             </li>
@@ -295,26 +237,26 @@
   </div>
 </section>
 
-{#if tagging !== null}
-  {@const held = tagging}
+{#if panel.tagging !== null}
+  {@const held = panel.tagging}
   <TagPickerModal
     open
-    picker={selection.picker}
+    picker={panel.selection.picker}
     place={held.place}
     chips={held.tags}
-    onchoose={(row) => void selection.choose(row)}
-    onuntag={(tag) => void selection.drop(held.id, tag)}
-    onclose={closeTags}
+    onchoose={(row) => void panel.selection.choose(row)}
+    onuntag={(tag) => void panel.selection.drop(held.id, tag)}
+    onclose={() => void restore(panel.closeTags())}
   />
 {/if}
 
 <Modal
-  open={warning !== null}
+  open={panel.warning !== null}
   title="Delete every capture"
   size="sm"
   onclose={() => view.clearAll.dismiss()}
 >
-  <p class="m-0">{warning}</p>
+  <p class="m-0">{panel.warning}</p>
   {#snippet footer(close)}
     <Button variant="ghost" onclick={close}>Keep them</Button>
     <Button variant="danger" onclick={() => void view.clearAll.clear()}>
