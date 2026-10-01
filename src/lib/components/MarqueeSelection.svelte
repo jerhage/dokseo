@@ -1,16 +1,6 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import {
-    NOT_SCROLLED,
-    anchorOnScreen,
-    anchoredRect,
-    endsInClick,
-    marqueeBox,
-    marqueeEnd,
-    marqueePress,
-    scrolledFurther,
-    stayedPut,
-  } from './marquee-selection';
+  import { MarqueeDrag } from './marquee-drag.svelte';
   import type {
     MarqueeEnd,
     MarqueePoint,
@@ -19,12 +9,6 @@
     MarqueeRefusal,
     MarqueeStroke,
   } from './marquee-selection';
-
-  type Watch = {
-    readonly id: number;
-    readonly from: MarqueePoint;
-    readonly strayed: boolean;
-  };
 
   type Props = {
     readonly within: HTMLElement | null;
@@ -58,28 +42,32 @@
     ondismiss,
   }: Props = $props();
 
-  const DRIVEN_POINTER = 'touch';
-
   let host = $state<HTMLDivElement | null>(null);
-  let corner = $state.raw<MarqueePoint | null>(null);
-  let anchor = $state.raw<MarqueePoint | null>(null);
-  let pointer = $state.raw<MarqueePoint | null>(null);
-  let travelled = $state.raw<MarqueePoint>(NOT_SCROLLED);
-  let held = $state<number | null>(null);
-  let kept = $state.raw<MarqueeRect | null>(null);
-  let watch = $state.raw<Watch | null>(null);
 
-  const box = $derived.by(() => {
-    const from = anchor;
-    const to = pointer;
-    const origin = corner;
-    if (from === null || to === null || origin === null) return null;
-
-    return marqueeBox(anchorOnScreen(from, travelled), to, origin);
+  const drag = new MarqueeDrag({
+    surface: () => within,
+    release,
+    pointerTypes: () => pointerTypes,
+    slop: (pointerType) => slop(pointerType),
+    minimum: () => minimum,
+    suppressed: () => suppressed,
+    onstart: () => onstart?.(),
+    ondraw: (selection) => ondraw?.(selection),
+    onend: (end, stroke) => onend?.(end, stroke),
+    onrefuse: (refusal) => onrefuse?.(refusal),
+    onclick: () => onclick?.(),
+    ondismiss: () => ondismiss?.(),
   });
+
+  const box = $derived(drag.box);
 
   function pointAt(event: PointerEvent): MarqueePoint {
     return { x: event.clientX, y: event.clientY };
+  }
+
+  function cornerOf(layer: HTMLDivElement): MarqueePoint {
+    const placed = layer.getBoundingClientRect();
+    return { x: placed.x, y: placed.y };
   }
 
   function onContent(element: HTMLElement, event: PointerEvent): boolean {
@@ -95,116 +83,46 @@
     if (element !== null && element.hasPointerCapture(id)) element.releasePointerCapture(id);
   }
 
-  function drawTo(from: MarqueePoint, to: MarqueePoint): void {
-    pointer = to;
-    ondraw?.(anchoredRect(from, travelled, to));
-  }
-
-  function stopDrag(): void {
-    const id = held;
-    if (id !== null) release(id);
-    held = null;
-    anchor = null;
-    pointer = null;
-  }
-
-  function begin(layer: HTMLDivElement, id: number, from: MarqueePoint, to: MarqueePoint): void {
-    const placed = layer.getBoundingClientRect();
-    corner = { x: placed.x, y: placed.y };
-    anchor = from;
-    travelled = NOT_SCROLLED;
-    held = id;
-    kept = null;
-    onstart?.();
-    drawTo(from, to);
-  }
-
-  function conclude(
-    released: number,
-    to: MarqueePoint,
-    pointerType: string,
-    clicks: boolean,
-  ): void {
-    const id = held;
-    if (id === null) return;
-    if (id !== released) {
-      onrefuse?.({ kind: 'pointer-mismatch', held: id, released });
-      return;
-    }
-
-    const surface = within;
-    const from = anchor === null ? null : anchorOnScreen(anchor, travelled);
-    stopDrag();
-    if (surface === null || from === null) {
-      onrefuse?.({
-        kind: 'no-drag-origin',
-        hasSurface: surface !== null,
-        hasAnchor: from !== null,
-      });
-      return;
-    }
-
-    const end = marqueeEnd(from, to, slop(pointerType), minimum);
-    onend?.(end, { from, to, surface });
-    if (clicks && endsInClick(end)) onclick?.();
-  }
-
   export function dragging(): boolean {
-    return held !== null;
+    return drag.dragging;
   }
 
   export function followScroll(by: MarqueePoint): void {
-    const from = anchor;
-    const to = pointer;
-    if (held === null || from === null) return;
-
-    travelled = scrolledFurther(travelled, by);
-    if (to !== null) drawTo(from, to);
+    drag.followScroll(by);
   }
 
   export function keep(selection: MarqueeRect): void {
-    kept = selection;
+    drag.keep(selection);
   }
 
   export function reset(): void {
-    watch = null;
-    if (anchor === null && kept === null) return;
-    stopDrag();
-    kept = null;
+    drag.reset();
   }
 
   export function dismiss(): void {
-    watch = null;
-    if (anchor === null && kept === null) return;
-    stopDrag();
-    kept = null;
-    ondismiss?.();
+    drag.dismiss();
   }
 
   export function pointerdown(event: PointerEvent): void {
     const element = within;
     const layer = host;
-    watch = null;
+    drag.unwatch();
     if (element === null || layer === null) return;
 
-    const press = marqueePress(
+    const press = drag.press(
       {
-        ready: !suppressed,
+        id: event.pointerId,
+        at: pointAt(event),
         primary: event.isPrimary,
         button: event.button,
-        onContent: onContent(element, event),
         pointerType: event.pointerType,
+        onContent: onContent(element, event),
       },
-      pointerTypes,
+      () => cornerOf(layer),
     );
     match(press)
-      .with({ kind: 'ignored' }, () => undefined)
-      .with({ kind: 'watched' }, () => {
-        watch = { id: event.pointerId, from: pointAt(event), strayed: false };
-      })
+      .with({ kind: 'ignored' }, { kind: 'watched' }, () => undefined)
       .with({ kind: 'drawn' }, () => {
-        const at = pointAt(event);
-        begin(layer, event.pointerId, at, at);
         element.setPointerCapture(event.pointerId);
         event.preventDefault();
       })
@@ -212,64 +130,35 @@
   }
 
   export function pointermove(event: PointerEvent): void {
-    const watching = watch;
-    if (watching !== null && watching.id === event.pointerId) {
-      if (!watching.strayed && !stayedPut(watching.from, pointAt(event), minimum)) {
-        watch = { ...watching, strayed: true };
-      }
-      return;
-    }
-
-    const from = anchor;
-    if (held !== event.pointerId || from === null) return;
-    drawTo(from, pointAt(event));
+    drag.move(event.pointerId, pointAt(event));
   }
 
   export function pointerup(event: PointerEvent): void {
-    const watching = watch;
-    if (watching !== null && watching.id === event.pointerId) {
-      watch = null;
-      if (!watching.strayed && stayedPut(watching.from, pointAt(event), minimum)) onclick?.();
-      return;
-    }
-
-    conclude(event.pointerId, pointAt(event), event.pointerType, true);
+    drag.lift(event.pointerId, pointAt(event), event.pointerType);
   }
 
   export function pointercancel(event: PointerEvent): void {
-    if (watch !== null && watch.id === event.pointerId) {
-      watch = null;
-      return;
-    }
-
-    if (held !== event.pointerId) return;
-    stopDrag();
+    drag.cancel(event.pointerId);
   }
 
   export function beginAt(id: number, from: MarqueePoint, to: MarqueePoint): void {
     const layer = host;
-    watch = null;
-    if (within === null || layer === null || suppressed) return;
+    drag.unwatch();
+    if (within === null || layer === null) return;
 
-    begin(layer, id, from, to);
+    drag.beginAt(id, from, to, () => cornerOf(layer));
   }
 
   export function extendTo(at: MarqueePoint): void {
-    const from = anchor;
-    if (held === null || from === null) return;
-    drawTo(from, at);
+    drag.extendTo(at);
   }
 
   export function endAt(at: MarqueePoint): void {
-    const id = held;
-    if (id === null) return;
-
-    conclude(id, at, DRIVEN_POINTER, false);
+    drag.endAt(at);
   }
 
   export function abandon(): void {
-    if (held === null) return;
-    stopDrag();
+    drag.abandon();
   }
 </script>
 
