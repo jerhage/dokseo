@@ -25,7 +25,6 @@
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
-  import { dueAfter, showsGuide } from '$lib/shared/guide-kind';
   import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -33,8 +32,8 @@
   import type { PageFit } from '$lib/shared/page-fit';
   import { SIDE_ZONE_SHARE, swipeMayStart } from '$lib/shared/page-turn';
   import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
-  import { guideSeen, markGuideSeen } from '$lib/shared/seen-guides.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
+  import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
   import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
@@ -145,12 +144,10 @@
     return heldLines;
   });
 
-  let guideDue = $state(
-    untrack(() => dueAfter({ kind: 'opened', seen: guideSeen(pagedGuide(turns, direction).kind) })),
-  );
-
   const guide = $derived(pagedGuide(turns, direction));
-  const guideShown = $derived(showsGuide({ offered: offersTouchGuide(pointing), due: guideDue }));
+  const touchGuide = new TouchGuide(() => guide.kind);
+  touchGuide.open();
+  const guideShown = $derived(touchGuide.shownWhen(offersTouchGuide(pointing)));
 
   function label(index: ImageIndex): string {
     return String(index + 1).padStart(3, '0');
@@ -266,12 +263,7 @@
   }
 
   export function showGuide(): void {
-    guideDue = dueAfter({ kind: 'recalled' });
-  }
-
-  function dismissGuide(): void {
-    guideDue = dueAfter({ kind: 'dismissed' });
-    markGuideSeen(guide.kind);
+    touchGuide.recall();
   }
 
   export function activeFit(): Fit {
@@ -706,7 +698,7 @@
     />
 
     {#if guideShown}
-      <LessonScrim class="col gap-0" ondismiss={dismissGuide}>
+      <LessonScrim class="col gap-0" ondismiss={() => touchGuide.dismiss()}>
         {#if guide.zones.length > 0}
           <div class="zones flex-1 min-h-0" style:--side-share={SIDE_ZONE_SHARE}>
             {#each guide.zones as zone (zone.zone)}

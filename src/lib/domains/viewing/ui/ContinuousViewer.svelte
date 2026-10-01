@@ -16,11 +16,10 @@
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
-  import { dueAfter, showsGuide } from '$lib/shared/guide-kind';
   import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import type { PagePicture } from '$lib/shared/page-source';
-  import { guideSeen, markGuideSeen } from '$lib/shared/seen-guides.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
+  import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import type { ReadingPosition } from '../domain/reading-position';
   import {
     anchorOf,
@@ -160,9 +159,9 @@
     return heldLines;
   });
 
-  let guideDue = $state(dueAfter({ kind: 'opened', seen: guideSeen(STRIP_GUIDE_KIND) }));
-
-  const guideShown = $derived(showsGuide({ offered: offersTouchGuide(pointing), due: guideDue }));
+  const touchGuide = new TouchGuide(() => STRIP_GUIDE_KIND);
+  touchGuide.open();
+  const guideShown = $derived(touchGuide.shownWhen(offersTouchGuide(pointing)));
 
   function snapToDevicePixels(value: number): number {
     const ratio = window.devicePixelRatio;
@@ -394,12 +393,7 @@
   }
 
   export function showGuide(): void {
-    guideDue = dueAfter({ kind: 'recalled' });
-  }
-
-  function dismissGuide(): void {
-    guideDue = dueAfter({ kind: 'dismissed' });
-    markGuideSeen(STRIP_GUIDE_KIND);
+    touchGuide.recall();
   }
 
   export function atFitWidth(): boolean {
@@ -626,7 +620,10 @@
   />
 
   {#if guideShown}
-    <LessonScrim class="row items-center justify-center p-4 text-center" ondismiss={dismissGuide}>
+    <LessonScrim
+      class="row items-center justify-center p-4 text-center"
+      ondismiss={() => touchGuide.dismiss()}
+    >
       <SwipeLine lesson={STRIP_GUIDE} />
     </LessonScrim>
   {/if}

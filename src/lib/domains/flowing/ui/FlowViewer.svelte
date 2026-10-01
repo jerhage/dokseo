@@ -17,14 +17,13 @@
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import type { Anchor } from '$lib/shared/anchor';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
-  import { dueAfter, showsGuide } from '$lib/shared/guide-kind';
   import LessonScrim from '$lib/shared/LessonScrim.svelte';
   import PageBar from '$lib/shared/PageBar.svelte';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
-  import { guideSeen, markGuideSeen } from '$lib/shared/seen-guides.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
+  import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
@@ -111,7 +110,7 @@
   let pointerHeld = false;
   let queued: number | null = null;
   let lastPointerType = $state<string | null>(null);
-  let guideDue = $state(false);
+  const touchGuide = new TouchGuide(() => flowGuideKind(view.paging));
   const chapters = new Set<Document>();
   const coarse = window.matchMedia('(pointer: coarse)').matches;
 
@@ -142,22 +141,13 @@
 
   const input = $derived(flowInput(lastPointerType, coarse));
   const guideOffered = $derived(offersFlowGuide({ open: reading, input }));
-  const guideShown = $derived(showsGuide({ offered: guideOffered, due: guideDue }));
+  const guideShown = $derived(touchGuide.shownWhen(guideOffered));
   const guideLesson = $derived(flowSwipeLesson(view.paging));
 
   function armGuide(): void {
     if (!reading) return;
 
-    guideDue = dueAfter({ kind: 'opened', seen: guideSeen(flowGuideKind(view.paging)) });
-  }
-
-  function dismissGuide(): void {
-    guideDue = dueAfter({ kind: 'dismissed' });
-    markGuideSeen(flowGuideKind(view.paging));
-  }
-
-  function showGuide(): void {
-    guideDue = dueAfter({ kind: 'recalled' });
+    touchGuide.open();
   }
 
   function toggleBars(): void {
@@ -445,7 +435,7 @@
       showing = null;
       pointerHeld = false;
       offer = null;
-      guideDue = false;
+      touchGuide.close();
       contentsOpen = false;
       settingsOpen = false;
       chapters.clear();
@@ -493,7 +483,7 @@
     {#if guideShown}
       <LessonScrim
         class="row items-center justify-center px-4 text-center"
-        ondismiss={dismissGuide}
+        ondismiss={() => touchGuide.dismiss()}
       >
         <SwipeLine lesson={guideLesson} />
       </LessonScrim>
@@ -607,5 +597,5 @@
   {saving}
   {onlanguage}
   touchGuide={guideOffered}
-  ontouchguide={showGuide}
+  ontouchguide={() => touchGuide.recall()}
 />
