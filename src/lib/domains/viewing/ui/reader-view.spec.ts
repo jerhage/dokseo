@@ -929,6 +929,47 @@ describe('ReaderView', () => {
     expect(readingNotice(view.opening)).toBeNull();
   });
 
+  it('tells the book changed once a setting is saved', async () => {
+    const world = fakes();
+    let changed = 0;
+    const view = new ReaderView(world.container, world.notify, null, null, () => {
+      changed += 1;
+    });
+    await view.open(bookId('one'));
+
+    await view.setDirection('ltr');
+
+    expect(changed).toBe(1);
+  });
+
+  it('tells the book changed once a place is saved', async () => {
+    const world = fakes();
+    let changed = 0;
+    const view = new ReaderView(world.container, world.notify, null, null, () => {
+      changed += 1;
+    });
+    await view.open(bookId('one'));
+
+    await view.next();
+
+    expect(changed).toBe(1);
+  });
+
+  it('tells nothing when a save fails', async () => {
+    const world = fakes();
+    world.editing = 'failed';
+    let changed = 0;
+    const view = new ReaderView(world.container, world.notify, null, null, () => {
+      changed += 1;
+    });
+    await view.open(bookId('one'));
+
+    await view.next();
+    await view.setDirection('ltr');
+
+    expect(changed).toBe(0);
+  });
+
   it('ignores a failed place save that answers after another book opened', async () => {
     const world = fakes();
     const view = new ReaderView(world.container, world.notify);

@@ -590,6 +590,40 @@ describe('the place a flow book keeps', () => {
     expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null)]);
   });
 
+  it('tells the book changed once a place is saved', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    let changed = 0;
+    const view = new FlowView(world.container, world.notify, () => {
+      changed += 1;
+    });
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+
+    view.close();
+    await settled();
+
+    expect(changed).toBe(1);
+  });
+
+  it('tells nothing when a place save fails', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    world.save = () =>
+      Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk went away' }));
+    let changed = 0;
+    const view = new FlowView(world.container, world.notify, () => {
+      changed += 1;
+    });
+    await view.open(novel(world.place), surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+
+    view.close();
+    await settled();
+
+    expect(changed).toBe(0);
+  });
+
   it('saves nothing for the cfi the book is already stored at', async () => {
     const world = shelf();
     const surfaces = shows();

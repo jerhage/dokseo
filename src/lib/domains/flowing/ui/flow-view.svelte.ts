@@ -52,6 +52,10 @@ type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
 
 type LibraryFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
 
+type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
+
+type BookChanged = () => void;
+
 type ShowFlowBook = (opening: FlowOpening) => Promise<FlowSurface>;
 
 type FlowState =
@@ -138,6 +142,7 @@ class FlowView {
 
   #container: Container;
   #notify: Notify;
+  #bookChanged: BookChanged | null;
   #generation = 0;
   #surface: FlowSurface | null = null;
   #places: PlaceKeeper<ReadingPlace, LibraryFailure>;
@@ -149,11 +154,12 @@ class FlowView {
   #showing: BookId | null = null;
   #ink: PageInk = INK_FOR_THE_DARK_PAGE;
 
-  constructor(container: Container, notify: Notify) {
+  constructor(container: Container, notify: Notify, bookChanged: BookChanged | null = null) {
     this.#container = container;
     this.#notify = notify;
+    this.#bookChanged = bookChanged;
     this.#places = new PlaceKeeper({
-      save: (id, place) => this.#container.library.saveReadingPlace(id, place),
+      save: (id, place) => this.#savePlace(id, place),
       describe: describePlaceFailure,
       notify,
       afterFailure: 'forgets-place',
@@ -428,7 +434,13 @@ class FlowView {
     this.#surface?.destroy();
     this.#surface = null;
   }
+
+  async #savePlace(id: BookId, place: ReadingPlace): Promise<PlaceOutcome> {
+    const saved = await this.#container.library.saveReadingPlace(id, place);
+    if (saved.ok) this.#bookChanged?.();
+    return saved;
+  }
 }
 
 export { FlowView, SETTINGS_FAILED };
-export type { FlowBook, FlowCurtain, FlowState, ShowFlowBook };
+export type { BookChanged, FlowBook, FlowCurtain, FlowState, ShowFlowBook };

@@ -37,6 +37,8 @@ type PlaceMirror = (place: ShownPlace) => void;
 
 type LanguageKnown = (book: BookId, language: Language) => void;
 
+type BookChanged = () => void;
+
 const NO_PAGES: PageGroup = [];
 
 const NO_GROUPS: readonly PageGroup[] = [];
@@ -110,6 +112,7 @@ class ReaderView {
   #notify: Notify;
   #mirror: PlaceMirror | null;
   #languageKnown: LanguageKnown | null;
+  #bookChanged: BookChanged | null;
   #source: PageSource | null = null;
   #generation = 0;
   #places: PlaceKeeper<ImagePlace, EditFailure>;
@@ -119,13 +122,15 @@ class ReaderView {
     notify: Notify,
     mirror: PlaceMirror | null = null,
     languageKnown: LanguageKnown | null = null,
+    bookChanged: BookChanged | null = null,
   ) {
     this.#container = container;
     this.#notify = notify;
     this.#mirror = mirror;
     this.#languageKnown = languageKnown;
+    this.#bookChanged = bookChanged;
     this.#places = new PlaceKeeper({
-      save: (id, place) => this.#container.library.saveReadingPlace(id, place),
+      save: (id, place) => this.#savePlace(id, place),
       describe: describeEditFailure,
       notify,
       afterFailure: 'keeps-place',
@@ -365,12 +370,19 @@ class ReaderView {
     this.#places.assumeStored(null);
   }
 
+  async #savePlace(id: BookId, place: ImagePlace): Promise<EditOutcome> {
+    const saved = await this.#container.library.saveReadingPlace(id, place);
+    if (saved.ok) this.#bookChanged?.();
+    return saved;
+  }
+
   async #edit(id: BookId, edit: BookEdit, failed: string): Promise<void> {
     const generation = this.#generation;
     this.saving = true;
 
     try {
       const saved = await this.#container.library.editBook(id, edit);
+      if (saved.ok) this.#bookChanged?.();
       if (generation !== this.#generation) return;
       if (!saved.ok) {
         this.#fail(failed, describeEditFailure(saved.error));
@@ -476,4 +488,4 @@ class ReaderView {
 }
 
 export { DIRECTION_FAILED, FIT_FAILED, LANGUAGE_FAILED, LAYOUT_FAILED, PAIRING_FAILED, ReaderView };
-export type { LanguageKnown, PlaceMirror };
+export type { BookChanged, LanguageKnown, PlaceMirror };
