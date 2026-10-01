@@ -19,6 +19,10 @@ type ReaderOpening =
   | { readonly kind: 'images'; readonly book: ReaderBook; readonly notice: string | null }
   | { readonly kind: 'flow'; readonly book: FlowBook };
 
+type ShownOpening = Extract<ReaderOpening, { readonly kind: 'images' }>;
+
+type CurtainOpening = Exclude<ReaderOpening, { readonly kind: 'images' }>;
+
 type ReaderStage = 'settling' | 'reading' | 'empty' | 'failed' | 'flowing';
 
 const NOT_OPENED: ReaderOpening = { kind: 'idle' };
@@ -90,4 +94,12 @@ export {
   shownBook,
   withBook,
 };
-export type { FlowBook, OpenOutcome, ReaderBook, ReaderOpening, ReaderStage };
+export type {
+  CurtainOpening,
+  FlowBook,
+  OpenOutcome,
+  ReaderBook,
+  ReaderOpening,
+  ReaderStage,
+  ShownOpening,
+};

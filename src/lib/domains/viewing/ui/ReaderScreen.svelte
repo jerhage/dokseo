@@ -4,7 +4,6 @@
   import { match } from 'ts-pattern';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
   import PageHeader from '$lib/components/PageHeader.svelte';
   import ArrowDown from '$lib/components/icons/ArrowDown.svelte';
@@ -32,9 +31,10 @@
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
-  import { readerCurtain, readerStage, readingNotice } from './reader-opening';
+  import { readerStage, readingNotice } from './reader-opening';
   import type { ReaderView } from './reader-view.svelte';
   import ContinuousViewer from './ContinuousViewer.svelte';
+  import ReaderBookData from './ReaderBookData.svelte';
   import PagedViewer from './PagedViewer.svelte';
   import { scrubPlace, stepMarker } from './page-scrubber';
   import type { ScrubSource } from './page-scrubber';
@@ -122,7 +122,6 @@
   const forwardKey = $derived(view.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight');
 
   const stage = $derived(readerStage(view.opening));
-  const curtain = $derived(readerCurtain(view.opening));
   const warning = $derived(readingNotice(view.opening));
 
   const meta = $derived(book === null ? '' : `${total} images · ${languageName(book.language)}`);
@@ -270,58 +269,49 @@
   {/snippet}
 
   {#snippet page()}
-    {#if curtain === null && book !== null && layout === 'continuous'}
-      <ContinuousViewer
-        bind:this={strip}
-        sizes={view.sizes}
-        start={view.position}
-        pictureAt={(index) => view.pictureAt(index)}
-        measured={(index, size) => view.measure(index, size)}
-        glow={lit}
-        {makes}
-        chromeShown={shown}
-        {selecting}
-        moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
-        select={(regions) => commit(regions, 'column')}
-        clear={() => view.clearSelection()}
-        onTap={toggleChrome}
-      />
-    {:else if curtain === null && book !== null}
-      {#key book.id}
-        <PagedViewer
-          bind:this={paged}
-          pages={view.visiblePages}
-          beside={view.besidePages}
-          direction={book.direction}
-          pageFit={book.pageFit}
-          pictureAt={(index) => view.pictureAt(index)}
-          measured={(index, size) => view.measure(index, size)}
-          glow={lit}
-          {makes}
-          chromeShown={shown}
-          {selecting}
-          turns={touchTurns.value}
-          select={(regions) => commit(regions, 'row')}
-          clear={() => view.clearSelection()}
-          onTap={toggleChrome}
-          onFit={(fit) => void view.setPageFit(fit)}
-          onTurn={turnTowards}
-        />
-      {/key}
-    {:else}
-      <EmptyState
-        variant="fill"
-        live
-        message={curtain ?? ''}
-        class="flex-1 min-h-0 scheme-dark surface-sunken"
-      >
-        {#snippet action()}
-          {#if stage === 'failed'}
-            <Button href="/" variant="primary" size="sm">Back to your library</Button>
-          {/if}
-        {/snippet}
-      </EmptyState>
-    {/if}
+    <ReaderBookData opening={view.opening}>
+      {#snippet children(ready)}
+        {#if layout === 'continuous'}
+          <ContinuousViewer
+            bind:this={strip}
+            sizes={view.sizes}
+            start={view.position}
+            pictureAt={(index) => view.pictureAt(index)}
+            measured={(index, size) => view.measure(index, size)}
+            glow={lit}
+            {makes}
+            chromeShown={shown}
+            {selecting}
+            moveTo={(position, shownThrough) => view.moveTo(position, shownThrough)}
+            select={(regions) => commit(regions, 'column')}
+            clear={() => view.clearSelection()}
+            onTap={toggleChrome}
+          />
+        {:else}
+          {#key ready.book.id}
+            <PagedViewer
+              bind:this={paged}
+              pages={view.visiblePages}
+              beside={view.besidePages}
+              direction={ready.book.direction}
+              pageFit={ready.book.pageFit}
+              pictureAt={(index) => view.pictureAt(index)}
+              measured={(index, size) => view.measure(index, size)}
+              glow={lit}
+              {makes}
+              chromeShown={shown}
+              {selecting}
+              turns={touchTurns.value}
+              select={(regions) => commit(regions, 'row')}
+              clear={() => view.clearSelection()}
+              onTap={toggleChrome}
+              onFit={(fit) => void view.setPageFit(fit)}
+              onTurn={turnTowards}
+            />
+          {/key}
+        {/if}
+      {/snippet}
+    </ReaderBookData>
 
     {#if arrival !== undefined}
       <div class="callout-top-start z-sticky">{@render arrival()}</div>
