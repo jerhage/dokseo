@@ -1,6 +1,7 @@
 import { keepPreviousData, mutationOptions, queryOptions } from '@tanstack/svelte-query';
+import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
-import { unwrap } from '$lib/shared/query-failure';
+import { QueryFailure, unwrap } from '$lib/shared/query-failure';
 import type { Result } from '$lib/shared/result';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { BookMatching } from '../domain/book/book-matching';
@@ -12,7 +13,7 @@ import { libraryKeys } from './library-keys';
 
 type LibraryReads = {
   readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
-  readonly readCover: (id: BookId) => Promise<Result<Blob, LibraryError>>;
+  readonly readCover: (id: BookId) => Promise<Result<Blob | null, LibraryError>>;
   readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
 };
 
@@ -44,13 +45,23 @@ function newestFirst(books: readonly Book[]): readonly Book[] {
   return books.toSorted((a, b) => b.addedAt - a.addedAt);
 }
 
+function heldCover(cover: Result<Blob | null, LibraryError>): Blob | null {
+  if (cover.ok) return cover.value;
+  return match(cover.error)
+    .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, () => null)
+    .with({ kind: 'storage-failed' }, (failed) => {
+      throw new QueryFailure(describeLibraryError(failed), { cause: failed });
+    })
+    .exhaustive();
+}
+
 async function readCovers(
   library: Pick<LibraryReads, 'readCover'>,
   ids: readonly BookId[],
 ): Promise<ReadonlyMap<BookId, Blob>> {
   const read = ids.map(async (id) => {
-    const cover = await library.readCover(id);
-    return cover.ok ? ([id, cover.value] as const) : null;
+    const cover = heldCover(await library.readCover(id));
+    return cover === null ? null : ([id, cover] as const);
   });
   const found = await Promise.all(read);
   return new Map(found.filter((entry) => entry !== null));
@@ -96,29 +107,20 @@ function openFileMutation(library: Pick<LibraryWrites, 'openFile'>) {
 
 function removeBookMutation(library: Pick<LibraryWrites, 'removeBook'>) {
   return mutationOptions({
-    mutationFn: async (id: BookId) => {
-      const removed = await library.removeBook(id);
-      return unwrap(removed, describeLibraryError);
-    },
+    mutationFn: (id: BookId) => library.removeBook(id),
   });
 }
 
 function editBookMutation(library: Pick<LibraryWrites, 'editBook'>) {
   return mutationOptions({
-    mutationFn: async ({ id, edit }: EditRequest) => {
-      const edited = await library.editBook(id, edit);
-      return unwrap(edited, describeLibraryError);
-    },
+    mutationFn: ({ id, edit }: EditRequest) => library.editBook(id, edit),
   });
 }
 
 function markBookMutation(library: Pick<LibraryWrites, 'markFinished' | 'markUnread'>) {
   return mutationOptions({
-    mutationFn: async ({ id, mark }: MarkRequest) => {
-      const marked =
-        mark === 'finished' ? await library.markFinished(id) : await library.markUnread(id);
-      return unwrap(marked, describeLibraryError);
-    },
+    mutationFn: ({ id, mark }: MarkRequest) =>
+      mark === 'finished' ? library.markFinished(id) : library.markUnread(id),
   });
 }
 

@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
+import { failureMessage } from '$lib/shared/query-failure';
 import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
@@ -26,8 +27,6 @@ const RENAME_FAILED = 'Could not rename that tag';
 const RECOLOUR_FAILED = 'Could not recolour that tag';
 
 const REMOVE_FAILED = 'Could not delete that tag';
-
-const STORAGE_UNREACHABLE = 'Local storage could not be reached.';
 
 function describeTagStorage(error: TagError): string {
   return match(error)
@@ -62,12 +61,21 @@ class ManageTagsView {
       void client.invalidateQueries({ queryKey: recognitionKeys.everyCapture() });
     };
     this.#notify = notify;
-    this.#renaming = writeQuery(() => ({ ...renameTagMutation(recognition), onSuccess: refresh }));
+    this.#renaming = writeQuery(() => ({
+      ...renameTagMutation(recognition),
+      onSuccess: refresh,
+      onError: (cause) => this.#fail(RENAME_FAILED, failureMessage(cause)),
+    }));
     this.#recolouring = writeQuery(() => ({
       ...recolourTagMutation(recognition),
       onSuccess: refresh,
+      onError: (cause) => this.#fail(RECOLOUR_FAILED, failureMessage(cause)),
     }));
-    this.#removing = writeQuery(() => ({ ...deleteTagMutation(recognition), onSuccess: refresh }));
+    this.#removing = writeQuery(() => ({
+      ...deleteTagMutation(recognition),
+      onSuccess: refresh,
+      onError: (cause) => this.#fail(REMOVE_FAILED, failureMessage(cause)),
+    }));
   }
 
   startRename(tag: Tag): void {
@@ -105,10 +113,7 @@ class ManageTagsView {
 
     if (generation !== this.#generation) return;
 
-    if (written === null) {
-      this.#fail(RENAME_FAILED, STORAGE_UNREACHABLE);
-      return;
-    }
+    if (written === null) return;
 
     if (!written.ok) {
       match(written.error)
@@ -133,10 +138,7 @@ class ManageTagsView {
 
     if (generation !== this.#generation) return;
 
-    if (written === null) {
-      this.#fail(RECOLOUR_FAILED, STORAGE_UNREACHABLE);
-      return;
-    }
+    if (written === null) return;
 
     if (!written.ok) {
       this.#fail(RECOLOUR_FAILED, describeTagStorage(written.error));
@@ -152,10 +154,7 @@ class ManageTagsView {
 
     if (generation !== this.#generation) return;
 
-    if (stripped === null) {
-      this.#fail(REMOVE_FAILED, STORAGE_UNREACHABLE);
-      return;
-    }
+    if (stripped === null) return;
 
     if (!stripped.ok) {
       this.#fail(REMOVE_FAILED, describeTagStorage(stripped.error));

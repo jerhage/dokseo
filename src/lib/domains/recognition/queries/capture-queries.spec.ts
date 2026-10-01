@@ -53,6 +53,7 @@ describe('everyCaptureQuery', () => {
 
     expect(failure).toBeInstanceOf(QueryFailure);
     expect(failure).toHaveProperty('message', 'Local storage failed: locked');
+    expect(failure).toHaveProperty('cause', { kind: 'storage-failed', cause: 'locked' });
   });
 
   it('files the read under the recognition root, stale at once', () => {

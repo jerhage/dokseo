@@ -25,7 +25,7 @@ function storeRead<T>(result: Result<T, TagError | CaptureError>): StoreRead<T> 
   return match(result.error)
     .with({ kind: 'storage-unavailable' }, (): StoreRead<T> => STORAGE_UNAVAILABLE)
     .with({ kind: 'storage-failed' }, (failed): StoreRead<T> => {
-      throw new QueryFailure(describeStoreFailure(failed));
+      throw new QueryFailure(describeStoreFailure(failed), { cause: failed });
     })
     .exhaustive();
 }

@@ -6,7 +6,7 @@ type ReadCoverDeps = {
   readonly repository: LibraryRepository;
 };
 
-function readCover(deps: ReadCoverDeps, id: BookId): Promise<Result<Blob, LibraryError>> {
+function readCover(deps: ReadCoverDeps, id: BookId): Promise<Result<Blob | null, LibraryError>> {
   return deps.repository.readCover(id);
 }
 

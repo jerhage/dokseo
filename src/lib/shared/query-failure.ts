@@ -6,7 +6,7 @@ class QueryFailure extends Error {
 }
 
 function unwrap<T, E>(result: Result<T, E>, describe: (error: E) => string): T {
-  if (!result.ok) throw new QueryFailure(describe(result.error));
+  if (!result.ok) throw new QueryFailure(describe(result.error), { cause: result.error });
   return result.value;
 }
 

@@ -125,6 +125,17 @@ describe('recognizerSetupQuery', () => {
     await expect(fetched).rejects.toThrow(/^blocked$/u);
   });
 
+  it('keeps the thrown error as the failure cause', async () => {
+    const thrown = new Error('blocked');
+    const reads = setupReads(() => Promise.reject(thrown));
+
+    const fetched = createTestQueryClient().fetchQuery(
+      recognizerSetupQuery(reads.recognition, 'ja'),
+    );
+
+    await expect(fetched).rejects.toHaveProperty('cause', thrown);
+  });
+
   it('rejects without reading when no language is asked', async () => {
     const reads = setupReads(() => Promise.resolve(ok(setupChoice('ja', null))));
 

@@ -110,7 +110,7 @@ async function described<T>(
   try {
     return await read();
   } catch (cause) {
-    throw new QueryFailure(note(describeCause(cause)));
+    throw new QueryFailure(note(describeCause(cause)), { cause });
   }
 }
 

@@ -64,16 +64,45 @@ describe('booksQuery', () => {
 });
 
 describe('coversQuery', () => {
-  it('maps each book to its cover and leaves out a cover it cannot read', async () => {
+  it('maps each book to its cover and leaves out a book with no cover', async () => {
     const client = createTestQueryClient();
     const cover = new Blob(['cover']);
-    const readCover = (id: BookId) => Promise.resolve(id === 'one' ? ok(cover) : err(DENIED));
+    const readCover = (id: BookId) => Promise.resolve(ok(id === 'one' ? cover : null));
 
     const covers = await client.fetchQuery(
       coversQuery({ readCover }, [bookId('one'), bookId('two')]),
     );
 
     expect(covers).toEqual(new Map([[bookId('one'), cover]]));
+  });
+
+  it('resolves no cover for a blocked store or a book the store no longer holds', async () => {
+    const client = createTestQueryClient();
+    const readCover = (id: BookId) =>
+      Promise.resolve(
+        id === 'one'
+          ? err({ kind: 'storage-unavailable' } as const)
+          : err({ kind: 'not-found', id } as const),
+      );
+
+    const covers = await client.fetchQuery(
+      coversQuery({ readCover }, [bookId('one'), bookId('two')]),
+    );
+
+    expect(covers).toEqual(new Map());
+  });
+
+  it('rejects a failed cover read, so no empty cover is cached', async () => {
+    const client = createTestQueryClient();
+    const cover = new Blob(['cover']);
+    const readCover = (id: BookId) => Promise.resolve(id === 'one' ? ok(cover) : err(DENIED));
+    const options = coversQuery({ readCover }, [bookId('one'), bookId('two')]);
+
+    const fetched = client.fetchQuery(options);
+
+    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
+    await expect(fetched).rejects.toThrow('Local storage failed: denied');
+    expect(client.getQueryData(options.queryKey)).toBeUndefined();
   });
 });
 
@@ -117,41 +146,57 @@ describe('libraryKeys', () => {
 });
 
 describe('library mutations', () => {
-  it('rejects a refused removal with the described message', async () => {
+  it('resolves a refused removal as an answer, not a rejection', async () => {
     const client = createTestQueryClient();
+    const refused = err(DENIED);
     const removal = new MutationObserver(
       client,
-      removeBookMutation({ removeBook: () => Promise.resolve(err(DENIED)) }),
+      removeBookMutation({ removeBook: () => Promise.resolve(refused) }),
     );
 
-    await expect(removal.mutate(bookId('one'))).rejects.toThrow('Local storage failed: denied');
+    await expect(removal.mutate(bookId('one'))).resolves.toBe(refused);
   });
 
-  it('resolves the edited book', async () => {
+  it('resolves the edit answer, a missing book included', async () => {
     const client = createTestQueryClient();
-    const edited = book('one', 1);
+    const edited = ok(book('one', 1));
+    const missing = err({ kind: 'not-found', id: bookId('gone') } as const);
     const editing = new MutationObserver(
       client,
-      editBookMutation({ editBook: () => Promise.resolve(ok(edited)) }),
+      editBookMutation({ editBook: (id) => Promise.resolve(id === 'gone' ? missing : edited) }),
     );
 
-    await expect(editing.mutate({ id: edited.id, edit: { title: 'x' } })).resolves.toBe(edited);
+    await expect(editing.mutate({ id: bookId('one'), edit: { title: 'x' } })).resolves.toBe(edited);
+    await expect(editing.mutate({ id: bookId('gone'), edit: { title: 'x' } })).resolves.toBe(
+      missing,
+    );
+  });
+
+  it('rejects a removal that threw', async () => {
+    const client = createTestQueryClient();
+    const thrown = new Error('broken');
+    const removal = new MutationObserver(
+      client,
+      removeBookMutation({ removeBook: () => Promise.reject(thrown) }),
+    );
+
+    await expect(removal.mutate(bookId('one'))).rejects.toBe(thrown);
   });
 
   it('marks through the write the mark names', async () => {
     const client = createTestQueryClient();
-    const finished = book('finished', 1);
-    const unread = book('unread', 1);
+    const finished = ok(book('finished', 1));
+    const unread = ok(book('unread', 1));
     const marking = new MutationObserver(
       client,
       markBookMutation({
-        markFinished: () => Promise.resolve(ok(finished)),
-        markUnread: () => Promise.resolve(ok(unread)),
+        markFinished: () => Promise.resolve(finished),
+        markUnread: () => Promise.resolve(unread),
       }),
     );
 
-    await expect(marking.mutate({ id: finished.id, mark: 'finished' })).resolves.toBe(finished);
-    await expect(marking.mutate({ id: unread.id, mark: 'unread' })).resolves.toBe(unread);
+    await expect(marking.mutate({ id: bookId('one'), mark: 'finished' })).resolves.toBe(finished);
+    await expect(marking.mutate({ id: bookId('one'), mark: 'unread' })).resolves.toBe(unread);
   });
 
   it('resolves a refused upload as an answer, not a rejection', async () => {

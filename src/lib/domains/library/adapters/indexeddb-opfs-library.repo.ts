@@ -86,13 +86,12 @@ function createLibraryRepository(): LibraryRepository {
   const readBlob = async (
     id: BookId,
     pick: (keys: BlobKeys) => string,
-  ): Promise<Result<Blob, LibraryError>> => {
+  ): Promise<Result<Blob | null, LibraryError>> => {
     if (!blobs.isAvailable()) return unavailable();
     const keys = blobKeys(id);
     if (keys === null) return notFlat(id);
     try {
       const blob = await blobs.get(pick(keys));
-      if (blob === null) return missing(id);
       return ok(blob);
     } catch (cause) {
       return failed(cause);
@@ -212,11 +211,14 @@ function createLibraryRepository(): LibraryRepository {
       }
     },
 
-    readSource(id: BookId): Promise<Result<Blob, LibraryError>> {
-      return readBlob(id, (keys) => keys.source);
+    async readSource(id: BookId): Promise<Result<Blob, LibraryError>> {
+      const source = await readBlob(id, (keys) => keys.source);
+      if (!source.ok) return source;
+      if (source.value === null) return missing(id);
+      return ok(source.value);
     },
 
-    readCover(id: BookId): Promise<Result<Blob, LibraryError>> {
+    readCover(id: BookId): Promise<Result<Blob | null, LibraryError>> {
       return readBlob(id, (keys) => keys.cover);
     },
 

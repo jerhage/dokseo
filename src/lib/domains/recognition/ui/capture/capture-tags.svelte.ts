@@ -4,6 +4,7 @@ import type { Container } from '$lib/container';
 import { tagId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
+import { failureMessage } from '$lib/shared/query-failure';
 import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
@@ -16,8 +17,14 @@ import { addTagMutation, createTagMutation, removeTagMutation } from '../../quer
 import type { CaptureTagging, NewTag } from '../../queries/tag-queries';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
 import type { CaptureList } from './capture-list.svelte';
-import { NOT_STORED, refuse, thrownFailure } from './storage-failure';
+import { NOT_STORED, refuse } from './storage-failure';
 import type { StorageFailure } from './storage-failure';
+
+const TAG_NOT_ADDED = 'The tag could not be added';
+
+const TAG_NOT_REMOVED = 'The tag could not be removed';
+
+const TAG_NOT_CREATED = 'The tag could not be created';
 
 type TagOutcome =
   | { readonly kind: 'created'; readonly tag: Tag }
@@ -63,18 +70,21 @@ class CaptureTags {
       onSuccess: (written) => {
         if (written.ok) refresh(recognitionKeys.everyCapture());
       },
+      onError: (cause) => this.#fail(TAG_NOT_ADDED, cause),
     }));
     this.#removing = writeQuery(() => ({
       ...removeTagMutation(recognition),
       onSuccess: (written) => {
         if (written.ok) refresh(recognitionKeys.everyCapture());
       },
+      onError: (cause) => this.#fail(TAG_NOT_REMOVED, cause),
     }));
     this.#creating = writeQuery(() => ({
       ...createTagMutation(recognition),
       onSuccess: (created) => {
         if (created.ok) refresh(recognitionKeys.tags());
       },
+      onError: (cause) => this.#fail(TAG_NOT_CREATED, cause),
     }));
   }
 
@@ -93,16 +103,16 @@ class CaptureTags {
   async addTag(id: CaptureId, tag: TagId): Promise<void> {
     const stored = this.#list.stored(id);
     if (stored === undefined) {
-      refuse(this.#notify, 'The tag could not be added', NOT_STORED);
+      refuse(this.#notify, TAG_NOT_ADDED, NOT_STORED);
       return;
     }
 
     const generation = this.#list.generation;
-    const written = await this.#adding.run({ capture: stored, tag }).catch(thrownFailure);
+    const written = await this.#adding.run({ capture: stored, tag }).catch(() => null);
 
-    if (generation !== this.#list.generation) return;
+    if (generation !== this.#list.generation || written === null) return;
     if (!written.ok) {
-      refuse(this.#notify, 'The tag could not be added', written.error);
+      refuse(this.#notify, TAG_NOT_ADDED, written.error);
       return;
     }
 
@@ -113,16 +123,16 @@ class CaptureTags {
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
     const stored = this.#list.stored(id);
     if (stored === undefined) {
-      refuse(this.#notify, 'The tag could not be removed', NOT_STORED);
+      refuse(this.#notify, TAG_NOT_REMOVED, NOT_STORED);
       return;
     }
 
     const generation = this.#list.generation;
-    const written = await this.#removing.run({ capture: stored, tag }).catch(thrownFailure);
+    const written = await this.#removing.run({ capture: stored, tag }).catch(() => null);
 
-    if (generation !== this.#list.generation) return;
+    if (generation !== this.#list.generation || written === null) return;
     if (!written.ok) {
-      refuse(this.#notify, 'The tag could not be removed', written.error);
+      refuse(this.#notify, TAG_NOT_REMOVED, written.error);
       return;
     }
 
@@ -132,20 +142,20 @@ class CaptureTags {
 
   async createTag(id: CaptureId, name: string): Promise<void> {
     if (this.#list.stored(id) === undefined) {
-      refuse(this.#notify, 'The tag could not be added', NOT_STORED);
+      refuse(this.#notify, TAG_NOT_ADDED, NOT_STORED);
       return;
     }
 
     const generation = this.#list.generation;
     const created = await this.#creating
       .run({ id: tagId(crypto.randomUUID()), name })
-      .catch(thrownFailure);
+      .catch(() => null);
 
-    if (generation !== this.#list.generation) return;
+    if (generation !== this.#list.generation || created === null) return;
 
     const outcome = tagOutcome(created);
     if (outcome.kind === 'failed') {
-      refuse(this.#notify, 'The tag could not be created', outcome.failure);
+      refuse(this.#notify, TAG_NOT_CREATED, outcome.failure);
       return;
     }
 
@@ -153,6 +163,10 @@ class CaptureTags {
 
     this.#tags = withTag(this.#tags, minted);
     await this.addTag(id, minted.id);
+  }
+
+  #fail(title: string, cause: unknown): void {
+    this.#notify({ tone: 'danger', title, message: failureMessage(cause) });
   }
 
   #retag(id: CaptureId, after: readonly TagId[]): void {

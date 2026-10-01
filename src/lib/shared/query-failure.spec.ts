@@ -16,6 +16,12 @@ describe('unwrap', () => {
     );
   });
 
+  it('keeps the error value as the failure cause', () => {
+    expect(() => unwrap(err('locked'), describeDenied)).toThrow(
+      expect.objectContaining({ cause: 'locked' }),
+    );
+  });
+
   it('rejects a fetched query with the described message', async () => {
     const client = createTestQueryClient();
 
