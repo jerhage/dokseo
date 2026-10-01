@@ -19,7 +19,7 @@ import type { Tag } from '../../domain/tag/tag';
 import type { TagError } from '../../domain/tag/tag-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { CaptureCollection } from './capture-collection.svelte';
-import type { Settled } from './capture-collection.svelte';
+import type { Settled } from './panel-capture';
 
 function byCfi(earlier: string, later: string): number {
   return earlier.localeCompare(later);
@@ -179,7 +179,7 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
 }
 
 function panelTexts(collection: CaptureCollection): readonly string[] {
-  return collection.captures.map((capture) =>
+  return collection.list.captures.map((capture) =>
     capture.status === 'done' ? capture.text.text : capture.status,
   );
 }
@@ -195,7 +195,7 @@ describe('CaptureCollection', () => {
     world.store.rows.push(storedRow('other', TWO, '別', 3));
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
 
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     expect(panelTexts(collection)).toEqual(['先', '後']);
   });
@@ -203,7 +203,7 @@ describe('CaptureCollection', () => {
   it('settles the pending card the recognition returns and stores the text', async () => {
     const world = fakes();
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     await collection.recognizing(
       regions(),
@@ -217,7 +217,7 @@ describe('CaptureCollection', () => {
   it('stores nothing for a recognition that read no text', async () => {
     const world = fakes();
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     await collection.recognizing(regions(), settles({ status: 'empty' }));
 
@@ -231,7 +231,7 @@ describe('CaptureCollection', () => {
 
     collection.note(regions());
 
-    expect(collection.captures).toEqual([]);
+    expect(collection.list.captures).toEqual([]);
     expect(world.steps.map((step) => step.detail.guard)).toEqual(['no-open-book']);
   });
 
@@ -240,12 +240,12 @@ describe('CaptureCollection', () => {
     world.store.rows = [storedRow('one', ONE, '先', 1)];
     world.store.tags = [namedTag(CROWN, 'crown', 'slate', 1)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
     await collection.loadTagCounts();
 
     await collection.addTag(captureId('one'), CROWN);
 
-    expect(collection.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
+    expect(collection.list.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
     expect(collection.libraryCounts.get(CROWN)).toBe(1);
     expect(collection.bookCounts.get(CROWN)).toBe(1);
   });
@@ -254,12 +254,12 @@ describe('CaptureCollection', () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1), storedRow('other', TWO, '別', 2)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     await collection.clear();
 
-    expect(collection.captures).toEqual([]);
-    expect(collection.count).toBe(0);
+    expect(collection.list.captures).toEqual([]);
+    expect(collection.list.count).toBe(0);
     expect(world.store.rows.map((row) => row.id)).toEqual([captureId('other')]);
   });
 });
@@ -293,7 +293,7 @@ describe('CaptureCollection arrivals', () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 100.333), storedAt('two', 10.666)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     const arrival = collection.arrivalFrom(
       { kind: 'image', index: imageIndex(4), region: imageRect(10.67, 12.5, 40, 20), query: null },
@@ -308,7 +308,7 @@ describe('CaptureCollection arrivals', () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 100), storedAt('two', 10)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     expect(
       collection.arrivalFrom(
@@ -330,7 +330,7 @@ describe('CaptureCollection arrivals', () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     expect(
       collection.arrivalFrom({ kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
@@ -342,7 +342,7 @@ describe('CaptureCollection arrivals', () => {
     const world = fakes();
     world.store.rows = [lifted('here', CFI)];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     expect(collection.passageFrom({ kind: 'passage', cfi: CFI, query: '灯' })).toEqual({
       cfi: CFI,
@@ -354,7 +354,7 @@ describe('CaptureCollection arrivals', () => {
     const world = fakes();
     world.store.rows = [lifted('elsewhere', 'epubcfi(/6/2)')];
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.open(ONE);
+    await collection.list.open(ONE);
 
     expect(collection.passageFrom({ kind: 'passage', cfi: CFI, query: null })).toEqual({
       cfi: CFI,

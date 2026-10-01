@@ -912,7 +912,7 @@ describe('CaptureView', () => {
 
     expect(view.captures).toEqual([]);
     expect(view.load).toEqual({
-      status: 'failed',
+      kind: 'failed',
       message: 'This browser blocks local storage.',
     });
     expect(world.notices).toEqual([]);
@@ -927,7 +927,7 @@ describe('CaptureView', () => {
     await view.open(ONE);
 
     expect(panelTexts(view)).toEqual(['kept']);
-    expect(view.load.status).toBe('failed');
+    expect(view.load.kind).toBe('failed');
   });
 
   it('marks the load as done when both listings succeed', async () => {
@@ -936,7 +936,7 @@ describe('CaptureView', () => {
 
     await view.open(ONE);
 
-    expect(view.load).toEqual({ status: 'loaded' });
+    expect(view.load).toEqual({ kind: 'ready' });
   });
 
   it('lists the stored captures on a second try after a failed load', async () => {
@@ -950,7 +950,7 @@ describe('CaptureView', () => {
     await view.reload();
 
     expect(panelTexts(view)).toEqual(['there all along']);
-    expect(view.load).toEqual({ status: 'loaded' });
+    expect(view.load).toEqual({ kind: 'ready' });
   });
 
   it('keeps an unstored card from this session when the second try lists the store', async () => {

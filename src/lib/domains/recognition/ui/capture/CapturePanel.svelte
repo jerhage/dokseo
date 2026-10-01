@@ -8,7 +8,6 @@
   import Button from '$lib/components/Button.svelte';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import SearchField from '$lib/components/SearchField.svelte';
   import Stepper from '$lib/components/Stepper.svelte';
@@ -36,6 +35,7 @@
   import type { CaptureSource } from './empty-panel';
   import { TagSelection } from './tag-selection.svelte';
   import CaptureCard from './CaptureCard.svelte';
+  import CaptureListData from './CaptureListData.svelte';
   import type { DraftField } from './card-drafts.svelte';
   import DocumentTags from './DocumentTags.svelte';
   import TagPickerModal from './TagPickerModal.svelte';
@@ -106,7 +106,6 @@
   );
   const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
   const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
-  const loadFailure = $derived(view.load.status === 'failed' ? view.load.message : null);
 
   function openHref(href: string, replace: boolean): void {
     void goto(href, { replaceState: replace, keepFocus: true, noScroll: true });
@@ -235,51 +234,43 @@
   <p class="visually-hidden" role="status">{copying.told}</p>
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
-    <div class="col gap-2 px-3 pt-3">
-      {#if view.count > 0}
-        <Stepper
-          steps={stepping}
-          axis="block"
-          countAs="status"
-          spaced
-          previousLabel="Previous match"
-          nextLabel="Next match"
-          class="gap-1"
-        >
-          <SearchField
-            bind:value={panel.query}
-            label="Search this book's captures and notes"
-            hideLabel
-            class="flex-fill min-w-0"
-            placeholder="Search captures and notes…"
-            title="Search this book's captures and notes · Enter steps to the next match"
-            onkeydown={stepOnEnter}
-          />
-        </Stepper>
-      {/if}
-
-      {#if mismatch !== null}
-        <Alert variant="warning">{mismatch}</Alert>
-      {/if}
-
-      {#if loadFailure !== null}
-        <Alert variant="danger" title="Your captures could not be loaded">
-          {loadFailure}
-          {#snippet actions()}
-            <Button size="sm" onclick={() => void view.reload()}>Try again</Button>
-          {/snippet}
-        </Alert>
-      {/if}
-    </div>
-
-    <div class="col gap-2 p-3">
-      {#if cards.length === 0}
-        {#if loadFailure === null}
-          <EmptyState class="p-2" message={emptyPanelText(source, searching)} />
+    <CaptureListData
+      state={view.load}
+      {cards}
+      invitation={emptyPanelText(source, searching)}
+      onretry={() => void view.reload()}
+    >
+      {#snippet above()}
+        {#if view.count > 0}
+          <Stepper
+            steps={stepping}
+            axis="block"
+            countAs="status"
+            spaced
+            previousLabel="Previous match"
+            nextLabel="Next match"
+            class="gap-1"
+          >
+            <SearchField
+              bind:value={panel.query}
+              label="Search this book's captures and notes"
+              hideLabel
+              class="flex-fill min-w-0"
+              placeholder="Search captures and notes…"
+              title="Search this book's captures and notes · Enter steps to the next match"
+              onkeydown={stepOnEnter}
+            />
+          </Stepper>
         {/if}
-      {:else}
+
+        {#if mismatch !== null}
+          <Alert variant="warning">{mismatch}</Alert>
+        {/if}
+      {/snippet}
+
+      {#snippet children(shown)}
         <ul class="col gap-2 list-reset" aria-label="Captures in this book">
-          {#each cards as card, order (card.id)}
+          {#each shown as card, order (card.id)}
             <li {@attach revealIfLatest(card.id)}>
               <CaptureCard
                 {card}
@@ -299,8 +290,8 @@
             </li>
           {/each}
         </ul>
-      {/if}
-    </div>
+      {/snippet}
+    </CaptureListData>
   </div>
 </section>
 

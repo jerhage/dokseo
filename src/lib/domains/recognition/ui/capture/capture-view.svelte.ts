@@ -14,7 +14,9 @@ import type { Result } from '$lib/shared/result';
 import type { ReaderArrival } from '$lib/shared/reader-location';
 import { CardDrafts } from './card-drafts.svelte';
 import { CaptureCollection } from './capture-collection.svelte';
-import type { CaptureLoad, PanelCapture, Settled, WriteOutcome } from './capture-collection.svelte';
+import type { WriteOutcome } from './capture-collection.svelte';
+import type { CaptureRead } from './capture-read';
+import type { PanelCapture, Settled } from './panel-capture';
 import { RecognizerView } from '../engine/recognizer-view.svelte';
 import type { ConsentRequest, PendingRecognition } from '../engine/recognizer-view.svelte';
 import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
@@ -86,15 +88,19 @@ class CaptureView {
       open: (capture) => this.#drafts.open('text', capture, '', null),
       close: (capture) => void this.#drafts.abandon('text', capture),
     });
-    this.#recognizer = new RecognizerView(container, notify, () => this.#collection.generation);
+    this.#recognizer = new RecognizerView(
+      container,
+      notify,
+      () => this.#collection.list.generation,
+    );
   }
 
   get captures(): readonly PanelCapture[] {
-    return this.#collection.captures;
+    return this.#collection.list.captures;
   }
 
-  get load(): CaptureLoad {
-    return this.#collection.load;
+  get load(): CaptureRead {
+    return this.#collection.list.state;
   }
 
   get drafts(): CardDrafts {
@@ -150,11 +156,11 @@ class CaptureView {
   }
 
   get count(): number {
-    return this.#collection.count;
+    return this.#collection.list.count;
   }
 
   get book(): BookId | null {
-    return this.#collection.book;
+    return this.#collection.list.book;
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
@@ -162,19 +168,19 @@ class CaptureView {
   }
 
   get anchors(): readonly Anchor[] {
-    return this.#collection.anchors;
+    return this.#collection.list.anchors;
   }
 
   get newestFirst(): readonly PanelCapture[] {
-    return this.#collection.newestFirst;
+    return this.#collection.list.newestFirst;
   }
 
   get latest(): CaptureId | null {
-    return this.#collection.latest;
+    return this.#collection.list.latest;
   }
 
   get read(): readonly ArrivalCapture[] {
-    return this.#collection.read;
+    return this.#collection.list.read;
   }
 
   arrivalFrom(
@@ -196,21 +202,21 @@ class CaptureView {
   async open(book: BookId): Promise<void> {
     this.#recognizer.forget();
     this.#drafts.clear();
-    await this.#collection.open(book);
+    await this.#collection.list.open(book);
   }
 
   async reload(): Promise<void> {
-    await this.#collection.reload();
+    await this.#collection.list.reload();
   }
 
   close(): void {
-    this.#collection.forget();
+    this.#collection.list.forget();
     this.#drafts.clear();
     this.#recognizer.close();
   }
 
   async warm(book: BookId, language: Language): Promise<void> {
-    if (this.#collection.book !== book) return;
+    if (this.#collection.list.book !== book) return;
 
     await this.#recognizer.warm(language);
   }

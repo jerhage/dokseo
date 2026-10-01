@@ -19,7 +19,7 @@ import { markedLines } from './capture-lines';
 import type { MarkedLines } from './capture-lines';
 import { cardChapter, placeLabel, placeLanguage } from './capture-place';
 import type { CardChapter } from './capture-place';
-import type { CaptureStatus, PanelCapture } from './capture-collection.svelte';
+import type { CaptureStatus, PanelCapture } from './panel-capture';
 import { NO_REVEAL, revealCard } from './capture-reveal';
 import type { CaptureReveal } from './capture-reveal';
 import { readCaptureSort, saveCaptureSort } from './capture-sort';

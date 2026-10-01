@@ -10,7 +10,7 @@ import { recognizedText } from '../../domain/engine/recognized-text';
 import { EMPTY_NOTE } from './capture-card';
 import { CaptureCards } from './capture-cards.svelte';
 import type { CardSource } from './capture-cards.svelte';
-import type { PanelCapture } from './capture-collection.svelte';
+import type { PanelCapture } from './panel-capture';
 import { CAPTURE_SORT_KEY } from './capture-sort';
 import { NOTHING_READ } from './capture-view.svelte';
 
