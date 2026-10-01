@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { useQueryClient } from '@tanstack/svelte-query';
   import { onDestroy } from 'svelte';
   import { afterNavigate, goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
@@ -9,6 +10,7 @@
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
+  import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
@@ -16,8 +18,10 @@
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
 
+  const container = useContainer();
   const session = new ReadSession(
-    useContainer(),
+    container,
+    useQueryClient(),
     toastNotify(getToaster()),
     {
       fileId: () => page.params.fileId,
@@ -28,7 +32,7 @@
     },
     (text) => navigator.clipboard.writeText(text),
   );
-  const { reader, captures, shelf, find, flow } = session;
+  const { reader, captures, find, flow } = session;
   const id = $derived(session.id);
   const language = $derived(session.language);
   const opening = $derived(reader.opening);
@@ -109,14 +113,18 @@
   />
 {/if}
 
-<SearchDialog
-  bind:this={search}
-  book={id}
-  books={shelf.searchedBooks}
-  {find}
-  tags={captures.tagging.tags}
-  covers={shelf.covers}
-  counts={shelf.imageCounts}
-  onopen={() => void shelf.load()}
-  onfollowedInBook={() => session.arrive(id)}
-/>
+<LibraryShelfData library={container.library} lazy>
+  {#snippet children(shelf)}
+    <SearchDialog
+      bind:this={search}
+      book={id}
+      books={shelf.searched}
+      {find}
+      tags={captures.tagging.tags}
+      covers={shelf.covers}
+      counts={shelf.counts}
+      onopen={shelf.reload}
+      onfollowedInBook={() => session.arrive(id)}
+    />
+  {/snippet}
+</LibraryShelfData>

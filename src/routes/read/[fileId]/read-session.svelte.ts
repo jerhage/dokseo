@@ -1,6 +1,7 @@
+import type { QueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
+import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
 import { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
 import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
 import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
@@ -44,10 +45,10 @@ type ReadAddress = {
 class ReadSession {
   readonly reader: ReaderView;
   readonly captures: CaptureView;
-  readonly shelf: LibraryBooks;
   readonly find: CaptureSearchView;
   readonly flow: FlowView;
 
+  #client: QueryClient;
   #address: ReadAddress;
   #notify: Notify;
   #copyText: ClipboardWrite;
@@ -76,10 +77,12 @@ class ReadSession {
 
   constructor(
     container: Container,
+    client: QueryClient,
     notify: Notify,
     address: ReadAddress,
     copyText: ClipboardWrite,
   ) {
+    this.#client = client;
     this.#address = address;
     this.#notify = notify;
     this.#copyText = copyText;
@@ -88,11 +91,11 @@ class ReadSession {
       notify,
       (place) => this.mirror(place),
       (book, known) => this.#warm(book, known),
+      () => this.#bookChanged(),
     );
     this.captures = new CaptureView(container, notify);
-    this.shelf = new LibraryBooks(container);
     this.find = new CaptureSearchView(container, comparePassages);
-    this.flow = new FlowView(container, notify);
+    this.flow = new FlowView(container, notify, () => this.#bookChanged());
   }
 
   get imagePanel(): CapturePanelView {
@@ -168,7 +171,6 @@ class ReadSession {
   close(): void {
     this.reader.dispose();
     this.captures.close();
-    this.shelf.dispose();
     this.find.dispose();
   }
 
@@ -198,6 +200,10 @@ class ReadSession {
       (text) => this.#copyText(text),
       (notice) => this.#notify(notice),
     );
+  }
+
+  #bookChanged(): void {
+    void refreshLibrary(this.#client);
   }
 
   #warm(book: BookId, known: Language): void {

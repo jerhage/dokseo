@@ -1,33 +1,159 @@
 import { describe, expect, it } from 'vitest';
-import type { Container } from '$lib/container';
-import type { Notice } from '$lib/shared/notice';
-import { BookUpload } from './book-upload.svelte';
-import { LibraryBooks } from './library-books.svelte';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { ACTION_NOTICE_MS } from '$lib/shared/notice';
+import { imagePlace } from '$lib/shared/reading-place';
+import type { Book } from '../domain/book/book';
+import { splitUpload } from '../domain/ingest/source-detection';
+import {
+  ALREADY_HELD,
+  describeFailedBook,
+  describeOpenFileError,
+  stageReached,
+  tallyOf,
+  uploadNotice,
+  uploadingBook,
+} from './book-upload.svelte';
 
-describe('BookUpload', () => {
-  it('raises no notice and opens no file for an empty selection', async () => {
-    const opened: unknown[] = [];
-    const notices: Notice[] = [];
-    const container = {
-      library: {
-        openFile: (files: readonly File[]) => {
-          opened.push(files);
-          return Promise.reject(new Error('not reached'));
-        },
-      },
-    } as unknown as Container;
-    const upload = new BookUpload(
-      container,
-      (notice) => {
-        notices.push(notice);
-      },
-      new LibraryBooks(container),
+function book(id: string, title: string): Book {
+  return {
+    id: bookId(id),
+    title,
+    language: 'ja',
+    layoutKind: 'paged',
+    direction: 'rtl',
+    pagePairing: 'single',
+    pageFit: 'height',
+    sourceKind: 'archive',
+    contentHash: contentHash('a1'),
+    fileName: 'book.cbz',
+    imageCount: 182,
+    addedAt: 1,
+    position: imagePlace(imageIndex(13)),
+    lastReadAt: null,
+    finishedAt: null,
+  };
+}
+
+function chosen(name: string, path = ''): File {
+  const file = new File(['x'], name);
+  Object.defineProperty(file, 'webkitRelativePath', { value: path });
+  return file;
+}
+
+describe('uploadNotice', () => {
+  it('announces an added book with an Open action that opens it', () => {
+    const opened: string[] = [];
+
+    const notice = uploadNotice({ kind: 'added', book: book('two', 'Blame! 2') }, (id) => {
+      opened.push(id);
+    });
+    notice.action?.run();
+
+    expect(notice).toEqual({
+      tone: 'success',
+      title: 'Added Blame! 2',
+      action: { label: 'Open', run: expect.any(Function) },
+      duration: ACTION_NOTICE_MS,
+    });
+    expect(opened).toEqual(['two']);
+  });
+
+  it('tells an upload it already holds apart from a new one, and still offers Open', () => {
+    const notice = uploadNotice(
+      { kind: 'already-held', book: book('one', 'Blame! 1') },
+      () => undefined,
     );
 
-    await upload.add([], () => undefined);
+    expect(notice).toEqual({
+      tone: 'info',
+      title: ALREADY_HELD,
+      message: 'Blame! 1',
+      action: { label: 'Open', run: expect.any(Function) },
+      duration: ACTION_NOTICE_MS,
+    });
+  });
+});
 
-    expect(notices).toEqual([]);
-    expect(opened).toEqual([]);
-    expect(upload.busy).toBe(false);
+describe('describeOpenFileError', () => {
+  it('names why an upload was refused', () => {
+    expect(describeOpenFileError({ kind: 'source', error: { kind: 'nothing-usable' } })).toBe(
+      'Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.',
+    );
+    expect(describeOpenFileError({ kind: 'storage', error: { kind: 'storage-unavailable' } })).toBe(
+      'This browser blocks local storage, so uploads cannot be kept.',
+    );
+    expect(describeOpenFileError({ kind: 'fingerprint', cause: 'no hashing here.' })).toBe(
+      'This page cannot check uploads for duplicates here: no hashing here.',
+    );
+  });
+});
+
+describe('describeFailedBook', () => {
+  it('names each failed book by its file', () => {
+    expect(
+      describeFailedBook({
+        name: 'a.pdf',
+        error: { kind: 'source', error: { kind: 'unreadable', cause: 'bad xref' } },
+      }),
+    ).toBe('a.pdf could not be read: bad xref');
+    expect(
+      describeFailedBook({
+        name: 'c.cbz',
+        error: { kind: 'storage', error: { kind: 'storage-failed', cause: 'disk full' } },
+      }),
+    ).toBe('c.cbz: Local storage failed: disk full');
+  });
+});
+
+describe('tallyOf', () => {
+  it('counts the added books apart from the held ones, and describes each failure', () => {
+    expect(
+      tallyOf(
+        [
+          { kind: 'added', book: book('a', 'a') },
+          { kind: 'already-held', book: book('b', 'b') },
+        ],
+        [{ name: 'c.cbz', error: { kind: 'source', error: { kind: 'empty' } } }],
+      ),
+    ).toEqual({
+      added: 1,
+      held: 1,
+      failures: ['c.cbz: No files arrived, so there was nothing to add.'],
+    });
+  });
+});
+
+describe('uploadingBook', () => {
+  it('titles each container in a folder after its own file name, at its place in the batch', () => {
+    const books = splitUpload([
+      chosen('vol2.pdf', 'Series/vol2.pdf'),
+      chosen('vol1.pdf', 'Series/vol1.pdf'),
+    ]);
+
+    expect(books.map((held, index) => uploadingBook(held, index, books.length))).toEqual([
+      {
+        kind: 'uploading',
+        title: 'vol1',
+        stage: { kind: 'inspecting' },
+        batch: { position: 1, total: 2 },
+      },
+      {
+        kind: 'uploading',
+        title: 'vol2',
+        stage: { kind: 'inspecting' },
+        batch: { position: 2, total: 2 },
+      },
+    ]);
+  });
+});
+
+describe('stageReached', () => {
+  it('moves a running upload to the stage it reports, and leaves an idle one alone', () => {
+    const [only] = splitUpload([chosen('one.cbz')]);
+    if (only === undefined) throw new Error('no book');
+    const stage = { kind: 'covering', imageCount: 3 } as const;
+
+    expect(stageReached(uploadingBook(only, 0, 1), stage)).toMatchObject({ stage });
+    expect(stageReached({ kind: 'idle' }, stage)).toEqual({ kind: 'idle' });
   });
 });

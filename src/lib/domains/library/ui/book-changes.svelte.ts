@@ -1,18 +1,18 @@
-import type { Container } from '$lib/container';
+import { useQueryClient } from '@tanstack/svelte-query';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
-import type { Result } from '$lib/shared/result';
+import { failureMessage } from '$lib/shared/query-failure';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Book, BookEdit } from '../domain/book/book';
-import type { LibraryError } from '../domain/book/library-repository';
-import type { LibraryBooks } from './library-books.svelte';
-import { describeLibraryError } from './library-error-text';
+import { editBookMutation, markBookMutation, removeBookMutation } from '../queries/library-queries';
+import type { BookMark, EditRequest, LibraryWrites, MarkRequest } from '../queries/library-queries';
+import { refreshLibrary } from './library-refresh';
 import { onShelf } from './library-shelves';
 import type { Shelf } from './library-shelves';
 
 type ChangeOutcome = 'changed' | 'failed' | 'skipped';
-
-type Mark = 'finished' | 'unread';
 
 type BookChange =
   | { readonly kind: 'idle' }
@@ -31,27 +31,58 @@ const UNREAD_FAILED = 'Could not mark that book unread';
 
 const UNDO_MARK_FAILED = 'Could not undo that change';
 
-function markedTitle(mark: Mark, book: Book): string {
+function markedTitle(mark: BookMark, book: Book): string {
   return mark === 'finished' ? `Marked ${book.title} finished` : `Marked ${book.title} unread`;
+}
+
+function undoOffer(
+  mark: BookMark,
+  before: Book | undefined,
+  marked: Book,
+  shelf: Shelf,
+): string | null {
+  if (before === undefined) return null;
+  if (!onShelf(before, shelf) || onShelf(marked, shelf)) return null;
+  return markedTitle(mark, marked);
+}
+
+function markFailedTitle(mark: BookMark): string {
+  return mark === 'finished' ? FINISH_FAILED : UNREAD_FAILED;
 }
 
 class BookChanges {
   #state = $state.raw<BookChange>(NO_CHANGE);
-  #container: Container;
   #notify: Notify;
-  #library: LibraryBooks;
   #uploading: () => boolean;
+  #removal: WriteQuery<void, BookId>;
+  #editing: WriteQuery<Book, EditRequest>;
+  #marking: WriteQuery<Book, MarkRequest>;
+  #undoing: WriteQuery<Book, EditRequest>;
 
-  constructor(
-    container: Container,
-    notify: Notify,
-    library: LibraryBooks,
-    uploading: () => boolean,
-  ) {
-    this.#container = container;
+  constructor(library: LibraryWrites, notify: Notify, uploading: () => boolean) {
+    const client = useQueryClient();
     this.#notify = notify;
-    this.#library = library;
     this.#uploading = uploading;
+    this.#removal = writeQuery(() => ({
+      ...removeBookMutation(library),
+      onSuccess: () => refreshLibrary(client),
+      onError: (cause) => this.#fail(REMOVE_FAILED, cause),
+    }));
+    this.#editing = writeQuery(() => ({
+      ...editBookMutation(library),
+      onSuccess: () => refreshLibrary(client),
+      onError: (cause) => this.#fail(EDIT_FAILED, cause),
+    }));
+    this.#marking = writeQuery(() => ({
+      ...markBookMutation(library),
+      onSuccess: () => refreshLibrary(client),
+      onError: (cause, { mark }) => this.#fail(markFailedTitle(mark), cause),
+    }));
+    this.#undoing = writeQuery(() => ({
+      ...editBookMutation(library),
+      onSuccess: () => refreshLibrary(client),
+      onError: (cause) => this.#fail(UNDO_MARK_FAILED, cause),
+    }));
   }
 
   get removing(): BookId | null {
@@ -64,107 +95,84 @@ class BookChanges {
 
   async remove(id: BookId): Promise<ChangeOutcome> {
     if (this.#blocked()) return 'skipped';
-    this.#state = { kind: 'removing', id };
-
-    try {
-      const removed = await this.#container.library.removeBook(id);
-      if (!removed.ok) {
-        this.#fail(REMOVE_FAILED, describeLibraryError(removed.error));
-        return 'failed';
-      }
-    } finally {
-      this.#state = NO_CHANGE;
-    }
-
-    await this.#library.load();
-    return 'changed';
+    const removed = await this.#change({ kind: 'removing', id }, () => this.#removal.run(id));
+    return removed === null ? 'failed' : 'changed';
   }
 
   async edit(id: BookId, edit: BookEdit): Promise<ChangeOutcome> {
     if (this.#blocked()) return 'skipped';
-    this.#state = { kind: 'editing', id };
-
-    try {
-      const edited = await this.#container.library.editBook(id, edit);
-      if (!edited.ok) {
-        this.#fail(EDIT_FAILED, describeLibraryError(edited.error));
-        return 'failed';
-      }
-    } finally {
-      this.#state = NO_CHANGE;
-    }
-
-    await this.#library.load();
-    return 'changed';
+    const edited = await this.#change({ kind: 'editing', id }, () =>
+      this.#editing.run({ id, edit }),
+    );
+    return edited === null ? 'failed' : 'changed';
   }
 
-  async markFinished(id: BookId, shelf: Shelf): Promise<void> {
-    await this.#markOn(id, shelf, 'finished');
+  async markFinished(id: BookId, shelf: Shelf, books: readonly Book[]): Promise<void> {
+    await this.#markOn(id, shelf, books, 'finished');
   }
 
-  async markUnread(id: BookId, shelf: Shelf): Promise<void> {
-    await this.#markOn(id, shelf, 'unread');
+  async markUnread(id: BookId, shelf: Shelf, books: readonly Book[]): Promise<void> {
+    await this.#markOn(id, shelf, books, 'unread');
   }
 
   #blocked(): boolean {
     return this.#state.kind !== 'idle' || this.#uploading();
   }
 
-  async #markOn(id: BookId, shelf: Shelf, mark: Mark): Promise<void> {
-    const before = this.#library.books.find((held) => held.id === id);
-    const marked = await this.#mark(id, mark === 'finished' ? FINISH_FAILED : UNREAD_FAILED, () =>
-      mark === 'finished'
-        ? this.#container.library.markFinished(id)
-        : this.#container.library.markUnread(id),
+  async #markOn(id: BookId, shelf: Shelf, books: readonly Book[], mark: BookMark): Promise<void> {
+    if (this.#blocked()) return;
+    const before = books.find((held) => held.id === id);
+    const marked = await this.#change({ kind: 'editing', id }, () =>
+      this.#marking.run({ id, mark }),
     );
     if (marked === null || before === undefined) return;
-    if (!onShelf(before, shelf) || onShelf(marked, shelf)) return;
+    const title = undoOffer(mark, before, marked.value, shelf);
+    if (title === null) return;
 
     this.#notify({
       tone: 'success',
-      title: markedTitle(mark, marked),
+      title,
       action: { label: 'Undo', run: () => void this.#undoMark(before) },
       duration: ACTION_NOTICE_MS,
     });
   }
 
   async #undoMark(before: Book): Promise<void> {
-    await this.#mark(before.id, UNDO_MARK_FAILED, () =>
-      this.#container.library.editBook(before.id, {
-        finishedAt: before.finishedAt,
-        position: before.position,
-      }),
+    if (this.#blocked()) return;
+    const edit = { finishedAt: before.finishedAt, position: before.position };
+    await this.#change({ kind: 'editing', id: before.id }, () =>
+      this.#undoing.run({ id: before.id, edit }),
     );
   }
 
-  async #mark(
-    id: BookId,
-    failed: string,
-    run: () => Promise<Result<Book, LibraryError>>,
-  ): Promise<Book | null> {
-    if (this.#blocked()) return null;
-    this.#state = { kind: 'editing', id };
-
-    let marked: Book;
+  async #change<R>(
+    change: BookChange,
+    run: () => Promise<R>,
+  ): Promise<{ readonly value: R } | null> {
+    this.#state = change;
     try {
-      const changed = await run();
-      if (!changed.ok) {
-        this.#fail(failed, describeLibraryError(changed.error));
-        return null;
-      }
-      marked = changed.value;
+      const value = await run();
+      return { value };
+    } catch {
+      return null;
     } finally {
       this.#state = NO_CHANGE;
     }
-
-    await this.#library.load();
-    return marked;
   }
 
-  #fail(title: string, message: string): void {
-    this.#notify({ tone: 'danger', title, message });
+  #fail(title: string, cause: unknown): void {
+    this.#notify({ tone: 'danger', title, message: failureMessage(cause) });
   }
 }
 
-export { BookChanges, EDIT_FAILED, FINISH_FAILED, REMOVE_FAILED, UNDO_MARK_FAILED, UNREAD_FAILED };
+export {
+  BookChanges,
+  EDIT_FAILED,
+  FINISH_FAILED,
+  REMOVE_FAILED,
+  UNDO_MARK_FAILED,
+  UNREAD_FAILED,
+  markFailedTitle,
+  undoOffer,
+};
 export type { BookChange, ChangeOutcome };

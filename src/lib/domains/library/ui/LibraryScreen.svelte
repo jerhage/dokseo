@@ -34,6 +34,7 @@
   import LibraryMenu from './LibraryMenu.svelte';
   import { LIBRARY_SECTIONS } from './library-sections';
   import { libraryBody } from './library-shelf';
+  import type { ShelfRead } from './library-shelf';
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
   import ShelfView from './ShelfView.svelte';
@@ -44,12 +45,13 @@
 
   type Props = {
     readonly view: LibraryView;
+    readonly shelfRead: ShelfRead;
     readonly scroll: LibraryScrollView;
     readonly onsearcheverything?: (() => void) | undefined;
     query?: string;
   };
 
-  let { view, scroll, onsearcheverything, query = $bindable('') }: Props = $props();
+  let { view, shelfRead, scroll, onsearcheverything, query = $bindable('') }: Props = $props();
 
   let main = $state<HTMLElement | null>(null);
 
@@ -59,9 +61,9 @@
   const arrangement = new ShelfArrangement();
 
   const settingsBook = $derived(
-    view.library.books.find((book) => book.id === openSettingsFor) ?? null,
+    shelfRead.books.find((book) => book.id === openSettingsFor) ?? null,
   );
-  const removeBook = $derived(view.library.books.find((book) => book.id === removeFor) ?? null);
+  const removeBook = $derived(shelfRead.books.find((book) => book.id === removeFor) ?? null);
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
     const outcome = await view.changes.edit(id, edit);
@@ -82,13 +84,13 @@
   }
 
   const searching = $derived(isSearching(query));
-  const titled = $derived(titledBooks(view.library.books, query));
-  const space = $derived(storageText(view.library.storedBytes));
-  const summary = $derived(librarySummary(view.library.books, view.library.storedBytes));
-  const body = $derived(libraryBody(view.library.state, view.upload.pending !== null));
+  const titled = $derived(titledBooks(shelfRead.books, query));
+  const space = $derived(storageText(shelfRead.storedBytes));
+  const summary = $derived(librarySummary(shelfRead.books, shelfRead.storedBytes));
+  const body = $derived(libraryBody(shelfRead.state, view.upload.pending !== null));
   const shown = $derived(arrangement.arrange(titled));
   const matched = $derived(matchedText(shown.length));
-  const resumable = $derived(searching ? [] : continueReading(view.library.books));
+  const resumable = $derived(searching ? [] : continueReading(shelfRead.books));
 
   $effect(() => {
     const top = scroll.settle(body);
@@ -185,9 +187,9 @@
     {/if}
 
     <LibraryBooksData
-      state={view.library.state}
+      state={shelfRead.state}
       importing={view.upload.pending !== null}
-      onretry={() => void view.library.load()}
+      onretry={shelfRead.reload}
     >
       {#snippet children(library)}
         {#if resumable.length > 0}
@@ -206,8 +208,10 @@
             busy={(id) => view.changes.removing === id || view.changes.editing === id}
             onedit={(id) => (openSettingsFor = id)}
             onremove={(id) => (removeFor = id)}
-            onfinish={(id) => void view.changes.markFinished(id, arrangement.shelf.value)}
-            onunread={(id) => void view.changes.markUnread(id, arrangement.shelf.value)}
+            onfinish={(id) =>
+              void view.changes.markFinished(id, arrangement.shelf.value, shelfRead.books)}
+            onunread={(id) =>
+              void view.changes.markUnread(id, arrangement.shelf.value, shelfRead.books)}
           />
         {/if}
 

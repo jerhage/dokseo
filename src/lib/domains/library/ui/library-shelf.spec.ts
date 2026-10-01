@@ -3,7 +3,15 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { LOADING, readFailed, readReady, reloadFailed, reloading } from '$lib/shared/read-state';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
-import { EMPTY_SHELF, failureOf, libraryBody, shelfOf } from './library-shelf';
+import {
+  EMPTY_SHELF,
+  failureOf,
+  imageCountsOf,
+  libraryBody,
+  listedOf,
+  shelfOf,
+  shelfState,
+} from './library-shelf';
 import type { LibraryShelf } from './library-shelf';
 
 const BOOK: Book = {
@@ -66,5 +74,35 @@ describe('failureOf', () => {
     expect(failureOf(reloadFailed(readReady(HELD), 'gone'))).toBe('gone');
     expect(failureOf(reloading(readReady(HELD)))).toBeNull();
     expect(failureOf(LOADING)).toBeNull();
+  });
+});
+
+describe('shelfState', () => {
+  it('puts the covers and the size beside the books once they are read', () => {
+    const covers = new Map([[BOOK.id, 'blob:cover']]);
+
+    expect(shelfState(readReady([BOOK]), covers, 10)).toEqual(
+      readReady({ books: [BOOK], covers, storedBytes: 10 }),
+    );
+  });
+
+  it('keeps a loading or failed read as it is', () => {
+    expect(shelfState(LOADING, new Map(), 10)).toBe(LOADING);
+    expect(shelfState(readFailed('denied'), new Map(), null)).toEqual(readFailed('denied'));
+  });
+});
+
+describe('listedOf', () => {
+  it('lists a book for search with the direction its layout reads in', () => {
+    expect([BOOK, { ...BOOK, layoutKind: 'continuous' as const }].map(listedOf)).toEqual([
+      { id: BOOK.id, title: 'one', language: 'ja', direction: 'rtl' },
+      { id: BOOK.id, title: 'one', language: 'ja', direction: 'ltr' },
+    ]);
+  });
+});
+
+describe('imageCountsOf', () => {
+  it('counts the images of each book', () => {
+    expect(imageCountsOf([{ ...BOOK, imageCount: 12 }])).toEqual(new Map([[BOOK.id, 12]]));
   });
 });

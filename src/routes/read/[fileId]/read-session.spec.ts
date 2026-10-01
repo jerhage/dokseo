@@ -5,6 +5,7 @@ import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
 import { err, ok } from '$lib/shared/result';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { ReadSession } from './read-session.svelte';
 
 const ORIGIN = 'https://reader.test';
@@ -56,6 +57,7 @@ function world(address: string): World {
   const held: World = {
     session: new ReadSession(
       container,
+      createTestQueryClient(),
       () => undefined,
       {
         fileId: () => decodeURIComponent(url.pathname.split('/').at(-1) ?? ''),
@@ -137,14 +139,13 @@ describe('ReadSession', () => {
     const closed = [
       vi.spyOn(held.session.reader, 'dispose'),
       vi.spyOn(held.session.captures, 'close'),
-      vi.spyOn(held.session.shelf, 'dispose'),
       vi.spyOn(held.session.find, 'dispose'),
     ];
 
     go(held, '/read/two');
     await settled();
 
-    expect(closed.map((spy) => spy.mock.calls.length)).toEqual([1, 1, 1, 1]);
+    expect(closed.map((spy) => spy.mock.calls.length)).toEqual([1, 1, 1]);
     expect(held.opened).toEqual([bookId('one'), bookId('two')]);
     expect(held.listed).toEqual([bookId('one'), bookId('two')]);
   });
@@ -332,6 +333,7 @@ describe('ReadSession', () => {
     const held = world('/read/one');
     const refusing = new ReadSession(
       {} as Container,
+      createTestQueryClient(),
       (notice) => held.notices.push(notice.title),
       {
         fileId: () => 'one',

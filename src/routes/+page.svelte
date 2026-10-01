@@ -7,6 +7,7 @@
   import { useContainer } from '$lib/context';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
+  import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
@@ -16,7 +17,7 @@
 
   const container = useContainer();
   const notify = toastNotify(getToaster());
-  const view = new LibraryView(container, notify);
+  const view = new LibraryView(container.library, notify);
   const find = new CaptureSearchView(container, comparePassages);
   const scroll = new LibraryScrollView();
 
@@ -36,23 +37,27 @@
     replaceState(missing.cleaned, page.state);
   });
 
-  onMount(() => {
-    void view.library.load();
-    return () => {
-      view.library.dispose();
-      find.dispose();
-    };
-  });
+  onMount(() => () => find.dispose());
 </script>
 
-<LibraryScreen {view} {scroll} onsearcheverything={() => search?.searchEverything()} bind:query />
+<LibraryShelfData library={container.library}>
+  {#snippet children(shelf)}
+    <LibraryScreen
+      {view}
+      shelfRead={shelf}
+      {scroll}
+      onsearcheverything={() => search?.searchEverything()}
+      bind:query
+    />
 
-<SearchDialog
-  bind:this={search}
-  book={null}
-  books={view.library.searchedBooks}
-  {find}
-  tags={find.tags}
-  covers={view.library.covers}
-  counts={view.library.imageCounts}
-/>
+    <SearchDialog
+      bind:this={search}
+      book={null}
+      books={shelf.searched}
+      {find}
+      tags={find.tags}
+      covers={shelf.covers}
+      counts={shelf.counts}
+    />
+  {/snippet}
+</LibraryShelfData>

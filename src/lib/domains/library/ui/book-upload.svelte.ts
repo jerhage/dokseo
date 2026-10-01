@@ -1,8 +1,12 @@
 import { match } from 'ts-pattern';
-import type { Container } from '$lib/container';
+import { useQueryClient } from '@tanstack/svelte-query';
+import type { QueryClient } from '@tanstack/svelte-query';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notice, Notify } from '$lib/shared/notice';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
 import { suggestTitle } from '../domain/book/title';
 import { describeIngestLimit } from '../domain/ingest/ingest-limits';
@@ -16,8 +20,10 @@ import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { bookMatchingChosen } from './book-matching.svelte';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
-import type { LibraryBooks } from './library-books.svelte';
-import { describeLibraryError } from './library-error-text';
+import { describeLibraryError } from '../queries/library-error-text';
+import { openFileMutation } from '../queries/library-queries';
+import type { LibraryWrites, UploadRequest } from '../queries/library-queries';
+import { refreshLibrary } from './library-refresh';
 import { uploadSummary } from './upload-summary';
 import type { UploadTally } from './upload-summary';
 
@@ -106,6 +112,19 @@ function nameOf(book: UploadBook<File>): string {
   return name.length > 0 ? name : titleOf(book);
 }
 
+function uploadingBook(book: UploadBook<File>, index: number, total: number): UploadState {
+  return {
+    kind: 'uploading',
+    title: titleOf(book),
+    stage: INSPECTING,
+    batch: { position: index + 1, total },
+  };
+}
+
+function stageReached(state: UploadState, stage: UploadStage): UploadState {
+  return state.kind === 'uploading' ? { ...state, stage } : state;
+}
+
 function tallyOf(opened: readonly OpenedUpload[], failed: readonly FailedBook[]): UploadTally {
   const added = opened.filter((upload) => upload.kind === 'added').length;
   return {
@@ -117,14 +136,14 @@ function tallyOf(opened: readonly OpenedUpload[], failed: readonly FailedBook[])
 
 class BookUpload {
   #state = $state.raw<UploadState>(NOT_UPLOADING);
-  #container: Container;
   #notify: Notify;
-  #library: LibraryBooks;
+  #client: QueryClient;
+  #opening: WriteQuery<Result<OpenedUpload, OpenFileError>, UploadRequest>;
 
-  constructor(container: Container, notify: Notify, library: LibraryBooks) {
-    this.#container = container;
+  constructor(library: Pick<LibraryWrites, 'openFile'>, notify: Notify) {
     this.#notify = notify;
-    this.#library = library;
+    this.#client = useQueryClient();
+    this.#opening = writeQuery(() => openFileMutation(library));
   }
 
   get busy(): boolean {
@@ -157,14 +176,13 @@ class BookUpload {
 
     try {
       for (const [index, book] of books.entries()) {
-        this.#state = {
-          kind: 'uploading',
-          title: titleOf(book),
-          stage: INSPECTING,
-          batch: { position: index + 1, total: books.length },
-        };
-        const outcome = await this.#container.library.openFile(book.files, matching, (stage) => {
-          this.#stageReached(stage);
+        this.#state = uploadingBook(book, index, books.length);
+        const outcome = await this.#opening.run({
+          files: book.files,
+          matching,
+          report: (stage) => {
+            this.#state = stageReached(this.#state, stage);
+          },
         });
         if (!outcome.ok) {
           failed.push({ name: nameOf(book), error: outcome.error });
@@ -173,18 +191,14 @@ class BookUpload {
         opened.push(outcome.value);
         if (books.length === 1) this.#notify(uploadNotice(outcome.value, openBook));
         lastBookOpened = index === books.length - 1;
-        if (!lastBookOpened) await this.#library.load();
+        if (!lastBookOpened) await refreshLibrary(this.#client);
       }
     } finally {
       this.#state = NOT_UPLOADING;
     }
 
-    if (lastBookOpened) await this.#library.load();
+    if (lastBookOpened) await refreshLibrary(this.#client);
     this.#announce(books.length, opened, failed);
-  }
-
-  #stageReached(stage: UploadStage): void {
-    if (this.#state.kind === 'uploading') this.#state = { ...this.#state, stage };
   }
 
   #announce(
@@ -206,5 +220,15 @@ class BookUpload {
   }
 }
 
-export { ALREADY_HELD, BookUpload, UPLOAD_FAILED };
+export {
+  ALREADY_HELD,
+  BookUpload,
+  UPLOAD_FAILED,
+  describeFailedBook,
+  describeOpenFileError,
+  stageReached,
+  tallyOf,
+  uploadNotice,
+  uploadingBook,
+};
 export type { OpenBook, UploadState };

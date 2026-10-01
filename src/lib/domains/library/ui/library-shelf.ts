@@ -21,15 +21,18 @@ type ListedBook = {
   readonly direction: ReadingDirection;
 };
 
+type ShelfRead = {
+  readonly state: ReadState<LibraryShelf>;
+  readonly books: readonly Book[];
+  readonly covers: ReadonlyMap<BookId, string>;
+  readonly storedBytes: number | null;
+  readonly failure: string | null;
+  readonly searched: readonly ListedBook[];
+  readonly counts: ReadonlyMap<BookId, number>;
+  readonly reload: () => void;
+};
+
 const EMPTY_SHELF: LibraryShelf = { books: [], covers: new Map(), storedBytes: null };
-
-function revoke(urls: Iterable<string>): void {
-  for (const url of urls) URL.revokeObjectURL(url);
-}
-
-function newestFirst(books: readonly Book[]): readonly Book[] {
-  return books.toSorted((a, b) => b.addedAt - a.addedAt);
-}
 
 function shelfOf(state: ReadState<LibraryShelf>): LibraryShelf {
   return state.kind === 'ready' ? state.value : EMPTY_SHELF;
@@ -39,6 +42,24 @@ function failureOf(state: ReadState<LibraryShelf>): string | null {
   if (state.kind === 'failed') return state.message;
   if (state.kind === 'ready' && state.refresh.kind === 'failed') return state.refresh.message;
   return null;
+}
+
+function shelfState(
+  books: ReadState<readonly Book[]>,
+  covers: ReadonlyMap<BookId, string>,
+  storedBytes: number | null,
+): ReadState<LibraryShelf> {
+  return match(books)
+    .with({ kind: 'loading' }, { kind: 'failed' }, (unread): ReadState<LibraryShelf> => unread)
+    .with({ kind: 'ready' }, (ready): ReadState<LibraryShelf> => ({
+      ...ready,
+      value: { books: ready.value, covers, storedBytes },
+    }))
+    .exhaustive();
+}
+
+function imageCountsOf(books: readonly Book[]): ReadonlyMap<BookId, number> {
+  return new Map(books.map((held) => [held.id, held.imageCount]));
 }
 
 function listedOf(book: Book): ListedBook {
@@ -65,5 +86,5 @@ function libraryBody(state: ReadState<LibraryShelf>, importing: boolean): Librar
     .exhaustive();
 }
 
-export { EMPTY_SHELF, failureOf, libraryBody, listedOf, newestFirst, revoke, shelfOf };
-export type { LibraryBody, LibraryShelf, ListedBook };
+export { EMPTY_SHELF, failureOf, imageCountsOf, libraryBody, listedOf, shelfOf, shelfState };
+export type { LibraryBody, LibraryShelf, ListedBook, ShelfRead };

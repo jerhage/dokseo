@@ -3,30 +3,32 @@
   import { page } from '$app/state';
   import { useContainer } from '$lib/context';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
-  import { LibraryBooks } from '$lib/domains/library/ui/library-books.svelte';
+  import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
   import { readTagName, TAG_PARAMETER } from '$lib/shared/tag-location';
 
   const container = useContainer();
-  const shelf = new LibraryBooks(container);
+  let shelf = $state<ReturnType<typeof LibraryShelfData> | null>(null);
   const wanted = $derived(readTagName(page.url.searchParams.get(TAG_PARAMETER)));
   const view = new TagView(
     container,
-    () => ({ books: shelf.searchedBooks, wanted }),
+    () => ({ books: shelf?.read().searched ?? [], wanted }),
     comparePassages,
   );
 
   onMount(() => {
-    void shelf.load();
     void view.load();
-    return () => shelf.dispose();
   });
 </script>
 
-<TagScreen
-  {view}
-  covers={shelf.covers}
-  libraryFailure={shelf.failure}
-  onretrylibrary={() => void shelf.load()}
-/>
+<LibraryShelfData bind:this={shelf} library={container.library}>
+  {#snippet children(read)}
+    <TagScreen
+      {view}
+      covers={read.covers}
+      libraryFailure={read.failure}
+      onretrylibrary={read.reload}
+    />
+  {/snippet}
+</LibraryShelfData>
