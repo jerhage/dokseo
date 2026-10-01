@@ -19,7 +19,7 @@ import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture
 import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
 import { FlowView } from '$lib/domains/flowing/ui/flow-view.svelte';
 import { ReaderView } from '$lib/domains/viewing/ui/reader-view.svelte';
-import { bookId } from '$lib/shared/ids';
+import { parsedBookId } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { GlowRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
@@ -59,7 +59,7 @@ class ReadSession {
   #flowPanel = $state.raw(this.#flowPanelBuilt());
   #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
   #requested: ReaderRequest | null = null;
-  #id = $derived.by(() => bookId(this.#address.fileId() ?? ''));
+  #id = $derived.by(() => parsedBookId(this.#address.fileId() ?? ''));
   #asked = $derived.by(() =>
     readImageIndex(this.#address.requested().searchParams.get(IMAGE_PARAMETER)),
   );
@@ -100,7 +100,7 @@ class ReadSession {
       () => this.#bookChanged(),
     );
     this.captures = new CaptureView(container, notify, client, listing);
-    this.flow = new FlowView(container, notify, () => this.#bookChanged());
+    this.flow = new FlowView(container, notify, client, () => this.#bookChanged());
   }
 
   get imagePanel(): CapturePanelView {
@@ -111,7 +111,7 @@ class ReadSession {
     return this.#flowPanel;
   }
 
-  get id(): BookId {
+  get id(): BookId | null {
     return this.#id;
   }
 
@@ -156,7 +156,12 @@ class ReadSession {
 
   navigate(): void {
     this.#standing = IMAGE_ARRIVAL_SHOWING;
-    const wanted = { book: this.#id, image: this.#asked };
+    const named = this.#id;
+    if (named === null) {
+      this.#address.leave(LIBRARY_AFTER_MISSING_BOOK);
+      return;
+    }
+    const wanted = { book: named, image: this.#asked };
     const next = readerNavigation(this.#requested, wanted);
     this.#requested = wanted;
     match(next)

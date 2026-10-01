@@ -24,6 +24,7 @@ import {
   LANGUAGE_FAILED,
   LAYOUT_FAILED,
   PAIRING_FAILED,
+  SOURCE_MISSING,
   ReaderView,
 } from './reader-view.svelte';
 import { heldBook, readingNotice } from './reader-opening';
@@ -150,7 +151,7 @@ type Fakes = {
   readonly container: Container;
   readonly pages: FakeSource;
   readonly edits: Edit[];
-  opening: ReaderBook | 'unreadable' | 'missing' | 'flow';
+  opening: ReaderBook | 'unreadable' | 'missing' | 'no-file' | 'flow';
   editing: 'ok' | 'failed';
   gate: Promise<void> | null;
   stored: ReaderBook;
@@ -171,7 +172,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
     notify: (notice: Notice) => {
       notices.push(notice);
     },
-    opening: opened as ReaderBook | 'unreadable' | 'missing' | 'flow',
+    opening: opened as ReaderBook | 'unreadable' | 'missing' | 'no-file' | 'flow',
     editing: 'ok' as 'ok' | 'failed',
     gate: null as Promise<void> | null,
     stored: opened,
@@ -187,6 +188,9 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
           return Promise.resolve(
             err({ kind: 'library', error: { kind: 'not-found', id: bookId('one') } } as const),
           );
+        }
+        if (world.opening === 'no-file') {
+          return Promise.resolve(err({ kind: 'source-missing', id: bookId('one') } as const));
         }
         if (world.opening === 'unreadable') {
           return Promise.resolve(
@@ -1701,6 +1705,16 @@ describe('the reading place in the url', () => {
       kind: 'missing',
       message: 'That book is no longer in your library.',
     });
+  });
+
+  it('reports a book whose file is gone as failed, not as missing', async () => {
+    const world = fakes();
+    world.opening = 'no-file';
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.opening).toEqual({ kind: 'failed', message: SOURCE_MISSING });
   });
 });
 

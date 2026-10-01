@@ -7,6 +7,7 @@ import {
 } from '$lib/platform/idb/connection';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { describeCause } from '$lib/shared/cause';
+import { parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
@@ -45,14 +46,9 @@ function missing(id: BookId): Result<never, LibraryError> {
   return err({ kind: 'not-found', id });
 }
 
-function blobKeys(id: BookId): BlobKeys | null {
-  const rejected = id.length === 0 || id.includes('/') || id.includes('\\') || id.includes('..');
-  if (rejected) return null;
+function blobKeys(id: BookId): BlobKeys {
+  if (parsedBookId(id) === null) throw new Error(`Book id "${id}" is not a flat storage key`);
   return { source: `${id}.src`, cover: `${id}.cover` };
-}
-
-function notFlat(id: BookId): Result<never, LibraryError> {
-  return err({ kind: 'storage-failed', cause: `Book id "${id}" is not a flat storage key` });
 }
 
 function upgrade(db: IDBDatabase): void {
@@ -89,7 +85,6 @@ function createLibraryRepository(): LibraryRepository {
   ): Promise<Result<Blob | null, LibraryError>> => {
     if (!blobs.isAvailable()) return unavailable();
     const keys = blobKeys(id);
-    if (keys === null) return notFlat(id);
     try {
       const blob = await blobs.get(pick(keys));
       return ok(blob);
@@ -137,7 +132,6 @@ function createLibraryRepository(): LibraryRepository {
     ): Promise<Result<void, LibraryError>> {
       if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
       const keys = blobKeys(book.id);
-      if (keys === null) return notFlat(book.id);
       try {
         await blobs.put(keys.source, source, report);
         if (cover !== null) await blobs.put(keys.cover, cover);
@@ -163,7 +157,6 @@ function createLibraryRepository(): LibraryRepository {
     async remove(id: BookId): Promise<Result<void, LibraryError>> {
       if (!recordsAvailable() || !blobs.isAvailable()) return unavailable();
       const keys = blobKeys(id);
-      if (keys === null) return notFlat(id);
       try {
         const db = await database();
         await deleteRecord(db, BOOK_STORE, id);
@@ -211,11 +204,8 @@ function createLibraryRepository(): LibraryRepository {
       }
     },
 
-    async readSource(id: BookId): Promise<Result<Blob, LibraryError>> {
-      const source = await readBlob(id, (keys) => keys.source);
-      if (!source.ok) return source;
-      if (source.value === null) return missing(id);
-      return ok(source.value);
+    readSource(id: BookId): Promise<Result<Blob | null, LibraryError>> {
+      return readBlob(id, (keys) => keys.source);
     },
 
     readCover(id: BookId): Promise<Result<Blob | null, LibraryError>> {

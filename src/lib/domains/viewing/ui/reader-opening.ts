@@ -1,6 +1,5 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import { FLOWING_TEXT_NOTICE } from './flow-notice';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
@@ -23,7 +22,7 @@ type ShownOpening = Extract<ReaderOpening, { readonly kind: 'images' }>;
 
 type CurtainOpening = Exclude<ReaderOpening, { readonly kind: 'images' }>;
 
-type ReaderStage = 'settling' | 'reading' | 'empty' | 'failed' | 'flowing';
+type ReaderStage = 'settling' | 'reading' | 'empty' | 'failed';
 
 const NOT_OPENED: ReaderOpening = { kind: 'idle' };
 
@@ -62,21 +61,31 @@ function withBook(opening: ReaderOpening, book: ReaderBook): ReaderOpening {
 
 function readerStage(opening: ReaderOpening): ReaderStage {
   return match(opening)
-    .with({ kind: 'idle' }, { kind: 'opening' }, { kind: 'missing' }, (): ReaderStage => 'settling')
+    .with(
+      { kind: 'idle' },
+      { kind: 'opening' },
+      { kind: 'missing' },
+      { kind: 'flow' },
+      (): ReaderStage => 'settling',
+    )
     .with({ kind: 'images' }, (): ReaderStage => 'reading')
     .with({ kind: 'empty' }, (): ReaderStage => 'empty')
     .with({ kind: 'failed' }, (): ReaderStage => 'failed')
-    .with({ kind: 'flow' }, (): ReaderStage => 'flowing')
     .exhaustive();
 }
 
 function readerCurtain(opening: ReaderOpening): string | null {
   return match(opening)
-    .with({ kind: 'idle' }, { kind: 'opening' }, { kind: 'missing' }, () => 'Opening the book…')
+    .with(
+      { kind: 'idle' },
+      { kind: 'opening' },
+      { kind: 'missing' },
+      { kind: 'flow' },
+      () => 'Opening the book…',
+    )
     .with({ kind: 'images' }, () => null)
     .with({ kind: 'empty' }, () => 'This book holds no pages to show.')
     .with({ kind: 'failed' }, (failed) => failed.message)
-    .with({ kind: 'flow' }, () => FLOWING_TEXT_NOTICE)
     .exhaustive();
 }
 

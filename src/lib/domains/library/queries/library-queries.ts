@@ -1,4 +1,4 @@
-import { keepPreviousData, mutationOptions, queryOptions } from '@tanstack/svelte-query';
+import { keepPreviousData, mutationOptions, queryOptions, skipToken } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import { QueryFailure, unwrap } from '$lib/shared/query-failure';
@@ -13,6 +13,7 @@ import { libraryKeys } from './library-keys';
 
 type LibraryReads = {
   readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
+  readonly readBook: (id: BookId) => Promise<Result<Book, LibraryError>>;
   readonly readCover: (id: BookId) => Promise<Result<Blob | null, LibraryError>>;
   readonly readLibrarySize: () => Promise<Result<number, LibraryError>>;
 };
@@ -29,6 +30,8 @@ type LibraryWrites = {
   readonly markUnread: (id: BookId) => Promise<Result<Book, LibraryError>>;
 };
 
+type BookAnswer = { readonly kind: 'found'; readonly book: Book } | { readonly kind: 'missing' };
+
 type BookMark = 'finished' | 'unread';
 
 type UploadRequest = {
@@ -40,6 +43,18 @@ type UploadRequest = {
 type EditRequest = { readonly id: BookId; readonly edit: BookEdit };
 
 type MarkRequest = { readonly id: BookId; readonly mark: BookMark };
+
+const BOOK_MISSING: BookAnswer = { kind: 'missing' };
+
+function bookAnswer(read: Result<Book, LibraryError>): BookAnswer {
+  if (read.ok) return { kind: 'found', book: read.value };
+  return match(read.error)
+    .with({ kind: 'not-found' }, () => BOOK_MISSING)
+    .with({ kind: 'storage-unavailable' }, { kind: 'storage-failed' }, (failed) => {
+      throw new QueryFailure(describeLibraryError(failed), { cause: failed });
+    })
+    .exhaustive();
+}
 
 function newestFirst(books: readonly Book[]): readonly Book[] {
   return books.toSorted((a, b) => b.addedAt - a.addedAt);
@@ -74,6 +89,20 @@ function booksQuery(library: Pick<LibraryReads, 'listBooks'>) {
       const listed = await library.listBooks();
       return newestFirst(unwrap(listed, describeLibraryError));
     },
+    staleTime: 0,
+  });
+}
+
+function bookQuery(library: Pick<LibraryReads, 'readBook'>, id: BookId | null) {
+  return queryOptions({
+    queryKey: libraryKeys.book(id),
+    queryFn:
+      id === null
+        ? skipToken
+        : async () => {
+            const read = await library.readBook(id);
+            return bookAnswer(read);
+          },
     staleTime: 0,
   });
 }
@@ -125,6 +154,9 @@ function markBookMutation(library: Pick<LibraryWrites, 'markFinished' | 'markUnr
 }
 
 export {
+  BOOK_MISSING,
+  bookAnswer,
+  bookQuery,
   booksQuery,
   coversQuery,
   editBookMutation,
@@ -134,4 +166,12 @@ export {
   openFileMutation,
   removeBookMutation,
 };
-export type { BookMark, EditRequest, LibraryReads, LibraryWrites, MarkRequest, UploadRequest };
+export type {
+  BookAnswer,
+  BookMark,
+  EditRequest,
+  LibraryReads,
+  LibraryWrites,
+  MarkRequest,
+  UploadRequest,
+};

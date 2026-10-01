@@ -23,7 +23,7 @@ interface LibraryRepository {
   savePageList(id: BookId, names: readonly string[]): Promise<Result<void, LibraryError>>;
   remove(id: BookId): Promise<Result<void, LibraryError>>;
   update(id: BookId, edit: BookEdit): Promise<Result<Book, LibraryError>>;
-  readSource(id: BookId): Promise<Result<Blob, LibraryError>>;
+  readSource(id: BookId): Promise<Result<Blob | null, LibraryError>>;
   readCover(id: BookId): Promise<Result<Blob | null, LibraryError>>;
   storedBytes(): Promise<Result<number, LibraryError>>;
 }

@@ -28,7 +28,8 @@ type OpenedBook =
 
 type OpenForReadingError =
   | { readonly kind: 'library'; readonly error: LibraryError }
-  | { readonly kind: 'source'; readonly error: PageSourceError };
+  | { readonly kind: 'source'; readonly error: PageSourceError }
+  | { readonly kind: 'source-missing'; readonly id: BookId };
 
 async function pageNamesOf(
   deps: OpenForReadingDeps,
@@ -80,6 +81,7 @@ async function openForReading(
 
   const source = await deps.repository.readSource(id);
   if (!source.ok) return err({ kind: 'library', error: source.error });
+  if (source.value === null) return err({ kind: 'source-missing', id });
   const blob = source.value;
 
   const opened = await match(book.sourceKind)

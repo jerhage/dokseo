@@ -4,7 +4,6 @@ import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
-import { FLOWING_TEXT_NOTICE } from './flow-notice';
 import type { ReaderBook, ReaderOpening, ShownOpening } from './reader-opening';
 import ReaderBookData from './ReaderBookData.svelte';
 
@@ -76,10 +75,11 @@ describe('ReaderBookData', () => {
     expect(html).not.toContain('reading');
   });
 
-  it('draws the flowing text notice for an ebook', () => {
+  it('draws the opening curtain for an ebook until the route shows the ebook reader', () => {
     const html = markup({ kind: 'flow', book: { ...BOOK, layoutKind: 'flow', imageCount: 0 } });
 
-    expect(html).toContain(FLOWING_TEXT_NOTICE);
+    expect(html).toContain('Opening the book…');
+    expect(html).not.toContain(BACK);
     expect(html).not.toContain('reading');
   });
 });

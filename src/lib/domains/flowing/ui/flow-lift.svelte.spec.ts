@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
@@ -12,6 +12,9 @@ import FlowViewer from './FlowViewer.svelte';
 import { FlowView } from './flow-view.svelte';
 import type { FlowBook } from './flow-view.svelte';
 import type { LiftedPassage } from './flow-lift';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
+
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
 
 const CONTAINER = `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -231,7 +234,7 @@ async function opened(): Promise<Document> {
   const book = novel();
   const source = await epub();
   render(FlowViewer, {
-    view: new FlowView(shelf(source, book), () => undefined),
+    view: new FlowView(shelf(source, book), () => undefined, createTestQueryClient()),
     book,
     onLift: (passage: LiftedPassage) => {
       lifted.push(passage);

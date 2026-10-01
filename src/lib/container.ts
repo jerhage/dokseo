@@ -67,7 +67,7 @@ import { readLibrarySize } from './domains/library/use-cases/read-library-size';
 import type { ReadLibrarySizeDeps } from './domains/library/use-cases/read-library-size';
 import { readPageSizes } from './domains/library/use-cases/read-page-sizes';
 import { readSource } from './domains/library/use-cases/read-source';
-import type { ReadSourceDeps } from './domains/library/use-cases/read-source';
+import type { ReadSourceDeps, ReadSourceError } from './domains/library/use-cases/read-source';
 import { saveReadingPlace } from './domains/library/use-cases/save-reading-place';
 import type { SaveReadingPlaceDeps } from './domains/library/use-cases/save-reading-place';
 import { createCanvasCropper } from './domains/recognition/adapters/engine/canvas-cropper';
@@ -265,7 +265,7 @@ type Container = {
     readonly listBooks: () => Promise<Result<readonly Book[], LibraryError>>;
     readonly readBook: (id: BookId) => Promise<Result<Book, LibraryError>>;
     readonly readCover: (id: BookId) => Promise<Result<Blob | null, LibraryError>>;
-    readonly readSource: (id: BookId) => Promise<Result<Blob, LibraryError>>;
+    readonly readSource: (id: BookId) => Promise<Result<Blob, ReadSourceError>>;
     readonly removeBook: (id: BookId) => Promise<Result<void, LibraryError | CaptureError>>;
     readonly editBook: (id: BookId, edit: BookEdit) => Promise<Result<Book, LibraryError>>;
     readonly saveReadingPlace: (

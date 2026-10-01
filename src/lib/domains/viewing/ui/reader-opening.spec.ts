@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
-import { FLOWING_TEXT_NOTICE } from './flow-notice';
 import {
   NOT_OPENED,
   OPENING,
@@ -53,7 +52,7 @@ describe('readerStage', () => {
       'failed',
       'empty',
       'reading',
-      'flowing',
+      'settling',
     ]);
   });
 });
@@ -67,7 +66,7 @@ describe('readerCurtain', () => {
       'bad zip',
       'This book holds no pages to show.',
       null,
-      FLOWING_TEXT_NOTICE,
+      'Opening the book…',
     ]);
   });
 });

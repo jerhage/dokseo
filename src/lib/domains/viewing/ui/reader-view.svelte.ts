@@ -55,6 +55,9 @@ const FIT_FAILED = 'Could not change the page fit';
 
 const LANGUAGE_FAILED = 'Could not change the language';
 
+const SOURCE_MISSING =
+  'The file of this book is missing from this device. Remove the book and add it again.';
+
 function describeEditFailure(error: EditFailure): string {
   return match(error)
     .with({ kind: 'not-found' }, () => 'That book is no longer in your library.')
@@ -90,10 +93,11 @@ function lostBook(error: OpenFailure): boolean {
 }
 
 function describeOpenFailure(error: OpenFailure): string {
-  if (error.kind === 'source') return describeSourceFailure(error.error);
-  if (error.kind === 'library') return describeEditFailure(error.error);
-  const unhandled: never = error;
-  return unhandled;
+  return match(error)
+    .with({ kind: 'source' }, (failed) => describeSourceFailure(failed.error))
+    .with({ kind: 'library' }, (failed) => describeEditFailure(failed.error))
+    .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
+    .exhaustive();
 }
 
 function unmeasured(count: number): readonly (Size | null)[] {
@@ -487,5 +491,13 @@ class ReaderView {
   }
 }
 
-export { DIRECTION_FAILED, FIT_FAILED, LANGUAGE_FAILED, LAYOUT_FAILED, PAIRING_FAILED, ReaderView };
+export {
+  DIRECTION_FAILED,
+  FIT_FAILED,
+  LANGUAGE_FAILED,
+  LAYOUT_FAILED,
+  PAIRING_FAILED,
+  SOURCE_MISSING,
+  ReaderView,
+};
 export type { BookChanged, LanguageKnown, PlaceMirror };

@@ -16,6 +16,11 @@ function bookId(value: string): BookId {
   return value as BookId;
 }
 
+function parsedBookId(raw: string): BookId | null {
+  const flat = raw.length > 0 && !raw.includes('/') && !raw.includes('\\') && !raw.includes('..');
+  return flat ? bookId(raw) : null;
+}
+
 function captureId(value: string): CaptureId {
   return value as CaptureId;
 }
@@ -32,5 +37,5 @@ function contentHash(value: string): ContentHash {
   return value as ContentHash;
 }
 
-export { bookId, captureId, tagId, imageIndex, contentHash };
+export { bookId, parsedBookId, captureId, tagId, imageIndex, contentHash };
 export type { BookId, CaptureId, TagId, ImageIndex, ContentHash };

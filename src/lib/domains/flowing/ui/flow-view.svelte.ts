@@ -1,16 +1,22 @@
+import type { QueryClient } from '@tanstack/svelte-query';
 import type { TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
-import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { PlaceKeeper } from '$lib/shared/place-keeper';
+import { failureMessage } from '$lib/shared/query-failure';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
+import { flowingKeys } from '../queries/flowing-keys';
+import { readingSettingsQuery, saveReadingSettingsMutation } from '../queries/flowing-queries';
 import {
   arrivingAt,
   landedAt,
@@ -50,9 +56,11 @@ type FlowBook = Extract<OpenedBook, { readonly kind: 'flow' }>['book'];
 
 type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
 
-type LibraryFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
+type SourceFailure = Extract<SourceOutcome, { readonly ok: false }>['error'];
 
 type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
+
+type LibraryFailure = Extract<PlaceOutcome, { readonly ok: false }>['error'];
 
 type BookChanged = () => void;
 
@@ -86,9 +94,13 @@ const WAITING_FOR_THE_BOOK: FlowCurtain = { kind: 'opening' };
 
 const SETTINGS_FAILED = 'Could not save the text settings';
 
-function describeLibraryFailure(error: LibraryFailure): string {
+const SOURCE_MISSING =
+  'The file of this book is missing from this device. Remove the book and add it again.';
+
+function describeSourceFailure(error: SourceFailure): string {
   return match(error)
     .with({ kind: 'not-found' }, () => 'That book is no longer stored on this device.')
+    .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
     .with(
       { kind: 'storage-unavailable' },
       () => 'This browser blocks local storage, so that book cannot be read.',
@@ -142,6 +154,8 @@ class FlowView {
 
   #container: Container;
   #notify: Notify;
+  #client: QueryClient;
+  #saving: WriteQuery<Result<void, ReadingSettingsError>, ReadingSettings>;
   #bookChanged: BookChanged | null;
   #generation = 0;
   #surface: FlowSurface | null = null;
@@ -154,10 +168,27 @@ class FlowView {
   #showing: BookId | null = null;
   #ink: PageInk = INK_FOR_THE_DARK_PAGE;
 
-  constructor(container: Container, notify: Notify, bookChanged: BookChanged | null = null) {
+  constructor(
+    container: Container,
+    notify: Notify,
+    client: QueryClient,
+    bookChanged: BookChanged | null = null,
+  ) {
     this.#container = container;
     this.#notify = notify;
+    this.#client = client;
     this.#bookChanged = bookChanged;
+    this.#saving = writeQuery(() => ({
+      ...saveReadingSettingsMutation(container.flowing),
+      onMutate: async (settings) => {
+        await client.cancelQueries({ queryKey: flowingKeys.settings() });
+        client.setQueryData(flowingKeys.settings(), settings);
+      },
+      onSuccess: (saved) => {
+        if (!saved.ok) this.#fail(SETTINGS_FAILED, describeSettingsFailure(saved.error));
+      },
+      onError: (cause) => this.#fail(SETTINGS_FAILED, failureMessage(cause)),
+    }));
     this.#places = new PlaceKeeper({
       save: (id, place) => this.#savePlace(id, place),
       describe: describePlaceFailure,
@@ -213,14 +244,14 @@ class FlowView {
     if (generation !== this.#generation) return;
 
     if (!stored.ok) {
-      this.state = { kind: 'failed', message: describeLibraryFailure(stored.error) };
+      this.state = { kind: 'failed', message: describeSourceFailure(stored.error) };
       return;
     }
 
     const at = resumedCfi(book.position);
     this.#places.assumeStored(book.position);
 
-    const chosen = await this.#container.flowing.readReadingSettings();
+    const chosen = await this.#client.fetchQuery(readingSettingsQuery(this.#container.flowing));
     if (generation !== this.#generation) return;
 
     this.settings = chosen;
@@ -356,7 +387,7 @@ class FlowView {
   restyle(settings: ReadingSettings): void {
     this.settings = settings;
     this.#surface?.restyle(settings, this.#ink);
-    void this.#remember(settings);
+    this.#saving.submit(settings);
   }
 
   paint(ink: PageInk): void {
@@ -414,18 +445,6 @@ class FlowView {
     this.#surface?.mark(this.#passages, marked);
   }
 
-  async #remember(settings: ReadingSettings): Promise<void> {
-    let saved: Awaited<ReturnType<Container['flowing']['saveReadingSettings']>>;
-    try {
-      saved = await this.#container.flowing.saveReadingSettings(settings);
-    } catch (cause) {
-      this.#fail(SETTINGS_FAILED, describeCause(cause));
-      return;
-    }
-
-    if (!saved.ok) this.#fail(SETTINGS_FAILED, describeSettingsFailure(saved.error));
-  }
-
   #fail(title: string, message: string): void {
     this.#notify({ tone: 'danger', title, message });
   }
@@ -442,5 +461,5 @@ class FlowView {
   }
 }
 
-export { FlowView, SETTINGS_FAILED };
+export { FlowView, SETTINGS_FAILED, SOURCE_MISSING };
 export type { BookChanged, FlowBook, FlowCurtain, FlowState, ShowFlowBook };

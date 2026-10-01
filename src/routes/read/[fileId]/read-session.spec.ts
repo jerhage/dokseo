@@ -189,6 +189,18 @@ describe('ReadSession', () => {
     expect(held.left).toEqual([LIBRARY_AFTER_MISSING_BOOK]);
   });
 
+  it('leaves for the library without opening anything when the address names no book', async () => {
+    const held = world('/read/a%2F..%2Fb');
+
+    held.session.navigate();
+    await settled();
+
+    expect(held.session.id).toBeNull();
+    expect(held.opened).toEqual([]);
+    expect(held.listed).toEqual([]);
+    expect(held.left).toEqual([LIBRARY_AFTER_MISSING_BOOK]);
+  });
+
   it('stays on a book that opened', async () => {
     const held = world('/read/one');
 

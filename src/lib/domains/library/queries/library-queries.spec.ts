@@ -9,6 +9,8 @@ import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { Book } from '../domain/book/book';
 import { libraryKeys } from './library-keys';
 import {
+  BOOK_MISSING,
+  bookQuery,
   booksQuery,
   coversQuery,
   editBookMutation,
@@ -60,6 +62,60 @@ describe('booksQuery', () => {
 
     await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
     await expect(fetched).rejects.toThrow('Local storage failed: denied');
+  });
+});
+
+describe('bookQuery', () => {
+  it('resolves the stored book as found', async () => {
+    const client = createTestQueryClient();
+    const stored = book('one', 1);
+
+    const answer = await client.fetchQuery(
+      bookQuery({ readBook: () => Promise.resolve(ok(stored)) }, bookId('one')),
+    );
+
+    expect(answer).toEqual({ kind: 'found', book: stored });
+  });
+
+  it('resolves a book the store does not hold as missing, so the answer is cached', async () => {
+    const client = createTestQueryClient();
+    const options = bookQuery(
+      { readBook: (id) => Promise.resolve(err({ kind: 'not-found', id })) },
+      bookId('gone'),
+    );
+
+    const answer = await client.fetchQuery(options);
+
+    expect(answer).toBe(BOOK_MISSING);
+    expect(client.getQueryState(options.queryKey)?.status).toBe('success');
+  });
+
+  it('rejects a failed read with the described message', async () => {
+    const client = createTestQueryClient();
+
+    const fetched = client.fetchQuery(
+      bookQuery({ readBook: () => Promise.resolve(err(DENIED)) }, bookId('one')),
+    );
+
+    await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
+    await expect(fetched).rejects.toThrow('Local storage failed: denied');
+  });
+
+  it('reads nothing while no book is named', async () => {
+    const asked: BookId[] = [];
+    const client = createTestQueryClient();
+    const options = bookQuery(
+      {
+        readBook: (id) => {
+          asked.push(id);
+          return Promise.resolve(err({ kind: 'not-found', id }));
+        },
+      },
+      null,
+    );
+
+    await expect(client.fetchQuery(options)).rejects.toThrow();
+    expect(asked).toEqual([]);
   });
 });
 
@@ -134,14 +190,16 @@ describe('libraryKeys', () => {
       booksQuery({ listBooks: () => new Promise(() => {}) }).queryKey,
       coversQuery({ readCover: () => new Promise(() => {}) }, [bookId('one')]).queryKey,
       librarySizeQuery({ readLibrarySize: () => new Promise(() => {}) }).queryKey,
+      bookQuery({ readBook: () => new Promise(() => {}) }, bookId('one')).queryKey,
     ];
 
     expect(keys.map((key) => key.slice(0, 1))).toEqual([
       libraryKeys.all(),
       libraryKeys.all(),
       libraryKeys.all(),
+      libraryKeys.all(),
     ]);
-    expect(new Set(keys.map((key) => key[1])).size).toBe(3);
+    expect(new Set(keys.map((key) => key[1])).size).toBe(4);
   });
 });
 

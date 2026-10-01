@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
@@ -11,6 +11,9 @@ import '$lib/styles/index.css';
 import FlowViewer from './FlowViewer.svelte';
 import { FlowView } from './flow-view.svelte';
 import type { FlowBook } from './flow-view.svelte';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
+
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
 
 const CONTAINER = `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -179,7 +182,10 @@ async function selectsAWord(doc: Document): Promise<void> {
 async function opened(): Promise<Document> {
   const book = novel();
   const source = await epub();
-  render(FlowViewer, { view: new FlowView(shelf(source, book), () => undefined), book });
+  render(FlowViewer, {
+    view: new FlowView(shelf(source, book), () => undefined, createTestQueryClient()),
+    book,
+  });
 
   await expect.poll(() => paginator().pages, { timeout: LAID_OUT_WITHIN_MS }).toBeGreaterThan(2);
   await rests();

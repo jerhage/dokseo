@@ -62,7 +62,7 @@ function fakePageSource(): PageSource {
 
 function fakeRepository(
   record: Result<Book, LibraryError> = ok(book()),
-  source: Result<Blob, LibraryError> = ok(new Blob(['source bytes'])),
+  source: Result<Blob | null, LibraryError> = ok(new Blob(['source bytes'])),
 ): LibraryRepository {
   return {
     list: () => Promise.resolve(ok([])),
@@ -130,6 +130,14 @@ describe('openForReading', () => {
       ok: false,
       error: { kind: 'library', error: { kind: 'storage-failed', cause: 'the file went away' } },
     });
+  });
+
+  it('reports the missing source file apart from a removed book', async () => {
+    const result = await openForReading(
+      deps({ repository: fakeRepository(ok(book()), ok(null)) }),
+      ID,
+    );
+    expect(result).toEqual({ ok: false, error: { kind: 'source-missing', id: ID } });
   });
 
   it('reports a source error when the page source will not open', async () => {
