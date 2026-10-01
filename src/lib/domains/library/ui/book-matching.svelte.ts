@@ -1,15 +1,15 @@
+import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
 import type { BookMatching } from '../domain/book/book-matching';
 import { readBookMatching, saveBookMatching } from './book-matching-setting';
 
-let chosen = $state(readBookMatching());
+const chosen = new RememberedChoice<BookMatching>(readBookMatching, saveBookMatching);
 
 function bookMatchingChosen(): BookMatching {
-  return chosen;
+  return chosen.value;
 }
 
 function chooseBookMatching(matching: BookMatching): void {
-  chosen = matching;
-  saveBookMatching(matching);
+  chosen.choose(matching);
 }
 
 export { bookMatchingChosen, chooseBookMatching };

@@ -6,6 +6,7 @@ import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { captureHref } from '$lib/shared/reader-location';
+import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
 import type { TextSegment } from '$lib/shared/text-search';
 import { firstRegion } from '../../domain/capture/capture-arrival';
 import { inBookOrder } from '../../domain/capture/capture-order';
@@ -239,15 +240,14 @@ class CaptureCards {
   query = $state('');
 
   #source: () => CardSource;
-  #locate: LocateStore | undefined;
-  #sort = $state<CaptureSort>('book');
+  #sort: RememberedChoice<CaptureSort>;
   #stepped = $state.raw<MatchStep | null>(null);
   #reveal: CaptureReveal = NO_REVEAL;
 
   #ordered = $derived.by<readonly PanelCapture[]>(() => {
     const held = this.#source();
 
-    return match(this.#sort)
+    return match(this.#sort.value)
       .with('book', () => inBookOrder(held.captures, held.direction, held.passages))
       .with('newest', () => held.newestFirst)
       .exhaustive();
@@ -287,17 +287,18 @@ class CaptureCards {
 
   constructor(source: () => CardSource, locate?: LocateStore) {
     this.#source = source;
-    this.#locate = locate;
-    this.#sort = readCaptureSort(locate);
+    this.#sort = new RememberedChoice(
+      () => readCaptureSort(locate),
+      (sort) => saveCaptureSort(sort, locate),
+    );
   }
 
   get sort(): CaptureSort {
-    return this.#sort;
+    return this.#sort.value;
   }
 
   sortBy(sort: CaptureSort): void {
-    this.#sort = sort;
-    saveCaptureSort(sort, this.#locate);
+    this.#sort.choose(sort);
   }
 
   reveals(id: CaptureId, latest: CaptureId | null, visible: boolean): boolean {

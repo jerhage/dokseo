@@ -23,6 +23,7 @@
   import { languageName } from '$lib/shared/language';
   import PageBar from '$lib/shared/PageBar.svelte';
   import type { TouchTurns } from '$lib/shared/page-turn';
+  import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
   import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
   import { chromeShown } from '$lib/shared/reader-chrome';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
@@ -94,7 +95,7 @@
   let asked = $state(false);
   let noting = $state(false);
   let selecting = $state(false);
-  let touchTurns = $state<TouchTurns>(readTouchTurns());
+  const touchTurns = new RememberedChoice<TouchTurns>(readTouchTurns, saveTouchTurns);
   let settingsOpen = $state(false);
 
   const readerFrame = new ReaderFrameView();
@@ -195,11 +196,6 @@
   function turnTowards(move: PageMove): void {
     const turn = turns?.[move];
     if (turn !== undefined && turn.enabled) turn.go();
-  }
-
-  function chooseTouchTurns(chosen: TouchTurns): void {
-    touchTurns = chosen;
-    saveTouchTurns(chosen);
   }
 
   const shownTurns = $derived.by(() => {
@@ -304,7 +300,7 @@
           {makes}
           chromeShown={shown}
           {selecting}
-          turns={touchTurns}
+          turns={touchTurns.value}
           select={(regions) => commit(regions, 'row')}
           clear={() => view.clearSelection()}
           onTap={toggleChrome}
@@ -419,8 +415,8 @@
   {downward}
   {fits}
   offersAppearance={narrow}
-  {touchTurns}
-  ontouchturns={chooseTouchTurns}
+  touchTurns={touchTurns.value}
+  ontouchturns={(chosen) => touchTurns.choose(chosen)}
   gestureHints={hintsWanted()}
   ongesturehints={chooseHints}
   {touchGuide}

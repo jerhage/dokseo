@@ -24,7 +24,8 @@
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
-  import { readTouchTurns } from '$lib/shared/touch-turns';
+  import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
+  import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
@@ -90,7 +91,7 @@
   const LIFT_LABEL = 'Save this passage as a capture';
   const SEARCH_BOOK_LABEL = 'Search this book';
 
-  const touchTurns = readTouchTurns();
+  const touchTurns = new RememberedChoice(readTouchTurns, saveTouchTurns);
 
   const ICONS: readonly Component<IconProps>[] = [ChevronLeft, ChevronRight];
 
@@ -271,7 +272,7 @@
       at: spot.at,
       width: spot.width,
       textSelected: textSelected(),
-      turns: touchTurns,
+      turns: touchTurns.value,
       chromeShown: awake,
     });
     pointerHeld = false;

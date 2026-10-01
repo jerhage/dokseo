@@ -1,4 +1,5 @@
 import { rememberedSet } from '$lib/platform/storage/remembered-set';
+import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
 import { isReaderGesture } from './gesture-hint';
 import type { ReaderGesture } from './gesture-hint';
 import { readGestureHints, saveGestureHints } from './gesture-hints-setting';
@@ -7,7 +8,7 @@ const remembered = rememberedSet('reader.gestures.learned');
 
 let learned = $state.raw<readonly ReaderGesture[]>(remembered.values().filter(isReaderGesture));
 
-let wanted = $state(readGestureHints());
+const wanted = new RememberedChoice<boolean>(readGestureHints, saveGestureHints);
 
 function learnedGestures(): readonly ReaderGesture[] {
   return learned;
@@ -24,15 +25,14 @@ function forgetGestures(): void {
 }
 
 function hintsWanted(): boolean {
-  return wanted;
+  return wanted.value;
 }
 
 function chooseHints(on: boolean): void {
-  if (on && !wanted) {
+  if (on && !wanted.value) {
     forgetGestures();
   }
-  wanted = on;
-  saveGestureHints(on);
+  wanted.choose(on);
 }
 
 export { chooseHints, forgetGestures, hintsWanted, learnedGestures, learnGesture };

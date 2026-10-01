@@ -39,14 +39,8 @@
   import ShelfView from './ShelfView.svelte';
   import UploadStrip from './UploadStrip.svelte';
   import { uploadsInProgressText } from './upload-progress-text';
-  import {
-    readArrangement,
-    saveCollectionView,
-    saveShelf,
-    saveSortOrder,
-  } from './library-arrangement';
-  import { continueReading, shelfBooks, sortBooks } from './library-shelves';
-  import type { CollectionView, Shelf, SortOrder } from './library-shelves';
+  import { continueReading } from './library-shelves';
+  import { ShelfArrangement } from './shelf-arrangement.svelte';
 
   type Props = {
     readonly view: LibraryView;
@@ -62,25 +56,7 @@
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
   let removeFor = $state<BookId | null>(null);
-  const arrangement = readArrangement();
-  let shelf = $state<Shelf>(arrangement.shelf);
-  let order = $state<SortOrder>(arrangement.order);
-  let layout = $state<CollectionView>(arrangement.layout);
-
-  function chooseShelf(next: Shelf): void {
-    shelf = next;
-    saveShelf(next);
-  }
-
-  function chooseOrder(next: SortOrder): void {
-    order = next;
-    saveSortOrder(next);
-  }
-
-  function chooseLayout(next: CollectionView): void {
-    layout = next;
-    saveCollectionView(next);
-  }
+  const arrangement = new ShelfArrangement();
 
   const settingsBook = $derived(
     view.library.books.find((book) => book.id === openSettingsFor) ?? null,
@@ -110,7 +86,7 @@
   const space = $derived(storageText(view.library.storedBytes));
   const summary = $derived(librarySummary(view.library.books, view.library.storedBytes));
   const body = $derived(libraryBody(view.library.state, view.upload.pending !== null));
-  const shown = $derived(sortBooks(shelfBooks(titled, shelf), order));
+  const shown = $derived(arrangement.arrange(titled));
   const matched = $derived(matchedText(shown.length));
   const resumable = $derived(searching ? [] : continueReading(view.library.books));
 
@@ -224,14 +200,14 @@
             {shown}
             covers={library.covers}
             {searching}
-            bind:shelf={() => shelf, chooseShelf}
-            bind:order={() => order, chooseOrder}
-            bind:layout={() => layout, chooseLayout}
+            bind:shelf={() => arrangement.shelf.value, (next) => arrangement.shelf.choose(next)}
+            bind:order={() => arrangement.order.value, (next) => arrangement.order.choose(next)}
+            bind:layout={() => arrangement.layout.value, (next) => arrangement.layout.choose(next)}
             busy={(id) => view.changes.removing === id || view.changes.editing === id}
             onedit={(id) => (openSettingsFor = id)}
             onremove={(id) => (removeFor = id)}
-            onfinish={(id) => void view.changes.markFinished(id, shelf)}
-            onunread={(id) => void view.changes.markUnread(id, shelf)}
+            onfinish={(id) => void view.changes.markFinished(id, arrangement.shelf.value)}
+            onunread={(id) => void view.changes.markUnread(id, arrangement.shelf.value)}
           />
         {/if}
 
