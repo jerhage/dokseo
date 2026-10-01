@@ -1,4 +1,6 @@
 import { mutationOptions, queryOptions } from '@tanstack/svelte-query';
+import type { BookId } from '$lib/shared/ids';
+import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadReadingSettingsResult } from '../use-cases/read-reading-settings';
 import type { SaveReadingSettingsResult } from '../use-cases/save-reading-settings';
@@ -11,6 +13,12 @@ type FlowingReads = {
 type FlowingWrites = {
   readonly saveReadingSettings: (settings: ReadingSettings) => Promise<SaveReadingSettingsResult>;
 };
+
+type PlaceSaving<R> = {
+  readonly saveReadingPlace: (id: BookId, place: ReadingPlace) => Promise<R>;
+};
+
+type PlaceRequest = { readonly id: BookId; readonly place: ReadingPlace };
 
 function readingSettingsQuery(flowing: FlowingReads) {
   return queryOptions({
@@ -29,5 +37,11 @@ function saveReadingSettingsMutation(flowing: FlowingWrites) {
   });
 }
 
-export { readingSettingsQuery, saveReadingSettingsMutation };
-export type { FlowingReads, FlowingWrites };
+function saveReadingPlaceMutation<R>(library: PlaceSaving<R>) {
+  return mutationOptions({
+    mutationFn: ({ id, place }: PlaceRequest) => library.saveReadingPlace(id, place),
+  });
+}
+
+export { readingSettingsQuery, saveReadingPlaceMutation, saveReadingSettingsMutation };
+export type { FlowingReads, FlowingWrites, PlaceRequest, PlaceSaving };

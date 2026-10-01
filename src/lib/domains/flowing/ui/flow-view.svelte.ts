@@ -8,6 +8,10 @@ import { PLACE_KEPT, PlaceKeeper } from '$lib/shared/place-keeper';
 import type { PlaceSaved } from '$lib/shared/place-keeper';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import { saveReadingPlaceMutation } from '../queries/flowing-queries';
+import type { PlaceRequest } from '../queries/flowing-queries';
 import { FlowAppearance } from './flow-appearance.svelte';
 import type { FlowRelocation } from './flow-move';
 import { FlowNavigation } from './flow-navigation.svelte';
@@ -90,7 +94,7 @@ class FlowView {
   readonly appearance: FlowAppearance;
 
   #container: Container;
-  #bookChanged: BookChanged | null;
+  #placing: WriteQuery<PlaceOutcome, PlaceRequest>;
   #generation = 0;
   #surface: FlowSurface | null = null;
   #places: PlaceKeeper<ReadingPlace>;
@@ -102,7 +106,12 @@ class FlowView {
     bookChanged: BookChanged | null = null,
   ) {
     this.#container = container;
-    this.#bookChanged = bookChanged;
+    this.#placing = writeQuery(() => ({
+      ...saveReadingPlaceMutation(container.library),
+      onSuccess: (saved) => {
+        if (saved.kind === 'success') bookChanged?.();
+      },
+    }));
     const surface = (): FlowSurface | null => this.#surface;
     this.navigation = new FlowNavigation(surface);
     this.arrivals = new PassageArrivals(surface, () => this.navigation.location?.cfi ?? null);
@@ -218,9 +227,8 @@ class FlowView {
   }
 
   async #savePlace(id: BookId, place: ReadingPlace): Promise<PlaceSaved> {
-    const saved = await this.#container.library.saveReadingPlace(id, place);
+    const saved = await this.#placing.run({ id, place });
     if (saved.kind !== 'success') return { kind: 'refused', message: describePlaceFailure(saved) };
-    this.#bookChanged?.();
     return PLACE_KEPT;
   }
 }

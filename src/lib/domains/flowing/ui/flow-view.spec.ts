@@ -33,7 +33,7 @@ import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { FlowView, SOURCE_MISSING } from './flow-view.svelte';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
 
-vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/running-write-query'));
 
 const NOVEL: BookId = bookId('one');
 
@@ -584,6 +584,7 @@ describe('the place a flow book keeps', () => {
     expect(world.edits).toEqual([]);
 
     view.close();
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null)]);
   });
@@ -733,6 +734,7 @@ describe('the place a flow book keeps', () => {
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
 
     view.close();
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
   });
