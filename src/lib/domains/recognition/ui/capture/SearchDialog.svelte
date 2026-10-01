@@ -14,23 +14,12 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import TagToggle from '$lib/components/TagToggle.svelte';
   import type { BookId } from '$lib/shared/ids';
-  import type { Capture } from '../../domain/capture/capture';
   import type { SearchedBook } from '../../domain/capture/capture-results';
-  import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
-  import { quickFinds } from '../../domain/capture/quick-find';
-  import type { SearchFilter, QuickFinds } from '../../domain/capture/quick-find';
   import type { Tag } from '../../domain/tag/tag';
   import type { CaptureSearchView } from './capture-search.svelte';
-  import {
-    CAPTURES_UNREAD_MESSAGE,
-    PALETTE_KEYS,
-    searchInvite,
-    searchNote,
-    resultCount,
-  } from './search-copy';
-  import { searchKey } from './search-keys';
+  import { CAPTURES_UNREAD_MESSAGE, PALETTE_KEYS, resultCount } from './search-copy';
   import { openerOf } from './search-opener';
-  import { effectiveScope, searchRows, searchedBooks } from './search-rows';
+  import { SearchPalette } from './search-palette.svelte';
   import type { SearchRow, SearchScope } from './search-rows';
   import SearchResult from './SearchResult.svelte';
 
@@ -50,8 +39,6 @@
     { value: 'all', label: 'All books' },
   ];
 
-  const NOTHING: QuickFinds<Capture> = { books: [], captures: [] };
-
   const narrowScreen = new MediaQuery(NARROW_SCREEN_QUERY);
 
   let {
@@ -65,52 +52,26 @@
     onfollowedInBook,
   }: Props = $props();
 
-  let shown = $state(false);
-  let present = $state(false);
-  let query = $state('');
-  let scope = $state<SearchScope>('book');
-  let filter = $state<SearchFilter>('everything');
-  let at = $state(NO_MATCH);
+  const palette = new SearchPalette(() => ({
+    book,
+    books,
+    covers,
+    counts,
+    tags,
+    captures: find.captures,
+    passages: find.passages,
+    status: find.status,
+    room: narrowScreen.current ? 'narrow' : 'wide',
+  }));
+
   let list = $state<(HTMLElement | null | undefined)[]>([]);
   let field = $state<HTMLInputElement | null>();
   let lastPressed: HTMLElement | null = null;
   let opener: HTMLElement | null = null;
 
-  const scoped = $derived(effectiveScope(book, scope));
-
-  const found = $derived(
-    present && query.trim().length > 0
-      ? quickFinds(
-          find.captures,
-          searchedBooks(books, book, scoped),
-          tags,
-          query,
-          filter,
-          find.passages,
-        )
-      : NOTHING,
-  );
-
-  const results = $derived(searchRows({ found, scope: scoped, book, covers, counts, tags, query }));
-
-  const invite = $derived(searchInvite(filter, scoped, narrowScreen.current ? 'narrow' : 'wide'));
-
-  const cursor = $derived(at >= results.rows.length ? NO_MATCH : at);
-
-  const note = $derived(
-    searchNote({
-      status: find.status,
-      query,
-      rows: results.rows.length,
-      filter,
-      scope: scoped,
-    }),
-  );
-
-  function choose(chosen: SearchScope): void {
-    scope = chosen;
-    at = NO_MATCH;
-  }
+  const results = $derived(palette.results);
+  const cursor = $derived(palette.cursor);
+  const note = $derived(palette.note);
 
   function remember(event: PointerEvent): void {
     const control = event.target instanceof Element ? event.target.closest('button, a') : null;
@@ -120,9 +81,7 @@
   function reveal(chosen: SearchScope): void {
     const focused = document.activeElement;
     opener = openerOf(focused instanceof HTMLElement ? focused : null, lastPressed, document.body);
-    shown = true;
-    present = true;
-    choose(chosen);
+    palette.reveal(chosen);
     void find.load();
     onopen?.();
     void selectKeptQuery();
@@ -130,7 +89,7 @@
 
   async function selectKeptQuery(): Promise<void> {
     await tick();
-    if (query !== '') field?.select();
+    if (palette.query !== '') field?.select();
   }
 
   export function searchEverything(): void {
@@ -141,19 +100,14 @@
     reveal('book');
   }
 
-  function hide(): void {
-    shown = false;
-  }
-
   function gone(): void {
-    present = false;
+    palette.gone();
     if (opener?.isConnected === true && document.activeElement === document.body) opener.focus();
     opener = null;
   }
 
   function moveBy(by: number): void {
-    at = clampedIndex(cursor, by, results.rows.length);
-    list[at]?.scrollIntoView({ block: 'nearest' });
+    list[palette.moveBy(by)]?.scrollIntoView({ block: 'nearest' });
   }
 
   function open(row: SearchRow, newTab: boolean): void {
@@ -162,7 +116,7 @@
       return;
     }
 
-    hide();
+    palette.hide();
     const from = book;
     void goto(row.href).then(() => {
       if (from !== null && book === from) onfollowedInBook?.();
@@ -170,7 +124,7 @@
   }
 
   function openAtCursor(event: KeyboardEvent, newTab: boolean): void {
-    const row = results.rows[cursor === NO_MATCH ? 0 : cursor];
+    const row = palette.rowAtCursor();
     if (row === undefined) return;
 
     event.preventDefault();
@@ -179,9 +133,8 @@
 
   function shortcuts(event: KeyboardEvent): void {
     lastPressed = null;
-    const pressed = searchKey(event, { shown, scope, hasBook: book !== null });
 
-    match(pressed)
+    match(palette.keyFor(event))
       .with({ kind: 'ignore' }, () => {})
       .with({ kind: 'open' }, ({ newTab }) => openAtCursor(event, newTab))
       .with({ kind: 'reveal' }, ({ scope: chosen }) => {
@@ -190,11 +143,11 @@
       })
       .with({ kind: 'choose' }, ({ scope: chosen }) => {
         event.preventDefault();
-        choose(chosen);
+        palette.choose(chosen);
       })
       .with({ kind: 'hide' }, () => {
         event.preventDefault();
-        hide();
+        palette.hide();
       })
       .with({ kind: 'move' }, ({ by }) => {
         event.preventDefault();
@@ -214,20 +167,19 @@
 
   function toggleTags(event: MouseEvent): void {
     event.preventDefault();
-    filter = filter === 'tags' ? 'everything' : 'tags';
-    at = NO_MATCH;
+    palette.toggleTags();
   }
 
   function pickScope(event: MouseEvent, chosen: SearchScope): void {
     event.preventDefault();
-    choose(chosen);
+    palette.choose(chosen);
   }
 </script>
 
 <svelte:window onkeydown={shortcuts} onpointerdowncapture={remember} />
 
 <Modal
-  bind:open={shown}
+  bind:open={palette.shown}
   aria-label="Find in captures"
   size="lg"
   placement="top"
@@ -239,25 +191,25 @@
 >
   {#snippet header()}
     <SearchField
-      bind:value={query}
+      bind:value={palette.query}
       bind:ref={field}
       label="Find in captures"
       hideLabel
       clearable
-      onclear={() => (at = NO_MATCH)}
+      onclear={() => palette.restart()}
       class="flex-fill"
       enterkeyhint="search"
       autofocus
-      placeholder={invite}
-      oninput={() => (at = NO_MATCH)}
+      placeholder={palette.invite}
+      oninput={() => palette.restart()}
     />
-    <Button variant="ghost" class="modal-fill-only" onclick={hide}>Cancel</Button>
+    <Button variant="ghost" class="modal-fill-only" onclick={() => palette.hide()}>Cancel</Button>
     <span class="row items-center gap-1">
       {#if book !== null}
         {#each SCOPES as choice (choice.value)}
           <TagToggle
             class="modal-panel-only"
-            pressed={scope === choice.value}
+            pressed={palette.scope === choice.value}
             onclick={(event) => pickScope(event, choice.value)}
           >
             {choice.label}
@@ -269,11 +221,11 @@
           label="Search in"
           class="modal-fill-only"
           options={SCOPES}
-          value={scope}
-          onvaluechange={choose}
+          value={palette.scope}
+          onvaluechange={(chosen) => palette.choose(chosen)}
         />
       {/if}
-      <TagToggle pressed={filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
+      <TagToggle pressed={palette.filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
     </span>
   {/snippet}
 
