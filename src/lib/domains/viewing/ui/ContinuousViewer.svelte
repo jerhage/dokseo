@@ -38,10 +38,10 @@
   import type { StripAnchor, Travel } from '../domain/strip';
   import type { Point } from '../domain/selection';
   import { edgeScrollBy, edgeSpeed } from './edge-scroll';
-  import { heldHints, hintsToShow, inputKind, readerHints } from './gesture-hint';
-  import type { GestureHint } from './gesture-hint';
+  import { inputKind } from './gesture-hint';
+  import { HintLines } from './hint-lines.svelte';
   import { handlesOwnKeys } from './keyboard';
-  import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
+  import { learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import PageFrame from './PageFrame.svelte';
   import { scrollMotion } from './scroll-motion';
@@ -111,7 +111,6 @@
   });
 
   let lastPointerType = $state<string | null>(null);
-  let heldLines: readonly GestureHint[] = [];
 
   let written: { readonly top: number; readonly left: number } | null = null;
   let reading = $state.raw<StripAnchor | null>(null);
@@ -142,22 +141,10 @@
   );
   const spacers = $derived(spacersFor(layout, range, snapToDevicePixels));
   const pointing = $derived(inputKind(lastPointerType, coarse));
-  const pending = $derived(
-    hintsToShow(
-      readerHints({
-        input: pointing,
-        layoutKind: 'continuous',
-        pannable: false,
-        turns: 'swipe-only',
-      }),
-      learnedGestures(),
-      { chromeShown, wanted: hintsWanted(), recall: 'earned', input: pointing },
-    ),
-  );
-  const hintLines = $derived.by(() => {
-    heldLines = heldHints(heldLines, pending);
-    return heldLines;
-  });
+  const hints = new HintLines(() => ({
+    scene: { input: pointing, layoutKind: 'continuous', pannable: false, turns: 'swipe-only' },
+    chromeShown,
+  }));
 
   const touchGuide = new TouchGuide(() => STRIP_GUIDE_KIND);
   touchGuide.open();
@@ -610,12 +597,12 @@
   />
 
   <KeyHints
-    hints={hintLines}
+    hints={hints.lines}
     size="sm"
     decorative
     class={[
       'pin-bottom pin-lift z-sticky pass-through px-3 py-2 hushable',
-      { 'is-hushed': pending.length === 0 },
+      { 'is-hushed': hints.hushed },
     ]}
   />
 

@@ -39,10 +39,10 @@
   import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
   import type { Framing } from '../domain/viewport';
   import type { PanReach } from '../domain/overscroll';
-  import { heldHints, hintsToShow, inputKind, readerHints, recallAfterPress } from './gesture-hint';
-  import type { GestureHint, HintRecall } from './gesture-hint';
+  import { inputKind } from './gesture-hint';
+  import { HintLines } from './hint-lines.svelte';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
-  import { hintsWanted, learnedGestures, learnGesture } from './learned-gestures.svelte';
+  import { learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import type { PageMove } from './page-moves';
   import { moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
@@ -112,8 +112,6 @@
   let grab = $state.raw<Grab | null>(null);
   let spaceHeld = $state(false);
   let pannable = $state(false);
-  let recall = $state<HintRecall>('earned');
-  let heldLines: readonly GestureHint[] = [];
   let motion = $state.raw<CarouselMotion>(CAROUSEL_REST);
   let lastPointerType = $state<string | null>(null);
   let frameSize = $state.raw<Size | null>(null);
@@ -132,17 +130,10 @@
 
   const pointing = $derived(inputKind(lastPointerType, coarse));
 
-  const pending = $derived(
-    hintsToShow(
-      readerHints({ input: pointing, layoutKind: 'paged', pannable, turns }),
-      learnedGestures(),
-      { chromeShown, wanted: hintsWanted(), recall, input: pointing },
-    ),
-  );
-  const hintLines = $derived.by(() => {
-    heldLines = heldHints(heldLines, pending);
-    return heldLines;
-  });
+  const hints = new HintLines(() => ({
+    scene: { input: pointing, layoutKind: 'paged', pannable, turns },
+    chromeShown,
+  }));
 
   const guide = $derived(pagedGuide(turns, direction));
   const touchGuide = new TouchGuide(() => guide.kind);
@@ -558,7 +549,7 @@
 
     if (event.key === '?') {
       event.preventDefault();
-      recall = recallAfterPress(pending);
+      hints.pressRecall();
       return;
     }
 
@@ -688,12 +679,12 @@
     />
 
     <KeyHints
-      hints={hintLines}
+      hints={hints.lines}
       size="sm"
       decorative
       class={[
         'pin-bottom pin-lift z-sticky pass-through px-3 py-2 hushable',
-        { 'is-hushed': pending.length === 0 },
+        { 'is-hushed': hints.hushed },
       ]}
     />
 
