@@ -1,33 +1,25 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
-import type { Anchor, SoughtPassage, TextQuote } from '$lib/shared/anchor';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import type { ClearScope } from './clearing';
-import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
-import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import type { Result } from '$lib/shared/result';
-import type { ReaderArrival } from '$lib/shared/reader-location';
-import { arrivalFrom, passageArrivalFrom, passageFrom } from './capture-arrivals';
 import { CardDrafts } from './card-drafts.svelte';
-import { CaptureCollection } from './capture-collection.svelte';
-import type { WriteOutcome } from './storage-failure';
-import type { CaptureRead } from './capture-read';
-import type { PanelCapture, Settled } from './panel-capture';
+import { CaptureEdits } from './capture-edits.svelte';
+import { CaptureList } from './capture-list.svelte';
+import { CaptureRecording } from './capture-recording.svelte';
+import { CaptureRemoval } from './capture-removal.svelte';
+import { CaptureTags } from './capture-tags.svelte';
+import { ClearAll } from './clear-all.svelte';
+import type { Settled } from './panel-capture';
 import { RecognizerView } from '../engine/recognizer-view.svelte';
-import type { ConsentRequest, PendingRecognition } from '../engine/recognizer-view.svelte';
-import type { Arrival, ArrivalCapture } from '../../domain/capture/capture-arrival';
-import type { PassageOrder } from '../../domain/capture/capture-order';
-import type { Tag } from '../../domain/tag/tag';
-import type { ModelLoad } from '../../domain/model/model-load';
-import type { EngineState } from '../../domain/engine/ocr-engine';
+import type { PendingRecognition } from '../engine/recognizer-view.svelte';
 import { hasNoText } from '../../domain/engine/recognized-text';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
-import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
@@ -78,148 +70,46 @@ function settlementOf(read: Result<RecognizedText, RecognizeRegionError>): Settl
 }
 
 class CaptureView {
+  readonly list: CaptureList;
+  readonly clearAll: ClearAll;
+  readonly removal: CaptureRemoval;
+  readonly edits: CaptureEdits;
+  readonly tagging: CaptureTags;
+  readonly recording: CaptureRecording;
+  readonly recognizer: RecognizerView;
+  readonly drafts = new CardDrafts();
   #container: Container;
-  #collection: CaptureCollection;
-  #recognizer: RecognizerView;
-  #drafts = new CardDrafts();
 
   constructor(container: Container, notify: Notify) {
     this.#container = container;
-    this.#collection = new CaptureCollection(container, notify, {
-      open: (capture) => this.#drafts.open('text', capture, '', null),
-      close: (capture) => void this.#drafts.abandon('text', capture),
+    this.list = new CaptureList(container, (tags) => this.tagging.adopt(tags));
+    this.clearAll = new ClearAll(container, notify, this.list);
+    this.removal = new CaptureRemoval(container, notify, this.list);
+    this.edits = new CaptureEdits(container, notify, this.list);
+    this.tagging = new CaptureTags(container, notify, this.list);
+    this.recording = new CaptureRecording(container, notify, this.list, {
+      open: (capture) => this.drafts.open('text', capture, '', null),
+      close: (capture) => void this.drafts.abandon('text', capture),
     });
-    this.#recognizer = new RecognizerView(
-      container,
-      notify,
-      () => this.#collection.list.generation,
-    );
-  }
-
-  get captures(): readonly PanelCapture[] {
-    return this.#collection.list.captures;
-  }
-
-  get load(): CaptureRead {
-    return this.#collection.list.state;
-  }
-
-  get drafts(): CardDrafts {
-    return this.#drafts;
-  }
-
-  get confirmingClear(): boolean {
-    return this.#collection.clearAll.confirming;
-  }
-
-  get tags(): readonly Tag[] {
-    return this.#collection.tagging.tags;
-  }
-
-  get libraryCounts(): ReadonlyMap<TagId, number> {
-    return this.#collection.tagging.libraryCounts;
-  }
-
-  get progress(): ModelLoad | null {
-    return this.#recognizer.progress;
-  }
-
-  get session(): RecognizerSession | null {
-    return this.#recognizer.session;
-  }
-
-  get downloaded(): boolean {
-    return this.#recognizer.downloaded;
-  }
-
-  get partlyDownloaded(): boolean {
-    return this.#recognizer.partlyDownloaded;
-  }
-
-  get opening(): boolean {
-    return this.#recognizer.opening;
-  }
-
-  get engineFailure(): string | null {
-    return this.#recognizer.engineFailure;
-  }
-
-  get consentRequest(): ConsentRequest | null {
-    return this.#recognizer.consentRequest;
-  }
-
-  get engine(): EngineState {
-    return this.#recognizer.engine;
-  }
-
-  get clearing(): ClearScope {
-    return this.#collection.clearAll.scope;
-  }
-
-  get count(): number {
-    return this.#collection.list.count;
-  }
-
-  get book(): BookId | null {
-    return this.#collection.list.book;
-  }
-
-  get bookCounts(): ReadonlyMap<TagId, number> {
-    return this.#collection.tagging.bookCounts;
-  }
-
-  get anchors(): readonly Anchor[] {
-    return this.#collection.list.anchors;
-  }
-
-  get newestFirst(): readonly PanelCapture[] {
-    return this.#collection.list.newestFirst;
-  }
-
-  get latest(): CaptureId | null {
-    return this.#collection.list.latest;
-  }
-
-  get read(): readonly ArrivalCapture[] {
-    return this.#collection.list.read;
-  }
-
-  arrivalFrom(
-    found: ReaderArrival,
-    direction: ReadingDirection,
-    passages: PassageOrder,
-  ): Arrival<ArrivalCapture> | null {
-    return arrivalFrom(this.#collection.list.read, found, direction, passages);
-  }
-
-  passageArrivalFrom(found: ReaderArrival, order: PassageOrder): Arrival<ArrivalCapture> | null {
-    return passageArrivalFrom(this.#collection.list.read, found, order);
-  }
-
-  passageFrom(found: ReaderArrival): SoughtPassage | null {
-    return passageFrom(this.#collection.list.anchors, found);
+    this.recognizer = new RecognizerView(container, notify, () => this.list.generation);
   }
 
   async open(book: BookId): Promise<void> {
-    this.#recognizer.forget();
-    this.#drafts.clear();
-    await this.#collection.list.open(book);
-  }
-
-  async reload(): Promise<void> {
-    await this.#collection.list.reload();
+    this.recognizer.forget();
+    this.drafts.clear();
+    await this.list.open(book);
   }
 
   close(): void {
-    this.#collection.list.forget();
-    this.#drafts.clear();
-    this.#recognizer.close();
+    this.list.forget();
+    this.drafts.clear();
+    this.recognizer.close();
   }
 
   async warm(book: BookId, language: Language): Promise<void> {
-    if (this.#collection.list.book !== book) return;
+    if (this.list.book !== book) return;
 
-    await this.#recognizer.warm(language);
+    await this.recognizer.warm(language);
   }
 
   capture(
@@ -246,27 +136,6 @@ class CaptureView {
     }
   }
 
-  note(regions: readonly ImageRegion[]): void {
-    this.#collection.recording.note(regions);
-  }
-
-  lift(cfi: string, quote: TextQuote, chapter: string | null): void {
-    this.#collection.recording.lift(cfi, quote, chapter);
-  }
-
-  async keepLifted(
-    book: BookId,
-    cfi: string,
-    quote: TextQuote,
-    chapter: string | null,
-  ): Promise<void> {
-    await this.#collection.recording.keepLifted(book, cfi, quote, chapter);
-  }
-
-  async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
-    await this.#collection.recording.write(book, regions);
-  }
-
   async recognize(
     source: PageSource,
     language: Language,
@@ -275,78 +144,30 @@ class CaptureView {
   ): Promise<void> {
     const held: PendingRecognition = { source, language, regions, arrangement };
 
-    const admitted = await this.#recognizer.admits(held);
+    const admitted = await this.recognizer.admits(held);
     if (admitted) await this.#read(held);
   }
 
   async agree(): Promise<void> {
-    const held = await this.#recognizer.agree();
+    const held = await this.recognizer.agree();
     if (held === null) return;
 
     await this.#read(held);
   }
 
-  decline(): void {
-    this.#recognizer.decline();
-  }
-
   async #read(held: PendingRecognition): Promise<void> {
-    await this.#collection.recording.recognizing(held.regions, () => this.#settlement(held));
+    await this.recording.recognizing(held.regions, () => this.#settlement(held));
   }
 
   async #settlement(held: PendingRecognition): Promise<Settled> {
     try {
-      return settlementOf(await this.#recognizer.read(held));
+      return settlementOf(await this.recognizer.read(held));
     } catch (cause) {
       return {
         status: 'failed',
         message: `That capture could not be read: ${describeCause(cause)}`,
       };
     }
-  }
-
-  edit(id: CaptureId, text: string): Promise<WriteOutcome> {
-    return this.#collection.edits.edit(id, text);
-  }
-
-  annotate(id: CaptureId, note: string): Promise<WriteOutcome> {
-    return this.#collection.edits.annotate(id, note);
-  }
-
-  remove(id: CaptureId): Promise<WriteOutcome> {
-    return this.#collection.removal.remove(id);
-  }
-
-  async loadTags(): Promise<void> {
-    await this.#collection.tagging.loadTags();
-  }
-
-  async loadTagCounts(): Promise<void> {
-    await this.#collection.tagging.loadTagCounts();
-  }
-
-  async addTag(id: CaptureId, tag: TagId): Promise<void> {
-    await this.#collection.tagging.addTag(id, tag);
-  }
-
-  async removeTag(id: CaptureId, tag: TagId): Promise<void> {
-    await this.#collection.tagging.removeTag(id, tag);
-  }
-
-  async createTag(id: CaptureId, name: string): Promise<void> {
-    await this.#collection.tagging.createTag(id, name);
-  }
-
-  askClear(): void {
-    this.#collection.clearAll.ask();
-  }
-
-  dismissClear(): void {
-    this.#collection.clearAll.dismiss();
-  }
-
-  async clear(): Promise<void> {
-    await this.#collection.clearAll.clear();
   }
 }
 

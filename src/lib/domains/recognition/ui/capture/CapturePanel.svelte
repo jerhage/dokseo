@@ -57,12 +57,12 @@
   const uid = $props.id();
 
   const panel = new CaptureCards(() => ({
-    captures: view.captures,
-    newestFirst: view.newestFirst,
-    tags: view.tags,
-    book: view.book,
+    captures: view.list.captures,
+    newestFirst: view.list.newestFirst,
+    tags: view.tagging.tags,
+    book: view.list.book,
     language,
-    progress: view.progress,
+    progress: view.recognizer.progress,
     direction,
     passages,
     seekable: onSeek !== undefined,
@@ -70,13 +70,13 @@
 
   const selection = new TagSelection(
     {
-      tagsOn: (id) => view.captures.find((capture) => capture.id === id)?.tagIds ?? [],
-      loadCounts: () => view.loadTagCounts(),
-      add: (id, tag) => view.addTag(id, tag),
-      remove: (id, tag) => view.removeTag(id, tag),
-      create: (id, name) => view.createTag(id, name),
+      tagsOn: (id) => view.list.captures.find((capture) => capture.id === id)?.tagIds ?? [],
+      loadCounts: () => view.tagging.loadTagCounts(),
+      add: (id, tag) => view.tagging.addTag(id, tag),
+      remove: (id, tag) => view.tagging.removeTag(id, tag),
+      create: (id, name) => view.tagging.createTag(id, name),
     },
-    () => ({ tags: view.tags, counts: view.libraryCounts }),
+    () => ({ tags: view.tagging.tags, counts: view.tagging.libraryCounts }),
   );
 
   const drafts = $derived(view.drafts);
@@ -89,12 +89,12 @@
   let list = $state<HTMLElement | null>();
   let tagFrom: FocusTarget | null = null;
 
-  const mismatch = $derived(engineMismatch(view.session, language));
-  const waiting = $derived(view.captures.some((capture) => capture.status === 'pending'));
-  const announcement = $derived(waiting ? modelLoadAnnouncement(view.progress) : '');
+  const mismatch = $derived(engineMismatch(view.recognizer.session, language));
+  const waiting = $derived(view.list.captures.some((capture) => capture.status === 'pending'));
+  const announcement = $derived(waiting ? modelLoadAnnouncement(view.recognizer.progress) : '');
   const cards = $derived(panel.cards);
   const searching = $derived(panel.searching);
-  const steps = $derived(searchSteps(panel.cursor, cards.length, view.count));
+  const steps = $derived(searchSteps(panel.cursor, cards.length, view.list.count));
   const stepping = $derived<StepperSteps | null>(
     searching
       ? {
@@ -104,7 +104,7 @@
         }
       : null,
   );
-  const warning = $derived(view.confirmingClear ? clearWarning(view.clearing) : null);
+  const warning = $derived(view.clearAll.confirming ? clearWarning(view.clearAll.scope) : null);
   const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
 
   function openHref(href: string, replace: boolean): void {
@@ -158,8 +158,8 @@
   async function save(field: DraftField, capture: CaptureId): Promise<void> {
     const saved = await drafts.save(field, capture, (written) =>
       match(field)
-        .with('text', () => view.edit(capture, written))
-        .with('note', () => view.annotate(capture, written))
+        .with('text', () => view.edits.edit(capture, written))
+        .with('note', () => view.edits.annotate(capture, written))
         .exhaustive(),
     );
 
@@ -168,7 +168,7 @@
 
   async function remove(capture: CaptureId): Promise<void> {
     if (selection.opened(capture)) selection.close();
-    const removed = view.remove(capture);
+    const removed = view.removal.remove(capture);
     await tick();
     list?.focus({ preventScroll: true });
     if ((await removed) === 'saved') drafts.forget(capture);
@@ -181,7 +181,7 @@
 
   function revealIfLatest(id: CaptureId): Attachment<HTMLElement> {
     return (node) => {
-      if (panel.reveals(id, view.latest, visible)) node.scrollIntoView({ block: 'nearest' });
+      if (panel.reveals(id, view.list.latest, visible)) node.scrollIntoView({ block: 'nearest' });
     };
   }
 
@@ -197,9 +197,9 @@
 <section class="col gap-0 flex-1 min-h-0 min-w-0" aria-labelledby="{uid}-name">
   <header class="row items-center gap-2 px-3 py-2 border-b shrink-0">
     <h2 class="m-0 text-sm weight-semibold" id="{uid}-name">Captures</h2>
-    <Badge>{view.count}</Badge>
+    <Badge>{view.list.count}</Badge>
     <kbd class="ms-auto" title="Find in captures">⌘K</kbd>
-    <DocumentTags tags={view.tags} counts={view.bookCounts} />
+    <DocumentTags tags={view.tagging.tags} counts={view.tagging.bookCounts} />
     <Dropdown
       variant="ghost"
       size="sm"
@@ -224,7 +224,7 @@
       icon={Ellipsis}
       label="Captures menu"
     >
-      <DropdownItem danger disabled={view.count === 0} onclick={() => view.askClear()}>
+      <DropdownItem danger disabled={view.list.count === 0} onclick={() => view.clearAll.ask()}>
         Delete every capture…
       </DropdownItem>
     </Dropdown>
@@ -235,13 +235,13 @@
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <CaptureListData
-      state={view.load}
+      state={view.list.state}
       {cards}
       invitation={emptyPanelText(source, searching)}
-      onretry={() => void view.reload()}
+      onretry={() => void view.list.reload()}
     >
       {#snippet above()}
-        {#if view.count > 0}
+        {#if view.list.count > 0}
           <Stepper
             steps={stepping}
             axis="block"
@@ -312,12 +312,12 @@
   open={warning !== null}
   title="Delete every capture"
   size="sm"
-  onclose={() => view.dismissClear()}
+  onclose={() => view.clearAll.dismiss()}
 >
   <p class="m-0">{warning}</p>
   {#snippet footer(close)}
     <Button variant="ghost" onclick={close}>Keep them</Button>
-    <Button variant="danger" onclick={() => void view.clear()}>
+    <Button variant="danger" onclick={() => void view.clearAll.clear()}>
       <Trash class="btn-icon" />
       Delete
     </Button>

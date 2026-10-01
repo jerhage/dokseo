@@ -13,6 +13,11 @@
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import { CaptureSearchView } from '$lib/domains/recognition/ui/capture/capture-search.svelte';
   import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
+  import {
+    arrivalFrom,
+    passageArrivalFrom,
+    passageFrom,
+  } from '$lib/domains/recognition/ui/capture/capture-arrivals';
   import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
@@ -71,12 +76,12 @@
   const opening = $derived(view.opening);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
-  const here = $derived(captures.arrivalFrom(found, view.direction, comparePassages));
+  const here = $derived(arrivalFrom(captures.list.read, found, view.direction, comparePassages));
   const glow = $derived(arrivalGlow(here));
-  const everyGlow = $derived(everyOtherGlow(captures.read, here));
-  const passage = $derived<SoughtPassage | null>(captures.passageFrom(found));
+  const everyGlow = $derived(everyOtherGlow(captures.list.read, here));
+  const passage = $derived<SoughtPassage | null>(passageFrom(captures.list.anchors, found));
   const stepping = $derived(here?.stepping ?? null);
-  const passageHere = $derived(captures.passageArrivalFrom(found, comparePassages));
+  const passageHere = $derived(passageArrivalFrom(captures.list.read, found, comparePassages));
   const passageStepping = $derived(passageHere?.stepping ?? null);
   const finding = $derived(arrivalQuery(found));
   const arrivalShows = $derived(imageArrivalShows(arrivalStanding));
@@ -123,9 +128,9 @@
   <FlowViewer
     view={flow}
     book={opening.book}
-    panelCount={captures.count}
-    anchors={captures.anchors}
-    onLift={(passage) => captures.lift(passage.cfi, passage.quote, passage.chapter)}
+    panelCount={captures.list.count}
+    anchors={captures.list.anchors}
+    onLift={(passage) => captures.recording.lift(passage.cfi, passage.quote, passage.chapter)}
     onsearch={() => search?.searchThisBook()}
     saving={view.saving}
     onlanguage={(chosen) => void view.setLanguage(chosen)}
@@ -158,9 +163,9 @@
     {view}
     {glow}
     {everyGlow}
-    panelCount={captures.count}
+    panelCount={captures.list.count}
     onSelect={(regions, laidOut) => captures.capture(view.source, language, regions, laidOut)}
-    onNote={(regions) => captures.note(regions)}
+    onNote={(regions) => captures.recording.note(regions)}
     onsearch={() => search?.searchThisBook()}
   >
     {#snippet arrival()}
@@ -169,7 +174,7 @@
       {/if}
     {/snippet}
     {#snippet engine()}
-      <EnginePill engine={captures.engine} {language} />
+      <EnginePill engine={captures.recognizer.engine} {language} />
     {/snippet}
     {#snippet panel(visible)}
       <CapturePanel
@@ -184,11 +189,11 @@
   </ReaderScreen>
 {/if}
 
-{#if captures.consentRequest !== null}
+{#if captures.recognizer.consentRequest !== null}
   <ModelConsentDialog
-    request={captures.consentRequest}
+    request={captures.recognizer.consentRequest}
     onagree={() => void captures.agree()}
-    ondecline={() => captures.decline()}
+    ondecline={() => captures.recognizer.decline()}
   />
 {/if}
 
@@ -197,7 +202,7 @@
   book={id}
   books={shelf.searchedBooks}
   {find}
-  tags={captures.tags}
+  tags={captures.tagging.tags}
   covers={shelf.covers}
   counts={shelf.imageCounts}
   onopen={() => void shelf.load()}

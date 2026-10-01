@@ -19,14 +19,12 @@ import type { Tag } from '../../domain/tag/tag';
 import type { TagError } from '../../domain/tag/tag-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { arrivalFrom, passageFrom } from './capture-arrivals';
-import { CaptureCollection } from './capture-collection.svelte';
+import { CaptureView } from './capture-view.svelte';
 import type { Settled } from './panel-capture';
 
 function byCfi(earlier: string, later: string): number {
   return earlier.localeCompare(later);
 }
-
-const NO_EDITORS = { open: () => undefined, close: () => undefined };
 
 type Step = {
   readonly label: string;
@@ -48,7 +46,7 @@ type Fakes = {
 };
 
 function unused(): never {
-  throw new Error('The capture collection does not use this');
+  throw new Error('The capture parts do not use this');
 }
 
 function fakes(): Fakes {
@@ -179,8 +177,8 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
   };
 }
 
-function panelTexts(collection: CaptureCollection): readonly string[] {
-  return collection.list.captures.map((capture) =>
+function panelTexts(view: CaptureView): readonly string[] {
+  return view.list.captures.map((capture) =>
     capture.status === 'done' ? capture.text.text : capture.status,
   );
 }
@@ -189,50 +187,50 @@ function settles(settled: Settled): () => Promise<Settled> {
   return () => Promise.resolve(settled);
 }
 
-describe('CaptureCollection', () => {
+describe('CaptureView parts', () => {
   it('lists the stored captures of the book it opens oldest first', async () => {
     const world = fakes();
     world.store.rows = [storedRow('two', ONE, '後', 2), storedRow('one', ONE, '先', 1)];
     world.store.rows.push(storedRow('other', TWO, '別', 3));
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    const view = new CaptureView(world.container, world.notify);
 
-    await collection.list.open(ONE);
+    await view.list.open(ONE);
 
-    expect(panelTexts(collection)).toEqual(['先', '後']);
+    expect(panelTexts(view)).toEqual(['先', '後']);
   });
 
   it('settles the pending card the recognition returns and stores the text', async () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
-    await collection.recording.recognizing(
+    await view.recording.recognizing(
       regions(),
       settles({ status: 'done', text: recognizedText('読', null), edited: false }),
     );
 
-    expect(panelTexts(collection)).toEqual(['読']);
+    expect(panelTexts(view)).toEqual(['読']);
     expect(world.store.rows.map((row) => row.text)).toEqual(['読']);
   });
 
   it('stores nothing for a recognition that read no text', async () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
-    await collection.recording.recognizing(regions(), settles({ status: 'empty' }));
+    await view.recording.recognizing(regions(), settles({ status: 'empty' }));
 
-    expect(panelTexts(collection)).toEqual(['empty']);
+    expect(panelTexts(view)).toEqual(['empty']);
     expect(world.store.rows).toEqual([]);
   });
 
   it('stores nothing for a note when no book is open', () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    const view = new CaptureView(world.container, world.notify);
 
-    collection.recording.note(regions());
+    view.recording.note(regions());
 
-    expect(collection.list.captures).toEqual([]);
+    expect(view.list.captures).toEqual([]);
     expect(world.steps.map((step) => step.detail.guard)).toEqual(['no-open-book']);
   });
 
@@ -240,32 +238,32 @@ describe('CaptureCollection', () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1)];
     world.store.tags = [namedTag(CROWN, 'crown', 'slate', 1)];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
-    await collection.tagging.loadTagCounts();
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
+    await view.tagging.loadTagCounts();
 
-    await collection.tagging.addTag(captureId('one'), CROWN);
+    await view.tagging.addTag(captureId('one'), CROWN);
 
-    expect(collection.list.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
-    expect(collection.tagging.libraryCounts.get(CROWN)).toBe(1);
-    expect(collection.tagging.bookCounts.get(CROWN)).toBe(1);
+    expect(view.list.captures.map((capture) => capture.tagIds)).toEqual([[CROWN]]);
+    expect(view.tagging.libraryCounts.get(CROWN)).toBe(1);
+    expect(view.tagging.bookCounts.get(CROWN)).toBe(1);
   });
 
   it('empties the list and the store of the open book when it is cleared', async () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1), storedRow('other', TWO, '別', 2)];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
-    await collection.clearAll.clear();
+    await view.clearAll.clear();
 
-    expect(collection.list.captures).toEqual([]);
-    expect(collection.list.count).toBe(0);
+    expect(view.list.captures).toEqual([]);
+    expect(view.list.count).toBe(0);
     expect(world.store.rows.map((row) => row.id)).toEqual([captureId('other')]);
   });
 });
 
-describe('CaptureCollection arrivals', () => {
+describe('CaptureView arrivals', () => {
   const CFI = 'epubcfi(/6/4!/4/2,/1:0,/1:2)';
   const QUOTE = { exact: '灯台', prefix: '', suffix: '' };
 
@@ -293,11 +291,11 @@ describe('CaptureCollection arrivals', () => {
   it('arrives at only the stored capture at the image and region a url names', async () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 100.333), storedAt('two', 10.666)];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
     const arrival = arrivalFrom(
-      collection.list.read,
+      view.list.read,
       { kind: 'image', index: imageIndex(4), region: imageRect(10.67, 12.5, 40, 20), query: null },
       'rtl',
       byCfi,
@@ -309,12 +307,12 @@ describe('CaptureCollection arrivals', () => {
   it('arrives at no capture for a url naming an image without a region', async () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 100), storedAt('two', 10)];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
     expect(
       arrivalFrom(
-        collection.list.read,
+        view.list.read,
         { kind: 'image', index: imageIndex(4), region: null, query: null },
         'rtl',
         byCfi,
@@ -322,7 +320,7 @@ describe('CaptureCollection arrivals', () => {
     ).toBeNull();
     expect(
       arrivalFrom(
-        collection.list.read,
+        view.list.read,
         { kind: 'image', index: imageIndex(4), region: null, query: '1' },
         'rtl',
         byCfi,
@@ -333,24 +331,22 @@ describe('CaptureCollection arrivals', () => {
   it('arrives at no capture for a url naming a passage or nothing', async () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1)];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
     expect(
-      arrivalFrom(collection.list.read, { kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
+      arrivalFrom(view.list.read, { kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
     ).toBeNull();
-    expect(arrivalFrom(collection.list.read, { kind: 'none' }, 'rtl', byCfi)).toBeNull();
+    expect(arrivalFrom(view.list.read, { kind: 'none' }, 'rtl', byCfi)).toBeNull();
   });
 
   it('seeks the cfi a url names, with the quote of the passage lifted there', async () => {
     const world = fakes();
     world.store.rows = [lifted('here', CFI)];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
-    expect(
-      passageFrom(collection.list.anchors, { kind: 'passage', cfi: CFI, query: '灯' }),
-    ).toEqual({
+    expect(passageFrom(view.list.anchors, { kind: 'passage', cfi: CFI, query: '灯' })).toEqual({
       cfi: CFI,
       quote: QUOTE,
     });
@@ -359,12 +355,10 @@ describe('CaptureCollection arrivals', () => {
   it('seeks the cfi a url names even when no capture was lifted there', async () => {
     const world = fakes();
     world.store.rows = [lifted('elsewhere', 'epubcfi(/6/2)')];
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
-    await collection.list.open(ONE);
+    const view = new CaptureView(world.container, world.notify);
+    await view.list.open(ONE);
 
-    expect(
-      passageFrom(collection.list.anchors, { kind: 'passage', cfi: CFI, query: null }),
-    ).toEqual({
+    expect(passageFrom(view.list.anchors, { kind: 'passage', cfi: CFI, query: null })).toEqual({
       cfi: CFI,
       quote: null,
     });
@@ -372,10 +366,10 @@ describe('CaptureCollection arrivals', () => {
 
   it('seeks no passage for a url naming an image', () => {
     const world = fakes();
-    const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
+    const view = new CaptureView(world.container, world.notify);
 
     expect(
-      passageFrom(collection.list.anchors, {
+      passageFrom(view.list.anchors, {
         kind: 'image',
         index: imageIndex(0),
         region: null,
