@@ -1,4 +1,4 @@
-import { mutationOptions, queryOptions } from '@tanstack/svelte-query';
+import { mutationOptions, queryOptions, skipToken } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
@@ -105,25 +105,30 @@ async function described<T>(
   }
 }
 
-function recognizerSetupQuery(
+async function languageSetup(
   recognition: Pick<EngineReads, 'readRecognizerSetup'>,
   language: Language,
+): Promise<LanguageSetupRead> {
+  const models = offeredModels(language);
+  const read = await described(
+    () => recognition.readRecognizerSetup(language),
+    (cause) => `The engine choice could not be read: ${cause}`,
+  );
+  if (read.kind !== 'success') return read;
+  const { model, compute } = read.choice;
+  return {
+    kind: 'success',
+    setup: { language, models, selected: model?.modelId ?? null, compute },
+  };
+}
+
+function recognizerSetupQuery(
+  recognition: Pick<EngineReads, 'readRecognizerSetup'>,
+  language: Language | null,
 ) {
   return queryOptions({
     queryKey: recognitionKeys.setup(language),
-    queryFn: async (): Promise<LanguageSetupRead> => {
-      const models = offeredModels(language);
-      const read = await described(
-        () => recognition.readRecognizerSetup(language),
-        (cause) => `The engine choice could not be read: ${cause}`,
-      );
-      if (read.kind !== 'success') return read;
-      const { model, compute } = read.choice;
-      return {
-        kind: 'success',
-        setup: { language, models, selected: model?.modelId ?? null, compute },
-      };
-    },
+    queryFn: language === null ? skipToken : () => languageSetup(recognition, language),
     staleTime: 0,
   });
 }
@@ -136,22 +141,32 @@ function computeQuery(recognition: Pick<EngineReads, 'detectCompute'>) {
   });
 }
 
-function modelConsentQuery(recognition: Pick<EngineReads, 'readModelConsent'>, language: Language) {
+function modelConsentQuery(
+  recognition: Pick<EngineReads, 'readModelConsent'>,
+  language: Language | null,
+) {
   return queryOptions({
     queryKey: recognitionKeys.consent(language),
-    queryFn: () => described(() => recognition.readModelConsent(language)),
+    queryFn:
+      language === null ? skipToken : () => described(() => recognition.readModelConsent(language)),
     staleTime: 0,
   });
 }
 
-function modelStorageQuery(recognition: Pick<EngineReads, 'readModelStorage'>, modelId: string) {
+function modelStorageQuery(
+  recognition: Pick<EngineReads, 'readModelStorage'>,
+  modelId: string | null,
+) {
   return queryOptions({
     queryKey: recognitionKeys.modelStorage(modelId),
-    queryFn: () =>
-      described(
-        () => recognition.readModelStorage(modelId),
-        (cause) => `What the model occupies could not be read: ${cause}`,
-      ),
+    queryFn:
+      modelId === null
+        ? skipToken
+        : () =>
+            described(
+              () => recognition.readModelStorage(modelId),
+              (cause) => `What the model occupies could not be read: ${cause}`,
+            ),
     staleTime: 0,
   });
 }
