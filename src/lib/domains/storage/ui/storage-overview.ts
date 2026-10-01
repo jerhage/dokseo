@@ -7,11 +7,6 @@ import {
   unnamedNote,
 } from './storage-view.svelte';
 
-type StorageScreenState =
-  | { readonly kind: 'reading' }
-  | { readonly kind: 'failed'; readonly message: string }
-  | { readonly kind: 'ready'; readonly account: StorageAccount };
-
 type BreakdownRow = {
   readonly key: string;
   readonly label: string;
@@ -31,12 +26,6 @@ type Allowance = {
 };
 
 const UNNAMED_KEY = 'unnamed';
-
-function screenState(account: StorageAccount | null, message: string | null): StorageScreenState {
-  if (account !== null) return { kind: 'ready', account };
-  if (message !== null) return { kind: 'failed', message };
-  return { kind: 'reading' };
-}
 
 function bySizeLargestFirst(a: BreakdownRow, b: BreakdownRow): number {
   return (b.bytes ?? -1) - (a.bytes ?? -1);
@@ -91,5 +80,5 @@ function allowanceOf(account: StorageAccount): Allowance | null {
   return { used: account.usage, allowed: account.quota };
 }
 
-export { UNNAMED_KEY, allowanceOf, breakdownRows, breakdownScale, screenState, usedHeadline };
-export type { Allowance, BreakdownRow, Headline, StorageScreenState };
+export { UNNAMED_KEY, allowanceOf, breakdownRows, breakdownScale, usedHeadline };
+export type { Allowance, BreakdownRow, Headline };

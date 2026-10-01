@@ -6,7 +6,6 @@ import {
   allowanceOf,
   breakdownRows,
   breakdownScale,
-  screenState,
   usedHeadline,
 } from './storage-overview';
 
@@ -45,22 +44,6 @@ function account(parts: readonly StoragePart[], usage: number | null): StorageAc
 function keys(shown: StorageAccount): readonly string[] {
   return breakdownRows(shown).map((row) => row.key);
 }
-
-describe('screenState', () => {
-  it('reports reading while there is neither an account nor a message', () => {
-    expect(screenState(null, null)).toEqual({ kind: 'reading' });
-  });
-
-  it('reports the failure message when there is no account', () => {
-    expect(screenState(null, 'denied')).toEqual({ kind: 'failed', message: 'denied' });
-  });
-
-  it('shows the account once there is one', () => {
-    const read = account([MODEL], null);
-
-    expect(screenState(read, null)).toEqual({ kind: 'ready', account: read });
-  });
-});
 
 describe('breakdownRows', () => {
   it('orders the measured parts largest first', () => {

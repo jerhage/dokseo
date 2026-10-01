@@ -1,6 +1,8 @@
 import type { Container } from '$lib/container';
 import { megabytes, storedSize } from '$lib/shared/bytes';
 import { describeCause } from '$lib/shared/cause';
+import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
+import type { ReadState } from '$lib/shared/read-state';
 import type { OriginStoresError } from '../domain/origin-stores';
 import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 
@@ -58,8 +60,7 @@ function persistenceNote(account: StorageAccount): string {
 }
 
 class StorageSettingsView {
-  account = $state.raw<StorageAccount | null>(null);
-  message = $state.raw<string | null>(null);
+  state = $state.raw<ReadState<StorageAccount>>(LOADING);
 
   #container: Container;
   #generation = 0;
@@ -75,17 +76,10 @@ class StorageSettingsView {
       const read = await this.#container.storage.readStorageAccount();
       if (generation !== this.#generation) return;
 
-      if (read.ok) {
-        this.account = read.value;
-        this.message = null;
-      } else {
-        this.account = null;
-        this.message = failureNote(read.error);
-      }
+      this.state = read.ok ? readReady(read.value) : readFailed(failureNote(read.error));
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.account = null;
-      this.message = `What this app stores could not be read: ${describeCause(cause)}`;
+      this.state = readFailed(`What this app stores could not be read: ${describeCause(cause)}`);
     }
   }
 

@@ -1,21 +1,16 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
   import ListGroup from '$lib/components/ListGroup.svelte';
   import ListRow from '$lib/components/ListRow.svelte';
-  import Skeleton from '$lib/components/Skeleton.svelte';
-  import type { StorageSettingsView } from './storage-view.svelte';
+  import type { ReadState } from '$lib/shared/read-state';
+  import type { StorageAccount } from '../domain/storage-parts';
   import StorageBreakdown from './StorageBreakdown.svelte';
+  import StorageData from './StorageData.svelte';
   import StorageSummary from './StorageSummary.svelte';
-  import { screenState } from './storage-overview';
-  import type { StorageScreenState } from './storage-overview';
 
-  type Props = { readonly view: StorageSettingsView; readonly engineHref?: string };
+  type Props = { readonly state: ReadState<StorageAccount>; readonly engineHref?: string };
 
-  let { view, engineHref = '/settings' }: Props = $props();
-
-  const state: StorageScreenState = $derived(screenState(view.account, view.message));
+  let { state, engineHref = '/settings' }: Props = $props();
 </script>
 
 <div class="col gap-6 prose">
@@ -28,19 +23,12 @@
     </p>
   </header>
 
-  {#if state.kind === 'reading'}
-    <div class="surface bordered rounded-container col gap-3 p-5" aria-busy="true">
-      <EmptyState live message="Reading what is stored…" />
-      <Skeleton shape="title" width="40%" />
-      <Skeleton shape="text" />
-      <Skeleton shape="text" width="70%" />
-    </div>
-  {:else if state.kind === 'failed'}
-    <Alert variant="danger" title="Storage could not be read">{state.message}</Alert>
-  {:else if state.kind === 'ready'}
-    <StorageSummary account={state.account} />
-    <StorageBreakdown account={state.account} />
-  {/if}
+  <StorageData {state}>
+    {#snippet children(account)}
+      <StorageSummary {account} />
+      <StorageBreakdown {account} />
+    {/snippet}
+  </StorageData>
 
   <ListGroup title="Free up space">
     <ListRow title="Books" description="Books are removed from your library.">

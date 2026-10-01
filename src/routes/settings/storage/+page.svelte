@@ -14,5 +14,5 @@
 </script>
 
 <SettingsShell current="storage">
-  <StorageScreen {view} />
+  <StorageScreen state={view.state} />
 </SettingsShell>

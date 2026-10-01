@@ -99,8 +99,13 @@ describe('StorageSettingsView', () => {
 
     await view.load();
 
-    expect(view.account).toBe(read);
-    expect(view.message).toBeNull();
+    expect(view.state).toEqual({ kind: 'ready', value: read });
+  });
+
+  it('starts loading before any read', () => {
+    const view = new StorageSettingsView(containerReading(() => new Promise(() => {})));
+
+    expect(view.state).toEqual({ kind: 'loading' });
   });
 
   it('reports why the survey failed and holds no account', async () => {
@@ -112,8 +117,10 @@ describe('StorageSettingsView', () => {
 
     await view.load();
 
-    expect(view.account).toBeNull();
-    expect(view.message).toContain('denied');
+    expect(view.state).toEqual({
+      kind: 'failed',
+      message: 'What this app stores could not be read: denied',
+    });
   });
 
   it('reports a thrown failure rather than leaving the screen reading', async () => {
@@ -123,7 +130,10 @@ describe('StorageSettingsView', () => {
 
     await view.load();
 
-    expect(view.message).toContain('no storage manager');
+    expect(view.state).toEqual({
+      kind: 'failed',
+      message: 'What this app stores could not be read: no storage manager',
+    });
   });
 
   it('drops a reading that a dispose has abandoned', async () => {
@@ -135,6 +145,26 @@ describe('StorageSettingsView', () => {
     view.dispose();
     await reading;
 
-    expect(view.account).toBeNull();
+    expect(view.state).toEqual({ kind: 'loading' });
+  });
+
+  it('keeps the later of two loads when the earlier one answers last', async () => {
+    const earlier = account([MODEL], 1);
+    const later = account([MODEL], 2);
+    let answerEarlier: (read: StorageAccount) => void = () => {};
+    const answers = [
+      new Promise<Awaited<ReturnType<Container['storage']['readStorageAccount']>>>((resolve) => {
+        answerEarlier = (read) => resolve(ok(read));
+      }),
+      Promise.resolve(ok(later)),
+    ];
+    const view = new StorageSettingsView(containerReading(() => answers.shift()!));
+
+    const first = view.load();
+    await view.load();
+    answerEarlier(earlier);
+    await first;
+
+    expect(view.state).toEqual({ kind: 'ready', value: later });
   });
 });
