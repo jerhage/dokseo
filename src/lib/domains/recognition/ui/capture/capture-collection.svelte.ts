@@ -3,26 +3,23 @@ import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { TextQuote } from '$lib/shared/anchor';
 import { captureId, tagId } from '$lib/shared/ids';
-import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { err } from '$lib/shared/result';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Result } from '$lib/shared/result';
 import { editedText } from '../../domain/capture/capture';
-import type { Capture, CaptureDraft } from '../../domain/capture/capture';
+import type { CaptureDraft } from '../../domain/capture/capture';
 import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { CreateTagError } from '../../use-cases/tag/create-tag';
 import { NOT_STORED, describeStorageFailure, refuse, thrownFailure } from './storage-failure';
-import type { StorageFailure } from './storage-failure';
+import type { StorageFailure, WriteOutcome } from './storage-failure';
 import { CaptureList } from './capture-list.svelte';
+import { CaptureRemoval } from './capture-removal.svelte';
 import { ClearAll } from './clear-all.svelte';
-import type { Removed } from './capture-list.svelte';
 import type { Settled } from './panel-capture';
-
-type WriteOutcome = 'saved' | 'failed';
 
 type NoteEditors = {
   readonly open: (capture: CaptureId) => void;
@@ -33,10 +30,6 @@ type TagOutcome =
   | { readonly kind: 'created'; readonly tag: Tag }
   | { readonly kind: 'existing'; readonly tag: Tag }
   | { readonly kind: 'failed'; readonly failure: StorageFailure };
-
-const CAPTURE_REMOVED = 'Capture removed';
-
-const RESTORE_FAILED = 'The capture could not be restored';
 
 function tagOutcome(created: Result<Tag, CreateTagError | StorageFailure>): TagOutcome {
   if (created.ok) return { kind: 'created', tag: created.value };
@@ -76,6 +69,7 @@ function countsAfter(
 class CaptureCollection {
   readonly list: CaptureList;
   readonly clearAll: ClearAll;
+  readonly removal: CaptureRemoval;
   tags = $state.raw<readonly Tag[]>([]);
   libraryCounts = $state.raw<ReadonlyMap<TagId, number>>(new Map());
 
@@ -91,6 +85,7 @@ class CaptureCollection {
       this.tags = tags;
     });
     this.clearAll = new ClearAll(container, notify, this.list);
+    this.removal = new CaptureRemoval(container, notify, this.list);
   }
 
   get bookCounts(): ReadonlyMap<TagId, number> {
@@ -277,39 +272,6 @@ class CaptureCollection {
     return 'saved';
   }
 
-  async remove(id: CaptureId): Promise<WriteOutcome> {
-    const removed = this.list.take(id);
-    if (removed === null || removed.stored === undefined) return 'saved';
-
-    const stored = removed.stored;
-    const generation = this.list.generation;
-    const gone = await this.#container.recognition.removeCapture(id).catch(thrownFailure);
-    if (generation !== this.list.generation) return 'saved';
-    if (gone.ok) {
-      this.#notify({
-        tone: 'success',
-        title: CAPTURE_REMOVED,
-        action: { label: 'Undo', run: () => void this.#undoRemove(removed, stored, generation) },
-        duration: ACTION_NOTICE_MS,
-      });
-      return 'saved';
-    }
-
-    this.list.putBack(removed);
-    return this.#refuse('The capture could not be removed', gone.error);
-  }
-
-  async #undoRemove(removed: Removed, stored: Capture, generation: number): Promise<void> {
-    const restored = await this.#container.recognition.restoreCapture(stored).catch(thrownFailure);
-    if (!restored.ok) {
-      this.#refuse(RESTORE_FAILED, restored.error);
-      return;
-    }
-    if (generation !== this.list.generation) return;
-
-    this.list.putBack(removed);
-  }
-
   async loadTags(): Promise<void> {
     const generation = this.list.generation;
     const named = await this.#container.recognition.listTags().catch(() => null);
@@ -424,5 +386,4 @@ class CaptureCollection {
   }
 }
 
-export { CAPTURE_REMOVED, CaptureCollection, RESTORE_FAILED };
-export type { WriteOutcome };
+export { CaptureCollection };

@@ -4,6 +4,8 @@ import { err } from '$lib/shared/result';
 import type { Notify } from '$lib/shared/notice';
 import type { Result } from '$lib/shared/result';
 
+type WriteOutcome = 'saved' | 'failed';
+
 type StorageFailure =
   | { readonly kind: 'storage-unavailable' }
   | { readonly kind: 'storage-failed'; readonly cause: string }
@@ -29,4 +31,4 @@ function refuse(notify: Notify, title: string, failure: StorageFailure): 'failed
 }
 
 export { NOT_STORED, describeStorageFailure, refuse, thrownFailure };
-export type { StorageFailure };
+export type { StorageFailure, WriteOutcome };

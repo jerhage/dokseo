@@ -1,6 +1,6 @@
 import type { CaptureId } from '$lib/shared/ids';
 import type { FocusTarget } from './card-editing.svelte';
-import type { WriteOutcome } from './capture-collection.svelte';
+import type { WriteOutcome } from './storage-failure';
 
 type DraftField = 'text' | 'note';
 

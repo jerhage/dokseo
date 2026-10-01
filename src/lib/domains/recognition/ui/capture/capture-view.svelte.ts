@@ -15,7 +15,7 @@ import type { ReaderArrival } from '$lib/shared/reader-location';
 import { arrivalFrom, passageArrivalFrom, passageFrom } from './capture-arrivals';
 import { CardDrafts } from './card-drafts.svelte';
 import { CaptureCollection } from './capture-collection.svelte';
-import type { WriteOutcome } from './capture-collection.svelte';
+import type { WriteOutcome } from './storage-failure';
 import type { CaptureRead } from './capture-read';
 import type { PanelCapture, Settled } from './panel-capture';
 import { RecognizerView } from '../engine/recognizer-view.svelte';
@@ -314,7 +314,7 @@ class CaptureView {
   }
 
   remove(id: CaptureId): Promise<WriteOutcome> {
-    return this.#collection.remove(id);
+    return this.#collection.removal.remove(id);
   }
 
   async loadTags(): Promise<void> {

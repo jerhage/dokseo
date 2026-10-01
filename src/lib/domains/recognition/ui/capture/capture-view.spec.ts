@@ -29,7 +29,7 @@ import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
-import { CAPTURE_REMOVED, RESTORE_FAILED } from './capture-collection.svelte';
+import { CAPTURE_REMOVED, RESTORE_FAILED } from './capture-removal.svelte';
 import { CaptureView } from './capture-view.svelte';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;

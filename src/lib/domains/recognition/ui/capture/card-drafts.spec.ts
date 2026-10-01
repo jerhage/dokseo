@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { captureId } from '$lib/shared/ids';
 import type { FocusTarget } from './card-editing.svelte';
 import { CardDrafts } from './card-drafts.svelte';
-import type { WriteOutcome } from './capture-collection.svelte';
+import type { WriteOutcome } from './storage-failure';
 
 const CARD = captureId('c1');
 const OTHER = captureId('c2');
