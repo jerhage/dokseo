@@ -108,14 +108,14 @@ function shelf(): Shelf {
     chosen: [],
     place: START_OF_THE_TEXT,
     stored: DEFAULT_READING_SETTINGS,
-    keep: () => Promise.resolve(ok(undefined)),
+    keep: () => Promise.resolve({ kind: 'success' }),
     read: () => Promise.resolve(ok(SOURCE)),
     save: () => Promise.resolve(ok(novel(world.place))),
   };
 
   world.container = {
     flowing: {
-      readReadingSettings: () => Promise.resolve(world.stored),
+      readReadingSettings: () => Promise.resolve({ kind: 'success', settings: world.stored }),
       saveReadingSettings: (settings: ReadingSettings) => {
         world.chosen.push(settings);
         return world.keep();
@@ -1074,6 +1074,26 @@ describe('FlowView reading settings', () => {
 
     expect(surfaces.openings.map((opening) => opening.settings)).toEqual([world.stored]);
     expect(view.settings).toEqual(world.stored);
+  });
+
+  it('opens the book at the defaults when the settings read throws', async () => {
+    const world = shelf();
+    world.container = {
+      ...world.container,
+      flowing: {
+        ...world.container.flowing,
+        readReadingSettings: () => Promise.reject(new Error('the disk went away')),
+      },
+    };
+    const surfaces = shows();
+    const view = new FlowView(world.container, world.notify, createTestQueryClient());
+
+    await view.open(novel(world.place), surfaces.show);
+
+    expect(surfaces.openings.map((opening) => opening.settings)).toEqual([
+      DEFAULT_READING_SETTINGS,
+    ]);
+    expect(view.state).toEqual({ kind: 'ready' });
   });
 
   it('reads the defaults for a reader who has chosen nothing', async () => {

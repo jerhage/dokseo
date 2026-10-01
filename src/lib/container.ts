@@ -20,14 +20,17 @@ import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Result } from '$lib/shared/result';
 import { createReadingSettingsStore } from './domains/flowing/adapters/indexeddb-reading-settings';
-import type {
-  ReadingSettings,
-  ReadingSettingsError,
-} from './domains/flowing/domain/reading-settings';
+import type { ReadingSettings } from './domains/flowing/domain/reading-settings';
 import { readReadingSettings } from './domains/flowing/use-cases/read-reading-settings';
-import type { ReadReadingSettingsDeps } from './domains/flowing/use-cases/read-reading-settings';
+import type {
+  ReadReadingSettingsDeps,
+  ReadReadingSettingsResult,
+} from './domains/flowing/use-cases/read-reading-settings';
 import { saveReadingSettings } from './domains/flowing/use-cases/save-reading-settings';
-import type { SaveReadingSettingsDeps } from './domains/flowing/use-cases/save-reading-settings';
+import type {
+  SaveReadingSettingsDeps,
+  SaveReadingSettingsResult,
+} from './domains/flowing/use-cases/save-reading-settings';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import {
@@ -281,10 +284,8 @@ type Container = {
     ) => Promise<Result<readonly (Size | null)[], PageSourceError>>;
   };
   readonly flowing: {
-    readonly readReadingSettings: () => Promise<ReadingSettings>;
-    readonly saveReadingSettings: (
-      settings: ReadingSettings,
-    ) => Promise<Result<void, ReadingSettingsError>>;
+    readonly readReadingSettings: () => Promise<ReadReadingSettingsResult>;
+    readonly saveReadingSettings: (settings: ReadingSettings) => Promise<SaveReadingSettingsResult>;
   };
   readonly recognition: {
     readonly readModelConsent: (

@@ -98,8 +98,9 @@ function shelf(source: Blob, book: FlowBook): Container {
       saveReadingPlace: () => Promise.resolve(ok(book)),
     },
     flowing: {
-      readReadingSettings: () => Promise.resolve(DEFAULT_READING_SETTINGS),
-      saveReadingSettings: () => Promise.resolve(ok(undefined)),
+      readReadingSettings: () =>
+        Promise.resolve({ kind: 'success', settings: DEFAULT_READING_SETTINGS }),
+      saveReadingSettings: () => Promise.resolve({ kind: 'success' }),
     },
   } as unknown as Container;
 }

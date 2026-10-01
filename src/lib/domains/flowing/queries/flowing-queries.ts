@@ -1,22 +1,24 @@
 import { mutationOptions, queryOptions } from '@tanstack/svelte-query';
-import type { Result } from '$lib/shared/result';
-import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
+import type { ReadingSettings } from '../domain/reading-settings';
+import type { ReadReadingSettingsResult } from '../use-cases/read-reading-settings';
+import type { SaveReadingSettingsResult } from '../use-cases/save-reading-settings';
 import { flowingKeys } from './flowing-keys';
 
 type FlowingReads = {
-  readonly readReadingSettings: () => Promise<ReadingSettings>;
+  readonly readReadingSettings: () => Promise<ReadReadingSettingsResult>;
 };
 
 type FlowingWrites = {
-  readonly saveReadingSettings: (
-    settings: ReadingSettings,
-  ) => Promise<Result<void, ReadingSettingsError>>;
+  readonly saveReadingSettings: (settings: ReadingSettings) => Promise<SaveReadingSettingsResult>;
 };
 
 function readingSettingsQuery(flowing: FlowingReads) {
   return queryOptions({
     queryKey: flowingKeys.settings(),
-    queryFn: () => flowing.readReadingSettings(),
+    queryFn: async () => {
+      const read = await flowing.readReadingSettings();
+      return read.settings;
+    },
     staleTime: 0,
   });
 }

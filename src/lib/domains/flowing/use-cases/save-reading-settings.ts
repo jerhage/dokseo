@@ -1,9 +1,7 @@
-import type { Result } from '$lib/shared/result';
-import type {
-  ReadingSettings,
-  ReadingSettingsError,
-  ReadingSettingsStore,
-} from '../domain/reading-settings';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { ReadingSettings, ReadingSettingsStore } from '../domain/reading-settings';
+
+type SaveReadingSettingsResult = { readonly kind: 'success' } | StorageUnavailable;
 
 type SaveReadingSettingsDeps = {
   readonly settings: ReadingSettingsStore;
@@ -12,9 +10,9 @@ type SaveReadingSettingsDeps = {
 function saveReadingSettings(
   deps: SaveReadingSettingsDeps,
   settings: ReadingSettings,
-): Promise<Result<void, ReadingSettingsError>> {
+): Promise<SaveReadingSettingsResult> {
   return deps.settings.write(settings);
 }
 
 export { saveReadingSettings };
-export type { SaveReadingSettingsDeps };
+export type { SaveReadingSettingsDeps, SaveReadingSettingsResult };

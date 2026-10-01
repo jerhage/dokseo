@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { err, ok } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type {
   ReadingSettings,
-  ReadingSettingsError,
   ReadingSettingsStore,
+  SettingsWrite,
 } from '../domain/reading-settings';
 import { saveReadingSettings } from './save-reading-settings';
 
@@ -13,7 +13,7 @@ const CHOSEN: ReadingSettings = {
   showPhoneticReadings: false,
 };
 
-function recordingStore(failure: ReadingSettingsError | null = null): {
+function recordingStore(answer: SettingsWrite = { kind: 'success' }): {
   readonly store: ReadingSettingsStore;
   readonly written: ReadingSettings[];
 } {
@@ -22,10 +22,10 @@ function recordingStore(failure: ReadingSettingsError | null = null): {
   return {
     written,
     store: {
-      read: () => Promise.resolve(ok(null)),
+      read: () => Promise.resolve({ kind: 'success', stored: null }),
       write: (settings: ReadingSettings) => {
         written.push(settings);
-        return Promise.resolve(failure === null ? ok(undefined) : err(failure));
+        return Promise.resolve(answer);
       },
     },
   };
@@ -37,15 +37,15 @@ describe('saveReadingSettings', () => {
 
     const saved = await saveReadingSettings({ settings: recording.store }, CHOSEN);
 
-    expect(saved).toEqual({ ok: true, value: undefined });
+    expect(saved).toEqual({ kind: 'success' });
     expect(recording.written).toEqual([CHOSEN]);
   });
 
-  it('reports storage that refused the write', async () => {
-    const recording = recordingStore({ kind: 'storage-failed', cause: 'quota' });
+  it('reports a browser that blocks storage', async () => {
+    const recording = recordingStore(STORAGE_UNAVAILABLE);
 
     const saved = await saveReadingSettings({ settings: recording.store }, CHOSEN);
 
-    expect(saved).toEqual({ ok: false, error: { kind: 'storage-failed', cause: 'quota' } });
+    expect(saved).toEqual(STORAGE_UNAVAILABLE);
   });
 });

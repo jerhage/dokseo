@@ -7,16 +7,16 @@ import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { PlaceKeeper } from '$lib/shared/place-keeper';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { resumedCfi, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
-import type { ReadingSettings, ReadingSettingsError } from '../domain/reading-settings';
+import type { ReadingSettings } from '../domain/reading-settings';
 import { flowingKeys } from '../queries/flowing-keys';
 import { readingSettingsQuery, saveReadingSettingsMutation } from '../queries/flowing-queries';
+import type { SaveReadingSettingsResult } from '../use-cases/save-reading-settings';
 import {
   arrivingAt,
   landedAt,
@@ -120,15 +120,7 @@ function describePlaceFailure(error: LibraryFailure): string {
     .exhaustive();
 }
 
-function describeSettingsFailure(error: ReadingSettingsError): string {
-  return match(error)
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so these settings cannot be kept.',
-    )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
-    .exhaustive();
-}
+const SETTINGS_UNKEPT = 'This browser blocks local storage, so these settings cannot be kept.';
 
 function curtainFor(state: FlowState): FlowCurtain {
   return match(state)
@@ -155,7 +147,7 @@ class FlowView {
   #container: Container;
   #notify: Notify;
   #client: QueryClient;
-  #saving: WriteQuery<Result<void, ReadingSettingsError>, ReadingSettings>;
+  #saving: WriteQuery<SaveReadingSettingsResult, ReadingSettings>;
   #bookChanged: BookChanged | null;
   #generation = 0;
   #surface: FlowSurface | null = null;
@@ -185,7 +177,7 @@ class FlowView {
         client.setQueryData(flowingKeys.settings(), settings);
       },
       onSuccess: (saved) => {
-        if (!saved.ok) this.#fail(SETTINGS_FAILED, describeSettingsFailure(saved.error));
+        if (saved.kind === 'storage-unavailable') this.#fail(SETTINGS_FAILED, SETTINGS_UNKEPT);
       },
       onError: (cause) => this.#fail(SETTINGS_FAILED, failureMessage(cause)),
     }));
@@ -251,7 +243,9 @@ class FlowView {
     const at = resumedCfi(book.position);
     this.#places.assumeStored(book.position);
 
-    const chosen = await this.#client.fetchQuery(readingSettingsQuery(this.#container.flowing));
+    const chosen = await this.#client
+      .fetchQuery(readingSettingsQuery(this.#container.flowing))
+      .catch(() => DEFAULT_READING_SETTINGS);
     if (generation !== this.#generation) return;
 
     this.settings = chosen;

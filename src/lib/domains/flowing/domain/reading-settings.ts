@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 
 type TextSize = 'smallest' | 'small' | 'regular' | 'large' | 'largest';
 
@@ -15,10 +15,6 @@ type ReadingChoice<T> = {
   readonly value: T;
   readonly label: string;
 };
-
-type ReadingSettingsError =
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string };
 
 type StoredReadingSettings = {
   readonly reader: string;
@@ -127,9 +123,15 @@ function withPhoneticReadings(
   return { ...settings, showPhoneticReadings };
 }
 
+type StoredSettingsRead =
+  | { readonly kind: 'success'; readonly stored: StoredReadingSettings | null }
+  | StorageUnavailable;
+
+type SettingsWrite = { readonly kind: 'success' } | StorageUnavailable;
+
 interface ReadingSettingsStore {
-  read(): Promise<Result<StoredReadingSettings | null, ReadingSettingsError>>;
-  write(settings: ReadingSettings): Promise<Result<void, ReadingSettingsError>>;
+  read(): Promise<StoredSettingsRead>;
+  write(settings: ReadingSettings): Promise<SettingsWrite>;
 }
 
 export {
@@ -156,8 +158,9 @@ export type {
   LineSpacing,
   ReadingChoice,
   ReadingSettings,
-  ReadingSettingsError,
   ReadingSettingsStore,
+  SettingsWrite,
   StoredReadingSettings,
+  StoredSettingsRead,
   TextSize,
 };
