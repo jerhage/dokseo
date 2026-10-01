@@ -1,6 +1,5 @@
 <script lang="ts">
   import { flushSync, onDestroy, untrack } from 'svelte';
-  import { SvelteMap } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
   import Carousel from '$lib/components/Carousel.svelte';
   import KeyHints from '$lib/components/KeyHints.svelte';
@@ -8,20 +7,7 @@
   import type { CarouselMotion, CarouselSide } from '$lib/components/carousel';
   import type { GestureInput, GestureSample, GestureState } from '$lib/components/gesture';
   import { GestureFeed } from '$lib/components/gesture-feed';
-  import {
-    canPan,
-    centrePan,
-    clampPan,
-    doubleTapTarget,
-    fitZoom,
-    panBy,
-    pinchStep,
-    wheelPixels,
-    wheelZoomFactor,
-    zoomAt,
-    ZOOM_STEP,
-  } from '$lib/components/pan-zoom';
-  import type { Pinch, Viewport, ZoomPoint } from '$lib/components/pan-zoom';
+  import { ZOOM_STEP, wheelPixels, wheelZoomFactor } from '$lib/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';
@@ -36,9 +22,7 @@
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import { readTouchTurns } from '$lib/shared/touch-turns';
   import type { PageGroup } from '../domain/page-pairing';
-  import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from '../domain/viewport';
-  import type { Framing } from '../domain/viewport';
-  import type { PanReach } from '../domain/overscroll';
+  import type { ViewportFit } from '../domain/viewport';
   import { inputKind } from './gesture-hint';
   import { GrabPan } from './grab-pan.svelte';
   import { HintLines } from './hint-lines.svelte';
@@ -46,6 +30,7 @@
   import { learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import type { PageMove } from './page-moves';
+  import { PagedViewport } from './paged-viewport.svelte';
   import { moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
   import type { Neighbours, SlidePane } from './page-slide';
   import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
@@ -54,8 +39,6 @@
   import PageFrame from './PageFrame.svelte';
   import SelectionLayer from './SelectionLayer.svelte';
   import './paged-viewer.css';
-
-  type Fit = PageFit | 'free';
 
   const NO_NEIGHBOURS: Neighbours = { decrement: null, increment: null };
 
@@ -101,19 +84,25 @@
   let strip = $state<HTMLDivElement | null>(null);
   let selection = $state<ReturnType<typeof SelectionLayer> | null>(null);
   let carousel = $state<ReturnType<typeof Carousel<SlidePane>> | null>(null);
-  let viewport = $state.raw<Viewport>({ zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 });
-  let fit = $state.raw<Fit>(untrack(() => pageFit));
-  let pannable = $state(false);
   let motion = $state.raw<CarouselMotion>(CAROUSEL_REST);
   let lastPointerType = $state<string | null>(null);
-  let frameSize = $state.raw<Size | null>(null);
 
-  const contents = new SvelteMap<ImageIndex, Size>();
   const gestures = new GestureFeed(feed);
   const pan = new GrabPan(() => frame);
+  const view = new PagedViewport(
+    {
+      boxes: () => {
+        const outer = frame;
+        const inner = strip;
+        if (outer === null || inner === null) return null;
+        return { frame: outer.getBoundingClientRect(), strip: inner.getBoundingClientRect() };
+      },
+      offset: () => frame?.getBoundingClientRect() ?? null,
+    },
+    () => pageFit,
+  );
 
   let shownPages: PageGroup | null = null;
-  let panOrigin: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
   let lastPointer = '';
   let slides = false;
 
@@ -124,7 +113,7 @@
   const pointing = $derived(inputKind(lastPointerType, coarse));
 
   const hints = new HintLines(() => ({
-    scene: { input: pointing, layoutKind: 'paged', pannable, turns },
+    scene: { input: pointing, layoutKind: 'paged', pannable: view.pannable, turns },
     chromeShown,
   }));
 
@@ -142,37 +131,10 @@
     select(regions);
   }
 
-  function framesNow(): Framing | null {
-    const outer = frame;
-    const inner = strip;
-    if (outer === null || inner === null) return null;
-
-    const zoom = viewport.zoom;
-    if (!Number.isFinite(zoom) || zoom <= 0) return null;
-
-    const outerBox = outer.getBoundingClientRect();
-    const innerBox = inner.getBoundingClientRect();
-
-    return {
-      frame: { width: outerBox.width, height: outerBox.height },
-      content: { width: innerBox.width / zoom, height: innerBox.height / zoom },
-    };
-  }
-
-  function framingOf(key: ImageIndex | undefined): Framing | null {
-    const content = key === undefined ? undefined : contents.get(key);
-    const outer = frameSize;
-    return content === undefined || outer === null ? null : { content, frame: outer };
-  }
-
-  function paneViewport(pane: SlidePane): Viewport {
-    return pane.beside === 0 ? viewport : arrivalViewport(fit, viewport, framingOf(pane.key));
-  }
-
   function measureFrame(element: HTMLDivElement): () => void {
     const observer = new ResizeObserver(([entry]) => {
       if (entry !== undefined) {
-        frameSize = { width: entry.contentRect.width, height: entry.contentRect.height };
+        view.framed({ width: entry.contentRect.width, height: entry.contentRect.height });
       }
       refitWhenFramed();
     });
@@ -184,57 +146,24 @@
     return (element) => {
       const observer = new ResizeObserver(([entry]) => {
         if (entry !== undefined) {
-          contents.set(key, { width: entry.contentRect.width, height: entry.contentRect.height });
+          view.measured(key, { width: entry.contentRect.width, height: entry.contentRect.height });
         }
       });
       observer.observe(element);
       return () => {
         observer.disconnect();
-        contents.delete(key);
+        view.forget(key);
       };
     };
   }
 
-  function commit(next: Viewport, sizes: Framing | null): void {
-    viewport = next;
-    if (sizes !== null) pannable = canPan(sizes.content, sizes.frame, next.zoom);
-  }
-
-  function settle(next: Viewport): void {
-    const sizes = framesNow();
-    commit(sizes === null ? next : clampPan(next, sizes.content, sizes.frame), sizes);
-  }
-
-  function recentre(zoom: number): void {
-    const sizes = framesNow();
-    const next: Viewport = { zoom, panX: viewport.panX, panY: viewport.panY };
-    commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
-  }
-
-  function arrive(key: ImageIndex | undefined): void {
-    const sizes = framingOf(key) ?? framesNow();
-    commit(arrivalViewport(fit, viewport, sizes), sizes);
-  }
-
-  function applyHeight(): void {
-    fit = 'height';
-    recentre(FIT_HEIGHT_ZOOM);
-  }
-
-  function applyWidth(): void {
-    const sizes = framesNow();
-    fit = 'width';
-    if (sizes === null) return;
-    recentre(fitZoom(sizes.content, sizes.frame, 'width'));
-  }
-
   export function fitHeight(): void {
-    applyHeight();
+    view.fitHeight();
     onFit('height');
   }
 
   export function fitWidth(): void {
-    applyWidth();
+    view.fitWidth();
     onFit('width');
   }
 
@@ -250,66 +179,8 @@
     touchGuide.recall();
   }
 
-  export function activeFit(): Fit {
-    return fit;
-  }
-
-  function reapplyFit(): void {
-    match(fit)
-      .with('height', () => applyHeight())
-      .with('width', () => applyWidth())
-      .with('free', () => settle(viewport))
-      .exhaustive();
-  }
-
-  function zoomed(next: Viewport): void {
-    fit = 'free';
-    settle(next);
-    if (pannable) learnGesture('zoom-to-pan');
-  }
-
-  function framePoint(x: number, y: number): ZoomPoint | null {
-    const element = frame;
-    if (element === null) return null;
-
-    const box = element.getBoundingClientRect();
-    return { x: x - box.left, y: y - box.top };
-  }
-
-  function pinched(pinch: Pinch): void {
-    const sizes = framesNow();
-    const centre = framePoint(pinch.cx, pinch.cy);
-    if (sizes === null || centre === null) return;
-
-    zoomed(
-      pinchStep(
-        viewport,
-        { ...pinch, cx: centre.x, cy: centre.y },
-        { content: sizes.content, frame: sizes.frame, floor: pageFitZoom(pageFit, sizes) },
-      ),
-    );
-  }
-
-  function doubleTapped(at: ZoomPoint): void {
-    const sizes = framesNow();
-    const point = framePoint(at.x, at.y);
-    if (sizes === null || point === null) return;
-
-    const target = doubleTapTarget(viewport, pageFitZoom(pageFit, sizes), point);
-    if (target.kind === 'zoom') {
-      zoomed(target.viewport);
-      return;
-    }
-
-    fit = pageFit;
-    settle(target.viewport);
-  }
-
-  function stepZoom(factor: number): void {
-    const sizes = framesNow();
-    if (sizes === null) return;
-
-    zoomed(zoomAt(viewport, factor, sizes.frame.width / 2, sizes.frame.height / 2));
+  export function activeFit(): ViewportFit {
+    return view.fit;
   }
 
   function onwheel(event: WheelEvent): void {
@@ -322,16 +193,16 @@
     const dy = wheelPixels(event.deltaY, event.deltaMode, box.height);
 
     if (event.ctrlKey || event.metaKey) {
-      zoomed(zoomAt(viewport, wheelZoomFactor(dy), event.clientX - box.x, event.clientY - box.y));
+      view.zoomAt(wheelZoomFactor(dy), event.clientX - box.x, event.clientY - box.y);
       return;
     }
 
     if (event.shiftKey) {
-      settle(panBy(viewport, -(dx + dy), 0));
+      view.panBy(-(dx + dy), 0);
       return;
     }
 
-    settle(panBy(viewport, -dx, -dy));
+    view.panBy(-dx, -dy);
   }
 
   function frameSpan(): FrameSpan {
@@ -347,9 +218,9 @@
       .with({ kind: 'none' }, () => undefined)
       .with({ kind: 'toggle-chrome' }, () => onTap())
       .with({ kind: 'turn' }, ({ move }) => onTurn?.(move))
-      .with({ kind: 'pan' }, ({ dx, dy }) => settle(panBy(viewport, dx, dy)))
-      .with({ kind: 'pinch' }, (pinch) => pinched(pinch))
-      .with({ kind: 'zoom-toggle' }, ({ at }) => doubleTapped(at))
+      .with({ kind: 'pan' }, ({ dx, dy }) => view.panBy(dx, dy))
+      .with({ kind: 'pinch' }, (pinch) => view.pinch(pinch))
+      .with({ kind: 'zoom-toggle' }, ({ at }) => view.doubleTap(at))
       .with({ kind: 'select-begin' }, ({ from, to }) => {
         const touch = gestures.state;
         if (touch.kind === 'selecting') selection?.beginAt(touch.id, from, to);
@@ -360,15 +231,8 @@
       .exhaustive();
   }
 
-  function panReach(): PanReach | null {
-    const sizes = framesNow();
-    return sizes === null
-      ? null
-      : { origin: panOrigin, content: sizes.content, frame: sizes.frame };
-  }
-
   function refitWhenFramed(): void {
-    if (frame !== null && strip !== null) reapplyFit();
+    if (frame !== null && strip !== null) view.refit();
   }
 
   function holdStrip(element: HTMLDivElement): () => void {
@@ -391,7 +255,9 @@
   }
 
   function slideWith(state: GestureState, action: TouchAction): boolean {
-    const travel = slides ? slideTravel(state, state.kind === 'panning' ? panReach() : null) : 0;
+    const travel = slides
+      ? slideTravel(state, state.kind === 'panning' ? view.panReach() : null)
+      : 0;
     const turn = action.kind === 'turn' ? action.move : null;
     return carousel?.drive(slideInput(state, travel, turn, direction)) ?? false;
   }
@@ -402,13 +268,13 @@
         carousel?.finish();
         flushSync();
       }
-      panOrigin = viewport;
+      view.holdPanOrigin();
       slides = followsTheFinger(input, frameSpan());
     }
 
     const span = frameSpan();
     const step = gestures.step(input, {
-      pannable,
+      pannable: view.pannable,
       selectMode: selecting,
       waitsForDoubleTap: centreZoneWaits(span, turns),
     });
@@ -418,7 +284,7 @@
       direction,
       frame: span,
       viewportWidth: window.innerWidth,
-      reach: step.intent.kind === 'pan-end' ? panReach() : null,
+      reach: step.intent.kind === 'pan-end' ? view.panReach() : null,
     });
     const lesson = touchLesson(step.intent, action);
     if (lesson !== null) learnGesture(lesson);
@@ -465,7 +331,7 @@
     const step = pan.move(event);
     if (step !== null) {
       learnGesture(step.bySpace ? 'space-pan' : 'middle-pan');
-      settle(panBy(viewport, step.dx, step.dy));
+      view.panBy(step.dx, step.dy);
       return;
     }
 
@@ -526,13 +392,13 @@
 
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
-      stepZoom(ZOOM_STEP);
+      view.stepZoom(ZOOM_STEP);
       return;
     }
 
     if (event.key === '-') {
       event.preventDefault();
-      stepZoom(1 / ZOOM_STEP);
+      view.stepZoom(1 / ZOOM_STEP);
       return;
     }
 
@@ -567,7 +433,7 @@
       carousel?.rest();
       selection?.reset();
       pan.stop();
-      arrive(group[0]);
+      view.arrive(group[0]);
     });
   });
 </script>
@@ -604,15 +470,15 @@
       onsettled={settledTowards}
     >
       {#snippet slide(pane)}
-        {@const view = paneViewport(pane)}
+        {@const shown = view.paneViewport(pane)}
         <div
           class={[
             'strip zoom-surface row gap-0 shrink-0 h-full',
             { 'is-rtl': direction === 'rtl' },
           ]}
-          style:--zoom-surface-pan-x="{view.panX}px"
-          style:--zoom-surface-pan-y="{view.panY}px"
-          style:--zoom-surface-zoom={view.zoom}
+          style:--zoom-surface-pan-x="{shown.panX}px"
+          style:--zoom-surface-pan-y="{shown.panY}px"
+          style:--zoom-surface-zoom={shown.zoom}
           {@attach pane.beside === 0 ? holdStrip : null}
           {@attach untrack(() => measureContent(pane.key))}
         >
