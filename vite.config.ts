@@ -95,6 +95,7 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
+          setupFiles: ['src/lib/shared/testing/fresh-local-storage.ts'],
           include: ['src/**/*.{test,spec}.{js,ts}'],
           exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
         },

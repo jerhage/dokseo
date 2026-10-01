@@ -5,6 +5,7 @@
     "npm:@sveltejs/adapter-static@^3.0.10": "3.0.10_@sveltejs+kit@2.70.3",
     "npm:@sveltejs/kit@^2.63.0": "2.70.3_@sveltejs+vite-plugin-svelte@7.3.0_svelte@5.57.1_typescript@6.0.3_vite@8.3.0_acorn@8.18.0",
     "npm:@sveltejs/vite-plugin-svelte@^7.1.2": "7.3.0_svelte@5.57.1_vite@8.3.0",
+    "npm:@tanstack/svelte-query@^6.3.0": "6.3.0_svelte@5.57.1",
     "npm:@vitest/browser-playwright@^4.1.8": "4.1.11_playwright@1.63.0_vitest@4.1.11_vite@8.3.0",
     "npm:@zip.js/zip.js@^2.15.0": "2.15.0",
     "npm:dependency-cruiser@^18.3.1": "18.3.1",
@@ -875,6 +876,16 @@
         "svelte",
         "vite",
         "vitefu"
+      ]
+    },
+    "@tanstack/query-core@5.104.0": {
+      "integrity": "sha512-JrC2r/JQlXt7khBSdUpsgxNvybzOg+aITa+ARRMlP2AFo93Y8vIqz077rp+e61mJetSZ0T6AJbwW1JHer1vrPQ=="
+    },
+    "@tanstack/svelte-query@6.3.0_svelte@5.57.1": {
+      "integrity": "sha512-Lzib+G+fGL6tFi8jJ3jfNKuSE94iEgjpSCz6Pdf33na+Bljfnv+r5aArSDwLecYEnZCBb8mS6uJrcfJj3dR6qg==",
+      "dependencies": [
+        "@tanstack/query-core",
+        "svelte"
       ]
     },
     "@testing-library/svelte-core@1.1.3_svelte@5.57.1": {
@@ -1983,6 +1994,7 @@
         "npm:@sveltejs/adapter-static@^3.0.10",
         "npm:@sveltejs/kit@^2.63.0",
         "npm:@sveltejs/vite-plugin-svelte@^7.1.2",
+        "npm:@tanstack/svelte-query@^6.3.0",
         "npm:@vitest/browser-playwright@^4.1.8",
         "npm:@zip.js/zip.js@^2.15.0",
         "npm:dependency-cruiser@^18.3.1",

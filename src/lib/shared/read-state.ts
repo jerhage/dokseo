@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import { failureMessage } from './query-failure';
 
 type Refresh =
   | { readonly kind: 'settled' }
@@ -9,6 +10,12 @@ type ReadState<T> =
   | { readonly kind: 'loading' }
   | { readonly kind: 'failed'; readonly message: string }
   | { readonly kind: 'ready'; readonly value: T; readonly refresh: Refresh };
+
+type ReadSnapshot<T> =
+  | { readonly status: 'pending' }
+  | { readonly status: 'error'; readonly isLoadingError: true; readonly error: unknown }
+  | { readonly status: 'error'; readonly isLoadingError: false; readonly data: T }
+  | { readonly status: 'success'; readonly data: T };
 
 const LOADING: ReadState<never> = { kind: 'loading' };
 
@@ -41,5 +48,16 @@ function reloadFailed<T>(state: ReadState<T>, message: string): ReadState<T> {
     .exhaustive();
 }
 
-export { LOADING, readFailed, readReady, reloadFailed, reloading };
-export type { ReadState, Refresh };
+function readStateOf<T>(snapshot: ReadSnapshot<T>): ReadState<T> {
+  return match(snapshot)
+    .with({ status: 'pending' }, (): ReadState<T> => LOADING)
+    .with({ status: 'error', isLoadingError: true }, ({ error }): ReadState<T> =>
+      readFailed(failureMessage(error)),
+    )
+    .with({ status: 'error', isLoadingError: false }, ({ data }) => readReady(data))
+    .with({ status: 'success' }, ({ data }) => readReady(data))
+    .exhaustive();
+}
+
+export { LOADING, readFailed, readReady, readStateOf, reloadFailed, reloading };
+export type { ReadSnapshot, ReadState, Refresh };

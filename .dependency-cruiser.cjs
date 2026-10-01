@@ -94,7 +94,7 @@ module.exports = {
     {
       name: 'routes-are-thin',
       comment:
-        'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts and context.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree), the shared kernel, style sheets and static assets, a base component from src/lib/components/, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
+        'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts, context.ts and query-client.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree, query-client.ts builds the one query cache the root layout provides), the shared kernel, style sheets and static assets, a base component from src/lib/components/, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
       severity: 'error',
       from: { path: '^src/routes/' },
       to: {
@@ -102,6 +102,7 @@ module.exports = {
         pathNot: [
           '^src/lib/container\\.ts$',
           '^src/lib/context\\.ts$',
+          '^src/lib/query-client\\.ts$',
           '^src/lib/shared/',
           '^src/lib/styles/',
           '^src/lib/assets/',
