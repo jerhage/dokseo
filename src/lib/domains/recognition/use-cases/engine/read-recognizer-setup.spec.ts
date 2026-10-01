@@ -21,12 +21,8 @@ function storeHolding(
   };
 }
 
-async function choiceFrom(
-  record: StoredRecognizerSetup | null,
-  language: Language = 'ja',
-  failure: SetupError | null = null,
-) {
-  const read = await readRecognizerSetup({ setups: storeHolding(record, failure) }, language);
+async function choiceFrom(record: StoredRecognizerSetup | null, language: Language = 'ja') {
+  const read = await readRecognizerSetup({ setups: storeHolding(record) }, language);
   if (!read.ok) throw new Error('The setup could not be read');
   return read.value;
 }
@@ -56,11 +52,13 @@ describe('readRecognizerSetup', () => {
     expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
   });
 
-  it('defaults rather than failing when the store cannot be read', async () => {
-    const choice = await choiceFrom(null, 'ja', { kind: 'storage-unavailable' });
+  it('passes on the failure of a store that cannot be read', async () => {
+    const read = await readRecognizerSetup(
+      { setups: storeHolding(null, { kind: 'storage-unavailable' }) },
+      'ja',
+    );
 
-    expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
-    expect(choice.compute).toBe('cpu');
+    expect(read).toEqual(err({ kind: 'storage-unavailable' }));
   });
 
   it('defaults each language to a model that can read it', async () => {

@@ -97,6 +97,7 @@ import type { ModelStorageError } from './domains/recognition/domain/model/model
 import type { PartialError } from './domains/recognition/domain/model/partial-downloads';
 import type { RecognizedText } from './domains/recognition/domain/engine/recognized-text';
 import type { RecognizerSession } from './domains/recognition/domain/engine/recognizer-session';
+import { setupChoice } from './domains/recognition/domain/engine/recognizer-setup';
 import type {
   RecognizerChoice,
   RecognizerSetup,
@@ -187,9 +188,10 @@ const setups = createRecognizerSetupStore();
 const readRecognizerSetupDeps: ReadRecognizerSetupDeps = { setups };
 
 async function setupFor(language: Language): Promise<RecognizerSetup | null> {
-  const choice = await readRecognizerSetup(readRecognizerSetupDeps, language);
-  if (!choice.ok || choice.value.model === null) return null;
-  return { modelId: choice.value.model.modelId, compute: choice.value.compute };
+  const read = await readRecognizerSetup(readRecognizerSetupDeps, language);
+  const choice = read.ok ? read.value : setupChoice(language, null);
+  if (choice.model === null) return null;
+  return { modelId: choice.model.modelId, compute: choice.compute };
 }
 
 function noticesFor(language: Language): {

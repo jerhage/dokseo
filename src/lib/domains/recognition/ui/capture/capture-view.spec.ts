@@ -352,11 +352,9 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         ),
       deleteModel: unused,
       readRecognizerSetup: (language: Language) =>
-        Promise.resolve(
-          engine.setupFails
-            ? err({ kind: 'storage-unavailable' as const })
-            : ok({ model: modelFootprint(language), compute: 'auto' as const }),
-        ),
+        engine.setupFails
+          ? Promise.reject(new Error('The setup store is gone'))
+          : Promise.resolve(ok({ model: modelFootprint(language), compute: 'auto' as const })),
       saveRecognizerSetup: unused,
       detectCompute: unused,
       prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {

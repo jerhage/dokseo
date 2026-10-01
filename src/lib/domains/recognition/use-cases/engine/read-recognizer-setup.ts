@@ -17,9 +17,9 @@ async function readRecognizerSetup(
   language: Language,
 ): Promise<Result<RecognizerChoice, SetupError>> {
   const record = await deps.setups.read(language);
-  const stored = record.ok ? record.value : null;
+  if (!record.ok) return record;
 
-  return ok(setupChoice(language, stored));
+  return ok(setupChoice(language, record.value));
 }
 
 export { readRecognizerSetup };
