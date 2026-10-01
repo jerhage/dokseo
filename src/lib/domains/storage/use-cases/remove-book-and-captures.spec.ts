@@ -5,23 +5,21 @@ import type {
 } from '$lib/domains/library/domain/book/library-repository';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type {
-  CaptureError,
   CaptureRepository,
+  CaptureWrite,
 } from '$lib/domains/recognition/domain/capture/capture-repository';
 import { bookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { removeBookAndCaptures } from './remove-book-and-captures';
 import type { RemoveBookAndCapturesDeps } from './remove-book-and-captures';
 
-const CAPTURES_BLOCKED: CaptureError = { kind: 'storage-unavailable' };
-
 const WRITTEN: LibraryWrite = { kind: 'success' };
 
+const NO_CAPTURES: readonly Capture[] = [];
+
 type Outcomes = {
-  readonly clearing?: Result<void, CaptureError>;
+  readonly clearing?: CaptureWrite;
   readonly removal?: LibraryWrite;
 };
 
@@ -40,15 +38,15 @@ function world(outcomes: Outcomes = {}): World {
   let held: readonly BookId[] = [bookId('book-1'), bookId('book-2')];
 
   const captures: CaptureRepository = {
-    listForBook: () => Promise.resolve(ok<readonly Capture[]>([])),
-    listEverything: () => Promise.resolve(ok<readonly Capture[]>([])),
+    listForBook: () => Promise.resolve({ kind: 'success', captures: NO_CAPTURES }),
+    listEverything: () => Promise.resolve({ kind: 'success', captures: NO_CAPTURES }),
     save: () => Promise.reject(new Error('not used')),
     remove: () => Promise.reject(new Error('not used')),
     clearBook: (book) => {
       steps.push('cleared');
       cleared.push(book);
-      const outcome = outcomes.clearing ?? ok(undefined);
-      if (outcome.ok) held = held.filter((each) => each !== book);
+      const outcome = outcomes.clearing ?? WRITTEN;
+      if (outcome.kind === 'success') held = held.filter((each) => each !== book);
       return Promise.resolve(outcome);
     },
   };
@@ -99,7 +97,7 @@ describe('removeBookAndCaptures', () => {
   });
 
   it('keeps the book when its captures cannot be cleared', async () => {
-    const origin = world({ clearing: err(CAPTURES_BLOCKED) });
+    const origin = world({ clearing: STORAGE_UNAVAILABLE });
 
     const result = await removeBookAndCaptures(origin.deps, bookId('book-1'));
 

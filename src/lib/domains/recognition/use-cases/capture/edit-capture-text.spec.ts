@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { editCaptureText } from './edit-capture-text';
 
 const BOOK = bookId('book-one');
@@ -27,17 +26,15 @@ const CAPTURE: Capture = takenCapture(
 function repository(broken = false) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
-    listForBook: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    save: (capture: Capture): Promise<Result<void, CaptureError>> => {
-      if (broken) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    save: (capture: Capture) => {
+      if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(capture);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
-    clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, saved };
@@ -49,7 +46,7 @@ describe('editCaptureText', () => {
 
     const edited = await editCaptureText({ captures, now: () => 9 }, CAPTURE, 'こっちに来い');
 
-    expect(edited.ok && edited.value.text).toBe('こっちに来い');
+    expect(edited.kind === 'success' && edited.capture.text).toBe('こっちに来い');
     expect(at(saved, 0).id).toBe(CAPTURE.id);
     expect(at(saved, 0).text).toBe('こっちに来い');
   });
@@ -59,7 +56,7 @@ describe('editCaptureText', () => {
 
     const edited = await editCaptureText({ captures, now: () => 9 }, CAPTURE, 'べつのことば');
 
-    expect(edited.ok && edited.value.editedAt).toBe(9);
+    expect(edited.kind === 'success' && edited.capture.editedAt).toBe(9);
     expect(at(saved, 0).editedAt).toBe(9);
   });
 
@@ -76,15 +73,15 @@ describe('editCaptureText', () => {
 
     const edited = await editCaptureText({ captures, now: () => 9 }, CAPTURE, '  ');
 
-    expect(edited.ok && edited.value.text).toBe('こっちに来て');
+    expect(edited.kind === 'success' && edited.capture.text).toBe('こっちに来て');
     expect(at(saved, 0).text).toBe('こっちに来て');
   });
 
-  it('reports a storage failure rather than throwing', async () => {
+  it('reports a browser that blocks storage', async () => {
     const { captures } = repository(true);
 
     const edited = await editCaptureText({ captures, now: () => 9 }, CAPTURE, 'べつのことば');
 
-    expect(edited).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(edited).toEqual(STORAGE_UNAVAILABLE);
   });
 });

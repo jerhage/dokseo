@@ -1,9 +1,12 @@
 import type { TagId } from '$lib/shared/ids';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { taggedCapture } from '../../domain/tag/capture-tags';
+
+type AddTagToCaptureResult =
+  | { readonly kind: 'success'; readonly capture: Capture }
+  | StorageUnavailable;
 
 type AddTagToCaptureDeps = {
   readonly captures: CaptureRepository;
@@ -13,13 +16,13 @@ async function addTagToCapture(
   deps: AddTagToCaptureDeps,
   capture: Capture,
   tag: TagId,
-): Promise<Result<Capture, CaptureError>> {
+): Promise<AddTagToCaptureResult> {
   const tagged = taggedCapture(capture, tag);
   const stored = await deps.captures.save(tagged);
-  if (!stored.ok) return stored;
+  if (stored.kind !== 'success') return stored;
 
-  return ok(tagged);
+  return { kind: 'success', capture: tagged };
 }
 
 export { addTagToCapture };
-export type { AddTagToCaptureDeps };
+export type { AddTagToCaptureDeps, AddTagToCaptureResult };

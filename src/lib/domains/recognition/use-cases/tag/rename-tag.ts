@@ -1,34 +1,30 @@
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { renamedTag, sameTagName } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
+import type { TagRepository } from '../../domain/tag/tag-repository';
 
-type RenameTagError = TagError | { readonly kind: 'name-taken'; readonly tag: Tag };
+type RenameTagResult =
+  | { readonly kind: 'success'; readonly tag: Tag }
+  | { readonly kind: 'name-taken'; readonly tag: Tag }
+  | StorageUnavailable;
 
 type RenameTagDeps = {
   readonly tags: TagRepository;
 };
 
-async function renameTag(
-  deps: RenameTagDeps,
-  tag: Tag,
-  name: string,
-): Promise<Result<Tag, RenameTagError>> {
+async function renameTag(deps: RenameTagDeps, tag: Tag, name: string): Promise<RenameTagResult> {
   const existing = await deps.tags.list();
-  if (!existing.ok) return existing;
+  if (existing.kind !== 'success') return existing;
 
-  const taken = existing.value.find(
-    (other) => other.id !== tag.id && sameTagName(other.name, name),
-  );
-  if (taken !== undefined) return err({ kind: 'name-taken', tag: taken });
+  const taken = existing.tags.find((other) => other.id !== tag.id && sameTagName(other.name, name));
+  if (taken !== undefined) return { kind: 'name-taken', tag: taken };
 
   const renamed = renamedTag(tag, name);
   const stored = await deps.tags.save(renamed);
-  if (!stored.ok) return stored;
+  if (stored.kind !== 'success') return stored;
 
-  return ok(renamed);
+  return { kind: 'success', tag: renamed };
 }
 
 export { renameTag };
-export type { RenameTagDeps, RenameTagError };
+export type { RenameTagDeps, RenameTagResult };

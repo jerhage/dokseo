@@ -8,14 +8,10 @@ import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Notice, Notify } from '$lib/shared/notice';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { taggedCapture } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError } from '../../domain/tag/tag-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { arrivalFrom, passageFrom } from './capture-arrivals';
@@ -83,41 +79,39 @@ function fakes(): Fakes {
       readModelConsent: unused,
       grantModelConsent: unused,
       recognizeRegion: unused,
-      listCaptures: (book: BookId): Promise<Result<readonly Capture[], CaptureError>> =>
-        Promise.resolve(ok(store.rows.filter((row) => row.bookId === book))),
-      listEveryCapture: (): Promise<Result<readonly Capture[], CaptureError>> =>
-        Promise.resolve(ok([...store.rows])),
-      saveCapture: (draft: CaptureDraft): Promise<Result<Capture, CaptureError>> => {
+      listCaptures: (book: BookId) =>
+        Promise.resolve({
+          kind: 'success',
+          captures: store.rows.filter((row) => row.bookId === book),
+        }),
+      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [...store.rows] }),
+      saveCapture: (draft: CaptureDraft) => {
         const kept = takenCapture(draft, store.rows.length + 1);
         store.rows = [...store.rows, kept];
-        return Promise.resolve(ok(kept));
+        return Promise.resolve({ kind: 'success', capture: kept });
       },
-      writeNote: (
-        id: CaptureId,
-        book: BookId,
-        taken: Anchor,
-      ): Promise<Result<Capture, CaptureError>> => {
+      writeNote: (id: CaptureId, book: BookId, taken: Anchor) => {
         const note = takenCapture(
           { id, bookId: book, anchor: taken, text: '', origin: 'written' },
           store.rows.length + 1,
         );
         store.rows = [...store.rows, note];
-        return Promise.resolve(ok(note));
+        return Promise.resolve({ kind: 'success', capture: note });
       },
       editCaptureText: unused,
       writeCaptureNote: unused,
       removeCapture: unused,
       restoreCapture: unused,
-      clearCaptures: (book: BookId): Promise<Result<void, CaptureError>> => {
+      clearCaptures: (book: BookId) => {
         store.rows = store.rows.filter((row) => row.bookId !== book);
-        return Promise.resolve(ok(undefined));
+        return Promise.resolve({ kind: 'success' });
       },
-      listTags: (): Promise<Result<readonly Tag[], TagError>> => Promise.resolve(ok(store.tags)),
+      listTags: () => Promise.resolve({ kind: 'success', tags: store.tags }),
       createTag: unused,
-      addTagToCapture: (capture: Capture, tag: TagId): Promise<Result<Capture, CaptureError>> => {
+      addTagToCapture: (capture: Capture, tag: TagId) => {
         const tagged = taggedCapture(capture, tag);
         store.rows = store.rows.map((row) => (row.id === tagged.id ? tagged : row));
-        return Promise.resolve(ok(tagged));
+        return Promise.resolve({ kind: 'success', capture: tagged });
       },
       removeTagFromCapture: unused,
       renameTag: unused,

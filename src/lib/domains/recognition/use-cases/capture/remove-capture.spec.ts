@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { CaptureId } from '$lib/shared/ids';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { removeCapture } from './remove-capture';
 
 const BOOK = bookId('book-one');
@@ -29,18 +28,17 @@ function stored(id: string): Capture {
 function repository(broken = false) {
   let rows: Capture[] = [stored('a'), stored('b')];
   const captures: CaptureRepository = {
-    listForBook: (): Promise<Result<readonly Capture[], CaptureError>> => Promise.resolve(ok(rows)),
-    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(rows)),
-    save: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
-    remove: (capture: CaptureId): Promise<Result<void, CaptureError>> => {
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: rows }),
+    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: rows }),
+    save: () => Promise.resolve({ kind: 'success' as const }),
+    remove: (capture: CaptureId) => {
       if (broken) {
-        return Promise.resolve(err({ kind: 'storage-failed', cause: 'the store is blocked' }));
+        return Promise.resolve(STORAGE_UNAVAILABLE);
       }
       rows = rows.filter((row) => row.id !== capture);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, remaining: () => rows.map((row) => row.id) };
@@ -52,15 +50,15 @@ describe('removeCapture', () => {
 
     const removed = await removeCapture({ captures }, captureId('a'));
 
-    expect(removed).toEqual(ok(undefined));
+    expect(removed).toEqual({ kind: 'success' as const });
     expect(remaining()).toEqual(['b']);
   });
 
-  it('reports a storage failure rather than throwing', async () => {
+  it('reports a browser that blocks storage', async () => {
     const { captures } = repository(true);
 
     const removed = await removeCapture({ captures }, captureId('a'));
 
-    expect(removed).toEqual(err({ kind: 'storage-failed', cause: 'the store is blocked' }));
+    expect(removed).toEqual(STORAGE_UNAVAILABLE);
   });
 });

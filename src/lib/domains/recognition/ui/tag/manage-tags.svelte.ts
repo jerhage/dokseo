@@ -3,14 +3,11 @@ import { match } from 'ts-pattern';
 import type { TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { tagName } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagColour } from '../../domain/tag/tag-colour';
-import type { TagError } from '../../domain/tag/tag-repository';
 import { recognitionKeys } from '../../queries/recognition-keys';
 import {
   deleteTagMutation,
@@ -18,7 +15,9 @@ import {
   renameTagMutation,
 } from '../../queries/tag-queries';
 import type { TagRecolour, TagRename, TagWrites } from '../../queries/tag-queries';
-import type { RenameTagError } from '../../use-cases/tag/rename-tag';
+import type { DeleteTagResult } from '../../use-cases/tag/delete-tag';
+import type { RecolourTagResult } from '../../use-cases/tag/recolour-tag';
+import type { RenameTagResult } from '../../use-cases/tag/rename-tag';
 
 const NAMELESS = 'A tag needs a name.';
 
@@ -28,15 +27,7 @@ const RECOLOUR_FAILED = 'Could not recolour that tag';
 
 const REMOVE_FAILED = 'Could not delete that tag';
 
-function describeTagStorage(error: TagError): string {
-  return match(error)
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so tags cannot be changed.',
-    )
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
-    .exhaustive();
-}
+const TAGS_UNCHANGEABLE = 'This browser blocks local storage, so tags cannot be changed.';
 
 class ManageTagsView {
   renaming = $state.raw<TagId | null>(null);
@@ -46,17 +37,17 @@ class ManageTagsView {
 
   #notify: Notify;
   #generation = 0;
-  #renaming: WriteQuery<Result<Tag, RenameTagError>, TagRename>;
-  #recolouring: WriteQuery<Result<Tag, TagError>, TagRecolour>;
-  #removing: WriteQuery<Result<number, TagError | CaptureError>, TagId>;
+  #renaming: WriteQuery<RenameTagResult, TagRename>;
+  #recolouring: WriteQuery<RecolourTagResult, TagRecolour>;
+  #removing: WriteQuery<DeleteTagResult, TagId>;
 
   constructor(
     recognition: Pick<TagWrites, 'renameTag' | 'recolourTag' | 'deleteTag'>,
     notify: Notify,
   ) {
     const client = useQueryClient();
-    const refresh = (written: Result<unknown, unknown>): void => {
-      if (!written.ok) return;
+    const refresh = (written: { readonly kind: string }): void => {
+      if (written.kind !== 'success') return;
       void client.invalidateQueries({ queryKey: recognitionKeys.tags() });
       void client.invalidateQueries({ queryKey: recognitionKeys.everyCapture() });
     };
@@ -115,21 +106,19 @@ class ManageTagsView {
 
     if (written === null) return;
 
-    if (!written.ok) {
-      match(written.error)
-        .with({ kind: 'name-taken' }, (taken) => {
-          this.invalid = `${taken.tag.name} already holds that name.`;
-        })
-        .with({ kind: 'storage-unavailable' }, { kind: 'storage-failed' }, (refused) => {
-          this.#fail(RENAME_FAILED, describeTagStorage(refused));
-        })
-        .exhaustive();
-      return;
-    }
-
-    this.renaming = null;
-    this.draft = '';
-    this.invalid = null;
+    match(written)
+      .with({ kind: 'success' }, () => {
+        this.renaming = null;
+        this.draft = '';
+        this.invalid = null;
+      })
+      .with({ kind: 'name-taken' }, (taken) => {
+        this.invalid = `${taken.tag.name} already holds that name.`;
+      })
+      .with({ kind: 'storage-unavailable' }, () => {
+        this.#fail(RENAME_FAILED, TAGS_UNCHANGEABLE);
+      })
+      .exhaustive();
   }
 
   async recolour(tag: Tag, colour: TagColour): Promise<void> {
@@ -140,8 +129,8 @@ class ManageTagsView {
 
     if (written === null) return;
 
-    if (!written.ok) {
-      this.#fail(RECOLOUR_FAILED, describeTagStorage(written.error));
+    if (written.kind !== 'success') {
+      this.#fail(RECOLOUR_FAILED, TAGS_UNCHANGEABLE);
       return;
     }
 
@@ -156,8 +145,8 @@ class ManageTagsView {
 
     if (stripped === null) return;
 
-    if (!stripped.ok) {
-      this.#fail(REMOVE_FAILED, describeTagStorage(stripped.error));
+    if (stripped.kind !== 'success') {
+      this.#fail(REMOVE_FAILED, TAGS_UNCHANGEABLE);
       return;
     }
 
@@ -176,5 +165,5 @@ export {
   RENAME_FAILED,
   RECOLOUR_FAILED,
   REMOVE_FAILED,
-  describeTagStorage,
+  TAGS_UNCHANGEABLE,
 };

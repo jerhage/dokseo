@@ -14,10 +14,8 @@ import { err, ok } from '$lib/shared/result';
 import type { Result } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError } from '../../domain/tag/tag-repository';
 import type { ModelConsentDecision, ModelConsentError } from '../../domain/model/model-consent';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
@@ -161,8 +159,11 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         new Promise<Reading>((resolve) => {
           calls.push({ language, regions: taken, notices, settle: resolve });
         }),
-      listCaptures: (book: BookId): Promise<Result<readonly Capture[], CaptureError>> =>
-        Promise.resolve(ok(store.rows.filter((row) => row.bookId === book))),
+      listCaptures: (book: BookId) =>
+        Promise.resolve({
+          kind: 'success',
+          captures: store.rows.filter((row) => row.bookId === book),
+        }),
       listEveryCapture: unused,
       saveCapture: unused,
       writeNote: unused,
@@ -171,7 +172,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       removeCapture: unused,
       restoreCapture: unused,
       clearCaptures: unused,
-      listTags: (): Promise<Result<readonly Tag[], TagError>> => Promise.resolve(ok(tags.rows)),
+      listTags: () => Promise.resolve({ kind: 'success', tags: tags.rows }),
       createTag: unused,
       addTagToCapture: unused,
       removeTagFromCapture: unused,

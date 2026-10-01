@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
+import type { TagRepository } from '../../domain/tag/tag-repository';
 import { recolourTag } from './recolour-tag';
 
 const SFX = namedTag(tagId('a'), 'sfx', 'slate', 1);
@@ -13,13 +12,13 @@ const SFX = namedTag(tagId('a'), 'sfx', 'slate', 1);
 function repository(broken = false) {
   const saved: Tag[] = [];
   const tags: TagRepository = {
-    list: (): Promise<Result<readonly Tag[], TagError>> => Promise.resolve(ok(saved)),
-    save: (tag: Tag): Promise<Result<void, TagError>> => {
-      if (broken) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+    list: () => Promise.resolve({ kind: 'success' as const, tags: saved }),
+    save: (tag: Tag) => {
+      if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(tag);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, TagError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { tags, saved };
@@ -31,7 +30,7 @@ describe('recolourTag', () => {
 
     const recoloured = await recolourTag({ tags }, SFX, 'plum');
 
-    expect(recoloured.ok && recoloured.value.colour).toBe('plum');
+    expect(recoloured.kind === 'success' && recoloured.tag.colour).toBe('plum');
     expect(at(saved, 0).colour).toBe('plum');
   });
 
@@ -45,11 +44,11 @@ describe('recolourTag', () => {
     expect(at(saved, 0).createdAt).toBe(1);
   });
 
-  it('reports a storage failure rather than throwing', async () => {
+  it('reports a browser that blocks storage', async () => {
     const { tags } = repository(true);
 
     const recoloured = await recolourTag({ tags }, SFX, 'plum');
 
-    expect(recoloured).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(recoloured).toEqual(STORAGE_UNAVAILABLE);
   });
 });

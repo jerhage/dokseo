@@ -9,18 +9,15 @@ import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
 import type { Notice } from '$lib/shared/notice';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { editedCapture, notedCapture } from '../../domain/capture/capture';
 import type { Capture, NotableCapture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { tagCounts, taggedCapture, untaggedCapture } from '../../domain/tag/capture-tags';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError } from '../../domain/tag/tag-repository';
-import type { CreateTagError } from '../../use-cases/tag/create-tag';
+import type { WriteCaptureNoteResult } from '../../use-cases/capture/write-capture-note';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
 import type { FocusTarget } from './card-editing.svelte';
 import { CapturePanelView, writtenIn } from './capture-panel.svelte';
@@ -104,8 +101,6 @@ function byCfi(earlier: string, later: string): number {
 
 function containerOf(store: Store): Container {
   const quiet: Trace = { step: () => undefined, image: () => undefined, end: () => undefined };
-  const failed = (): Result<never, CaptureError> =>
-    err({ kind: 'storage-failed', cause: 'the disk is busy' });
 
   return {
     beginTrace: () => quiet,
@@ -128,45 +123,45 @@ function containerOf(store: Store): Container {
       readModelConsent: unused,
       grantModelConsent: unused,
       recognizeRegion: unused,
-      listCaptures: (book: BookId): Promise<Result<readonly Capture[], CaptureError>> =>
-        Promise.resolve(ok(store.rows.filter((row) => row.bookId === book))),
-      listEveryCapture: (): Promise<Result<readonly Capture[], CaptureError>> => {
+      listCaptures: (book: BookId) =>
+        Promise.resolve({
+          kind: 'success',
+          captures: store.rows.filter((row) => row.bookId === book),
+        }),
+      listEveryCapture: () => {
         store.everyRead += 1;
-        return Promise.resolve(ok([...store.rows]));
+        return Promise.resolve({ kind: 'success', captures: [...store.rows] });
       },
       saveCapture: unused,
       writeNote: unused,
-      editCaptureText: (capture: Capture, text: string): Promise<Result<Capture, CaptureError>> => {
+      editCaptureText: (capture: Capture, text: string) => {
         store.edits.push(text);
-        return Promise.resolve(ok(editedCapture(capture, text, 99)));
+        return Promise.resolve({ kind: 'success', capture: editedCapture(capture, text, 99) });
       },
       writeCaptureNote: <T extends NotableCapture>(
         capture: T,
         note: string,
-      ): Promise<Result<T, CaptureError>> => {
+      ): Promise<WriteCaptureNoteResult<T>> => {
         store.notes.push(note);
-        return Promise.resolve(ok(notedCapture(capture, note)));
+        return Promise.resolve({ kind: 'success', capture: notedCapture(capture, note) });
       },
-      removeCapture: (capture: CaptureId): Promise<Result<void, CaptureError>> => {
-        if (store.removeFails) return Promise.resolve(failed());
+      removeCapture: (capture: CaptureId) => {
+        if (store.removeFails) return Promise.resolve(STORAGE_UNAVAILABLE);
         store.rows = store.rows.filter((row) => row.id !== capture);
-        return Promise.resolve(ok(undefined));
+        return Promise.resolve({ kind: 'success' });
       },
       restoreCapture: unused,
       clearCaptures: unused,
-      listTags: (): Promise<Result<readonly Tag[], TagError>> => Promise.resolve(ok(store.tags)),
-      createTag: (id: TagId, name: string): Promise<Result<Tag, CreateTagError>> => {
+      listTags: () => Promise.resolve({ kind: 'success', tags: store.tags }),
+      createTag: (id: TagId, name: string) => {
         const made = namedTag(id, name, 'slate', 2);
         store.tags = [...store.tags, made];
-        return Promise.resolve(ok(made));
+        return Promise.resolve({ kind: 'success', tag: made });
       },
-      addTagToCapture: (capture: Capture, tag: TagId): Promise<Result<Capture, CaptureError>> =>
-        Promise.resolve(ok(taggedCapture(capture, tag))),
-      removeTagFromCapture: (
-        capture: Capture,
-        tag: TagId,
-      ): Promise<Result<Capture, CaptureError>> =>
-        Promise.resolve(ok(untaggedCapture(capture, tag))),
+      addTagToCapture: (capture: Capture, tag: TagId) =>
+        Promise.resolve({ kind: 'success', capture: taggedCapture(capture, tag) }),
+      removeTagFromCapture: (capture: Capture, tag: TagId) =>
+        Promise.resolve({ kind: 'success', capture: untaggedCapture(capture, tag) }),
       renameTag: unused,
       recolourTag: unused,
       deleteTag: unused,

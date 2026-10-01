@@ -3,11 +3,12 @@ import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { Capture } from '../../domain/capture/capture';
 import type { Tag } from '../../domain/tag/tag';
 import { recognitionKeys } from '../../queries/recognition-keys';
-import type { StoreRead } from '../../queries/store-read';
+import type { ListCapturesResult } from '../../use-cases/capture/list-captures';
+import type { ListTagsResult } from '../../use-cases/tag/list-tags';
 
-type Listed = StoreRead<readonly Capture[]>;
+type Listed = ListCapturesResult;
 
-type Named = StoreRead<readonly Tag[]>;
+type Named = ListTagsResult;
 
 const NOTHING_HELD: readonly Capture[] = [];
 
@@ -16,48 +17,48 @@ function withTag(tags: readonly Tag[], tag: Tag): readonly Tag[] {
 }
 
 function withCapture(listed: Listed | undefined, capture: Capture): Listed | undefined {
-  if (listed?.kind !== 'read') return listed;
+  if (listed?.kind !== 'success') return listed;
 
-  const held = listed.value.some((row) => row.id === capture.id);
-  const value = held
-    ? listed.value.map((row) => (row.id === capture.id ? capture : row))
-    : [...listed.value, capture];
-  return { kind: 'read', value };
+  const held = listed.captures.some((row) => row.id === capture.id);
+  const captures = held
+    ? listed.captures.map((row) => (row.id === capture.id ? capture : row))
+    : [...listed.captures, capture];
+  return { kind: 'success', captures };
 }
 
 function withoutCapture(listed: Listed | undefined, id: CaptureId): Listed | undefined {
-  if (listed?.kind !== 'read') return listed;
+  if (listed?.kind !== 'success') return listed;
 
-  return { kind: 'read', value: listed.value.filter((row) => row.id !== id) };
+  return { kind: 'success', captures: listed.captures.filter((row) => row.id !== id) };
 }
 
 function withCaptures(
   listed: Listed | undefined,
   restored: readonly Capture[],
 ): Listed | undefined {
-  if (listed?.kind !== 'read') return listed;
+  if (listed?.kind !== 'success') return listed;
 
-  const held = new Set(listed.value.map((row) => row.id));
+  const held = new Set(listed.captures.map((row) => row.id));
   return {
-    kind: 'read',
-    value: [...restored.filter((row) => !held.has(row.id)), ...listed.value],
+    kind: 'success',
+    captures: [...restored.filter((row) => !held.has(row.id)), ...listed.captures],
   };
 }
 
 function emptied(listed: Listed | undefined): Listed | undefined {
-  if (listed?.kind !== 'read') return listed;
+  if (listed?.kind !== 'success') return listed;
 
-  return { kind: 'read', value: NOTHING_HELD };
+  return { kind: 'success', captures: NOTHING_HELD };
 }
 
 function heldRows(listed: Listed | undefined): readonly Capture[] {
-  return listed?.kind === 'read' ? listed.value : NOTHING_HELD;
+  return listed?.kind === 'success' ? listed.captures : NOTHING_HELD;
 }
 
 function withNamed(named: Named | undefined, tag: Tag): Named | undefined {
-  if (named?.kind !== 'read') return named;
+  if (named?.kind !== 'success') return named;
 
-  return { kind: 'read', value: withTag(named.value, tag) };
+  return { kind: 'success', tags: withTag(named.tags, tag) };
 }
 
 class CaptureCache {

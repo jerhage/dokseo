@@ -3,16 +3,15 @@ import { tagId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
-import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { tagCounts } from '../../domain/tag/capture-tags';
 import type { Tag } from '../../domain/tag/tag';
 import { addTagMutation, createTagMutation, removeTagMutation } from '../../queries/tag-queries';
 import type { CaptureTagging, NewTag, TagWrites } from '../../queries/tag-queries';
-import type { CreateTagError } from '../../use-cases/tag/create-tag';
+import type { AddTagToCaptureResult } from '../../use-cases/tag/add-tag-to-capture';
+import type { CreateTagResult } from '../../use-cases/tag/create-tag';
+import type { RemoveTagFromCaptureResult } from '../../use-cases/tag/remove-tag-from-capture';
 import type { CaptureCache } from './capture-cache';
 import type { CaptureList } from './capture-list.svelte';
 import { NOT_STORED, refuse } from './storage-failure';
@@ -29,17 +28,12 @@ type TagOutcome =
   | { readonly kind: 'existing'; readonly tag: Tag }
   | { readonly kind: 'failed'; readonly failure: StorageFailure };
 
-function tagOutcome(created: Result<Tag, CreateTagError | StorageFailure>): TagOutcome {
-  if (created.ok) return { kind: 'created', tag: created.value };
-
-  return match(created.error)
-    .with({ kind: 'name-taken' }, (taken) => ({ kind: 'existing', tag: taken.tag }) as const)
-    .with(
-      { kind: 'storage-unavailable' },
-      { kind: 'storage-failed' },
-      { kind: 'not-stored' },
-      (failure) => ({ kind: 'failed', failure }) as const,
-    )
+function tagOutcome(created: CreateTagResult): TagOutcome {
+  return match(created)
+    .returnType<TagOutcome>()
+    .with({ kind: 'success' }, ({ tag }) => ({ kind: 'created', tag }))
+    .with({ kind: 'name-taken' }, ({ tag }) => ({ kind: 'existing', tag }))
+    .with({ kind: 'storage-unavailable' }, (failure) => ({ kind: 'failed', failure }))
     .exhaustive();
 }
 
@@ -47,9 +41,9 @@ class CaptureTags {
   #notify: Notify;
   #list: CaptureList;
   #cache: CaptureCache;
-  #adding: WriteQuery<Result<Capture, CaptureError>, CaptureTagging>;
-  #removing: WriteQuery<Result<Capture, CaptureError>, CaptureTagging>;
-  #creating: WriteQuery<Result<Tag, CreateTagError>, NewTag>;
+  #adding: WriteQuery<AddTagToCaptureResult, CaptureTagging>;
+  #removing: WriteQuery<RemoveTagFromCaptureResult, CaptureTagging>;
+  #creating: WriteQuery<CreateTagResult, NewTag>;
 
   constructor(
     recognition: Pick<TagWrites, 'addTagToCapture' | 'removeTagFromCapture' | 'createTag'>,
@@ -63,7 +57,7 @@ class CaptureTags {
     this.#adding = writeQuery(() => ({
       ...addTagMutation(recognition),
       onSuccess: (written) => {
-        if (written.ok) cache.put(written.value);
+        if (written.kind === 'success') cache.put(written.capture);
       },
       onError: (cause) => this.#fail(TAG_NOT_ADDED, cause),
       onSettled: (_written, _cause, { capture }) => cache.refresh(capture.bookId),
@@ -71,7 +65,7 @@ class CaptureTags {
     this.#removing = writeQuery(() => ({
       ...removeTagMutation(recognition),
       onSuccess: (written) => {
-        if (written.ok) cache.put(written.value);
+        if (written.kind === 'success') cache.put(written.capture);
       },
       onError: (cause) => this.#fail(TAG_NOT_REMOVED, cause),
       onSettled: (_written, _cause, { capture }) => cache.refresh(capture.bookId),
@@ -79,7 +73,7 @@ class CaptureTags {
     this.#creating = writeQuery(() => ({
       ...createTagMutation(recognition),
       onSuccess: (created) => {
-        if (created.ok) void cache.refreshTags();
+        if (created.kind === 'success') void cache.refreshTags();
       },
       onError: (cause) => this.#fail(TAG_NOT_CREATED, cause),
     }));
@@ -101,7 +95,8 @@ class CaptureTags {
     }
 
     const written = await this.#adding.run({ capture: stored, tag }).catch(() => null);
-    if (written !== null && !written.ok) refuse(this.#notify, TAG_NOT_ADDED, written.error);
+    if (written !== null && written.kind !== 'success')
+      refuse(this.#notify, TAG_NOT_ADDED, written);
   }
 
   async removeTag(id: CaptureId, tag: TagId): Promise<void> {
@@ -112,7 +107,9 @@ class CaptureTags {
     }
 
     const written = await this.#removing.run({ capture: stored, tag }).catch(() => null);
-    if (written !== null && !written.ok) refuse(this.#notify, TAG_NOT_REMOVED, written.error);
+    if (written !== null && written.kind !== 'success') {
+      refuse(this.#notify, TAG_NOT_REMOVED, written);
+    }
   }
 
   async createTag(id: CaptureId, name: string): Promise<void> {

@@ -4,11 +4,10 @@ import type { Anchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { writeNote } from './write-note';
 
 const BOOK = bookId('book-one');
@@ -24,17 +23,15 @@ const ANCHOR: Anchor = regionAnchor(REGIONS);
 function repository(broken = false) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
-    listForBook: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    save: (capture: Capture): Promise<Result<void, CaptureError>> => {
-      if (broken) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    save: (capture: Capture) => {
+      if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(capture);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
-    clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, saved };
@@ -46,7 +43,7 @@ describe('writeNote', () => {
 
     const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
-    expect(written.ok && written.value.origin).toBe('written');
+    expect(written.kind === 'success' && written.capture.origin).toBe('written');
     expect(at(saved, 0).origin).toBe('written');
   });
 
@@ -55,8 +52,8 @@ describe('writeNote', () => {
 
     const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
-    expect(written.ok && written.value.text).toBe('');
-    expect(written.ok && 'confidence' in written.value).toBe(false);
+    expect(written.kind === 'success' && written.capture.text).toBe('');
+    expect(written.kind === 'success' && 'confidence' in written.capture).toBe(false);
   });
 
   it('keeps the book, the id and the anchor it was given', async () => {
@@ -74,15 +71,15 @@ describe('writeNote', () => {
 
     const written = await writeNote({ captures, now: () => 1_700_000_000_000 }, NOTE, BOOK, ANCHOR);
 
-    expect(written.ok && written.value.createdAt).toBe(1_700_000_000_000);
+    expect(written.kind === 'success' && written.capture.createdAt).toBe(1_700_000_000_000);
     expect(at(saved, 0).editedAt).toBeNull();
   });
 
-  it('reports a storage failure rather than throwing', async () => {
+  it('reports a browser that blocks storage', async () => {
     const { captures } = repository(true);
 
     const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
 
-    expect(written).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(written).toEqual(STORAGE_UNAVAILABLE);
   });
 });

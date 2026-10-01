@@ -1,38 +1,37 @@
 import { mutationOptions, queryOptions, skipToken } from '@tanstack/svelte-query';
 import type { Anchor } from '$lib/shared/anchor';
 import type { BookId, CaptureId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
 import type { Capture, CaptureDraft, NotableCapture } from '../domain/capture/capture';
-import type { CaptureError } from '../domain/capture/capture-repository';
+import type { ClearCapturesResult } from '../use-cases/capture/clear-captures';
+import type { EditCaptureTextResult } from '../use-cases/capture/edit-capture-text';
+import type { ListCapturesResult } from '../use-cases/capture/list-captures';
+import type { ListEveryCaptureResult } from '../use-cases/capture/list-every-capture';
+import type { RemoveCaptureResult } from '../use-cases/capture/remove-capture';
+import type { RestoreCaptureResult } from '../use-cases/capture/restore-capture';
+import type { SaveCaptureResult } from '../use-cases/capture/save-capture';
+import type { WriteCaptureNoteResult } from '../use-cases/capture/write-capture-note';
+import type { WriteNoteResult } from '../use-cases/capture/write-note';
 import { recognitionKeys } from './recognition-keys';
-import { storeRead } from './store-read';
 
 type CaptureReads = {
-  readonly listEveryCapture: () => Promise<Result<readonly Capture[], CaptureError>>;
+  readonly listEveryCapture: () => Promise<ListEveryCaptureResult>;
 };
 
 type BookCaptureReads = {
-  readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
+  readonly listCaptures: (book: BookId) => Promise<ListCapturesResult>;
 };
 
 type CaptureWrites = {
-  readonly saveCapture: (draft: CaptureDraft) => Promise<Result<Capture, CaptureError>>;
-  readonly writeNote: (
-    id: CaptureId,
-    book: BookId,
-    anchor: Anchor,
-  ) => Promise<Result<Capture, CaptureError>>;
-  readonly editCaptureText: (
-    capture: Capture,
-    text: string,
-  ) => Promise<Result<Capture, CaptureError>>;
+  readonly saveCapture: (draft: CaptureDraft) => Promise<SaveCaptureResult>;
+  readonly writeNote: (id: CaptureId, book: BookId, anchor: Anchor) => Promise<WriteNoteResult>;
+  readonly editCaptureText: (capture: Capture, text: string) => Promise<EditCaptureTextResult>;
   readonly writeCaptureNote: <T extends NotableCapture>(
     capture: T,
     note: string,
-  ) => Promise<Result<T, CaptureError>>;
-  readonly removeCapture: (capture: CaptureId) => Promise<Result<void, CaptureError>>;
-  readonly restoreCapture: (capture: Capture) => Promise<Result<void, CaptureError>>;
-  readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
+  ) => Promise<WriteCaptureNoteResult<T>>;
+  readonly removeCapture: (capture: CaptureId) => Promise<RemoveCaptureResult>;
+  readonly restoreCapture: (capture: Capture) => Promise<RestoreCaptureResult>;
+  readonly clearCaptures: (book: BookId) => Promise<ClearCapturesResult>;
 };
 
 type NoteRequest = { readonly id: CaptureId; readonly book: BookId; readonly anchor: Anchor };
@@ -44,10 +43,7 @@ type NoteEdit = { readonly capture: NotableCapture; readonly note: string };
 function everyCaptureQuery(recognition: CaptureReads) {
   return queryOptions({
     queryKey: recognitionKeys.everyCapture(),
-    queryFn: async () => {
-      const listed = await recognition.listEveryCapture();
-      return storeRead(listed);
-    },
+    queryFn: () => recognition.listEveryCapture(),
     staleTime: 0,
   });
 }
@@ -55,13 +51,7 @@ function everyCaptureQuery(recognition: CaptureReads) {
 function capturesQuery(recognition: BookCaptureReads, book: BookId | null) {
   return queryOptions({
     queryKey: recognitionKeys.captures(book),
-    queryFn:
-      book === null
-        ? skipToken
-        : async () => {
-            const listed = await recognition.listCaptures(book);
-            return storeRead(listed);
-          },
+    queryFn: book === null ? skipToken : () => recognition.listCaptures(book),
     staleTime: 0,
   });
 }

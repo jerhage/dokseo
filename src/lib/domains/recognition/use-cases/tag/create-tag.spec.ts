@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
+import type { TagRepository } from '../../domain/tag/tag-repository';
 import { createTag } from './create-tag';
 
 type StoreFault = 'none' | 'listing' | 'saving';
@@ -15,18 +14,18 @@ const SFX = namedTag(tagId('a'), 'sfx', 'slate', 1);
 function repository(rows: readonly Tag[], fault: StoreFault = 'none') {
   const saved: Tag[] = [];
   const tags: TagRepository = {
-    list: (): Promise<Result<readonly Tag[], TagError>> => {
-      if (fault === 'listing') return Promise.resolve(err({ kind: 'storage-unavailable' }));
-      return Promise.resolve(ok(rows));
+    list: () => {
+      if (fault === 'listing') return Promise.resolve(STORAGE_UNAVAILABLE);
+      return Promise.resolve({ kind: 'success' as const, tags: rows });
     },
-    save: (tag: Tag): Promise<Result<void, TagError>> => {
+    save: (tag: Tag) => {
       if (fault === 'saving') {
-        return Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk is full' }));
+        return Promise.resolve(STORAGE_UNAVAILABLE);
       }
       saved.push(tag);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, TagError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { tags, saved };
@@ -38,7 +37,7 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), '  grammar   to ask ');
 
-    expect(created.ok && created.value.name).toBe('grammar to ask');
+    expect(created.kind === 'success' && created.tag.name).toBe('grammar to ask');
     expect(at(saved, 0).name).toBe('grammar to ask');
     expect(at(saved, 0).createdAt).toBe(7);
   });
@@ -48,7 +47,7 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'keigo');
 
-    expect(created.ok && created.value.colour).toBe('clay');
+    expect(created.kind === 'success' && created.tag.colour).toBe('clay');
     expect(at(saved, 0).colour).toBe('clay');
   });
 
@@ -57,7 +56,7 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'sfx');
 
-    expect(created).toEqual(err({ kind: 'name-taken', tag: SFX }));
+    expect(created).toEqual({ kind: 'name-taken', tag: SFX });
     expect(saved).toEqual([]);
   });
 
@@ -66,7 +65,7 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'SFX');
 
-    expect(created).toEqual(err({ kind: 'name-taken', tag: SFX }));
+    expect(created).toEqual({ kind: 'name-taken', tag: SFX });
     expect(saved).toEqual([]);
   });
 
@@ -75,7 +74,7 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'ｓｆｘ');
 
-    expect(created).toEqual(err({ kind: 'name-taken', tag: SFX }));
+    expect(created).toEqual({ kind: 'name-taken', tag: SFX });
     expect(saved).toEqual([]);
   });
 
@@ -84,7 +83,7 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'keigo');
 
-    expect(created).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(created).toEqual(STORAGE_UNAVAILABLE);
   });
 
   it('reports a failure to store the tag rather than throwing', async () => {
@@ -92,6 +91,6 @@ describe('createTag', () => {
 
     const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'keigo');
 
-    expect(created).toEqual(err({ kind: 'storage-failed', cause: 'the disk is full' }));
+    expect(created).toEqual(STORAGE_UNAVAILABLE);
   });
 });

@@ -1,14 +1,18 @@
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
+import type { TagRepository } from '../../domain/tag/tag-repository';
+
+type ListTagsResult =
+  | { readonly kind: 'success'; readonly tags: readonly Tag[] }
+  | StorageUnavailable;
 
 type ListTagsDeps = {
   readonly tags: TagRepository;
 };
 
-function listTags(deps: ListTagsDeps): Promise<Result<readonly Tag[], TagError>> {
+function listTags(deps: ListTagsDeps): Promise<ListTagsResult> {
   return deps.tags.list();
 }
 
 export { listTags };
-export type { ListTagsDeps };
+export type { ListTagsDeps, ListTagsResult };

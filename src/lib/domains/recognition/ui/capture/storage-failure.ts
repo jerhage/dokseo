@@ -3,17 +3,13 @@ import type { Notify } from '$lib/shared/notice';
 
 type WriteOutcome = 'saved' | 'failed';
 
-type StorageFailure =
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string }
-  | { readonly kind: 'not-stored' };
+type StorageFailure = { readonly kind: 'storage-unavailable' } | { readonly kind: 'not-stored' };
 
 const NOT_STORED: StorageFailure = { kind: 'not-stored' };
 
 function describeStorageFailure(failure: StorageFailure): string {
   return match(failure)
     .with({ kind: 'storage-unavailable' }, () => 'This browser blocks local storage.')
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
     .with({ kind: 'not-stored' }, () => 'This capture is not in storage.')
     .exhaustive();
 }

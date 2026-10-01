@@ -2,11 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository, CaptureWrite } from '../../domain/capture/capture-repository';
 import { restoreCapture } from './restore-capture';
 
 const removed: Capture = {
@@ -24,35 +23,34 @@ const removed: Capture = {
   tagIds: [tagId('t1')],
 };
 
-function repository(outcome: Result<void, CaptureError>) {
+function repository(outcome: CaptureWrite) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
-    listForBook: () => Promise.resolve(ok([])),
-    listEverything: () => Promise.resolve(ok([])),
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: [] }),
+    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: [] }),
     save: (capture) => {
       saved.push(capture);
       return Promise.resolve(outcome);
     },
-    remove: () => Promise.resolve(ok(undefined)),
-    clearBook: () => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
   return { captures, saved };
 }
 
 describe('restoreCapture', () => {
   it('stores the removed record as it was, id, tags and creation time included', async () => {
-    const { captures, saved } = repository(ok(undefined));
+    const { captures, saved } = repository({ kind: 'success' as const });
 
     const restored = await restoreCapture({ captures }, removed);
 
-    expect(restored).toEqual(ok(undefined));
+    expect(restored).toEqual({ kind: 'success' });
     expect(saved).toEqual([removed]);
   });
 
-  it('returns what the repository returned', async () => {
-    const failed = err({ kind: 'storage-failed', cause: 'the store is blocked' } as const);
-    const { captures } = repository(failed);
+  it('reports a browser that blocks storage', async () => {
+    const { captures } = repository(STORAGE_UNAVAILABLE);
 
-    expect(await restoreCapture({ captures }, removed)).toEqual(failed);
+    expect(await restoreCapture({ captures }, removed)).toEqual(STORAGE_UNAVAILABLE);
   });
 });

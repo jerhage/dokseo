@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { removeTagFromCapture } from './remove-tag-from-capture';
 
 const BOOK = bookId('book-one');
@@ -34,17 +33,15 @@ const TAGGED: Capture = {
 function repository(broken = false) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
-    listForBook: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    save: (capture: Capture): Promise<Result<void, CaptureError>> => {
-      if (broken) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    save: (capture: Capture) => {
+      if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(capture);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
-    clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, saved };
@@ -56,7 +53,7 @@ describe('removeTagFromCapture', () => {
 
     const untagged = await removeTagFromCapture({ captures }, TAGGED, SFX);
 
-    expect(untagged.ok && untagged.value.tagIds).toEqual([KEIGO]);
+    expect(untagged.kind === 'success' && untagged.capture.tagIds).toEqual([KEIGO]);
     expect(at(saved, 0).tagIds).toEqual([KEIGO]);
     expect(at(saved, 0).id).toBe(TAGGED.id);
   });
@@ -69,11 +66,11 @@ describe('removeTagFromCapture', () => {
     expect(at(saved, 0).editedAt).toBeNull();
   });
 
-  it('reports a storage failure rather than throwing', async () => {
+  it('reports a browser that blocks storage', async () => {
     const { captures } = repository(true);
 
     const untagged = await removeTagFromCapture({ captures }, TAGGED, SFX);
 
-    expect(untagged).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(untagged).toEqual(STORAGE_UNAVAILABLE);
   });
 });

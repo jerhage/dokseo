@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { addTagToCapture } from './add-tag-to-capture';
 
 const BOOK = bookId('book-one');
@@ -29,17 +28,15 @@ const CAPTURE: Capture = takenCapture(
 function repository(broken = false) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
-    listForBook: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> =>
-      Promise.resolve(ok(saved)),
-    save: (capture: Capture): Promise<Result<void, CaptureError>> => {
-      if (broken) return Promise.resolve(err({ kind: 'storage-unavailable' }));
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    save: (capture: Capture) => {
+      if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(capture);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
-    clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, saved };
@@ -51,7 +48,7 @@ describe('addTagToCapture', () => {
 
     const tagged = await addTagToCapture({ captures }, CAPTURE, SFX);
 
-    expect(tagged.ok && tagged.value.tagIds).toEqual([SFX]);
+    expect(tagged.kind === 'success' && tagged.capture.tagIds).toEqual([SFX]);
     expect(at(saved, 0).tagIds).toEqual([SFX]);
     expect(at(saved, 0).id).toBe(CAPTURE.id);
   });
@@ -70,15 +67,15 @@ describe('addTagToCapture', () => {
 
     const tagged = await addTagToCapture({ captures }, already, SFX);
 
-    expect(tagged.ok && tagged.value.tagIds).toEqual([SFX]);
+    expect(tagged.kind === 'success' && tagged.capture.tagIds).toEqual([SFX]);
     expect(at(saved, 0).tagIds).toEqual([SFX]);
   });
 
-  it('reports a storage failure rather than throwing', async () => {
+  it('reports a browser that blocks storage', async () => {
     const { captures } = repository(true);
 
     const tagged = await addTagToCapture({ captures }, CAPTURE, SFX);
 
-    expect(tagged).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(tagged).toEqual(STORAGE_UNAVAILABLE);
   });
 });

@@ -4,8 +4,7 @@ import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
-import { QueryFailure } from '$lib/shared/query-failure';
-import { err, ok } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { Capture } from '../domain/capture/capture';
 import { taggedCapture, untaggedCapture } from '../domain/tag/capture-tags';
@@ -37,17 +36,17 @@ const CAPTURE: Capture = {
 
 describe('tagsQuery', () => {
   it('resolves every tag', async () => {
-    const read = tagsQuery({ listTags: () => Promise.resolve(ok([SFX])) });
+    const read = tagsQuery({ listTags: () => Promise.resolve({ kind: 'success', tags: [SFX] }) });
 
     await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'read',
-      value: [SFX],
+      kind: 'success',
+      tags: [SFX],
     });
   });
 
   it('resolves a store the browser blocks as an answer', async () => {
     const read = tagsQuery({
-      listTags: () => Promise.resolve(err({ kind: 'storage-unavailable' })),
+      listTags: () => Promise.resolve(STORAGE_UNAVAILABLE),
     });
 
     await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
@@ -55,21 +54,15 @@ describe('tagsQuery', () => {
     });
   });
 
-  it('rejects a store that failed with the described note', async () => {
-    const read = tagsQuery({
-      listTags: () => Promise.resolve(err({ kind: 'storage-failed', cause: 'locked' })),
-    });
+  it('rejects with the error a failed store throws', async () => {
+    const broken = new Error('locked');
+    const read = tagsQuery({ listTags: () => Promise.reject(broken) });
 
-    const failure = await createTestQueryClient()
-      .fetchQuery(read)
-      .catch((cause: unknown) => cause);
-
-    expect(failure).toBeInstanceOf(QueryFailure);
-    expect(failure).toHaveProperty('message', 'Local storage failed: locked');
+    await expect(createTestQueryClient().fetchQuery(read)).rejects.toBe(broken);
   });
 
   it('files the tags under the recognition root, stale at once', () => {
-    const read = tagsQuery({ listTags: () => Promise.resolve(ok([])) });
+    const read = tagsQuery({ listTags: () => Promise.resolve({ kind: 'success', tags: [] }) });
 
     expect(read.queryKey).toEqual(recognitionKeys.tags());
     expect(read.queryKey.slice(0, 1)).toEqual(recognitionKeys.all());
@@ -85,14 +78,15 @@ describe('tag mutations', () => {
       createTagMutation({
         createTag: (id: TagId, name: string) => {
           asked.push(`${id} ${name}`);
-          return Promise.resolve(err({ kind: 'name-taken', tag: SFX }));
+          return Promise.resolve({ kind: 'name-taken', tag: SFX } as const);
         },
       }),
     );
 
-    await expect(creating.mutate({ id: tagId('new'), name: 'sfx' })).resolves.toEqual(
-      err({ kind: 'name-taken', tag: SFX }),
-    );
+    await expect(creating.mutate({ id: tagId('new'), name: 'sfx' })).resolves.toEqual({
+      kind: 'name-taken',
+      tag: SFX,
+    });
     expect(asked).toEqual(['new sfx']);
   });
 
@@ -100,40 +94,46 @@ describe('tag mutations', () => {
     const adding = new MutationObserver(
       createTestQueryClient(),
       addTagMutation({
-        addTagToCapture: (capture, tag) => Promise.resolve(ok(taggedCapture(capture, tag))),
+        addTagToCapture: (capture, tag) =>
+          Promise.resolve({ kind: 'success', capture: taggedCapture(capture, tag) } as const),
       }),
     );
     const removing = new MutationObserver(
       createTestQueryClient(),
       removeTagMutation({
-        removeTagFromCapture: (capture, tag) => Promise.resolve(ok(untaggedCapture(capture, tag))),
+        removeTagFromCapture: (capture, tag) =>
+          Promise.resolve({ kind: 'success', capture: untaggedCapture(capture, tag) } as const),
       }),
     );
 
     const added = await adding.mutate({ capture: CAPTURE, tag: SFX.id });
     const taken = await removing.mutate({ capture: { ...CAPTURE, tagIds: [SFX.id] }, tag: SFX.id });
 
-    expect(added.ok && added.value.tagIds).toEqual([SFX.id]);
-    expect(taken.ok && taken.value.tagIds).toEqual([]);
+    expect(added.kind === 'success' && added.capture.tagIds).toEqual([SFX.id]);
+    expect(taken.kind === 'success' && taken.capture.tagIds).toEqual([]);
   });
 
   it('renames and recolours the tag it is given', async () => {
     const renaming = new MutationObserver(
       createTestQueryClient(),
-      renameTagMutation({ renameTag: (tag, name) => Promise.resolve(ok(renamedTag(tag, name))) }),
+      renameTagMutation({
+        renameTag: (tag, name) =>
+          Promise.resolve({ kind: 'success', tag: renamedTag(tag, name) } as const),
+      }),
     );
     const recolouring = new MutationObserver(
       createTestQueryClient(),
       recolourTagMutation({
-        recolourTag: (tag, colour) => Promise.resolve(ok(recolouredTag(tag, colour))),
+        recolourTag: (tag, colour) =>
+          Promise.resolve({ kind: 'success', tag: recolouredTag(tag, colour) } as const),
       }),
     );
 
     const renamed = await renaming.mutate({ tag: SFX, name: 'sound' });
     const recoloured = await recolouring.mutate({ tag: SFX, colour: 'clay' });
 
-    expect(renamed.ok && renamed.value.name).toBe('sound');
-    expect(recoloured.ok && recoloured.value.colour).toBe('clay');
+    expect(renamed.kind === 'success' && renamed.tag.name).toBe('sound');
+    expect(recoloured.kind === 'success' && recoloured.tag.colour).toBe('clay');
   });
 
   it('deletes the tag it names and answers how many captures lost it', async () => {
@@ -143,12 +143,12 @@ describe('tag mutations', () => {
       deleteTagMutation({
         deleteTag: (tag) => {
           deleted.push(tag);
-          return Promise.resolve(ok(4));
+          return Promise.resolve({ kind: 'success', untagged: 4 } as const);
         },
       }),
     );
 
-    await expect(removing.mutate(SFX.id)).resolves.toEqual(ok(4));
+    await expect(removing.mutate(SFX.id)).resolves.toEqual({ kind: 'success', untagged: 4 });
     expect(deleted).toEqual([SFX.id]);
   });
 });

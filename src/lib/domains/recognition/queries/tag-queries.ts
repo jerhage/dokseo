@@ -1,33 +1,31 @@
 import { mutationOptions, queryOptions } from '@tanstack/svelte-query';
 import type { TagId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
 import type { Capture } from '../domain/capture/capture';
-import type { CaptureError } from '../domain/capture/capture-repository';
 import type { Tag } from '../domain/tag/tag';
 import type { TagColour } from '../domain/tag/tag-colour';
-import type { TagError } from '../domain/tag/tag-repository';
-import type { CreateTagError } from '../use-cases/tag/create-tag';
-import type { RenameTagError } from '../use-cases/tag/rename-tag';
+import type { AddTagToCaptureResult } from '../use-cases/tag/add-tag-to-capture';
+import type { CreateTagResult } from '../use-cases/tag/create-tag';
+import type { DeleteTagResult } from '../use-cases/tag/delete-tag';
+import type { ListTagsResult } from '../use-cases/tag/list-tags';
+import type { RecolourTagResult } from '../use-cases/tag/recolour-tag';
+import type { RemoveTagFromCaptureResult } from '../use-cases/tag/remove-tag-from-capture';
+import type { RenameTagResult } from '../use-cases/tag/rename-tag';
 import { recognitionKeys } from './recognition-keys';
-import { storeRead } from './store-read';
 
 type TagReads = {
-  readonly listTags: () => Promise<Result<readonly Tag[], TagError>>;
+  readonly listTags: () => Promise<ListTagsResult>;
 };
 
 type TagWrites = {
-  readonly createTag: (id: TagId, name: string) => Promise<Result<Tag, CreateTagError>>;
-  readonly addTagToCapture: (
-    capture: Capture,
-    tag: TagId,
-  ) => Promise<Result<Capture, CaptureError>>;
+  readonly createTag: (id: TagId, name: string) => Promise<CreateTagResult>;
+  readonly addTagToCapture: (capture: Capture, tag: TagId) => Promise<AddTagToCaptureResult>;
   readonly removeTagFromCapture: (
     capture: Capture,
     tag: TagId,
-  ) => Promise<Result<Capture, CaptureError>>;
-  readonly renameTag: (tag: Tag, name: string) => Promise<Result<Tag, RenameTagError>>;
-  readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<Result<Tag, TagError>>;
-  readonly deleteTag: (tag: TagId) => Promise<Result<number, TagError | CaptureError>>;
+  ) => Promise<RemoveTagFromCaptureResult>;
+  readonly renameTag: (tag: Tag, name: string) => Promise<RenameTagResult>;
+  readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<RecolourTagResult>;
+  readonly deleteTag: (tag: TagId) => Promise<DeleteTagResult>;
 };
 
 type NewTag = { readonly id: TagId; readonly name: string };
@@ -41,10 +39,7 @@ type TagRecolour = { readonly tag: Tag; readonly colour: TagColour };
 function tagsQuery(recognition: TagReads) {
   return queryOptions({
     queryKey: recognitionKeys.tags(),
-    queryFn: async () => {
-      const listed = await recognition.listTags();
-      return storeRead(listed);
-    },
+    queryFn: () => recognition.listTags(),
     staleTime: 0,
   });
 }

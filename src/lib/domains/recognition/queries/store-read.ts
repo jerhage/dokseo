@@ -1,44 +1,38 @@
 import { match } from 'ts-pattern';
-import { QueryFailure } from '$lib/shared/query-failure';
 import { readFailed, readReady } from '$lib/shared/read-state';
 import type { ReadState } from '$lib/shared/read-state';
-import type { Result } from '$lib/shared/result';
-import type { CaptureError } from '../domain/capture/capture-repository';
-import type { TagError } from '../domain/tag/tag-repository';
+import type { Capture } from '../domain/capture/capture';
+import type { Tag } from '../domain/tag/tag';
+import type { ListCapturesResult } from '../use-cases/capture/list-captures';
+import type { ListEveryCaptureResult } from '../use-cases/capture/list-every-capture';
+import type { ListTagsResult } from '../use-cases/tag/list-tags';
 
-type StoreRead<T> =
-  | { readonly kind: 'read'; readonly value: T }
-  | { readonly kind: 'storage-unavailable' };
+const STORE_BLOCKED = 'This browser blocks local storage.';
 
-const STORAGE_UNAVAILABLE = { kind: 'storage-unavailable' } as const;
-
-function describeStoreFailure(error: TagError | CaptureError): string {
-  return match(error)
-    .with({ kind: 'storage-unavailable' }, () => 'This browser blocks local storage.')
-    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
-    .exhaustive();
-}
-
-function storeRead<T>(result: Result<T, TagError | CaptureError>): StoreRead<T> {
-  if (result.ok) return { kind: 'read', value: result.value };
-
-  return match(result.error)
-    .with({ kind: 'storage-unavailable' }, (): StoreRead<T> => STORAGE_UNAVAILABLE)
-    .with({ kind: 'storage-failed' }, (failed): StoreRead<T> => {
-      throw new QueryFailure(describeStoreFailure(failed), { cause: failed });
-    })
-    .exhaustive();
-}
-
-function storedState<T>(state: ReadState<StoreRead<T>>): ReadState<T> {
+function storedCaptures(
+  state: ReadState<ListCapturesResult | ListEveryCaptureResult>,
+): ReadState<readonly Capture[]> {
   return match(state)
-    .with({ kind: 'loading' }, { kind: 'failed' }, (unread): ReadState<T> => unread)
-    .with({ kind: 'ready', value: { kind: 'read' } }, ({ value }) => readReady(value.value))
-    .with({ kind: 'ready', value: { kind: 'storage-unavailable' } }, ({ value }) =>
-      readFailed(describeStoreFailure(value)),
+    .with(
+      { kind: 'loading' },
+      { kind: 'failed' },
+      (unread): ReadState<readonly Capture[]> => unread,
+    )
+    .with({ kind: 'ready', value: { kind: 'success' } }, ({ value }) => readReady(value.captures))
+    .with({ kind: 'ready', value: { kind: 'storage-unavailable' } }, () =>
+      readFailed(STORE_BLOCKED),
     )
     .exhaustive();
 }
 
-export { describeStoreFailure, storeRead, storedState };
-export type { StoreRead };
+function storedTags(state: ReadState<ListTagsResult>): ReadState<readonly Tag[]> {
+  return match(state)
+    .with({ kind: 'loading' }, { kind: 'failed' }, (unread): ReadState<readonly Tag[]> => unread)
+    .with({ kind: 'ready', value: { kind: 'success' } }, ({ value }) => readReady(value.tags))
+    .with({ kind: 'ready', value: { kind: 'storage-unavailable' } }, () =>
+      readFailed(STORE_BLOCKED),
+    )
+    .exhaustive();
+}
+
+export { STORE_BLOCKED, storedCaptures, storedTags };

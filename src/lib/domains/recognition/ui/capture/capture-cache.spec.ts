@@ -43,7 +43,7 @@ function row(id: string, text = id, book = ONE): Capture {
 const UNAVAILABLE = { kind: 'storage-unavailable' } as const;
 
 function read(...rows: Capture[]) {
-  return { kind: 'read', value: rows } as const;
+  return { kind: 'success', captures: rows } as const;
 }
 
 describe('withCapture', () => {
@@ -110,9 +110,9 @@ describe('withTag', () => {
   });
 
   it('names a tag in a read catalogue only', () => {
-    expect(withNamed({ kind: 'read', value: [CROWN_TAG] }, SWORD_TAG)).toEqual({
-      kind: 'read',
-      value: [CROWN_TAG, SWORD_TAG],
+    expect(withNamed({ kind: 'success', tags: [CROWN_TAG] }, SWORD_TAG)).toEqual({
+      kind: 'success',
+      tags: [CROWN_TAG, SWORD_TAG],
     });
     expect(withNamed(undefined, SWORD_TAG)).toBeUndefined();
   });
@@ -159,13 +159,13 @@ describe('CaptureCache', () => {
 
   it('names a new tag in the cached catalogue', () => {
     const client = createTestQueryClient();
-    client.setQueryData(recognitionKeys.tags(), { kind: 'read', value: [CROWN_TAG] });
+    client.setQueryData(recognitionKeys.tags(), { kind: 'success', tags: [CROWN_TAG] });
 
     new CaptureCache(client).name(SWORD_TAG);
 
     expect(client.getQueryData(recognitionKeys.tags())).toEqual({
-      kind: 'read',
-      value: [CROWN_TAG, SWORD_TAG],
+      kind: 'success',
+      tags: [CROWN_TAG, SWORD_TAG],
     });
   });
 

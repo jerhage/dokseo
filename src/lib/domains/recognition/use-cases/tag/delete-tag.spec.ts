@@ -2,15 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
-import { err, ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { TagId } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
-import type { Tag } from '../../domain/tag/tag';
-import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
+import type { TagRepository } from '../../domain/tag/tag-repository';
 import { deleteTag } from './delete-tag';
 
 type StoreFault = 'none' | 'listing' | 'saving' | 'removing';
@@ -42,29 +40,29 @@ function stores(rows: readonly Capture[], fault: StoreFault = 'none') {
   const removed: TagId[] = [];
 
   const captures: CaptureRepository = {
-    listForBook: (): Promise<Result<readonly Capture[], CaptureError>> => Promise.resolve(ok(rows)),
-    listEverything: (): Promise<Result<readonly Capture[], CaptureError>> => {
-      if (fault === 'listing') return Promise.resolve(err({ kind: 'storage-unavailable' }));
-      return Promise.resolve(ok(rows));
+    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: rows }),
+    listEverything: () => {
+      if (fault === 'listing') return Promise.resolve(STORAGE_UNAVAILABLE);
+      return Promise.resolve({ kind: 'success' as const, captures: rows });
     },
-    save: (edited: Capture): Promise<Result<void, CaptureError>> => {
+    save: (edited: Capture) => {
       if (fault === 'saving') {
-        return Promise.resolve(err({ kind: 'storage-failed', cause: 'the disk is full' }));
+        return Promise.resolve(STORAGE_UNAVAILABLE);
       }
       saved.push(edited);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
-    remove: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
-    clearBook: (): Promise<Result<void, CaptureError>> => Promise.resolve(ok(undefined)),
+    remove: () => Promise.resolve({ kind: 'success' as const }),
+    clearBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   const tags: TagRepository = {
-    list: (): Promise<Result<readonly Tag[], TagError>> => Promise.resolve(ok([])),
-    save: (): Promise<Result<void, TagError>> => Promise.resolve(ok(undefined)),
-    remove: (tag: TagId): Promise<Result<void, TagError>> => {
-      if (fault === 'removing') return Promise.resolve(err({ kind: 'storage-unavailable' }));
+    list: () => Promise.resolve({ kind: 'success' as const, tags: [] }),
+    save: () => Promise.resolve({ kind: 'success' as const }),
+    remove: (tag: TagId) => {
+      if (fault === 'removing') return Promise.resolve(STORAGE_UNAVAILABLE);
       removed.push(tag);
-      return Promise.resolve(ok(undefined));
+      return Promise.resolve({ kind: 'success' as const });
     },
   };
 
@@ -81,7 +79,7 @@ describe('deleteTag', () => {
 
     const count = await deleteTag({ captures, tags }, SFX);
 
-    expect(count).toEqual(ok(2));
+    expect(count).toEqual({ kind: 'success', untagged: 2 });
     expect(saved.map((row) => row.id)).toEqual([captureId('a'), captureId('c')]);
     expect(at(saved, 0).tagIds).toEqual([]);
     expect(removed).toEqual([SFX]);
@@ -108,7 +106,7 @@ describe('deleteTag', () => {
 
     const count = await deleteTag({ captures, tags }, SFX);
 
-    expect(count).toEqual(ok(0));
+    expect(count).toEqual({ kind: 'success', untagged: 0 });
     expect(removed).toEqual([SFX]);
   });
 
@@ -117,7 +115,7 @@ describe('deleteTag', () => {
 
     const count = await deleteTag({ captures, tags }, SFX);
 
-    expect(count).toEqual(err({ kind: 'storage-failed', cause: 'the disk is full' }));
+    expect(count).toEqual(STORAGE_UNAVAILABLE);
     expect(removed).toEqual([]);
   });
 
@@ -126,7 +124,7 @@ describe('deleteTag', () => {
 
     const count = await deleteTag({ captures, tags }, SFX);
 
-    expect(count).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(count).toEqual(STORAGE_UNAVAILABLE);
     expect(removed).toEqual([]);
   });
 
@@ -135,7 +133,7 @@ describe('deleteTag', () => {
 
     const count = await deleteTag({ captures, tags }, SFX);
 
-    expect(count).toEqual(err({ kind: 'storage-unavailable' }));
+    expect(count).toEqual(STORAGE_UNAVAILABLE);
     expect(saved.map((row) => row.id)).toEqual([captureId('a')]);
   });
 });

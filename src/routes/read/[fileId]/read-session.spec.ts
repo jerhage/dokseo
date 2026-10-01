@@ -4,7 +4,6 @@ import type { Container } from '$lib/container';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
-import { ok } from '$lib/shared/result';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { ReadSession } from './read-session.svelte';
 
@@ -53,9 +52,9 @@ function world(address: string): World {
     recognition: {
       listCaptures: (book: BookId) => {
         listed.push(book);
-        return Promise.resolve(ok([]));
+        return Promise.resolve({ kind: 'success', captures: [] });
       },
-      listTags: () => Promise.resolve(ok([])),
+      listTags: () => Promise.resolve({ kind: 'success', tags: [] }),
     },
   } as unknown as Container;
   const held: World = {

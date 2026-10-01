@@ -1,14 +1,13 @@
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { clearCapturesMutation } from '../../queries/capture-queries';
 import type { CaptureWrites } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
+import type { ClearCapturesResult } from '../../use-cases/capture/clear-captures';
 import type { CaptureList } from './capture-list.svelte';
 import { clearScope } from './clearing';
 import type { ClearScope } from './clearing';
@@ -27,7 +26,7 @@ class ClearAll {
   #list: CaptureList;
   #cache: CaptureCache;
   #confirming = $state(false);
-  #clearing: WriteQuery<Result<void, CaptureError>, BookId>;
+  #clearing: WriteQuery<ClearCapturesResult, BookId>;
 
   constructor(recognition: CaptureWrites, notify: Notify, list: CaptureList, cache: CaptureCache) {
     this.#notify = notify;
@@ -40,9 +39,9 @@ class ClearAll {
         return { rows: cache.empty(book), unsaved: list.unsaved.empty() };
       },
       onSuccess: (cleared, book, emptied) => {
-        if (cleared.ok) return;
+        if (cleared.kind === 'success') return;
         this.#putBack(book, emptied);
-        refuse(this.#notify, CLEAR_FAILED, cleared.error);
+        refuse(this.#notify, CLEAR_FAILED, cleared);
       },
       onError: (cause, book, emptied) => {
         if (emptied !== undefined) this.#putBack(book, emptied);

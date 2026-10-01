@@ -2,14 +2,14 @@ import type { CaptureId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { removeCaptureMutation, restoreCaptureMutation } from '../../queries/capture-queries';
 import type { CaptureWrites } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
+import type { RemoveCaptureResult } from '../../use-cases/capture/remove-capture';
+import type { RestoreCaptureResult } from '../../use-cases/capture/restore-capture';
 import type { CaptureList } from './capture-list.svelte';
 import { refuse } from './storage-failure';
 import type { WriteOutcome } from './storage-failure';
@@ -23,8 +23,8 @@ const RESTORE_FAILED = 'The capture could not be restored';
 class CaptureRemoval {
   #notify: Notify;
   #list: CaptureList;
-  #removing: WriteQuery<Result<void, CaptureError>, Capture>;
-  #restoring: WriteQuery<Result<void, CaptureError>, Capture>;
+  #removing: WriteQuery<RemoveCaptureResult, Capture>;
+  #restoring: WriteQuery<RestoreCaptureResult, Capture>;
 
   constructor(recognition: CaptureWrites, notify: Notify, list: CaptureList, cache: CaptureCache) {
     this.#notify = notify;
@@ -36,7 +36,7 @@ class CaptureRemoval {
         cache.drop(capture);
       },
       onSuccess: (gone, capture) => {
-        if (!gone.ok) cache.put(capture);
+        if (gone.kind !== 'success') cache.put(capture);
       },
       onError: (cause, capture) => {
         cache.put(capture);
@@ -47,7 +47,7 @@ class CaptureRemoval {
     this.#restoring = writeQuery(() => ({
       ...restoreCaptureMutation(recognition),
       onSuccess: (restored, capture) => {
-        if (restored.ok) cache.put(capture);
+        if (restored.kind === 'success') cache.put(capture);
       },
       onError: (cause) => this.#fail(RESTORE_FAILED, cause),
       onSettled: (_restored, _cause, capture) => cache.refresh(capture.bookId),
@@ -61,7 +61,7 @@ class CaptureRemoval {
 
     const gone = await this.#removing.run(stored).catch(() => null);
     if (gone === null) return 'failed';
-    if (!gone.ok) return refuse(this.#notify, REMOVE_FAILED, gone.error);
+    if (gone.kind !== 'success') return refuse(this.#notify, REMOVE_FAILED, gone);
 
     this.#notify({
       tone: 'success',
@@ -74,7 +74,9 @@ class CaptureRemoval {
 
   async #undo(stored: Capture): Promise<void> {
     const restored = await this.#restoring.run(stored).catch(() => null);
-    if (restored !== null && !restored.ok) refuse(this.#notify, RESTORE_FAILED, restored.error);
+    if (restored !== null && restored.kind !== 'success') {
+      refuse(this.#notify, RESTORE_FAILED, restored);
+    }
   }
 
   #fail(title: string, cause: unknown): void {

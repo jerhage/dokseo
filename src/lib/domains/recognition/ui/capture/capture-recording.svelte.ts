@@ -6,15 +6,15 @@ import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { saveCaptureMutation, writeNoteMutation } from '../../queries/capture-queries';
 import type { NoteRequest } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
+import type { SaveCaptureResult } from '../../use-cases/capture/save-capture';
+import type { WriteNoteResult } from '../../use-cases/capture/write-note';
 import type { CaptureList } from './capture-list.svelte';
 import type { Settled } from './panel-capture';
 import { describeStorageFailure } from './storage-failure';
@@ -34,8 +34,8 @@ class CaptureRecording {
   #list: CaptureList;
   #cache: CaptureCache;
   #editors: NoteEditors;
-  #saving: WriteQuery<Result<Capture, CaptureError>, CaptureDraft>;
-  #writing: WriteQuery<Result<Capture, CaptureError>, NoteRequest>;
+  #saving: WriteQuery<SaveCaptureResult, CaptureDraft>;
+  #writing: WriteQuery<WriteNoteResult, NoteRequest>;
 
   constructor(
     container: Container,
@@ -53,8 +53,8 @@ class CaptureRecording {
     this.#saving = writeQuery(() => ({
       ...saveCaptureMutation(recognition),
       onSuccess: (kept, { id }) => {
-        if (kept.ok) this.#stored(kept.value);
-        else this.#unsaved(id, CAPTURE_NOT_SAVED, describeStorageFailure(kept.error));
+        if (kept.kind === 'success') this.#stored(kept.capture);
+        else this.#unsaved(id, CAPTURE_NOT_SAVED, describeStorageFailure(kept));
       },
       onError: (cause, { id }) => this.#unsaved(id, CAPTURE_NOT_SAVED, failureMessage(cause)),
       onSettled: (_kept, _cause, { bookId }) => cache.refresh(bookId),
@@ -62,8 +62,8 @@ class CaptureRecording {
     this.#writing = writeQuery(() => ({
       ...writeNoteMutation(recognition),
       onSuccess: (written, { id }) => {
-        if (written.ok) this.#stored(written.value);
-        else this.#noteUnsaved(id, describeStorageFailure(written.error));
+        if (written.kind === 'success') this.#stored(written.capture);
+        else this.#noteUnsaved(id, describeStorageFailure(written));
       },
       onError: (cause, { id }) => this.#noteUnsaved(id, failureMessage(cause)),
       onSettled: (_written, _cause, { book }) => cache.refresh(book),

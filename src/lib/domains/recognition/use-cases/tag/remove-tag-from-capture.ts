@@ -1,9 +1,12 @@
 import type { TagId } from '$lib/shared/ids';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { untaggedCapture } from '../../domain/tag/capture-tags';
+
+type RemoveTagFromCaptureResult =
+  | { readonly kind: 'success'; readonly capture: Capture }
+  | StorageUnavailable;
 
 type RemoveTagFromCaptureDeps = {
   readonly captures: CaptureRepository;
@@ -13,13 +16,13 @@ async function removeTagFromCapture(
   deps: RemoveTagFromCaptureDeps,
   capture: Capture,
   tag: TagId,
-): Promise<Result<Capture, CaptureError>> {
+): Promise<RemoveTagFromCaptureResult> {
   const untagged = untaggedCapture(capture, tag);
   const stored = await deps.captures.save(untagged);
-  if (!stored.ok) return stored;
+  if (stored.kind !== 'success') return stored;
 
-  return ok(untagged);
+  return { kind: 'success', capture: untagged };
 }
 
 export { removeTagFromCapture };
-export type { RemoveTagFromCaptureDeps };
+export type { RemoveTagFromCaptureDeps, RemoveTagFromCaptureResult };

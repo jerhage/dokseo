@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { tagId } from '$lib/shared/ids';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import { describeTagStorage, ManageTagsView } from './manage-tags.svelte';
+import { ManageTagsView } from './manage-tags.svelte';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/idle-write-query'));
 
@@ -79,19 +79,5 @@ describe('ManageTagsView', () => {
 
     expect(manage.renaming).toBeNull();
     expect(manage.draft).toBe('');
-  });
-});
-
-describe('describeTagStorage', () => {
-  it('says the browser blocks storage, so tags cannot be changed', () => {
-    expect(describeTagStorage({ kind: 'storage-unavailable' })).toBe(
-      'This browser blocks local storage, so tags cannot be changed.',
-    );
-  });
-
-  it('names the cause of a refused write', () => {
-    expect(describeTagStorage({ kind: 'storage-failed', cause: 'quota' })).toBe(
-      'Local storage failed: quota',
-    );
   });
 });

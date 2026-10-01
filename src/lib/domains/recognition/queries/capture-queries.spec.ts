@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
-import { QueryFailure } from '$lib/shared/query-failure';
-import { err, ok } from '$lib/shared/result';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { notedCapture } from '../domain/capture/capture';
 import type { Capture, NotableCapture } from '../domain/capture/capture';
@@ -20,7 +19,7 @@ import {
   writeNoteMutation,
 } from './capture-queries';
 import { recognitionKeys } from './recognition-keys';
-import { describeStoreFailure, storedState } from './store-read';
+import { storedCaptures, storedTags } from './store-read';
 import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 
 const CAPTURE: Capture = {
@@ -49,17 +48,19 @@ const READ_CAPTURE: NotableCapture = {
 
 describe('everyCaptureQuery', () => {
   it('resolves every capture in the library', async () => {
-    const read = everyCaptureQuery({ listEveryCapture: () => Promise.resolve(ok([CAPTURE])) });
+    const read = everyCaptureQuery({
+      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [CAPTURE] }),
+    });
 
     await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'read',
-      value: [CAPTURE],
+      kind: 'success',
+      captures: [CAPTURE],
     });
   });
 
   it('resolves a store the browser blocks as an answer', async () => {
     const read = everyCaptureQuery({
-      listEveryCapture: () => Promise.resolve(err({ kind: 'storage-unavailable' })),
+      listEveryCapture: () => Promise.resolve(STORAGE_UNAVAILABLE),
     });
 
     await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
@@ -67,22 +68,17 @@ describe('everyCaptureQuery', () => {
     });
   });
 
-  it('rejects a store that failed with the described note', async () => {
-    const read = everyCaptureQuery({
-      listEveryCapture: () => Promise.resolve(err({ kind: 'storage-failed', cause: 'locked' })),
-    });
+  it('rejects with the error a failed store throws', async () => {
+    const broken = new Error('locked');
+    const read = everyCaptureQuery({ listEveryCapture: () => Promise.reject(broken) });
 
-    const failure = await createTestQueryClient()
-      .fetchQuery(read)
-      .catch((cause: unknown) => cause);
-
-    expect(failure).toBeInstanceOf(QueryFailure);
-    expect(failure).toHaveProperty('message', 'Local storage failed: locked');
-    expect(failure).toHaveProperty('cause', { kind: 'storage-failed', cause: 'locked' });
+    await expect(createTestQueryClient().fetchQuery(read)).rejects.toBe(broken);
   });
 
   it('files the read under the recognition root, stale at once', () => {
-    const read = everyCaptureQuery({ listEveryCapture: () => Promise.resolve(ok([])) });
+    const read = everyCaptureQuery({
+      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [] }),
+    });
 
     expect(read.queryKey).toEqual(recognitionKeys.everyCapture());
     expect(read.queryKey.slice(0, 1)).toEqual(recognitionKeys.all());
@@ -97,37 +93,40 @@ describe('capturesQuery', () => {
       {
         listCaptures: (book) => {
           asked.push(book);
-          return Promise.resolve(ok([CAPTURE]));
+          return Promise.resolve({ kind: 'success', captures: [CAPTURE] });
         },
       },
       bookId('one'),
     );
 
     await expect(createTestQueryClient().fetchQuery(read)).resolves.toEqual({
-      kind: 'read',
-      value: [CAPTURE],
+      kind: 'success',
+      captures: [CAPTURE],
     });
     expect(asked).toEqual(['one']);
   });
 
   it('resolves a store the browser blocks as an answer and rejects a failed store', async () => {
     const blocked = capturesQuery(
-      { listCaptures: () => Promise.resolve(err({ kind: 'storage-unavailable' })) },
+      { listCaptures: () => Promise.resolve(STORAGE_UNAVAILABLE) },
       bookId('one'),
     );
     const broken = capturesQuery(
-      { listCaptures: () => Promise.resolve(err({ kind: 'storage-failed', cause: 'locked' })) },
+      { listCaptures: () => Promise.reject(new Error('locked')) },
       bookId('one'),
     );
 
     await expect(createTestQueryClient().fetchQuery(blocked)).resolves.toEqual({
       kind: 'storage-unavailable',
     });
-    await expect(createTestQueryClient().fetchQuery(broken)).rejects.toBeInstanceOf(QueryFailure);
+    await expect(createTestQueryClient().fetchQuery(broken)).rejects.toThrow('locked');
   });
 
   it('files each book under its own key below the recognition root, stale at once', () => {
-    const read = capturesQuery({ listCaptures: () => Promise.resolve(ok([])) }, bookId('one'));
+    const read = capturesQuery(
+      { listCaptures: () => Promise.resolve({ kind: 'success', captures: [] }) },
+      bookId('one'),
+    );
 
     expect(read.queryKey).toEqual(recognitionKeys.captures(bookId('one')));
     expect(read.queryKey).not.toEqual(recognitionKeys.captures(bookId('two')));
@@ -136,14 +135,17 @@ describe('capturesQuery', () => {
   });
 
   it('reads nothing while no book is open', () => {
-    const read = capturesQuery({ listCaptures: () => Promise.resolve(ok([])) }, null);
+    const read = capturesQuery(
+      { listCaptures: () => Promise.resolve({ kind: 'success', captures: [] }) },
+      null,
+    );
 
     expect(read.queryFn).toBe(skipToken);
   });
 });
 
 describe('capture mutations', () => {
-  const REFUSED = err({ kind: 'storage-unavailable' } as const);
+  const REFUSED = STORAGE_UNAVAILABLE;
 
   it('answers a refused write as data, for every capture write', async () => {
     const refusing = () => Promise.resolve(REFUSED);
@@ -207,7 +209,7 @@ describe('capture mutations', () => {
       writeNoteMutation({
         writeNote: (id, book) => {
           asked.push(`note ${id} ${book}`);
-          return Promise.resolve(ok(CAPTURE));
+          return Promise.resolve({ kind: 'success', capture: CAPTURE });
         },
       }),
     ).mutate({ id: CAPTURE.id, book: CAPTURE.bookId, anchor: CAPTURE.anchor });
@@ -216,7 +218,7 @@ describe('capture mutations', () => {
       editTextMutation({
         editCaptureText: (capture, text) => {
           asked.push(`edit ${capture.id} ${text}`);
-          return Promise.resolve(ok(capture));
+          return Promise.resolve({ kind: 'success', capture });
         },
       }),
     ).mutate({ capture: CAPTURE, text: '山' });
@@ -225,7 +227,7 @@ describe('capture mutations', () => {
       writeCaptureNoteMutation({
         writeCaptureNote: (capture, note) => {
           asked.push(`annotate ${capture.id} ${note}`);
-          return Promise.resolve(ok(notedCapture(capture, note)));
+          return Promise.resolve({ kind: 'success', capture: notedCapture(capture, note) });
         },
       }),
     ).mutate({ capture: READ_CAPTURE, note: 'sea' });
@@ -234,7 +236,7 @@ describe('capture mutations', () => {
       removeCaptureMutation({
         removeCapture: (id) => {
           asked.push(`remove ${id}`);
-          return Promise.resolve(ok(undefined));
+          return Promise.resolve({ kind: 'success' });
         },
       }),
     ).mutate(CAPTURE);
@@ -243,7 +245,7 @@ describe('capture mutations', () => {
       clearCapturesMutation({
         clearCaptures: (book) => {
           asked.push(`clear ${book}`);
-          return Promise.resolve(ok(undefined));
+          return Promise.resolve({ kind: 'success' });
         },
       }),
     ).mutate(CAPTURE.bookId);
@@ -258,34 +260,37 @@ describe('capture mutations', () => {
   });
 });
 
-describe('describeStoreFailure', () => {
-  it('says the browser blocks local storage', () => {
-    expect(describeStoreFailure({ kind: 'storage-unavailable' })).toBe(
-      'This browser blocks local storage.',
-    );
-  });
-
-  it('names the cause of a failed store', () => {
-    expect(describeStoreFailure({ kind: 'storage-failed', cause: 'quota' })).toBe(
-      'Local storage failed: quota',
-    );
-  });
-});
-
-describe('storedState', () => {
+describe('storedCaptures', () => {
   it('passes a load and a failure through', () => {
-    expect(storedState(LOADING)).toEqual(LOADING);
-    expect(storedState(readFailed('broke'))).toEqual(readFailed('broke'));
+    expect(storedCaptures(LOADING)).toEqual(LOADING);
+    expect(storedCaptures(readFailed('broke'))).toEqual(readFailed('broke'));
   });
 
-  it('readies what was read', () => {
-    expect(storedState(readReady({ kind: 'read', value: [CAPTURE] }))).toEqual(
+  it('readies the captures that were read', () => {
+    expect(storedCaptures(readReady({ kind: 'success', captures: [CAPTURE] }))).toEqual(
       readReady([CAPTURE]),
     );
   });
 
   it('fails a blocked store with the note the read showed before', () => {
-    expect(storedState(readReady({ kind: 'storage-unavailable' }))).toEqual(
+    expect(storedCaptures(readReady(STORAGE_UNAVAILABLE))).toEqual(
+      readFailed('This browser blocks local storage.'),
+    );
+  });
+});
+
+describe('storedTags', () => {
+  it('passes a load and a failure through', () => {
+    expect(storedTags(LOADING)).toEqual(LOADING);
+    expect(storedTags(readFailed('broke'))).toEqual(readFailed('broke'));
+  });
+
+  it('readies the tags that were read', () => {
+    expect(storedTags(readReady({ kind: 'success', tags: [] }))).toEqual(readReady([]));
+  });
+
+  it('fails a blocked store with the note the read showed before', () => {
+    expect(storedTags(readReady(STORAGE_UNAVAILABLE))).toEqual(
       readFailed('This browser blocks local storage.'),
     );
   });

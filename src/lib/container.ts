@@ -88,7 +88,6 @@ import type {
   CaptureDraft,
   NotableCapture,
 } from './domains/recognition/domain/capture/capture';
-import type { CaptureError } from './domains/recognition/domain/capture/capture-repository';
 import type { GpuDetection } from './domains/recognition/domain/engine/compute-choice';
 import type { ModelRuntime } from './domains/recognition/domain/engine/model-runtime';
 import { chosenModel } from './domains/recognition/domain/model/model-footprint';
@@ -112,33 +111,56 @@ import type {
 import type { TextRecognizer } from './domains/recognition/domain/engine/text-recognizer';
 import type { Tag } from './domains/recognition/domain/tag/tag';
 import type { TagColour } from './domains/recognition/domain/tag/tag-colour';
-import type { TagError } from './domains/recognition/domain/tag/tag-repository';
 import { addTagToCapture } from './domains/recognition/use-cases/tag/add-tag-to-capture';
-import type { AddTagToCaptureDeps } from './domains/recognition/use-cases/tag/add-tag-to-capture';
+import type {
+  AddTagToCaptureDeps,
+  AddTagToCaptureResult,
+} from './domains/recognition/use-cases/tag/add-tag-to-capture';
 import { cancelModelLoad } from './domains/recognition/use-cases/model/cancel-model-load';
 import { closeRecognizer } from './domains/recognition/use-cases/engine/close-recognizer';
 import { clearCaptures } from './domains/recognition/use-cases/capture/clear-captures';
-import type { ClearCapturesDeps } from './domains/recognition/use-cases/capture/clear-captures';
+import type {
+  ClearCapturesDeps,
+  ClearCapturesResult,
+} from './domains/recognition/use-cases/capture/clear-captures';
 import { createTag } from './domains/recognition/use-cases/tag/create-tag';
-import type { CreateTagDeps, CreateTagError } from './domains/recognition/use-cases/tag/create-tag';
+import type {
+  CreateTagDeps,
+  CreateTagResult,
+} from './domains/recognition/use-cases/tag/create-tag';
 import { deleteTag } from './domains/recognition/use-cases/tag/delete-tag';
-import type { DeleteTagDeps } from './domains/recognition/use-cases/tag/delete-tag';
+import type {
+  DeleteTagDeps,
+  DeleteTagResult,
+} from './domains/recognition/use-cases/tag/delete-tag';
 import { deleteModel } from './domains/recognition/use-cases/model/delete-model';
 import type { DeleteModelDeps } from './domains/recognition/use-cases/model/delete-model';
 import { detectCompute } from './domains/recognition/use-cases/engine/detect-compute';
 import type { DetectComputeDeps } from './domains/recognition/use-cases/engine/detect-compute';
 import { editCaptureText } from './domains/recognition/use-cases/capture/edit-capture-text';
-import type { EditCaptureTextDeps } from './domains/recognition/use-cases/capture/edit-capture-text';
+import type {
+  EditCaptureTextDeps,
+  EditCaptureTextResult,
+} from './domains/recognition/use-cases/capture/edit-capture-text';
 import { writeCaptureNote } from './domains/recognition/use-cases/capture/write-capture-note';
-import type { WriteCaptureNoteDeps } from './domains/recognition/use-cases/capture/write-capture-note';
+import type {
+  WriteCaptureNoteDeps,
+  WriteCaptureNoteResult,
+} from './domains/recognition/use-cases/capture/write-capture-note';
 import { grantModelConsent } from './domains/recognition/use-cases/model/grant-model-consent';
 import type { GrantModelConsentDeps } from './domains/recognition/use-cases/model/grant-model-consent';
 import { listCaptures } from './domains/recognition/use-cases/capture/list-captures';
-import type { ListCapturesDeps } from './domains/recognition/use-cases/capture/list-captures';
+import type {
+  ListCapturesDeps,
+  ListCapturesResult,
+} from './domains/recognition/use-cases/capture/list-captures';
 import { listEveryCapture } from './domains/recognition/use-cases/capture/list-every-capture';
-import type { ListEveryCaptureDeps } from './domains/recognition/use-cases/capture/list-every-capture';
+import type {
+  ListEveryCaptureDeps,
+  ListEveryCaptureResult,
+} from './domains/recognition/use-cases/capture/list-every-capture';
 import { listTags } from './domains/recognition/use-cases/tag/list-tags';
-import type { ListTagsDeps } from './domains/recognition/use-cases/tag/list-tags';
+import type { ListTagsDeps, ListTagsResult } from './domains/recognition/use-cases/tag/list-tags';
 import { pauseModelLoad } from './domains/recognition/use-cases/model/pause-model-load';
 import { prepareRecognizer } from './domains/recognition/use-cases/engine/prepare-recognizer';
 import { readModelConsent } from './domains/recognition/use-cases/model/read-model-consent';
@@ -153,21 +175,42 @@ import type { ReadRecognizerSetupDeps } from './domains/recognition/use-cases/en
 import { recognizeRegion } from './domains/recognition/use-cases/engine/recognize-region';
 import type { RecognizeRegionError } from './domains/recognition/use-cases/engine/recognize-region';
 import { removeCapture } from './domains/recognition/use-cases/capture/remove-capture';
-import type { RemoveCaptureDeps } from './domains/recognition/use-cases/capture/remove-capture';
+import type {
+  RemoveCaptureDeps,
+  RemoveCaptureResult,
+} from './domains/recognition/use-cases/capture/remove-capture';
 import { restoreCapture } from './domains/recognition/use-cases/capture/restore-capture';
-import type { RestoreCaptureDeps } from './domains/recognition/use-cases/capture/restore-capture';
+import type {
+  RestoreCaptureDeps,
+  RestoreCaptureResult,
+} from './domains/recognition/use-cases/capture/restore-capture';
 import { recolourTag } from './domains/recognition/use-cases/tag/recolour-tag';
-import type { RecolourTagDeps } from './domains/recognition/use-cases/tag/recolour-tag';
+import type {
+  RecolourTagDeps,
+  RecolourTagResult,
+} from './domains/recognition/use-cases/tag/recolour-tag';
 import { removeTagFromCapture } from './domains/recognition/use-cases/tag/remove-tag-from-capture';
-import type { RemoveTagFromCaptureDeps } from './domains/recognition/use-cases/tag/remove-tag-from-capture';
+import type {
+  RemoveTagFromCaptureDeps,
+  RemoveTagFromCaptureResult,
+} from './domains/recognition/use-cases/tag/remove-tag-from-capture';
 import { renameTag } from './domains/recognition/use-cases/tag/rename-tag';
-import type { RenameTagDeps, RenameTagError } from './domains/recognition/use-cases/tag/rename-tag';
+import type {
+  RenameTagDeps,
+  RenameTagResult,
+} from './domains/recognition/use-cases/tag/rename-tag';
 import { saveCapture } from './domains/recognition/use-cases/capture/save-capture';
-import type { SaveCaptureDeps } from './domains/recognition/use-cases/capture/save-capture';
+import type {
+  SaveCaptureDeps,
+  SaveCaptureResult,
+} from './domains/recognition/use-cases/capture/save-capture';
 import { saveRecognizerSetup } from './domains/recognition/use-cases/engine/save-recognizer-setup';
 import type { SaveRecognizerSetupDeps } from './domains/recognition/use-cases/engine/save-recognizer-setup';
 import { writeNote } from './domains/recognition/use-cases/capture/write-note';
-import type { WriteNoteDeps } from './domains/recognition/use-cases/capture/write-note';
+import type {
+  WriteNoteDeps,
+  WriteNoteResult,
+} from './domains/recognition/use-cases/capture/write-note';
 import { createOriginStores } from './domains/storage/adapters/browser-origin-stores';
 import { readStorageAccount } from './domains/storage/use-cases/read-storage-account';
 import type {
@@ -300,38 +343,28 @@ type Container = {
       arrangement: Arrangement,
       notices?: RecognitionNotices,
     ) => Promise<Result<RecognizedText, RecognizeRegionError>>;
-    readonly listCaptures: (book: BookId) => Promise<Result<readonly Capture[], CaptureError>>;
-    readonly listEveryCapture: () => Promise<Result<readonly Capture[], CaptureError>>;
-    readonly saveCapture: (draft: CaptureDraft) => Promise<Result<Capture, CaptureError>>;
-    readonly writeNote: (
-      id: CaptureId,
-      book: BookId,
-      anchor: Anchor,
-    ) => Promise<Result<Capture, CaptureError>>;
-    readonly editCaptureText: (
-      capture: Capture,
-      text: string,
-    ) => Promise<Result<Capture, CaptureError>>;
+    readonly listCaptures: (book: BookId) => Promise<ListCapturesResult>;
+    readonly listEveryCapture: () => Promise<ListEveryCaptureResult>;
+    readonly saveCapture: (draft: CaptureDraft) => Promise<SaveCaptureResult>;
+    readonly writeNote: (id: CaptureId, book: BookId, anchor: Anchor) => Promise<WriteNoteResult>;
+    readonly editCaptureText: (capture: Capture, text: string) => Promise<EditCaptureTextResult>;
     readonly writeCaptureNote: <T extends NotableCapture>(
       capture: T,
       note: string,
-    ) => Promise<Result<T, CaptureError>>;
-    readonly removeCapture: (capture: CaptureId) => Promise<Result<void, CaptureError>>;
-    readonly restoreCapture: (capture: Capture) => Promise<Result<void, CaptureError>>;
-    readonly clearCaptures: (book: BookId) => Promise<Result<void, CaptureError>>;
-    readonly listTags: () => Promise<Result<readonly Tag[], TagError>>;
-    readonly createTag: (id: TagId, name: string) => Promise<Result<Tag, CreateTagError>>;
-    readonly addTagToCapture: (
-      capture: Capture,
-      tag: TagId,
-    ) => Promise<Result<Capture, CaptureError>>;
+    ) => Promise<WriteCaptureNoteResult<T>>;
+    readonly removeCapture: (capture: CaptureId) => Promise<RemoveCaptureResult>;
+    readonly restoreCapture: (capture: Capture) => Promise<RestoreCaptureResult>;
+    readonly clearCaptures: (book: BookId) => Promise<ClearCapturesResult>;
+    readonly listTags: () => Promise<ListTagsResult>;
+    readonly createTag: (id: TagId, name: string) => Promise<CreateTagResult>;
+    readonly addTagToCapture: (capture: Capture, tag: TagId) => Promise<AddTagToCaptureResult>;
     readonly removeTagFromCapture: (
       capture: Capture,
       tag: TagId,
-    ) => Promise<Result<Capture, CaptureError>>;
-    readonly renameTag: (tag: Tag, name: string) => Promise<Result<Tag, RenameTagError>>;
-    readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<Result<Tag, TagError>>;
-    readonly deleteTag: (tag: TagId) => Promise<Result<number, TagError | CaptureError>>;
+    ) => Promise<RemoveTagFromCaptureResult>;
+    readonly renameTag: (tag: Tag, name: string) => Promise<RenameTagResult>;
+    readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<RecolourTagResult>;
+    readonly deleteTag: (tag: TagId) => Promise<DeleteTagResult>;
     readonly readModelStorage: (
       modelId: string,
     ) => Promise<Result<ModelStorageSnapshot, ModelStorageError>>;

@@ -1,15 +1,15 @@
 import type { TagId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Tag } from './tag';
 
-type TagError =
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string };
+type TagListing = { readonly kind: 'success'; readonly tags: readonly Tag[] } | StorageUnavailable;
+
+type TagWrite = { readonly kind: 'success' } | StorageUnavailable;
 
 interface TagRepository {
-  list(): Promise<Result<readonly Tag[], TagError>>;
-  save(tag: Tag): Promise<Result<void, TagError>>;
-  remove(tag: TagId): Promise<Result<void, TagError>>;
+  list(): Promise<TagListing>;
+  save(tag: Tag): Promise<TagWrite>;
+  remove(tag: TagId): Promise<TagWrite>;
 }
 
-export type { TagError, TagRepository };
+export type { TagListing, TagRepository, TagWrite };

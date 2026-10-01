@@ -1,8 +1,11 @@
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { editedCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
+
+type EditCaptureTextResult =
+  | { readonly kind: 'success'; readonly capture: Capture }
+  | StorageUnavailable;
 
 type EditCaptureTextDeps = {
   readonly captures: CaptureRepository;
@@ -13,13 +16,13 @@ async function editCaptureText(
   deps: EditCaptureTextDeps,
   capture: Capture,
   text: string,
-): Promise<Result<Capture, CaptureError>> {
+): Promise<EditCaptureTextResult> {
   const edited = editedCapture(capture, text, deps.now());
   const stored = await deps.captures.save(edited);
-  if (!stored.ok) return stored;
+  if (stored.kind !== 'success') return stored;
 
-  return ok(edited);
+  return { kind: 'success', capture: edited };
 }
 
 export { editCaptureText };
-export type { EditCaptureTextDeps };
+export type { EditCaptureTextDeps, EditCaptureTextResult };

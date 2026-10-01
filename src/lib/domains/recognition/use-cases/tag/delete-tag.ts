@@ -1,34 +1,32 @@
 import type { TagId } from '$lib/shared/ids';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { untaggedCapture } from '../../domain/tag/capture-tags';
-import type { TagError, TagRepository } from '../../domain/tag/tag-repository';
+import type { TagRepository } from '../../domain/tag/tag-repository';
+
+type DeleteTagResult = { readonly kind: 'success'; readonly untagged: number } | StorageUnavailable;
 
 type DeleteTagDeps = {
   readonly tags: TagRepository;
   readonly captures: CaptureRepository;
 };
 
-async function deleteTag(
-  deps: DeleteTagDeps,
-  tag: TagId,
-): Promise<Result<number, TagError | CaptureError>> {
+async function deleteTag(deps: DeleteTagDeps, tag: TagId): Promise<DeleteTagResult> {
   const everything = await deps.captures.listEverything();
-  if (!everything.ok) return everything;
+  if (everything.kind !== 'success') return everything;
 
-  const carrying = everything.value.filter((capture) => capture.tagIds.includes(tag));
+  const carrying = everything.captures.filter((capture) => capture.tagIds.includes(tag));
 
   for (const capture of carrying) {
     const stored = await deps.captures.save(untaggedCapture(capture, tag));
-    if (!stored.ok) return stored;
+    if (stored.kind !== 'success') return stored;
   }
 
   const removed = await deps.tags.remove(tag);
-  if (!removed.ok) return removed;
+  if (removed.kind !== 'success') return removed;
 
-  return ok(carrying.length);
+  return { kind: 'success', untagged: carrying.length };
 }
 
 export { deleteTag };
-export type { DeleteTagDeps };
+export type { DeleteTagDeps, DeleteTagResult };

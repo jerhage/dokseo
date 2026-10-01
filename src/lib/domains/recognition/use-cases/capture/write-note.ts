@@ -1,10 +1,11 @@
 import type { Anchor } from '$lib/shared/anchor';
 import type { BookId, CaptureId } from '$lib/shared/ids';
-import { ok } from '$lib/shared/result';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
-import type { CaptureError, CaptureRepository } from '../../domain/capture/capture-repository';
+import type { CaptureRepository } from '../../domain/capture/capture-repository';
+
+type WriteNoteResult = { readonly kind: 'success'; readonly capture: Capture } | StorageUnavailable;
 
 type WriteNoteDeps = {
   readonly captures: CaptureRepository;
@@ -16,13 +17,13 @@ async function writeNote(
   id: CaptureId,
   book: BookId,
   anchor: Anchor,
-): Promise<Result<Capture, CaptureError>> {
+): Promise<WriteNoteResult> {
   const note = takenCapture({ id, bookId: book, anchor, text: '', origin: 'written' }, deps.now());
   const stored = await deps.captures.save(note);
-  if (!stored.ok) return stored;
+  if (stored.kind !== 'success') return stored;
 
-  return ok(note);
+  return { kind: 'success', capture: note };
 }
 
 export { writeNote };
-export type { WriteNoteDeps };
+export type { WriteNoteDeps, WriteNoteResult };

@@ -4,7 +4,7 @@
   import { tagCounts } from '../../domain/tag/capture-tags';
   import { everyCaptureQuery } from '../../queries/capture-queries';
   import type { CaptureReads } from '../../queries/capture-queries';
-  import { storedState } from '../../queries/store-read';
+  import { storedCaptures, storedTags } from '../../queries/store-read';
   import { tagsQuery } from '../../queries/tag-queries';
   import type { TagReads } from '../../queries/tag-queries';
   import { foundCaptures, foundTags } from './capture-find';
@@ -21,9 +21,9 @@
 
   const everyCapture = readQuery(() => ({ ...everyCaptureQuery(recognition), enabled: asked }));
   const tagList = readQuery(() => ({ ...tagsQuery(recognition), enabled: asked }));
-  const found = $derived(storedState(everyCapture.state));
+  const found = $derived(storedCaptures(everyCapture.state));
   const captures = $derived(foundCaptures(found));
-  const tags = $derived(foundTags(storedState(tagList.state)));
+  const tags = $derived(foundTags(storedTags(tagList.state)));
   const counted = $derived(tagCounts(captures));
 
   function reload(): void {

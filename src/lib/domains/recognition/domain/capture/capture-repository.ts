@@ -1,17 +1,19 @@
 import type { BookId, CaptureId } from '$lib/shared/ids';
-import type { Result } from '$lib/shared/result';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Capture } from './capture';
 
-type CaptureError =
-  | { readonly kind: 'storage-unavailable' }
-  | { readonly kind: 'storage-failed'; readonly cause: string };
+type CaptureListing =
+  | { readonly kind: 'success'; readonly captures: readonly Capture[] }
+  | StorageUnavailable;
+
+type CaptureWrite = { readonly kind: 'success' } | StorageUnavailable;
 
 interface CaptureRepository {
-  listForBook(book: BookId): Promise<Result<readonly Capture[], CaptureError>>;
-  listEverything(): Promise<Result<readonly Capture[], CaptureError>>;
-  save(capture: Capture): Promise<Result<void, CaptureError>>;
-  remove(capture: CaptureId): Promise<Result<void, CaptureError>>;
-  clearBook(book: BookId): Promise<Result<void, CaptureError>>;
+  listForBook(book: BookId): Promise<CaptureListing>;
+  listEverything(): Promise<CaptureListing>;
+  save(capture: Capture): Promise<CaptureWrite>;
+  remove(capture: CaptureId): Promise<CaptureWrite>;
+  clearBook(book: BookId): Promise<CaptureWrite>;
 }
 
-export type { CaptureError, CaptureRepository };
+export type { CaptureListing, CaptureRepository, CaptureWrite };

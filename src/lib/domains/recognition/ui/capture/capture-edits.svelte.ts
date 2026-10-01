@@ -1,15 +1,15 @@
 import type { CaptureId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
-import type { Result } from '$lib/shared/result';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { editedText } from '../../domain/capture/capture';
-import type { Capture, NotableCapture } from '../../domain/capture/capture';
-import type { CaptureError } from '../../domain/capture/capture-repository';
+import type { NotableCapture } from '../../domain/capture/capture';
 import { editTextMutation, writeCaptureNoteMutation } from '../../queries/capture-queries';
 import type { CaptureWrites, NoteEdit, TextEdit } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
+import type { EditCaptureTextResult } from '../../use-cases/capture/edit-capture-text';
+import type { WriteCaptureNoteResult } from '../../use-cases/capture/write-capture-note';
 import type { CaptureList } from './capture-list.svelte';
 import { NOT_STORED, refuse } from './storage-failure';
 import type { WriteOutcome } from './storage-failure';
@@ -21,8 +21,8 @@ const NOTE_NOT_SAVED = 'The note could not be saved';
 class CaptureEdits {
   #notify: Notify;
   #list: CaptureList;
-  #editing: WriteQuery<Result<Capture, CaptureError>, TextEdit>;
-  #noting: WriteQuery<Result<NotableCapture, CaptureError>, NoteEdit>;
+  #editing: WriteQuery<EditCaptureTextResult, TextEdit>;
+  #noting: WriteQuery<WriteCaptureNoteResult<NotableCapture>, NoteEdit>;
 
   constructor(recognition: CaptureWrites, notify: Notify, list: CaptureList, cache: CaptureCache) {
     this.#notify = notify;
@@ -30,7 +30,7 @@ class CaptureEdits {
     this.#editing = writeQuery(() => ({
       ...editTextMutation(recognition),
       onSuccess: (written) => {
-        if (written.ok) cache.put(written.value);
+        if (written.kind === 'success') cache.put(written.capture);
       },
       onError: (cause) => this.#fail(TEXT_NOT_SAVED, cause),
       onSettled: (_written, _cause, { capture }) => cache.refresh(capture.bookId),
@@ -38,7 +38,7 @@ class CaptureEdits {
     this.#noting = writeQuery(() => ({
       ...writeCaptureNoteMutation(recognition),
       onSuccess: (written) => {
-        if (written.ok) cache.put(written.value);
+        if (written.kind === 'success') cache.put(written.capture);
       },
       onError: (cause) => this.#fail(NOTE_NOT_SAVED, cause),
       onSettled: (_written, _cause, { capture }) => cache.refresh(capture.bookId),
@@ -69,9 +69,12 @@ class CaptureEdits {
     return this.#outcome(NOTE_NOT_SAVED, written);
   }
 
-  #outcome(title: string, written: Result<unknown, CaptureError> | null): WriteOutcome {
+  #outcome(
+    title: string,
+    written: EditCaptureTextResult | WriteCaptureNoteResult<NotableCapture> | null,
+  ): WriteOutcome {
     if (written === null) return 'failed';
-    if (!written.ok) return refuse(this.#notify, title, written.error);
+    if (written.kind !== 'success') return refuse(this.#notify, title, written);
 
     return 'saved';
   }
