@@ -11,6 +11,7 @@ import type { WriteState } from './write-state';
 interface WriteQuery<R, V> {
   readonly state: WriteState<R>;
   submit(variables: V): void;
+  run(variables: V): Promise<R>;
   reset(): void;
 }
 
@@ -27,6 +28,9 @@ function writeQuery<R, V>(
     },
     submit(variables) {
       mutation.mutate(variables);
+    },
+    run(variables) {
+      return mutation.mutateAsync(variables);
     },
     reset() {
       mutation.reset();
