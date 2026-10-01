@@ -206,7 +206,7 @@ describe('CaptureCollection', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
 
-    await collection.recognizing(
+    await collection.recording.recognizing(
       regions(),
       settles({ status: 'done', text: recognizedText('読', null), edited: false }),
     );
@@ -220,7 +220,7 @@ describe('CaptureCollection', () => {
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
     await collection.list.open(ONE);
 
-    await collection.recognizing(regions(), settles({ status: 'empty' }));
+    await collection.recording.recognizing(regions(), settles({ status: 'empty' }));
 
     expect(panelTexts(collection)).toEqual(['empty']);
     expect(world.store.rows).toEqual([]);
@@ -230,7 +230,7 @@ describe('CaptureCollection', () => {
     const world = fakes();
     const collection = new CaptureCollection(world.container, world.notify, NO_EDITORS);
 
-    collection.note(regions());
+    collection.recording.note(regions());
 
     expect(collection.list.captures).toEqual([]);
     expect(world.steps.map((step) => step.detail.guard)).toEqual(['no-open-book']);

@@ -247,11 +247,11 @@ class CaptureView {
   }
 
   note(regions: readonly ImageRegion[]): void {
-    this.#collection.note(regions);
+    this.#collection.recording.note(regions);
   }
 
   lift(cfi: string, quote: TextQuote, chapter: string | null): void {
-    this.#collection.lift(cfi, quote, chapter);
+    this.#collection.recording.lift(cfi, quote, chapter);
   }
 
   async keepLifted(
@@ -260,11 +260,11 @@ class CaptureView {
     quote: TextQuote,
     chapter: string | null,
   ): Promise<void> {
-    await this.#collection.keepLifted(book, cfi, quote, chapter);
+    await this.#collection.recording.keepLifted(book, cfi, quote, chapter);
   }
 
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
-    await this.#collection.write(book, regions);
+    await this.#collection.recording.write(book, regions);
   }
 
   async recognize(
@@ -291,7 +291,7 @@ class CaptureView {
   }
 
   async #read(held: PendingRecognition): Promise<void> {
-    await this.#collection.recognizing(held.regions, () => this.#settlement(held));
+    await this.#collection.recording.recognizing(held.regions, () => this.#settlement(held));
   }
 
   async #settlement(held: PendingRecognition): Promise<Settled> {
