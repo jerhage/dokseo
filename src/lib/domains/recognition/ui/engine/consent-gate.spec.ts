@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import { imageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
@@ -9,14 +9,21 @@ import type { Notice } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import { ok } from '$lib/shared/result';
 import { at } from '$lib/shared/testing/at';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
+import { askedWrites } from '$lib/shared/testing/unrun-write-query';
 import { modelFootprint } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import { ConsentGate, RECOGNITION_OFF, TURN_ON } from './consent-gate.svelte';
 import type { PendingRecognition } from './engine-warmup.svelte';
 
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unrun-write-query'));
+
+beforeEach(() => {
+  askedWrites.splice(0);
+});
+
 type World = {
   readonly gate: ConsentGate;
-  readonly grants: Language[];
   readonly consentReads: Language[];
   readonly notices: Notice[];
   readonly bump: () => void;
@@ -26,7 +33,6 @@ function fakes(
   granted: readonly Language[] = [],
   model: (language: Language) => ModelFootprint | null = modelFootprint,
 ): World {
-  const grants: Language[] = [];
   const consentReads: Language[] = [];
   const notices: Notice[] = [];
   const agreed = new Set(granted);
@@ -41,22 +47,17 @@ function fakes(
         consentReads.push(language);
         return Promise.resolve(ok(agreed.has(language) ? 'granted' : 'undecided'));
       },
-      grantModelConsent: (language: Language) => {
-        grants.push(language);
-        agreed.add(language);
-        return Promise.resolve(ok(undefined));
-      },
     },
   } as unknown as Container;
 
   const gate = new ConsentGate(
     container,
     (notice) => notices.push(notice),
+    createTestQueryClient(),
     () => generation,
   );
   return {
     gate,
-    grants,
     consentReads,
     notices,
     bump: () => {
@@ -129,7 +130,7 @@ describe('ConsentGate', () => {
 
     expect(released).toBe(held);
     expect(world.gate.request).toBeNull();
-    expect(world.grants).toEqual(['ja']);
+    expect(askedWrites).toEqual(['ja']);
     expect(await world.gate.admits(selection())).toBe(true);
     expect(world.consentReads).toEqual(['ja']);
   });
@@ -186,7 +187,7 @@ describe('ConsentGate', () => {
 
     expect(world.gate.request?.language).toBe('ja');
     expect(await world.gate.agree()).toBe(later);
-    expect(world.grants).toEqual(['ja']);
+    expect(askedWrites).toEqual(['ja']);
   });
 
   it('asks nothing new when Turn on is pressed while the dialog is open', async () => {
@@ -238,6 +239,6 @@ describe('ConsentGate', () => {
 
     expect(world.gate.request).toBeNull();
     expect(await world.gate.agree()).toBeNull();
-    expect(world.grants).toEqual([]);
+    expect(askedWrites).toEqual([]);
   });
 });

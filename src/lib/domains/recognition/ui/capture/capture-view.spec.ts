@@ -50,9 +50,7 @@ type Call = {
 type Consent = {
   readonly granted: Set<Language>;
   readonly reads: Language[];
-  readonly grants: Language[];
   readFails: boolean;
-  grantFails: boolean;
 };
 
 type Store = {
@@ -74,7 +72,7 @@ type Engine = {
   readonly prepares: Language[];
   readonly closes: Language[];
   failure: string | null;
-  setupFails: boolean;
+  noModel: boolean;
 };
 
 type Fakes = {
@@ -105,9 +103,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
   const consent: Consent = {
     granted: new Set(granted),
     reads: [],
-    grants: [],
     readFails: false,
-    grantFails: false,
   };
 
   const store: Store = { rows: [] };
@@ -119,7 +115,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     prepares: [],
     closes: [],
     failure: null,
-    setupFails: false,
+    noModel: false,
   };
 
   const steps: Step[] = [];
@@ -160,12 +156,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         }
         return Promise.resolve(ok(consent.granted.has(language) ? 'granted' : 'undecided'));
       },
-      grantModelConsent: (language: Language): Promise<Result<void, ModelConsentError>> => {
-        consent.grants.push(language);
-        if (consent.grantFails) return Promise.resolve(err({ kind: 'storage-unavailable' }));
-        consent.granted.add(language);
-        return Promise.resolve(ok(undefined));
-      },
+      grantModelConsent: unused,
       recognizeRegion: (language, _source, taken, _arrangement, notices = {}) =>
         new Promise<Reading>((resolve) => {
           calls.push({ language, regions: taken, notices, settle: resolve });
@@ -206,9 +197,9 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         ),
       deleteModel: unused,
       readRecognizerSetup: (language: Language) =>
-        engine.setupFails
-          ? Promise.reject(new Error('The setup store is gone'))
-          : Promise.resolve(ok({ model: modelFootprint(language), compute: 'auto' as const })),
+        Promise.resolve(
+          ok({ model: engine.noModel ? null : modelFootprint(language), compute: 'auto' as const }),
+        ),
       saveRecognizerSetup: unused,
       detectCompute: unused,
       prepareRecognizer: (language: Language, notices: RecognitionNotices = {}) => {
@@ -556,7 +547,7 @@ describe('CaptureView', () => {
 
     expect(view.consent.request).toBeNull();
     expect(world.consent.reads).toEqual([]);
-    expect(world.consent.grants).toEqual([]);
+    expect(askedWrites).not.toContain('ja');
   });
 
   it('starts no recognition for a language the reader has not agreed to', async () => {
@@ -599,7 +590,7 @@ describe('CaptureView', () => {
     await running;
 
     expect(view.consent.request).toBeNull();
-    expect(world.consent.grants).toEqual(['ja']);
+    expect(askedWrites).toContain('ja');
     expect(at(view.list.captures, 0).anchor).toEqual(regionAnchor(regions(7)));
   });
 
@@ -613,7 +604,7 @@ describe('CaptureView', () => {
     expect(view.consent.request).toBeNull();
     expect(world.calls).toEqual([]);
     expect(view.list.captures).toEqual([]);
-    expect(world.consent.grants).toEqual([]);
+    expect(askedWrites).not.toContain('ja');
 
     await read(view);
 
@@ -653,6 +644,8 @@ describe('CaptureView', () => {
     const granting = asked.agree();
     (await started(world, 0)).settle(ok(recognizedText('first')));
     await granting;
+    expect(askedWrites).toContain('ja');
+    world.consent.granted.add('ja');
 
     const later = viewOf(world);
     const running = read(later);
@@ -660,14 +653,12 @@ describe('CaptureView', () => {
     await running;
 
     expect(later.consent.request).toBeNull();
-    expect(world.consent.grants).toEqual(['ja']);
     expect(at(later.list.captures, 0).status).toBe('done');
   });
 
   it('asks the reader and still recognizes when the decision cannot be stored', async () => {
     const world = fakes([]);
     world.consent.readFails = true;
-    world.consent.grantFails = true;
     const view = viewOf(world);
 
     await read(view);
@@ -693,7 +684,7 @@ describe('CaptureView', () => {
     await second;
 
     const unnamed = fakes([]);
-    unnamed.engine.setupFails = true;
+    unnamed.engine.noModel = true;
     const unreadable = viewOf(unnamed);
     const running = unreadable.recognize(source, 'ko', regions(), 'column');
     (await started(unnamed, 0)).settle(ok(recognizedText('안녕')));
@@ -969,7 +960,7 @@ describe('CaptureView.warm', () => {
     await view.warm(ONE, 'ja');
 
     expect(world.consent.reads).toEqual([]);
-    expect(world.consent.grants).toEqual([]);
+    expect(askedWrites).not.toContain('ja');
   });
 
   it('reports the weights as absent and opens nothing when only the grant is here', async () => {

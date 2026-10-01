@@ -1,16 +1,21 @@
-import type { Container } from '$lib/container';
+import type { QueryClient } from '@tanstack/svelte-query';
 import type { Language } from '$lib/shared/language';
-import { setupChoice } from '../../domain/engine/recognizer-setup';
+import { chosenModel } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
+import { recognizerSetupQuery } from '../../queries/engine-queries';
+import type { EngineReads } from '../../queries/engine-queries';
 
 async function readChosenFootprint(
-  container: Container,
+  client: QueryClient,
+  recognition: Pick<EngineReads, 'readRecognizerSetup'>,
   language: Language,
 ): Promise<ModelFootprint | null> {
-  const choice = await container.recognition.readRecognizerSetup(language).catch(() => null);
-  if (choice === null) return null;
+  const setup = await client
+    .fetchQuery(recognizerSetupQuery(recognition, language))
+    .catch(() => null);
 
-  return choice.ok ? choice.value.model : setupChoice(language, null).model;
+  if (setup === null) return chosenModel(language, null);
+  return setup.selected === null ? null : chosenModel(language, setup.selected);
 }
 
 export { readChosenFootprint };

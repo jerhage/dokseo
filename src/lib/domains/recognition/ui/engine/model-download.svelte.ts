@@ -47,7 +47,11 @@ class ModelDownload {
     this.#clock = clock;
     const refreshStorage = () =>
       client.invalidateQueries({ queryKey: recognitionKeys.modelStorages() });
-    this.#granting = writeQuery(() => grantConsentMutation(recognition));
+    this.#granting = writeQuery(() => ({
+      ...grantConsentMutation(recognition),
+      onSettled: (_granted, _cause, language) =>
+        client.invalidateQueries({ queryKey: recognitionKeys.consent(language) }),
+    }));
     this.#preparing = writeQuery(() => ({
       ...prepareRecognizerMutation(recognition),
       onSettled: refreshStorage,

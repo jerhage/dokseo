@@ -12,7 +12,7 @@ import type {
   SetupError,
 } from '../domain/engine/recognizer-setup';
 import type { ModelStorageReport } from '../domain/model/model-cache';
-import type { ModelConsentError } from '../domain/model/model-consent';
+import type { ModelConsentDecision, ModelConsentError } from '../domain/model/model-consent';
 import { modelsFor } from '../domain/model/model-footprint';
 import type { ModelFootprint } from '../domain/model/model-footprint';
 import type { ModelLoad, ModelLoadError } from '../domain/model/model-load';
@@ -36,6 +36,9 @@ type EngineReads = {
     language: Language,
   ) => Promise<Result<RecognizerChoice, SetupError>>;
   readonly detectCompute: () => Promise<GpuDetection>;
+  readonly readModelConsent: (
+    language: Language,
+  ) => Promise<Result<ModelConsentDecision, ModelConsentError>>;
   readonly readModelStorage: (
     modelId: string,
   ) => Promise<Result<ModelStorageSnapshot, ModelStorageError>>;
@@ -93,6 +96,16 @@ function setupReadNote(error: SetupError): string {
     .exhaustive();
 }
 
+function consentReadNote(error: ModelConsentError): string {
+  return match(error)
+    .with(
+      { kind: 'storage-unavailable' },
+      () => 'This browser blocks local storage, so the download consent cannot be read.',
+    )
+    .with({ kind: 'storage-failed' }, (failed) => `Local storage failed: ${failed.cause}`)
+    .exhaustive();
+}
+
 function storageFailureNote(error: ModelStorageError): string {
   return match(error)
     .with(
@@ -137,6 +150,17 @@ function computeQuery(recognition: Pick<EngineReads, 'detectCompute'>) {
     queryKey: recognitionKeys.compute(),
     queryFn: () => described(() => recognition.detectCompute()),
     staleTime: Infinity,
+  });
+}
+
+function modelConsentQuery(recognition: Pick<EngineReads, 'readModelConsent'>, language: Language) {
+  return queryOptions({
+    queryKey: recognitionKeys.consent(language),
+    queryFn: async () => {
+      const read = await described(() => recognition.readModelConsent(language));
+      return unwrap(read, consentReadNote);
+    },
+    staleTime: 0,
   });
 }
 
@@ -214,8 +238,10 @@ export {
   NO_MODEL,
   cancelDownloadMutation,
   computeQuery,
+  consentReadNote,
   deleteModelMutation,
   grantConsentMutation,
+  modelConsentQuery,
   modelStorageQuery,
   offeredModels,
   pauseDownloadMutation,

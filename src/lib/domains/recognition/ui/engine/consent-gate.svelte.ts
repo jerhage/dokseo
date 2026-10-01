@@ -1,10 +1,17 @@
+import type { QueryClient } from '@tanstack/svelte-query';
 import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Language } from '$lib/shared/language';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
+import type { Result } from '$lib/shared/result';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { ModelConsentError } from '../../domain/model/model-consent';
 import { downloadMb } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
+import { grantConsentMutation, modelConsentQuery } from '../../queries/engine-queries';
+import { recognitionKeys } from '../../queries/recognition-keys';
 import { readChosenFootprint } from './chosen-footprint';
 import type { PendingRecognition } from './engine-warmup.svelte';
 
@@ -24,16 +31,24 @@ class ConsentGate {
 
   #container: Container;
   #notify: Notify;
+  #client: QueryClient;
+  #granting: WriteQuery<Result<void, ModelConsentError>, Language>;
   #generation: () => number;
   #pendingRecognition: PendingRecognition | null = null;
   #agreed = new Set<Language>();
   #declined = new Set<Language>();
   #toldDeclined = new Set<Language>();
 
-  constructor(container: Container, notify: Notify, generation: () => number) {
+  constructor(container: Container, notify: Notify, client: QueryClient, generation: () => number) {
     this.#container = container;
     this.#notify = notify;
+    this.#client = client;
     this.#generation = generation;
+    this.#granting = writeQuery(() => ({
+      ...grantConsentMutation(container.recognition),
+      onSettled: (_granted, _cause, language) =>
+        client.invalidateQueries({ queryKey: recognitionKeys.consent(language) }),
+    }));
   }
 
   takeAsAgreed(language: Language): void {
@@ -59,14 +74,17 @@ class ConsentGate {
       return true;
     }
 
-    const footprint = await readChosenFootprint(this.#container, language);
+    const recognition = this.#container.recognition;
+    const footprint = await readChosenFootprint(this.#client, recognition, language);
     if (footprint === null) {
       trace.step('reading', { gate: 'nothing-to-download', language });
       return true;
     }
 
-    const decision = await this.#container.recognition.readModelConsent(language);
-    if (decision.ok && decision.value === 'granted') {
+    const decision = await this.#client
+      .fetchQuery(modelConsentQuery(recognition, language))
+      .catch(() => null);
+    if (decision === 'granted') {
       this.#agreed.add(language);
       trace.step('reading', { gate: 'consent-stored', language });
       return true;
@@ -110,7 +128,7 @@ class ConsentGate {
     if (held === null) return null;
 
     this.#agreed.add(held.language);
-    await this.#container.recognition.grantModelConsent(held.language);
+    await this.#granting.run(held.language).catch(() => null);
     return held;
   }
 

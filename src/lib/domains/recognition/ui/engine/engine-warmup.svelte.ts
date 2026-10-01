@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Arrangement } from '$lib/shared/arrangement';
@@ -15,6 +16,7 @@ import type { RecognizedText } from '../../domain/engine/recognized-text';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizeRegionError } from '../../use-cases/engine/recognize-region';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
+import { modelStorageQuery } from '../../queries/engine-queries';
 import { readChosenFootprint } from './chosen-footprint';
 
 const READING_SELECTION = 'Reading the selection.';
@@ -102,6 +104,7 @@ class EngineWarmup {
   session = $state.raw<RecognizerSession | null>(null);
 
   #container: Container;
+  #client: QueryClient;
   #generation: () => number;
   #joins: WarmupJoins;
   #warmed: WarmedFor | null = null;
@@ -109,8 +112,14 @@ class EngineWarmup {
   #recognizerLanguage: Language | null = null;
   #retiring = new Set<Language>();
 
-  constructor(container: Container, generation: () => number, joins: WarmupJoins) {
+  constructor(
+    container: Container,
+    client: QueryClient,
+    generation: () => number,
+    joins: WarmupJoins,
+  ) {
     this.#container = container;
+    this.#client = client;
     this.#generation = generation;
     this.#joins = joins;
   }
@@ -128,19 +137,20 @@ class EngineWarmup {
 
     const trace = this.#container.beginTrace('engine-warm');
     try {
-      const model = await readChosenFootprint(this.#container, language);
+      const recognition = this.#container.recognition;
+      const model = await readChosenFootprint(this.#client, recognition, language);
       if (!this.#stillWarming(generation, language)) return;
       if (model === null) {
         trace.step('stopped', { guard: 'no-model-for-language', language });
         return;
       }
 
-      const held = await this.#container.recognition
-        .readModelStorage(model.modelId)
+      const held = await this.#client
+        .fetchQuery(modelStorageQuery(recognition, model.modelId))
         .catch(() => null);
       if (!this.#stillWarming(generation, language)) return;
 
-      this.warmth = warmthOf(held !== null && held.ok ? held.value : null);
+      this.warmth = warmthOf(held);
       if (this.warmth.kind !== 'stored') {
         trace.step('stopped', { guard: 'weights-not-on-disk', modelId: model.modelId });
         return;

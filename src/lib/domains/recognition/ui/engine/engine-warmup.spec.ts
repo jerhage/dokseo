@@ -24,6 +24,7 @@ import {
   warmthOf,
 } from './engine-warmup.svelte';
 import type { EngineWarmth, PendingRecognition } from './engine-warmup.svelte';
+import { createTestQueryClient } from '$lib/shared/testing/query-client';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
@@ -147,7 +148,7 @@ function fakes(setup: Partial<Setup> = {}): World {
     },
   } as unknown as Container;
 
-  const warmup = new EngineWarmup(container, () => generation, {
+  const warmup = new EngineWarmup(container, createTestQueryClient(), () => generation, {
     stored: (language) => stored.push(language),
   });
   return {

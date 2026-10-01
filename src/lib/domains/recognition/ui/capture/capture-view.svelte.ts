@@ -107,8 +107,8 @@ class CaptureView {
       open: (capture) => this.drafts.open('text', capture, '', null),
       close: (capture) => void this.drafts.abandon('text', capture),
     });
-    this.consent = new ConsentGate(container, notify, () => this.#visits);
-    this.warmup = new EngineWarmup(container, () => this.#visits, {
+    this.consent = new ConsentGate(container, notify, client, () => this.#visits);
+    this.warmup = new EngineWarmup(container, client, () => this.#visits, {
       stored: (language) => this.consent.takeAsAgreed(language),
     });
   }
