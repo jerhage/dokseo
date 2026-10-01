@@ -29,6 +29,7 @@ import type {
   SaveReadingSettingsDeps,
   SaveReadingSettingsResult,
 } from './domains/flowing/use-cases/save-reading-settings';
+import { blobDigestHasher } from './domains/library/adapters/blob-digest-hasher';
 import { createFileSourceBuilder } from './domains/library/adapters/file-source-builder';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import {
@@ -400,8 +401,8 @@ function buildContainer(): Container {
       const { inspectEpubArchive } = await import('./domains/library/adapters/zip-epub-inspector');
       return await inspectEpubArchive(source);
     },
-    partialMd5,
-    legacyFingerprint: fingerprintOf,
+    partialMd5: blobDigestHasher(partialMd5),
+    legacyFingerprint: blobDigestHasher(fingerprintOf),
     requestPersistence,
     now: Date.now,
     newId: () => crypto.randomUUID(),

@@ -73,11 +73,10 @@ type DownloadRequest = {
   readonly onProgress: (load: ModelLoad) => void;
 };
 
-const NO_MODEL = 'No recognition model reads this language.';
-
-function offeredModels(language: Language): OfferedModels | null {
+function offeredModels(language: Language): OfferedModels {
   const [first, ...rest] = modelsFor(language);
-  return first === undefined ? null : [first, ...rest];
+  if (first === undefined) throw new Error(`No recognition model reads ${language}`);
+  return [first, ...rest];
 }
 
 const SETUP_UNREADABLE = 'This browser blocks local storage, so the engine choice cannot be read.';
@@ -108,15 +107,16 @@ async function described<T>(
 
 function recognizerSetupQuery(
   recognition: Pick<EngineReads, 'readRecognizerSetup'>,
-  language: Language | null,
+  language: Language,
 ) {
   return queryOptions({
     queryKey: recognitionKeys.setup(language),
     queryFn: async (): Promise<LanguageSetupRead> => {
-      const models = language === null ? null : offeredModels(language);
-      if (language === null || models === null) throw new QueryFailure(NO_MODEL);
-
-      const read = await described(() => recognition.readRecognizerSetup(language));
+      const models = offeredModels(language);
+      const read = await described(
+        () => recognition.readRecognizerSetup(language),
+        (cause) => `The engine choice could not be read: ${cause}`,
+      );
       if (read.kind !== 'success') return read;
       const { model, compute } = read.choice;
       return {
@@ -214,7 +214,6 @@ function deleteModelMutation(recognition: Pick<EngineWrites, 'cancelModelLoad' |
 
 export {
   CACHE_UNREADABLE,
-  NO_MODEL,
   SETUP_UNREADABLE,
   cancelDownloadMutation,
   computeQuery,

@@ -22,7 +22,6 @@ import type { Settled } from './panel-capture';
 import { ConsentGate } from '../engine/consent-gate.svelte';
 import { EngineWarmup } from '../engine/engine-warmup.svelte';
 import type { PendingRecognition } from '../engine/engine-warmup.svelte';
-import { hasNoText } from '../../domain/engine/recognized-text';
 import type { CropError } from '../../domain/engine/region-cropper';
 import type { RecognitionError } from '../../domain/engine/text-recognizer';
 import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
@@ -56,9 +55,7 @@ function describeRecognitionFailure(error: RecognitionError): string {
 function settlementOf(read: RecognizeRegionResult): Settled {
   return match(read)
     .returnType<Settled>()
-    .with({ kind: 'success' }, ({ text }) =>
-      hasNoText(text) ? { status: 'empty' } : { status: 'done', text, edited: false },
-    )
+    .with({ kind: 'success' }, ({ text }) => ({ status: 'done', text, edited: false }))
     .with({ kind: 'no-text' }, () => ({ status: 'empty' }))
     .with({ kind: 'nothing-selected' }, { kind: 'unreadable' }, (failure) => ({
       status: 'failed',

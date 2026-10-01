@@ -1,5 +1,4 @@
 import { match } from 'ts-pattern';
-import { describeCause } from '$lib/shared/cause';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
@@ -14,6 +13,7 @@ import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/bo
 import type { LibraryRepository } from '../domain/book/library-repository';
 import { INTRINSIC_ORDER } from '../domain/book/page-list';
 import type { PageOrder } from '../domain/book/page-list';
+import type { ContentHasher } from '../domain/ingest/content-hasher';
 import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
 import type { PageObstacle } from '../domain/ingest/epub-pages';
@@ -54,8 +54,8 @@ type OpenFileDeps = {
   readonly repository: LibraryRepository;
   readonly builder: SourceBuilder;
   readonly inspectEpub: EpubInspector;
-  readonly partialMd5: (blob: Blob) => Promise<string>;
-  readonly legacyFingerprint: (blob: Blob) => Promise<string>;
+  readonly partialMd5: ContentHasher;
+  readonly legacyFingerprint: ContentHasher;
   readonly requestPersistence: () => Promise<boolean>;
   readonly now: () => number;
   readonly newId: () => string;
@@ -71,14 +71,10 @@ function hashedPart(files: readonly File[]): Blob {
   return new Blob([uploadManifest(files)]);
 }
 
-async function hashWith(hash: (blob: Blob) => Promise<string>, upload: Blob): Promise<Hashed> {
-  let digest: string;
-  try {
-    digest = await hash(upload);
-  } catch (cause) {
-    return { kind: 'fingerprint', cause: describeCause(cause) };
-  }
-  return { kind: 'success', hash: contentHash(digest) };
+async function hashWith(hash: ContentHasher, upload: Blob): Promise<Hashed> {
+  const hashed = await hash(upload);
+  if (hashed.kind === 'unreadable') return { kind: 'fingerprint', cause: hashed.cause };
+  return { kind: 'success', hash: contentHash(hashed.digest) };
 }
 
 async function legacyHashIfHeld(

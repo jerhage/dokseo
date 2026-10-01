@@ -14,7 +14,7 @@ import {
   resumeLabel,
   storedFigure,
 } from './engine-settings.svelte';
-import { engineLanguages } from './engine-setup.svelte';
+import { engineLanguages, firstEngineLanguage } from './engine-setup.svelte';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
@@ -232,5 +232,11 @@ describe('engineStateOf', () => {
 describe('engineLanguages', () => {
   it('offers every language a model can read', () => {
     expect(engineLanguages()).toEqual(['ja', 'ko', 'en']);
+  });
+});
+
+describe('firstEngineLanguage', () => {
+  it('starts on the first language a model can read', () => {
+    expect(firstEngineLanguage()).toBe('ja');
   });
 });

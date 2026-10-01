@@ -86,7 +86,9 @@ describe('shelfState', () => {
 
   it('names a blocked store as a failed read', () => {
     expect(shelfState(readReady({ kind: 'storage-unavailable' }), new Map(), null)).toEqual(
-      readFailed('This browser blocks local storage, so uploads cannot be kept.'),
+      readFailed(
+        'This browser blocks local storage, so uploads cannot be kept. A private window does not save files, so open the library in a normal window to add a book.',
+      ),
     );
   });
 

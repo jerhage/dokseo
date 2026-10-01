@@ -80,7 +80,7 @@ describe('describeOpenFileError', () => {
       'Nothing readable there. Images, ZIP, CBZ, PDF or EPUB only.',
     );
     expect(describeOpenFileError({ kind: 'storage-unavailable' })).toBe(
-      'This browser blocks local storage, so uploads cannot be kept.',
+      'This browser blocks local storage, so uploads cannot be kept. A private window does not save files, so open the library in a normal window to add a book.',
     );
     expect(describeOpenFileError({ kind: 'fingerprint', cause: 'no hashing here.' })).toBe(
       'This page cannot check uploads for duplicates here: no hashing here.',

@@ -407,7 +407,7 @@ describe('FlowView', () => {
 
     expect(view.curtain).toEqual({
       kind: 'notice',
-      message: 'That book could not be read: Error: disk gone',
+      message: 'That book could not be read: disk gone',
     });
   });
 
@@ -421,7 +421,7 @@ describe('FlowView', () => {
 
     expect(view.state).toEqual({
       kind: 'failed',
-      message: 'This book could not be displayed: Error: not a zip',
+      message: 'This book could not be displayed: not a zip',
     });
   });
 
@@ -784,7 +784,7 @@ describe('the place a flow book keeps', () => {
     moved?.(relocated(FURTHER_ON));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
     expect(world.notices).toEqual([
-      { tone: 'danger', title: PLACE_FAILED, message: 'the disk went away' },
+      { tone: 'danger', title: PLACE_FAILED, message: 'Something went wrong: the disk went away' },
     ]);
 
     world.save = () => Promise.resolve({ kind: 'success', book: novel(world.place) });

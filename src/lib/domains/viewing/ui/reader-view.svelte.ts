@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { releasePicture } from '$lib/platform/image/bitmap';
 import { describeCause } from '$lib/shared/cause';
+import { unexpectedMessage } from '$lib/shared/unexpected-failure';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
@@ -199,7 +200,10 @@ class ReaderView {
       opened = await this.#container.library.openForReading(id);
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.opening = { kind: 'failed', message: `That book could not be opened: ${String(cause)}` };
+      this.opening = {
+        kind: 'failed',
+        message: `That book could not be opened: ${describeCause(cause)}`,
+      };
       return;
     }
 
@@ -395,7 +399,7 @@ class ReaderView {
       this.#hold(saved.book);
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.#fail(failed, describeCause(cause));
+      this.#fail(failed, unexpectedMessage(cause));
     } finally {
       this.saving = false;
     }

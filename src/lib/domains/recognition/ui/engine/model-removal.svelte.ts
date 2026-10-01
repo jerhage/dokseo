@@ -1,8 +1,8 @@
 import type { QueryClient } from '@tanstack/svelte-query';
 import { megabytes } from '$lib/shared/bytes';
-import { describeCause } from '$lib/shared/cause';
 import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
+import { unexpectedMessage } from '$lib/shared/unexpected-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { CACHE_UNREADABLE, deleteModelMutation } from '../../queries/engine-queries';
@@ -77,7 +77,7 @@ class ModelRemoval {
         this.message = `Freed ${megabytes(removed.report.bytes)} MB. ${REMOVAL_WARNING}`;
       } else this.#fail(CACHE_UNREADABLE);
     } catch (cause) {
-      if (generation === this.#clock.current) this.#fail(describeCause(cause));
+      if (generation === this.#clock.current) this.#fail(unexpectedMessage(cause));
     } finally {
       if (generation === this.#clock.current) this.removing = false;
     }

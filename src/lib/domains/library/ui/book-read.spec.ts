@@ -40,7 +40,8 @@ describe('bookReadOf', () => {
   it('names a blocked store as a failed read', () => {
     expect(bookReadOf({ kind: 'ready', value: { kind: 'storage-unavailable' } })).toEqual({
       kind: 'failed',
-      message: 'This browser blocks local storage, so uploads cannot be kept.',
+      message:
+        'This browser blocks local storage, so uploads cannot be kept. A private window does not save files, so open the library in a normal window to add a book.',
     });
   });
 

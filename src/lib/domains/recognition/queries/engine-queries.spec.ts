@@ -16,7 +16,6 @@ import type {
   ReadModelStorageResult,
 } from '../use-cases/model/read-model-storage';
 import {
-  NO_MODEL,
   cancelDownloadMutation,
   computeQuery,
   deleteModelMutation,
@@ -114,7 +113,7 @@ describe('recognizerSetupQuery', () => {
     expect(setup).toEqual(STORAGE_UNAVAILABLE);
   });
 
-  it('rejects a read that threw with its cause alone', async () => {
+  it('rejects a read that threw with its cause under a lead-in', async () => {
     const reads = setupReads(() => Promise.reject(new Error('blocked')));
 
     const fetched = createTestQueryClient().fetchQuery(
@@ -122,7 +121,7 @@ describe('recognizerSetupQuery', () => {
     );
 
     await expect(fetched).rejects.toBeInstanceOf(QueryFailure);
-    await expect(fetched).rejects.toThrow(/^blocked$/u);
+    await expect(fetched).rejects.toThrow(/^The engine choice could not be read: blocked$/u);
   });
 
   it('keeps the thrown error as the failure cause', async () => {
@@ -134,19 +133,6 @@ describe('recognizerSetupQuery', () => {
     );
 
     await expect(fetched).rejects.toHaveProperty('cause', thrown);
-  });
-
-  it('rejects without reading when no language is asked', async () => {
-    const reads = setupReads(() =>
-      Promise.resolve({ kind: 'success', choice: setupChoice('ja', null) }),
-    );
-
-    const fetched = createTestQueryClient().fetchQuery(
-      recognizerSetupQuery(reads.recognition, null),
-    );
-
-    await expect(fetched).rejects.toThrow(NO_MODEL);
-    expect(reads.asked).toEqual([]);
   });
 
   it('files each language under its own setup key', () => {

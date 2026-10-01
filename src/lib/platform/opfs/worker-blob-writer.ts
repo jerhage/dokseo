@@ -21,10 +21,11 @@ type Waiting = {
   readonly reject: (failed: Error) => void;
 };
 
-function unwritten(name: string, cause: string): Error {
-  if (cause.includes(PRIVATE_WINDOW)) return new Error(PRIVATE_WINDOW, { cause });
+function unwritten(name: string, cause: unknown): Error {
+  const described = describeCause(cause);
+  if (described.includes(PRIVATE_WINDOW)) return new Error(PRIVATE_WINDOW, { cause });
 
-  return new Error(`Key "${name}" could not be written: ${cause}`, { cause });
+  return new Error(`Key "${name}" could not be written: ${described}`, { cause });
 }
 
 function createBlobWriter(options: BlobWriterOptions): BlobWrite {
@@ -93,7 +94,7 @@ function createBlobWriter(options: BlobWriterOptions): BlobWrite {
     try {
       target = writer();
     } catch (cause) {
-      throw unwritten(name, describeCause(cause));
+      throw unwritten(name, cause);
     }
 
     lastId += 1;
@@ -115,7 +116,7 @@ function createBlobWriter(options: BlobWriterOptions): BlobWrite {
       target.postMessage(request, []);
     } catch (cause) {
       pending.delete(id);
-      throw unwritten(name, describeCause(cause));
+      throw unwritten(name, cause);
     }
 
     await written;

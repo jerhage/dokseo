@@ -206,6 +206,15 @@ describe('openDatabase', () => {
     await expect(opening).rejects.toThrow('Reload this page');
   });
 
+  it('keeps the refusal of a failed open as its cause', async () => {
+    factory.holding = true;
+    const failing = openDatabase(freshName(), 1, upgrade);
+    const refusal = new DOMException('broken', 'UnknownError');
+    factory.last().fail(refusal);
+
+    await expect(failing).rejects.toHaveProperty('cause', refusal);
+  });
+
   it('opens again after a failed open', async () => {
     const name = freshName();
     factory.holding = true;

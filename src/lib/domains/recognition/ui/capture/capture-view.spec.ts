@@ -404,17 +404,6 @@ describe('CaptureView', () => {
     expect(at(view.list.captures, 0).status).toBe('empty');
   });
 
-  it('reports an empty recognized line as having read nothing', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-
-    const running = read(view);
-    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('   ') });
-    await running;
-
-    expect(at(view.list.captures, 0).status).toBe('empty');
-  });
-
   it('stores the load progress and clears it when the recognition settles', async () => {
     const world = fakes();
     const view = viewOf(world);

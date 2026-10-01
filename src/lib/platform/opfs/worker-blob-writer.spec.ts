@@ -229,6 +229,20 @@ describe('createBlobWriter', () => {
       cause: 'Key "book.src" could not be written: No worker was left to start',
     });
   });
+  it('keeps the error that stopped the worker from starting as the cause', async () => {
+    const refused = new Error('Workers are refused here');
+    const write = createBlobWriter({
+      directory: 'blobs',
+      startWorker: () => {
+        throw refused;
+      },
+    });
+
+    await expect(write('book.src', new Blob(['a']), () => undefined)).rejects.toHaveProperty(
+      'cause',
+      refused,
+    );
+  });
 });
 
 describe('a private window that refuses the file system', () => {

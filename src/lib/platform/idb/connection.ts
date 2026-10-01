@@ -23,7 +23,7 @@ const registrations = new WeakMap<IDBDatabase, Registration>();
 const retired = new WeakSet<IDBDatabase>();
 
 function failedToOpen(name: string, cause: unknown): Error {
-  return new Error(`Database "${name}" failed to open: ${describeCause(cause)}`);
+  return new Error(`Database "${name}" failed to open: ${describeCause(cause)}`, { cause });
 }
 
 function openFailure(name: string, error: DOMException | null): Error {
@@ -147,7 +147,7 @@ async function transact<T>(
           new Error(`Store "${store}" failed the transaction: ${describeCause(transaction.error)}`),
         );
     } catch (cause) {
-      reject(new Error(`Store "${store}" is not usable: ${describeCause(cause)}`));
+      reject(new Error(`Store "${store}" is not usable: ${describeCause(cause)}`, { cause }));
     }
   });
 }

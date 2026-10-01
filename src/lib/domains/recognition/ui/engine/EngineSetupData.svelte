@@ -15,7 +15,7 @@
 
   type Props = {
     readonly recognition: EngineReads;
-    readonly language: Language | null;
+    readonly language: Language;
     readonly children: Snippet<[EngineChoice]>;
   };
 

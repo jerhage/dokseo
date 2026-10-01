@@ -11,6 +11,12 @@ function engineLanguages(): readonly Language[] {
   return LANGUAGES.filter((language) => modelsFor(language).length > 0);
 }
 
+function firstEngineLanguage(): Language {
+  const [first] = engineLanguages();
+  if (first === undefined) throw new Error('No recognition model reads any language');
+  return first;
+}
+
 function shownModel(choice: Pick<LanguageSetup, 'models' | 'selected'>): ModelFootprint {
   return choice.models.find((known) => known.modelId === choice.selected) ?? choice.models[0];
 }
@@ -19,5 +25,5 @@ function engineChoiceOf(setup: LanguageSetup, detection: GpuDetection): EngineCh
   return { ...setup, detection };
 }
 
-export { engineChoiceOf, engineLanguages, shownModel };
+export { engineChoiceOf, engineLanguages, firstEngineLanguage, shownModel };
 export type { EngineChoice };

@@ -14,6 +14,7 @@ import type {
 } from '../domain/book/library-repository';
 import type { PageOrder } from '../domain/book/page-list';
 import { NO_CONTENT_HASH } from '../domain/book/stored-book';
+import type { ContentDigest } from '../domain/ingest/content-hasher';
 import type { EpubInspectionAnswer } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
 import type { EpubLayout, EpubPackage, SpineDirection } from '../domain/ingest/epub-package';
@@ -35,6 +36,8 @@ const NOW = 1758240000000;
 const NEW_ID = 'book-7';
 
 const DIGEST = 'f0e1d2c3';
+
+const UNHASHABLE: ContentDigest = { kind: 'unreadable', cause: 'no hashing here.' };
 
 const LEGACY_DIGEST = 'a'.repeat(64);
 
@@ -209,13 +212,17 @@ function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
     repository: fakeRepository().repository,
     builder: fakeBuilder(built(builtSource())).builder,
     inspectEpub: fakeInspector().inspector,
-    partialMd5: () => Promise.resolve(DIGEST),
-    legacyFingerprint: () => Promise.resolve(LEGACY_DIGEST),
+    partialMd5: () => Promise.resolve(digested(DIGEST)),
+    legacyFingerprint: () => Promise.resolve(digested(LEGACY_DIGEST)),
     requestPersistence: () => Promise.resolve(true),
     now: () => NOW,
     newId: () => NEW_ID,
     ...over,
   };
+}
+
+function digested(digest: string): ContentDigest {
+  return { kind: 'success', digest };
 }
 
 function fakeFingerprint(digest: string = DIGEST) {
@@ -224,7 +231,7 @@ function fakeFingerprint(digest: string = DIGEST) {
     hashed,
     fingerprint: (blob: Blob) => {
       hashed.push(blob);
-      return Promise.resolve(digest);
+      return Promise.resolve(digested(digest));
     },
   };
 }
@@ -483,7 +490,7 @@ describe('openFile', () => {
     expect(hashing.hashed).toEqual([at(files, 0)]);
   });
 
-  it('returns a fingerprint failure instead of rejecting, and stores nothing', async () => {
+  it('returns a fingerprint failure for an unreadable upload, and stores nothing', async () => {
     const repository = fakeRepository();
     const builder = fakeBuilder(built(builtSource()));
 
@@ -491,7 +498,7 @@ describe('openFile', () => {
       deps({
         repository: repository.repository,
         builder: builder.builder,
-        partialMd5: () => Promise.reject(new Error('no hashing here.')),
+        partialMd5: () => Promise.resolve(UNHASHABLE),
       }),
       files,
     );
@@ -551,7 +558,10 @@ describe('openFile', () => {
     const repository = fakeRepository();
 
     const result = await openFile(
-      deps({ repository: repository.repository, partialMd5: () => Promise.resolve('beef01') }),
+      deps({
+        repository: repository.repository,
+        partialMd5: () => Promise.resolve(digested('beef01')),
+      }),
       files,
     );
 
@@ -649,7 +659,7 @@ describe('openFile', () => {
     const result = await openFile(
       deps({
         repository: repository.repository,
-        legacyFingerprint: () => Promise.reject(new Error('no hashing here.')),
+        legacyFingerprint: () => Promise.resolve(UNHASHABLE),
       }),
       files,
     );

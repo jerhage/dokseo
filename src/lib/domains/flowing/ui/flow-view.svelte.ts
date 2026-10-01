@@ -3,6 +3,7 @@ import type { TocItem } from 'foliate-js/view.js';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
+import { describeCause } from '$lib/shared/cause';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { PLACE_KEPT, PlaceKeeper } from '$lib/shared/place-keeper';
@@ -224,7 +225,10 @@ class FlowView {
       stored = await this.#container.library.readSource(book.id);
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.state = { kind: 'failed', message: `That book could not be read: ${String(cause)}` };
+      this.state = {
+        kind: 'failed',
+        message: `That book could not be read: ${describeCause(cause)}`,
+      };
       return;
     }
 
@@ -261,7 +265,7 @@ class FlowView {
       if (generation !== this.#generation) return;
       this.state = {
         kind: 'failed',
-        message: `This book could not be displayed: ${String(cause)}`,
+        message: `This book could not be displayed: ${describeCause(cause)}`,
       };
       return;
     }

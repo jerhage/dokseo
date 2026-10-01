@@ -1,4 +1,4 @@
-import { describeCause } from './cause';
+import { unexpectedMessage } from './unexpected-failure';
 import type { BookId } from './ids';
 import type { Notify } from './notice';
 import { samePlace } from './reading-place';
@@ -91,7 +91,7 @@ class PlaceKeeper<P extends ReadingPlace> {
       saved = await this.#options.save(id, place);
     } catch (cause) {
       if (generation !== this.#generation()) return;
-      this.#failed(place, describeCause(cause));
+      this.#failed(place, unexpectedMessage(cause));
       return;
     }
 

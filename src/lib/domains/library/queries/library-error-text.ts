@@ -1,10 +1,11 @@
 import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
+import { PRIVATE_WINDOW_ADVICE } from '$lib/shared/storage-unavailable';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 
 type LibraryRefusal = { readonly kind: 'not-found'; readonly id: BookId } | StorageUnavailable;
 
-const LIBRARY_UNAVAILABLE = 'This browser blocks local storage, so uploads cannot be kept.';
+const LIBRARY_UNAVAILABLE = `This browser blocks local storage, so uploads cannot be kept. ${PRIVATE_WINDOW_ADVICE}`;
 
 function describeLibraryRefusal(refusal: LibraryRefusal): string {
   return match(refusal)
