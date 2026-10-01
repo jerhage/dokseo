@@ -26,7 +26,8 @@ import {
   PAIRING_FAILED,
   ReaderView,
 } from './reader-view.svelte';
-import type { ReaderBook } from './reader-view.svelte';
+import { heldBook, readingNotice } from './reader-opening';
+import type { ReaderBook } from './reader-opening';
 
 const PORTRAIT: Size = { width: 1000, height: 1500 };
 
@@ -142,6 +143,8 @@ type Edit = {
   readonly pageFit: PageFit | undefined;
   readonly language: Language | undefined;
 };
+
+type OpenAnswer = Awaited<ReturnType<Container['library']['openForReading']>>;
 
 type Fakes = {
   readonly container: Container;
@@ -299,15 +302,68 @@ describe('ReaderView', () => {
   it('opens a book and exposes its first group', async () => {
     const world = fakes();
     const view = new ReaderView(world.container, world.notify);
-    expect(view.status).toBe('idle');
+    expect(view.opening.kind).toBe('idle');
 
     await view.open(bookId('one'));
 
-    expect(view.status).toBe('ready');
+    expect(view.opening.kind).toBe('images');
     expect(view.book?.title).toBe('Blame!');
     expect(view.groups).toHaveLength(3);
     expect(view.visiblePages).toEqual([0, 1]);
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
+  });
+
+  it('is opening while the book is read', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+
+    const opening = view.open(bookId('one'));
+    expect(view.opening).toEqual({ kind: 'opening' });
+    await opening;
+
+    expect(view.opening.kind).toBe('images');
+  });
+
+  it('opens a book that holds no images as empty, and keeps the book', async () => {
+    const world = fakes({ imageCount: 0 });
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.opening).toEqual({ kind: 'empty', book: book({ imageCount: 0 }) });
+    expect(view.book?.title).toBe('Blame!');
+  });
+
+  it('discards an open that answers after the reader was disposed, and closes its pages', async () => {
+    const world = fakes();
+    let answer: (opened: OpenAnswer) => void = () => undefined;
+    const late = new Promise<OpenAnswer>((resolve) => {
+      answer = resolve;
+    });
+    const library = world.container.library;
+    const container = {
+      ...world.container,
+      library: { ...library, openForReading: () => late },
+    } as Container;
+    const view = new ReaderView(container, world.notify);
+
+    const first = view.open(bookId('one'));
+    view.dispose();
+    answer(ok({ kind: 'images', book: book(), pages: world.pages.source }));
+    await first;
+
+    expect(view.opening).toEqual({ kind: 'idle' });
+    expect(world.pages.closed).toBe(1);
+  });
+
+  it('keeps an edited book on the variant it opened as', async () => {
+    const world = fakes({ imageCount: 0 });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+
+    await view.setDirection('ltr');
+
+    expect(view.opening).toMatchObject({ kind: 'empty', book: { direction: 'ltr' } });
   });
 
   it('lands a failure in the status without throwing', async () => {
@@ -317,8 +373,10 @@ describe('ReaderView', () => {
 
     await expect(view.open(bookId('one'))).resolves.toBeUndefined();
 
-    expect(view.status).toBe('failed');
-    expect(view.message).toBe('That book could not be read: bad zip');
+    expect(view.opening).toEqual({
+      kind: 'failed',
+      message: 'That book could not be read: bad zip',
+    });
     expect(view.book).toBeNull();
     expect(view.groups).toEqual([]);
   });
@@ -378,7 +436,7 @@ describe('ReaderView', () => {
     view.dispose();
 
     expect(world.pages.closed).toBe(1);
-    expect(view.status).toBe('idle');
+    expect(view.opening.kind).toBe('idle');
     expect(view.book).toBeNull();
   });
 
@@ -432,8 +490,8 @@ describe('ReaderView', () => {
     const drawn = await view.pictureAt(imageIndex(1));
 
     expect(drawn).toBeNull();
-    expect(view.status).toBe('ready');
-    expect(view.message).toBeNull();
+    expect(view.opening.kind).toBe('images');
+    expect(readingNotice(view.opening)).toBeNull();
   });
 
   it('hands the display an encoded picture and measures nothing', async () => {
@@ -555,7 +613,7 @@ describe('ReaderView', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(at(view.sizes, 0)).toBeNull();
-    expect(view.status).toBe('ready');
+    expect(view.opening.kind).toBe('images');
     expect(world.notices).toEqual([]);
   });
 
@@ -690,7 +748,7 @@ describe('ReaderView', () => {
 
     expect(view.book?.direction).toBe('ltr');
     expect(at(world.edits, 0).direction).toBe('ltr');
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
   });
 
   it('saves a new language', async () => {
@@ -702,7 +760,7 @@ describe('ReaderView', () => {
 
     expect(view.book?.language).toBe('ko');
     expect(at(world.edits, 0).language).toBe('ko');
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
   });
 
   it('ignores the language already in force', async () => {
@@ -763,7 +821,7 @@ describe('ReaderView', () => {
 
     expect(view.book?.pageFit).toBe('width');
     expect(at(world.edits, 0).pageFit).toBe('width');
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
   });
 
   it('keeps the selection when the page fit changes', async () => {
@@ -824,7 +882,7 @@ describe('ReaderView', () => {
         message: 'Local storage failed: the disk went away',
       },
     ]);
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
     expect(view.book?.pagePairing).toBe('double');
     expect(view.groups).toHaveLength(3);
     expect(view.saving).toBe(false);
@@ -868,7 +926,26 @@ describe('ReaderView', () => {
         message: 'Local storage failed: the disk went away',
       },
     ]);
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
+  });
+
+  it('ignores a failed place save that answers after another book opened', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    let release: () => void = () => undefined;
+    world.gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    world.editing = 'failed';
+
+    const turning = view.next();
+    await view.open(bookId('one'));
+    release();
+    await turning;
+
+    expect(world.edits.map((edit) => edit.position?.kind)).toContain('image');
+    expect(world.notices).toEqual([]);
   });
 
   it('reports a run of failed place saves once, and again after one succeeds', async () => {
@@ -914,7 +991,9 @@ describe('ReaderView', () => {
 
     await view.setPageFit('width');
 
-    expect(view.message).toBe('This book holds 6 images, so it opened at the last one.');
+    expect(readingNotice(view.opening)).toBe(
+      'This book holds 6 images, so it opened at the last one.',
+    );
     expect(world.notices.map((notice) => notice.title)).toEqual([FIT_FAILED]);
   });
 
@@ -1338,7 +1417,7 @@ describe('the reading place in the url', () => {
 
     expect(mirrored).toEqual([]);
     expect(world.edits).toEqual([]);
-    expect(view.message).toBeNull();
+    expect(readingNotice(view.opening)).toBeNull();
   });
 
   it('keeps the saved place when the url asks for nothing', async () => {
@@ -1358,7 +1437,9 @@ describe('the reading place in the url', () => {
     await view.open(bookId('one'), imageIndex(99));
 
     expect(view.position.index).toBe(5);
-    expect(view.message).toBe('This book holds 6 images, so it opened at the last one.');
+    expect(readingNotice(view.opening)).toBe(
+      'This book holds 6 images, so it opened at the last one.',
+    );
   });
 
   it('reports the place it opened at to its mirror as an arrival', async () => {
@@ -1484,7 +1565,7 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.status).toBe('flow');
+    expect(view.opening.kind).toBe('flow');
     expect(view.book).toBeNull();
     expect(view.source).toBeNull();
     expect(view.layout).toBeNull();
@@ -1509,7 +1590,10 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.flowBook).toEqual(book({ layoutKind: 'flow', imageCount: 0 }));
+    expect(view.opening).toEqual({
+      kind: 'flow',
+      book: book({ layoutKind: 'flow', imageCount: 0 }),
+    });
   });
 
   it('saves a new language for a flow book into the flow book', async () => {
@@ -1522,7 +1606,7 @@ describe('the reading place in the url', () => {
     await view.setLanguage('ko');
 
     expect(at(world.edits, 0).language).toBe('ko');
-    expect(view.flowBook?.language).toBe('ko');
+    expect(heldBook(view.opening)?.language).toBe('ko');
     expect(view.book).toBeNull();
     expect(view.language).toBe('ko');
   });
@@ -1562,8 +1646,7 @@ describe('the reading place in the url', () => {
     world.opening = world.stored;
     await view.open(bookId('one'));
 
-    expect(view.flowBook).toBeNull();
-    expect(view.status).toBe('ready');
+    expect(view.opening.kind).toBe('images');
   });
 
   it('reports a book that is no longer in the library as missing', async () => {
@@ -1573,8 +1656,10 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.status).toBe('missing');
-    expect(view.message).toBe('That book is no longer in your library.');
+    expect(view.opening).toEqual({
+      kind: 'missing',
+      message: 'That book is no longer in your library.',
+    });
   });
 });
 

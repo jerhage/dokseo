@@ -22,28 +22,16 @@ import type { PageGroup } from '../domain/page-pairing';
 import { groupOf, positionOfGroup, readingPosition } from '../domain/reading-position';
 import type { ReadingPosition } from '../domain/reading-position';
 import type { PageMove } from './page-moves';
-
-type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
+import { NOT_OPENED, OPENING, heldBook, shownBook, withBook } from './reader-opening';
+import type { OpenOutcome, ReaderBook, ReaderOpening } from './reader-opening';
 
 type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
 
 type BookEdit = Parameters<Container['library']['editBook']>[1];
 
-type OpenedBook = Extract<OpenOutcome, { readonly ok: true }>['value'];
-
-type OpenedImages = Extract<OpenedBook, { readonly kind: 'images' }>;
-
-type OpenedFlow = Extract<OpenedBook, { readonly kind: 'flow' }>;
-
 type OpenFailure = Extract<OpenOutcome, { readonly ok: false }>['error'];
 
 type EditFailure = Extract<EditOutcome, { readonly ok: false }>['error'];
-
-type ReaderBook = OpenedImages['book'];
-
-type FlowBook = OpenedFlow['book'];
-
-type ReaderStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'failed' | 'missing' | 'flow';
 
 type PlaceMirror = (place: ShownPlace) => void;
 
@@ -111,10 +99,7 @@ function unmeasured(count: number): readonly (Size | null)[] {
 }
 
 class ReaderView {
-  status = $state<ReaderStatus>('idle');
-  message = $state<string | null>(null);
-  book = $state.raw<ReaderBook | null>(null);
-  flowBook = $state.raw<FlowBook | null>(null);
+  opening = $state.raw<ReaderOpening>(NOT_OPENED);
   saving = $state(false);
   sizes = $state.raw<readonly (Size | null)[]>([]);
   groups = $state.raw<readonly PageGroup[]>([]);
@@ -154,6 +139,10 @@ class ReaderView {
     });
   }
 
+  get book(): ReaderBook | null {
+    return shownBook(this.opening);
+  }
+
   get source(): PageSource | null {
     return this.#source;
   }
@@ -164,7 +153,7 @@ class ReaderView {
   }
 
   get language(): Language | null {
-    return this.book?.language ?? this.flowBook?.language ?? null;
+    return heldBook(this.opening)?.language ?? null;
   }
 
   get layout(): ImageLayoutKind | null {
@@ -190,10 +179,7 @@ class ReaderView {
     this.#places.flush();
     const generation = ++this.#generation;
     this.#release();
-    this.status = 'loading';
-    this.message = null;
-    this.book = null;
-    this.flowBook = null;
+    this.opening = OPENING;
     this.sizes = [];
     this.groups = [];
     this.regions = [];
@@ -205,8 +191,7 @@ class ReaderView {
       opened = await this.#container.library.openForReading(id);
     } catch (cause) {
       if (generation !== this.#generation) return;
-      this.status = 'failed';
-      this.message = `That book could not be opened: ${String(cause)}`;
+      this.opening = { kind: 'failed', message: `That book could not be opened: ${String(cause)}` };
       return;
     }
 
@@ -216,26 +201,25 @@ class ReaderView {
     }
 
     if (!opened.ok) {
-      this.status = lostBook(opened.error) ? 'missing' : 'failed';
-      this.message = describeOpenFailure(opened.error);
+      const message = describeOpenFailure(opened.error);
+      this.opening = { kind: lostBook(opened.error) ? 'missing' : 'failed', message };
       return;
     }
 
     if (opened.value.kind === 'flow') {
-      this.flowBook = opened.value.book;
-      this.status = 'flow';
+      this.opening = { kind: 'flow', book: opened.value.book };
       return;
     }
 
     const { book, pages } = opened.value;
     this.#source = pages;
-    this.book = book;
+    this.opening = { kind: 'images', book, notice: null };
     this.#languageKnown?.(book.id, book.language);
     this.#regroup(book, unmeasured(book.imageCount));
     void this.#seedSizes(pages, generation);
     const saved = book.position;
     const place = openingPlace(at, saved, book.imageCount);
-    this.status = this.groups.length === 0 ? 'empty' : 'ready';
+    if (this.groups.length === 0) this.opening = { kind: 'empty', book };
     if (place === null) return;
 
     this.position = readingPosition(place.index, place.offset);
@@ -243,7 +227,8 @@ class ReaderView {
       saved.kind === 'image' && saved.index === place.index ? saved : imagePlace(place.index),
     );
     if (place.clamped) {
-      this.message = `This book holds ${book.imageCount} images, so it opened at the last one.`;
+      const notice = `This book holds ${book.imageCount} images, so it opened at the last one.`;
+      if (this.opening.kind === 'images') this.opening = { ...this.opening, notice };
     }
     const showing = this.#placeShowing(place.index);
     const movedByTheUrl = place.asked && saved.kind === 'image' && place.index !== saved.index;
@@ -349,7 +334,7 @@ class ReaderView {
   }
 
   async setLanguage(language: Language): Promise<void> {
-    const book = this.book ?? this.flowBook;
+    const book = heldBook(this.opening);
     if (book === null || this.saving || book.language === language) return;
     await this.#edit(book.id, { language }, LANGUAGE_FAILED);
   }
@@ -372,13 +357,10 @@ class ReaderView {
     this.#places.flush();
     this.#generation += 1;
     this.#release();
-    this.book = null;
-    this.flowBook = null;
+    this.opening = NOT_OPENED;
     this.sizes = [];
     this.groups = [];
     this.regions = [];
-    this.status = 'idle';
-    this.message = null;
     this.saving = false;
     this.#places.assumeStored(null);
   }
@@ -434,12 +416,12 @@ class ReaderView {
 
   #hold(saved: ReaderBook): void {
     if (imageLayoutKind(saved.layoutKind) === null) {
-      this.flowBook = saved;
+      this.opening = { kind: 'flow', book: saved };
       return;
     }
     const before = this.book?.language ?? null;
-    this.book = saved;
-    if (this.flowBook === null && saved.language !== before) {
+    this.opening = withBook(this.opening, saved);
+    if (this.opening.kind !== 'flow' && saved.language !== before) {
       this.#languageKnown?.(saved.id, saved.language);
     }
     this.#regroup(saved, this.sizes);
@@ -494,4 +476,4 @@ class ReaderView {
 }
 
 export { DIRECTION_FAILED, FIT_FAILED, LANGUAGE_FAILED, LAYOUT_FAILED, PAIRING_FAILED, ReaderView };
-export type { LanguageKnown, ReaderBook, ReaderStatus, PlaceMirror };
+export type { LanguageKnown, PlaceMirror };

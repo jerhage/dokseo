@@ -68,7 +68,7 @@
   const flow = new FlowView(container, notify);
   const id = $derived(bookId(page.params.fileId ?? ''));
   const language = $derived(view.language);
-  const flowBook = $derived(view.flowBook);
+  const opening = $derived(view.opening);
   const asked = $derived(readImageIndex(page.url.searchParams.get(IMAGE_PARAMETER)));
   const found = $derived(readArrival(page.url.searchParams));
   const here = $derived(captures.arrivalFrom(found, view.direction, comparePassages));
@@ -84,7 +84,8 @@
   let requested: ReaderRequest | null = null;
 
   function leaveIfMissing(): void {
-    if (view.status === 'missing') void goto(LIBRARY_AFTER_MISSING_BOOK, { replaceState: true });
+    if (view.opening.kind === 'missing')
+      void goto(LIBRARY_AFTER_MISSING_BOOK, { replaceState: true });
   }
 
   function openBook(book: BookId, image: ImageIndex | null): void {
@@ -118,10 +119,10 @@
   onDestroy(closeBook);
 </script>
 
-{#if flowBook !== null}
+{#if opening.kind === 'flow'}
   <FlowViewer
     view={flow}
-    book={flowBook}
+    book={opening.book}
     panelCount={captures.count}
     anchors={captures.anchors}
     onLift={(passage) => captures.lift(passage.cfi, passage.quote, passage.chapter)}

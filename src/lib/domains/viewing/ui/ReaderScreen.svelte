@@ -28,10 +28,10 @@
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABELS } from './drag-mode';
-  import { FLOWING_TEXT_NOTICE } from './flow-notice';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
   import type { PageMove } from './page-moves';
+  import { readerCurtain, readerStage, readingNotice } from './reader-opening';
   import type { ReaderView } from './reader-view.svelte';
   import ContinuousViewer from './ContinuousViewer.svelte';
   import PagedViewer from './PagedViewer.svelte';
@@ -120,27 +120,9 @@
   const downward = $derived(layout === 'continuous');
   const forwardKey = $derived(view.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight');
 
-  const stage = $derived(
-    match(view.status)
-      .with('idle', () => 'settling' as const)
-      .with('loading', () => 'settling' as const)
-      .with('missing', () => 'settling' as const)
-      .with('ready', () => 'reading' as const)
-      .with('empty', () => 'empty' as const)
-      .with('failed', () => 'failed' as const)
-      .with('flow', () => 'flowing' as const)
-      .exhaustive(),
-  );
-
-  const curtain = $derived(
-    match(stage)
-      .with('settling', () => 'Opening the book…')
-      .with('reading', () => null)
-      .with('empty', () => 'This book holds no pages to show.')
-      .with('failed', () => view.message ?? 'This book could not be opened.')
-      .with('flowing', () => FLOWING_TEXT_NOTICE)
-      .exhaustive(),
-  );
+  const stage = $derived(readerStage(view.opening));
+  const curtain = $derived(readerCurtain(view.opening));
+  const warning = $derived(readingNotice(view.opening));
 
   const meta = $derived(book === null ? '' : `${total} images · ${languageName(book.language)}`);
 
@@ -286,8 +268,8 @@
   {panelCount}
 >
   {#snippet notice()}
-    {#if view.message !== null && stage === 'reading'}
-      <Alert variant="warning" role="alert" class="shrink-0">{view.message}</Alert>
+    {#if warning !== null}
+      <Alert variant="warning" role="alert" class="shrink-0">{warning}</Alert>
     {/if}
   {/snippet}
 
