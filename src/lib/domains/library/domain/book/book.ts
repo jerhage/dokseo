@@ -14,6 +14,12 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 
 type SourceKind = 'images' | 'pdf' | 'archive' | 'epub';
 
+const SOURCE_KINDS: readonly SourceKind[] = ['images', 'pdf', 'archive', 'epub'];
+
+function isSourceKind(value: unknown): value is SourceKind {
+  return SOURCE_KINDS.some((kind) => kind === value);
+}
+
 type Book = {
   readonly id: BookId;
   readonly title: string;
@@ -90,5 +96,5 @@ function startingPlace(book: Book): ReadingPlace {
     .exhaustive();
 }
 
-export { DEFAULT_PAGE_PAIRING, defaultPageFit, applyEdit, startingPlace };
+export { DEFAULT_PAGE_PAIRING, defaultPageFit, applyEdit, isSourceKind, startingPlace };
 export type { SourceKind, Book, BookEdit };

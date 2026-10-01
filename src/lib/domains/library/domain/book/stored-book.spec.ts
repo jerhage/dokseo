@@ -4,7 +4,14 @@ import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
-import { bookFromStored, NO_CONTENT_HASH, NO_FILE_NAME } from './stored-book';
+import { CorruptRow } from '$lib/shared/corrupt-row';
+import {
+  bookFromStored,
+  FALLBACK_DIRECTION,
+  FALLBACK_LANGUAGE,
+  NO_CONTENT_HASH,
+  NO_FILE_NAME,
+} from './stored-book';
 import type { StoredBook } from './stored-book';
 
 const legacy: StoredBook = {
@@ -212,8 +219,12 @@ describe('bookFromStored', () => {
   it('leaves every other field exactly as stored', () => {
     const expected: Book = {
       ...legacy,
+      language: 'ja',
+      layoutKind: 'paged',
+      direction: 'rtl',
+      sourceKind: 'archive',
       pagePairing: DEFAULT_PAGE_PAIRING,
-      pageFit: defaultPageFit(legacy.layoutKind),
+      pageFit: defaultPageFit('paged'),
       position: imagePlace(imageIndex(3)),
       contentHash: NO_CONTENT_HASH,
       fileName: NO_FILE_NAME,
@@ -254,5 +265,57 @@ describe('bookFromStored', () => {
     expect(book).not.toBe(stored);
     expect(Object.hasOwn(stored, 'pagePairing')).toBe(false);
     expect(Object.hasOwn(stored, 'pageFit')).toBe(false);
+  });
+
+  it('keeps every stored language, layout kind, direction and source kind it knows', () => {
+    const book = bookFromStored({
+      ...legacy,
+      language: 'ko',
+      layoutKind: 'flow',
+      direction: 'ltr',
+      sourceKind: 'epub',
+    });
+
+    expect([book.language, book.layoutKind, book.direction, book.sourceKind]).toEqual([
+      'ko',
+      'flow',
+      'ltr',
+      'epub',
+    ]);
+  });
+
+  it('falls back to the first language for a stored language it does not know', () => {
+    expect(bookFromStored({ ...legacy, language: 'xx' }).language).toBe(FALLBACK_LANGUAGE);
+    expect(FALLBACK_LANGUAGE).toBe('ja');
+  });
+
+  it('falls back to right to left for a stored direction it does not know', () => {
+    expect(bookFromStored({ ...legacy, direction: 'down' }).direction).toBe(FALLBACK_DIRECTION);
+    expect(FALLBACK_DIRECTION).toBe('rtl');
+  });
+
+  it('falls back to the default pairing for a stored pairing it does not know', () => {
+    expect(bookFromStored({ ...legacy, pagePairing: 'triple' }).pagePairing).toBe(
+      DEFAULT_PAGE_PAIRING,
+    );
+  });
+
+  it('falls back to the fit of the layout kind for a stored fit it does not know', () => {
+    expect(bookFromStored({ ...legacy, layoutKind: 'continuous', pageFit: 7 }).pageFit).toBe(
+      'width',
+    );
+  });
+
+  it('throws a corrupt row for a stored layout kind it does not know', () => {
+    expect(() => bookFromStored({ ...legacy, layoutKind: 'scroll' })).toThrow(CorruptRow);
+    expect(() => bookFromStored({ ...legacy, layoutKind: 'scroll' })).toThrow(
+      'A stored book holds an unknown layout kind: scroll',
+    );
+  });
+
+  it('throws a corrupt row for a stored source kind it does not know', () => {
+    expect(() => bookFromStored({ ...legacy, sourceKind: 'mobi' })).toThrow(
+      'A stored book holds an unknown source kind: mobi',
+    );
   });
 });

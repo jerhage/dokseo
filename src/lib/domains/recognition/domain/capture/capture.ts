@@ -1,7 +1,9 @@
 import { match } from 'ts-pattern';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
+import { isCaptureOrigin } from '$lib/shared/capture-origin';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
+import { CorruptRow } from '$lib/shared/corrupt-row';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 
@@ -65,7 +67,7 @@ type StoredCapture = {
   readonly confidence?: number | null;
   readonly createdAt?: number | null;
   readonly editedAt?: number | null;
-  readonly origin?: CaptureOrigin;
+  readonly origin?: unknown;
   readonly tagIds?: readonly TagId[];
 };
 
@@ -80,9 +82,10 @@ function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
 }
 
 function anchorFromStored(anchor: StoredAnchor): Anchor {
-  if (anchor.kind === 'region') return anchor;
-
-  return textAnchor(anchor.cfi, anchor.quote, anchor.chapter ?? null);
+  const { kind } = anchor;
+  if (kind === 'region') return anchor;
+  if (kind === 'text') return textAnchor(anchor.cfi, anchor.quote, anchor.chapter ?? null);
+  throw new CorruptRow('capture', 'anchor kind', kind);
 }
 
 function storedAnchor(stored: StoredCapture): Anchor {
@@ -92,7 +95,7 @@ function storedAnchor(stored: StoredCapture): Anchor {
 }
 
 function storedOrigin(stored: StoredCapture): CaptureOrigin {
-  return stored.origin ?? 'recognized';
+  return isCaptureOrigin(stored.origin) ? stored.origin : 'recognized';
 }
 
 function captureFromStored(stored: StoredCapture): Capture {

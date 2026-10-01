@@ -1,8 +1,12 @@
 import { match, P } from 'ts-pattern';
+import { knownStoredValue } from '$lib/shared/corrupt-row';
 import { contentHash } from '$lib/shared/ids';
 import type { ContentHash, ImageIndex } from '$lib/shared/ids';
-import type { PagePairing } from '$lib/shared/layout-kind';
-import type { PageFit } from '$lib/shared/page-fit';
+import { isLanguage } from '$lib/shared/language';
+import type { Language } from '$lib/shared/language';
+import { isLayoutKind, isPagePairing, isReadingDirection } from '$lib/shared/layout-kind';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
+import { isPageFit } from '$lib/shared/page-fit';
 import {
   imagePlace,
   NO_FRACTION_REPORTED,
@@ -10,12 +14,16 @@ import {
   TOP_OF_THE_IMAGE,
 } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
+import { defaultPageFit, DEFAULT_PAGE_PAIRING, isSourceKind } from './book';
 import type { Book } from './book';
 
 const NO_CONTENT_HASH = contentHash('');
 
 const NO_FILE_NAME = '';
+
+const FALLBACK_LANGUAGE: Language = 'ja';
+
+const FALLBACK_DIRECTION: ReadingDirection = 'rtl';
 
 type StoredPlace =
   | {
@@ -28,10 +36,24 @@ type StoredPlace =
 
 type StoredBook = Omit<
   Book,
-  'pagePairing' | 'pageFit' | 'position' | 'contentHash' | 'fileName' | 'lastReadAt' | 'finishedAt'
+  | 'language'
+  | 'layoutKind'
+  | 'direction'
+  | 'sourceKind'
+  | 'pagePairing'
+  | 'pageFit'
+  | 'position'
+  | 'contentHash'
+  | 'fileName'
+  | 'lastReadAt'
+  | 'finishedAt'
 > & {
-  readonly pagePairing?: PagePairing;
-  readonly pageFit?: PageFit;
+  readonly language: unknown;
+  readonly layoutKind: unknown;
+  readonly direction: unknown;
+  readonly sourceKind: unknown;
+  readonly pagePairing?: unknown;
+  readonly pageFit?: unknown;
   readonly position: ImageIndex | StoredPlace;
   readonly contentHash?: ContentHash;
   readonly fileName?: string;
@@ -50,10 +72,15 @@ function storedPlace(position: ImageIndex | StoredPlace): ReadingPlace {
 }
 
 function bookFromStored(stored: StoredBook): Book {
+  const layoutKind = knownStoredValue('book', 'layout kind', stored.layoutKind, isLayoutKind);
   return {
     ...stored,
-    pagePairing: stored.pagePairing ?? DEFAULT_PAGE_PAIRING,
-    pageFit: stored.pageFit ?? defaultPageFit(stored.layoutKind),
+    language: isLanguage(stored.language) ? stored.language : FALLBACK_LANGUAGE,
+    layoutKind,
+    direction: isReadingDirection(stored.direction) ? stored.direction : FALLBACK_DIRECTION,
+    sourceKind: knownStoredValue('book', 'source kind', stored.sourceKind, isSourceKind),
+    pagePairing: isPagePairing(stored.pagePairing) ? stored.pagePairing : DEFAULT_PAGE_PAIRING,
+    pageFit: isPageFit(stored.pageFit) ? stored.pageFit : defaultPageFit(layoutKind),
     position: storedPlace(stored.position),
     contentHash: stored.contentHash ?? NO_CONTENT_HASH,
     fileName: stored.fileName ?? NO_FILE_NAME,
@@ -62,5 +89,5 @@ function bookFromStored(stored: StoredBook): Book {
   };
 }
 
-export { NO_CONTENT_HASH, NO_FILE_NAME, bookFromStored };
+export { FALLBACK_DIRECTION, FALLBACK_LANGUAGE, NO_CONTENT_HASH, NO_FILE_NAME, bookFromStored };
 export type { StoredBook, StoredPlace };

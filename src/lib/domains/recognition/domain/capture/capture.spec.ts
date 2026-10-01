@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextQuote } from '$lib/shared/anchor';
+import { CorruptRow } from '$lib/shared/corrupt-row';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -359,6 +360,32 @@ describe('captureFromStored', () => {
     };
 
     expect(captureFromStored(stored).origin).toBe('written');
+  });
+
+  it('reads a stored origin it does not know as recognized', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      regions: REGIONS,
+      text: 'こっちに来て',
+      origin: 'dictated',
+    };
+
+    expect(captureFromStored(stored).origin).toBe('recognized');
+  });
+
+  it('throws a corrupt row for a stored anchor kind it does not know', () => {
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: { ...QUOTED, kind: 'page' } as unknown as Anchor,
+      text: 'こっちに来て',
+    };
+
+    expect(() => captureFromStored(stored)).toThrow(CorruptRow);
+    expect(() => captureFromStored(stored)).toThrow(
+      'A stored capture holds an unknown anchor kind: page',
+    );
   });
 
   it('reads a stored lifted record back as lifted, carrying its note', () => {
