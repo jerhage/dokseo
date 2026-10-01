@@ -88,7 +88,7 @@
   const removeBook = $derived(view.library.books.find((book) => book.id === removeFor) ?? null);
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
-    const outcome = await view.edit(id, edit);
+    const outcome = await view.changes.edit(id, edit);
     if (outcome !== 'failed') openSettingsFor = null;
   }
 
@@ -97,11 +97,11 @@
   }
 
   function upload(files: readonly File[]): void {
-    void view.upload(files, openBook);
+    void view.upload.add(files, openBook);
   }
 
   async function remove(id: BookId): Promise<void> {
-    const outcome = await view.remove(id);
+    const outcome = await view.changes.remove(id);
     if (outcome !== 'failed') removeFor = null;
   }
 
@@ -109,7 +109,7 @@
   const titled = $derived(titledBooks(view.library.books, query));
   const space = $derived(storageText(view.library.storedBytes));
   const summary = $derived(librarySummary(view.library.books, view.library.storedBytes));
-  const body = $derived(libraryBody(view.library.state, view.pending !== null));
+  const body = $derived(libraryBody(view.library.state, view.upload.pending !== null));
   const shown = $derived(sortBooks(shelfBooks(titled, shelf), order));
   const matched = $derived(matchedText(shown.length));
   const resumable = $derived(searching ? [] : continueReading(view.library.books));
@@ -148,10 +148,10 @@
       <Button
         variant="primary"
         class="layout-app-shell-wide-only"
-        disabled={view.busy || strip === null}
+        disabled={view.upload.busy || strip === null}
         onclick={() => strip?.choose()}
       >
-        {view.busy ? 'Adding…' : 'Upload'}
+        {view.upload.busy ? 'Adding…' : 'Upload'}
       </Button>
       <div class="row layout-app-shell-wide-only">
         <AppearanceSwitcher />
@@ -169,9 +169,9 @@
         <IconButton
           variant="primary"
           icon={UploadIcon}
-          label={view.busy ? 'Adding…' : 'Upload'}
+          label={view.upload.busy ? 'Adding…' : 'Upload'}
           tooltip={false}
-          disabled={view.busy || strip === null}
+          disabled={view.upload.busy || strip === null}
           onclick={() => strip?.choose()}
         />
         <LibraryMenu {onsearcheverything} />
@@ -199,13 +199,18 @@
       <p class="text-xs text-muted">{summary}</p>
     </div>
 
-    {#if view.pending !== null}
-      <ImportStatus title={view.pending} language="ja" stage={view.progress} batch={view.batch} />
+    {#if view.upload.pending !== null}
+      <ImportStatus
+        title={view.upload.pending}
+        language="ja"
+        stage={view.upload.progress}
+        batch={view.upload.batch}
+      />
     {/if}
 
     <LibraryBooksData
       state={view.library.state}
-      importing={view.pending !== null}
+      importing={view.upload.pending !== null}
       onretry={() => void view.library.load()}
     >
       {#snippet children(library)}
@@ -222,18 +227,18 @@
             bind:shelf={() => shelf, chooseShelf}
             bind:order={() => order, chooseOrder}
             bind:layout={() => layout, chooseLayout}
-            busy={(id) => view.removing === id || view.editing === id}
+            busy={(id) => view.changes.removing === id || view.changes.editing === id}
             onedit={(id) => (openSettingsFor = id)}
             onremove={(id) => (removeFor = id)}
-            onfinish={(id) => void view.markFinished(id, shelf)}
-            onunread={(id) => void view.markUnread(id, shelf)}
+            onfinish={(id) => void view.changes.markFinished(id, shelf)}
+            onunread={(id) => void view.changes.markUnread(id, shelf)}
           />
         {/if}
 
         <div hidden={searching}>
           <UploadStrip
             bind:this={strip}
-            busy={view.busy}
+            busy={view.upload.busy}
             compact={library.books.length > 0}
             onfiles={(selection) => upload(arrivedFiles(selection))}
           />
@@ -242,8 +247,9 @@
     </LibraryBooksData>
 
     <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
-      {#if view.pending !== null}
-        <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.batch)}</span>
+      {#if view.upload.pending !== null}
+        <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.upload.batch)}</span
+        >
       {/if}
       <span class="ms-auto">{space}</span>
       <a
@@ -263,7 +269,7 @@
 </div>
 
 <WindowDropzone
-  disabled={view.busy || settingsBook !== null || removeBook !== null}
+  disabled={view.upload.busy || settingsBook !== null || removeBook !== null}
   readDrop={filesFromDataTransfer}
   onfiles={(selection) => upload(arrivedFiles(selection))}
 >
@@ -273,7 +279,7 @@
 {#if settingsBook !== null}
   <BookSettings
     book={settingsBook}
-    saving={view.editing === settingsBook.id}
+    saving={view.changes.editing === settingsBook.id}
     onsave={(edit) => void save(settingsBook.id, edit)}
     onclose={() => (openSettingsFor = null)}
   />
@@ -282,7 +288,7 @@
 {#if removeBook !== null}
   <RemoveBook
     book={removeBook}
-    removing={view.removing === removeBook.id}
+    removing={view.changes.removing === removeBook.id}
     onremove={() => void remove(removeBook.id)}
     onclose={() => (removeFor = null)}
   />
