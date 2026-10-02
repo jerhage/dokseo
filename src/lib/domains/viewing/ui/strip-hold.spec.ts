@@ -43,36 +43,30 @@ describe('heldAtScroll', () => {
 });
 
 describe('heldAround', () => {
-  it('holds the place under where the pinch began and pins it where the fingers are now', () => {
-    const held = heldAround(
-      LAYOUT,
-      WIDTH,
-      PREVIOUS,
-      { top: 800, left: 0 },
-      { x: 200, y: 200 },
-      { x: 50, y: 100 },
-    );
-
-    expect(held).toEqual({
-      position: { index: imageIndex(1), offset: 0.5 },
-      top: 100,
-      across: 0.5,
-      left: 50,
-    });
-  });
-
-  it('measures across from the scroll left plus the point', () => {
-    const held = heldAround(
-      LAYOUT,
-      WIDTH,
-      PREVIOUS,
-      { top: 0, left: 100 },
-      { x: 100, y: 0 },
-      { x: 0, y: 0 },
-    );
-
-    expect(held.across).toBe(0.5);
-  });
+  it.each<{
+    readonly scroll: { readonly top: number; readonly left: number };
+    readonly was: { readonly x: number; readonly y: number };
+    readonly now: { readonly x: number; readonly y: number };
+    readonly hold: StripHold;
+  }>([
+    {
+      scroll: { top: 800, left: 100 },
+      was: { x: 200, y: 200 },
+      now: { x: 50, y: 100 },
+      hold: { position: { index: imageIndex(1), offset: 0.5 }, top: 100, across: 0.75, left: 50 },
+    },
+    {
+      scroll: { top: 0, left: 100 },
+      was: { x: 100, y: 0 },
+      now: { x: 0, y: 0 },
+      hold: { position: { index: imageIndex(0), offset: 0 }, top: 0, across: 0.5, left: 0 },
+    },
+  ])(
+    'holds the place under where the pinch began, measured across from the scroll left plus the point, and pins it where the fingers are now',
+    ({ scroll, was, now, hold }) => {
+      expect(heldAround(LAYOUT, WIDTH, PREVIOUS, scroll, was, now)).toEqual(hold);
+    },
+  );
 
   it('holds nothing across a strip with no width', () => {
     const point = { x: 10, y: 10 };

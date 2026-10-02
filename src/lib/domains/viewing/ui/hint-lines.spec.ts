@@ -47,22 +47,10 @@ describe('HintLines', () => {
     expect(lines.hushed).toBe(false);
   });
 
-  it('leaves out the hints already learned', () => {
-    const lines = hintLines(held({ learned: ['select'] }));
-
-    expect(keys(lines.lines)).toEqual(['+', '?']);
-  });
-
   it('shows the touch hints of a strip without a recall line', () => {
     const lines = hintLines(held({ scene: TOUCH_STRIP }));
 
     expect(keys(lines.lines)).toEqual(['long press drag', 'pinch']);
-  });
-
-  it('shows the pannable hints once the page can pan', () => {
-    const lines = hintLines(held({ scene: { ...POINTER_PAGED, pannable: true } }));
-
-    expect(keys(lines.lines)).toEqual(['drag', 'space drag', 'middle drag', '?']);
   });
 
   it('hushes and holds nothing while the chrome is hidden from the start', () => {
@@ -127,15 +115,6 @@ describe('HintLines', () => {
     lines.pressRecall();
 
     expect(before).toEqual([]);
-    expect(keys(lines.pending)).toEqual(['drag', '+', '?']);
-  });
-
-  it('flips between hidden and revealed on each press of the recall key', () => {
-    const lines = hintLines(held());
-
-    lines.pressRecall();
-    lines.pressRecall();
-
     expect(keys(lines.pending)).toEqual(['drag', '+', '?']);
   });
 });

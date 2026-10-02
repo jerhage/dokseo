@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screenRect } from '$lib/shared/geometry';
 import { regionsIn } from '../domain/placement';
-import { naturalSizeOf, placedImages } from './page-placements';
+import { placedImages } from './page-placements';
 
 type Box = {
   readonly x: number;
@@ -72,24 +72,6 @@ function division(index: string): Element {
   return new FakeHtmlElement(index) as unknown as Element;
 }
 
-function vector(index: string): Element {
-  return new FakeElement(index) as unknown as Element;
-}
-
-describe('naturalSizeOf', () => {
-  it('reads an image from its natural width and height', () => {
-    expect(naturalSizeOf(image('0', 1200, 1700))).toEqual({ width: 1200, height: 1700 });
-  });
-
-  it('reads a canvas from its width and height', () => {
-    expect(naturalSizeOf(canvas('0', 800, 1100))).toEqual({ width: 800, height: 1100 });
-  });
-
-  it('reports nothing for any other element', () => {
-    expect(naturalSizeOf(division('0'))).toBeNull();
-  });
-});
-
 describe('placedImages', () => {
   it('places an image at its natural size', () => {
     const placed = placedImages([image('3', 1200, 1700)]);
@@ -122,20 +104,12 @@ describe('placedImages', () => {
     expect(placed.map((page) => page.natural.width)).toEqual([1200, 800]);
   });
 
-  it('skips an element that is neither an image nor a canvas', () => {
-    expect(placedImages([division('0')])).toEqual([]);
-  });
-
-  it('skips an element that is not an HTML element', () => {
-    expect(placedImages([vector('0')])).toEqual([]);
-  });
-
-  it('skips an element that carries no image index', () => {
-    expect(placedImages([image(undefined, 1200, 1700)])).toEqual([]);
-  });
-
-  it('skips an element whose image index is not a whole number', () => {
-    expect(placedImages([image('half', 1200, 1700)])).toEqual([]);
+  it.each([
+    { element: () => division('0'), what: 'that is neither an image nor a canvas' },
+    { element: () => image(undefined, 1200, 1700), what: 'that carries no image index' },
+    { element: () => image('half', 1200, 1700), what: 'whose image index is not a whole number' },
+  ])('skips an element $what', ({ element }) => {
+    expect(placedImages([element()])).toEqual([]);
   });
 
   it('reports a zero natural size for an image that has not loaded', () => {

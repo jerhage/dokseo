@@ -211,22 +211,15 @@ describe('PagedViewport', () => {
     expect(held.view.viewport.zoom).toBe(fitZoom(PAGE, FRAME, 'width'));
   });
 
-  it('ignores a pinch while the frame has no box', () => {
-    const held = world();
-    held.offset = null;
+  it('ignores a pinch while the frame has no box or nothing is framed', () => {
+    const noBox = world();
+    noBox.offset = null;
+    noBox.view.pinch({ scale: 2, cx: 0, cy: 0, dx: 0, dy: 0 });
+    const unframed = world();
+    unframed.frame = null;
+    unframed.view.pinch({ scale: 2, cx: 0, cy: 0, dx: 0, dy: 0 });
 
-    held.view.pinch({ scale: 2, cx: 0, cy: 0, dx: 0, dy: 0 });
-
-    expect(held.view.viewport).toEqual(FITTED);
-  });
-
-  it('ignores a pinch while nothing is framed', () => {
-    const held = world();
-    held.frame = null;
-
-    held.view.pinch({ scale: 2, cx: 0, cy: 0, dx: 0, dy: 0 });
-
-    expect(held.view.viewport).toEqual(FITTED);
+    expect([noBox.view.viewport, unframed.view.viewport]).toEqual([FITTED, FITTED]);
   });
 
   it('zooms in on a double tap at the point measured from the frame', () => {

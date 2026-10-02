@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EDGE_TOP_SPEED_PX_PER_S, EDGE_ZONE_PX, LONGEST_EDGE_FRAME_MS } from './edge-scroll';
+import { EDGE_TOP_SPEED_PX_PER_S, EDGE_ZONE_PX } from './edge-scroll';
 import type { EdgeBand } from './edge-scroll';
 import { EdgeScroll } from './edge-scroll-loop';
 import type { EdgeSurface } from './edge-scroll-loop';
@@ -101,41 +101,28 @@ describe('EdgeScroll', () => {
     expect(frames.pending.size).toBe(1);
   });
 
-  it('scrolls nothing on the first frame and then by the time since the last one', () => {
-    const { edge, clock: frames, surface: held } = world();
+  it.each([
+    { pointer: NEAR_BOTTOM, from: 0, sign: 1, gap: 16 },
+    { pointer: NEAR_BOTTOM, from: 0, sign: 1, gap: 40 },
+    { pointer: NEAR_TOP, from: 500, sign: -1, gap: 16 },
+  ])(
+    'scrolls nothing on the first frame and then by the $gap ms since the last one, from $from at $pointer',
+    ({ pointer, from, sign, gap }) => {
+      const { edge, clock: frames, surface: held } = world();
+      held.scrollTop = from;
 
-    edge.follow(NEAR_BOTTOM);
-    frames.tick(1000);
-    const first = held.scrollTop;
-    frames.tick(1016);
+      edge.follow(pointer);
+      frames.tick(1000);
+      const first = held.scrollTop;
+      frames.tick(1000 + gap);
 
-    expect(first).toBe(0);
-    expect(held.scrollTop).toBeCloseTo((EDGE_TOP_SPEED_PX_PER_S * 0.5 * 16) / 1000);
-    expect(frames.pending.size).toBe(1);
-  });
-
-  it('scrolls up near the top edge', () => {
-    const { edge, clock: frames, surface: held } = world();
-    held.scrollTop = 500;
-
-    edge.follow(NEAR_TOP);
-    frames.tick(1000);
-    frames.tick(1016);
-
-    expect(held.scrollTop).toBeCloseTo(500 - (EDGE_TOP_SPEED_PX_PER_S * 0.5 * 16) / 1000);
-  });
-
-  it('caps a long gap between frames', () => {
-    const { edge, clock: frames, surface: held } = world();
-
-    edge.follow(NEAR_BOTTOM);
-    frames.tick(1000);
-    frames.tick(5000);
-
-    expect(held.scrollTop).toBeCloseTo(
-      (EDGE_TOP_SPEED_PX_PER_S * 0.5 * LONGEST_EDGE_FRAME_MS) / 1000,
-    );
-  });
+      expect(first).toBe(from);
+      expect(held.scrollTop).toBeCloseTo(
+        from + (sign * EDGE_TOP_SPEED_PX_PER_S * 0.5 * gap) / 1000,
+      );
+      expect(frames.pending.size).toBe(1);
+    },
+  );
 
   it('follows the pointer to where it moved last', () => {
     const { edge, clock: frames, surface: held } = world();

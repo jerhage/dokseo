@@ -122,18 +122,31 @@ describe('StripZoom', () => {
     expect(zoom.hold.top).toBe(100);
   });
 
-  it('scrolls to the held place', () => {
+  it.each<{
+    readonly how: string;
+    readonly act: (zoom: StripZoom) => void;
+    readonly target: { readonly top: number; readonly left: number };
+  }>([
+    {
+      how: 'a pinch that keeps the zoom',
+      act: (zoom) => zoom.pinch(1, { top: 800, left: 0 }, { x: 200, y: 200 }, { x: 50, y: 100 }),
+      target: { top: 900, left: 150 },
+    },
+    {
+      how: 'a pinch to twice the zoom',
+      act: (zoom) => zoom.pinch(2, { top: 800, left: 0 }, { x: 200, y: 200 }, { x: 50, y: 100 }),
+      target: { top: 1900, left: 350 },
+    },
+    {
+      how: 'a zoom to twice the width',
+      act: (zoom) => zoom.zoomBy(2, { top: 0, left: 200 }, { x: 0, y: 0 }),
+      target: { top: 0, left: 400 },
+    },
+  ])('scrolls to the held place on the zoomed strip after $how', ({ act, target }) => {
     const zoom = strip();
-    zoom.pinch(1, { top: 800, left: 0 }, { x: 200, y: 200 }, { x: 50, y: 100 });
+    act(zoom);
 
-    expect(zoom.target).toEqual({ top: 900, left: 150 });
-  });
-
-  it('scrolls across by the zoomed width', () => {
-    const zoom = strip();
-    zoom.zoomBy(2, { top: 0, left: 200 }, { x: 0, y: 0 });
-
-    expect(zoom.target.left).toBe(400);
+    expect(zoom.target).toEqual(target);
   });
 
   it('settles on the place at a scroll and reads the slice it sits in', () => {
