@@ -28,17 +28,13 @@ describe('CONTENT_SECURITY_POLICY', () => {
     expect(sources('default-src')).toEqual(['none']);
   });
 
-  it('keeps blob out of script-src, so a chapter blob url can never be executed', () => {
-    expect(sources('script-src')).not.toContain('blob:');
-  });
-
-  it('keeps data out of script-src, so a chapter data url can never be executed', () => {
-    expect(sources('script-src')).not.toContain('data:');
-  });
-
-  it('names neither inline nor eval in script-src, which is why hash mode exists', () => {
-    expect(sources('script-src')).not.toContain('unsafe-inline');
-    expect(sources('script-src')).not.toContain('unsafe-eval');
+  it.each([
+    { source: 'blob:', reason: 'a chapter blob url can never be executed' },
+    { source: 'data:', reason: 'a chapter data url can never be executed' },
+    { source: 'unsafe-inline', reason: 'hash mode exists instead' },
+    { source: 'unsafe-eval', reason: 'hash mode exists instead' },
+  ])('keeps $source out of script-src, so $reason', ({ source }) => {
+    expect(sources('script-src')).not.toContain(source);
   });
 
   it('admits every inline script in app.html by its hash, so the theme applies before paint', () => {
@@ -48,16 +44,15 @@ describe('CONTENT_SECURITY_POLICY', () => {
     for (const hash of hashes) expect(sources('script-src')).toContain(hash);
   });
 
-  it('admits the blob url foliate mints for a chapter, without which no book opens', () => {
-    expect(sources('frame-src')).toContain('blob:');
-  });
-
-  it('admits the blob worker zip.js starts to read an archive', () => {
-    expect(sources('worker-src')).toContain('blob:');
-  });
-
-  it('admits the blob stylesheet foliate mints from a book of its own', () => {
-    expect(sources('style-src')).toContain('blob:');
+  it.each([
+    {
+      directive: 'frame-src',
+      reason: 'the chapter url foliate mints, without which no book opens',
+    },
+    { directive: 'worker-src', reason: 'the worker zip.js starts to read an archive' },
+    { directive: 'style-src', reason: 'the stylesheet foliate mints from a book of its own' },
+  ] as const)('admits blob in $directive for $reason', ({ directive }) => {
+    expect(sources(directive)).toContain('blob:');
   });
 
   it('reaches no origin over plain http', () => {

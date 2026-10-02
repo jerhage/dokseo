@@ -37,11 +37,31 @@ afterEach(() => {
 });
 
 describe('cropFrom', () => {
-  const overhangs: readonly { readonly edge: string; readonly rect: ImageRect }[] = [
-    { edge: 'left', rect: imageRect(-20, 10, 50, 20) },
-    { edge: 'top', rect: imageRect(10, -15, 30, 40) },
-    { edge: 'right', rect: imageRect(80, 10, 50, 20) },
-    { edge: 'bottom', rect: imageRect(10, 60, 30, 40) },
+  const overhangs: readonly {
+    readonly edge: string;
+    readonly rect: ImageRect;
+    readonly shared: SourceRect;
+  }[] = [
+    {
+      edge: 'left',
+      rect: imageRect(-20, 10, 50, 20),
+      shared: { x: 0, y: 10, width: 30, height: 20 },
+    },
+    {
+      edge: 'top',
+      rect: imageRect(10, -15, 30, 40),
+      shared: { x: 10, y: 0, width: 30, height: 25 },
+    },
+    {
+      edge: 'right',
+      rect: imageRect(80, 10, 50, 20),
+      shared: { x: 80, y: 10, width: 20, height: 20 },
+    },
+    {
+      edge: 'bottom',
+      rect: imageRect(10, 60, 30, 40),
+      shared: { x: 10, y: 60, width: 30, height: 20 },
+    },
   ];
 
   it('asks for a region inside the image exactly as given', async () => {
@@ -56,23 +76,13 @@ describe('cropFrom', () => {
   });
 
   it.each(overhangs)(
-    'keeps a region hanging off the $edge edge inside the image',
-    async ({ rect }) => {
+    'trims a region hanging off the $edge edge to the pixels it shares with the image',
+    async ({ rect, shared }) => {
       await cropFrom(stubBitmap(PAGE_WIDTH, PAGE_HEIGHT), rect);
 
-      const area = sourceRect();
-      expect(area.x).toBeGreaterThanOrEqual(0);
-      expect(area.y).toBeGreaterThanOrEqual(0);
-      expect(area.x + area.width).toBeLessThanOrEqual(PAGE_WIDTH);
-      expect(area.y + area.height).toBeLessThanOrEqual(PAGE_HEIGHT);
+      expect(sourceRect()).toEqual(shared);
     },
   );
-
-  it('trims a region hanging off the left edge to the pixels it shares with the image', async () => {
-    await cropFrom(stubBitmap(PAGE_WIDTH, PAGE_HEIGHT), imageRect(-20, 10, 50, 20));
-
-    expect(sourceRect()).toEqual({ x: 0, y: 10, width: 30, height: 20 });
-  });
 
   it('rejects a region that covers no pixels of the image', async () => {
     await expect(

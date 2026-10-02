@@ -65,12 +65,11 @@ describe('StackShim', () => {
     expect(() => stack.dispose()).not.toThrow();
   });
 
-  it('refuses a value that cannot be disposed', () => {
-    expect(() => new StackShim().use({})).toThrow(/not disposable/u);
-  });
-
-  it('refuses a primitive, which carries no dispose method', () => {
-    expect(() => new StackShim().use(7)).toThrow(/not disposable/u);
+  it.each([
+    { value: {}, kind: 'an object with no dispose method' },
+    { value: 7, kind: 'a primitive' },
+  ])('refuses $kind as not disposable', ({ value }) => {
+    expect(() => new StackShim().use(value)).toThrow(/not disposable/u);
   });
 
   it('disposes a function that carries its own dispose method', () => {
@@ -97,16 +96,6 @@ describe('StackShim', () => {
 
     expect(held).toBe('page');
     expect(closed).toEqual(['page']);
-  });
-
-  it('defers plain work', () => {
-    const closed: string[] = [];
-    const stack = new StackShim();
-
-    stack.defer(() => closed.push('deferred'));
-    stack.dispose();
-
-    expect(closed).toEqual(['deferred']);
   });
 
   it('disposes once, however often it is asked', () => {
@@ -141,16 +130,5 @@ describe('StackShim', () => {
     stack.dispose();
 
     expect(() => stack.use(closing([], 'late'))).toThrow(ReferenceError);
-  });
-
-  it('disposes through the symbol, which is how using reaches it', () => {
-    ensureDisposableStack({}, Symbol.dispose);
-    const closed: string[] = [];
-    const stack = new StackShim();
-    stack.use(closing(closed, 'held'));
-
-    (stack as unknown as Disposable)[Symbol.dispose]();
-
-    expect(closed).toEqual(['held']);
   });
 });

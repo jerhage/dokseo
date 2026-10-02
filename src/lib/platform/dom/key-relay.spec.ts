@@ -24,38 +24,24 @@ const TURNS_THE_PAGE: readonly string[] = [
 ];
 
 describe('relaysToHost', () => {
-  it('forwards a press carrying the command key', () => {
-    expect(relaysToHost(pressing('k', { metaKey: true }))).toBe(true);
-  });
-
-  it('forwards a press carrying the control key', () => {
-    expect(relaysToHost(pressing('k', { ctrlKey: true }))).toBe(true);
+  it.each([
+    { key: 'k', held: { metaKey: true } },
+    { key: 'k', held: { ctrlKey: true } },
+    ...TURNS_THE_PAGE.map((key) => ({ key, held: { metaKey: true } })),
+  ])('forwards $key once a modifier makes it a shortcut', ({ key, held }) => {
+    expect(relaysToHost(pressing(key, held))).toBe(true);
   });
 
   it('forwards Escape, which closes things and wears no modifier', () => {
     expect(relaysToHost(pressing('Escape'))).toBe(true);
   });
 
-  it('keeps an ordinary letter where it was typed', () => {
-    expect(relaysToHost(pressing('k'))).toBe(false);
-    expect(relaysToHost(pressing('a'))).toBe(false);
-    expect(relaysToHost(pressing('?'))).toBe(false);
-  });
-
-  it('keeps a shifted letter where it was typed, because shift selects text', () => {
-    expect(relaysToHost(pressing('K'))).toBe(false);
-    expect(relaysToHost(pressing('ArrowLeft'))).toBe(false);
-  });
-
-  it('keeps every key the reader turns pages with', () => {
-    for (const key of TURNS_THE_PAGE) expect(relaysToHost(pressing(key))).toBe(false);
-  });
-
-  it('forwards those same keys once a modifier makes them a shortcut', () => {
-    for (const key of TURNS_THE_PAGE) {
-      expect(relaysToHost(pressing(key, { metaKey: true }))).toBe(true);
-    }
-  });
+  it.each(['k', 'a', '?', 'K', ...TURNS_THE_PAGE])(
+    'keeps an unmodified %j where it was typed',
+    (key) => {
+      expect(relaysToHost(pressing(key))).toBe(false);
+    },
+  );
 
   it('keeps a press the frame has already consumed', () => {
     expect(relaysToHost(pressing('k', { metaKey: true, defaultPrevented: true }))).toBe(false);

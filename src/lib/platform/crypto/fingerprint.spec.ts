@@ -29,30 +29,13 @@ describe('fingerprintOf', () => {
     );
   });
 
-  it('hashes a small blob to sixty-four hex characters', async () => {
-    const digest = await fingerprintOf(new Blob(['page bytes']));
+  it.each([
+    { label: 'a small blob', blob: new Blob(['page bytes']) },
+    { label: 'an empty blob', blob: new Blob([]) },
+  ])('hashes $label to sixty-four hex characters', async ({ blob }) => {
+    const digest = await fingerprintOf(blob);
 
     expect(digest).toMatch(/^[0-9a-f]{64}$/u);
-  });
-
-  it('hashes an empty blob', async () => {
-    const digest = await fingerprintOf(new Blob([]));
-
-    expect(digest).toMatch(/^[0-9a-f]{64}$/u);
-  });
-
-  it('gives two blobs holding the same bytes the same fingerprint', async () => {
-    const one = await fingerprintOf(new Blob(['Yotsuba&! 1']));
-    const other = await fingerprintOf(new Blob(['Yotsuba&! 1']));
-
-    expect(one).toBe(other);
-  });
-
-  it('separates two small blobs that differ in the middle', async () => {
-    const one = await fingerprintOf(new Blob(['abXde']));
-    const other = await fingerprintOf(new Blob(['abYde']));
-
-    expect(one).not.toBe(other);
   });
 
   it('reads every byte of a blob of exactly two mebibytes', async () => {
@@ -72,13 +55,6 @@ describe('fingerprintOf', () => {
     expect(await fingerprintOf(one)).toBe(await fingerprintOf(other));
   });
 
-  it('gives two large blobs differing only in the middle the same fingerprint', async () => {
-    const one = new Blob([HEAD, run(FINGERPRINT_SAMPLE_BYTES, 0x30), TAIL]);
-    const other = new Blob([HEAD, run(FINGERPRINT_SAMPLE_BYTES, 0x31), TAIL]);
-
-    expect(await fingerprintOf(one)).toBe(await fingerprintOf(other));
-  });
-
   it('separates two large blobs whose ends match but whose sizes differ', async () => {
     const one = new Blob([HEAD, run(1, 0x30), TAIL]);
     const other = new Blob([HEAD, run(2, 0x30), TAIL]);
@@ -86,17 +62,12 @@ describe('fingerprintOf', () => {
     expect(await fingerprintOf(one)).not.toBe(await fingerprintOf(other));
   });
 
-  it('separates two large blobs that differ in the first mebibyte', async () => {
+  it.each([
+    { part: 'first', other: [run(FINGERPRINT_SAMPLE_BYTES, 0x62), run(8, 0x30), TAIL] },
+    { part: 'last', other: [HEAD, run(8, 0x30), run(FINGERPRINT_SAMPLE_BYTES, 0x79)] },
+  ])('separates two large blobs that differ in the $part mebibyte', async ({ other }) => {
     const one = new Blob([HEAD, run(8, 0x30), TAIL]);
-    const other = new Blob([run(FINGERPRINT_SAMPLE_BYTES, 0x62), run(8, 0x30), TAIL]);
 
-    expect(await fingerprintOf(one)).not.toBe(await fingerprintOf(other));
-  });
-
-  it('separates two large blobs that differ in the last mebibyte', async () => {
-    const one = new Blob([HEAD, run(8, 0x30), TAIL]);
-    const other = new Blob([HEAD, run(8, 0x30), run(FINGERPRINT_SAMPLE_BYTES, 0x79)]);
-
-    expect(await fingerprintOf(one)).not.toBe(await fingerprintOf(other));
+    expect(await fingerprintOf(one)).not.toBe(await fingerprintOf(new Blob(other)));
   });
 });

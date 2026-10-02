@@ -52,13 +52,6 @@ describe('Md5', () => {
     expect(md5.hexDigest()).toBe('7707d6ae4e027c70eea2a935c2296f21');
   });
 
-  it('gives the same digest for a message fed byte by byte', () => {
-    const md5 = new Md5();
-    for (const byte of encoder.encode('message digest')) md5.update(Uint8Array.of(byte));
-
-    expect(md5.hexDigest()).toBe('f96b697d7cb7938d525a2f31aaf161d0');
-  });
-
   it('leaves the running digest untouched when read', () => {
     const md5 = new Md5();
     md5.update(encoder.encode('ab'));

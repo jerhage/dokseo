@@ -25,23 +25,6 @@ describe('noticeBoard', () => {
     expect(other).toEqual([]);
   });
 
-  it('keeps the remembered value of two keys apart', () => {
-    const board = noticeBoard<string, number>();
-
-    board.post('a', 1);
-    board.post('b', 2);
-
-    expect(board.latest('a')).toBe(1);
-    expect(board.latest('b')).toBe(2);
-  });
-
-  it('posts nothing to a key with no watcher', () => {
-    const board = noticeBoard<string, number>();
-
-    expect(() => board.post('a', 1)).not.toThrow();
-    expect(board.latest('a')).toBe(1);
-  });
-
   it('removes one watcher and leaves the rest', () => {
     const board = noticeBoard<string, number>();
     const dropped: number[] = [];

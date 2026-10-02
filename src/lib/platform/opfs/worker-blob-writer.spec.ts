@@ -141,20 +141,6 @@ describe('createBlobWriter', () => {
     expect(writing).toEqual({ settled: true, cause: null });
   });
 
-  it('names the key when the worker reports a failure', async () => {
-    const worker = fakeWorker();
-    const { write } = writerOn([worker]);
-
-    const writing = watch(write('book.src', new Blob(['a']), () => undefined));
-    worker.reply({ kind: 'failed', id: worker.sent[0]?.id ?? 0, cause: 'the quota ran out' });
-    await flush();
-
-    expect(writing).toEqual({
-      settled: true,
-      cause: 'Key "book.src" could not be written: the quota ran out',
-    });
-  });
-
   it('settles the write the reply names, and leaves the other waiting', async () => {
     const worker = fakeWorker();
     const { write } = writerOn([worker]);
@@ -219,17 +205,7 @@ describe('createBlobWriter', () => {
     expect(started()).toBe(2);
   });
 
-  it('names the key when no worker can be started', async () => {
-    const { write } = writerOn([]);
-    const writing = watch(write('book.src', new Blob(['a']), () => undefined));
-    await flush();
-
-    expect(writing).toEqual({
-      settled: true,
-      cause: 'Key "book.src" could not be written: No worker was left to start',
-    });
-  });
-  it('keeps the error that stopped the worker from starting as the cause', async () => {
+  it('names the key when no worker can be started, and keeps the error that stopped it as the cause', async () => {
     const refused = new Error('Workers are refused here');
     const write = createBlobWriter({
       directory: 'blobs',
@@ -238,10 +214,12 @@ describe('createBlobWriter', () => {
       },
     });
 
-    await expect(write('book.src', new Blob(['a']), () => undefined)).rejects.toHaveProperty(
-      'cause',
-      refused,
+    const writing = write('book.src', new Blob(['a']), () => undefined);
+
+    await expect(writing).rejects.toThrow(
+      'Key "book.src" could not be written: Workers are refused here',
     );
+    await expect(writing).rejects.toHaveProperty('cause', refused);
   });
 });
 

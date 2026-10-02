@@ -39,12 +39,13 @@ describe('rememberedSet', () => {
     expect(rememberedSet(KEY).values()).toEqual(['a']);
   });
 
-  it('empties the values it holds on clear', () => {
+  it('empties the values it holds on clear, and adds afresh after it', () => {
     const set = rememberedSet(KEY);
     set.add('a');
 
     expect(set.clear()).toEqual([]);
     expect(set.values()).toEqual([]);
+    expect(set.add('b')).toEqual(['b']);
   });
 
   it('removes the stored key on clear, so a later read starts empty', () => {
@@ -54,13 +55,5 @@ describe('rememberedSet', () => {
 
     expect(storage.entries.has(KEY)).toBe(false);
     expect(rememberedSet(KEY).values()).toEqual([]);
-  });
-
-  it('adds again after a clear', () => {
-    const set = rememberedSet(KEY);
-    set.add('a');
-    set.clear();
-
-    expect(set.add('b')).toEqual(['b']);
   });
 });

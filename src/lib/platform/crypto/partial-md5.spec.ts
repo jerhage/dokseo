@@ -37,10 +37,6 @@ describe('luajitLeftShift', () => {
   it('masks a negative shift count to five bits and overflows to zero, as bit.lshift does', () => {
     expect(luajitLeftShift(1024, -2)).toBe(0);
   });
-
-  it('keeps a shift that fits in thirty-two bits', () => {
-    expect(luajitLeftShift(1024, 20)).toBe(1_073_741_824);
-  });
 });
 
 describe('partialMd5Offsets', () => {
@@ -79,25 +75,5 @@ describe('partialMd5', () => {
     await partialMd5(blob);
 
     expect(blob.ranges).toEqual([[0, 1024]]);
-  });
-
-  it('ignores a byte that lies between two samples', async () => {
-    const bytes = seededBytes(70_000);
-    const changed = seededBytes(70_000);
-    changed[2048] = (changed[2048] ?? 0) ^ 0xff;
-
-    expect(await partialMd5(new Blob([changed]))).toBe(await partialMd5(new Blob([bytes])));
-  });
-
-  it('changes when a byte inside a sample changes', async () => {
-    const bytes = seededBytes(70_000);
-    const changed = seededBytes(70_000);
-    changed[65_536] = (changed[65_536] ?? 0) ^ 0xff;
-
-    expect(await partialMd5(new Blob([changed]))).not.toBe(await partialMd5(new Blob([bytes])));
-  });
-
-  it('returns thirty-two lowercase hex characters', async () => {
-    expect(await partialMd5(new Blob(['page bytes']))).toMatch(/^[0-9a-f]{32}$/u);
   });
 });

@@ -67,27 +67,17 @@ describe('rememberedString', () => {
     expect([...store.entries]).toEqual([['reader.other', 'moss']]);
   });
 
-  it('reads null and swallows writes when the store refuses every call', () => {
-    const remembered = rememberedString('reader.theme', () => new RefusingStore());
-
-    expect(remembered.read()).toBeNull();
-    expect(() => remembered.write('ember')).not.toThrow();
-    expect(() => remembered.forget()).not.toThrow();
-  });
-
-  it('reads null and swallows writes when the store cannot be reached', () => {
-    const unreachable = (): StringStore => {
-      throw new Error('SecurityError');
-    };
-    const remembered = rememberedString('reader.theme', unreachable);
-
-    expect(remembered.read()).toBeNull();
-    expect(() => remembered.write('ember')).not.toThrow();
-    expect(() => remembered.forget()).not.toThrow();
-  });
-
-  it('does nothing when there is no store', () => {
-    const remembered = rememberedString('reader.theme', () => null);
+  it.each([
+    { store: 'refuses every call', locate: (): StringStore | null => new RefusingStore() },
+    {
+      store: 'cannot be reached',
+      locate: (): StringStore | null => {
+        throw new Error('SecurityError');
+      },
+    },
+    { store: 'does not exist', locate: (): StringStore | null => null },
+  ])('reads null and swallows writes when the store $store', ({ locate }) => {
+    const remembered = rememberedString('reader.theme', locate);
 
     expect(remembered.read()).toBeNull();
     expect(() => remembered.write('ember')).not.toThrow();

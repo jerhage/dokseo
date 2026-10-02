@@ -24,11 +24,17 @@ afterEach(() => {
 });
 
 describe('storageRoot', () => {
-  it('says a private window will not save files, in words a reader can act on', async () => {
-    storageThat(refusing('SecurityError'));
+  it.each([
+    { opener: 'the root', open: () => storageRoot() },
+    { opener: 'a directory under it', open: () => directoryNamed('books') },
+  ])(
+    'says a private window will not save files, in words a reader can act on, from $opener',
+    async ({ open }) => {
+      storageThat(refusing('SecurityError'));
 
-    await expect(storageRoot()).rejects.toThrow(PRIVATE_WINDOW);
-  });
+      await expect(open()).rejects.toThrow(PRIVATE_WINDOW);
+    },
+  );
 
   it('keeps the original wording for a refusal that is not a private window', async () => {
     storageThat(refusing('InvalidStateError'));
@@ -49,12 +55,6 @@ describe('directoryNamed', () => {
     vi.stubGlobal('navigator', {});
 
     await expect(directoryNamed('books')).rejects.toThrow(NO_FILE_SYSTEM);
-  });
-
-  it('carries the private window message out of the root it could not open', async () => {
-    storageThat(refusing('SecurityError'));
-
-    await expect(directoryNamed('books')).rejects.toThrow(PRIVATE_WINDOW);
   });
 });
 

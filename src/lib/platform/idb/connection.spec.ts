@@ -84,6 +84,11 @@ function freshName(): string {
 
 function upgrade(): void {}
 
+const RETIREMENTS = [
+  { cause: 'a version change', version: 2, retire: (db: FakeDatabase) => db.onversionchange?.() },
+  { cause: 'the browser closing it', version: 1, retire: (db: FakeDatabase) => db.onclose?.() },
+] as const;
+
 async function opened(name: string, version = 1): Promise<FakeDatabase> {
   const db = await openDatabase(name, version, upgrade);
   if (!(db instanceof FakeDatabase)) throw new Error('not a fake database');
@@ -123,27 +128,16 @@ describe('openDatabase', () => {
     expect(db.closed).toBe(true);
   });
 
-  it('opens a new connection after a version change', async () => {
+  it.each(RETIREMENTS)('opens a new connection after $cause', async ({ version, retire }) => {
     const name = freshName();
-    const db = await opened(name, 2);
+    const db = await opened(name, version);
 
-    db.onversionchange?.();
-    const reopened = await opened(name, 2);
+    retire(db);
+    const reopened = await opened(name, version);
 
     expect(reopened).not.toBe(db);
     expect(factory.requests).toHaveLength(2);
-    expect(factory.last().version).toBe(2);
-  });
-
-  it('opens a new connection after the browser closes the old one', async () => {
-    const name = freshName();
-    const db = await opened(name);
-
-    db.onclose?.();
-    const reopened = await opened(name);
-
-    expect(reopened).not.toBe(db);
-    expect(factory.requests).toHaveLength(2);
+    expect(factory.last().version).toBe(version);
   });
 
   it('resolves once a blocked upgrade is unblocked', async () => {
@@ -239,29 +233,20 @@ describe('getRecord', () => {
     expect(db.served).toBe(1);
   });
 
-  it('reads through a reopened connection when handed one a version change closed', async () => {
-    const name = freshName();
-    const stale = await opened(name, 2);
-    stale.onversionchange?.();
+  it.each(RETIREMENTS)(
+    'reads through a reopened connection when handed one closed by $cause',
+    async ({ version, retire }) => {
+      const name = freshName();
+      const stale = await opened(name, version);
+      retire(stale);
 
-    const record = await getRecord(asConnection(stale), 'books', 'a');
-    const reopened = await opened(name, 2);
+      const record = await getRecord(asConnection(stale), 'books', 'a');
+      const reopened = await opened(name, version);
 
-    expect(record).toBe('record a');
-    expect(stale.served).toBe(0);
-    expect(reopened.served).toBe(1);
-    expect(factory.last().version).toBe(2);
-  });
-
-  it('reads through a reopened connection when handed one the browser closed', async () => {
-    const name = freshName();
-    const stale = await opened(name);
-    stale.onclose?.();
-
-    await getRecord(asConnection(stale), 'books', 'a');
-    const reopened = await opened(name);
-
-    expect(stale.served).toBe(0);
-    expect(reopened.served).toBe(1);
-  });
+      expect(record).toBe('record a');
+      expect(stale.served).toBe(0);
+      expect(reopened.served).toBe(1);
+      expect(factory.last().version).toBe(version);
+    },
+  );
 });

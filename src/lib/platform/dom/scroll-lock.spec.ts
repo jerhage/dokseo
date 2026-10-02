@@ -14,20 +14,12 @@ describe('lockScrolling', () => {
     expect(target.style.overflow).toBe('hidden');
   });
 
-  it('restores an empty inline value', () => {
-    const target = targetOf();
+  it.each(['', 'scroll'])('restores the exact value %j the element already carried', (value) => {
+    const target = targetOf(value);
 
     lockScrolling(target)();
 
-    expect(target.style.overflow).toBe('');
-  });
-
-  it('restores the exact value the element already carried', () => {
-    const target = targetOf('scroll');
-
-    lockScrolling(target)();
-
-    expect(target.style.overflow).toBe('scroll');
+    expect(target.style.overflow).toBe(value);
   });
 
   it('stays locked until every holder releases', () => {
@@ -61,10 +53,15 @@ describe('lockScrolling', () => {
 
   it('locks an element again after it was restored', () => {
     const target = targetOf('visible');
-
     lockScrolling(target)();
-    lockScrolling(target)();
+    target.style.overflow = 'scroll';
 
-    expect(target.style.overflow).toBe('visible');
+    const release = lockScrolling(target);
+
+    expect(target.style.overflow).toBe('hidden');
+
+    release();
+
+    expect(target.style.overflow).toBe('scroll');
   });
 });

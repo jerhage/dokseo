@@ -22,18 +22,13 @@ describe('decodeImage', () => {
     expect(decode).toHaveBeenCalledWith(blob, { imageOrientation: 'from-image' });
   });
 
-  it('names the blob when it will not decode', async () => {
+  it.each([
+    { blob: new Blob(['bytes'], { type: 'image/jpeg' }), reason: /image\/jpeg.*not an image/u },
+    { blob: new Blob(['bytes']), reason: /unknown type.*not an image/u },
+  ])('names the type of a blob that will not decode, as $reason', async ({ blob, reason }) => {
     decode.mockRejectedValue(new Error('not an image'));
 
-    await expect(decodeImage(new Blob(['bytes'], { type: 'image/jpeg' }))).rejects.toThrow(
-      /image\/jpeg.*not an image/u,
-    );
-  });
-
-  it('says the type is unknown when the blob carries none', async () => {
-    decode.mockRejectedValue(new Error('not an image'));
-
-    await expect(decodeImage(new Blob(['bytes']))).rejects.toThrow(/unknown type/u);
+    await expect(decodeImage(blob)).rejects.toThrow(reason);
   });
 });
 

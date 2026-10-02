@@ -59,29 +59,18 @@ afterEach(() => {
 });
 
 describe('NO_TRACE', () => {
-  it('writes nothing to the console', () => {
+  it('writes nothing to the console, marks nothing on the timeline and leaves the bitmap open', () => {
+    const { bitmap, close } = stubBitmap();
+
     NO_TRACE.step('region', { order: 0 });
-    NO_TRACE.image('crop', stubBitmap().bitmap);
+    NO_TRACE.image('crop', bitmap);
     NO_TRACE.end();
 
     expect(console.groupCollapsed).not.toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalled();
     expect(console.groupEnd).not.toHaveBeenCalled();
-  });
-
-  it('marks nothing on the performance timeline', () => {
-    NO_TRACE.step('region', { order: 0 });
-    NO_TRACE.end();
-
     expect(performance.mark).not.toHaveBeenCalled();
     expect(performance.measure).not.toHaveBeenCalled();
-  });
-
-  it('leaves the bitmap open', () => {
-    const { bitmap, close } = stubBitmap();
-
-    NO_TRACE.image('crop', bitmap);
-
     expect(close).not.toHaveBeenCalled();
   });
 });
