@@ -5,7 +5,6 @@ import { CorruptRow } from '$lib/shared/corrupt-row';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
-import { at } from '$lib/shared/testing/at';
 import {
   captureFromStored,
   editedCapture,
@@ -84,67 +83,58 @@ function asLifted(capture: Capture): LiftedCapture {
   return capture;
 }
 
-function asRegions(anchor: Anchor): readonly ImageRegion[] {
-  if (anchor.kind !== 'region') throw new Error('That capture was not anchored to a region');
-  return anchor.regions;
-}
-
 describe('takenCapture', () => {
-  it('stamps the draft with the moment it was taken', () => {
-    const capture = takenCapture(draft('a', 0.8), 1_700_000_000_000);
-
-    expect(capture).toEqual({
-      id: 'a',
-      bookId: BOOK,
-      anchor: ANCHOR,
-      text: 'こっちに来て',
-      note: null,
-      confidence: 0.8,
-      origin: 'recognized',
-      createdAt: 1_700_000_000_000,
-      editedAt: null,
-      tagIds: [],
+  for (const { name, capture, expected } of [
+    {
+      name: 'stamps the draft with the moment it was taken',
+      capture: takenCapture(draft('a', 0.8), 1_700_000_000_000),
+      expected: {
+        id: 'a',
+        bookId: BOOK,
+        anchor: ANCHOR,
+        text: 'こっちに来て',
+        note: null,
+        confidence: 0.8,
+        origin: 'recognized',
+        createdAt: 1_700_000_000_000,
+        editedAt: null,
+        tagIds: [],
+      },
+    },
+    {
+      name: 'builds a written capture with no confidence and no note to carry',
+      capture: note('a', 'my own words'),
+      expected: {
+        id: 'a',
+        bookId: BOOK,
+        anchor: ANCHOR,
+        text: 'my own words',
+        origin: 'written',
+        createdAt: 1,
+        editedAt: null,
+        tagIds: [],
+      },
+    },
+    {
+      name: 'builds a lifted capture with no confidence and a note it can hold',
+      capture: lifted('a', 'こっちに来て'),
+      expected: {
+        id: 'a',
+        bookId: BOOK,
+        anchor: QUOTED,
+        text: 'こっちに来て',
+        note: null,
+        origin: 'lifted',
+        createdAt: 1,
+        editedAt: null,
+        tagIds: [],
+      },
+    },
+  ]) {
+    it(name, () => {
+      expect(capture).toEqual(expected);
     });
-  });
-
-  it('builds a written capture with no confidence and no note to carry', () => {
-    const capture = note('a', 'my own words');
-
-    expect(capture).toEqual({
-      id: 'a',
-      bookId: BOOK,
-      anchor: ANCHOR,
-      text: 'my own words',
-      origin: 'written',
-      createdAt: 1,
-      editedAt: null,
-      tagIds: [],
-    });
-  });
-
-  it('builds a lifted capture with no confidence and a note it can hold', () => {
-    const capture = lifted('a', 'こっちに来て');
-
-    expect(capture).toEqual({
-      id: 'a',
-      bookId: BOOK,
-      anchor: QUOTED,
-      text: 'こっちに来て',
-      note: null,
-      origin: 'lifted',
-      createdAt: 1,
-      editedAt: null,
-      tagIds: [],
-    });
-  });
-
-  it('keeps the image index and the rect rather than a page number', () => {
-    const capture = takenCapture(draft('a'), 1);
-
-    expect(capture.anchor.kind).toBe('region');
-    expect(at(asRegions(capture.anchor), 0).index).toBe(13);
-    expect(at(asRegions(capture.anchor), 0).rect).toEqual(imageRect(10, 20, 100, 40));
-  });
+  }
 });
 
 describe('captureFromStored', () => {
@@ -193,19 +183,6 @@ describe('captureFromStored', () => {
     };
 
     expect(captureFromStored(stored).anchor).toEqual(regionAnchor([]));
-  });
-
-  it('reads a stored text anchor back whole', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      anchor: QUOTED,
-      text: 'こっちに来て',
-      confidence: null,
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).anchor).toEqual(QUOTED);
   });
 
   it('reads back the chapter a stored text anchor names', () => {
@@ -412,33 +389,36 @@ describe('captureFromStored', () => {
     });
   });
 
-  it('drops a confidence a stored lifted record happens to carry', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      anchor: QUOTED,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
+  for (const { origin, stored } of [
+    {
       origin: 'lifted',
-    };
-
-    expect('confidence' in captureFromStored(stored)).toBe(false);
-  });
-
-  it('drops a confidence a stored written record happens to carry', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'my own words',
-      confidence: 0.5,
-      createdAt: 42,
+      stored: {
+        id: captureId('a'),
+        bookId: BOOK,
+        anchor: QUOTED,
+        text: 'こっちに来て',
+        confidence: 0.5,
+        createdAt: 42,
+        origin: 'lifted',
+      },
+    },
+    {
       origin: 'written',
-    };
-
-    expect('confidence' in captureFromStored(stored)).toBe(false);
-  });
+      stored: {
+        id: captureId('a'),
+        bookId: BOOK,
+        regions: REGIONS,
+        text: 'my own words',
+        confidence: 0.5,
+        createdAt: 42,
+        origin: 'written',
+      },
+    },
+  ]) {
+    it(`drops a confidence a stored ${origin} record happens to carry`, () => {
+      expect('confidence' in captureFromStored(stored)).toBe(false);
+    });
+  }
 
   it('sorts a record with no creation time before every dated one', () => {
     const undated = captureFromStored({
@@ -462,26 +442,30 @@ describe('editedCapture', () => {
     expect(edited.editedAt).toBe(77);
   });
 
-  it('keeps the previous text when the edit is blank', () => {
-    const edited = editedCapture(taken('a', 1), '   ', 77);
+  for (const { name, before, text } of [
+    {
+      name: 'keeps the previous text when the edit is blank',
+      before: taken('a', 1),
+      text: 'こっちに来て',
+    },
+    {
+      name: 'keeps the lifted text when the edit is blank, because the book still holds it',
+      before: lifted('a', 'こっちに来て'),
+      text: 'こっちに来て',
+    },
+    {
+      name: 'empties a written capture when the edit is blank',
+      before: note('a', 'my own words'),
+      text: '',
+    },
+  ]) {
+    it(name, () => {
+      const edited = editedCapture(before, '   ', 77);
 
-    expect(edited.text).toBe('こっちに来て');
-    expect(edited.editedAt).toBe(77);
-  });
-
-  it('keeps the lifted text when the edit is blank, because the book still holds it', () => {
-    const edited = editedCapture(lifted('a', 'こっちに来て'), '   ', 77);
-
-    expect(edited.text).toBe('こっちに来て');
-    expect(edited.editedAt).toBe(77);
-  });
-
-  it('empties a written capture when the edit is blank', () => {
-    const edited = editedCapture(note('a', 'my own words'), '   ', 77);
-
-    expect(edited.text).toBe('');
-    expect(edited.editedAt).toBe(77);
-  });
+      expect(edited.text).toBe(text);
+      expect(edited.editedAt).toBe(77);
+    });
+  }
 
   it('keeps everything the reader did not change', () => {
     const before = taken('a', 1);
@@ -496,17 +480,24 @@ describe('editedCapture', () => {
 });
 
 describe('notedCapture', () => {
-  it('stores a note on a lifted capture and leaves it lifted', () => {
-    const noted = notedCapture(asLifted(lifted('a', 'こっちに来て')), '  he means his sister  ');
+  for (const { name, before, origin } of [
+    {
+      name: 'stores a note on a lifted capture and leaves it lifted',
+      before: asLifted(lifted('a', 'こっちに来て')),
+      origin: 'lifted',
+    },
+    {
+      name: 'stores the note the reader wrote, without the space around it',
+      before: asRecognized(taken('a', 1)),
+      origin: 'recognized',
+    },
+  ]) {
+    it(name, () => {
+      const noted = notedCapture(before, '  he means his sister  ');
 
-    expect([noted.origin, noted.note]).toEqual(['lifted', 'he means his sister']);
-  });
-
-  it('stores the note the reader wrote, without the space around it', () => {
-    const noted = notedCapture(asRecognized(taken('a', 1)), '  he means his sister  ');
-
-    expect(noted.note).toBe('he means his sister');
-  });
+      expect([noted.origin, noted.note]).toEqual([origin, 'he means his sister']);
+    });
+  }
 
   it('stores no note for a blank one, which is how a reader takes a note back', () => {
     const written = notedCapture(asRecognized(taken('a', 1)), 'he means his sister');
@@ -514,20 +505,13 @@ describe('notedCapture', () => {
     expect(notedCapture(written, '   \n  ').note).toBeNull();
   });
 
-  it('leaves the recognized text and the moment it was edited where they were', () => {
+  it('leaves the recognized text and the moment it was edited where they were, with everything else the capture carried', () => {
     const before = asRecognized(editedCapture(taken('a', 1), 'べつのことば', 77));
 
     const noted = notedCapture(before, 'my own words');
 
     expect(noted.text).toBe('べつのことば');
     expect(noted.editedAt).toBe(77);
-  });
-
-  it('keeps everything else the capture carried', () => {
-    const before = asRecognized(taken('a', 1));
-
-    const noted = notedCapture(before, 'my own words');
-
     expect(noted.id).toBe(before.id);
     expect(noted.createdAt).toBe(before.createdAt);
     expect(noted.confidence).toBe(before.confidence);

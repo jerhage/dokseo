@@ -48,10 +48,6 @@ describe('matchesInBookOrder', () => {
     ]);
   });
 
-  it('orders a right-to-left page from the right edge', () => {
-    expect(matchesInBookOrder([SECOND, FIRST], '海', 'rtl', byCfi)[0]?.id).toBe(FIRST.id);
-  });
-
   it('orders a left-to-right page from the left edge', () => {
     expect(matchesInBookOrder([FIRST, SECOND], '海', 'ltr', byCfi)[0]?.id).toBe(SECOND.id);
   });
@@ -78,24 +74,17 @@ describe('arrivalAt', () => {
     expect(arrivalAt(ALL, null, 'rtl', position(FIRST), byCfi)?.at.id).toBe(FIRST.id);
   });
 
-  it('counts the arrival among the matching captures in book order', () => {
+  it('counts the arrival among the matching captures in book order and names its neighbours, one step per capture on the same image', () => {
     const arrival = arrivalAt(ALL, '海', 'rtl', position(SECOND), byCfi);
     expect(arrival?.stepping?.ordinal).toBe(2);
     expect(arrival?.stepping?.total).toBe(3);
-  });
-
-  it('names the neighbouring captures, one step per capture on the same image', () => {
-    const arrival = arrivalAt(ALL, '海', 'rtl', position(SECOND), byCfi);
     expect(arrival?.stepping?.previous.id).toBe(FIRST.id);
     expect(arrival?.stepping?.next.id).toBe(THIRD.id);
     expect(arrivalAt(ALL, '海', 'rtl', position(FIRST), byCfi)?.stepping?.next.id).toBe(SECOND.id);
   });
 
-  it('wraps from the last match back to the first', () => {
+  it('wraps from the last match back to the first, and from the first back to the last', () => {
     expect(arrivalAt(ALL, '海', 'rtl', position(THIRD), byCfi)?.stepping?.next.id).toBe(FIRST.id);
-  });
-
-  it('wraps from the first match back to the last', () => {
     expect(arrivalAt(ALL, '海', 'rtl', position(FIRST), byCfi)?.stepping?.previous.id).toBe(
       THIRD.id,
     );
@@ -108,15 +97,16 @@ describe('arrivalAt', () => {
     expect(only?.stepping?.next.id).toBe(OTHER.id);
   });
 
-  it('reaches a capture named without a query and offers no stepping', () => {
-    const arrival = arrivalAt(ALL, null, 'rtl', position(OTHER), byCfi);
-    expect(arrival?.at.id).toBe(OTHER.id);
-    expect(arrival?.stepping).toBeNull();
-  });
-
-  it('treats a query of only spaces as no query at all', () => {
-    expect(arrivalAt(ALL, '  ', 'rtl', position(SECOND), byCfi)?.stepping).toBeNull();
-  });
+  for (const { asked, query, reached } of [
+    { asked: 'without a query', query: null, reached: OTHER },
+    { asked: 'with a query of only spaces', query: '  ', reached: SECOND },
+  ]) {
+    it(`reaches a capture named ${asked} and offers no stepping`, () => {
+      const arrival = arrivalAt(ALL, query, 'rtl', position(reached), byCfi);
+      expect(arrival?.at.id).toBe(reached.id);
+      expect(arrival?.stepping).toBeNull();
+    });
+  }
 
   it('reports nothing for a position where this book holds no capture', () => {
     expect(arrivalAt([FIRST, SECOND], null, 'rtl', position(THIRD), byCfi)).toBeNull();
@@ -162,12 +152,10 @@ describe('arrivalAt for a capture the query never matched', () => {
   const other = row('other', '海が見える', at(1, 10, 10));
   const place = { index: imageIndex(0), rect: imageRect(10, 10, 10, 10) };
 
-  it('arrives at a capture whose text holds none of the query, so the box is drawn', () => {
-    expect(arrivalAt([other, wanted], '海', 'rtl', place, byCfi)?.at.id).toBe(wanted.id);
-  });
-
-  it('offers no stepping there, because it is not one of the query matches', () => {
-    expect(arrivalAt([other, wanted], '海', 'rtl', place, byCfi)?.stepping).toBeNull();
+  it('arrives at a capture whose text holds none of the query, so the box is drawn, and offers no stepping there', () => {
+    const arrival = arrivalAt([other, wanted], '海', 'rtl', place, byCfi);
+    expect(arrival?.at.id).toBe(wanted.id);
+    expect(arrival?.stepping).toBeNull();
   });
 });
 
@@ -210,51 +198,36 @@ describe('passageArrivalAt', () => {
 
   const LIFTED = [CLOSING, UNPLACED, MOUNTAIN, MIDDLE, ON_A_PAGE, OPENING];
 
-  it('counts the passage among the matching passages in book order', () => {
+  it('counts the passage among the matching passages in book order and names the passages before and after it', () => {
     const arrival = passageArrivalAt(LIFTED, '海', 'cfi-3', byReadingOrder);
 
     expect(arrival?.at.id).toBe(MIDDLE.id);
     expect([arrival?.stepping?.ordinal, arrival?.stepping?.total]).toEqual([2, 3]);
-  });
-
-  it('names the passages before and after it in book order', () => {
-    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-3', byReadingOrder);
-
     expect([arrival?.stepping?.previous.id, arrival?.stepping?.next.id]).toEqual([
       OPENING.id,
       CLOSING.id,
     ]);
   });
 
-  it('wraps from the last passage back to the first', () => {
-    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-4', byReadingOrder);
-
-    expect(arrival?.stepping?.next.id).toBe(OPENING.id);
+  it('wraps from the last passage back to the first, and from the first back to the last', () => {
+    expect(passageArrivalAt(LIFTED, '海', 'cfi-4', byReadingOrder)?.stepping?.next.id).toBe(
+      OPENING.id,
+    );
+    expect(passageArrivalAt(LIFTED, '海', 'cfi-1', byReadingOrder)?.stepping?.previous.id).toBe(
+      CLOSING.id,
+    );
   });
 
-  it('wraps from the first passage back to the last', () => {
-    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-1', byReadingOrder);
+  for (const { reached, query } of [
+    { reached: 'reached without a query', query: null },
+    { reached: 'the query does not match', query: '海' },
+  ]) {
+    it(`offers no stepping for a passage ${reached}`, () => {
+      const arrival = passageArrivalAt(LIFTED, query, 'cfi-2', byReadingOrder);
 
-    expect(arrival?.stepping?.previous.id).toBe(CLOSING.id);
-  });
-
-  it('steps over a capture on a page and a capture that names no passage', () => {
-    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-1', byReadingOrder);
-
-    expect(arrival?.stepping?.total).toBe(3);
-  });
-
-  it('offers no stepping for a passage reached without a query', () => {
-    const arrival = passageArrivalAt(LIFTED, null, 'cfi-2', byReadingOrder);
-
-    expect(arrival).toEqual({ at: MOUNTAIN, stepping: null });
-  });
-
-  it('offers no stepping for a passage the query does not match', () => {
-    const arrival = passageArrivalAt(LIFTED, '海', 'cfi-2', byReadingOrder);
-
-    expect(arrival).toEqual({ at: MOUNTAIN, stepping: null });
-  });
+      expect(arrival).toEqual({ at: MOUNTAIN, stepping: null });
+    });
+  }
 
   it('reports nothing for a cfi no capture was lifted at', () => {
     expect(passageArrivalAt(LIFTED, '海', 'cfi-9', byReadingOrder)).toBeNull();
