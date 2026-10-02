@@ -4,6 +4,7 @@
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Button from '$lib/components/Button.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
+  import SelectedShelfIcon from '$lib/components/icons/SelectedShelf.svelte';
   import TagIcon from '$lib/components/icons/Tag.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import Modal from '$lib/components/Modal.svelte';
@@ -67,9 +68,9 @@
 <div class="layout-app-shell">
   <header class="layout-app-shell-header layout-app-shell-narrow-nowrap">
     <div class="row items-center gap-3 min-w-0">
-      <IconButton href="/" variant="primary" size="sm" label="Your library" tooltip={false}>
-        <span lang="ja" aria-hidden="true">読</span>
-      </IconButton>
+      <IconButton href="/" variant="ghost" label="Your library" tooltip={false}
+        ><SelectedShelfIcon class="brand-mark" /></IconButton
+      >
       <Breadcrumb items={crumbs} label="You are here" class="min-w-0" />
     </div>
     <div class="row items-center gap-1 shrink-0">

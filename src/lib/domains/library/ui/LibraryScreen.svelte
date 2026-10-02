@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Avatar from '$lib/components/Avatar.svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
@@ -104,8 +103,8 @@
     class="layout-app-shell-header wrap layout-app-shell-narrow-nowrap layout-app-shell-narrow-touch"
   >
     <div class="row items-center gap-2 min-w-0">
-      <Avatar shape="square" size="sm" aria-hidden="true"
-        ><SelectedShelfIcon class="avatar-icon" /></Avatar
+      <IconButton href="/" variant="ghost" label="Your library" tooltip={false}
+        ><SelectedShelfIcon class="brand-mark" /></IconButton
       >
       <div class="col gap-0 flex-1">
         <span class="display weight-semibold">Library</span>

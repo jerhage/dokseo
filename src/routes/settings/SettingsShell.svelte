@@ -5,6 +5,7 @@
   import IconButton from '$lib/components/IconButton.svelte';
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
+  import SelectedShelfIcon from '$lib/components/icons/SelectedShelf.svelte';
   import { settingsSections } from './settings-sections';
   import type { SettingsSection } from './settings-sections';
 
@@ -30,9 +31,9 @@
 <div class="layout-app-shell">
   <header class="layout-app-shell-header wrap">
     <div class="row items-center gap-3">
-      <IconButton href="/" variant="primary" size="sm" label="Your library" tooltip={false}>
-        <span lang="ja" aria-hidden="true">読</span>
-      </IconButton>
+      <IconButton href="/" variant="ghost" label="Your library" tooltip={false}
+        ><SelectedShelfIcon class="brand-mark" /></IconButton
+      >
       <Breadcrumb items={crumbs} label="You are here" />
     </div>
   </header>
