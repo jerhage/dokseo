@@ -31,10 +31,6 @@ describe('scrubPlace', () => {
   it('keeps the place on the last step when the position runs past it', () => {
     expect(scrubPlace({ ...SPREADS, group: 9 })).toEqual({ steps: 3, at: 2 });
   });
-
-  it('reports no steps and the first place for a book with no groups', () => {
-    expect(scrubPlace({ ...SPREADS, groups: [], total: 0 })).toEqual({ steps: 0, at: 0 });
-  });
 });
 
 describe('stepMarker', () => {

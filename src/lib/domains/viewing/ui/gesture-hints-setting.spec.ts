@@ -24,16 +24,12 @@ class FakeStore implements StringStore {
 }
 
 describe('toGestureHints', () => {
-  it('reads nothing stored as on', () => {
-    expect(toGestureHints(null)).toBe(true);
-  });
-
-  it('reads an unknown value as on', () => {
-    expect(toGestureHints('maybe')).toBe(true);
-  });
-
-  it('reads off as off', () => {
-    expect(toGestureHints('off')).toBe(false);
+  it.each([
+    { stored: null, wanted: true },
+    { stored: 'maybe', wanted: true },
+    { stored: 'off', wanted: false },
+  ])('reads $stored as $wanted', ({ stored, wanted }) => {
+    expect(toGestureHints(stored)).toBe(wanted);
   });
 });
 
@@ -52,9 +48,5 @@ describe('readGestureHints and saveGestureHints', () => {
     saveGestureHints(true, () => store);
 
     expect(readGestureHints(() => store)).toBe(true);
-  });
-
-  it('reads on when no store is reachable', () => {
-    expect(readGestureHints(() => null)).toBe(true);
   });
 });

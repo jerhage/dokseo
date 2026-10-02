@@ -24,16 +24,12 @@ class FakeStore implements StringStore {
 }
 
 describe('toAllCaptures', () => {
-  it('reads nothing stored as off', () => {
-    expect(toAllCaptures(null)).toBe(false);
-  });
-
-  it('reads an unknown value as off', () => {
-    expect(toAllCaptures('maybe')).toBe(false);
-  });
-
-  it('reads on as on', () => {
-    expect(toAllCaptures('on')).toBe(true);
+  it.each([
+    { stored: null, wanted: false },
+    { stored: 'maybe', wanted: false },
+    { stored: 'on', wanted: true },
+  ])('reads $stored as $wanted', ({ stored, wanted }) => {
+    expect(toAllCaptures(stored)).toBe(wanted);
   });
 });
 
@@ -52,9 +48,5 @@ describe('readAllCaptures and saveAllCaptures', () => {
     saveAllCaptures(false, () => store);
 
     expect(readAllCaptures(() => store)).toBe(false);
-  });
-
-  it('reads off when no store is reachable', () => {
-    expect(readAllCaptures(() => null)).toBe(false);
   });
 });

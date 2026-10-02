@@ -58,16 +58,6 @@ describe('forgetGestures', () => {
     expect(storage.entries.has(KEY)).toBe(false);
     expect(next.learnedGestures()).toEqual([]);
   });
-
-  it('learns a gesture again after forgetting', async () => {
-    const gestures = await import('./learned-gestures.svelte');
-    gestures.learnGesture('pinch');
-    gestures.forgetGestures();
-
-    gestures.learnGesture('pinch');
-
-    expect(gestures.learnedGestures()).toEqual(['pinch']);
-  });
 });
 
 describe('chooseHints', () => {

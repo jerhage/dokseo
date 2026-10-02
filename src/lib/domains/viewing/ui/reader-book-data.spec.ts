@@ -45,41 +45,31 @@ describe('ReaderBookData', () => {
     expect(html).not.toContain('Opening the book…');
   });
 
-  it('draws the opening curtain in place of the child until the book is open', () => {
-    for (const opening of [
-      { kind: 'idle' },
-      { kind: 'opening' },
-      { kind: 'missing', message: 'gone' },
-    ] as const) {
+  it.each<{ readonly opening: ReaderOpening; readonly text: string }>([
+    { opening: { kind: 'idle' }, text: 'Opening the book…' },
+    { opening: { kind: 'opening' }, text: 'Opening the book…' },
+    { opening: { kind: 'missing', message: 'gone' }, text: 'Opening the book…' },
+    { opening: { kind: 'empty', book: BOOK }, text: 'This book holds no pages to show.' },
+    {
+      opening: { kind: 'flow', book: { ...BOOK, layoutKind: 'flow', imageCount: 0 } },
+      text: 'Opening the book…',
+    },
+  ])(
+    'draws $text in place of the child, with no way back, for a $opening.kind book',
+    ({ opening, text }) => {
       const html = markup(opening);
 
-      expect(html).toContain('Opening the book…');
+      expect(html).toContain(text);
       expect(html).not.toContain('reading');
       expect(html).not.toContain(BACK);
-    }
-  });
+    },
+  );
 
   it('draws the failure with a way back to the library', () => {
     const html = markup({ kind: 'failed', message: 'That book could not be read: bad zip' });
 
     expect(html).toContain('That book could not be read: bad zip');
     expect(html).toContain(BACK);
-    expect(html).not.toContain('reading');
-  });
-
-  it('draws the empty book notice without a way back', () => {
-    const html = markup({ kind: 'empty', book: BOOK });
-
-    expect(html).toContain('This book holds no pages to show.');
-    expect(html).not.toContain(BACK);
-    expect(html).not.toContain('reading');
-  });
-
-  it('draws the opening curtain for an ebook until the route shows the ebook reader', () => {
-    const html = markup({ kind: 'flow', book: { ...BOOK, layoutKind: 'flow', imageCount: 0 } });
-
-    expect(html).toContain('Opening the book…');
-    expect(html).not.toContain(BACK);
     expect(html).not.toContain('reading');
   });
 });

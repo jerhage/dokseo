@@ -55,11 +55,14 @@ afterEach(() => {
 });
 
 describe('ReaderScreen', () => {
-  it('shows a paged book in the paged viewer', () => {
-    const html = markup({ kind: 'images', book: BOOK, notice: null });
+  it.each([
+    { layoutKind: 'paged', shown: 'paged-viewer', absent: 'continuous-viewer' },
+    { layoutKind: 'continuous', shown: 'continuous-viewer', absent: 'paged-viewer' },
+  ] as const)('shows a $layoutKind book in the $shown', ({ layoutKind, shown, absent }) => {
+    const html = markup({ kind: 'images', book: { ...BOOK, layoutKind }, notice: null });
 
-    expect(html).toContain('paged-viewer');
-    expect(html).not.toContain('continuous-viewer');
+    expect(html).toContain(shown);
+    expect(html).not.toContain(absent);
   });
 
   it('lays the pages out in the reading direction of the book', () => {
@@ -72,17 +75,6 @@ describe('ReaderScreen', () => {
 
     expect(rightToLeft).toContain('is-rtl');
     expect(leftToRight).not.toContain('is-rtl');
-  });
-
-  it('shows a continuous book in the strip viewer', () => {
-    const html = markup({
-      kind: 'images',
-      book: { ...BOOK, layoutKind: 'continuous' },
-      notice: null,
-    });
-
-    expect(html).toContain('continuous-viewer');
-    expect(html).not.toContain('paged-viewer');
   });
 
   it('keeps the frame, with the book unnamed, while the book opens', () => {

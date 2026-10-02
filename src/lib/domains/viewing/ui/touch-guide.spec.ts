@@ -34,24 +34,15 @@ function swipeMove(finger: SwipeFinger, direction: ReadingDirection, turns: Touc
 }
 
 describe('offersTouchGuide', () => {
-  it('offers the guide on touch', () => {
-    expect(offersTouchGuide('touch')).toBe(true);
-  });
-
-  it('offers nothing to a mouse or pen reader', () => {
-    expect(offersTouchGuide('pointer')).toBe(false);
+  it.each([
+    { input: 'touch', offered: true },
+    { input: 'pointer', offered: false },
+  ] as const)('offers the guide to a $input reader: $offered', ({ input, offered }) => {
+    expect(offersTouchGuide(input)).toBe(offered);
   });
 });
 
 describe('forwardSwipe', () => {
-  it('tells a left-to-right reader to swipe left', () => {
-    expect(forwardSwipe('ltr')).toBe('left');
-  });
-
-  it('tells a right-to-left reader to swipe right', () => {
-    expect(forwardSwipe('rtl')).toBe('right');
-  });
-
   it('names the swipe that really turns forward, in both directions and both turn modes', () => {
     for (const direction of ['ltr', 'rtl'] as const) {
       for (const turns of ['tap-zones', 'swipe-only'] as const) {

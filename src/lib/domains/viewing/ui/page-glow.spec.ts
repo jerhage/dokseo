@@ -10,26 +10,18 @@ function region(index: number, x: number): GlowRegion {
 }
 
 describe('glowOn', () => {
-  it('keeps only the regions lying on the asked page', () => {
-    const glow = [region(1, 0), region(2, 0), region(1, 30)];
-
-    expect(glowOn(glow, imageIndex(1)).map((found) => found.rect.x)).toEqual([0, 30]);
-  });
-
-  it('carries both origins onto one page', () => {
+  it('keeps only the regions lying on the asked page, whatever their origin', () => {
     const glow = [
-      ...glowRegions([{ index: imageIndex(4), rect: imageRect(0, 0, 10, 10) }], 'recognized'),
-      ...glowRegions([{ index: imageIndex(4), rect: imageRect(20, 0, 10, 10) }], 'written'),
+      region(1, 0),
+      region(2, 0),
+      ...glowRegions([{ index: imageIndex(1), rect: imageRect(30, 0, 10, 10) }], 'written'),
     ];
 
-    expect(glowOn(glow, imageIndex(4)).map((found) => found.origin)).toEqual([
-      'recognized',
-      'written',
+    expect(glowOn(glow, imageIndex(1)).map((found) => [found.rect.x, found.origin])).toEqual([
+      [0, 'recognized'],
+      [30, 'written'],
     ]);
-  });
-
-  it('finds nothing on a page no region touches', () => {
-    expect(glowOn([region(1, 0)], imageIndex(7))).toEqual([]);
+    expect(glowOn(glow, imageIndex(7))).toEqual([]);
   });
 });
 

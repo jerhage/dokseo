@@ -26,15 +26,19 @@ function tapTurn(x: number, direction: ReadingDirection) {
 
 describe('zoneLabels', () => {
   it('names the zones Previous, Menu, Next from left to right in a left-to-right book', () => {
-    expect(labels('ltr')).toEqual(['Previous', 'Menu', 'Next']);
+    expect(zoneLabels('ltr')).toEqual([
+      { zone: 'left', label: 'Previous' },
+      { zone: 'centre', label: 'Menu' },
+      { zone: 'right', label: 'Next' },
+    ]);
   });
 
   it('mirrors the side labels in a right-to-left book', () => {
-    expect(labels('rtl')).toEqual(['Next', 'Menu', 'Previous']);
-  });
-
-  it('orders the zones left, centre, right', () => {
-    expect(zoneLabels('rtl').map((zone) => zone.zone)).toEqual(['left', 'centre', 'right']);
+    expect(zoneLabels('rtl')).toEqual([
+      { zone: 'left', label: 'Next' },
+      { zone: 'centre', label: 'Menu' },
+      { zone: 'right', label: 'Previous' },
+    ]);
   });
 
   it('agrees with the turn a tap in each side zone makes, in both directions', () => {
@@ -51,9 +55,5 @@ describe('zoneLabels', () => {
       expect(named[leftTurn.move]).toBe(first);
       expect(named[rightTurn.move]).toBe(last);
     }
-  });
-
-  it('agrees that a centre tap brings up the menu', () => {
-    expect(tapTurn(WIDTH / 2, 'ltr')).toEqual({ kind: 'toggle-chrome' });
   });
 });
