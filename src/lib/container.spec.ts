@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { buildContainer } from './container';
 import type { LibraryRepository } from './domains/library/domain/book/library-repository';
 import type { CaptureRepository } from './domains/recognition/domain/capture/capture-repository';
 import { bookId } from './shared/ids';
@@ -49,8 +50,6 @@ vi.mock('./domains/recognition/adapters/capture/indexeddb-captures.repo', () => 
 
 describe('buildContainer', () => {
   it('removes a book and keeps its captures', async () => {
-    const { buildContainer } = await import('./container');
-
     const result = await buildContainer().library.removeBook(bookId('book-1'));
 
     expect(result).toEqual({ kind: 'success' });
