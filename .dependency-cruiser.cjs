@@ -15,11 +15,11 @@ module.exports = {
     {
       name: 'only-the-container-builds-adapters',
       comment:
-        'A concrete adapter is a choice of technology, and exactly one file is allowed to make that choice: src/lib/container.ts, the composition root. Everything else — a route, a use case, a UI module, another domain — depends on the port in domain/ and receives the adapter it was handed. The one other exemption is an adapter reaching a sibling adapter in its OWN domain, which is how a decorator wraps the thing it decorates. This rule is why the domain barrel is gone: a barrel re-exported the adapters, and dependency-cruiser works at module granularity, so it could not tell an importer that took the port from one that took the adapter.',
+        'A concrete adapter is a choice of technology, and only the composition root is allowed to make that choice: src/lib/container.ts and the per-domain builders it calls in src/lib/composition/. Everything else — a route, a use case, a UI module, another domain — depends on the port in domain/ and receives the adapter it was handed. The one other exemption is an adapter reaching a sibling adapter in its OWN domain, which is how a decorator wraps the thing it decorates. This rule is why the domain barrel is gone: a barrel re-exported the adapters, and dependency-cruiser works at module granularity, so it could not tell an importer that took the port from one that took the adapter.',
       severity: 'error',
       from: {
         path: '^src/lib/domains/([^/]+)/adapters/|^src/',
-        pathNot: '^src/lib/container\\.ts$',
+        pathNot: ['^src/lib/container\\.ts$', '^src/lib/composition/'],
       },
       to: {
         path: '^src/lib/domains/[^/]+/adapters/',

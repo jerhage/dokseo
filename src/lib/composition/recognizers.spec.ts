@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { recognizerFor } from './container';
+import { recognizerFor } from './recognizers';
 
 describe('recognizerFor', () => {
   it('resolves a recognizer of its own for each language', async () => {
