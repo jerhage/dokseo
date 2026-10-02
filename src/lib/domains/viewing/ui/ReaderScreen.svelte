@@ -18,14 +18,12 @@
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
+  import { chooseTouchTurns, touchTurns } from '$lib/shared/chosen-touch-turns.svelte';
   import { chooseEdgeClicksTurn, edgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { imageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
   import PageBar from '$lib/shared/PageBar.svelte';
-  import type { TouchTurns } from '$lib/shared/page-turn';
-  import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
-  import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
   import { shownTurnSettings } from '$lib/shared/turn-settings';
   import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
@@ -97,7 +95,6 @@
   let strip = $state<ReturnType<typeof ContinuousViewer> | null>(null);
   let noting = $state(false);
   let selecting = $state(false);
-  const touchTurns = new RememberedChoice<TouchTurns>(readTouchTurns, saveTouchTurns);
   let settingsOpen = $state(false);
   let turnSettings = $state.raw<ShownTurnSettings>(presentTurnSettings());
 
@@ -310,7 +307,7 @@
               {makes}
               chromeShown={shown}
               {selecting}
-              turns={touchTurns.value}
+              turns={touchTurns()}
               edgeClicksTurn={edgeClicksTurn()}
               select={(regions) => commit(regions, 'row')}
               clear={() => view.selection.clear()}
@@ -411,8 +408,8 @@
   {fits}
   offersAppearance={narrow}
   {turnSettings}
-  touchTurns={touchTurns.value}
-  ontouchturns={(chosen) => touchTurns.choose(chosen)}
+  touchTurns={touchTurns()}
+  ontouchturns={chooseTouchTurns}
   edgeClicksTurn={edgeClicksTurn()}
   onedgeclicksturn={chooseEdgeClicksTurn}
   gestureHints={hintsWanted()}

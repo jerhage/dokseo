@@ -7,6 +7,7 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import PageTurnSettings from '$lib/shared/PageTurnSettings.svelte';
   import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';
   import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
   import type { Language } from '$lib/shared/language';
@@ -19,9 +20,7 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND,
   } from '$lib/shared/layout-choices';
-  import { EDGE_CLICKS_LABEL } from '$lib/shared/edge-clicks-setting';
   import type { TouchTurns } from '$lib/shared/page-turn';
-  import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from '$lib/shared/touch-turns';
   import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import { ALL_CAPTURES_LABEL } from './all-captures-setting';
   import { GESTURE_HINTS_LABEL } from './gesture-hints-setting';
@@ -163,28 +162,14 @@
       />
     </Fieldset>
 
-    {#if layout === 'paged' && (turnSettings.touchTurns || turnSettings.edgeClicks)}
-      <Fieldset legend={TOUCH_TURNS_LEGEND}>
-        <div class="col gap-2">
-          {#if turnSettings.touchTurns}
-            {#each TOUCH_TURNS_CHOICES as choice (choice.value)}
-              <Radio
-                name="{uid}-touch-turns"
-                value={choice.value}
-                group={touchTurns}
-                onchange={() => ontouchturns(choice.value)}>{choice.label}</Radio
-              >
-            {/each}
-          {/if}
-          {#if turnSettings.edgeClicks}
-            <Checkbox
-              checked={edgeClicksTurn}
-              onchange={(event) => onedgeclicksturn(event.currentTarget.checked)}
-              >{EDGE_CLICKS_LABEL}</Checkbox
-            >
-          {/if}
-        </div>
-      </Fieldset>
+    {#if layout === 'paged'}
+      <PageTurnSettings
+        shown={turnSettings}
+        {touchTurns}
+        {edgeClicksTurn}
+        {ontouchturns}
+        {onedgeclicksturn}
+      />
     {/if}
 
     <Checkbox

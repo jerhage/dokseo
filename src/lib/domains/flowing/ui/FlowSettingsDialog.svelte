@@ -6,9 +6,12 @@
   import Radio from '$lib/components/Radio.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import PageTurnSettings from '$lib/shared/PageTurnSettings.svelte';
   import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';
   import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
   import type { Language } from '$lib/shared/language';
+  import type { TouchTurns } from '$lib/shared/page-turn';
+  import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import {
     LINE_SPACING_CHOICES,
     LINE_SPACING_LEGEND,
@@ -31,6 +34,11 @@
     readonly onlanguage?: ((language: Language) => void) | undefined;
     readonly touchGuide?: boolean;
     readonly ontouchguide?: (() => void) | undefined;
+    readonly turnSettings: ShownTurnSettings;
+    readonly touchTurns: TouchTurns;
+    readonly edgeClicksTurn: boolean;
+    readonly ontouchturns: (turns: TouchTurns) => void;
+    readonly onedgeclicksturn: (wanted: boolean) => void;
   };
 
   let {
@@ -43,6 +51,11 @@
     onlanguage,
     touchGuide = false,
     ontouchguide,
+    turnSettings,
+    touchTurns,
+    edgeClicksTurn,
+    ontouchturns,
+    onedgeclicksturn,
   }: Props = $props();
 
   const uid = $props.id();
@@ -112,6 +125,14 @@
         onchange={(event) => chooseReadings(event.currentTarget.checked)}>Show</Checkbox
       >
     </Fieldset>
+
+    <PageTurnSettings
+      shown={turnSettings}
+      {touchTurns}
+      {edgeClicksTurn}
+      {ontouchturns}
+      {onedgeclicksturn}
+    />
 
     {#if touchGuide && ontouchguide !== undefined}
       <div class="row">

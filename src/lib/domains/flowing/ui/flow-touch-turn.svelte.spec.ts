@@ -4,6 +4,7 @@ import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
 import type { Container } from '$lib/container';
 import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
+import { chooseTouchTurns } from '$lib/shared/chosen-touch-turns.svelte';
 import { TOUCH_TURNS_KEY } from '$lib/shared/touch-turns';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import '$lib/styles/index.css';
@@ -243,10 +244,11 @@ async function opened(): Promise<FlowView> {
 }
 
 beforeEach(() => {
-  localStorage.setItem(TOUCH_TURNS_KEY, 'tap-zones');
+  chooseTouchTurns('tap-zones');
 });
 
 afterEach(() => {
+  chooseTouchTurns('swipe-only');
   localStorage.removeItem(TOUCH_TURNS_KEY);
   for (const view of document.querySelectorAll('foliate-view')) view.remove();
 });

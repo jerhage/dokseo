@@ -3,6 +3,14 @@ import { render } from 'vitest-browser-svelte';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import FlowSettingsDialog from './FlowSettingsDialog.svelte';
 
+const NO_PAGE_TURNS = {
+  turnSettings: { touchTurns: false, edgeClicks: false },
+  touchTurns: 'swipe-only',
+  edgeClicksTurn: true,
+  ontouchturns: vi.fn(),
+  onedgeclicksturn: vi.fn(),
+} as const;
+
 function panel(container: HTMLElement): HTMLDialogElement {
   const dialog = container.querySelector('dialog');
   if (dialog === null) throw new Error('The text settings rendered no dialog');
@@ -22,6 +30,7 @@ function readingsSwitch(dialog: HTMLDialogElement): HTMLInputElement {
 test('opens for a book of any language, because it asks about none', async () => {
   const { container } = await render(FlowSettingsDialog, {
     props: {
+      ...NO_PAGE_TURNS,
       settings: DEFAULT_READING_SETTINGS,
       onchoose: vi.fn(),
       open: true,
@@ -34,6 +43,7 @@ test('opens for a book of any language, because it asks about none', async () =>
 test('offers the readings beside the two scales, whatever the book', async () => {
   const { container } = await render(FlowSettingsDialog, {
     props: {
+      ...NO_PAGE_TURNS,
       settings: DEFAULT_READING_SETTINGS,
       onchoose: vi.fn(),
       open: true,
@@ -53,6 +63,7 @@ test('reports the readings turned off when the switch is unticked', async () => 
   const onchoose = vi.fn();
   const { container } = await render(FlowSettingsDialog, {
     props: {
+      ...NO_PAGE_TURNS,
       settings: DEFAULT_READING_SETTINGS,
       onchoose,
       open: true,

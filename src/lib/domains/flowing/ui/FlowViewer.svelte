@@ -3,6 +3,7 @@
   import type { Component, Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
+  import { anyPointer } from '$lib/platform/dom/any-pointer';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -22,8 +23,10 @@
   import { FOCUSED_OR_OPEN, ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
-  import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
-  import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
+  import { chooseTouchTurns, touchTurns } from '$lib/shared/chosen-touch-turns.svelte';
+  import { chooseEdgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
+  import { shownTurnSettings } from '$lib/shared/turn-settings';
+  import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
@@ -91,8 +94,6 @@
   const LIFT_LABEL = 'Save this passage as a capture';
   const SEARCH_BOOK_LABEL = 'Search this book';
 
-  const touchTurns = new RememberedChoice(readTouchTurns, saveTouchTurns);
-
   const ICONS: readonly Component<IconProps>[] = [ChevronLeft, ChevronRight];
 
   const TURN_LABELS: Readonly<Record<FlowTurn, string>> = {
@@ -104,6 +105,7 @@
   let contentsOpen = $state(false);
   let contentsDialog = $state<ReturnType<typeof FlowContentsDialog> | null>(null);
   let settingsOpen = $state(false);
+  let turnSettings = $state.raw<ShownTurnSettings>(presentTurnSettings());
   let gestures: FlowGestures | null = null;
   let lastPointerType = $state<string | null>(null);
   const lift = new LiftOffer<ChapterView>({
@@ -143,6 +145,15 @@
   const guideOffered = $derived(offersFlowGuide({ open: reading, input }));
   const guideShown = $derived(touchGuide.shownWhen(guideOffered));
   const guideLesson = $derived(flowSwipeLesson(view.navigation.paging));
+
+  function presentTurnSettings(): ShownTurnSettings {
+    return shownTurnSettings(anyPointer('coarse'), anyPointer('fine'));
+  }
+
+  function openSettings(): void {
+    turnSettings = presentTurnSettings();
+    settingsOpen = true;
+  }
 
   function armGuide(): void {
     if (!reading) return;
@@ -228,7 +239,7 @@
       at: spot.at,
       width: spot.width,
       textSelected: textSelected(),
-      turns: touchTurns.value,
+      turns: touchTurns(),
       edgeClicksTurn,
       chromeShown: awake,
     });
@@ -434,12 +445,7 @@
           onclick={onsearch}
         />
       {/if}
-      <Button
-        size="sm"
-        class="shrink-0"
-        aria-haspopup="dialog"
-        onclick={() => (settingsOpen = true)}
-      >
+      <Button size="sm" class="shrink-0" aria-haspopup="dialog" onclick={openSettings}>
         {TEXT_SETTINGS_LABEL}
       </Button>
     {/if}
@@ -498,4 +504,9 @@
   {onlanguage}
   touchGuide={guideOffered}
   ontouchguide={() => touchGuide.recall()}
+  {turnSettings}
+  touchTurns={touchTurns()}
+  ontouchturns={chooseTouchTurns}
+  {edgeClicksTurn}
+  onedgeclicksturn={chooseEdgeClicksTurn}
 />
