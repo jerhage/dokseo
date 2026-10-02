@@ -143,6 +143,8 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       readCover: unused,
       readSource: unused,
       removeBook: unused,
+      listRemovedBooks: unused,
+      deleteRemovedBookCaptures: unused,
       editBook: unused,
       saveReadingPlace: unused,
       markFinished: unused,

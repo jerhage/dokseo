@@ -36,6 +36,8 @@ import { readPageSizes } from '../domains/library/use-cases/read-page-sizes';
 import type { ReadPageSizesResult } from '../domains/library/use-cases/read-page-sizes';
 import { readSource } from '../domains/library/use-cases/read-source';
 import type { ReadSourceResult } from '../domains/library/use-cases/read-source';
+import { removeBook } from '../domains/library/use-cases/remove-book';
+import type { RemoveBookResult } from '../domains/library/use-cases/remove-book';
 import { saveReadingPlace } from '../domains/library/use-cases/save-reading-place';
 import type { SaveReadingPlaceResult } from '../domains/library/use-cases/save-reading-place';
 
@@ -51,6 +53,7 @@ type LibraryUseCases = {
   readonly readCover: (id: BookId) => Promise<ReadCoverResult>;
   readonly readSource: (id: BookId) => Promise<ReadSourceResult>;
   readonly editBook: (id: BookId, edit: BookEdit) => Promise<EditBookResult>;
+  readonly removeBook: (id: BookId) => Promise<RemoveBookResult>;
   readonly saveReadingPlace: (id: BookId, place: ReadingPlace) => Promise<SaveReadingPlaceResult>;
   readonly markFinished: (id: BookId) => Promise<MarkFinishedResult>;
   readonly markUnread: (id: BookId) => Promise<MarkUnreadResult>;
@@ -90,6 +93,7 @@ function buildLibrary(repository: LibraryRepository): LibraryUseCases {
     readCover: (id: BookId) => readCover({ repository }, id),
     readSource: (id: BookId) => readSource({ repository }, id),
     editBook: (id: BookId, edit: BookEdit) => editBook({ repository }, id, edit),
+    removeBook: (id: BookId) => removeBook({ repository }, id),
     saveReadingPlace: (id: BookId, place: ReadingPlace) =>
       saveReadingPlace({ repository, now: Date.now }, id, place),
     markFinished: (id: BookId) => markFinished({ repository, now: Date.now }, id),

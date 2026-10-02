@@ -85,6 +85,9 @@ function fakeRepository(
     storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),
+    listRemoved: () => Promise.resolve({ kind: 'success', removed: [] }),
+    listRestorable: () => Promise.resolve({ kind: 'success', removed: [] }),
+    forgetRemoved: () => Promise.resolve({ kind: 'success' }),
   };
 }
 

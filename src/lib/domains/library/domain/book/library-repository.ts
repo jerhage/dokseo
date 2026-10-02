@@ -2,6 +2,7 @@ import type { BookId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from './book';
 import type { PageList, PageOrder } from './page-list';
+import type { RemovedBook } from './removed-book';
 import type { UnreadableBook } from './stored-book';
 import type { SourceWriteReport } from '../ingest/upload-progress';
 
@@ -23,6 +24,10 @@ type PageListLookup =
 
 type FileLookup = { readonly kind: 'success'; readonly file: Blob | null } | StorageUnavailable;
 
+type RemovedListing =
+  | { readonly kind: 'success'; readonly removed: readonly RemovedBook[] }
+  | StorageUnavailable;
+
 type ByteCount = { readonly kind: 'success'; readonly bytes: number } | StorageUnavailable;
 
 interface LibraryRepository {
@@ -38,6 +43,9 @@ interface LibraryRepository {
   readPageList(id: BookId): Promise<PageListLookup>;
   savePageList(id: BookId, names: readonly string[]): Promise<LibraryWrite>;
   remove(id: BookId): Promise<LibraryWrite>;
+  listRemoved(): Promise<RemovedListing>;
+  listRestorable(): Promise<RemovedListing>;
+  forgetRemoved(id: BookId): Promise<LibraryWrite>;
   update(id: BookId, edit: BookEdit): Promise<BookLookup>;
   readSource(id: BookId): Promise<FileLookup>;
   readCover(id: BookId): Promise<FileLookup>;
@@ -52,4 +60,5 @@ export type {
   LibraryRepository,
   LibraryWrite,
   PageListLookup,
+  RemovedListing,
 };

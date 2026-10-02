@@ -1,20 +1,22 @@
 import { isPersisted, storageEstimate } from '$lib/platform/storage/persistence';
 import type { BookId } from '$lib/shared/ids';
+import type { LibraryRepository } from '../domains/library/domain/book/library-repository';
+import type { CaptureRepository } from '../domains/recognition/domain/capture/capture-repository';
 import { createOriginStores } from '../domains/storage/adapters/browser-origin-stores';
+import { deleteRemovedBookCaptures } from '../domains/storage/use-cases/delete-removed-book-captures';
+import type { DeleteRemovedBookCapturesResult } from '../domains/storage/use-cases/delete-removed-book-captures';
+import { listRemovedBooksAndCaptures } from '../domains/storage/use-cases/list-removed-books-and-captures';
+import type { ListRemovedBooksAndCapturesResult } from '../domains/storage/use-cases/list-removed-books-and-captures';
 import { readStorageAccount } from '../domains/storage/use-cases/read-storage-account';
 import type { ReadStorageAccountResult } from '../domains/storage/use-cases/read-storage-account';
-import { removeBookAndCaptures } from '../domains/storage/use-cases/remove-book-and-captures';
-import type {
-  RemoveBookAndCapturesDeps,
-  RemoveBookAndCapturesResult,
-} from '../domains/storage/use-cases/remove-book-and-captures';
 
 type StorageUseCases = {
   readonly readStorageAccount: () => Promise<ReadStorageAccountResult>;
 };
 
-type BookRemoval = {
-  readonly removeBook: (id: BookId) => Promise<RemoveBookAndCapturesResult>;
+type RemovedBooks = {
+  readonly listRemovedBooks: () => Promise<ListRemovedBooksAndCapturesResult>;
+  readonly deleteRemovedBookCaptures: (id: BookId) => Promise<DeleteRemovedBookCapturesResult>;
 };
 
 function buildStorage(): StorageUseCases {
@@ -26,11 +28,21 @@ function buildStorage(): StorageUseCases {
   };
 }
 
-function buildBookRemoval(deps: RemoveBookAndCapturesDeps): BookRemoval {
+function buildRemovedBooks(
+  repository: LibraryRepository,
+  captures: CaptureRepository,
+): RemovedBooks {
   return {
-    removeBook: (id: BookId) => removeBookAndCaptures(deps, id),
+    listRemovedBooks: () =>
+      listRemovedBooksAndCaptures({
+        shelf: { repository },
+        removed: { repository },
+        captures: { captures },
+      }),
+    deleteRemovedBookCaptures: (id: BookId) =>
+      deleteRemovedBookCaptures({ clearing: { captures }, forgetting: { repository } }, id),
   };
 }
 
-export { buildStorage, buildBookRemoval };
-export type { StorageUseCases, BookRemoval };
+export { buildStorage, buildRemovedBooks };
+export type { StorageUseCases, RemovedBooks };

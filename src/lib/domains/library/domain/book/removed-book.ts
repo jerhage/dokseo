@@ -1,0 +1,76 @@
+import { isText } from '$lib/shared/corrupt-row';
+import { parsedBookId } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
+import { isLanguage } from '$lib/shared/language';
+import type { Language } from '$lib/shared/language';
+import { effectiveDirection, isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
+import { FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from './stored-book';
+
+type RemovedBook = {
+  readonly id: BookId;
+  readonly title: string;
+  readonly contentHash: string;
+  readonly fileName: string;
+  readonly language: Language;
+  readonly direction: ReadingDirection;
+};
+
+type RemovedShelfEntry =
+  | { readonly kind: 'recorded'; readonly book: RemovedBook; readonly captureCount: number }
+  | { readonly kind: 'unknown'; readonly id: BookId; readonly captureCount: number };
+
+type RetiredRow = {
+  readonly id?: unknown;
+  readonly title?: unknown;
+  readonly contentHash?: unknown;
+  readonly fileName?: unknown;
+  readonly language?: unknown;
+  readonly direction?: unknown;
+  readonly layoutKind?: unknown;
+};
+
+const UNTITLED_BOOK = 'Untitled book';
+
+const UNKNOWN_BOOK = 'Unknown book';
+
+function textOf(value: unknown): string {
+  return isText(value) ? value : '';
+}
+
+function titleOf(value: unknown): string {
+  const title = textOf(value).trim();
+  return title.length === 0 ? UNTITLED_BOOK : title;
+}
+
+function directionOf(row: RetiredRow): ReadingDirection {
+  const direction = isReadingDirection(row.direction) ? row.direction : FALLBACK_DIRECTION;
+  return isLayoutKind(row.layoutKind) ? effectiveDirection(direction, row.layoutKind) : direction;
+}
+
+function removedBookFrom(row: RetiredRow): RemovedBook | null {
+  const id = isText(row.id) ? parsedBookId(row.id) : null;
+  if (id === null) return null;
+  return {
+    id,
+    title: titleOf(row.title),
+    contentHash: textOf(row.contentHash),
+    fileName: textOf(row.fileName),
+    language: isLanguage(row.language) ? row.language : FALLBACK_LANGUAGE,
+    direction: directionOf(row),
+  };
+}
+
+function removedBooksFrom(rows: readonly RetiredRow[]): readonly RemovedBook[] {
+  return rows.flatMap((row) => {
+    const removed = removedBookFrom(row);
+    return removed === null ? [] : [removed];
+  });
+}
+
+function entryId(entry: RemovedShelfEntry): BookId {
+  return entry.kind === 'recorded' ? entry.book.id : entry.id;
+}
+
+export { UNKNOWN_BOOK, UNTITLED_BOOK, entryId, removedBookFrom, removedBooksFrom };
+export type { RemovedBook, RemovedShelfEntry, RetiredRow };

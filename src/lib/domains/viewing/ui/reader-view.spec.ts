@@ -227,6 +227,8 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       readCover: () => Promise.reject(new Error('not used')),
       readSource: () => Promise.reject(new Error('not used')),
       removeBook: () => Promise.reject(new Error('not used')),
+      listRemovedBooks: () => Promise.reject(new Error('not used')),
+      deleteRemovedBookCaptures: () => Promise.reject(new Error('not used')),
       editBook: async (id, edit) => {
         if (edit.position !== undefined) throw new Error('a place is saved with saveReadingPlace');
         edits.push({

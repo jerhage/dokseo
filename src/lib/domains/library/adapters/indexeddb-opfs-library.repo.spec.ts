@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { INTRINSIC_ORDER } from '../domain/book/page-list';
 import { imagePlace } from '$lib/shared/reading-place';
+import { bookFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import { createLibraryRepository } from './indexeddb-opfs-library.repo';
 
@@ -98,7 +100,7 @@ describe('createLibraryRepository', () => {
     ]);
   });
 
-  it('removes an unreadable row by its id with its page list and files, and reads nothing first', async () => {
+  it('removes an unreadable row by its id with its page list and files', async () => {
     store('books').set(OLD_SHAPE.id, OLD_SHAPE);
     store('page-lists').set(OLD_SHAPE.id, { id: OLD_SHAPE.id, names: ['a.jpg'] });
     held.blobs.set('old-1.src', new Blob(['source']));
@@ -113,5 +115,93 @@ describe('createLibraryRepository', () => {
     expect(store('page-lists').size).toBe(0);
     expect(held.blobs.size).toBe(0);
     expect(listed).toEqual({ kind: 'success', books: [], unreadable: [] });
+  });
+
+  it('keeps a removed record with the title, hash and file name of a book it removes', async () => {
+    store('books').set(GOOD.id, GOOD);
+    const repository = createLibraryRepository();
+
+    await repository.remove(bookId('good-1'));
+    const removed = await repository.listRemoved();
+
+    expect(removed).toEqual({
+      kind: 'success',
+      removed: [
+        {
+          id: 'good-1',
+          title: 'Yotsuba&! 1',
+          contentHash: '9f86d081',
+          fileName: 'Yotsuba&! 1.cbz',
+          language: 'ja',
+          direction: 'rtl',
+        },
+      ],
+    });
+  });
+
+  it('keeps a removed record read from the raw fields of an unreadable row', async () => {
+    store('books').set(OLD_SHAPE.id, { ...OLD_SHAPE, fileName: 'Yotsuba&! 2.cbz' });
+    const repository = createLibraryRepository();
+
+    await repository.remove(bookId('old-1'));
+    const removed = await repository.listRemoved();
+
+    expect(removed).toEqual({
+      kind: 'success',
+      removed: [
+        {
+          id: 'old-1',
+          title: 'Yotsuba&! 2',
+          contentHash: '',
+          fileName: 'Yotsuba&! 2.cbz',
+          language: 'ja',
+          direction: 'rtl',
+        },
+      ],
+    });
+  });
+
+  it('offers removed records and unreadable rows as restorable, and no readable book', async () => {
+    store('books').set(GOOD.id, GOOD);
+    store('books').set(OLD_SHAPE.id, OLD_SHAPE);
+    store('removed-books').set('gone-1', { id: 'gone-1', title: 'Gone', contentHash: 'abc' });
+
+    const restorable = await createLibraryRepository().listRestorable();
+
+    expect(restorable.kind === 'success' && restorable.removed.map((book) => book.id)).toEqual([
+      'gone-1',
+      'old-1',
+    ]);
+  });
+
+  it('forgets the removed record and the stale page list of an id it adds a book under', async () => {
+    store('books').set(OLD_SHAPE.id, OLD_SHAPE);
+    store('page-lists').set(OLD_SHAPE.id, { id: OLD_SHAPE.id, names: ['a.jpg'] });
+    store('removed-books').set(OLD_SHAPE.id, { id: OLD_SHAPE.id, title: 'Yotsuba&! 2' });
+    held.blobs.set('old-1.cover', new Blob(['old cover']));
+    const repository = createLibraryRepository();
+
+    await repository.add(
+      bookFromStored({ ...GOOD, id: 'old-1' }),
+      new Blob(['source']),
+      null,
+      INTRINSIC_ORDER,
+      () => undefined,
+    );
+    const listed = await repository.list();
+
+    expect(listed.kind === 'success' && listed.books.map((book) => book.id)).toEqual(['old-1']);
+    expect(store('removed-books').size).toBe(0);
+    expect(store('page-lists').size).toBe(0);
+    expect(held.blobs.has('old-1.cover')).toBe(false);
+  });
+
+  it('forgets a removed record by its id', async () => {
+    store('removed-books').set('gone-1', { id: 'gone-1', title: 'Gone' });
+    const repository = createLibraryRepository();
+
+    await repository.forgetRemoved(bookId('gone-1'));
+
+    expect(store('removed-books').size).toBe(0);
   });
 });

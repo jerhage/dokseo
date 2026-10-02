@@ -21,20 +21,25 @@ import type {
   LibraryRepository,
   LibraryWrite,
   PageListLookup,
+  RemovedListing,
 } from '../domain/book/library-repository';
 import { pageListFromStored } from '../domain/book/page-list';
 import type { PageOrder, StoredPageList } from '../domain/book/page-list';
+import { removedBookFrom, removedBooksFrom } from '../domain/book/removed-book';
+import type { RetiredRow } from '../domain/book/removed-book';
 import { bookFromStored, booksFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
 const DATABASE_NAME = 'reader';
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 const BOOK_STORE = 'books';
 
 const PAGE_LIST_STORE = 'page-lists';
+
+const REMOVED_BOOK_STORE = 'removed-books';
 
 const WRITTEN: LibraryWrite = { kind: 'success' };
 
@@ -65,6 +70,9 @@ function upgrade(db: IDBDatabase): void {
   }
   if (!db.objectStoreNames.contains(PAGE_LIST_STORE)) {
     db.createObjectStore(PAGE_LIST_STORE, { keyPath: 'id' });
+  }
+  if (!db.objectStoreNames.contains(REMOVED_BOOK_STORE)) {
+    db.createObjectStore(REMOVED_BOOK_STORE, { keyPath: 'id' });
   }
 }
 
@@ -150,6 +158,8 @@ function createLibraryRepository(): LibraryRepository {
         if (order.kind === 'listed') {
           const pageList: StoredPageList = { id: book.id, names: order.names };
           await putRecord(db, PAGE_LIST_STORE, pageList);
+        } else {
+          await deleteRecord(db, PAGE_LIST_STORE, book.id);
         }
         await putRecord(db, BOOK_STORE, book);
       } catch (cause) {
@@ -157,6 +167,8 @@ function createLibraryRepository(): LibraryRepository {
         await forgetPageList(book.id);
         throw cause;
       }
+      if (cover === null) await blobs.remove(keys.cover).catch(() => undefined);
+      await deleteRecord(await database(), REMOVED_BOOK_STORE, book.id);
       return WRITTEN;
     },
 
@@ -164,6 +176,9 @@ function createLibraryRepository(): LibraryRepository {
       if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
       const keys = blobKeys(id);
       const db = await database();
+      const row = await getRecord<RetiredRow>(db, BOOK_STORE, id);
+      const kept = row === undefined ? null : removedBookFrom(row);
+      if (kept !== null) await putRecord(db, REMOVED_BOOK_STORE, kept);
       await deleteRecord(db, BOOK_STORE, id);
       await deleteRecord(db, PAGE_LIST_STORE, id);
       return unlessRefused<LibraryWrite>(async () => {
@@ -171,6 +186,28 @@ function createLibraryRepository(): LibraryRepository {
         await blobs.remove(keys.cover);
         return WRITTEN;
       });
+    },
+
+    async listRemoved(): Promise<RemovedListing> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const rows = await listRecords<RetiredRow>(await database(), REMOVED_BOOK_STORE);
+      return { kind: 'success', removed: removedBooksFrom(rows) };
+    },
+
+    async listRestorable(): Promise<RemovedListing> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      const db = await database();
+      const removed = await listRecords<RetiredRow>(db, REMOVED_BOOK_STORE);
+      const rows = await listRecords<StoredBook>(db, BOOK_STORE);
+      const unreadable = new Set<unknown>(booksFromStored(rows).unreadable.map((book) => book.id));
+      const broken = rows.filter((row) => unreadable.has(row.id));
+      return { kind: 'success', removed: removedBooksFrom([...removed, ...broken]) };
+    },
+
+    async forgetRemoved(id: BookId): Promise<LibraryWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      await deleteRecord(await database(), REMOVED_BOOK_STORE, id);
+      return WRITTEN;
     },
 
     async update(id: BookId, edit: BookEdit): Promise<BookLookup> {

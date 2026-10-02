@@ -11,14 +11,14 @@ import type {
   RecognitionProgress,
   RecognitionSessionReport,
 } from './composition/recognizers';
-import { buildBookRemoval, buildStorage } from './composition/storage';
-import type { BookRemoval, StorageUseCases } from './composition/storage';
+import { buildRemovedBooks, buildStorage } from './composition/storage';
+import type { RemovedBooks, StorageUseCases } from './composition/storage';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
 
 type Container = {
   readonly beginTrace: TraceFactory;
-  readonly library: LibraryUseCases & BookRemoval;
+  readonly library: LibraryUseCases & RemovedBooks;
   readonly flowing: FlowingUseCases;
   readonly recognition: RecognitionUseCases;
   readonly storage: StorageUseCases;
@@ -32,7 +32,7 @@ function buildContainer(): Container {
     beginTrace,
     library: {
       ...buildLibrary(repository),
-      ...buildBookRemoval({ clearing: { captures }, removal: { repository } }),
+      ...buildRemovedBooks(repository, captures),
     },
     flowing: buildFlowing(),
     recognition: buildRecognition(captures),
