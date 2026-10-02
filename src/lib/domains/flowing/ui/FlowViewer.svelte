@@ -312,8 +312,10 @@
     view.arrivals.markPassages(passages);
   });
 
+  const shownBook = $derived(book.id);
+
   const openOnStage: Attachment<HTMLDivElement> = (host) => {
-    void book.id;
+    void shownBook;
     const held = untrack(() => book);
     const opensWith = untrack(() => storedSettings);
 
@@ -326,14 +328,14 @@
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
 
-    void view
-      .open(
+    void untrack(() =>
+      view.open(
         held,
         opensWith,
         (opening) => openFlowSurface(host, opening, (chapter) => bind(host, chapter)),
         () => lift.ask(),
-      )
-      .then(armGuide);
+      ),
+    ).then(armGuide);
     return () => {
       host.removeEventListener('pointerdown', began);
       host.removeEventListener('pointerup', ended);
