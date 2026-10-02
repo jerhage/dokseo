@@ -5,9 +5,14 @@ import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { RemovedBook } from '../domain/book/removed-book';
 import { removedEntries } from './library-shelf';
 import {
+  DEFAULT_REMOVAL,
+  DELETE_CAPTURES_CHOICE,
   DELETED_CAPTURES_FATE,
+  REMOVAL_DELETES_CAPTURES,
   RESTORE_HINT,
   REMOVAL_KEEPS_CAPTURES,
+  removalChosen,
+  removalNote,
   removedBookName,
 } from './removed-books';
 
@@ -41,6 +46,25 @@ describe('REMOVAL_KEEPS_CAPTURES', () => {
   it('tells the reader the captures stay and the same file restores the book', () => {
     expect(REMOVAL_KEEPS_CAPTURES).toBe(
       'Its captures are kept. Upload the same file again to restore it with its captures.',
+    );
+  });
+});
+
+describe('DEFAULT_REMOVAL', () => {
+  it('keeps the captures unless the reader ticks the choice to delete them', () => {
+    expect(DEFAULT_REMOVAL).toBe('keep-captures');
+    expect(removalChosen(false)).toBe('keep-captures');
+    expect(removalChosen(true)).toBe('delete-captures');
+  });
+});
+
+describe('removalNote', () => {
+  it('says the captures are kept, or that they go for good once the reader chose to delete them', () => {
+    expect(DELETE_CAPTURES_CHOICE).toBe('Also delete its captures');
+    expect(removalNote('keep-captures')).toBe(REMOVAL_KEEPS_CAPTURES);
+    expect(removalNote('delete-captures')).toBe(REMOVAL_DELETES_CAPTURES);
+    expect(REMOVAL_DELETES_CAPTURES).toBe(
+      'Its captures will be deleted for good; uploading the file again will not bring them back.',
     );
   });
 });

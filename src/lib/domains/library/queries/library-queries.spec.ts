@@ -17,6 +17,7 @@ import {
   librarySizeQuery,
   markBookMutation,
   openFileMutation,
+  removeBookAndCapturesMutation,
   removeBookMutation,
 } from './library-queries';
 
@@ -242,6 +243,23 @@ describe('library mutations', () => {
     );
 
     await expect(removal.mutate(bookId('one'))).resolves.toBe(STORAGE_UNAVAILABLE);
+  });
+
+  it('removes a book with its captures through its own write, and resolves a partial removal', async () => {
+    const client = createTestQueryClient();
+    const asked: string[] = [];
+    const removal = new MutationObserver(
+      client,
+      removeBookAndCapturesMutation({
+        removeBookAndCaptures: (id) => {
+          asked.push(id);
+          return Promise.resolve({ kind: 'partly-removed' });
+        },
+      }),
+    );
+
+    await expect(removal.mutate(bookId('one'))).resolves.toEqual({ kind: 'partly-removed' });
+    expect(asked).toEqual(['one']);
   });
 
   it('resolves the edit answer, a missing book included', async () => {

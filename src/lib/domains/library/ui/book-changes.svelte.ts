@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/svelte-query';
+import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
@@ -7,9 +8,15 @@ import { shownTitle } from '$lib/shared/shown-title';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Book, BookEdit } from '../domain/book/book';
+import type { RemovalWithCaptures } from '../domain/book/removed-book';
 import { describeLibraryRefusal } from '../queries/library-error-text';
 import type { LibraryRefusal } from '../queries/library-error-text';
-import { editBookMutation, markBookMutation, removeBookMutation } from '../queries/library-queries';
+import {
+  editBookMutation,
+  markBookMutation,
+  removeBookAndCapturesMutation,
+  removeBookMutation,
+} from '../queries/library-queries';
 import type { BookMark, EditRequest, LibraryWrites, MarkRequest } from '../queries/library-queries';
 import type { EditBookResult } from '../use-cases/edit-book';
 import type { MarkFinishedResult } from '../use-cases/mark-finished';
@@ -31,6 +38,10 @@ const NO_CHANGE: BookChange = { kind: 'idle' };
 const EDIT_FAILED = 'Could not save the book settings';
 
 const REMOVE_FAILED = 'Could not remove that book';
+
+const CAPTURES_LEFT = 'Removed that book, but not all of its captures';
+
+const CAPTURES_LEFT_ADVICE = 'It is listed under Removed books, where Delete captures finishes it.';
 
 const FINISH_FAILED = 'Could not mark that book finished';
 
@@ -64,6 +75,7 @@ class BookChanges {
   #notify: Notify;
   #uploading: () => boolean;
   #removal: WriteQuery<RemoveBookResult, BookId>;
+  #removalWithCaptures: WriteQuery<RemovalWithCaptures, BookId>;
   #editing: WriteQuery<EditBookResult, EditRequest>;
   #marking: WriteQuery<MarkFinishedResult | MarkUnreadResult, MarkRequest>;
   #undoing: WriteQuery<EditBookResult, EditRequest>;
@@ -74,6 +86,11 @@ class BookChanges {
     this.#uploading = uploading;
     this.#removal = writeQuery(() => ({
       ...removeBookMutation(library),
+      onSettled: () => refreshLibrary(client),
+      onError: (cause) => this.#fail(REMOVE_FAILED, failureMessage(cause)),
+    }));
+    this.#removalWithCaptures = writeQuery(() => ({
+      ...removeBookAndCapturesMutation(library),
       onSettled: () => refreshLibrary(client),
       onError: (cause) => this.#fail(REMOVE_FAILED, failureMessage(cause)),
     }));
@@ -108,6 +125,29 @@ class BookChanges {
       this.#removal.run(id),
     );
     return removed === null ? 'failed' : 'changed';
+  }
+
+  async removeWithCaptures(id: BookId): Promise<ChangeOutcome> {
+    if (this.#blocked()) return 'skipped';
+    this.#state = { kind: 'removing', id };
+    try {
+      const removed = await this.#removalWithCaptures.run(id);
+      return match(removed)
+        .with({ kind: 'success' }, (): ChangeOutcome => 'changed')
+        .with({ kind: 'partly-removed' }, (): ChangeOutcome => {
+          this.#notify({ tone: 'warning', title: CAPTURES_LEFT, message: CAPTURES_LEFT_ADVICE });
+          return 'changed';
+        })
+        .with({ kind: 'storage-unavailable' }, (refusal): ChangeOutcome => {
+          this.#fail(REMOVE_FAILED, describeLibraryRefusal(refusal));
+          return 'failed';
+        })
+        .exhaustive();
+    } catch {
+      return 'failed';
+    } finally {
+      this.#state = NO_CHANGE;
+    }
   }
 
   async removeEach(ids: readonly BookId[]): Promise<ChangeOutcome> {
@@ -189,6 +229,8 @@ class BookChanges {
 
 export {
   BookChanges,
+  CAPTURES_LEFT,
+  CAPTURES_LEFT_ADVICE,
   EDIT_FAILED,
   FINISH_FAILED,
   REMOVE_FAILED,

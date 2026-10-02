@@ -18,6 +18,7 @@ const GONE = vi.hoisted(() => ({
 const held = vi.hoisted(() => ({
   removed: [] as string[],
   cleared: [] as string[],
+  forgotten: [] as string[],
 }));
 
 function notUsed(): Promise<never> {
@@ -37,7 +38,10 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
     },
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [GONE] }),
     listRestorable: notUsed,
-    forgetRemoved: notUsed,
+    forgetRemoved: (id: BookId) => {
+      held.forgotten.push(id);
+      return Promise.resolve({ kind: 'success' });
+    },
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,
@@ -65,6 +69,16 @@ describe('buildContainer', () => {
     expect(result).toEqual({ kind: 'success' });
     expect(held.removed).toEqual(['book-1']);
     expect(held.cleared).toEqual([]);
+    expect(held.forgotten).toEqual([]);
+  });
+
+  it('removes a book, deletes its captures by book id and forgets its record when asked to', async () => {
+    const result = await buildContainer().library.removeBookAndCaptures(bookId('book-2'));
+
+    expect(result).toEqual({ kind: 'success' });
+    expect(held.removed).toContain('book-2');
+    expect(held.cleared).toEqual(['book-2']);
+    expect(held.forgotten).toEqual(['book-2']);
   });
 
   it('lists the removed books without reading a capture', async () => {

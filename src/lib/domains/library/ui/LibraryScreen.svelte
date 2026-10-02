@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
   import Button from '$lib/components/Button.svelte';
   import IconButton from '$lib/components/IconButton.svelte';
@@ -39,6 +40,7 @@
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
   import RemovedBooks from './RemovedBooks.svelte';
+  import type { BookRemoval } from './removed-books';
   import ShelfView from './ShelfView.svelte';
   import UnreadableBooks from './UnreadableBooks.svelte';
   import UploadStrip from './UploadStrip.svelte';
@@ -85,8 +87,11 @@
     void view.upload.add(files, openBook);
   }
 
-  async function remove(id: BookId): Promise<void> {
-    const outcome = await view.changes.remove(id);
+  async function remove(id: BookId, removal: BookRemoval): Promise<void> {
+    const outcome = await match(removal)
+      .with('keep-captures', () => view.changes.remove(id))
+      .with('delete-captures', () => view.changes.removeWithCaptures(id))
+      .exhaustive();
     if (outcome !== 'failed') removeFor = null;
   }
 
@@ -304,7 +309,7 @@
   <RemoveBook
     book={removeBook}
     removing={view.changes.removing === removeBook.id}
-    onremove={() => void remove(removeBook.id)}
+    onremove={(removal) => void remove(removeBook.id, removal)}
     onclose={() => (removeFor = null)}
   />
 {/if}

@@ -70,6 +70,7 @@ function fakes(): Fakes {
       removeBook: unused,
       listRemovedBooks: unused,
       deleteRemovedBookCaptures: unused,
+      removeBookAndCaptures: unused,
       editBook: unused,
       saveReadingPlace: unused,
       markFinished: unused,

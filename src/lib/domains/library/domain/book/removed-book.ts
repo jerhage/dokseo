@@ -24,6 +24,11 @@ type RemovedShelf =
 
 type CapturesDeletion = { readonly kind: 'success' } | StorageUnavailable;
 
+type RemovalWithCaptures =
+  | { readonly kind: 'success' }
+  | { readonly kind: 'partly-removed' }
+  | StorageUnavailable;
+
 type RetiredRow = {
   readonly id?: unknown;
   readonly title?: unknown;
@@ -78,4 +83,4 @@ function removedBooksFrom(rows: readonly RetiredRow[]): readonly RemovedBook[] {
 }
 
 export { UNTITLED_BOOK, removedBookFrom, removedBooksFrom };
-export type { CapturesDeletion, RemovedBook, RemovedShelf, RetiredRow };
+export type { CapturesDeletion, RemovalWithCaptures, RemovedBook, RemovedShelf, RetiredRow };
