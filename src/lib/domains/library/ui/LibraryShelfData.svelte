@@ -18,6 +18,7 @@
     listedBooks,
     listedOf,
     removedEntries,
+    removedListedOf,
     shelfOf,
     shelfState,
     unreadableBooks,
@@ -56,10 +57,10 @@
   const covers = $derived(shelfOf(held).covers);
   const storedBytes = $derived(shelfOf(held).storedBytes);
   const failure = $derived(failureOf(held));
-  const searched = $derived(books.map(listedOf));
+  const removed = $derived(removedEntries(removedRead.state));
+  const searched = $derived([...books.map(listedOf), ...removed.map(removedListedOf)]);
   const counts = $derived(imageCountsOf(books));
   const unreadable = $derived(unreadableBooks(listing.state));
-  const removed = $derived(removedEntries(removedRead.state));
 
   function reload(): void {
     if (!wanted) {

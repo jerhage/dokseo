@@ -12,9 +12,21 @@ import type { Tag } from '../../domain/tag/tag';
 import { effectiveScope, searchRows, searchedBooks } from './search-rows';
 import type { CaptureRow, SearchRowsInput, SearchRow } from './search-rows';
 
-const ONE: SearchedBook = { id: bookId('one'), title: '海の本', language: 'ja', direction: 'rtl' };
+const ONE: SearchedBook = {
+  id: bookId('one'),
+  title: '海の本',
+  language: 'ja',
+  direction: 'rtl',
+  removed: false,
+};
 
-const TWO: SearchedBook = { id: bookId('two'), title: '山の本', language: 'ko', direction: 'ltr' };
+const TWO: SearchedBook = {
+  id: bookId('two'),
+  title: '山の本',
+  language: 'ko',
+  direction: 'ltr',
+  removed: false,
+};
 
 const IMAGERY: TagId = tagId('imagery');
 
@@ -195,6 +207,19 @@ describe('searchRows', () => {
 
     expect(captureAt(rows, 0).title).toBeNull();
     expect(captureAt(rows, 1).title).toBe('山の本');
+  });
+
+  it('labels a capture of a removed book as removed and links it nowhere', () => {
+    const gone: SearchedBook = { ...TWO, removed: true };
+    const found = {
+      books: [],
+      captures: [{ book: gone, captures: [written('b', gone, '海', onPage(0))] }],
+    };
+
+    const { rows } = searchRows(input(found));
+
+    expect(captureAt(rows, 0).title).toBe('山の本 (removed)');
+    expect(captureAt(rows, 0).href).toBeNull();
   });
 
   it('lights the tags whose name matches and drops unknown tags', () => {

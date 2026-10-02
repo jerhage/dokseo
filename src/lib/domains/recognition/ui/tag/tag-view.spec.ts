@@ -28,7 +28,7 @@ type Store = {
 };
 
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
-  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction };
+  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction, removed: false };
 }
 
 function capture(

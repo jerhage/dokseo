@@ -23,7 +23,7 @@ function byCfi(earlier: string, later: string): number {
 }
 
 function book(id: string, direction: ReadingDirection = 'rtl'): SearchedBook {
-  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction };
+  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction, removed: false };
 }
 
 function capture(name: string, id: string, text: string, index = 0, x = 0, y = 0): Found {

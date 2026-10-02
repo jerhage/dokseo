@@ -5,7 +5,9 @@ import { effectiveDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadState } from '$lib/shared/read-state';
 import type { Book } from '../domain/book/book';
+import { UNKNOWN_BOOK } from '../domain/book/removed-book';
 import type { RemovedShelf, RemovedShelfEntry } from '../domain/book/removed-book';
+import { FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from '../domain/book/stored-book';
 import type { UnreadableBook } from '../domain/book/stored-book';
 import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
 import type { ListBooksResult } from '../use-cases/list-books';
@@ -23,6 +25,7 @@ type ListedBook = {
   readonly title: string;
   readonly language: Language;
   readonly direction: ReadingDirection;
+  readonly removed: boolean;
 };
 
 type ShelfRead = {
@@ -88,7 +91,27 @@ function listedOf(book: Book): ListedBook {
     title: book.title,
     language: book.language,
     direction: effectiveDirection(book.direction, book.layoutKind),
+    removed: false,
   };
+}
+
+function removedListedOf(entry: RemovedShelfEntry): ListedBook {
+  return match(entry)
+    .with({ kind: 'recorded' }, ({ book }) => ({
+      id: book.id,
+      title: book.title,
+      language: book.language,
+      direction: book.direction,
+      removed: true,
+    }))
+    .with({ kind: 'unknown' }, ({ id }) => ({
+      id,
+      title: UNKNOWN_BOOK,
+      language: FALLBACK_LANGUAGE,
+      direction: FALLBACK_DIRECTION,
+      removed: true,
+    }))
+    .exhaustive();
 }
 
 function libraryBody(state: ReadState<LibraryShelf>, importing: boolean): LibraryBody {
@@ -108,6 +131,7 @@ export {
   listedBooks,
   listedOf,
   removedEntries,
+  removedListedOf,
   shelfOf,
   shelfState,
   unreadableBooks,

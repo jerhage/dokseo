@@ -105,7 +105,7 @@
       .with({ kind: 'move' }, (step) => moveBy(step.by))
       .with({ kind: 'open' }, () => anchors[cursor]?.click())
       .with({ kind: 'open-in-new-tab' }, () => {
-        if (row !== undefined) window.open(row.href, '_blank', 'noopener');
+        if (row !== undefined && row.href !== null) window.open(row.href, '_blank', 'noopener');
       })
       .exhaustive();
   }
@@ -195,20 +195,16 @@
                   </h2>
                   <span class="text-xs text-muted">{taggedCount(shelf.rows.length)}</span>
                 </div>
-                <Button href="/read/{shelf.id}" variant="ghost" size="sm" class="shrink-0">
-                  Open document
-                </Button>
+                {#if !shelf.removed}
+                  <Button href="/read/{shelf.id}" variant="ghost" size="sm" class="shrink-0">
+                    Open document
+                  </Button>
+                {/if}
               </div>
               <ListGroup variant="inset">
                 {#each shelf.rows as row (row.id)}
                   <li>
-                    <CommandItem
-                      bind:ref={anchors[row.order]}
-                      href={row.href}
-                      selected={row.order === cursor}
-                      class="items-start"
-                      onfocus={() => (walk = { tag: view.chosen, at: row.order })}
-                    >
+                    {#snippet rowText()}
                       <span class="col gap-1 flex-1">
                         <span class="text-base" lang={shelf.language}>{row.text}</span>
                         <span class="row wrap items-center gap-2 text-xs text-muted">
@@ -231,8 +227,28 @@
                           </OverflowList>
                         </span>
                       </span>
-                      <span class="visually-hidden">{row.jump}</span>
-                    </CommandItem>
+                    {/snippet}
+                    {#if row.href !== null}
+                      <CommandItem
+                        bind:ref={anchors[row.order]}
+                        href={row.href}
+                        selected={row.order === cursor}
+                        class="items-start"
+                        onfocus={() => (walk = { tag: view.chosen, at: row.order })}
+                      >
+                        {@render rowText()}
+                        <span class="visually-hidden">{row.jump}</span>
+                      </CommandItem>
+                    {:else}
+                      <CommandItem
+                        bind:ref={anchors[row.order]}
+                        element="div"
+                        selected={row.order === cursor}
+                        class="items-start"
+                      >
+                        {@render rowText()}
+                      </CommandItem>
+                    {/if}
                   </li>
                 {/each}
               </ListGroup>

@@ -31,7 +31,7 @@ const TAGS: readonly Tag[] = [SFX, KEIGO, SLANG];
 const NOW = 10 * 60_000;
 
 function book(id: string): SearchedBook {
-  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction: 'rtl' };
+  return { id: bookId(id), title: `Book ${id}`, language: 'ja', direction: 'rtl', removed: false };
 }
 
 function regional(name: string, id: string, tags: readonly TagId[], index = 0): Capture {
@@ -162,6 +162,27 @@ describe('taggedShelves', () => {
     expect(shelves[0]?.rows[0]?.jump).toBe('Jump to p.005');
     expect(shelves[0]?.rows[0]?.place).toBe('p.005');
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');
+  });
+
+  it('labels the shelf of a removed book as removed and links its rows nowhere', () => {
+    const [gone] = taggedShelves({
+      groups: [
+        {
+          book: { ...book('gone'), title: 'Unknown book', removed: true },
+          captures: [regional('kept', 'gone', [SFX.id], 2)],
+        },
+      ],
+      covers: new Map(),
+      chosen: SFX.id,
+      tags: TAGS,
+      now: NOW,
+    });
+
+    expect(gone?.title).toBe('Unknown book (removed)');
+    expect(gone?.removed).toBe(true);
+    expect(gone?.rows[0]?.href).toBeNull();
+    expect(gone?.rows[0]?.jump).toBeNull();
+    expect(shelves[0]?.removed).toBe(false);
   });
 
   it('marks a chapter place with its book language, and a page or chapterless place with none', () => {

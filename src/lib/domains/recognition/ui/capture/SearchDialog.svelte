@@ -117,14 +117,16 @@
   }
 
   function open(row: SearchRow, newTab: boolean): void {
+    const href = row.href;
+    if (href === null) return;
     if (newTab) {
-      window.open(row.href, '_blank', 'noopener');
+      window.open(href, '_blank', 'noopener');
       return;
     }
 
     palette.hide();
     const from = book;
-    void goto(row.href).then(() => {
+    void goto(href).then(() => {
       if (from !== null && book === from) onfollowedInBook?.();
     });
   }

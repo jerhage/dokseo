@@ -10,6 +10,7 @@ import {
   libraryBody,
   listedBooks,
   listedOf,
+  removedListedOf,
   shelfOf,
   shelfState,
 } from './library-shelf';
@@ -104,9 +105,38 @@ describe('listedBooks', () => {
 describe('listedOf', () => {
   it('lists a book for search with the direction its layout reads in', () => {
     expect([BOOK, { ...BOOK, layoutKind: 'continuous' as const }].map(listedOf)).toEqual([
-      { id: BOOK.id, title: 'one', language: 'ja', direction: 'rtl' },
-      { id: BOOK.id, title: 'one', language: 'ja', direction: 'ltr' },
+      { id: BOOK.id, title: 'one', language: 'ja', direction: 'rtl', removed: false },
+      { id: BOOK.id, title: 'one', language: 'ja', direction: 'ltr', removed: false },
     ]);
+  });
+});
+
+describe('removedListedOf', () => {
+  it('lists a removed book for search as removed, with its title, language and direction', () => {
+    expect(
+      removedListedOf({
+        kind: 'recorded',
+        book: {
+          id: bookId('gone-1'),
+          title: '나의 책',
+          contentHash: '',
+          fileName: 'my-book.epub',
+          language: 'ko',
+          direction: 'ltr',
+        },
+        captureCount: 2,
+      }),
+    ).toEqual({ id: 'gone-1', title: '나의 책', language: 'ko', direction: 'ltr', removed: true });
+  });
+
+  it('lists the captures of a book with no record under an unknown removed book', () => {
+    expect(removedListedOf({ kind: 'unknown', id: bookId('lost-1'), captureCount: 1 })).toEqual({
+      id: 'lost-1',
+      title: 'Unknown book',
+      language: 'ja',
+      direction: 'rtl',
+      removed: true,
+    });
   });
 });
 
