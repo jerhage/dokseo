@@ -2,22 +2,30 @@ import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
-import type { Notify } from '$lib/shared/notice';
+import type { Notice, Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
 import { shownTitle } from '$lib/shared/shown-title';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Book, BookEdit } from '../domain/book/book';
+import type { BookMerge } from '../domain/book/book-merge';
 import type { RemovalWithCaptures } from '../domain/book/removed-book';
 import { describeLibraryRefusal } from '../queries/library-error-text';
 import type { LibraryRefusal } from '../queries/library-error-text';
 import {
   editBookMutation,
   markBookMutation,
+  mergeIntoBookMutation,
   removeBookAndCapturesMutation,
   removeBookMutation,
 } from '../queries/library-queries';
-import type { BookMark, EditRequest, LibraryWrites, MarkRequest } from '../queries/library-queries';
+import type {
+  BookMark,
+  EditRequest,
+  LibraryWrites,
+  MarkRequest,
+  MergeRequest,
+} from '../queries/library-queries';
 import type { EditBookResult } from '../use-cases/edit-book';
 import type { MarkFinishedResult } from '../use-cases/mark-finished';
 import type { MarkUnreadResult } from '../use-cases/mark-unread';
@@ -31,6 +39,7 @@ type ChangeOutcome = 'changed' | 'failed' | 'skipped';
 type BookChange =
   | { readonly kind: 'idle' }
   | { readonly kind: 'removing'; readonly id: BookId }
+  | { readonly kind: 'merging'; readonly id: BookId }
   | { readonly kind: 'editing'; readonly id: BookId };
 
 const NO_CHANGE: BookChange = { kind: 'idle' };
@@ -42,6 +51,14 @@ const REMOVE_FAILED = 'Could not remove that book';
 const CAPTURES_LEFT = 'Removed that book, but not all of its captures';
 
 const CAPTURES_LEFT_ADVICE = 'It is listed under Removed books, where Delete captures finishes it.';
+
+const MERGE_FAILED = 'Could not merge that book';
+
+const MERGED_ADVICE = 'Its captures were moved onto it.';
+
+const MERGE_LEFT = 'Moved its captures, but could not clear the unreadable book';
+
+const MERGE_LEFT_ADVICE = 'Merge it again to finish.';
 
 const FINISH_FAILED = 'Could not mark that book finished';
 
@@ -66,6 +83,27 @@ function undoOffer(
   return markedTitle(mark, marked);
 }
 
+function mergeNotice(merged: BookMerge, into: Book): Notice {
+  return match(merged)
+    .returnType<Notice>()
+    .with({ kind: 'merged' }, () => ({
+      tone: 'success',
+      title: `Merged into ${shownTitle(into)}`,
+      message: MERGED_ADVICE,
+    }))
+    .with({ kind: 'partly-merged' }, () => ({
+      tone: 'warning',
+      title: MERGE_LEFT,
+      message: MERGE_LEFT_ADVICE,
+    }))
+    .with({ kind: 'storage-unavailable' }, (refusal) => ({
+      tone: 'danger',
+      title: MERGE_FAILED,
+      message: describeLibraryRefusal(refusal),
+    }))
+    .exhaustive();
+}
+
 function markFailedTitle(mark: BookMark): string {
   return mark === 'finished' ? FINISH_FAILED : UNREAD_FAILED;
 }
@@ -76,6 +114,7 @@ class BookChanges {
   #uploading: () => boolean;
   #removal: WriteQuery<RemoveBookResult, BookId>;
   #removalWithCaptures: WriteQuery<RemovalWithCaptures, BookId>;
+  #merging: WriteQuery<BookMerge, MergeRequest>;
   #editing: WriteQuery<EditBookResult, EditRequest>;
   #marking: WriteQuery<MarkFinishedResult | MarkUnreadResult, MarkRequest>;
   #undoing: WriteQuery<EditBookResult, EditRequest>;
@@ -93,6 +132,11 @@ class BookChanges {
       ...removeBookAndCapturesMutation(library),
       onSettled: () => refreshLibrary(client),
       onError: (cause) => this.#fail(REMOVE_FAILED, failureMessage(cause)),
+    }));
+    this.#merging = writeQuery(() => ({
+      ...mergeIntoBookMutation(library),
+      onSettled: () => refreshLibrary(client),
+      onError: (cause) => this.#fail(MERGE_FAILED, failureMessage(cause)),
     }));
     this.#editing = writeQuery(() => ({
       ...editBookMutation(library),
@@ -113,6 +157,10 @@ class BookChanges {
 
   get removing(): BookId | null {
     return this.#state.kind === 'removing' ? this.#state.id : null;
+  }
+
+  get merging(): BookId | null {
+    return this.#state.kind === 'merging' ? this.#state.id : null;
   }
 
   get editing(): BookId | null {
@@ -143,6 +191,20 @@ class BookChanges {
           return 'failed';
         })
         .exhaustive();
+    } catch {
+      return 'failed';
+    } finally {
+      this.#state = NO_CHANGE;
+    }
+  }
+
+  async merge(stray: BookId, into: Book): Promise<ChangeOutcome> {
+    if (this.#blocked()) return 'skipped';
+    this.#state = { kind: 'merging', id: stray };
+    try {
+      const merged = await this.#merging.run({ into: into.id, stray });
+      this.#notify(mergeNotice(merged, into));
+      return merged.kind === 'storage-unavailable' ? 'failed' : 'changed';
     } catch {
       return 'failed';
     } finally {
@@ -233,10 +295,15 @@ export {
   CAPTURES_LEFT_ADVICE,
   EDIT_FAILED,
   FINISH_FAILED,
+  MERGED_ADVICE,
+  MERGE_FAILED,
+  MERGE_LEFT,
+  MERGE_LEFT_ADVICE,
   REMOVE_FAILED,
   UNDO_MARK_FAILED,
   UNREAD_FAILED,
   markFailedTitle,
+  mergeNotice,
   undoOffer,
 };
 export type { BookChange, ChangeOutcome };

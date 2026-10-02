@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
-import { FINISH_FAILED, UNREAD_FAILED, markFailedTitle, undoOffer } from './book-changes.svelte';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
+import {
+  FINISH_FAILED,
+  MERGED_ADVICE,
+  MERGE_FAILED,
+  MERGE_LEFT,
+  MERGE_LEFT_ADVICE,
+  UNREAD_FAILED,
+  markFailedTitle,
+  mergeNotice,
+  undoOffer,
+} from './book-changes.svelte';
 
 function book(overrides: Partial<Book> = {}): Book {
   return {
@@ -60,5 +71,30 @@ describe('markFailedTitle', () => {
   it('titles a failed mark by the mark it made', () => {
     expect(markFailedTitle('finished')).toBe(FINISH_FAILED);
     expect(markFailedTitle('unread')).toBe(UNREAD_FAILED);
+  });
+});
+
+describe('mergeNotice', () => {
+  it('names the shelf book an unreadable book merged into, by its alias', () => {
+    expect(mergeNotice({ kind: 'merged' }, book({ alias: 'Mine' }))).toEqual({
+      tone: 'success',
+      title: 'Merged into Mine',
+      message: MERGED_ADVICE,
+    });
+  });
+
+  it('warns that a partial merge is finished by merging again', () => {
+    expect(mergeNotice({ kind: 'partly-merged' }, book())).toEqual({
+      tone: 'warning',
+      title: MERGE_LEFT,
+      message: MERGE_LEFT_ADVICE,
+    });
+  });
+
+  it('reports a blocked store as a failed merge', () => {
+    expect(mergeNotice(STORAGE_UNAVAILABLE, book())).toMatchObject({
+      tone: 'danger',
+      title: MERGE_FAILED,
+    });
   });
 });

@@ -280,14 +280,22 @@ describe('booksFromStored', () => {
     const read = booksFromStored([row, scrolled]);
 
     expect(read.books.map((book) => book.id)).toEqual(['b-1']);
-    expect(read.unreadable).toEqual([{ id: 'b-2', title: 'Yotsuba&! 1', alias: null }]);
+    expect(read.unreadable).toEqual([
+      {
+        id: 'b-2',
+        title: 'Yotsuba&! 1',
+        alias: null,
+        contentHash: '9f86d081',
+        fileName: 'Yotsuba&! 1.cbz',
+      },
+    ]);
   });
 
   it('reports no title for an unreadable row whose title is not a string', () => {
     const untitled = { ...row, title: 7, layoutKind: 'scroll' } as unknown as StoredBook;
 
     expect(booksFromStored([untitled]).unreadable).toEqual([
-      { id: 'b-1', title: null, alias: null },
+      { id: 'b-1', title: null, alias: null, contentHash: '9f86d081', fileName: 'Yotsuba&! 1.cbz' },
     ]);
   });
 
@@ -295,7 +303,13 @@ describe('booksFromStored', () => {
     const renamed: StoredBook = { ...row, alias: 'Mine', layoutKind: 'scroll' };
 
     expect(booksFromStored([renamed]).unreadable).toEqual([
-      { id: 'b-1', title: 'Yotsuba&! 1', alias: 'Mine' },
+      {
+        id: 'b-1',
+        title: 'Yotsuba&! 1',
+        alias: 'Mine',
+        contentHash: '9f86d081',
+        fileName: 'Yotsuba&! 1.cbz',
+      },
     ]);
   });
 

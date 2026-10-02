@@ -30,6 +30,8 @@ type UnreadableBook = {
   readonly id: BookId;
   readonly title: string | null;
   readonly alias: string | null;
+  readonly contentHash: string;
+  readonly fileName: string;
 };
 
 type StoredBooks = {
@@ -37,7 +39,13 @@ type StoredBooks = {
   readonly unreadable: readonly UnreadableBook[];
 };
 
-type RawRow = { readonly id?: unknown; readonly title?: unknown; readonly alias?: unknown };
+type RawRow = {
+  readonly id?: unknown;
+  readonly title?: unknown;
+  readonly alias?: unknown;
+  readonly contentHash?: unknown;
+  readonly fileName?: unknown;
+};
 
 function bookField<T>(field: string, value: unknown, known: (value: unknown) => value is T): T {
   return knownStoredValue('book', field, value, known);
@@ -103,6 +111,8 @@ function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
     id,
     title: typeof row.title === 'string' ? row.title : null,
     alias: typeof row.alias === 'string' ? row.alias : null,
+    contentHash: typeof row.contentHash === 'string' ? row.contentHash : '',
+    fileName: typeof row.fileName === 'string' ? row.fileName : '',
   };
 }
 

@@ -1,3 +1,7 @@
+import type { BookId } from '$lib/shared/ids';
+import { shownTitle } from '$lib/shared/shown-title';
+import type { Book } from '../domain/book/book';
+import { shelfMatch } from '../domain/book/book-matching';
 import type { UnreadableBook } from '../domain/book/stored-book';
 import { withOriginalTitle } from './removed-books';
 
@@ -18,4 +22,25 @@ function unreadableBookName(book: UnreadableBook): string {
   return alias ?? `Untitled book (${book.id.slice(0, SHORT_ID_LENGTH)})`;
 }
 
-export { unreadableBookName, unreadableBooksTitle };
+function mergeTargets(
+  unreadable: readonly UnreadableBook[],
+  shelf: readonly Book[],
+): ReadonlyMap<BookId, Book> {
+  const targets = new Map<BookId, Book>();
+  for (const book of unreadable) {
+    const target = shelfMatch(shelf, {
+      contentHash: book.contentHash,
+      fileName: book.fileName,
+      title: book.title ?? '',
+      fileTitle: '',
+    });
+    if (target !== null) targets.set(book.id, target);
+  }
+  return targets;
+}
+
+function mergeLabel(target: Book): string {
+  return `Merge into ${shownTitle(target)}`;
+}
+
+export { mergeLabel, mergeTargets, unreadableBookName, unreadableBooksTitle };

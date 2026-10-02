@@ -208,8 +208,10 @@
     {#if shelfRead.unreadable.length > 0}
       <UnreadableBooks
         books={shelfRead.unreadable}
-        busy={view.changes.removing !== null}
+        shelf={shelfRead.books}
+        busy={view.changes.removing !== null || view.changes.merging !== null}
         onremove={(id) => void view.changes.remove(id)}
+        onmerge={(id, into) => void view.changes.merge(id, into)}
         onremoveall={() =>
           void view.changes.removeEach(shelfRead.unreadable.map((book) => book.id))}
       />

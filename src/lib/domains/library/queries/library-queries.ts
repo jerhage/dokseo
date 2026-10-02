@@ -3,6 +3,7 @@ import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { BookMatching } from '../domain/book/book-matching';
+import type { BookMerge } from '../domain/book/book-merge';
 import type {
   CapturesDeletion,
   RemovalWithCaptures,
@@ -40,6 +41,7 @@ type LibraryWrites = {
   readonly markFinished: (id: BookId) => Promise<MarkFinishedResult>;
   readonly markUnread: (id: BookId) => Promise<MarkUnreadResult>;
   readonly deleteRemovedBookCaptures: (id: BookId) => Promise<CapturesDeletion>;
+  readonly mergeIntoBook: (into: BookId, strays: readonly BookId[]) => Promise<BookMerge>;
 };
 
 type BookMark = 'finished' | 'unread';
@@ -53,6 +55,8 @@ type UploadRequest = {
 type EditRequest = { readonly id: BookId; readonly edit: BookEdit };
 
 type MarkRequest = { readonly id: BookId; readonly mark: BookMark };
+
+type MergeRequest = { readonly into: BookId; readonly stray: BookId };
 
 function newestFirst(books: readonly Book[]): readonly Book[] {
   return books.toSorted((a, b) => b.addedAt - a.addedAt);
@@ -166,6 +170,12 @@ function deleteRemovedCapturesMutation(library: Pick<LibraryWrites, 'deleteRemov
   });
 }
 
+function mergeIntoBookMutation(library: Pick<LibraryWrites, 'mergeIntoBook'>) {
+  return mutationOptions({
+    mutationFn: ({ into, stray }: MergeRequest) => library.mergeIntoBook(into, [stray]),
+  });
+}
+
 function editBookMutation(library: Pick<LibraryWrites, 'editBook'>) {
   return mutationOptions({
     mutationFn: ({ id, edit }: EditRequest) => library.editBook(id, edit),
@@ -187,10 +197,19 @@ export {
   editBookMutation,
   librarySizeQuery,
   markBookMutation,
+  mergeIntoBookMutation,
   newestFirst,
   openFileMutation,
   removeBookAndCapturesMutation,
   removeBookMutation,
   removedBooksQuery,
 };
-export type { BookMark, EditRequest, LibraryReads, LibraryWrites, MarkRequest, UploadRequest };
+export type {
+  BookMark,
+  EditRequest,
+  LibraryReads,
+  LibraryWrites,
+  MarkRequest,
+  MergeRequest,
+  UploadRequest,
+};
