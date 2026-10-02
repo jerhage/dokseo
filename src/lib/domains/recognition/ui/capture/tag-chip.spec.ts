@@ -23,13 +23,10 @@ describe('chipsOf', () => {
     expect(chips).toEqual([{ id: KEIGO.id, name: 'keigo', colour: 'clay' }]);
   });
 
-  it('drops an id no tag in the library answers to', () => {
-    const chips = chipsOf([SFX.id, tagId('deleted'), KEIGO.id], LIBRARY);
-
-    expect(chips.map((chip) => chip.name)).toEqual(['sfx', 'keigo']);
-  });
-
-  it('returns nothing when the capture carries no tag', () => {
-    expect(chipsOf([], LIBRARY)).toEqual([]);
+  it.each([
+    ['an id no tag answers to', [SFX.id, tagId('deleted'), KEIGO.id], ['sfx', 'keigo']],
+    ['no tag at all', [], []],
+  ])('drops an id no tag in the library answers to, given %s', (_case, ids, names) => {
+    expect(chipsOf(ids, LIBRARY).map((chip) => chip.name)).toEqual(names);
   });
 });

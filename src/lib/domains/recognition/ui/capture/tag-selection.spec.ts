@@ -73,18 +73,12 @@ describe('tag selection', () => {
     const selection = selectionOver(held, [SPEECH]);
     selection.open(CARD);
     selection.close();
+
+    expect(selection.opened(CARD)).toBe(false);
+
     selection.open(CARD);
 
     expect(held.calls).toEqual(['counts']);
-  });
-
-  it('closes the picker', () => {
-    const held = written();
-    const selection = selectionOver(held, [SPEECH]);
-    selection.open(CARD);
-    selection.close();
-
-    expect(selection.opened(CARD)).toBe(false);
   });
 
   it('adds a chosen tag and reopens on the tags now carried', async () => {

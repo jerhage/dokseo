@@ -34,16 +34,13 @@ describe('writerKey', () => {
     expect(writerKey(press('Enter'))).toBe('type');
   });
 
-  it('leaves Escape and a saving Enter to the IME while it composes', () => {
-    expect(writerKey(composing('Escape'))).toBe('type');
-    expect(writerKey(composing('Enter', 'meta'))).toBe('type');
-    expect(writerKey(composing('Enter', 'ctrl'))).toBe('type');
-  });
-
-  it('leaves Escape and a saving Enter to the IME on the process key code 229 Safari sends', () => {
-    expect(writerKey(processKey('Escape'))).toBe('type');
-    expect(writerKey(processKey('Enter', 'meta'))).toBe('type');
-    expect(writerKey(processKey('Enter', 'ctrl'))).toBe('type');
+  it.each([
+    ['the composing flag', composing],
+    ['the process key code 229 Safari sends', processKey],
+  ])('leaves Escape and a saving Enter to the IME while it composes, by %s', (_signal, held) => {
+    expect(writerKey(held('Escape'))).toBe('type');
+    expect(writerKey(held('Enter', 'meta'))).toBe('type');
+    expect(writerKey(held('Enter', 'ctrl'))).toBe('type');
   });
 });
 
@@ -59,15 +56,15 @@ describe('pickerKey', () => {
     expect(pickerKey(press('ArrowLeft'))).toBe('type');
   });
 
-  it('leaves the arrows, Enter and Escape to the IME while it composes', () => {
-    expect(
-      ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].map((key) => pickerKey(composing(key))),
-    ).toEqual(['type', 'type', 'type', 'type']);
-  });
-
-  it('leaves the arrows, Enter and Escape to the IME on the process key code 229 Safari sends', () => {
-    expect(
-      ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].map((key) => pickerKey(processKey(key))),
-    ).toEqual(['type', 'type', 'type', 'type']);
+  it.each([
+    ['the composing flag', composing],
+    ['the process key code 229 Safari sends', processKey],
+  ])('leaves the arrows, Enter and Escape to the IME while it composes, by %s', (_signal, held) => {
+    expect(['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].map((key) => pickerKey(held(key)))).toEqual([
+      'type',
+      'type',
+      'type',
+      'type',
+    ]);
   });
 });

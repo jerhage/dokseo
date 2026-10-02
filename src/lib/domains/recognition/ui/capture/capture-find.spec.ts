@@ -49,19 +49,13 @@ describe('foundTags', () => {
 });
 
 describe('tagCountingOf', () => {
-  it('counts nothing and asks nothing before the find is there', () => {
-    const counting = tagCountingOf(() => null);
-
-    expect(counting.counts().size).toBe(0);
-    expect(() => counting.ask()).not.toThrow();
-  });
-
   it('reads the counts of the find it is handed at each call', () => {
     const counts = new Map([[TAG.id, 3]]);
     let held: CaptureFindRead | null = null;
     const counting = tagCountingOf(() => held);
 
-    expect(counting.counts().get(TAG.id)).toBeUndefined();
+    expect(counting.counts().size).toBe(0);
+    expect(() => counting.ask()).not.toThrow();
     held = readOf(counts, []);
     expect(counting.counts().get(TAG.id)).toBe(3);
   });

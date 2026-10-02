@@ -44,31 +44,23 @@ describe('searchNote', () => {
     scope: 'book',
   };
 
-  it('reports captures that could not be read instead of saying nothing matched', () => {
-    expect(searchNote({ ...TYPED, read: UNREAD })).toEqual({ kind: 'unread' });
+  it.each([
+    ['instead of saying nothing matched', {}],
+    ['before anything is typed', { query: '' }],
+    ['while titles still match', { rows: 2 }],
+  ])('reports captures that could not be read %s', (_case, input) => {
+    expect(searchNote({ ...TYPED, read: UNREAD, ...input })).toEqual({ kind: 'unread' });
   });
 
-  it('reports captures that could not be read before anything is typed', () => {
-    expect(searchNote({ ...TYPED, read: UNREAD, query: '' })).toEqual({ kind: 'unread' });
-  });
-
-  it('reports captures that could not be read while titles still match', () => {
-    expect(searchNote({ ...TYPED, read: UNREAD, rows: 2 })).toEqual({ kind: 'unread' });
-  });
-
-  it('says nothing matched once the captures were read', () => {
-    expect(searchNote(TYPED)).toEqual({
-      kind: 'nothing',
-      message: 'No capture holds that text.',
-    });
-  });
-
-  it('words the empty result for the filter and scope', () => {
-    expect(searchNote({ ...TYPED, filter: 'tags', scope: 'all' })).toEqual({
-      kind: 'nothing',
-      message: 'No capture carries a tag of that name.',
-    });
-  });
+  it.each([
+    ['everything', 'book', 'No capture holds that text.'],
+    ['tags', 'all', 'No capture carries a tag of that name.'],
+  ] as const)(
+    'says nothing matched once the captures were read, under the %s filter in the %s scope',
+    (filter, scope, message) => {
+      expect(searchNote({ ...TYPED, filter, scope })).toEqual({ kind: 'nothing', message });
+    },
+  );
 
   it('shows no note before anything is typed', () => {
     expect(searchNote({ ...TYPED, query: '  ' })).toEqual({ kind: 'none' });

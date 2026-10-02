@@ -14,11 +14,10 @@ describe('emptyPanelText', () => {
     );
   });
 
-  it('reports a search miss in the image reader', () => {
-    expect(emptyPanelText('images', true)).toBe('No capture or note in this book holds that text.');
-  });
-
-  it('reports the same search miss in the ebook reader', () => {
-    expect(emptyPanelText('text', true)).toBe('No capture or note in this book holds that text.');
-  });
+  it.each(['images', 'text'] as const)(
+    'reports the same search miss in the %s reader',
+    (source) => {
+      expect(emptyPanelText(source, true)).toBe('No capture or note in this book holds that text.');
+    },
+  );
 });

@@ -40,28 +40,13 @@ describe('markedLines', () => {
   });
 
   it('renders a note the query misses, unmarked', () => {
-    const lines = markedLines(read('おはよう', 'a polite greeting'), 'おはよう');
+    const capture = read('おはよう', 'a polite greeting');
+    const lines = markedLines(capture, 'おはよう');
 
     expect(plain(lines.note)).toBe('a polite greeting');
     expect(lit(lines.note)).toEqual([]);
-  });
-
-  it('reports a match when only the note holds the query', () => {
-    const lines = markedLines(read('おはよう', 'a polite greeting'), 'polite');
-
-    expect(lines.matched).toBe(true);
-    expect(lit(lines.text)).toEqual([]);
-  });
-
-  it('reports a match when only the recognized text holds the query', () => {
-    const lines = markedLines(read('おはよう', 'a polite greeting'), 'はよ');
-
-    expect(lines.matched).toBe(true);
-    expect(lit(lines.note)).toEqual([]);
-  });
-
-  it('reports no match when neither the text nor the note holds the query', () => {
-    expect(markedLines(read('おはよう', 'a polite greeting'), 'こんばんは').matched).toBe(false);
+    expect(lit(markedLines(capture, 'はよ').note)).toEqual([]);
+    expect(lit(markedLines(capture, 'polite').text)).toEqual([]);
   });
 
   it('reports no note line for a recognized capture carrying none', () => {
@@ -91,7 +76,7 @@ describe('markedLines', () => {
       wrote('おはよう'),
     ];
 
-    for (const query of ['polite', 'おはよう', 'こんばんは', '']) {
+    for (const query of ['polite', 'おはよう', 'はよ', 'こんばんは', '']) {
       for (const capture of captures) {
         expect(markedLines(capture, query).matched).toBe(captureHolds(capture, query));
       }

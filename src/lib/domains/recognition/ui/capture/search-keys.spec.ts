@@ -55,6 +55,7 @@ describe('searchKey', () => {
   it('ignores a plain k', () => {
     expect(searchKey(press('k'), HIDDEN_IN_BOOK)).toEqual({ kind: 'ignore' });
     expect(searchKey(press('k'), SHOWN_IN_BOOK)).toEqual({ kind: 'ignore' });
+    expect(searchKey(press('a'), SHOWN_ON_SHELF)).toEqual({ kind: 'ignore' });
   });
 
   it('ignores every other key while hidden', () => {
@@ -84,28 +85,14 @@ describe('searchKey', () => {
     });
   });
 
-  it('ignores typing while shown', () => {
-    expect(searchKey(press('a'), SHOWN_ON_SHELF)).toEqual({ kind: 'ignore' });
-  });
-
-  it('ignores every command key while an IME composes', () => {
+  it.each([
+    ['the composing flag', { isComposing: true }],
+    ['the process key code 229 Safari sends', { keyCode: 229 }],
+  ])('ignores every command key and the shortcut while an IME composes, by %s', (_s, signal) => {
     for (const key of ['Enter', 'Escape', 'ArrowDown', 'ArrowUp']) {
-      expect(searchKey(press(key, { isComposing: true }), SHOWN_ON_SHELF)).toEqual({
-        kind: 'ignore',
-      });
+      expect(searchKey(press(key, signal), SHOWN_ON_SHELF)).toEqual({ kind: 'ignore' });
     }
-  });
-
-  it('ignores the IME process key code 229 that Safari sends for a confirming Enter', () => {
-    for (const key of ['Enter', 'Escape', 'ArrowDown', 'ArrowUp']) {
-      expect(searchKey(press(key, { keyCode: 229 }), SHOWN_ON_SHELF)).toEqual({
-        kind: 'ignore',
-      });
-    }
-  });
-
-  it('ignores the shortcut while an IME composes', () => {
-    expect(searchKey(press('k', { metaKey: true, isComposing: true }), HIDDEN_IN_BOOK)).toEqual({
+    expect(searchKey(press('k', { metaKey: true, ...signal }), HIDDEN_IN_BOOK)).toEqual({
       kind: 'ignore',
     });
   });

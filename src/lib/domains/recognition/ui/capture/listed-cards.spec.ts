@@ -82,12 +82,6 @@ describe('listedCards', () => {
     expect(texts(cards)).toEqual(['先', '後', '新', 'failed']);
   });
 
-  it('keeps an unsaved card from this session beside the rows a later read lists', () => {
-    const cards = listedCards([storedRow('a', 'older', 1)], [failedCard('new')]);
-
-    expect(texts(cards)).toEqual(['older', 'failed']);
-  });
-
   it('shows a capture once when it is both stored and still held as unsaved', () => {
     const cards = listedCards([storedRow('a', 'older', 1)], [settledCard('a', 'older')]);
 

@@ -55,10 +55,11 @@ describe('UnsavedCards', () => {
     const unsaved = new UnsavedCards();
     unsaved.put(pending('a'));
     unsaved.empty();
+    unsaved.put(pending('b'));
 
     unsaved.settle(captureId('a'), { status: 'empty' });
 
-    expect(unsaved.cards).toEqual([]);
+    expect(unsaved.cards).toEqual([pending('b')]);
   });
 
   it('drops one card and keeps the rest', () => {

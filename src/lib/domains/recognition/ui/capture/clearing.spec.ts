@@ -67,11 +67,10 @@ describe('clearWarning', () => {
     expect(warning).toContain('The notes cannot');
   });
 
-  it('says one reading, not 1 readings', () => {
-    expect(clearWarning({ kind: 'readings', readings: 1 })).toContain('1 reading?');
-  });
-
-  it('says one note, not 1 notes', () => {
-    expect(clearWarning({ kind: 'notes', notes: 1 })).toContain('1 note?');
+  it.each([
+    [{ kind: 'readings', readings: 1 }, '1 reading?'],
+    [{ kind: 'notes', notes: 1 }, '1 note?'],
+  ] as const)('says one, not 1 of a plural, for %o', (scope, singular) => {
+    expect(clearWarning(scope)).toContain(singular);
   });
 });

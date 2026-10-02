@@ -19,12 +19,8 @@ class FakeStore implements StringStore {
 }
 
 describe('toCaptureSort', () => {
-  it('reads nothing stored as book order', () => {
-    expect(toCaptureSort(null)).toBe('book');
-  });
-
-  it('reads an unknown value as book order', () => {
-    expect(toCaptureSort('oldest')).toBe('book');
+  it.each([null, 'oldest'])('reads an unknown value as book order, given %s', (stored) => {
+    expect(toCaptureSort(stored)).toBe('book');
   });
 
   it('reads newest as newest first', () => {

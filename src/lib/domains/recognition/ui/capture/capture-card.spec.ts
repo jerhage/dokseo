@@ -9,16 +9,12 @@ import {
 } from './capture-card';
 
 describe('captureState', () => {
-  it('calls a written capture a note', () => {
-    expect(captureState('written')).toBe(NOTE_STATE);
-  });
-
-  it('calls a recognized capture read', () => {
-    expect(captureState('recognized')).toBe(READ_STATE);
-  });
-
-  it('calls a capture taken from the book lifted', () => {
-    expect(captureState('lifted')).toBe(LIFTED_STATE);
+  it.each([
+    ['written', NOTE_STATE],
+    ['recognized', READ_STATE],
+    ['lifted', LIFTED_STATE],
+  ] as const)('calls a %s capture by its own state word', (origin, state) => {
+    expect(captureState(origin)).toBe(state);
   });
 });
 
@@ -31,11 +27,10 @@ describe('captureNote', () => {
     expect(captureNote('written', 'ひとこと')).toBeNull();
   });
 
-  it('says nothing beside a recognized capture, however empty', () => {
-    expect(captureNote('recognized', '')).toBeNull();
-  });
-
-  it('says nothing beside a lifted capture, however empty', () => {
-    expect(captureNote('lifted', '')).toBeNull();
-  });
+  it.each(['recognized', 'lifted'] as const)(
+    'says nothing beside a %s capture, however empty',
+    (origin) => {
+      expect(captureNote(origin, '')).toBeNull();
+    },
+  );
 });

@@ -30,12 +30,6 @@ describe('card editing', () => {
     editing.begin(CARD, 'ねこ', null);
 
     expect([editing.holds(CARD), editing.holds(OTHER)]).toEqual([true, false]);
-  });
-
-  it('starts the draft from the text it was given', () => {
-    const editing = new CardEditing();
-    editing.begin(CARD, 'ねこ', null);
-
     expect(editing.draft).toBe('ねこ');
   });
 

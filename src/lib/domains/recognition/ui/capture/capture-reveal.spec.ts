@@ -6,8 +6,11 @@ const made = captureId('c2');
 const other = captureId('c1');
 
 describe('revealFor', () => {
-  it('holds nothing to reveal while no capture was made', () => {
-    expect(revealFor(NO_REVEAL, null)).toEqual(NO_REVEAL);
+  it.each([
+    ['nothing to reveal', NO_REVEAL],
+    ['a capture to reveal the book then forgot', { kind: 'pending', id: made }],
+  ] as const)('holds nothing to reveal while no capture was made, from %s', (_case, state) => {
+    expect(revealFor(state, null)).toEqual(NO_REVEAL);
   });
 
   it('marks a capture just made as to reveal', () => {
@@ -20,10 +23,6 @@ describe('revealFor', () => {
 
   it('marks the next capture made as to reveal after one was revealed', () => {
     expect(revealFor({ kind: 'done', id: other }, made)).toEqual({ kind: 'pending', id: made });
-  });
-
-  it('drops a capture to reveal when the book forgets it', () => {
-    expect(revealFor({ kind: 'pending', id: made }, null)).toEqual(NO_REVEAL);
   });
 });
 
