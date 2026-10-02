@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { relaysToHost } from '$lib/platform/dom/key-relay';
+import { CLICK_EDGE_SHARE } from '$lib/shared/page-turn';
 import {
   dismissesTheArrival,
   FRAME_NOWHERE_ON_THE_STAGE,
@@ -10,7 +11,6 @@ import {
   moveForTurn,
   pointerEnded,
   pressesOnSpace,
-  EDGE_SHARE,
   regionAt,
   releaseAction,
   tapOnStage,
@@ -341,7 +341,7 @@ describe('the keys a chapter relays out to the host window', () => {
 });
 
 describe('regionAt', () => {
-  const EDGE = PAGE_WIDTH * EDGE_SHARE;
+  const EDGE = PAGE_WIDTH * CLICK_EDGE_SHARE;
 
   it('names the leading strip the left edge', () => {
     expect(regionAt(0, PAGE_WIDTH)).toEqual({ kind: 'left-edge' });
@@ -360,7 +360,7 @@ describe('regionAt', () => {
   });
 
   it('leaves most of the page to the reader, not to turning', () => {
-    expect(EDGE_SHARE * 2).toBeLessThanOrEqual(0.2);
+    expect(CLICK_EDGE_SHARE * 2).toBeLessThanOrEqual(0.2);
   });
 
   it('names the middle when there is no width to divide', () => {

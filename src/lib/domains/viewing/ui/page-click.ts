@@ -1,4 +1,5 @@
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import { CLICK_EDGE_SHARE } from '$lib/shared/page-turn';
 import type { FrameSpan, TurnSide } from '$lib/shared/page-turn';
 import { moveTowards } from './page-moves';
 import type { PageMove } from './page-moves';
@@ -6,8 +7,6 @@ import type { PageMove } from './page-moves';
 type PageClick =
   | { readonly kind: 'turn'; readonly move: PageMove }
   | { readonly kind: 'toggle-chrome' };
-
-const CLICK_EDGE_SHARE = 0.1;
 
 const TOGGLES_THE_CHROME: PageClick = { kind: 'toggle-chrome' };
 
@@ -29,5 +28,5 @@ function pageClick(x: number, frame: FrameSpan, direction: ReadingDirection): Pa
   return { kind: 'turn', move: moveTowards(side, 'paged', direction) };
 }
 
-export { CLICK_EDGE_SHARE, pageClick };
+export { pageClick };
 export type { PageClick };

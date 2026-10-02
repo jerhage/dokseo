@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import { clickSlop } from '$lib/shared/click-slop';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
-import { tapZone, towards } from '$lib/shared/page-turn';
+import { CLICK_EDGE_SHARE, tapZone, towards } from '$lib/shared/page-turn';
 import type { TapZone, TouchTurns, TurnSide } from '$lib/shared/page-turn';
 
 type Point = { readonly x: number; readonly y: number };
@@ -74,8 +74,6 @@ type PageTurner = {
   prev(): unknown;
   next(): unknown;
 };
-
-const EDGE_SHARE = 0.1;
 
 const HOST_VIEWPORT_ORIGIN: Point = { x: 0, y: 0 };
 
@@ -156,7 +154,7 @@ function tapOnStage(at: Point, origin: Point, stage: StageBox): StageTap {
 function regionAt(x: number, width: number): ClickRegion {
   if (!Number.isFinite(x) || !Number.isFinite(width) || width <= 0) return MIDDLE;
 
-  const edge = width * EDGE_SHARE;
+  const edge = width * CLICK_EDGE_SHARE;
   if (x < edge) return LEFT_EDGE;
   if (x > width - edge) return RIGHT_EDGE;
 
@@ -264,7 +262,6 @@ function turnPage(pages: PageTurner, move: FlowMove): void {
 }
 
 export {
-  EDGE_SHARE,
   FRAME_NOWHERE_ON_THE_STAGE,
   HOST_VIEWPORT_ORIGIN,
   isTyping,

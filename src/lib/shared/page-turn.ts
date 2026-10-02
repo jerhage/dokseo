@@ -14,6 +14,8 @@ type FrameSpan = { readonly left: number; readonly width: number };
 
 const SIDE_ZONE_SHARE = 0.3;
 
+const CLICK_EDGE_SHARE = 0.1;
+
 const SWIPE_MIN_PX = 50;
 
 const SWIPE_MIN_PX_PER_MS = 0.3;
@@ -94,6 +96,7 @@ function towards<T>(side: TurnSide, order: readonly [T, T]): T {
 }
 
 export {
+  CLICK_EDGE_SHARE,
   EDGE_GUTTER_PX,
   SIDE_ZONE_SHARE,
   SWIPE_AXIS_RATIO,
