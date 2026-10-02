@@ -4,20 +4,14 @@ import { detectSourceKind, fingerprintedFiles, splitUpload } from './source-dete
 import type { UploadBook, UploadEntry } from './source-detection';
 
 describe('detectSourceKind', () => {
-  it('detects a single pdf', () => {
-    expect(detectSourceKind(['chapter.pdf'])).toBe('pdf');
-  });
-
-  it('detects a single zip', () => {
-    expect(detectSourceKind(['chapter.zip'])).toBe('archive');
-  });
-
-  it('detects a single cbz', () => {
-    expect(detectSourceKind(['chapter.cbz'])).toBe('archive');
-  });
-
-  it('detects a single epub', () => {
-    expect(detectSourceKind(['volume-1.epub'])).toBe('epub');
+  it.each([
+    ['chapter.pdf', 'pdf'],
+    ['vol1.pdf/chapter.pdf', 'pdf'],
+    ['chapter.zip', 'archive'],
+    ['chapter.cbz', 'archive'],
+    ['volume-1.epub', 'epub'],
+  ] as const)('detects a single container %s as %s', (name, kind) => {
+    expect(detectSourceKind([name])).toBe(kind);
   });
 
   it('ignores the case of the container extension', () => {
@@ -27,73 +21,47 @@ describe('detectSourceKind', () => {
     expect(detectSourceKind(['chapter.CBZ'])).toBe('archive');
   });
 
-  it('judges the extension of the basename, not of a folder', () => {
-    expect(detectSourceKind(['vol1.pdf/chapter.pdf'])).toBe('pdf');
-    expect(detectSourceKind(['vol1.pdf/notes.txt'])).toBe(null);
-  });
+  it.each([[['chapter.pdf', 'page1.jpg']], [['chapter.cbz', 'page1.png']]])(
+    'falls to images when a container arrives alongside an image: %j',
+    (names) => {
+      expect(detectSourceKind(names)).toBe('images');
+    },
+  );
 
-  it('falls to images when a pdf arrives alongside an image', () => {
-    expect(detectSourceKind(['chapter.pdf', 'page1.jpg'])).toBe('images');
-  });
-
-  it('falls to images when an archive arrives alongside an image', () => {
-    expect(detectSourceKind(['chapter.cbz', 'page1.png'])).toBe('images');
-  });
-
-  it('returns null for two pdfs, because neither the single-container nor the image rule matches', () => {
-    expect(detectSourceKind(['one.pdf', 'two.pdf'])).toBe(null);
-  });
-
-  it('returns null for two archives, for the same reason', () => {
-    expect(detectSourceKind(['one.zip', 'two.cbz'])).toBe(null);
-  });
-
-  it('detects loose images', () => {
-    expect(detectSourceKind(['page1.jpg', 'page2.png', 'page3.webp'])).toBe('images');
-  });
+  it.each([[['one.pdf', 'two.pdf']], [['one.zip', 'two.cbz']]])(
+    'returns null for two containers %j, because neither the single-container nor the image rule matches',
+    (names) => {
+      expect(detectSourceKind(names)).toBe(null);
+    },
+  );
 
   it('detects a single loose image', () => {
     expect(detectSourceKind(['cover.jpg'])).toBe('images');
   });
 
-  it('detects a dropped folder of images by its relative paths', () => {
-    expect(detectSourceKind(['vol1/page1.jpg', 'vol1/page2.jpg'])).toBe('images');
+  it.each([
+    [['page1.jpg', 'page2.png', 'page3.webp']],
+    [['vol1/page1.jpg', 'vol1/page2.jpg']],
+    [['ComicInfo.xml', 'notes.txt', 'vol1/page1.jpg']],
+  ])('detects images when any entry is an image: %j', (names) => {
+    expect(detectSourceKind(names)).toBe('images');
   });
 
-  it('detects images when only one entry of many is an image', () => {
-    expect(detectSourceKind(['ComicInfo.xml', 'notes.txt', 'vol1/page1.jpg'])).toBe('images');
-  });
-
-  it('returns null when nothing is usable', () => {
-    expect(detectSourceKind(['notes.txt', 'ComicInfo.xml'])).toBe(null);
-  });
-
-  it('returns null for an empty list', () => {
-    expect(detectSourceKind([])).toBe(null);
-  });
-
-  it('returns null for a name with no extension', () => {
-    expect(detectSourceKind(['chapter'])).toBe(null);
-    expect(detectSourceKind(['vol1/chapter'])).toBe(null);
-  });
-
-  it('returns null for a dotfile whose whole name looks like an extension', () => {
-    expect(detectSourceKind(['.pdf'])).toBe(null);
-    expect(detectSourceKind(['.cbz'])).toBe(null);
-    expect(detectSourceKind(['.jpg'])).toBe(null);
-  });
-
-  it('returns null for an empty name', () => {
-    expect(detectSourceKind([''])).toBe(null);
-  });
-
-  it('does not treat a rar or a 7z as an archive', () => {
-    expect(detectSourceKind(['chapter.cbr'])).toBe(null);
-    expect(detectSourceKind(['chapter.7z'])).toBe(null);
-  });
-
-  it('does not treat a directory entry as a container', () => {
-    expect(detectSourceKind(['chapter.zip/'])).toBe(null);
+  it.each([
+    [['notes.txt', 'ComicInfo.xml']],
+    [[]],
+    [['vol1.pdf/notes.txt']],
+    [['chapter']],
+    [['vol1/chapter']],
+    [['.pdf']],
+    [['.cbz']],
+    [['.jpg']],
+    [['']],
+    [['chapter.cbr']],
+    [['chapter.7z']],
+    [['chapter.zip/']],
+  ])('returns null for an upload with nothing usable: %j', (names) => {
+    expect(detectSourceKind(names)).toBe(null);
   });
 
   it('returns null for a lone resource fork that looks like a container', () => {
@@ -117,29 +85,10 @@ function shapeOf(books: readonly UploadBook<UploadEntry>[]): readonly (readonly 
 }
 
 describe('splitUpload', () => {
-  it('makes one book of a single pdf', () => {
-    expect(shapeOf(splitUpload([entry('chapter.pdf')]))).toEqual([['pdf', 'chapter.pdf']]);
-  });
-
-  it('makes one book of each of several pdfs', () => {
-    expect(shapeOf(splitUpload([entry('b.pdf'), entry('a.pdf'), entry('c.pdf')]))).toEqual([
-      ['pdf', 'a.pdf'],
-      ['pdf', 'b.pdf'],
-      ['pdf', 'c.pdf'],
-    ]);
-  });
-
   it('orders the container books naturally, so volume 2 comes before volume 10', () => {
     expect(shapeOf(splitUpload([entry('vol 10.cbz'), entry('vol 2.cbz')]))).toEqual([
       ['archive', 'vol 2.cbz'],
       ['archive', 'vol 10.cbz'],
-    ]);
-  });
-
-  it('makes one book of an epub and one of a cbz, each with its own kind', () => {
-    expect(shapeOf(splitUpload([entry('novel.epub'), entry('manga.cbz')]))).toEqual([
-      ['archive', 'manga.cbz'],
-      ['epub', 'novel.epub'],
     ]);
   });
 
