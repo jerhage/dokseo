@@ -32,7 +32,22 @@ describe('effectivePairing', () => {
     ['double', 'continuous', 'single'],
     ['double-after-cover', 'continuous', 'single'],
     ['single', 'continuous', 'single'],
+    ['auto', 'paged', 'double-after-cover'],
+    ['auto', 'continuous', 'single'],
   ] as const)('pairs a book asking for %s in layout %s as %s', (pairing, kind, effective) => {
-    expect(effectivePairing(pairing, kind)).toBe(effective);
+    expect(effectivePairing(pairing, kind, 'wide')).toBe(effective);
   });
+
+  it.each([
+    ['auto', 'paged', 'single'],
+    ['double', 'paged', 'double'],
+    ['double-after-cover', 'paged', 'double-after-cover'],
+    ['single', 'paged', 'single'],
+    ['auto', 'continuous', 'single'],
+  ] as const)(
+    'pairs a book asking for %s in layout %s as %s on a narrow screen',
+    (pairing, kind, effective) => {
+      expect(effectivePairing(pairing, kind, 'narrow')).toBe(effective);
+    },
+  );
 });

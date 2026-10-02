@@ -1,4 +1,4 @@
-import type { ImageLayoutKind, PagePairing, ReadingDirection } from './layout-kind';
+import type { ImageLayoutKind, PagePairingChoice, ReadingDirection } from './layout-kind';
 
 type LayoutChoice<T> = {
   readonly value: T;
@@ -14,7 +14,8 @@ const LAYOUT_KIND_CHOICES: readonly LayoutChoice<ImageLayoutKind>[] = [
 
 const PAGE_PAIRING_LEGEND = 'Page pairing';
 
-const PAGE_PAIRING_CHOICES: readonly LayoutChoice<PagePairing>[] = [
+const PAGE_PAIRING_CHOICES: readonly LayoutChoice<PagePairingChoice>[] = [
+  { value: 'auto', label: 'Automatic, one page on a phone' },
   { value: 'single', label: 'One page at a time' },
   { value: 'double', label: 'Two pages side by side' },
   { value: 'double-after-cover', label: 'Two pages, cover alone' },

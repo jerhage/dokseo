@@ -6,7 +6,13 @@ type ReadingDirection = 'rtl' | 'ltr';
 
 type PagePairing = 'single' | 'double' | 'double-after-cover';
 
+type PagePairingChoice = PagePairing | 'auto';
+
+type ScreenWidth = 'narrow' | 'wide';
+
 const PAGE_PAIRINGS: readonly PagePairing[] = ['single', 'double', 'double-after-cover'];
+
+const PAGE_PAIRING_CHOICE_VALUES: readonly PagePairingChoice[] = ['auto', ...PAGE_PAIRINGS];
 
 const LAYOUT_KINDS: readonly LayoutKind[] = ['paged', 'continuous', 'flow'];
 
@@ -24,6 +30,10 @@ function isPagePairing(value: unknown): value is PagePairing {
   return PAGE_PAIRINGS.some((pairing) => pairing === value);
 }
 
+function isPagePairingChoice(value: unknown): value is PagePairingChoice {
+  return PAGE_PAIRING_CHOICE_VALUES.some((choice) => choice === value);
+}
+
 function imageLayoutKind(layoutKind: LayoutKind): ImageLayoutKind | null {
   return layoutKind === 'flow' ? null : layoutKind;
 }
@@ -32,17 +42,35 @@ function effectiveDirection(direction: ReadingDirection, layoutKind: LayoutKind)
   return direction === 'rtl' && layoutKind !== 'continuous' ? 'rtl' : 'ltr';
 }
 
-function effectivePairing(pairing: PagePairing, layoutKind: ImageLayoutKind): PagePairing {
-  return layoutKind === 'continuous' ? 'single' : pairing;
+function automaticPairing(screen: ScreenWidth): PagePairing {
+  return screen === 'narrow' ? 'single' : 'double-after-cover';
+}
+
+function effectivePairing(
+  pairing: PagePairingChoice,
+  layoutKind: ImageLayoutKind,
+  screen: ScreenWidth,
+): PagePairing {
+  if (layoutKind === 'continuous') return 'single';
+  return pairing === 'auto' ? automaticPairing(screen) : pairing;
 }
 
 export {
   PAGE_PAIRINGS,
+  PAGE_PAIRING_CHOICE_VALUES,
   imageLayoutKind,
   effectiveDirection,
   effectivePairing,
   isLayoutKind,
   isPagePairing,
+  isPagePairingChoice,
   isReadingDirection,
 };
-export type { ImageLayoutKind, LayoutKind, ReadingDirection, PagePairing };
+export type {
+  ImageLayoutKind,
+  LayoutKind,
+  ReadingDirection,
+  PagePairing,
+  PagePairingChoice,
+  ScreenWidth,
+};

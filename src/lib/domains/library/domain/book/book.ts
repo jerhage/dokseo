@@ -5,7 +5,7 @@ import type { Language } from '$lib/shared/language';
 import type {
   ImageLayoutKind,
   LayoutKind,
-  PagePairing,
+  PagePairingChoice,
   ReadingDirection,
 } from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
@@ -28,7 +28,7 @@ type Book = {
   readonly language: Language;
   readonly layoutKind: LayoutKind;
   readonly direction: ReadingDirection;
-  readonly pagePairing: PagePairing;
+  readonly pagePairing: PagePairingChoice;
   readonly pageFit: PageFit;
   readonly sourceKind: SourceKind;
   readonly contentHash: ContentHash;
@@ -40,7 +40,7 @@ type Book = {
   readonly finishedAt: number | null;
 };
 
-const DEFAULT_PAGE_PAIRING: PagePairing = 'double-after-cover';
+const DEFAULT_PAGE_PAIRING: PagePairingChoice = 'auto';
 
 const PAGE_FIT_A_FLOW_BOOK_NEVER_READS: PageFit = 'width';
 
@@ -57,7 +57,7 @@ type BookEdit = {
   readonly language?: Language;
   readonly layoutKind?: ImageLayoutKind;
   readonly direction?: ReadingDirection;
-  readonly pagePairing?: PagePairing;
+  readonly pagePairing?: PagePairingChoice;
   readonly pageFit?: PageFit;
   readonly position?: ReadingPlace;
   readonly lastReadAt?: number | null;

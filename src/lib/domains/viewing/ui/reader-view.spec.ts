@@ -7,7 +7,12 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
-import type { LayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type {
+  LayoutKind,
+  PagePairing,
+  PagePairingChoice,
+  ReadingDirection,
+} from '$lib/shared/layout-kind';
 import type { PageFit } from '$lib/shared/page-fit';
 import type { PagePicture, PageSource } from '$lib/shared/page-source';
 import type { ShownPlace } from '$lib/shared/reader-location';
@@ -154,7 +159,7 @@ type Edit = {
   readonly id: BookId;
   readonly position: ReadingPlace | undefined;
   readonly layoutKind: LayoutKind | undefined;
-  readonly pagePairing: PagePairing | undefined;
+  readonly pagePairing: PagePairingChoice | undefined;
   readonly direction: ReadingDirection | undefined;
   readonly pageFit: PageFit | undefined;
   readonly language: Language | undefined;
@@ -642,6 +647,49 @@ describe('ReaderView', () => {
     expect(view.grouping.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
     expect(at(world.edits, 0).pagePairing).toBe('single');
     expect(view.preferences.saving).toBe(false);
+  });
+
+  it('shows an automatic book one page at a time on a narrow screen and two after the cover on a wide one', async () => {
+    const world = fakes({ pagePairing: 'auto' });
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    const wide = view.grouping.groups;
+
+    view.grouping.fitScreen('narrow');
+    const narrow = view.grouping.groups;
+    view.grouping.fitScreen('wide');
+
+    expect(wide).toEqual([[0], [1, 2], [3, 4], [5]]);
+    expect(narrow).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(view.grouping.groups).toEqual(wide);
+    expect(world.edits).toEqual([]);
+  });
+
+  it('opens an automatic book one page at a time when the screen was already narrow', async () => {
+    const world = fakes({ pagePairing: 'auto' });
+    const view = new ReaderView(world.container, world.notify);
+    view.grouping.fitScreen('narrow');
+
+    await view.open(bookId('one'));
+
+    expect(view.grouping.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+  });
+
+  it('keeps a chosen pairing on a narrow screen', async () => {
+    const world = fakes({ pagePairing: 'double-after-cover' });
+    const view = new ReaderView(world.container, world.notify);
+    view.grouping.fitScreen('narrow');
+
+    await view.open(bookId('one'));
+    const chosen = view.grouping.groups;
+    await view.preferences.setPairing('double');
+
+    expect(chosen).toEqual([[0], [1, 2], [3, 4], [5]]);
+    expect(view.grouping.groups).toEqual([
+      [0, 1],
+      [2, 3],
+      [4, 5],
+    ]);
   });
 
   it('groups a strip one image at a time whatever pairing the book stores', async () => {

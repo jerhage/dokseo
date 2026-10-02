@@ -12,7 +12,7 @@ import { contentHash, imageIndex, parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
-import { isLayoutKind, isPagePairing, isReadingDirection } from '$lib/shared/layout-kind';
+import { isLayoutKind, isPagePairingChoice, isReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { isPageFit } from '$lib/shared/page-fit';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
@@ -91,7 +91,9 @@ function bookFromStored(stored: StoredBook): Book {
     language: isLanguage(stored.language) ? stored.language : FALLBACK_LANGUAGE,
     layoutKind,
     direction: isReadingDirection(stored.direction) ? stored.direction : FALLBACK_DIRECTION,
-    pagePairing: isPagePairing(stored.pagePairing) ? stored.pagePairing : DEFAULT_PAGE_PAIRING,
+    pagePairing: isPagePairingChoice(stored.pagePairing)
+      ? stored.pagePairing
+      : DEFAULT_PAGE_PAIRING,
     pageFit: isPageFit(stored.pageFit) ? stored.pageFit : defaultPageFit(layoutKind),
     sourceKind: bookField('source kind', stored.sourceKind, isSourceKind),
     contentHash: contentHash(bookField('content hash', stored.contentHash, isText)),

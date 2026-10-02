@@ -18,6 +18,21 @@ describe('ReaderFrameView', () => {
     expect(measured(390, 640).narrow).toBe(true);
   });
 
+  it('reports the screen width once both widths are measured, and again only when it flips', () => {
+    const reported: string[] = [];
+    const frame = new ReaderFrameView(NOTHING_FOCUSED, undefined, (screen) =>
+      reported.push(screen),
+    );
+    frame.bodyWidth = 390;
+    frame.compactWidth = 700;
+    frame.bodyWidth = 380;
+    frame.bodyWidth = 1440;
+    frame.bodyWidth = 1200;
+    frame.bodyWidth = 390;
+
+    expect(reported).toEqual(['narrow', 'wide', 'narrow']);
+  });
+
   it('opens the dock beside a wide page and peeks it under a narrow one', () => {
     expect(measured(1440, 640).placement).toBe('side');
     expect(measured(390, 640).placement).toBe('peek');

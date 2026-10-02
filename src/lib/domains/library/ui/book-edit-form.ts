@@ -1,7 +1,7 @@
 import { imageLayoutKind } from '$lib/shared/layout-kind';
 import type { Language } from '$lib/shared/language';
 import { aliasFor, shownTitle } from '$lib/shared/shown-title';
-import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type { ImageLayoutKind, PagePairingChoice, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Book, BookEdit } from '../domain/book/book';
 
 type BookForm = {
@@ -9,7 +9,7 @@ type BookForm = {
   language: Language;
   layoutKind: ImageLayoutKind | null;
   direction: ReadingDirection;
-  pagePairing: PagePairing;
+  pagePairing: PagePairingChoice;
 };
 
 function bookForm(book: Book): BookForm {
@@ -33,7 +33,7 @@ function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
     language?: Language;
     layoutKind?: ImageLayoutKind;
     direction?: ReadingDirection;
-    pagePairing?: PagePairing;
+    pagePairing?: PagePairingChoice;
   } = {};
 
   const alias = aliasFor(book.title, form.title);

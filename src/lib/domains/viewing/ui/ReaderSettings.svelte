@@ -11,7 +11,11 @@
   import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';
   import { LANGUAGES, LANGUAGE_LEGEND, languageName } from '$lib/shared/language';
   import type { Language } from '$lib/shared/language';
-  import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+  import type {
+    ImageLayoutKind,
+    PagePairingChoice,
+    ReadingDirection,
+  } from '$lib/shared/layout-kind';
   import {
     LAYOUT_KIND_CHOICES,
     LAYOUT_KIND_LEGEND_BRIEF,
@@ -36,7 +40,7 @@
     open: boolean;
     readonly language: Language | null;
     readonly layout: ImageLayoutKind | null;
-    readonly pairing: PagePairing | null;
+    readonly pairing: PagePairingChoice | null;
     readonly direction: ReadingDirection | null;
     readonly saving: boolean;
     readonly downward: boolean;
@@ -50,7 +54,7 @@
     readonly allCaptures: boolean;
     readonly onlanguage: (language: Language) => void;
     readonly onlayout: (kind: ImageLayoutKind) => void;
-    readonly onpairing: (pairing: PagePairing) => void;
+    readonly onpairing: (pairing: PagePairingChoice) => void;
     readonly ondirection: (direction: ReadingDirection) => void;
     readonly ontouchturns: (turns: TouchTurns) => void;
     readonly onedgeclicksturn: (wanted: boolean) => void;

@@ -39,6 +39,13 @@ describe('bookFromStored', () => {
     expect(PAGE_PAIRINGS).toEqual(['single', 'double', 'double-after-cover']);
   });
 
+  it('keeps an automatic pairing, and keeps a stored two-pages-after-the-cover as the choice it is', () => {
+    expect(bookFromStored({ ...row, pagePairing: 'auto' }).pagePairing).toBe('auto');
+    expect(bookFromStored({ ...row, pagePairing: 'double-after-cover' }).pagePairing).toBe(
+      'double-after-cover',
+    );
+  });
+
   it('keeps a stored fit that is present', () => {
     expect(bookFromStored({ ...row, pageFit: 'width' }).pageFit).toBe('width');
     expect(bookFromStored({ ...row, layoutKind: 'continuous', pageFit: 'height' }).pageFit).toBe(
@@ -196,6 +203,7 @@ describe('bookFromStored', () => {
     expect(bookFromStored({ ...row, pagePairing: 'triple' }).pagePairing).toBe(
       DEFAULT_PAGE_PAIRING,
     );
+    expect(DEFAULT_PAGE_PAIRING).toBe('auto');
   });
 
   it('falls back to the fit of the layout kind for a stored fit it does not know', () => {

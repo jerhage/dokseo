@@ -28,7 +28,7 @@
   import { shownTurnSettings } from '$lib/shared/turn-settings';
   import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
-  import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
+  import { FOCUSED_OR_OPEN, NOTHING_HOLDS, ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABELS } from './drag-mode';
   import { handlesOwnKeys } from './keyboard';
   import { moveOrder } from './page-moves';
@@ -99,7 +99,9 @@
   let settingsOpen = $state(false);
   let turnSettings = $state.raw<ShownTurnSettings>(presentTurnSettings());
 
-  const readerFrame = new ReaderFrameView();
+  const readerFrame = new ReaderFrameView(FOCUSED_OR_OPEN, NOTHING_HOLDS, (screen) =>
+    view.grouping.fitScreen(screen),
+  );
 
   const shown = $derived(readerFrame.barsShown);
   const makes = $derived(dragOrigin(noting));

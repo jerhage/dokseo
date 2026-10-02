@@ -2,6 +2,7 @@ import type { Container } from '$lib/container';
 import type { Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import { effectivePairing, imageLayoutKind } from '$lib/shared/layout-kind';
+import type { PagePairing, ScreenWidth } from '$lib/shared/layout-kind';
 import type { PageSource } from '$lib/shared/page-source';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { ImagePlace } from '$lib/shared/reading-place';
@@ -27,6 +28,7 @@ class PageGrouping {
   #book: () => ReaderBook | null;
   #generation: () => number;
   #regrouped: Regrouped;
+  #screen: ScreenWidth = 'wide';
 
   constructor(
     container: Container,
@@ -52,6 +54,14 @@ class PageGrouping {
     this.regroup(book, sizes);
   }
 
+  fitScreen(screen: ScreenWidth): void {
+    if (screen === this.#screen) return;
+    const book = this.#book();
+    const before = book === null ? null : this.#pairing(book);
+    this.#screen = screen;
+    if (book !== null && this.#pairing(book) !== before) this.regroup(book, this.sizes);
+  }
+
   start(book: ReaderBook): void {
     this.regroup(book, unmeasured(book.imageCount));
   }
@@ -75,10 +85,14 @@ class PageGrouping {
 
   regroup(book: ReaderBook, sizes: readonly (Size | null)[]): void {
     this.sizes = sizes;
-    const layout = imageLayoutKind(book.layoutKind);
-    this.groups =
-      layout === null ? NO_GROUPS : pairPages(sizes, effectivePairing(book.pagePairing, layout));
+    const pairing = this.#pairing(book);
+    this.groups = pairing === null ? NO_GROUPS : pairPages(sizes, pairing);
     this.#regrouped(book);
+  }
+
+  #pairing(book: ReaderBook): PagePairing | null {
+    const layout = imageLayoutKind(book.layoutKind);
+    return layout === null ? null : effectivePairing(book.pagePairing, layout, this.#screen);
   }
 
   reset(): void {

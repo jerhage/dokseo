@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
-import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
+import type { ImageLayoutKind, PagePairingChoice, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Notify } from '$lib/shared/notice';
 import type { PageFit } from '$lib/shared/page-fit';
 import { unexpectedMessage } from '$lib/shared/unexpected-failure';
@@ -83,7 +83,7 @@ class BookPreferences {
     await this.#edit(book.id, { layoutKind: kind }, LAYOUT_FAILED);
   }
 
-  async setPairing(pairing: PagePairing): Promise<void> {
+  async setPairing(pairing: PagePairingChoice): Promise<void> {
     const book = shownBook(this.#opening());
     if (book === null || this.saving || book.pagePairing === pairing) return;
     this.#selection.clear();
