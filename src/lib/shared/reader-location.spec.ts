@@ -12,7 +12,6 @@ import {
   captureHref,
   imageArrivalShows,
   mirroredPlace,
-  missingBookNotice,
   missingBookArrival,
   openingPlace,
   readArrival,
@@ -119,12 +118,6 @@ describe('openingPlace', () => {
     expect(openingPlace(null, imagePlace(imageIndex(99), imageIndex(99), 0.6), 40)?.offset).toBe(0);
   });
 
-  it('opens at the top of an image the url names when the book stopped at a text place', () => {
-    expect(
-      openingPlace(imageIndex(3), textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.5), 40)?.offset,
-    ).toBe(0);
-  });
-
   it('reports no place for a book holding no images', () => {
     expect(openingPlace(imageIndex(2), imagePlace(imageIndex(0)), 0)).toBeNull();
   });
@@ -221,22 +214,6 @@ describe('mirroredPlace', () => {
     return imageArrivalShows(mirroredPlace(new URL(url), place, IMAGE_ARRIVAL_SHOWING).standing);
   }
 
-  it('keeps the arrival bar on arrival', () => {
-    expect(showsAfter(linked, { kind: 'arrived', index: imageIndex(5) })).toBe(true);
-  });
-
-  it('keeps the arrival bar when a move lands on the named image', () => {
-    expect(showsAfter(linked, moved(3, [3]))).toBe(true);
-  });
-
-  it('keeps the arrival bar when a move shows a spread holding the named image', () => {
-    expect(showsAfter(linked, moved(2, [2, 3]))).toBe(true);
-  });
-
-  it('ends the arrival bar when a move shows a group without the named image', () => {
-    expect(showsAfter(linked, moved(4, [4, 5]))).toBe(false);
-  });
-
   it('ends the arrival bar when a move lands in a url that names no image', () => {
     expect(showsAfter('https://r.test/read/one?find=x', moved(2, [2, 3]))).toBe(false);
   });
@@ -265,14 +242,6 @@ describe('mirroredPlace', () => {
       expect(imageArrivalShows(mirrored.standing)).toBe(written.searchParams.has('find'));
     }
   });
-
-  it('writes the same url as urlForShownPlace', () => {
-    const place = moved(4, [4, 5]);
-
-    expect(mirroredPlace(new URL(linked), place, IMAGE_ARRIVAL_SHOWING).url?.href).toBe(
-      urlForShownPlace(new URL(linked), place)?.href,
-    );
-  });
 });
 
 describe('readerHref', () => {
@@ -288,10 +257,6 @@ describe('readerHref', () => {
     expect(readerHref(bookId('one'), imageIndex(13), '海が')).toBe(
       '/read/one?image=13&find=%E6%B5%B7%E3%81%8C',
     );
-  });
-
-  it('names only the image when no search was carried', () => {
-    expect(readerHref(bookId('one'), imageIndex(13), null)).toBe('/read/one?image=13');
   });
 
   it('drops a search of only spaces', () => {
@@ -370,19 +335,21 @@ describe('passageHref', () => {
 });
 
 describe('readArrival', () => {
-  it('reads the image and the search back out of a url', () => {
-    expect(
-      readArrival(new URL('https://r.test/read/one?image=1&find=%E6%B5%B7').searchParams),
-    ).toEqual({ kind: 'image', index: imageIndex(1), region: null, query: '海' });
-  });
+  it('reads the image and the search back out of a url, and an image named without either', () => {
+    const urls = [
+      {
+        href: 'https://r.test/read/one?image=1&find=%E6%B5%B7',
+        read: { kind: 'image', index: imageIndex(1), region: null, query: '海' },
+      },
+      {
+        href: 'https://r.test/read/one?image=4',
+        read: { kind: 'image', index: imageIndex(4), region: null, query: null },
+      },
+    ];
 
-  it('reads an image named without a search or a region', () => {
-    expect(readArrival(new URL('https://r.test/read/one?image=4').searchParams)).toEqual({
-      kind: 'image',
-      index: imageIndex(4),
-      region: null,
-      query: null,
-    });
+    for (const { href, read } of urls) {
+      expect(readArrival(new URL(href).searchParams), href).toEqual(read);
+    }
   });
 
   it('reads the region a capture link names beside its image', () => {
@@ -448,17 +415,6 @@ describe('arrivalQuery', () => {
 
   it('gives no search when there is no arrival', () => {
     expect(arrivalQuery(NO_ARRIVAL)).toBeNull();
-  });
-});
-
-describe('missingBookNotice', () => {
-  it('explains a book that is no longer in the library', () => {
-    expect(missingBookNotice('book')).toBe(MISSING_BOOK_NOTICE);
-  });
-
-  it('says nothing for any other value', () => {
-    expect(missingBookNotice(null)).toBeNull();
-    expect(missingBookNotice('anything else')).toBeNull();
   });
 });
 

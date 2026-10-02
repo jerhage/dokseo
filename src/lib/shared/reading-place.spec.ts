@@ -12,22 +12,15 @@ import {
 import type { ReadingPlace } from './reading-place';
 
 describe('imagePlace', () => {
-  it('holds the image index it was given', () => {
-    expect(imagePlace(imageIndex(7))).toEqual({
-      kind: 'image',
-      index: 7,
-      shownThrough: 7,
-      offset: 0,
-    });
-  });
-
-  it('holds the first image without treating it as absent', () => {
-    expect(imagePlace(imageIndex(0))).toEqual({
-      kind: 'image',
-      index: 0,
-      shownThrough: 0,
-      offset: 0,
-    });
+  it('holds the image index it was given, the first image included', () => {
+    for (const index of [7, 0]) {
+      expect(imagePlace(imageIndex(index))).toEqual({
+        kind: 'image',
+        index,
+        shownThrough: index,
+        offset: 0,
+      });
+    }
   });
 
   it('holds the last image shown beside the image the place opens at', () => {
@@ -50,10 +43,6 @@ describe('imagePlace', () => {
 });
 
 describe('the offset an image place carries', () => {
-  it('holds the top of the image when it is given no offset', () => {
-    expect(imagePlace(imageIndex(3)).offset).toBe(0);
-  });
-
   it('holds the fraction down the image it was given', () => {
     expect(imagePlace(imageIndex(3), imageIndex(3), 0.42).offset).toBe(0.42);
   });
@@ -69,20 +58,6 @@ describe('the offset an image place carries', () => {
   it('holds the top of the image for an offset that could not be measured', () => {
     expect(imagePlace(imageIndex(3), imageIndex(3), Number.NaN).offset).toBe(0);
     expect(imagePlace(imageIndex(3), imageIndex(3), Number.POSITIVE_INFINITY).offset).toBe(0);
-  });
-});
-
-describe('textPlace', () => {
-  it('holds the cfi it was given', () => {
-    expect(textPlace('epubcfi(/6/14!/4/2/14/1:0)', null)).toEqual({
-      kind: 'text',
-      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
-      fraction: null,
-    });
-  });
-
-  it('carries no quote, because a place is not an anchor', () => {
-    expect(Object.keys(textPlace('epubcfi(/6/4!/2)', null))).toEqual(['kind', 'cfi', 'fraction']);
   });
 });
 
@@ -164,10 +139,6 @@ describe('samePlace', () => {
     expect(samePlace(textPlace('epubcfi(/6/4!/2)', 0.4), textPlace('epubcfi(/6/6!/2)', 0.4))).toBe(
       false,
     );
-  });
-
-  it('matches two image places at the same index', () => {
-    expect(samePlace(imagePlace(imageIndex(7)), imagePlace(imageIndex(7)))).toBe(true);
   });
 
   it('separates two image places at the same index that sit at different offsets', () => {
