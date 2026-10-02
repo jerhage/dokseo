@@ -2,11 +2,19 @@ import type * as PdfJs from 'pdfjs-dist';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PageViewport } from 'pdfjs-dist';
 import type { Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
-import type { ImageRead, PageSourceOpening, PictureRead, SizesRead } from '$lib/shared/page-source';
+import type {
+  ImageRead,
+  PageSource,
+  PageSourceError,
+  PageSourceOpening,
+  PictureRead,
+  SizesRead,
+} from '$lib/shared/page-source';
 import { describeCause } from '$lib/shared/cause';
 import { RANGE_CHUNK_BYTES, clampRange, initialChunkSize } from './pdf-ranges';
 import { choosePdfBuild } from './pdf-build';
 import type { PdfBuild } from './pdf-build';
+import { plausibleTitle } from '../domain/book/title';
 
 const RENDER_SCALE = 2;
 
@@ -120,34 +128,93 @@ async function renderToBitmap(pdf: PDFDocumentProxy, pageNumber: number): Promis
   return canvas.transferToImageBitmap();
 }
 
-async function openPdfPageSource(source: Blob): Promise<PageSourceOpening> {
+type OpenedPdf = {
+  readonly task: PDFDocumentLoadingTask;
+  readonly transport: BlobRangeTransport;
+  readonly pdf: PDFDocumentProxy;
+};
+
+type PdfOpening = { readonly kind: 'success'; readonly opened: OpenedPdf } | PageSourceError;
+
+type PdfBookOpening =
+  | {
+      readonly kind: 'success';
+      readonly pages: PageSource;
+      readonly metadataTitle: string | null;
+    }
+  | PageSourceError;
+
+type PdfMetadata = Awaited<ReturnType<PDFDocumentProxy['getMetadata']>>;
+
+const METADATA_PATIENCE_MS = 3000;
+
+async function openPdfDocument(source: Blob): Promise<PdfOpening> {
   let task: PDFDocumentLoadingTask | undefined;
-  let transport: BlobRangeTransport;
-  let pdf: PDFDocumentProxy;
   try {
     const { getDocument, BlobRangeTransport } = await pdfJsRuntime();
     const head = await source.slice(0, initialChunkSize(source.size)).arrayBuffer();
-    transport = new BlobRangeTransport(source, new Uint8Array(head));
+    const transport = new BlobRangeTransport(source, new Uint8Array(head));
     task = getDocument({
       range: transport,
       rangeChunkSize: RANGE_CHUNK_BYTES,
       disableAutoFetch: true,
       disableStream: true,
     });
-    pdf = await Promise.race([task.promise, transport.failure]);
+    const pdf = await Promise.race([task.promise, transport.failure]);
+    return { kind: 'success', opened: { task, transport, pdf } };
   } catch (cause) {
     void task?.destroy().catch(() => undefined);
     return { kind: 'source-unreadable', cause: describeCause(cause) };
   }
+}
 
-  const loading = task;
+function infoTitle(info: unknown): unknown {
+  if (typeof info !== 'object' || info === null) return null;
+  return Reflect.get(info, 'Title');
+}
+
+function xmpTitle(metadata: PdfMetadata['metadata'] | null): unknown {
+  if (metadata === null) return null;
+  return metadata.get('dc:title');
+}
+
+function firstPlausibleTitle(candidates: readonly unknown[]): string | null {
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const title = plausibleTitle(candidate);
+    if (title !== null) return title;
+  }
+  return null;
+}
+
+async function readMetadataTitle(opened: OpenedPdf): Promise<string | null> {
+  let patience: ReturnType<typeof setTimeout> | undefined;
+  const outwaited = new Promise<null>((resolve) => {
+    patience = setTimeout(() => resolve(null), METADATA_PATIENCE_MS);
+  });
+  try {
+    const read = await Promise.race([
+      opened.pdf.getMetadata(),
+      opened.transport.failure,
+      outwaited,
+    ]);
+    if (read === null) return null;
+    return firstPlausibleTitle([infoTitle(read.info), xmpTitle(read.metadata)]);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(patience);
+  }
+}
+
+function pdfPageSource({ task, transport, pdf }: OpenedPdf): PageSource {
   const count = pdf.numPages;
   let closed = false;
 
   const close = (): void => {
     if (closed) return;
     closed = true;
-    void loading.destroy().catch(() => undefined);
+    void task.destroy().catch(() => undefined);
   };
 
   const render = async (index: ImageIndex): Promise<ImageRead> => {
@@ -164,32 +231,43 @@ async function openPdfPageSource(source: Blob): Promise<PageSourceOpening> {
   };
 
   return {
-    kind: 'success',
-    pages: {
-      count,
+    count,
 
-      async picture(index: ImageIndex): Promise<PictureRead> {
-        const drawn = await render(index);
-        if (drawn.kind !== 'success') return drawn;
-        return { kind: 'success', picture: { kind: 'drawn', bitmap: drawn.image } };
-      },
-
-      image: render,
-
-      async sizes(): Promise<SizesRead> {
-        if (closed) return { kind: 'source-unreadable', cause: 'The document is closed' };
-        try {
-          const sizes = await Promise.race([pageSizes(pdf), transport.failure]);
-          return { kind: 'success', sizes };
-        } catch (cause) {
-          return { kind: 'source-unreadable', cause: describeCause(cause) };
-        }
-      },
-
-      close,
-      [Symbol.dispose]: close,
+    async picture(index: ImageIndex): Promise<PictureRead> {
+      const drawn = await render(index);
+      if (drawn.kind !== 'success') return drawn;
+      return { kind: 'success', picture: { kind: 'drawn', bitmap: drawn.image } };
     },
+
+    image: render,
+
+    async sizes(): Promise<SizesRead> {
+      if (closed) return { kind: 'source-unreadable', cause: 'The document is closed' };
+      try {
+        const sizes = await Promise.race([pageSizes(pdf), transport.failure]);
+        return { kind: 'success', sizes };
+      } catch (cause) {
+        return { kind: 'source-unreadable', cause: describeCause(cause) };
+      }
+    },
+
+    close,
+    [Symbol.dispose]: close,
   };
 }
 
-export { openPdfPageSource };
+async function openPdfPageSource(source: Blob): Promise<PageSourceOpening> {
+  const opening = await openPdfDocument(source);
+  if (opening.kind !== 'success') return opening;
+  return { kind: 'success', pages: pdfPageSource(opening.opened) };
+}
+
+async function openPdfBook(source: Blob): Promise<PdfBookOpening> {
+  const opening = await openPdfDocument(source);
+  if (opening.kind !== 'success') return opening;
+  const metadataTitle = await readMetadataTitle(opening.opened);
+  return { kind: 'success', pages: pdfPageSource(opening.opened), metadataTitle };
+}
+
+export { METADATA_PATIENCE_MS, openPdfBook, openPdfPageSource };
+export type { PdfBookOpening };

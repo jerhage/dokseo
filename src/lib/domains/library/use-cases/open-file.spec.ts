@@ -72,6 +72,7 @@ function builtSource(overrides: Partial<BuiltSource> = {}): BuiltSource {
     blob: new Blob(['source bytes']),
     sourceKind: 'archive',
     suggestedTitle: 'Yotsuba&! 1',
+    metadataTitle: null,
     pages: builtImages(),
     ...overrides,
   };
@@ -241,6 +242,8 @@ const files: readonly File[] = [inFolder(new File(['bytes'], 'Yotsuba&! 1.cbz'),
 
 const epub: readonly File[] = [inFolder(new File(['bytes'], 'Yotsuba&! 1.epub'), '')];
 
+const pdf: readonly File[] = [inFolder(new File(['bytes'], 'scan_0042.pdf'), '')];
+
 const folder: readonly File[] = [
   inFolder(new File(['0123456789'], '002.png'), 'Ch 12/002.png'),
   inFolder(new File(['01234'], '001.png'), 'Ch 12/001.png'),
@@ -368,6 +371,45 @@ describe('openFile', () => {
       expect(inspector.inspected).toEqual([]);
     },
   );
+
+  it('titles a PDF by the title its metadata declares, not its file name', async () => {
+    const repository = fakeRepository();
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        builder: fakeBuilder(
+          built(
+            builtSource({
+              sourceKind: 'pdf',
+              suggestedTitle: 'scan_0042',
+              metadataTitle: 'よつばと! 1',
+            }),
+          ),
+        ).builder,
+      }),
+      pdf,
+    );
+
+    expect(openedBook(result).title).toBe('よつばと! 1');
+    expect(at(repository.added, 0).book.fileName).toBe('scan_0042.pdf');
+  });
+
+  it('titles a PDF by its file name when its metadata yields no title, and still adds it', async () => {
+    const result = await openFile(
+      deps({
+        builder: fakeBuilder(
+          built(
+            builtSource({ sourceKind: 'pdf', suggestedTitle: 'scan_0042', metadataTitle: null }),
+          ),
+        ).builder,
+      }),
+      pdf,
+    );
+
+    expect(result.kind).toBe('added');
+    expect(openedBook(result).title).toBe('scan_0042');
+  });
 
   it('reads Korean from a hangul title, so the reader does not have to say so', async () => {
     const builder = fakeBuilder(built(builtSource({ suggestedTitle: '나 혼자만 레벨업' }))).builder;
@@ -763,6 +805,38 @@ describe('openFile', () => {
 
     expect(result.kind).toBe('restored');
     expect(openedBook(result).id).toBe('gone-1');
+  });
+
+  it.each([
+    ['its file-name title', 'scan_0042'],
+    ['its metadata title', 'よつばと! 1'],
+  ])('restores a PDF into a row stored under %s', async (_, storedTitle) => {
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([]),
+      [],
+      [removedRecord({ title: storedTitle, contentHash: 'a'.repeat(64), fileName: '' })],
+    );
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        builder: fakeBuilder(
+          built(
+            builtSource({
+              sourceKind: 'pdf',
+              suggestedTitle: 'scan_0042',
+              metadataTitle: 'よつばと! 1',
+            }),
+          ),
+        ).builder,
+      }),
+      pdf,
+    );
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result)).toMatchObject({ id: 'gone-1', title: 'よつばと! 1' });
   });
 
   it('adds a new book when no record shares its hash, file name or title', async () => {

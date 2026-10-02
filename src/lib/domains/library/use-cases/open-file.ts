@@ -19,7 +19,12 @@ import type { EpubInspectionError } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
 import type { PageObstacle } from '../domain/ingest/epub-pages';
 import { detectSourceKind, fingerprintedFiles } from '../domain/ingest/source-detection';
-import type { BuiltPages, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
+import type {
+  BuiltPages,
+  BuiltSource,
+  SourceBuildError,
+  SourceBuilder,
+} from '../domain/ingest/source-builder';
 import { languageDeclared } from '../domain/ingest/declared-language';
 import type { EpubPackage } from '../domain/ingest/epub-package';
 import { languageOfTitle } from '../domain/ingest/title-language';
@@ -168,8 +173,8 @@ function declaredLanguage(inspection: UploadInspection): Language | null {
   return languageDeclared(inspection.packageDocument.language);
 }
 
-function declaredTitle(inspection: UploadInspection): string | null {
-  if (inspection.kind !== 'epub') return null;
+function declaredTitle(inspection: UploadInspection, built: BuiltSource): string | null {
+  if (inspection.kind !== 'epub') return built.metadataTitle;
 
   return inspection.packageDocument.title;
 }
@@ -220,7 +225,7 @@ async function openFile(
   const layoutKind = content.layoutKind;
 
   const fileTitle = built.suggestedTitle;
-  const title = bookTitle(declaredTitle(inspection), fileTitle);
+  const title = bookTitle(declaredTitle(inspection, built), fileTitle);
   const restoring = restorableMatch(restorable, { ...identity, title, fileTitle });
 
   const book: Book = {

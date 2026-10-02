@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookTitle, suggestTitle } from './title';
+import { bookTitle, plausibleTitle, suggestTitle } from './title';
 
 describe('suggestTitle', () => {
   it('falls back for an empty list', () => {
@@ -72,5 +72,40 @@ describe('bookTitle', () => {
 
   it.each([null, '', '   '])('takes the file title when the declared title is %j', (declared) => {
     expect(bookTitle(declared, 'kino-v1')).toBe('kino-v1');
+  });
+});
+
+describe('plausibleTitle', () => {
+  it.each([
+    ['  よつばと! 1  ', 'よつばと! 1'],
+    ['Akira Vol. 1', 'Akira Vol. 1'],
+    ['Untitled Goose: A History', 'Untitled Goose: A History'],
+    ['Chapter 1/2', 'Chapter 1/2'],
+    ['PDF Basics', 'PDF Basics'],
+  ])('passes the real title %j, trimmed', (declared, title) => {
+    expect(plausibleTitle(declared)).toBe(title);
+  });
+
+  it.each([
+    '',
+    '   ',
+    'untitled',
+    'Untitled',
+    'Untitled Document',
+    'Microsoft Word - chapter01.doc',
+    'scan_0001.docx',
+    'Akira_v01.pdf',
+    'Akira_v01.PDF',
+    'cover.indd',
+    'notes.rtf',
+    'draft.odt',
+    'C:\\Users\\scan\\akira',
+    'D:/scans/akira',
+    '\\\\server\\share\\akira',
+    '/Users/jh/Desktop/akira',
+    '~/Desktop/akira',
+    'Volumes\\akira',
+  ])('rejects the authoring-tool leftover %j', (declared) => {
+    expect(plausibleTitle(declared)).toBeNull();
   });
 });

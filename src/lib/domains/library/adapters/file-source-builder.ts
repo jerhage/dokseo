@@ -14,11 +14,7 @@ import type { UploadReport } from '../domain/ingest/upload-progress';
 import { detectSourceKind } from '../domain/ingest/source-detection';
 import { suggestTitle } from '../domain/book/title';
 import { entryName, titleCandidate } from './file-entry';
-import {
-  listStoredPageNames,
-  openListedPageSource,
-  openStoredPageSource,
-} from './stored-page-source';
+import { listStoredPageNames, openListedPageSource } from './stored-page-source';
 
 const COVER_MAX_WIDTH = 400;
 
@@ -58,7 +54,12 @@ async function sourceBlobOf(
 }
 
 type OpenedPages =
-  | { readonly kind: 'source'; readonly source: PageSource; readonly order: PageOrder }
+  | {
+      readonly kind: 'source';
+      readonly source: PageSource;
+      readonly order: PageOrder;
+      readonly metadataTitle: string | null;
+    }
   | {
       readonly kind: 'unpaged';
       readonly obstacle: PageObstacle;
@@ -78,7 +79,7 @@ async function epubPages(blob: Blob): Promise<PagesOpening> {
     .returnType<PagesOpening>()
     .with({ kind: 'paged' }, ({ source }) => ({
       kind: 'success',
-      opened: { kind: 'source', source, order: INTRINSIC_ORDER },
+      opened: { kind: 'source', source, order: INTRINSIC_ORDER, metadataTitle: null },
     }))
     .with({ kind: 'not-paged' }, ({ obstacle, cover }) => ({
       kind: 'success',
@@ -96,11 +97,17 @@ async function epubPages(blob: Blob): Promise<PagesOpening> {
 }
 
 async function pdfPages(blob: Blob): Promise<PagesOpening> {
-  const opened = await openStoredPageSource('pdf', blob);
+  const { openPdfBook } = await import('./pdf-page-source');
+  const opened = await openPdfBook(blob);
   if (opened.kind !== 'success') return unreadablePages(opened);
   return {
     kind: 'success',
-    opened: { kind: 'source', source: opened.pages, order: INTRINSIC_ORDER },
+    opened: {
+      kind: 'source',
+      source: opened.pages,
+      order: INTRINSIC_ORDER,
+      metadataTitle: opened.metadataTitle,
+    },
   };
 }
 
@@ -112,7 +119,12 @@ async function listedPages(blob: Blob): Promise<PagesOpening> {
   if (opened.kind !== 'success') return unreadablePages(opened);
   return {
     kind: 'success',
-    opened: { kind: 'source', source: opened.pages, order: { kind: 'listed', names } },
+    opened: {
+      kind: 'source',
+      source: opened.pages,
+      order: { kind: 'listed', names },
+      metadataTitle: null,
+    },
   };
 }
 
@@ -152,6 +164,7 @@ async function buildFrom(files: readonly File[], report: UploadReport): Promise<
         blob,
         sourceKind,
         suggestedTitle,
+        metadataTitle: null,
         pages: { kind: 'unpaged', obstacle: opened.obstacle, cover: opened.cover },
       },
     };
@@ -178,6 +191,7 @@ async function buildFrom(files: readonly File[], report: UploadReport): Promise<
       blob,
       sourceKind,
       suggestedTitle,
+      metadataTitle: opened.metadataTitle,
       pages: { kind: 'images', imageCount: pages.count, cover, order },
     },
   };

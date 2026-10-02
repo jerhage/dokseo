@@ -13,6 +13,10 @@ const document = vi.hoisted(() => ({
   size: { width: 306.25, height: 396 },
   rendered: [] as number[],
   failRender: false,
+  metadata: (() => Promise.resolve({ info: {}, metadata: null })) as () => Promise<{
+    info: unknown;
+    metadata: { get: (name: string) => unknown } | null;
+  }>,
 }));
 
 const pdfjs = vi.hoisted(() => {
@@ -55,6 +59,7 @@ const pdfjs = vi.hoisted(() => {
         return {
           promise: Promise.resolve({
             numPages: document.pages,
+            getMetadata: () => document.metadata(),
             getPage: (number: number) => Promise.resolve(page(number)),
           }),
           destroy: () => Promise.resolve(),
@@ -114,6 +119,7 @@ beforeEach(() => {
   document.rendered = [];
   document.size = PORTRAIT;
   document.failRender = false;
+  document.metadata = () => Promise.resolve({ info: {}, metadata: null });
   vi.stubGlobal('OffscreenCanvas', FakeOffscreenCanvas);
 });
 
@@ -248,5 +254,77 @@ describe('openPdfPageSource', () => {
 
     expect([first.count, second.count]).toEqual([3, 3]);
     expect(pdfjs.openedBy).toEqual(['legacy', 'legacy']);
+  });
+});
+
+function xmp(title: unknown) {
+  return { get: (name: string) => (name === 'dc:title' ? title : undefined) };
+}
+
+async function bookTitled(): Promise<string | null> {
+  const { openPdfBook } = await import('./pdf-page-source');
+  const book = await openPdfBook(new Blob(['%PDF-1.7 pretend bytes']));
+  if (book.kind !== 'success') throw new Error('the document could not be opened');
+  book.pages.close();
+  return book.metadataTitle;
+}
+
+describe('openPdfBook', () => {
+  it('opens the pages beside the title in the info dictionary, trimmed', async () => {
+    document.metadata = () =>
+      Promise.resolve({ info: { Title: '  よつばと! 1 ' }, metadata: xmp('XMP title') });
+    const { openPdfBook } = await import('./pdf-page-source');
+
+    const book = await openPdfBook(new Blob(['%PDF-1.7 pretend bytes']));
+
+    if (book.kind !== 'success') throw new Error('the document could not be opened');
+    using pages = book.pages;
+    expect(book.metadataTitle).toBe('よつばと! 1');
+    expect(pages.count).toBe(3);
+  });
+
+  it.each([
+    ['has no Title', {}],
+    ['has an empty Title', { Title: '' }],
+    ['has a blank Title', { Title: '   ' }],
+    ['has a placeholder Title', { Title: 'Untitled' }],
+    ['has a Title that is a file name', { Title: 'Microsoft Word - akira.doc' }],
+    ['has a Title that is not text', { Title: 7 }],
+  ])('falls back to the XMP dc:title when the info dictionary %s', async (_, info) => {
+    document.metadata = () => Promise.resolve({ info, metadata: xmp('AKIRA 1') });
+
+    expect(await bookTitled()).toBe('AKIRA 1');
+  });
+
+  it.each([
+    ['carries no metadata at all', () => Promise.resolve({ info: {}, metadata: null })],
+    [
+      'carries only junk titles',
+      () =>
+        Promise.resolve({
+          info: { Title: 'C:\\scans\\akira.indd' },
+          metadata: xmp('/Users/jh/akira'),
+        }),
+    ],
+    ['fails to read its metadata', () => Promise.reject(new Error('the trailer is damaged'))],
+  ])('reports no title, and still opens, when the document %s', async (_, metadata) => {
+    document.metadata = metadata;
+
+    expect(await bookTitled()).toBeNull();
+  });
+
+  it('gives up on a metadata read that never answers, and still opens', async () => {
+    vi.useFakeTimers();
+    try {
+      document.metadata = () => new Promise(() => undefined);
+      const { METADATA_PATIENCE_MS } = await import('./pdf-page-source');
+
+      const titled = bookTitled();
+      await vi.advanceTimersByTimeAsync(METADATA_PATIENCE_MS);
+
+      expect(await titled).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

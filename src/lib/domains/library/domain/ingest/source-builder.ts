@@ -21,6 +21,7 @@ type BuiltSource = {
   readonly blob: Blob;
   readonly sourceKind: SourceKind;
   readonly suggestedTitle: string;
+  readonly metadataTitle: string | null;
   readonly pages: BuiltPages;
 };
 

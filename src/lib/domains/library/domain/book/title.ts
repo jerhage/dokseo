@@ -26,5 +26,19 @@ function bookTitle(metadataTitle: string | null, fileTitle: string): string {
   return declared.length > 0 ? declared : fileTitle;
 }
 
-export { bookTitle, suggestTitle };
+const PLACEHOLDER_TITLES: ReadonlySet<string> = new Set(['untitled', 'untitled document']);
+
+const AUTHORING_FILE_NAME = /\.(?:docx?|pdf|indd|rtf|odt)$/i;
+
+const FILE_PATH = /^(?:[a-z]:[\\/]|\\\\|\/|~\/)|\\/i;
+
+function plausibleTitle(declared: string): string | null {
+  const trimmed = declared.trim();
+  if (trimmed.length === 0) return null;
+  if (PLACEHOLDER_TITLES.has(trimmed.toLowerCase())) return null;
+  if (AUTHORING_FILE_NAME.test(trimmed) || FILE_PATH.test(trimmed)) return null;
+  return trimmed;
+}
+
+export { bookTitle, plausibleTitle, suggestTitle };
 export type { TitleCandidate };
