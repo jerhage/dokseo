@@ -5,9 +5,9 @@ const REPO = 'https://huggingface.co/DigitalLarynx/manga-ocr-onnx/resolve/main';
 
 describe('downloadsModelPayload', () => {
   it.each([
-    { what: 'a whole weights file', url: `${REPO}/onnx/encoder_model_quantized.onnx` },
-    { what: 'the runtime binary', url: 'https://cdn.example/ort-wasm-simd-threaded.jsep.wasm' },
-  ])('counts $what', ({ url }) => {
+    ['a whole weights file', `${REPO}/onnx/encoder_model_quantized.onnx`],
+    ['the runtime binary', 'https://cdn.example/ort-wasm-simd-threaded.jsep.wasm'],
+  ])('counts %s', (_what, url) => {
     expect(downloadsModelPayload({ url, partial: false })).toBe(true);
   });
 
