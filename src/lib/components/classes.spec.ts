@@ -132,7 +132,7 @@ describe('the base component class tables', () => {
 });
 
 describe('the tag colour tables', () => {
-  it('map every tag colour, and no other, to the tag and badge class named after it', () => {
+  it('maps every tag colour, and no other, to the tag and badge class named after it', () => {
     expect(Object.keys(TAG_COLOUR_CLASSES).toSorted()).toEqual(TAG_COLOURS.toSorted());
     expect(Object.keys(BADGE_COLOUR_CLASSES).toSorted()).toEqual(TAG_COLOURS.toSorted());
     for (const colour of TAG_COLOURS) {
@@ -147,14 +147,10 @@ describe('the tag colour tables', () => {
       });
     }
   });
-
-  it('lists each tag colour once', () => {
-    expect(new Set(TAG_COLOURS).size).toBe(TAG_COLOURS.length);
-  });
 });
 
 describe('the base components', () => {
-  it('write only classes the stylesheets define', () => {
+  it('writes only classes the stylesheets define', () => {
     const defined = definedClasses();
 
     const missing = literalClasses()

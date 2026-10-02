@@ -4,8 +4,12 @@ import { fieldControl, fieldIds } from './field';
 const IDS = fieldIds('f1');
 
 describe('fieldIds', () => {
-  it('derives a distinct id for the control, the hint and the error', () => {
-    expect(new Set([IDS.control, IDS.hint, IDS.error]).size).toBe(3);
+  it('derives a distinct id for the control, the hint and the error of each field', () => {
+    const other = fieldIds('f2');
+
+    expect(
+      new Set([IDS.control, IDS.hint, IDS.error, other.control, other.hint, other.error]).size,
+    ).toBe(6);
   });
 });
 
@@ -14,16 +18,12 @@ describe('fieldControl', () => {
     expect(fieldControl(IDS, false, false).id).toBe(IDS.control);
   });
 
-  it('describes a bare control by nothing', () => {
-    expect(fieldControl(IDS, false, false)['aria-describedby']).toBeUndefined();
-  });
-
-  it('describes the control by its hint', () => {
-    expect(fieldControl(IDS, true, false)['aria-describedby']).toBe(IDS.hint);
-  });
-
-  it('describes the control by its hint and then its error', () => {
-    expect(fieldControl(IDS, true, true)['aria-describedby']).toBe(`${IDS.hint} ${IDS.error}`);
+  it('describes a bare control by nothing, and otherwise by its hint and then its error', () => {
+    expect([
+      fieldControl(IDS, false, false)['aria-describedby'],
+      fieldControl(IDS, true, false)['aria-describedby'],
+      fieldControl(IDS, true, true)['aria-describedby'],
+    ]).toEqual([undefined, IDS.hint, `${IDS.hint} ${IDS.error}`]);
   });
 
   it('marks the control invalid only while an error shows', () => {

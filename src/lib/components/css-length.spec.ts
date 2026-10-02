@@ -6,12 +6,11 @@ function styleWith(values: Readonly<Record<string, string>>) {
 }
 
 describe('pixelLength', () => {
-  it('reads the pixels a registered length computes to', () => {
-    expect(pixelLength(styleWith({ '--gap': '16px' }), '--gap')).toBe(16);
-  });
-
-  it('reads a fractional length', () => {
-    expect(pixelLength(styleWith({ '--gap': ' 12.5px' }), '--gap')).toBe(12.5);
+  it('reads the pixels a registered length computes to, whole or fractional', () => {
+    expect([
+      pixelLength(styleWith({ '--gap': '16px' }), '--gap'),
+      pixelLength(styleWith({ '--gap': ' 12.5px' }), '--gap'),
+    ]).toEqual([16, 12.5]);
   });
 
   it('reads 0 for a property nothing sets', () => {

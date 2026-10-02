@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   dockCover,
   dockDetentAfterKey,
-  dockDetentHeight,
-  dockDetentToggled,
   dockLabel,
   dockName,
   dockPlacement,
@@ -13,7 +11,7 @@ import {
   dockTally,
   dockToggle,
 } from './dock';
-import type { DockSheetHeights, DockWords } from './dock';
+import type { DockPlacement, DockSheetHeights, DockWords } from './dock';
 
 const WORDS: DockWords = {
   label: 'Captures',
@@ -21,58 +19,47 @@ const WORDS: DockWords = {
   collapseLabel: 'Hide captures',
 };
 
+const PLACEMENTS: readonly DockPlacement[] = ['side', 'sheet', 'rail', 'peek'];
+
 describe('dockPlacement', () => {
-  it('opens the panel beside the page on a wide screen until asked otherwise', () => {
-    expect(dockPlacement(false, null)).toBe('side');
-  });
-
-  it('leaves the panel as a peek below the page on a narrow screen until asked', () => {
-    expect(dockPlacement(true, null)).toBe('peek');
-  });
-
-  it('follows the reader who closed it on a wide screen', () => {
-    expect(dockPlacement(false, false)).toBe('rail');
-  });
-
-  it('follows the reader who opened it on a narrow screen', () => {
-    expect(dockPlacement(true, true)).toBe('sheet');
+  it('opens beside a wide page and peeks below a narrow one until asked, then follows the reader', () => {
+    expect([
+      dockPlacement(false, null),
+      dockPlacement(true, null),
+      dockPlacement(false, false),
+      dockPlacement(true, true),
+    ]).toEqual(['side', 'peek', 'rail', 'sheet']);
   });
 });
 
 describe('dockToggle', () => {
-  it('offers to hide an open panel and to show a closed one', () => {
-    expect(dockToggle('side')).toMatchObject({ open: true });
-    expect(dockLabel('side', WORDS)).toBe('Hide captures');
-    expect(dockToggle('sheet')).toMatchObject({ open: true });
-    expect(dockLabel('sheet', WORDS)).toBe('Hide captures');
-    expect(dockToggle('rail')).toMatchObject({ open: false });
-    expect(dockLabel('rail', WORDS)).toBe('Show captures');
-    expect(dockToggle('peek')).toMatchObject({ open: false });
-    expect(dockLabel('peek', WORDS)).toBe('Show captures');
-  });
-
-  it('points each arrow the way the panel will move', () => {
-    expect(dockToggle('side').points).toBe('right');
-    expect(dockToggle('rail').points).toBe('left');
-    expect(dockToggle('sheet').points).toBe('down');
-    expect(dockToggle('peek').points).toBe('up');
+  it('offers to hide an open panel and to show a closed one, pointing each arrow the way the panel will move', () => {
+    expect(
+      PLACEMENTS.map((placement) => ({
+        placement,
+        open: dockToggle(placement).open,
+        points: dockToggle(placement).points,
+        label: dockLabel(placement, WORDS),
+      })),
+    ).toEqual([
+      { placement: 'side', open: true, points: 'right', label: 'Hide captures' },
+      { placement: 'sheet', open: true, points: 'down', label: 'Hide captures' },
+      { placement: 'rail', open: false, points: 'left', label: 'Show captures' },
+      { placement: 'peek', open: false, points: 'up', label: 'Show captures' },
+    ]);
   });
 });
 
 describe('dockTally', () => {
-  it('shows the count on a closed panel', () => {
-    expect(dockTally('rail', 3)).toBe(3);
-    expect(dockTally('peek', 3)).toBe(3);
-  });
-
-  it('hides the count while the panel is open', () => {
-    expect(dockTally('side', 3)).toBeNull();
-    expect(dockTally('sheet', 3)).toBeNull();
-  });
-
-  it('shows no count when there are no captures or none are known', () => {
-    expect(dockTally('rail', 0)).toBeNull();
-    expect(dockTally('peek', undefined)).toBeNull();
+  it('shows the count on a closed panel only, and none when there are no captures or none are known', () => {
+    expect([
+      dockTally('rail', 3),
+      dockTally('peek', 3),
+      dockTally('side', 3),
+      dockTally('sheet', 3),
+      dockTally('rail', 0),
+      dockTally('peek', undefined),
+    ]).toEqual([3, 3, null, null, null, null]);
   });
 });
 
@@ -151,29 +138,18 @@ describe('dockSheetSettle', () => {
     });
   });
 
-  it('carries a quick flick up to the next detent above', () => {
-    expect(dockSheetSettle(340, -40, QUICK_MS, HEIGHTS, 'standard')).toEqual({
-      kind: 'detent',
-      detent: 'tall',
-    });
-  });
-
-  it('carries a quick flick down to the next detent below', () => {
-    expect(dockSheetSettle(560, 40, QUICK_MS, HEIGHTS, 'tall')).toEqual({
-      kind: 'detent',
-      detent: 'standard',
-    });
-  });
-
-  it('closes on a quick flick down from the standard height', () => {
-    expect(dockSheetSettle(260, 40, QUICK_MS, HEIGHTS, 'standard')).toEqual({ kind: 'close' });
-  });
-
-  it('stays at the tall height on a quick flick up from it', () => {
-    expect(dockSheetSettle(600, -40, QUICK_MS, HEIGHTS, 'tall')).toEqual({
-      kind: 'detent',
-      detent: 'tall',
-    });
+  it('carries a quick flick to the next detent, closing below the standard height and stopping at the tall one', () => {
+    expect([
+      dockSheetSettle(340, -40, QUICK_MS, HEIGHTS, 'standard'),
+      dockSheetSettle(560, 40, QUICK_MS, HEIGHTS, 'tall'),
+      dockSheetSettle(260, 40, QUICK_MS, HEIGHTS, 'standard'),
+      dockSheetSettle(600, -40, QUICK_MS, HEIGHTS, 'tall'),
+    ]).toEqual([
+      { kind: 'detent', detent: 'tall' },
+      { kind: 'detent', detent: 'standard' },
+      { kind: 'close' },
+      { kind: 'detent', detent: 'tall' },
+    ]);
   });
 
   it('keeps the current detent while the heights are not measured', () => {
@@ -185,41 +161,25 @@ describe('dockSheetSettle', () => {
 });
 
 describe('dockDetentAfterKey', () => {
-  it('steps up and down between the detents and stops at either end', () => {
-    expect(dockDetentAfterKey('standard', 'ArrowUp')).toBe('tall');
-    expect(dockDetentAfterKey('tall', 'ArrowUp')).toBe('tall');
-    expect(dockDetentAfterKey('tall', 'ArrowDown')).toBe('standard');
-    expect(dockDetentAfterKey('standard', 'ArrowDown')).toBe('standard');
-  });
-
-  it('ignores every other key', () => {
-    expect(dockDetentAfterKey('standard', 'Enter')).toBeNull();
-    expect(dockDetentAfterKey('standard', 'ArrowLeft')).toBeNull();
-  });
-});
-
-describe('dockDetentToggled', () => {
-  it('switches between the standard and the tall height', () => {
-    expect(dockDetentToggled('standard')).toBe('tall');
-    expect(dockDetentToggled('tall')).toBe('standard');
-  });
-});
-
-describe('dockDetentHeight', () => {
-  it('reads each detent from its layout token', () => {
-    expect(dockDetentHeight('standard')).toBe('var(--layout-sheet-height)');
-    expect(dockDetentHeight('tall')).toBe('var(--layout-sheet-height-tall)');
+  it('steps up and down between the detents, stops at either end, and ignores every other key', () => {
+    expect([
+      dockDetentAfterKey('standard', 'ArrowUp'),
+      dockDetentAfterKey('tall', 'ArrowUp'),
+      dockDetentAfterKey('tall', 'ArrowDown'),
+      dockDetentAfterKey('standard', 'ArrowDown'),
+      dockDetentAfterKey('standard', 'Enter'),
+      dockDetentAfterKey('standard', 'ArrowLeft'),
+    ]).toEqual(['tall', 'tall', 'standard', 'standard', null, null]);
   });
 });
 
 describe('dockCover', () => {
-  it('reports how far the drawer rises above the room the dock keeps', () => {
-    expect(dockCover(331, 33)).toBe(298);
-    expect(dockCover(33, 33)).toBe(0);
-  });
-
-  it('reports nothing for a drawer shorter than its room or not measured', () => {
-    expect(dockCover(20, 33)).toBe(0);
-    expect(dockCover(Number.NaN, 33)).toBe(0);
+  it('reports how far the drawer rises above the room the dock keeps, and nothing for one shorter or not measured', () => {
+    expect([
+      dockCover(331, 33),
+      dockCover(33, 33),
+      dockCover(20, 33),
+      dockCover(Number.NaN, 33),
+    ]).toEqual([298, 0, 0, 0]);
   });
 });

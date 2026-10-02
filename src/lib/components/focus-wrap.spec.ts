@@ -2,12 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { wrappedStop } from './focus-wrap';
 
 describe('wrappedStop', () => {
-  it('sends Tab from the last stop back to the first', () => {
-    expect(wrappedStop(4, 3, false)).toBe(0);
-  });
-
-  it('sends Shift+Tab from the first stop round to the last', () => {
-    expect(wrappedStop(4, 0, true)).toBe(3);
+  it('sends Tab from the last stop to the first and Shift+Tab from the first to the last', () => {
+    expect([wrappedStop(4, 3, false), wrappedStop(4, 0, true)]).toEqual([0, 3]);
   });
 
   it('leaves a step between two stops to the browser', () => {

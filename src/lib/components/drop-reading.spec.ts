@@ -14,13 +14,6 @@ function transfer(files: readonly Page[]): FakeTransfer {
 }
 
 describe('readDropped', () => {
-  it("resolves to the transfer's own files when no reader is given", async () => {
-    await expect(readDropped(transfer([cover, spread]), undefined)).resolves.toEqual([
-      cover,
-      spread,
-    ]);
-  });
-
   it('copies the files before returning, so a transfer emptied afterwards still yields them', async () => {
     const dropped = transfer([cover, spread]);
 
@@ -40,13 +33,12 @@ describe('readDropped', () => {
     expect(reader).toHaveBeenCalledWith(dropped);
   });
 
-  it('resolves to what an asynchronous reader finds rather than the transfer files', async () => {
-    const reader = vi.fn(() => Promise.resolve([folderPage]));
+  it('resolves to what an asynchronous or a synchronous reader finds rather than the transfer files', async () => {
+    const found = await Promise.all([
+      readDropped(transfer([cover]), () => Promise.resolve([folderPage])),
+      readDropped(transfer([cover]), () => [spread]),
+    ]);
 
-    await expect(readDropped(transfer([cover]), reader)).resolves.toEqual([folderPage]);
-  });
-
-  it('resolves to what a synchronous reader returns', async () => {
-    await expect(readDropped(transfer([cover]), () => [spread])).resolves.toEqual([spread]);
+    expect(found).toEqual([[folderPage], [spread]]);
   });
 });

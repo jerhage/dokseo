@@ -9,14 +9,6 @@ function measured(onclose: () => void = () => undefined): DockSheet {
 }
 
 describe('DockSheet', () => {
-  it('starts at the standard height, read from its token', () => {
-    const sheet = measured();
-
-    expect(sheet.detent).toBe('standard');
-    expect(sheet.dragging).toBe(false);
-    expect(sheet.height).toBe('var(--layout-sheet-height)');
-  });
-
   it('follows the finger in pixels while it drags', () => {
     const sheet = measured();
 

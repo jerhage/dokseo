@@ -17,19 +17,13 @@ function markup(component: unknown, props: Record<string, unknown>): string {
 const TEXT = createRawSnippet(() => ({ render: () => '<span>Inbox</span>' }));
 
 describe('the component captions', () => {
-  it('draws the card eyebrow with the eyebrow utility', () => {
+  it('draws the card eyebrow, the stat label and the dropdown label with the eyebrow utility', () => {
     expect(markup(Card, { eyebrow: TEXT })).toContain(
       '<span class="card-eyebrow eyebrow"><span>Inbox</span></span>',
     );
-  });
-
-  it('draws the stat label with the eyebrow utility', () => {
     expect(markup(Stat, { label: 'Used', value: '8 kB' })).toContain(
       '<span class="stat-label eyebrow">Used</span>',
     );
-  });
-
-  it('draws the dropdown label with the eyebrow utility', () => {
     expect(markup(DropdownLabel, { children: TEXT })).toBe(
       '<span role="presentation" class="dropdown-label eyebrow"><span>Inbox</span></span>',
     );

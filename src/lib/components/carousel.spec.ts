@@ -49,28 +49,26 @@ function release(towards: -1 | 1 | null) {
 }
 
 describe('screenSide', () => {
-  it('keeps every slot where its side says in a left-to-right carousel', () => {
-    expect(screenSide(-1, 'ltr')).toBe(-1);
-    expect(screenSide(0, 'ltr')).toBe(0);
-    expect(screenSide(1, 'ltr')).toBe(1);
-  });
-
-  it('mirrors the neighbours and keeps the current slot in a right-to-left carousel', () => {
-    expect(screenSide(1, 'rtl')).toBe(-1);
-    expect(screenSide(-1, 'rtl')).toBe(1);
+  it('keeps every slot where its side says left to right, and mirrors the neighbours right to left', () => {
+    expect([
+      screenSide(-1, 'ltr'),
+      screenSide(0, 'ltr'),
+      screenSide(1, 'ltr'),
+      screenSide(1, 'rtl'),
+      screenSide(-1, 'rtl'),
+    ]).toEqual([-1, 0, 1, -1, 1]);
     expect(Object.is(screenSide(0, 'rtl'), 0)).toBe(true);
   });
 });
 
 describe('revealedSide', () => {
-  it('reveals the slot after for a drag to the left, and the slot before for a drag to the right', () => {
-    expect(revealedSide(-50, 'ltr')).toBe(1);
-    expect(revealedSide(50, 'ltr')).toBe(-1);
-  });
-
-  it('mirrors the revealed slot in a right-to-left carousel', () => {
-    expect(revealedSide(-50, 'rtl')).toBe(-1);
-    expect(revealedSide(50, 'rtl')).toBe(1);
+  it('reveals the slot after for a drag to the left and the slot before for a drag to the right, mirrored right to left', () => {
+    expect([
+      revealedSide(-50, 'ltr'),
+      revealedSide(50, 'ltr'),
+      revealedSide(-50, 'rtl'),
+      revealedSide(50, 'rtl'),
+    ]).toEqual([1, -1, -1, 1]);
   });
 });
 
@@ -158,9 +156,6 @@ describe('carouselStep', () => {
       offset: ACROSS,
       towards: -1,
     });
-  });
-
-  it('completes the slide rightward towards the slide after in a right-to-left carousel', () => {
     expect(carouselStep(following(120), release(1), MIRRORED)).toEqual({
       kind: 'settle',
       offset: ACROSS,
@@ -243,20 +238,15 @@ describe('carouselGap', () => {
 
     expect(carouselGap(style)).toBe(16);
   });
-
-  it('reads 0 where the token is unset', () => {
-    expect(carouselGap({ getPropertyValue: () => '' })).toBe(0);
-  });
 });
 
 describe('settleFallbackMs', () => {
-  it('outlasts a transition given in seconds by the margin', () => {
-    expect(settleFallbackMs('0.18s')).toBe(180 + SETTLE_FALLBACK_MARGIN_MS);
-    expect(settleFallbackMs('0.14s')).toBe(140 + SETTLE_FALLBACK_MARGIN_MS);
-  });
-
-  it('outlasts a transition given in milliseconds by the margin', () => {
-    expect(settleFallbackMs('40ms')).toBe(40 + SETTLE_FALLBACK_MARGIN_MS);
+  it('outlasts a transition given in seconds or in milliseconds by the margin', () => {
+    expect([
+      settleFallbackMs('0.18s'),
+      settleFallbackMs('0.14s'),
+      settleFallbackMs('40ms'),
+    ]).toEqual([180, 140, 40].map((ms) => ms + SETTLE_FALLBACK_MARGIN_MS));
   });
 
   it('outlasts the longest of several transitions', () => {

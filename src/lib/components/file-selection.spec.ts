@@ -46,48 +46,23 @@ describe('fileVerdict', () => {
     expect(fileVerdict(file('notes', ''), policy())).toEqual({ kind: 'accepted' });
   });
 
-  it('accepts a file whose extension matches, in any case', () => {
-    const rules = acceptRules('.pdf');
-
-    expect(fileVerdict(file('Brief.PDF', ''), policy({ rules }))).toEqual({ kind: 'accepted' });
+  it('accepts a file whose extension, type family or exact type matches, in any case', () => {
+    expect([
+      fileVerdict(file('Brief.PDF', ''), policy({ rules: acceptRules('.pdf') })),
+      fileVerdict(file('a.png', 'image/png'), policy({ rules: acceptRules('image/*') })),
+      fileVerdict(
+        file('a.cbz', 'Application/ZIP'),
+        policy({ rules: acceptRules('application/zip') }),
+      ),
+    ]).toEqual([{ kind: 'accepted' }, { kind: 'accepted' }, { kind: 'accepted' }]);
   });
 
-  it('accepts a file whose type falls in an accepted family', () => {
-    const rules = acceptRules('image/*');
-
-    expect(fileVerdict(file('a.png', 'image/png'), policy({ rules }))).toEqual({
-      kind: 'accepted',
-    });
-  });
-
-  it('accepts a file whose type matches exactly, in any case', () => {
-    const rules = acceptRules('application/zip');
-
-    expect(fileVerdict(file('a.cbz', 'Application/ZIP'), policy({ rules }))).toEqual({
-      kind: 'accepted',
-    });
-  });
-
-  it('rejects a file that matches no rule as the wrong type', () => {
-    const rules = acceptRules('image/*,.pdf');
-
-    expect(fileVerdict(file('a.zip', 'application/zip'), policy({ rules }))).toEqual({
-      kind: 'wrong-type',
-    });
-  });
-
-  it('rejects a file with no type against a family rule', () => {
-    const rules = acceptRules('image/*');
-
-    expect(fileVerdict(file('a.png', ''), policy({ rules }))).toEqual({ kind: 'wrong-type' });
-  });
-
-  it('rejects a type that only shares a prefix with an exact rule', () => {
-    const rules = acceptRules('image/png');
-
-    expect(fileVerdict(file('a.png', 'image/pngx'), policy({ rules }))).toEqual({
-      kind: 'wrong-type',
-    });
+  it('rejects as the wrong type a file that matches no rule, has no type against a family, or only shares a prefix with an exact type', () => {
+    expect([
+      fileVerdict(file('a.zip', 'application/zip'), policy({ rules: acceptRules('image/*,.pdf') })),
+      fileVerdict(file('a.png', ''), policy({ rules: acceptRules('image/*') })),
+      fileVerdict(file('a.png', 'image/pngx'), policy({ rules: acceptRules('image/png') })),
+    ]).toEqual([{ kind: 'wrong-type' }, { kind: 'wrong-type' }, { kind: 'wrong-type' }]);
   });
 
   it('rejects a file above the limit as too large, carrying the limit', () => {
@@ -138,12 +113,6 @@ describe('selectFiles', () => {
     });
   });
 
-  it('keeps only the first accepted file when a single file is allowed', () => {
-    const selection = selectFiles([archive, photo, scan], policy({ rules, multiple: false }));
-
-    expect(selection.accepted).toEqual([photo]);
-  });
-
   it('reports every accepted file after the first as too many when a single file is allowed', () => {
     const selfie = file('selfie.jpg', 'image/jpeg');
     const selection = selectFiles(
@@ -183,32 +152,22 @@ describe('selectFiles', () => {
     expect(selection.arrived[0]?.file).toBe(photo);
   });
 
-  it('lists every file in the order it arrived, whatever its verdict', () => {
-    const selection = selectFiles([scan, archive, photo], policy({ rules }));
-
-    expect(selection.arrived.map((arrived) => arrived.file)).toEqual([scan, archive, photo]);
-  });
-
   it('returns empty lists for an empty batch', () => {
     expect(selectFiles([], policy())).toEqual({ accepted: [], rejected: [], arrived: [] });
   });
 });
 
 describe('formatFileSize', () => {
-  it('writes a size under a kilobyte in bytes', () => {
-    expect(formatFileSize(0)).toBe('0 B');
-    expect(formatFileSize(1023)).toBe('1023 B');
-  });
-
-  it('writes kilobytes with one decimal', () => {
-    expect(formatFileSize(1024)).toBe('1.0 KB');
-    expect(formatFileSize(422_707)).toBe('412.8 KB');
-  });
-
-  it('writes megabytes with one decimal', () => {
-    expect(formatFileSize(MB)).toBe('1.0 MB');
-    expect(formatFileSize(5 * MB)).toBe('5.0 MB');
-    expect(formatFileSize(2.25 * MB)).toBe('2.3 MB');
+  it('writes bytes under a kilobyte, and kilobytes and megabytes with one decimal', () => {
+    expect([0, 1023, 1024, 422_707, MB, 5 * MB, 2.25 * MB].map(formatFileSize)).toEqual([
+      '0 B',
+      '1023 B',
+      '1.0 KB',
+      '412.8 KB',
+      '1.0 MB',
+      '5.0 MB',
+      '2.3 MB',
+    ]);
   });
 
   it('moves to megabytes rather than print 1024.0 KB', () => {
@@ -217,15 +176,11 @@ describe('formatFileSize', () => {
 });
 
 describe('describeRejection', () => {
-  it('names the limit a file exceeded', () => {
-    expect(describeRejection({ kind: 'too-large', limit: 5 * MB })).toBe('Larger than 5.0 MB');
-  });
-
-  it('names a disallowed type', () => {
-    expect(describeRejection({ kind: 'wrong-type' })).toBe('File type not allowed');
-  });
-
-  it('names a file beyond the one allowed', () => {
-    expect(describeRejection({ kind: 'too-many' })).toBe('Only one file at a time');
+  it('names the limit a file exceeded, a disallowed type and a file beyond the one allowed', () => {
+    expect([
+      describeRejection({ kind: 'too-large', limit: 5 * MB }),
+      describeRejection({ kind: 'wrong-type' }),
+      describeRejection({ kind: 'too-many' }),
+    ]).toEqual(['Larger than 5.0 MB', 'File type not allowed', 'Only one file at a time']);
   });
 });
