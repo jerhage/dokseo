@@ -6,8 +6,15 @@ const RESTORE_HINT = 'Upload the same file again to restore it with its captures
 
 const NO_RESTORE_HINT = 'No file is known for these, so they cannot be restored';
 
+const REMOVAL_KEEPS_CAPTURES = `Its captures are kept. ${RESTORE_HINT}.`;
+
 function captureCountText(count: number): string {
   return count === 1 ? '1 capture' : `${count.toLocaleString()} captures`;
+}
+
+function deletedCapturesFate(count: number): string {
+  const kept = count === 1 ? 'it' : 'them';
+  return `will be deleted for good, and uploading the file again will not bring ${kept} back.`;
 }
 
 function removedEntryName(entry: RemovedShelfEntry): string {
@@ -24,8 +31,10 @@ function removedEntryDescription(entry: RemovedShelfEntry): string {
 
 export {
   NO_RESTORE_HINT,
+  REMOVAL_KEEPS_CAPTURES,
   RESTORE_HINT,
   captureCountText,
+  deletedCapturesFate,
   removedEntryDescription,
   removedEntryName,
 };

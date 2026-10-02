@@ -2,7 +2,7 @@
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import type { RemovedShelfEntry } from '../domain/book/removed-book';
-  import { captureCountText, removedEntryName } from './removed-books';
+  import { captureCountText, deletedCapturesFate, removedEntryName } from './removed-books';
 
   type Props = {
     readonly entry: RemovedShelfEntry;
@@ -26,7 +26,8 @@
     The {captureCountText(entry.captureCount)} kept from
     <strong lang={entry.kind === 'recorded' ? entry.book.language : undefined}
       >{removedEntryName(entry)}</strong
-    > will be deleted for good, and uploading the file again will not bring them back.
+    >
+    {deletedCapturesFate(entry.captureCount)}
   </p>
 
   {#snippet footer(close)}

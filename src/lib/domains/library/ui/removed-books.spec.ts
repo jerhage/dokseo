@@ -7,7 +7,9 @@ import { removedEntries } from './library-shelf';
 import {
   NO_RESTORE_HINT,
   RESTORE_HINT,
+  REMOVAL_KEEPS_CAPTURES,
   captureCountText,
+  deletedCapturesFate,
   removedEntryDescription,
   removedEntryName,
 } from './removed-books';
@@ -50,6 +52,23 @@ describe('captureCountText', () => {
     expect(captureCountText(0)).toBe('0 captures');
     expect(captureCountText(1)).toBe('1 capture');
     expect(captureCountText(1200)).toBe('1,200 captures');
+  });
+});
+
+describe('REMOVAL_KEEPS_CAPTURES', () => {
+  it('tells the reader the captures stay and the same file restores the book', () => {
+    expect(REMOVAL_KEEPS_CAPTURES).toBe(
+      'Its captures are kept. Upload the same file again to restore it with its captures.',
+    );
+  });
+});
+
+describe('deletedCapturesFate', () => {
+  it.each([
+    [1, 'will be deleted for good, and uploading the file again will not bring it back.'],
+    [3, 'will be deleted for good, and uploading the file again will not bring them back.'],
+  ])('refers to %i deleted captures with a pronoun of the same number', (count, fate) => {
+    expect(deletedCapturesFate(count)).toBe(fate);
   });
 });
 

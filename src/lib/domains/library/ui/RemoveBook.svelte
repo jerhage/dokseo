@@ -2,6 +2,7 @@
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import type { Book } from '../domain/book/book';
+  import { REMOVAL_KEEPS_CAPTURES } from './removed-books';
 
   type Props = {
     readonly book: Book;
@@ -23,6 +24,7 @@
 <Modal bind:open={() => open, requestOpen} title="Remove this upload?" size="sm" {onclose}>
   <p class="text-sm">
     <strong lang={book.language}>{book.title}</strong> will be removed from your library.
+    {REMOVAL_KEEPS_CAPTURES}
   </p>
 
   {#snippet footer(close)}
