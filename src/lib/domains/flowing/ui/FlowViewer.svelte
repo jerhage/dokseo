@@ -62,6 +62,7 @@
     readonly view: FlowView;
     readonly book: FlowBook;
     readonly storedSettings: ReadingSettings;
+    readonly edgeClicksTurn: boolean;
     readonly panel?: Snippet<[boolean]>;
     readonly arrival?: Snippet;
     readonly panelCount?: number;
@@ -76,6 +77,7 @@
     view,
     book,
     storedSettings,
+    edgeClicksTurn,
     panel,
     arrival,
     panelCount,
@@ -227,6 +229,7 @@
       width: spot.width,
       textSelected: textSelected(),
       turns: touchTurns.value,
+      edgeClicksTurn,
       chromeShown: awake,
     });
     lift.release();

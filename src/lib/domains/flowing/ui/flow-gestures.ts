@@ -15,6 +15,7 @@ type Release = {
   readonly width: number;
   readonly textSelected: boolean;
   readonly turns: TouchTurns;
+  readonly edgeClicksTurn: boolean;
   readonly chromeShown: boolean;
 };
 
@@ -49,6 +50,7 @@ class FlowGestures {
         width: release.width,
         textSelected: release.textSelected,
         turns: release.turns,
+        edgeClicksTurn: release.edgeClicksTurn,
         chromeShown: release.chromeShown,
       }),
     );

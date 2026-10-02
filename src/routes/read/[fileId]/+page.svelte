@@ -21,6 +21,7 @@
   import ReadingSettingsData from '$lib/domains/flowing/ui/ReadingSettingsData.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
+  import { edgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
   import { ReadSession } from './read-session.svelte';
 
@@ -82,6 +83,7 @@
             view={flow}
             book={flowing}
             {storedSettings}
+            edgeClicksTurn={edgeClicksTurn()}
             panel={flowPanel}
             panelCount={captures.list.count}
             anchors={captures.list.anchors}

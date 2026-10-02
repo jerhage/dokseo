@@ -229,7 +229,12 @@ async function opened(): Promise<FlowView> {
   const book = novel();
   const source = await epub();
   const view = new FlowView(shelf(source, book), () => undefined, createTestQueryClient());
-  render(FlowViewer, { view, book, storedSettings: DEFAULT_READING_SETTINGS });
+  render(FlowViewer, {
+    view,
+    book,
+    storedSettings: DEFAULT_READING_SETTINGS,
+    edgeClicksTurn: true,
+  });
 
   await expect.poll(() => paginator().pages, { timeout: LAID_OUT_WITHIN_MS }).toBeGreaterThan(2);
   await rests();

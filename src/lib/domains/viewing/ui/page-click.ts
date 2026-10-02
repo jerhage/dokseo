@@ -21,7 +21,14 @@ function clickedEdge(x: number, frame: FrameSpan): TurnSide | null {
   return null;
 }
 
-function pageClick(x: number, frame: FrameSpan, direction: ReadingDirection): PageClick {
+function pageClick(
+  x: number,
+  frame: FrameSpan,
+  direction: ReadingDirection,
+  edgeClicksTurn: boolean,
+): PageClick {
+  if (!edgeClicksTurn) return TOGGLES_THE_CHROME;
+
   const side = clickedEdge(x, frame);
   if (side === null) return TOGGLES_THE_CHROME;
 

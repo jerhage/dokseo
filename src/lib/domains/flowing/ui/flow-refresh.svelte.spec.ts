@@ -80,7 +80,12 @@ describe('FlowViewer given a refreshed record of the open book', () => {
       flowing: { saveReadingSettings: () => Promise.resolve({ kind: 'success' }) },
     } as unknown as Container;
     const view = new FlowView(container, () => undefined, createTestQueryClient());
-    const shown = render(FlowViewer, { view, book, storedSettings: DEFAULT_READING_SETTINGS });
+    const shown = render(FlowViewer, {
+      view,
+      book,
+      storedSettings: DEFAULT_READING_SETTINGS,
+      edgeClicksTurn: true,
+    });
     await expect.poll(() => view.state.kind, { timeout: OPENED_WITHIN_MS }).toBe('ready');
 
     await shown.rerender({

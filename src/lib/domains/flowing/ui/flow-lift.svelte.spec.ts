@@ -235,6 +235,7 @@ async function opened(): Promise<Document> {
     view: new FlowView(shelf(source, book), () => undefined, createTestQueryClient()),
     book,
     storedSettings: DEFAULT_READING_SETTINGS,
+    edgeClicksTurn: true,
     onLift: (passage: LiftedPassage) => {
       lifted.push(passage);
     },

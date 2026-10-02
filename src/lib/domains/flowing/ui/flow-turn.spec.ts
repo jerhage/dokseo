@@ -122,6 +122,7 @@ function releasing(release: Partial<PointerRelease> = {}): PointerRelease {
     width: PAGE_WIDTH,
     textSelected: false,
     turns: 'tap-zones',
+    edgeClicksTurn: true,
     chromeShown: false,
     ...release,
   };
@@ -415,6 +416,26 @@ describe('pointerEnded', () => {
     expect(
       pointerEnded(
         releasing({ to: edge, pointerType: 'mouse', turns: 'swipe-only', chromeShown: true }),
+      ),
+    ).toEqual({ kind: 'click', region: { kind: 'left-edge' } });
+  });
+
+  it('names every mouse and pen click the middle when edge clicks do not turn', () => {
+    for (const pointerType of ['mouse', 'pen']) {
+      for (const x of [4, PAGE_WIDTH / 2, PAGE_WIDTH - 4]) {
+        expect(
+          releaseAction(
+            pointerEnded(releasing({ to: { x, y: 100 }, pointerType, edgeClicksTurn: false })),
+          ),
+        ).toEqual({ kind: 'chrome' });
+      }
+    }
+  });
+
+  it('keeps the finger tap zones when edge clicks do not turn', () => {
+    expect(
+      pointerEnded(
+        releasing({ to: { x: 4, y: 100 }, pointerType: 'touch', edgeClicksTurn: false }),
       ),
     ).toEqual({ kind: 'click', region: { kind: 'left-edge' } });
   });
@@ -713,6 +734,7 @@ describe('tapOnStage', () => {
           width: spot.width,
           textSelected: false,
           turns: 'tap-zones',
+          edgeClicksTurn: true,
           chromeShown: false,
         }),
       ),

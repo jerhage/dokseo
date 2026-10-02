@@ -34,6 +34,7 @@ function releaseAt(x: number, held: Partial<Release> = {}): Release {
     width: PAGE_WIDTH,
     textSelected: false,
     turns: 'tap-zones',
+    edgeClicksTurn: true,
     chromeShown: false,
     ...held,
   };
@@ -252,6 +253,27 @@ describe('FlowGestures', () => {
     gestures.released(releaseAt(20));
 
     expect(reader.calls).toEqual(['next']);
+  });
+
+  it('asks for the chrome and turns nothing when a mouse clicks an edge and edge clicks do not turn', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(760));
+    const action = gestures.released(releaseAt(760, { edgeClicksTurn: false }));
+
+    expect(action).toEqual({ kind: 'chrome' });
+    expect(reader.calls).toEqual([]);
+  });
+
+  it('turns the page when a finger taps an edge and edge clicks do not turn', () => {
+    const reader = foliateLike('ltr');
+    const gestures = new FlowGestures(reader.pages);
+
+    gestures.pressed(pressAt(4, { pointerType: 'touch' }));
+    gestures.released(releaseAt(4, { edgeClicksTurn: false }));
+
+    expect(reader.calls).toEqual(['prev']);
   });
 
   it('turns the page on an arrow key and reports the move it made', () => {

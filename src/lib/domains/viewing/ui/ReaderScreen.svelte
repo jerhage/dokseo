@@ -14,9 +14,11 @@
   import Pencil from '$lib/components/icons/Pencil.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import SquareDashedMousePointer from '$lib/components/icons/SquareDashedMousePointer.svelte';
+  import { anyPointer } from '$lib/platform/dom/any-pointer';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
+  import { chooseEdgeClicksTurn, edgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { imageIndex } from '$lib/shared/ids';
   import type { GlowRegion, ImageRegion } from '$lib/shared/image-region';
   import { languageName } from '$lib/shared/language';
@@ -24,6 +26,8 @@
   import type { TouchTurns } from '$lib/shared/page-turn';
   import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
   import { readTouchTurns, saveTouchTurns } from '$lib/shared/touch-turns';
+  import { shownTurnSettings } from '$lib/shared/turn-settings';
+  import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import ReaderFrame from '$lib/shared/ReaderFrame.svelte';
   import { ReaderFrameView } from '$lib/shared/reader-frame.svelte';
   import { dragOrigin, NOTE_MODE_LABEL, SELECT_MODE_LABELS } from './drag-mode';
@@ -95,6 +99,7 @@
   let selecting = $state(false);
   const touchTurns = new RememberedChoice<TouchTurns>(readTouchTurns, saveTouchTurns);
   let settingsOpen = $state(false);
+  let turnSettings = $state.raw<ShownTurnSettings>(presentTurnSettings());
 
   const readerFrame = new ReaderFrameView();
 
@@ -103,6 +108,15 @@
   const narrow = $derived(readerFrame.narrow);
   const lit = $derived(shownGlow(glow, everyGlow, allCapturesWanted()));
   const touchGuide = $derived(paged?.offersGuide() ?? strip?.offersGuide() ?? false);
+
+  function presentTurnSettings(): ShownTurnSettings {
+    return shownTurnSettings(anyPointer('coarse'), anyPointer('fine'));
+  }
+
+  function openSettings(): void {
+    turnSettings = presentTurnSettings();
+    settingsOpen = true;
+  }
 
   function toggleChrome(): void {
     readerFrame.toggleBars(document.activeElement, paged?.surface() ?? strip?.surface() ?? null);
@@ -297,6 +311,7 @@
               chromeShown={shown}
               {selecting}
               turns={touchTurns.value}
+              edgeClicksTurn={edgeClicksTurn()}
               select={(regions) => commit(regions, 'row')}
               clear={() => view.selection.clear()}
               onTap={toggleChrome}
@@ -357,12 +372,7 @@
         />
       {/if}
 
-      <Button
-        size="sm"
-        class="shrink-0"
-        aria-haspopup="dialog"
-        onclick={() => (settingsOpen = true)}
-      >
+      <Button size="sm" class="shrink-0" aria-haspopup="dialog" onclick={openSettings}>
         Settings
       </Button>
 
@@ -400,8 +410,11 @@
   {downward}
   {fits}
   offersAppearance={narrow}
+  {turnSettings}
   touchTurns={touchTurns.value}
   ontouchturns={(chosen) => touchTurns.choose(chosen)}
+  edgeClicksTurn={edgeClicksTurn()}
+  onedgeclicksturn={chooseEdgeClicksTurn}
   gestureHints={hintsWanted()}
   ongesturehints={chooseHints}
   {touchGuide}

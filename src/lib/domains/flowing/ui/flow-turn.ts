@@ -23,6 +23,7 @@ type PointerRelease = {
   readonly width: number;
   readonly textSelected: boolean;
   readonly turns: TouchTurns;
+  readonly edgeClicksTurn: boolean;
   readonly chromeShown: boolean;
 };
 
@@ -177,7 +178,9 @@ function touchRegionAt(
 }
 
 function releasedRegion(release: PointerRelease): ClickRegion {
-  if (release.pointerType !== 'touch') return regionAt(release.to.x, release.width);
+  if (release.pointerType !== 'touch') {
+    return release.edgeClicksTurn ? regionAt(release.to.x, release.width) : MIDDLE;
+  }
 
   return touchRegionAt(release.to.x, release.width, release.turns, release.chromeShown);
 }

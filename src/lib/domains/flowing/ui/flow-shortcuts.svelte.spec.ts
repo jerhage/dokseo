@@ -184,6 +184,7 @@ async function opened(): Promise<Document> {
     view: new FlowView(shelf(source, book), () => undefined, createTestQueryClient()),
     book,
     storedSettings: DEFAULT_READING_SETTINGS,
+    edgeClicksTurn: true,
   });
 
   await expect.poll(() => paginator().pages, { timeout: LAID_OUT_WITHIN_MS }).toBeGreaterThan(2);

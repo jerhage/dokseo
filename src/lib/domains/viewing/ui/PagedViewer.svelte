@@ -55,6 +55,7 @@
     readonly chromeShown: boolean;
     readonly selecting?: boolean;
     readonly turns: TouchTurns;
+    readonly edgeClicksTurn: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
     readonly onTap: () => void;
@@ -74,6 +75,7 @@
     chromeShown,
     selecting = false,
     turns,
+    edgeClicksTurn,
     select,
     clear,
     onTap,
@@ -298,7 +300,7 @@
   }
 
   function clicked(at: Point): void {
-    match(pageClick(at.x, frameSpan(), direction))
+    match(pageClick(at.x, frameSpan(), direction, edgeClicksTurn))
       .with({ kind: 'turn' }, ({ move }) => onTurn?.(move))
       .with({ kind: 'toggle-chrome' }, () => onTap())
       .exhaustive();
