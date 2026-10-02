@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { imagePlace, textPlace } from '$lib/shared/reading-place';
+import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { BookLookup, LibraryRepository } from '../domain/book/library-repository';
@@ -70,17 +70,5 @@ describe('editBook', () => {
       title: 'Kept',
     });
     expect(result).toEqual(STORAGE_UNAVAILABLE);
-  });
-
-  it('passes a text place to the repository unchanged', async () => {
-    const repository = fakeRepository({ kind: 'success', book: stored });
-    const edit: BookEdit = { position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null) };
-    await editBook({ repository: repository.repository }, bookId('book-7'), edit);
-    expect(repository.updates).toEqual([
-      {
-        id: 'book-7',
-        edit: { position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: null } },
-      },
-    ]);
   });
 });

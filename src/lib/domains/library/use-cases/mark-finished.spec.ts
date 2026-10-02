@@ -58,15 +58,7 @@ function fakeRepository(outcome: BookLookup) {
 }
 
 describe('markFinished', () => {
-  it('marks the book finished now and leaves its place and last read time alone', async () => {
-    const fake = fakeRepository({ kind: 'success', book: { ...stored, finishedAt: NOW } });
-
-    await markFinished({ repository: fake.repository, now: () => NOW }, bookId('book-7'));
-
-    expect(fake.updates).toEqual([{ id: 'book-7', edit: { finishedAt: NOW } }]);
-  });
-
-  it('returns the marked book', async () => {
+  it('marks the book finished now, leaves its place and last read time alone, and returns it', async () => {
     const marked = { ...stored, finishedAt: NOW };
     const fake = fakeRepository({ kind: 'success', book: marked });
 
@@ -75,6 +67,7 @@ describe('markFinished', () => {
       bookId('book-7'),
     );
 
+    expect(fake.updates).toEqual([{ id: 'book-7', edit: { finishedAt: NOW } }]);
     expect(result).toEqual({ kind: 'success', book: marked });
   });
 

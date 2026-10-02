@@ -281,16 +281,23 @@ describe('library mutations', () => {
     await expect(marking.mutate({ id: bookId('one'), mark: 'unread' })).resolves.toBe(unread);
   });
 
-  it('resolves a refused upload as an answer, not a rejection', async () => {
+  it('resolves a refused upload as an answer, passing the files, matching and report on', async () => {
     const client = createTestQueryClient();
     const refused = { kind: 'source', failure: { kind: 'empty' } } as const;
+    const files = [new File(['x'], 'one.cbz')];
+    const report = () => undefined;
+    const received: unknown[][] = [];
     const opening = new MutationObserver(
       client,
-      openFileMutation({ openFile: () => Promise.resolve(refused) }),
+      openFileMutation({
+        openFile: (...args) => {
+          received.push(args);
+          return Promise.resolve(refused);
+        },
+      }),
     );
 
-    await expect(
-      opening.mutate({ files: [], matching: 'content', report: () => undefined }),
-    ).resolves.toBe(refused);
+    await expect(opening.mutate({ files, matching: 'file-name', report })).resolves.toBe(refused);
+    expect(received).toEqual([[files, 'file-name', report]]);
   });
 });

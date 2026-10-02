@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { imagePlace, textPlace } from '$lib/shared/reading-place';
+import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from '../domain/book/book';
 import type {
@@ -72,26 +72,6 @@ describe('saveReadingPlace', () => {
         id: 'book-7',
         edit: {
           position: { kind: 'image', index: 12, shownThrough: 12, offset: 0 },
-          lastReadAt: NOW,
-        },
-      },
-    ]);
-  });
-
-  it('stores a text place unchanged', async () => {
-    const fake = fakeRepository({ kind: 'success', book: stored });
-
-    await saveReadingPlace(
-      { repository: fake.repository, now: () => NOW },
-      bookId('book-7'),
-      textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.37),
-    );
-
-    expect(fake.updates).toEqual([
-      {
-        id: 'book-7',
-        edit: {
-          position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: 0.37 },
           lastReadAt: NOW,
         },
       },

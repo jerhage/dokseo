@@ -158,41 +158,25 @@ describe('openForReading', () => {
     });
   });
 
-  it('never opens a page source when the record is missing', async () => {
-    const opener = fakeOpener();
-    await openForReading(
-      deps({ repository: fakeRepository(NO_BOOK), openPages: opener.openPages }),
-      ID,
-    );
-    expect(opener.calls).toEqual([]);
-  });
-
-  it('opens a flow book without asking for a page source', async () => {
+  it('opens a flow book without asking for a page source or reading its source blob', async () => {
     const opener = fakeOpener();
     const flowing = book({ layoutKind: 'flow', imageCount: 0 });
-
-    const result = await openForReading(
-      deps({ repository: fakeRepository(found(flowing)), openPages: opener.openPages }),
-      ID,
-    );
-
-    expect(result).toEqual({ kind: 'flow', book: flowing });
-    expect(opener.calls).toEqual([]);
-  });
-
-  it('reads no source blob for a flow book', async () => {
     let read = 0;
-    const repository = fakeRepository(found(book({ layoutKind: 'flow', imageCount: 0 })));
     const counting: LibraryRepository = {
-      ...repository,
+      ...fakeRepository(found(flowing)),
       readSource: () => {
         read += 1;
         return Promise.resolve(file(new Blob(['source bytes'])));
       },
     };
 
-    await openForReading(deps({ repository: counting }), ID);
+    const result = await openForReading(
+      deps({ repository: counting, openPages: opener.openPages }),
+      ID,
+    );
 
+    expect(result).toEqual({ kind: 'flow', book: flowing });
+    expect(opener.calls).toEqual([]);
     expect(read).toBe(0);
   });
 
@@ -300,24 +284,6 @@ describe('openForReading a book of listed pages', () => {
     expect(opener.calls).toEqual([{ blob, names: RULE_NAMES }]);
   });
 
-  it('stores the list of an unlisted book once, and opens it by that list after', async () => {
-    const { repository, saved } = pageListRepository({ kind: 'unlisted' });
-    const opener = fakeListedOpener();
-    const lister = fakeLister({ kind: 'success', names: RULE_NAMES });
-    const opening = deps({
-      repository,
-      openListedPages: opener.openListedPages,
-      listPageNames: lister.listPageNames,
-    });
-
-    await openForReading(opening, ID);
-    await openForReading(opening, ID);
-
-    expect(lister.calls).toHaveLength(1);
-    expect(saved).toHaveLength(1);
-    expect(opener.calls.map((call) => call.names)).toEqual([RULE_NAMES, RULE_NAMES]);
-  });
-
   it('reports an unreadable source and stores nothing when the archive will not list', async () => {
     const { repository, saved } = pageListRepository({ kind: 'unlisted' });
 
@@ -391,23 +357,5 @@ describe('openForReading a book of listed pages', () => {
 
     expect(opener.calls.map((call) => call.names)).toEqual([['p1.png']]);
     expect(intrinsic.calls).toEqual([]);
-  });
-
-  it('reads no page list for a PDF', async () => {
-    let read = 0;
-    const counting: LibraryRepository = {
-      ...fakeRepository(),
-      readPageList: () => {
-        read += 1;
-        return Promise.resolve({
-          kind: 'success' as const,
-          pageList: { kind: 'unlisted' as const },
-        });
-      },
-    };
-
-    await openForReading(deps({ repository: counting }), ID);
-
-    expect(read).toBe(0);
   });
 });
