@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { suggestTitle } from './title';
+import { bookTitle, suggestTitle } from './title';
 
 describe('suggestTitle', () => {
   it('falls back for an empty list', () => {
@@ -62,5 +62,15 @@ describe('suggestTitle', () => {
 
   it('falls back for a container whose name holds nothing but whitespace', () => {
     expect(suggestTitle('pdf', [{ name: '   .pdf', path: 'Series/   .pdf' }])).toBe('Untitled');
+  });
+});
+
+describe('bookTitle', () => {
+  it('takes the declared title, trimmed', () => {
+    expect(bookTitle('  キノの旅  ', 'kino-v1')).toBe('キノの旅');
+  });
+
+  it.each([null, '', '   '])('takes the file title when the declared title is %j', (declared) => {
+    expect(bookTitle(declared, 'kino-v1')).toBe('kino-v1');
   });
 });

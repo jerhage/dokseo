@@ -183,21 +183,23 @@ function epubPackage(
   layout: EpubLayout,
   direction: SpineDirection = 'rtl',
   language: string | null = 'ja',
+  title: string | null = 'Yotsuba&! 1',
 ): EpubPackage {
-  return { layout, direction, title: 'Yotsuba&! 1', language };
+  return { layout, direction, title, language };
 }
 
 function inspectedEpub(
   layout: EpubLayout,
   direction: SpineDirection = 'rtl',
   language: string | null = 'ja',
+  title: string | null = 'Yotsuba&! 1',
 ): EpubInspectionAnswer {
   return {
     kind: 'success',
     inspection: {
       kind: 'epub',
       packagePath: 'OEBPS/content.opf',
-      packageDocument: epubPackage(layout, direction, language),
+      packageDocument: epubPackage(layout, direction, language, title),
     },
   };
 }
@@ -308,6 +310,64 @@ describe('openFile', () => {
     expect(openedBook(result).lastReadAt).toBeNull();
     expect(openedBook(result).finishedAt).toBeNull();
   });
+
+  it('titles an EPUB by the title its package declares, not its file name', async () => {
+    const repository = fakeRepository();
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        inspectEpub: fakeInspector(
+          inspectedEpub('pre-paginated', 'rtl', 'ja', 'キノの旅 the Beautiful World'),
+        ).inspector,
+        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub', suggestedTitle: 'kino-v1' })))
+          .builder,
+      }),
+      epub,
+    );
+
+    expect(openedBook(result).title).toBe('キノの旅 the Beautiful World');
+    expect(at(repository.added, 0).book.fileName).toBe('Yotsuba&! 1.epub');
+  });
+
+  it.each([null, '   '])(
+    'titles an EPUB by its file name when the package declares the title %j',
+    async (declared) => {
+      const result = await openFile(
+        deps({
+          inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'ja', declared))
+            .inspector,
+          builder: fakeBuilder(
+            built(builtSource({ sourceKind: 'epub', suggestedTitle: 'kino-v1' })),
+          ).builder,
+        }),
+        epub,
+      );
+
+      expect(openedBook(result).title).toBe('kino-v1');
+    },
+  );
+
+  it.each([
+    ['archive', files],
+    ['pdf', [inFolder(new File(['bytes'], 'Yotsuba&! 1.pdf'), '')]],
+    ['images', folder],
+  ] as const)(
+    'titles a %s upload by the title its builder suggested',
+    async (sourceKind, upload) => {
+      const inspector = fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'ja', 'Not this one'));
+      const result = await openFile(
+        deps({
+          inspectEpub: inspector.inspector,
+          builder: fakeBuilder(built(builtSource({ sourceKind, suggestedTitle: 'Ch 12' }))).builder,
+        }),
+        upload,
+      );
+
+      expect(openedBook(result).title).toBe('Ch 12');
+      expect(inspector.inspected).toEqual([]);
+    },
+  );
 
   it('reads Korean from a hangul title, so the reader does not have to say so', async () => {
     const builder = fakeBuilder(built(builtSource({ suggestedTitle: '나 혼자만 레벨업' }))).builder;
@@ -646,6 +706,65 @@ describe('openFile', () => {
     expect(at(repository.added, 0).book.id).toBe('a816bb74-old');
   });
 
+  it('restores an EPUB into a row stored under its file-name title before titles came from metadata', async () => {
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([]),
+      [],
+      [removedRecord({ title: 'kino-v1', contentHash: 'a'.repeat(64), fileName: '' })],
+    );
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        inspectEpub: fakeInspector(
+          inspectedEpub('pre-paginated', 'rtl', 'ja', 'キノの旅 the Beautiful World'),
+        ).inspector,
+        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub', suggestedTitle: 'kino-v1' })))
+          .builder,
+      }),
+      epub,
+    );
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result)).toMatchObject({
+      id: 'gone-1',
+      title: 'キノの旅 the Beautiful World',
+    });
+  });
+
+  it('restores an EPUB into a row titled by its metadata when the file was renamed', async () => {
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([]),
+      [],
+      [
+        removedRecord({
+          title: 'キノの旅 the Beautiful World',
+          contentHash: 'a'.repeat(64),
+          fileName: 'kino-v1.epub',
+        }),
+      ],
+    );
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        inspectEpub: fakeInspector(
+          inspectedEpub('pre-paginated', 'rtl', 'ja', 'キノの旅 the Beautiful World'),
+        ).inspector,
+        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub', suggestedTitle: 'renamed' })))
+          .builder,
+      }),
+      epub,
+    );
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result).id).toBe('gone-1');
+  });
+
   it('adds a new book when no record shares its hash, file name or title', async () => {
     const repository = fakeRepository(WRITTEN, [], listing([]), [
       removedRecord({ contentHash: OTHER_DIGEST, fileName: 'other.cbz', title: 'Other' }),
@@ -745,10 +864,10 @@ describe('openFile', () => {
   it('falls back to the title when the EPUB declares a language this app cannot read', async () => {
     const result = await openFile(
       deps({
-        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'zh-Hans')).inspector,
-        builder: fakeBuilder(
-          built(builtSource({ sourceKind: 'epub', suggestedTitle: '\uB098 \uD63C\uC790\uB9CC' })),
-        ).builder,
+        inspectEpub: fakeInspector(
+          inspectedEpub('pre-paginated', 'rtl', 'zh-Hans', '\uB098 \uD63C\uC790\uB9CC'),
+        ).inspector,
+        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
       }),
       epub,
     );

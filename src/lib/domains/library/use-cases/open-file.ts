@@ -8,6 +8,7 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
+import { bookTitle } from '../domain/book/title';
 import { DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch } from '../domain/book/book-matching';
 import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
 import type { LibraryRepository } from '../domain/book/library-repository';
@@ -167,6 +168,12 @@ function declaredLanguage(inspection: UploadInspection): Language | null {
   return languageDeclared(inspection.packageDocument.language);
 }
 
+function declaredTitle(inspection: UploadInspection): string | null {
+  if (inspection.kind !== 'epub') return null;
+
+  return inspection.packageDocument.title;
+}
+
 const EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE: ReadingDirection = 'ltr';
 
 function declaredDirection(inspection: UploadInspection): ReadingDirection {
@@ -212,8 +219,9 @@ async function openFile(
 
   const layoutKind = content.layoutKind;
 
-  const title = built.suggestedTitle;
-  const restoring = restorableMatch(restorable, { ...identity, title });
+  const fileTitle = built.suggestedTitle;
+  const title = bookTitle(declaredTitle(inspection), fileTitle);
+  const restoring = restorableMatch(restorable, { ...identity, title, fileTitle });
 
   const book: Book = {
     id: restoring?.id ?? bookId(deps.newId()),

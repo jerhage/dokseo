@@ -21,5 +21,10 @@ function suggestTitle(sourceKind: SourceKind, entries: readonly TitleCandidate[]
   return firstNonEmpty(folder, withoutExtension(first.name));
 }
 
-export { suggestTitle };
+function bookTitle(metadataTitle: string | null, fileTitle: string): string {
+  const declared = metadataTitle?.trim() ?? '';
+  return declared.length > 0 ? declared : fileTitle;
+}
+
+export { bookTitle, suggestTitle };
 export type { TitleCandidate };

@@ -97,11 +97,24 @@ function restoring(over: Partial<RestorableUpload> = {}): RestorableUpload {
     contentHash: contentHash(PARTIAL),
     fileName: 'kino.epub',
     title: 'キノの旅 the Beautiful World',
+    fileTitle: 'kino',
     ...over,
   };
 }
 
 describe('restorableMatch', () => {
+  it('matches by the file-name title a row stored before titles came from metadata', () => {
+    const old = candidate({ title: 'kino' });
+
+    expect(restorableMatch({ removed: [old], unreadable: [] }, restoring())).toBe(old);
+  });
+
+  it('matches by the metadata title a row stored with it', () => {
+    const titled = candidate();
+
+    expect(restorableMatch({ removed: [titled], unreadable: [] }, restoring())).toBe(titled);
+  });
+
   it('matches by title an unreadable row with a SHA-256 hash and no file name', () => {
     const old = candidate();
 
@@ -129,11 +142,14 @@ describe('restorableMatch', () => {
     expect(
       restorableMatch(
         { removed: [untitled], unreadable: [] },
-        restoring({ title: 'Untitled book' }),
+        restoring({ title: 'Untitled book', fileTitle: 'Untitled book' }),
       ),
     ).toBeNull();
     expect(
-      restorableMatch({ removed: [empty], unreadable: [] }, restoring({ title: '  ' })),
+      restorableMatch(
+        { removed: [empty], unreadable: [] },
+        restoring({ title: '  ', fileTitle: '' }),
+      ),
     ).toBeNull();
   });
 

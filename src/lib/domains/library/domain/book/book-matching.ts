@@ -29,7 +29,10 @@ type RestorableIdentity = {
   readonly addedAt: number | null;
 };
 
-type RestorableUpload = UploadIdentity & { readonly title: string };
+type RestorableUpload = UploadIdentity & {
+  readonly title: string;
+  readonly fileTitle: string;
+};
 
 type RestorableCandidates<T extends RestorableIdentity> = {
   readonly removed: readonly T[];
@@ -55,7 +58,11 @@ function matchesAt(step: RestoreStep, candidate: RestorableIdentity, upload: Res
   return match(step)
     .with('content', () => candidate.contentHash === upload.contentHash)
     .with('file-name', () => upload.fileName.length > 0 && candidate.fileName === upload.fileName)
-    .with('title', () => sameTitle(candidate.title, upload.title))
+    .with(
+      'title',
+      () =>
+        sameTitle(candidate.title, upload.title) || sameTitle(candidate.title, upload.fileTitle),
+    )
     .exhaustive();
 }
 
