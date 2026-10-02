@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { NARROW_SCREEN_QUERY } from '../components/breakpoints';
 import { TAG_COLOURS } from '../components/classes';
@@ -392,7 +394,9 @@ function withoutComments(css: string): string {
 }
 
 function filesUnder(root: URL, extensions: readonly string[]): readonly string[] {
-  return readdirSync(root, { recursive: true, encoding: 'utf8' })
+  return readdirSync(root, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(fileURLToPath(root), join(entry.parentPath, entry.name)))
     .filter((path) => extensions.some((extension) => path.endsWith(extension)))
     .map((path) => path.split('\\').join('/'))
     .toSorted();

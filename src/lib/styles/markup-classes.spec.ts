@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const SOURCE = new URL('../../', import.meta.url);
@@ -8,7 +10,9 @@ const LIBRARY_FOLDERS = ['components/', 'utilities/', 'overrides/'];
 type Written = { readonly file: string; readonly name: string; readonly defined: boolean };
 
 function filesUnder(root: URL, extension: string): readonly string[] {
-  return readdirSync(root, { recursive: true, encoding: 'utf8' })
+  return readdirSync(root, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(fileURLToPath(root), join(entry.parentPath, entry.name)))
     .filter((path) => path.endsWith(extension))
     .map((path) => path.split('\\').join('/'))
     .toSorted();

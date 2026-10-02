@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const SOURCE = new URL('../../../../', import.meta.url);
@@ -36,7 +38,9 @@ interface LoadedEntry {
 }
 
 function sourceFiles(): readonly string[] {
-  return readdirSync(SOURCE, { recursive: true, encoding: 'utf8' })
+  return readdirSync(SOURCE, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(fileURLToPath(SOURCE), join(entry.parentPath, entry.name)))
     .map((path) => path.split('\\').join('/'))
     .filter((path) => SCRIPT_EXTENSIONS.some((extension) => path.endsWith(extension)))
     .toSorted();

@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   ALERT_VARIANTS,
@@ -75,7 +77,9 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
 };
 
 function cssFiles(folder: URL): readonly string[] {
-  return readdirSync(folder, { recursive: true, encoding: 'utf8' })
+  return readdirSync(folder, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(fileURLToPath(folder), join(entry.parentPath, entry.name)))
     .filter((path) => path.endsWith('.css'))
     .map((path) => readFileSync(new URL(path, folder), 'utf8'));
 }

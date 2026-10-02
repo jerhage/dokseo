@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRawSnippet } from 'svelte';
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
@@ -38,7 +40,9 @@ function kebab(component: string): string {
 }
 
 function sourceFiles(): readonly string[] {
-  return readdirSync(SOURCE, { recursive: true, encoding: 'utf8' })
+  return readdirSync(SOURCE, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(fileURLToPath(SOURCE), join(entry.parentPath, entry.name)))
     .map((path) => path.split('\\').join('/'))
     .filter((path) => /\.(svelte|ts)$/u.test(path))
     .filter((path) => !path.endsWith('.spec.ts'))
