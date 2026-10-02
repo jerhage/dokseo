@@ -5,6 +5,7 @@ import { effectiveDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadState } from '$lib/shared/read-state';
 import type { Book } from '../domain/book/book';
+import type { RemovedShelf, RemovedShelfEntry } from '../domain/book/removed-book';
 import type { UnreadableBook } from '../domain/book/stored-book';
 import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
 import type { ListBooksResult } from '../use-cases/list-books';
@@ -33,6 +34,7 @@ type ShelfRead = {
   readonly searched: readonly ListedBook[];
   readonly counts: ReadonlyMap<BookId, number>;
   readonly unreadable: readonly UnreadableBook[];
+  readonly removed: readonly RemovedShelfEntry[];
   readonly reload: () => void;
 };
 
@@ -52,6 +54,10 @@ function listedBooks(books: ReadState<ListBooksResult>): readonly Book[] {
 
 function unreadableBooks(books: ReadState<ListBooksResult>): readonly UnreadableBook[] {
   return books.kind === 'ready' && books.value.kind === 'success' ? books.value.unreadable : [];
+}
+
+function removedEntries(removed: ReadState<RemovedShelf>): readonly RemovedShelfEntry[] {
+  return removed.kind === 'ready' && removed.value.kind === 'success' ? removed.value.entries : [];
 }
 
 function shelfState(
@@ -101,6 +107,7 @@ export {
   libraryBody,
   listedBooks,
   listedOf,
+  removedEntries,
   shelfOf,
   shelfState,
   unreadableBooks,

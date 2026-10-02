@@ -13,6 +13,7 @@
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
+  import { entryId } from '../domain/book/removed-book';
   import type { LibraryScrollView } from './library-scroll-view.svelte';
   import type { LibraryView } from './library-view.svelte';
   import {
@@ -29,6 +30,7 @@
   import BookSettings from './BookSettings.svelte';
   import { arrivedFiles } from './chosen-files';
   import ContinueReading from './ContinueReading.svelte';
+  import DeleteRemovedCaptures from './DeleteRemovedCaptures.svelte';
   import ImportStatus from './ImportStatus.svelte';
   import LibraryBooksData from './LibraryBooksData.svelte';
   import LibraryMenu from './LibraryMenu.svelte';
@@ -37,6 +39,7 @@
   import type { ShelfRead } from './library-shelf';
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
+  import RemovedBooks from './RemovedBooks.svelte';
   import ShelfView from './ShelfView.svelte';
   import UnreadableBooks from './UnreadableBooks.svelte';
   import UploadStrip from './UploadStrip.svelte';
@@ -59,12 +62,16 @@
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
   let openSettingsFor = $state<BookId | null>(null);
   let removeFor = $state<BookId | null>(null);
+  let deleteCapturesFor = $state<BookId | null>(null);
   const arrangement = new ShelfArrangement();
 
   const settingsBook = $derived(
     shelfRead.books.find((book) => book.id === openSettingsFor) ?? null,
   );
   const removeBook = $derived(shelfRead.books.find((book) => book.id === removeFor) ?? null);
+  const deleteCaptures = $derived(
+    shelfRead.removed.find((entry) => entryId(entry) === deleteCapturesFor) ?? null,
+  );
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
     const outcome = await view.changes.edit(id, edit);
@@ -82,6 +89,11 @@
   async function remove(id: BookId): Promise<void> {
     const outcome = await view.changes.remove(id);
     if (outcome !== 'failed') removeFor = null;
+  }
+
+  async function deleteRemovedCaptures(id: BookId): Promise<void> {
+    const outcome = await view.removed.delete(id);
+    if (outcome !== 'failed') deleteCapturesFor = null;
   }
 
   const searching = $derived(isSearching(query));
@@ -239,6 +251,14 @@
       {/snippet}
     </LibraryBooksData>
 
+    {#if shelfRead.removed.length > 0}
+      <RemovedBooks
+        entries={shelfRead.removed}
+        busy={view.removed.deleting !== null}
+        ondelete={(id) => (deleteCapturesFor = id)}
+      />
+    {/if}
+
     <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
       {#if view.upload.pending !== null}
         <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.upload.batch)}</span
@@ -262,7 +282,10 @@
 </div>
 
 <WindowDropzone
-  disabled={view.upload.busy || settingsBook !== null || removeBook !== null}
+  disabled={view.upload.busy ||
+    settingsBook !== null ||
+    removeBook !== null ||
+    deleteCaptures !== null}
   readDrop={filesFromDataTransfer}
   onfiles={(selection) => upload(arrivedFiles(selection))}
 >
@@ -284,5 +307,14 @@
     removing={view.changes.removing === removeBook.id}
     onremove={() => void remove(removeBook.id)}
     onclose={() => (removeFor = null)}
+  />
+{/if}
+
+{#if deleteCaptures !== null}
+  <DeleteRemovedCaptures
+    entry={deleteCaptures}
+    deleting={view.removed.deleting === entryId(deleteCaptures)}
+    ondelete={() => void deleteRemovedCaptures(entryId(deleteCaptures))}
+    onclose={() => (deleteCapturesFor = null)}
   />
 {/if}

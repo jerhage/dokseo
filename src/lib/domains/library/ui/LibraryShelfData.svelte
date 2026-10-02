@@ -4,7 +4,12 @@
   import type { BookId } from '$lib/shared/ids';
   import { readQuery } from '$lib/shared/read-query.svelte';
   import type { Book } from '../domain/book/book';
-  import { booksQuery, coversQuery, librarySizeQuery } from '../queries/library-queries';
+  import {
+    booksQuery,
+    coversQuery,
+    librarySizeQuery,
+    removedBooksQuery,
+  } from '../queries/library-queries';
   import type { LibraryReads } from '../queries/library-queries';
   import { CoverUrls } from './cover-urls';
   import {
@@ -12,6 +17,7 @@
     imageCountsOf,
     listedBooks,
     listedOf,
+    removedEntries,
     shelfOf,
     shelfState,
     unreadableBooks,
@@ -39,6 +45,7 @@
     enabled: wanted && listing.state.kind === 'ready',
   }));
   const sizing = readQuery(() => ({ ...librarySizeQuery(library), enabled: wanted }));
+  const removedRead = readQuery(() => ({ ...removedBooksQuery(library), enabled: wanted }));
 
   const urls = new CoverUrls();
   const shown = $derived(
@@ -52,6 +59,7 @@
   const searched = $derived(books.map(listedOf));
   const counts = $derived(imageCountsOf(books));
   const unreadable = $derived(unreadableBooks(listing.state));
+  const removed = $derived(removedEntries(removedRead.state));
 
   function reload(): void {
     if (!wanted) {
@@ -60,6 +68,7 @@
     }
     listing.reload();
     sizing.reload();
+    removedRead.reload();
   }
 
   const shelf: ShelfRead = {
@@ -86,6 +95,9 @@
     },
     get unreadable() {
       return unreadable;
+    },
+    get removed() {
+      return removed;
     },
     reload,
   };

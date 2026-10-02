@@ -5,6 +5,7 @@ import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { effectiveDirection, isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
+import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from './stored-book';
 
 type RemovedBook = {
@@ -19,6 +20,12 @@ type RemovedBook = {
 type RemovedShelfEntry =
   | { readonly kind: 'recorded'; readonly book: RemovedBook; readonly captureCount: number }
   | { readonly kind: 'unknown'; readonly id: BookId; readonly captureCount: number };
+
+type RemovedShelf =
+  | { readonly kind: 'success'; readonly entries: readonly RemovedShelfEntry[] }
+  | StorageUnavailable;
+
+type CapturesDeletion = { readonly kind: 'success' } | StorageUnavailable;
 
 type RetiredRow = {
   readonly id?: unknown;
@@ -73,4 +80,4 @@ function entryId(entry: RemovedShelfEntry): BookId {
 }
 
 export { UNKNOWN_BOOK, UNTITLED_BOOK, entryId, removedBookFrom, removedBooksFrom };
-export type { RemovedBook, RemovedShelfEntry, RetiredRow };
+export type { CapturesDeletion, RemovedBook, RemovedShelf, RemovedShelfEntry, RetiredRow };

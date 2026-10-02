@@ -1,0 +1,31 @@
+import { match } from 'ts-pattern';
+import { UNKNOWN_BOOK } from '../domain/book/removed-book';
+import type { RemovedShelfEntry } from '../domain/book/removed-book';
+
+const RESTORE_HINT = 'Upload the same file again to restore it with its captures';
+
+const NO_RESTORE_HINT = 'No file is known for these, so they cannot be restored';
+
+function captureCountText(count: number): string {
+  return count === 1 ? '1 capture' : `${count.toLocaleString()} captures`;
+}
+
+function removedEntryName(entry: RemovedShelfEntry): string {
+  return match(entry)
+    .with({ kind: 'recorded' }, ({ book }) => book.title)
+    .with({ kind: 'unknown' }, () => UNKNOWN_BOOK)
+    .exhaustive();
+}
+
+function removedEntryDescription(entry: RemovedShelfEntry): string {
+  const hint = entry.kind === 'recorded' ? RESTORE_HINT : NO_RESTORE_HINT;
+  return `${captureCountText(entry.captureCount)} · ${hint}`;
+}
+
+export {
+  NO_RESTORE_HINT,
+  RESTORE_HINT,
+  captureCountText,
+  removedEntryDescription,
+  removedEntryName,
+};

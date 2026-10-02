@@ -3,6 +3,7 @@ import { match } from 'ts-pattern';
 import type { BookId } from '$lib/shared/ids';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { BookMatching } from '../domain/book/book-matching';
+import type { CapturesDeletion, RemovedShelf } from '../domain/book/removed-book';
 import type { UploadReport } from '../domain/ingest/upload-progress';
 import type { EditBookResult } from '../use-cases/edit-book';
 import type { ListBooksResult } from '../use-cases/list-books';
@@ -20,6 +21,7 @@ type LibraryReads = {
   readonly readBook: (id: BookId) => Promise<ReadBookResult>;
   readonly readCover: (id: BookId) => Promise<ReadCoverResult>;
   readonly readLibrarySize: () => Promise<ReadLibrarySizeResult>;
+  readonly listRemovedBooks: () => Promise<RemovedShelf>;
 };
 
 type LibraryWrites = {
@@ -32,6 +34,7 @@ type LibraryWrites = {
   readonly editBook: (id: BookId, edit: BookEdit) => Promise<EditBookResult>;
   readonly markFinished: (id: BookId) => Promise<MarkFinishedResult>;
   readonly markUnread: (id: BookId) => Promise<MarkUnreadResult>;
+  readonly deleteRemovedBookCaptures: (id: BookId) => Promise<CapturesDeletion>;
 };
 
 type BookMark = 'finished' | 'unread';
@@ -125,6 +128,14 @@ function librarySizeQuery(library: Pick<LibraryReads, 'readLibrarySize'>) {
   });
 }
 
+function removedBooksQuery(library: Pick<LibraryReads, 'listRemovedBooks'>) {
+  return queryOptions({
+    queryKey: libraryKeys.removed(),
+    queryFn: () => library.listRemovedBooks(),
+    staleTime: 0,
+  });
+}
+
 function openFileMutation(library: Pick<LibraryWrites, 'openFile'>) {
   return mutationOptions({
     mutationFn: ({ files, matching, report }: UploadRequest) =>
@@ -135,6 +146,12 @@ function openFileMutation(library: Pick<LibraryWrites, 'openFile'>) {
 function removeBookMutation(library: Pick<LibraryWrites, 'removeBook'>) {
   return mutationOptions({
     mutationFn: (id: BookId) => library.removeBook(id),
+  });
+}
+
+function deleteRemovedCapturesMutation(library: Pick<LibraryWrites, 'deleteRemovedBookCaptures'>) {
+  return mutationOptions({
+    mutationFn: (id: BookId) => library.deleteRemovedBookCaptures(id),
   });
 }
 
@@ -155,11 +172,13 @@ export {
   bookQuery,
   booksQuery,
   coversQuery,
+  deleteRemovedCapturesMutation,
   editBookMutation,
   librarySizeQuery,
   markBookMutation,
   newestFirst,
   openFileMutation,
   removeBookMutation,
+  removedBooksQuery,
 };
 export type { BookMark, EditRequest, LibraryReads, LibraryWrites, MarkRequest, UploadRequest };
