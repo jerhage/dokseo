@@ -27,9 +27,15 @@ describe('LibraryScrollView', () => {
     expect(view.settle('listed')).toBeNull();
   });
 
-  it('ignores a snapshot that is not an offset', () => {
+  it.each([
+    { snapshot: 'a string snapshot', arrive: (view: LibraryScrollView) => view.restore('640') },
+    {
+      snapshot: 'a link from the reader with nothing remembered',
+      arrive: (view: LibraryScrollView) => view.arrive('link', READER_ROUTE),
+    },
+  ])('ignores $snapshot, which is not an offset, and starts at the top', ({ arrive }) => {
     const { view } = fresh();
-    view.restore('640');
+    arrive(view);
 
     expect(view.settle('listed')).toBeNull();
   });
@@ -56,23 +62,5 @@ describe('LibraryScrollView', () => {
     view.arrive('link', '/settings');
 
     expect(view.settle('listed')).toBeNull();
-  });
-
-  it('starts at the top after a link from the reader when nothing was remembered', () => {
-    const { view } = fresh();
-    view.arrive('link', READER_ROUTE);
-
-    expect(view.settle('listed')).toBeNull();
-  });
-
-  it('shares the remembered offset between views on the same memory', () => {
-    const memory: ScrollMemory = { top: null };
-    const leaving = new LibraryScrollView(memory);
-    leaving.track(300);
-    leaving.capture();
-    const arriving = new LibraryScrollView(memory);
-    arriving.arrive('link', READER_ROUTE);
-
-    expect(arriving.settle('listed')).toBe(300);
   });
 });

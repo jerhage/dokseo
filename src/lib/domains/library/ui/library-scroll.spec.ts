@@ -32,18 +32,17 @@ describe('returnsFromReader', () => {
 });
 
 describe('scrollStep', () => {
-  it('waits while the library is still being read', () => {
-    expect(scrollStep(480, 'reading')).toEqual({ kind: 'wait' });
-  });
-
-  it('scrolls to the pending offset once the books are listed', () => {
-    expect(scrollStep(480, 'listed')).toEqual({ kind: 'scroll', top: 480 });
-  });
-
-  it('gives up on the offset when there is nothing to scroll to', () => {
-    expect(scrollStep(480, 'empty')).toEqual({ kind: 'none' });
-    expect(scrollStep(480, 'failed')).toEqual({ kind: 'none' });
-  });
+  it.each([
+    { body: 'reading', step: { kind: 'wait' } },
+    { body: 'listed', step: { kind: 'scroll', top: 480 } },
+    { body: 'empty', step: { kind: 'none' } },
+    { body: 'failed', step: { kind: 'none' } },
+  ] as const)(
+    'answers $step.kind for a pending offset while the library is $body',
+    ({ body, step }) => {
+      expect(scrollStep(480, body)).toEqual(step);
+    },
+  );
 
   it('does nothing when no offset is pending', () => {
     expect(scrollStep(null, 'listed')).toEqual({ kind: 'none' });

@@ -36,27 +36,20 @@ const BOOK: Book = {
 const HELD: LibraryShelf = { books: [BOOK], covers: new Map(), storedBytes: 10 };
 
 describe('libraryBody', () => {
-  it('reads the library while it settles with nothing to show', () => {
-    expect(libraryBody(LOADING, false)).toBe('reading');
-  });
-
-  it('lists the import it holds while the first read settles', () => {
-    expect(libraryBody(LOADING, true)).toBe('listed');
-  });
-
-  it('reports a failed read even with an import on screen', () => {
-    expect(libraryBody(readFailed('denied'), false)).toBe('failed');
-    expect(libraryBody(readFailed('denied'), true)).toBe('failed');
-  });
-
-  it('invites a first upload when the ready library is empty', () => {
-    expect(libraryBody(readReady(EMPTY_SHELF), false)).toBe('empty');
-  });
-
-  it('lists a ready library that holds books or an import', () => {
-    expect(libraryBody(readReady(HELD), false)).toBe('listed');
-    expect(libraryBody(readReady(EMPTY_SHELF), true)).toBe('listed');
-  });
+  it.each([
+    { read: 'loading', state: LOADING, importing: false, body: 'reading' },
+    { read: 'loading', state: LOADING, importing: true, body: 'listed' },
+    { read: 'failed', state: readFailed('denied'), importing: false, body: 'failed' },
+    { read: 'failed', state: readFailed('denied'), importing: true, body: 'failed' },
+    { read: 'empty', state: readReady(EMPTY_SHELF), importing: false, body: 'empty' },
+    { read: 'holding books', state: readReady(HELD), importing: false, body: 'listed' },
+    { read: 'empty', state: readReady(EMPTY_SHELF), importing: true, body: 'listed' },
+  ] as const)(
+    'answers $body for a library $read when importing is $importing',
+    ({ state, importing, body }) => {
+      expect(libraryBody(state, importing)).toBe(body);
+    },
+  );
 });
 
 describe('shelfOf', () => {
