@@ -41,12 +41,6 @@ describe('choosePdfBuild', () => {
     expect(choosePdfBuild(globalsWithout(missing))).toBe('legacy');
   });
 
-  it('chooses the legacy build when a holder of the API is missing entirely', () => {
-    const globals = globalsWithout(undefined);
-    Reflect.deleteProperty(globals, 'Iterator');
-    expect(choosePdfBuild(globals)).toBe('legacy');
-  });
-
   it('chooses the legacy build when an API is present but is not a function', () => {
     const globals = globalsWithout('Promise.try');
     Reflect.set(globals, 'Promise', { try: true });

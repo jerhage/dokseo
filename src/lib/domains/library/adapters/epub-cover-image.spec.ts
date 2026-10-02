@@ -110,30 +110,33 @@ describe('epubCoverImage', () => {
     await expect(epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(null))).resolves.toBeNull();
   });
 
-  it('stores no cover when the named image is larger than the ceiling', async () => {
-    const huge = entry({ bytes: COVER_MAX_BYTES + 1 });
-    const read = vi.spyOn(huge, 'read');
+  it.each([
+    ['renders an image exactly at the ceiling', COVER_MAX_BYTES, true],
+    ['stores no cover for an image one byte past the ceiling', COVER_MAX_BYTES + 1, false],
+  ])('%s', async (_, bytes, renders) => {
+    const sized = entry({ bytes });
+    const read = vi.spyOn(sized, 'read');
 
-    await expect(epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(huge))).resolves.toBeNull();
-    expect(read).not.toHaveBeenCalled();
+    const cover = await epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(sized));
+
+    expect(cover !== null).toBe(renders);
+    expect(read).toHaveBeenCalledTimes(renders ? 1 : 0);
   });
 
-  it('renders an image exactly at the ceiling', async () => {
-    const limit = entry({ bytes: COVER_MAX_BYTES });
-
-    await expect(epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(limit))).resolves.not.toBeNull();
-  });
-
-  it('stores no cover when the named image will not decode', async () => {
-    decode.mockRejectedValue(new Error('not an image'));
-
-    await expect(epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(entry()))).resolves.toBeNull();
-  });
-
-  it('stores no cover when the archive cannot read the entry', async () => {
-    const broken = entry({ read: () => Promise.reject(new Error('the entry is damaged')) });
-
-    await expect(epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(broken))).resolves.toBeNull();
+  it.each([
+    [
+      'the named image will not decode',
+      () => {
+        decode.mockRejectedValue(new Error('not an image'));
+        return entry();
+      },
+    ],
+    [
+      'the archive cannot read the entry',
+      () => entry({ read: () => Promise.reject(new Error('the entry is damaged')) }),
+    ],
+  ])('stores no cover when %s', async (_, broken) => {
+    await expect(epubCoverImage(PACKAGE_XML, PACKAGE_PATH, lookup(broken()))).resolves.toBeNull();
   });
 
   it('closes the bitmap it drew from', async () => {

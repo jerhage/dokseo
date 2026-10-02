@@ -150,26 +150,19 @@ async function decodedText(source: PageSource, index: number): Promise<string> {
 }
 
 describe('listArchivePageNames', () => {
-  it('lists no junk entry of a ZIP as a page', async () => {
+  it('lists the pages of a ZIP in natural order, leaving out every junk entry', async () => {
     const junky = await archiveOf([
-      '001.jpg',
+      '10.jpg',
       '._001.jpg',
       '__MACOSX/._001.jpg',
+      'notes.txt',
       '.cover.jpg',
+      '2.jpg',
       '.thumbnails/001.jpg',
-      '002.jpg',
+      '1.jpg',
     ]);
 
     expect(await listArchivePageNames(junky)).toEqual({
-      kind: 'success',
-      names: ['001.jpg', '002.jpg'],
-    });
-  });
-
-  it('orders the page names naturally, whatever order the archive holds them in', async () => {
-    const shuffled = await archiveOf(['10.jpg', 'notes.txt', '2.jpg', '1.jpg']);
-
-    expect(await listArchivePageNames(shuffled)).toEqual({
       kind: 'success',
       names: ['1.jpg', '2.jpg', '10.jpg'],
     });
@@ -231,16 +224,22 @@ describe('openArchivePageSource', () => {
   });
 
   it('separates an unreadable entry from an entry that will not decode', async () => {
-    using source = await opened();
+    const blob = await flaky();
+    const opening = await openArchivePageSource(blob, PAGES);
+    if (opening.kind !== 'success') throw new Error('the archive could not be opened');
+    using source = opening.pages;
     decode.mockRejectedValue(new Error('not an image'));
 
-    const image = await source.image(imageIndex(0));
+    const undecodable = await source.image(imageIndex(0));
+    blob.broken = true;
+    const unreadable = await source.image(imageIndex(1));
 
-    expect(image).toEqual({
+    expect(undecodable).toEqual({
       kind: 'decode-failed',
       index: 0,
       cause: expect.stringContaining('not an image'),
     });
+    expect(unreadable).toEqual({ kind: 'page-unreadable', index: 1, cause: expect.any(String) });
   });
 
   it('mints a fresh url for every call', async () => {

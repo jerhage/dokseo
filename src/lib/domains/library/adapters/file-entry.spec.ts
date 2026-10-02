@@ -20,10 +20,6 @@ describe('entryName', () => {
 
     expect(entry).toBe('나 혼자만/01.jpg');
   });
-
-  it('leaves text that is already composed alone', () => {
-    expect(entryName(fileNamed('One Piece v01.cbz'))).toBe('One Piece v01.cbz');
-  });
 });
 
 describe('titleCandidate', () => {

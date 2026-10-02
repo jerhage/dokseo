@@ -218,30 +218,27 @@ describe('openPdfPageSource', () => {
     expect(sizes).toEqual({ kind: 'source-unreadable', cause: 'The document is closed' });
   });
 
-  it('opens the document with the modern build and its worker when the browser has every API', async () => {
-    pdfjs.build.chosen = 'modern';
-    using source = await opened();
+  it.each([
+    [
+      'modern',
+      'the browser has every API',
+      'legacy',
+      /^(?!.*legacy).*\/build\/pdf\.worker\.min\.mjs$/u,
+    ],
+    ['legacy', 'the browser lacks an API', 'modern', /\/legacy\/build\/pdf\.worker\.min\.mjs$/u],
+  ] as const)(
+    'opens the document with the %s build and its worker when %s',
+    async (chosen, _, other, worker) => {
+      pdfjs.build.chosen = chosen;
+      using source = await opened();
 
-    expect(source.count).toBe(3);
+      expect(source.count).toBe(3);
 
-    expect(pdfjs.openedBy).toEqual(['modern']);
-    expect(pdfjs.modern.GlobalWorkerOptions.workerSrc).toMatch(/\/build\/pdf\.worker\.min\.mjs$/u);
-    expect(pdfjs.modern.GlobalWorkerOptions.workerSrc).not.toContain('legacy');
-    expect(pdfjs.legacy.GlobalWorkerOptions.workerSrc).toBe('');
-  });
-
-  it('opens the document with the legacy build and its worker when the browser lacks an API', async () => {
-    pdfjs.build.chosen = 'legacy';
-    using source = await opened();
-
-    expect(source.count).toBe(3);
-
-    expect(pdfjs.openedBy).toEqual(['legacy']);
-    expect(pdfjs.legacy.GlobalWorkerOptions.workerSrc).toMatch(
-      /\/legacy\/build\/pdf\.worker\.min\.mjs$/u,
-    );
-    expect(pdfjs.modern.GlobalWorkerOptions.workerSrc).toBe('');
-  });
+      expect(pdfjs.openedBy).toEqual([chosen]);
+      expect(pdfjs[chosen].GlobalWorkerOptions.workerSrc).toMatch(worker);
+      expect(pdfjs[other].GlobalWorkerOptions.workerSrc).toBe('');
+    },
+  );
 
   it('chooses the build once and keeps it for every later document', async () => {
     pdfjs.build.chosen = 'legacy';
