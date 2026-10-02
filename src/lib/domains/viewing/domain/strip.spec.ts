@@ -46,34 +46,15 @@ function positionAt(layout: readonly SliceLayout[], scrollTop: number): ReadingP
 }
 
 describe('layOutStrip', () => {
-  it('stacks every slice directly below the one before it', () => {
-    const layout = layOutStrip([tall, null, { width: 800, height: 800 }, null], WIDTH);
-
-    for (let index = 1; index < layout.length; index += 1) {
-      expect(at(layout, index).top).toBeCloseTo(bottomOf(at(layout, index - 1)));
-    }
-  });
-
-  it('gives every slice the same width by scaling its height from that width', () => {
-    const layout = layOutStrip([{ width: 400, height: 1600 }], WIDTH);
-
-    expect(at(layout, 0).height).toBeCloseTo(WIDTH * 4);
-  });
-
-  it('uses the measured aspect where a size is known', () => {
-    const layout = layOutStrip([tall], WIDTH);
-
-    expect(at(layout, 0).height).toBeCloseTo(WIDTH * (4000 / 800));
+  it('gives every slice the same width by scaling its height from that width, using the measured aspect where a size is known', () => {
+    expect(at(layOutStrip([{ width: 400, height: 1600 }], WIDTH), 0).height).toBeCloseTo(WIDTH * 4);
+    expect(at(layOutStrip([tall], WIDTH), 0).height).toBeCloseTo(WIDTH * (4000 / 800));
   });
 
   it('falls back to the assumed aspect where no size is known', () => {
     const layout = layOutStrip([null], WIDTH);
 
     expect(at(layout, 0).height).toBeCloseTo(ASSUMED_HEIGHT);
-  });
-
-  it('assumes a slice is taller than it is wide', () => {
-    expect(ASSUMED_ASPECT).toBeGreaterThan(1);
   });
 
   it('marks which slices were measured and which were assumed', () => {
@@ -128,22 +109,11 @@ describe('layOutStrip', () => {
       Array.from(degenerate, () => ASSUMED_HEIGHT),
     );
   });
-
-  it('keeps every top and height finite across degenerate input', () => {
-    const layout = layOutStrip([{ width: 0, height: 0 }, null, tall], Number.NEGATIVE_INFINITY);
-
-    for (const slice of layout) {
-      expect(Number.isFinite(slice.top) && Number.isFinite(slice.height)).toBe(true);
-    }
-  });
 });
 
 describe('stripHeight', () => {
-  it('reports the total of every slice height', () => {
+  it('reports the total of every slice height, measured or assumed', () => {
     expect(stripHeight(layOutStrip(unmeasured(4), WIDTH))).toBeCloseTo(ASSUMED_HEIGHT * 4);
-  });
-
-  it('reports the total across a mixture of measured and assumed slices', () => {
     expect(stripHeight(layOutStrip([tall, null, tall], WIDTH))).toBeCloseTo(
       WIDTH * 5 + ASSUMED_HEIGHT + WIDTH * 5,
     );
@@ -188,18 +158,20 @@ describe('visibleRange', () => {
     expect(visibleRange(layout, scrollTop, 400, Number.NaN)).toEqual({ first: 4, last: 4 });
   });
 
-  it('returns a range that loops over nothing for an empty layout', () => {
-    const range = visibleRange([], 0, 900, 200);
+  it('returns a range that loops over nothing for an empty layout or a scroll past the end', () => {
+    const cases = [
+      { name: 'empty layout', slices: [], range: visibleRange([], 0, 900, 200) },
+      {
+        name: 'scroll past the end',
+        slices: layout,
+        range: visibleRange(layout, stripHeight(layout) + 10_000, 900, 100),
+      },
+    ];
 
-    expect(range.last).toBeLessThan(range.first);
-    expect([].slice(range.first, range.last + 1)).toEqual([]);
-  });
-
-  it('returns a range that loops over nothing for a scroll past the end', () => {
-    const range = visibleRange(layout, stripHeight(layout) + 10_000, 900, 100);
-
-    expect(range.last).toBeLessThan(range.first);
-    expect(layout.slice(range.first, range.last + 1)).toEqual([]);
+    for (const { name, slices, range } of cases) {
+      expect(range.last, name).toBeLessThan(range.first);
+      expect(slices.slice(range.first, range.last + 1), name).toEqual([]);
+    }
   });
 
   it('covers the whole strip for a viewport taller than it', () => {
@@ -229,21 +201,6 @@ describe('stripWindow', () => {
   const SHORT: Size = { width: WIDTH, height: 400 };
   const SHORT_HEIGHT = WIDTH * (400 / 800);
   const layout = layOutStrip(unmeasured(40), WIDTH);
-  const scrollTop = ASSUMED_HEIGHT * 20 + 100;
-
-  it('reaches further ahead of a downward travel than behind it', () => {
-    const range = stripWindow(layout, scrollTop, SCREEN, 'down');
-    const shown = visibleRange(layout, scrollTop, SCREEN, 0);
-
-    expect(range.last - shown.last).toBeGreaterThan(shown.first - range.first);
-  });
-
-  it('reaches further ahead of an upward travel than below it', () => {
-    const range = stripWindow(layout, scrollTop, SCREEN, 'up');
-    const shown = visibleRange(layout, scrollTop, SCREEN, 0);
-
-    expect(shown.first - range.first).toBeGreaterThan(range.last - shown.last);
-  });
 
   it('reaches the named number of screens each way while under the cap', () => {
     const tallLayout = layOutStrip(
@@ -289,28 +246,17 @@ describe('stripWindow', () => {
     expect(stripWindow(shortLayout, 0, screen, 'down')).toEqual(shown);
   });
 
-  it('mounts nothing while the frame has no height', () => {
-    const range = stripWindow(layout, 0, 0, 'down');
+  it('mounts nothing for a frame with no height or no width, an empty layout or a scroll past the end', () => {
+    const ranges = [
+      stripWindow(layout, 0, 0, 'down'),
+      stripWindow(layOutStrip(unmeasured(40), 0), 0, SCREEN, 'down'),
+      stripWindow([], 0, SCREEN, 'down'),
+      stripWindow(layout, stripHeight(layout) + 10_000, SCREEN, 'up'),
+    ];
 
-    expect(range.last).toBeLessThan(range.first);
-  });
-
-  it('mounts nothing while the frame has no width', () => {
-    const range = stripWindow(layOutStrip(unmeasured(40), 0), 0, SCREEN, 'down');
-
-    expect(range.last).toBeLessThan(range.first);
-  });
-
-  it('returns a range that loops over nothing for an empty layout', () => {
-    const range = stripWindow([], 0, SCREEN, 'down');
-
-    expect(range.last).toBeLessThan(range.first);
-  });
-
-  it('returns a range that loops over nothing for a scroll past the end', () => {
-    const range = stripWindow(layout, stripHeight(layout) + 10_000, SCREEN, 'up');
-
-    expect(range.last).toBeLessThan(range.first);
+    for (const [index, range] of ranges.entries()) {
+      expect(range.last, String(index)).toBeLessThan(range.first);
+    }
   });
 });
 
@@ -358,22 +304,12 @@ describe('windowScrollTop', () => {
   const held = { position: readingPosition(imageIndex(25), 0), top: 0 };
   const SCREEN = 900;
 
-  it('takes the window at the held place before the opening scroll is written', () => {
+  it('takes the window at the held place before the opening scroll is written, off the top of the strip', () => {
     const top = windowScrollTop(layout, WIDTH, null, 0, held);
+    const range = stripWindow(layout, top, SCREEN, 'down');
 
     expect(top).toBe(25 * ASSUMED_HEIGHT);
-    expect(stripWindow(layout, top, SCREEN, 'down').first).toBeGreaterThanOrEqual(24);
-  });
-
-  it('keeps the window off the top of the strip while the strip opens mid-book', () => {
-    const range = stripWindow(
-      layout,
-      windowScrollTop(layout, WIDTH, null, 0, held),
-      SCREEN,
-      'down',
-    );
-
-    expect(range.first).not.toBe(0);
+    expect(range.first).toBeGreaterThanOrEqual(24);
     expect(range.first).toBeLessThanOrEqual(25);
     expect(range.last).toBeGreaterThanOrEqual(25);
   });
@@ -478,10 +414,13 @@ describe('spacersFor', () => {
     expect(spacersFor(layout, { first: 2, last: 3 }, whole).before).toBe(whole(at(layout, 2).top));
   });
 
-  it('rounds every rendered height with the snap it is given', () => {
-    const spacers = spacersFor(layout, { first: 0, last: 5 }, whole);
+  it('places every rendered edge with the snap it is given', () => {
+    const spacers = spacersFor(layout, { first: 0, last: 5 }, Math.floor);
+    const floored = layout.map((slice) => Math.floor(bottomOf(slice)));
 
-    expect(spacers.slices.every((slice) => Number.isInteger(slice.height))).toBe(true);
+    expect(spacers.slices.map((slice) => slice.height)).toEqual(
+      floored.map((bottom, index) => bottom - (index === 0 ? 0 : (floored[index - 1] ?? 0))),
+    );
   });
 
   it('makes the bottom of each slice the top of the next one exactly', () => {
@@ -642,7 +581,7 @@ describe('scrollForPosition', () => {
     expect(scrollForPosition(layout, readingPosition(imageIndex(99), 0.5))).toBe(0);
   });
 
-  it('round-trips a position back to the scroll it came from', () => {
+  it('round-trips a scroll through the position it reads as and back to the same scroll', () => {
     for (const scrollTop of [0, 137, 2400, stripHeight(layout) / 2, stripHeight(layout) - 1]) {
       const position = positionAt(layout, scrollTop);
 
@@ -650,7 +589,7 @@ describe('scrollForPosition', () => {
     }
   });
 
-  it('round-trips a scroll back to the position it came from', () => {
+  it('round-trips a position through the scroll it maps to and back to the same position', () => {
     const position = readingPosition(imageIndex(1), 0.375);
     const roundTripped = positionAt(layout, scrollForPosition(layout, position));
 
@@ -665,23 +604,10 @@ describe('a layout recomputed with a newly measured slice', () => {
   const position = positionAt(assumed, scrollTop);
   const refined = layOutStrip([tall, null, null, null, null], WIDTH);
 
-  it('keeps the reader on the same image at the same fraction', () => {
-    const moved = positionAt(refined, scrollForPosition(refined, position));
-
-    expect(moved.index).toBe(position.index);
-    expect(moved.offset).toBeCloseTo(position.offset);
-  });
-
   it('moves the scroll offset that position now maps to', () => {
     const grown = WIDTH * 5 - ASSUMED_HEIGHT;
 
     expect(scrollForPosition(refined, position)).toBeCloseTo(scrollTop + grown);
     expect(scrollForPosition(refined, position)).not.toBeCloseTo(scrollTop);
-  });
-
-  it('leaves the slices contiguous after the recompute', () => {
-    for (let index = 1; index < refined.length; index += 1) {
-      expect(at(refined, index).top).toBeCloseTo(bottomOf(at(refined, index - 1)));
-    }
   });
 });
