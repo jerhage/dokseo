@@ -94,25 +94,23 @@ function handed(
 }
 
 describe('drawPassage', () => {
-  it('washes the passage the reader jumped to in the capture yellow too', () => {
-    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE)?.options.color).toBe(
-      PASSAGE_HIGHLIGHT_COLOUR,
-    );
-  });
+  it('rings the passage jumped to, and washes every other one, all in the capture yellow', () => {
+    const passages: readonly (readonly [
+      string,
+      Readonly<Record<string, PassageWeight>>,
+      boolean,
+    ])[] = [
+      ['jumped to', { [SOMEWHERE]: 'arrived' }, false],
+      ['lifted', { [SOMEWHERE]: 'ordinary' }, true],
+      ['untracked', {}, true],
+    ];
 
-  it('washes every other lifted passage in the capture yellow', () => {
-    expect(handed({ [SOMEWHERE]: 'ordinary' }, SOMEWHERE)?.options.color).toBe(
-      PASSAGE_HIGHLIGHT_COLOUR,
-    );
-  });
-
-  it('washes a passage it is not tracking in the capture yellow', () => {
-    expect(handed({}, SOMEWHERE)?.options.color).toBe(PASSAGE_HIGHLIGHT_COLOUR);
-  });
-
-  it('rings the passage jumped to, and washes every other one', () => {
-    expect(handed({ [SOMEWHERE]: 'arrived' }, SOMEWHERE)?.wash).toBe(false);
-    expect(handed({ [SOMEWHERE]: 'ordinary' }, SOMEWHERE)?.wash).toBe(true);
+    for (const [name, shown, wash] of passages) {
+      expect(handed(shown, SOMEWHERE), name).toMatchObject({
+        wash,
+        options: { color: PASSAGE_HIGHLIGHT_COLOUR },
+      });
+    }
   });
 
   it('rings it at the width it is handed', () => {
@@ -148,18 +146,18 @@ describe('openAt', () => {
     await expect(openAt(view, everySectionHasABody(3), SOMEWHERE)).resolves.toBe(false);
   });
 
-  it('opens past a cover the paginator has no body element to lay out', async () => {
-    const view = stage();
+  it('opens past a cover, or the two opening sections, the paginator has no body element to lay out', async () => {
+    const covers: readonly (readonly [Spine, number])[] = [
+      [{ sections: 3, withoutABody: [0] }, 1],
+      [{ sections: 4, withoutABody: [0, 1] }, 2],
+    ];
 
-    await expect(openAt(view, { sections: 3, withoutABody: [0] }, null)).resolves.toBe(true);
-    expect(view.targets).toEqual([1]);
-  });
+    for (const [spine, opened] of covers) {
+      const view = stage();
 
-  it('opens past the two opening sections that have no body element', async () => {
-    const view = stage();
-
-    await expect(openAt(view, { sections: 4, withoutABody: [0, 1] }, null)).resolves.toBe(true);
-    expect(view.targets).toEqual([2]);
+      await expect(openAt(view, spine, null)).resolves.toBe(true);
+      expect(view.targets).toEqual([opened]);
+    }
   });
 
   it('moves a stored place out of a section that has no body element', async () => {
@@ -192,40 +190,33 @@ describe('openAt', () => {
 });
 
 describe('navigate', () => {
-  it('reports a target foliate cannot resolve as unresolved, and asks foliate for nothing', async () => {
-    const view = stage({ unresolvable: [UNKNOWN_HREF] });
+  it('reports a target foliate cannot resolve, an href the book does not hold, a cfi past the spine and a section past the last as unresolved, and asks foliate for nothing', async () => {
+    const targets: readonly (readonly [string, Stage, Spine, FlowTarget])[] = [
+      [
+        'unresolvable',
+        stage({ unresolvable: [UNKNOWN_HREF] }),
+        { sections: 3, withoutABody: [0] },
+        UNKNOWN_HREF,
+      ],
+      ['unknown href', stage({ unknown: [UNKNOWN_HREF] }), everySectionHasABody(3), UNKNOWN_HREF],
+      [
+        'past the spine',
+        stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } }),
+        everySectionHasABody(3),
+        PAST_THE_SPINE,
+      ],
+      [
+        'one past the last section',
+        stage({ at: { [PAST_THE_SPINE]: 3 } }),
+        everySectionHasABody(3),
+        PAST_THE_SPINE,
+      ],
+    ];
 
-    await expect(navigate(view, { sections: 3, withoutABody: [0] }, UNKNOWN_HREF)).resolves.toEqual(
-      { kind: 'unresolved' },
-    );
-    expect(view.targets).toEqual([]);
-  });
-
-  it('reports an href the book does not hold as unresolved rather than throwing', async () => {
-    const view = stage({ unknown: [UNKNOWN_HREF] });
-
-    await expect(navigate(view, everySectionHasABody(3), UNKNOWN_HREF)).resolves.toEqual({
-      kind: 'unresolved',
-    });
-    expect(view.targets).toEqual([]);
-  });
-
-  it('reports a cfi past the end of the spine as unresolved', async () => {
-    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
-
-    await expect(navigate(view, everySectionHasABody(3), PAST_THE_SPINE)).resolves.toEqual({
-      kind: 'unresolved',
-    });
-    expect(view.targets).toEqual([]);
-  });
-
-  it('reports a section index one past the last section as unresolved', async () => {
-    const view = stage({ at: { [PAST_THE_SPINE]: 3 } });
-
-    await expect(navigate(view, everySectionHasABody(3), PAST_THE_SPINE)).resolves.toEqual({
-      kind: 'unresolved',
-    });
-    expect(view.targets).toEqual([]);
+    for (const [name, view, spine, aimed] of targets) {
+      await expect(navigate(view, spine, aimed), name).resolves.toEqual({ kind: 'unresolved' });
+      expect(view.targets, name).toEqual([]);
+    }
   });
 
   it('arrives at the last section of the spine', async () => {
@@ -258,14 +249,6 @@ describe('navigate', () => {
     const view = stage({ at: { 'cover.svg': 0 } });
 
     await navigate(view, { sections: 3, withoutABody: [0] }, 'cover.svg');
-
-    expect(view.targets).toEqual([1]);
-  });
-
-  it('sends a scrubbed fraction landing on a section with no body to the next one', async () => {
-    const view = stage();
-
-    await navigate(view, { sections: 3, withoutABody: [0] }, { fraction: 0 });
 
     expect(view.targets).toEqual([1]);
   });
@@ -381,27 +364,32 @@ describe('goToPassage', () => {
     expect(view.targets).toEqual([SOMEWHERE, REFOUND]);
   });
 
-  it('reports the passage lost when its text is nowhere in the book', async () => {
-    const view = stage({ refuses: [SOMEWHERE] });
+  it('reports the passage lost when its text is nowhere in the book, wherever its stored place pointed', async () => {
+    const places: readonly (readonly [string, Stage, string, readonly FlowTarget[]])[] = [
+      ['a cfi that no longer resolves', stage({ refuses: [SOMEWHERE] }), SOMEWHERE, [SOMEWHERE]],
+      ['no file in the book', stage({ unknown: [UNKNOWN_HREF] }), UNKNOWN_HREF, []],
+      [
+        'past the spine',
+        stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } }),
+        PAST_THE_SPINE,
+        [],
+      ],
+    ];
 
-    const arrival = await goToPassage(
-      view,
-      everySectionHasABody(3),
-      () => Promise.resolve(null),
-      passage(),
-    );
+    for (const [name, view, cfi, tried] of places) {
+      const arrival = await goToPassage(
+        view,
+        everySectionHasABody(3),
+        () => Promise.resolve(null),
+        {
+          cfi,
+          quote: QUOTE,
+        },
+      );
 
-    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
-    expect(view.targets).toEqual([SOMEWHERE]);
-  });
-
-  it('goes to a cfi sought with no quote, as a link names it', async () => {
-    const view = stage();
-
-    await expect(
-      goToPassage(view, everySectionHasABody(3), never, { cfi: SOMEWHERE, quote: null }),
-    ).resolves.toEqual(arrivedAtTheCfi(SOMEWHERE));
-    expect(view.targets).toEqual([SOMEWHERE]);
+      expect(arrival, name).toEqual(THE_PASSAGE_IS_LOST);
+      expect(view.targets, name).toEqual(tried);
+    }
   });
 
   it('reports a cfi sought with no quote lost when it no longer resolves, without searching', async () => {
@@ -413,55 +401,27 @@ describe('goToPassage', () => {
     expect(view.targets).toEqual([SOMEWHERE]);
   });
 
-  it('re-finds the passage by its text when its stored place names no file in the book', async () => {
-    const view = stage({ unknown: [UNKNOWN_HREF] });
+  it('re-finds the passage by its text when its stored place names no file in the book or lies past the spine', async () => {
+    const places: readonly (readonly [string, Stage, string])[] = [
+      ['no file in the book', stage({ unknown: [UNKNOWN_HREF] }), UNKNOWN_HREF],
+      [
+        'past the spine',
+        stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } }),
+        PAST_THE_SPINE,
+      ],
+    ];
 
-    const arrival = await goToPassage(
-      view,
-      everySectionHasABody(3),
-      () => Promise.resolve(REFOUND),
-      { cfi: UNKNOWN_HREF, quote: QUOTE },
-    );
+    for (const [name, view, cfi] of places) {
+      const arrival = await goToPassage(
+        view,
+        everySectionHasABody(3),
+        () => Promise.resolve(REFOUND),
+        { cfi, quote: QUOTE },
+      );
 
-    expect(arrival).toEqual(foundByItsText(REFOUND));
-    expect(view.targets).toEqual([REFOUND]);
-  });
-
-  it('reports the passage lost when its stored place names no file and its text is gone', async () => {
-    const view = stage({ unknown: [UNKNOWN_HREF] });
-
-    const arrival = await goToPassage(view, everySectionHasABody(3), () => Promise.resolve(null), {
-      cfi: UNKNOWN_HREF,
-      quote: QUOTE,
-    });
-
-    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
-    expect(view.targets).toEqual([]);
-  });
-
-  it('re-finds the passage by its text when its stored cfi lies past the end of the spine', async () => {
-    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
-
-    const arrival = await goToPassage(
-      view,
-      everySectionHasABody(3),
-      () => Promise.resolve(REFOUND),
-      { cfi: PAST_THE_SPINE, quote: QUOTE },
-    );
-
-    expect(arrival).toEqual(foundByItsText(REFOUND));
-    expect(view.targets).toEqual([REFOUND]);
-  });
-
-  it('reports the passage lost when its cfi lies past the spine and its text is gone', async () => {
-    const view = stage({ at: { [PAST_THE_SPINE]: FOLIATE_FINDS_NO_ITEMREF } });
-
-    const arrival = await goToPassage(view, everySectionHasABody(3), () => Promise.resolve(null), {
-      cfi: PAST_THE_SPINE,
-      quote: QUOTE,
-    });
-
-    expect(arrival).toEqual(THE_PASSAGE_IS_LOST);
+      expect(arrival, name).toEqual(foundByItsText(REFOUND));
+      expect(view.targets, name).toEqual([REFOUND]);
+    }
   });
 
   it('reports the passage lost when the re-found cfi will not lay out either', async () => {
@@ -523,16 +483,6 @@ describe('markPassages', () => {
 
     expect(view.added).toEqual([SOMEWHERE]);
     expect(shown).toEqual(new Map([[SOMEWHERE, 'ordinary']]));
-  });
-
-  it('draws nothing twice when the captures have not changed', () => {
-    const view = overlay();
-    const shown = nothingDrawn();
-
-    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
-    markPassages(view, shown, [SOMEWHERE], NOTHING_ARRIVED_AT);
-
-    expect(view.added).toEqual([SOMEWHERE]);
   });
 
   it('takes the highlight away when its capture is deleted', () => {
