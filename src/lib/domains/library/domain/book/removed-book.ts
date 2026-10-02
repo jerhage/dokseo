@@ -1,4 +1,4 @@
-import { isText } from '$lib/shared/corrupt-row';
+import { isNumber, isText } from '$lib/shared/corrupt-row';
 import { parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
@@ -16,6 +16,7 @@ type RemovedBook = {
   readonly fileName: string;
   readonly language: Language;
   readonly direction: ReadingDirection;
+  readonly addedAt: number | null;
 };
 
 type RemovedShelf =
@@ -38,6 +39,7 @@ type RetiredRow = {
   readonly language?: unknown;
   readonly direction?: unknown;
   readonly layoutKind?: unknown;
+  readonly addedAt?: unknown;
 };
 
 const UNTITLED_BOOK = 'Untitled book';
@@ -72,6 +74,7 @@ function removedBookFrom(row: RetiredRow): RemovedBook | null {
     fileName: textOf(row.fileName),
     language: isLanguage(row.language) ? row.language : FALLBACK_LANGUAGE,
     direction: directionOf(row),
+    addedAt: isNumber(row.addedAt) ? row.addedAt : null,
   };
 }
 

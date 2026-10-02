@@ -28,6 +28,14 @@ type RemovedListing =
   | { readonly kind: 'success'; readonly removed: readonly RemovedBook[] }
   | StorageUnavailable;
 
+type RestorableListing =
+  | {
+      readonly kind: 'success';
+      readonly removed: readonly RemovedBook[];
+      readonly unreadable: readonly RemovedBook[];
+    }
+  | StorageUnavailable;
+
 type ByteCount = { readonly kind: 'success'; readonly bytes: number } | StorageUnavailable;
 
 interface LibraryRepository {
@@ -44,7 +52,7 @@ interface LibraryRepository {
   savePageList(id: BookId, names: readonly string[]): Promise<LibraryWrite>;
   remove(id: BookId): Promise<LibraryWrite>;
   listRemoved(): Promise<RemovedListing>;
-  listRestorable(): Promise<RemovedListing>;
+  listRestorable(): Promise<RestorableListing>;
   forgetRemoved(id: BookId): Promise<LibraryWrite>;
   update(id: BookId, edit: BookEdit): Promise<BookLookup>;
   readSource(id: BookId): Promise<FileLookup>;
@@ -61,4 +69,5 @@ export type {
   LibraryWrite,
   PageListLookup,
   RemovedListing,
+  RestorableListing,
 };

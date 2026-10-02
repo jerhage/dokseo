@@ -24,6 +24,7 @@ const REMOVED: RemovedBook = {
   fileName: 'yotsuba-1.epub',
   language: 'ja',
   direction: 'rtl',
+  addedAt: null,
 };
 
 describe('removedBookName', () => {

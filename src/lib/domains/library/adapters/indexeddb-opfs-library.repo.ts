@@ -22,6 +22,7 @@ import type {
   LibraryWrite,
   PageListLookup,
   RemovedListing,
+  RestorableListing,
 } from '../domain/book/library-repository';
 import { pageListFromStored } from '../domain/book/page-list';
 import type { PageOrder, StoredPageList } from '../domain/book/page-list';
@@ -194,14 +195,18 @@ function createLibraryRepository(): LibraryRepository {
       return { kind: 'success', removed: removedBooksFrom(rows) };
     },
 
-    async listRestorable(): Promise<RemovedListing> {
+    async listRestorable(): Promise<RestorableListing> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       const db = await database();
       const removed = await listRecords<RetiredRow>(db, REMOVED_BOOK_STORE);
       const rows = await listRecords<StoredBook>(db, BOOK_STORE);
       const unreadable = new Set<unknown>(booksFromStored(rows).unreadable.map((book) => book.id));
       const broken = rows.filter((row) => unreadable.has(row.id));
-      return { kind: 'success', removed: removedBooksFrom([...removed, ...broken]) };
+      return {
+        kind: 'success',
+        removed: removedBooksFrom(removed),
+        unreadable: removedBooksFrom(broken),
+      };
     },
 
     async forgetRemoved(id: BookId): Promise<LibraryWrite> {

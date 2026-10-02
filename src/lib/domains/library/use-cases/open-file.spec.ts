@@ -114,6 +114,7 @@ function fakeRepository(
   writes: readonly (readonly [number, number])[] = [],
   held: BookListing = listing([]),
   restorable: readonly RemovedBook[] = [],
+  unreadable: readonly RemovedBook[] = [],
 ) {
   const added: AddCall[] = [];
   const repository: LibraryRepository = {
@@ -132,7 +133,7 @@ function fakeRepository(
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [] }),
-    listRestorable: () => Promise.resolve({ kind: 'success', removed: restorable }),
+    listRestorable: () => Promise.resolve({ kind: 'success', removed: restorable, unreadable }),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
   };
   return { repository, added };
@@ -254,6 +255,7 @@ function removedRecord(overrides: Partial<RemovedBook> = {}): RemovedBook {
     fileName: 'other.cbz',
     language: 'ja',
     direction: 'rtl',
+    addedAt: null,
     ...overrides,
   };
 }
@@ -605,9 +607,48 @@ describe('openFile', () => {
     expect(openedBook(result).id).toBe('gone-1');
   });
 
-  it('adds a new book beside a record with another partial MD5 digest and the same file name', async () => {
+  it('restores by file name a record with another partial MD5 digest and the same file name', async () => {
     const repository = fakeRepository(WRITTEN, [], listing([]), [
-      removedRecord({ contentHash: OTHER_DIGEST, fileName: 'Yotsuba&! 1.cbz' }),
+      removedRecord({ contentHash: OTHER_DIGEST, fileName: 'Yotsuba&! 1.cbz', title: 'Other' }),
+    ]);
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result).id).toBe('gone-1');
+  });
+
+  it('repairs under its old id an unreadable row with a SHA-256 hash and no file name whose title matches', async () => {
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([]),
+      [],
+      [
+        removedRecord({
+          id: bookId('a816bb74-old'),
+          title: 'キノの旅 the Beautiful World',
+          contentHash: 'a'.repeat(64),
+          fileName: '',
+        }),
+      ],
+    );
+    const builder = fakeBuilder(
+      built(builtSource({ sourceKind: 'epub', suggestedTitle: 'キノの旅 the Beautiful World' })),
+    );
+
+    const result = await openFile(
+      deps({ repository: repository.repository, builder: builder.builder }),
+      files,
+    );
+
+    expect(result.kind).toBe('restored');
+    expect(at(repository.added, 0).book.id).toBe('a816bb74-old');
+  });
+
+  it('adds a new book when no record shares its hash, file name or title', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: OTHER_DIGEST, fileName: 'other.cbz', title: 'Other' }),
     ]);
 
     const result = await openFile(deps({ repository: repository.repository }), files);

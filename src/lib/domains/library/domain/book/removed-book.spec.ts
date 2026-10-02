@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { removedBookFrom, removedBooksFrom } from './removed-book';
 
 describe('removedBookFrom', () => {
-  it('reads the title, alias, hash, file name, language and direction a row holds', () => {
+  it('reads the title, alias, hash, file name, language, direction and added time a row holds', () => {
     expect(
       removedBookFrom({
         id: 'book-1',
@@ -12,6 +12,7 @@ describe('removedBookFrom', () => {
         fileName: 'Yotsuba&! 1.cbz',
         language: 'ko',
         direction: 'ltr',
+        addedAt: 5,
       }),
     ).toEqual({
       id: 'book-1',
@@ -21,6 +22,7 @@ describe('removedBookFrom', () => {
       fileName: 'Yotsuba&! 1.cbz',
       language: 'ko',
       direction: 'ltr',
+      addedAt: 5,
     });
   });
 
@@ -33,6 +35,7 @@ describe('removedBookFrom', () => {
       fileName: '',
       language: 'ja',
       direction: 'rtl',
+      addedAt: null,
     });
   });
 

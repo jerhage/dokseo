@@ -13,6 +13,7 @@ const GONE = vi.hoisted(() => ({
   fileName: 'gone.epub',
   language: 'ja' as const,
   direction: 'rtl' as const,
+  addedAt: null,
 }));
 
 const held = vi.hoisted(() => ({

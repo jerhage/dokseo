@@ -23,6 +23,7 @@ function removedBook(id: string): RemovedBook {
     fileName: `${id}.cbz`,
     language: 'ja',
     direction: 'rtl',
+    addedAt: null,
   };
 }
 

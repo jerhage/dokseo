@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from './book';
-import { DEFAULT_BOOK_MATCHING, joinUpload } from './book-matching';
-import type { UploadIdentity } from './book-matching';
+import { DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch } from './book-matching';
+import type { RestorableIdentity, RestorableUpload, UploadIdentity } from './book-matching';
 
 const PARTIAL = 'd41d8cd98f00b204e9800998ecf8427e';
 
@@ -78,5 +78,86 @@ describe('joinUpload', () => {
     expect(joinUpload([book('a', 'f'.repeat(32), 'other.cbz')], upload(), 'file-name')).toEqual({
       kind: 'new',
     });
+  });
+});
+
+function candidate(over: Partial<RestorableIdentity> = {}): RestorableIdentity {
+  return {
+    id: bookId('old'),
+    title: 'キノの旅 the Beautiful World',
+    contentHash: 'a'.repeat(64),
+    fileName: '',
+    addedAt: null,
+    ...over,
+  };
+}
+
+function restoring(over: Partial<RestorableUpload> = {}): RestorableUpload {
+  return {
+    contentHash: contentHash(PARTIAL),
+    fileName: 'kino.epub',
+    title: 'キノの旅 the Beautiful World',
+    ...over,
+  };
+}
+
+describe('restorableMatch', () => {
+  it('matches by title an unreadable row with a SHA-256 hash and no file name', () => {
+    const old = candidate();
+
+    expect(restorableMatch({ removed: [], unreadable: [old] }, restoring())).toBe(old);
+  });
+
+  it('prefers a file name match over a title match', () => {
+    const titled = candidate({ id: bookId('titled') });
+    const named = candidate({ id: bookId('named'), title: 'Other', fileName: 'kino.epub' });
+
+    expect(restorableMatch({ removed: [titled, named], unreadable: [] }, restoring())).toBe(named);
+  });
+
+  it('prefers a content match over a file name match', () => {
+    const named = candidate({ id: bookId('named'), fileName: 'kino.epub' });
+    const same = candidate({ id: bookId('same'), title: 'Other', contentHash: PARTIAL });
+
+    expect(restorableMatch({ removed: [named, same], unreadable: [] }, restoring())).toBe(same);
+  });
+
+  it('matches no empty title and no placeholder title', () => {
+    const untitled = candidate({ title: 'Untitled book' });
+    const empty = candidate({ title: '' });
+
+    expect(
+      restorableMatch(
+        { removed: [untitled], unreadable: [] },
+        restoring({ title: 'Untitled book' }),
+      ),
+    ).toBeNull();
+    expect(
+      restorableMatch({ removed: [empty], unreadable: [] }, restoring({ title: '  ' })),
+    ).toBeNull();
+  });
+
+  it('matches titles that differ only in Unicode composition and surrounding spaces', () => {
+    const old = candidate({ title: 'ガ'.normalize('NFD') });
+
+    expect(restorableMatch({ removed: [old], unreadable: [] }, restoring({ title: ' ガ ' }))).toBe(
+      old,
+    );
+  });
+
+  it('prefers an unreadable row over a removed record at the same step', () => {
+    const removed = candidate({ id: bookId('removed'), addedAt: 9 });
+    const unreadable = candidate({ id: bookId('unreadable'), addedAt: 1 });
+
+    expect(restorableMatch({ removed: [removed], unreadable: [unreadable] }, restoring())).toBe(
+      unreadable,
+    );
+  });
+
+  it('prefers the most recently added candidate within a kind', () => {
+    const older = candidate({ id: bookId('older'), addedAt: 1 });
+    const newer = candidate({ id: bookId('newer'), addedAt: 2 });
+
+    expect(restorableMatch({ removed: [older, newer], unreadable: [] }, restoring())).toBe(newer);
   });
 });

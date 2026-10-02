@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { BookId, ContentHash } from '$lib/shared/ids';
 import type { Book } from './book';
+import { UNTITLED_BOOK } from './removed-book';
 
 type BookMatching = 'content' | 'file-name';
 
@@ -22,33 +23,56 @@ const NEW_BOOK: UploadJoin = { kind: 'new' };
 
 type RestorableIdentity = {
   readonly id: BookId;
+  readonly title: string;
   readonly contentHash: string;
   readonly fileName: string;
+  readonly addedAt: number | null;
 };
 
-const PARTIAL_MD5_DIGEST = /^[0-9a-f]{32}$/;
+type RestorableUpload = UploadIdentity & { readonly title: string };
 
-function isPartialMd5Digest(hash: string): boolean {
-  return PARTIAL_MD5_DIGEST.test(hash);
+type RestorableCandidates<T extends RestorableIdentity> = {
+  readonly removed: readonly T[];
+  readonly unreadable: readonly T[];
+};
+
+type RestoreStep = 'content' | 'file-name' | 'title';
+
+const RESTORE_STEPS: readonly RestoreStep[] = ['content', 'file-name', 'title'];
+
+function matchableTitle(title: string): string | null {
+  const normalised = title.normalize('NFC').trim();
+  if (normalised.length === 0 || normalised === UNTITLED_BOOK) return null;
+  return normalised;
 }
 
-function joinsByName(
-  candidate: RestorableIdentity,
-  fileName: string,
-  matching: BookMatching,
-): boolean {
-  if (fileName.length === 0 || candidate.fileName !== fileName) return false;
-  return matching === 'file-name' || !isPartialMd5Digest(candidate.contentHash);
+function sameTitle(candidate: string, upload: string): boolean {
+  const title = matchableTitle(upload);
+  return title !== null && matchableTitle(candidate) === title;
+}
+
+function matchesAt(step: RestoreStep, candidate: RestorableIdentity, upload: RestorableUpload) {
+  return match(step)
+    .with('content', () => candidate.contentHash === upload.contentHash)
+    .with('file-name', () => upload.fileName.length > 0 && candidate.fileName === upload.fileName)
+    .with('title', () => sameTitle(candidate.title, upload.title))
+    .exhaustive();
+}
+
+function newestFirst<T extends RestorableIdentity>(candidates: readonly T[]): readonly T[] {
+  return candidates.toSorted((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
 }
 
 function restorableMatch<T extends RestorableIdentity>(
-  candidates: readonly T[],
-  upload: UploadIdentity,
-  matching: BookMatching,
+  candidates: RestorableCandidates<T>,
+  upload: RestorableUpload,
 ): T | null {
-  const same = candidates.find((candidate) => candidate.contentHash === upload.contentHash);
-  if (same !== undefined) return same;
-  return candidates.find((candidate) => joinsByName(candidate, upload.fileName, matching)) ?? null;
+  const ranked = [...newestFirst(candidates.unreadable), ...newestFirst(candidates.removed)];
+  for (const step of RESTORE_STEPS) {
+    const found = ranked.find((candidate) => matchesAt(step, candidate, upload));
+    if (found !== undefined) return found;
+  }
+  return null;
 }
 
 function byName(held: readonly Book[], fileName: string): UploadJoin {
@@ -71,5 +95,12 @@ function joinUpload(
     .exhaustive();
 }
 
-export { BOOK_MATCHINGS, DEFAULT_BOOK_MATCHING, isPartialMd5Digest, joinUpload, restorableMatch };
-export type { BookMatching, RestorableIdentity, UploadIdentity, UploadJoin };
+export { BOOK_MATCHINGS, DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch };
+export type {
+  BookMatching,
+  RestorableCandidates,
+  RestorableIdentity,
+  RestorableUpload,
+  UploadIdentity,
+  UploadJoin,
+};

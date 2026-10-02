@@ -135,6 +135,7 @@ describe('createLibraryRepository', () => {
           fileName: 'Yotsuba&! 1.cbz',
           language: 'ja',
           direction: 'rtl',
+          addedAt: 1758240000000,
         },
       ],
     });
@@ -180,6 +181,7 @@ describe('createLibraryRepository', () => {
           fileName: 'Yotsuba&! 2.cbz',
           language: 'ja',
           direction: 'rtl',
+          addedAt: 1758240000001,
         },
       ],
     });
@@ -194,6 +196,8 @@ describe('createLibraryRepository', () => {
 
     expect(restorable.kind === 'success' && restorable.removed.map((book) => book.id)).toEqual([
       'gone-1',
+    ]);
+    expect(restorable.kind === 'success' && restorable.unreadable.map((book) => book.id)).toEqual([
       'old-1',
     ]);
   });

@@ -198,7 +198,6 @@ async function openFile(
 
   const restorable = await deps.repository.listRestorable();
   if (restorable.kind !== 'success') return restorable;
-  const restoring = restorableMatch(restorable.removed, identity, matching);
 
   const inspection = await inspectUpload(deps, files);
   if (inspection.kind === 'refused') return { kind: 'epub', failure: inspection.refusal };
@@ -214,6 +213,7 @@ async function openFile(
   const layoutKind = content.layoutKind;
 
   const title = built.suggestedTitle;
+  const restoring = restorableMatch(restorable, { ...identity, title });
 
   const book: Book = {
     id: restoring?.id ?? bookId(deps.newId()),
