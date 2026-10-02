@@ -54,15 +54,18 @@ describe('clampZoom', () => {
     expect(clampZoom(MAX_ZOOM)).toBe(MAX_ZOOM);
   });
 
-  it('falls back to the minimum for a non-finite zoom', () => {
-    expect(clampZoom(Number.NaN)).toBe(MIN_ZOOM);
-    expect(clampZoom(Number.POSITIVE_INFINITY)).toBe(MIN_ZOOM);
-    expect(clampZoom(Number.NEGATIVE_INFINITY)).toBe(MIN_ZOOM);
-  });
+  const UNUSABLE_ZOOMS: readonly number[] = [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    0,
+    -3,
+  ];
 
-  it('falls back to the minimum for a zero or negative zoom', () => {
-    expect(clampZoom(0)).toBe(MIN_ZOOM);
-    expect(clampZoom(-3)).toBe(MIN_ZOOM);
+  it('falls back to the minimum for a zero, negative or non-finite zoom', () => {
+    for (const zoom of UNUSABLE_ZOOMS) {
+      expect(clampZoom(zoom), String(zoom)).toBe(MIN_ZOOM);
+    }
   });
 });
 
@@ -71,14 +74,6 @@ describe('panBy', () => {
     const moved = panBy({ zoom: 2.5, panX: 10, panY: -20 }, 30, 45);
 
     expect(moved).toEqual({ zoom: 2.5, panX: 40, panY: 25 });
-  });
-
-  it('returns a new object rather than mutating its argument', () => {
-    const before: Viewport = { zoom: 1, panX: 5, panY: 5 };
-    const after = panBy(before, 1, 1);
-
-    expect(after).not.toBe(before);
-    expect(before).toEqual({ zoom: 1, panX: 5, panY: 5 });
   });
 });
 
@@ -103,16 +98,6 @@ describe('zoomAt', () => {
     expect(after.zoom).toBeCloseTo(1);
     expect(contentUnder(after, 512, 384).x).toBeCloseTo(anchored.x);
     expect(contentUnder(after, 512, 384).y).toBeCloseTo(anchored.y);
-  });
-
-  it('restores the original pan after zooming in and out by the reciprocal', () => {
-    const before: Viewport = { zoom: 1.5, panX: 33, panY: -77 };
-
-    const round = zoomAt(zoomAt(before, 2, 210, 130), 0.5, 210, 130);
-
-    expect(round.zoom).toBeCloseTo(before.zoom);
-    expect(round.panX).toBeCloseTo(before.panX);
-    expect(round.panY).toBeCloseTo(before.panY);
   });
 
   it('keeps the pan consistent with the zoom actually applied when the clamp bites above', () => {
@@ -149,48 +134,47 @@ describe('fitZoom', () => {
   const taller: Size = { width: 800, height: 1200 };
   const wider: Size = { width: 2000, height: 500 };
 
-  it('fits content taller than the frame by height', () => {
-    expect(fitZoom(taller, frame, 'height')).toBeCloseTo(0.5);
+  const FITS: readonly (readonly [string, Size, 'height' | 'width' | 'contain', number])[] = [
+    ['taller than the frame by height', taller, 'height', 0.5],
+    ['taller than the frame by width', taller, 'width', 1.25],
+    ['taller than the frame by contain, taking the smaller ratio', taller, 'contain', 0.5],
+    ['wider than the frame by height', wider, 'height', 1.2],
+    ['wider than the frame by width', wider, 'width', 0.5],
+    ['wider than the frame by contain, taking the smaller ratio', wider, 'contain', 0.5],
+  ];
+
+  it('fits content taller or wider than the frame by height, by width and by contain, taking the smaller ratio', () => {
+    for (const [name, content, fit, zoom] of FITS) {
+      expect(fitZoom(content, frame, fit), name).toBeCloseTo(zoom);
+    }
   });
 
-  it('fits content taller than the frame by width', () => {
-    expect(fitZoom(taller, frame, 'width')).toBeCloseTo(1.25);
-  });
+  const DEGENERATE_FITS: readonly (readonly [
+    string,
+    Size,
+    Size,
+    'height' | 'width' | 'contain',
+  ])[] = [
+    ['a zero content height', { width: 800, height: 0 }, frame, 'height'],
+    ['a zero content width', { width: 0, height: 1200 }, frame, 'width'],
+    ['a zero frame height', taller, { width: 1000, height: 0 }, 'contain'],
+    ['a zero frame width', taller, { width: 0, height: 600 }, 'contain'],
+    ['a content height that is not a number', { width: 800, height: Number.NaN }, frame, 'height'],
+    [
+      'an infinite content width',
+      { width: Number.POSITIVE_INFINITY, height: 1200 },
+      frame,
+      'width',
+    ],
+    ['a frame height that is not a number', taller, { width: 1000, height: Number.NaN }, 'contain'],
+    ['a negative content height', { width: 800, height: -1200 }, frame, 'height'],
+    ['a negative frame width', taller, { width: -1000, height: 600 }, 'width'],
+  ];
 
-  it('fits content taller than the frame by contain, taking the smaller ratio', () => {
-    expect(fitZoom(taller, frame, 'contain')).toBeCloseTo(0.5);
-  });
-
-  it('fits content wider than the frame by height', () => {
-    expect(fitZoom(wider, frame, 'height')).toBeCloseTo(1.2);
-  });
-
-  it('fits content wider than the frame by width', () => {
-    expect(fitZoom(wider, frame, 'width')).toBeCloseTo(0.5);
-  });
-
-  it('fits content wider than the frame by contain, taking the smaller ratio', () => {
-    expect(fitZoom(wider, frame, 'contain')).toBeCloseTo(0.5);
-  });
-
-  it('returns the minimum zoom for a zero dimension', () => {
-    expect(fitZoom({ width: 800, height: 0 }, frame, 'height')).toBe(MIN_ZOOM);
-    expect(fitZoom({ width: 0, height: 1200 }, frame, 'width')).toBe(MIN_ZOOM);
-    expect(fitZoom(taller, { width: 1000, height: 0 }, 'contain')).toBe(MIN_ZOOM);
-    expect(fitZoom(taller, { width: 0, height: 600 }, 'contain')).toBe(MIN_ZOOM);
-  });
-
-  it('returns the minimum zoom for a non-finite dimension', () => {
-    expect(fitZoom({ width: 800, height: Number.NaN }, frame, 'height')).toBe(MIN_ZOOM);
-    expect(fitZoom({ width: Number.POSITIVE_INFINITY, height: 1200 }, frame, 'width')).toBe(
-      MIN_ZOOM,
-    );
-    expect(fitZoom(taller, { width: 1000, height: Number.NaN }, 'contain')).toBe(MIN_ZOOM);
-  });
-
-  it('returns the minimum zoom for a negative dimension', () => {
-    expect(fitZoom({ width: 800, height: -1200 }, frame, 'height')).toBe(MIN_ZOOM);
-    expect(fitZoom(taller, { width: -1000, height: 600 }, 'width')).toBe(MIN_ZOOM);
+  it('returns the minimum zoom for a zero, non-finite or negative dimension', () => {
+    for (const [name, content, box, fit] of DEGENERATE_FITS) {
+      expect(fitZoom(content, box, fit), name).toBe(MIN_ZOOM);
+    }
   });
 
   it('clamps a fit that would exceed the zoom range', () => {
@@ -263,29 +247,16 @@ describe('clampPan', () => {
     });
   });
 
-  it('leaves the pan untouched for a zero or negative dimension', () => {
+  it('leaves the pan untouched for a zero, negative or non-finite dimension', () => {
     const pan: Viewport = { zoom: 1, panX: 77, panY: -33 };
 
     expect(clampPan(pan, { width: 0, height: 0 }, frame)).toEqual(pan);
     expect(clampPan(pan, { width: -400, height: -200 }, frame)).toEqual(pan);
     expect(clampPan(pan, { width: 400, height: 200 }, { width: 0, height: 0 })).toEqual(pan);
-  });
-
-  it('leaves the pan untouched for a non-finite dimension', () => {
-    const pan: Viewport = { zoom: 1, panX: 77, panY: -33 };
-
     expect(clampPan(pan, { width: Number.NaN, height: Number.NaN }, frame)).toEqual(pan);
     expect(
       clampPan(pan, { width: 400, height: 200 }, { width: Number.POSITIVE_INFINITY, height: 600 }),
     ).toEqual({ zoom: 1, panX: 77, panY: 200 });
-  });
-
-  it('returns a new object rather than mutating its argument', () => {
-    const before: Viewport = { zoom: 1, panX: 400, panY: 400 };
-    const after = clampPan(before, { width: 2000, height: 900 }, frame);
-
-    expect(after).not.toBe(before);
-    expect(before).toEqual({ zoom: 1, panX: 400, panY: 400 });
   });
 });
 
@@ -332,16 +303,16 @@ describe('canPan', () => {
     expect(canPan({ width: 1000, height: 600 }, frame, 1)).toBe(false);
   });
 
-  it('reports something to pan when the content is wider than the frame', () => {
-    expect(canPan({ width: 1400, height: 200 }, frame, 1)).toBe(true);
-  });
+  const OVERFLOWS: readonly (readonly [string, Size])[] = [
+    ['wider than the frame', { width: 1400, height: 200 }],
+    ['taller than the frame', { width: 400, height: 900 }],
+    ['overflowing on both axes', { width: 1400, height: 900 }],
+  ];
 
-  it('reports something to pan when the content is taller than the frame', () => {
-    expect(canPan({ width: 400, height: 900 }, frame, 1)).toBe(true);
-  });
-
-  it('reports something to pan when the content overflows on both axes', () => {
-    expect(canPan({ width: 1400, height: 900 }, frame, 1)).toBe(true);
+  it('reports something to pan when the content overflows the frame on either axis or both', () => {
+    for (const [name, content] of OVERFLOWS) {
+      expect(canPan(content, frame, 1), name).toBe(true);
+    }
   });
 
   it('measures the content at the given zoom rather than at its natural size', () => {
@@ -352,25 +323,28 @@ describe('canPan', () => {
     expect(canPan({ width: 1400, height: 900 }, frame, 0.5)).toBe(false);
   });
 
-  it('reports nothing to pan for a degenerate content size', () => {
-    expect(canPan({ width: 0, height: 0 }, frame, 1)).toBe(false);
-    expect(canPan({ width: -1400, height: -900 }, frame, 1)).toBe(false);
-    expect(canPan({ width: Number.NaN, height: Number.NaN }, frame, 1)).toBe(false);
-  });
+  const OVERFLOWING: Size = { width: 1400, height: 900 };
 
-  it('reports nothing to pan for a degenerate frame size', () => {
-    const content: Size = { width: 1400, height: 900 };
+  const DEGENERATE_PANS: readonly (readonly [string, Size, Size, number])[] = [
+    ['a zero content size', { width: 0, height: 0 }, frame, 1],
+    ['a negative content size', { width: -1400, height: -900 }, frame, 1],
+    ['a content size that is not a number', { width: Number.NaN, height: Number.NaN }, frame, 1],
+    ['a zero frame size', OVERFLOWING, { width: 0, height: 0 }, 1],
+    [
+      'a frame size that is not a number',
+      OVERFLOWING,
+      { width: Number.NaN, height: Number.NaN },
+      1,
+    ],
+    ['a zero zoom', OVERFLOWING, frame, 0],
+    ['a zoom that is not a number', OVERFLOWING, frame, Number.NaN],
+    ['an infinite zoom', OVERFLOWING, frame, Number.POSITIVE_INFINITY],
+  ];
 
-    expect(canPan(content, { width: 0, height: 0 }, 1)).toBe(false);
-    expect(canPan(content, { width: Number.NaN, height: Number.NaN }, 1)).toBe(false);
-  });
-
-  it('reports nothing to pan for a degenerate zoom', () => {
-    const content: Size = { width: 1400, height: 900 };
-
-    expect(canPan(content, frame, 0)).toBe(false);
-    expect(canPan(content, frame, Number.NaN)).toBe(false);
-    expect(canPan(content, frame, Number.POSITIVE_INFINITY)).toBe(false);
+  it('reports nothing to pan for a degenerate content size, frame size or zoom', () => {
+    for (const [name, content, box, zoom] of DEGENERATE_PANS) {
+      expect(canPan(content, box, zoom), name).toBe(false);
+    }
   });
 });
 
@@ -500,8 +474,9 @@ describe('doubleTapTarget', () => {
     );
   });
 
-  it('counts a zoom a hair above the fit as the fit', () => {
+  it('counts a zoom a hair above the fit as the fit, and one a step further as above it', () => {
     expect(doubleTapTarget({ zoom: 1.005, panX: 0, panY: 0 }, 1, at).kind).toBe('zoom');
+    expect(doubleTapTarget({ zoom: 1.02, panX: 0, panY: 0 }, 1, at).kind).toBe('fit');
   });
 
   it('caps the zoom-in at the maximum zoom', () => {

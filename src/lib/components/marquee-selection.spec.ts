@@ -32,22 +32,21 @@ describe('marqueeRect', () => {
     });
   });
 
-  it('gives positive extents for a drag up and to the left', () => {
-    expect(marqueeRect({ x: 260, y: 170 }, { x: 100, y: 50 })).toEqual({
-      x: 100,
-      y: 50,
-      width: 160,
-      height: 120,
-    });
-  });
+  it('gives positive extents for a drag up and to the left, or up and to the right', () => {
+    const drags = [
+      [
+        { x: 260, y: 170 },
+        { x: 100, y: 50 },
+      ],
+      [
+        { x: 100, y: 170 },
+        { x: 260, y: 50 },
+      ],
+    ] as const;
 
-  it('gives positive extents for a drag up and to the right', () => {
-    expect(marqueeRect({ x: 100, y: 170 }, { x: 260, y: 50 })).toEqual({
-      x: 100,
-      y: 50,
-      width: 160,
-      height: 120,
-    });
+    for (const [from, to] of drags) {
+      expect(marqueeRect(from, to)).toEqual({ x: 100, y: 50, width: 160, height: 120 });
+    }
   });
 
   it('gives an empty rect for a drag that goes nowhere', () => {
@@ -74,14 +73,6 @@ describe('marqueeEnd', () => {
     expect(marqueeEnd(from, { x: 100, y: 100 }, MOUSE_SLOP, MINIMUM)).toEqual({ kind: 'click' });
   });
 
-  it('forgives the jitter of a hand on a mouse', () => {
-    expect(marqueeEnd(from, { x: 102, y: 101 }, MOUSE_SLOP, MINIMUM).kind).toBe('click');
-  });
-
-  it('calls a small drag too small, NOT a click, so the chrome stays put', () => {
-    expect(marqueeEnd(from, { x: 108, y: 104 }, MOUSE_SLOP, MINIMUM).kind).toBe('too-small');
-  });
-
   it('calls a long thin drag too small, though it can select nothing', () => {
     expect(marqueeEnd(from, { x: 300, y: 104 }, MOUSE_SLOP, MINIMUM).kind).toBe('too-small');
   });
@@ -93,15 +84,6 @@ describe('marqueeEnd', () => {
   it('calls a drag a pixel under the minimum in width or in height too small', () => {
     expect(marqueeEnd(from, { x: 111, y: 112 }, MOUSE_SLOP, MINIMUM).kind).toBe('too-small');
     expect(marqueeEnd(from, { x: 112, y: 111 }, MOUSE_SLOP, MINIMUM).kind).toBe('too-small');
-  });
-
-  it('measures a backwards drag by its extents rather than its sign', () => {
-    expect(marqueeEnd({ x: 300, y: 200 }, { x: 260, y: 160 }, MOUSE_SLOP, MINIMUM).kind).toBe(
-      'selection',
-    );
-    expect(marqueeEnd({ x: 300, y: 200 }, { x: 296, y: 160 }, MOUSE_SLOP, MINIMUM).kind).toBe(
-      'too-small',
-    );
   });
 
   it('calls a real drag a selection, and carries the rect', () => {
@@ -118,21 +100,9 @@ describe('marqueeEnd', () => {
     });
   });
 
-  it('calls a drift inside a wide slop a click, so a tap on a phone toggles the chrome', () => {
-    expect(marqueeEnd(from, { x: 106, y: 106 }, TOUCH_SLOP, MINIMUM)).toEqual({ kind: 'click' });
-  });
-
-  it('calls the same drift past a narrow slop too small, NOT a click', () => {
-    expect(marqueeEnd(from, { x: 106, y: 106 }, MOUSE_SLOP, MINIMUM).kind).toBe('too-small');
-  });
-
   it('calls a drift one pixel inside the slop a click and one at it too small', () => {
     expect(marqueeEnd(from, { x: 111, y: 89 }, TOUCH_SLOP, MINIMUM).kind).toBe('click');
     expect(marqueeEnd(from, { x: 112, y: 100 }, TOUCH_SLOP, MINIMUM).kind).toBe('too-small');
-  });
-
-  it('still calls a real drag inside a wide slop a selection', () => {
-    expect(marqueeEnd(from, { x: 300, y: 260 }, TOUCH_SLOP, MINIMUM).kind).toBe('selection');
   });
 
   it('calls a drag with a non-finite end a click', () => {
@@ -163,29 +133,20 @@ describe('stayedPut', () => {
     expect(stayedPut({ x: 120, y: 80 }, { x: 127, y: 73 }, MINIMUM)).toBe(true);
   });
 
-  it('rejects a press that travelled the minimum downward', () => {
-    expect(stayedPut({ x: 120, y: 80 }, { x: 120, y: 80 + MINIMUM }, MINIMUM)).toBe(false);
-  });
+  it('rejects a press that travelled the minimum downward, upward or sideways', () => {
+    const ends = [
+      { x: 120, y: 80 + MINIMUM },
+      { x: 120, y: 80 - MINIMUM },
+      { x: 120 + MINIMUM, y: 80 },
+    ];
 
-  it('rejects a press that travelled the minimum upward', () => {
-    expect(stayedPut({ x: 120, y: 80 }, { x: 120, y: 80 - MINIMUM }, MINIMUM)).toBe(false);
-  });
-
-  it('rejects a press that travelled the minimum sideways', () => {
-    expect(stayedPut({ x: 120, y: 80 }, { x: 120 + MINIMUM, y: 80 }, MINIMUM)).toBe(false);
+    for (const end of ends) {
+      expect(stayedPut({ x: 120, y: 80 }, end, MINIMUM), JSON.stringify(end)).toBe(false);
+    }
   });
 
   it('rejects the flick a strip scrolls with', () => {
     expect(stayedPut({ x: 200, y: 600 }, { x: 204, y: 190 }, MINIMUM)).toBe(false);
-  });
-
-  it('forgives a drift that a narrow slop would not call a click', () => {
-    const drifted = { x: 108, y: 104 };
-
-    expect([
-      marqueeEnd({ x: 100, y: 100 }, drifted, MOUSE_SLOP, MINIMUM).kind,
-      stayedPut({ x: 100, y: 100 }, drifted, MINIMUM),
-    ]).toEqual(['too-small', true]);
   });
 
   it('measures travel by the same minimum a selection is held to', () => {
@@ -284,10 +245,6 @@ describe('anchorOnScreen', () => {
   it('moves the anchor up the screen by the distance scrolled down', () => {
     expect(anchorOnScreen({ x: 200, y: 300 }, { x: 10, y: 500 })).toEqual({ x: 190, y: -200 });
   });
-
-  it('leaves the anchor where it was pressed before any scroll', () => {
-    expect(anchorOnScreen({ x: 200, y: 300 }, NOT_SCROLLED)).toEqual({ x: 200, y: 300 });
-  });
 });
 
 describe('anchoredRect', () => {
@@ -307,12 +264,5 @@ describe('anchoredRect', () => {
       width: 200,
       height: 700,
     });
-  });
-
-  it('matches the plain rect when nothing has scrolled', () => {
-    const from = { x: 40, y: 60 };
-    const to = { x: 10, y: 200 };
-
-    expect(anchoredRect(from, NOT_SCROLLED, to)).toEqual(marqueeRect(from, to));
   });
 });

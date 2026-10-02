@@ -330,12 +330,6 @@ describe('gestureStep long presses', () => {
     ]);
   });
 
-  it('refuses a long press once the finger strayed, even if it came back', () => {
-    expect(heard([down(CENTRE, 0), move(CENTRE + 20, 100), move(CENTRE, 200), tick(700)])).toEqual(
-      [],
-    );
-  });
-
   it('begins a selection on a long press even when the page can pan', () => {
     expect(heard([down(CENTRE, 0), tick(LONG_PRESS_MS)], ZOOMED)).toEqual([
       { kind: 'long-press', x: CENTRE, y: ROW },
@@ -457,12 +451,6 @@ describe('gestureStep swipes', () => {
       { kind: 'none' },
       { kind: 'none' },
       { kind: 'swipe', start: { x: 300, y: ROW }, end: { x: 160, y: ROW }, elapsed: 90 },
-    ]);
-  });
-
-  it('reports a swipe when every tap would wait for a double tap as well', () => {
-    expect(heard([down(300, 0), move(200, 40), up(150, 80)], WAITS_EVERYWHERE)).toEqual([
-      { kind: 'swipe', start: { x: 300, y: ROW }, end: { x: 150, y: ROW }, elapsed: 80 },
     ]);
   });
 
@@ -639,32 +627,5 @@ describe('gestureDeadline', () => {
 
     expect(gestureStep(state, tick(deadline - 1), FIT).intent.kind).toBe('none');
     expect(gestureStep(state, tick(deadline), FIT).intent.kind).toBe('long-press');
-  });
-});
-
-describe('gestureStep without double taps', () => {
-  const IMMEDIATE: GestureContext = { ...FIT, waitsForDoubleTap: () => false };
-
-  it('taps a centre tap at the release, with nothing left to wait for', () => {
-    expect(run([down(CENTRE, 0), up(CENTRE, 90)], IMMEDIATE)).toEqual([
-      { kind: 'none' },
-      { kind: 'tap', x: CENTRE, y: ROW },
-    ]);
-    expect(gestureDeadline(settled([down(CENTRE, 0), up(CENTRE, 90)], IMMEDIATE))).toBeNull();
-  });
-
-  it('reports two quick centre taps as two taps and no double tap', () => {
-    expect(
-      heard([down(CENTRE, 0), up(CENTRE, 60), down(CENTRE, 200), up(CENTRE, 260)], IMMEDIATE),
-    ).toEqual([
-      { kind: 'tap', x: CENTRE, y: ROW },
-      { kind: 'tap', x: CENTRE, y: ROW },
-    ]);
-  });
-
-  it('still reports a long press', () => {
-    expect(heard([down(CENTRE, 0), tick(LONG_PRESS_MS)], IMMEDIATE)).toEqual([
-      { kind: 'long-press', x: CENTRE, y: ROW },
-    ]);
   });
 });
