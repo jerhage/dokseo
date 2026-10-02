@@ -2,20 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { clampedIndex, matchOfTotal, NO_MATCH, wrappedIndex } from './match-stepping';
 
 describe('clampedIndex', () => {
-  it('selects the first row when nothing is selected and the step is forward', () => {
-    expect(clampedIndex(NO_MATCH, 1, 4)).toBe(0);
-  });
-
-  it('selects the last row when nothing is selected and the step is backward', () => {
-    expect(clampedIndex(NO_MATCH, -1, 4)).toBe(3);
-  });
-
-  it('stops at the last row rather than passing it', () => {
-    expect(clampedIndex(3, 1, 4)).toBe(3);
-  });
-
-  it('stops at the first row rather than passing it', () => {
-    expect(clampedIndex(0, -1, 4)).toBe(0);
+  it.each([
+    ['selects the first row when nothing is selected and the step is forward', NO_MATCH, 1, 0],
+    ['selects the last row when nothing is selected and the step is backward', NO_MATCH, -1, 3],
+    ['stops at the last row rather than passing it', 3, 1, 3],
+    ['stops at the first row rather than passing it', 0, -1, 0],
+  ])('%s', (_, from, by, expected) => {
+    expect(clampedIndex(from, by, 4)).toBe(expected);
   });
 
   it('reports no match when there is nothing to step through', () => {

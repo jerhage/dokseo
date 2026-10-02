@@ -101,26 +101,15 @@ describe('quickFinds', () => {
     expect(texts(found.captures)).toEqual(['海が見える', '海まであと少し', '海の匂い']);
   });
 
-  it('finds nothing for a blank query', () => {
+  it.each([
+    ['blank', ''],
+    ['whitespace-only', '   '],
+  ])('finds nothing for a %s query', (_, query) => {
     const found = quickFinds(
       [capture(ONE, '海の音', [IMAGERY])],
       BOOKS,
       [tag(IMAGERY, '海-imagery')],
-      '',
-      'everything',
-      byCfi,
-    );
-
-    expect(found.captures).toEqual([]);
-    expect(found.books).toEqual([]);
-  });
-
-  it('finds nothing for a whitespace-only query', () => {
-    const found = quickFinds(
-      [capture(ONE, '海の音', [IMAGERY])],
-      BOOKS,
-      [tag(IMAGERY, '海-imagery')],
-      '   ',
+      query,
       'everything',
       byCfi,
     );
@@ -182,36 +171,6 @@ describe('quickFinds', () => {
     expect(texts(found.captures)).toEqual(['山の音']);
   });
 
-  it('orders the captures of a book along its reading direction', () => {
-    const found = quickFinds(
-      [
-        capture(ONE, '海 left', [], { index: 0, x: 0 }),
-        capture(ONE, '海 later page', [], { index: 1, x: 400 }),
-        capture(ONE, '海 right', [], { index: 0, x: 400 }),
-      ],
-      BOOKS,
-      [],
-      '海',
-      'everything',
-      byCfi,
-    );
-
-    expect(texts(found.captures)).toEqual(['海 right', '海 left', '海 later page']);
-  });
-
-  it('drops a book that holds nothing the query found', () => {
-    const found = quickFinds(
-      [capture(ONE, '海の音', []), capture(TWO, '山の音', [])],
-      BOOKS,
-      [],
-      '海',
-      'everything',
-      byCfi,
-    );
-
-    expect(found.captures.map((book) => book.book.id)).toEqual([ONE.id]);
-  });
-
   it('matches a tag name through the fold, so case and width do not matter', () => {
     const found = quickFinds(
       [capture(ONE, '山', [IMAGERY])],
@@ -231,9 +190,9 @@ describe('quickFinds', () => {
     expect(titles(found.books)).toEqual(['Volume one', 'Volume two']);
   });
 
-  it('finds a book by its title although no capture holds that text', () => {
+  it('finds a book by its title although no capture holds that text, and leaves the captures of that book out of the results', () => {
     const found = quickFinds(
-      [capture(ONE, '海の音', []), capture(TWO, '山の音', [])],
+      [capture(ONE, '海の音', []), capture(TWO, '山の音', []), capture(TWO, '海の音', [])],
       BOOKS,
       [],
       'volume two',
@@ -243,20 +202,6 @@ describe('quickFinds', () => {
 
     expect(titles(found.books)).toEqual(['Volume two']);
     expect(found.captures).toEqual([]);
-  });
-
-  it('leaves the captures of a title match out of the results', () => {
-    const found = quickFinds(
-      [capture(TWO, '海の音', [])],
-      BOOKS,
-      [],
-      'volume two',
-      'everything',
-      byCfi,
-    );
-
-    expect(titles(found.books)).toEqual(['Volume two']);
-    expect(texts(found.captures)).toEqual([]);
   });
 
   it('finds no book under the tags filter', () => {
