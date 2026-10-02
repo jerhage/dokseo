@@ -64,6 +64,10 @@ describe('isResizeObserverNotice', () => {
     expect(isResizeObserverNotice(windowError(RESIZE_OBSERVER_NOTICE, null))).toBe(true);
   });
 
+  it('recognises the notice as Firefox sends it, with an undefined error', () => {
+    expect(isResizeObserverNotice(windowError(RESIZE_OBSERVER_NOTICE, undefined))).toBe(true);
+  });
+
   it('rejects an error event that carries a thrown value under the same words', () => {
     expect(isResizeObserverNotice(windowError(RESIZE_OBSERVER_NOTICE, new Error('x')))).toBe(false);
   });
@@ -78,6 +82,14 @@ describe('UnexpectedFailures', () => {
     const toaster = createToaster();
 
     new UnexpectedFailures(toaster).windowError(windowError(RESIZE_OBSERVER_NOTICE, null));
+
+    expect([logged.mock.calls.length, toaster.toasts.length]).toEqual([0, 0]);
+  });
+
+  it('neither logs nor toasts the notice as Firefox sends it', () => {
+    const toaster = createToaster();
+
+    new UnexpectedFailures(toaster).windowError(windowError(RESIZE_OBSERVER_NOTICE, undefined));
 
     expect([logged.mock.calls.length, toaster.toasts.length]).toEqual([0, 0]);
   });

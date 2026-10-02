@@ -24,7 +24,8 @@ function windowErrorCause(event: Event): unknown {
 function isResizeObserverNotice(event: Event): boolean {
   if (!('message' in event) || event.message !== RESIZE_OBSERVER_NOTICE) return false;
 
-  return windowErrorCause(event) === null;
+  const cause = windowErrorCause(event);
+  return cause === null || cause === undefined;
 }
 
 class UnexpectedFailures {
