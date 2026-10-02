@@ -51,32 +51,17 @@ describe('createTag', () => {
     expect(at(saved, 0).colour).toBe('clay');
   });
 
-  it('reports the existing tag and writes nothing when the name is taken', async () => {
-    const { tags, saved } = repository([SFX]);
+  it.each(['sfx', 'SFX', 'ｓｆｘ'])(
+    'reports the existing tag and writes nothing when the name %s is taken',
+    async (name) => {
+      const { tags, saved } = repository([SFX]);
 
-    const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'sfx');
+      const created = await createTag({ tags, now: () => 7 }, tagId('b'), name);
 
-    expect(created).toEqual({ kind: 'name-taken', tag: SFX });
-    expect(saved).toEqual([]);
-  });
-
-  it('treats a name that differs only by case as taken', async () => {
-    const { tags, saved } = repository([SFX]);
-
-    const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'SFX');
-
-    expect(created).toEqual({ kind: 'name-taken', tag: SFX });
-    expect(saved).toEqual([]);
-  });
-
-  it('treats a name that differs only by character width as taken', async () => {
-    const { tags, saved } = repository([SFX]);
-
-    const created = await createTag({ tags, now: () => 7 }, tagId('b'), 'ｓｆｘ');
-
-    expect(created).toEqual({ kind: 'name-taken', tag: SFX });
-    expect(saved).toEqual([]);
-  });
+      expect(created).toEqual({ kind: 'name-taken', tag: SFX });
+      expect(saved).toEqual([]);
+    },
+  );
 
   it('reports a failure to read the tags rather than throwing', async () => {
     const { tags } = repository([], 'listing');

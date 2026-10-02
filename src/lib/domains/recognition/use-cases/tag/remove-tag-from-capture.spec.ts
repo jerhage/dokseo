@@ -3,7 +3,6 @@ import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { at } from '$lib/shared/testing/at';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
 import type { CaptureRepository } from '../../domain/capture/capture-repository';
@@ -27,6 +26,7 @@ const TAGGED: Capture = {
     },
     1_700_000_000_000,
   ),
+  editedAt: 1_700_000_500_000,
   tagIds: [SFX, KEIGO],
 };
 
@@ -48,22 +48,14 @@ function repository(broken = false) {
 }
 
 describe('removeTagFromCapture', () => {
-  it('stores the capture without the tag it was given', async () => {
+  it('stores the capture without the tag it was given, keeping when it was last edited', async () => {
     const { captures, saved } = repository();
 
     const untagged = await removeTagFromCapture({ captures }, TAGGED, SFX);
 
-    expect(untagged.kind === 'success' && untagged.capture.tagIds).toEqual([KEIGO]);
-    expect(at(saved, 0).tagIds).toEqual([KEIGO]);
-    expect(at(saved, 0).id).toBe(TAGGED.id);
-  });
-
-  it('keeps the moment the reader last edited the text', async () => {
-    const { captures, saved } = repository();
-
-    await removeTagFromCapture({ captures }, TAGGED, SFX);
-
-    expect(at(saved, 0).editedAt).toBeNull();
+    const expected = { ...TAGGED, tagIds: [KEIGO] };
+    expect(untagged).toEqual({ kind: 'success', capture: expected });
+    expect(saved).toEqual([expected]);
   });
 
   it('reports a browser that blocks storage', async () => {

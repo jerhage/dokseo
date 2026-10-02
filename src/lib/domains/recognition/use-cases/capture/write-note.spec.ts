@@ -5,7 +5,6 @@ import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { at } from '$lib/shared/testing/at';
 import type { Capture } from '../../domain/capture/capture';
 import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { writeNote } from './write-note';
@@ -38,41 +37,23 @@ function repository(broken = false) {
 }
 
 describe('writeNote', () => {
-  it('marks the capture as written rather than recognized', async () => {
-    const { captures, saved } = repository();
-
-    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
-
-    expect(written.kind === 'success' && written.capture.origin).toBe('written');
-    expect(at(saved, 0).origin).toBe('written');
-  });
-
-  it('starts the note empty, with no confidence to report', async () => {
-    const { captures } = repository();
-
-    const written = await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
-
-    expect(written.kind === 'success' && written.capture.text).toBe('');
-    expect(written.kind === 'success' && 'confidence' in written.capture).toBe(false);
-  });
-
-  it('keeps the book, the id and the anchor it was given', async () => {
-    const { captures, saved } = repository();
-
-    await writeNote({ captures, now: () => 5 }, NOTE, BOOK, ANCHOR);
-
-    expect(at(saved, 0).id).toBe(NOTE);
-    expect(at(saved, 0).bookId).toBe(BOOK);
-    expect(at(saved, 0).anchor).toEqual(ANCHOR);
-  });
-
-  it('stamps the note with the clock it was given, unedited', async () => {
+  it('stores an empty written note on the book, id and anchor it was given, unedited', async () => {
     const { captures, saved } = repository();
 
     const written = await writeNote({ captures, now: () => 1_700_000_000_000 }, NOTE, BOOK, ANCHOR);
 
-    expect(written.kind === 'success' && written.capture.createdAt).toBe(1_700_000_000_000);
-    expect(at(saved, 0).editedAt).toBeNull();
+    const expected = {
+      id: NOTE,
+      bookId: BOOK,
+      anchor: ANCHOR,
+      text: '',
+      origin: 'written',
+      createdAt: 1_700_000_000_000,
+      editedAt: null,
+      tagIds: [],
+    };
+    expect(written).toStrictEqual({ kind: 'success', capture: expected });
+    expect(saved).toStrictEqual([expected]);
   });
 
   it('reports a browser that blocks storage', async () => {

@@ -3,7 +3,6 @@ import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { at } from '$lib/shared/testing/at';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
 import type { CaptureRepository } from '../../domain/capture/capture-repository';
 import { saveCapture } from './save-capture';
@@ -37,23 +36,20 @@ function repository(broken = false) {
 }
 
 describe('saveCapture', () => {
-  it('stamps the capture with the clock it was given', async () => {
+  it('stamps the capture with the clock it was given, never edited', async () => {
     const { captures, saved } = repository();
 
     const stored = await saveCapture({ captures, now: () => 1_700_000_000_000 }, DRAFT);
 
-    expect(stored.kind === 'success' && stored.capture.createdAt).toBe(1_700_000_000_000);
-    expect(at(saved, 0).createdAt).toBe(1_700_000_000_000);
-    expect(at(saved, 0).bookId).toBe(BOOK);
-  });
-
-  it('reports the capture it stored, marked as never edited', async () => {
-    const { captures } = repository();
-
-    const stored = await saveCapture({ captures, now: () => 5 }, DRAFT);
-
-    expect(stored.kind === 'success' && stored.capture.text).toBe('こっちに来て');
-    expect(stored.kind === 'success' && stored.capture.editedAt).toBeNull();
+    const expected = {
+      ...DRAFT,
+      note: null,
+      createdAt: 1_700_000_000_000,
+      editedAt: null,
+      tagIds: [],
+    };
+    expect(stored).toEqual({ kind: 'success', capture: expected });
+    expect(saved).toEqual([expected]);
   });
 
   it('reports a browser that blocks storage', async () => {

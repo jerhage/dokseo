@@ -82,31 +82,17 @@ describe('deleteTag', () => {
     expect(count).toEqual({ kind: 'success', untagged: 2 });
     expect(saved.map((row) => row.id)).toEqual([captureId('a'), captureId('c')]);
     expect(at(saved, 0).tagIds).toEqual([]);
+    expect(at(saved, 1).tagIds).toEqual([KEIGO]);
     expect(removed).toEqual([SFX]);
   });
 
-  it('leaves the other tags a stripped capture carries alone', async () => {
-    const { captures, tags, saved } = stores([capture('c', [SFX, KEIGO])]);
-
-    await deleteTag({ captures, tags }, SFX);
-
-    expect(at(saved, 0).tagIds).toEqual([KEIGO]);
-  });
-
-  it('writes nothing to a capture that never carried the tag', async () => {
-    const { captures, tags, saved } = stores([capture('b', [KEIGO])]);
-
-    await deleteTag({ captures, tags }, SFX);
-
-    expect(saved).toEqual([]);
-  });
-
-  it('reports no capture lost the tag and still removes the record', async () => {
-    const { captures, tags, removed } = stores([capture('b', [KEIGO])]);
+  it('reports no capture lost the tag, writes no capture and still removes the record', async () => {
+    const { captures, tags, saved, removed } = stores([capture('b', [KEIGO])]);
 
     const count = await deleteTag({ captures, tags }, SFX);
 
     expect(count).toEqual({ kind: 'success', untagged: 0 });
+    expect(saved).toEqual([]);
     expect(removed).toEqual([SFX]);
   });
 

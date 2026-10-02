@@ -52,60 +52,35 @@ describe('renameTag', () => {
     expect(at(saved, 0).createdAt).toBe(1);
   });
 
-  it('lets a tag keep the name it already holds', async () => {
-    const { tags, saved } = repository([SFX, KEIGO]);
+  it.each([
+    ['keep the name it already holds', SFX, 'sfx', 'sfx'],
+    ['recase its own name', SFX, 'SFX', 'SFX'],
+    [
+      'respace its own name',
+      namedTag(tagId('c'), 'grammar to ask', 'sage', 3),
+      ' grammar    to ask ',
+      'grammar to ask',
+    ],
+  ] as const)('lets a tag %s', async (_change, tag, name, stored) => {
+    const { tags, saved } = repository([tag, KEIGO]);
 
-    const renamed = await renameTag({ tags }, SFX, 'sfx');
+    const renamed = await renameTag({ tags }, tag, name);
 
-    expect(renamed.kind === 'success' && renamed.tag.name).toBe('sfx');
-    expect(at(saved, 0).name).toBe('sfx');
+    expect(renamed.kind === 'success' && renamed.tag.name).toBe(stored);
+    expect(at(saved, 0).name).toBe(stored);
   });
 
-  it('lets a tag recase its own name', async () => {
-    const { tags, saved } = repository([SFX, KEIGO]);
+  it.each(['keigo', 'Keigo', 'ｋｅｉｇｏ'])(
+    'reports the other tag and writes nothing when it already holds the name %s',
+    async (name) => {
+      const { tags, saved } = repository([SFX, KEIGO]);
 
-    const renamed = await renameTag({ tags }, SFX, 'SFX');
+      const renamed = await renameTag({ tags }, SFX, name);
 
-    expect(renamed.kind === 'success' && renamed.tag.name).toBe('SFX');
-    expect(at(saved, 0).name).toBe('SFX');
-  });
-
-  it('lets a tag respace its own name', async () => {
-    const spaced = namedTag(tagId('c'), 'grammar to ask', 'sage', 3);
-    const { tags, saved } = repository([spaced, KEIGO]);
-
-    const renamed = await renameTag({ tags }, spaced, ' grammar    to ask ');
-
-    expect(renamed.kind === 'success' && renamed.tag.name).toBe('grammar to ask');
-    expect(at(saved, 0).name).toBe('grammar to ask');
-  });
-
-  it('reports the other tag and writes nothing when it already holds the name', async () => {
-    const { tags, saved } = repository([SFX, KEIGO]);
-
-    const renamed = await renameTag({ tags }, SFX, 'keigo');
-
-    expect(renamed).toEqual({ kind: 'name-taken', tag: KEIGO });
-    expect(saved).toEqual([]);
-  });
-
-  it('reports a name another tag holds in another case as taken', async () => {
-    const { tags, saved } = repository([SFX, KEIGO]);
-
-    const renamed = await renameTag({ tags }, SFX, 'Keigo');
-
-    expect(renamed).toEqual({ kind: 'name-taken', tag: KEIGO });
-    expect(saved).toEqual([]);
-  });
-
-  it('reports a name another tag holds in another character width as taken', async () => {
-    const { tags, saved } = repository([SFX, KEIGO]);
-
-    const renamed = await renameTag({ tags }, SFX, 'ｋｅｉｇｏ');
-
-    expect(renamed).toEqual({ kind: 'name-taken', tag: KEIGO });
-    expect(saved).toEqual([]);
-  });
+      expect(renamed).toEqual({ kind: 'name-taken', tag: KEIGO });
+      expect(saved).toEqual([]);
+    },
+  );
 
   it('reports a failure to read the tags rather than throwing', async () => {
     const { tags } = repository([SFX], 'listing');
