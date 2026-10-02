@@ -55,14 +55,6 @@ const EVERY_APPEARANCE: readonly Appearance[] = THEMES.flatMap((theme) =>
 );
 
 describe('chooseAppearance', () => {
-  it('applies the choice to the root', () => {
-    const root = new FakeRoot();
-
-    chooseAppearance(root, { theme: 'ember', colorScheme: 'dark' }, () => new FakeStore());
-
-    expect(readAppearance(root)).toEqual({ theme: 'ember', colorScheme: 'dark' });
-  });
-
   it('stores the theme and a pinned scheme under the keys the pre-paint script reads', () => {
     const store = new FakeStore();
 
@@ -82,15 +74,21 @@ describe('chooseAppearance', () => {
     expect(Object.fromEntries(store.entries)).toEqual({ [THEME_KEY]: 'ember' });
   });
 
-  it('still applies the choice when storage refuses every call', () => {
+  it.each<[string, Appearance, () => StringStore]>([
+    ['storage that works', { theme: 'ember', colorScheme: 'dark' }, () => new FakeStore()],
+    [
+      'storage that refuses every call',
+      { theme: 'forge', colorScheme: 'light' },
+      () => {
+        throw new Error('SecurityError');
+      },
+    ],
+  ])('applies the choice to the root even with %s', (_name, appearance, locate) => {
     const root = new FakeRoot();
-    const unreachable = (): StringStore => {
-      throw new Error('SecurityError');
-    };
 
-    chooseAppearance(root, { theme: 'forge', colorScheme: 'light' }, unreachable);
+    chooseAppearance(root, appearance, locate);
 
-    expect(readAppearance(root)).toEqual({ theme: 'forge', colorScheme: 'light' });
+    expect(readAppearance(root)).toEqual(appearance);
   });
 
   it('saves every choice so that the pre-paint script restores it after a reload', () => {

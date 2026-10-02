@@ -11,32 +11,19 @@ function region(index: number): ImageRegion {
 const quote = { exact: '猫である', prefix: '吾輩は', suffix: '。' };
 
 describe('regionAnchor', () => {
-  it('builds an anchor of the region kind', () => {
-    expect(regionAnchor([region(0)]).kind).toBe('region');
-  });
-
-  it('keeps every region it was given, in order', () => {
-    const regions = [region(14), region(15), region(16)];
-
+  it.each([
+    ['every one of three regions', [region(14), region(15), region(16)]],
+    ['a single region', [region(0)]],
+    ['an empty list of regions', []],
+  ])('keeps %s it was given, in order', (_name, regions) => {
     const anchor = regionAnchor(regions);
     if (anchor.kind !== 'region') throw new Error('expected a region anchor');
 
     expect(anchor.regions).toEqual(regions);
   });
-
-  it('builds an anchor of no regions at all', () => {
-    const anchor = regionAnchor([]);
-    if (anchor.kind !== 'region') throw new Error('expected a region anchor');
-
-    expect(anchor.regions).toHaveLength(0);
-  });
 });
 
 describe('textAnchor', () => {
-  it('builds an anchor of the text kind', () => {
-    expect(textAnchor('epubcfi(/6/4!/4/2/2/1:0)', quote, null).kind).toBe('text');
-  });
-
   it('keeps the cfi and the quote it was given', () => {
     const anchor = textAnchor('epubcfi(/6/4!/4/2/2/1:0)', quote, null);
     if (anchor.kind !== 'text') throw new Error('expected a text anchor');
@@ -47,16 +34,12 @@ describe('textAnchor', () => {
 });
 
 describe('sameAnchorKind', () => {
-  it('agrees for two region anchors', () => {
-    expect(sameAnchorKind(regionAnchor([region(0)]), regionAnchor([]))).toBe(true);
-  });
-
-  it('agrees for two text anchors', () => {
-    expect(sameAnchorKind(textAnchor('a', quote, null), textAnchor('b', quote, null))).toBe(true);
-  });
-
-  it('disagrees across the two kinds', () => {
-    expect(sameAnchorKind(regionAnchor([region(0)]), textAnchor('a', quote, null))).toBe(false);
-    expect(sameAnchorKind(textAnchor('a', quote, null), regionAnchor([region(0)]))).toBe(false);
+  it.each([
+    ['two region anchors', regionAnchor([region(0)]), regionAnchor([]), true],
+    ['two text anchors', textAnchor('a', quote, null), textAnchor('b', quote, null), true],
+    ['a region then a text anchor', regionAnchor([region(0)]), textAnchor('a', quote, null), false],
+    ['a text then a region anchor', textAnchor('a', quote, null), regionAnchor([region(0)]), false],
+  ])('agrees on the kind of %s only when they share it', (_name, one, other, same) => {
+    expect(sameAnchorKind(one, other)).toBe(same);
   });
 });

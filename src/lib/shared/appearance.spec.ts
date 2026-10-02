@@ -68,30 +68,23 @@ describe('applyAppearance', () => {
 });
 
 describe('readAppearance', () => {
-  it('reads the theme and the pinned scheme the root carries', () => {
-    const root = new FakeRoot({ 'data-theme': 'ember', 'data-color-scheme': 'light' });
+  it.each(['light', 'dark'] as const)(
+    'reads the theme and the pinned %s scheme the root carries',
+    (colorScheme) => {
+      const root = new FakeRoot({ 'data-theme': 'ember', 'data-color-scheme': colorScheme });
 
-    expect(readAppearance(root)).toEqual({ theme: 'ember', colorScheme: 'light' });
-  });
+      expect(readAppearance(root)).toEqual({ theme: 'ember', colorScheme });
+    },
+  );
 
-  it('reports automatic when no scheme is pinned', () => {
-    const root = new FakeRoot({ 'data-theme': 'base' });
-
-    expect(readAppearance(root).colorScheme).toBe('automatic');
-  });
-
-  it('falls back to base and automatic for values it does not know', () => {
-    const root = new FakeRoot({ 'data-theme': 'neon', 'data-color-scheme': 'auto' });
-
-    expect(readAppearance(root)).toEqual({ theme: 'base', colorScheme: 'automatic' });
-  });
-
-  it('reads back what it applied', () => {
-    const root = new FakeRoot();
-
-    applyAppearance(root, { theme: 'ember', colorScheme: 'dark' });
-
-    expect(readAppearance(root)).toEqual({ theme: 'ember', colorScheme: 'dark' });
+  it.each([
+    ['no scheme pinned', { 'data-theme': 'base' }],
+    ['values it does not know', { 'data-theme': 'neon', 'data-color-scheme': 'auto' }],
+  ])('falls back to base and automatic for %s', (_name, attributes) => {
+    expect(readAppearance(new FakeRoot(attributes))).toEqual({
+      theme: 'base',
+      colorScheme: 'automatic',
+    });
   });
 });
 

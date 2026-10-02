@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GuideKind } from './guide-kind';
 
 const KEY = 'reader.touch.guides-seen';
 
@@ -67,10 +68,19 @@ describe('the seen guides', () => {
     expect(next.guideSeen('tap-zones')).toBe(true);
   });
 
-  it('ignores a kind a stale store holds', async () => {
+  it('ignores a kind a stale store holds, on the first read and after a mark', async () => {
     storage.setItem(KEY, JSON.stringify(['zones', 'swipe-left']));
     const guides = await import('./seen-guides.svelte');
+    const stale = 'zones' as GuideKind;
+    const read = [guides.guideSeen(stale), guides.guideSeen('swipe-left')];
 
-    expect(guides.guideSeen('swipe-left')).toBe(true);
+    guides.markGuideSeen('tap-zones');
+
+    expect([...read, guides.guideSeen(stale), guides.guideSeen('tap-zones')]).toEqual([
+      false,
+      true,
+      false,
+      true,
+    ]);
   });
 });

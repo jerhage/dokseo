@@ -42,20 +42,14 @@ describe('returnFocusToPage', () => {
     expect(log.steps).toEqual(['blur settings', `focus surface ${JSON.stringify(QUIET_FOCUS)}`]);
   });
 
-  it('finds the control in the bottom bar as well as the top one', () => {
+  it.each([
+    ['an empty top bar', false],
+    ['a top bar Svelte has torn down to null', true],
+  ])('finds the control in the bottom bar past %s', (_name, tornDown) => {
     const log = recorded();
     const next = log.control('next');
 
-    returnFocusToPage(next, [barHolding(), barHolding(next)], log.surface);
-
-    expect(log.steps).toEqual(['blur next', `focus surface ${JSON.stringify(QUIET_FOCUS)}`]);
-  });
-
-  it('passes over a bar Svelte has torn down to null', () => {
-    const log = recorded();
-    const next = log.control('next');
-
-    returnFocusToPage(next, [null, barHolding(next)], log.surface);
+    returnFocusToPage(next, [tornDown ? null : barHolding(), barHolding(next)], log.surface);
 
     expect(log.steps).toEqual(['blur next', `focus surface ${JSON.stringify(QUIET_FOCUS)}`]);
   });
@@ -81,7 +75,7 @@ describe('returnFocusToPage', () => {
     expect(log.steps).toEqual([]);
   });
 
-  it('still releases the bar control when no reading surface is showing', () => {
+  it('releases the bar control even when no reading surface is showing', () => {
     const log = recorded();
     const library = log.control('library');
 

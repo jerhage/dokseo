@@ -19,20 +19,13 @@ class FakeStore implements StringStore {
 }
 
 describe('toTouchTurns', () => {
-  it('defaults to swipe only when nothing was stored', () => {
-    expect(toTouchTurns(null)).toBe('swipe-only');
-  });
-
-  it('defaults to swipe only when the stored value is unknown', () => {
-    expect(toTouchTurns('sideways')).toBe('swipe-only');
-  });
-
-  it('keeps a stored tap-zones choice', () => {
-    expect(toTouchTurns('tap-zones')).toBe('tap-zones');
-  });
-
-  it('keeps a stored swipe-only choice', () => {
-    expect(toTouchTurns('swipe-only')).toBe('swipe-only');
+  it.each([
+    ['nothing stored as swipe only', null, 'swipe-only'],
+    ['an unknown stored value as swipe only', 'sideways', 'swipe-only'],
+    ['a stored tap-zones choice as tap zones', 'tap-zones', 'tap-zones'],
+    ['a stored swipe-only choice as swipe only', 'swipe-only', 'swipe-only'],
+  ])('reads page turns from %s', (_name, stored, turns) => {
+    expect(toTouchTurns(stored)).toBe(turns);
   });
 });
 

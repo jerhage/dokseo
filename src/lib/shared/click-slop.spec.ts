@@ -12,11 +12,10 @@ describe('clickSlop', () => {
     expect(CLICK_SLOP_PX).toBe(3);
   });
 
-  it('holds a pen to the mouse slop, because a nib does not drift like a finger', () => {
-    expect(clickSlop('pen')).toBe(CLICK_SLOP_PX);
-  });
-
-  it('treats an unknown pointer type as a mouse', () => {
-    expect(clickSlop('')).toBe(CLICK_SLOP_PX);
+  it.each([
+    ['a pen, whose nib does not drift like a finger,', 'pen'],
+    ['an unknown pointer type', ''],
+  ])('holds %s to the mouse slop', (_name, pointerType) => {
+    expect(clickSlop(pointerType)).toBe(CLICK_SLOP_PX);
   });
 });

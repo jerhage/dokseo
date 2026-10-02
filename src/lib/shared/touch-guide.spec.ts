@@ -14,12 +14,6 @@ function seenGuides(...kinds: GuideKind[]): SeenGuides & { readonly kinds: Guide
 }
 
 describe('TouchGuide', () => {
-  it('holds the guide back until the surface opens', () => {
-    const guide = new TouchGuide(() => 'tap-zones', seenGuides());
-
-    expect(guide.due).toBe(false);
-  });
-
   it('makes the guide due when the surface opens on a kind never dismissed', () => {
     const guide = new TouchGuide(() => 'tap-zones', seenGuides());
 
@@ -72,6 +66,7 @@ describe('TouchGuide', () => {
   it('shows the guide only where it is offered and while it is due', () => {
     const guide = new TouchGuide(() => 'tap-zones', seenGuides());
 
+    expect(guide.due).toBe(false);
     expect(guide.shownWhen(true)).toBe(false);
     guide.open();
     expect(guide.shownWhen(false)).toBe(false);

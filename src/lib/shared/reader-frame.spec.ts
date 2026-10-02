@@ -44,6 +44,7 @@ describe('ReaderFrameView', () => {
     const narrow = measured(390, 640);
     narrow.panelAfterCapture();
     expect(narrow.placement).toBe('peek');
+    expect(narrow.panelOpen).toBe(false);
   });
 
   it('reports the panel shown beside a wide page and hidden under a narrow one until toggled', () => {
@@ -54,13 +55,6 @@ describe('ReaderFrameView', () => {
     narrow.togglePanel();
 
     expect([...hidden, wide.panelOpen, narrow.panelOpen]).toEqual([true, false, false, true]);
-  });
-
-  it('reports the panel still hidden after a capture under a narrow page', () => {
-    const narrow = measured(390, 640);
-    narrow.panelAfterCapture();
-
-    expect(narrow.panelOpen).toBe(false);
   });
 
   it('clears toasts of what sits under the page, and of the bottom bar only while it shows', () => {
@@ -120,17 +114,14 @@ describe('ReaderFrameView', () => {
       vi.unstubAllGlobals();
     });
 
-    it('hides the bars until they are asked for', () => {
-      expect(new ReaderFrameView(NOTHING_FOCUSED).barsShown).toBe(false);
-    });
-
-    it('shows the bars on a toggle and hides them on the next', () => {
+    it('hides the bars until a toggle shows them, and hides them on the next', () => {
       const frame = new ReaderFrameView(NOTHING_FOCUSED);
+      const before = frame.barsShown;
       frame.toggleBars(null, null);
       const shown = frame.barsShown;
       frame.toggleBars(null, null);
 
-      expect([shown, frame.barsShown]).toEqual([true, false]);
+      expect([before, shown, frame.barsShown]).toEqual([false, true, false]);
     });
 
     it('shows the bars while something else holds them, and a toggle then asks for nothing', () => {

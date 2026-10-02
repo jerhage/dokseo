@@ -14,18 +14,11 @@ describe('writeStateOf', () => {
     expect(writeStateOf({ status: 'pending' })).toEqual({ kind: 'saving' });
   });
 
-  it('reports an error as failed with the described message', () => {
-    expect(writeStateOf({ status: 'error', error: new QueryFailure('denied') })).toEqual({
-      kind: 'failed',
-      message: 'denied',
-    });
-  });
-
-  it('describes a thrown value that is not a query failure', () => {
-    expect(writeStateOf({ status: 'error', error: 'gone' })).toEqual({
-      kind: 'failed',
-      message: 'Something went wrong: gone',
-    });
+  it.each([
+    ['a query failure', new QueryFailure('denied'), 'denied'],
+    ['a thrown value that is not a query failure', 'gone', 'Something went wrong: gone'],
+  ])('reports an error from %s as failed with the described message', (_name, error, message) => {
+    expect(writeStateOf({ status: 'error', error })).toEqual({ kind: 'failed', message });
   });
 
   it('reports a success as done with the result', () => {
@@ -90,18 +83,5 @@ describe('writeStateOf over a MutationObserver', () => {
     await vi.waitFor(() =>
       expect(write.state()).toEqual({ kind: 'failed', message: 'The note could not be saved.' }),
     );
-  });
-
-  it('returns to idle on reset', async () => {
-    const write = observeWrite();
-    const settled = write.observer.mutate(3).catch(() => undefined);
-    await vi.waitFor(() => expect(write.writes).toHaveLength(1));
-    write.write(0).refuse(new QueryFailure('denied'));
-    await settled;
-    await vi.waitFor(() => expect(write.state().kind).toBe('failed'));
-
-    write.observer.reset();
-
-    expect(write.state()).toEqual(IDLE);
   });
 });

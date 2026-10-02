@@ -48,28 +48,14 @@ class Harness {
 }
 
 describe('ChromeFocus', () => {
-  it('reports nothing held before anything asks it to look', () => {
-    const held = new Harness();
-
-    expect(held.focus.held).toBe(false);
-  });
-
-  it('reads no focus while the turn that asked is still running', () => {
+  it('reports nothing held and reads no focus until the deferred turn runs', () => {
     const held = new Harness();
     held.looking(PILL);
+    const before = held.focus.held;
 
     held.focus.refresh();
 
-    expect(held.reads).toBe(0);
-  });
-
-  it('leaves the bars alone until the deferred turn runs', () => {
-    const held = new Harness();
-    held.looking(PILL);
-
-    held.focus.refresh();
-
-    expect(held.focus.held).toBe(false);
+    expect([before, held.reads, held.focus.held]).toEqual([false, 0, false]);
   });
 
   it('holds the bars up once the deferred turn finds focus inside one', () => {

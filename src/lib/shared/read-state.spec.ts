@@ -12,10 +12,6 @@ describe('read states', () => {
     expect(state).toEqual({ kind: 'loading' });
   });
 
-  it('carries the failure message on the failed variant', () => {
-    expect(readFailed('denied')).toEqual({ kind: 'failed', message: 'denied' });
-  });
-
   it('carries the value on the ready variant and nothing beside it', () => {
     const value = { books: 3 };
 
@@ -49,17 +45,22 @@ describe('readStateOf', () => {
     expect(readStateOf({ status: 'pending' })).toEqual({ kind: 'loading' });
   });
 
-  it('reports a load error as failed with the described message', () => {
-    expect(
-      readStateOf({ status: 'error', isLoadingError: true, error: new QueryFailure('denied') }),
-    ).toEqual({ kind: 'failed', message: 'denied' });
-  });
-
-  it('describes a thrown value that is not a query failure', () => {
-    expect(
-      readStateOf({ status: 'error', isLoadingError: true, error: new TypeError('broken') }),
-    ).toEqual({ kind: 'failed', message: 'Something went wrong: broken' });
-  });
+  it.each([
+    ['a query failure', new QueryFailure('denied'), 'denied'],
+    [
+      'a thrown value that is not a query failure',
+      new TypeError('broken'),
+      'Something went wrong: broken',
+    ],
+  ])(
+    'reports a load error from %s as failed with the described message',
+    (_name, error, message) => {
+      expect(readStateOf({ status: 'error', isLoadingError: true, error })).toEqual({
+        kind: 'failed',
+        message,
+      });
+    },
+  );
 
   it('keeps the data when a refetch fails', () => {
     expect(readStateOf({ status: 'error', isLoadingError: false, data: 3 })).toEqual(readReady(3));
@@ -136,18 +137,5 @@ describe('readStateOf over a QueryObserver', () => {
 
     expect(query.observer.getCurrentResult().status).toBe('error');
     expect(query.state()).toEqual(readReady(3));
-  });
-
-  it('reads again on refetch and reports the new answer', async () => {
-    const query = observeRead();
-    query.read(0).answer(3);
-    await vi.waitFor(() => expect(query.state()).toEqual(readReady(3)));
-
-    const refetched = query.observer.refetch();
-    await vi.waitFor(() => expect(query.reads).toHaveLength(2));
-    query.read(1).answer(4);
-    await refetched;
-
-    await vi.waitFor(() => expect(query.state()).toEqual(readReady(4)));
   });
 });

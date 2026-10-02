@@ -3,16 +3,12 @@ import { chromeHolds, chromeShown } from './reader-chrome';
 import type { ChromeBar } from './reader-chrome';
 
 describe('chromeShown', () => {
-  it('shows the bars the reader asked for', () => {
-    expect(chromeShown(true, false)).toBe(true);
-  });
-
-  it('hides the bars once the reader asks for nothing', () => {
-    expect(chromeShown(false, false)).toBe(false);
-  });
-
-  it('keeps unasked bars up while something in them holds them', () => {
-    expect(chromeShown(false, true)).toBe(true);
+  it.each([
+    ['shows the bars the reader asked for', true, false, true],
+    ['hides the bars once the reader asks for nothing', false, false, false],
+    ['keeps unasked bars up while something in them holds them', false, true, true],
+  ])('%s', (_name, asked, held, shown) => {
+    expect(chromeShown(asked, held)).toBe(shown);
   });
 });
 
@@ -25,16 +21,13 @@ const PILL = {} as Element;
 const PICKER = {} as Element;
 
 describe('chromeHolds', () => {
-  it('holds the bars up for a popover opened inside one of them', () => {
+  it('holds the bars up for a popover or focus inside either of them', () => {
     expect(chromeHolds([bar([PILL]), undefined], [PILL])).toBe(true);
+    expect(chromeHolds([undefined, bar([PILL])], [PILL])).toBe(true);
   });
 
   it('lets the bars fall for a popover opened outside every one of them', () => {
     expect(chromeHolds([bar([PILL]), undefined], [PICKER])).toBe(false);
-  });
-
-  it('holds the bars up for whatever holds focus inside one of them', () => {
-    expect(chromeHolds([undefined, bar([PILL])], [PILL])).toBe(true);
   });
 
   it('ignores a bar that is already inert, because nothing in it can be reached', () => {
@@ -52,9 +45,6 @@ describe('chromeHolds', () => {
   it('passes over a bar Svelte has torn down to null and holds for the one still standing', () => {
     expect(chromeHolds([null, bar([PILL])], [PILL])).toBe(true);
     expect(chromeHolds([null], [PILL])).toBe(false);
-  });
-
-  it('lets the bars fall when there are no bars at all', () => {
     expect(chromeHolds([], [PILL])).toBe(false);
   });
 });

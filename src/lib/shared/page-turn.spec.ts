@@ -48,33 +48,26 @@ describe('tapZone', () => {
 });
 
 describe('swipedSide', () => {
-  it('reports the right side for a finger moving left', () => {
-    expect(swipedSide('left')).toBe('right');
-  });
-
-  it('reports the left side for a finger moving right', () => {
-    expect(swipedSide('right')).toBe('left');
-  });
-
-  it('agrees with a real leftward swipe', () => {
-    expect(swipeTurn(at(300), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only')).toBe(
-      swipedSide('left'),
-    );
+  it.each([
+    ['left', 'right'],
+    ['right', 'left'],
+  ] as const)('reports for a finger moving %s the %s side', (moving, side) => {
+    expect(swipedSide(moving)).toBe(side);
   });
 });
 
 describe('swipeTurn', () => {
-  it('turns towards the right when the finger travels leftward, in both variants', () => {
-    for (const turns of BOTH) {
-      expect(swipeTurn(at(300), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, turns)).toBe('right');
-    }
-  });
-
-  it('turns towards the left when the finger travels rightward, in both variants', () => {
-    for (const turns of BOTH) {
-      expect(swipeTurn(at(100), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, turns)).toBe('left');
-    }
-  });
+  it.each([
+    ['right', 'leftward', 300, 200],
+    ['left', 'rightward', 100, 200],
+  ] as const)(
+    'turns towards the %s when the finger travels %s, in both variants',
+    (side, _travel, from, to) => {
+      for (const turns of BOTH) {
+        expect(swipeTurn(at(from), at(to), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, turns)).toBe(side);
+      }
+    },
+  );
 
   it('turns on distance alone once the finger has travelled the minimum', () => {
     expect(
@@ -113,45 +106,24 @@ describe('swipeTurn', () => {
     expect(
       swipeTurn(at(200, 400), at(110, 341), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'tap-zones'),
     ).toBe('right');
-  });
-
-  it('refuses a vertical scroll however far it travels', () => {
     expect(
       swipeTurn(at(200, 600), at(200, 100), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only'),
     ).toBeNull();
   });
 
-  it('leaves a swipe that starts in the edge gutter to the browser in the swipe-only variant', () => {
-    expect(
-      swipeTurn(at(EDGE_GUTTER_PX - 1), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only'),
-    ).toBeNull();
-    expect(
-      swipeTurn(
-        at(PHONE_WIDTH - EDGE_GUTTER_PX + 1),
-        at(200),
-        SLOW_MS,
-        WHOLE_SCREEN,
-        PHONE_WIDTH,
-        'swipe-only',
-      ),
-    ).toBeNull();
-  });
-
-  it('takes a swipe that starts just inside the gutter in the swipe-only variant', () => {
-    expect(
-      swipeTurn(at(EDGE_GUTTER_PX), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only'),
-    ).toBe('left');
-    expect(
-      swipeTurn(
-        at(PHONE_WIDTH - EDGE_GUTTER_PX),
-        at(200),
-        SLOW_MS,
-        WHOLE_SCREEN,
-        PHONE_WIDTH,
-        'swipe-only',
-      ),
-    ).toBe('right');
-  });
+  it.each([
+    [EDGE_GUTTER_PX - 1, null],
+    [PHONE_WIDTH - EDGE_GUTTER_PX + 1, null],
+    [EDGE_GUTTER_PX, 'left'],
+    [PHONE_WIDTH - EDGE_GUTTER_PX, 'right'],
+  ] as const)(
+    'leaves a swipe from x %d to the browser only from inside the edge gutter in the swipe-only variant',
+    (x, turned) => {
+      expect(swipeTurn(at(x), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'swipe-only')).toBe(
+        turned,
+      );
+    },
+  );
 
   it('measures the gutter from the screen, not from the frame', () => {
     const inset: FrameSpan = { left: 40, width: 310 };
@@ -173,6 +145,9 @@ describe('swipeTurn', () => {
   it('refuses a swipe it cannot measure', () => {
     expect(
       swipeTurn(at(Number.NaN), at(200), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'tap-zones'),
+    ).toBeNull();
+    expect(
+      swipeTurn(at(300), at(200, Number.NaN), SLOW_MS, WHOLE_SCREEN, PHONE_WIDTH, 'tap-zones'),
     ).toBeNull();
     expect(
       swipeTurn(at(300), at(200), SLOW_MS, { left: 0, width: 0 }, PHONE_WIDTH, 'tap-zones'),

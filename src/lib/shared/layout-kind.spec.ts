@@ -2,46 +2,37 @@ import { describe, expect, it } from 'vitest';
 import { effectiveDirection, effectivePairing, imageLayoutKind } from './layout-kind';
 
 describe('imageLayoutKind', () => {
-  it('answers with the layout kind of a book made of images', () => {
-    expect(imageLayoutKind('paged')).toBe('paged');
-    expect(imageLayoutKind('continuous')).toBe('continuous');
-  });
-
-  it('answers nothing for a book that reflows its text', () => {
-    expect(imageLayoutKind('flow')).toBeNull();
+  it.each([
+    ['paged', 'paged'],
+    ['continuous', 'continuous'],
+    ['flow', null],
+  ] as const)('answers a book of layout %s with the image layout kind %s', (kind, image) => {
+    expect(imageLayoutKind(kind)).toBe(image);
   });
 });
 
 describe('effectiveDirection', () => {
-  it('reads a paged right-to-left book right to left', () => {
-    expect(effectiveDirection('rtl', 'paged')).toBe('rtl');
-  });
-
-  it('reads a strip left to right whatever the book says', () => {
-    expect(effectiveDirection('rtl', 'continuous')).toBe('ltr');
-    expect(effectiveDirection('ltr', 'continuous')).toBe('ltr');
-  });
-
-  it('reads a paged left-to-right book left to right', () => {
-    expect(effectiveDirection('ltr', 'paged')).toBe('ltr');
-  });
-
-  it('keeps the direction a flow book declares, because its text runs that way', () => {
-    expect(effectiveDirection('rtl', 'flow')).toBe('rtl');
-    expect(effectiveDirection('ltr', 'flow')).toBe('ltr');
+  it.each([
+    ['rtl', 'paged', 'rtl'],
+    ['ltr', 'paged', 'ltr'],
+    ['rtl', 'continuous', 'ltr'],
+    ['ltr', 'continuous', 'ltr'],
+    ['rtl', 'flow', 'rtl'],
+    ['ltr', 'flow', 'ltr'],
+  ] as const)('reads a %s book of layout %s as %s', (direction, kind, effective) => {
+    expect(effectiveDirection(direction, kind)).toBe(effective);
   });
 });
 
 describe('effectivePairing', () => {
-  it('pairs a paged book the way the book asks', () => {
-    expect(effectivePairing('double', 'paged')).toBe('double');
-    expect(effectivePairing('double-after-cover', 'paged')).toBe('double-after-cover');
-    expect(effectivePairing('single', 'paged')).toBe('single');
-  });
-
-  it('leaves a strip unpaired whatever the book says', () => {
-    expect(effectivePairing('double', 'continuous')).toBe('single');
-    expect(effectivePairing('double-after-cover', 'continuous')).toBe('single');
-    expect(effectivePairing('single', 'continuous')).toBe('single');
+  it.each([
+    ['double', 'paged', 'double'],
+    ['double-after-cover', 'paged', 'double-after-cover'],
+    ['single', 'paged', 'single'],
+    ['double', 'continuous', 'single'],
+    ['double-after-cover', 'continuous', 'single'],
+    ['single', 'continuous', 'single'],
+  ] as const)('pairs a book asking for %s in layout %s as %s', (pairing, kind, effective) => {
+    expect(effectivePairing(pairing, kind)).toBe(effective);
   });
 });

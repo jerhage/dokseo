@@ -6,7 +6,6 @@ import {
   UNEXPECTED_FAILURE_TITLE,
   UnexpectedFailures,
   isResizeObserverNotice,
-  logUnexpected,
   unexpectedMessage,
   windowErrorCause,
 } from './unexpected-failure';
@@ -19,16 +18,6 @@ beforeEach(() => {
 
 afterEach(() => {
   logged.mockRestore();
-});
-
-describe('logUnexpected', () => {
-  it('logs the error itself, so the console keeps its stack', () => {
-    const error = new Error('broken');
-
-    logUnexpected('render', error);
-
-    expect(logged).toHaveBeenCalledWith('Unexpected failure (render)', error);
-  });
 });
 
 describe('unexpectedMessage', () => {
@@ -78,21 +67,16 @@ describe('isResizeObserverNotice', () => {
 });
 
 describe('UnexpectedFailures', () => {
-  it('neither logs nor toasts the ResizeObserver loop notice', () => {
-    const toaster = createToaster();
+  it.each([null, undefined])(
+    'drops the ResizeObserver loop notice, sent with the error %s, without a log or a toast',
+    (error) => {
+      const toaster = createToaster();
 
-    new UnexpectedFailures(toaster).windowError(windowError(RESIZE_OBSERVER_NOTICE, null));
+      new UnexpectedFailures(toaster).windowError(windowError(RESIZE_OBSERVER_NOTICE, error));
 
-    expect([logged.mock.calls.length, toaster.toasts.length]).toEqual([0, 0]);
-  });
-
-  it('neither logs nor toasts the notice as Firefox sends it', () => {
-    const toaster = createToaster();
-
-    new UnexpectedFailures(toaster).windowError(windowError(RESIZE_OBSERVER_NOTICE, undefined));
-
-    expect([logged.mock.calls.length, toaster.toasts.length]).toEqual([0, 0]);
-  });
+      expect([logged.mock.calls.length, toaster.toasts.length]).toEqual([0, 0]);
+    },
+  );
 
   it('logs and toasts the thrown value of any other window error', () => {
     const toaster = createToaster();

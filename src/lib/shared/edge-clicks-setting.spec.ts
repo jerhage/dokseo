@@ -24,20 +24,13 @@ class FakeStore implements StringStore {
 }
 
 describe('toEdgeClicksTurn', () => {
-  it('turns on edge clicks when nothing was stored', () => {
-    expect(toEdgeClicksTurn(null)).toBe(true);
-  });
-
-  it('turns on edge clicks when the stored value is unknown', () => {
-    expect(toEdgeClicksTurn('sideways')).toBe(true);
-  });
-
-  it('keeps a stored on', () => {
-    expect(toEdgeClicksTurn('on')).toBe(true);
-  });
-
-  it('keeps a stored off', () => {
-    expect(toEdgeClicksTurn('off')).toBe(false);
+  it.each([
+    ['nothing stored as on', null, true],
+    ['an unknown stored value as on', 'sideways', true],
+    ['a stored on as on', 'on', true],
+    ['a stored off as off', 'off', false],
+  ])('reads edge clicks from %s', (_name, stored, turns) => {
+    expect(toEdgeClicksTurn(stored)).toBe(turns);
   });
 });
 

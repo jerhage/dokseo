@@ -15,39 +15,36 @@ describe('foldForSearch', () => {
     expect(foldForSearch('ｱｲｳ').text).toBe('あいう');
   });
 
-  it('folds a half-width voiced kana onto one precomposed character', () => {
-    const folded = foldForSearch('ｶﾞ');
+  it.each([
+    ['ｶﾞ', 'が'],
+    ['ﾊﾟ', 'ぱ'],
+  ])(
+    'folds the half-width voiced or semi-voiced kana %s onto one precomposed %s',
+    (half, precomposed) => {
+      const folded = foldForSearch(half);
 
-    expect(folded.text).toBe('が');
-    expect(folded.origins).toEqual([0]);
-  });
-
-  it('folds a half-width semi-voiced kana onto one precomposed character', () => {
-    expect(foldForSearch('ﾊﾟ').text).toBe('ぱ');
-  });
+      expect(folded.text).toBe(precomposed);
+      expect(folded.origins).toEqual([0]);
+    },
+  );
 
   it('folds a standalone voiced mark onto the combining mark without a space', () => {
     expect(foldForSearch('か゛').text).toBe('が');
   });
 
-  it('folds katakana onto hiragana', () => {
-    expect(foldForSearch('カタカナ').text).toBe('かたかな');
+  it.each([
+    ['カタカナ', 'かたかな'],
+    ['ァィゥェォッャュョヮヵヶ', 'ぁぃぅぇぉっゃゅょゎゕゖ'],
+  ])('folds katakana %s onto hiragana, small kana included', (katakana, hiragana) => {
+    expect(foldForSearch(katakana).text).toBe(hiragana);
   });
 
-  it('folds small katakana onto small hiragana', () => {
-    expect(foldForSearch('ァィゥェォッャュョヮヵヶ').text).toBe('ぁぃぅぇぉっゃゅょゎゕゖ');
-  });
-
-  it('leaves the prolonged sound mark unshifted', () => {
-    expect(foldForSearch('ラーメン').text).toBe('らーめん');
-  });
-
-  it('leaves the katakana middle dot and iteration marks unshifted', () => {
-    expect(foldForSearch('・ヽヾ').text).toBe('・ヽヾ');
-  });
-
-  it('leaves hiragana alone', () => {
-    expect(foldForSearch('こっちに来て').text).toBe('こっちに来て');
+  it.each([
+    ['the prolonged sound mark', 'ラーメン', 'らーめん'],
+    ['the katakana middle dot and iteration marks', '・ヽヾ', '・ヽヾ'],
+    ['hiragana', 'こっちに来て', 'こっちに来て'],
+  ])('leaves %s unshifted', (_name, text, folded) => {
+    expect(foldForSearch(text).text).toBe(folded);
   });
 
   it('maps every folded unit back to the character it came from', () => {
@@ -61,8 +58,8 @@ describe('foldForSearch', () => {
 describe('decomposed Hangul', () => {
   const TITLE = '나 혼자만 레벨업 1권';
 
-  it('finds a syllable in a title macOS stored decomposed', () => {
-    expect(matchesQuery(TITLE.normalize('NFD'), '나')).toBe(true);
+  it.each(['나', '레벨업'])('finds %s anywhere in a title macOS stored decomposed', (query) => {
+    expect(matchesQuery(TITLE.normalize('NFD'), query)).toBe(true);
   });
 
   it('finds a composed syllable from a decomposed query, both ways round', () => {
@@ -76,34 +73,20 @@ describe('decomposed Hangul', () => {
     expect(decomposed.slice(0, 2).normalize('NFC')).toBe('나');
   });
 
-  it('matches a word inside the title, not only at the start', () => {
-    expect(matchesQuery(TITLE.normalize('NFD'), '레벨업')).toBe(true);
-  });
-
-  it('still refuses a syllable the title does not hold', () => {
+  it('refuses a syllable the title does not hold', () => {
     expect(matchesQuery(TITLE.normalize('NFD'), '용')).toBe(false);
   });
 });
 
 describe('textMatches', () => {
-  it('matches katakana text with a hiragana query', () => {
-    expect(matchesQuery('コーヒー', 'こーひー')).toBe(true);
-  });
-
-  it('matches hiragana text with a katakana query', () => {
-    expect(matchesQuery('ありがとう', 'アリガトウ')).toBe(true);
-  });
-
-  it('matches a full-width question mark with a half-width query', () => {
-    expect(matchesQuery('えっ？', '?')).toBe(true);
-  });
-
-  it('matches a half-width digit with a full-width query', () => {
-    expect(matchesQuery('3人', '３')).toBe(true);
-  });
-
-  it('matches a precomposed voiced kana with a half-width query', () => {
-    expect(matchesQuery('ガキ', 'ｶﾞ')).toBe(true);
+  it.each([
+    ['katakana text with a hiragana query', 'コーヒー', 'こーひー'],
+    ['hiragana text with a katakana query', 'ありがとう', 'アリガトウ'],
+    ['a full-width question mark with a half-width query', 'えっ？', '?'],
+    ['a half-width digit with a full-width query', '3人', '３'],
+    ['a precomposed voiced kana with a half-width query', 'ガキ', 'ｶﾞ'],
+  ])('matches %s', (_name, text, query) => {
+    expect(matchesQuery(text, query)).toBe(true);
   });
 
   it('rejects text that does not hold the query', () => {
@@ -129,12 +112,11 @@ describe('textMatches', () => {
     ]);
   });
 
-  it('reports nothing for a blank query', () => {
-    expect(textMatches('こっちに来て', '   ')).toEqual([]);
-  });
-
-  it('reports nothing for empty text', () => {
-    expect(textMatches('', 'あ')).toEqual([]);
+  it.each([
+    ['a blank query', 'こっちに来て', '   '],
+    ['empty text', '', 'あ'],
+  ])('reports nothing for %s', (_name, text, query) => {
+    expect(textMatches(text, query)).toEqual([]);
   });
 });
 

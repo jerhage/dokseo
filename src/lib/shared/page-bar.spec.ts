@@ -23,13 +23,15 @@ describe('scrubStep', () => {
 });
 
 describe('turnsSide', () => {
-  it('places the turn buttons on the left of a right-to-left scrubber, where it moves forward', () => {
-    expect(turnsSide('rtl')).toBe('before');
-  });
-
-  it('places the turn buttons on the right of a left-to-right scrubber, where it moves forward', () => {
-    expect(turnsSide('ltr')).toBe('after');
-  });
+  it.each([
+    ['rtl', 'before'],
+    ['ltr', 'after'],
+  ] as const)(
+    'places the turn buttons of a %s scrubber %s it, where it moves forward',
+    (direction, side) => {
+      expect(turnsSide(direction)).toBe(side);
+    },
+  );
 });
 
 describe('stepWithin', () => {

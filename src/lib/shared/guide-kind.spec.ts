@@ -1,53 +1,41 @@
 import { describe, expect, it } from 'vitest';
 import { TOUCH_GUIDE_LABEL, dueAfter, isGuideKind, lessonKind, showsGuide } from './guide-kind';
+import type { GuideKind, GuideMoment } from './guide-kind';
+import type { SwipeLesson } from './swipe-lesson';
 
 describe('lessonKind', () => {
-  it('keys a guide that teaches a left swipe as swipe-left', () => {
-    expect(lessonKind({ kind: 'sideways', forward: 'left' })).toBe('swipe-left');
-  });
-
-  it('keys a guide that teaches a right swipe as swipe-right', () => {
-    expect(lessonKind({ kind: 'sideways', forward: 'right' })).toBe('swipe-right');
-  });
-
-  it('keys vertical pages as vertical-pages', () => {
-    expect(lessonKind({ kind: 'vertical-pages' })).toBe('vertical-pages');
-  });
-
-  it('keys the strip scroll as strip-scroll', () => {
-    expect(lessonKind({ kind: 'vertical-scroll' })).toBe('strip-scroll');
+  it.each<[string, SwipeLesson, GuideKind]>([
+    ['a guide that teaches a left swipe', { kind: 'sideways', forward: 'left' }, 'swipe-left'],
+    ['a guide that teaches a right swipe', { kind: 'sideways', forward: 'right' }, 'swipe-right'],
+    ['vertical pages', { kind: 'vertical-pages' }, 'vertical-pages'],
+    ['the strip scroll', { kind: 'vertical-scroll' }, 'strip-scroll'],
+  ])('keys %s as its guide kind', (_name, lesson, kind) => {
+    expect(lessonKind(lesson)).toBe(kind);
   });
 });
 
 describe('dueAfter', () => {
-  it('shows the guide of a kind not yet seen when a book opens', () => {
-    expect(dueAfter({ kind: 'opened', seen: false })).toBe(true);
-  });
-
-  it('keeps a seen kind hidden when a book opens', () => {
-    expect(dueAfter({ kind: 'opened', seen: true })).toBe(false);
-  });
-
-  it('shows the guide the reader asked for, even of a seen kind', () => {
-    expect(dueAfter({ kind: 'recalled' })).toBe(true);
-  });
-
-  it('ends the guide when it is dismissed', () => {
-    expect(dueAfter({ kind: 'dismissed' })).toBe(false);
+  it.each<[string, GuideMoment, boolean]>([
+    [
+      'shows the guide of a kind not yet seen when a book opens',
+      { kind: 'opened', seen: false },
+      true,
+    ],
+    ['keeps a seen kind hidden when a book opens', { kind: 'opened', seen: true }, false],
+    ['shows the guide the reader asked for, even of a seen kind', { kind: 'recalled' }, true],
+    ['ends the guide when it is dismissed', { kind: 'dismissed' }, false],
+  ])('%s', (_name, moment, due) => {
+    expect(dueAfter(moment)).toBe(due);
   });
 });
 
 describe('showsGuide', () => {
-  it('shows a due guide where one is offered', () => {
-    expect(showsGuide({ offered: true, due: true })).toBe(true);
-  });
-
-  it('shows nothing when the guide is not due', () => {
-    expect(showsGuide({ offered: true, due: false })).toBe(false);
-  });
-
-  it('shows nothing where no guide is offered', () => {
-    expect(showsGuide({ offered: false, due: true })).toBe(false);
+  it.each([
+    [true, true, true],
+    [true, false, false],
+    [false, true, false],
+  ])('decides that a guide offered %s and due %s shows: %s', (offered, due, shown) => {
+    expect(showsGuide({ offered, due })).toBe(shown);
   });
 });
 
@@ -58,7 +46,7 @@ describe('TOUCH_GUIDE_LABEL', () => {
 });
 
 describe('isGuideKind', () => {
-  it('accepts every guide kind', () => {
+  it('accepts every guide kind and rejects anything else a stale store holds', () => {
     for (const kind of [
       'swipe-left',
       'swipe-right',
@@ -68,9 +56,6 @@ describe('isGuideKind', () => {
     ]) {
       expect(isGuideKind(kind)).toBe(true);
     }
-  });
-
-  it('rejects anything else a stale store holds', () => {
     expect(isGuideKind('zones')).toBe(false);
   });
 });
