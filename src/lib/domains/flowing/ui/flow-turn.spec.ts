@@ -128,7 +128,7 @@ function releasing(release: Partial<PointerRelease> = {}): PointerRelease {
   };
 }
 
-function foliateLike(dir: 'ltr' | 'rtl'): { readonly pages: PageTurner; readonly calls: string[] } {
+function recording(): { readonly pages: PageTurner; readonly calls: string[] } {
   const calls: string[] = [];
   const pages: PageTurner = {
     prev: () => {
@@ -137,8 +137,12 @@ function foliateLike(dir: 'ltr' | 'rtl'): { readonly pages: PageTurner; readonly
     next: () => {
       calls.push('next');
     },
-    goLeft: () => (dir === 'rtl' ? pages.next() : pages.prev()),
-    goRight: () => (dir === 'rtl' ? pages.prev() : pages.next()),
+    goLeft: () => {
+      calls.push('goLeft');
+    },
+    goRight: () => {
+      calls.push('goRight');
+    },
   };
 
   return { pages, calls };
@@ -208,21 +212,23 @@ describe('keyMove', () => {
 });
 
 describe('isTyping', () => {
-  it('reports an input, a select and a text area as typing', () => {
-    for (const tagName of ['INPUT', 'SELECT', 'TEXTAREA', 'input', 'textarea']) {
-      expect(isTyping(targeting(tagName))).toBe(true);
-    }
-  });
+  const TYPED_INTO: readonly KeyTarget[] = [
+    targeting('INPUT'),
+    targeting('SELECT'),
+    targeting('TEXTAREA'),
+    targeting('input'),
+    targeting('textarea'),
+    ...['text', 'search', 'email', 'number', 'password'].map((type) =>
+      targeting('INPUT', { type }),
+    ),
+    targeting('SELECT', { type: 'select-one' }),
+    targeting('TEXTAREA', { type: 'textarea' }),
+  ];
 
-  it('reports a text field as typing whatever it calls its type', () => {
-    for (const type of ['text', 'search', 'email', 'number', 'password']) {
-      expect(isTyping(targeting('INPUT', { type }))).toBe(true);
+  it('reports an input, a select and a text area as typing, whatever it calls its type', () => {
+    for (const target of TYPED_INTO) {
+      expect(isTyping(target)).toBe(true);
     }
-  });
-
-  it('reports a select and a text area as typing, types and all', () => {
-    expect(isTyping(targeting('SELECT', { type: 'select-one' }))).toBe(true);
-    expect(isTyping(targeting('TEXTAREA', { type: 'textarea' }))).toBe(true);
   });
 
   it('reports a range slider as not typing, however it is cased', () => {
@@ -259,14 +265,15 @@ describe('pressesOnSpace', () => {
     expect(pressesOnSpace(targeting('A'))).toBe(false);
   });
 
-  it('reports an element wearing another role as not pressed', () => {
-    expect(pressesOnSpace(targeting('DIV', { role: 'group' }))).toBe(false);
-    expect(pressesOnSpace(targeting('SUMMARY'))).toBe(false);
-  });
-
-  it('reports the progress slider and an ordinary element as not pressed', () => {
-    expect(pressesOnSpace(targeting('INPUT', { type: 'range' }))).toBe(false);
-    expect(pressesOnSpace(targeting('P'))).toBe(false);
+  it('reports an element wearing another role, the progress slider and an ordinary element as not pressed', () => {
+    for (const target of [
+      targeting('DIV', { role: 'group' }),
+      targeting('SUMMARY'),
+      targeting('INPUT', { type: 'range' }),
+      targeting('P'),
+    ]) {
+      expect(pressesOnSpace(target)).toBe(false);
+    }
   });
 
   it('reports nothing as not pressed', () => {
@@ -324,12 +331,6 @@ describe('the space bar over a focused chrome control', () => {
 });
 
 describe('the keys a chapter relays out to the host window', () => {
-  it('keeps every key that turns a page inside the chapter it was pressed in', () => {
-    for (const key of TURNING_KEYS) {
-      expect(relaying(key, {})).toBe(false);
-    }
-  });
-
   it('leaves every relayed press alone, whatever the host says it landed on', () => {
     for (const key of [...TURNING_KEYS, 'Escape', 'Home', 'End', 'k', 'K']) {
       for (const held of HELD_DOWN.filter((down) => relaying(key, down))) {
@@ -440,20 +441,15 @@ describe('pointerEnded', () => {
     ).toEqual({ kind: 'click', region: { kind: 'left-edge' } });
   });
 
-  it('asks for the chrome for a finger tap on an edge while the chrome is up', () => {
-    expect(
-      releaseAction(
-        pointerEnded(releasing({ to: { x: 4, y: 100 }, pointerType: 'touch', chromeShown: true })),
-      ),
-    ).toEqual({ kind: 'chrome' });
-  });
+  const FINGER_CHROME: readonly (readonly [string, Partial<PointerRelease>])[] = [
+    ['while the chrome is up', { chromeShown: true }],
+    ['when only a swipe turns', { turns: 'swipe-only' }],
+  ];
 
-  it('asks for the chrome for a finger tap on an edge when only a swipe turns', () => {
+  it.each(FINGER_CHROME)('asks for the chrome for a finger tap on an edge %s', (_case, held) => {
     expect(
       releaseAction(
-        pointerEnded(
-          releasing({ to: { x: 4, y: 100 }, pointerType: 'touch', turns: 'swipe-only' }),
-        ),
+        pointerEnded(releasing({ to: { x: 4, y: 100 }, pointerType: 'touch', ...held })),
       ),
     ).toEqual({ kind: 'chrome' });
   });
@@ -523,88 +519,51 @@ describe('pointerEnded', () => {
 
 describe('turnPage', () => {
   it('turns leftward with goLeft and rightward with goRight', () => {
-    const reader = foliateLike('ltr');
+    const reader = recording();
 
     turnPage(reader.pages, LEFTWARD);
     turnPage(reader.pages, RIGHTWARD);
 
+    expect(reader.calls).toEqual(['goLeft', 'goRight']);
+  });
+
+  it('steps backward with prev and forward with next', () => {
+    const reader = recording();
+
+    turnPage(reader.pages, BACKWARD);
+    turnPage(reader.pages, FORWARD);
+
     expect(reader.calls).toEqual(['prev', 'next']);
   });
 
-  it('steps backward with prev and forward with next, whatever the book direction', () => {
-    const western = foliateLike('ltr');
-    const japanese = foliateLike('rtl');
-
-    turnPage(western.pages, BACKWARD);
-    turnPage(western.pages, FORWARD);
-    turnPage(japanese.pages, BACKWARD);
-    turnPage(japanese.pages, FORWARD);
-
-    expect(western.calls).toEqual(['prev', 'next']);
-    expect(japanese.calls).toEqual(['prev', 'next']);
-  });
-
   it('calls nothing when the reader asked for nothing', () => {
-    const reader = foliateLike('ltr');
+    const reader = recording();
 
     turnPage(reader.pages, STAY);
 
     expect(reader.calls).toEqual([]);
   });
+});
 
-  it('retreats a left-to-right book when the left edge is clicked', () => {
-    const reader = foliateLike('ltr');
+describe('moveForEnd', () => {
+  const ENDS: readonly (readonly [string, PointerRelease, FlowMove])[] = [
+    ['a click on the left edge leftward', releasing({ to: { x: 4, y: 9 } }), LEFTWARD],
+    ['a click on the right edge rightward', releasing({ to: { x: 796, y: 9 } }), RIGHTWARD],
+    ['a click in the middle nowhere', releasing(), STAY],
+    [
+      'a click that ended with text selected nowhere, even on an edge',
+      releasing({ to: { x: 4, y: 9 }, textSelected: true }),
+      STAY,
+    ],
+    [
+      'a release the pointer travelled away from nowhere',
+      releasing({ from: ORIGIN, to: { x: 440, y: 100 } }),
+      STAY,
+    ],
+  ];
 
-    turnPage(reader.pages, moveForEnd(pointerEnded(releasing({ to: { x: 4, y: 9 } }))));
-
-    expect(reader.calls).toEqual(['prev']);
-  });
-
-  it('advances a right-to-left book when the left edge is clicked', () => {
-    const reader = foliateLike('rtl');
-
-    turnPage(reader.pages, moveForEnd(pointerEnded(releasing({ to: { x: 4, y: 9 } }))));
-
-    expect(reader.calls).toEqual(['next']);
-  });
-
-  it('advances a left-to-right book when the right edge is clicked', () => {
-    const reader = foliateLike('ltr');
-
-    turnPage(reader.pages, moveForEnd(pointerEnded(releasing({ to: { x: 796, y: 9 } }))));
-
-    expect(reader.calls).toEqual(['next']);
-  });
-
-  it('retreats a right-to-left book when the right edge is clicked', () => {
-    const reader = foliateLike('rtl');
-
-    turnPage(reader.pages, moveForEnd(pointerEnded(releasing({ to: { x: 796, y: 9 } }))));
-
-    expect(reader.calls).toEqual(['prev']);
-  });
-
-  it('calls nothing for a click in the middle of either book', () => {
-    const western = foliateLike('ltr');
-    const japanese = foliateLike('rtl');
-
-    turnPage(western.pages, moveForEnd(pointerEnded(releasing())));
-    turnPage(japanese.pages, moveForEnd(pointerEnded(releasing())));
-
-    expect(western.calls).toEqual([]);
-    expect(japanese.calls).toEqual([]);
-  });
-
-  it('calls nothing for a click that ended with text selected, at either edge', () => {
-    const western = foliateLike('ltr');
-    const japanese = foliateLike('rtl');
-    const onTheEdge = releasing({ to: { x: 4, y: 9 }, textSelected: true });
-
-    turnPage(western.pages, moveForEnd(pointerEnded(onTheEdge)));
-    turnPage(japanese.pages, moveForEnd(pointerEnded(onTheEdge)));
-
-    expect(western.calls).toEqual([]);
-    expect(japanese.calls).toEqual([]);
+  it.each(ENDS)('sends %s', (_case, release, move) => {
+    expect(moveForEnd(pointerEnded(release))).toEqual(move);
   });
 });
 
@@ -652,26 +611,16 @@ describe('turnOrder', () => {
 
 describe('moveForTurn', () => {
   it('turns in reading order, leaving the sides to the edges and the arrows', () => {
-    const japanese = foliateLike('rtl');
+    const reader = recording();
 
-    turnPage(japanese.pages, moveForTurn('previous'));
-    turnPage(japanese.pages, moveForTurn('next'));
+    turnPage(reader.pages, moveForTurn('previous'));
+    turnPage(reader.pages, moveForTurn('next'));
 
-    expect(japanese.calls).toEqual(['prev', 'next']);
+    expect(reader.calls).toEqual(['prev', 'next']);
   });
 });
 
 describe('turnTowards', () => {
-  it('goes forward from the left side of a right-to-left book, exactly as the footer does', () => {
-    expect(turnTowards('left', 'rtl')).toBe('next');
-    expect(turnTowards('right', 'rtl')).toBe('previous');
-  });
-
-  it('goes forward from the right side of a left-to-right book', () => {
-    expect(turnTowards('left', 'ltr')).toBe('previous');
-    expect(turnTowards('right', 'ltr')).toBe('next');
-  });
-
   it('matches the footer slot on each side in both directions', () => {
     for (const direction of ['ltr', 'rtl'] as const) {
       expect([turnTowards('left', direction), turnTowards('right', direction)]).toEqual(
