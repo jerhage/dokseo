@@ -18,6 +18,7 @@ import { lumaPlane } from '$lib/platform/image/pixels';
 import { describeCause } from '$lib/shared/cause';
 import { guardFirstGpuRun, openOnDevice, reopenOnCpu } from './device-fallback';
 import { installModelFetch } from './model-fetch';
+import { explainUnreachable } from './network-reach';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
 const DICTIONARY_FILE = 'inference.yml';
@@ -126,6 +127,7 @@ async function openSession(
     },
   });
 
+  const explained = explainUnreachable(env);
   const url = dictionaryUrl(env.remoteHost, env.remotePathTemplate, modelId);
   const build = (on: RecognizerDevice) =>
     PreTrainedModel.from_pretrained(modelId, {
@@ -139,12 +141,14 @@ async function openSession(
   const model =
     refused === null ? openOnDevice(await deviceFor(setup.compute), build) : reopenOnCpu(build);
 
-  const [config, running] = await Promise.all([
-    env
-      .fetch(url, { cache: 'force-cache' })
-      .then((answer: Response) => checkedResponse(answer, 'GET', url).text()),
-    model,
-  ]);
+  const [config, running] = await explained(
+    Promise.all([
+      env
+        .fetch(url, { cache: 'force-cache' })
+        .then((answer: Response) => checkedResponse(answer, 'GET', url).text()),
+      model,
+    ]),
+  );
 
   const labels = ctcLabels(characterDictionary(config));
   if (labels.length <= 2) {

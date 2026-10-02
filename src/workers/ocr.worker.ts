@@ -10,6 +10,7 @@ import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model/mode
 import { describeCause } from '$lib/shared/cause';
 import { guardFirstGpuRun, openOnDevice, reopenOnCpu } from './device-fallback';
 import { installModelFetch } from './model-fetch';
+import { explainUnreachable } from './network-reach';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
 
 const DECODER_START_TOKEN = 2;
@@ -90,6 +91,7 @@ async function openSession(
       post({ kind: 'progress', ...load });
     },
   });
+  const explained = explainUnreachable(env);
   const precision = knownModel(modelId)?.precision ?? QUANTIZED_THROUGHOUT;
   const build = (on: RecognizerDevice) =>
     AutoModel.from_pretrained(modelId, {
@@ -100,11 +102,13 @@ async function openSession(
   const model =
     refused === null ? openOnDevice(await deviceFor(setup.compute), build) : reopenOnCpu(build);
 
-  const [processor, tokenizer, running] = await Promise.all([
-    AutoProcessor.from_pretrained(modelId),
-    AutoTokenizer.from_pretrained(modelId),
-    model,
-  ]);
+  const [processor, tokenizer, running] = await explained(
+    Promise.all([
+      AutoProcessor.from_pretrained(modelId),
+      AutoTokenizer.from_pretrained(modelId),
+      model,
+    ]),
+  );
 
   const sessions = sessionsOf(running.opened.sessions);
   const encoder = sessions.model;
