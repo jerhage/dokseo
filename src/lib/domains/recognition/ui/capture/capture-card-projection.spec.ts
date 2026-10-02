@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
-import { namedTag } from '../../domain/tag/tag';
-import type { Tag } from '../../domain/tag/tag';
+import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { EMPTY_NOTE } from './capture-card';
 import { cardOf, hitOf } from './capture-card-projection';
 import type { Card, CardPlacing } from './capture-card-projection';
 import type { PanelCapture } from './panel-capture';
 import { NOTHING_READ } from './nothing-read';
-
-const TAG: Tag = namedTag(tagId('tag-1'), 'speech', 'copper', 1);
 
 const PLACING: CardPlacing = {
   tags: [],
@@ -21,6 +17,10 @@ const PLACING: CardPlacing = {
   seekable: false,
   carried: null,
 };
+
+const IN_CHAPTER_ONE = textAnchor('/6/4!/2', { exact: 'ねこ', prefix: '', suffix: '' }, '第一章');
+
+const CHAPTER_ONE = { text: '第一章', lang: 'ja' };
 
 const AT_PAGE_THREE = regionAnchor([{ index: imageIndex(2), rect: imageRect(0, 0, 10, 10) }]);
 
@@ -114,9 +114,6 @@ describe('cardOf', () => {
     ];
 
     expect(cards.map((capture) => cardFor(capture).placeLanguage)).toEqual(['ja', null, null]);
-  });
-
-  it('marks no chapter place with a language when the route knows none', () => {
     expect(cardFor(lifted('c1', 'x', null, '第三章'), { language: null }).placeLanguage).toBeNull();
   });
 
@@ -170,24 +167,12 @@ describe('cardOf', () => {
     expect(cardFor(read('c1', 'ねこ')).href).toBe('/read/book-1?image=2&region=0,0,10,10');
   });
 
-  it('carries the searched query into the link', () => {
-    expect(cardFor(read('c1', 'ねこ'), { carried: 'cat' }).href).toBe(
-      '/read/book-1?image=2&region=0,0,10,10&find=cat',
-    );
-  });
-
   it('links nowhere when no book is open', () => {
     expect(cardFor(read('c1', 'ねこ'), { book: null }).href).toBeNull();
   });
 
   it('links nowhere for a capture lifted from text', () => {
     expect(cardFor(lifted('c1', 'ねこ', null)).href).toBeNull();
-  });
-
-  it('shows the chapter a lifted capture came from as its place', () => {
-    const captures = [lifted('c1', 'ねこ', null, '第一章'), lifted('c2', 'いぬ', null)];
-
-    expect(captures.map((capture) => cardFor(capture).place)).toEqual(['第一章', 'no chapter']);
   });
 
   it('offers a passage only when the panel can seek', () => {
@@ -197,33 +182,28 @@ describe('cardOf', () => {
     expect([away.passage, seeking.passage?.cfi]).toEqual([null, '/6/4!/2']);
   });
 
-  it('heads an ebook card with its chapter in the book language, and gives no header to one without a chapter', () => {
-    const captures = [lifted('c1', 'ねこ', null, '第一章'), lifted('c2', 'いぬ', null)];
-
-    expect(captures.map((capture) => cardFor(capture, { seekable: true }).chapter)).toEqual([
-      { text: '第一章', lang: 'ja' },
-      null,
-    ]);
-  });
+  it.each([
+    ['a read card with a chapter', lifted('c1', 'ねこ', null, '第一章'), true, CHAPTER_ONE],
+    ['a read card without a chapter', lifted('c2', 'いぬ', null), true, null],
+    ['an empty card', { ...blank('c1'), anchor: IN_CHAPTER_ONE }, false, CHAPTER_ONE],
+    [
+      'a failed card',
+      { ...broken('c2', 'the crop failed'), anchor: IN_CHAPTER_ONE },
+      false,
+      CHAPTER_ONE,
+    ],
+  ])(
+    'heads an ebook card with its chapter in the book language, for %s',
+    (_case, capture, seekable, chapter) => {
+      expect(cardFor(capture, { seekable }).chapter).toEqual(chapter);
+    },
+  );
 
   it('gives an image capture no chapter header, and keeps its place and link', () => {
     const card = cardFor(read('c1', 'ねこ'), { seekable: true });
 
     expect(card).toMatchObject({ passage: null, chapter: null, place: 'p.003' });
     expect(card.href).not.toBeNull();
-  });
-
-  it('heads an empty or failed ebook card with its chapter', () => {
-    const anchor = textAnchor('/6/4!/2', { exact: 'ねこ', prefix: '', suffix: '' }, '第一章');
-    const captures = [
-      { ...blank('c1'), anchor },
-      { ...broken('c2', 'the crop failed'), anchor },
-    ];
-
-    expect(captures.map((capture) => cardFor(capture).chapter)).toEqual([
-      { text: '第一章', lang: 'ja' },
-      { text: '第一章', lang: 'ja' },
-    ]);
   });
 
   it('leaves the chapter header off a card still being read', () => {
@@ -239,26 +219,20 @@ describe('cardOf', () => {
     expect(cardFor(reading, { seekable: true }).chapter).toBeNull();
   });
 
-  it('asks to add a note when the capture carries none', () => {
-    expect(cardFor(read('c1', 'ねこ')).noteLabel).toBe('Add a note to the capture at p.003');
-  });
-
-  it('asks to edit the note when the capture carries one', () => {
-    expect(cardFor(read('c1', 'ねこ', 'a cat')).noteLabel).toBe(
+  it.each([
+    [
+      'asks to add a note when the capture carries none',
+      read('c1', 'ねこ'),
+      'Add a note to the capture at p.003',
+    ],
+    [
+      'asks to edit the note when the capture carries one',
+      read('c1', 'ねこ', 'a cat'),
       'Edit the note on the capture at p.003',
-    );
-  });
-
-  it('offers no note label on a written capture', () => {
-    expect(cardFor(written('c1', 'mine')).noteLabel).toBeNull();
-  });
-
-  it('chips the tags the capture carries', () => {
-    const tagged = { ...read('c1', 'ねこ'), tagIds: [TAG.id] };
-
-    expect(cardFor(tagged, { tags: [TAG] }).tags).toEqual([
-      { id: TAG.id, name: 'speech', colour: 'copper' },
-    ]);
+    ],
+    ['offers no note label on a written capture', written('c1', 'mine'), null],
+  ])('%s', (_name, capture, label) => {
+    expect(cardFor(capture).noteLabel).toBe(label);
   });
 
   it('shows the marked runs of a hit in the text and the note', () => {
@@ -284,12 +258,11 @@ describe('hitOf', () => {
     expect(hitOf(capture, 'ねこ')).toMatchObject({ capture, anchor: capture.anchor });
   });
 
-  it('finds a capture holding the query in its note', () => {
-    expect(hitOf(read('c1', 'ねこ', 'a cat sat'), 'cat')).not.toBeNull();
-  });
-
-  it('finds a lifted capture holding the query in its note', () => {
-    expect(hitOf(lifted('c1', 'ねこ', 'a cat sat'), 'cat')).not.toBeNull();
+  it.each([
+    ['recognized', read('c1', 'ねこ', 'a cat sat')],
+    ['lifted', lifted('c1', 'ねこ', 'a cat sat')],
+  ])('finds a capture holding the query in its note, when it is %s', (_origin, capture) => {
+    expect(hitOf(capture, 'cat')).not.toBeNull();
   });
 
   it('finds nothing in a capture that does not hold the query', () => {

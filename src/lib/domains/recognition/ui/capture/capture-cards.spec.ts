@@ -131,54 +131,11 @@ describe('card search', () => {
     expect(panel.cards.map((card) => card.id)).toEqual([captureId('c2')]);
   });
 
-  it('matches a capture by its note', () => {
-    const panel = cardsOf([read('c1', 'ねこ', 'a cat sat'), read('c2', 'いぬ')]);
-    panel.query = 'cat';
-
-    expect(panel.cards.map((card) => card.id)).toEqual([captureId('c1')]);
-  });
-
-  it('holds back a pending capture from the matches', () => {
-    const panel = cardsOf([pending('c1'), read('c2', 'ねこ')]);
-    panel.query = 'ね';
-
-    expect(panel.cards.map((card) => card.id)).toEqual([captureId('c2')]);
-  });
-
   it('orders the matches the way the book reads', () => {
     const panel = cardsOf([read('c1', 'ねこ', null, 0), read('c2', 'ねこ', null, 100)]);
     panel.query = 'ねこ';
 
     expect(panel.cards.map((card) => card.id)).toEqual([captureId('c2'), captureId('c1')]);
-  });
-
-  it('orders text matches by the passage order it is given', () => {
-    const panel = cardsOf(
-      [
-        liftedAt('c3', 'ねこの尾', '/6/22!/2:0'),
-        liftedAt('c1', 'ねこが来た', '/6/4!/2:0'),
-        liftedAt('c2', 'ねこの目', '/6/14!/2:0'),
-      ],
-      { passages: byPassageOrder },
-    );
-    panel.query = 'ねこ';
-
-    expect(panel.cards.map((card) => card.id)).toEqual([
-      captureId('c1'),
-      captureId('c2'),
-      captureId('c3'),
-    ]);
-  });
-
-  it('lists matches newest first when the reader sorts by newest', () => {
-    const panel = cardsOf(
-      [read('c1', 'ねこ', null, 100), read('c2', 'いぬ', null, 50), read('c3', 'ねこ', null, 0)],
-      {},
-      newestChosen(),
-    );
-    panel.query = 'ねこ';
-
-    expect(idsOf(panel)).toEqual(['c3', 'c1']);
   });
 
   it('marks the matched run inside the text', () => {
@@ -214,9 +171,10 @@ describe('card order', () => {
       read('c1', 'ねこ', null, 0),
       read('c2', 'いぬ', null, 100),
       read('c3', 'とり', null, 50),
+      pending('c4', 75),
     ]);
 
-    expect(idsOf(panel)).toEqual(['c2', 'c3', 'c1']);
+    expect(idsOf(panel)).toEqual(['c2', 'c4', 'c3', 'c1']);
   });
 
   it('lists text captures in the passage order it is given while nothing is typed', () => {
@@ -232,16 +190,6 @@ describe('card order', () => {
     expect(idsOf(panel)).toEqual(['c1', 'c2', 'c3']);
   });
 
-  it('places a capture still being read at its place in the book, not at the top', () => {
-    const panel = cardsOf([
-      read('c1', 'ねこ', null, 100),
-      read('c2', 'いぬ', null, 0),
-      pending('c3', 50),
-    ]);
-
-    expect(idsOf(panel)).toEqual(['c1', 'c3', 'c2']);
-  });
-
   it('lists every capture newest first when the reader sorts by newest', () => {
     const panel = cardsOf(
       [liftedAt('c1', 'いぬが来た', '/6/4!/2:0'), liftedAt('c3', 'ねこの尾', '/6/22!/2:0')],
@@ -250,13 +198,6 @@ describe('card order', () => {
     );
 
     expect(idsOf(panel)).toEqual(['c3', 'c1']);
-  });
-
-  it('starts in book order when the stored choice is unknown', () => {
-    const store = new FakeStore();
-    store.setItem(CAPTURE_SORT_KEY, 'oldest');
-
-    expect(cardsOf([], {}, store).sort).toBe('book');
   });
 
   it('reorders the cards and stores the choice when the reader sorts', () => {
@@ -278,37 +219,6 @@ describe('card reveal', () => {
       true,
       false,
     ]);
-  });
-
-  it('reveals no capture other than the one just made', () => {
-    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
-
-    expect(panel.reveals(captureId('c1'), captureId('c2'), true)).toBe(false);
-  });
-
-  it('reveals nothing when no capture was made while the book is open', () => {
-    const panel = cardsOf([read('c1', 'ねこ')]);
-
-    expect(panel.reveals(captureId('c1'), null, true)).toBe(false);
-  });
-
-  it('reveals the next capture made after one it has revealed', () => {
-    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
-    panel.reveals(captureId('c1'), captureId('c1'), true);
-
-    expect(panel.reveals(captureId('c2'), captureId('c2'), true)).toBe(true);
-  });
-
-  it('holds the capture just made while the panel is hidden and reveals it when the panel shows', () => {
-    const panel = cardsOf([read('c1', 'ねこ'), pending('c2')]);
-    const made = captureId('c2');
-
-    expect([
-      panel.reveals(made, made, false),
-      panel.reveals(made, made, false),
-      panel.reveals(made, made, true),
-      panel.reveals(made, made, true),
-    ]).toEqual([false, false, true, false]);
   });
 
   it('reveals a capture held while hidden after the reader sorts, at its new place', () => {

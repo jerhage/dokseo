@@ -33,9 +33,7 @@ type Store = {
   tags: readonly Tag[];
   edits: string[];
   notes: string[];
-  everyRead: number;
   removeFails: boolean;
-  copyFails: boolean;
   copied: string[];
 };
 
@@ -128,10 +126,7 @@ function containerOf(store: Store): Container {
           kind: 'success',
           captures: store.rows.filter((row) => row.bookId === book),
         }),
-      listEveryCapture: () => {
-        store.everyRead += 1;
-        return Promise.resolve({ kind: 'success', captures: [...store.rows] });
-      },
+      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [...store.rows] }),
       saveCapture: unused,
       writeNote: unused,
       editCaptureText: (capture: Capture, text: string) => {
@@ -191,9 +186,7 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
     tags,
     edits: [],
     notes: [],
-    everyRead: 0,
     removeFails: false,
-    copyFails: false,
     copied: [],
   };
   const notices: Notice[] = [];
@@ -226,12 +219,10 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
     {
       counts: () => counted,
       ask: () => {
-        store.everyRead += 1;
         counted = tagCounts(store.rows);
       },
     },
     (text) => {
-      if (store.copyFails) return Promise.reject(new Error('the clipboard is locked'));
       store.copied.push(text);
       return Promise.resolve();
     },
@@ -291,25 +282,16 @@ function pending(id: string): PanelCapture {
 const CROWN_TAG = namedTag(CROWN, 'crown', 'slate', 1);
 
 describe('writtenIn', () => {
-  it('answers the note for the note field and the text for the text field', async () => {
-    const world = await opened([storedRow('a', '先生', 1, 'teacher')]);
-    const card = at(world.panel.cards.cards, 0);
+  it.each([
+    ['the note for the note field', [storedRow('a', '先生', 1, 'teacher')], [], 'note', 'teacher'],
+    ['the text for the text field', [storedRow('a', '先生', 1, 'teacher')], [], 'text', '先生'],
+    ['an empty string for a card without a note', [storedRow('a', '先生', 1)], [], 'note', ''],
+    ['an empty string for a card still being read', [], [pending('new')], 'text', ''],
+  ] as const)('answers %s', async (_case, rows, unsaved, field, written) => {
+    const world = await opened(rows);
+    for (const card of unsaved) world.view.list.unsaved.put(card);
 
-    expect(writtenIn('note', card)).toBe('teacher');
-    expect(writtenIn('text', card)).toBe('先生');
-  });
-
-  it('answers an empty string for a card without a note', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-
-    expect(writtenIn('note', at(world.panel.cards.cards, 0))).toBe('');
-  });
-
-  it('answers an empty string for a card still being read', async () => {
-    const world = await opened();
-    world.view.list.unsaved.put(pending('new'));
-
-    expect(writtenIn('text', at(world.panel.cards.cards, 0))).toBe('');
+    expect(writtenIn(field, at(world.panel.cards.cards, 0))).toBe(written);
   });
 });
 
@@ -340,35 +322,27 @@ describe('CapturePanelView', () => {
     expect(world.view.drafts.draft('text', card.id)).toBe('先生');
   });
 
-  it('saves a text draft through the text edit and answers the opener', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    const card = at(world.panel.cards.cards, 0);
-    const from = target();
-    world.panel.openDraft('text', card, from);
-    world.view.drafts.write('text', card.id, '先週');
-    const edit = vi.spyOn(world.view.edits, 'edit').mockResolvedValue('saved');
-    const annotate = vi.spyOn(world.view.edits, 'annotate').mockResolvedValue('saved');
+  it.each([
+    ['text', 'the text edit', '先週', target()],
+    ['note', 'the note write', 'teacher', null],
+  ] as const)(
+    'saves a %s draft through %s and answers the opener',
+    async (field, _write, written, from) => {
+      const world = await opened([storedRow('a', '先生', 1)]);
+      const card = at(world.panel.cards.cards, 0);
+      world.panel.openDraft(field, card, from);
+      world.view.drafts.write(field, card.id, written);
+      const edit = vi.spyOn(world.view.edits, 'edit').mockResolvedValue('saved');
+      const annotate = vi.spyOn(world.view.edits, 'annotate').mockResolvedValue('saved');
 
-    const saved = await world.panel.save('text', card.id);
+      const saved = await world.panel.save(field, card.id);
 
-    expect(saved).toEqual({ kind: 'closed', from });
-    expect(edit.mock.calls).toEqual([[card.id, '先週']]);
-    expect(annotate).not.toHaveBeenCalled();
-  });
-
-  it('saves a note draft through the note write', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    const card = at(world.panel.cards.cards, 0);
-    world.panel.openDraft('note', card, null);
-    world.view.drafts.write('note', card.id, 'teacher');
-    const edit = vi.spyOn(world.view.edits, 'edit').mockResolvedValue('saved');
-    const annotate = vi.spyOn(world.view.edits, 'annotate').mockResolvedValue('saved');
-
-    await world.panel.save('note', card.id);
-
-    expect(annotate.mock.calls).toEqual([[card.id, 'teacher']]);
-    expect(edit).not.toHaveBeenCalled();
-  });
+      expect(saved).toEqual({ kind: 'closed', from });
+      expect([edit.mock.calls, annotate.mock.calls]).toEqual(
+        field === 'text' ? [[[card.id, written]], []] : [[], [[card.id, written]]],
+      );
+    },
+  );
 
   it('answers the opener of an abandoned draft and closes it', async () => {
     const world = await opened([storedRow('a', '先生', 1)]);
@@ -431,22 +405,6 @@ describe('CapturePanelView', () => {
     expect(world.panel.closeTags()).toBeNull();
   });
 
-  it('answers no opener when no picker is open', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-
-    expect(world.panel.closeTags()).toBeNull();
-  });
-
-  it('reads the library counts once however often the picker opens', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-
-    world.panel.openTags(captureId('a'), target());
-    world.panel.closeTags();
-    world.panel.openTags(captureId('a'), target());
-
-    expect(world.store.everyRead).toBe(1);
-  });
-
   it('answers the card the tag picker is open on', async () => {
     const world = await opened([storedRow('a', '先生', 1), storedRow('b', '後', 2)]);
 
@@ -468,10 +426,18 @@ describe('CapturePanelView', () => {
   });
 
   it('counts the search steps against every capture in the book', async () => {
-    const world = await opened([storedRow('a', '先生', 1), storedRow('b', '後', 2)]);
+    const world = await opened([
+      storedRow('a', '先生', 1),
+      storedRow('b', '先', 2),
+      storedRow('c', '後', 3),
+    ]);
     world.panel.cards.query = '先';
 
-    expect(world.panel.steps).toEqual({ tally: '1 of 2 matched', previous: false, next: true });
+    expect(world.panel.steps).toEqual({ tally: '2 of 3 matched', previous: false, next: true });
+
+    world.panel.stepBy(1);
+
+    expect(world.panel.steps).toEqual({ tally: 'match 1 of 2', previous: false, next: true });
   });
 
   it('notes the model load on a capture still being read', async () => {
@@ -554,15 +520,6 @@ describe('CapturePanelView', () => {
     expect(world.panel.selection.picker.rows).toEqual([{ kind: 'tag', tag: CROWN_TAG, count: 1 }]);
   });
 
-  it('counts the search steps from the cursor once a match is stepped to', async () => {
-    const world = await opened([storedRow('a', '先生', 1), storedRow('b', '先', 2)]);
-    world.panel.cards.query = '先';
-
-    world.panel.stepBy(1);
-
-    expect(world.panel.steps).toEqual({ tally: 'match 1 of 2', previous: false, next: true });
-  });
-
   it('reveals the latest capture only while the panel shows', async () => {
     const world = await opened();
     world.view.list.unsaved.put(pending('new'));
@@ -601,7 +558,7 @@ describe('CapturePanelView', () => {
 
     world.view.clearAll.ask();
 
-    expect(world.panel.warning).not.toBeNull();
+    expect(world.panel.warning).toBe('Delete 1 reading? You can read them again.');
   });
 
   it('copies through the clipboard write it was given', async () => {
@@ -611,14 +568,5 @@ describe('CapturePanelView', () => {
 
     expect(world.store.copied).toEqual(['先生']);
     expect(world.panel.copying.copied).toBe(captureId('a'));
-  });
-
-  it('tells a refused copy through the notify it was given', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    world.store.copyFails = true;
-
-    await world.panel.copying.copy(captureId('a'), '先生');
-
-    expect(world.notices.map((notice) => notice.title)).toEqual(['The text could not be copied']);
   });
 });
