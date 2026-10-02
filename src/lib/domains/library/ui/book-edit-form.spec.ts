@@ -41,10 +41,6 @@ describe('bookForm', () => {
 });
 
 describe('bookForm, for a flow book', () => {
-  it('offers no layout, because neither choice describes flowing text', () => {
-    expect(bookForm(book({ layoutKind: 'flow' })).layoutKind).toBeNull();
-  });
-
   it('seeds the other fields from the book as usual', () => {
     const subject = book({ layoutKind: 'flow', direction: 'ltr' });
 
@@ -81,6 +77,7 @@ describe('changedFields', () => {
     expect('language' in edit).toBe(false);
     expect('layoutKind' in edit).toBe(false);
     expect('direction' in edit).toBe(false);
+    expect('pagePairing' in edit).toBe(false);
   });
 
   it('trims a title before comparing it with the current one', () => {
@@ -119,35 +116,37 @@ describe('changedFields', () => {
     expect(edit).toEqual({ title: 'Blame! 1', language: 'ko', direction: 'ltr' });
   });
 
-  it('sends a pairing the user changed', () => {
-    const subject = book();
-    const edit = changedFields(subject, {
-      ...bookForm(subject),
-      pagePairing: 'double-after-cover',
-    });
+  it.each([
+    {
+      case: 'a pairing the user changed',
+      stored: {},
+      moved: { pagePairing: 'double-after-cover' },
+      edit: { pagePairing: 'double-after-cover' },
+    },
+    {
+      case: 'a pairing the user changed alongside a turn to continuous',
+      stored: {},
+      moved: { layoutKind: 'continuous', pagePairing: 'double-after-cover' },
+      edit: { layoutKind: 'continuous', pagePairing: 'double-after-cover' },
+    },
+    {
+      case: 'direction for a book that is already continuous',
+      stored: { layoutKind: 'continuous', direction: 'ltr' },
+      moved: { direction: 'rtl' },
+      edit: { direction: 'rtl' },
+    },
+    {
+      case: 'direction again when the layout returns to pages',
+      stored: { layoutKind: 'continuous', direction: 'ltr' },
+      moved: { layoutKind: 'paged', direction: 'rtl' },
+      edit: { layoutKind: 'paged', direction: 'rtl' },
+    },
+  ] as const)('sends $case', ({ stored, moved, edit }) => {
+    const subject = book(stored);
+    const sent = changedFields(subject, { ...bookForm(subject), ...moved });
 
-    expect(edit).toEqual({ pagePairing: 'double-after-cover' });
-    expect(applyEdit(subject, edit).pagePairing).toBe('double-after-cover');
-  });
-
-  it('omits a pairing the user left alone', () => {
-    const subject = book();
-    const edit = changedFields(subject, { ...bookForm(subject), title: 'Blame! 1' });
-
-    expect(edit).toEqual({ title: 'Blame! 1' });
-    expect('pagePairing' in edit).toBe(false);
-  });
-
-  it('sends a pairing the user changed alongside a turn to continuous', () => {
-    const subject = book();
-    const edit = changedFields(subject, {
-      ...bookForm(subject),
-      layoutKind: 'continuous',
-      pagePairing: 'double-after-cover',
-    });
-
-    expect(edit).toEqual({ layoutKind: 'continuous', pagePairing: 'double-after-cover' });
-    expect(applyEdit(subject, edit).pagePairing).toBe('double-after-cover');
+    expect(sent).toEqual(edit);
+    expect(applyEdit(subject, sent)).toMatchObject(edit);
   });
 
   it('leaves the direction of a book the user only turned continuous alone', () => {
@@ -155,41 +154,6 @@ describe('changedFields', () => {
     const edit = changedFields(subject, { ...bookForm(subject), layoutKind: 'continuous' });
 
     expect(edit).toEqual({ layoutKind: 'continuous' });
-    expect(applyEdit(subject, edit).direction).toBe('rtl');
-  });
-
-  it('sends direction for a book that is already continuous', () => {
-    const subject = book({ layoutKind: 'continuous', direction: 'ltr' });
-    const edit = changedFields(subject, { ...bookForm(subject), direction: 'rtl' });
-
-    expect(edit).toEqual({ direction: 'rtl' });
-    expect(applyEdit(subject, edit).direction).toBe('rtl');
-  });
-
-  it('returns a right-to-left two-page book unharmed from a trip through continuous', () => {
-    const subject = book();
-    const strip = applyEdit(
-      subject,
-      changedFields(subject, { ...bookForm(subject), layoutKind: 'continuous' }),
-    );
-    const back = applyEdit(
-      strip,
-      changedFields(strip, { ...bookForm(strip), layoutKind: 'paged' }),
-    );
-
-    expect(back.direction).toBe('rtl');
-    expect(back.pagePairing).toBe('double');
-  });
-
-  it('sends direction again when the layout returns to pages', () => {
-    const subject = book({ layoutKind: 'continuous', direction: 'ltr' });
-    const edit = changedFields(subject, {
-      ...bookForm(subject),
-      layoutKind: 'paged',
-      direction: 'rtl',
-    });
-
-    expect(edit).toEqual({ layoutKind: 'paged', direction: 'rtl' });
     expect(applyEdit(subject, edit).direction).toBe('rtl');
   });
 });

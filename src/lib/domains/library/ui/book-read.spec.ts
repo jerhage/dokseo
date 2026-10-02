@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
+import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
 import { bookReadOf, flowingBook } from './book-read';
 import type { BookRead } from './book-read';
 
@@ -25,40 +26,34 @@ function book(layoutKind: Book['layoutKind']): Book {
   };
 }
 
-describe('bookReadOf', () => {
-  it('passes a read in progress as loading', () => {
-    expect(bookReadOf({ kind: 'loading' })).toEqual({ kind: 'loading' });
-  });
+const found = book('paged');
 
-  it('passes a read that could not complete as failed with its message', () => {
-    expect(bookReadOf({ kind: 'failed', message: 'Local storage failed: denied' })).toEqual({
-      kind: 'failed',
-      message: 'Local storage failed: denied',
-    });
+describe('bookReadOf', () => {
+  it.each([
+    { read: 'a read in progress', state: { kind: 'loading' }, answer: { kind: 'loading' } },
+    {
+      read: 'a read that could not complete',
+      state: { kind: 'failed', message: 'Local storage failed: denied' },
+      answer: { kind: 'failed', message: 'Local storage failed: denied' },
+    },
+    {
+      read: 'a not-found answer',
+      state: { kind: 'ready', value: { kind: 'not-found', id: bookId('gone') } },
+      answer: { kind: 'missing' },
+    },
+    {
+      read: 'a found book',
+      state: { kind: 'ready', value: { kind: 'success', book: found } },
+      answer: { kind: 'ready', book: found },
+    },
+  ] as const)('lifts $read into its own state', ({ state, answer }) => {
+    expect(bookReadOf(state)).toEqual(answer);
   });
 
   it('names a blocked store as a failed read', () => {
     expect(bookReadOf({ kind: 'ready', value: { kind: 'storage-unavailable' } })).toEqual({
       kind: 'failed',
-      message:
-        'This browser blocks local storage, so uploads cannot be kept. A private window does not save files, so open the library in a normal window to add a book.',
-    });
-  });
-
-  it('lifts a not-found answer beside loading and failed', () => {
-    expect(bookReadOf({ kind: 'ready', value: { kind: 'not-found', id: bookId('gone') } })).toEqual(
-      {
-        kind: 'missing',
-      },
-    );
-  });
-
-  it('hands the found book as ready', () => {
-    const found = book('paged');
-
-    expect(bookReadOf({ kind: 'ready', value: { kind: 'success', book: found } })).toEqual({
-      kind: 'ready',
-      book: found,
+      message: LIBRARY_UNAVAILABLE,
     });
   });
 });
@@ -70,18 +65,15 @@ describe('flowingBook', () => {
     expect(flowingBook({ kind: 'ready', book: ebook })).toBe(ebook);
   });
 
-  it('answers nothing for a ready book of images, paged or continuous', () => {
-    expect(flowingBook({ kind: 'ready', book: book('paged') })).toBeNull();
-    expect(flowingBook({ kind: 'ready', book: book('continuous') })).toBeNull();
-  });
-
-  it('answers nothing while the book is loading, failed or missing', () => {
+  it('answers nothing while the book is loading, failed, missing, or made of images', () => {
     const reads: readonly BookRead[] = [
       { kind: 'loading' },
       { kind: 'failed', message: 'denied' },
       { kind: 'missing' },
+      { kind: 'ready', book: book('paged') },
+      { kind: 'ready', book: book('continuous') },
     ];
 
-    expect(reads.map(flowingBook)).toEqual([null, null, null]);
+    expect(reads.map(flowingBook)).toEqual([null, null, null, null, null]);
   });
 });

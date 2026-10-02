@@ -3,7 +3,6 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import {
-  clearsSearch,
   filterKey,
   formatBytes,
   isSearching,
@@ -34,24 +33,14 @@ function book(title: string, imageCount = 10): Book {
 }
 
 describe('formatBytes', () => {
-  it('writes bytes below a kilobyte whole', () => {
-    expect(formatBytes(1023)).toBe('1023 B');
-  });
-
-  it('moves to the next unit at exactly 1024', () => {
-    expect(formatBytes(1024)).toBe('1.0 KB');
-  });
-
-  it('keeps one decimal below ten of a larger unit', () => {
-    expect(formatBytes(1536)).toBe('1.5 KB');
-  });
-
-  it('drops the decimal from ten of a unit upwards', () => {
-    expect(formatBytes(10 * 1024 * 1024)).toBe('10 MB');
-  });
-
-  it('stops at terabytes', () => {
-    expect(formatBytes(2048 * 1024 ** 4)).toBe('2048 TB');
+  it.each([
+    { bytes: 1023, text: '1023 B' },
+    { bytes: 1024, text: '1.0 KB' },
+    { bytes: 1536, text: '1.5 KB' },
+    { bytes: 10 * 1024 * 1024, text: '10 MB' },
+    { bytes: 2048 * 1024 ** 4, text: '2048 TB' },
+  ])('writes $bytes bytes as $text', ({ bytes, text }) => {
+    expect(formatBytes(bytes)).toBe(text);
   });
 });
 
@@ -93,27 +82,12 @@ describe('isSearching', () => {
 });
 
 describe('matchedText', () => {
-  it('counts one title in the singular', () => {
-    expect(matchedText(1)).toBe('1 title');
-  });
-
-  it('counts other numbers in the plural', () => {
-    expect(matchedText(0)).toBe('0 titles');
-    expect(matchedText(3)).toBe('3 titles');
-  });
-});
-
-describe('clearsSearch', () => {
-  it('clears on Escape while the query holds text', () => {
-    expect(clearsSearch('Escape', ' ')).toBe(true);
-  });
-
-  it('leaves Escape alone once the query is empty', () => {
-    expect(clearsSearch('Escape', '')).toBe(false);
-  });
-
-  it('ignores every other key', () => {
-    expect(clearsSearch('Enter', 'yotsuba')).toBe(false);
+  it.each([
+    { count: 1, text: '1 title' },
+    { count: 0, text: '0 titles' },
+    { count: 3, text: '3 titles' },
+  ])('counts $count as $text', ({ count, text }) => {
+    expect(matchedText(count)).toBe(text);
   });
 });
 
@@ -122,8 +96,9 @@ describe('filterKey', () => {
     return { key, isComposing: false, keyCode: 0, ...held };
   }
 
-  it('clears the query on Escape while it holds text', () => {
+  it('clears the query on Escape while it holds text, even only a space', () => {
     expect(filterKey(press('Escape'), 'yotsuba')).toBe('clear');
+    expect(filterKey(press('Escape'), ' ')).toBe('clear');
   });
 
   it('ignores Escape on an empty query', () => {
@@ -137,11 +112,10 @@ describe('filterKey', () => {
     ]);
   });
 
-  it('ignores the Escape that cancels an IME conversion', () => {
-    expect(filterKey(press('Escape', { isComposing: true }), 'yotsuba')).toBe('ignore');
-  });
-
-  it('ignores an Escape on the IME process key code 229 that Safari sends', () => {
-    expect(filterKey(press('Escape', { keyCode: 229 }), 'yotsuba')).toBe('ignore');
+  it.each([
+    { signal: 'the composing flag that cancels an IME conversion', held: { isComposing: true } },
+    { signal: 'the IME process key code 229 that Safari sends', held: { keyCode: 229 } },
+  ])('ignores an Escape carrying $signal', ({ held }) => {
+    expect(filterKey(press('Escape', held), 'yotsuba')).toBe('ignore');
   });
 });
