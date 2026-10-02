@@ -384,6 +384,51 @@ describe('ShellUpdates.checkNow', () => {
     expect(waiting.posted).toEqual([SKIP_WAITING]);
   });
 
+  it('replaces the Reload toast still showing with one ready toast at the front', async () => {
+    const toaster = createToaster();
+    const container = new FakeShellContainer(true);
+    const waiting = new FakeShellWorker('installed');
+    container.registration.waiting = waiting;
+    const updates = new ShellUpdates(toaster, container, () => undefined, online);
+    await updates.watch('/service-worker.js');
+    const offered = toaster.toasts[0];
+    if (offered === undefined) throw new Error('no toast');
+
+    await updates.checkNow();
+
+    expect(shownTitles(toaster)).toEqual([UPDATE_CHECK_TITLES.ready]);
+    expect(toaster.toasts.find((toast) => toast.id === offered.id)?.phase).toBe('leaving');
+    expect(toaster.toasts.at(-1)?.title).toBe(UPDATE_CHECK_TITLES.ready);
+  });
+
+  it('keeps one ready toast when the check is repeated while it shows', async () => {
+    const toaster = createToaster();
+    const container = new FakeShellContainer(false);
+    container.registration.waiting = new FakeShellWorker('installed');
+    const updates = new ShellUpdates(toaster, container, () => undefined, online);
+    await updates.watch('/service-worker.js');
+
+    await updates.checkNow();
+    await updates.checkNow();
+
+    expect(shownTitles(toaster)).toEqual([UPDATE_CHECK_TITLES.ready]);
+  });
+
+  it('shows a ready toast when the earlier Reload toast was dismissed', async () => {
+    const toaster = createToaster();
+    const container = new FakeShellContainer(true);
+    container.registration.waiting = new FakeShellWorker('installed');
+    const updates = new ShellUpdates(toaster, container, () => undefined, online);
+    await updates.watch('/service-worker.js');
+    const offered = toaster.toasts[0];
+    if (offered === undefined) throw new Error('no toast');
+    toaster.dismiss(offered.id);
+
+    await updates.checkNow();
+
+    expect(shownTitles(toaster)).toEqual([UPDATE_CHECK_TITLES.ready]);
+  });
+
   it('warns of a missing connection without a request while offline', async () => {
     const { toaster, container, updates } = await watched(offline);
 

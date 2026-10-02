@@ -187,6 +187,7 @@ class ShellUpdates {
       .with({ kind: 'found' }, ({ found }) => this.#follow(found))
       .with({ kind: 'already-waiting' }, ({ waiting }) => {
         this.#waiting = waiting;
+        if (this.#shown !== null) this.#toaster.dismiss(this.#shown);
         this.#shown = this.#toaster.show({
           title: UPDATE_CHECK_TITLES.ready,
           action: { label: SHELL_UPDATE_ACTION, run: () => this.#apply() },
