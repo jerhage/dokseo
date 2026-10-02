@@ -8,7 +8,7 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
-import { DEFAULT_BOOK_MATCHING, joinUpload } from '../domain/book/book-matching';
+import { DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch } from '../domain/book/book-matching';
 import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
 import type { LibraryRepository } from '../domain/book/library-repository';
 import { INTRINSIC_ORDER } from '../domain/book/page-list';
@@ -28,6 +28,7 @@ import type { UploadReport } from '../domain/ingest/upload-progress';
 
 type OpenedUpload =
   | { readonly kind: 'added'; readonly book: Book }
+  | { readonly kind: 'restored'; readonly book: Book }
   | { readonly kind: 'already-held'; readonly book: Book };
 
 type OpenFileFailure =
@@ -195,6 +196,10 @@ async function openFile(
   const joined = joinedBook(joinUpload(held, identity, matching));
   if (joined !== null) return joined;
 
+  const restorable = await deps.repository.listRestorable();
+  if (restorable.kind !== 'success') return restorable;
+  const restoring = restorableMatch(restorable.removed, identity, matching);
+
   const inspection = await inspectUpload(deps, files);
   if (inspection.kind === 'refused') return { kind: 'epub', failure: inspection.refusal };
 
@@ -211,7 +216,7 @@ async function openFile(
   const title = built.suggestedTitle;
 
   const book: Book = {
-    id: bookId(deps.newId()),
+    id: restoring?.id ?? bookId(deps.newId()),
     title,
     language: declaredLanguage(inspection) ?? languageOfTitle(title) ?? DEFAULT_LANGUAGE,
     layoutKind,
@@ -246,7 +251,7 @@ async function openFile(
   );
   if (stored.kind !== 'success') return stored;
 
-  return { kind: 'added', book };
+  return restoring === null ? { kind: 'added', book } : { kind: 'restored', book };
 }
 
 export { openFile };

@@ -6,6 +6,7 @@ import type { Book } from '../domain/book/book';
 import { splitUpload } from '../domain/ingest/source-detection';
 import {
   ALREADY_HELD,
+  RESTORED_MESSAGE,
   describeFailedBook,
   describeOpenFileError,
   stageReached,
@@ -74,6 +75,23 @@ describe('uploadNotice', () => {
   });
 });
 
+describe('uploadNotice for a restored book', () => {
+  it('announces a restored book and says its captures came back', () => {
+    const notice = uploadNotice(
+      { kind: 'restored', book: book('one', 'Blame! 1') },
+      () => undefined,
+    );
+
+    expect(notice).toEqual({
+      tone: 'success',
+      title: 'Restored Blame! 1',
+      message: RESTORED_MESSAGE,
+      action: { label: 'Open', run: expect.any(Function) },
+      duration: ACTION_NOTICE_MS,
+    });
+  });
+});
+
 describe('describeOpenFileError', () => {
   it('names why an upload was refused', () => {
     expect(describeOpenFileError({ kind: 'source', failure: { kind: 'nothing-usable' } })).toBe(
@@ -109,17 +127,18 @@ describe('describeFailedBook', () => {
 });
 
 describe('tallyOf', () => {
-  it('counts the added books apart from the held ones, and describes each failure', () => {
+  it('counts the added and restored books apart from the held ones, and describes each failure', () => {
     expect(
       tallyOf(
         [
           { kind: 'added', book: book('a', 'a') },
           { kind: 'already-held', book: book('b', 'b') },
+          { kind: 'restored', book: book('d', 'd') },
         ],
         [{ name: 'c.cbz', failure: { kind: 'source', failure: { kind: 'empty' } } }],
       ),
     ).toEqual({
-      added: 1,
+      added: 2,
       held: 1,
       failures: ['c.cbz: No files arrived, so there was nothing to add.'],
     });

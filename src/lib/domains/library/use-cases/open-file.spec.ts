@@ -12,6 +12,7 @@ import type {
   LibraryWrite,
 } from '../domain/book/library-repository';
 import type { PageOrder } from '../domain/book/page-list';
+import type { RemovedBook } from '../domain/book/removed-book';
 import type { ContentDigest } from '../domain/ingest/content-hasher';
 import type { EpubInspectionAnswer } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
@@ -50,7 +51,7 @@ function built(source: BuiltSource): SourceBuild {
 }
 
 function openedBook(result: OpenFileResult): Book {
-  if (result.kind !== 'added' && result.kind !== 'already-held') {
+  if (result.kind !== 'added' && result.kind !== 'restored' && result.kind !== 'already-held') {
     throw new Error(`The upload answered ${result.kind}`);
   }
   return result.book;
@@ -111,6 +112,7 @@ function fakeRepository(
   outcome: LibraryWrite = WRITTEN,
   writes: readonly (readonly [number, number])[] = [],
   held: BookListing = listing([]),
+  restorable: readonly RemovedBook[] = [],
 ) {
   const added: AddCall[] = [];
   const repository: LibraryRepository = {
@@ -129,7 +131,7 @@ function fakeRepository(
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [] }),
-    listRestorable: () => Promise.resolve({ kind: 'success', removed: [] }),
+    listRestorable: () => Promise.resolve({ kind: 'success', removed: restorable }),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
   };
   return { repository, added };
@@ -239,6 +241,20 @@ const folder: readonly File[] = [
   inFolder(new File(['0123456789'], '002.png'), 'Ch 12/002.png'),
   inFolder(new File(['01234'], '001.png'), 'Ch 12/001.png'),
 ];
+
+const OTHER_DIGEST = '0123456789abcdef0123456789abcdef';
+
+function removedRecord(overrides: Partial<RemovedBook> = {}): RemovedBook {
+  return {
+    id: bookId('gone-1'),
+    title: 'Yotsuba&! 1',
+    contentHash: OTHER_DIGEST,
+    fileName: 'other.cbz',
+    language: 'ja',
+    direction: 'rtl',
+    ...overrides,
+  };
+}
 
 describe('openFile', () => {
   it('stores exactly the book it answers as added', async () => {
@@ -541,6 +557,67 @@ describe('openFile', () => {
 
     expect(result).toEqual({ kind: 'already-held', book: known });
     expect(builder.calls).toEqual([]);
+  });
+
+  it('restores a removed book under its old id when the fingerprint matches its record', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: DIGEST, fileName: 'renamed.cbz' }),
+    ]);
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result).id).toBe('gone-1');
+    expect(at(repository.added, 0).book.id).toBe('gone-1');
+  });
+
+  it('restores by file name a record whose hash is no partial MD5 digest', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: '', fileName: 'Yotsuba&! 1.cbz' }),
+    ]);
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result).id).toBe('gone-1');
+  });
+
+  it('adds a new book beside a record with another partial MD5 digest and the same file name', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: OTHER_DIGEST, fileName: 'Yotsuba&! 1.cbz' }),
+    ]);
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result.kind).toBe('added');
+    expect(openedBook(result).id).toBe(NEW_ID);
+  });
+
+  it('restores by file name a record with another partial MD5 digest when matching by file name', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: OTHER_DIGEST, fileName: 'Yotsuba&! 1.cbz' }),
+    ]);
+
+    const result = await openFile(
+      deps({ repository: repository.repository }),
+      files,
+      () => undefined,
+      'file-name',
+    );
+
+    expect(result.kind).toBe('restored');
+    expect(openedBook(result).id).toBe('gone-1');
+  });
+
+  it('answers already-held for a held book before it looks at a removed record', async () => {
+    const known = heldBook(contentHash(DIGEST));
+    const repository = fakeRepository(WRITTEN, [], listing([known]), [
+      removedRecord({ contentHash: DIGEST }),
+    ]);
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result).toEqual({ kind: 'already-held', book: known });
   });
 
   it('passes a blocked store through when the library cannot be read', async () => {

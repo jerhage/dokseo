@@ -48,12 +48,21 @@ const UPLOAD_FAILED = 'Could not add that upload';
 
 const ALREADY_HELD = 'Already in your library';
 
+const RESTORED_MESSAGE = 'Its captures are back with it.';
+
 function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
   const open = { label: 'Open', run: () => openBook(opened.book.id) };
   return match(opened)
     .with({ kind: 'added' }, ({ book }) => ({
       tone: 'success' as const,
       title: `Added ${book.title}`,
+      action: open,
+      duration: ACTION_NOTICE_MS,
+    }))
+    .with({ kind: 'restored' }, ({ book }) => ({
+      tone: 'success' as const,
+      title: `Restored ${book.title}`,
+      message: RESTORED_MESSAGE,
       action: open,
       duration: ACTION_NOTICE_MS,
     }))
@@ -129,7 +138,7 @@ function stageReached(state: UploadState, stage: UploadStage): UploadState {
 }
 
 function tallyOf(opened: readonly OpenedUpload[], failed: readonly FailedBook[]): UploadTally {
-  const added = opened.filter((upload) => upload.kind === 'added').length;
+  const added = opened.filter((upload) => upload.kind !== 'already-held').length;
   return {
     added,
     held: opened.length - added,
@@ -189,7 +198,11 @@ class BookUpload {
             },
           })
           .catch((cause: unknown): UploadFailure => ({ kind: 'threw', cause }));
-        if (outcome.kind !== 'added' && outcome.kind !== 'already-held') {
+        if (
+          outcome.kind !== 'added' &&
+          outcome.kind !== 'restored' &&
+          outcome.kind !== 'already-held'
+        ) {
           failed.push({ name: nameOf(book), failure: outcome });
           continue;
         }
@@ -228,6 +241,7 @@ class BookUpload {
 export {
   ALREADY_HELD,
   BookUpload,
+  RESTORED_MESSAGE,
   UPLOAD_FAILED,
   describeFailedBook,
   describeOpenFileError,
