@@ -223,17 +223,6 @@ describe('CaptureView parts', () => {
     expect(panelTexts(view)).toEqual(['読']);
   });
 
-  it('stores nothing for a recognition that read no text', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    view.list.open(ONE);
-
-    await view.recording.recognizing(regions(), settles({ status: 'empty' }));
-
-    expect(panelTexts(view)).toEqual(['empty']);
-    expect(world.store.rows).toEqual([]);
-  });
-
   it('stores nothing for a note when no book is open', () => {
     const world = fakes();
     const view = viewOf(world);

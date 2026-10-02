@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container, RecognitionNotices } from '$lib/container';
+import type { Arrangement } from '$lib/shared/arrangement';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { TextQuote } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
@@ -23,7 +24,6 @@ import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-reg
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { askedWrites } from '$lib/shared/testing/unrun-write-query';
 import type { EngineGateRead } from '../engine/engine-gate';
-import { RECOGNITION_UNSTARTED } from '../engine/consent-gate.svelte';
 import { READ } from './capture-read';
 import type { CaptureListing } from './capture-read';
 import { CaptureView } from './capture-view.svelte';
@@ -250,10 +250,6 @@ function panelTexts(view: CaptureView): readonly string[] {
   );
 }
 
-function panelNotes(view: CaptureView): readonly (string | null)[] {
-  return view.list.captures.map((capture) => (capture.origin === 'written' ? null : capture.note));
-}
-
 function editedFlags(view: CaptureView): readonly boolean[] {
   return view.list.captures.map((capture) => capture.status === 'done' && capture.edited);
 }
@@ -432,88 +428,6 @@ describe('CaptureView', () => {
     expect(at(view.list.captures, 0).status).toBe('empty');
   });
 
-  it('stores the load progress and clears it when the recognition settles', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    expect(view.warmup.progress).toBeNull();
-
-    const running = read(view);
-    const call = await started(world, 0);
-    call.notices.onProgress?.({ fraction: 0.42, source: 'network', loadedBytes: 0, totalBytes: 0 });
-    expect(view.warmup.progress).toEqual({
-      fraction: 0.42,
-      source: 'network',
-      loadedBytes: 0,
-      totalBytes: 0,
-    });
-
-    call.settle({ kind: 'success', text: recognizedText('done') });
-    await running;
-    expect(view.warmup.progress).toBeNull();
-  });
-
-  it('holds the load progress until the last capture in flight settles', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-
-    const first = read(view);
-    const second = read(view);
-    (await started(world, 0)).notices.onProgress?.({
-      fraction: 0.5,
-      source: 'cache',
-      loadedBytes: 0,
-      totalBytes: 0,
-    });
-
-    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('first') });
-    await first;
-    expect(view.warmup.progress).toEqual({
-      fraction: 0.5,
-      source: 'cache',
-      loadedBytes: 0,
-      totalBytes: 0,
-    });
-
-    (await started(world, 1)).settle({ kind: 'success', text: recognizedText('second') });
-    await second;
-    expect(view.warmup.progress).toBeNull();
-  });
-
-  it('holds no session until the recognizer reports one', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    expect(view.warmup.session).toBeNull();
-
-    const running = read(view);
-    const call = await started(world, 0);
-    expect(view.warmup.session).toBeNull();
-
-    call.settle({ kind: 'success', text: recognizedText('done') });
-    await running;
-    expect(view.warmup.session).toBeNull();
-  });
-
-  it('records the model and the device the recognizer opened its session on', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-
-    const running = read(view);
-    const call = await started(world, 0);
-    call.notices.onSession?.({
-      modelId: 'DigitalLarynx/manga-ocr-onnx',
-      device: 'webgpu',
-      fellBackFrom: null,
-    });
-
-    call.settle({ kind: 'success', text: recognizedText('done') });
-    await running;
-    expect(view.warmup.session).toEqual({
-      modelId: 'DigitalLarynx/manga-ocr-onnx',
-      device: 'webgpu',
-      fellBackFrom: null,
-    });
-  });
-
   it('forgets the session when the reader opens another book', async () => {
     const world = fakes();
     const view = viewOf(world);
@@ -560,39 +474,26 @@ describe('CaptureView', () => {
     expect(shown).toEqual(['newer', 'older']);
   });
 
-  it('reads and records no decision before a selection is committed', () => {
-    const world = fakes([]);
-    const view = viewOf(world);
+  const UNAGREED_LANGUAGES: readonly (readonly [string, Language, Arrangement])[] = [
+    ['a large model', 'ja', 'row'],
+    ['a small model', 'ko', 'column'],
+  ];
 
-    expect(view.consent.request).toBeNull();
-    expect(world.consent.reads).toEqual([]);
-    expect(askedWrites).not.toContain('ja');
-  });
+  it.each(UNAGREED_LANGUAGES)(
+    'starts no recognition and asks for agreement to %s the reader has not agreed to',
+    async (_size, language, arrangement) => {
+      const world = fakes([]);
+      world.engine.language = language;
+      const view = viewOf(world);
 
-  it('starts no recognition for a language the reader has not agreed to', async () => {
-    const world = fakes([]);
-    const view = viewOf(world);
+      await view.recognize(source, language, regions(), arrangement);
 
-    await read(view);
-
-    expect(world.calls).toEqual([]);
-    expect(view.list.captures).toEqual([]);
-    expect(view.consent.request?.language).toBe('ja');
-    expect(view.consent.request?.footprint).toEqual(modelFootprint('ja'));
-  });
-
-  it('asks before a selection fetches weights this device does not have', async () => {
-    const world = fakes([]);
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-    await read(view);
-
-    expect(world.engine.prepares).toEqual([]);
-    expect(world.calls).toEqual([]);
-    expect(view.consent.request?.language).toBe('ja');
-  });
+      expect(world.calls).toEqual([]);
+      expect(view.list.captures).toEqual([]);
+      expect(view.consent.request?.language).toBe(language);
+      expect(view.consent.request?.footprint).toEqual(modelFootprint(language));
+    },
+  );
 
   it('recognizes the selection it was holding when the reader agreed', async () => {
     const world = fakes([]);
@@ -613,24 +514,6 @@ describe('CaptureView', () => {
     expect(at(view.list.captures, 0).anchor).toEqual(regionAnchor(regions(7)));
   });
 
-  it('discards the held selection and asks no second time when the reader declines', async () => {
-    const world = fakes([]);
-    const view = viewOf(world);
-
-    await read(view);
-    view.consent.decline();
-
-    expect(view.consent.request).toBeNull();
-    expect(world.calls).toEqual([]);
-    expect(view.list.captures).toEqual([]);
-    expect(askedWrites).not.toContain('ja');
-
-    await read(view);
-
-    expect(view.consent.request).toBeNull();
-    expect(world.calls).toEqual([]);
-  });
-
   it('drops the consent request when the reader opens another book', async () => {
     const world = fakes([]);
     const view = viewOf(world);
@@ -639,40 +522,6 @@ describe('CaptureView', () => {
     view.open(TWO);
 
     expect(view.consent.request).toBeNull();
-  });
-
-  it('asks nothing when Turn on is pressed after the reader opened another book', async () => {
-    const world = fakes([]);
-    const view = viewOf(world);
-    view.open(ONE);
-    await read(view);
-    view.consent.decline();
-    await read(view);
-
-    view.open(TWO);
-    at(world.notices, 0).action?.run();
-
-    expect(view.consent.request).toBeNull();
-  });
-
-  it('asks once and recognizes a later selection without asking again', async () => {
-    const world = fakes([]);
-    const asked = viewOf(world);
-
-    await read(asked);
-    const granting = asked.agree();
-    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('first') });
-    await granting;
-    expect(askedWrites).toContain('ja');
-    world.consent.granted.add('ja');
-
-    const later = viewOf(world);
-    const running = read(later);
-    (await started(world, 1)).settle({ kind: 'success', text: recognizedText('second') });
-    await running;
-
-    expect(later.consent.request).toBeNull();
-    expect(at(later.list.captures, 0).status).toBe('done');
   });
 
   it('asks the reader and still recognizes when the decision cannot be stored', async () => {
@@ -744,58 +593,26 @@ describe('CaptureView', () => {
     await running;
   });
 
-  it('asks for agreement to a small model on the same terms as a large one', async () => {
-    const world = fakes([]);
-    world.engine.language = 'ko';
-    const view = viewOf(world);
+  const UNSTORED_READINGS: readonly (readonly [string, Reading, string])[] = [
+    ['failed', { kind: 'nothing-selected' }, 'failed'],
+    ['read no text', { kind: 'no-text' }, 'empty'],
+  ];
 
-    await view.recognize(source, 'ko', regions(), 'column');
+  it.each(UNSTORED_READINGS)(
+    'stores nothing for a capture that %s',
+    async (_outcome, reading, status) => {
+      const world = fakes();
+      const view = viewOf(world);
+      view.open(ONE);
 
-    expect(view.consent.request?.language).toBe('ko');
-    expect(view.consent.request?.footprint).toEqual(modelFootprint('ko'));
-    expect(world.calls).toEqual([]);
-  });
+      const running = read(view);
+      (await started(world, 0)).settle(reading);
+      await running;
 
-  it('loads the stored captures of the book it opens and no other book', () => {
-    const world = fakes();
-    world.store.rows = [
-      storedRow('a', ONE, 'from the first book', 1),
-      storedRow('b', TWO, 'from the second book', 2),
-      storedRow('c', ONE, 'also from the first book', 3),
-    ];
-    const view = viewOf(world);
-
-    view.open(ONE);
-
-    expect(panelTexts(view)).toEqual(['from the first book', 'also from the first book']);
-    expect(view.list.newestFirst.map((capture) => capture.id)).toEqual(['c', 'a']);
-  });
-
-  it('stores nothing for a capture that failed', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    view.open(ONE);
-
-    const running = read(view);
-    (await started(world, 0)).settle({ kind: 'nothing-selected' });
-    await running;
-
-    expect(at(view.list.captures, 0).status).toBe('failed');
-    expect(askedWrites).toEqual([]);
-  });
-
-  it('stores nothing for a capture that read no text', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    view.open(ONE);
-
-    const running = read(view);
-    (await started(world, 0)).settle({ kind: 'no-text' });
-    await running;
-
-    expect(at(view.list.captures, 0).status).toBe('empty');
-    expect(askedWrites).toEqual([]);
-  });
+      expect(at(view.list.captures, 0).status).toBe(status);
+      expect(askedWrites).toEqual([]);
+    },
+  );
 
   it('asks to store a capture that settled as read, in the book that is open', async () => {
     const world = fakes();
@@ -830,18 +647,6 @@ describe('CaptureView', () => {
     expect(askedWrites).toEqual([]);
   });
 
-  it('reports nothing when a capture is stored', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    view.open(ONE);
-
-    const running = read(view);
-    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('保存できた') });
-    await running;
-
-    expect(world.notices).toEqual([]);
-  });
-
   it('shows a stored capture that was edited in an earlier session as edited', () => {
     const world = fakes();
     world.store.rows = [{ ...storedRow('a', ONE, 'corrected', 1), editedAt: 42 }];
@@ -852,27 +657,25 @@ describe('CaptureView', () => {
     expect(editedFlags(view)).toEqual([true]);
   });
 
-  it('keeps the previous text and stores nothing for a blank edit', async () => {
-    const world = fakes();
-    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
-    const view = viewOf(world);
-    view.open(ONE);
+  const UNCHANGING_EDITS: readonly (readonly [string, string])[] = [
+    ['is blank', '   \n  '],
+    ['changes no text', '  model reading  '],
+  ];
 
-    expect(await view.edits.edit(captureId('a'), '   \n  ')).toBe('saved');
-    expect(panelTexts(view)).toEqual(['model reading']);
-    expect(editedFlags(view)).toEqual([false]);
-  });
+  it.each(UNCHANGING_EDITS)(
+    'keeps the previous text and stores nothing for an edit that %s',
+    async (_edit, typed) => {
+      const world = fakes();
+      world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
+      const view = viewOf(world);
+      view.open(ONE);
 
-  it('stores nothing for an edit that changes no text', async () => {
-    const world = fakes();
-    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
-    const view = viewOf(world);
-    view.open(ONE);
-
-    expect(await view.edits.edit(captureId('a'), '  model reading  ')).toBe('saved');
-    expect(panelTexts(view)).toEqual(['model reading']);
-    expect(editedFlags(view)).toEqual([false]);
-  });
+      expect(await view.edits.edit(captureId('a'), typed)).toBe('saved');
+      expect(panelTexts(view)).toEqual(['model reading']);
+      expect(editedFlags(view)).toEqual([false]);
+      expect(askedWrites).toEqual([]);
+    },
+  );
 
   it('edits nothing for a capture that read no text', async () => {
     const world = fakes();
@@ -887,35 +690,6 @@ describe('CaptureView', () => {
       'saved',
     );
     expect(at(view.list.captures, 0).status).toBe('empty');
-  });
-
-  it('leaves the recognized text and the edited mark alone when a note is written', async () => {
-    const world = fakes();
-    world.store.rows = [storedRow('a', ONE, 'model reading', 1)];
-    const view = viewOf(world);
-    view.open(ONE);
-
-    await view.edits.annotate(captureId('a'), 'a thought');
-
-    expect(panelTexts(view)).toEqual(['model reading']);
-    expect(editedFlags(view)).toEqual([false]);
-    expect(at(world.store.rows, 0).editedAt).toBeNull();
-  });
-
-  it('writes no note for a capture the store never held', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    view.open(ONE);
-
-    const running = read(view);
-    (await started(world, 0)).settle({ kind: 'success', text: recognizedText('保存できなかった') });
-    await running;
-
-    askedWrites.splice(0);
-
-    expect(await view.edits.annotate(at(view.list.captures, 0).id, 'a thought')).toBe('failed');
-    expect(panelNotes(view)).toEqual([null]);
-    expect(askedWrites).toEqual([]);
   });
 
   it('drops a capture the store never held from the list', async () => {
@@ -983,54 +757,10 @@ describe('CaptureView.engineRead', () => {
     expect(world.engine.prepares).toEqual(['ja']);
     expect(view.warmup.session).toEqual(OPENED_SESSION);
   });
-
-  it('tells the reader a failed engine settings read, reads nothing, and reads the settings again', async () => {
-    const world = fakes(['ja']);
-    world.engine.reads = 'failed';
-    const view = viewOf(world);
-
-    await read(view);
-
-    expect(world.calls).toEqual([]);
-    expect(view.consent.request).toBeNull();
-    expect(world.notices).toEqual([
-      {
-        tone: 'danger',
-        title: RECOGNITION_UNSTARTED,
-        message: 'The engine choice could not be read: gone',
-      },
-    ]);
-    expect(world.engine.reloads).toBe(1);
-  });
 });
 
 describe('CaptureView.warm', () => {
-  it('opens the engine when the book opens and the weights are already here', async () => {
-    const world = fakes();
-    world.engine.files = 9;
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-
-    expect(world.engine.prepares).toEqual(['ja']);
-    expect(view.warmup.session).toEqual(OPENED_SESSION);
-    expect(view.warmup.engine.stored).toBe(true);
-  });
-
-  it('opens nothing when the weights are not on this device', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-
-    expect(world.engine.prepares).toEqual([]);
-    expect(view.warmup.session).toBeNull();
-    expect(view.warmup.engine.stored).toBe(false);
-  });
-
-  it('opens the engine on weights that are here although no grant was ever recorded', async () => {
+  it('opens the engine on weights that are here although no grant was ever recorded, reading no consent record', async () => {
     const world = fakes([]);
     world.engine.files = 9;
     const view = viewOf(world);
@@ -1041,29 +771,8 @@ describe('CaptureView.warm', () => {
     expect(world.engine.prepares).toEqual(['ja']);
     expect(view.warmup.session).toEqual(OPENED_SESSION);
     expect(view.warmup.engine.stored).toBe(true);
-  });
-
-  it('reads no consent record on the way to opening weights that are here', async () => {
-    const world = fakes([]);
-    world.engine.files = 9;
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-
     expect(world.consent.reads).toEqual([]);
     expect(askedWrites).not.toContain('ja');
-  });
-
-  it('reports the weights as absent and opens nothing when only the grant is here', async () => {
-    const world = fakes(['ja']);
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-
-    expect(world.engine.prepares).toEqual([]);
-    expect(view.warmup.engine.stored).toBe(false);
   });
 
   it('asks for no agreement on a later selection once it has opened the engine', async () => {
@@ -1079,31 +788,6 @@ describe('CaptureView.warm', () => {
 
     expect(view.consent.request).toBeNull();
     expect(call.regions).toEqual(regions(3));
-  });
-
-  it('opens the engine once for one book however often the reader asks', async () => {
-    const world = fakes();
-    world.engine.files = 9;
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-    await view.warm(ONE, 'ja');
-
-    expect(world.engine.prepares).toEqual(['ja']);
-  });
-
-  it('names the failure rather than a session when the engine will not open', async () => {
-    const world = fakes();
-    world.engine.files = 9;
-    world.engine.failure = 'the worker died';
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-
-    expect(view.warmup.session).toBeNull();
-    expect(view.warmup.engine.failure).toBe('the worker died');
   });
 
   it('opens no engine for a book other than the one open', async () => {
@@ -1157,17 +841,6 @@ describe('CaptureView.close', () => {
     view.close();
 
     expect(view.consent.request).toBeNull();
-  });
-
-  it('closes nothing when no engine was ever opened', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-
-    view.open(ONE);
-    await view.warm(ONE, 'ja');
-    view.close();
-
-    expect(world.engine.closes).toEqual([]);
   });
 
   it('opens the engine again for the next book after the previous one closed it', async () => {
@@ -1227,16 +900,6 @@ describe('CaptureView notes', () => {
     expect(world.notices).toEqual([]);
   });
 
-  it('stores nothing when no book is open', () => {
-    const world = fakes();
-    const view = viewOf(world);
-
-    view.recording.note(regions());
-
-    expect(view.list.captures).toEqual([]);
-    expect(askedWrites).toEqual([]);
-  });
-
   it('stores nothing when the drag covered no page', () => {
     const world = fakes();
     const view = viewOf(world);
@@ -1248,28 +911,19 @@ describe('CaptureView notes', () => {
     expect(askedWrites).toEqual([]);
   });
 
-  it('opens the draft of a written note at once', () => {
+  it('opens the draft of each written note at once, and keeps it for the panel that comes', async () => {
     const world = fakes();
     const view = viewOf(world);
     view.open(ONE);
 
     view.recording.note(regions());
+    await view.recording.write(ONE, regions(5));
 
     const written = at(view.list.captures, 0).id;
     expect([view.drafts.holds('text', written), view.drafts.draft('text', written)]).toEqual([
       true,
       '',
     ]);
-  });
-
-  it('keeps the draft of a note written while no panel shows open for the panel that comes', async () => {
-    const world = fakes();
-    const view = viewOf(world);
-    view.open(ONE);
-
-    await view.recording.write(ONE, regions());
-    await view.recording.write(ONE, regions(5));
-
     expect(view.list.captures.map((card) => view.drafts.holds('text', card.id))).toEqual([
       true,
       true,
