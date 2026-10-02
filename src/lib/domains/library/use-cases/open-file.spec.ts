@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ContentHash } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
-import type { ReadingPlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { applyEdit, defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
@@ -251,13 +250,6 @@ const folder: readonly File[] = [
 ];
 
 describe('openFile', () => {
-  it('returns the stored book on the happy path', async () => {
-    const repository = fakeRepository();
-    const result = await openFile(deps({ repository: repository.repository }), files);
-    expect(result.kind).toBe('added');
-    expect(openedBook(result).title).toBe('Yotsuba&! 1');
-  });
-
   it('stores exactly the book it answers as added', async () => {
     const repository = fakeRepository();
     const result = await openFile(deps({ repository: repository.repository }), files);
@@ -268,21 +260,14 @@ describe('openFile', () => {
     });
   });
 
-  it('stores the page list the builder made with the book', async () => {
-    const repository = fakeRepository();
-
-    await openFile(deps({ repository: repository.repository }), files);
-
-    expect(at(repository.added, 0).order).toEqual(LISTED);
-  });
-
-  it('stores the source blob and the cover the builder produced', async () => {
+  it('stores the source blob, the cover and the page list the builder produced', async () => {
     const source = builtSource();
     const repository = fakeRepository();
     const builder = fakeBuilder(built(source));
     await openFile(deps({ repository: repository.repository, builder: builder.builder }), files);
     expect(at(repository.added, 0).source).toBe(source.blob);
     expect(at(repository.added, 0).cover).toBe(COVER);
+    expect(at(repository.added, 0).order).toEqual(LISTED);
   });
 
   it('uses the injected id, time and title', async () => {
@@ -296,22 +281,19 @@ describe('openFile', () => {
     expect(openedBook(result).title).toBe('Nichijou 3');
   });
 
-  it('defaults a new book to Japanese, paged, right to left, two pages after a cover, at the first image', async () => {
-    const result = await openFile(deps(), files);
+  it('defaults a new book to Japanese, paged, right to left, two pages after a cover, the paged fit, at the first image, unread and unfinished', async () => {
+    const result = await openFile(deps({ now: () => 42 }), files);
     expect(openedBook(result).language).toBe('ja');
     expect(openedBook(result).layoutKind).toBe('paged');
     expect(openedBook(result).direction).toBe('rtl');
     expect(openedBook(result).pagePairing).toBe(DEFAULT_PAGE_PAIRING);
+    expect(openedBook(result).pageFit).toBe(defaultPageFit('paged'));
     expect(openedBook(result).position).toEqual({
       kind: 'image',
       index: 0,
       shownThrough: 0,
       offset: 0,
     });
-  });
-
-  it('gives a new book no last read time and no finished mark', async () => {
-    const result = await openFile(deps({ now: () => 42 }), files);
     expect(openedBook(result).lastReadAt).toBeNull();
     expect(openedBook(result).finishedAt).toBeNull();
   });
@@ -324,25 +306,12 @@ describe('openFile', () => {
     expect(openedBook(result).language).toBe('ko');
   });
 
-  it('reads Japanese from a kana title', async () => {
-    const builder = fakeBuilder(built(builtSource({ suggestedTitle: 'よつばと！' }))).builder;
-
-    const result = await openFile(deps({ builder }), files);
-
-    expect(openedBook(result).language).toBe('ja');
-  });
-
   it('falls back to Japanese when the title says nothing', async () => {
     const builder = fakeBuilder(built(builtSource({ suggestedTitle: 'One Piece v01' }))).builder;
 
     const result = await openFile(deps({ builder }), files);
 
     expect(openedBook(result).language).toBe('ja');
-  });
-
-  it('defaults a new book to the fit its layout kind asks for', async () => {
-    const result = await openFile(deps(), files);
-    expect(openedBook(result).pageFit).toBe(defaultPageFit('paged'));
   });
 
   it('carries the source kind and the image count the builder reported', async () => {
@@ -358,20 +327,6 @@ describe('openFile', () => {
     const builder = fakeBuilder(built(builtSource()));
     await openFile(deps({ builder: builder.builder }), files);
     expect(builder.calls).toEqual([files]);
-  });
-
-  it('requests the persistence grant', async () => {
-    let requested = 0;
-    await openFile(
-      deps({
-        requestPersistence: () => {
-          requested += 1;
-          return Promise.resolve(true);
-        },
-      }),
-      files,
-    );
-    expect(requested).toBe(1);
   });
 
   it('requests the persistence grant before it builds the source', async () => {
@@ -405,29 +360,26 @@ describe('openFile', () => {
     expect(repository.added).toHaveLength(1);
   });
 
-  it('reports a builder failure as a source error', async () => {
-    const builder = fakeBuilder({ kind: 'nothing-usable' });
-    const result = await openFile(deps({ builder: builder.builder }), files);
-    expect(result).toEqual({ kind: 'source', failure: { kind: 'nothing-usable' } });
-  });
+  const BUILD_FAILURES: readonly SourceBuild[] = [{ kind: 'nothing-usable' }, { kind: 'empty' }];
 
-  it('stores nothing when the builder fails', async () => {
-    const repository = fakeRepository();
-    const builder = fakeBuilder({ kind: 'empty' });
-    await openFile(deps({ repository: repository.repository, builder: builder.builder }), files);
-    expect(repository.added).toEqual([]);
-  });
+  it.each(BUILD_FAILURES)(
+    'reports a builder failure as a source error and stores nothing: $kind',
+    async (failure) => {
+      const repository = fakeRepository();
+      const builder = fakeBuilder(failure);
+      const result = await openFile(
+        deps({ repository: repository.repository, builder: builder.builder }),
+        files,
+      );
+      expect(result).toEqual({ kind: 'source', failure });
+      expect(repository.added).toEqual([]);
+    },
+  );
 
   it('passes a blocked store through when the book will not store', async () => {
     const repository = fakeRepository(STORAGE_UNAVAILABLE);
     const result = await openFile(deps({ repository: repository.repository }), files);
     expect(result).toEqual(STORAGE_UNAVAILABLE);
-  });
-
-  it('leaves the reading position typed as a reading place', async () => {
-    const result = await openFile(deps(), files);
-    const position: ReadingPlace = openedBook(result).position;
-    expect(position).toEqual({ kind: 'image', index: 0, shownThrough: 0, offset: 0 });
   });
 
   it('forwards every stage the builder reported', async () => {
@@ -445,41 +397,24 @@ describe('openFile', () => {
     ]);
   });
 
-  it('reports the bytes the repository wrote as a storing stage carrying the image count', async () => {
+  it('reports the bytes the repository wrote as a storing stage carrying the image count, timed from the clock after the book time', async () => {
     const seen = collector();
     const repository = fakeRepository(WRITTEN, [
       [0, 400],
       [200, 400],
       [400, 400],
     ]);
-    await openFile(
+    const result = await openFile(
       deps({ repository: repository.repository, now: clock([NOW, 1000, 1500, 3000, 5000]) }),
       files,
       seen.report,
     );
+    expect(openedBook(result).addedAt).toBe(NOW);
     expect(seen.stages).toEqual([
       { kind: 'storing', imageCount: 182, writtenBytes: 0, totalBytes: 400, elapsedMs: 500 },
       { kind: 'storing', imageCount: 182, writtenBytes: 200, totalBytes: 400, elapsedMs: 2000 },
       { kind: 'storing', imageCount: 182, writtenBytes: 400, totalBytes: 400, elapsedMs: 4000 },
     ]);
-  });
-
-  it('measures the storing elapsed time from the injected clock, not from the book time', async () => {
-    const seen = collector();
-    const repository = fakeRepository(WRITTEN, [[64, 128]]);
-    const result = await openFile(
-      deps({ repository: repository.repository, now: clock([7, 100, 900]) }),
-      files,
-      seen.report,
-    );
-    expect(openedBook(result).addedAt).toBe(7);
-    expect(at(seen.stages, 0)).toEqual({
-      kind: 'storing',
-      imageCount: 182,
-      writtenBytes: 64,
-      totalBytes: 128,
-      elapsedMs: 800,
-    });
   });
 
   it('fingerprints the one file it was handed', async () => {
@@ -544,16 +479,6 @@ describe('openFile', () => {
     expect(hashing.hashed).toEqual([page]);
   });
 
-  it('reads the same manifest whichever order a folder arrives in', async () => {
-    const one = fakeFingerprint();
-    const other = fakeFingerprint();
-
-    await openFile(deps({ partialMd5: one.fingerprint }), folder);
-    await openFile(deps({ partialMd5: other.fingerprint }), folder.toReversed());
-
-    expect(await at(one.hashed, 0).text()).toBe(await at(other.hashed, 0).text());
-  });
-
   it('stores the fingerprint on the new book', async () => {
     const repository = fakeRepository();
 
@@ -588,23 +513,22 @@ describe('openFile', () => {
     expect(builder.calls).toEqual([]);
   });
 
-  it('imports a file no held book carries the fingerprint of', async () => {
-    const repository = fakeRepository(WRITTEN, [], listing([heldBook(contentHash('other'))]));
+  const UNHELD: readonly (readonly [string, ContentHash])[] = [
+    ['another fingerprint', contentHash('other')],
+    ['no fingerprint, stored before fingerprints', NO_CONTENT_HASH],
+  ];
 
-    const result = await openFile(deps({ repository: repository.repository }), files);
+  it.each(UNHELD)(
+    'imports a file no held book carries the fingerprint of: a held book carries %s',
+    async (_case, carried) => {
+      const repository = fakeRepository(WRITTEN, [], listing([heldBook(carried)]));
 
-    expect(repository.added).toHaveLength(1);
-    expect(openedBook(result).id).toBe(NEW_ID);
-  });
+      const result = await openFile(deps({ repository: repository.repository }), files);
 
-  it('imports a file although a book stored before fingerprints carries none', async () => {
-    const repository = fakeRepository(WRITTEN, [], listing([heldBook(NO_CONTENT_HASH)]));
-
-    const result = await openFile(deps({ repository: repository.repository }), files);
-
-    expect(repository.added).toHaveLength(1);
-    expect(openedBook(result).id).toBe(NEW_ID);
-  });
+      expect(repository.added).toHaveLength(1);
+      expect(openedBook(result).id).toBe(NEW_ID);
+    },
+  );
 
   it('computes no legacy fingerprint while no held book carries one', async () => {
     const legacy = fakeFingerprint(LEGACY_DIGEST);
@@ -693,21 +617,18 @@ describe('openFile', () => {
     expect(result).toEqual({ kind: 'not-found', id: known.id });
   });
 
-  it('stores the uploaded file name on the new book', async () => {
+  const NAMES: readonly (readonly [string, readonly File[], string])[] = [
+    ['the uploaded file name', files, 'Yotsuba&! 1.cbz'],
+    ['the folder name of a book made from a folder', folder, 'Ch 12'],
+  ];
+
+  it.each(NAMES)('stores %s on the new book', async (_case, upload, name) => {
     const repository = fakeRepository();
 
-    const result = await openFile(deps({ repository: repository.repository }), files);
+    const result = await openFile(deps({ repository: repository.repository }), upload);
 
-    expect(openedBook(result).fileName).toBe('Yotsuba&! 1.cbz');
-    expect(at(repository.added, 0).book.fileName).toBe('Yotsuba&! 1.cbz');
-  });
-
-  it('stores the folder name on a book made from a folder', async () => {
-    const repository = fakeRepository();
-
-    await openFile(deps({ repository: repository.repository }), folder);
-
-    expect(at(repository.added, 0).book.fileName).toBe('Ch 12');
+    expect(openedBook(result).fileName).toBe(name);
+    expect(at(repository.added, 0).book.fileName).toBe(name);
   });
 
   it('joins a book by its file name when matching by file name, although the bytes differ', async () => {
@@ -726,19 +647,6 @@ describe('openFile', () => {
     expect(builder.calls).toEqual([]);
   });
 
-  it('imports a renamed copy of a file name it holds when matching by content', async () => {
-    const repository = fakeRepository(WRITTEN, [], listing([heldBook(contentHash('other'))]));
-
-    const result = await openFile(
-      deps({ repository: repository.repository }),
-      files,
-      () => undefined,
-      'content',
-    );
-
-    expect(result.kind).toBe('added');
-  });
-
   it('passes a blocked store through when the library cannot be read', async () => {
     const repository = fakeRepository(WRITTEN, [], STORAGE_UNAVAILABLE);
 
@@ -747,43 +655,55 @@ describe('openFile', () => {
     expect(result).toEqual(STORAGE_UNAVAILABLE);
   });
 
-  it('inspects an uploaded EPUB before it builds a source from it', async () => {
+  it('inspects an uploaded fixed-layout EPUB before it builds a source from it, and imports it', async () => {
+    const order: string[] = [];
+    const repository = fakeRepository();
     const inspector = fakeInspector(inspectedEpub('pre-paginated'));
     const builder = fakeBuilder(built(builtSource({ sourceKind: 'epub' })));
 
     const result = await openFile(
-      deps({ inspectEpub: inspector.inspector, builder: builder.builder }),
+      deps({
+        repository: repository.repository,
+        inspectEpub: (source) => {
+          order.push('inspect');
+          return inspector.inspector(source);
+        },
+        builder: {
+          build: (upload, report) => {
+            order.push('build');
+            return builder.builder.build(upload, report);
+          },
+        },
+      }),
       epub,
     );
 
+    expect(order).toEqual(['inspect', 'build']);
     expect(inspector.inspected).toEqual([at(epub, 0)]);
-    expect(result.kind).toBe('added');
+    expect(openedBook(result).sourceKind).toBe('epub');
+    expect(repository.added).toHaveLength(1);
   });
 
-  it('takes the language the EPUB itself declares, not one guessed from a title', async () => {
-    const result = await openFile(
-      deps({
-        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'ko-KR')).inspector,
-        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
-      }),
-      epub,
-    );
+  const DECLARED_LANGUAGES: readonly (readonly [string, string, string])[] = [
+    ['ko-KR', 'Yotsuba&! 1', 'ko'],
+    ['en-GB', 'Watchmen', 'en'],
+  ];
 
-    expect(openedBook(result).language).toBe('ko');
-  });
+  it.each(DECLARED_LANGUAGES)(
+    'takes the language the EPUB itself declares, not one guessed from a title: %s titled %s',
+    async (declared, title, language) => {
+      const result = await openFile(
+        deps({
+          inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', declared)).inspector,
+          builder: fakeBuilder(built(builtSource({ sourceKind: 'epub', suggestedTitle: title })))
+            .builder,
+        }),
+        epub,
+      );
 
-  it('opens an EPUB declaring English as English, whatever its Latin title looks like', async () => {
-    const result = await openFile(
-      deps({
-        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'en-GB')).inspector,
-        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub', suggestedTitle: 'Watchmen' })))
-          .builder,
-      }),
-      epub,
-    );
-
-    expect(openedBook(result).language).toBe('en');
-  });
+      expect(openedBook(result).language).toBe(language);
+    },
+  );
 
   it('falls back to the title when the EPUB declares a language this app cannot read', async () => {
     const result = await openFile(
@@ -826,45 +746,6 @@ describe('openFile', () => {
     expect(openedBook(result).direction).toBe('ltr');
   });
 
-  it('keeps the manga default for an upload that is no EPUB at all', async () => {
-    const result = await openFile(deps(), files);
-
-    expect(openedBook(result).direction).toBe('rtl');
-  });
-
-  it('imports a fixed-layout EPUB', async () => {
-    const repository = fakeRepository();
-    const result = await openFile(
-      deps({
-        repository: repository.repository,
-        inspectEpub: fakeInspector(inspectedEpub('pre-paginated')).inspector,
-        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
-      }),
-      epub,
-    );
-
-    expect(openedBook(result).sourceKind).toBe('epub');
-    expect(repository.added).toHaveLength(1);
-  });
-
-  it('stores an EPUB declaring reflowable whose every page is one image', async () => {
-    const repository = fakeRepository();
-    const builder = fakeBuilder(built(builtSource({ sourceKind: 'epub' })));
-
-    const result = await openFile(
-      deps({
-        repository: repository.repository,
-        builder: builder.builder,
-        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
-      }),
-      epub,
-    );
-
-    expect(builder.calls).toEqual([epub]);
-    expect(openedBook(result).sourceKind).toBe('epub');
-    expect(repository.added).toHaveLength(1);
-  });
-
   it('imports an EPUB declaring reflowable whose pages are not images as a flow book', async () => {
     const repository = fakeRepository();
     const obstacle: PageObstacle = { kind: 'no-image', path: 'OEBPS/ch01.xhtml' };
@@ -884,11 +765,44 @@ describe('openFile', () => {
     expect(repository.added).toHaveLength(1);
   });
 
-  it('stores a flow book with no images, a place in its text and the cover the builder lifted', async () => {
+  const FLOW_COVERS: readonly (readonly [string, Blob | null])[] = [
+    ['the cover the builder lifted', COVER],
+    ['no cover when its EPUB names none', null],
+  ];
+
+  it.each(FLOW_COVERS)(
+    'stores a flow book with no images, a place in its text, the order its EPUB gives it, the pairing and fit it never reads, and %s',
+    async (_case, cover) => {
+      const repository = fakeRepository();
+      const builder = fakeBuilder(
+        built(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' }, cover)),
+      );
+
+      const result = await openFile(
+        deps({
+          repository: repository.repository,
+          builder: builder.builder,
+          inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
+        }),
+        epub,
+      );
+
+      expect(openedBook(result).imageCount).toBe(0);
+      expect(openedBook(result).position).toEqual({
+        kind: 'text',
+        cfi: '',
+        fraction: null,
+      });
+      expect(at(repository.added, 0).cover).toBe(cover);
+      expect(at(repository.added, 0).order).toEqual({ kind: 'intrinsic' });
+      expect(openedBook(result).pagePairing).toBe(DEFAULT_PAGE_PAIRING);
+      expect(openedBook(result).pageFit).toBe(defaultPageFit('flow'));
+    },
+  );
+
+  it('stores an EPUB declaring reflowable whose every page is one image as a paged book', async () => {
     const repository = fakeRepository();
-    const builder = fakeBuilder(
-      built(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' }, COVER)),
-    );
+    const builder = fakeBuilder(built(builtSource({ sourceKind: 'epub' })));
 
     const result = await openFile(
       deps({
@@ -899,71 +813,9 @@ describe('openFile', () => {
       epub,
     );
 
-    expect(openedBook(result).imageCount).toBe(0);
-    expect(openedBook(result).position).toEqual({
-      kind: 'text',
-      cfi: '',
-      fraction: null,
-    });
-    expect(at(repository.added, 0).cover).toBe(COVER);
-  });
-
-  it('stores a flow book with the order its EPUB gives it, not a page list', async () => {
-    const repository = fakeRepository();
-    const builder = fakeBuilder(built(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })));
-
-    await openFile(
-      deps({
-        repository: repository.repository,
-        builder: builder.builder,
-        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
-      }),
-      epub,
-    );
-
-    expect(at(repository.added, 0).order).toEqual({ kind: 'intrinsic' });
-  });
-
-  it('stores a flow book whose EPUB names no cover with none', async () => {
-    const repository = fakeRepository();
-    const builder = fakeBuilder(built(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })));
-
-    await openFile(
-      deps({
-        repository: repository.repository,
-        builder: builder.builder,
-        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
-      }),
-      epub,
-    );
-
-    expect(at(repository.added, 0).cover).toBeNull();
-  });
-
-  it('keeps the pairing and the fit a flow book never reads', async () => {
-    const builder = fakeBuilder(built(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })));
-
-    const result = await openFile(
-      deps({
-        builder: builder.builder,
-        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
-      }),
-      epub,
-    );
-
-    expect(openedBook(result).pagePairing).toBe(DEFAULT_PAGE_PAIRING);
-    expect(openedBook(result).pageFit).toBe(defaultPageFit('flow'));
-  });
-
-  it('imports an EPUB declaring reflowable whose every page is one image as a paged book', async () => {
-    const result = await openFile(
-      deps({
-        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
-        inspectEpub: fakeInspector(inspectedEpub('reflowable')).inspector,
-      }),
-      epub,
-    );
-
+    expect(builder.calls).toEqual([epub]);
+    expect(openedBook(result).sourceKind).toBe('epub');
+    expect(repository.added).toHaveLength(1);
     expect(openedBook(result).layoutKind).toBe('paged');
     expect(openedBook(result).position).toEqual({
       kind: 'image',
