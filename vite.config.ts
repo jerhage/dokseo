@@ -83,6 +83,7 @@ export default defineConfig({
       adapter: adapter({ fallback: 'index.html' }),
       alias: { $workers: 'src/workers' },
       csp: { mode: 'hash', directives: CONTENT_SECURITY_POLICY },
+      serviceWorker: { register: false },
     }),
     crossOriginIsolation(),
     runtimeServedFromCdn(),
