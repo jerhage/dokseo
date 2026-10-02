@@ -5,5 +5,5 @@
   "printWidth": 100,
   "singleQuote": true,
   "svelte": true,
-  "ignorePatterns": []
+  "ignorePatterns": ["CHANGELOG.md"]
 }
