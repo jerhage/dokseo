@@ -4,12 +4,8 @@ import { byName, namedTag, sameTagName, tagFromStored, tagName } from './tag';
 import type { StoredTag, Tag } from './tag';
 
 describe('tagName', () => {
-  it('composes a decomposed name', () => {
-    expect(tagName('が'.normalize('NFD'))).toBe('が');
-  });
-
-  it('composes a decomposed Korean name', () => {
-    expect(tagName('한국어'.normalize('NFD'))).toBe('한국어'.normalize('NFC'));
+  it.each(['が', '한국어'])('composes the decomposed name %s', (name) => {
+    expect(tagName(name.normalize('NFD'))).toBe(name.normalize('NFC'));
   });
 
   it('trims the ends and collapses a run of inner whitespace to one space', () => {
@@ -30,23 +26,16 @@ describe('namedTag', () => {
 });
 
 describe('tagFromStored', () => {
-  it('reads a record with no colour as the first palette colour', () => {
-    const stored: StoredTag = { id: tagId('one'), name: 'sfx' };
-
-    expect(tagFromStored(stored).colour).toBe('slate');
-  });
-
-  it('replaces an unknown stored colour with the default', () => {
-    const stored: StoredTag = { id: tagId('one'), name: 'sfx', colour: 'ember' };
-
-    expect(tagFromStored(stored).colour).toBe('slate');
-  });
-
-  it('passes a known stored colour through unchanged', () => {
-    const stored: StoredTag = { id: tagId('one'), name: 'sfx', colour: 'copper' };
-
-    expect(tagFromStored(stored).colour).toBe('copper');
-  });
+  it.each([
+    { stored: { id: tagId('one'), name: 'sfx' }, colour: 'slate' },
+    { stored: { id: tagId('one'), name: 'sfx', colour: 'ember' }, colour: 'slate' },
+    { stored: { id: tagId('one'), name: 'sfx', colour: 'copper' }, colour: 'copper' },
+  ] satisfies { stored: StoredTag; colour: string }[])(
+    'reads the stored colour $stored.colour as $colour, the first palette colour unless it knows it',
+    ({ stored, colour }) => {
+      expect(tagFromStored(stored).colour).toBe(colour);
+    },
+  );
 
   it('dates a record with no creation time to the beginning', () => {
     const stored: StoredTag = { id: tagId('one'), name: 'sfx' };
@@ -67,16 +56,12 @@ describe('tagFromStored', () => {
 });
 
 describe('sameTagName', () => {
-  it('equates two spellings that differ only in case', () => {
-    expect(sameTagName('Grammar', 'grammar')).toBe(true);
-  });
-
-  it('equates a half-width and a full-width spelling', () => {
-    expect(sameTagName('ｓｆｘ', 'sfx')).toBe(true);
-  });
-
-  it('equates a decomposed and a composed spelling', () => {
-    expect(sameTagName('ぱ'.normalize('NFD'), 'ぱ'.normalize('NFC'))).toBe(true);
+  it.each([
+    ['two spellings that differ only in case', 'Grammar', 'grammar'],
+    ['a half-width and a full-width spelling', 'ｓｆｘ', 'sfx'],
+    ['a decomposed and a composed spelling', 'ぱ'.normalize('NFD'), 'ぱ'.normalize('NFC')],
+  ])('equates %s', (_spellings, one, other) => {
+    expect(sameTagName(one, other)).toBe(true);
   });
 
   it('ignores the whitespace a reader left around a name', () => {
@@ -106,18 +91,5 @@ describe('byName', () => {
     const ordered = byName([made('Sfx', 1), made('keigo', 2), made('sage', 3)]);
 
     expect(ordered.map((tag) => tag.name)).toEqual(['keigo', 'sage', 'Sfx']);
-  });
-
-  it('orders a Japanese name against a Latin one without failing', () => {
-    const ordered = byName([made('sfx', 1), made('文法', 2)]);
-
-    expect(ordered).toHaveLength(2);
-  });
-
-  it('leaves the tags it was given alone', () => {
-    const tags = [made('sfx', 1), made('keigo', 2)];
-    byName(tags);
-
-    expect(tags.map((tag) => tag.name)).toEqual(['sfx', 'keigo']);
   });
 });

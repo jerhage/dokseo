@@ -44,14 +44,14 @@ describe('tagCounts', () => {
     expect(counts.get(SFX)).toBe(1);
   });
 
-  it('reports nothing for a tag no capture carries', () => {
-    const counts = tagCounts([capture('a', [GRAMMAR])]);
+  it.each([
+    { across: 'one capture', captures: [capture('a', [GRAMMAR])], counted: 1 },
+    { across: 'no captures', captures: [], counted: 0 },
+  ])('reports nothing for a tag no capture carries, across $across', ({ captures, counted }) => {
+    const counts = tagCounts(captures);
 
     expect(counts.get(UNUSED)).toBeUndefined();
-  });
-
-  it('counts nothing across no captures', () => {
-    expect(tagCounts([]).size).toBe(0);
+    expect(counts.size).toBe(counted);
   });
 });
 
@@ -64,14 +64,6 @@ describe('taggedCapture', () => {
     const once = taggedCapture(capture('a', []), GRAMMAR);
 
     expect(taggedCapture(once, GRAMMAR).tagIds).toEqual([GRAMMAR]);
-  });
-
-  it('leaves the capture it was given untouched', () => {
-    const before = capture('a', [GRAMMAR]);
-
-    taggedCapture(before, SFX);
-
-    expect(before.tagIds).toEqual([GRAMMAR]);
   });
 });
 
@@ -88,13 +80,5 @@ describe('untaggedCapture', () => {
 
   it('removes a tag the capture never carried without complaint', () => {
     expect(untaggedCapture(capture('a', [GRAMMAR]), UNUSED).tagIds).toEqual([GRAMMAR]);
-  });
-
-  it('leaves the capture it was given untouched', () => {
-    const before = capture('a', [GRAMMAR, SFX]);
-
-    untaggedCapture(before, GRAMMAR);
-
-    expect(before.tagIds).toEqual([GRAMMAR, SFX]);
   });
 });

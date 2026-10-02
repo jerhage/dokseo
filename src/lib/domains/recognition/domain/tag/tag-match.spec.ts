@@ -35,16 +35,11 @@ function names(matches: TagMatches): readonly string[] {
 }
 
 describe('tagMatches', () => {
-  it('offers every tag when the query is empty', () => {
-    expect(tagMatches(TAGS, COUNTS, [], '').kind).toBe('every');
-  });
+  it.each(['', '   '])('offers every tag by count descending for the query %j', (query) => {
+    const found = tagMatches(TAGS, COUNTS, [], query);
 
-  it('offers every tag when the query is whitespace only', () => {
-    expect(tagMatches(TAGS, COUNTS, [], '   ').kind).toBe('every');
-  });
-
-  it('orders the options by count descending', () => {
-    expect(names(tagMatches(TAGS, COUNTS, [], ''))).toEqual(['grammar solved', 'grammar', 'sfx']);
+    expect(found.kind).toBe('every');
+    expect(names(found)).toEqual(['grammar solved', 'grammar', 'sfx']);
   });
 
   it('orders two tags of equal count by name', () => {
@@ -86,21 +81,20 @@ describe('tagMatches', () => {
     expect(found.kind === 'matched' && found.create).toBe('gramm');
   });
 
-  it('offers the matches alone when the query is an existing name', () => {
-    const found = tagMatches(TAGS, COUNTS, [], 'grammar');
+  it.each(['grammar', 'Grammar'])(
+    'offers the matches alone when the query %j is an existing name',
+    (query) => {
+      const found = tagMatches(TAGS, COUNTS, [], query);
 
-    expect(found).toEqual({
-      kind: 'matched-only',
-      options: [
-        { tag: GRAMMAR_SOLVED, count: 9 },
-        { tag: GRAMMAR, count: 3 },
-      ],
-    });
-  });
-
-  it('reads a name of a different case as the same existing name', () => {
-    expect(tagMatches(TAGS, COUNTS, [], 'Grammar').kind).toBe('matched-only');
-  });
+      expect(found).toEqual({
+        kind: 'matched-only',
+        options: [
+          { tag: GRAMMAR_SOLVED, count: 9 },
+          { tag: GRAMMAR, count: 3 },
+        ],
+      });
+    },
+  );
 
   it('offers the new name alone when nothing matches', () => {
     expect(tagMatches(TAGS, COUNTS, [], 'keigo')).toEqual({ kind: 'create-only', create: 'keigo' });

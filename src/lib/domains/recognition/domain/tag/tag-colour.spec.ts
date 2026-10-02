@@ -99,12 +99,11 @@ describe('TAG_COLOURS', () => {
 });
 
 describe('nextColour', () => {
-  it('returns the first palette colour when nothing is tagged yet', () => {
-    expect(nextColour([])).toBe('slate');
-  });
-
-  it('returns the first unused colour while the palette has one', () => {
-    expect(nextColour(coloured(['slate', 'clay']))).toBe('sage');
+  it.each([
+    { tagged: [], colour: 'slate' },
+    { tagged: ['slate', 'clay'], colour: 'sage' },
+  ] as const)('returns the first unused colour, $colour, after $tagged', ({ tagged, colour }) => {
+    expect(nextColour(coloured(tagged))).toBe(colour);
   });
 
   it('returns the least used colour once every one is taken', () => {
