@@ -2,8 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
 import { createToaster } from '$lib/components/toaster.svelte';
 import { SKIP_WAITING } from '$lib/platform/service-worker/shell-message';
-import { SHELL_UPDATE_ACTION, SHELL_UPDATE_TITLE, ShellUpdates } from './shell-updates';
+import {
+  SHELL_UPDATE_ACTION,
+  SHELL_UPDATE_TITLE,
+  ShellUpdates,
+  UPDATE_CHECK_TITLES,
+  checkAfterRequest,
+  checkBeforeRequest,
+  foundProgress,
+  shellCheckState,
+} from './shell-updates';
 import { FakeShellContainer, FakeShellWorker } from './testing/fake-shell-worker';
+import { UNEXPECTED_FAILURE_TITLE } from './unexpected-failure';
 
 let logged: MockInstance<typeof console.error>;
 
@@ -173,5 +183,271 @@ describe('ShellUpdates', () => {
     await vi.waitFor(() =>
       expect(logged).toHaveBeenCalledWith('Unexpected failure (service-worker)', failure),
     );
+  });
+});
+
+type Watched = {
+  readonly toaster: ReturnType<typeof createToaster>;
+  readonly container: FakeShellContainer;
+  readonly updates: ShellUpdates;
+};
+
+function shownTitles(toaster: ReturnType<typeof createToaster>): readonly string[] {
+  return toaster.toasts.filter((toast) => toast.phase === 'shown').map((toast) => toast.title);
+}
+
+async function watched(isOnline: () => boolean): Promise<Watched> {
+  const toaster = createToaster();
+  const container = new FakeShellContainer(true);
+  const updates = new ShellUpdates(toaster, container, () => undefined, isOnline);
+  await updates.watch('/service-worker.js');
+  return { toaster, container, updates };
+}
+
+describe('shellCheckState', () => {
+  it('reports an absent registration as unregistered', () => {
+    expect(shellCheckState(null)).toEqual({ kind: 'unregistered' });
+  });
+
+  it('reports the waiting worker of a registration that holds one', () => {
+    const registration = new FakeShellContainer(true).registration;
+    const waiting = new FakeShellWorker('installed');
+    registration.waiting = waiting;
+
+    expect(shellCheckState(registration)).toEqual({ kind: 'update-waiting', waiting });
+  });
+
+  it('reports a registration without a waiting worker as current', () => {
+    const registration = new FakeShellContainer(true).registration;
+
+    expect(shellCheckState(registration)).toEqual({ kind: 'current', registration });
+  });
+});
+
+describe('checkBeforeRequest', () => {
+  const registration = new FakeShellContainer(true).registration;
+  const waiting = new FakeShellWorker('installed');
+
+  it('answers unavailable for an unregistered app, online or not', () => {
+    const unavailable = { kind: 'answered', check: { kind: 'unavailable' } };
+
+    expect(checkBeforeRequest({ kind: 'unregistered' }, true)).toEqual(unavailable);
+    expect(checkBeforeRequest({ kind: 'unregistered' }, false)).toEqual(unavailable);
+  });
+
+  it('answers with the waiting worker before it looks at the network', () => {
+    const ready = { kind: 'answered', check: { kind: 'already-waiting', waiting } };
+
+    expect(checkBeforeRequest({ kind: 'update-waiting', waiting }, true)).toEqual(ready);
+    expect(checkBeforeRequest({ kind: 'update-waiting', waiting }, false)).toEqual(ready);
+  });
+
+  it('answers offline without a request when the device has no network', () => {
+    expect(checkBeforeRequest({ kind: 'current', registration }, false)).toEqual({
+      kind: 'answered',
+      check: { kind: 'offline' },
+    });
+  });
+
+  it('asks for a request when the app is current and online', () => {
+    expect(checkBeforeRequest({ kind: 'current', registration }, true)).toEqual({
+      kind: 'request',
+      registration,
+    });
+  });
+});
+
+describe('foundProgress', () => {
+  it('names a found worker still installing as downloading', () => {
+    expect(foundProgress('parsed')).toBe('downloading');
+    expect(foundProgress('installing')).toBe('downloading');
+  });
+
+  it('names a found worker that finished installing as installed', () => {
+    expect(foundProgress('installed')).toBe('installed');
+    expect(foundProgress('activating')).toBe('installed');
+    expect(foundProgress('activated')).toBe('installed');
+  });
+
+  it('names a found worker that turned redundant as a failed download', () => {
+    expect(foundProgress('redundant')).toBe('download-failed');
+  });
+});
+
+describe('checkAfterRequest', () => {
+  it('answers up to date when the request found no newer worker', () => {
+    expect(checkAfterRequest({ kind: 'resolved', found: null })).toEqual({ kind: 'up-to-date' });
+  });
+
+  it('answers found with the newer worker the request started installing', () => {
+    const found = new FakeShellWorker('installing');
+
+    expect(checkAfterRequest({ kind: 'resolved', found })).toEqual({ kind: 'found', found });
+  });
+
+  it('answers a failed download for a found worker that is already redundant', () => {
+    const found = new FakeShellWorker('redundant');
+
+    expect(checkAfterRequest({ kind: 'resolved', found })).toEqual({ kind: 'download-failed' });
+  });
+
+  it('answers unreachable for a request that failed to reach the network', () => {
+    expect(
+      checkAfterRequest({ kind: 'rejected', error: new TypeError('Failed to fetch') }),
+    ).toEqual({ kind: 'unreachable' });
+    expect(
+      checkAfterRequest({ kind: 'rejected', error: new DOMException('Offline', 'NetworkError') }),
+    ).toEqual({ kind: 'unreachable' });
+  });
+
+  it('answers unexpected with the error for any other rejection', () => {
+    const error = new DOMException('Not allowed', 'SecurityError');
+
+    expect(checkAfterRequest({ kind: 'rejected', error })).toEqual({ kind: 'unexpected', error });
+  });
+});
+
+describe('ShellUpdates.checkNow', () => {
+  it('reports an up-to-date app with one success toast', async () => {
+    const { toaster, container, updates } = await watched(online);
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'up-to-date' });
+    expect(container.registration.updates).toBe(1);
+    expect(toaster.toasts).toMatchObject([
+      { title: UPDATE_CHECK_TITLES.upToDate, variant: 'success' },
+    ]);
+  });
+
+  it('shows the download, then the Reload toast once the found worker is installed', async () => {
+    const { toaster, container, updates } = await watched(online);
+    const found = new FakeShellWorker('installing');
+    container.registration.updateFinds = found;
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'found', found });
+    expect(shownTitles(toaster)).toEqual([UPDATE_CHECK_TITLES.downloading]);
+
+    found.become('installed');
+
+    expect(shownTitles(toaster)).toEqual([SHELL_UPDATE_TITLE]);
+    const offered = toaster.toasts.find((toast) => toast.phase === 'shown');
+    if (offered === undefined) throw new Error('no toast');
+    toaster.act(offered.id);
+    expect(found.posted).toEqual([SKIP_WAITING]);
+  });
+
+  it('reports a failed download when the found worker turns redundant before it installs', async () => {
+    const { toaster, container, updates } = await watched(online);
+    const found = new FakeShellWorker('installing');
+    container.registration.updateFinds = found;
+
+    await updates.checkNow();
+    found.become('redundant');
+
+    expect(shownTitles(toaster)).toEqual([UPDATE_CHECK_TITLES.downloadFailed]);
+    expect(toaster.toasts.at(-1)?.variant).toBe('danger');
+  });
+
+  it('reports no failure for a found worker that turns redundant after it installed', async () => {
+    const { toaster, container, updates } = await watched(online);
+    const found = new FakeShellWorker('installing');
+    container.registration.updateFinds = found;
+
+    await updates.checkNow();
+    found.become('installed');
+    found.become('redundant');
+
+    expect(shownTitles(toaster)).toEqual([SHELL_UPDATE_TITLE]);
+  });
+
+  it('offers a worker already waiting without a request, and Reload applies it', async () => {
+    const toaster = createToaster();
+    const container = new FakeShellContainer(false);
+    const waiting = new FakeShellWorker('installed');
+    container.registration.waiting = waiting;
+    const updates = new ShellUpdates(toaster, container, () => undefined, online);
+    await updates.watch('/service-worker.js');
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'already-waiting', waiting });
+    expect(container.registration.updates).toBe(0);
+    expect(toaster.toasts).toMatchObject([
+      { title: UPDATE_CHECK_TITLES.ready, variant: 'info', action: { label: SHELL_UPDATE_ACTION } },
+    ]);
+    const ready = toaster.toasts[0];
+    if (ready === undefined) throw new Error('no toast');
+    toaster.act(ready.id);
+    expect(waiting.posted).toEqual([SKIP_WAITING]);
+  });
+
+  it('warns of a missing connection without a request while offline', async () => {
+    const { toaster, container, updates } = await watched(offline);
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'offline' });
+    expect(container.registration.updates).toBe(0);
+    expect(toaster.toasts).toMatchObject([
+      { title: UPDATE_CHECK_TITLES.offline, variant: 'warning' },
+    ]);
+  });
+
+  it('warns of an unreachable server and logs nothing when the request fails to reach the network', async () => {
+    const { toaster, container, updates } = await watched(online);
+    container.registration.updateFailure = new TypeError('Failed to fetch');
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'unreachable' });
+    expect(toaster.toasts).toMatchObject([
+      { title: UPDATE_CHECK_TITLES.unreachable, variant: 'warning' },
+    ]);
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it('reports updates as unavailable without a service worker container', async () => {
+    const toaster = createToaster();
+    const updates = new ShellUpdates(toaster, null, () => undefined, online);
+    await updates.watch('/service-worker.js');
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'unavailable' });
+    expect(toaster.toasts).toMatchObject([
+      { title: UPDATE_CHECK_TITLES.unavailable, variant: 'info' },
+    ]);
+  });
+
+  it('reports updates as unavailable when the registration failed', async () => {
+    const failure = new DOMException('Not allowed', 'SecurityError');
+    const updates = new ShellUpdates(
+      createToaster(),
+      new FakeShellContainer(false, failure),
+      () => undefined,
+      online,
+    );
+    await updates.watch('/service-worker.js');
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'unavailable' });
+  });
+
+  it('logs any other failed request and shows it as an unexpected failure', async () => {
+    const { toaster, container, updates } = await watched(online);
+    const failure = new DOMException('Not allowed', 'SecurityError');
+    container.registration.updateFailure = failure;
+
+    const check = await updates.checkNow();
+
+    expect(check).toEqual({ kind: 'unexpected', error: failure });
+    expect(logged).toHaveBeenCalledWith('Unexpected failure (service-worker)', failure);
+    expect(toaster.toasts).toMatchObject([
+      { title: UNEXPECTED_FAILURE_TITLE, message: 'Not allowed', variant: 'danger' },
+    ]);
   });
 });

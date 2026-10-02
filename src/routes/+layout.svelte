@@ -15,7 +15,8 @@
     logUnexpected,
     unexpectedMessage,
   } from '$lib/shared/unexpected-failure';
-  import { watchShellUpdates } from '$lib/shared/shell-updates';
+  import { createShellUpdates, watchShellUpdates } from '$lib/shared/shell-updates';
+  import { provideShellUpdates } from '$lib/shared/shell-updates-context';
   import '$lib/styles/index.css';
 
   let { children } = $props();
@@ -24,7 +25,9 @@
   const toaster = createToaster();
   setToaster(toaster);
   const failures = new UnexpectedFailures(toaster);
-  if (!dev) watchShellUpdates(toaster);
+  const shellUpdates = createShellUpdates(toaster);
+  provideShellUpdates(shellUpdates);
+  if (!dev) watchShellUpdates(shellUpdates);
 
   const queryClient = createQueryClient();
 </script>

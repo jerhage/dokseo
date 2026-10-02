@@ -33,11 +33,13 @@ class FakeShellRegistration implements ShellRegistration {
   installing: FakeShellWorker | null = null;
   updates = 0;
   updateFailure: unknown = undefined;
+  updateFinds: FakeShellWorker | null = null;
   #updatefound: (() => void)[] = [];
 
   update(): Promise<void> {
     this.updates += 1;
     if (this.updateFailure !== undefined) return Promise.reject(this.updateFailure);
+    if (this.updateFinds !== null) this.install(this.updateFinds);
     return Promise.resolve();
   }
 
