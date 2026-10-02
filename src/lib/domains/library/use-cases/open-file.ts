@@ -218,6 +218,7 @@ async function openFile(
   const book: Book = {
     id: restoring?.id ?? bookId(deps.newId()),
     title,
+    alias: restoring?.alias ?? null,
     language: declaredLanguage(inspection) ?? languageOfTitle(title) ?? DEFAULT_LANGUAGE,
     layoutKind,
     direction: declaredDirection(inspection),

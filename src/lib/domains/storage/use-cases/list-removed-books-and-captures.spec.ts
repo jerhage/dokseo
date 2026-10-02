@@ -24,6 +24,7 @@ function removedBook(id: string): RemovedBook {
   return {
     id: bookId(id),
     title: `Title ${id}`,
+    alias: null,
     contentHash: '0123456789abcdef0123456789abcdef',
     fileName: `${id}.cbz`,
     language: 'ja',
@@ -100,7 +101,7 @@ describe('listRemovedBooksAndCaptures', () => {
         shelf: {
           kind: 'success',
           books: [heldBook('live-1')],
-          unreadable: [{ id: bookId('broken-1'), title: null }],
+          unreadable: [{ id: bookId('broken-1'), title: null, alias: null }],
         },
         captures: {
           kind: 'success',

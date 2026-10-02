@@ -20,6 +20,7 @@ function comic(title: string, page: number, imageCount = 10, addedAt = 0): Book 
   return {
     id: bookId(title),
     title,
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -124,6 +125,16 @@ describe('sortBooks', () => {
 
   it('orders titles alphabetically, ignoring case and reading numbers as numbers', () => {
     expect(titles(sortBooks(books, 'title'))).toEqual(['Akira', 'vol 2', 'Vol 10']);
+  });
+
+  it('orders renamed books by the alias they show, not the original title', () => {
+    const renamed = [
+      { ...comic('Aa', 1), alias: 'Zz' },
+      { ...comic('Mm', 1), alias: null },
+      { ...comic('Zy', 1), alias: 'Ab' },
+    ];
+
+    expect(sortBooks(renamed, 'title').map((book) => book.title)).toEqual(['Zy', 'Mm', 'Aa']);
   });
 
   it('puts the book read furthest first', () => {

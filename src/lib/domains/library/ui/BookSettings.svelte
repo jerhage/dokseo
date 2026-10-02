@@ -13,7 +13,7 @@
     READING_DIRECTION_LEGEND,
   } from '$lib/shared/layout-choices';
   import type { Book, BookEdit } from '../domain/book/book';
-  import { bookForm, changedFields } from './book-edit-form';
+  import { bookForm, changedFields, originalTitleHint } from './book-edit-form';
 
   type Props = {
     readonly book: Book;
@@ -46,7 +46,7 @@
 
 <Modal bind:open={() => open, requestOpen} title="Book settings" size="sm" {onclose}>
   <form id={formId} class="stack-md" onsubmit={submit}>
-    <Field label="Title">
+    <Field label="Title" hint={originalTitleHint(book)}>
       {#snippet children(control)}
         <Input
           {...control}
@@ -55,6 +55,7 @@
           type="text"
           lang={form.language}
           autocomplete="off"
+          placeholder={book.title}
           disabled={saving}
           bind:value={form.title}
         />

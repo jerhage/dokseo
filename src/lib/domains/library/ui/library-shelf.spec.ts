@@ -19,6 +19,7 @@ import type { LibraryShelf } from './library-shelf';
 const BOOK: Book = {
   id: bookId('one'),
   title: 'one',
+  alias: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
@@ -111,7 +112,31 @@ describe('listedOf', () => {
   });
 });
 
+describe('listedOf, for a renamed book', () => {
+  it('lists the book for search under its alias', () => {
+    expect(listedOf({ ...BOOK, alias: 'Mine' }).title).toBe('Mine');
+  });
+});
+
 describe('removedListedOf', () => {
+  it('lists a renamed removed book for search under its alias', () => {
+    const listed = removedListedOf({
+      kind: 'recorded',
+      book: {
+        id: bookId('gone-1'),
+        title: '나의 책',
+        alias: 'Mine',
+        contentHash: '',
+        fileName: 'my-book.epub',
+        language: 'ko',
+        direction: 'ltr',
+      },
+      captureCount: 2,
+    });
+
+    expect(listed.title).toBe('Mine');
+  });
+
   it('lists a removed book for search as removed, with its title, language and direction', () => {
     expect(
       removedListedOf({
@@ -119,6 +144,7 @@ describe('removedListedOf', () => {
         book: {
           id: bookId('gone-1'),
           title: '나의 책',
+          alias: null,
           contentHash: '',
           fileName: 'my-book.epub',
           language: 'ko',

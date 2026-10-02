@@ -39,6 +39,7 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
   return {
     id: bookId('one'),
     title: 'Blame!',
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

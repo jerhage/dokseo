@@ -19,6 +19,7 @@ const RECORDED: RemovedShelfEntry = {
   book: {
     id: bookId('gone-1'),
     title: 'よつばと! 1',
+    alias: null,
     contentHash: '0123456789abcdef0123456789abcdef',
     fileName: 'yotsuba-1.epub',
     language: 'ja',
@@ -33,6 +34,12 @@ describe('removedEntryName', () => {
   it('names a removed book by its title and a book with no record as unknown', () => {
     expect(removedEntryName(RECORDED)).toBe('よつばと! 1');
     expect(removedEntryName(UNKNOWN)).toBe('Unknown book');
+  });
+
+  it('names a renamed removed book by its alias, then its original title', () => {
+    const renamed: RemovedShelfEntry = { ...RECORDED, book: { ...RECORDED.book, alias: 'Mine' } };
+
+    expect(removedEntryName(renamed)).toBe('Mine (originally よつばと! 1)');
   });
 });
 

@@ -26,6 +26,7 @@ function book(id: string, addedAt: number): Book {
   return {
     id: bookId(id),
     title: id,
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -252,8 +253,8 @@ describe('library mutations', () => {
       editBookMutation({ editBook: (id) => Promise.resolve(id === 'gone' ? missing : edited) }),
     );
 
-    await expect(editing.mutate({ id: bookId('one'), edit: { title: 'x' } })).resolves.toBe(edited);
-    await expect(editing.mutate({ id: bookId('gone'), edit: { title: 'x' } })).resolves.toBe(
+    await expect(editing.mutate({ id: bookId('one'), edit: { alias: 'x' } })).resolves.toBe(edited);
+    await expect(editing.mutate({ id: bookId('gone'), edit: { alias: 'x' } })).resolves.toBe(
       missing,
     );
   });

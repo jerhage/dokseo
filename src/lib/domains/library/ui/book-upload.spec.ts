@@ -19,6 +19,7 @@ function book(id: string, title: string): Book {
   return {
     id: bookId(id),
     title,
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -89,6 +90,19 @@ describe('uploadNotice for a restored book', () => {
       action: { label: 'Open', run: expect.any(Function) },
       duration: ACTION_NOTICE_MS,
     });
+  });
+});
+
+describe('uploadNotice for a renamed book', () => {
+  it('names a restored or held book by its alias', () => {
+    const renamed = { ...book('one', 'Blame! 1'), alias: 'Mine' };
+
+    expect(uploadNotice({ kind: 'restored', book: renamed }, () => undefined).title).toBe(
+      'Restored Mine',
+    );
+    expect(uploadNotice({ kind: 'already-held', book: renamed }, () => undefined).message).toBe(
+      'Mine',
+    );
   });
 });
 

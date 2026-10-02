@@ -10,6 +10,7 @@ function book(layoutKind: Book['layoutKind']): Book {
   return {
     id: bookId('one'),
     title: 'Kokoro',
+    alias: null,
     language: 'ja',
     layoutKind,
     direction: 'rtl',

@@ -16,6 +16,7 @@ import type { ReaderBook, ReaderOpening } from './reader-opening';
 const BOOK: ReaderBook = {
   id: bookId('one'),
   title: 'Blame!',
+  alias: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',

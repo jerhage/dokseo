@@ -50,6 +50,7 @@ function novel(): FlowBook {
   return {
     id: bookId('refresh'),
     title: 'Refresh',
+    alias: null,
     language: 'ja',
     layoutKind: 'flow',
     direction: 'rtl',

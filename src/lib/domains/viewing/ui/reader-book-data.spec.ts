@@ -12,6 +12,7 @@ const DATA = ReaderBookData as unknown as Component<Record<string, unknown>>;
 const BOOK: ReaderBook = {
   id: bookId('one'),
   title: 'Blame!',
+  alias: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',

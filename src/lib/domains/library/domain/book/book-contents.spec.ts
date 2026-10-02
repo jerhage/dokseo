@@ -15,6 +15,7 @@ function book(layoutKind: LayoutKind, imageCount: number, id = 'book-1'): Book {
   return {
     id: bookId(id),
     title: 'Yotsuba&! 1',
+    alias: null,
     language: 'ja',
     layoutKind,
     direction: 'rtl',

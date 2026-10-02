@@ -16,6 +16,7 @@ type UpdateCall = { readonly id: BookId; readonly edit: BookEdit };
 const comic: Book = {
   id: bookId('book-7'),
   title: 'Blame! 1',
+  alias: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',

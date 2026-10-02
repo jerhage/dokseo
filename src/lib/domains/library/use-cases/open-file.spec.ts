@@ -92,6 +92,7 @@ function heldBook(hash: ContentHash): Book {
   return {
     id: bookId('book-1'),
     title: 'Yotsuba&! 1',
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -248,6 +249,7 @@ function removedRecord(overrides: Partial<RemovedBook> = {}): RemovedBook {
   return {
     id: bookId('gone-1'),
     title: 'Yotsuba&! 1',
+    alias: null,
     contentHash: OTHER_DIGEST,
     fileName: 'other.cbz',
     language: 'ja',
@@ -569,6 +571,27 @@ describe('openFile', () => {
     expect(result.kind).toBe('restored');
     expect(openedBook(result).id).toBe('gone-1');
     expect(at(repository.added, 0).book.id).toBe('gone-1');
+  });
+
+  it('restores a removed book with the alias its record kept and the title of the upload', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: DIGEST, title: 'Yotsuba&! 1', alias: 'Mine' }),
+    ]);
+    const builder = fakeBuilder(built(builtSource({ suggestedTitle: 'Nichijou 3' })));
+
+    const result = await openFile(
+      deps({ repository: repository.repository, builder: builder.builder }),
+      files,
+    );
+
+    expect(openedBook(result)).toMatchObject({ title: 'Nichijou 3', alias: 'Mine' });
+    expect(at(repository.added, 0).book).toMatchObject({ title: 'Nichijou 3', alias: 'Mine' });
+  });
+
+  it('adds a new book with no alias', async () => {
+    const result = await openFile(deps(), files);
+
+    expect(openedBook(result).alias).toBeNull();
   });
 
   it('restores by file name a record whose hash is no partial MD5 digest', async () => {

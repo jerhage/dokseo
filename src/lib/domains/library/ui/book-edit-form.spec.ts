@@ -3,12 +3,13 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import { applyEdit } from '../domain/book/book';
-import { bookForm, changedFields } from './book-edit-form';
+import { bookForm, changedFields, originalTitleHint } from './book-edit-form';
 
 function book(overrides: Partial<Book> = {}): Book {
   return {
     id: bookId('one'),
     title: '月光食堂',
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -37,6 +38,24 @@ describe('bookForm', () => {
       direction: 'ltr',
       pagePairing: 'double',
     });
+  });
+});
+
+describe('bookForm, for a renamed book', () => {
+  it('seeds the title field with the alias', () => {
+    expect(bookForm(book({ alias: 'Blame! 1' })).title).toBe('Blame! 1');
+  });
+});
+
+describe('originalTitleHint', () => {
+  it('gives no hint for a book that has no alias', () => {
+    expect(originalTitleHint(book())).toBeUndefined();
+  });
+
+  it('names the original title of a renamed book', () => {
+    expect(originalTitleHint(book({ alias: 'Blame! 1' }))).toBe(
+      'Original title: 月光食堂. Clear the field to use it again.',
+    );
   });
 });
 
@@ -73,7 +92,7 @@ describe('changedFields', () => {
     const subject = book();
     const edit = changedFields(subject, { ...bookForm(subject), title: 'Blame! 1' });
 
-    expect(edit).toEqual({ title: 'Blame! 1' });
+    expect(edit).toEqual({ alias: 'Blame! 1' });
     expect('language' in edit).toBe(false);
     expect('layoutKind' in edit).toBe(false);
     expect('direction' in edit).toBe(false);
@@ -86,21 +105,37 @@ describe('changedFields', () => {
     expect(changedFields(subject, { ...bookForm(subject), title: '  月光食堂  ' })).toEqual({});
   });
 
-  it('trims a title it does send', () => {
+  it('sends a trimmed rename as the alias and leaves the title alone', () => {
     const subject = book();
+    const edit = changedFields(subject, { ...bookForm(subject), title: '  Blame! 1  ' });
 
-    expect(changedFields(subject, { ...bookForm(subject), title: '  Blame! 1  ' })).toEqual({
-      title: 'Blame! 1',
-    });
+    expect(edit).toEqual({ alias: 'Blame! 1' });
+    expect(applyEdit(subject, edit)).toMatchObject({ title: '月光食堂', alias: 'Blame! 1' });
   });
 
-  it('drops an emptied title instead of sending one the domain would reject', () => {
+  it('sends no alias for an emptied field on a book that has none', () => {
     const subject = book();
     const edit = changedFields(subject, { ...bookForm(subject), title: '   ', language: 'ko' });
 
     expect(edit).toEqual({ language: 'ko' });
-    expect('title' in edit).toBe(false);
     expect(applyEdit(subject, edit).title).toBe('月光食堂');
+  });
+
+  it.each([
+    ['an emptied field', '   '],
+    ['the original title typed again', '月光食堂'],
+  ])('clears the alias for %s', (_, typed) => {
+    const subject = book({ alias: 'Blame! 1' });
+    const edit = changedFields(subject, { ...bookForm(subject), title: typed });
+
+    expect(edit).toEqual({ alias: null });
+    expect(applyEdit(subject, edit)).toMatchObject({ title: '月光食堂', alias: null });
+  });
+
+  it('sends nothing when the field still shows the alias', () => {
+    const subject = book({ alias: 'Blame! 1' });
+
+    expect(changedFields(subject, bookForm(subject))).toEqual({});
   });
 
   it('reports every field the user moved', () => {
@@ -113,7 +148,7 @@ describe('changedFields', () => {
       pagePairing: 'double',
     });
 
-    expect(edit).toEqual({ title: 'Blame! 1', language: 'ko', direction: 'ltr' });
+    expect(edit).toEqual({ alias: 'Blame! 1', language: 'ko', direction: 'ltr' });
   });
 
   it.each([

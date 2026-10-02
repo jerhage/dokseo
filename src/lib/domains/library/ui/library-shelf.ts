@@ -4,6 +4,7 @@ import type { Language } from '$lib/shared/language';
 import { effectiveDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadState } from '$lib/shared/read-state';
+import { shownTitle } from '$lib/shared/shown-title';
 import type { Book } from '../domain/book/book';
 import { UNKNOWN_BOOK } from '../domain/book/removed-book';
 import type { RemovedShelf, RemovedShelfEntry } from '../domain/book/removed-book';
@@ -88,7 +89,7 @@ function imageCountsOf(books: readonly Book[]): ReadonlyMap<BookId, number> {
 function listedOf(book: Book): ListedBook {
   return {
     id: book.id,
-    title: book.title,
+    title: shownTitle(book),
     language: book.language,
     direction: effectiveDirection(book.direction, book.layoutKind),
     removed: false,
@@ -99,7 +100,7 @@ function removedListedOf(entry: RemovedShelfEntry): ListedBook {
   return match(entry)
     .with({ kind: 'recorded' }, ({ book }) => ({
       id: book.id,
-      title: book.title,
+      title: shownTitle(book),
       language: book.language,
       direction: book.direction,
       removed: true,

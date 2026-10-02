@@ -26,6 +26,7 @@
   import { chooseTouchTurns, touchTurns } from '$lib/shared/chosen-touch-turns.svelte';
   import { chooseEdgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { shownTurnSettings } from '$lib/shared/turn-settings';
+  import { shownTitle } from '$lib/shared/shown-title';
   import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
@@ -420,7 +421,13 @@
   {/snippet}
 
   {#snippet header()}
-    <PageHeader backHref="/" backLabel="Library" title={book.title} lang={book.language} {meta} />
+    <PageHeader
+      backHref="/"
+      backLabel="Library"
+      title={shownTitle(book)}
+      lang={book.language}
+      {meta}
+    />
 
     {#if reading}
       {#if contents.kind === 'listed'}

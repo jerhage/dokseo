@@ -12,6 +12,7 @@ type UpdateCall = { readonly id: BookId; readonly edit: BookEdit };
 const stored: Book = {
   id: bookId('book-7'),
   title: 'Blame! 1',
+  alias: null,
   language: 'ja',
   layoutKind: 'continuous',
   direction: 'ltr',
@@ -53,7 +54,7 @@ function fakeRepository(outcome: BookLookup) {
 describe('editBook', () => {
   it('passes the id and the edit to the repository and returns the edited book', async () => {
     const repository = fakeRepository({ kind: 'success', book: stored });
-    const edit: BookEdit = { title: 'Blame! 1', layoutKind: 'continuous' };
+    const edit: BookEdit = { alias: 'Blame! 1', layoutKind: 'continuous' };
     const result = await editBook({ repository: repository.repository }, bookId('book-7'), edit);
     expect(repository.updates).toEqual([{ id: 'book-7', edit }]);
     expect(result).toEqual({ kind: 'success', book: stored });
@@ -62,7 +63,7 @@ describe('editBook', () => {
   it('answers not-found for a book the repository no longer holds', async () => {
     const repository = fakeRepository({ kind: 'success', book: null });
     const result = await editBook({ repository: repository.repository }, bookId('book-7'), {
-      title: 'Gone',
+      alias: 'Gone',
     });
     expect(result).toEqual({ kind: 'not-found', id: 'book-7' });
   });
@@ -70,7 +71,7 @@ describe('editBook', () => {
   it('passes a blocked store through', async () => {
     const repository = fakeRepository(STORAGE_UNAVAILABLE);
     const result = await editBook({ repository: repository.repository }, bookId('book-7'), {
-      title: 'Kept',
+      alias: 'Kept',
     });
     expect(result).toEqual(STORAGE_UNAVAILABLE);
   });

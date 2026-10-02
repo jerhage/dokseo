@@ -3,6 +3,7 @@ import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
+import { shownTitle } from '$lib/shared/shown-title';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Book, BookEdit } from '../domain/book/book';
@@ -38,7 +39,9 @@ const UNREAD_FAILED = 'Could not mark that book unread';
 const UNDO_MARK_FAILED = 'Could not undo that change';
 
 function markedTitle(mark: BookMark, book: Book): string {
-  return mark === 'finished' ? `Marked ${book.title} finished` : `Marked ${book.title} unread`;
+  return mark === 'finished'
+    ? `Marked ${shownTitle(book)} finished`
+    : `Marked ${shownTitle(book)} unread`;
 }
 
 function undoOffer(

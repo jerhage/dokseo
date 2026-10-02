@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useContainer } from '$lib/context';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
+  import { shownTitle } from '$lib/shared/shown-title';
   import { activeComparison, comparesBook, routeParameters, variantHref } from './comparison';
 
   const comparison = activeComparison();
@@ -23,7 +24,7 @@
         <ul class="list-reset col gap-2">
           {#each compared as book (book.id)}
             <li class="row wrap items-center gap-2">
-              <span class="flex-fill truncate" lang={book.language}>{book.title}</span>
+              <span class="flex-fill truncate" lang={book.language}>{shownTitle(book)}</span>
               {#each comparison.variants as variant (variant.route)}
                 {@const href = variantHref(variant, { fileId: book.id })}
                 {#if href !== null}

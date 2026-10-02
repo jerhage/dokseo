@@ -11,6 +11,7 @@ import type {
 import type { PageFit } from '$lib/shared/page-fit';
 import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
+import { aliasFor } from '$lib/shared/shown-title';
 
 type SourceKind = 'images' | 'pdf' | 'archive' | 'epub';
 
@@ -23,6 +24,7 @@ function isSourceKind(value: unknown): value is SourceKind {
 type Book = {
   readonly id: BookId;
   readonly title: string;
+  readonly alias: string | null;
   readonly language: Language;
   readonly layoutKind: LayoutKind;
   readonly direction: ReadingDirection;
@@ -51,7 +53,7 @@ function defaultPageFit(layoutKind: LayoutKind): PageFit {
 }
 
 type BookEdit = {
-  readonly title?: string;
+  readonly alias?: string | null;
   readonly language?: Language;
   readonly layoutKind?: ImageLayoutKind;
   readonly direction?: ReadingDirection;
@@ -62,10 +64,9 @@ type BookEdit = {
   readonly finishedAt?: number | null;
 };
 
-function editedTitle(book: Book, edit: BookEdit): string {
-  if (edit.title === undefined) return book.title;
-  const trimmed = edit.title.trim();
-  return trimmed.length === 0 ? book.title : trimmed;
+function editedAlias(book: Book, edit: BookEdit): string | null {
+  if (edit.alias === undefined) return book.alias;
+  return edit.alias === null ? null : aliasFor(book.title, edit.alias);
 }
 
 function applyEdit(book: Book, edit: BookEdit): Book {
@@ -73,7 +74,7 @@ function applyEdit(book: Book, edit: BookEdit): Book {
   const pageFit = layoutKind === 'continuous' ? 'width' : (edit.pageFit ?? book.pageFit);
   return {
     ...book,
-    title: editedTitle(book, edit),
+    alias: editedAlias(book, edit),
     language: edit.language ?? book.language,
     layoutKind,
     direction: edit.direction ?? book.direction,

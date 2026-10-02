@@ -18,6 +18,7 @@ const NOW = 1758400000000;
 const stored: Book = {
   id: bookId('book-7'),
   title: 'Blame! 1',
+  alias: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',

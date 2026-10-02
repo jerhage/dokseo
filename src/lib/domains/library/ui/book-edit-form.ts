@@ -1,5 +1,6 @@
 import { imageLayoutKind } from '$lib/shared/layout-kind';
 import type { Language } from '$lib/shared/language';
+import { aliasFor, shownTitle } from '$lib/shared/shown-title';
 import type { ImageLayoutKind, PagePairing, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Book, BookEdit } from '../domain/book/book';
 
@@ -13,7 +14,7 @@ type BookForm = {
 
 function bookForm(book: Book): BookForm {
   return {
-    title: book.title,
+    title: shownTitle(book),
     language: book.language,
     layoutKind: imageLayoutKind(book.layoutKind),
     direction: book.direction,
@@ -21,17 +22,22 @@ function bookForm(book: Book): BookForm {
   };
 }
 
+function originalTitleHint(book: Book): string | undefined {
+  if (book.alias === null) return undefined;
+  return `Original title: ${book.title}. Clear the field to use it again.`;
+}
+
 function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   const edit: {
-    title?: string;
+    alias?: string | null;
     language?: Language;
     layoutKind?: ImageLayoutKind;
     direction?: ReadingDirection;
     pagePairing?: PagePairing;
   } = {};
 
-  const title = form.title.trim();
-  if (title.length > 0 && title !== book.title) edit.title = title;
+  const alias = aliasFor(book.title, form.title);
+  if (alias !== book.alias) edit.alias = alias;
   if (form.language !== book.language) edit.language = form.language;
   const layoutKind = form.layoutKind;
   if (layoutKind !== null && layoutKind !== book.layoutKind) edit.layoutKind = layoutKind;
@@ -41,5 +47,5 @@ function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   return edit;
 }
 
-export { bookForm, changedFields };
+export { bookForm, changedFields, originalTitleHint };
 export type { BookForm };

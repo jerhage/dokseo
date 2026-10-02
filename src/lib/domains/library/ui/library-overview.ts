@@ -1,5 +1,6 @@
 import { matchesQuery } from '$lib/shared/text-search';
 import { isComposingKey } from '$lib/shared/composing-key';
+import { shownTitle } from '$lib/shared/shown-title';
 import type { KeyHint } from '$lib/components/key-hints';
 import type { ComposingSignals } from '$lib/shared/composing-key';
 import type { Book } from '../domain/book/book';
@@ -55,7 +56,7 @@ function isSearching(query: string): boolean {
 }
 
 function titledBooks(books: readonly Book[], query: string): readonly Book[] {
-  return isSearching(query) ? books.filter((book) => matchesQuery(book.title, query)) : books;
+  return isSearching(query) ? books.filter((book) => matchesQuery(shownTitle(book), query)) : books;
 }
 
 function matchedText(count: number): string {

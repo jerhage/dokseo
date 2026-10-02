@@ -3,6 +3,7 @@
   import Card from '$lib/components/Card.svelte';
   import Progress from '$lib/components/Progress.svelte';
   import Thumbnail from '$lib/components/Thumbnail.svelte';
+  import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
@@ -25,12 +26,13 @@
 <ul class="grid-auto grid-auto-sm p-0" aria-label="Books">
   {#each books as book (book.id)}
     {@const progress = bookProgress(book)}
+    {@const name = shownTitle(book)}
     {@const cover = covers.get(book.id) ?? null}
     <li class={['col gap-2', { 'is-busy': busy(book.id) }]} aria-busy={busy(book.id)}>
       <Card
         href="/read/{book.id}"
         mediaRatio="portrait"
-        aria-label="Read {book.title}"
+        aria-label="Read {name}"
         tooltip={bookFacts(book)}
       >
         {#snippet media()}
@@ -42,11 +44,11 @@
           <Badge variant="success">Finished</Badge>
         </div>
       {:else if progress.kind === 'known'}
-        <Progress label="Read so far in {book.title}" value={progress.filled} size="sm" />
+        <Progress label="Read so far in {name}" value={progress.filled} size="sm" />
       {/if}
       <div class="row items-start gap-1">
         <div class="col gap-1 flex-1">
-          <h3 class="text-sm weight-medium truncate" lang={book.language}>{book.title}</h3>
+          <h3 class="text-sm weight-medium truncate" lang={book.language}>{name}</h3>
           <p class="text-xs text-muted truncate">
             {progress.kind === 'known' ? progress.label : bookFacts(book)}
           </p>

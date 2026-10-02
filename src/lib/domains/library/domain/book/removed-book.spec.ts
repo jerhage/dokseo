@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { removedBookFrom, removedBooksFrom } from './removed-book';
 
 describe('removedBookFrom', () => {
-  it('reads the title, hash, file name, language and direction a row holds', () => {
+  it('reads the title, alias, hash, file name, language and direction a row holds', () => {
     expect(
       removedBookFrom({
         id: 'book-1',
         title: 'Yotsuba&! 1',
+        alias: 'Mine',
         contentHash: '9f86d081',
         fileName: 'Yotsuba&! 1.cbz',
         language: 'ko',
@@ -15,6 +16,7 @@ describe('removedBookFrom', () => {
     ).toEqual({
       id: 'book-1',
       title: 'Yotsuba&! 1',
+      alias: 'Mine',
       contentHash: '9f86d081',
       fileName: 'Yotsuba&! 1.cbz',
       language: 'ko',
@@ -26,11 +28,21 @@ describe('removedBookFrom', () => {
     expect(removedBookFrom({ id: 'book-1', title: '  ', contentHash: 7 })).toEqual({
       id: 'book-1',
       title: 'Untitled book',
+      alias: null,
       contentHash: '',
       fileName: '',
       language: 'ja',
       direction: 'rtl',
     });
+  });
+
+  it.each([
+    ['absent', undefined],
+    ['null', null],
+    ['blank', '  '],
+    ['not text', 7],
+  ])('keeps no alias when the row holds one that is %s', (_, alias) => {
+    expect(removedBookFrom({ id: 'book-1', title: 'x', alias })?.alias).toBeNull();
   });
 
   it('stores the direction a continuous book reads in, not the one it was set to', () => {

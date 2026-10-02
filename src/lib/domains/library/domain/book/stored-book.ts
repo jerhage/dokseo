@@ -5,6 +5,7 @@ import {
   isNumberOrNull,
   isStoredFields,
   isText,
+  isTextOrNull,
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import { contentHash, imageIndex, parsedBookId } from '$lib/shared/ids';
@@ -25,14 +26,18 @@ const FALLBACK_DIRECTION: ReadingDirection = 'rtl';
 
 type StoredBook = { readonly [Field in keyof Book]?: unknown };
 
-type UnreadableBook = { readonly id: BookId; readonly title: string | null };
+type UnreadableBook = {
+  readonly id: BookId;
+  readonly title: string | null;
+  readonly alias: string | null;
+};
 
 type StoredBooks = {
   readonly books: readonly Book[];
   readonly unreadable: readonly UnreadableBook[];
 };
 
-type RawRow = { readonly id?: unknown; readonly title?: unknown };
+type RawRow = { readonly id?: unknown; readonly title?: unknown; readonly alias?: unknown };
 
 function bookField<T>(field: string, value: unknown, known: (value: unknown) => value is T): T {
   return knownStoredValue('book', field, value, known);
@@ -42,6 +47,10 @@ function storedBookId(value: unknown): BookId {
   const id = isText(value) ? parsedBookId(value) : null;
   if (id === null) throw new CorruptRow('book', 'id', value);
   return id;
+}
+
+function storedAlias(value: unknown): string | null {
+  return value === undefined ? null : bookField('alias', value, isTextOrNull);
 }
 
 function storedPlace(value: unknown): ReadingPlace {
@@ -70,6 +79,7 @@ function bookFromStored(stored: StoredBook): Book {
   return {
     id: storedBookId(stored.id),
     title: bookField('title', stored.title, isText),
+    alias: storedAlias(stored.alias),
     language: isLanguage(stored.language) ? stored.language : FALLBACK_LANGUAGE,
     layoutKind,
     direction: isReadingDirection(stored.direction) ? stored.direction : FALLBACK_DIRECTION,
@@ -89,7 +99,11 @@ function bookFromStored(stored: StoredBook): Book {
 function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
   const id = typeof row.id === 'string' ? parsedBookId(row.id) : null;
   if (id === null) throw cause;
-  return { id, title: typeof row.title === 'string' ? row.title : null };
+  return {
+    id,
+    title: typeof row.title === 'string' ? row.title : null,
+    alias: typeof row.alias === 'string' ? row.alias : null,
+  };
 }
 
 function booksFromStored(rows: readonly StoredBook[]): StoredBooks {

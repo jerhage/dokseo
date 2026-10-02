@@ -13,11 +13,23 @@ describe('unreadableBooksTitle', () => {
 
 describe('unreadableBookName', () => {
   it('names the book by its stored title', () => {
-    expect(unreadableBookName({ id: bookId('b-1'), title: 'Yotsuba&! 2' })).toBe('Yotsuba&! 2');
+    expect(unreadableBookName({ id: bookId('b-1'), title: 'Yotsuba&! 2', alias: null })).toBe(
+      'Yotsuba&! 2',
+    );
+  });
+
+  it('names a renamed book by its alias, then its original title', () => {
+    expect(unreadableBookName({ id: bookId('b-1'), title: 'Yotsuba&! 2', alias: 'Mine' })).toBe(
+      'Mine (originally Yotsuba&! 2)',
+    );
+  });
+
+  it.each([null, '  '])('names a renamed book without a title %j by its alias', (title) => {
+    expect(unreadableBookName({ id: bookId('b-1'), title, alias: 'Mine' })).toBe('Mine');
   });
 
   it.each([null, '  '])('names a book without a title %j by a short id', (title) => {
-    expect(unreadableBookName({ id: bookId('0123456789abcdef'), title })).toBe(
+    expect(unreadableBookName({ id: bookId('0123456789abcdef'), title, alias: null })).toBe(
       'Untitled book (01234567)',
     );
   });

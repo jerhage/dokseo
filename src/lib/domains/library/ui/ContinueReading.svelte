@@ -3,6 +3,7 @@
   import Progress from '$lib/components/Progress.svelte';
   import Thumbnail from '$lib/components/Thumbnail.svelte';
   import type { BookId } from '$lib/shared/ids';
+  import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
 
@@ -22,6 +23,7 @@
   <ul class="scroll-strip">
     {#each books as book (book.id)}
       {@const progress = bookProgress(book)}
+      {@const name = shownTitle(book)}
       {@const cover = covers.get(book.id) ?? null}
       <li>
         <Card href="/read/{book.id}" variant="elevated">
@@ -29,10 +31,10 @@
             <Thumbnail src={cover} size="lg" />
             <span class="col gap-2 flex-1">
               <span class="text-base weight-semibold truncate" lang={book.language}>
-                {book.title}
+                {name}
               </span>
               {#if progress.kind === 'known'}
-                <Progress label="Read so far in {book.title}" value={progress.filled} size="sm" />
+                <Progress label="Read so far in {name}" value={progress.filled} size="sm" />
                 <span class="text-xs mono text-muted">{progress.label}</span>
               {/if}
               <span class="text-xs text-faint">Resume</span>

@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import { effectiveDirection } from '$lib/shared/layout-kind';
 import { readingStarted, showsTheEnd } from '$lib/shared/reading-place';
+import { shownTitle } from '$lib/shared/shown-title';
 import type { TabItem } from '$lib/components/tabs';
 import type { Book, SourceKind } from '../domain/book/book';
 import { bookContents, describeBookContents } from '../domain/book/book-contents';
@@ -84,7 +85,9 @@ function readPercent(book: Book): number {
 function sortBooks(books: readonly Book[], order: SortOrder): readonly Book[] {
   return match(order)
     .with('added', () => books)
-    .with('title', () => books.toSorted((a, b) => TITLE_ORDER.compare(a.title, b.title)))
+    .with('title', () =>
+      books.toSorted((a, b) => TITLE_ORDER.compare(shownTitle(a), shownTitle(b))),
+    )
     .with('progress', () => books.toSorted((a, b) => readPercent(b) - readPercent(a)))
     .exhaustive();
 }

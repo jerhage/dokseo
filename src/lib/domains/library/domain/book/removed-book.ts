@@ -11,6 +11,7 @@ import { FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from './stored-book';
 type RemovedBook = {
   readonly id: BookId;
   readonly title: string;
+  readonly alias: string | null;
   readonly contentHash: string;
   readonly fileName: string;
   readonly language: Language;
@@ -30,6 +31,7 @@ type CapturesDeletion = { readonly kind: 'success' } | StorageUnavailable;
 type RetiredRow = {
   readonly id?: unknown;
   readonly title?: unknown;
+  readonly alias?: unknown;
   readonly contentHash?: unknown;
   readonly fileName?: unknown;
   readonly language?: unknown;
@@ -50,6 +52,11 @@ function titleOf(value: unknown): string {
   return title.length === 0 ? UNTITLED_BOOK : title;
 }
 
+function aliasOf(value: unknown): string | null {
+  const alias = textOf(value).trim();
+  return alias.length === 0 ? null : alias;
+}
+
 function directionOf(row: RetiredRow): ReadingDirection {
   const direction = isReadingDirection(row.direction) ? row.direction : FALLBACK_DIRECTION;
   return isLayoutKind(row.layoutKind) ? effectiveDirection(direction, row.layoutKind) : direction;
@@ -61,6 +68,7 @@ function removedBookFrom(row: RetiredRow): RemovedBook | null {
   return {
     id,
     title: titleOf(row.title),
+    alias: aliasOf(row.alias),
     contentHash: textOf(row.contentHash),
     fileName: textOf(row.fileName),
     language: isLanguage(row.language) ? row.language : FALLBACK_LANGUAGE,

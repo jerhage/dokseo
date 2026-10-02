@@ -7,6 +7,7 @@
   import TableHeader from '$lib/components/TableHeader.svelte';
   import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
   import TableRow from '$lib/components/TableRow.svelte';
+  import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
@@ -39,9 +40,10 @@
   <TableBody>
     {#each books as book (book.id)}
       {@const progress = bookProgress(book)}
+      {@const name = shownTitle(book)}
       <TableRow class={{ 'is-busy': busy(book.id) }} aria-busy={busy(book.id)}>
         <TableCell>
-          <a class="weight-medium" href="/read/{book.id}" lang={book.language}>{book.title}</a>
+          <a class="weight-medium" href="/read/{book.id}" lang={book.language}>{name}</a>
         </TableCell>
         <TableCell>
           {#if book.finishedAt !== null}
@@ -51,7 +53,7 @@
           {:else if progress.kind === 'known'}
             <div class="col gap-1">
               <span class="text-xs mono">{progress.label}</span>
-              <Progress label="Read so far in {book.title}" value={progress.filled} size="sm" />
+              <Progress label="Read so far in {name}" value={progress.filled} size="sm" />
             </div>
           {:else}
             <span class="text-xs text-faint">Unknown</span>

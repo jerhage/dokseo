@@ -16,6 +16,7 @@ function book(title: string, imageCount = 10): Book {
   return {
     id: bookId(title),
     title,
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -71,6 +72,13 @@ describe('titledBooks', () => {
 
   it('keeps only the titles the query matches', () => {
     expect(titledBooks(books, 'yotsu').map((kept) => kept.title)).toEqual(['Yotsuba']);
+  });
+
+  it('matches a renamed book by the alias it shows', () => {
+    const renamed = [{ ...book('Yotsuba'), alias: 'Clover' }, book('Berserk')];
+
+    expect(titledBooks(renamed, 'clov').map((kept) => kept.title)).toEqual(['Yotsuba']);
+    expect(titledBooks(renamed, 'yotsu')).toEqual([]);
   });
 });
 

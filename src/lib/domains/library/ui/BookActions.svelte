@@ -2,6 +2,7 @@
   import Dropdown from '$lib/components/Dropdown.svelte';
   import DropdownItem from '$lib/components/DropdownItem.svelte';
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
+  import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
   import { readingState } from './library-shelves';
 
@@ -19,7 +20,13 @@
   const reading = $derived(readingState(book));
 </script>
 
-<Dropdown size="sm" variant="ghost" align="end" icon={Ellipsis} label="Actions for {book.title}">
+<Dropdown
+  size="sm"
+  variant="ghost"
+  align="end"
+  icon={Ellipsis}
+  label="Actions for {shownTitle(book)}"
+>
   {#if reading !== 'finished'}
     <DropdownItem disabled={busy} onclick={onfinish}>Mark as finished</DropdownItem>
   {/if}

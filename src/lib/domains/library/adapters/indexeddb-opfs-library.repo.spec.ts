@@ -96,7 +96,7 @@ describe('createLibraryRepository', () => {
 
     expect(listed.kind === 'success' && listed.books.map((book) => book.id)).toEqual(['good-1']);
     expect(listed.kind === 'success' && listed.unreadable).toEqual([
-      { id: 'old-1', title: 'Yotsuba&! 2' },
+      { id: 'old-1', title: 'Yotsuba&! 2', alias: null },
     ]);
   });
 
@@ -130,12 +130,35 @@ describe('createLibraryRepository', () => {
         {
           id: 'good-1',
           title: 'Yotsuba&! 1',
+          alias: null,
           contentHash: '9f86d081',
           fileName: 'Yotsuba&! 1.cbz',
           language: 'ja',
           direction: 'rtl',
         },
       ],
+    });
+  });
+
+  it('stores a rename as the alias and keeps the original title in the row', async () => {
+    store('books').set(GOOD.id, GOOD);
+    const repository = createLibraryRepository();
+
+    await repository.update(bookId('good-1'), { alias: 'Mine' });
+
+    expect(store('books').get('good-1')).toMatchObject({ title: 'Yotsuba&! 1', alias: 'Mine' });
+  });
+
+  it('keeps the alias of a book it removes in the removed record', async () => {
+    store('books').set(GOOD.id, { ...GOOD, alias: 'Mine' });
+    const repository = createLibraryRepository();
+
+    await repository.remove(bookId('good-1'));
+    const removed = await repository.listRemoved();
+
+    expect(removed.kind === 'success' && removed.removed[0]).toMatchObject({
+      title: 'Yotsuba&! 1',
+      alias: 'Mine',
     });
   });
 
@@ -152,6 +175,7 @@ describe('createLibraryRepository', () => {
         {
           id: 'old-1',
           title: 'Yotsuba&! 2',
+          alias: null,
           contentHash: '',
           fileName: 'Yotsuba&! 2.cbz',
           language: 'ja',

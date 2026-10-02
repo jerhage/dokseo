@@ -5,6 +5,7 @@ import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notice, Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
+import { shownTitle } from '$lib/shared/shown-title';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
@@ -55,13 +56,13 @@ function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
   return match(opened)
     .with({ kind: 'added' }, ({ book }) => ({
       tone: 'success' as const,
-      title: `Added ${book.title}`,
+      title: `Added ${shownTitle(book)}`,
       action: open,
       duration: ACTION_NOTICE_MS,
     }))
     .with({ kind: 'restored' }, ({ book }) => ({
       tone: 'success' as const,
-      title: `Restored ${book.title}`,
+      title: `Restored ${shownTitle(book)}`,
       message: RESTORED_MESSAGE,
       action: open,
       duration: ACTION_NOTICE_MS,
@@ -69,7 +70,7 @@ function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
     .with({ kind: 'already-held' }, ({ book }) => ({
       tone: 'info' as const,
       title: ALREADY_HELD,
-      message: book.title,
+      message: shownTitle(book),
       action: open,
       duration: ACTION_NOTICE_MS,
     }))

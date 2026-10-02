@@ -17,9 +17,13 @@ function deletedCapturesFate(count: number): string {
   return `will be deleted for good, and uploading the file again will not bring ${kept} back.`;
 }
 
+function withOriginalTitle(alias: string | null, title: string): string {
+  return alias === null || alias === title ? title : `${alias} (originally ${title})`;
+}
+
 function removedEntryName(entry: RemovedShelfEntry): string {
   return match(entry)
-    .with({ kind: 'recorded' }, ({ book }) => book.title)
+    .with({ kind: 'recorded' }, ({ book }) => withOriginalTitle(book.alias, book.title))
     .with({ kind: 'unknown' }, () => UNKNOWN_BOOK)
     .exhaustive();
 }
@@ -37,4 +41,5 @@ export {
   deletedCapturesFate,
   removedEntryDescription,
   removedEntryName,
+  withOriginalTitle,
 };

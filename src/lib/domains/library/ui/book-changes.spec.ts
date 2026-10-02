@@ -8,6 +8,7 @@ function book(overrides: Partial<Book> = {}): Book {
   return {
     id: bookId('one'),
     title: 'Blame! 1',
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -37,6 +38,12 @@ describe('undoOffer', () => {
     const unread = book({ position: imagePlace(imageIndex(0)) });
 
     expect(undoOffer('unread', finished, unread, 'finished')).toBe('Marked Blame! 1 unread');
+  });
+
+  it('names a renamed book by its alias in the Undo offer', () => {
+    const marked = book({ finishedAt: 5, alias: 'Mine' });
+
+    expect(undoOffer('finished', book(), marked, 'reading')).toBe('Marked Mine finished');
   });
 
   it('offers nothing for a mark that keeps the book on the shelf', () => {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
   import { REMOVAL_KEEPS_CAPTURES } from './removed-books';
 
@@ -23,7 +24,7 @@
 
 <Modal bind:open={() => open, requestOpen} title="Remove this upload?" size="sm" {onclose}>
   <p class="text-sm">
-    <strong lang={book.language}>{book.title}</strong> will be removed from your library.
+    <strong lang={book.language}>{shownTitle(book)}</strong> will be removed from your library.
     {REMOVAL_KEEPS_CAPTURES}
   </p>
 

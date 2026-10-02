@@ -18,6 +18,7 @@
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
+  import { shownTitle } from '$lib/shared/shown-title';
   import { chooseTouchTurns, touchTurns } from '$lib/shared/chosen-touch-turns.svelte';
   import { chooseEdgeClicksTurn, edgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { imageIndex } from '$lib/shared/ids';
@@ -330,7 +331,7 @@
       backHref="/"
       backLabel="Library"
       compact={narrow}
-      title={book?.title ?? 'Reader'}
+      title={book === null ? 'Reader' : shownTitle(book)}
       lang={book?.language ?? 'en'}
       {meta}
     />

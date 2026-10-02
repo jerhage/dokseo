@@ -30,6 +30,7 @@ function comic(title: string, page: number): Book {
   return {
     id: bookId(title),
     title,
+    alias: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

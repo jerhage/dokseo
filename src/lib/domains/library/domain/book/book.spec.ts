@@ -7,6 +7,7 @@ import type { Book } from './book';
 const book: Book = {
   id: bookId('b-1'),
   title: 'Yotsuba&! 1',
+  alias: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
@@ -51,9 +52,9 @@ describe('applyEdit', () => {
 
   it.each([
     [
-      'a title and a language',
-      { title: 'Blame! 1', language: 'ko' },
-      { title: 'Blame! 1', language: 'ko' },
+      'an alias and a language',
+      { alias: 'Blame! 1', language: 'ko' },
+      { alias: 'Blame! 1', language: 'ko' },
     ],
     ['the direction a paged book already reads in', { direction: 'rtl' }, {}],
     ['a paged layout to a paged book', { layoutKind: 'paged' }, {}],
@@ -70,9 +71,9 @@ describe('applyEdit', () => {
   );
 
   it('returns a new object and leaves the original untouched', () => {
-    const edited = applyEdit(book, { title: 'Blame! 1', position: imagePlace(imageIndex(7)) });
+    const edited = applyEdit(book, { alias: 'Blame! 1', position: imagePlace(imageIndex(7)) });
     expect(edited).not.toBe(book);
-    expect(book.title).toBe('Yotsuba&! 1');
+    expect(book.alias).toBeNull();
     expect(book.position).toEqual({ kind: 'image', index: 3, shownThrough: 3, offset: 0 });
   });
 
@@ -87,7 +88,7 @@ describe('applyEdit', () => {
     [
       'keeps the last read time when the edit does not give one',
       { lastReadAt: 1758300000000 },
-      { title: 'Blame! 1' },
+      { alias: 'Blame! 1' },
       'lastReadAt',
       1758300000000,
     ],
@@ -150,7 +151,7 @@ describe('applyEdit', () => {
       const webtoon: Book = { ...book, layoutKind: 'continuous', ...stored };
 
       expect(applyEdit(webtoon, edit)[field]).toBe(chosen);
-      expect(applyEdit(webtoon, { title: 'Tower of God' })[field]).toBe(kept);
+      expect(applyEdit(webtoon, { alias: 'Tower of God' })[field]).toBe(kept);
     },
   );
 
@@ -163,7 +164,7 @@ describe('applyEdit', () => {
   it('forces the fit to width when the book is already continuous', () => {
     const webtoon: Book = { ...book, layoutKind: 'continuous' };
     expect(applyEdit(webtoon, { pageFit: 'height' }).pageFit).toBe('width');
-    expect(applyEdit(webtoon, { title: 'Tower of God' }).pageFit).toBe('width');
+    expect(applyEdit(webtoon, { alias: 'Tower of God' }).pageFit).toBe('width');
   });
 
   it('keeps a chosen fit on a paged book', () => {
@@ -171,13 +172,28 @@ describe('applyEdit', () => {
     expect(applyEdit(book, { layoutKind: 'paged' }).pageFit).toBe('height');
   });
 
-  it('trims a title', () => {
-    expect(applyEdit(book, { title: '  Blame! 1 \n' }).title).toBe('Blame! 1');
+  it('writes a rename to the alias and keeps the original title', () => {
+    const renamed = applyEdit(book, { alias: '  Blame! 1 \n' });
+
+    expect(renamed.alias).toBe('Blame! 1');
+    expect(renamed.title).toBe('Yotsuba&! 1');
   });
 
-  it('keeps the previous title when the edit title trims to empty', () => {
-    expect(applyEdit(book, { title: '   ' }).title).toBe('Yotsuba&! 1');
-    expect(applyEdit(book, { title: '' }).title).toBe('Yotsuba&! 1');
+  it.each([
+    ['null', null],
+    ['an empty name', ''],
+    ['a blank name', '   '],
+    ['the original title', ' Yotsuba&! 1 '],
+  ])('clears the alias when the edit gives %s', (_, alias) => {
+    const renamed: Book = { ...book, alias: 'Blame! 1' };
+
+    expect(applyEdit(renamed, { alias })).toEqual(book);
+  });
+
+  it('keeps the alias when the edit does not name it', () => {
+    const renamed: Book = { ...book, alias: 'Blame! 1' };
+
+    expect(applyEdit(renamed, { language: 'ko' }).alias).toBe('Blame! 1');
   });
 });
 

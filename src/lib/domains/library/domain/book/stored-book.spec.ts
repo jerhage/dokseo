@@ -108,6 +108,18 @@ describe('bookFromStored', () => {
     expect(bookFromStored(stored).contentHash).toBe('a1b2c3d4');
   });
 
+  it('reads a row stored without an alias as a book with none', () => {
+    expect('alias' in row).toBe(false);
+    expect(bookFromStored(row).alias).toBeNull();
+  });
+
+  it.each(['Mine', null])('keeps a stored alias %j', (alias) => {
+    const renamed = bookFromStored({ ...row, alias });
+
+    expect(renamed.alias).toBe(alias);
+    expect(renamed.title).toBe('Yotsuba&! 1');
+  });
+
   it('keeps a stored file name that is present', () => {
     expect(bookFromStored({ ...row, fileName: 'Yotsuba&! 2.cbz' }).fileName).toBe(
       'Yotsuba&! 2.cbz',
@@ -118,6 +130,7 @@ describe('bookFromStored', () => {
     const expected: Book = {
       id: bookId('b-1'),
       title: 'Yotsuba&! 1',
+      alias: null,
       language: 'ja',
       layoutKind: 'paged',
       direction: 'rtl',
@@ -228,6 +241,8 @@ describe('booksFromStored', () => {
 
   it.each([
     ['title', 7],
+    ['alias', 7],
+    ['alias', { name: 'Mine' }],
     ['contentHash', null],
     ['fileName', 12],
     ['imageCount', '182'],
@@ -265,13 +280,23 @@ describe('booksFromStored', () => {
     const read = booksFromStored([row, scrolled]);
 
     expect(read.books.map((book) => book.id)).toEqual(['b-1']);
-    expect(read.unreadable).toEqual([{ id: 'b-2', title: 'Yotsuba&! 1' }]);
+    expect(read.unreadable).toEqual([{ id: 'b-2', title: 'Yotsuba&! 1', alias: null }]);
   });
 
   it('reports no title for an unreadable row whose title is not a string', () => {
     const untitled = { ...row, title: 7, layoutKind: 'scroll' } as unknown as StoredBook;
 
-    expect(booksFromStored([untitled]).unreadable).toEqual([{ id: 'b-1', title: null }]);
+    expect(booksFromStored([untitled]).unreadable).toEqual([
+      { id: 'b-1', title: null, alias: null },
+    ]);
+  });
+
+  it('keeps the alias of an unreadable row', () => {
+    const renamed: StoredBook = { ...row, alias: 'Mine', layoutKind: 'scroll' };
+
+    expect(booksFromStored([renamed]).unreadable).toEqual([
+      { id: 'b-1', title: 'Yotsuba&! 1', alias: 'Mine' },
+    ]);
   });
 
   it('rethrows the mapping failure of a row without a usable id', () => {
