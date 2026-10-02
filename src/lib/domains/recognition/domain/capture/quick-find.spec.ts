@@ -23,7 +23,6 @@ const ONE: SearchedBook = {
   title: 'Volume one',
   language: 'ja',
   direction: 'rtl',
-  removed: false,
 };
 
 const TWO: SearchedBook = {
@@ -31,7 +30,6 @@ const TWO: SearchedBook = {
   title: 'Volume two',
   language: 'ja',
   direction: 'rtl',
-  removed: false,
 };
 
 const BOOKS: readonly SearchedBook[] = [ONE, TWO];
@@ -206,31 +204,26 @@ describe('quickFinds', () => {
     expect(found.captures).toEqual([]);
   });
 
-  it('finds no removed book by its title, since there is nothing to open', () => {
+  it('finds no capture of a book the shelf no longer holds, by its text or its tag', () => {
     const found = quickFinds(
-      [],
-      [ONE, { ...TWO, removed: true }],
-      [],
-      'volume',
-      'everything',
-      byCfi,
-    );
-
-    expect(titles(found.books)).toEqual(['Volume one']);
-  });
-
-  it('finds the captures of a removed book', () => {
-    const gone = { ...TWO, removed: true };
-    const found = quickFinds(
-      [capture(gone, '海の音', [])],
-      [ONE, gone],
-      [],
+      [capture(ONE, '海の音', []), capture(TWO, '海の色', [IMAGERY])],
+      [ONE],
+      [tag(IMAGERY, 'imagery')],
       '海',
       'everything',
       byCfi,
     );
+    const byTag = quickFinds(
+      [capture(TWO, '山', [IMAGERY])],
+      [ONE],
+      [tag(IMAGERY, 'imagery')],
+      'imagery',
+      'tags',
+      byCfi,
+    );
 
     expect(texts(found.captures)).toEqual(['海の音']);
+    expect(byTag.captures).toEqual([]);
   });
 
   it('finds no book under the tags filter', () => {
@@ -253,7 +246,6 @@ describe('quickFinds', () => {
       title: 'ｼｰ-Volume Ｔｈｒｅｅ',
       language: 'ko',
       direction: 'ltr',
-      removed: false,
     };
 
     const found = quickFinds([], [wide], [], 'シー-volume three', 'everything', byCfi);

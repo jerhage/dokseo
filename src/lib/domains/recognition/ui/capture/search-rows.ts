@@ -11,7 +11,6 @@ import type { Tag } from '../../domain/tag/tag';
 import { markedLines } from './capture-lines';
 import { bookHref, captureLink } from './capture-link';
 import { firstImage, NO_PLACE, pageLabel, passageLabel, placeLanguage } from './capture-place';
-import { bookLabel } from './removed-book-label';
 import { chipsOf } from './tag-chip';
 import type { TagChip } from './tag-chip';
 
@@ -32,7 +31,7 @@ type BookRow = {
 type CaptureRow = {
   readonly kind: 'capture';
   readonly key: CaptureId;
-  readonly href: string | null;
+  readonly href: string;
   readonly place: string;
   readonly placeLanguage: Language | null;
   readonly title: string | null;
@@ -104,10 +103,10 @@ function captureRow(shelf: SearchedBook, capture: Capture, input: SearchRowsInpu
   return {
     kind: 'capture',
     key: capture.id,
-    href: shelf.removed ? null : captureLink(shelf.id, capture, input.query).href,
+    href: captureLink(shelf.id, capture, input.query).href,
     place: rowPlace(capture.anchor),
     placeLanguage: placeLanguage(capture.anchor, shelf.language),
-    title: shelf.id === input.book ? null : bookLabel(shelf),
+    title: shelf.id === input.book ? null : shelf.title,
     language: shelf.language,
     cover: input.covers.get(shelf.id) ?? null,
     segments: lines.text,

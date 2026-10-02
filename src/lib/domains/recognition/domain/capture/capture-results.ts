@@ -12,7 +12,6 @@ type SearchedBook = {
   readonly title: string;
   readonly language: Language;
   readonly direction: ReadingDirection;
-  readonly removed: boolean;
 };
 
 type SearchedCapture =

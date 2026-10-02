@@ -9,7 +9,6 @@ import type { TagColour } from '../../domain/tag/tag-colour';
 import type { AlsoTagged, TagSummary } from '../../domain/tag/tag-summary';
 import { captureLink } from '../capture/capture-link';
 import { capturedLabel, placeLabel, placeLanguage } from '../capture/capture-place';
-import { bookLabel } from '../capture/removed-book-label';
 import { chipsOf } from '../capture/tag-chip';
 import type { TagChip } from '../capture/tag-chip';
 import type { TagViewStatus } from './tag-view.svelte';
@@ -25,8 +24,8 @@ type TagStage =
 type TaggedRow = {
   readonly id: CaptureId;
   readonly order: number;
-  readonly href: string | null;
-  readonly jump: string | null;
+  readonly href: string;
+  readonly jump: string;
   readonly place: string;
   readonly placeLanguage: Language | null;
   readonly when: string | null;
@@ -37,7 +36,6 @@ type TaggedRow = {
 type TaggedShelf = {
   readonly id: BookId;
   readonly title: string;
-  readonly removed: boolean;
   readonly language: Language;
   readonly cover: string | null;
   readonly rows: readonly TaggedRow[];
@@ -105,18 +103,17 @@ function taggedShelves(input: ShelfInput): readonly TaggedShelf[] {
   return input.groups
     .map((group) => ({
       id: group.book.id,
-      title: bookLabel(group.book),
-      removed: group.book.removed,
+      title: group.book.title,
       language: group.book.language,
       cover: input.covers.get(group.book.id) ?? null,
       rows: group.captures.map((capture): TaggedRow => {
-        const link = group.book.removed ? null : captureLink(group.book.id, capture, null);
+        const link = captureLink(group.book.id, capture, null);
 
         return {
           id: capture.id,
           order: order++,
-          href: link?.href ?? null,
-          jump: link?.jump ?? null,
+          href: link.href,
+          jump: link.jump,
           place: placeLabel(capture.anchor),
           placeLanguage: placeLanguage(capture.anchor, group.book.language),
           when: capturedLabel(capture.createdAt, input.now),

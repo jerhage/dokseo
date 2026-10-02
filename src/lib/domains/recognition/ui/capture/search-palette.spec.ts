@@ -16,20 +16,8 @@ const READY: CaptureFind = readReady([]);
 
 const UNREAD: CaptureFind = readFailed('Local storage failed: gone');
 
-const ONE: SearchedBook = {
-  id: bookId('one'),
-  title: '海の本',
-  language: 'ja',
-  direction: 'rtl',
-  removed: false,
-};
-const TWO: SearchedBook = {
-  id: bookId('two'),
-  title: '山の本',
-  language: 'ja',
-  direction: 'rtl',
-  removed: false,
-};
+const ONE: SearchedBook = { id: bookId('one'), title: '海の本', language: 'ja', direction: 'rtl' };
+const TWO: SearchedBook = { id: bookId('two'), title: '山の本', language: 'ja', direction: 'rtl' };
 
 const SEA = tagId('sea');
 

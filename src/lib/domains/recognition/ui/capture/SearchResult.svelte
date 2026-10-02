@@ -22,7 +22,14 @@
   }
 </script>
 
-{#snippet content()}
+<CommandItem
+  bind:ref
+  href={row.href}
+  selected={current}
+  hint={row.kind === 'capture' ? row.place : undefined}
+  hintLang={row.kind === 'capture' ? (row.placeLanguage ?? undefined) : undefined}
+  onclick={click}
+>
   <Thumbnail src={row.cover} size="sm" bordered />
   <span class="col gap-1 flex-1">
     <span class="truncate text-base" lang={row.language}>
@@ -52,27 +59,4 @@
       {/if}
     {/if}
   </span>
-{/snippet}
-
-{#if row.href !== null}
-  <CommandItem
-    bind:ref
-    href={row.href}
-    selected={current}
-    hint={row.kind === 'capture' ? row.place : undefined}
-    hintLang={row.kind === 'capture' ? (row.placeLanguage ?? undefined) : undefined}
-    onclick={click}
-  >
-    {@render content()}
-  </CommandItem>
-{:else}
-  <CommandItem
-    bind:ref
-    element="div"
-    selected={current}
-    hint={row.kind === 'capture' ? row.place : undefined}
-    hintLang={row.kind === 'capture' ? (row.placeLanguage ?? undefined) : undefined}
-  >
-    {@render content()}
-  </CommandItem>
-{/if}
+</CommandItem>

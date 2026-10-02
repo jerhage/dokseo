@@ -30,7 +30,7 @@ function titledBooks(
 ): readonly SearchedBook[] {
   if (filter === 'tags') return [];
 
-  return books.filter((book) => !book.removed && matchesQuery(book.title, query));
+  return books.filter((book) => matchesQuery(book.title, query));
 }
 
 function quickFinds<T extends Written & Tagged>(
