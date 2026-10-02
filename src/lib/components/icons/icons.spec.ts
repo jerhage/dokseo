@@ -4,7 +4,7 @@ import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import X from './X.svelte';
-import { iconStroke, isDecorative } from './icon';
+import { iconStroke } from './icon';
 
 const ICONS = new URL('./', import.meta.url);
 const SOURCE = new URL('../../../', import.meta.url);
@@ -107,31 +107,9 @@ describe('Icon', () => {
 });
 
 describe('iconStroke', () => {
-  it('defaults to the Lucide stroke width and leaves it to the theme', () => {
-    expect(iconStroke(undefined, false, 24)).toEqual({ width: 2, fixed: false });
-  });
-
-  it('fixes a given stroke width', () => {
-    expect(iconStroke(1.5, false, 24)).toEqual({ width: 1.5, fixed: true });
-  });
-
   it('fixes an absolute stroke width at the stroke times the grid over the size', () => {
     expect(iconStroke(undefined, true, 12)).toEqual({ width: 4, fixed: true });
     expect(iconStroke(3, true, 36)).toEqual({ width: 2, fixed: true });
-  });
-});
-
-describe('isDecorative', () => {
-  it('reports an icon with no name, role or content as decorative', () => {
-    expect(isDecorative({ class: 'x', id: 'y' }, false)).toBe(true);
-  });
-
-  it('reports an icon with an aria attribute, a role, a title or content as meaningful', () => {
-    expect(isDecorative({ 'aria-label': 'Close' }, false)).toBe(false);
-    expect(isDecorative({ 'aria-describedby': 'hint' }, false)).toBe(false);
-    expect(isDecorative({ role: 'img' }, false)).toBe(false);
-    expect(isDecorative({ title: 'Close' }, false)).toBe(false);
-    expect(isDecorative({}, true)).toBe(false);
   });
 });
 

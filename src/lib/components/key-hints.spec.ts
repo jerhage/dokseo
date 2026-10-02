@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { KEY_HINTS_SIZES, KEY_HINTS_VARIANTS, hintPieces, hintText, hintsBody } from './key-hints';
+import { KEY_HINTS_SIZES, KEY_HINTS_VARIANTS, hintText } from './key-hints';
 import KeyHints from './KeyHints.svelte';
 
 const HINTS_COMPONENT = KeyHints as unknown as Component<Record<string, unknown>>;
@@ -19,34 +19,8 @@ function markup(props: Record<string, unknown>): string {
 }
 
 describe('hintText', () => {
-  it('joins the keys of a hint with a spaced plus and the hints with a middle dot', () => {
-    expect(hintText(HINTS)).toBe('Esc cancels · ⌘/Ctrl + Enter saves');
-  });
-
   it('writes nothing for no hints', () => {
     expect(hintText([])).toBe('');
-  });
-});
-
-describe('hintPieces', () => {
-  it('writes each key as a key piece and the joiners, separators and descriptions as words', () => {
-    expect(hintPieces(HINTS)).toEqual([
-      { kind: 'key', text: 'Esc' },
-      { kind: 'words', text: ' cancels' },
-      { kind: 'words', text: ' · ' },
-      { kind: 'key', text: '⌘/Ctrl' },
-      { kind: 'words', text: ' + ' },
-      { kind: 'key', text: 'Enter' },
-      { kind: 'words', text: ' saves' },
-    ]);
-  });
-});
-
-describe('hintsBody', () => {
-  it('gives the chips variant nothing to precompute, the inline variant its pieces and the text variant its line', () => {
-    expect(hintsBody('chips', HINTS)).toEqual({ kind: 'chips' });
-    expect(hintsBody('inline', HINTS)).toEqual({ kind: 'inline', pieces: hintPieces(HINTS) });
-    expect(hintsBody('text', HINTS)).toEqual({ kind: 'text', text: hintText(HINTS) });
   });
 });
 

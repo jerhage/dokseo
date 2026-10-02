@@ -18,18 +18,6 @@ describe('modalStep', () => {
     expect(modalStep('leaving', 'show')).toEqual({ phase: 'open', effect: 'none' });
   });
 
-  it('ignores the end of a leaving animation that a reopen cut short', () => {
-    expect(modalStep('open', 'left')).toEqual({ phase: 'open', effect: 'none' });
-  });
-
-  it('starts only one leaving animation for a second hide', () => {
-    expect(modalStep('leaving', 'hide')).toEqual({ phase: 'leaving', effect: 'none' });
-  });
-
-  it('shows an open modal only once', () => {
-    expect(modalStep('open', 'show')).toEqual({ phase: 'open', effect: 'none' });
-  });
-
   it('follows a dialog the browser closed on its own, from any phase', () => {
     expect([
       modalStep('open', 'closed'),
@@ -42,10 +30,13 @@ describe('modalStep', () => {
     ]);
   });
 
-  it('does nothing to a closed modal that is hidden or reports a late animation end', () => {
-    expect([modalStep('closed', 'hide'), modalStep('closed', 'left')]).toEqual([
-      { phase: 'closed', effect: 'none' },
-      { phase: 'closed', effect: 'none' },
-    ]);
+  it.each([
+    ['ignores the end of a leaving animation that a reopen cut short', 'open', 'left'],
+    ['starts only one leaving animation for a second hide', 'leaving', 'hide'],
+    ['shows an open modal only once', 'open', 'show'],
+    ['does nothing to a closed modal that is hidden', 'closed', 'hide'],
+    ['does nothing to a closed modal that reports a late animation end', 'closed', 'left'],
+  ] as const)('%s', (_name, phase, event) => {
+    expect(modalStep(phase, event)).toEqual({ phase, effect: 'none' });
   });
 });

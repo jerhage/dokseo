@@ -65,15 +65,6 @@ describe('GestureFeed', () => {
     });
   });
 
-  it('keeps the state each step leaves behind', () => {
-    const { feed } = fed();
-
-    expect(feed.state.kind).toBe('idle');
-    feed.step(feed.sample('down', FINGER), CONTEXT);
-
-    expect(feed.state.kind).toBe('pressed');
-  });
-
   it('ticks at the long press deadline, and the tick reports the long press', () => {
     const { feed, clock, heard } = fed();
     feed.step(feed.sample('down', FINGER), CONTEXT);

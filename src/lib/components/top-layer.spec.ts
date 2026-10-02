@@ -9,15 +9,11 @@ describe('entersTopLayer', () => {
     expect(entersTopLayer({ target: menu, newState: 'open' }, region)).toBe(true);
   });
 
-  it('ignores another element that closes', () => {
-    expect(entersTopLayer({ target: menu, newState: 'closed' }, region)).toBe(false);
-  });
-
-  it('ignores the region opening itself', () => {
-    expect(entersTopLayer({ target: region, newState: 'open' }, region)).toBe(false);
-  });
-
-  it('ignores an event that carries no toggle state', () => {
-    expect(entersTopLayer({ target: menu }, region)).toBe(false);
+  it.each([
+    ['another element that closes', { target: menu, newState: 'closed' }],
+    ['the region opening itself', { target: region, newState: 'open' }],
+    ['an event that carries no toggle state', { target: menu }],
+  ])('ignores %s', (_case, event) => {
+    expect(entersTopLayer(event, region)).toBe(false);
   });
 });

@@ -164,6 +164,14 @@ describe('MarqueeDrag move and lift', () => {
     drag.lift(1, { x: 56, y: 66 }, 'touch');
 
     expect(seen.ends.map(({ end }) => end.kind)).toEqual(['click']);
+
+    const mouse = rig();
+    mouse.drag.press(contact(1, 50, 60, 'mouse'), () => CORNER);
+
+    mouse.drag.lift(1, { x: 56, y: 66 }, 'mouse');
+
+    expect(mouse.seen.ends.map(({ end }) => end.kind)).not.toContain('click');
+    expect(mouse.seen.clicks).toEqual([]);
   });
 
   it('refuses a lift of another pointer and keeps the drag', () => {

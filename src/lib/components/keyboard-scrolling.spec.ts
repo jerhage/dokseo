@@ -43,23 +43,16 @@ describe('scrollsThePage', () => {
     expect(scrollsThePage(shifted, PAGE)).toBe(true);
   });
 
-  it('ignores a key that does not scroll, so Tab still starts at the header', () => {
-    expect(scrollsThePage(press({ key: 'Tab' }), PAGE)).toBe(false);
-    expect(scrollsThePage(press({ key: 'k' }), PAGE)).toBe(false);
-  });
-
-  it('ignores a key pressed on a control, which owns its own keys', () => {
-    expect(scrollsThePage(press({ target: { name: 'input' } }), PAGE)).toBe(false);
-  });
-
-  it('ignores a key another handler has already taken', () => {
-    expect(scrollsThePage(press({ defaultPrevented: true }), PAGE)).toBe(false);
-  });
-
-  it('ignores a key held with ctrl, alt or meta', () => {
-    expect(scrollsThePage(press({ ctrlKey: true }), PAGE)).toBe(false);
-    expect(scrollsThePage(press({ altKey: true }), PAGE)).toBe(false);
-    expect(scrollsThePage(press({ metaKey: true }), PAGE)).toBe(false);
+  it.each([
+    ['a key that does not scroll, so Tab still starts at the header', { key: 'Tab' }],
+    ['a key that does not scroll', { key: 'k' }],
+    ['a key pressed on a control, which owns its own keys', { target: { name: 'input' } }],
+    ['a key another handler has already taken', { defaultPrevented: true }],
+    ['a key held with ctrl', { ctrlKey: true }],
+    ['a key held with alt', { altKey: true }],
+    ['a key held with meta', { metaKey: true }],
+  ])('ignores %s', (_case, overrides: Partial<KeyPress>) => {
+    expect(scrollsThePage(press(overrides), PAGE)).toBe(false);
   });
 });
 

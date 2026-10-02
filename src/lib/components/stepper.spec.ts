@@ -19,21 +19,19 @@ describe('stepFace', () => {
     expect(ran).toBe(1);
   });
 
-  it('disables a missing step when missing steps are disabled', () => {
-    expect(stepFace(null, 'disabled')).toEqual({ kind: 'disabled' });
-  });
-
-  it('leaves a missing step out when missing steps are hidden', () => {
-    expect(stepFace(null, 'hidden')).toEqual({ kind: 'hidden' });
+  it.each([
+    ['disables a missing step when missing steps are disabled', 'disabled'],
+    ['leaves a missing step out when missing steps are hidden', 'hidden'],
+  ] as const)('%s', (_name, missing) => {
+    expect(stepFace(null, missing)).toEqual({ kind: missing });
   });
 });
 
 describe('stepperArrows', () => {
-  it('points previous left and next right along a line', () => {
-    expect(stepperArrows('inline')).toEqual({ previous: 'left', next: 'right' });
-  });
-
-  it('points previous up and next down along a column', () => {
-    expect(stepperArrows('block')).toEqual({ previous: 'up', next: 'down' });
+  it.each([
+    ['left and next right along a line', 'inline', { previous: 'left', next: 'right' }],
+    ['up and next down along a column', 'block', { previous: 'up', next: 'down' }],
+  ] as const)('points previous %s', (_case, axis, arrows) => {
+    expect(stepperArrows(axis)).toEqual(arrows);
   });
 });

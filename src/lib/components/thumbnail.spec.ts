@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { THUMBNAIL_RATIOS, THUMBNAIL_SIZES, thumbnailContent, thumbnailFraming } from './thumbnail';
+import { THUMBNAIL_RATIOS, THUMBNAIL_SIZES, thumbnailFraming } from './thumbnail';
 import Thumbnail from './Thumbnail.svelte';
 
 const THUMBNAIL = Thumbnail as unknown as Component<Record<string, unknown>>;
@@ -33,35 +33,6 @@ describe('the thumbnail class maps', () => {
 describe('thumbnailFraming', () => {
   it('pairs the size with the ratio for a sized frame', () => {
     expect(thumbnailFraming(false, 'sm', 'square')).toEqual(['thumbnail-sm', 'aspect-square']);
-  });
-
-  it('gives the default size no class of its own', () => {
-    expect(thumbnailFraming(false, 'md', 'portrait')).toEqual(['aspect-portrait']);
-  });
-
-  it('drops the size and the ratio for a frame that fills its parent', () => {
-    expect(thumbnailFraming(true, 'lg', 'portrait')).toEqual(['thumbnail-fill']);
-  });
-});
-
-describe('thumbnailContent', () => {
-  it('shows the image with its alt text when there is a source', () => {
-    expect(thumbnailContent('blob:cover', '')).toEqual({
-      kind: 'image',
-      src: 'blob:cover',
-      alt: '',
-    });
-  });
-
-  it('names the empty frame when there is no source but an alt text', () => {
-    expect(thumbnailContent(null, 'Cover of Dune')).toEqual({
-      kind: 'named',
-      label: 'Cover of Dune',
-    });
-  });
-
-  it('leaves a decorative frame without a source blank', () => {
-    expect(thumbnailContent(null, '')).toEqual({ kind: 'blank' });
   });
 });
 

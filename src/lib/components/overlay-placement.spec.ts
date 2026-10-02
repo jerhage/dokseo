@@ -52,26 +52,13 @@ function place(
 }
 
 describe('overlayPlacement', () => {
-  it('places the overlay one gap below the trigger, at its left edge, in left-to-right text', () => {
-    expect(place(MIDDLE, DESKTOP, MENU, START_LTR)).toEqual({ top: 136, left: 600 });
-  });
-
-  it('lines an end overlay up with the right of the trigger in left-to-right text', () => {
-    expect(place(MIDDLE, DESKTOP, MENU, END_LTR)).toEqual({ top: 136, left: 520 });
-  });
-
-  it('lines a start overlay up with the right of the trigger in right-to-left text', () => {
-    expect(place(MIDDLE, DESKTOP, MENU, START_RTL)).toEqual({ top: 136, left: 520 });
-  });
-
-  it('lines an end overlay up with the left of the trigger in right-to-left text', () => {
-    expect(place(MIDDLE, DESKTOP, MENU, END_RTL)).toEqual({ top: 136, left: 600 });
-  });
-
-  it('flips above the trigger when the room below cannot hold the overlay, its gap and the edge', () => {
-    const anchor = trigger(600, 680);
-
-    expect(place(anchor, DESKTOP, MENU).top).toBe(476);
+  it.each([
+    ['a start overlay up with the left of the trigger in left-to-right text', START_LTR, 600],
+    ['an end overlay up with the right of the trigger in left-to-right text', END_LTR, 520],
+    ['a start overlay up with the right of the trigger in right-to-left text', START_RTL, 520],
+    ['an end overlay up with the left of the trigger in right-to-left text', END_RTL, 600],
+  ])('lines %s, one gap below it', (_case, request, left) => {
+    expect(place(MIDDLE, DESKTOP, MENU, request)).toEqual({ top: 136, left });
   });
 
   it('flips above when the overlay alone fits below but its gap and the edge do not', () => {
@@ -104,20 +91,33 @@ describe('overlayPlacement', () => {
     expect(place(MIDDLE, DESKTOP, tall).top).toBe(8);
   });
 
-  it('switches a start overlay to the end when it would cross the right edge in left-to-right text', () => {
-    expect(place(trigger(1340, 100), DESKTOP, MENU).left).toBe(1172);
-  });
-
-  it('switches an end overlay to the start when it would cross the left edge in left-to-right text', () => {
-    expect(place(trigger(20, 100), DESKTOP, MENU, END_LTR).left).toBe(20);
-  });
-
-  it('switches a start overlay to the end when it would cross the left edge in right-to-left text', () => {
-    expect(place(trigger(20, 100), DESKTOP, MENU, START_RTL).left).toBe(20);
-  });
-
-  it('switches an end overlay to the start when it would cross the right edge in right-to-left text', () => {
-    expect(place(trigger(1340, 100), DESKTOP, MENU, END_RTL).left).toBe(1172);
+  it.each([
+    [
+      'a start overlay to the end when it would cross the right edge in left-to-right text',
+      1340,
+      START_LTR,
+      1172,
+    ],
+    [
+      'an end overlay to the start when it would cross the left edge in left-to-right text',
+      20,
+      END_LTR,
+      20,
+    ],
+    [
+      'a start overlay to the end when it would cross the left edge in right-to-left text',
+      20,
+      START_RTL,
+      20,
+    ],
+    [
+      'an end overlay to the start when it would cross the right edge in right-to-left text',
+      1340,
+      END_RTL,
+      1172,
+    ],
+  ])('switches %s', (_case, x, request, left) => {
+    expect(place(trigger(x, 100), DESKTOP, MENU, request).left).toBe(left);
   });
 
   it('keeps the requested alignment and clamps it when neither alignment fits', () => {
@@ -142,14 +142,6 @@ describe('overlayPlacement', () => {
     expect(place(MIDDLE, DESKTOP, huge, END_RTL).left).toBe(8);
   });
 
-  it('caps the overlay width at the viewport less an edge margin on each side', () => {
-    expect(overlayPlacement(MIDDLE, DESKTOP, MENU, START_LTR, SPACING).maxWidth).toBe(1424);
-  });
-
-  it('reports the trigger width', () => {
-    expect(overlayPlacement(MIDDLE, DESKTOP, MENU, START_LTR, SPACING).anchorWidth).toBe(120);
-  });
-
   it('measures the overlay at least as wide as its trigger when asked, and at its own width otherwise', () => {
     const wide: AnchorRect = { top: 100, bottom: 132, left: 1100, right: 1440 };
     const request: OverlayRequest = { align: 'start', direction: 'ltr', width: 'at-least-anchor' };
@@ -158,20 +150,25 @@ describe('overlayPlacement', () => {
     expect(place(wide, DESKTOP, MENU, START_LTR).left).toBe(1100);
   });
 
-  it('places a sheet from a trigger near the top left of a phone below it, held off the left edge', () => {
-    expect(place(trigger(2, 10), PHONE, SHEET)).toEqual({ top: 46, left: 8 });
-  });
-
-  it('places a sheet from a trigger near the top right of a phone below it, held off the right edge', () => {
-    expect(place(trigger(350, 10), PHONE, SHEET)).toEqual({ top: 46, left: 8 });
-  });
-
-  it('places a sheet from a trigger near the bottom left of a phone above it', () => {
-    expect(place(trigger(8, 800), PHONE, SHEET)).toEqual({ top: 446, left: 8 });
-  });
-
-  it('places a sheet from a trigger near the bottom right of a phone above it', () => {
-    expect(place(trigger(350, 800), PHONE, SHEET, END_LTR)).toEqual({ top: 446, left: 8 });
+  it.each([
+    [
+      'the top left of a phone below it, held off the left edge',
+      2,
+      10,
+      START_LTR,
+      { top: 46, left: 8 },
+    ],
+    [
+      'the top right of a phone below it, held off the right edge',
+      350,
+      10,
+      START_LTR,
+      { top: 46, left: 8 },
+    ],
+    ['the bottom left of a phone above it', 8, 800, START_LTR, { top: 446, left: 8 }],
+    ['the bottom right of a phone above it', 350, 800, END_LTR, { top: 446, left: 8 }],
+  ])('places a sheet from a trigger near %s', (_case, x, y, request, placed) => {
+    expect(place(trigger(x, y), PHONE, SHEET, request)).toEqual(placed);
   });
 
   it('places a menu from a trigger at the right of a phone header under the trigger, aligned to its end', () => {

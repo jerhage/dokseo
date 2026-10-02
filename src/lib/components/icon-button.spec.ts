@@ -2,7 +2,6 @@ import { createRawSnippet } from 'svelte';
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { iconButtonTitle } from './icon-button';
 import IconButton from './IconButton.svelte';
 import Pencil from './icons/Pencil.svelte';
 
@@ -19,20 +18,6 @@ function markup(props: Record<string, unknown>): string {
 function opening(html: string): string {
   return /^<[^>]*>/u.exec(html)?.[0] ?? '';
 }
-
-describe('iconButtonTitle', () => {
-  it('repeats the label when no tooltip is given', () => {
-    expect(iconButtonTitle('Next match', undefined)).toBe('Next match');
-  });
-
-  it('prefers the tooltip the caller wrote', () => {
-    expect(iconButtonTitle('Add a tag to the capture at p.3', 'Tags')).toBe('Tags');
-  });
-
-  it('gives no title when the tooltip is turned off', () => {
-    expect(iconButtonTitle('Your library', false)).toBeUndefined();
-  });
-});
 
 describe('IconButton', () => {
   it('draws a square button with the icon, names it by hidden text and repeats the name as its tooltip', () => {

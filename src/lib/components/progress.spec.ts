@@ -6,19 +6,17 @@ describe('progressPercent', () => {
     expect(progressPercent(3, 12)).toBe(25);
   });
 
-  it('holds a value above the maximum at a full bar', () => {
-    expect(progressPercent(140, 100)).toBe(100);
+  it.each([
+    ['a value above the maximum at a full bar', 140, 100],
+    ['a negative value at an empty bar', -5, 0],
+  ])('holds %s', (_case, value, percent) => {
+    expect(progressPercent(value, 100)).toBe(percent);
   });
 
-  it('holds a negative value at an empty bar', () => {
-    expect(progressPercent(-5, 100)).toBe(0);
-  });
-
-  it('reports an empty bar for a maximum of zero', () => {
-    expect(progressPercent(5, 0)).toBe(0);
-  });
-
-  it('reports an empty bar for a value that is not a number', () => {
-    expect(progressPercent(Number.NaN, 100)).toBe(0);
+  it.each([
+    ['a maximum of zero', 5, 0],
+    ['a value that is not a number', Number.NaN, 100],
+  ])('reports an empty bar for %s', (_case, value, maximum) => {
+    expect(progressPercent(value, maximum)).toBe(0);
   });
 });

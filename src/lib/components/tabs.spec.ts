@@ -20,12 +20,11 @@ describe('shownTab', () => {
     expect(shownTab(TABS, 'activity')).toBe('activity');
   });
 
-  it('shows the first enabled tab when nothing is selected', () => {
-    expect(shownTab(TABS, undefined)).toBe('overview');
-  });
-
-  it('shows the first enabled tab in place of a selection that names no tab', () => {
-    expect(shownTab(TABS, 'gone')).toBe('overview');
+  it.each([
+    ['when nothing is selected', undefined],
+    ['in place of a selection that names no tab', 'gone'],
+  ])('shows the first enabled tab %s', (_case, selected) => {
+    expect(shownTab(TABS, selected)).toBe('overview');
   });
 
   it('refuses to show a disabled tab even when it is selected', () => {

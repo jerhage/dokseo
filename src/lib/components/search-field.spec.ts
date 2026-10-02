@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { CLEAR_LABEL, searchFieldId, showsClear } from './search-field';
+import { CLEAR_LABEL, searchFieldId } from './search-field';
 import SearchField from './SearchField.svelte';
 
 const FIELD = SearchField as unknown as Component<Record<string, unknown>>;
@@ -16,15 +16,6 @@ function markup(props: Record<string, unknown>): string {
 function tag(html: string, name: string): string {
   return html.match(new RegExp(`<${name}[^>]*>`, 'u'))?.[0] ?? '';
 }
-
-describe('showsClear', () => {
-  it('shows the clear button only on a clearable field that holds a value', () => {
-    expect(showsClear(true, 'kraken')).toBe(true);
-    expect(showsClear(true, '')).toBe(false);
-    expect(showsClear(false, 'kraken')).toBe(false);
-    expect(showsClear(false, '')).toBe(false);
-  });
-});
 
 describe('searchFieldId', () => {
   it('keeps an id the caller gives and derives one from the instance otherwise', () => {

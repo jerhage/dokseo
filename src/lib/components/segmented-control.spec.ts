@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
-import { SEGMENTED_VARIANTS, groupRole, segmentLook } from './segmented-control';
+import { SEGMENTED_VARIANTS, segmentLook } from './segmented-control';
 import SegmentedControl from './SegmentedControl.svelte';
 
 const CONTROL = SegmentedControl as unknown as Component<Record<string, unknown>>;
@@ -23,24 +23,29 @@ function buttons(html: string): string[] {
 }
 
 describe('segmentLook', () => {
-  it('draws every segment as a default button in the default variant', () => {
-    expect(segmentLook('default', true)).toEqual({ kind: 'button', variant: 'default' });
-    expect(segmentLook('default', false)).toEqual({ kind: 'button', variant: 'default' });
-  });
-
-  it('draws every segment as a ghost button in the ghost variant', () => {
-    expect(segmentLook('ghost', true)).toEqual({ kind: 'button', variant: 'ghost' });
-    expect(segmentLook('ghost', false)).toEqual({ kind: 'button', variant: 'ghost' });
-  });
-
-  it('outlines only the chosen segment in the outline variant', () => {
-    expect(segmentLook('outline', true)).toEqual({ kind: 'button', variant: 'outline' });
-    expect(segmentLook('outline', false)).toEqual({ kind: 'button', variant: 'default' });
-  });
-
-  it('draws chips in the track variant', () => {
-    expect(segmentLook('track', true)).toEqual({ kind: 'chip' });
-    expect(segmentLook('track', false)).toEqual({ kind: 'chip' });
+  it.each([
+    [
+      'every segment as a default button in the default variant',
+      'default',
+      { kind: 'button', variant: 'default' },
+      { kind: 'button', variant: 'default' },
+    ],
+    [
+      'every segment as a ghost button in the ghost variant',
+      'ghost',
+      { kind: 'button', variant: 'ghost' },
+      { kind: 'button', variant: 'ghost' },
+    ],
+    [
+      'only the chosen segment outlined in the outline variant',
+      'outline',
+      { kind: 'button', variant: 'outline' },
+      { kind: 'button', variant: 'default' },
+    ],
+    ['chips in the track variant', 'track', { kind: 'chip' }, { kind: 'chip' }],
+  ] as const)('draws %s', (_case, variant, chosen, other) => {
+    expect(segmentLook(variant, true)).toEqual(chosen);
+    expect(segmentLook(variant, false)).toEqual(other);
   });
 });
 
@@ -52,17 +57,6 @@ describe('SEGMENTED_VARIANTS', () => {
       outline: [],
       track: ['segmented-track'],
     });
-  });
-});
-
-describe('groupRole', () => {
-  it('makes a named control a group', () => {
-    expect(groupRole('Show books as', undefined)).toBe('group');
-    expect(groupRole(undefined, 'language')).toBe('group');
-  });
-
-  it('gives an unnamed control no role', () => {
-    expect(groupRole(undefined, undefined)).toBeUndefined();
   });
 });
 

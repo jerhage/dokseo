@@ -9,38 +9,26 @@ function enteredTimes(times: number): WindowDrag {
 }
 
 describe('carriesFiles', () => {
-  it('reports a drag of files from the desktop', () => {
-    expect(carriesFiles(['Files'])).toBe(true);
+  it.each([
+    ['a drag of files from the desktop', ['Files']],
+    ['files that arrive alongside other types', ['text/uri-list', 'Files', 'text/plain']],
+  ])('reports %s', (_case, types) => {
+    expect(carriesFiles(types)).toBe(true);
   });
 
-  it('reports files that arrive alongside other types', () => {
-    expect(carriesFiles(['text/uri-list', 'Files', 'text/plain'])).toBe(true);
-  });
-
-  it('ignores a dragged link', () => {
-    expect(carriesFiles(['text/uri-list', 'text/plain'])).toBe(false);
-  });
-
-  it('ignores dragged text and a dragged image from the page', () => {
-    expect(carriesFiles(['text/plain', 'text/html'])).toBe(false);
-  });
-
-  it('ignores a type that only resembles the files type', () => {
-    expect(carriesFiles(['files', 'application/x-moz-file'])).toBe(false);
-  });
-
-  it('ignores a drag that carries nothing', () => {
-    expect(carriesFiles([])).toBe(false);
+  it.each([
+    ['a dragged link', ['text/uri-list', 'text/plain']],
+    ['dragged text and a dragged image from the page', ['text/plain', 'text/html']],
+    ['a type that only resembles the files type', ['files', 'application/x-moz-file']],
+    ['a drag that carries nothing', []],
+  ])('ignores %s', (_case, types) => {
+    expect(carriesFiles(types)).toBe(false);
   });
 });
 
 describe('window drag', () => {
   it('starts idle', () => {
     expect(IDLE_DRAG).toEqual({ kind: 'idle' });
-  });
-
-  it('carries at depth one once a drag enters the window', () => {
-    expect(entered(IDLE_DRAG)).toEqual({ kind: 'carrying', depth: 1 });
   });
 
   it('counts each element the drag enters on its way in', () => {
@@ -69,7 +57,10 @@ describe('window drag', () => {
     expect(dropped()).toEqual({ kind: 'idle' });
   });
 
-  it('carries afresh after a drop, without the depth of the earlier drag', () => {
-    expect(entered(dropped())).toEqual({ kind: 'carrying', depth: 1 });
+  it.each([
+    ['once a drag enters the window', IDLE_DRAG],
+    ['afresh after a drop, without the depth of the earlier drag', dropped()],
+  ])('carries at depth one %s', (_case, start) => {
+    expect(entered(start)).toEqual({ kind: 'carrying', depth: 1 });
   });
 });

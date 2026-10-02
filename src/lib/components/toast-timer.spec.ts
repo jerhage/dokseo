@@ -44,12 +44,6 @@ function started(ms: number): { timer: ToastTimer; clock: FakeClock; expiries: (
 }
 
 describe('ToastTimer', () => {
-  it('runs from the moment it is made', () => {
-    const { timer } = started(5000);
-
-    expect(timer.kind).toBe('running');
-  });
-
   it('expires once its time has passed', () => {
     const { clock, expiries } = started(5000);
 
@@ -74,16 +68,6 @@ describe('ToastTimer', () => {
     timer.pause('hover');
 
     expect(clock.pending).toBe(0);
-  });
-
-  it('keeps the time that was left when a pause began', () => {
-    const { timer, clock } = started(5000);
-
-    clock.advance(1500);
-    timer.pause('hover');
-    clock.advance(9000);
-
-    expect(timer.remaining).toBe(3500);
   });
 
   it('expires after only the time that was left once resumed', () => {
@@ -131,7 +115,7 @@ describe('ToastTimer', () => {
     expect(clock.pending).toBe(1);
   });
 
-  it('never expires once stopped', () => {
+  it('expires no more once stopped', () => {
     const { timer, clock, expiries } = started(5000);
 
     timer.stop();

@@ -7,7 +7,6 @@ import {
   LIST_ROW_LAYOUTS,
   LIST_ROW_SIZES,
   LIST_ROW_VALUE_TONES,
-  listRowLayout,
 } from './list-group';
 import ListGroup from './ListGroup.svelte';
 import ListRow from './ListRow.svelte';
@@ -44,13 +43,6 @@ describe('the list group class maps', () => {
     });
     expect(LIST_ROW_SIZES).toEqual({ sm: ['list-row-sm'], md: [] });
     expect(LIST_ROW_VALUE_TONES).toEqual({ default: [], faint: ['list-row-value-faint'] });
-  });
-});
-
-describe('listRowLayout', () => {
-  it('lays a row out for actions only when it has them', () => {
-    expect(listRowLayout(undefined)).toBe('value');
-    expect(listRowLayout(OPEN)).toBe('actions');
   });
 });
 

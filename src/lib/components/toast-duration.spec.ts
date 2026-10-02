@@ -2,32 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { parseDuration, toastDuration, toastTimeout } from './toast-duration';
 
 describe('parseDuration', () => {
-  it('reads seconds as milliseconds', () => {
-    expect(parseDuration('5s')).toBe(5000);
+  it.each([
+    ['seconds as milliseconds', '5s', 5000],
+    ['milliseconds as they are', '4500ms', 4500],
+    ['a fraction of a second', '0.25s', 250],
+    ['a fraction of a second with no leading zero', '.5s', 500],
+    ['through the whitespace a computed custom property keeps', ' 6s ', 6000],
+  ])('reads %s', (_case, value, ms) => {
+    expect(parseDuration(value)).toBe(ms);
   });
 
-  it('reads milliseconds as they are', () => {
-    expect(parseDuration('4500ms')).toBe(4500);
-  });
-
-  it('reads a fraction of a second', () => {
-    expect([parseDuration('0.25s'), parseDuration('.5s')]).toEqual([250, 500]);
-  });
-
-  it('reads through the whitespace a computed custom property keeps', () => {
-    expect(parseDuration(' 6s ')).toBe(6000);
-  });
-
-  it('rejects an empty value, as an unloaded stylesheet gives', () => {
-    expect(parseDuration('')).toBeUndefined();
-  });
-
-  it('rejects a number with no unit', () => {
-    expect(parseDuration('5000')).toBeUndefined();
-  });
-
-  it('rejects a negative time and a value that is no time at all', () => {
-    expect([parseDuration('-2s'), parseDuration('var(--x)')]).toEqual([undefined, undefined]);
+  it.each([
+    ['an empty value, as an unloaded stylesheet gives', ''],
+    ['a number with no unit', '5000'],
+    ['a negative time', '-2s'],
+    ['a value that is no time at all', 'var(--x)'],
+  ])('rejects %s', (_case, value) => {
+    expect(parseDuration(value)).toBeUndefined();
   });
 });
 
@@ -36,16 +27,15 @@ describe('toastDuration', () => {
     expect(toastDuration(undefined)).toEqual({ kind: 'default' });
   });
 
-  it('times a toast for the milliseconds requested', () => {
-    expect(toastDuration(2500)).toEqual({ kind: 'timed', ms: 2500 });
+  it.each([
+    ['without an action', 2500, false],
+    ['with an action', 9000, true],
+  ])('times a toast %s for the milliseconds requested', (_case, ms, offersAction) => {
+    expect(toastDuration(ms, offersAction)).toEqual({ kind: 'timed', ms });
   });
 
   it('keeps an unrequested toast with an action up until dismissed', () => {
     expect(toastDuration(undefined, true)).toEqual({ kind: 'persistent' });
-  });
-
-  it('times a toast with an action for the milliseconds requested', () => {
-    expect(toastDuration(9000, true)).toEqual({ kind: 'timed', ms: 9000 });
   });
 
   it('keeps a toast up when asked to persist', () => {
@@ -76,7 +66,7 @@ describe('toastTimeout', () => {
     expect(toastTimeout({ kind: 'timed', ms: 1200 }, '5s')).toBe(1200);
   });
 
-  it('never times a persistent toast', () => {
+  it('times no persistent toast', () => {
     expect(toastTimeout({ kind: 'persistent' }, '5s')).toBeUndefined();
   });
 });
