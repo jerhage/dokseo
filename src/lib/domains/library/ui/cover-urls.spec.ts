@@ -50,7 +50,7 @@ describe('CoverUrls', () => {
     expect(revoked).toEqual([]);
   });
 
-  it('keeps the URL of a cover it already shows and revokes the one replaced', () => {
+  it('keeps the URL of a cover it already shows and revokes the one replaced or gone', () => {
     const urls = new CoverUrls();
     const kept = new Blob(['1']);
     urls.urlsFor(
@@ -74,21 +74,10 @@ describe('CoverUrls', () => {
       ]),
     );
     expect(revoked).toEqual(['blob:cover-2']);
-  });
-
-  it('revokes the URL of a cover that leaves', () => {
-    const urls = new CoverUrls();
-    const kept = new Blob(['1']);
-    urls.urlsFor(
-      new Map([
-        [ONE, kept],
-        [TWO, new Blob(['2'])],
-      ]),
-    );
 
     urls.urlsFor(new Map([[ONE, kept]]));
 
-    expect(revoked).toEqual(['blob:cover-2']);
+    expect(revoked).toEqual(['blob:cover-2', 'blob:cover-3']);
   });
 
   it('answers the same map for the same covers', () => {

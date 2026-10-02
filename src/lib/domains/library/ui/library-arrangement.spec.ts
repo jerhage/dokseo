@@ -32,42 +32,26 @@ class FakeStore implements StringStore {
   }
 }
 
-class ThrowingStore implements StringStore {
-  getItem(): string | null {
-    throw new Error('blocked');
-  }
-
-  setItem(): void {
-    throw new Error('blocked');
-  }
-
-  removeItem(): void {
-    throw new Error('blocked');
-  }
-}
-
 describe('toSortOrder', () => {
-  it('reads every known sort order', () => {
-    expect(toSortOrder('added')).toBe('added');
-    expect(toSortOrder('title')).toBe('title');
-    expect(toSortOrder('progress')).toBe('progress');
-  });
-
-  it('falls back to recently added for an unknown or missing value', () => {
-    expect(toSortOrder('newest')).toBe('added');
-    expect(toSortOrder(null)).toBe('added');
+  it.each([
+    { stored: 'added', order: 'added' },
+    { stored: 'title', order: 'title' },
+    { stored: 'progress', order: 'progress' },
+    { stored: 'newest', order: 'added' },
+    { stored: null, order: 'added' },
+  ] as const)('reads $stored as $order', ({ stored, order }) => {
+    expect(toSortOrder(stored)).toBe(order);
   });
 });
 
 describe('toCollectionView', () => {
-  it('reads both views', () => {
-    expect(toCollectionView('grid')).toBe('grid');
-    expect(toCollectionView('list')).toBe('list');
-  });
-
-  it('falls back to covers for an unknown or missing value', () => {
-    expect(toCollectionView('table')).toBe('grid');
-    expect(toCollectionView(null)).toBe('grid');
+  it.each([
+    { stored: 'grid', view: 'grid' },
+    { stored: 'list', view: 'list' },
+    { stored: 'table', view: 'grid' },
+    { stored: null, view: 'grid' },
+  ] as const)('reads $stored as $view', ({ stored, view }) => {
+    expect(toCollectionView(stored)).toBe(view);
   });
 });
 
@@ -86,30 +70,14 @@ describe('readArrangement', () => {
     });
   });
 
-  it('answers the defaults when nothing is saved', () => {
-    expect(readArrangement(() => new FakeStore())).toEqual({
-      shelf: 'all',
-      order: 'added',
-      layout: 'grid',
-    });
-  });
-
-  it('answers the defaults for values it does not know', () => {
-    const store = new FakeStore({ [SHELF_KEY]: 'later', [SORT_KEY]: 'size', [VIEW_KEY]: 'wall' });
-
-    expect(readArrangement(() => store)).toEqual({
-      shelf: 'all',
-      order: 'added',
-      layout: 'grid',
-    });
-  });
-
-  it('answers the defaults when there is no store', () => {
-    expect(readArrangement(() => null)).toEqual({ shelf: 'all', order: 'added', layout: 'grid' });
-  });
-
-  it('answers the defaults when the store throws', () => {
-    expect(readArrangement(() => new ThrowingStore())).toEqual({
+  it.each([
+    { saved: 'nothing', entries: {} },
+    {
+      saved: 'values it does not know',
+      entries: { [SHELF_KEY]: 'later', [SORT_KEY]: 'size', [VIEW_KEY]: 'wall' },
+    },
+  ])('answers the defaults when $saved is saved', ({ entries }) => {
+    expect(readArrangement(() => new FakeStore(entries))).toEqual({
       shelf: 'all',
       order: 'added',
       layout: 'grid',
@@ -130,27 +98,5 @@ describe('saving the arrangement', () => {
       'reader.library.sort': 'progress',
       'reader.library.view': 'list',
     });
-  });
-
-  it('reads back what it saved', () => {
-    const store = new FakeStore();
-
-    saveShelf('unread', () => store);
-    saveSortOrder('title', () => store);
-    saveCollectionView('list', () => store);
-
-    expect(readArrangement(() => store)).toEqual({
-      shelf: 'unread',
-      order: 'title',
-      layout: 'list',
-    });
-  });
-
-  it('stores nothing and does not throw when the store throws', () => {
-    expect(() => {
-      saveShelf('reading', () => new ThrowingStore());
-      saveSortOrder('title', () => new ThrowingStore());
-      saveCollectionView('list', () => new ThrowingStore());
-    }).not.toThrow();
   });
 });

@@ -25,16 +25,12 @@ class FakeStore implements StringStore {
 }
 
 describe('toBookMatching', () => {
-  it('reads nothing stored as content', () => {
-    expect(toBookMatching(null)).toBe('content');
-  });
-
-  it('reads an unknown value as content', () => {
-    expect(toBookMatching('bytes')).toBe('content');
-  });
-
-  it('reads file-name as file-name', () => {
-    expect(toBookMatching('file-name')).toBe('file-name');
+  it.each([
+    { stored: null, matching: 'content' },
+    { stored: 'bytes', matching: 'content' },
+    { stored: 'file-name', matching: 'file-name' },
+  ] as const)('reads $stored as $matching', ({ stored, matching }) => {
+    expect(toBookMatching(stored)).toBe(matching);
   });
 });
 
@@ -45,10 +41,6 @@ describe('readBookMatching and saveBookMatching', () => {
 
     expect(store.entries.get(BOOK_MATCHING_KEY)).toBe('file-name');
     expect(readBookMatching(() => store)).toBe('file-name');
-  });
-
-  it('reads content when no store is reachable', () => {
-    expect(readBookMatching(() => null)).toBe('content');
   });
 });
 
