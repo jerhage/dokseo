@@ -13,7 +13,6 @@
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
-  import { entryId } from '../domain/book/removed-book';
   import type { LibraryScrollView } from './library-scroll-view.svelte';
   import type { LibraryView } from './library-view.svelte';
   import {
@@ -70,7 +69,7 @@
   );
   const removeBook = $derived(shelfRead.books.find((book) => book.id === removeFor) ?? null);
   const deleteCaptures = $derived(
-    shelfRead.removed.find((entry) => entryId(entry) === deleteCapturesFor) ?? null,
+    shelfRead.removed.find((book) => book.id === deleteCapturesFor) ?? null,
   );
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
@@ -253,7 +252,7 @@
 
     {#if shelfRead.removed.length > 0}
       <RemovedBooks
-        entries={shelfRead.removed}
+        books={shelfRead.removed}
         busy={view.removed.deleting !== null}
         ondelete={(id) => (deleteCapturesFor = id)}
       />
@@ -312,9 +311,9 @@
 
 {#if deleteCaptures !== null}
   <DeleteRemovedCaptures
-    entry={deleteCaptures}
-    deleting={view.removed.deleting === entryId(deleteCaptures)}
-    ondelete={() => void deleteRemovedCaptures(entryId(deleteCaptures))}
+    book={deleteCaptures}
+    deleting={view.removed.deleting === deleteCaptures.id}
+    ondelete={() => void deleteRemovedCaptures(deleteCaptures.id)}
     onclose={() => (deleteCapturesFor = null)}
   />
 {/if}

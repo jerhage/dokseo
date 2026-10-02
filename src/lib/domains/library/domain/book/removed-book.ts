@@ -18,12 +18,8 @@ type RemovedBook = {
   readonly direction: ReadingDirection;
 };
 
-type RemovedShelfEntry =
-  | { readonly kind: 'recorded'; readonly book: RemovedBook; readonly captureCount: number }
-  | { readonly kind: 'unknown'; readonly id: BookId; readonly captureCount: number };
-
 type RemovedShelf =
-  | { readonly kind: 'success'; readonly entries: readonly RemovedShelfEntry[] }
+  | { readonly kind: 'success'; readonly books: readonly RemovedBook[] }
   | StorageUnavailable;
 
 type CapturesDeletion = { readonly kind: 'success' } | StorageUnavailable;
@@ -40,8 +36,6 @@ type RetiredRow = {
 };
 
 const UNTITLED_BOOK = 'Untitled book';
-
-const UNKNOWN_BOOK = 'Unknown book';
 
 function textOf(value: unknown): string {
   return isText(value) ? value : '';
@@ -83,9 +77,5 @@ function removedBooksFrom(rows: readonly RetiredRow[]): readonly RemovedBook[] {
   });
 }
 
-function entryId(entry: RemovedShelfEntry): BookId {
-  return entry.kind === 'recorded' ? entry.book.id : entry.id;
-}
-
-export { UNKNOWN_BOOK, UNTITLED_BOOK, entryId, removedBookFrom, removedBooksFrom };
-export type { CapturesDeletion, RemovedBook, RemovedShelf, RemovedShelfEntry, RetiredRow };
+export { UNTITLED_BOOK, removedBookFrom, removedBooksFrom };
+export type { CapturesDeletion, RemovedBook, RemovedShelf, RetiredRow };

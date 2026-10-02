@@ -5,6 +5,16 @@ import type { CaptureRepository } from './domains/recognition/domain/capture/cap
 import { bookId } from './shared/ids';
 import type { BookId } from './shared/ids';
 
+const GONE = vi.hoisted(() => ({
+  id: 'gone-1' as BookId,
+  title: 'Gone',
+  alias: null,
+  contentHash: '0123456789abcdef0123456789abcdef',
+  fileName: 'gone.epub',
+  language: 'ja' as const,
+  direction: 'rtl' as const,
+}));
+
 const held = vi.hoisted(() => ({
   removed: [] as string[],
   cleared: [] as string[],
@@ -16,7 +26,7 @@ function notUsed(): Promise<never> {
 
 vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
   createLibraryRepository: (): LibraryRepository => ({
-    list: notUsed,
+    list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: notUsed,
     add: notUsed,
     readPageList: notUsed,
@@ -25,7 +35,7 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
       held.removed.push(id);
       return Promise.resolve({ kind: 'success' });
     },
-    listRemoved: notUsed,
+    listRemoved: () => Promise.resolve({ kind: 'success', removed: [GONE] }),
     listRestorable: notUsed,
     forgetRemoved: notUsed,
     update: notUsed,
@@ -55,5 +65,11 @@ describe('buildContainer', () => {
     expect(result).toEqual({ kind: 'success' });
     expect(held.removed).toEqual(['book-1']);
     expect(held.cleared).toEqual([]);
+  });
+
+  it('lists the removed books without reading a capture', async () => {
+    const result = await buildContainer().library.listRemovedBooks();
+
+    expect(result).toEqual({ kind: 'success', books: [GONE] });
   });
 });
