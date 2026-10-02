@@ -170,6 +170,15 @@ module.exports = {
     },
 
     {
+      name: 'only-the-pdf-adapter-loads-pdfjs',
+      comment:
+        "pdf.js ships a modern build and a legacy build, and library/adapters/pdf-page-source.ts chooses one at runtime by feature detection and loads only that build's library and worker. A static, dynamic or type import of pdfjs-dist, or of any path inside it, from any other module would fix a build in advance or put one in a chunk the other kind of browser fetches, so only the adapter may import it. The worker is named as new URL('pdfjs-dist/...', import.meta.url), which dependency-cruiser does not see as an edge; library/adapters/pdf-build-entries.spec.ts holds that form, and which build each entry belongs to.",
+      severity: 'error',
+      from: { pathNot: '^src/lib/domains/library/adapters/pdf-page-source\\.ts$' },
+      to: { path: '(^|/)node_modules/(pdfjs-dist|.*/pdfjs-dist)/' },
+    },
+
+    {
       name: 'no-unresolvable',
       comment:
         "An import that does not resolve is invisible to every rule above, so a broken alias silently disables the architecture checks rather than failing loudly. $app and $env are SvelteKit's own virtual modules and are expected here.",
@@ -184,7 +193,7 @@ module.exports = {
 
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(\\.svelte-kit|build|node_modules)/' },
+    exclude: { path: '^(\\.svelte-kit|build)/' },
 
     tsConfig: { fileName: 'tsconfig.depcruise.json' },
     tsPreCompilationDeps: true,

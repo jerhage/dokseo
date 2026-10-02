@@ -4,12 +4,7 @@ import { describe, expect, it } from 'vitest';
 const SOURCE = new URL('../../../../', import.meta.url);
 const SCRIPT_EXTENSIONS = ['.ts', '.js', '.mjs', '.svelte'];
 const ADAPTER = 'lib/domains/library/adapters/pdf-page-source.ts';
-const MAY_NAME_AN_ENTRY = new Set([
-  ADAPTER,
-  'lib/domains/library/adapters/pdf-page-source.spec.ts',
-  'lib/domains/library/adapters/pdf-build-entries.spec.ts',
-]);
-const ANY_ENTRY = new RegExp('[\'"`]pdfjs-dist(?:/[^\'"`]*)?[\'"`]', 'u');
+const URL_OF_AN_ENTRY = new RegExp('new URL\\(\\s*[\'"`]pdfjs-dist', 'u');
 const LOADED_ENTRY = new RegExp(
   '(import|new URL)\\(\\s*[\'"`](pdfjs-dist(?:/[^\'"`]*)?)[\'"`]',
   'gu',
@@ -69,16 +64,13 @@ function loadedEntries(): readonly LoadedEntry[] {
 }
 
 describe('pdf.js entry points', () => {
-  it('finds the source tree', () => {
-    expect(sourceFiles()).toContain(ADAPTER);
-  });
+  it('keeps every new URL of a pdf.js entry inside the adapter', () => {
+    const files = sourceFiles();
+    const offenders = files.filter((path) => path !== ADAPTER && URL_OF_AN_ENTRY.test(read(path)));
 
-  it.each(sourceFiles().filter((path) => !MAY_NAME_AN_ENTRY.has(path)))(
-    'keeps every pdf.js entry out of %s',
-    (path) => {
-      expect(read(path)).not.toMatch(ANY_ENTRY);
-    },
-  );
+    expect(files).toContain(ADAPTER);
+    expect(offenders).toEqual([]);
+  });
 
   it('imports only types from pdf.js statically, so no build loads before the choice', () => {
     expect(read(ADAPTER)).not.toMatch(VALUE_IMPORT);
