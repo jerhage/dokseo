@@ -226,6 +226,7 @@ async function openFile(
 
   const fileTitle = built.suggestedTitle;
   const title = bookTitle(declaredTitle(inspection, built), fileTitle);
+  report({ kind: 'titled', title });
   const restoring = restorableMatch(restorable, { ...identity, title, fileTitle });
 
   const book: Book = {

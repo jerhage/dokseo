@@ -14,7 +14,11 @@ type UploadStage =
       readonly elapsedMs: number;
     };
 
-type UploadReport = (stage: UploadStage) => void;
+type UploadEvent = UploadStage | { readonly kind: 'titled'; readonly title: string };
+
+type StageReport = (stage: UploadStage) => void;
+
+type UploadReport = (event: UploadEvent) => void;
 
 type SourceWriteReport = (writtenBytes: number, totalBytes: number) => void;
 
@@ -72,4 +76,12 @@ function uploadRemainingSeconds(stage: UploadStage): number | null {
 }
 
 export { INSPECTING, SINGLE_BOOK, booksLeft, uploadCount, uploadFraction, uploadRemainingSeconds };
-export type { UploadBatch, UploadStage, UploadReport, SourceWriteReport, UploadCount };
+export type {
+  StageReport,
+  UploadBatch,
+  UploadEvent,
+  UploadStage,
+  UploadReport,
+  SourceWriteReport,
+  UploadCount,
+};

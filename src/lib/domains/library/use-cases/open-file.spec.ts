@@ -161,9 +161,21 @@ function clock(times: readonly number[]): () => number {
   };
 }
 
-function collector(): { readonly report: UploadReport; readonly stages: UploadStage[] } {
+function collector(): {
+  readonly report: UploadReport;
+  readonly stages: UploadStage[];
+  readonly titles: string[];
+} {
   const stages: UploadStage[] = [];
-  return { report: (stage) => stages.push(stage), stages };
+  const titles: string[] = [];
+  return {
+    report: (event) => {
+      if (event.kind === 'titled') titles.push(event.title);
+      else stages.push(event);
+    },
+    stages,
+    titles,
+  };
 }
 
 function fakeInspector(outcome: EpubInspectionAnswer = NOT_AN_EPUB): {
@@ -409,6 +421,48 @@ describe('openFile', () => {
 
     expect(result.kind).toBe('added');
     expect(openedBook(result).title).toBe('scan_0042');
+  });
+
+  it.each([
+    ['a PDF metadata title', 'pdf', 'scan_0042', 'よつばと! 1', 'よつばと! 1'],
+    ['a PDF file-name title', 'pdf', 'scan_0042', null, 'scan_0042'],
+    ['an archive file-name title', 'archive', 'Ch 12', null, 'Ch 12'],
+  ] as const)(
+    'reports %s as the chosen title before it stores the book',
+    async (_, sourceKind, suggestedTitle, metadataTitle, chosen) => {
+      const order: string[] = [];
+      const repository = fakeRepository(WRITTEN, [[0, 1]]);
+
+      await openFile(
+        deps({
+          repository: repository.repository,
+          builder: fakeBuilder(built(builtSource({ sourceKind, suggestedTitle, metadataTitle })))
+            .builder,
+        }),
+        pdf,
+        (event) => order.push(event.kind === 'titled' ? `titled ${event.title}` : event.kind),
+      );
+
+      expect(order).toEqual([`titled ${chosen}`, 'storing']);
+    },
+  );
+
+  it('reports the EPUB package title as the chosen title', async () => {
+    const seen = collector();
+
+    await openFile(
+      deps({
+        inspectEpub: fakeInspector(
+          inspectedEpub('pre-paginated', 'rtl', 'ja', 'キノの旅 the Beautiful World'),
+        ).inspector,
+        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub', suggestedTitle: 'kino-v1' })))
+          .builder,
+      }),
+      epub,
+      seen.report,
+    );
+
+    expect(seen.titles).toEqual(['キノの旅 the Beautiful World']);
   });
 
   it('reads Korean from a hangul title, so the reader does not have to say so', async () => {

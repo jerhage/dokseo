@@ -10,7 +10,7 @@ import type { PageObstacle } from '../domain/ingest/epub-pages';
 import { uploadBreach } from '../domain/ingest/ingest-limits';
 import type { SourceBuild, SourceBuildError, SourceBuilder } from '../domain/ingest/source-builder';
 import { INSPECTING } from '../domain/ingest/upload-progress';
-import type { UploadReport } from '../domain/ingest/upload-progress';
+import type { StageReport } from '../domain/ingest/upload-progress';
 import { detectSourceKind } from '../domain/ingest/source-detection';
 import { suggestTitle } from '../domain/book/title';
 import { entryName, titleCandidate } from './file-entry';
@@ -36,7 +36,7 @@ function describePageSourceError(error: PageSourceError): string {
 async function sourceBlobOf(
   sourceKind: SourceKind,
   files: readonly File[],
-  report: UploadReport,
+  report: StageReport,
 ): Promise<SourceBlob> {
   if (sourceKind !== 'images') {
     const [container] = files;
@@ -136,7 +136,7 @@ function pagesOf(sourceKind: SourceKind, blob: Blob): Promise<PagesOpening> {
     .exhaustive();
 }
 
-async function buildFrom(files: readonly File[], report: UploadReport): Promise<SourceBuild> {
+async function buildFrom(files: readonly File[], report: StageReport): Promise<SourceBuild> {
   report(INSPECTING);
   const sourceKind = detectSourceKind(files.map(entryName));
   if (sourceKind === null) return { kind: 'nothing-usable' };
@@ -201,7 +201,7 @@ function createFileSourceBuilder(): SourceBuilder {
   return {
     async build(
       files: readonly File[],
-      report: UploadReport = () => undefined,
+      report: StageReport = () => undefined,
     ): Promise<SourceBuild> {
       if (files.length === 0) return { kind: 'empty' };
       const breach = uploadBreach(files);

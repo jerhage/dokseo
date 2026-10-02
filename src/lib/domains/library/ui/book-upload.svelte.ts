@@ -15,7 +15,7 @@ import { splitUpload } from '../domain/ingest/source-detection';
 import type { UploadBook } from '../domain/ingest/source-detection';
 import { uploadName } from '../domain/ingest/upload-name';
 import { INSPECTING, SINGLE_BOOK } from '../domain/ingest/upload-progress';
-import type { UploadBatch, UploadStage } from '../domain/ingest/upload-progress';
+import type { UploadBatch, UploadEvent, UploadStage } from '../domain/ingest/upload-progress';
 import type { OpenedUpload, OpenFileFailure, OpenFileResult } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { bookMatchingChosen } from './book-matching.svelte';
@@ -138,6 +138,11 @@ function stageReached(state: UploadState, stage: UploadStage): UploadState {
   return state.kind === 'uploading' ? { ...state, stage } : state;
 }
 
+function uploadReported(state: UploadState, event: UploadEvent): UploadState {
+  if (event.kind !== 'titled') return stageReached(state, event);
+  return state.kind === 'uploading' ? { ...state, title: event.title } : state;
+}
+
 function tallyOf(opened: readonly OpenedUpload[], failed: readonly FailedBook[]): UploadTally {
   const added = opened.filter((upload) => upload.kind !== 'already-held').length;
   return {
@@ -194,8 +199,8 @@ class BookUpload {
           .run({
             files: book.files,
             matching,
-            report: (stage) => {
-              this.#state = stageReached(this.#state, stage);
+            report: (event) => {
+              this.#state = uploadReported(this.#state, event);
             },
           })
           .catch((cause: unknown): UploadFailure => ({ kind: 'threw', cause }));
@@ -249,6 +254,7 @@ export {
   stageReached,
   tallyOf,
   uploadNotice,
+  uploadReported,
   uploadingBook,
 };
 export type { OpenBook, UploadState };

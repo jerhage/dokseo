@@ -12,6 +12,7 @@ import {
   stageReached,
   tallyOf,
   uploadNotice,
+  uploadReported,
   uploadingBook,
 } from './book-upload.svelte';
 
@@ -191,5 +192,36 @@ describe('stageReached', () => {
 
     expect(stageReached(uploadingBook(only, 0, 1), stage)).toMatchObject({ stage });
     expect(stageReached({ kind: 'idle' }, stage)).toEqual({ kind: 'idle' });
+  });
+});
+
+describe('uploadReported', () => {
+  it('shows the file-name title until the upload reports the chosen title, then shows that', () => {
+    const [only] = splitUpload([chosen('scan_0042.pdf')]);
+    if (only === undefined) throw new Error('no book');
+    const covering = { kind: 'covering', imageCount: 3 } as const;
+    const storing = {
+      kind: 'storing',
+      imageCount: 3,
+      writtenBytes: 0,
+      totalBytes: 10,
+      elapsedMs: 0,
+    } as const;
+
+    const started = uploadingBook(only, 0, 1);
+    const covered = uploadReported(started, covering);
+    const titled = uploadReported(covered, { kind: 'titled', title: 'よつばと! 1' });
+    const stored = uploadReported(titled, storing);
+
+    expect(started).toMatchObject({ title: 'scan_0042' });
+    expect(covered).toMatchObject({ title: 'scan_0042', stage: covering });
+    expect(titled).toMatchObject({ title: 'よつばと! 1', stage: covering });
+    expect(stored).toMatchObject({ title: 'よつばと! 1', stage: storing });
+  });
+
+  it('leaves an idle upload alone when a title arrives', () => {
+    expect(uploadReported({ kind: 'idle' }, { kind: 'titled', title: 'よつばと! 1' })).toEqual({
+      kind: 'idle',
+    });
   });
 });

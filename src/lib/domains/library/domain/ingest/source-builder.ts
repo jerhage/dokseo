@@ -2,7 +2,7 @@ import type { SourceKind } from '../book/book';
 import type { PageOrder } from '../book/page-list';
 import type { IngestLimit } from './ingest-limits';
 import type { PageObstacle } from './epub-pages';
-import type { UploadReport } from './upload-progress';
+import type { StageReport } from './upload-progress';
 
 type BuiltPages =
   | {
@@ -34,7 +34,7 @@ type SourceBuildError =
 type SourceBuild = { readonly kind: 'success'; readonly source: BuiltSource } | SourceBuildError;
 
 interface SourceBuilder {
-  build(files: readonly File[], report: UploadReport): Promise<SourceBuild>;
+  build(files: readonly File[], report: StageReport): Promise<SourceBuild>;
 }
 
 export type { BuiltPages, BuiltSource, SourceBuild, SourceBuildError, SourceBuilder };
