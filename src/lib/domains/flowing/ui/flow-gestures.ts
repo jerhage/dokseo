@@ -71,7 +71,6 @@ class FlowGestures {
     if (this.#press?.pointerId !== pointerId) return;
 
     this.#press = null;
-    this.#touchTurned = false;
   }
 
   claimsTouchEnd(): boolean {
