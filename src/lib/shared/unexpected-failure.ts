@@ -1,7 +1,14 @@
 import type { ToastId, Toaster } from '$lib/components/toaster.svelte';
 import { describeCause } from './cause';
 
-type FailureSite = 'navigation' | 'render' | 'query' | 'write' | 'window' | 'promise';
+type FailureSite =
+  | 'navigation'
+  | 'render'
+  | 'query'
+  | 'write'
+  | 'window'
+  | 'promise'
+  | 'service-worker';
 
 type FailureToaster = Pick<Toaster, 'show' | 'toasts'>;
 

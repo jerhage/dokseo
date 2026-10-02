@@ -1,5 +1,6 @@
 <script lang="ts">
   import { QueryClientProvider } from '@tanstack/svelte-query';
+  import { dev } from '$app/environment';
   import favicon from '$lib/assets/favicon.svg';
   import Button from '$lib/components/Button.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
@@ -14,6 +15,7 @@
     logUnexpected,
     unexpectedMessage,
   } from '$lib/shared/unexpected-failure';
+  import { watchShellUpdates } from '$lib/shared/shell-updates';
   import '$lib/styles/index.css';
 
   let { children } = $props();
@@ -22,6 +24,7 @@
   const toaster = createToaster();
   setToaster(toaster);
   const failures = new UnexpectedFailures(toaster);
+  if (!dev) watchShellUpdates(toaster);
 
   const queryClient = createQueryClient();
 </script>
