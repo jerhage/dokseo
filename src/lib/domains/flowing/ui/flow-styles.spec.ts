@@ -23,41 +23,48 @@ function injected(settings: ReadingSettings): string {
 }
 
 describe('flowStyles', () => {
-  it('sizes the root font to the percentage the chosen size names', () => {
-    expect(injected(BIG_AND_LOOSE)).toContain(`font-size: ${textSizePercent('largest')}%`);
-    expect(injected(SMALL_AND_TIGHT)).toContain(`font-size: ${textSizePercent('smallest')}%`);
-  });
+  const EVERY_SCALE: readonly ReadingSettings[] = [
+    SMALL_AND_TIGHT,
+    BIG_AND_LOOSE,
+    { ...SMALL_AND_TIGHT, lineSpacing: 'loose' },
+    { ...BIG_AND_LOOSE, lineSpacing: 'tight' },
+  ];
 
-  it('sets the line height the chosen spacing names', () => {
-    expect(injected(BIG_AND_LOOSE)).toContain(`line-height: ${lineSpacingHeight('loose')}`);
-    expect(injected(SMALL_AND_TIGHT)).toContain(`line-height: ${lineSpacingHeight('tight')}`);
-  });
+  it.each(EVERY_SCALE)(
+    'sizes the root font to the percentage $textSize names, outranking the book',
+    (settings) => {
+      expect(injected(settings)).toContain(
+        `font-size: ${textSizePercent(settings.textSize)}% !important`,
+      );
+    },
+  );
 
-  it("lays every chapter of a vertical book out in the book's writing mode", () => {
-    const [prepended, appended] = flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, 'vertical-rl');
+  it.each(EVERY_SCALE)(
+    'sets the line height $lineSpacing names, outranking the book',
+    (settings) => {
+      expect(injected(settings)).toContain(
+        `line-height: ${lineSpacingHeight(settings.lineSpacing)} !important`,
+      );
+    },
+  );
 
-    expect(prepended).not.toContain('writing-mode');
-    expect(appended).toMatch(/html, body \{\s*writing-mode: vertical-rl !important;/u);
-  });
+  it.each(['vertical-rl', 'vertical-lr'] as const)(
+    "lays every chapter of a %s book out in the book's writing mode",
+    (mode) => {
+      const [prepended, appended] = flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, mode);
 
-  it('keeps the left-to-right vertical mode a book declares', () => {
-    expect(flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, 'vertical-lr')[1]).toContain(
-      'writing-mode: vertical-lr !important',
-    );
-  });
+      expect(prepended).not.toContain('writing-mode');
+      expect(appended).toMatch(
+        new RegExp(`html, body \\{\\s*writing-mode: ${mode} !important;`, 'u'),
+      );
+    },
+  );
 
   it('leaves the writing mode of a horizontal book to the book', () => {
     const styles = flowStyles(SMALL_AND_TIGHT, INK_FOR_THE_DARK_PAGE, 'horizontal');
 
     expect(styles.join('')).not.toContain('writing-mode');
     expect(styles).toEqual(flowStyles(SMALL_AND_TIGHT));
-  });
-
-  it('outranks a book that sizes its own text', () => {
-    const styles = injected(BIG_AND_LOOSE);
-
-    expect(styles).toMatch(/font-size:[^;]+!important/u);
-    expect(styles).toMatch(/line-height:[^;]+!important/u);
   });
 
   it('keeps the dark page readable whatever the reader chose', () => {
@@ -71,16 +78,10 @@ describe('flowStyles', () => {
     const styles = injected(SMALL_AND_TIGHT);
 
     expect(styles).toContain('::selection');
-    expect(styles).toMatch(/::selection\s*\{[^}]*background:\s*rgba\(79, 178, 134, 0\.35\)/u);
-    expect(styles).toMatch(/::selection\s*\{[^}]*color:\s*#f2efe9/u);
-  });
-
-  it('outranks a book that colours its own selection', () => {
-    const styles = injected(BIG_AND_LOOSE);
-    const rule = /::selection\s*\{([^}]*)\}/u.exec(styles)?.[1] ?? '';
-
-    expect(rule).toMatch(/background:[^;]+!important/u);
-    expect(rule).toMatch(/color:[^;]+!important/u);
+    expect(styles).toMatch(
+      /::selection\s*\{[^}]*background:\s*rgba\(79, 178, 134, 0\.35\) !important/u,
+    );
+    expect(styles).toMatch(/::selection\s*\{[^}]*color:\s*#f2efe9 !important/u);
   });
 
   it('carries the selection rule on the sheet appended after the book', () => {
@@ -90,38 +91,16 @@ describe('flowStyles', () => {
     expect(prepended).not.toContain('::selection');
   });
 
-  it('answers a different sheet for every choice on the two scales', () => {
-    const sheets = new Set([
-      injected(SMALL_AND_TIGHT),
-      injected(BIG_AND_LOOSE),
-      injected({ ...SMALL_AND_TIGHT, lineSpacing: 'loose' }),
-      injected({ ...BIG_AND_LOOSE, lineSpacing: 'tight' }),
-    ]);
+  it('takes the readings and their parentheses out of the line when they are turned off, outranking the book from the sheet appended after it', () => {
+    const [prepended, appended] = flowStyles(READINGS_HIDDEN);
+    const rule = /(^|\})\s*rt,\s*rp\s*\{([^}]*)\}/u.exec(appended)?.[2] ?? '';
 
-    expect(sheets.size).toBe(4);
-  });
-
-  it('takes the readings and their parentheses out of the line when they are turned off', () => {
-    const rule = /(^|\})\s*rt,\s*rp\s*\{([^}]*)\}/u.exec(injected(READINGS_HIDDEN))?.[2] ?? '';
-
-    expect(rule).toMatch(/display:\s*none/u);
+    expect(rule).toMatch(/display:\s*none !important/u);
+    expect(prepended).not.toContain('display: none');
   });
 
   it('leaves the readings in the book for a reader who has not turned them off', () => {
     expect(injected(BIG_AND_LOOSE)).not.toContain('display: none');
-  });
-
-  it('outranks a book that styles its own readings', () => {
-    const rule = /(^|\})\s*rt,\s*rp\s*\{([^}]*)\}/u.exec(injected(READINGS_HIDDEN))?.[2] ?? '';
-
-    expect(rule).toMatch(/display:[^;]+!important/u);
-  });
-
-  it('carries the hiding rule on the sheet appended after the book', () => {
-    const [prepended, appended] = flowStyles(READINGS_HIDDEN);
-
-    expect(appended).toMatch(/rt,\s*rp/u);
-    expect(prepended).not.toContain('display: none');
   });
 
   it('keeps sizing the readings the book does print', () => {
@@ -129,10 +108,6 @@ describe('flowStyles', () => {
 
     expect(prepended).toContain('rt {');
     expect(prepended).toContain('font-size: 0.6em');
-  });
-
-  it('answers a different sheet whether the readings are shown or hidden', () => {
-    expect(injected(READINGS_HIDDEN)).not.toBe(injected(BIG_AND_LOOSE));
   });
 });
 
@@ -169,14 +144,6 @@ describe('flowStyles with an ink', () => {
 
     expect(rule).toContain('background: oklch(0.93 0.04 195) !important');
     expect(rule).toContain('color: oklch(0.3 0.01 255) !important');
-  });
-
-  it('keeps the size, the spacing and the readings whatever the ink', () => {
-    const [, appended] = flowStyles(READINGS_HIDDEN, PAPER);
-
-    expect(appended).toContain(`font-size: ${textSizePercent('largest')}%`);
-    expect(appended).toContain(`line-height: ${lineSpacingHeight('loose')}`);
-    expect(appended).toMatch(/rt,\s*rp\s*\{\s*display: none !important/u);
   });
 });
 

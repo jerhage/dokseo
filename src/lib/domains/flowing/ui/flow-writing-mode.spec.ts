@@ -40,52 +40,34 @@ function probe(
 }
 
 describe('writingModeNamed', () => {
-  it('reads a right-to-left vertical mode', () => {
-    expect(writingModeNamed('vertical-rl')).toBe('vertical-rl');
-  });
-
-  it('reads a left-to-right vertical mode', () => {
-    expect(writingModeNamed('vertical-lr')).toBe('vertical-lr');
+  it.each(['vertical-rl', 'vertical-lr'] as const)('reads the vertical mode %s', (mode) => {
+    expect(writingModeNamed(mode)).toBe(mode);
   });
 
   it('ignores the case and the spaces around a declared value', () => {
     expect(writingModeNamed('  Vertical-RL ')).toBe('vertical-rl');
   });
 
-  it('reads the computed horizontal mode as horizontal', () => {
-    expect(writingModeNamed('horizontal-tb')).toBe('horizontal');
-  });
+  it.each(['horizontal-tb', 'horizontal-lr', 'horizontal-rl'])(
+    'reads the computed or package value %s as horizontal',
+    (value) => {
+      expect(writingModeNamed(value)).toBe('horizontal');
+    },
+  );
 
-  it('reads either horizontal package value as horizontal', () => {
-    expect(writingModeNamed('horizontal-lr')).toBe('horizontal');
-    expect(writingModeNamed('horizontal-rl')).toBe('horizontal');
-  });
-
-  it('names nothing for a value it does not know', () => {
-    expect(writingModeNamed('sideways-rl')).toBeNull();
-  });
-
-  it('names nothing for a missing value', () => {
-    expect(writingModeNamed(null)).toBeNull();
-    expect(writingModeNamed(undefined)).toBeNull();
+  it.each(['sideways-rl', null, undefined])('names nothing for %j', (value) => {
+    expect(writingModeNamed(value)).toBeNull();
   });
 });
 
 describe('chapterDirection', () => {
-  it('reads a chapter with no right-to-left mark as left to right', () => {
-    expect(chapterDirection({ bodyDir: '', rootDir: '', direction: 'ltr' })).toBe('ltr');
-  });
-
-  it('reads a right-to-left computed direction', () => {
-    expect(chapterDirection({ bodyDir: '', rootDir: '', direction: 'rtl' })).toBe('rtl');
-  });
-
-  it('reads a right-to-left dir on the body', () => {
-    expect(chapterDirection({ bodyDir: 'rtl', rootDir: '', direction: 'ltr' })).toBe('rtl');
-  });
-
-  it('reads a right-to-left dir on the root', () => {
-    expect(chapterDirection({ bodyDir: '', rootDir: 'rtl', direction: 'ltr' })).toBe('rtl');
+  it.each([
+    [{ bodyDir: '', rootDir: '', direction: 'ltr' }, 'ltr'],
+    [{ bodyDir: '', rootDir: '', direction: 'rtl' }, 'rtl'],
+    [{ bodyDir: 'rtl', rootDir: '', direction: 'ltr' }, 'rtl'],
+    [{ bodyDir: '', rootDir: 'rtl', direction: 'ltr' }, 'rtl'],
+  ] as const)('reads a chapter marked %j as %s', (marks, direction) => {
+    expect(chapterDirection(marks)).toBe(direction);
   });
 });
 
@@ -94,12 +76,11 @@ describe('measuredPaging', () => {
     expect(measuredPaging(VERTICAL_TEXT)).toEqual({ axis: 'vertical', mode: 'vertical-rl' });
   });
 
-  it('pages right-to-left horizontal text sideways, right to left', () => {
-    expect(measuredPaging(HEBREW_TEXT)).toEqual({ axis: 'horizontal', direction: 'rtl' });
-  });
-
-  it('pages left-to-right horizontal text sideways, left to right', () => {
-    expect(measuredPaging(ENGLISH_TEXT)).toEqual({ axis: 'horizontal', direction: 'ltr' });
+  it.each([
+    [HEBREW_TEXT, 'rtl'],
+    [ENGLISH_TEXT, 'ltr'],
+  ] as const)('pages horizontal text %j sideways, in its own direction', (text, direction) => {
+    expect(measuredPaging(text)).toEqual({ axis: 'horizontal', direction });
   });
 
   it('pages left to right when nothing was measured', () => {

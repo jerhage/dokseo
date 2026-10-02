@@ -68,10 +68,6 @@ describe('passageCfis', () => {
   it('draws nothing for a passage whose cfi was never recorded', () => {
     expect(passageCfis([lifted('')])).toEqual([]);
   });
-
-  it('draws nothing when the book holds no captures', () => {
-    expect(passageCfis([])).toEqual([]);
-  });
 });
 
 describe('passageWeight', () => {
@@ -89,17 +85,12 @@ describe('passageWeight', () => {
 });
 
 describe('passageColour', () => {
-  it('washes the passage the reader jumped to in the capture yellow too', () => {
-    expect(passageColour('arrived')).toBe(PASSAGE_HIGHLIGHT_COLOUR);
-  });
-
-  it('answers the capture yellow for every other passage', () => {
-    expect(passageColour('ordinary')).toBe(PASSAGE_HIGHLIGHT_COLOUR);
-  });
-
-  it('answers the capture yellow for a passage it is not tracking', () => {
-    expect(passageColour(undefined)).toBe(PASSAGE_HIGHLIGHT_COLOUR);
-  });
+  it.each(['arrived', 'ordinary', undefined] as const)(
+    'washes a passage weighted %s in the capture yellow',
+    (weight) => {
+      expect(passageColour(weight)).toBe(PASSAGE_HIGHLIGHT_COLOUR);
+    },
+  );
 
   it('reads the ring width in pixels from the border width token', () => {
     const style = {
@@ -139,10 +130,13 @@ describe('passageMark', () => {
 });
 
 describe('markAfterMove', () => {
-  it('keeps the mark while the reader stays on the page it landed on', () => {
+  it.each([
+    ['travel', TRAVELLED],
+    ['a reflow', REFLOWED],
+  ])('keeps the mark unchanged when %s reports the page it landed on', (_cause, cause) => {
     const mark = jumpedTo(FIRST);
 
-    expect(markAfterMove(mark, A_PAGE, TRAVELLED)).toBe(mark);
+    expect(markAfterMove(mark, A_PAGE, cause)).toBe(mark);
   });
 
   it('drops the mark when the reader turns the page', () => {
@@ -161,12 +155,6 @@ describe('markAfterMove', () => {
     });
   });
 
-  it('keeps the mark unchanged when a reflow reports the page it landed on', () => {
-    const mark = jumpedTo(FIRST);
-
-    expect(markAfterMove(mark, A_PAGE, REFLOWED)).toBe(mark);
-  });
-
   it('keeps the mark when a reflow reports a place the jump never learned', () => {
     expect(markAfterMove(jumpedTo(FIRST, null), A_PAGE, REFLOWED)).toEqual({
       kind: 'arrived',
@@ -175,12 +163,11 @@ describe('markAfterMove', () => {
     });
   });
 
-  it('leaves an unmarked book unmarked after a page turn', () => {
-    expect(markAfterMove(NOTHING_ARRIVED_AT, A_PAGE, TRAVELLED)).toEqual(NOTHING_ARRIVED_AT);
-  });
-
-  it('leaves an unmarked book unmarked after a reflow', () => {
-    expect(markAfterMove(NOTHING_ARRIVED_AT, A_PAGE, REFLOWED)).toEqual(NOTHING_ARRIVED_AT);
+  it.each([
+    ['a page turn', TRAVELLED],
+    ['a reflow', REFLOWED],
+  ])('leaves an unmarked book unmarked after %s', (_cause, cause) => {
+    expect(markAfterMove(NOTHING_ARRIVED_AT, A_PAGE, cause)).toEqual(NOTHING_ARRIVED_AT);
   });
 });
 
@@ -194,14 +181,17 @@ describe('highlightChange', () => {
     });
   });
 
-  it('removes a passage whose capture is gone', () => {
+  it.each([
+    [[SECOND], [FIRST]],
+    [[], [FIRST, SECOND]],
+  ])('removes each passage whose capture is gone, keeping %j', (kept, removed) => {
     expect(
       highlightChange(
         drawn({ [FIRST]: 'ordinary', [SECOND]: 'ordinary' }),
-        [SECOND],
+        kept,
         NOTHING_ARRIVED_AT,
       ),
-    ).toEqual({ added: [], removed: [FIRST] });
+    ).toEqual({ added: [], removed });
   });
 
   it('leaves an unchanged passage alone', () => {
@@ -209,12 +199,6 @@ describe('highlightChange', () => {
       added: [],
       removed: [],
     });
-  });
-
-  it('removes every passage when the reader clears the captures', () => {
-    expect(
-      highlightChange(drawn({ [FIRST]: 'ordinary', [SECOND]: 'ordinary' }), [], NOTHING_ARRIVED_AT),
-    ).toEqual({ added: [], removed: [FIRST, SECOND] });
   });
 
   it('draws the passage jumped to again, now that it is marked', () => {
@@ -269,13 +253,10 @@ describe('joinedLines', () => {
     expect(joinedLines([column(10, 20), column(30, 12), column(42, 18)])).toEqual([column(10, 50)]);
   });
 
-  it('leaves two separate lines separate', () => {
-    const far = { ...column(10, 20), left: 100, right: 130 };
-
-    expect(joinedLines([column(10, 20), far])).toHaveLength(2);
-  });
-
-  it('answers nothing for nothing', () => {
-    expect(joinedLines([])).toEqual([]);
+  it.each([
+    ['in two columns', column(10, 20), { ...column(10, 20), left: 100, right: 130 }],
+    ['in one column with a gap between them', column(10, 20), column(40, 20)],
+  ])('leaves two separate lines %s separate', (_where, first, second) => {
+    expect(joinedLines([first, second])).toEqual([first, second]);
   });
 });

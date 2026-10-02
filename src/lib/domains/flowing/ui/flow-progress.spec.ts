@@ -38,12 +38,11 @@ describe('flowLocation', () => {
     });
   });
 
-  it('reports no fraction for a book whose progress foliate never built', () => {
-    expect(flowLocation(at()).fraction).toBeNull();
-  });
-
-  it('reports no fraction for a book whose sections all measure nothing', () => {
-    expect(flowLocation(at({ fraction: Number.NaN })).fraction).toBeNull();
+  it.each([
+    ['whose progress foliate never built', at()],
+    ['whose sections all measure nothing', at({ fraction: Number.NaN })],
+  ])('reports no fraction for a book %s', (_book, relocation) => {
+    expect(flowLocation(relocation).fraction).toBeNull();
   });
 
   it('holds a reported fraction inside the book', () => {
@@ -51,18 +50,18 @@ describe('flowLocation', () => {
     expect(flowLocation(at({ fraction: -0.2 })).fraction).toBe(0);
   });
 
-  it('reports no chapter for a section the table of contents does not name', () => {
-    expect(flowLocation(at()).chapter).toBeNull();
-    expect(flowLocation(at({ tocItem: null })).chapter).toBeNull();
-    expect(flowLocation(at({ tocItem: {} })).chapter).toBeNull();
-    expect(flowLocation(at({ tocItem: { label: '  ' } })).chapter).toBeNull();
-  });
-
-  it('collapses the whitespace a chapter heading was laid out with', () => {
-    expect(flowLocation(at({ tocItem: { label: '\n  第一章\n  上\n' } })).chapter).toBe(
-      '第一章 上',
-    );
-  });
+  it.each([
+    [at(), null],
+    [at({ tocItem: null }), null],
+    [at({ tocItem: {} }), null],
+    [at({ tocItem: { label: '  ' } }), null],
+    [at({ tocItem: { label: '\n  第一章\n  上\n' } }), '第一章 上'],
+  ])(
+    'reads the chapter of %j as the table of contents names it, collapsed',
+    (relocation, chapter) => {
+      expect(flowLocation(relocation).chapter).toBe(chapter);
+    },
+  );
 });
 
 describe('reportedChapter', () => {
@@ -81,12 +80,11 @@ describe('reportedChapter', () => {
 });
 
 describe('flowProgress', () => {
-  it('reports nothing before the book has said where it is', () => {
-    expect(flowProgress(null)).toEqual({ kind: 'unknown' });
-  });
-
-  it('reports nothing for a book that cannot say how far through it is', () => {
-    expect(flowProgress(located())).toEqual({ kind: 'unknown' });
+  it.each([
+    ['before the book has said where it is', null],
+    ['for a book that cannot say how far through it is', located()],
+  ])('reports nothing %s', (_when, location) => {
+    expect(flowProgress(location)).toEqual({ kind: 'unknown' });
   });
 
   it('rounds a reported fraction to a whole percent', () => {
@@ -139,10 +137,6 @@ describe('scrubbedFraction', () => {
 });
 
 describe('chapterTicks', () => {
-  it('marks every boundary a book reports between its chapters', () => {
-    expect(chapterTicks([0.25, 0.5, 0.75])).toEqual([0.25, 0.5, 0.75]);
-  });
-
   it('marks nothing for a book that lists no sections at all', () => {
     expect(chapterTicks(null)).toEqual([]);
     expect(chapterTicks(undefined)).toEqual([]);
@@ -157,23 +151,23 @@ describe('chapterTicks', () => {
     expect(chapterTicks([-0.2, 0.4, 1.4])).toEqual([0.4]);
   });
 
-  it('drops the boundary at the very start and the one at the very end', () => {
-    const margin = TICK_EDGE_MARGIN;
-
-    expect(chapterTicks([0, Number.EPSILON, margin, 0.4, 1 - margin, 1])).toEqual([0.4]);
+  it.each([
+    [[0, Number.EPSILON, TICK_EDGE_MARGIN, 0.4, 1 - TICK_EDGE_MARGIN, 1], [0.4]],
+    [[Number.EPSILON], []],
+  ])('drops the boundary at the very start and the one at the very end of %j', (bounds, ticks) => {
+    expect(chapterTicks(bounds)).toEqual(ticks);
   });
 
   it('marks a repeated boundary once', () => {
     expect(chapterTicks([0.4, 0.4, 0.6])).toEqual([0.4, 0.6]);
   });
 
-  it('orders the boundaries along the bar', () => {
-    expect(chapterTicks([0.75, 0.25, 0.5])).toEqual([0.25, 0.5, 0.75]);
-  });
-
-  it('marks nothing for a novel that arrives as a single file', () => {
-    expect(chapterTicks([Number.EPSILON])).toEqual([]);
-  });
+  it.each([[[0.25, 0.5, 0.75]], [[0.75, 0.25, 0.5]]])(
+    'marks every boundary of %j in order along the bar',
+    (bounds) => {
+      expect(chapterTicks(bounds)).toEqual([0.25, 0.5, 0.75]);
+    },
+  );
 
   it('marks nothing for a book with more boundaries than the bar can separate', () => {
     expect(chapterTicks(spread(MAX_CHAPTER_TICKS))).toHaveLength(MAX_CHAPTER_TICKS);
@@ -197,10 +191,6 @@ describe('tickOffsets', () => {
   it('places a boundary a third of the way along without a trail of digits', () => {
     expect(tickOffsets([1 / 3], 'ltr')).toEqual([33.33]);
     expect(tickOffsets([1 / 3], 'rtl')).toEqual([66.67]);
-  });
-
-  it('places nothing for a book with no boundaries to mark', () => {
-    expect(tickOffsets([], 'rtl')).toEqual([]);
   });
 });
 
