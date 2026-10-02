@@ -9,6 +9,7 @@ import type { DeleteTagResult } from '../use-cases/tag/delete-tag';
 import type { ListTagsResult } from '../use-cases/tag/list-tags';
 import type { RecolourTagResult } from '../use-cases/tag/recolour-tag';
 import type { RemoveTagFromCaptureResult } from '../use-cases/tag/remove-tag-from-capture';
+import type { RemoveUnreadableTagsResult } from '../use-cases/tag/remove-unreadable-tags';
 import type { RenameTagResult } from '../use-cases/tag/rename-tag';
 import { recognitionKeys } from './recognition-keys';
 
@@ -26,6 +27,7 @@ type TagWrites = {
   readonly renameTag: (tag: Tag, name: string) => Promise<RenameTagResult>;
   readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<RecolourTagResult>;
   readonly deleteTag: (tag: TagId) => Promise<DeleteTagResult>;
+  readonly removeUnreadableTags: (tags: readonly TagId[]) => Promise<RemoveUnreadableTagsResult>;
 };
 
 type NewTag = { readonly id: TagId; readonly name: string };
@@ -81,12 +83,19 @@ function deleteTagMutation(recognition: Pick<TagWrites, 'deleteTag'>) {
   });
 }
 
+function removeUnreadableTagsMutation(recognition: Pick<TagWrites, 'removeUnreadableTags'>) {
+  return mutationOptions({
+    mutationFn: (ids: readonly TagId[]) => recognition.removeUnreadableTags(ids),
+  });
+}
+
 export {
   addTagMutation,
   createTagMutation,
   deleteTagMutation,
   recolourTagMutation,
   removeTagMutation,
+  removeUnreadableTagsMutation,
   renameTagMutation,
   tagsQuery,
 };

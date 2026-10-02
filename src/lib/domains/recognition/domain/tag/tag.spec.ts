@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { CorruptRow } from '$lib/shared/corrupt-row';
 import { tagId } from '$lib/shared/ids';
-import { byName, namedTag, sameTagName, tagFromStored, tagName } from './tag';
+import { byName, namedTag, sameTagName, tagFromStored, tagName, tagsFromStored } from './tag';
 import type { StoredTag, Tag } from './tag';
 
 describe('tagName', () => {
@@ -27,21 +28,15 @@ describe('namedTag', () => {
 
 describe('tagFromStored', () => {
   it.each([
-    { stored: { id: tagId('one'), name: 'sfx' }, colour: 'slate' },
-    { stored: { id: tagId('one'), name: 'sfx', colour: 'ember' }, colour: 'slate' },
-    { stored: { id: tagId('one'), name: 'sfx', colour: 'copper' }, colour: 'copper' },
+    { stored: { id: tagId('one'), name: 'sfx', createdAt: 1 }, colour: 'slate' },
+    { stored: { id: tagId('one'), name: 'sfx', colour: 'ember', createdAt: 1 }, colour: 'slate' },
+    { stored: { id: tagId('one'), name: 'sfx', colour: 'copper', createdAt: 1 }, colour: 'copper' },
   ] satisfies { stored: StoredTag; colour: string }[])(
     'reads the stored colour $stored.colour as $colour, the first palette colour unless it knows it',
     ({ stored, colour }) => {
       expect(tagFromStored(stored).colour).toBe(colour);
     },
   );
-
-  it('dates a record with no creation time to the beginning', () => {
-    const stored: StoredTag = { id: tagId('one'), name: 'sfx' };
-
-    expect(tagFromStored(stored).createdAt).toBe(0);
-  });
 
   it('keeps the colour and the creation time a record carries', () => {
     const stored: StoredTag = { id: tagId('one'), name: 'sfx', colour: 'plum', createdAt: 42 };
@@ -53,6 +48,53 @@ describe('tagFromStored', () => {
       createdAt: 42,
     });
   });
+
+  it.each([
+    ['id', { name: 'sfx', createdAt: 1 }, 'A stored tag lacks its id'],
+    ['id', { id: 7, name: 'sfx', createdAt: 1 }, 'A stored tag holds an unknown id: 7'],
+    ['name', { id: 'one', createdAt: 1 }, 'A stored tag lacks its name'],
+    ['name', { id: 'one', name: 3, createdAt: 1 }, 'A stored tag holds an unknown name: 3'],
+    ['creation time', { id: 'one', name: 'sfx' }, 'A stored tag lacks its created time'],
+    [
+      'creation time',
+      { id: 'one', name: 'sfx', createdAt: '1' },
+      'A stored tag holds an unknown created time: 1',
+    ],
+  ] satisfies [string, StoredTag, string][])(
+    'rejects a row whose %s is missing or of the wrong type',
+    (_field, stored, message) => {
+      expect(() => tagFromStored(stored)).toThrow(CorruptRow);
+      expect(() => tagFromStored(stored)).toThrow(message);
+    },
+  );
+});
+
+describe('tagsFromStored', () => {
+  it('keeps the rows that read and lists the rest apart by id and any stored name', () => {
+    const rows: StoredTag[] = [
+      { id: 'good', name: 'sfx', colour: 'plum', createdAt: 1 },
+      { id: 'nameless', colour: 'plum', createdAt: 2 },
+      { id: 'undated', name: 'keigo' },
+    ];
+
+    expect(tagsFromStored(rows)).toEqual({
+      tags: [{ id: 'good', name: 'sfx', colour: 'plum', createdAt: 1 }],
+      unreadable: [
+        { id: 'nameless', name: null },
+        { id: 'undated', name: 'keigo' },
+      ],
+    });
+  });
+
+  it.each([
+    { name: 'sfx', createdAt: 1 },
+    { id: 5, name: 'sfx', createdAt: 1 },
+  ] satisfies StoredTag[])(
+    'rethrows for a row %j with no usable id, which nothing could remove',
+    (row) => {
+      expect(() => tagsFromStored([row])).toThrow(CorruptRow);
+    },
+  );
 });
 
 describe('sameTagName', () => {

@@ -58,7 +58,7 @@ function heldRows(listed: Listed | undefined): readonly Capture[] {
 function withNamed(named: Named | undefined, tag: Tag): Named | undefined {
   if (named?.kind !== 'success') return named;
 
-  return { kind: 'success', tags: withTag(named.tags, tag) };
+  return { ...named, tags: withTag(named.tags, tag) };
 }
 
 class CaptureCache {

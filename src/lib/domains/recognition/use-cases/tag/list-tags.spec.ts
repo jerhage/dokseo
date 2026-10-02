@@ -15,7 +15,7 @@ function repository(broken = false) {
   const tags: TagRepository = {
     list: () => {
       if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
-      return Promise.resolve({ kind: 'success' as const, tags: rows });
+      return Promise.resolve({ kind: 'success' as const, tags: rows, unreadable: [] });
     },
     save: () => Promise.resolve({ kind: 'success' as const }),
     remove: () => Promise.resolve({ kind: 'success' as const }),
@@ -30,7 +30,7 @@ describe('listTags', () => {
 
     const listed = await listTags({ tags });
 
-    expect(listed).toEqual({ kind: 'success', tags: [SFX, KEIGO] });
+    expect(listed).toEqual({ kind: 'success', tags: [SFX, KEIGO], unreadable: [] });
   });
 
   it('reports a browser that blocks storage', async () => {

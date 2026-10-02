@@ -16,7 +16,7 @@ function repository(rows: readonly Tag[], fault: StoreFault = 'none') {
   const tags: TagRepository = {
     list: () => {
       if (fault === 'listing') return Promise.resolve(STORAGE_UNAVAILABLE);
-      return Promise.resolve({ kind: 'success' as const, tags: rows });
+      return Promise.resolve({ kind: 'success' as const, tags: rows, unreadable: [] });
     },
     save: (tag: Tag) => {
       if (fault === 'saving') {

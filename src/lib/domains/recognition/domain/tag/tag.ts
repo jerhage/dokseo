@@ -1,5 +1,7 @@
-import { foldForSearch } from '$lib/shared/text-search';
+import { isNumber, isText, knownStoredValue } from '$lib/shared/corrupt-row';
+import { tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
+import { foldForSearch } from '$lib/shared/text-search';
 import { FIRST_TAG_COLOUR, isTagColour } from './tag-colour';
 import type { TagColour } from './tag-colour';
 
@@ -10,9 +12,13 @@ type Tag = {
   readonly createdAt: number;
 };
 
-type StoredTag = Omit<Tag, 'colour' | 'createdAt'> & {
-  readonly colour?: unknown;
-  readonly createdAt?: number | null;
+type StoredTag = { readonly [Field in keyof Tag]?: unknown };
+
+type UnreadableTag = { readonly id: TagId; readonly name: string | null };
+
+type StoredTags = {
+  readonly tags: readonly Tag[];
+  readonly unreadable: readonly UnreadableTag[];
 };
 
 const INNER_SPACE = /\s+/gu;
@@ -33,12 +39,35 @@ function recolouredTag(tag: Tag, colour: TagColour): Tag {
   return { ...tag, colour };
 }
 
+function tagField<T>(field: string, value: unknown, known: (value: unknown) => value is T): T {
+  return knownStoredValue('tag', field, value, known);
+}
+
 function tagFromStored(stored: StoredTag): Tag {
   return {
-    ...stored,
+    id: tagId(tagField('id', stored.id, isText)),
+    name: tagField('name', stored.name, isText),
     colour: isTagColour(stored.colour) ? stored.colour : FIRST_TAG_COLOUR,
-    createdAt: stored.createdAt ?? 0,
+    createdAt: tagField('created time', stored.createdAt, isNumber),
   };
+}
+
+function unreadableTag(row: StoredTag, cause: unknown): UnreadableTag {
+  if (typeof row.id !== 'string' || row.id.length === 0) throw cause;
+  return { id: tagId(row.id), name: typeof row.name === 'string' ? row.name : null };
+}
+
+function tagsFromStored(rows: readonly StoredTag[]): StoredTags {
+  const tags: Tag[] = [];
+  const unreadable: UnreadableTag[] = [];
+  for (const row of rows) {
+    try {
+      tags.push(tagFromStored(row));
+    } catch (cause) {
+      unreadable.push(unreadableTag(row, cause));
+    }
+  }
+  return { tags, unreadable };
 }
 
 function byName(tags: readonly Tag[]): readonly Tag[] {
@@ -49,5 +78,14 @@ function sameTagName(left: string, right: string): boolean {
   return foldForSearch(tagName(left)).text === foldForSearch(tagName(right)).text;
 }
 
-export { tagName, namedTag, renamedTag, recolouredTag, tagFromStored, byName, sameTagName };
-export type { Tag, StoredTag };
+export {
+  tagName,
+  namedTag,
+  renamedTag,
+  recolouredTag,
+  tagFromStored,
+  tagsFromStored,
+  byName,
+  sameTagName,
+};
+export type { Tag, StoredTag, StoredTags, UnreadableTag };

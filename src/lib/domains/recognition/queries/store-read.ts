@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import { readFailed, readReady } from '$lib/shared/read-state';
 import type { ReadState } from '$lib/shared/read-state';
 import type { Capture, UnreadableCapture } from '../domain/capture/capture';
-import type { Tag } from '../domain/tag/tag';
+import type { Tag, UnreadableTag } from '../domain/tag/tag';
 import type { ListCapturesResult } from '../use-cases/capture/list-captures';
 import type { ListEveryCaptureResult } from '../use-cases/capture/list-every-capture';
 import type { ListTagsResult } from '../use-cases/tag/list-tags';
@@ -41,4 +41,8 @@ function storedTags(state: ReadState<ListTagsResult>): ReadState<readonly Tag[]>
     .exhaustive();
 }
 
-export { STORE_BLOCKED, storedCaptures, storedTags, unreadableCaptures };
+function unreadableTags(state: ReadState<ListTagsResult>): readonly UnreadableTag[] {
+  return state.kind === 'ready' && state.value.kind === 'success' ? state.value.unreadable : [];
+}
+
+export { STORE_BLOCKED, storedCaptures, storedTags, unreadableCaptures, unreadableTags };

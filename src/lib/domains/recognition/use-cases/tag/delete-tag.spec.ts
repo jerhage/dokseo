@@ -58,7 +58,7 @@ function stores(rows: readonly Capture[], fault: StoreFault = 'none') {
   };
 
   const tags: TagRepository = {
-    list: () => Promise.resolve({ kind: 'success' as const, tags: [] }),
+    list: () => Promise.resolve({ kind: 'success' as const, tags: [], unreadable: [] }),
     save: () => Promise.resolve({ kind: 'success' as const }),
     remove: (tag: TagId) => {
       if (fault === 'removing') return Promise.resolve(STORAGE_UNAVAILABLE);

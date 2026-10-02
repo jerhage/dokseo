@@ -4,7 +4,13 @@
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { capturesQuery } from '../../queries/capture-queries';
   import type { BookCaptureReads } from '../../queries/capture-queries';
-  import { storedCaptures, storedTags, unreadableCaptures } from '../../queries/store-read';
+  import type { UnreadableTag } from '../../domain/tag/tag';
+  import {
+    storedCaptures,
+    storedTags,
+    unreadableCaptures,
+    unreadableTags,
+  } from '../../queries/store-read';
   import { tagsQuery } from '../../queries/tag-queries';
   import type { TagReads } from '../../queries/tag-queries';
   import { foundCaptures, foundTags } from './capture-find';
@@ -27,6 +33,7 @@
   const rows = $derived(foundCaptures(captures));
   const named = $derived(foundTags(tags));
   const unreadable = $derived(unreadableCaptures(listed.state));
+  const unreadableTagRows = $derived(unreadableTags(tagList.state));
   const settled = $derived(book !== null && listed.state.kind !== 'loading' ? book : null);
 
   $effect(() => {
@@ -57,5 +64,9 @@
 
   export function read(): CaptureListing {
     return listing;
+  }
+
+  export function unreadableTagList(): readonly UnreadableTag[] {
+    return unreadableTagRows;
   }
 </script>

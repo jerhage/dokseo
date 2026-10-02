@@ -294,6 +294,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       renameTag: () => Promise.reject(new Error('not used')),
       recolourTag: () => Promise.reject(new Error('not used')),
       deleteTag: () => Promise.reject(new Error('not used')),
+      removeUnreadableTags: () => Promise.reject(new Error('not used')),
       readModelStorage: () => Promise.reject(new Error('not used')),
       deleteModel: () => Promise.reject(new Error('not used')),
       readRecognizerSetup: () => Promise.reject(new Error('not used')),

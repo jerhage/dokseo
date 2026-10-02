@@ -2,6 +2,7 @@
   import { match } from 'ts-pattern';
   import Badge from '$lib/components/Badge.svelte';
   import CommandItem from '$lib/components/CommandItem.svelte';
+  import type { Snippet } from 'svelte';
   import type { KeyHint } from '$lib/components/key-hints';
   import KeyHints from '$lib/components/KeyHints.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -22,9 +23,10 @@
     readonly onchoose: (row: PickerRow) => void;
     readonly onuntag: (tag: TagId) => void;
     readonly onclose: () => void;
+    readonly notice?: Snippet | undefined;
   };
 
-  let { open, picker, place, chips, onchoose, onuntag, onclose }: Props = $props();
+  let { open, picker, place, chips, onchoose, onuntag, onclose, notice }: Props = $props();
 
   const PICKER_KEYS: readonly KeyHint[] = [
     { keys: ['↑↓'], does: 'move' },
@@ -71,6 +73,7 @@
 >
   <div class="col gap-2 px-5 pb-4">
     <p class="m-0 text-xs text-muted">On the capture at {place}</p>
+    {@render notice?.()}
     <ul
       class="chips row items-center gap-1 list-reset overflow-auto min-w-0"
       aria-label="Tags on this capture"

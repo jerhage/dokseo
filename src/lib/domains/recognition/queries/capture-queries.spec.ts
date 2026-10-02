@@ -2,7 +2,7 @@ import { MutationObserver, skipToken } from '@tanstack/svelte-query';
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { observedRead } from '$lib/shared/testing/observed-read';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
@@ -20,7 +20,7 @@ import {
   writeNoteMutation,
 } from './capture-queries';
 import { recognitionKeys } from './recognition-keys';
-import { storedCaptures, storedTags } from './store-read';
+import { storedCaptures, storedTags, unreadableTags } from './store-read';
 import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 
 const CAPTURE: Capture = {
@@ -214,7 +214,10 @@ describe('storedTags', () => {
   it.each([
     { state: LOADING, expected: LOADING },
     { state: readFailed('broke'), expected: readFailed('broke') },
-    { state: readReady({ kind: 'success' as const, tags: [] }), expected: readReady([]) },
+    {
+      state: readReady({ kind: 'success' as const, tags: [], unreadable: [] }),
+      expected: readReady([]),
+    },
     {
       state: readReady(STORAGE_UNAVAILABLE),
       expected: readFailed('This browser blocks local storage.'),
@@ -223,6 +226,25 @@ describe('storedTags', () => {
     'passes a load and a failure through, readies what was read, and fails a blocked store with the note the read showed before (%#)',
     ({ state, expected }) => {
       expect(storedTags(state)).toEqual(expected);
+    },
+  );
+});
+
+describe('unreadableTags', () => {
+  const NAMELESS = { id: tagId('nameless'), name: null };
+
+  it.each([
+    { state: LOADING, expected: [] },
+    { state: readFailed('broke'), expected: [] },
+    { state: readReady(STORAGE_UNAVAILABLE), expected: [] },
+    {
+      state: readReady({ kind: 'success' as const, tags: [], unreadable: [NAMELESS] }),
+      expected: [NAMELESS],
+    },
+  ] as const)(
+    'reports the unreadable tags only of a read that succeeded (%#)',
+    ({ state, expected }) => {
+      expect(unreadableTags(state)).toEqual(expected);
     },
   );
 });

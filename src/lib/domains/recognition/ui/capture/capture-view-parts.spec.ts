@@ -111,7 +111,7 @@ function fakes(): Fakes {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve({ kind: 'success' });
       },
-      listTags: () => Promise.resolve({ kind: 'success', tags: store.tags }),
+      listTags: () => Promise.resolve({ kind: 'success', tags: store.tags, unreadable: [] }),
       createTag: unused,
       addTagToCapture: (capture: Capture, tag: TagId) => {
         const tagged = taggedCapture(capture, tag);
@@ -122,6 +122,7 @@ function fakes(): Fakes {
       renameTag: unused,
       recolourTag: unused,
       deleteTag: unused,
+      removeUnreadableTags: unused,
       readModelStorage: unused,
       deleteModel: unused,
       readRecognizerSetup: unused,

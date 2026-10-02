@@ -110,9 +110,10 @@ describe('withTag', () => {
   });
 
   it('names a tag in a read catalogue only', () => {
-    expect(withNamed({ kind: 'success', tags: [CROWN_TAG] }, SWORD_TAG)).toEqual({
+    expect(withNamed({ kind: 'success', tags: [CROWN_TAG], unreadable: [] }, SWORD_TAG)).toEqual({
       kind: 'success',
       tags: [CROWN_TAG, SWORD_TAG],
+      unreadable: [],
     });
     expect(withNamed(undefined, SWORD_TAG)).toBeUndefined();
   });
@@ -159,13 +160,18 @@ describe('CaptureCache', () => {
 
   it('names a new tag in the cached catalogue', () => {
     const client = createTestQueryClient();
-    client.setQueryData(recognitionKeys.tags(), { kind: 'success', tags: [CROWN_TAG] });
+    client.setQueryData(recognitionKeys.tags(), {
+      kind: 'success',
+      tags: [CROWN_TAG],
+      unreadable: [],
+    });
 
     new CaptureCache(client).name(SWORD_TAG);
 
     expect(client.getQueryData(recognitionKeys.tags())).toEqual({
       kind: 'success',
       tags: [CROWN_TAG, SWORD_TAG],
+      unreadable: [],
     });
   });
 

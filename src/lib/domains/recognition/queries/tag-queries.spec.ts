@@ -37,15 +37,19 @@ const CAPTURE: Capture = {
 
 describe('tagsQuery', () => {
   it('readies every tag', async () => {
-    const read = tagsQuery({ listTags: () => Promise.resolve({ kind: 'success', tags: [SFX] }) });
+    const read = tagsQuery({
+      listTags: () => Promise.resolve({ kind: 'success', tags: [SFX], unreadable: [] }),
+    });
 
     expect(await observedRead(createTestQueryClient(), read)).toEqual(
-      readReady({ kind: 'success', tags: [SFX] }),
+      readReady({ kind: 'success', tags: [SFX], unreadable: [] }),
     );
   });
 
   it('files the tags under the recognition root, stale at once', () => {
-    const read = tagsQuery({ listTags: () => Promise.resolve({ kind: 'success', tags: [] }) });
+    const read = tagsQuery({
+      listTags: () => Promise.resolve({ kind: 'success', tags: [], unreadable: [] }),
+    });
 
     expect(read.queryKey).toEqual(recognitionKeys.tags());
     expect(read.queryKey.slice(0, 1)).toEqual(recognitionKeys.all());

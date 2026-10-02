@@ -5,6 +5,7 @@
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import TagPageData from '$lib/domains/recognition/ui/tag/TagPageData.svelte';
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
+  import UnreadableTags from '$lib/domains/recognition/ui/tag/UnreadableTags.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
   import { readTagName, TAG_PARAMETER } from '$lib/shared/tag-location';
@@ -31,6 +32,10 @@
         {#snippet notice()}
           <UnreadableCaptures
             captures={tagged?.unreadableRows() ?? []}
+            recognition={container.recognition}
+          />
+          <UnreadableTags
+            tags={tagged?.unreadableTagList() ?? []}
             recognition={container.recognition}
           />
         {/snippet}

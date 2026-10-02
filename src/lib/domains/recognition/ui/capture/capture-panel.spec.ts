@@ -152,7 +152,7 @@ function containerOf(store: Store): Container {
       restoreCapture: unused,
       removeUnreadableCaptures: unused,
       clearCaptures: unused,
-      listTags: () => Promise.resolve({ kind: 'success', tags: store.tags }),
+      listTags: () => Promise.resolve({ kind: 'success', tags: store.tags, unreadable: [] }),
       createTag: (id: TagId, name: string) => {
         const made = namedTag(id, name, 'slate', 2);
         store.tags = [...store.tags, made];
@@ -165,6 +165,7 @@ function containerOf(store: Store): Container {
       renameTag: unused,
       recolourTag: unused,
       deleteTag: unused,
+      removeUnreadableTags: unused,
       readModelStorage: unused,
       deleteModel: unused,
       readRecognizerSetup: unused,

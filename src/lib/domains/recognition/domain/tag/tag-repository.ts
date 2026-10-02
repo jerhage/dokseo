@@ -1,8 +1,14 @@
 import type { TagId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
-import type { Tag } from './tag';
+import type { Tag, UnreadableTag } from './tag';
 
-type TagListing = { readonly kind: 'success'; readonly tags: readonly Tag[] } | StorageUnavailable;
+type TagListing =
+  | {
+      readonly kind: 'success';
+      readonly tags: readonly Tag[];
+      readonly unreadable: readonly UnreadableTag[];
+    }
+  | StorageUnavailable;
 
 type TagWrite = { readonly kind: 'success' } | StorageUnavailable;
 

@@ -11,6 +11,7 @@
   import { tagCountingOf } from '$lib/domains/recognition/ui/capture/capture-find';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
+  import UnreadableTags from '$lib/domains/recognition/ui/tag/UnreadableTags.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import EngineGateData from '$lib/domains/recognition/ui/engine/EngineGateData.svelte';
@@ -66,6 +67,10 @@
   />
 {/snippet}
 
+{#snippet unreadableTags()}
+  <UnreadableTags tags={listed?.unreadableTagList() ?? []} recognition={container.recognition} />
+{/snippet}
+
 {#snippet flowPanel(visible: boolean)}
   <CapturePanel
     view={captures}
@@ -75,6 +80,7 @@
     {visible}
     onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
     notice={unreadableCaptures}
+    tagNotice={unreadableTags}
   />
 {/snippet}
 
@@ -142,6 +148,7 @@
             source="images"
             {visible}
             notice={unreadableCaptures}
+            tagNotice={unreadableTags}
           />
         {/snippet}
       </ReaderScreen>

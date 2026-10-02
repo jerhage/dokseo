@@ -16,6 +16,8 @@ import { recolourTag } from '../domains/recognition/use-cases/tag/recolour-tag';
 import type { RecolourTagResult } from '../domains/recognition/use-cases/tag/recolour-tag';
 import { removeTagFromCapture } from '../domains/recognition/use-cases/tag/remove-tag-from-capture';
 import type { RemoveTagFromCaptureResult } from '../domains/recognition/use-cases/tag/remove-tag-from-capture';
+import { removeUnreadableTags } from '../domains/recognition/use-cases/tag/remove-unreadable-tags';
+import type { RemoveUnreadableTagsResult } from '../domains/recognition/use-cases/tag/remove-unreadable-tags';
 import { renameTag } from '../domains/recognition/use-cases/tag/rename-tag';
 import type { RenameTagResult } from '../domains/recognition/use-cases/tag/rename-tag';
 
@@ -30,6 +32,7 @@ type TagUseCases = {
   readonly renameTag: (tag: Tag, name: string) => Promise<RenameTagResult>;
   readonly recolourTag: (tag: Tag, colour: TagColour) => Promise<RecolourTagResult>;
   readonly deleteTag: (tag: TagId) => Promise<DeleteTagResult>;
+  readonly removeUnreadableTags: (tags: readonly TagId[]) => Promise<RemoveUnreadableTagsResult>;
 };
 
 function buildTags(captures: CaptureRepository): TagUseCases {
@@ -44,6 +47,7 @@ function buildTags(captures: CaptureRepository): TagUseCases {
     renameTag: (tag: Tag, name: string) => renameTag({ tags }, tag, name),
     recolourTag: (tag: Tag, colour: TagColour) => recolourTag({ tags }, tag, colour),
     deleteTag: (tag: TagId) => deleteTag({ tags, captures }, tag),
+    removeUnreadableTags: (ids: readonly TagId[]) => removeUnreadableTags({ tags, captures }, ids),
   };
 }
 

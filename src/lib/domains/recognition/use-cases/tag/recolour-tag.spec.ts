@@ -12,7 +12,7 @@ const SFX = namedTag(tagId('a'), 'sfx', 'slate', 1);
 function repository(broken = false) {
   const saved: Tag[] = [];
   const tags: TagRepository = {
-    list: () => Promise.resolve({ kind: 'success' as const, tags: saved }),
+    list: () => Promise.resolve({ kind: 'success' as const, tags: saved, unreadable: [] }),
     save: (tag: Tag) => {
       if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(tag);

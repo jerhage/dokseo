@@ -41,9 +41,10 @@
     readonly visible: boolean;
     readonly onSeek?: (passage: TextAnchor) => void;
     readonly notice?: Snippet;
+    readonly tagNotice?: Snippet;
   };
 
-  let { view, panel, language, source, visible, onSeek, notice }: Props = $props();
+  let { view, panel, language, source, visible, onSeek, notice, tagNotice }: Props = $props();
 
   const uid = $props.id();
 
@@ -237,6 +238,7 @@
     onchoose={(row) => void panel.selection.choose(row)}
     onuntag={(tag) => void panel.selection.drop(held.id, tag)}
     onclose={() => void restore(panel.closeTags())}
+    notice={tagNotice}
   />
 {/if}
 
