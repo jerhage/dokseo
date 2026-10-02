@@ -14,24 +14,17 @@ describe('languageDeclared', () => {
     expect(languageDeclared('en-GB')).toBe('en');
   });
 
-  it('reads a tag a publisher wrote in capitals', () => {
-    expect(languageDeclared('JA')).toBe('ja');
+  it.each([
+    ['written in capitals', 'JA'],
+    ['padded with the whitespace an XML element carries', '\n      ja-JP\n    '],
+    ['joined with an underscore, which some publishers write', 'ja_JP'],
+  ])('reads a tag %s', (_, tag) => {
+    expect(languageDeclared(tag)).toBe('ja');
   });
 
-  it('reads a tag padded with the whitespace an XML element carries', () => {
-    expect(languageDeclared('\n      ja-JP\n    ')).toBe('ja');
-  });
-
-  it('reads a tag joined with an underscore, which some publishers write', () => {
-    expect(languageDeclared('ja_JP')).toBe('ja');
-  });
-
-  it('says nothing about a language this app does not read', () => {
+  it('says nothing about a language this app does not read, or a three-letter code', () => {
     expect(languageDeclared('zh-Hans')).toBeNull();
     expect(languageDeclared('fr')).toBeNull();
-  });
-
-  it('says nothing about a three-letter code, which is not what BCP 47 asks for', () => {
     expect(languageDeclared('jpn')).toBeNull();
   });
 

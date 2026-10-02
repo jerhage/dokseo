@@ -20,12 +20,14 @@ function storing(over: Partial<Extract<UploadStage, { kind: 'storing' }>> = {}):
 }
 
 describe('uploadCount', () => {
-  it('reports no count while the drop is being inspected', () => {
-    expect(uploadCount(INSPECTING)).toBeNull();
-  });
-
-  it('reports no count while the source is being opened, because the page count is unknown', () => {
-    expect(uploadCount({ kind: 'opening', sourceKind: 'pdf' })).toBeNull();
+  it.each<[string, UploadStage]>([
+    ['the drop is being inspected', INSPECTING],
+    [
+      'the source is being opened, because the page count is unknown',
+      { kind: 'opening', sourceKind: 'pdf' },
+    ],
+  ])('reports no count while %s', (_, stage) => {
+    expect(uploadCount(stage)).toBeNull();
   });
 
   it('reports both halves of the count while loose images are packed', () => {
@@ -35,26 +37,21 @@ describe('uploadCount', () => {
     });
   });
 
-  it('reports a total with no done half while the source is stored', () => {
-    expect(uploadCount(storing())).toEqual({ done: null, total: 186 });
-  });
-
-  it('reports a total with no done half while the cover is rendered', () => {
-    expect(uploadCount({ kind: 'covering', imageCount: 186 })).toEqual({ done: null, total: 186 });
+  it.each<[string, UploadStage]>([
+    ['the source is stored', storing()],
+    ['the cover is rendered', { kind: 'covering', imageCount: 186 }],
+  ])('reports a total with no done half while %s', (_, stage) => {
+    expect(uploadCount(stage)).toEqual({ done: null, total: 186 });
   });
 });
 
 describe('uploadFraction', () => {
-  it('reports no fraction while the drop is being inspected', () => {
-    expect(uploadFraction(INSPECTING)).toBeNull();
-  });
-
-  it('reports no fraction while the source is being opened', () => {
-    expect(uploadFraction({ kind: 'opening', sourceKind: 'archive' })).toBeNull();
-  });
-
-  it('reports no fraction while the cover is rendered', () => {
-    expect(uploadFraction({ kind: 'covering', imageCount: 4 })).toBeNull();
+  it.each<[string, UploadStage]>([
+    ['the drop is being inspected', INSPECTING],
+    ['the source is being opened', { kind: 'opening', sourceKind: 'archive' }],
+    ['the cover is rendered', { kind: 'covering', imageCount: 4 }],
+  ])('reports no fraction while %s', (_, stage) => {
+    expect(uploadFraction(stage)).toBeNull();
   });
 
   it('divides packed images by the total', () => {

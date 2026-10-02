@@ -3,11 +3,6 @@ import { at } from '$lib/shared/testing/at';
 import { compareNatural } from './natural-order';
 
 describe('compareNatural', () => {
-  it('orders a shorter number before a longer one', () => {
-    expect(compareNatural('page2', 'page10')).toBeLessThan(0);
-    expect(compareNatural('page10', 'page2')).toBeGreaterThan(0);
-  });
-
   it('sorts a run of entry names the way a reader expects', () => {
     const names = ['page10', 'page2', 'page1', 'page20', 'page3'];
     expect(names.toSorted(compareNatural)).toEqual(['page1', 'page2', 'page3', 'page10', 'page20']);
@@ -30,12 +25,9 @@ describe('compareNatural', () => {
     ]);
   });
 
-  it('compares pure text alphabetically', () => {
+  it('orders a name with no digits against another and against one that has them', () => {
     expect(compareNatural('alpha', 'beta')).toBeLessThan(0);
     expect(compareNatural('beta', 'alpha')).toBeGreaterThan(0);
-  });
-
-  it('orders a name with no digits against one that has them', () => {
     expect(compareNatural('cover', 'page1')).toBeLessThan(0);
     expect(compareNatural('page', 'page1')).toBeLessThan(0);
   });

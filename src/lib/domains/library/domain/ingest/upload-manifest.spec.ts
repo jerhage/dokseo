@@ -18,32 +18,16 @@ describe('uploadManifest', () => {
     const shuffled = [at(folder, 2), at(folder, 0), at(folder, 1)];
 
     expect(uploadManifest(shuffled)).toBe(uploadManifest(folder));
-  });
-
-  it('reads the same manifest from a reversed upload', () => {
     expect(uploadManifest(folder.toReversed())).toBe(uploadManifest(folder));
   });
 
-  it('changes when a file is renamed', () => {
-    const renamed = withFirst({ name: 'Ch 12/01.png', size: 204_800 });
-
-    expect(uploadManifest(renamed)).not.toBe(uploadManifest(folder));
-  });
-
-  it('changes when a file is resized', () => {
-    const resized = withFirst({ name: 'Ch 12/001.png', size: 204_801 });
-
-    expect(uploadManifest(resized)).not.toBe(uploadManifest(folder));
-  });
-
-  it('changes when a file is added', () => {
-    const added = [...folder, { name: 'Ch 12/004.png', size: 190_000 }];
-
-    expect(uploadManifest(added)).not.toBe(uploadManifest(folder));
-  });
-
-  it('changes when a file is removed', () => {
-    expect(uploadManifest(folder.slice(0, 2))).not.toBe(uploadManifest(folder));
+  it.each([
+    ['renamed', withFirst({ name: 'Ch 12/01.png', size: 204_800 })],
+    ['resized', withFirst({ name: 'Ch 12/001.png', size: 204_801 })],
+    ['added', [...folder, { name: 'Ch 12/004.png', size: 190_000 }]],
+    ['removed', folder.slice(0, 2)],
+  ])('changes when a file is %s', (_, changed) => {
+    expect(uploadManifest(changed)).not.toBe(uploadManifest(folder));
   });
 
   it('separates two uploads that differ only by where a name ends', () => {
