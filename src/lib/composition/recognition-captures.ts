@@ -16,6 +16,8 @@ import { listEveryCapture } from '../domains/recognition/use-cases/capture/list-
 import type { ListEveryCaptureResult } from '../domains/recognition/use-cases/capture/list-every-capture';
 import { removeCapture } from '../domains/recognition/use-cases/capture/remove-capture';
 import type { RemoveCaptureResult } from '../domains/recognition/use-cases/capture/remove-capture';
+import { removeUnreadableCaptures } from '../domains/recognition/use-cases/capture/remove-unreadable-captures';
+import type { RemoveUnreadableCapturesResult } from '../domains/recognition/use-cases/capture/remove-unreadable-captures';
 import { restoreCapture } from '../domains/recognition/use-cases/capture/restore-capture';
 import type { RestoreCaptureResult } from '../domains/recognition/use-cases/capture/restore-capture';
 import { saveCapture } from '../domains/recognition/use-cases/capture/save-capture';
@@ -37,6 +39,9 @@ type CaptureUseCases = {
   ) => Promise<WriteCaptureNoteResult<T>>;
   readonly removeCapture: (capture: CaptureId) => Promise<RemoveCaptureResult>;
   readonly restoreCapture: (capture: Capture) => Promise<RestoreCaptureResult>;
+  readonly removeUnreadableCaptures: (
+    ids: readonly CaptureId[],
+  ) => Promise<RemoveUnreadableCapturesResult>;
   readonly clearCaptures: (book: BookId) => Promise<ClearCapturesResult>;
 };
 
@@ -53,6 +58,8 @@ function buildCaptures(captures: CaptureRepository): CaptureUseCases {
       writeCaptureNote({ captures }, capture, note),
     removeCapture: (capture: CaptureId) => removeCapture({ captures }, capture),
     restoreCapture: (capture: Capture) => restoreCapture({ captures }, capture),
+    removeUnreadableCaptures: (ids: readonly CaptureId[]) =>
+      removeUnreadableCaptures({ captures }, ids),
     clearCaptures: (book: BookId) => clearCaptures({ captures }, book),
   };
 }

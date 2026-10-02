@@ -63,6 +63,7 @@ describe('CaptureList', () => {
       state: READ,
       captures: [storedRow('stored', 'old', 1, null)],
       tags: [],
+      unreadable: [],
       reload: () => undefined,
     };
 
@@ -77,7 +78,7 @@ describe('CaptureList', () => {
   it('answers the stored row of a capture and nothing for an unsaved card', () => {
     const row = storedRow('stored', 'old', 1, null);
     const list = listOver({
-      current: { state: READ, captures: [row], tags: [], reload: () => undefined },
+      current: { state: READ, captures: [row], tags: [], unreadable: [], reload: () => undefined },
     });
     list.unsaved.put(card('made'));
 
@@ -91,6 +92,7 @@ describe('CaptureList', () => {
         state: READ,
         captures: [storedRow('stored', '海', 1, 'the sea')],
         tags: [],
+        unreadable: [],
         reload: () => undefined,
       },
     });

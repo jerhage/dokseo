@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import { readFailed, readReady } from '$lib/shared/read-state';
 import type { ReadState } from '$lib/shared/read-state';
-import type { Capture } from '../domain/capture/capture';
+import type { Capture, UnreadableCapture } from '../domain/capture/capture';
 import type { Tag } from '../domain/tag/tag';
 import type { ListCapturesResult } from '../use-cases/capture/list-captures';
 import type { ListEveryCaptureResult } from '../use-cases/capture/list-every-capture';
@@ -25,6 +25,12 @@ function storedCaptures(
     .exhaustive();
 }
 
+function unreadableCaptures(
+  state: ReadState<ListCapturesResult | ListEveryCaptureResult>,
+): readonly UnreadableCapture[] {
+  return state.kind === 'ready' && state.value.kind === 'success' ? state.value.unreadable : [];
+}
+
 function storedTags(state: ReadState<ListTagsResult>): ReadState<readonly Tag[]> {
   return match(state)
     .with({ kind: 'loading' }, { kind: 'failed' }, (unread): ReadState<readonly Tag[]> => unread)
@@ -35,4 +41,4 @@ function storedTags(state: ReadState<ListTagsResult>): ReadState<readonly Tag[]>
     .exhaustive();
 }
 
-export { STORE_BLOCKED, storedCaptures, storedTags };
+export { STORE_BLOCKED, storedCaptures, storedTags, unreadableCaptures };

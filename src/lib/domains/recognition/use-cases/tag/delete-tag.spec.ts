@@ -40,10 +40,11 @@ function stores(rows: readonly Capture[], fault: StoreFault = 'none') {
   const removed: TagId[] = [];
 
   const captures: CaptureRepository = {
-    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: rows }),
+    listForBook: () =>
+      Promise.resolve({ kind: 'success' as const, captures: rows, unreadable: [] }),
     listEverything: () => {
       if (fault === 'listing') return Promise.resolve(STORAGE_UNAVAILABLE);
-      return Promise.resolve({ kind: 'success' as const, captures: rows });
+      return Promise.resolve({ kind: 'success' as const, captures: rows, unreadable: [] });
     },
     save: (edited: Capture) => {
       if (fault === 'saving') {

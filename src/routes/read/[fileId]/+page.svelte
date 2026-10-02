@@ -10,6 +10,7 @@
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import { tagCountingOf } from '$lib/domains/recognition/ui/capture/capture-find';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
+  import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import CapturePanel from '$lib/domains/recognition/ui/capture/CapturePanel.svelte';
   import EnginePill from '$lib/domains/recognition/ui/engine/EnginePill.svelte';
   import EngineGateData from '$lib/domains/recognition/ui/engine/EngineGateData.svelte';
@@ -58,6 +59,13 @@
   onDestroy(() => session.close());
 </script>
 
+{#snippet unreadableCaptures()}
+  <UnreadableCaptures
+    captures={listed?.read().unreadable ?? []}
+    recognition={container.recognition}
+  />
+{/snippet}
+
 {#snippet flowPanel(visible: boolean)}
   <CapturePanel
     view={captures}
@@ -66,6 +74,7 @@
     source="text"
     {visible}
     onSeek={(passage) => void flow.arrivals.jumpToPassage(passage.cfi, passage.quote)}
+    notice={unreadableCaptures}
   />
 {/snippet}
 
@@ -132,6 +141,7 @@
             {language}
             source="images"
             {visible}
+            notice={unreadableCaptures}
           />
         {/snippet}
       </ReaderScreen>
@@ -176,7 +186,11 @@
           counts={shelf.counts}
           onopen={shelf.reload}
           onfollowedInBook={() => id !== null && session.arrive(id)}
-        />
+        >
+          {#snippet notice()}
+            <UnreadableCaptures captures={find.unreadable} recognition={container.recognition} />
+          {/snippet}
+        </SearchDialog>
       {/snippet}
     </CaptureFindData>
   {/snippet}

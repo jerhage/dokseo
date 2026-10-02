@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern';
 import { readBoth } from '$lib/shared/read-state';
 import type { ReadState } from '$lib/shared/read-state';
-import type { Capture } from '../../domain/capture/capture';
+import type { Capture, UnreadableCapture } from '../../domain/capture/capture';
 import type { Tag } from '../../domain/tag/tag';
 
 type CaptureRead =
@@ -15,6 +15,7 @@ type CaptureListing = {
   readonly state: CaptureRead;
   readonly captures: readonly Capture[];
   readonly tags: readonly Tag[];
+  readonly unreadable: readonly UnreadableCapture[];
   reload(): void;
 };
 
@@ -26,6 +27,7 @@ const UNLISTED: CaptureListing = {
   state: READING,
   captures: [],
   tags: [],
+  unreadable: [],
   reload: () => undefined,
 };
 

@@ -4,6 +4,7 @@
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import TagPageData from '$lib/domains/recognition/ui/tag/TagPageData.svelte';
+  import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
   import { readTagName, TAG_PARAMETER } from '$lib/shared/tag-location';
@@ -26,7 +27,14 @@
         covers={read.covers}
         libraryFailure={read.failure}
         onretrylibrary={read.reload}
-      />
+      >
+        {#snippet notice()}
+          <UnreadableCaptures
+            captures={tagged?.unreadableRows() ?? []}
+            recognition={container.recognition}
+          />
+        {/snippet}
+      </TagScreen>
     </TagPageData>
   {/snippet}
 </LibraryShelfData>

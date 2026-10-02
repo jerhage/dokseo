@@ -4,7 +4,7 @@
   import { tagCounts } from '../../domain/tag/capture-tags';
   import { everyCaptureQuery } from '../../queries/capture-queries';
   import type { CaptureReads } from '../../queries/capture-queries';
-  import { storedCaptures, storedTags } from '../../queries/store-read';
+  import { storedCaptures, storedTags, unreadableCaptures } from '../../queries/store-read';
   import { tagsQuery } from '../../queries/tag-queries';
   import type { TagReads } from '../../queries/tag-queries';
   import { foundCaptures, foundTags } from './capture-find';
@@ -25,6 +25,7 @@
   const captures = $derived(foundCaptures(found));
   const tags = $derived(foundTags(storedTags(tagList.state)));
   const counted = $derived(tagCounts(captures));
+  const unreadable = $derived(unreadableCaptures(everyCapture.state));
 
   function reload(): void {
     if (!asked) {
@@ -47,6 +48,9 @@
     },
     get tagCounts() {
       return counted;
+    },
+    get unreadable() {
+      return unreadable;
     },
     reload,
   };

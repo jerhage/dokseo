@@ -3,6 +3,7 @@ import type { Anchor } from '$lib/shared/anchor';
 import { isCaptureOrigin } from '$lib/shared/capture-origin';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import { CorruptRow } from '$lib/shared/corrupt-row';
+import { captureId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 
 type CaptureContent = {
@@ -62,6 +63,15 @@ type StoredCapture = {
   readonly tagIds: readonly TagId[];
 };
 
+type UnreadableCapture = { readonly id: CaptureId };
+
+type StoredCaptures = {
+  readonly captures: readonly Capture[];
+  readonly unreadable: readonly UnreadableCapture[];
+};
+
+type RawRow = { readonly id?: unknown };
+
 function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
   const history: CaptureHistory = { createdAt, editedAt: null, tagIds: [] };
 
@@ -105,6 +115,24 @@ function captureFromStored(stored: StoredCapture): Capture {
     .exhaustive();
 }
 
+function unreadableCapture(row: RawRow, cause: unknown): UnreadableCapture {
+  if (typeof row.id !== 'string' || row.id.length === 0) throw cause;
+  return { id: captureId(row.id) };
+}
+
+function capturesFromStored(rows: readonly StoredCapture[]): StoredCaptures {
+  const captures: Capture[] = [];
+  const unreadable: UnreadableCapture[] = [];
+  for (const row of rows) {
+    try {
+      captures.push(captureFromStored(row));
+    } catch (cause) {
+      unreadable.push(unreadableCapture(row, cause));
+    }
+  }
+  return { captures, unreadable };
+}
+
 function editedText(previous: string, text: string, origin: CaptureOrigin): string {
   const trimmed = text.trim();
   if (trimmed.length > 0) return trimmed;
@@ -132,6 +160,7 @@ function oldestFirst(captures: readonly Capture[]): readonly Capture[] {
 export {
   takenCapture,
   captureFromStored,
+  capturesFromStored,
   editedText,
   editedCapture,
   notedCapture,
@@ -146,4 +175,6 @@ export type {
   RecognizedCapture,
   WrittenCapture,
   StoredCapture,
+  StoredCaptures,
+  UnreadableCapture,
 };

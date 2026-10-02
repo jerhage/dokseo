@@ -28,6 +28,7 @@ function readOf(tagCounts: ReadonlyMap<TagId, number>, reloads: string[]): Captu
     captures: [CAPTURE],
     tags: [TAG],
     tagCounts,
+    unreadable: [],
     reload: () => reloads.push('reload'),
   };
 }

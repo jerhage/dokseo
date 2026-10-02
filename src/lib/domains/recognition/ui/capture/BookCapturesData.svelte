@@ -4,7 +4,7 @@
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { capturesQuery } from '../../queries/capture-queries';
   import type { BookCaptureReads } from '../../queries/capture-queries';
-  import { storedCaptures, storedTags } from '../../queries/store-read';
+  import { storedCaptures, storedTags, unreadableCaptures } from '../../queries/store-read';
   import { tagsQuery } from '../../queries/tag-queries';
   import type { TagReads } from '../../queries/tag-queries';
   import { foundCaptures, foundTags } from './capture-find';
@@ -26,6 +26,7 @@
   const held = $derived(captureReadOf(captures, tags));
   const rows = $derived(foundCaptures(captures));
   const named = $derived(foundTags(tags));
+  const unreadable = $derived(unreadableCaptures(listed.state));
   const settled = $derived(book !== null && listed.state.kind !== 'loading' ? book : null);
 
   $effect(() => {
@@ -47,6 +48,9 @@
     },
     get tags() {
       return named;
+    },
+    get unreadable() {
+      return unreadable;
     },
     reload,
   };

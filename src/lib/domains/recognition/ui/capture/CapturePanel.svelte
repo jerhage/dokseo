@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import type { Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
@@ -39,9 +40,10 @@
     readonly source: CaptureSource;
     readonly visible: boolean;
     readonly onSeek?: (passage: TextAnchor) => void;
+    readonly notice?: Snippet;
   };
 
-  let { view, panel, language, source, visible, onSeek }: Props = $props();
+  let { view, panel, language, source, visible, onSeek, notice }: Props = $props();
 
   const uid = $props.id();
 
@@ -194,6 +196,8 @@
         {#if panel.mismatch !== null}
           <Alert variant="warning">{panel.mismatch}</Alert>
         {/if}
+
+        {@render notice?.()}
       {/snippet}
 
       {#snippet children(shown)}

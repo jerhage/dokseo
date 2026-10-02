@@ -7,6 +7,7 @@ import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import {
   captureFromStored,
+  capturesFromStored,
   editedCapture,
   notedCapture,
   oldestFirst,
@@ -392,5 +393,32 @@ describe('oldestFirst', () => {
     oldestFirst(given);
 
     expect(given.map((capture) => capture.id)).toEqual(['c', 'a']);
+  });
+});
+
+describe('capturesFromStored', () => {
+  const kept = {
+    id: captureId('kept'),
+    bookId: BOOK,
+    anchor: ANCHOR,
+    text: 'こっちに来て',
+    createdAt: 1,
+    editedAt: null,
+    origin: 'written',
+    tagIds: [],
+  } satisfies StoredCapture;
+
+  it('reports a row whose mapping throws as unreadable by its id and keeps the rows that read', () => {
+    const anchorless = { ...kept, id: 'old', anchor: undefined } as unknown as StoredCapture;
+    const read = capturesFromStored([kept, anchorless]);
+
+    expect(read.captures.map((capture) => capture.id)).toEqual(['kept']);
+    expect(read.unreadable).toEqual([{ id: 'old' }]);
+  });
+
+  it('rethrows the mapping failure of a row without an id', () => {
+    const nameless = { ...kept, id: 7, anchor: { kind: 'page' } } as unknown as StoredCapture;
+
+    expect(() => capturesFromStored([nameless])).toThrow(CorruptRow);
   });
 });

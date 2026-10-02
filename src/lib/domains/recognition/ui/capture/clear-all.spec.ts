@@ -34,6 +34,7 @@ function opened(): { list: CaptureList; clearing: ClearAll } {
     state: READ,
     captures: [],
     tags: [],
+    unreadable: [],
     reload: () => undefined,
   }));
   list.open(ONE);

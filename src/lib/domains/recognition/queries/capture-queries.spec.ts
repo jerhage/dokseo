@@ -50,17 +50,18 @@ const READ_CAPTURE: NotableCapture = {
 describe('everyCaptureQuery', () => {
   it('readies every capture in the library', async () => {
     const read = everyCaptureQuery({
-      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [CAPTURE] }),
+      listEveryCapture: () =>
+        Promise.resolve({ kind: 'success', captures: [CAPTURE], unreadable: [] }),
     });
 
     expect(await observedRead(createTestQueryClient(), read)).toEqual(
-      readReady({ kind: 'success', captures: [CAPTURE] }),
+      readReady({ kind: 'success', captures: [CAPTURE], unreadable: [] }),
     );
   });
 
   it('files the read under the recognition root, stale at once', () => {
     const read = everyCaptureQuery({
-      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [] }),
+      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [], unreadable: [] }),
     });
 
     expect(read.queryKey).toEqual(recognitionKeys.everyCapture());
@@ -76,21 +77,21 @@ describe('capturesQuery', () => {
       {
         listCaptures: (book) => {
           asked.push(book);
-          return Promise.resolve({ kind: 'success', captures: [CAPTURE] });
+          return Promise.resolve({ kind: 'success', captures: [CAPTURE], unreadable: [] });
         },
       },
       bookId('one'),
     );
 
     expect(await observedRead(createTestQueryClient(), read)).toEqual(
-      readReady({ kind: 'success', captures: [CAPTURE] }),
+      readReady({ kind: 'success', captures: [CAPTURE], unreadable: [] }),
     );
     expect(asked).toEqual(['one']);
   });
 
   it('files each book under its own key below the recognition root, stale at once', () => {
     const read = capturesQuery(
-      { listCaptures: () => Promise.resolve({ kind: 'success', captures: [] }) },
+      { listCaptures: () => Promise.resolve({ kind: 'success', captures: [], unreadable: [] }) },
       bookId('one'),
     );
 
@@ -102,7 +103,7 @@ describe('capturesQuery', () => {
 
   it('reads nothing while no book is open', () => {
     const read = capturesQuery(
-      { listCaptures: () => Promise.resolve({ kind: 'success', captures: [] }) },
+      { listCaptures: () => Promise.resolve({ kind: 'success', captures: [], unreadable: [] }) },
       null,
     );
 
@@ -194,7 +195,7 @@ describe('storedCaptures', () => {
     { state: LOADING, expected: LOADING },
     { state: readFailed('broke'), expected: readFailed('broke') },
     {
-      state: readReady({ kind: 'success' as const, captures: [CAPTURE] }),
+      state: readReady({ kind: 'success' as const, captures: [CAPTURE], unreadable: [] }),
       expected: readReady([CAPTURE]),
     },
     {

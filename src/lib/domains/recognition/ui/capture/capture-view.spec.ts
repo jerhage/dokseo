@@ -161,6 +161,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         Promise.resolve({
           kind: 'success',
           captures: store.rows.filter((row) => row.bookId === book),
+          unreadable: [],
         }),
       listEveryCapture: unused,
       saveCapture: unused,
@@ -169,6 +170,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       writeCaptureNote: unused,
       removeCapture: unused,
       restoreCapture: unused,
+      removeUnreadableCaptures: unused,
       clearCaptures: unused,
       listTags: () => Promise.resolve({ kind: 'success', tags: tags.rows }),
       createTag: unused,
@@ -275,6 +277,7 @@ function listingOf(world: Fakes, book: BookId | null): CaptureListing {
     state: READ,
     captures: world.store.rows.filter((row) => row.bookId === book),
     tags: world.tags.rows,
+    unreadable: [],
     reload: () => undefined,
   };
 }

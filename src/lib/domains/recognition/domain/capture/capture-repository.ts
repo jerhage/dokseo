@@ -1,9 +1,13 @@
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
-import type { Capture } from './capture';
+import type { Capture, UnreadableCapture } from './capture';
 
 type CaptureListing =
-  | { readonly kind: 'success'; readonly captures: readonly Capture[] }
+  | {
+      readonly kind: 'success';
+      readonly captures: readonly Capture[];
+      readonly unreadable: readonly UnreadableCapture[];
+    }
   | StorageUnavailable;
 
 type CaptureWrite = { readonly kind: 'success' } | StorageUnavailable;

@@ -43,7 +43,7 @@ function row(id: string, text = id, book = ONE): Capture {
 const UNAVAILABLE = { kind: 'storage-unavailable' } as const;
 
 function read(...rows: Capture[]) {
-  return { kind: 'success', captures: rows } as const;
+  return { kind: 'success', captures: rows, unreadable: [] } as const;
 }
 
 describe('withCapture', () => {

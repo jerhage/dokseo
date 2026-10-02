@@ -35,6 +35,7 @@ function opened(): { list: CaptureList; edits: CaptureEdits; notices: Notice[] }
     state: READ,
     captures: [WRITTEN],
     tags: [],
+    unreadable: [],
     reload: () => undefined,
   }));
   list.open(ONE);

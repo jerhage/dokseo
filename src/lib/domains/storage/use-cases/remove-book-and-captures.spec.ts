@@ -36,8 +36,9 @@ function world(outcomes: Outcomes = {}): World {
   const removed: BookId[] = [];
 
   const captures: CaptureRepository = {
-    listForBook: () => Promise.resolve({ kind: 'success', captures: NO_CAPTURES }),
-    listEverything: () => Promise.resolve({ kind: 'success', captures: NO_CAPTURES }),
+    listForBook: () => Promise.resolve({ kind: 'success', captures: NO_CAPTURES, unreadable: [] }),
+    listEverything: () =>
+      Promise.resolve({ kind: 'success', captures: NO_CAPTURES, unreadable: [] }),
     save: () => Promise.reject(new Error('not used')),
     remove: () => Promise.reject(new Error('not used')),
     clearBook: (book) => {

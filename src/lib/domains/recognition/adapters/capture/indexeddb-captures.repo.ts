@@ -7,7 +7,7 @@ import {
 } from '$lib/platform/idb/connection';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { captureFromStored, oldestFirst } from '../../domain/capture/capture';
+import { capturesFromStored, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, StoredCapture } from '../../domain/capture/capture';
 import type {
   CaptureListing,
@@ -24,7 +24,8 @@ import {
 const WRITTEN: CaptureWrite = { kind: 'success' };
 
 function listed(records: readonly StoredCapture[]): CaptureListing {
-  return { kind: 'success', captures: oldestFirst(records.map(captureFromStored)) };
+  const read = capturesFromStored(records);
+  return { kind: 'success', captures: oldestFirst(read.captures), unreadable: read.unreadable };
 }
 
 function createCaptureRepository(): CaptureRepository {

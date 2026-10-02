@@ -83,8 +83,10 @@ function fakes(): Fakes {
         Promise.resolve({
           kind: 'success',
           captures: store.rows.filter((row) => row.bookId === book),
+          unreadable: [],
         }),
-      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [...store.rows] }),
+      listEveryCapture: () =>
+        Promise.resolve({ kind: 'success', captures: [...store.rows], unreadable: [] }),
       saveCapture: (draft: CaptureDraft) => {
         const kept = takenCapture(draft, store.rows.length + 1);
         store.rows = [...store.rows, kept];
@@ -102,6 +104,7 @@ function fakes(): Fakes {
       writeCaptureNote: unused,
       removeCapture: unused,
       restoreCapture: unused,
+      removeUnreadableCaptures: unused,
       clearCaptures: (book: BookId) => {
         store.rows = store.rows.filter((row) => row.bookId !== book);
         return Promise.resolve({ kind: 'success' });
@@ -187,6 +190,7 @@ function viewOf(world: Fakes): CaptureView {
       state: READ,
       captures: world.store.rows.filter((row) => row.bookId === view.list.book),
       tags: world.store.tags,
+      unreadable: [],
       reload: () => undefined,
     }),
     () => undefined,

@@ -283,6 +283,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       writeCaptureNote: () => Promise.reject(new Error('not used')),
       removeCapture: () => Promise.reject(new Error('not used')),
       restoreCapture: () => Promise.reject(new Error('not used')),
+      removeUnreadableCaptures: () => Promise.reject(new Error('not used')),
       clearCaptures: () => Promise.reject(new Error('not used')),
       listTags: () => Promise.reject(new Error('not used')),
       createTag: () => Promise.reject(new Error('not used')),

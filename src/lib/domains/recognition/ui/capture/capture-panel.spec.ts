@@ -125,8 +125,10 @@ function containerOf(store: Store): Container {
         Promise.resolve({
           kind: 'success',
           captures: store.rows.filter((row) => row.bookId === book),
+          unreadable: [],
         }),
-      listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [...store.rows] }),
+      listEveryCapture: () =>
+        Promise.resolve({ kind: 'success', captures: [...store.rows], unreadable: [] }),
       saveCapture: unused,
       writeNote: unused,
       editCaptureText: (capture: Capture, text: string) => {
@@ -146,6 +148,7 @@ function containerOf(store: Store): Container {
         return Promise.resolve({ kind: 'success' });
       },
       restoreCapture: unused,
+      removeUnreadableCaptures: unused,
       clearCaptures: unused,
       listTags: () => Promise.resolve({ kind: 'success', tags: store.tags }),
       createTag: (id: TagId, name: string) => {
@@ -201,6 +204,7 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
       state: READ,
       captures: store.rows.filter((row) => row.bookId === view.list.book),
       tags: store.tags,
+      unreadable: [],
       reload: () => undefined,
     }),
     () => undefined,

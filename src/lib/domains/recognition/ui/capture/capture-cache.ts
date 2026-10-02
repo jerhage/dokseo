@@ -23,13 +23,13 @@ function withCapture(listed: Listed | undefined, capture: Capture): Listed | und
   const captures = held
     ? listed.captures.map((row) => (row.id === capture.id ? capture : row))
     : [...listed.captures, capture];
-  return { kind: 'success', captures };
+  return { ...listed, captures };
 }
 
 function withoutCapture(listed: Listed | undefined, id: CaptureId): Listed | undefined {
   if (listed?.kind !== 'success') return listed;
 
-  return { kind: 'success', captures: listed.captures.filter((row) => row.id !== id) };
+  return { ...listed, captures: listed.captures.filter((row) => row.id !== id) };
 }
 
 function withCaptures(
@@ -40,7 +40,7 @@ function withCaptures(
 
   const held = new Set(listed.captures.map((row) => row.id));
   return {
-    kind: 'success',
+    ...listed,
     captures: [...restored.filter((row) => !held.has(row.id)), ...listed.captures],
   };
 }
@@ -48,7 +48,7 @@ function withCaptures(
 function emptied(listed: Listed | undefined): Listed | undefined {
   if (listed?.kind !== 'success') return listed;
 
-  return { kind: 'success', captures: NOTHING_HELD };
+  return { ...listed, captures: NOTHING_HELD };
 }
 
 function heldRows(listed: Listed | undefined): readonly Capture[] {

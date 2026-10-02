@@ -1,6 +1,7 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import { tick } from 'svelte';
+  import type { Snippet } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import Alert from '$lib/components/Alert.svelte';
@@ -34,6 +35,7 @@
     readonly passages: PassageOrder;
     readonly onopen?: () => void;
     readonly onfollowedInBook?: () => void;
+    readonly notice?: Snippet;
   };
 
   const SCOPES: readonly { readonly value: SearchScope; readonly label: string }[] = [
@@ -53,6 +55,7 @@
     passages,
     onopen,
     onfollowedInBook,
+    notice,
   }: Props = $props();
 
   const palette = new SearchPalette(() => ({
@@ -231,6 +234,10 @@
       <TagToggle pressed={palette.filter === 'tags'} onclick={toggleTags}>Tags</TagToggle>
     </span>
   {/snippet}
+
+  {#if notice !== undefined && find.unreadable.length > 0}
+    <div class="p-3">{@render notice()}</div>
+  {/if}
 
   {#if note.kind === 'unread'}
     <div class="p-3">

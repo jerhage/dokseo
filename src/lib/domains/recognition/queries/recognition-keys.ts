@@ -10,6 +10,7 @@ const recognitionKeys = {
   compute: () => [...ALL, 'compute'] as const,
   tags: () => [...ALL, 'tags'] as const,
   everyCapture: () => [...ALL, 'every-capture'] as const,
+  bookCaptures: () => [...ALL, 'captures'] as const,
   captures: (book: BookId | null) => [...ALL, 'captures', book] as const,
   modelStorages: () => [...ALL, 'model-storage'] as const,
   modelStorage: (modelId: string | null) => [...ALL, 'model-storage', modelId] as const,

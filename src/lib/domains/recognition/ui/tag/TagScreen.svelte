@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import Alert from '$lib/components/Alert.svelte';
   import Badge from '$lib/components/Badge.svelte';
@@ -33,6 +34,7 @@
     readonly covers: ReadonlyMap<BookId, string>;
     readonly libraryFailure: string | null;
     readonly onretrylibrary: () => void;
+    readonly notice?: Snippet;
   };
 
   type Walk = { readonly tag: TagId | null; readonly at: number };
@@ -43,7 +45,7 @@
     { keys: ['⌘↵'], does: 'new tab' },
   ];
 
-  let { view, covers, libraryFailure, onretrylibrary }: Props = $props();
+  let { view, covers, libraryFailure, onretrylibrary, notice }: Props = $props();
 
   let walk = $state.raw<Walk | null>(null);
   let anchors = $state<(HTMLElement | null | undefined)[]>([]);
@@ -125,6 +127,8 @@
         {/snippet}
       </Alert>
     {/if}
+
+    {@render notice?.()}
 
     {#if stage.kind === 'loading'}
       <EmptyState live message="Reading your tags…" />

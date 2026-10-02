@@ -28,8 +28,10 @@ function stored(id: string): Capture {
 function repository(broken = false) {
   let rows: Capture[] = [stored('a'), stored('b')];
   const captures: CaptureRepository = {
-    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: rows }),
-    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: rows }),
+    listForBook: () =>
+      Promise.resolve({ kind: 'success' as const, captures: rows, unreadable: [] }),
+    listEverything: () =>
+      Promise.resolve({ kind: 'success' as const, captures: rows, unreadable: [] }),
     save: () => Promise.resolve({ kind: 'success' as const }),
     remove: (capture: CaptureId) => {
       if (broken) {

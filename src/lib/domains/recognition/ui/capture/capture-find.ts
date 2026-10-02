@@ -1,6 +1,6 @@
 import type { TagId } from '$lib/shared/ids';
 import type { ReadState } from '$lib/shared/read-state';
-import type { Capture } from '../../domain/capture/capture';
+import type { Capture, UnreadableCapture } from '../../domain/capture/capture';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagCounting } from './capture-panel.svelte';
 
@@ -11,6 +11,7 @@ type CaptureFindRead = {
   readonly captures: readonly Capture[];
   readonly tags: readonly Tag[];
   readonly tagCounts: ReadonlyMap<TagId, number>;
+  readonly unreadable: readonly UnreadableCapture[];
   reload(): void;
 };
 

@@ -22,8 +22,10 @@ const ANCHOR: Anchor = regionAnchor(REGIONS);
 function repository(broken = false) {
   const saved: Capture[] = [];
   const captures: CaptureRepository = {
-    listForBook: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
-    listEverything: () => Promise.resolve({ kind: 'success' as const, captures: saved }),
+    listForBook: () =>
+      Promise.resolve({ kind: 'success' as const, captures: saved, unreadable: [] }),
+    listEverything: () =>
+      Promise.resolve({ kind: 'success' as const, captures: saved, unreadable: [] }),
     save: (capture: Capture) => {
       if (broken) return Promise.resolve(STORAGE_UNAVAILABLE);
       saved.push(capture);

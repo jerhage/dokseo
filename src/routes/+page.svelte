@@ -10,6 +10,7 @@
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
   import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
+  import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
@@ -57,7 +58,11 @@
           tags={find.tags}
           covers={shelf.covers}
           counts={shelf.counts}
-        />
+        >
+          {#snippet notice()}
+            <UnreadableCaptures captures={find.unreadable} recognition={container.recognition} />
+          {/snippet}
+        </SearchDialog>
       {/snippet}
     </CaptureFindData>
   {/snippet}

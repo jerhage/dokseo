@@ -7,6 +7,7 @@ import type { EditCaptureTextResult } from '../use-cases/capture/edit-capture-te
 import type { ListCapturesResult } from '../use-cases/capture/list-captures';
 import type { ListEveryCaptureResult } from '../use-cases/capture/list-every-capture';
 import type { RemoveCaptureResult } from '../use-cases/capture/remove-capture';
+import type { RemoveUnreadableCapturesResult } from '../use-cases/capture/remove-unreadable-captures';
 import type { RestoreCaptureResult } from '../use-cases/capture/restore-capture';
 import type { SaveCaptureResult } from '../use-cases/capture/save-capture';
 import type { WriteCaptureNoteResult } from '../use-cases/capture/write-capture-note';
@@ -31,6 +32,9 @@ type CaptureWrites = {
   ) => Promise<WriteCaptureNoteResult<T>>;
   readonly removeCapture: (capture: CaptureId) => Promise<RemoveCaptureResult>;
   readonly restoreCapture: (capture: Capture) => Promise<RestoreCaptureResult>;
+  readonly removeUnreadableCaptures: (
+    ids: readonly CaptureId[],
+  ) => Promise<RemoveUnreadableCapturesResult>;
   readonly clearCaptures: (book: BookId) => Promise<ClearCapturesResult>;
 };
 
@@ -92,6 +96,14 @@ function restoreCaptureMutation(recognition: Pick<CaptureWrites, 'restoreCapture
   });
 }
 
+function removeUnreadableCapturesMutation(
+  recognition: Pick<CaptureWrites, 'removeUnreadableCaptures'>,
+) {
+  return mutationOptions({
+    mutationFn: (ids: readonly CaptureId[]) => recognition.removeUnreadableCaptures(ids),
+  });
+}
+
 function clearCapturesMutation(recognition: Pick<CaptureWrites, 'clearCaptures'>) {
   return mutationOptions({
     mutationFn: (book: BookId) => recognition.clearCaptures(book),
@@ -104,6 +116,7 @@ export {
   editTextMutation,
   everyCaptureQuery,
   removeCaptureMutation,
+  removeUnreadableCapturesMutation,
   restoreCaptureMutation,
   saveCaptureMutation,
   writeCaptureNoteMutation,

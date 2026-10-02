@@ -3,9 +3,10 @@
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { readBoth } from '$lib/shared/read-state';
   import type { ReadState } from '$lib/shared/read-state';
+  import type { UnreadableCapture } from '../../domain/capture/capture';
   import { everyCaptureQuery } from '../../queries/capture-queries';
   import type { CaptureReads } from '../../queries/capture-queries';
-  import { storedCaptures, storedTags } from '../../queries/store-read';
+  import { storedCaptures, storedTags, unreadableCaptures } from '../../queries/store-read';
   import { tagsQuery } from '../../queries/tag-queries';
   import type { TagReads } from '../../queries/tag-queries';
   import { taggedCapturesOf } from './tag-view.svelte';
@@ -24,8 +25,14 @@
     readBoth(storedTags(tagList.state), storedCaptures(everyCapture.state), taggedCapturesOf),
   );
 
+  const unreadable = $derived(unreadableCaptures(everyCapture.state));
+
   export function read(): ReadState<TaggedCaptures> {
     return tagged;
+  }
+
+  export function unreadableRows(): readonly UnreadableCapture[] {
+    return unreadable;
   }
 </script>
 
