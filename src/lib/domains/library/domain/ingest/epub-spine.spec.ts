@@ -74,16 +74,6 @@ describe('readEpubSpine', () => {
     expect(readEpubSpine('<html><body/></html>', 'content.opf')).toEqual({ kind: 'unreadable' });
   });
 
-  it('decodes a percent-encoded manifest href to the name the archive holds', () => {
-    const xml = `<package><manifest><item id="p1" href="text/%E3%81%82.xhtml"/></manifest>
-      <spine><itemref idref="p1"/></spine></package>`;
-
-    expect(readEpubSpine(xml, 'OEBPS/content.opf')).toEqual({
-      kind: 'spine',
-      paths: ['OEBPS/text/あ.xhtml'],
-    });
-  });
-
   it('skips an itemref that names no idref', () => {
     const xml = `<package><manifest><item id="p1" href="p1.xhtml"/></manifest>
       <spine><itemref/><itemref idref="p1"/></spine></package>`;

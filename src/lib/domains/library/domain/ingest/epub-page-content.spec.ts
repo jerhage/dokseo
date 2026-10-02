@@ -4,13 +4,22 @@ import { readPageContent } from './epub-page-content';
 const PAGE = 'OEBPS/text/001.xhtml';
 
 describe('readPageContent', () => {
-  it('resolves a page that is one img against the page it sits in', () => {
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  it.each([
+    [
+      'is one img',
+      `<?xml version="1.0" encoding="UTF-8"?>
       <html xmlns="http://www.w3.org/1999/xhtml">
         <head><title>Page 1</title></head>
         <body><img src="../images/001.jpg" alt=""/></body>
-      </html>`;
-
+      </html>`,
+    ],
+    [
+      'wraps its image in divs',
+      `<html><body><div class="page"><div class="frame">
+      <img src="../images/001.jpg"/>
+    </div></div></body></html>`,
+    ],
+  ])('resolves a page that %s against the page it sits in', (_, xml) => {
     expect(readPageContent(xml, PAGE)).toEqual({
       kind: 'one-image',
       path: 'OEBPS/images/001.jpg',
@@ -32,32 +41,22 @@ describe('readPageContent', () => {
     });
   });
 
-  it('resolves a page that wraps its image in divs', () => {
-    const xml = `<html><body><div class="page"><div class="frame">
-      <img src="../images/001.jpg"/>
-    </div></div></body></html>`;
-
-    expect(readPageContent(xml, PAGE)).toEqual({
-      kind: 'one-image',
-      path: 'OEBPS/images/001.jpg',
-    });
-  });
-
-  it('counts a page holding two images', () => {
-    const xml = `<html><body>
+  it.each([
+    [
+      'two imgs',
+      `<html><body>
       <img src="../images/001.jpg"/>
       <img src="../images/002.jpg"/>
-    </body></html>`;
-
-    expect(readPageContent(xml, PAGE)).toEqual({ kind: 'many-images', count: 2 });
-  });
-
-  it('counts an img beside an SVG image as two', () => {
-    const xml = `<html><body>
+    </body></html>`,
+    ],
+    [
+      'an img beside an SVG image',
+      `<html><body>
       <img src="../images/001.jpg"/>
       <svg><image href="../images/002.jpg"/></svg>
-    </body></html>`;
-
+    </body></html>`,
+    ],
+  ])('counts a page holding %s as two images', (_, xml) => {
     expect(readPageContent(xml, PAGE)).toEqual({ kind: 'many-images', count: 2 });
   });
 
@@ -100,13 +99,16 @@ describe('readPageContent', () => {
     });
   });
 
-  it('shortens a long text to an excerpt', () => {
-    const long = 'あ'.repeat(120);
+  it.each([
+    ['あ'.repeat(120), `${'あ'.repeat(48)}…`],
+    [`${'あ'.repeat(47)} ${'い'.repeat(60)}`, `${'あ'.repeat(47)}…`],
+  ])('shortens a long text to an excerpt, trimming a space at the cut', (long, excerpt) => {
     const xml = `<html><body><img src="001.jpg"/><p>${long}</p></body></html>`;
 
-    const content = readPageContent(xml, PAGE);
-
-    expect(content.kind).toBe('text-beside-the-image');
-    expect(content.kind === 'text-beside-the-image' && content.text.length).toBe(49);
+    expect(readPageContent(xml, PAGE)).toEqual({
+      kind: 'text-beside-the-image',
+      path: 'OEBPS/text/001.jpg',
+      text: excerpt,
+    });
   });
 });

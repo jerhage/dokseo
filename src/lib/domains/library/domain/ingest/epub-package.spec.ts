@@ -60,14 +60,18 @@ describe('readEpubPackage', () => {
     });
   });
 
-  it('calls a book with no rendition:layout reflowable', () => {
-    expect(readEpubPackage(EPUB_TWO)?.layout).toBe('reflowable');
-  });
-
-  it('ignores a name-and-content meta, because the layout is a property and its text', () => {
-    const named =
-      '<package><metadata><meta name="rendition:layout" content="pre-paginated"/></metadata></package>';
-    expect(readEpubPackage(named)?.layout).toBe('reflowable');
+  it.each([
+    ['with no rendition:layout', EPUB_TWO],
+    [
+      'whose layout sits in a name-and-content meta rather than a property and its text',
+      '<package><metadata><meta name="rendition:layout" content="pre-paginated"/></metadata></package>',
+    ],
+    [
+      'with an unrecognised rendition:layout value',
+      '<package><metadata><meta property="rendition:layout">scrolled</meta></metadata></package>',
+    ],
+  ])('calls a book %s reflowable', (_, xml) => {
+    expect(readEpubPackage(xml)?.layout).toBe('reflowable');
   });
 
   it('calls a spine with no page-progression-direction default', () => {
@@ -93,12 +97,6 @@ describe('readEpubPackage', () => {
   it('reports an empty title element as null rather than as an empty title', () => {
     const empty = '<package><metadata><dc:title>  </dc:title></metadata></package>';
     expect(readEpubPackage(empty)?.title).toBe(null);
-  });
-
-  it('calls an unrecognised rendition:layout value reflowable', () => {
-    const scrolled =
-      '<package><metadata><meta property="rendition:layout">scrolled</meta></metadata></package>';
-    expect(readEpubPackage(scrolled)?.layout).toBe('reflowable');
   });
 
   it('reads the direction whatever case it was written in', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blocksReading, bookProtection } from './epub-protection';
+import type { BookProtection } from './epub-protection';
 
 const ORDINARY = ['META-INF/container.xml', 'OEBPS/content.opf', 'OEBPS/page1.xhtml'];
 
@@ -36,13 +37,6 @@ describe('bookProtection', () => {
     });
   });
 
-  it('reports a rights file as rights-managed without reading anything else', () => {
-    const names = [...ORDINARY, 'META-INF/rights.xml'];
-    expect(bookProtection({ entryNames: names, encryptionXml: null })).toEqual({
-      kind: 'rights-managed',
-    });
-  });
-
   it('reports a rights file as rights-managed even beside obfuscated fonts', () => {
     const names = [...ORDINARY, 'META-INF/rights.xml', 'META-INF/encryption.xml'];
     expect(bookProtection({ entryNames: names, encryptionXml: OBFUSCATED_FONT })).toEqual({
@@ -50,19 +44,14 @@ describe('bookProtection', () => {
     });
   });
 
-  it('tells the IDPF font obfuscation algorithm from encryption', () => {
+  it.each([
+    ['IDPF', OBFUSCATED_FONT, 'http://www.idpf.org/2008/embedding'],
+    ['Adobe', ADOBE_OBFUSCATED_FONT, 'http://ns.adobe.com/pdf/enc#RC4SHA1'],
+  ])('tells the %s font obfuscation algorithm from encryption', (_, encryptionXml, algorithm) => {
     const names = [...ORDINARY, 'META-INF/encryption.xml'];
-    expect(bookProtection({ entryNames: names, encryptionXml: OBFUSCATED_FONT })).toEqual({
+    expect(bookProtection({ entryNames: names, encryptionXml })).toEqual({
       kind: 'obfuscated-fonts',
-      algorithms: ['http://www.idpf.org/2008/embedding'],
-    });
-  });
-
-  it("tells Adobe's font obfuscation algorithm from its DRM", () => {
-    const names = [...ORDINARY, 'META-INF/encryption.xml'];
-    expect(bookProtection({ entryNames: names, encryptionXml: ADOBE_OBFUSCATED_FONT })).toEqual({
-      kind: 'obfuscated-fonts',
-      algorithms: ['http://ns.adobe.com/pdf/enc#RC4SHA1'],
+      algorithms: [algorithm],
     });
   });
 
@@ -121,13 +110,12 @@ describe('bookProtection', () => {
 });
 
 describe('blocksReading', () => {
-  it('lets an unprotected book and one with obfuscated fonts through', () => {
-    expect(blocksReading({ kind: 'unprotected' })).toBe(false);
-    expect(blocksReading({ kind: 'obfuscated-fonts', algorithms: ['x'] })).toBe(false);
-  });
-
-  it('stops a rights-managed book and an encrypted one', () => {
-    expect(blocksReading({ kind: 'rights-managed' })).toBe(true);
-    expect(blocksReading({ kind: 'encrypted', algorithms: ['x'] })).toBe(true);
+  it.each<[BookProtection, boolean]>([
+    [{ kind: 'unprotected' }, false],
+    [{ kind: 'obfuscated-fonts', algorithms: ['x'] }, false],
+    [{ kind: 'rights-managed' }, true],
+    [{ kind: 'encrypted', algorithms: ['x'] }, true],
+  ])('answers whether %j stops the book from being read: %s', (protection, blocked) => {
+    expect(blocksReading(protection)).toBe(blocked);
   });
 });

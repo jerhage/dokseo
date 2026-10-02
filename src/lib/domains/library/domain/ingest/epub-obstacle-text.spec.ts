@@ -30,12 +30,14 @@ describe('describePageObstacle', () => {
     expect(said).toContain('あとがき');
   });
 
-  it('spells every obstacle in words, never as the name of its variant', () => {
+  it('spells every obstacle in words, never as the name of its variant, naming each field it carries', () => {
     for (const obstacle of OBSTACLES) {
       const said = describePageObstacle(obstacle);
+      const fields = Object.entries(obstacle).filter(([name]) => name !== 'kind');
 
       expect(said).not.toContain(obstacle.kind);
       expect(said.endsWith('.')).toBe(true);
+      for (const [, value] of fields) expect(said).toContain(String(value));
     }
   });
 });

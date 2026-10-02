@@ -10,12 +10,11 @@ describe('resolveHref', () => {
     expect(resolveHref('content.opf', 'images/001.jpg')).toBe('images/001.jpg');
   });
 
-  it('climbs out of the base directory for a dot-dot step', () => {
-    expect(resolveHref('OEBPS/text/001.xhtml', '../images/001.jpg')).toBe('OEBPS/images/001.jpg');
-  });
-
-  it('climbs twice for two dot-dot steps', () => {
-    expect(resolveHref('a/b/c/page.xhtml', '../../images/001.jpg')).toBe('a/images/001.jpg');
+  it.each([
+    ['OEBPS/text/001.xhtml', '../images/001.jpg', 'OEBPS/images/001.jpg'],
+    ['a/b/c/page.xhtml', '../../images/001.jpg', 'a/images/001.jpg'],
+  ])('climbs out of the directory of %s once for each dot-dot step of %s', (base, href, path) => {
+    expect(resolveHref(base, href)).toBe(path);
   });
 
   it('stops at the root rather than climbing past it', () => {

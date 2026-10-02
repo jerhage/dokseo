@@ -17,18 +17,17 @@ const PREFIXED = `<?xml version="1.0" encoding="UTF-8"?>
 </ocf:container>`;
 
 describe('packagePathFromContainer', () => {
-  it('reads the package path out of the rootfile', () => {
+  it('reads the package path out of the rootfile, subdirectories and escapes included', () => {
+    const nested =
+      '<container><rootfiles><rootfile full-path="a/b/c/book.opf"/></rootfiles></container>';
+    const escaped = '<container><rootfile full-path="OEBPS/a&amp;b.opf"/></container>';
     expect(packagePathFromContainer(PLAIN)).toBe('OEBPS/content.opf');
+    expect(packagePathFromContainer(nested)).toBe('a/b/c/book.opf');
+    expect(packagePathFromContainer(escaped)).toBe('OEBPS/a&b.opf');
   });
 
   it('reads a namespace-prefixed container with the attributes in the other order', () => {
     expect(packagePathFromContainer(PREFIXED)).toBe('item/standard.opf');
-  });
-
-  it('keeps the subdirectory the package sits in', () => {
-    const xml =
-      '<container><rootfiles><rootfile full-path="a/b/c/book.opf"/></rootfiles></container>';
-    expect(packagePathFromContainer(xml)).toBe('a/b/c/book.opf');
   });
 
   it('strips a leading slash or dot-slash from the path', () => {
@@ -36,11 +35,6 @@ describe('packagePathFromContainer', () => {
     const relative = '<container><rootfile full-path="./content.opf"/></container>';
     expect(packagePathFromContainer(rooted)).toBe('OEBPS/content.opf');
     expect(packagePathFromContainer(relative)).toBe('content.opf');
-  });
-
-  it('decodes an escaped path', () => {
-    const xml = '<container><rootfile full-path="OEBPS/a&amp;b.opf"/></container>';
-    expect(packagePathFromContainer(xml)).toBe('OEBPS/a&b.opf');
   });
 
   it('skips a rootfile of another media type and takes the package one', () => {
