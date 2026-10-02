@@ -47,7 +47,7 @@ type MarqueeDragHost = {
   readonly ondraw: (selection: MarqueeRect) => void;
   readonly onend: (end: MarqueeEnd, stroke: MarqueeStroke) => void;
   readonly onrefuse: (refusal: MarqueeRefusal) => void;
-  readonly onclick: () => void;
+  readonly onclick: (at: MarqueePoint) => void;
   readonly ondismiss: () => void;
 };
 
@@ -129,7 +129,7 @@ class MarqueeDrag {
 
     const end = marqueeEnd(from, to, this.#host.slop(pointerType), this.#host.minimum());
     this.#host.onend(end, { from, to, surface });
-    if (clicks && endsInClick(end)) this.#host.onclick();
+    if (clicks && endsInClick(end)) this.#host.onclick(to);
   }
 
   followScroll(by: MarqueePoint): void {
@@ -206,7 +206,7 @@ class MarqueeDrag {
     if (watching !== null && watching.id === id) {
       this.#watch = null;
       if (!watching.strayed && stayedPut(watching.from, at, this.#host.minimum())) {
-        this.#host.onclick();
+        this.#host.onclick(at);
       }
       return;
     }

@@ -110,6 +110,48 @@ test('reports a finished drag in a spread as a selection and never as a tap', as
   expect(onTap).not.toHaveBeenCalled();
 });
 
+test('turns the page on a mouse click at either edge and toggles the bars only between them', async () => {
+  holdPointer();
+  const onTap = vi.fn();
+  const onTurn = vi.fn();
+  const { container } = await render(PagedViewer, {
+    props: {
+      pages: [imageIndex(0)],
+      direction: 'ltr' as const,
+      pageFit: 'height' as const,
+      pictureAt,
+      measured: (_index: ImageIndex) => undefined,
+      chromeShown: false,
+      turns: 'swipe-only' as const,
+      select: () => undefined,
+      clear: () => undefined,
+      onTap,
+      onFit: () => undefined,
+      onTurn,
+    },
+  });
+  sized(container);
+  await drawnPage(container);
+
+  const frame = container.querySelector('.paged-viewer .frame');
+  if (frame === null) throw new Error('The viewer rendered no frame');
+  const box = frame.getBoundingClientRect();
+  const across = (share: number): Point => ({
+    x: box.left + box.width * share,
+    y: box.top + box.height / 2,
+  });
+
+  drag(frame, across(0.95), across(0.95));
+  expect(onTurn).toHaveBeenLastCalledWith('increment');
+  drag(frame, across(0.05), across(0.05));
+  expect(onTurn).toHaveBeenLastCalledWith('decrement');
+  expect(onTap).not.toHaveBeenCalled();
+
+  drag(frame, across(0.5), across(0.5));
+  expect(onTap).toHaveBeenCalledTimes(1);
+  expect(onTurn).toHaveBeenCalledTimes(2);
+});
+
 test('reports a finished mouse drag in a strip as a selection and never as a tap', async () => {
   holdPointer();
   const select = vi.fn();

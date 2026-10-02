@@ -29,7 +29,7 @@
     readonly suppressed?: boolean;
     readonly select: (regions: readonly ImageRegion[]) => void;
     readonly clear: () => void;
-    readonly tap: () => void;
+    readonly tap: (at: Point) => void;
   };
 
   let {

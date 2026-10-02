@@ -15,7 +15,7 @@ type Recorded = {
   readonly draws: MarqueeRect[];
   readonly ends: { readonly end: MarqueeEnd; readonly stroke: MarqueeStroke }[];
   readonly refusals: MarqueeRefusal[];
-  readonly clicks: number[];
+  readonly clicks: MarqueePoint[];
   readonly dismissals: number[];
   readonly released: number[];
 };
@@ -63,8 +63,8 @@ function rig(setup: Setup = {}): { readonly drag: MarqueeDrag; readonly seen: Re
     onrefuse: (refusal) => {
       seen.refusals.push(refusal);
     },
-    onclick: () => {
-      seen.clicks.push(1);
+    onclick: (at) => {
+      seen.clicks.push(at);
     },
     ondismiss: () => {
       seen.dismissals.push(1);
@@ -154,7 +154,7 @@ describe('MarqueeDrag move and lift', () => {
     drag.lift(1, { x: 51, y: 61 }, 'mouse');
 
     expect(seen.ends.map(({ end }) => end.kind)).toEqual(['click']);
-    expect(seen.clicks).toHaveLength(1);
+    expect(seen.clicks).toEqual([{ x: 51, y: 61 }]);
   });
 
   it('measures the slop of the lifting pointer type', () => {
@@ -206,7 +206,7 @@ describe('MarqueeDrag watch', () => {
     drag.move(3, { x: 52, y: 62 });
     drag.lift(3, { x: 52, y: 62 }, 'mouse');
 
-    expect(seen.clicks).toHaveLength(1);
+    expect(seen.clicks).toEqual([{ x: 52, y: 62 }]);
     expect(seen.ends).toHaveLength(0);
     expect(drag.dragging).toBe(false);
   });

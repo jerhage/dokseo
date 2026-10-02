@@ -21,6 +21,7 @@
   import SwipeLine from '$lib/shared/SwipeLine.svelte';
   import { TouchGuide } from '$lib/shared/touch-guide.svelte';
   import type { PageGroup } from '../domain/page-pairing';
+  import type { Point } from '../domain/selection';
   import type { ViewportFit } from '../domain/viewport';
   import { inputKind } from './gesture-hint';
   import { GrabPan } from './grab-pan.svelte';
@@ -28,6 +29,7 @@
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
+  import { pageClick } from './page-click';
   import type { PageMove } from './page-moves';
   import { PagedViewport } from './paged-viewport.svelte';
   import { moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
@@ -295,6 +297,13 @@
     feed(gestures.sample(kind, event));
   }
 
+  function clicked(at: Point): void {
+    match(pageClick(at.x, frameSpan(), direction))
+      .with({ kind: 'turn' }, ({ move }) => onTurn?.(move))
+      .with({ kind: 'toggle-chrome' }, () => onTap())
+      .exhaustive();
+  }
+
   function oncontextmenu(event: MouseEvent): void {
     if (lastPointer === 'touch') event.preventDefault();
   }
@@ -504,7 +513,7 @@
       suppressed={pan.spaceHeld}
       select={selected}
       {clear}
-      tap={onTap}
+      tap={clicked}
     />
 
     <KeyHints

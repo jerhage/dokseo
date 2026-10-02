@@ -22,7 +22,7 @@
     readonly ondraw?: (selection: MarqueeRect) => void;
     readonly onend?: (end: MarqueeEnd, stroke: MarqueeStroke) => void;
     readonly onrefuse?: (refusal: MarqueeRefusal) => void;
-    readonly onclick?: () => void;
+    readonly onclick?: (at: MarqueePoint) => void;
     readonly ondismiss?: () => void;
   };
 
@@ -55,7 +55,7 @@
     ondraw: (selection) => ondraw?.(selection),
     onend: (end, stroke) => onend?.(end, stroke),
     onrefuse: (refusal) => onrefuse?.(refusal),
-    onclick: () => onclick?.(),
+    onclick: (at) => onclick?.(at),
     ondismiss: () => ondismiss?.(),
   });
 
