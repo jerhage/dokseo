@@ -2,61 +2,43 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING } from './book';
+import { DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
 import { CorruptRow } from '$lib/shared/corrupt-row';
-import {
-  bookFromStored,
-  FALLBACK_DIRECTION,
-  FALLBACK_LANGUAGE,
-  NO_CONTENT_HASH,
-  NO_FILE_NAME,
-} from './stored-book';
+import { bookFromStored, FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from './stored-book';
 import type { StoredBook } from './stored-book';
 
-const legacy: StoredBook = {
+const row: StoredBook = {
   id: bookId('b-1'),
   title: 'Yotsuba&! 1',
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
+  pagePairing: 'single',
+  pageFit: 'width',
   sourceKind: 'archive',
+  contentHash: contentHash('9f86d081'),
+  fileName: 'Yotsuba&! 1.cbz',
   imageCount: 182,
   addedAt: 1758240000000,
-  position: imageIndex(3),
+  position: imagePlace(imageIndex(3), imageIndex(4), 0.35),
+  lastReadAt: 1758300000000,
+  finishedAt: null,
 };
 
 describe('bookFromStored', () => {
-  it('fills the default pairing when the stored record lacks one', () => {
-    expect(bookFromStored(legacy).pagePairing).toBe(DEFAULT_PAGE_PAIRING);
-  });
-
   it('keeps a stored pairing that is present', () => {
     for (const pairing of PAGE_PAIRINGS) {
-      expect(bookFromStored({ ...legacy, pagePairing: pairing }).pagePairing).toBe(pairing);
+      expect(bookFromStored({ ...row, pagePairing: pairing }).pagePairing).toBe(pairing);
     }
     expect(PAGE_PAIRINGS).toEqual(['single', 'double', 'double-after-cover']);
   });
 
-  it('fills the fit from the layout kind when the stored record lacks one', () => {
-    expect(bookFromStored(legacy).pageFit).toBe('height');
-    expect(bookFromStored({ ...legacy, layoutKind: 'continuous' }).pageFit).toBe('width');
-  });
-
   it('keeps a stored fit that is present', () => {
-    expect(bookFromStored({ ...legacy, pageFit: 'width' }).pageFit).toBe('width');
-    expect(bookFromStored({ ...legacy, layoutKind: 'continuous', pageFit: 'height' }).pageFit).toBe(
+    expect(bookFromStored({ ...row, pageFit: 'width' }).pageFit).toBe('width');
+    expect(bookFromStored({ ...row, layoutKind: 'continuous', pageFit: 'height' }).pageFit).toBe(
       'height',
     );
-  });
-
-  it('reads a stored number as the image it names', () => {
-    expect(bookFromStored(legacy).position).toEqual({
-      kind: 'image',
-      index: 3,
-      shownThrough: 3,
-      offset: 0,
-    });
   });
 
   it.each([
@@ -72,36 +54,13 @@ describe('bookFromStored', () => {
       { index: 3, shownThrough: 4, offset: 0.35 },
     ],
   ])('reads a stored image place back %s', (_, position, expected) => {
-    const stored: StoredBook = { ...legacy, position };
+    const stored: StoredBook = { ...row, position };
     expect(bookFromStored(stored).position).toEqual({ kind: 'image', ...expected });
-  });
-
-  it('reads an image place stored before the last shown image as showing its own image', () => {
-    const stored: StoredBook = { ...legacy, position: { kind: 'image', index: imageIndex(12) } };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'image',
-      index: 12,
-      shownThrough: 12,
-      offset: 0,
-    });
-  });
-
-  it('reads an image place stored before the offset as the top of its image', () => {
-    const stored: StoredBook = {
-      ...legacy,
-      position: { kind: 'image', index: imageIndex(12), shownThrough: imageIndex(13) },
-    };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'image',
-      index: 12,
-      shownThrough: 13,
-      offset: 0,
-    });
   });
 
   it('reads a stored offset outside the image back inside it', () => {
     const stored: StoredBook = {
-      ...legacy,
+      ...row,
       position: { kind: 'image', index: imageIndex(12), shownThrough: imageIndex(12), offset: 7 },
     };
     expect(bookFromStored(stored).position).toEqual({
@@ -112,25 +71,9 @@ describe('bookFromStored', () => {
     });
   });
 
-  it('reads a text place written before fractions as holding no fraction', () => {
-    const stored: StoredBook = {
-      ...legacy,
-      layoutKind: 'flow',
-      sourceKind: 'epub',
-      imageCount: 0,
-      position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' },
-    };
-
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'text',
-      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
-      fraction: null,
-    });
-  });
-
   it.each([0.37, null])('keeps a stored fraction of %s, or its absence, as it is', (fraction) => {
     const stored: StoredBook = {
-      ...legacy,
+      ...row,
       position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', fraction),
     };
 
@@ -143,7 +86,7 @@ describe('bookFromStored', () => {
 
   it('reads a stored fraction the book could never have reached as no fraction', () => {
     const stored: StoredBook = {
-      ...legacy,
+      ...row,
       position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: Number.NaN },
     };
 
@@ -154,86 +97,59 @@ describe('bookFromStored', () => {
     });
   });
 
-  it('reads the first image rather than treating the stored zero as absent', () => {
-    expect(bookFromStored({ ...legacy, position: imageIndex(0) }).position).toEqual({
-      kind: 'image',
-      index: 0,
-      shownThrough: 0,
-      offset: 0,
-    });
-  });
-
-  it('reads a record written before fingerprints as holding no content hash', () => {
-    expect(bookFromStored(legacy).contentHash).toBe(NO_CONTENT_HASH);
-  });
-
-  it('gives a record written before fingerprints a hash no file can be given', () => {
-    expect(NO_CONTENT_HASH).toBe('');
-  });
-
   it('keeps a stored content hash that is present', () => {
-    const stored: StoredBook = { ...legacy, contentHash: contentHash('9f86d081') };
+    const stored: StoredBook = { ...row, contentHash: contentHash('a1b2c3d4') };
 
-    expect(bookFromStored(stored).contentHash).toBe('9f86d081');
-  });
-
-  it('reads a record stored before file names with no file name', () => {
-    expect(bookFromStored(legacy).fileName).toBe(NO_FILE_NAME);
-    expect(NO_FILE_NAME).toBe('');
+    expect(bookFromStored(stored).contentHash).toBe('a1b2c3d4');
   });
 
   it('keeps a stored file name that is present', () => {
-    expect(bookFromStored({ ...legacy, fileName: 'Yotsuba&! 1.cbz' }).fileName).toBe(
-      'Yotsuba&! 1.cbz',
+    expect(bookFromStored({ ...row, fileName: 'Yotsuba&! 2.cbz' }).fileName).toBe(
+      'Yotsuba&! 2.cbz',
     );
   });
 
   it('leaves every other field exactly as stored', () => {
     const expected: Book = {
-      ...legacy,
+      id: bookId('b-1'),
+      title: 'Yotsuba&! 1',
       language: 'ja',
       layoutKind: 'paged',
       direction: 'rtl',
+      pagePairing: 'single',
+      pageFit: 'width',
       sourceKind: 'archive',
-      pagePairing: DEFAULT_PAGE_PAIRING,
-      pageFit: defaultPageFit('paged'),
-      position: imagePlace(imageIndex(3)),
-      contentHash: NO_CONTENT_HASH,
-      fileName: NO_FILE_NAME,
-      lastReadAt: null,
+      contentHash: contentHash('9f86d081'),
+      fileName: 'Yotsuba&! 1.cbz',
+      imageCount: 182,
+      addedAt: 1758240000000,
+      position: imagePlace(imageIndex(3), imageIndex(4), 0.35),
+      lastReadAt: 1758300000000,
       finishedAt: null,
     };
-    expect(bookFromStored(legacy)).toEqual(expected);
-  });
-
-  it('reads a record written before reading times as never read and not marked finished', () => {
-    const book = bookFromStored(legacy);
-
-    expect(book.lastReadAt).toBeNull();
-    expect(book.finishedAt).toBeNull();
+    expect(bookFromStored(row)).toEqual(expected);
   });
 
   it.each([
     [1758300000000, 1758400000000],
     [null, null],
   ])('keeps the stored reading times %s and %s as they are', (lastReadAt, finishedAt) => {
-    const book = bookFromStored({ ...legacy, lastReadAt, finishedAt });
+    const book = bookFromStored({ ...row, lastReadAt, finishedAt });
 
     expect(book.lastReadAt).toBe(lastReadAt);
     expect(book.finishedAt).toBe(finishedAt);
   });
 
   it('returns a new object and leaves the stored record untouched', () => {
-    const stored: StoredBook = { ...legacy };
+    const stored: StoredBook = { ...row, pagePairing: 'triple' };
     const book = bookFromStored(stored);
     expect(book).not.toBe(stored);
-    expect(Object.hasOwn(stored, 'pagePairing')).toBe(false);
-    expect(Object.hasOwn(stored, 'pageFit')).toBe(false);
+    expect(stored.pagePairing).toBe('triple');
   });
 
   it('keeps every stored language, layout kind, direction and source kind it knows', () => {
     const book = bookFromStored({
-      ...legacy,
+      ...row,
       language: 'ko',
       layoutKind: 'flow',
       direction: 'ltr',
@@ -249,36 +165,34 @@ describe('bookFromStored', () => {
   });
 
   it('falls back to the first language for a stored language it does not know', () => {
-    expect(bookFromStored({ ...legacy, language: 'xx' }).language).toBe(FALLBACK_LANGUAGE);
+    expect(bookFromStored({ ...row, language: 'xx' }).language).toBe(FALLBACK_LANGUAGE);
     expect(FALLBACK_LANGUAGE).toBe('ja');
   });
 
   it('falls back to right to left for a stored direction it does not know', () => {
-    expect(bookFromStored({ ...legacy, direction: 'down' }).direction).toBe(FALLBACK_DIRECTION);
+    expect(bookFromStored({ ...row, direction: 'down' }).direction).toBe(FALLBACK_DIRECTION);
     expect(FALLBACK_DIRECTION).toBe('rtl');
   });
 
   it('falls back to the default pairing for a stored pairing it does not know', () => {
-    expect(bookFromStored({ ...legacy, pagePairing: 'triple' }).pagePairing).toBe(
+    expect(bookFromStored({ ...row, pagePairing: 'triple' }).pagePairing).toBe(
       DEFAULT_PAGE_PAIRING,
     );
   });
 
   it('falls back to the fit of the layout kind for a stored fit it does not know', () => {
-    expect(bookFromStored({ ...legacy, layoutKind: 'continuous', pageFit: 7 }).pageFit).toBe(
-      'width',
-    );
+    expect(bookFromStored({ ...row, layoutKind: 'continuous', pageFit: 7 }).pageFit).toBe('width');
   });
 
   it('throws a corrupt row for a stored layout kind it does not know', () => {
-    expect(() => bookFromStored({ ...legacy, layoutKind: 'scroll' })).toThrow(CorruptRow);
-    expect(() => bookFromStored({ ...legacy, layoutKind: 'scroll' })).toThrow(
+    expect(() => bookFromStored({ ...row, layoutKind: 'scroll' })).toThrow(CorruptRow);
+    expect(() => bookFromStored({ ...row, layoutKind: 'scroll' })).toThrow(
       'A stored book holds an unknown layout kind: scroll',
     );
   });
 
   it('throws a corrupt row for a stored source kind it does not know', () => {
-    expect(() => bookFromStored({ ...legacy, sourceKind: 'mobi' })).toThrow(
+    expect(() => bookFromStored({ ...row, sourceKind: 'mobi' })).toThrow(
       'A stored book holds an unknown source kind: mobi',
     );
   });

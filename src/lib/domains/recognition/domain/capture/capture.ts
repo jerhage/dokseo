@@ -1,11 +1,9 @@
 import { match } from 'ts-pattern';
-import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import type { Anchor, TextAnchor } from '$lib/shared/anchor';
+import type { Anchor } from '$lib/shared/anchor';
 import { isCaptureOrigin } from '$lib/shared/capture-origin';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
 import { CorruptRow } from '$lib/shared/corrupt-row';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 
 type CaptureContent = {
   readonly id: CaptureId;
@@ -51,24 +49,17 @@ type Capture = RecognizedCapture | WrittenCapture | LiftedCapture;
 
 type NotableCapture = RecognizedCapture | LiftedCapture;
 
-type StoredTextAnchor = Omit<TextAnchor, 'chapter'> & {
-  readonly chapter?: string | null;
-};
-
-type StoredAnchor = Exclude<Anchor, TextAnchor> | StoredTextAnchor;
-
 type StoredCapture = {
   readonly id: CaptureId;
   readonly bookId: BookId;
   readonly text: string;
-  readonly anchor?: StoredAnchor;
-  readonly regions?: readonly ImageRegion[];
+  readonly anchor: Anchor;
   readonly note?: string | null;
   readonly confidence?: number | null;
-  readonly createdAt?: number | null;
-  readonly editedAt?: number | null;
-  readonly origin?: unknown;
-  readonly tagIds?: readonly TagId[];
+  readonly createdAt: number;
+  readonly editedAt: number | null;
+  readonly origin: unknown;
+  readonly tagIds: readonly TagId[];
 };
 
 function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
@@ -81,17 +72,10 @@ function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
     .exhaustive();
 }
 
-function anchorFromStored(anchor: StoredAnchor): Anchor {
+function storedAnchor(anchor: Anchor): Anchor {
   const { kind } = anchor;
-  if (kind === 'region') return anchor;
-  if (kind === 'text') return textAnchor(anchor.cfi, anchor.quote, anchor.chapter ?? null);
+  if (kind === 'region' || kind === 'text') return anchor;
   throw new CorruptRow('capture', 'anchor kind', kind);
-}
-
-function storedAnchor(stored: StoredCapture): Anchor {
-  if (stored.anchor === undefined) return regionAnchor(stored.regions ?? []);
-
-  return anchorFromStored(stored.anchor);
 }
 
 function storedOrigin(stored: StoredCapture): CaptureOrigin {
@@ -102,11 +86,11 @@ function captureFromStored(stored: StoredCapture): Capture {
   const held = {
     id: stored.id,
     bookId: stored.bookId,
-    anchor: storedAnchor(stored),
+    anchor: storedAnchor(stored.anchor),
     text: stored.text,
-    createdAt: stored.createdAt ?? 0,
-    editedAt: stored.editedAt ?? null,
-    tagIds: stored.tagIds ?? [],
+    createdAt: stored.createdAt,
+    editedAt: stored.editedAt,
+    tagIds: stored.tagIds,
   };
 
   return match(storedOrigin(stored))
@@ -161,6 +145,5 @@ export type {
   NotableCapture,
   RecognizedCapture,
   WrittenCapture,
-  StoredAnchor,
   StoredCapture,
 };

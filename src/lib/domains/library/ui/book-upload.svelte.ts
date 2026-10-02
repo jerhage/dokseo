@@ -82,7 +82,7 @@ function describeSourceBuildError(error: SourceBuildError): string {
 function describeOpenFileError(failure: UploadFailure): string {
   return match(failure)
     .with({ kind: 'source' }, (source) => describeSourceBuildError(source.failure))
-    .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, describeLibraryRefusal)
+    .with({ kind: 'storage-unavailable' }, describeLibraryRefusal)
     .with({ kind: 'epub' }, (epub) => describeEpubRefusal(epub.failure))
     .with({ kind: 'not-paged' }, (blocked) => describePageObstacle(blocked.obstacle))
     .with({ kind: 'fingerprint' }, (failed) => describeFingerprintFailure(failed.cause))

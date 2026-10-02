@@ -1,4 +1,3 @@
-import { fingerprintOf } from '$lib/platform/crypto/fingerprint';
 import { partialMd5 } from '$lib/platform/crypto/partial-md5';
 import { requestPersistence } from '$lib/platform/storage/persistence';
 import type { BookId } from '$lib/shared/ids';
@@ -68,7 +67,6 @@ function buildLibrary(repository: LibraryRepository): LibraryUseCases {
       return await inspectEpubArchive(source);
     },
     partialMd5: blobDigestHasher(partialMd5),
-    legacyFingerprint: blobDigestHasher(fingerprintOf),
     requestPersistence,
     now: Date.now,
     newId: () => crypto.randomUUID(),

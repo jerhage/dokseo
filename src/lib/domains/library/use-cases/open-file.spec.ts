@@ -1,18 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
-import type { BookId, ContentHash } from '$lib/shared/ids';
+import type { ContentHash } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
-import { applyEdit, defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
-import type { Book, BookEdit } from '../domain/book/book';
+import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
+import type { Book } from '../domain/book/book';
 import type {
   BookListing,
   LibraryRepository,
   LibraryWrite,
 } from '../domain/book/library-repository';
 import type { PageOrder } from '../domain/book/page-list';
-import { NO_CONTENT_HASH } from '../domain/book/stored-book';
 import type { ContentDigest } from '../domain/ingest/content-hasher';
 import type { EpubInspectionAnswer } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
@@ -37,8 +36,6 @@ const NEW_ID = 'book-7';
 const DIGEST = 'f0e1d2c3';
 
 const UNHASHABLE: ContentDigest = { kind: 'unreadable', cause: 'no hashing here.' };
-
-const LEGACY_DIGEST = 'a'.repeat(64);
 
 const NOT_AN_EPUB: EpubInspectionAnswer = { kind: 'success', inspection: { kind: 'not-an-epub' } };
 
@@ -116,7 +113,6 @@ function fakeRepository(
   held: BookListing = listing([]),
 ) {
   const added: AddCall[] = [];
-  const updated: (readonly [BookId, BookEdit])[] = [];
   const repository: LibraryRepository = {
     list: () => Promise.resolve(held),
     get: () => Promise.resolve({ kind: 'success', book: null }),
@@ -126,21 +122,14 @@ function fakeRepository(
       return Promise.resolve(outcome);
     },
     remove: () => Promise.resolve(WRITTEN),
-    update: (id, edit) => {
-      updated.push([id, edit]);
-      const book = held.kind === 'success' ? held.books.find((each) => each.id === id) : undefined;
-      return Promise.resolve({
-        kind: 'success',
-        book: book === undefined ? null : applyEdit(book, edit),
-      });
-    },
+    update: () => Promise.resolve({ kind: 'success', book: null }),
     readSource: () => Promise.resolve({ kind: 'success', file: null }),
     readCover: () => Promise.resolve({ kind: 'success', file: null }),
     storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),
   };
-  return { repository, added, updated };
+  return { repository, added };
 }
 
 function fakeBuilder(outcome: SourceBuild, stages: readonly UploadStage[] = []) {
@@ -212,7 +201,6 @@ function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
     builder: fakeBuilder(built(builtSource())).builder,
     inspectEpub: fakeInspector().inspector,
     partialMd5: () => Promise.resolve(digested(DIGEST)),
-    legacyFingerprint: () => Promise.resolve(digested(LEGACY_DIGEST)),
     requestPersistence: () => Promise.resolve(true),
     now: () => NOW,
     newId: () => NEW_ID,
@@ -513,108 +501,13 @@ describe('openFile', () => {
     expect(builder.calls).toEqual([]);
   });
 
-  const UNHELD: readonly (readonly [string, ContentHash])[] = [
-    ['another fingerprint', contentHash('other')],
-    ['no fingerprint, stored before fingerprints', NO_CONTENT_HASH],
-  ];
-
-  it.each(UNHELD)(
-    'imports a file no held book carries the fingerprint of: a held book carries %s',
-    async (_case, carried) => {
-      const repository = fakeRepository(WRITTEN, [], listing([heldBook(carried)]));
-
-      const result = await openFile(deps({ repository: repository.repository }), files);
-
-      expect(repository.added).toHaveLength(1);
-      expect(openedBook(result).id).toBe(NEW_ID);
-    },
-  );
-
-  it('computes no legacy fingerprint while no held book carries one', async () => {
-    const legacy = fakeFingerprint(LEGACY_DIGEST);
+  it('imports a file no held book carries the fingerprint of', async () => {
     const repository = fakeRepository(WRITTEN, [], listing([heldBook(contentHash('other'))]));
-
-    await openFile(
-      deps({ repository: repository.repository, legacyFingerprint: legacy.fingerprint }),
-      files,
-    );
-
-    expect(legacy.hashed).toEqual([]);
-  });
-
-  it('rejoins a book stored with the legacy fingerprint and upgrades its hash and name', async () => {
-    const known = { ...heldBook(contentHash(LEGACY_DIGEST)), fileName: '' };
-    const repository = fakeRepository(WRITTEN, [], listing([known]));
-    const builder = fakeBuilder(built(builtSource()));
-
-    const result = await openFile(
-      deps({ repository: repository.repository, builder: builder.builder }),
-      files,
-    );
-
-    expect(repository.updated).toEqual([
-      [known.id, { contentHash: DIGEST, fileName: 'Yotsuba&! 1.cbz' }],
-    ]);
-    expect(result).toEqual({
-      kind: 'already-held',
-      book: { ...known, contentHash: DIGEST, fileName: 'Yotsuba&! 1.cbz' },
-    });
-    expect(repository.added).toEqual([]);
-    expect(builder.calls).toEqual([]);
-  });
-
-  it('imports a file whose legacy fingerprint no held book carries', async () => {
-    const repository = fakeRepository(
-      WRITTEN,
-      [],
-      listing([heldBook(contentHash('b'.repeat(64)))]),
-    );
 
     const result = await openFile(deps({ repository: repository.repository }), files);
 
     expect(repository.added).toHaveLength(1);
-    expect(repository.updated).toEqual([]);
-    expect(result.kind).toBe('added');
-  });
-
-  it('returns a fingerprint failure when a legacy book is held and no legacy hash can be made', async () => {
-    const repository = fakeRepository(WRITTEN, [], listing([heldBook(contentHash(LEGACY_DIGEST))]));
-
-    const result = await openFile(
-      deps({
-        repository: repository.repository,
-        legacyFingerprint: () => Promise.resolve(UNHASHABLE),
-      }),
-      files,
-    );
-
-    expect(result).toEqual({ kind: 'fingerprint', cause: 'no hashing here.' });
-    expect(repository.added).toEqual([]);
-  });
-
-  it('passes a blocked store through when a legacy hash cannot be upgraded', async () => {
-    const repository = fakeRepository(WRITTEN, [], listing([heldBook(contentHash(LEGACY_DIGEST))]));
-    const failing: LibraryRepository = {
-      ...repository.repository,
-      update: () => Promise.resolve(STORAGE_UNAVAILABLE),
-    };
-
-    const result = await openFile(deps({ repository: failing }), files);
-
-    expect(result).toEqual(STORAGE_UNAVAILABLE);
-  });
-
-  it('answers not-found when the legacy book is removed before its hash is upgraded', async () => {
-    const known = heldBook(contentHash(LEGACY_DIGEST));
-    const repository = fakeRepository(WRITTEN, [], listing([known]));
-    const removed: LibraryRepository = {
-      ...repository.repository,
-      update: () => Promise.resolve({ kind: 'success', book: null }),
-    };
-
-    const result = await openFile(deps({ repository: removed }), files);
-
-    expect(result).toEqual({ kind: 'not-found', id: known.id });
+    expect(openedBook(result).id).toBe(NEW_ID);
   });
 
   const NAMES: readonly (readonly [string, readonly File[], string])[] = [

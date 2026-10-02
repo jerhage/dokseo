@@ -142,10 +142,14 @@ describe('captureFromStored', () => {
     const stored: StoredCapture = {
       id: captureId('a'),
       bookId: BOOK,
-      regions: REGIONS,
+      anchor: ANCHOR,
       text: 'こっちに来て',
+      note: 'he means his sister',
       confidence: 0.5,
       createdAt: 42,
+      editedAt: 99,
+      origin: 'recognized',
+      tagIds: [tagId('grammar')],
     };
 
     expect(captureFromStored(stored)).toEqual({
@@ -153,202 +157,61 @@ describe('captureFromStored', () => {
       bookId: BOOK,
       anchor: ANCHOR,
       text: 'こっちに来て',
-      note: null,
+      note: 'he means his sister',
       confidence: 0.5,
       createdAt: 42,
-      editedAt: null,
+      editedAt: 99,
       origin: 'recognized',
-      tagIds: [],
+      tagIds: ['grammar'],
     });
-  });
-
-  it('anchors a record holding regions and no anchor to those regions', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).anchor).toEqual(regionAnchor(REGIONS));
-  });
-
-  it('anchors a record holding neither an anchor nor regions nowhere', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      text: 'こっちに来て',
-    };
-
-    expect(captureFromStored(stored).anchor).toEqual(regionAnchor([]));
   });
 
   it('reads back the chapter a stored text anchor names', () => {
     const named = textAnchor('epubcfi(/6/14!/4/2/6,/1:0,/1:5)', QUOTE, '第一章');
-    const stored: StoredCapture = { id: captureId('a'), bookId: BOOK, anchor: named, text: '海' };
+    const stored: StoredCapture = {
+      id: captureId('a'),
+      bookId: BOOK,
+      anchor: named,
+      text: '海',
+      createdAt: 42,
+      editedAt: null,
+      origin: 'written',
+      tagIds: [],
+    };
 
     expect(captureFromStored(stored).anchor).toEqual(named);
-  });
-
-  it('reads a text anchor stored before chapters were kept as naming no chapter', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      anchor: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE },
-      text: 'こっちに来て',
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).anchor).toEqual({
-      kind: 'text',
-      cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)',
-      quote: QUOTE,
-      chapter: null,
-    });
-  });
-
-  it('prefers the anchor a record carries over the regions beside it', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      anchor: QUOTED,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).anchor).toEqual(QUOTED);
-  });
-
-  it('reads a record written before an edit was possible as never edited', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).editedAt).toBeNull();
-  });
-
-  it('keeps the moment a stored record was edited', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-      editedAt: 99,
-    };
-
-    expect(captureFromStored(stored).editedAt).toBe(99);
-  });
-
-  it('fills an absent confidence with nothing rather than leaving the field missing', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      createdAt: 42,
-    };
-
-    expect(asRecognized(captureFromStored(stored)).confidence).toBeNull();
-  });
-
-  it('reads a record written before a note was possible as carrying none', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-    };
-
-    expect(asRecognized(captureFromStored(stored)).note).toBeNull();
-  });
-
-  it('dates a record written before the creation time existed to the beginning', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-    };
-
-    expect(captureFromStored(stored).createdAt).toBe(0);
-  });
-
-  it('reads a record written before notes existed as recognized', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).origin).toBe('recognized');
-  });
-
-  it('reads a record written before tags existed as carrying no tag', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-    };
-
-    expect(captureFromStored(stored).tagIds).toEqual([]);
-  });
-
-  it('keeps the tags a stored record carries', () => {
-    const stored: StoredCapture = {
-      id: captureId('a'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'こっちに来て',
-      confidence: 0.5,
-      createdAt: 42,
-      tagIds: [tagId('grammar')],
-    };
-
-    expect(captureFromStored(stored).tagIds).toEqual(['grammar']);
   });
 
   it('keeps the origin a stored record carries', () => {
     const stored: StoredCapture = {
       id: captureId('a'),
       bookId: BOOK,
-      regions: REGIONS,
+      anchor: ANCHOR,
       text: 'my own words',
-      confidence: null,
       createdAt: 42,
+      editedAt: null,
       origin: 'written',
+      tagIds: [],
     };
 
     expect(captureFromStored(stored).origin).toBe('written');
   });
 
-  it('reads a stored origin it does not know as recognized', () => {
+  it('reads a stored origin it does not know as recognized, carrying no note and no confidence', () => {
     const stored: StoredCapture = {
       id: captureId('a'),
       bookId: BOOK,
-      regions: REGIONS,
+      anchor: ANCHOR,
       text: 'こっちに来て',
+      createdAt: 42,
+      editedAt: null,
       origin: 'dictated',
+      tagIds: [],
     };
 
-    expect(captureFromStored(stored).origin).toBe('recognized');
+    const read = asRecognized(captureFromStored(stored));
+
+    expect([read.origin, read.note, read.confidence]).toEqual(['recognized', null, null]);
   });
 
   it('throws a corrupt row for a stored anchor kind it does not know', () => {
@@ -357,6 +220,10 @@ describe('captureFromStored', () => {
       bookId: BOOK,
       anchor: { ...QUOTED, kind: 'page' } as unknown as Anchor,
       text: 'こっちに来て',
+      createdAt: 42,
+      editedAt: null,
+      origin: 'recognized',
+      tagIds: [],
     };
 
     expect(() => captureFromStored(stored)).toThrow(CorruptRow);
@@ -372,8 +239,10 @@ describe('captureFromStored', () => {
       anchor: QUOTED,
       text: 'こっちに来て',
       createdAt: 42,
+      editedAt: null,
       origin: 'lifted',
       note: 'he means his sister',
+      tagIds: [],
     };
 
     expect(captureFromStored(stored)).toEqual({
@@ -399,7 +268,9 @@ describe('captureFromStored', () => {
         text: 'こっちに来て',
         confidence: 0.5,
         createdAt: 42,
+        editedAt: null,
         origin: 'lifted',
+        tagIds: [],
       },
     },
     {
@@ -407,11 +278,13 @@ describe('captureFromStored', () => {
       stored: {
         id: captureId('a'),
         bookId: BOOK,
-        regions: REGIONS,
+        anchor: ANCHOR,
         text: 'my own words',
         confidence: 0.5,
         createdAt: 42,
+        editedAt: null,
         origin: 'written',
+        tagIds: [],
       },
     },
   ]) {
@@ -419,19 +292,6 @@ describe('captureFromStored', () => {
       expect('confidence' in captureFromStored(stored)).toBe(false);
     });
   }
-
-  it('sorts a record with no creation time before every dated one', () => {
-    const undated = captureFromStored({
-      id: captureId('old'),
-      bookId: BOOK,
-      regions: REGIONS,
-      text: 'older',
-    });
-
-    const ordered = oldestFirst([taken('a', 5), undated, taken('b', 1)]);
-
-    expect(ordered.map((capture) => capture.id)).toEqual(['old', 'b', 'a']);
-  });
 });
 
 describe('editedCapture', () => {
