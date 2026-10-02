@@ -13,7 +13,6 @@
     UnexpectedFailures,
     logUnexpected,
     unexpectedMessage,
-    windowErrorCause,
   } from '$lib/shared/unexpected-failure';
   import '$lib/styles/index.css';
 
@@ -32,7 +31,7 @@
 </svelte:head>
 
 <svelte:window
-  onerror={(event) => failures.raise('window', windowErrorCause(event))}
+  onerror={(event) => failures.windowError(event)}
   onunhandledrejection={(event) => failures.raise('promise', event.reason)}
 />
 

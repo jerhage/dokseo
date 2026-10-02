@@ -7,6 +7,8 @@ type FailureToaster = Pick<Toaster, 'show' | 'toasts'>;
 
 const UNEXPECTED_FAILURE_TITLE = 'Something went wrong';
 
+const RESIZE_OBSERVER_NOTICE = 'ResizeObserver loop completed with undelivered notifications.';
+
 function logUnexpected(site: FailureSite, error: unknown): void {
   console.error(`Unexpected failure (${site})`, error);
 }
@@ -19,12 +21,24 @@ function windowErrorCause(event: Event): unknown {
   return 'error' in event ? event.error : event;
 }
 
+function isResizeObserverNotice(event: Event): boolean {
+  if (!('message' in event) || event.message !== RESIZE_OBSERVER_NOTICE) return false;
+
+  return windowErrorCause(event) === null;
+}
+
 class UnexpectedFailures {
   #toaster: FailureToaster;
   #shown: ToastId | null = null;
 
   constructor(toaster: FailureToaster) {
     this.#toaster = toaster;
+  }
+
+  windowError(event: Event): void {
+    if (isResizeObserverNotice(event)) return;
+
+    this.raise('window', windowErrorCause(event));
   }
 
   raise(site: FailureSite, error: unknown): void {
@@ -45,8 +59,10 @@ class UnexpectedFailures {
 }
 
 export {
+  RESIZE_OBSERVER_NOTICE,
   UNEXPECTED_FAILURE_TITLE,
   UnexpectedFailures,
+  isResizeObserverNotice,
   logUnexpected,
   unexpectedMessage,
   windowErrorCause,
