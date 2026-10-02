@@ -48,16 +48,10 @@ describe('openOnDevice', () => {
       device: 'wasm',
       fellBackFrom: 'webgpu',
     });
-  });
-
-  it('retries once, and only on the CPU', async () => {
-    const refused = opener(['webgpu']);
-    await openOnDevice('webgpu', refused.open);
-
     expect(refused.asked).toEqual(['webgpu', 'wasm']);
   });
 
-  it('never reaches for the GPU when the CPU was the device', async () => {
+  it('opens on the CPU alone, never reaching for the GPU, when the CPU was the device', async () => {
     const cpu = opener(['webgpu']);
     const running = await openOnDevice('wasm', cpu.open);
 
@@ -172,7 +166,7 @@ describe('guardFirstGpuRun', () => {
     expect(clock.asked).toEqual([FIRST_GPU_RUN_DEADLINE_MS]);
   });
 
-  it('never times a session that is already on the CPU', async () => {
+  it('sets no deadline for a session that is already on the CPU', async () => {
     const cpu = reading('wasm', (crop) => Promise.resolve(`${crop} read on the CPU`));
     const clock = deadline();
     const read = guardFirstGpuRun<string, string>({
@@ -196,24 +190,7 @@ describe('guardFirstGpuRun', () => {
     expect(cpu.crops).toEqual(['a crop']);
   });
 
-  it('retries the crop on the CPU when the first GPU run outlives the deadline', async () => {
-    const hanging = held();
-    const gpu = reading('webgpu', () => hanging.running);
-    const cpu = reading('wasm', (crop) => Promise.resolve(`${crop} read on the CPU`));
-    const clock = deadline();
-    const read = guardFirstGpuRun<string, string>({
-      wait: clock.wait,
-      fallBack: () => Promise.resolve(cpu.session),
-    });
-
-    const answer = read(gpu.session, 'a crop');
-    clock.expire();
-
-    await expect(answer).resolves.toBe('a crop read on the CPU');
-    expect(clock.asked).toEqual([FIRST_GPU_RUN_DEADLINE_MS]);
-  });
-
-  it('ignores a GPU run that answers after the deadline', async () => {
+  it('retries the crop on the CPU when the first GPU run outlives the deadline, and ignores its late answer', async () => {
     const abandoned = held();
     const gpu = reading('webgpu', () => abandoned.running);
     const cpu = reading('wasm', (crop) => Promise.resolve(`${crop} read on the CPU`));
@@ -229,6 +206,7 @@ describe('guardFirstGpuRun', () => {
     abandoned.settle('a crop read late on the GPU');
 
     await expect(answer).resolves.toBe('a crop read on the CPU');
+    expect(clock.asked).toEqual([FIRST_GPU_RUN_DEADLINE_MS]);
     expect(cpu.crops).toEqual(['a crop']);
   });
 

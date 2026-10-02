@@ -42,12 +42,11 @@ function held() {
   return store;
 }
 
-function ranged(asked: string[], caching: (RequestCache | undefined)[]) {
+function ranged(asked: string[]) {
   return (_input: string, init?: RequestInit): Promise<Response> => {
     const headers = (init?.headers ?? {}) as Record<string, string>;
     const range = headers.Range ?? 'whole';
     asked.push(range);
-    caching.push(init?.cache);
 
     const matched = /bytes=(\d+)-(\d+)/.exec(range);
     const from = Number(matched?.[1] ?? 0);
@@ -65,7 +64,6 @@ function world() {
   const passed: string[] = [];
   const passedWith: unknown[] = [];
   const asked: string[] = [];
-  const caching: (RequestCache | undefined)[] = [];
   const env: Env = {
     fetch: (input: string | URL, init?: unknown) => {
       passed.push(String(input));
@@ -77,11 +75,11 @@ function world() {
   const source = installModelFetch(env, {
     modelId: MODEL,
     store: held(),
-    fetch: ranged(asked, caching),
+    fetch: ranged(asked),
     chunkBytes: 4,
   });
 
-  return { env, source, passed, passedWith, asked, caching };
+  return { env, source, passed, passedWith, asked };
 }
 
 describe('installModelFetch', () => {
@@ -102,33 +100,28 @@ describe('installModelFetch', () => {
     expect(source()).toBe('network');
   });
 
-  it('leaves the size probe to pass through, and still calls that load a cached one', async () => {
-    const { env, source, asked, passed } = world();
+  it('leaves the size probe to pass through with its range header, past the HTTP cache, and still calls that load a cached one', async () => {
+    const { env, source, asked, passed, passedWith } = world();
+    const headers = new Headers({ Range: 'bytes=0-0' });
 
-    await env.fetch(`${REPO}/onnx/encoder_model.onnx`, {
-      headers: new Headers({ Range: 'bytes=0-0' }),
-    });
+    await env.fetch(`${REPO}/onnx/encoder_model.onnx`, { headers });
 
     expect(asked).toEqual([]);
     expect(passed).toEqual([`${REPO}/onnx/encoder_model.onnx`]);
+    expect(passedWith).toEqual([{ headers, cache: 'no-store' }]);
     expect(source()).toBe('cache');
   });
 
-  it('passes a configuration file through to the fetch it replaced', async () => {
-    const { env, source } = world();
+  it.each([undefined, { cache: 'force-cache' }])(
+    'passes a configuration file through to the fetch it replaced, leaving it to the HTTP cache with %o',
+    async (init) => {
+      const { env, source, passedWith } = world();
 
-    expect(await env.fetch(`${REPO}/config.json`)).toBe(`${REPO}/config.json`);
-    expect(source()).toBe('cache');
-  });
-
-  it('asks for every chunk of the weights with the HTTP cache bypassed', async () => {
-    const { env, caching } = world();
-
-    const answered = await env.fetch(`${REPO}/onnx/encoder_model_quantized.onnx`);
-    if (answered instanceof Response) await answered.arrayBuffer();
-
-    expect(caching).toEqual(['no-store', 'no-store', 'no-store']);
-  });
+      expect(await env.fetch(`${REPO}/config.json`, init)).toBe(`${REPO}/config.json`);
+      expect(passedWith).toEqual([init]);
+      expect(source()).toBe('cache');
+    },
+  );
 
   it('fetches the runtime binary and its loader with the HTTP cache bypassed', async () => {
     const { env, passedWith } = world();
@@ -138,22 +131,5 @@ describe('installModelFetch', () => {
     await env.fetch(`${runtime}.jsep.mjs`);
 
     expect(passedWith).toEqual([{ cache: 'no-store' }, { cache: 'no-store' }]);
-  });
-
-  it('keeps the range header of a size probe while it bypasses the HTTP cache', async () => {
-    const { env, passedWith } = world();
-    const headers = new Headers({ Range: 'bytes=0-0' });
-
-    await env.fetch(`${REPO}/onnx/encoder_model.onnx`, { headers });
-
-    expect(passedWith).toEqual([{ headers, cache: 'no-store' }]);
-  });
-
-  it('leaves a configuration file to the HTTP cache', async () => {
-    const { env, passedWith } = world();
-
-    await env.fetch(`${REPO}/config.json`, { cache: 'force-cache' });
-
-    expect(passedWith).toEqual([{ cache: 'force-cache' }]);
   });
 });

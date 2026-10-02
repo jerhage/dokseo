@@ -19,19 +19,14 @@ describe('watchModelLoadSource', () => {
     expect(source()).toBe('cache');
   });
 
-  it('reports a load as coming from the network once a weights file is fetched', async () => {
+  it.each([
+    `${REPO}/onnx/encoder_model_quantized.onnx`,
+    'https://cdn.example/ort-wasm-simd-threaded.jsep.wasm',
+  ])('reports a load as coming from the network once %s is fetched', async (url) => {
     const watched = env();
     const source = watchModelLoadSource(watched);
 
-    await watched.fetch(`${REPO}/onnx/encoder_model_quantized.onnx`);
-    expect(source()).toBe('network');
-  });
-
-  it('reports a load as coming from the network once the runtime binary is fetched', async () => {
-    const watched = env();
-    const source = watchModelLoadSource(watched);
-
-    await watched.fetch('https://cdn.example/ort-wasm-simd-threaded.jsep.wasm');
+    await watched.fetch(url);
     expect(source()).toBe('network');
   });
 
@@ -61,6 +56,7 @@ describe('watchModelLoadSource', () => {
 
     await watched.fetch(`${REPO}/onnx/encoder_model_quantized.onnx`);
     expect(source()).toBe('network');
+    await watched.fetch(`${REPO}/config.json`);
     expect(source()).toBe('network');
   });
 

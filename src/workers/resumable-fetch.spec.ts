@@ -121,22 +121,6 @@ describe('fetchResumable', () => {
     expect(served.asked).toEqual(['bytes=0-3', 'bytes=4-7', 'bytes=8-11']);
   });
 
-  it('deletes the part-downloaded file only after the whole body was handed over', async () => {
-    const body = weights(10);
-    const served = host(body);
-    const { store, files } = fakeStore();
-
-    const response = await fetchResumable(URL_OF_WEIGHTS, {
-      fetch: served.fetching,
-      store,
-      chunkBytes: CHUNK,
-    });
-
-    expect(files.has(KEY)).toBe(false);
-    await bodyOf(response);
-    expect(files.has(KEY)).toBe(false);
-  });
-
   it('closes the file it appended to before it asks for that file to be deleted', async () => {
     const body = weights(10);
     const served = host(body);
@@ -168,7 +152,7 @@ describe('fetchResumable', () => {
     expect(files.has(KEY)).toBe(false);
   });
 
-  it('deletes the part-downloaded file when a resumed download reaches the last byte', async () => {
+  it('resumes from the bytes already on this device rather than fetching them again, and deletes the part-downloaded file at the last byte', async () => {
     const body = weights(10);
     const served = host(body);
     const { store, files } = fakeStore(body.slice(0, 6));
@@ -178,24 +162,10 @@ describe('fetchResumable', () => {
       store,
       chunkBytes: CHUNK,
     });
-    expect(await bodyOf(response)).toEqual(body);
-
-    expect(files.has(KEY)).toBe(false);
-  });
-
-  it('resumes from the bytes already on this device rather than fetching them again', async () => {
-    const body = weights(10);
-    const served = host(body);
-    const { store } = fakeStore(body.slice(0, 6));
-
-    const response = await fetchResumable(URL_OF_WEIGHTS, {
-      fetch: served.fetching,
-      store,
-      chunkBytes: CHUNK,
-    });
 
     expect(served.asked).toEqual(['bytes=6-9']);
     expect(await bodyOf(response)).toEqual(body);
+    expect(files.has(KEY)).toBe(false);
   });
 
   it('keeps every byte it wrote when the load stops part-way', async () => {
@@ -349,23 +319,29 @@ describe('fetchResumable', () => {
     expect(served.asked).toEqual(['bytes=0-3']);
   });
 
-  it('says a transfer happened only once the host answered with bytes', async () => {
-    const body = weights(10);
-    const served = host(body);
-    const { store } = fakeStore();
-    let transfers = 0;
+  it.each([
+    { ranges: true, expected: 1 },
+    { ranges: false, expected: 0 },
+  ])(
+    'says a transfer happened only once the host answered with a range of bytes (ranges: $ranges)',
+    async ({ ranges, expected }) => {
+      const body = weights(10);
+      const served = host(body, { ranges });
+      const { store } = fakeStore();
+      let transfers = 0;
 
-    await fetchResumable(URL_OF_WEIGHTS, {
-      fetch: served.fetching,
-      store,
-      chunkBytes: CHUNK,
-      onTransfer: () => {
-        transfers += 1;
-      },
-    });
+      await fetchResumable(URL_OF_WEIGHTS, {
+        fetch: served.fetching,
+        store,
+        chunkBytes: CHUNK,
+        onTransfer: () => {
+          transfers += 1;
+        },
+      });
 
-    expect(transfers).toBe(1);
-  });
+      expect(transfers).toBe(expected);
+    },
+  );
 
   it('bypasses the HTTP cache for every chunk it asks for', async () => {
     const served = host(weights(10));
