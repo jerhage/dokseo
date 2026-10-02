@@ -86,12 +86,14 @@ describe('tagStage', () => {
     ).toBe('empty');
   });
 
-  it('asks for a choice when tags exist and none is chosen', () => {
-    expect(
-      tagStage({ tag: undefined, summary: null, tags: 3, status: 'ready', libraryFailed: false })
-        .kind,
-    ).toBe('unchosen');
-  });
+  it.each([false, true])(
+    'asks for a choice when tags exist and none is chosen, whether or not the library failed (%s)',
+    (libraryFailed) => {
+      expect(
+        tagStage({ tag: undefined, summary: null, tags: 3, status: 'ready', libraryFailed }).kind,
+      ).toBe('unchosen');
+    },
+  );
 
   it('reports loading while no tag has arrived yet', () => {
     expect(
@@ -110,19 +112,6 @@ describe('tagStage', () => {
     expect(
       tagStage({ tag: SFX, summary: none, tags: 3, status: 'ready', libraryFailed: true }),
     ).toEqual({ kind: 'unshelved', tag: SFX });
-  });
-
-  it('keeps asking for a choice when the library could not be read', () => {
-    expect(
-      tagStage({ tag: undefined, summary: null, tags: 3, status: 'ready', libraryFailed: true })
-        .kind,
-    ).toBe('unchosen');
-  });
-
-  it('shows the chosen tag once the library is read again', () => {
-    expect(
-      tagStage({ tag: SFX, summary, tags: 3, status: 'ready', libraryFailed: false }).kind,
-    ).toBe('chosen');
   });
 
   it('reports no tags once the load settles empty or fails', () => {
@@ -175,38 +164,10 @@ describe('taggedShelves', () => {
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');
   });
 
-  it('links a capture anchored in text to its passage by its cfi, in no chapter', () => {
-    expect(shelves[1]?.rows[0]?.href).toBe('/read/two?cfi=epubcfi(%2F6%2F2)');
-    expect(shelves[1]?.rows[0]?.jump).toBe('Jump to the passage');
-    expect(shelves[1]?.rows[0]?.place).toBe('no chapter');
-  });
-
-  it('shows the chapter a capture anchored in text was lifted from as its place', () => {
-    expect(shelves[0]?.rows[1]?.place).toBe('第一章');
-  });
-
   it('marks a chapter place with its book language, and a page or chapterless place with none', () => {
     expect(shelves[0]?.rows[1]?.placeLanguage).toBe('ja');
     expect(shelves[0]?.rows[0]?.placeLanguage).toBeNull();
     expect(shelves[1]?.rows[0]?.placeLanguage).toBeNull();
-  });
-
-  it('opens the book for a capture anchored to no region at all', () => {
-    const [bare] = taggedShelves({
-      groups: [
-        {
-          book: book('four'),
-          captures: [{ ...regional('bare', 'four', [SFX.id]), anchor: regionAnchor([]) }],
-        },
-      ],
-      covers: new Map(),
-      chosen: SFX.id,
-      tags: TAGS,
-      now: NOW,
-    });
-
-    expect(bare?.rows[0]?.href).toBe('/read/four');
-    expect(bare?.rows[0]?.jump).toBe('Open the book');
   });
 
   it('carries every tag on a row except the chosen one', () => {

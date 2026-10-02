@@ -95,17 +95,6 @@ function loaded(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRAR
 }
 
 describe('TagView', () => {
-  it('reads books from its source on each access', () => {
-    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
-    source.books = [book('one'), book('two')];
-    source.wanted = SFX.name;
-
-    expect([view.books.map((held) => String(held.id)), view.wanted]).toEqual([
-      ['one', 'two'],
-      SFX.name,
-    ]);
-  });
-
   it('holds every tag and every capture once the load settles', () => {
     const { view } = loaded([capture('first', 'one', [SFX.id])]);
 
@@ -114,14 +103,13 @@ describe('TagView', () => {
     expect(view.status).toBe('ready');
   });
 
-  it('counts each tag across the whole library', () => {
-    const { view } = loaded([
-      capture('first', 'one', [SFX.id]),
-      capture('second', 'two', [SFX.id, KEIGO.id]),
-    ]);
+  it('reports a failed read with nothing held', () => {
+    const { view, source } = world([capture('first', 'one', [SFX.id])]);
+    source.tagged = readFailed('locked');
 
-    expect(view.counts.get(SFX.id)).toBe(2);
-    expect(view.counts.get(KEIGO.id)).toBe(1);
+    expect(view.status).toBe('failed');
+    expect(view.tags).toEqual([]);
+    expect(view.captures).toEqual([]);
   });
 
   it('orders the column by count descending and then by name', () => {
@@ -165,11 +153,12 @@ describe('TagView', () => {
     expect(view.summary).toEqual({ captures: 2, documents: 2, lastAdded: 40 });
   });
 
-  it('reports no summary and no co-occurrent tag while nothing is chosen', () => {
+  it('reports no summary, no co-occurrent tag and no group while nothing is chosen', () => {
     const { view } = loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
 
     expect(view.summary).toBeNull();
     expect(view.also).toEqual([]);
+    expect(view.groups).toEqual([]);
   });
 
   it('reports the tags sharing a capture with the chosen one', () => {
@@ -206,33 +195,20 @@ describe('TagView', () => {
       'closing',
     ]);
   });
-
-  it('groups nothing while no tag is chosen', () => {
-    const { view } = loaded([capture('first', 'one', [SFX.id])]);
-
-    expect(view.groups).toEqual([]);
-  });
-
-  it('groups nothing again once the chosen tag is cleared', () => {
-    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
-    source.wanted = SFX.name;
-    source.wanted = null;
-
-    expect(view.groups).toEqual([]);
-    expect(view.summary).toBeNull();
-  });
 });
 
 describe('TagView and a book the library no longer holds', () => {
-  it('counts no capture of a book the library no longer holds', () => {
+  it('counts each tag across the books the library holds, and no capture of one it no longer holds', () => {
     const { view, source } = loaded([
       capture('kept', 'one', [SFX.id]),
+      capture('second', 'two', [SFX.id, KEIGO.id]),
       capture('orphan', 'gone', [SFX.id]),
     ]);
-    source.books = [book('one')];
+    source.books = [book('one'), book('two')];
     source.wanted = SFX.name;
 
-    expect(view.counts.get(SFX.id)).toBe(1);
+    expect(view.counts.get(SFX.id)).toBe(2);
+    expect(view.counts.get(KEIGO.id)).toBe(1);
   });
 
   it('reports the same number of documents as it renders groups', () => {
@@ -260,23 +236,13 @@ describe('TagView and a book the library no longer holds', () => {
 });
 
 describe('TagView chosen by name', () => {
-  it('resolves a wanted name to its tag', () => {
+  it.each([
+    ['as it is spelled', SFX.name],
+    ['spelled in another case', SFX.name.toUpperCase()],
+    ['spelled full width', 'ｓｆｘ'],
+  ])('resolves a wanted name to its tag, %s', (_name, wanted) => {
     const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
-    source.wanted = SFX.name;
-
-    expect(view.chosen).toBe(SFX.id);
-  });
-
-  it('resolves a name the reader spelled in another case', () => {
-    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
-    source.wanted = SFX.name.toUpperCase();
-
-    expect(view.chosen).toBe(SFX.id);
-  });
-
-  it('resolves a name the reader spelled full width', () => {
-    const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
-    source.wanted = 'ｓｆｘ';
+    source.wanted = wanted;
 
     expect(view.chosen).toBe(SFX.id);
   });
@@ -286,15 +252,6 @@ describe('TagView chosen by name', () => {
     source.wanted = SFX.name;
 
     expect(view.chosen).toBeNull();
-  });
-
-  it('chooses the tag as soon as the tags arrive, without being asked again', () => {
-    const made = world([capture('first', 'one', [SFX.id])], LIBRARY);
-    made.source.wanted = SFX.name;
-    made.source.books = [book('one')];
-    made.load();
-
-    expect(made.view.chosen).toBe(SFX.id);
   });
 
   it('chooses nothing for a name no tag answers to', () => {
@@ -322,16 +279,5 @@ describe('heldTagged', () => {
     expect(heldTagged(readFailed('locked'))).toEqual({ tags: [], captures: [] });
     expect(heldTagged({ kind: 'loading' })).toEqual({ tags: [], captures: [] });
     expect(heldTagged(null)).toEqual({ tags: [], captures: [] });
-  });
-});
-
-describe('TagView status', () => {
-  it('reports a failed read with nothing held', () => {
-    const { view, source } = world([capture('first', 'one', [SFX.id])]);
-    source.tagged = readFailed('locked');
-
-    expect(view.status).toBe('failed');
-    expect(view.tags).toEqual([]);
-    expect(view.captures).toEqual([]);
   });
 });

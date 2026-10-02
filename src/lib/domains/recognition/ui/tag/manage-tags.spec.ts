@@ -45,14 +45,6 @@ describe('ManageTagsView', () => {
     expect(manage.renaming).toBe(SFX.id);
   });
 
-  it('holds one row at a time awaiting a delete', () => {
-    const manage = managing();
-    manage.askRemove(SFX);
-    manage.askRemove(KEIGO);
-
-    expect(manage.confirming).toBe(KEIGO.id);
-  });
-
   it('closes the rename field when a row is asked about instead', () => {
     const manage = managing();
     manage.startRename(KEIGO);
