@@ -20,6 +20,4 @@ jobs:
 
       - run: deno install --frozen
 
-      - run: ./node_modules/.bin/playwright install --with-deps chromium
-
-      - run: deno task verify:tests
+      - run: deno task verify:ci
