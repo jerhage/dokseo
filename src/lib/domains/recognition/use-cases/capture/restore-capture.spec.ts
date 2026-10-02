@@ -35,6 +35,7 @@ function repository(outcome: CaptureWrite) {
     },
     remove: () => Promise.resolve({ kind: 'success' as const }),
     clearBook: () => Promise.resolve({ kind: 'success' as const }),
+    moveBook: () => Promise.resolve({ kind: 'success' as const }),
   };
   return { captures, saved };
 }

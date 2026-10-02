@@ -113,6 +113,7 @@ function containerOf(store: Store): Container {
       listRemovedBooks: unused,
       deleteRemovedBookCaptures: unused,
       removeBookAndCaptures: unused,
+      mergeIntoBook: unused,
       editBook: unused,
       saveReadingPlace: unused,
       markFinished: unused,

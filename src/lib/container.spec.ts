@@ -20,6 +20,7 @@ const held = vi.hoisted(() => ({
   removed: [] as string[],
   cleared: [] as string[],
   forgotten: [] as string[],
+  moved: [] as string[],
 }));
 
 function notUsed(): Promise<never> {
@@ -28,7 +29,14 @@ function notUsed(): Promise<never> {
 
 vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
   createLibraryRepository: (): LibraryRepository => ({
-    list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
+    list: () =>
+      Promise.resolve({
+        kind: 'success',
+        books: [],
+        unreadable: [
+          { id: 'broken-1' as BookId, title: 'Gone', alias: null, contentHash: '', fileName: '' },
+        ],
+      }),
     get: notUsed,
     add: notUsed,
     readPageList: notUsed,
@@ -56,6 +64,10 @@ vi.mock('./domains/recognition/adapters/capture/indexeddb-captures.repo', () => 
     listEverything: notUsed,
     save: notUsed,
     remove: notUsed,
+    moveBook: (from: BookId, to: BookId) => {
+      held.moved.push(`${from} -> ${to}`);
+      return Promise.resolve({ kind: 'success' });
+    },
     clearBook: (book: BookId) => {
       held.cleared.push(book);
       return Promise.resolve({ kind: 'success' });
@@ -80,6 +92,23 @@ describe('buildContainer', () => {
     expect(held.removed).toContain('book-2');
     expect(held.cleared).toEqual(['book-2']);
     expect(held.forgotten).toEqual(['book-2']);
+  });
+
+  it('merges an unreadable book by moving its captures onto the shelf book, then removing it and its record', async () => {
+    const result = await buildContainer().library.mergeIntoBook(bookId('held-1'), [
+      bookId('broken-1'),
+    ]);
+
+    expect(result).toEqual({ kind: 'merged' });
+    expect(held.moved).toEqual(['broken-1 -> held-1']);
+    expect(held.removed).toContain('broken-1');
+    expect(held.forgotten).toContain('broken-1');
+  });
+
+  it('lists a shelf holding an unreadable book without reading a capture', async () => {
+    const result = await buildContainer().library.listBooks();
+
+    expect(result).toMatchObject({ kind: 'success', unreadable: [{ id: 'broken-1' }] });
   });
 
   it('lists the removed books without reading a capture', async () => {

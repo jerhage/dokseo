@@ -197,6 +197,22 @@ async function deleteByIndex(
   });
 }
 
+async function rewriteByIndex<T>(
+  db: IDBDatabase,
+  store: string,
+  index: string,
+  key: IDBValidKey,
+  rewrite: (record: T) => T,
+): Promise<void> {
+  await transact(db, store, 'readwrite', (objectStore) => {
+    const matching = objectStore.index(index).getAll(key);
+    matching.onsuccess = () => {
+      for (const record of matching.result) objectStore.put(rewrite(record));
+    };
+    return matching;
+  });
+}
+
 export {
   BLOCKED_PATIENCE_MS,
   openDatabase,
@@ -206,4 +222,5 @@ export {
   listRecords,
   listByIndex,
   deleteByIndex,
+  rewriteByIndex,
 };

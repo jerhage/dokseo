@@ -16,6 +16,7 @@ function repository(outcome: CaptureWrite) {
       return Promise.resolve(outcome);
     },
     clearBook: () => Promise.reject(new Error('not used')),
+    moveBook: () => Promise.reject(new Error('not used')),
   };
   return { captures, removed };
 }

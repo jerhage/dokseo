@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import { imagePlace } from '$lib/shared/reading-place';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Book } from '../domain/book/book';
+import { NOTHING_TO_MERGE } from '../domain/book/book-merge';
 import { splitUpload } from '../domain/ingest/source-detection';
 import {
   ALREADY_HELD,
+  MERGED_ON_UPLOAD,
+  MERGE_UNFINISHED,
   RESTORED_MESSAGE,
   describeFailedBook,
   describeOpenFileError,
@@ -63,7 +67,7 @@ describe('uploadNotice', () => {
 
   it('tells an upload it already holds apart from a new one, and still offers Open', () => {
     const notice = uploadNotice(
-      { kind: 'already-held', book: book('one', 'Blame! 1') },
+      { kind: 'already-held', book: book('one', 'Blame! 1'), merge: NOTHING_TO_MERGE },
       () => undefined,
     );
 
@@ -75,6 +79,37 @@ describe('uploadNotice', () => {
       duration: ACTION_NOTICE_MS,
     });
   });
+});
+
+describe('uploadNotice for a held book with unreadable copies', () => {
+  it('says the old captures were moved onto the held book', () => {
+    const notice = uploadNotice(
+      { kind: 'already-held', book: book('one', 'Blame! 1'), merge: { kind: 'merged' } },
+      () => undefined,
+    );
+
+    expect(notice).toMatchObject({
+      tone: 'success',
+      title: ALREADY_HELD,
+      message: `Blame! 1. ${MERGED_ON_UPLOAD}`,
+    });
+  });
+
+  it.each([{ kind: 'partly-merged' as const }, STORAGE_UNAVAILABLE])(
+    'warns that the unreadable book notice finishes a merge that answered %j',
+    (merge) => {
+      const notice = uploadNotice(
+        { kind: 'already-held', book: book('one', 'Blame! 1'), merge },
+        () => undefined,
+      );
+
+      expect(notice).toMatchObject({
+        tone: 'warning',
+        title: ALREADY_HELD,
+        message: `Blame! 1. ${MERGE_UNFINISHED}`,
+      });
+    },
+  );
 });
 
 describe('uploadNotice for a restored book', () => {
@@ -101,9 +136,12 @@ describe('uploadNotice for a renamed book', () => {
     expect(uploadNotice({ kind: 'restored', book: renamed }, () => undefined).title).toBe(
       'Restored Mine',
     );
-    expect(uploadNotice({ kind: 'already-held', book: renamed }, () => undefined).message).toBe(
-      'Mine',
-    );
+    expect(
+      uploadNotice(
+        { kind: 'already-held', book: renamed, merge: NOTHING_TO_MERGE },
+        () => undefined,
+      ).message,
+    ).toBe('Mine');
   });
 });
 
@@ -147,7 +185,7 @@ describe('tallyOf', () => {
       tallyOf(
         [
           { kind: 'added', book: book('a', 'a') },
-          { kind: 'already-held', book: book('b', 'b') },
+          { kind: 'already-held', book: book('b', 'b'), merge: NOTHING_TO_MERGE },
           { kind: 'restored', book: book('d', 'd') },
         ],
         [{ name: 'c.cbz', failure: { kind: 'source', failure: { kind: 'empty' } } }],

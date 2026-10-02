@@ -7,6 +7,8 @@ import type { CaptureRepository } from '../domains/recognition/domain/capture/ca
 import { createOriginStores } from '../domains/storage/adapters/browser-origin-stores';
 import { deleteRemovedBookCaptures } from '../domains/storage/use-cases/delete-removed-book-captures';
 import type { DeleteRemovedBookCapturesResult } from '../domains/storage/use-cases/delete-removed-book-captures';
+import { mergeIntoBook } from '../domains/storage/use-cases/merge-into-book';
+import type { MergeIntoBookResult } from '../domains/storage/use-cases/merge-into-book';
 import { removeBookAndCaptures } from '../domains/storage/use-cases/remove-book-and-captures';
 import type { RemoveBookAndCapturesResult } from '../domains/storage/use-cases/remove-book-and-captures';
 import { readStorageAccount } from '../domains/storage/use-cases/read-storage-account';
@@ -20,6 +22,7 @@ type RemovedBooks = {
   readonly listRemovedBooks: () => Promise<RemovedShelf>;
   readonly deleteRemovedBookCaptures: (id: BookId) => Promise<DeleteRemovedBookCapturesResult>;
   readonly removeBookAndCaptures: (id: BookId) => Promise<RemoveBookAndCapturesResult>;
+  readonly mergeIntoBook: (into: BookId, strays: readonly BookId[]) => Promise<MergeIntoBookResult>;
 };
 
 function buildStorage(): StorageUseCases {
@@ -43,6 +46,12 @@ function buildRemovedBooks(
       removeBookAndCaptures(
         { removing: { repository }, clearing: { captures }, forgetting: { repository } },
         id,
+      ),
+    mergeIntoBook: (into: BookId, strays: readonly BookId[]) =>
+      mergeIntoBook(
+        { moving: { captures }, removing: { repository }, forgetting: { repository } },
+        into,
+        strays,
       ),
   };
 }

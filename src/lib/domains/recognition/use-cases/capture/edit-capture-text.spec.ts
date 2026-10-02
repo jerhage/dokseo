@@ -36,6 +36,7 @@ function repository(broken = false) {
     },
     remove: () => Promise.resolve({ kind: 'success' as const }),
     clearBook: () => Promise.resolve({ kind: 'success' as const }),
+    moveBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, saved };

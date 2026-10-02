@@ -231,6 +231,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       listRemovedBooks: () => Promise.reject(new Error('not used')),
       deleteRemovedBookCaptures: () => Promise.reject(new Error('not used')),
       removeBookAndCaptures: () => Promise.reject(new Error('not used')),
+      mergeIntoBook: () => Promise.reject(new Error('not used')),
       editBook: async (id, edit) => {
         if (edit.position !== undefined) throw new Error('a place is saved with saveReadingPlace');
         edits.push({

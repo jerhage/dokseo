@@ -6,6 +6,8 @@ import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
+import { NOTHING_TO_MERGE } from '../domain/book/book-merge';
+import type { BookMerge, MergeInto } from '../domain/book/book-merge';
 import type {
   BookListing,
   LibraryRepository,
@@ -217,9 +219,26 @@ function inspectedEpub(
   };
 }
 
+type MergeCall = { readonly into: string; readonly strays: readonly string[] };
+
+function fakeMerge(outcome: BookMerge = { kind: 'merged' }): {
+  readonly mergeInto: MergeInto;
+  readonly calls: MergeCall[];
+} {
+  const calls: MergeCall[] = [];
+  return {
+    calls,
+    mergeInto: (into, strays) => {
+      calls.push({ into, strays });
+      return Promise.resolve(outcome);
+    },
+  };
+}
+
 function deps(over: Partial<OpenFileDeps> = {}): OpenFileDeps {
   return {
     repository: fakeRepository().repository,
+    mergeInto: fakeMerge().mergeInto,
     builder: fakeBuilder(built(builtSource())).builder,
     inspectEpub: fakeInspector().inspector,
     partialMd5: () => Promise.resolve(digested(DIGEST)),
@@ -667,7 +686,7 @@ describe('openFile', () => {
 
     const result = await openFile(deps({ repository: repository.repository }), files);
 
-    expect(result).toEqual({ kind: 'already-held', book: known });
+    expect(result).toEqual({ kind: 'already-held', book: known, merge: NOTHING_TO_MERGE });
   });
 
   it('stores nothing and builds nothing when the fingerprint matches', async () => {
@@ -715,7 +734,7 @@ describe('openFile', () => {
       'file-name',
     );
 
-    expect(result).toEqual({ kind: 'already-held', book: known });
+    expect(result).toEqual({ kind: 'already-held', book: known, merge: NOTHING_TO_MERGE });
     expect(builder.calls).toEqual([]);
   });
 
@@ -928,7 +947,143 @@ describe('openFile', () => {
 
     const result = await openFile(deps({ repository: repository.repository }), files);
 
-    expect(result).toEqual({ kind: 'already-held', book: known });
+    expect(result).toEqual({ kind: 'already-held', book: known, merge: NOTHING_TO_MERGE });
+  });
+
+  const KINO = 'キノの旅 the Beautiful World';
+
+  const kinoUpload: readonly File[] = [inFolder(new File(['bytes'], `${KINO}.epub`), '')];
+
+  function heldKino(): Book {
+    return {
+      ...heldBook(contentHash(DIGEST)),
+      id: bookId('6a7bd926-held'),
+      title: KINO,
+      sourceKind: 'epub',
+      fileName: `${KINO}.epub`,
+    };
+  }
+
+  function brokenKino(overrides: Partial<RemovedBook> = {}): RemovedBook {
+    return removedRecord({
+      id: bookId('a816bb74-9c83-4e11-a8bf-ce63119b9e24'),
+      title: KINO,
+      contentHash: 'a'.repeat(64),
+      fileName: '',
+      ...overrides,
+    });
+  }
+
+  it('merges an unreadable SHA-256 row with no file name and the same title into the held book the upload joins', async () => {
+    const known = heldKino();
+    const repository = fakeRepository(WRITTEN, [], listing([known]), [], [brokenKino()]);
+    const builder = fakeBuilder(built(builtSource()));
+    const merging = fakeMerge();
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        builder: builder.builder,
+        mergeInto: merging.mergeInto,
+      }),
+      kinoUpload,
+    );
+
+    expect(result).toEqual({ kind: 'already-held', book: known, merge: { kind: 'merged' } });
+    expect(merging.calls).toEqual([
+      { into: '6a7bd926-held', strays: ['a816bb74-9c83-4e11-a8bf-ce63119b9e24'] },
+    ]);
+    expect(repository.added).toEqual([]);
+    expect(builder.calls).toEqual([]);
+  });
+
+  it.each([
+    ['its content hash', { title: 'Other', contentHash: DIGEST }],
+    ['its file name', { title: 'Other', fileName: `${KINO}.epub` }],
+    ['the file-name title of the upload', { title: KINO }],
+  ])('merges an unreadable row into a held book by %s', async (_, row) => {
+    const known = { ...heldKino(), title: 'Kino no Tabi' };
+    const repository = fakeRepository(WRITTEN, [], listing([known]), [], [brokenKino(row)]);
+    const merging = fakeMerge();
+
+    const result = await openFile(
+      deps({ repository: repository.repository, mergeInto: merging.mergeInto }),
+      kinoUpload,
+    );
+
+    expect(result).toMatchObject({ kind: 'already-held', merge: { kind: 'merged' } });
+    expect(merging.calls).toHaveLength(1);
+  });
+
+  it('merges every unreadable row that matches the held book', async () => {
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([heldKino()]),
+      [],
+      [brokenKino({ id: bookId('broken-1') }), brokenKino({ id: bookId('broken-2') })],
+    );
+    const merging = fakeMerge();
+
+    await openFile(
+      deps({ repository: repository.repository, mergeInto: merging.mergeInto }),
+      kinoUpload,
+    );
+
+    expect(merging.calls).toEqual([{ into: '6a7bd926-held', strays: ['broken-1', 'broken-2'] }]);
+  });
+
+  it('merges nothing when no unreadable row shares the hash, file name or title of the held book', async () => {
+    const known = heldKino();
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([known]),
+      [],
+      [brokenKino({ title: 'Other', fileName: 'other.epub' })],
+    );
+    const merging = fakeMerge();
+
+    const result = await openFile(
+      deps({ repository: repository.repository, mergeInto: merging.mergeInto }),
+      kinoUpload,
+    );
+
+    expect(result).toEqual({ kind: 'already-held', book: known, merge: NOTHING_TO_MERGE });
+    expect(merging.calls).toEqual([]);
+  });
+
+  it('merges no removed record into a held book, however it matches', async () => {
+    const repository = fakeRepository(
+      WRITTEN,
+      [],
+      listing([heldKino()]),
+      [brokenKino({ contentHash: DIGEST })],
+      [],
+    );
+    const merging = fakeMerge();
+
+    const result = await openFile(
+      deps({ repository: repository.repository, mergeInto: merging.mergeInto }),
+      kinoUpload,
+    );
+
+    expect(result).toMatchObject({ kind: 'already-held', merge: NOTHING_TO_MERGE });
+    expect(merging.calls).toEqual([]);
+  });
+
+  it('carries a partial merge out to its caller', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([heldKino()]), [], [brokenKino()]);
+
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        mergeInto: fakeMerge({ kind: 'partly-merged' }).mergeInto,
+      }),
+      kinoUpload,
+    );
+
+    expect(result).toMatchObject({ kind: 'already-held', merge: { kind: 'partly-merged' } });
   });
 
   it('passes a blocked store through when the library cannot be read', async () => {

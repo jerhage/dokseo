@@ -41,6 +41,7 @@ function repository(broken = false) {
       return Promise.resolve({ kind: 'success' as const });
     },
     clearBook: () => Promise.resolve({ kind: 'success' as const }),
+    moveBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   return { captures, remaining: () => rows.map((row) => row.id) };

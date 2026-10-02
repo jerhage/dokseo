@@ -21,6 +21,18 @@ vi.mock('$lib/platform/idb/connection', () => ({
     return Promise.resolve();
   },
   deleteByIndex: () => Promise.resolve(),
+  rewriteByIndex: (
+    _db: unknown,
+    _store: string,
+    _index: string,
+    key: unknown,
+    rewrite: (row: { id?: unknown; bookId?: unknown }) => { id?: unknown; bookId?: unknown },
+  ) => {
+    for (const row of [...held.rows.values()].filter((stored) => stored.bookId === key)) {
+      held.rows.set(row.id, rewrite(row));
+    }
+    return Promise.resolve();
+  },
 }));
 
 const BOOK = bookId('book-one');
@@ -73,6 +85,20 @@ describe('createCaptureRepository', () => {
       expect(listed.kind === 'success' && listed.unreadable).toEqual([{ id: 'old' }]);
     },
   );
+
+  it('moves every row of a book, readable or not, onto another book and keeps its other fields', async () => {
+    const other = { ...GOOD, id: captureId('other'), bookId: bookId('book-two') };
+    held.rows.set(GOOD.id, GOOD);
+    held.rows.set(OLD_SHAPE.id, OLD_SHAPE);
+    held.rows.set(other.id, other);
+
+    const moved = await createCaptureRepository().moveBook(BOOK, bookId('book-two'));
+
+    expect(moved).toEqual({ kind: 'success' });
+    expect(held.rows.get('good')).toEqual({ ...GOOD, bookId: 'book-two' });
+    expect(held.rows.get('old')).toEqual({ ...OLD_SHAPE, bookId: 'book-two' });
+    expect(held.rows.get('other')).toEqual(other);
+  });
 
   it('removes an unreadable row by its id without reading it', async () => {
     held.rows.set(OLD_SHAPE.id, OLD_SHAPE);

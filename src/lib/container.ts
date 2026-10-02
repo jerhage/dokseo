@@ -27,12 +27,13 @@ type Container = {
 function buildContainer(): Container {
   const repository = createLibraryRepository();
   const captures = createCaptureRepository();
+  const removedBooks = buildRemovedBooks(repository, captures);
 
   return {
     beginTrace,
     library: {
-      ...buildLibrary(repository),
-      ...buildRemovedBooks(repository, captures),
+      ...buildLibrary(repository, removedBooks.mergeIntoBook),
+      ...removedBooks,
     },
     flowing: buildFlowing(),
     recognition: buildRecognition(captures),

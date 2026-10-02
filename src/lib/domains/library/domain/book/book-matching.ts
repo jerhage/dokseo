@@ -34,6 +34,13 @@ type RestorableUpload = UploadIdentity & {
   readonly fileTitle: string;
 };
 
+type MatchProbe = {
+  readonly contentHash: string;
+  readonly fileName: string;
+  readonly title: string;
+  readonly fileTitle: string;
+};
+
 type RestorableCandidates<T extends RestorableIdentity> = {
   readonly removed: readonly T[];
   readonly unreadable: readonly T[];
@@ -54,9 +61,12 @@ function sameTitle(candidate: string, upload: string): boolean {
   return title !== null && matchableTitle(candidate) === title;
 }
 
-function matchesAt(step: RestoreStep, candidate: RestorableIdentity, upload: RestorableUpload) {
+function matchesAt(step: RestoreStep, candidate: RestorableIdentity, upload: MatchProbe) {
   return match(step)
-    .with('content', () => candidate.contentHash === upload.contentHash)
+    .with(
+      'content',
+      () => upload.contentHash.length > 0 && candidate.contentHash === upload.contentHash,
+    )
     .with('file-name', () => upload.fileName.length > 0 && candidate.fileName === upload.fileName)
     .with(
       'title',
@@ -72,7 +82,7 @@ function newestFirst<T extends RestorableIdentity>(candidates: readonly T[]): re
 
 function restorableMatch<T extends RestorableIdentity>(
   candidates: RestorableCandidates<T>,
-  upload: RestorableUpload,
+  upload: MatchProbe,
 ): T | null {
   const ranked = [...newestFirst(candidates.unreadable), ...newestFirst(candidates.removed)];
   for (const step of RESTORE_STEPS) {
@@ -80,6 +90,17 @@ function restorableMatch<T extends RestorableIdentity>(
     if (found !== undefined) return found;
   }
   return null;
+}
+
+function mergeableRows<T extends RestorableIdentity>(
+  unreadable: readonly T[],
+  held: MatchProbe,
+): readonly T[] {
+  return unreadable.filter((row) => RESTORE_STEPS.some((step) => matchesAt(step, row, held)));
+}
+
+function shelfMatch(shelf: readonly Book[], row: MatchProbe): Book | null {
+  return restorableMatch({ removed: [], unreadable: shelf }, row);
 }
 
 function byName(held: readonly Book[], fileName: string): UploadJoin {
@@ -102,9 +123,17 @@ function joinUpload(
     .exhaustive();
 }
 
-export { BOOK_MATCHINGS, DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch };
+export {
+  BOOK_MATCHINGS,
+  DEFAULT_BOOK_MATCHING,
+  joinUpload,
+  mergeableRows,
+  restorableMatch,
+  shelfMatch,
+};
 export type {
   BookMatching,
+  MatchProbe,
   RestorableCandidates,
   RestorableIdentity,
   RestorableUpload,

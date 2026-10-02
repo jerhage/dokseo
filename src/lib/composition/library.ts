@@ -11,6 +11,7 @@ import {
   openStoredPageSource,
 } from '../domains/library/adapters/stored-page-source';
 import type { BookEdit } from '../domains/library/domain/book/book';
+import type { MergeInto } from '../domains/library/domain/book/book-merge';
 import type { BookMatching } from '../domains/library/domain/book/book-matching';
 import type { LibraryRepository } from '../domains/library/domain/book/library-repository';
 import type { UploadReport } from '../domains/library/domain/ingest/upload-progress';
@@ -61,9 +62,10 @@ type LibraryUseCases = {
   readonly readPageSizes: (source: PageSource) => Promise<ReadPageSizesResult>;
 };
 
-function buildLibrary(repository: LibraryRepository): LibraryUseCases {
+function buildLibrary(repository: LibraryRepository, mergeInto: MergeInto): LibraryUseCases {
   const openFileDeps: OpenFileDeps = {
     repository,
+    mergeInto,
     builder: createFileSourceBuilder(),
     inspectEpub: async (source: Blob) => {
       const { inspectEpubArchive } = await import('../domains/library/adapters/zip-epub-inspector');

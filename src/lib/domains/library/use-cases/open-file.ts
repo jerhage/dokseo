@@ -8,8 +8,15 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
-import { bookTitle, plausibleTitle } from '../domain/book/title';
-import { DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch } from '../domain/book/book-matching';
+import { NOTHING_TO_MERGE } from '../domain/book/book-merge';
+import type { HeldMerge, MergeInto } from '../domain/book/book-merge';
+import { bookTitle, plausibleTitle, suggestTitle } from '../domain/book/title';
+import {
+  DEFAULT_BOOK_MATCHING,
+  joinUpload,
+  mergeableRows,
+  restorableMatch,
+} from '../domain/book/book-matching';
 import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
 import type { LibraryRepository } from '../domain/book/library-repository';
 import { INTRINSIC_ORDER } from '../domain/book/page-list';
@@ -35,7 +42,7 @@ import type { UploadReport } from '../domain/ingest/upload-progress';
 type OpenedUpload =
   | { readonly kind: 'added'; readonly book: Book }
   | { readonly kind: 'restored'; readonly book: Book }
-  | { readonly kind: 'already-held'; readonly book: Book };
+  | { readonly kind: 'already-held'; readonly book: Book; readonly merge: HeldMerge };
 
 type OpenFileFailure =
   | { readonly kind: 'source'; readonly failure: SourceBuildError }
@@ -57,6 +64,7 @@ type OpenFileDeps = {
   readonly builder: SourceBuilder;
   readonly inspectEpub: EpubInspector;
   readonly partialMd5: ContentHasher;
+  readonly mergeInto: MergeInto;
   readonly requestPersistence: () => Promise<boolean>;
   readonly now: () => number;
   readonly newId: () => string;
@@ -87,15 +95,48 @@ async function uploadIdentity(deps: OpenFileDeps, files: readonly File[]): Promi
   };
 }
 
-function joinedBook(join: UploadJoin): OpenedUpload | null {
+function joinedBook(join: UploadJoin): Book | null {
   return match(join)
-    .returnType<OpenedUpload | null>()
-    .with({ kind: 'by-content' }, { kind: 'by-name' }, ({ book }) => ({
-      kind: 'already-held',
-      book,
-    }))
+    .returnType<Book | null>()
+    .with({ kind: 'by-content' }, { kind: 'by-name' }, ({ book }) => book)
     .with({ kind: 'new' }, () => null)
     .exhaustive();
+}
+
+function fileTitleOf(files: readonly File[]): string {
+  const names = files.map((file) =>
+    file.webkitRelativePath.length > 0 ? file.webkitRelativePath : file.name,
+  );
+  const sourceKind = detectSourceKind(names);
+  if (sourceKind === null) return '';
+  return suggestTitle(
+    sourceKind,
+    files.map((file) => ({
+      name: file.name.normalize('NFC'),
+      path: file.webkitRelativePath.normalize('NFC'),
+    })),
+  );
+}
+
+async function mergeStrays(
+  deps: OpenFileDeps,
+  book: Book,
+  identity: UploadIdentity,
+  files: readonly File[],
+): Promise<HeldMerge> {
+  const restorable = await deps.repository.listRestorable();
+  if (restorable.kind !== 'success') return restorable;
+  const strays = mergeableRows(restorable.unreadable, {
+    ...identity,
+    title: book.title,
+    fileTitle: fileTitleOf(files),
+  }).filter((stray) => stray.id !== book.id);
+  if (strays.length === 0) return NOTHING_TO_MERGE;
+
+  return deps.mergeInto(
+    book.id,
+    strays.map((stray) => stray.id),
+  );
 }
 
 function epubUpload(files: readonly File[]): File | null {
@@ -207,7 +248,10 @@ async function openFile(
   const identity = identified.identity;
 
   const joined = joinedBook(joinUpload(held, identity, matching));
-  if (joined !== null) return joined;
+  if (joined !== null) {
+    const merge = await mergeStrays(deps, joined, identity, files);
+    return { kind: 'already-held', book: joined, merge };
+  }
 
   const restorable = await deps.repository.listRestorable();
   if (restorable.kind !== 'success') return restorable;

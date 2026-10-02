@@ -18,6 +18,7 @@ interface CaptureRepository {
   save(capture: Capture): Promise<CaptureWrite>;
   remove(capture: CaptureId): Promise<CaptureWrite>;
   clearBook(book: BookId): Promise<CaptureWrite>;
+  moveBook(from: BookId, to: BookId): Promise<CaptureWrite>;
 }
 
 export type { CaptureListing, CaptureRepository, CaptureWrite };

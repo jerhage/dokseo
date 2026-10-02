@@ -55,6 +55,7 @@ function stores(rows: readonly Capture[], fault: StoreFault = 'none') {
     },
     remove: () => Promise.resolve({ kind: 'success' as const }),
     clearBook: () => Promise.resolve({ kind: 'success' as const }),
+    moveBook: () => Promise.resolve({ kind: 'success' as const }),
   };
 
   const tags: TagRepository = {

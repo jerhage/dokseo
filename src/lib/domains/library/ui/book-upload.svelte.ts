@@ -3,11 +3,12 @@ import { useQueryClient } from '@tanstack/svelte-query';
 import type { QueryClient } from '@tanstack/svelte-query';
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
-import type { Notice, Notify } from '$lib/shared/notice';
+import type { Notice, NoticeTone, Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
 import { shownTitle } from '$lib/shared/shown-title';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
+import type { HeldMerge } from '../domain/book/book-merge';
 import type { SourceBuildError } from '../domain/ingest/source-builder';
 import { suggestTitle } from '../domain/book/title';
 import { describeIngestLimit } from '../domain/ingest/ingest-limits';
@@ -51,6 +52,25 @@ const ALREADY_HELD = 'Already in your library';
 
 const RESTORED_MESSAGE = 'Its captures are back with it.';
 
+const MERGED_ON_UPLOAD = 'Its old captures were moved onto it.';
+
+const MERGE_UNFINISHED =
+  'Its old captures could not all be moved. Merge in the unreadable book notice finishes it.';
+
+type HeldNotice = { readonly tone: NoticeTone; readonly message: string };
+
+function heldNotice(merge: HeldMerge, title: string): HeldNotice {
+  return match(merge)
+    .returnType<HeldNotice>()
+    .with({ kind: 'nothing-to-merge' }, () => ({ tone: 'info', message: title }))
+    .with({ kind: 'merged' }, () => ({ tone: 'success', message: `${title}. ${MERGED_ON_UPLOAD}` }))
+    .with({ kind: 'partly-merged' }, { kind: 'storage-unavailable' }, () => ({
+      tone: 'warning',
+      message: `${title}. ${MERGE_UNFINISHED}`,
+    }))
+    .exhaustive();
+}
+
 function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
   const open = { label: 'Open', run: () => openBook(opened.book.id) };
   return match(opened)
@@ -67,10 +87,9 @@ function uploadNotice(opened: OpenedUpload, openBook: OpenBook): Notice {
       action: open,
       duration: ACTION_NOTICE_MS,
     }))
-    .with({ kind: 'already-held' }, ({ book }) => ({
-      tone: 'info' as const,
+    .with({ kind: 'already-held' }, ({ book, merge }) => ({
+      ...heldNotice(merge, shownTitle(book)),
       title: ALREADY_HELD,
-      message: shownTitle(book),
       action: open,
       duration: ACTION_NOTICE_MS,
     }))
@@ -247,6 +266,8 @@ class BookUpload {
 export {
   ALREADY_HELD,
   BookUpload,
+  MERGED_ON_UPLOAD,
+  MERGE_UNFINISHED,
   RESTORED_MESSAGE,
   UPLOAD_FAILED,
   describeFailedBook,

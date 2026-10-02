@@ -4,6 +4,7 @@ import {
   listByIndex,
   listRecords,
   putRecord,
+  rewriteByIndex,
 } from '$lib/platform/idb/connection';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -62,6 +63,18 @@ function createCaptureRepository(): CaptureRepository {
     async clearBook(book: BookId): Promise<CaptureWrite> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       await deleteByIndex(await recognitionDatabase(), CAPTURE_STORE, CAPTURE_BOOK_INDEX, book);
+      return WRITTEN;
+    },
+
+    async moveBook(from: BookId, to: BookId): Promise<CaptureWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      await rewriteByIndex<StoredCapture>(
+        await recognitionDatabase(),
+        CAPTURE_STORE,
+        CAPTURE_BOOK_INDEX,
+        from,
+        (row) => ({ ...row, bookId: to }),
+      );
       return WRITTEN;
     },
   };
