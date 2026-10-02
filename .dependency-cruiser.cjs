@@ -42,7 +42,7 @@ module.exports = {
     {
       name: 'queries-know-no-ui-or-wiring',
       comment:
-        "A domain's queries/ folder holds its query keys and the factories that return queryOptions: a key and a call to a use case the caller hands in. It sits between use-cases/ and ui/, so it may import its own domain/ for types, shared/ and npm, and it may not import any ui/ (its own included, since ui/ imports queries/), any adapters/, container.ts or context.ts. A factory types its parameter structurally as the use cases it calls, so a spec passes a plain object and the composition root stays above it.",
+        "A domain's queries/ folder holds its query keys and the factories that return queryOptions: a key and a call to a use case the caller hands in. It sits between use-cases/ and ui/, so it may import its own domain/ for types, shared/ and npm, and it may not import any ui/ (its own included, since ui/ imports queries/), any adapters/, container.ts, context.ts or the builders in composition/. A factory types its parameter structurally as the use cases it calls, so a spec passes a plain object and the composition root stays above it.",
       severity: 'error',
       from: { path: '^src/lib/domains/[^/]+/queries/' },
       to: {
@@ -50,6 +50,7 @@ module.exports = {
           '^src/lib/domains/[^/]+/(ui|adapters)/',
           '^src/lib/container\\.ts$',
           '^src/lib/context\\.ts$',
+          '^src/lib/composition/',
         ],
       },
     },
