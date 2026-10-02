@@ -105,6 +105,20 @@ function bandPixels(image: ImageBitmap, band: TextBand): Float32Array {
   return lineTensorData(pixels, geometry);
 }
 
+async function dictionaryText(
+  cacheName: string,
+  url: string,
+  fetched: (input: string, init?: RequestInit) => Promise<Response>,
+): Promise<string> {
+  const cache = await caches.open(cacheName);
+  const held = await cache.match(url);
+  if (held !== undefined) return await held.text();
+
+  const answer = checkedResponse(await fetched(url), 'GET', url);
+  await cache.put(url, answer.clone());
+  return await answer.text();
+}
+
 function dictionaryUrl(remoteHost: string, template: string, modelId: string): string {
   const path = template.replaceAll('{model}', modelId).replaceAll('{revision}', 'main');
   return `${remoteHost}${path}${DICTIONARY_FILE}`;
@@ -142,12 +156,7 @@ async function openSession(
     refused === null ? openOnDevice(await deviceFor(setup.compute), build) : reopenOnCpu(build);
 
   const [config, running] = await explained(
-    Promise.all([
-      env
-        .fetch(url, { cache: 'force-cache' })
-        .then((answer: Response) => checkedResponse(answer, 'GET', url).text()),
-      model,
-    ]),
+    Promise.all([dictionaryText(env.cacheKey, url, env.fetch), model]),
   );
 
   const labels = ctcLabels(characterDictionary(config));
