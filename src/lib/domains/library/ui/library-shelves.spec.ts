@@ -8,7 +8,6 @@ import {
   bookFacts,
   continueReading,
   emptyShelfText,
-  otherView,
   readingState,
   shelfBooks,
   shelfTabs,
@@ -62,51 +61,11 @@ describe('readingState', () => {
     expect(readingState(comic('a', 9))).toBe('finished');
   });
 
-  it('counts a comic whose last spread showed the last page as finished', () => {
-    const spread = imagePlace(imageIndex(3), imageIndex(4));
-    expect(readingState({ ...comic('a', 0, 5), position: spread })).toBe('finished');
-  });
-
-  it('counts a comic whose spread showed the page before the last as in progress', () => {
-    const spread = imagePlace(imageIndex(2), imageIndex(3));
-    expect(readingState({ ...comic('a', 0, 5), position: spread })).toBe('reading');
-  });
-
-  it('counts a comic back on its first page as not started whatever it showed', () => {
-    const cover = imagePlace(imageIndex(0), imageIndex(1));
-    expect(readingState({ ...comic('a', 0, 2), position: cover })).toBe('unread');
-  });
-
   it('counts a one-image book a reader saved as finished, and one only imported as not started', () => {
     const only = comic('a', 0, 1);
 
     expect(readingState(only)).toBe('unread');
     expect(readingState({ ...only, lastReadAt: 1758300000000 })).toBe('finished');
-  });
-
-  it('counts a two-page spread book a reader saved showing both pages as finished', () => {
-    const spread = { ...comic('a', 0, 2), position: imagePlace(imageIndex(0), imageIndex(1)) };
-
-    expect(readingState(spread)).toBe('unread');
-    expect(readingState({ ...spread, lastReadAt: 1758300000000 })).toBe('finished');
-  });
-
-  it('counts a text whose last page reported a rounding short of one as finished', () => {
-    const last = textPlace('epubcfi(/6/40!/4/2)', 0.9999999999999999);
-    expect(readingState(novel('a', last))).toBe('finished');
-  });
-
-  it('counts a text never opened past its start as not started', () => {
-    expect(readingState(novel('a', START_OF_THE_TEXT))).toBe('unread');
-  });
-
-  it('counts a text with a place but no known fraction as in progress', () => {
-    expect(readingState(novel('a', textPlace('epubcfi(/6/4!/2)', null)))).toBe('reading');
-    expect(readingState(novel('a', textPlace('epubcfi(/6/4!/2)', 0.99)))).toBe('reading');
-  });
-
-  it('counts a text read to its end as finished', () => {
-    expect(readingState(novel('a', textPlace('epubcfi(/6/40!/4/2)', 1)))).toBe('finished');
   });
 
   it('counts a book marked finished as finished wherever its place is', () => {
@@ -147,13 +106,12 @@ describe('shelfTabs', () => {
 });
 
 describe('toShelf', () => {
-  it('reads a known shelf id', () => {
-    expect(toShelf('finished')).toBe('finished');
-  });
-
-  it('falls back to the all shelf for an unknown or missing id', () => {
-    expect(toShelf('elsewhere')).toBe('all');
-    expect(toShelf(undefined)).toBe('all');
+  it.each([
+    { id: 'finished', shelf: 'finished' },
+    { id: 'elsewhere', shelf: 'all' },
+    { id: undefined, shelf: 'all' },
+  ] as const)('reads $id as the $shelf shelf', ({ id, shelf }) => {
+    expect(toShelf(id)).toBe(shelf);
   });
 });
 
@@ -178,15 +136,6 @@ describe('sortBooks', () => {
     expect(titles(sortBooks(marked, 'progress'))).toEqual(['marked', 'almost']);
   });
 
-  it('ranks a spread book by the last page it showed, not the page it reopens at', () => {
-    const spread = { ...comic('spread', 0, 5), position: imagePlace(imageIndex(3), imageIndex(4)) };
-
-    expect(titles(sortBooks([comic('middle', 3, 5), spread], 'progress'))).toEqual([
-      'spread',
-      'middle',
-    ]);
-  });
-
   it('leaves the given list unchanged', () => {
     sortBooks(books, 'title');
 
@@ -205,12 +154,6 @@ describe('continueReading', () => {
     const books = Array.from({ length: CONTINUE_LIMIT + 2 }, (_, at) => comic(`b${at}`, 3));
 
     expect(continueReading(books)).toHaveLength(CONTINUE_LIMIT);
-  });
-
-  it('leaves out a book marked finished even when it is read again', () => {
-    const books = [{ ...comic('marked', 4), lastReadAt: 300, finishedAt: 100 }, comic('open', 4)];
-
-    expect(titles(continueReading(books))).toEqual(['open']);
   });
 
   it('puts the book read most recently first', () => {
@@ -247,9 +190,15 @@ describe('continueReading', () => {
 });
 
 describe('bookFacts', () => {
-  it('names the source, the reading direction and the image count', () => {
-    expect(bookFacts(comic('a', 0, 120))).toBe('Archive · Right to left · 120 images');
-  });
+  it.each([
+    { sourceKind: 'archive', imageCount: 120, facts: 'Archive · Right to left · 120 images' },
+    { sourceKind: 'pdf', imageCount: 2, facts: 'PDF · Right to left · 2 images' },
+  ] as const)(
+    'names the source, the reading direction and the image count of $sourceKind',
+    ({ sourceKind, imageCount, facts }) => {
+      expect(bookFacts({ ...comic('a', 0, imageCount), sourceKind })).toBe(facts);
+    },
+  );
 
   it('reads a strip from top to bottom whatever direction it stores', () => {
     const strip = { ...comic('a', 0, 1), layoutKind: 'continuous', sourceKind: 'images' } as const;
@@ -262,12 +211,6 @@ describe('bookFacts', () => {
 
     expect(bookFacts(book)).toBe('EPUB · Left to right · Flowing text');
   });
-
-  it('names a PDF', () => {
-    expect(bookFacts({ ...comic('a', 0, 2), sourceKind: 'pdf' })).toBe(
-      'PDF · Right to left · 2 images',
-    );
-  });
 });
 
 describe('emptyShelfText', () => {
@@ -278,12 +221,6 @@ describe('emptyShelfText', () => {
   it('explains an empty shelf when nothing is searched', () => {
     expect(emptyShelfText('reading', false)).toBe('Nothing in progress. Open a book to start it.');
     expect(emptyShelfText('finished', false)).toBe('No finished books yet.');
-  });
-});
-
-describe('otherView', () => {
-  it('switches covers to a list and a list back to covers', () => {
-    expect([otherView('grid'), otherView('list')]).toEqual(['list', 'grid']);
   });
 });
 

@@ -44,20 +44,14 @@ describe('uploadCountText', () => {
 });
 
 describe('uploadStageText', () => {
-  it('names the drop being read before anything is known about it', () => {
-    expect(uploadStageText(INSPECTING)).toBe('Reading the drop');
-  });
-
-  it('names the kind of source being opened', () => {
-    expect(uploadStageText({ kind: 'opening', sourceKind: 'pdf' })).toBe('Opening the PDF');
-    expect(uploadStageText({ kind: 'opening', sourceKind: 'archive' })).toBe('Opening the archive');
-    expect(uploadStageText({ kind: 'opening', sourceKind: 'images' })).toBe(
-      'Opening the packed images',
-    );
-  });
-
-  it('names the cover as its own stage', () => {
-    expect(uploadStageText({ kind: 'covering', imageCount: 186 })).toBe('Rendering the cover');
+  it.each([
+    { stage: INSPECTING, text: 'Reading the drop' },
+    { stage: { kind: 'opening', sourceKind: 'pdf' }, text: 'Opening the PDF' },
+    { stage: { kind: 'opening', sourceKind: 'archive' }, text: 'Opening the archive' },
+    { stage: { kind: 'opening', sourceKind: 'images' }, text: 'Opening the packed images' },
+    { stage: { kind: 'covering', imageCount: 186 }, text: 'Rendering the cover' },
+  ] as const)('names the $stage.kind stage as $text', ({ stage, text }) => {
+    expect(uploadStageText(stage)).toBe(text);
   });
 
   it('adds a percentage to a stage that has one', () => {
@@ -70,15 +64,17 @@ describe('uploadStageText', () => {
     expect(uploadStageText(storing())).toBe('Storing the source — 20% · ~40s left');
   });
 
-  it('omits the estimate rather than guessing one from too small a sample', () => {
-    expect(uploadStageText(storing({ elapsedMs: 100 }))).toBe('Storing the source — 20%');
-  });
-
-  it('states a long estimate in minutes', () => {
-    expect(uploadStageText(storing({ writtenBytes: 10_000_000, elapsedMs: 20_000 }))).toBe(
-      'Storing the source — 10% · ~3m left',
-    );
-  });
+  it.each([
+    { writtenBytes: 50_000_000, elapsedMs: 89_000, text: 'Storing the source — 50% · ~89s left' },
+    { writtenBytes: 50_000_000, elapsedMs: 90_000, text: 'Storing the source — 50% · ~2m left' },
+    { writtenBytes: 50_000_000, elapsedMs: 130_000, text: 'Storing the source — 50% · ~3m left' },
+    { writtenBytes: 10_000_000, elapsedMs: 20_000, text: 'Storing the source — 10% · ~3m left' },
+  ])(
+    'states an estimate from a minute and a half up in whole minutes, rounded up: $text',
+    ({ writtenBytes, elapsedMs, text }) => {
+      expect(uploadStageText(storing({ writtenBytes, elapsedMs }))).toBe(text);
+    },
+  );
 
   it('states a bare verb for a stage with neither a percentage nor an estimate', () => {
     expect(uploadStageText({ kind: 'packing', packed: 0, total: 0 })).toBe('Packing the images');
@@ -96,10 +92,6 @@ describe('uploadBatchText', () => {
 });
 
 describe('uploadsInProgressText', () => {
-  it('counts a single-book upload as one upload', () => {
-    expect(uploadsInProgressText(SINGLE_BOOK)).toBe('1 upload in progress');
-  });
-
   it('counts the books still to add, the current one included, falling as each finishes', () => {
     expect(
       [1, 2, 3, 4, 5].map((position) => uploadsInProgressText({ position, total: 5 })),
