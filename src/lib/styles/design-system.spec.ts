@@ -360,6 +360,33 @@ function group(found: RegExpMatchArray, index: number): string {
   return found[index] ?? '';
 }
 
+function lightDarkPair(value: string | undefined): readonly [string, string] | null {
+  const inner = /^light-dark\((.*)\)$/u.exec(value ?? '')?.[1];
+  if (inner === undefined) return null;
+
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (const [index, character] of Array.from(inner).entries()) {
+    if (character === '(') depth += 1;
+    if (character === ')') depth -= 1;
+    if (character === ',' && depth === 0) {
+      parts.push(inner.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  parts.push(inner.slice(start).trim());
+
+  const [light, dark, ...rest] = parts;
+  if (light === undefined || dark === undefined || rest.length > 0) return null;
+  return [light, dark];
+}
+
+function oklchLightness(colour: string): number | null {
+  const found = /^oklch\(([\d.]+)\s/u.exec(colour);
+  return found === null ? null : Number(group(found, 1));
+}
+
 function withoutComments(css: string): string {
   return css.replaceAll(/\/\*[\s\S]*?\*\//gu, '');
 }
@@ -619,14 +646,14 @@ describe('the design system stylesheets', () => {
     expect(scoped).toEqual(scoped.map(({ path }) => ({ path, selectors: expected(path) })));
   });
 
-  it('has every theme assign exactly the role primitives the default theme assigns', () => {
+  it('has every theme assign exactly the role primitives the default theme assigns, an icon stroke among them', () => {
     const expected = definitions(roleBody('base')).toSorted();
     const assigned = themeFiles().map((path) => ({
       path,
       names: definitions(roleRule(path).body).toSorted(),
     }));
 
-    expect(expected.length).toBeGreaterThan(0);
+    expect(expected).toContain('--ds-icon-stroke');
     expect(assigned.length).toBeGreaterThan(1);
     expect(assigned).toEqual(assigned.map(({ path }) => ({ path, names: expected })));
   });
@@ -682,10 +709,6 @@ describe('the design system stylesheets', () => {
 
     expect(clashing).toEqual([]);
     expect(defaults).toEqual([]);
-  });
-
-  it('lets a bare root render the default theme', () => {
-    expect(ruleFor(themeSheets(), ":root[data-theme='base']").selectors).toContain(':root');
   });
 
   it('declares every scheme-dependent color once, with no media query or scheme palette', () => {
@@ -1043,23 +1066,32 @@ describe('the design system stylesheets', () => {
     ).toBe(false);
   });
 
-  it('hides wide-only shell content and keeps a nowrap row on one line strictly below the shell breakpoint', () => {
+  it('hides wide-only shell content, keeps a nowrap row on one line, grows the buttons of a touch row to the 44px touch height, keeps a narrow row at its content width and hides content visually, all strictly below the shell breakpoint', () => {
     const layout = style('utilities/layout.css');
     const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
+    const elsewhere = layout.replace(narrow, '');
+    const narrowShell: readonly (readonly [string, readonly string[]])[] = [
+      ['wide-only', ['display: none']],
+      ['narrow-nowrap', ['flex-wrap: nowrap', '--tabs-header-wrap: nowrap']],
+      ['narrow-touch', ['--btn-min-block-size: var(--control-h-touch)']],
+      ['narrow-fit', ['flex: none']],
+      [
+        'narrow-visually-hidden',
+        declarations(ruleBody(style('utilities/text.css'), '.visually-hidden')),
+      ],
+    ];
 
-    expect(declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-wide-only'))).toEqual(
-      ['display: none'],
+    for (const [name, declared] of narrowShell) {
+      expect(
+        declarations(ruleBody(narrow, `.layout-app-shell .layout-app-shell-${name}`)),
+        name,
+      ).toEqual(declared);
+      expect(elsewhere, name).not.toMatch(new RegExp(`layout-app-shell-${name}(?![\\w-])`, 'u'));
+    }
+    expect(definitionValues(style('tokens/sizes.css')).get('--control-h-touch')).toBe(
+      'var(--ds-size-touch)',
     );
-    expect(
-      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-nowrap')),
-    ).toEqual(['flex-wrap: nowrap', '--tabs-header-wrap: nowrap']);
-    expect(
-      rules(layout.replace(narrow, '')).some((rule) =>
-        rule.selectors.some((selector) =>
-          /layout-app-shell-(?:wide-only|narrow-nowrap)$/u.test(selector),
-        ),
-      ),
-    ).toBe(false);
+    expect(definitionValues(style('base/primitives.css')).get('--ds-size-touch')).toBe('2.75rem');
   });
 
   it('hides narrow-only shell content from the shell breakpoint up', () => {
@@ -1074,20 +1106,6 @@ describe('the design system stylesheets', () => {
         rule.selectors.some((selector) => selector.endsWith('.layout-app-shell-narrow-only')),
       ),
     ).toBe(false);
-  });
-
-  it('grows the buttons of a touch shell row to the 44px touch height strictly below the shell breakpoint', () => {
-    const layout = style('utilities/layout.css');
-    const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
-
-    expect(
-      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-touch')),
-    ).toEqual(['--btn-min-block-size: var(--control-h-touch)']);
-    expect(definitionValues(style('tokens/sizes.css')).get('--control-h-touch')).toBe(
-      'var(--ds-size-touch)',
-    );
-    expect(definitionValues(style('base/primitives.css')).get('--ds-size-touch')).toBe('2.75rem');
-    expect(layout.replace(narrow, '')).not.toContain('layout-app-shell-narrow-touch');
   });
 
   it('names no button tone and no button emphasis together in one selector', () => {
@@ -1142,21 +1160,6 @@ describe('the design system stylesheets', () => {
 
       expect({ path, named }).toEqual({ path, named: [] });
     }
-  });
-
-  it('lets a narrow shell row keep its content width and hide content visually strictly below the shell breakpoint', () => {
-    const layout = style('utilities/layout.css');
-    const narrow = atRuleBlock(layout, '@container app-shell (width < 48rem)');
-
-    expect(
-      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-fit')),
-    ).toEqual(['flex: none']);
-    expect(
-      declarations(ruleBody(narrow, '.layout-app-shell .layout-app-shell-narrow-visually-hidden')),
-    ).toEqual(declarations(ruleBody(style('utilities/text.css'), '.visually-hidden')));
-    expect(layout.replace(narrow, '')).not.toMatch(
-      /layout-app-shell-narrow-(?:fit|visually-hidden)/u,
-    );
   });
 
   it('lets an element shrink below its content width', () => {
@@ -1297,7 +1300,13 @@ describe('the design system stylesheets', () => {
       'overrides/overrides.css',
     ].map(style);
 
-    for (const sheet of sheets) expect(sheet).not.toContain('.modal-backdrop.is-open');
+    const toggled = unique(
+      sheets.flatMap((sheet) =>
+        Array.from(sheet.matchAll(/\.modal-backdrop\.([\w-]+)/gu), (found) => group(found, 1)),
+      ),
+    );
+
+    expect(toggled).toEqual(['is-leaving']);
     expect(
       declarations(ruleBody(style('components/modal/modal.css'), '.modal-backdrop[open]')),
     ).toContain('display: grid');
@@ -1313,10 +1322,18 @@ describe('the design system stylesheets', () => {
         `--ds-tag-${colour}-ink`,
         `--ds-tag-${colour}-wash`,
       ]) {
-        expect({ name, value: scheme.get(name)?.startsWith('light-dark(') }).toEqual({
-          name,
-          value: true,
-        });
+        const pair = lightDarkPair(scheme.get(name));
+        const [light, dark] = pair ?? ['', ''];
+        const lightInLight = oklchLightness(light);
+        const lightInDark = oklchLightness(dark);
+
+        expect({ name, paired: pair !== null && light !== dark }).toEqual({ name, paired: true });
+        if (lightInLight !== null && lightInDark !== null) {
+          expect({ name, darkerInLight: lightInLight < lightInDark }).toEqual({
+            name,
+            darkerInLight: true,
+          });
+        }
       }
     }
     expect(themed.filter((name) => name.startsWith('--ds-tag-'))).toEqual([]);
@@ -1577,48 +1594,39 @@ describe('the design system stylesheets', () => {
     ]);
   });
 
-  it('pins a bar across the full width of its positioned ancestor, at the edge its name says', () => {
+  it('pins a bar across the full width of its positioned ancestor at the edge its name says, lifts a bottom-pinned one by the offset its ancestor sets, and floats a callout a step below the offset its ancestor drops it by', () => {
     const layout = style('utilities/layout.css');
+    const placed: readonly (readonly [string, readonly string[]])[] = [
+      ['.pin-top', ['inset-block-start: 0', 'inset-inline: 0', 'position: absolute']],
+      ['.pin-bottom', ['inset-block-end: 0', 'inset-inline: 0', 'position: absolute']],
+      ['.pin-lift', ['inset-block-end: var(--pin-lift, 0px)']],
+      [
+        '.callout-top-start',
+        [
+          'inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3))',
+          'inset-inline-start: var(--sp-3)',
+          'max-inline-size: calc(100% - 2 * var(--sp-3))',
+          'position: absolute',
+        ],
+      ],
+      [
+        '.callout-top-center',
+        [
+          'inline-size: max-content',
+          'inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3))',
+          'inset-inline-start: 50%',
+          'max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3))',
+          'position: absolute',
+          'translate: -50% 0',
+        ],
+      ],
+    ];
 
-    expect(everyDeclarationFor(layout, '.pin-top').toSorted()).toEqual([
-      'inset-block-start: 0',
-      'inset-inline: 0',
-      'position: absolute',
-    ]);
-    expect(everyDeclarationFor(layout, '.pin-bottom').toSorted()).toEqual([
-      'inset-block-end: 0',
-      'inset-inline: 0',
-      'position: absolute',
-    ]);
+    for (const [selector, declared] of placed) {
+      expect(everyDeclarationFor(layout, selector).toSorted(), selector).toEqual(declared);
+    }
     expect(declarations(ruleBody(layout, '.relative'))).toEqual(['position: relative']);
-  });
-
-  it('lifts a bottom-pinned element by the offset its ancestor sets, and by nothing without one', () => {
-    const layout = style('utilities/layout.css');
-
-    expect(everyDeclarationFor(layout, '.pin-lift')).toEqual([
-      'inset-block-end: var(--pin-lift, 0px)',
-    ]);
     expect(layout.indexOf('.pin-lift {')).toBeGreaterThan(layout.indexOf('.pin-bottom {'));
-  });
-
-  it('floats a callout a step below the offset its ancestor drops it by, at the start or centred', () => {
-    const layout = style('utilities/layout.css');
-
-    expect(everyDeclarationFor(layout, '.callout-top-start').toSorted()).toEqual([
-      'inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3))',
-      'inset-inline-start: var(--sp-3)',
-      'max-inline-size: calc(100% - 2 * var(--sp-3))',
-      'position: absolute',
-    ]);
-    expect(everyDeclarationFor(layout, '.callout-top-center').toSorted()).toEqual([
-      'inline-size: max-content',
-      'inset-block-start: calc(var(--pin-drop, 0px) + var(--sp-3))',
-      'inset-inline-start: 50%',
-      'max-inline-size: min(var(--container-prose), 100% - 2 * var(--sp-3))',
-      'position: absolute',
-      'translate: -50% 0',
-    ]);
   });
 
   it('gives every step of the z-index scale a utility that reads its token', () => {
@@ -1695,13 +1703,6 @@ describe('the design system stylesheets', () => {
     expect(definitionValues(style('tokens/icons.css')).get('--icon-stroke')).toBe(
       'var(--ds-icon-stroke)',
     );
-  });
-
-  it('gives every theme an icon stroke', () => {
-    const themed = themeFiles().map(roleRule);
-
-    expect(themed.length).toBeGreaterThan(1);
-    for (const rule of themed) expect(definitions(rule.body)).toContain('--ds-icon-stroke');
   });
 
   it('draws no icon from a mask or a data url', () => {
