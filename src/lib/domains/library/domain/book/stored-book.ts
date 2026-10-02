@@ -1,6 +1,13 @@
 import { match } from 'ts-pattern';
-import { knownStoredValue } from '$lib/shared/corrupt-row';
-import { parsedBookId } from '$lib/shared/ids';
+import {
+  CorruptRow,
+  isNumber,
+  isNumberOrNull,
+  isStoredFields,
+  isText,
+  knownStoredValue,
+} from '$lib/shared/corrupt-row';
+import { contentHash, imageIndex, parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
@@ -16,17 +23,7 @@ const FALLBACK_LANGUAGE: Language = 'ja';
 
 const FALLBACK_DIRECTION: ReadingDirection = 'rtl';
 
-type StoredBook = Omit<
-  Book,
-  'language' | 'layoutKind' | 'direction' | 'sourceKind' | 'pagePairing' | 'pageFit'
-> & {
-  readonly language: unknown;
-  readonly layoutKind: unknown;
-  readonly direction: unknown;
-  readonly sourceKind: unknown;
-  readonly pagePairing: unknown;
-  readonly pageFit: unknown;
-};
+type StoredBook = { readonly [Field in keyof Book]?: unknown };
 
 type UnreadableBook = { readonly id: BookId; readonly title: string | null };
 
@@ -37,24 +34,55 @@ type StoredBooks = {
 
 type RawRow = { readonly id?: unknown; readonly title?: unknown };
 
-function storedPlace(position: ReadingPlace): ReadingPlace {
-  return match(position)
-    .with({ kind: 'image' }, (at) => imagePlace(at.index, at.shownThrough, at.offset))
-    .with({ kind: 'text' }, (at) => textPlace(at.cfi, at.fraction))
-    .exhaustive();
+function bookField<T>(field: string, value: unknown, known: (value: unknown) => value is T): T {
+  return knownStoredValue('book', field, value, known);
+}
+
+function storedBookId(value: unknown): BookId {
+  const id = isText(value) ? parsedBookId(value) : null;
+  if (id === null) throw new CorruptRow('book', 'id', value);
+  return id;
+}
+
+function storedPlace(value: unknown): ReadingPlace {
+  const position = bookField('position', value, isStoredFields);
+  return match(position.kind)
+    .with('image', () =>
+      imagePlace(
+        imageIndex(bookField('position index', position.index, isNumber)),
+        imageIndex(bookField('last image shown', position.shownThrough, isNumber)),
+        bookField('position offset', position.offset, isNumber),
+      ),
+    )
+    .with('text', () =>
+      textPlace(
+        bookField('position cfi', position.cfi, isText),
+        bookField('position fraction', position.fraction, isNumberOrNull),
+      ),
+    )
+    .otherwise((kind) => {
+      throw new CorruptRow('book', 'position kind', kind);
+    });
 }
 
 function bookFromStored(stored: StoredBook): Book {
-  const layoutKind = knownStoredValue('book', 'layout kind', stored.layoutKind, isLayoutKind);
+  const layoutKind = bookField('layout kind', stored.layoutKind, isLayoutKind);
   return {
-    ...stored,
+    id: storedBookId(stored.id),
+    title: bookField('title', stored.title, isText),
     language: isLanguage(stored.language) ? stored.language : FALLBACK_LANGUAGE,
     layoutKind,
     direction: isReadingDirection(stored.direction) ? stored.direction : FALLBACK_DIRECTION,
-    sourceKind: knownStoredValue('book', 'source kind', stored.sourceKind, isSourceKind),
     pagePairing: isPagePairing(stored.pagePairing) ? stored.pagePairing : DEFAULT_PAGE_PAIRING,
     pageFit: isPageFit(stored.pageFit) ? stored.pageFit : defaultPageFit(layoutKind),
+    sourceKind: bookField('source kind', stored.sourceKind, isSourceKind),
+    contentHash: contentHash(bookField('content hash', stored.contentHash, isText)),
+    fileName: bookField('file name', stored.fileName, isText),
+    imageCount: bookField('image count', stored.imageCount, isNumber),
+    addedAt: bookField('added time', stored.addedAt, isNumber),
     position: storedPlace(stored.position),
+    lastReadAt: bookField('last read time', stored.lastReadAt, isNumberOrNull),
+    finishedAt: bookField('finished time', stored.finishedAt, isNumberOrNull),
   };
 }
 

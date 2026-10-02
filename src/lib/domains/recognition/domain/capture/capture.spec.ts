@@ -416,6 +416,90 @@ describe('capturesFromStored', () => {
     expect(read.unreadable).toEqual([{ id: 'old' }]);
   });
 
+  const complete = {
+    id: captureId('full'),
+    bookId: BOOK,
+    anchor: ANCHOR,
+    text: 'こっちに来て',
+    note: null,
+    confidence: 0.5,
+    createdAt: 1,
+    editedAt: null,
+    origin: 'recognized',
+    tagIds: [tagId('grammar')],
+  } satisfies StoredCapture;
+
+  function without(field: string): StoredCapture {
+    return Object.fromEntries(Object.entries(complete).filter(([key]) => key !== field));
+  }
+
+  it.each(['bookId', 'anchor', 'text', 'createdAt', 'editedAt', 'tagIds'])(
+    'reports a row without its %s as unreadable',
+    (field) => {
+      const read = capturesFromStored([without(field)]);
+
+      expect(read.captures).toEqual([]);
+      expect(read.unreadable).toEqual([{ id: 'full' }]);
+    },
+  );
+
+  it.each([
+    ['bookId', 7],
+    ['text', null],
+    ['createdAt', '1'],
+    ['editedAt', '99'],
+    ['tagIds', 'grammar'],
+    ['tagIds', [7]],
+    ['note', 7],
+    ['confidence', 'high'],
+    ['anchor', 'region'],
+    ['anchor', { kind: 'region' }],
+    ['anchor', { kind: 'region', regions: [{ index: 13 }] }],
+    ['anchor', { kind: 'region', regions: [{ index: 13, rect: { x: 1, y: 2, width: 3 } }] }],
+    ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE }],
+    ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', chapter: null }],
+    ['anchor', { kind: 'text', quote: QUOTE, chapter: null }],
+    [
+      'anchor',
+      {
+        kind: 'text',
+        cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)',
+        quote: { exact: '海' },
+        chapter: null,
+      },
+    ],
+  ])('reports a row whose %s holds %j as unreadable', (field, value) => {
+    const read = capturesFromStored([{ ...complete, [field]: value }]);
+
+    expect(read.captures).toEqual([]);
+    expect(read.unreadable).toEqual([{ id: 'full' }]);
+  });
+
+  it.each(['note', 'confidence', 'origin'])(
+    'reads a row without its %s through the fallback',
+    (field) => {
+      expect(capturesFromStored([without(field)]).captures.map((capture) => capture.id)).toEqual([
+        'full',
+      ]);
+    },
+  );
+
+  it('reads a complete current row back as it was written', () => {
+    expect(capturesFromStored([complete, { ...complete, id: 'text', anchor: QUOTED }])).toEqual({
+      captures: [
+        { ...complete, tagIds: ['grammar'] },
+        { ...complete, id: 'text', anchor: QUOTED, tagIds: ['grammar'] },
+      ],
+      unreadable: [],
+    });
+  });
+
+  it('names the field a stored capture lacks', () => {
+    expect(() => captureFromStored(without('tagIds'))).toThrow(
+      'A stored capture lacks its tag ids',
+    );
+  });
+
   it('rethrows the mapping failure of a row without an id', () => {
     const nameless = { ...kept, id: 7, anchor: { kind: 'page' } } as unknown as StoredCapture;
 

@@ -1,10 +1,23 @@
 import { match } from 'ts-pattern';
-import type { Anchor } from '$lib/shared/anchor';
+import { regionAnchor, textAnchor } from '$lib/shared/anchor';
+import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import { isCaptureOrigin } from '$lib/shared/capture-origin';
 import type { CaptureOrigin } from '$lib/shared/capture-origin';
-import { CorruptRow } from '$lib/shared/corrupt-row';
-import { captureId } from '$lib/shared/ids';
+import {
+  CorruptRow,
+  isNumber,
+  isNumberOrNull,
+  isStoredFields,
+  isStoredList,
+  isText,
+  isTextList,
+  isTextOrNull,
+  knownStoredValue,
+} from '$lib/shared/corrupt-row';
+import { imageRect } from '$lib/shared/geometry';
+import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
+import type { ImageRegion } from '$lib/shared/image-region';
 
 type CaptureContent = {
   readonly id: CaptureId;
@@ -50,18 +63,7 @@ type Capture = RecognizedCapture | WrittenCapture | LiftedCapture;
 
 type NotableCapture = RecognizedCapture | LiftedCapture;
 
-type StoredCapture = {
-  readonly id: CaptureId;
-  readonly bookId: BookId;
-  readonly text: string;
-  readonly anchor: Anchor;
-  readonly note?: string | null;
-  readonly confidence?: number | null;
-  readonly createdAt: number;
-  readonly editedAt: number | null;
-  readonly origin: unknown;
-  readonly tagIds: readonly TagId[];
-};
+type StoredCapture = { readonly [Field in keyof RecognizedCapture]?: unknown };
 
 type UnreadableCapture = { readonly id: CaptureId };
 
@@ -82,35 +84,83 @@ function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
     .exhaustive();
 }
 
-function storedAnchor(anchor: Anchor): Anchor {
-  const { kind } = anchor;
-  if (kind === 'region' || kind === 'text') return anchor;
-  throw new CorruptRow('capture', 'anchor kind', kind);
+function captureField<T>(field: string, value: unknown, known: (value: unknown) => value is T): T {
+  return knownStoredValue('capture', field, value, known);
+}
+
+function storedRegion(value: unknown): ImageRegion {
+  const region = captureField('region', value, isStoredFields);
+  const rect = captureField('region rect', region.rect, isStoredFields);
+  return {
+    index: imageIndex(captureField('region index', region.index, isNumber)),
+    rect: imageRect(
+      captureField('region x', rect.x, isNumber),
+      captureField('region y', rect.y, isNumber),
+      captureField('region width', rect.width, isNumber),
+      captureField('region height', rect.height, isNumber),
+    ),
+  };
+}
+
+function storedQuote(value: unknown): TextQuote {
+  const quote = captureField('quote', value, isStoredFields);
+  return {
+    exact: captureField('quoted text', quote.exact, isText),
+    prefix: captureField('quote prefix', quote.prefix, isText),
+    suffix: captureField('quote suffix', quote.suffix, isText),
+  };
+}
+
+function storedAnchor(value: unknown): Anchor {
+  const anchor = captureField('anchor', value, isStoredFields);
+  return match(anchor.kind)
+    .with('region', () =>
+      regionAnchor(captureField('regions', anchor.regions, isStoredList).map(storedRegion)),
+    )
+    .with('text', () =>
+      textAnchor(
+        captureField('anchor cfi', anchor.cfi, isText),
+        storedQuote(anchor.quote),
+        captureField('chapter', anchor.chapter, isTextOrNull),
+      ),
+    )
+    .otherwise((kind) => {
+      throw new CorruptRow('capture', 'anchor kind', kind);
+    });
 }
 
 function storedOrigin(stored: StoredCapture): CaptureOrigin {
   return isCaptureOrigin(stored.origin) ? stored.origin : 'recognized';
 }
 
+function storedNote(stored: StoredCapture): string | null {
+  return stored.note === undefined ? null : captureField('note', stored.note, isTextOrNull);
+}
+
+function storedConfidence(stored: StoredCapture): number | null {
+  if (stored.confidence === undefined) return null;
+  return captureField('confidence', stored.confidence, isNumberOrNull);
+}
+
 function captureFromStored(stored: StoredCapture): Capture {
   const held = {
-    id: stored.id,
-    bookId: stored.bookId,
+    id: captureId(captureField('id', stored.id, isText)),
+    bookId: bookId(captureField('book id', stored.bookId, isText)),
     anchor: storedAnchor(stored.anchor),
-    text: stored.text,
-    createdAt: stored.createdAt,
-    editedAt: stored.editedAt,
-    tagIds: stored.tagIds,
+    text: captureField('text', stored.text, isText),
+    createdAt: captureField('created time', stored.createdAt, isNumber),
+    editedAt: captureField('edited time', stored.editedAt, isNumberOrNull),
+    tagIds: captureField('tag ids', stored.tagIds, isTextList).map(tagId),
   };
 
   return match(storedOrigin(stored))
     .with('written', () => ({ ...held, origin: 'written' as const }))
-    .with('lifted', () => ({ ...held, origin: 'lifted' as const, note: stored.note ?? null }))
+    .with('lifted', () => ({ ...held, origin: 'lifted' as const, note: storedNote(stored) }))
     .with('recognized', () => ({
       ...held,
       origin: 'recognized' as const,
-      note: stored.note ?? null,
-      confidence: stored.confidence ?? null,
+      note: storedNote(stored),
+      confidence: storedConfidence(stored),
     }))
     .exhaustive();
 }

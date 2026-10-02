@@ -203,7 +203,63 @@ describe('bookFromStored', () => {
   });
 });
 
+function without(field: string): StoredBook {
+  return Object.fromEntries(Object.entries(row).filter(([key]) => key !== field));
+}
+
 describe('booksFromStored', () => {
+  it.each([
+    'title',
+    'layoutKind',
+    'sourceKind',
+    'contentHash',
+    'fileName',
+    'imageCount',
+    'addedAt',
+    'position',
+    'lastReadAt',
+    'finishedAt',
+  ])('reports a row without its %s as unreadable', (field) => {
+    const read = booksFromStored([without(field)]);
+
+    expect(read.books).toEqual([]);
+    expect(read.unreadable.map((book) => book.id)).toEqual(['b-1']);
+  });
+
+  it.each([
+    ['title', 7],
+    ['contentHash', null],
+    ['fileName', 12],
+    ['imageCount', '182'],
+    ['addedAt', null],
+    ['lastReadAt', '1758300000000'],
+    ['finishedAt', false],
+    ['position', 45],
+    ['position', { kind: 'page', index: 3 }],
+    ['position', { kind: 'image', index: 3, offset: 0 }],
+    ['position', { kind: 'image', index: 3, shownThrough: 3 }],
+    ['position', { kind: 'text', fraction: 0.5 }],
+    ['position', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' }],
+  ])('reports a row whose %s holds %j as unreadable', (field, value) => {
+    const read = booksFromStored([{ ...row, [field]: value }]);
+
+    expect(read.books).toEqual([]);
+    expect(read.unreadable.map((book) => book.id)).toEqual(['b-1']);
+  });
+
+  it.each(['language', 'direction', 'pagePairing', 'pageFit'])(
+    'reads a row without its %s through the fallback',
+    (field) => {
+      expect(booksFromStored([without(field)]).books.map((book) => book.id)).toEqual(['b-1']);
+    },
+  );
+
+  it('names the field a stored book lacks', () => {
+    expect(() => bookFromStored(without('lastReadAt'))).toThrow(
+      'A stored book lacks its last read time',
+    );
+  });
+
   it('reports a row whose mapping throws as unreadable and keeps the rows that read', () => {
     const scrolled: StoredBook = { ...row, id: bookId('b-2'), layoutKind: 'scroll' };
     const read = booksFromStored([row, scrolled]);
