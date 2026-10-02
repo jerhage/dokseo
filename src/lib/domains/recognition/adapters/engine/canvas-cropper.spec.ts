@@ -91,30 +91,26 @@ afterEach(() => {
 });
 
 describe('createCanvasCropper', () => {
-  it('ends the trace when nothing is selected', async () => {
+  it.each([
+    {
+      exit: 'nothing is selected',
+      source: unreadableSource,
+      regions: [],
+      kind: 'nothing-selected',
+    },
+    {
+      exit: 'the source cannot be read',
+      source: unreadableSource,
+      regions: REGIONS,
+      kind: 'unreadable',
+    },
+    { exit: 'the pixel work throws', source: decodedSource, regions: REGIONS, kind: 'unreadable' },
+  ])('ends the trace once when $exit', async ({ source, regions, kind }) => {
     const { begin, end } = stubTrace();
 
-    const result = await createCanvasCropper(begin).crop(unreadableSource(), [], ARRANGEMENT);
+    const result = await createCanvasCropper(begin).crop(source(), regions, ARRANGEMENT);
 
-    expect(result).toEqual({ kind: 'nothing-selected' });
-    expect(end).toHaveBeenCalledTimes(1);
-  });
-
-  it('ends the trace when the source cannot be read', async () => {
-    const { begin, end } = stubTrace();
-
-    const result = await createCanvasCropper(begin).crop(unreadableSource(), REGIONS, ARRANGEMENT);
-
-    expect(result.kind).toBe('unreadable');
-    expect(end).toHaveBeenCalledTimes(1);
-  });
-
-  it('ends the trace when the pixel work throws', async () => {
-    const { begin, end } = stubTrace();
-
-    const result = await createCanvasCropper(begin).crop(decodedSource(), REGIONS, ARRANGEMENT);
-
-    expect(result.kind).toBe('unreadable');
+    expect(result.kind).toBe(kind);
     expect(end).toHaveBeenCalledTimes(1);
   });
 

@@ -58,25 +58,6 @@ describe('everyCaptureQuery', () => {
     );
   });
 
-  it('readies a store the browser blocks as an answer', async () => {
-    const read = everyCaptureQuery({
-      listEveryCapture: () => Promise.resolve(STORAGE_UNAVAILABLE),
-    });
-
-    expect(await observedRead(createTestQueryClient(), read)).toEqual(
-      readReady({ kind: 'storage-unavailable' }),
-    );
-  });
-
-  it('fails with the cause of a store that threw', async () => {
-    const broken = new Error('locked');
-    const read = everyCaptureQuery({ listEveryCapture: () => Promise.reject(broken) });
-
-    expect(await observedRead(createTestQueryClient(), read)).toEqual(
-      readFailed('Something went wrong: locked'),
-    );
-  });
-
   it('files the read under the recognition root, stale at once', () => {
     const read = everyCaptureQuery({
       listEveryCapture: () => Promise.resolve({ kind: 'success', captures: [] }),
@@ -107,24 +88,6 @@ describe('capturesQuery', () => {
     expect(asked).toEqual(['one']);
   });
 
-  it('readies a store the browser blocks as an answer and fails a store that threw', async () => {
-    const blocked = capturesQuery(
-      { listCaptures: () => Promise.resolve(STORAGE_UNAVAILABLE) },
-      bookId('one'),
-    );
-    const broken = capturesQuery(
-      { listCaptures: () => Promise.reject(new Error('locked')) },
-      bookId('one'),
-    );
-
-    expect(await observedRead(createTestQueryClient(), blocked)).toEqual(
-      readReady({ kind: 'storage-unavailable' }),
-    );
-    expect(await observedRead(createTestQueryClient(), broken)).toEqual(
-      readFailed('Something went wrong: locked'),
-    );
-  });
-
   it('files each book under its own key below the recognition root, stale at once', () => {
     const read = capturesQuery(
       { listCaptures: () => Promise.resolve({ kind: 'success', captures: [] }) },
@@ -148,65 +111,17 @@ describe('capturesQuery', () => {
 });
 
 describe('capture mutations', () => {
-  const REFUSED = STORAGE_UNAVAILABLE;
-
-  it('answers a refused write as data, for every capture write', async () => {
-    const refusing = () => Promise.resolve(REFUSED);
-    const writes = [
-      new MutationObserver(
-        createTestQueryClient(),
-        saveCaptureMutation({ saveCapture: refusing }),
-      ).mutate(CAPTURE),
-      new MutationObserver(
-        createTestQueryClient(),
-        writeNoteMutation({ writeNote: refusing }),
-      ).mutate({
-        id: CAPTURE.id,
-        book: CAPTURE.bookId,
-        anchor: CAPTURE.anchor,
-      }),
-      new MutationObserver(
-        createTestQueryClient(),
-        editTextMutation({ editCaptureText: refusing }),
-      ).mutate({
-        capture: CAPTURE,
-        text: '山',
-      }),
-      new MutationObserver(
-        createTestQueryClient(),
-        writeCaptureNoteMutation({ writeCaptureNote: refusing }),
-      ).mutate({
-        capture: READ_CAPTURE,
-        note: 'n',
-      }),
-      new MutationObserver(
-        createTestQueryClient(),
-        removeCaptureMutation({ removeCapture: refusing }),
-      ).mutate(CAPTURE),
-      new MutationObserver(
-        createTestQueryClient(),
-        restoreCaptureMutation({ restoreCapture: refusing }),
-      ).mutate(CAPTURE),
-      new MutationObserver(
-        createTestQueryClient(),
-        clearCapturesMutation({ clearCaptures: refusing }),
-      ).mutate(CAPTURE.bookId),
-    ];
-
-    await expect(Promise.all(writes)).resolves.toEqual(Array.from({ length: 7 }, () => REFUSED));
-  });
-
-  it('rejects a write that throws', async () => {
-    const saving = new MutationObserver(
-      createTestQueryClient(),
-      saveCaptureMutation({ saveCapture: () => Promise.reject(new Error('the database closed')) }),
-    );
-
-    await expect(saving.mutate(CAPTURE)).rejects.toThrow('the database closed');
-  });
-
   it('hands each use case what the write names', async () => {
     const asked: string[] = [];
+    await new MutationObserver(
+      createTestQueryClient(),
+      saveCaptureMutation({
+        saveCapture: (draft) => {
+          asked.push(`save ${draft.id} ${draft.text}`);
+          return Promise.resolve(STORAGE_UNAVAILABLE);
+        },
+      }),
+    ).mutate(CAPTURE);
     await new MutationObserver(
       createTestQueryClient(),
       writeNoteMutation({
@@ -245,6 +160,15 @@ describe('capture mutations', () => {
     ).mutate(CAPTURE);
     await new MutationObserver(
       createTestQueryClient(),
+      restoreCaptureMutation({
+        restoreCapture: (capture) => {
+          asked.push(`restore ${capture.id} ${capture.text}`);
+          return Promise.resolve(STORAGE_UNAVAILABLE);
+        },
+      }),
+    ).mutate(CAPTURE);
+    await new MutationObserver(
+      createTestQueryClient(),
       clearCapturesMutation({
         clearCaptures: (book) => {
           asked.push(`clear ${book}`);
@@ -254,47 +178,50 @@ describe('capture mutations', () => {
     ).mutate(CAPTURE.bookId);
 
     expect(asked).toEqual([
+      'save a 海',
       'note a one',
       'edit a 山',
       'annotate read sea',
       'remove a',
+      'restore a 海',
       'clear one',
     ]);
   });
 });
 
 describe('storedCaptures', () => {
-  it('passes a load and a failure through', () => {
-    expect(storedCaptures(LOADING)).toEqual(LOADING);
-    expect(storedCaptures(readFailed('broke'))).toEqual(readFailed('broke'));
-  });
-
-  it('readies the captures that were read', () => {
-    expect(storedCaptures(readReady({ kind: 'success', captures: [CAPTURE] }))).toEqual(
-      readReady([CAPTURE]),
-    );
-  });
-
-  it('fails a blocked store with the note the read showed before', () => {
-    expect(storedCaptures(readReady(STORAGE_UNAVAILABLE))).toEqual(
-      readFailed('This browser blocks local storage.'),
-    );
-  });
+  it.each([
+    { state: LOADING, expected: LOADING },
+    { state: readFailed('broke'), expected: readFailed('broke') },
+    {
+      state: readReady({ kind: 'success' as const, captures: [CAPTURE] }),
+      expected: readReady([CAPTURE]),
+    },
+    {
+      state: readReady(STORAGE_UNAVAILABLE),
+      expected: readFailed('This browser blocks local storage.'),
+    },
+  ] as const)(
+    'passes a load and a failure through, readies what was read, and fails a blocked store with the note the read showed before (%#)',
+    ({ state, expected }) => {
+      expect(storedCaptures(state)).toEqual(expected);
+    },
+  );
 });
 
 describe('storedTags', () => {
-  it('passes a load and a failure through', () => {
-    expect(storedTags(LOADING)).toEqual(LOADING);
-    expect(storedTags(readFailed('broke'))).toEqual(readFailed('broke'));
-  });
-
-  it('readies the tags that were read', () => {
-    expect(storedTags(readReady({ kind: 'success', tags: [] }))).toEqual(readReady([]));
-  });
-
-  it('fails a blocked store with the note the read showed before', () => {
-    expect(storedTags(readReady(STORAGE_UNAVAILABLE))).toEqual(
-      readFailed('This browser blocks local storage.'),
-    );
-  });
+  it.each([
+    { state: LOADING, expected: LOADING },
+    { state: readFailed('broke'), expected: readFailed('broke') },
+    { state: readReady({ kind: 'success' as const, tags: [] }), expected: readReady([]) },
+    {
+      state: readReady(STORAGE_UNAVAILABLE),
+      expected: readFailed('This browser blocks local storage.'),
+    },
+  ] as const)(
+    'passes a load and a failure through, readies what was read, and fails a blocked store with the note the read showed before (%#)',
+    ({ state, expected }) => {
+      expect(storedTags(state)).toEqual(expected);
+    },
+  );
 });

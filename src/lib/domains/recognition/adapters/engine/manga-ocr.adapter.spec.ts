@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ModelLoad } from '../../domain/model/model-load';
-import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizerSetup } from '../../domain/engine/recognizer-setup';
 import { createMangaOcrRecognizer } from './manga-ocr.adapter';
 import type { OcrReply, OcrRequest } from '../../../../../workers/ocr-worker-protocol';
@@ -334,28 +333,6 @@ describe('createMangaOcrRecognizer', () => {
     expect(started).toBe(2);
   });
 
-  it('leaves the caller bitmap open and transfers a copy of it', async () => {
-    const fake = fakeWorker();
-    const recognizer = recognizerOver(fake);
-    const owned = stubBitmap(120, 48);
-
-    const recognition = recognizer.recognize(owned.bitmap);
-    await openedOver(fake);
-
-    const sent = cropsIn(fake)[0];
-    if (sent === undefined || sent.request.kind !== 'recognize') {
-      throw new Error('No crop was sent to the worker');
-    }
-
-    expect(owned.wasClosed()).toBe(false);
-    expect(sent.request.image).not.toBe(owned.bitmap);
-    expect(sent.transfer).toEqual([sent.request.image]);
-
-    fake.reply({ kind: 'recognized', id: sent.request.id, text: 'ありがとう', confidence: null });
-    await recognition;
-    expect(owned.wasClosed()).toBe(false);
-  });
-
   it('reports load progress as a fraction, the bytes and the source they came from', async () => {
     stubOffscreenCanvas();
     const fake = fakeWorker();
@@ -385,7 +362,6 @@ describe('createMangaOcrRecognizer', () => {
   it('resolves prepare with the model and the device the worker chose', async () => {
     const fake = fakeWorker();
     const recognizer = recognizerOver(fake);
-    const seen: RecognizerSession[] = [];
 
     const opening = recognizer.prepare();
     const id = await openId(fake);
@@ -404,7 +380,6 @@ describe('createMangaOcrRecognizer', () => {
       device: 'webgpu',
       fellBackFrom: null,
     });
-    expect(seen).toEqual([]);
   });
 
   it('reports no session and no worker when no model is configured', async () => {

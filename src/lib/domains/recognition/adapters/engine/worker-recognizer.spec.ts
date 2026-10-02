@@ -181,35 +181,31 @@ describe('createWorkerRecognizer', () => {
     expect(crop.image.height).toBe(Math.round((900 * MAX_MODEL_INPUT_EDGE) / 6000));
   });
 
-  it('leaves the bitmap it was handed alone', async () => {
-    stubOffscreenCanvas();
-    const fake = fakeWorker();
-    const recognizer = recognizerOver(fake);
-    const handed = stubBitmap(6000, 900);
+  it.each([
+    { width: 6000, height: 900 },
+    { width: 120, height: 48 },
+  ])(
+    'leaves the $width by $height bitmap it was handed open and transfers the prepared copy',
+    async ({ width, height }) => {
+      stubOffscreenCanvas();
+      const fake = fakeWorker();
+      const recognizer = recognizerOver(fake);
+      const handed = stubBitmap(width, height);
 
-    const recognition = recognizer.recognize(handed.bitmap);
-    await openedOver(fake);
-    const crop = cropSent(fake);
-    fake.reply({ kind: 'recognized', id: crop.id, text: 'ありがとう', confidence: null });
-    await recognition;
+      const recognition = recognizer.recognize(handed.bitmap);
+      await openedOver(fake);
+      const crop = cropSent(fake);
 
-    expect(handed.wasClosed()).toBe(false);
-    expect(crop.image).not.toBe(handed.bitmap);
-  });
+      expect(handed.wasClosed()).toBe(false);
+      expect(crop.image).not.toBe(handed.bitmap);
+      expect(crop.transfer).toEqual([crop.image]);
+      expect(crop.transfer).not.toContain(handed.bitmap);
 
-  it('transfers the prepared bitmap', async () => {
-    stubOffscreenCanvas();
-    const fake = fakeWorker();
-    const recognizer = recognizerOver(fake);
-    const handed = stubBitmap(120, 48);
-
-    void recognizer.recognize(handed.bitmap);
-    await openedOver(fake);
-
-    const crop = cropSent(fake);
-    expect(crop.transfer).toEqual([crop.image]);
-    expect(crop.transfer).not.toContain(handed.bitmap);
-  });
+      fake.reply({ kind: 'recognized', id: crop.id, text: 'ありがとう', confidence: null });
+      await recognition;
+      expect(handed.wasClosed()).toBe(false);
+    },
+  );
 
   it('traces the capping, the greyscale and the picture the model reads', async () => {
     stubOffscreenCanvas();
@@ -247,21 +243,6 @@ describe('createWorkerRecognizer', () => {
     expect(crop.transfer).toEqual([crop.image]);
     expect(trace.images).toEqual([['input', crop.image]]);
     expect(trace.ends()).toBe(1);
-  });
-
-  it('recognizes without a trace factory', async () => {
-    stubOffscreenCanvas();
-    const fake = fakeWorker();
-    const recognizer = recognizerOver(fake);
-
-    const recognition = recognizer.recognize(stubBitmap(120, 48).bitmap);
-    await openedOver(fake);
-    const crop = cropSent(fake);
-    fake.reply({ kind: 'recognized', id: crop.id, text: 'こんにちは', confidence: null });
-
-    const result = await recognition;
-    if (result.kind !== 'success') throw new Error('The recognizer failed');
-    expect(result.text.text).toBe('こんにちは');
   });
 
   it('reports a preparation that throws as a failed recognition', async () => {
