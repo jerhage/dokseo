@@ -53,16 +53,13 @@ describe('passageQuote', () => {
     expect(quote.suffix.startsWith('と言った')).toBe(true);
   });
 
-  it('keeps shorter context whole rather than padding it', () => {
-    const quote = passageQuote('海', 'そして', 'と');
+  it.each([
+    ['そして', 'と'],
+    ['', ''],
+  ])('keeps the shorter context %j and %j whole rather than padding it', (before, after) => {
+    const quote = passageQuote('海', before, after);
 
-    expect([quote.prefix, quote.suffix]).toEqual(['そして', 'と']);
-  });
-
-  it('keeps no context at all at the very start and the very end of a chapter', () => {
-    const quote = passageQuote('海', '', '');
-
-    expect([quote.prefix, quote.suffix]).toEqual(['', '']);
+    expect([quote.prefix, quote.suffix]).toEqual([before, after]);
   });
 
   it('counts a surrogate pair as one character rather than splitting it', () => {
@@ -87,56 +84,41 @@ describe('liftsAnything', () => {
 });
 
 describe('rectOnStage', () => {
-  it('places a chapter rect where the reader saw it, not where the frame counts from', () => {
-    const placed = rectOnStage(
+  it.each([
+    [
+      'places a chapter rect where the reader saw it, not where the frame counts from',
       rect(100, 40, 260, 70),
       { x: -755, y: 0 },
-      {
-        left: 0,
-        top: 0,
-        width: 414,
-      },
-    );
-
-    expect(placed).toEqual({ left: -655, top: 40, right: -495, bottom: 70 });
-  });
-
-  it('leaves a rect on the stage itself where it landed', () => {
-    const placed = rectOnStage(rect(10, 20, 30, 40), HOST_VIEWPORT_ORIGIN, {
-      left: 0,
-      top: 0,
-      width: 414,
-    });
-
-    expect(placed).toEqual({ left: 10, top: 20, right: 30, bottom: 40 });
-  });
-
-  it('subtracts the stage offset from a rect measured against the viewport', () => {
-    const placed = rectOnStage(rect(110, 60, 130, 80), HOST_VIEWPORT_ORIGIN, {
-      left: 100,
-      top: 50,
-      width: 414,
-    });
-
-    expect(placed).toEqual({ left: 10, top: 10, right: 30, bottom: 30 });
+      { left: 0, top: 0, width: 414 },
+      { left: -655, top: 40, right: -495, bottom: 70 },
+    ],
+    [
+      'leaves a rect on the stage itself where it landed',
+      rect(10, 20, 30, 40),
+      HOST_VIEWPORT_ORIGIN,
+      { left: 0, top: 0, width: 414 },
+      { left: 10, top: 20, right: 30, bottom: 40 },
+    ],
+    [
+      'subtracts the stage offset from a rect measured against the viewport',
+      rect(110, 60, 130, 80),
+      HOST_VIEWPORT_ORIGIN,
+      { left: 100, top: 50, width: 414 },
+      { left: 10, top: 10, right: 30, bottom: 30 },
+    ],
+  ])('%s', (_name, chapterRect, frame, stage, placed) => {
+    expect(rectOnStage(chapterRect, frame, stage)).toEqual(placed);
   });
 });
 
 describe('liftPlacement', () => {
-  it('places a lift by the size and the gap it is given', () => {
-    const placed = liftPlacement([rect(100, 300, 260, 330)], STAGE, { size: 60, gap: 12 });
+  it.each([
+    [{ size: 60, gap: 12 }, 150],
+    [LIFT, centred(100, 260)],
+  ])('places a lift of size and gap %j above the selection when there is room', (metrics, left) => {
+    const placed = liftPlacement([rect(100, 300, 260, 330)], STAGE, metrics);
 
-    expect(placed).toEqual({ kind: 'above', left: 150, top: 300 - 12 - 60 });
-  });
-
-  it('offers the button above the selection when there is room for it', () => {
-    const placed = liftPlacement([rect(100, 300, 260, 330)], STAGE, LIFT);
-
-    expect(placed).toEqual({
-      kind: 'above',
-      left: centred(100, 260),
-      top: 300 - LIFT.gap - LIFT.size,
-    });
+    expect(placed).toEqual({ kind: 'above', left, top: 300 - metrics.gap - metrics.size });
   });
 
   it('offers the button below a selection sitting against the top of the page', () => {
@@ -206,12 +188,11 @@ describe('liftPlacement', () => {
     });
   });
 
-  it('offers nothing when every rect sits off the page', () => {
-    expect(liftPlacement([rect(900, 40, 1080, 60)], STAGE, LIFT).kind).toBe('nowhere');
-  });
-
-  it('offers nothing when the selection produced no rect at all', () => {
-    expect(liftPlacement([], STAGE, LIFT).kind).toBe('nowhere');
+  it.each([
+    ['every rect sits off the page', [rect(900, 40, 1080, 60)]],
+    ['the selection produced no rect at all', []],
+  ])('offers nothing when %s', (_when, rects) => {
+    expect(liftPlacement(rects, STAGE, LIFT).kind).toBe('nowhere');
   });
 
   it('offers nothing for a rect whose frame is nowhere on the stage', () => {
@@ -239,13 +220,12 @@ describe('offerMove', () => {
     expect(offerMove({ selected: true, pointerHeld: false })).toEqual({ kind: 'place' });
   });
 
-  it('takes the offer away the moment the selection collapses', () => {
-    expect(offerMove({ selected: false, pointerHeld: false })).toEqual({ kind: 'clear' });
-  });
-
-  it('takes the offer away for a collapsed selection even under a held pointer', () => {
-    expect(offerMove({ selected: false, pointerHeld: true })).toEqual({ kind: 'clear' });
-  });
+  it.each([false, true])(
+    'takes the offer away the moment the selection collapses, pointer held %s',
+    (pointerHeld) => {
+      expect(offerMove({ selected: false, pointerHeld })).toEqual({ kind: 'clear' });
+    },
+  );
 
   it('leaves the offer where it is while a pointer is still down', () => {
     expect(offerMove({ selected: true, pointerHeld: true })).toEqual({ kind: 'keep' });
@@ -273,27 +253,22 @@ describe('liftSpot', () => {
     expect(spot).toEqual({ left: centred(100, 260), top: 300 - LIFT.gap - LIFT.size });
   });
 
-  it('places the lift below a selection against the top of the stage', () => {
-    const spot = liftSpot(
-      [rect(100, 4, 260, 34)],
-      HOST_VIEWPORT_ORIGIN,
-      { left: 0, top: 0, width: 414, height: 896 },
-      LIFT,
-    );
+  it.each([
+    [896, 34 + LIFT.gap],
+    [60, 60 - LIFT.size],
+  ])(
+    'places the lift below a selection against the top of a stage %i high, within it',
+    (height, top) => {
+      const spot = liftSpot(
+        [rect(100, 4, 260, 34)],
+        HOST_VIEWPORT_ORIGIN,
+        { left: 0, top: 0, width: 414, height },
+        LIFT,
+      );
 
-    expect(spot).toEqual({ left: centred(100, 260), top: 34 + LIFT.gap });
-  });
-
-  it('measures the stage by the height it is given', () => {
-    const spot = liftSpot(
-      [rect(100, 4, 260, 34)],
-      HOST_VIEWPORT_ORIGIN,
-      { left: 0, top: 0, width: 414, height: 60 },
-      LIFT,
-    );
-
-    expect(spot).toEqual({ left: centred(100, 260), top: 60 - LIFT.size });
-  });
+      expect(spot).toEqual({ left: centred(100, 260), top });
+    },
+  );
 
   it('offers no spot for a selection off the stage', () => {
     const spot = liftSpot(

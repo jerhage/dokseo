@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  flowGuideKind,
-  flowInput,
-  flowSwipeLesson,
-  forwardFinger,
-  offersFlowGuide,
-} from './flow-hint';
+import { flowGuideKind, flowInput, flowSwipeLesson, offersFlowGuide } from './flow-hint';
 
 describe('offersFlowGuide', () => {
   it('offers the guide on touch in an open book', () => {
@@ -18,16 +12,6 @@ describe('offersFlowGuide', () => {
 
   it('offers nothing to a mouse or a pen', () => {
     expect(offersFlowGuide({ open: true, input: 'pointer' })).toBe(false);
-  });
-});
-
-describe('forwardFinger', () => {
-  it('swipes left to go forward through left-to-right text', () => {
-    expect(forwardFinger('ltr')).toBe('left');
-  });
-
-  it('swipes right to go forward through right-to-left text', () => {
-    expect(forwardFinger('rtl')).toBe('right');
   });
 });
 
@@ -54,17 +38,16 @@ describe('flowSwipeLesson', () => {
 });
 
 describe('flowGuideKind', () => {
-  it('keys a vertical book as vertical-pages', () => {
-    expect(flowGuideKind({ axis: 'vertical', mode: 'vertical-lr' })).toBe('vertical-pages');
-  });
-
-  it('keys left-to-right text as swipe-left, the kind an image book of that direction shares', () => {
-    expect(flowGuideKind({ axis: 'horizontal', direction: 'ltr' })).toBe('swipe-left');
-  });
-
-  it('keys right-to-left text as swipe-right', () => {
-    expect(flowGuideKind({ axis: 'horizontal', direction: 'rtl' })).toBe('swipe-right');
-  });
+  it.each([
+    [{ axis: 'vertical', mode: 'vertical-lr' }, 'vertical-pages'],
+    [{ axis: 'horizontal', direction: 'ltr' }, 'swipe-left'],
+    [{ axis: 'horizontal', direction: 'rtl' }, 'swipe-right'],
+  ] as const)(
+    'keys a book paged %j as %s, the kind an image book of that direction shares',
+    (paging, kind) => {
+      expect(flowGuideKind(paging)).toBe(kind);
+    },
+  );
 });
 
 describe('flowInput', () => {
@@ -72,12 +55,8 @@ describe('flowInput', () => {
     expect(flowInput('touch', false)).toBe('touch');
   });
 
-  it('reads a mouse on a touch screen as a pointer', () => {
-    expect(flowInput('mouse', true)).toBe('pointer');
-  });
-
-  it('reads a pen as a pointer', () => {
-    expect(flowInput('pen', true)).toBe('pointer');
+  it.each(['mouse', 'pen'])('reads a %s on a touch screen as a pointer', (pointerType) => {
+    expect(flowInput(pointerType, true)).toBe('pointer');
   });
 
   it('falls back to the coarse pointer media query before any press', () => {

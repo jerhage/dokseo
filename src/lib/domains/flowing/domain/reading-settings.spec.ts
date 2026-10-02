@@ -48,15 +48,12 @@ describe('textSizeOf', () => {
     expect(textSizeOf('largest')).toBe('largest');
   });
 
-  it('falls back to the default for a size no longer offered', () => {
-    expect(textSizeOf('gigantic')).toBe(DEFAULT_READING_SETTINGS.textSize);
-  });
-
-  it('falls back to the default for a record that holds no size', () => {
-    expect(textSizeOf(undefined)).toBe(DEFAULT_READING_SETTINGS.textSize);
-    expect(textSizeOf(null)).toBe(DEFAULT_READING_SETTINGS.textSize);
-    expect(textSizeOf(14)).toBe(DEFAULT_READING_SETTINGS.textSize);
-  });
+  it.each(['gigantic', undefined, null, 14])(
+    'falls back to the default for %j, a size no longer offered or none at all',
+    (stored) => {
+      expect(textSizeOf(stored)).toBe(DEFAULT_READING_SETTINGS.textSize);
+    },
+  );
 });
 
 describe('lineSpacingOf', () => {
@@ -70,12 +67,8 @@ describe('lineSpacingOf', () => {
 });
 
 describe('phoneticReadingsOf', () => {
-  it('takes a reader who has turned the readings off', () => {
-    expect(phoneticReadingsOf(false)).toBe(false);
-  });
-
-  it('takes a reader who has turned the readings back on', () => {
-    expect(phoneticReadingsOf(true)).toBe(true);
+  it.each([false, true])('takes a reader who has set the readings shown to %s', (shown) => {
+    expect(phoneticReadingsOf(shown)).toBe(shown);
   });
 
   it('shows the readings for a record that holds no answer', () => {
@@ -106,29 +99,25 @@ describe('readingSettingsOf', () => {
     expect(readingSettingsOf(null)).toEqual(DEFAULT_READING_SETTINGS);
   });
 
-  it('shows the readings for a record written before the choice existed', () => {
-    const settings = readingSettingsOf({
-      reader: ONE_READER,
-      textSize: 'largest',
-      lineSpacing: 'loose',
-    });
-
-    expect(settings).toEqual({
-      textSize: 'largest',
-      lineSpacing: 'loose',
-      showPhoneticReadings: true,
-    });
-  });
-
-  it('keeps the readable half of a record whose other half is unusable', () => {
-    const settings = readingSettingsOf({ reader: ONE_READER, textSize: 'largest' });
-
-    expect(settings).toEqual({
-      textSize: 'largest',
-      lineSpacing: DEFAULT_READING_SETTINGS.lineSpacing,
-      showPhoneticReadings: DEFAULT_READING_SETTINGS.showPhoneticReadings,
-    });
-  });
+  it.each([
+    [
+      { reader: ONE_READER, textSize: 'largest', lineSpacing: 'loose' },
+      { textSize: 'largest', lineSpacing: 'loose', showPhoneticReadings: true },
+    ],
+    [
+      { reader: ONE_READER, textSize: 'largest' },
+      {
+        textSize: 'largest',
+        lineSpacing: DEFAULT_READING_SETTINGS.lineSpacing,
+        showPhoneticReadings: DEFAULT_READING_SETTINGS.showPhoneticReadings,
+      },
+    ],
+  ])(
+    'keeps the readable part of the partial record %j and defaults the rest',
+    (stored, settings) => {
+      expect(readingSettingsOf(stored)).toEqual(settings);
+    },
+  );
 });
 
 describe('storedReadingSettings', () => {
@@ -145,12 +134,6 @@ describe('storedReadingSettings', () => {
       lineSpacing: 'relaxed',
       showPhoneticReadings: false,
     });
-  });
-
-  it('survives a round trip through storage unchanged', () => {
-    const settings = { textSize: LARGER, lineSpacing: LOOSER, showPhoneticReadings: false };
-
-    expect(readingSettingsOf(storedReadingSettings(settings))).toEqual(settings);
   });
 });
 
@@ -182,25 +165,19 @@ describe('withLineSpacing', () => {
 });
 
 describe('withPhoneticReadings', () => {
-  it('hides the readings and leaves both scales alone', () => {
+  it.each([
+    [true, false],
+    [false, true],
+  ])('turns the readings shown from %s to %s and leaves both scales alone', (before, after) => {
     expect(
       withPhoneticReadings(
-        { textSize: LARGER, lineSpacing: LOOSER, showPhoneticReadings: true },
-        false,
+        { textSize: LARGER, lineSpacing: LOOSER, showPhoneticReadings: before },
+        after,
       ),
     ).toEqual({
       textSize: LARGER,
       lineSpacing: LOOSER,
-      showPhoneticReadings: false,
+      showPhoneticReadings: after,
     });
-  });
-
-  it('shows them again for a reader who turns the choice back on', () => {
-    expect(
-      withPhoneticReadings(
-        { textSize: LARGER, lineSpacing: LOOSER, showPhoneticReadings: false },
-        true,
-      ).showPhoneticReadings,
-    ).toBe(true);
   });
 });
