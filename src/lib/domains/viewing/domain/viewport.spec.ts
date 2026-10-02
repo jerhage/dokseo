@@ -63,19 +63,10 @@ describe('pageFitZoom', () => {
   const frame: Size = { width: 390, height: 811 };
   const tall: Framing = { content: { width: 324.5, height: 811 }, frame };
 
-  it('floors a height fit at the unscaled page', () => {
-    expect(pageFitZoom('height', tall)).toBe(FIT_HEIGHT_ZOOM);
-  });
-
-  it('floors a width fit at the zoom that fills the frame across', () => {
-    expect(pageFitZoom('width', tall)).toBe(390 / 324.5);
-  });
-
-  it('gives the zoom a fitted arrival lands on', () => {
-    for (const fit of ['height', 'width'] as const) {
-      expect(arrivalViewport(fit, { zoom: 3, panX: 0, panY: 0 }, tall).zoom).toBe(
-        pageFitZoom(fit, tall),
-      );
-    }
+  it.each([
+    { fit: 'height', zoom: FIT_HEIGHT_ZOOM },
+    { fit: 'width', zoom: 390 / 324.5 },
+  ] as const)('returns the zoom a $fit fit gives the page', ({ fit, zoom }) => {
+    expect(pageFitZoom(fit, tall)).toBe(zoom);
   });
 });

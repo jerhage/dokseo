@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { imageIndex } from '$lib/shared/ids';
-import { at } from '$lib/shared/testing/at';
 import type { Size } from '$lib/shared/geometry';
 import { pairPages, groupContaining } from './page-pairing';
 
@@ -13,35 +12,49 @@ function portraits(count: number): readonly Size[] {
 }
 
 describe('pairPages', () => {
-  it('gives one group per image when the pairing is single', () => {
-    expect(pairPages(portraits(4), 'single')).toEqual([[0], [1], [2], [3]]);
-  });
+  it.each([
+    { sizes: portraits(4), groups: [[0], [1], [2], [3]] },
+    { sizes: [wide, wide, portrait, null], groups: [[0], [1], [2], [3]] },
+  ])(
+    'gives one group per image when the pairing is single, whatever its shape',
+    ({ sizes, groups }) => {
+      expect(pairPages(sizes, 'single')).toEqual(groups);
+    },
+  );
 
-  it('pairs from image zero when the pairing is double', () => {
-    expect(pairPages(portraits(6), 'double')).toEqual([
-      [0, 1],
-      [2, 3],
-      [4, 5],
-    ]);
-  });
+  it.each([
+    {
+      sizes: portraits(6),
+      groups: [
+        [0, 1],
+        [2, 3],
+        [4, 5],
+      ],
+    },
+    {
+      sizes: portraits(4),
+      groups: [
+        [0, 1],
+        [2, 3],
+      ],
+    },
+    { sizes: portraits(5), groups: [[0, 1], [2, 3], [4]] },
+  ])(
+    'pairs from image zero when the pairing is double, leaving an odd last image alone',
+    ({ sizes, groups }) => {
+      expect(pairPages(sizes, 'double')).toEqual(groups);
+    },
+  );
 
-  it('leaves the last image alone when a doubled run is odd', () => {
-    const groups = pairPages(portraits(5), 'double');
-
-    expect(groups).toHaveLength(3);
-    expect(at(groups, 2)).toEqual([4]);
-  });
-
-  it('shows the cover alone and pairs the rest after it', () => {
-    expect(pairPages(portraits(7), 'double-after-cover')).toEqual([[0], [1, 2], [3, 4], [5, 6]]);
-  });
-
-  it('leaves the last image alone when the images after the cover are odd', () => {
-    const groups = pairPages(portraits(6), 'double-after-cover');
-
-    expect(groups).toEqual([[0], [1, 2], [3, 4], [5]]);
-    expect(at(groups, 3)).toEqual([5]);
-  });
+  it.each([
+    { sizes: portraits(7), groups: [[0], [1, 2], [3, 4], [5, 6]] },
+    { sizes: portraits(6), groups: [[0], [1, 2], [3, 4], [5]] },
+  ])(
+    'shows the cover alone and pairs the rest after it, leaving an odd last image alone',
+    ({ sizes, groups }) => {
+      expect(pairPages(sizes, 'double-after-cover')).toEqual(groups);
+    },
+  );
 
   it('returns nothing for an empty array of sizes', () => {
     expect(pairPages([], 'single')).toEqual([]);
@@ -55,94 +68,79 @@ describe('pairPages', () => {
     expect(pairPages(portraits(1), 'double-after-cover')).toEqual([[0]]);
   });
 
-  it('orders the indices inside a group ascending', () => {
-    expect(at(pairPages(portraits(4), 'double'), 1)).toEqual([2, 3]);
-  });
-
-  it('shows a wide image alone when the pairing is double', () => {
-    expect(pairPages([portrait, portrait, wide, portrait, portrait], 'double')).toEqual([
-      [0, 1],
-      [2],
-      [3, 4],
-    ]);
-  });
-
-  it('shows a wide image alone when the pairing is double-after-cover', () => {
-    expect(
-      pairPages([portrait, portrait, portrait, wide, portrait, portrait], 'double-after-cover'),
-    ).toEqual([[0], [1, 2], [3], [4, 5]]);
-  });
+  it.each([
+    {
+      sizes: [portrait, portrait, wide, portrait, portrait],
+      pairing: 'double',
+      groups: [[0, 1], [2], [3, 4]],
+    },
+    {
+      sizes: [portrait, portrait, portrait, wide, portrait, portrait],
+      pairing: 'double-after-cover',
+      groups: [[0], [1, 2], [3], [4, 5]],
+    },
+    { sizes: [wide, portrait, portrait], pairing: 'double', groups: [[0], [1, 2]] },
+    { sizes: [wide, portrait, portrait], pairing: 'double-after-cover', groups: [[0], [1, 2]] },
+    { sizes: [wide, wide], pairing: 'double', groups: [[0], [1]] },
+    {
+      sizes: [portrait, wide, wide, portrait, portrait],
+      pairing: 'double',
+      groups: [[0], [1], [2], [3, 4]],
+    },
+  ] as const)(
+    'shows a wide image alone and resumes pairing after it, $pairing',
+    ({ sizes, pairing, groups }) => {
+      expect(pairPages(sizes, pairing)).toEqual(groups);
+    },
+  );
 
   it('leaves the portrait before a wide image alone rather than pairing them', () => {
     expect(pairPages([portrait, wide, portrait], 'double')).toEqual([[0], [1], [2]]);
   });
 
-  it('resumes pairing after a wide image', () => {
-    expect(pairPages([wide, portrait, portrait], 'double')).toEqual([[0], [1, 2]]);
-  });
-
-  it('shows a wide cover alone like any other cover', () => {
-    expect(pairPages([wide, portrait, portrait], 'double-after-cover')).toEqual([[0], [1, 2]]);
-  });
-
-  it('gives a group of one to each of two wide images in a row', () => {
-    expect(pairPages([wide, wide], 'double')).toEqual([[0], [1]]);
-    expect(pairPages([portrait, wide, wide, portrait, portrait], 'double')).toEqual([
-      [0],
-      [1],
-      [2],
-      [3, 4],
-    ]);
-  });
-
-  it('treats an unmeasured image as portrait', () => {
-    expect(pairPages([null, null, null, null], 'double')).toEqual([
-      [0, 1],
-      [2, 3],
-    ]);
-    expect(pairPages([null, portrait, null], 'double-after-cover')).toEqual([[0], [1, 2]]);
-  });
-
-  it('treats a square image as portrait', () => {
-    expect(pairPages([square, square], 'double')).toEqual([[0, 1]]);
-    expect(pairPages([square, portrait], 'double')).toEqual([[0, 1]]);
-  });
-
-  it('treats a zero, negative or non-finite dimension as portrait', () => {
-    const suspect: readonly Size[] = [
-      { width: 0, height: 1200 },
-      { width: 2400, height: 0 },
-      { width: -2400, height: 1200 },
-      { width: 2400, height: -1200 },
-      { width: Number.NaN, height: 1200 },
-      { width: Number.POSITIVE_INFINITY, height: 1200 },
-      { width: 2400, height: Number.NaN },
-    ];
-
-    for (const size of suspect) {
-      expect(pairPages([size, portrait], 'double')).toEqual([[0, 1]]);
-    }
-  });
-
-  it('ignores image shape when the pairing is single', () => {
-    expect(pairPages([wide, wide, portrait, null], 'single')).toEqual([[0], [1], [2], [3]]);
-  });
+  it.each([
+    {
+      sizes: [null, null, null, null],
+      pairing: 'double',
+      groups: [
+        [0, 1],
+        [2, 3],
+      ],
+    },
+    { sizes: [null, portrait, null], pairing: 'double-after-cover', groups: [[0], [1, 2]] },
+    { sizes: [square, square], pairing: 'double', groups: [[0, 1]] },
+    { sizes: [square, portrait], pairing: 'double', groups: [[0, 1]] },
+    { sizes: [{ width: 0, height: 1200 }, portrait], pairing: 'double', groups: [[0, 1]] },
+    { sizes: [{ width: 2400, height: 0 }, portrait], pairing: 'double', groups: [[0, 1]] },
+    { sizes: [{ width: -2400, height: 1200 }, portrait], pairing: 'double', groups: [[0, 1]] },
+    { sizes: [{ width: 2400, height: -1200 }, portrait], pairing: 'double', groups: [[0, 1]] },
+    { sizes: [{ width: Number.NaN, height: 1200 }, portrait], pairing: 'double', groups: [[0, 1]] },
+    {
+      sizes: [{ width: Number.POSITIVE_INFINITY, height: 1200 }, portrait],
+      pairing: 'double',
+      groups: [[0, 1]],
+    },
+    { sizes: [{ width: 2400, height: Number.NaN }, portrait], pairing: 'double', groups: [[0, 1]] },
+  ] as const)(
+    'treats an unmeasured, square, zero, negative or non-finite image as portrait',
+    ({ sizes, pairing, groups }) => {
+      expect(pairPages(sizes, pairing)).toEqual(groups);
+    },
+  );
 });
 
 describe('groupContaining', () => {
-  it('finds the group holding an image that shares a pair', () => {
-    const groups = pairPages(portraits(6), 'double');
-
-    expect(groupContaining(groups, imageIndex(3))).toBe(1);
-    expect(groupContaining(groups, imageIndex(2))).toBe(1);
-  });
-
-  it('finds the group holding an image that stands alone', () => {
-    const groups = pairPages(portraits(6), 'double-after-cover');
-
-    expect(groupContaining(groups, imageIndex(0))).toBe(0);
-    expect(groupContaining(groups, imageIndex(5))).toBe(3);
-  });
+  it.each([
+    { pairing: 'double', index: 3, group: 1 },
+    { pairing: 'double', index: 2, group: 1 },
+    { pairing: 'double-after-cover', index: 0, group: 0 },
+    { pairing: 'double-after-cover', index: 5, group: 3 },
+  ] as const)(
+    'finds the group holding image $index under $pairing, paired or alone',
+    ({ pairing, index, group }) => {
+      expect(groupContaining(pairPages(portraits(6), pairing), imageIndex(index))).toBe(group);
+    },
+  );
 
   it('reports -1 for an index past the end', () => {
     const groups = pairPages(portraits(4), 'double');

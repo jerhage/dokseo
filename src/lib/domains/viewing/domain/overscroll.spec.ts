@@ -65,7 +65,7 @@ describe('overscrollTurn', () => {
     expect(drag(upright, 300, 200)).toBe('right');
   });
 
-  it('never turns a vertical pan, even at the edge', () => {
+  it('turns nothing for a vertical pan, even at the edge', () => {
     expect(drag(reachAt(RIGHT_EDGE), 300, 180, TAP_ZONES, 200)).toBeNull();
   });
 

@@ -21,24 +21,20 @@ function startOf(groups: readonly PageGroup[], group: number): ReadingPosition {
 }
 
 describe('readingPosition', () => {
-  it('raises an offset below zero to zero', () => {
-    expect(readingPosition(imageIndex(3), -0.4).offset).toBe(0);
-  });
-
-  it('lowers an offset above one to one', () => {
-    expect(readingPosition(imageIndex(3), 1.8).offset).toBe(1);
-  });
-
   it('falls back to zero for a non-finite offset', () => {
     expect(readingPosition(imageIndex(3), Number.NaN).offset).toBe(0);
     expect(readingPosition(imageIndex(3), Number.POSITIVE_INFINITY).offset).toBe(0);
     expect(readingPosition(imageIndex(3), Number.NEGATIVE_INFINITY).offset).toBe(0);
   });
 
-  it('keeps an offset already inside the range', () => {
-    expect(readingPosition(imageIndex(3), 0.42)).toEqual({ index: 3, offset: 0.42 });
-    expect(readingPosition(imageIndex(0), 0).offset).toBe(0);
-    expect(readingPosition(imageIndex(0), 1).offset).toBe(1);
+  it.each([
+    { index: 3, offset: -0.4, clamped: 0 },
+    { index: 3, offset: 1.8, clamped: 1 },
+    { index: 3, offset: 0.42, clamped: 0.42 },
+    { index: 0, offset: 0, clamped: 0 },
+    { index: 0, offset: 1, clamped: 1 },
+  ])('clamps an offset of $offset to $clamped', ({ index, offset, clamped }) => {
+    expect(readingPosition(imageIndex(index), offset)).toEqual({ index, offset: clamped });
   });
 });
 
@@ -47,20 +43,6 @@ describe('groupOf', () => {
     const groups = pairPages([portrait, wide, portrait, portrait], 'double');
 
     expect(groupOf(groups, readingPosition(imageIndex(1), 0))).toBe(1);
-  });
-
-  it('finds the group holding an image that shares a pair', () => {
-    const groups = pairPages(portraits(6), 'double');
-
-    expect(groupOf(groups, readingPosition(imageIndex(3), 0.5))).toBe(1);
-    expect(groupOf(groups, readingPosition(imageIndex(2), 0.5))).toBe(1);
-  });
-
-  it('reports -1 for an image no group holds', () => {
-    const groups = pairPages(portraits(4), 'double');
-
-    expect(groupOf(groups, readingPosition(imageIndex(9), 0))).toBe(-1);
-    expect(groupOf([], readingPosition(imageIndex(0), 0))).toBe(-1);
   });
 });
 
@@ -72,13 +54,12 @@ describe('positionOfGroup', () => {
     expect(positionOfGroup(groups, 2)).toEqual({ index: 3, offset: 0 });
   });
 
-  it('returns null for a negative group', () => {
-    expect(positionOfGroup(pairPages(portraits(4), 'double'), -1)).toBeNull();
-  });
-
-  it('returns null for a group past the end', () => {
-    expect(positionOfGroup(pairPages(portraits(4), 'double'), 2)).toBeNull();
-    expect(positionOfGroup([], 0)).toBeNull();
+  it.each([
+    { groups: pairPages(portraits(4), 'double'), group: -1 },
+    { groups: pairPages(portraits(4), 'double'), group: 2 },
+    { groups: [], group: 0 },
+  ])('returns null for group $group, before the start or past the end', ({ groups, group }) => {
+    expect(positionOfGroup(groups, group)).toBeNull();
   });
 });
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { imageRect, screenRect } from '$lib/shared/geometry';
 import type { ImageRect, ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
-import { at } from '$lib/shared/testing/at';
 import { regionsIn, toImageRect, toPageFraction } from './placement';
 import type { PlacedImage } from './placement';
 
@@ -49,18 +48,17 @@ describe('toImageRect', () => {
     });
   });
 
-  it('returns null for a selection that misses the image entirely', () => {
-    expect(toImageRect(page, screenRect(600, 700, 50, 50))).toBeNull();
-    expect(toImageRect(page, screenRect(0, 0, 40, 40))).toBeNull();
-  });
-
-  it('returns null for a selection that only touches an edge', () => {
-    expect(toImageRect(page, screenRect(500, 200, 60, 60))).toBeNull();
-  });
-
-  it('returns null for a selection with no extent', () => {
-    expect(toImageRect(page, screenRect(200, 200, 0, 100))).toBeNull();
-  });
+  it.each([
+    screenRect(600, 700, 50, 50),
+    screenRect(0, 0, 40, 40),
+    screenRect(500, 200, 60, 60),
+    screenRect(200, 200, 0, 100),
+  ])(
+    'returns null for a selection that misses the image, touches only its edge or has no extent',
+    (selection) => {
+      expect(toImageRect(page, selection)).toBeNull();
+    },
+  );
 
   it('handles a backwards drag by normalizing it first', () => {
     const forwards = mapped(page, screenRect(200, 200, 100, 150));
@@ -69,82 +67,82 @@ describe('toImageRect', () => {
     expect(plain(backwards)).toEqual(plain(forwards));
   });
 
-  it('returns null for an image with a zero, negative or non-finite natural size', () => {
-    const selection = screenRect(200, 200, 100, 150);
-    const suspect: readonly PlacedImage[] = [
-      { ...page, natural: { width: 0, height: 1200 } },
-      { ...page, natural: { width: 800, height: 0 } },
-      { ...page, natural: { width: Number.NaN, height: 1200 } },
-      { ...page, natural: { width: 800, height: Number.POSITIVE_INFINITY } },
-      { ...page, natural: { width: -800, height: 1200 } },
-    ];
+  const inside = screenRect(200, 200, 100, 150);
 
-    for (const image of suspect) expect(toImageRect(image, selection)).toBeNull();
-  });
-
-  it('returns null for an image with a zero-size on-screen rect', () => {
-    const flat: PlacedImage = { ...page, onScreen: screenRect(100, 50, 0, 600) };
-
-    expect(toImageRect(flat, screenRect(0, 0, 1000, 1000))).toBeNull();
-  });
+  it.each([
+    { image: { ...page, natural: { width: 0, height: 1200 } }, selection: inside },
+    { image: { ...page, natural: { width: 800, height: 0 } }, selection: inside },
+    { image: { ...page, natural: { width: Number.NaN, height: 1200 } }, selection: inside },
+    {
+      image: { ...page, natural: { width: 800, height: Number.POSITIVE_INFINITY } },
+      selection: inside,
+    },
+    { image: { ...page, natural: { width: -800, height: 1200 } }, selection: inside },
+    {
+      image: { ...page, onScreen: screenRect(100, 50, 0, 600) },
+      selection: screenRect(0, 0, 1000, 1000),
+    },
+  ])(
+    'returns null for an image with a zero, negative or non-finite natural size, or a zero-size on-screen rect',
+    ({ image, selection }) => {
+      expect(toImageRect(image, selection)).toBeNull();
+    },
+  );
 });
 
+function square(index: number, top: number): PlacedImage {
+  return {
+    index: imageIndex(index),
+    onScreen: screenRect(0, top, 100, 100),
+    natural: { width: 100, height: 100 },
+  };
+}
+
 describe('regionsIn', () => {
-  it('returns one region for a selection inside a single image', () => {
-    const regions = regionsIn([page], screenRect(200, 200, 100, 150));
+  it.each([
+    {
+      placed: [page],
+      selection: screenRect(200, 200, 100, 150),
+      regions: [{ index: 0, rect: { x: 200, y: 300, width: 200, height: 300 } }],
+    },
+    {
+      placed: [slice(0, 0), slice(1, 1000)],
+      selection: screenRect(100, 900, 200, 200),
+      regions: [
+        { index: 0, rect: { x: 100, y: 900, width: 200, height: 100 } },
+        { index: 1, rect: { x: 100, y: 0, width: 200, height: 100 } },
+      ],
+    },
+    {
+      placed: [square(0, 0), square(1, 300), square(2, 100)],
+      selection: screenRect(0, 0, 100, 200),
+      regions: [
+        { index: 0, rect: { x: 0, y: 0, width: 100, height: 100 } },
+        { index: 2, rect: { x: 0, y: 0, width: 100, height: 100 } },
+      ],
+    },
+    {
+      placed: [slice(0, 0), { ...slice(1, 1000), natural: { width: 800, height: Number.NaN } }],
+      selection: screenRect(100, 900, 200, 200),
+      regions: [{ index: 0, rect: { x: 100, y: 900, width: 200, height: 100 } }],
+    },
+    {
+      placed: [slice(0, 0), slice(1, 1000)],
+      selection: screenRect(2000, 2000, 50, 50),
+      regions: [],
+    },
+    { placed: [], selection: screenRect(0, 0, 100, 100), regions: [] },
+  ])(
+    'returns one region per overlapped image, in order, omitting an untouched or unmeasured one',
+    ({ placed, selection, regions }) => {
+      const found = regionsIn(placed, selection).map((region) => ({
+        index: region.index,
+        rect: plain(region.rect),
+      }));
 
-    expect(regions).toHaveLength(1);
-    expect(at(regions, 0).index).toBe(imageIndex(0));
-    expect(plain(at(regions, 0).rect)).toEqual({ x: 200, y: 300, width: 200, height: 300 });
-  });
-
-  it('returns one region per overlapped image, in order, across a slice boundary', () => {
-    const regions = regionsIn([slice(0, 0), slice(1, 1000)], screenRect(100, 900, 200, 200));
-
-    expect(regions).toHaveLength(2);
-    expect(at(regions, 0).index).toBe(imageIndex(0));
-    expect(plain(at(regions, 0).rect)).toEqual({ x: 100, y: 900, width: 200, height: 100 });
-    expect(at(regions, 1).index).toBe(imageIndex(1));
-    expect(plain(at(regions, 1).rect)).toEqual({ x: 100, y: 0, width: 200, height: 100 });
-  });
-
-  it('omits an untouched image that sits between two touched ones', () => {
-    const near: PlacedImage = {
-      index: imageIndex(0),
-      onScreen: screenRect(0, 0, 100, 100),
-      natural: { width: 100, height: 100 },
-    };
-    const far: PlacedImage = {
-      index: imageIndex(1),
-      onScreen: screenRect(0, 300, 100, 100),
-      natural: { width: 100, height: 100 },
-    };
-    const alsoNear: PlacedImage = {
-      index: imageIndex(2),
-      onScreen: screenRect(0, 100, 100, 100),
-      natural: { width: 100, height: 100 },
-    };
-
-    const regions = regionsIn([near, far, alsoNear], screenRect(0, 0, 100, 200));
-
-    expect(regions).toHaveLength(2);
-    expect(at(regions, 0).index).toBe(imageIndex(0));
-    expect(at(regions, 1).index).toBe(imageIndex(2));
-  });
-
-  it('returns nothing when the selection touches no image', () => {
-    expect(regionsIn([slice(0, 0), slice(1, 1000)], screenRect(2000, 2000, 50, 50))).toEqual([]);
-    expect(regionsIn([], screenRect(0, 0, 100, 100))).toEqual([]);
-  });
-
-  it('omits an image with a zero or non-finite natural size', () => {
-    const broken: PlacedImage = { ...slice(1, 1000), natural: { width: 800, height: Number.NaN } };
-
-    const regions = regionsIn([slice(0, 0), broken], screenRect(100, 900, 200, 200));
-
-    expect(regions).toHaveLength(1);
-    expect(at(regions, 0).index).toBe(imageIndex(0));
-  });
+      expect(found).toEqual(regions);
+    },
+  );
 });
 
 describe('toPageFraction', () => {
@@ -177,11 +175,10 @@ describe('toPageFraction', () => {
     });
   });
 
-  it('reports nothing for a page with no measured size', () => {
-    expect(toPageFraction({ width: 0, height: 0 }, imageRect(0, 0, 10, 10))).toBeNull();
-  });
-
-  it('reports nothing for a rect lying off the page', () => {
-    expect(toPageFraction(natural, imageRect(400, 0, 10, 10))).toBeNull();
+  it.each([
+    { natural: { width: 0, height: 0 }, rect: imageRect(0, 0, 10, 10) },
+    { natural, rect: imageRect(400, 0, 10, 10) },
+  ])('reports nothing for a page with no measured size or a rect lying off it', (row) => {
+    expect(toPageFraction(row.natural, row.rect)).toBeNull();
   });
 });
