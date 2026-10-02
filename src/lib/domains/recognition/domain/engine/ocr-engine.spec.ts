@@ -86,12 +86,6 @@ describe('engineStatus', () => {
     expect(status.note).toContain('Nothing is being fetched');
   });
 
-  it('reports a fetched load as downloading', () => {
-    expect(engineStatus(state({ opening: true, load: load({ source: 'network' }) })).label).toBe(
-      'Downloading',
-    );
-  });
-
   it('uses the same verb for a load as the capture panel does', () => {
     for (const source of ['cache', 'network'] as const) {
       expect(engineStatus(state({ opening: true, load: load({ source }) })).label).toBe(
@@ -107,19 +101,34 @@ describe('engineStatus', () => {
     expect(status.note).toContain('Resuming');
   });
 
-  it('says a cancelled load discarded the part-downloaded file', () => {
-    expect(engineStatus(state({ cancelled: true })).note).toContain('discarded');
-  });
+  it.each([{ stored: false }, { stored: true }])(
+    'reports a cancelled load as cancelled, having discarded the part-downloaded file, when stored is $stored',
+    ({ stored }) => {
+      const status = engineStatus(state({ stored, cancelled: true }));
 
-  it('reports a cancelled load as cancelled rather than as missing weights', () => {
-    expect(engineStatus(state({ stored: true, cancelled: true })).label).toBe('Cancelled');
-  });
+      expect(status.label).toBe('Cancelled');
+      expect(status.note).toContain('discarded');
+    },
+  );
 
   it('reports a failure ahead of the weights it still holds', () => {
     const status = engineStatus(state({ stored: true, failure: 'the worker died' }));
 
     expect(status.tone).toBe('bad');
     expect(status.note).toContain('the worker died');
+  });
+
+  it('calls a model whose weights are incomplete part-downloaded, not downloaded', () => {
+    const status = engineStatus(state({ stored: false, partlyDownloaded: true }));
+
+    expect(status.label).toBe('Part-downloaded');
+    expect(status.note).toContain('Resuming');
+  });
+
+  it('prefers the paused word over the part-downloaded one, because pausing is the newer fact', () => {
+    const status = engineStatus(state({ paused: true, partlyDownloaded: true }));
+
+    expect(status.label).toBe('Paused');
   });
 });
 
@@ -186,21 +195,6 @@ describe('tradeOffsOf', () => {
   });
 });
 
-describe('engineStatus', () => {
-  it('calls a model whose weights are incomplete part-downloaded, not downloaded', () => {
-    const status = engineStatus(state({ stored: false, partlyDownloaded: true }));
-
-    expect(status.label).toBe('Part-downloaded');
-    expect(status.note).toContain('Resuming');
-  });
-
-  it('prefers the paused word over the part-downloaded one, because pausing is the newer fact', () => {
-    const status = engineStatus(state({ paused: true, partlyDownloaded: true }));
-
-    expect(status.label).toBe('Paused');
-  });
-});
-
 describe('engineMismatch', () => {
   const japanese: RecognizerSession = {
     modelId: JAPANESE_OCR_MODEL.modelId,
@@ -208,12 +202,11 @@ describe('engineMismatch', () => {
     fellBackFrom: null,
   };
 
-  it('says so when the running model cannot read the book in front of the reader', () => {
-    expect(engineMismatch(japanese, 'ko')).toContain(JAPANESE_OCR_MODEL.label);
-  });
+  it('names the running model and the language of the book it cannot read', () => {
+    const mismatch = engineMismatch(japanese, 'ko');
 
-  it('names the language the model cannot read, not the one it can', () => {
-    expect(engineMismatch(japanese, 'ko')).toContain('Korean');
+    expect(mismatch).toContain(JAPANESE_OCR_MODEL.label);
+    expect(mismatch).toContain('Korean');
   });
 
   it('says nothing when the running model declares the language of the book', () => {

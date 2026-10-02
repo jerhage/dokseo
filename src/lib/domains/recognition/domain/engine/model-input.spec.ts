@@ -5,36 +5,32 @@ describe('downscaleFor', () => {
   it('leaves a small crop alone', () => {
     expect(downscaleFor({ width: 180, height: 420 })).toBe(1);
     expect(downscaleFor({ width: 1, height: 1 })).toBe(1);
+    expect(downscaleFor({ width: 2, height: 3 })).toBe(1);
+    expect(downscaleFor({ width: 640, height: 900 })).toBe(1);
+    expect(
+      downscaleFor({ width: MAX_MODEL_INPUT_EDGE - 1, height: MAX_MODEL_INPUT_EDGE - 1 }),
+    ).toBe(1);
   });
 
   it('leaves a crop exactly on the limit alone', () => {
     expect(downscaleFor({ width: MAX_MODEL_INPUT_EDGE, height: 700 })).toBe(1);
   });
 
-  it('never returns a factor above one', () => {
-    const sizes = [
-      { width: 2, height: 3 },
-      { width: 640, height: 900 },
-      { width: MAX_MODEL_INPUT_EDGE - 1, height: MAX_MODEL_INPUT_EDGE - 1 },
-      { width: MAX_MODEL_INPUT_EDGE * 4, height: 10 },
-    ];
+  it.each([
+    { crop: 'wide', long: 6000, short: 900, size: { width: 6000, height: 900 } },
+    { crop: 'tall', long: 6000, short: 900, size: { width: 900, height: 6000 } },
+    {
+      crop: 'very wide',
+      long: MAX_MODEL_INPUT_EDGE * 4,
+      short: 10,
+      size: { width: MAX_MODEL_INPUT_EDGE * 4, height: 10 },
+    },
+  ])('reduces a $crop crop to the limit', ({ long, short, size }) => {
+    const factor = downscaleFor(size);
 
-    for (const size of sizes) expect(downscaleFor(size)).toBeLessThanOrEqual(1);
-  });
-
-  it('reduces a wide crop to the limit', () => {
-    const factor = downscaleFor({ width: 6000, height: 900 });
-
-    expect(factor).toBeCloseTo(MAX_MODEL_INPUT_EDGE / 6000);
-    expect(6000 * factor).toBeCloseTo(MAX_MODEL_INPUT_EDGE);
-    expect(900 * factor).toBeLessThan(MAX_MODEL_INPUT_EDGE);
-  });
-
-  it('reduces a tall crop to the limit', () => {
-    const factor = downscaleFor({ width: 900, height: 6000 });
-
-    expect(factor).toBeCloseTo(MAX_MODEL_INPUT_EDGE / 6000);
-    expect(6000 * factor).toBeCloseTo(MAX_MODEL_INPUT_EDGE);
+    expect(factor).toBeCloseTo(MAX_MODEL_INPUT_EDGE / long);
+    expect(long * factor).toBeCloseTo(MAX_MODEL_INPUT_EDGE);
+    expect(short * factor).toBeLessThan(MAX_MODEL_INPUT_EDGE);
   });
 
   it('reduces by the longer edge when both are past the limit', () => {

@@ -31,7 +31,14 @@ describe('lineGeometry', () => {
     }
   });
 
-  it('draws at least one column of a line with no measurable size', () => {
+  it('draws a line with no measurable size as wide as it is high', () => {
     expect(lineGeometry(0, 0).drawnWidth).toBe(LINE_HEIGHT);
+  });
+
+  it.each([
+    { width: 1, height: 1_000 },
+    { width: Number.MIN_VALUE, height: 10 },
+  ])('draws at least one column of a sliver $width wide and $height high', ({ width, height }) => {
+    expect(lineGeometry(width, height).drawnWidth).toBe(1);
   });
 });

@@ -46,7 +46,7 @@ describe('ctcReading', () => {
   });
 
   it('reads an index the dictionary does not reach as nothing rather than failing', () => {
-    expect(ctcReading(stepsOf([1]), ['', '']).text).toBe('');
+    expect(ctcReading(stepsOf([1, 3]), ['', '']).text).toBe('');
   });
 });
 

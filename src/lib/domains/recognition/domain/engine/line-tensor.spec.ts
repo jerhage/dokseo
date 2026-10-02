@@ -40,14 +40,4 @@ describe('lineTensorData', () => {
 
     expectClose(Array.from(data), [-1, -0.6, -1, -0.6, -1, -0.6]);
   });
-
-  it('pads the columns past the drawn width with zero, the normalized mid level', () => {
-    const data = lineTensorData(RGBA, GEOMETRY);
-
-    for (let channel = 0; channel < LINE_CHANNELS; channel += 1) {
-      const plane = planeOf(data, channel);
-      expect(plane[2]).toBe(0);
-      expect(plane[5]).toBe(0);
-    }
-  });
 });

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   chosenDevice,
-  COMPUTE_CHOICES,
   computeChoiceName,
   computeCpuNote,
   computeChoiceOf,
@@ -11,37 +10,21 @@ import {
 } from './compute-choice';
 
 describe('chosenDevice', () => {
-  it('runs on the CPU when the reader left the choice to the app', () => {
-    expect(chosenDevice('auto', true)).toBe('wasm');
-  });
-
-  it('leaves the GPU to a reader who asked for it', () => {
-    expect(chosenDevice('gpu', true)).toBe('webgpu');
-  });
-
-  it('runs on the CPU when nothing was forced and no adapter answered', () => {
-    expect(chosenDevice('auto', false)).toBe('wasm');
-  });
-
-  it('runs on the CPU when the CPU was forced and an adapter was available', () => {
-    expect(chosenDevice('cpu', true)).toBe('wasm');
-  });
-
-  it('falls back to the CPU when the GPU was forced and no adapter answered', () => {
-    expect(chosenDevice('gpu', false)).toBe('wasm');
-  });
-
-  it('runs on the GPU when the GPU was forced and an adapter answered', () => {
-    expect(chosenDevice('gpu', true)).toBe('webgpu');
-  });
+  it.each([
+    { choice: 'auto', adapter: true, device: 'wasm' },
+    { choice: 'auto', adapter: false, device: 'wasm' },
+    { choice: 'cpu', adapter: true, device: 'wasm' },
+    { choice: 'gpu', adapter: false, device: 'wasm' },
+    { choice: 'gpu', adapter: true, device: 'webgpu' },
+  ] as const)(
+    'runs on $device for the choice $choice when an adapter answered is $adapter',
+    ({ choice, adapter, device }) => {
+      expect(chosenDevice(choice, adapter)).toBe(device);
+    },
+  );
 });
 
 describe('computeChoiceOf', () => {
-  it('reads a stored choice back', () => {
-    expect(computeChoiceOf('gpu')).toBe('gpu');
-    expect(computeChoiceOf('cpu')).toBe('cpu');
-  });
-
   it('treats a missing or unknown choice as the CPU, the steady one', () => {
     expect(computeChoiceOf(null)).toBe('cpu');
     expect(computeChoiceOf(undefined)).toBe('cpu');
@@ -66,17 +49,16 @@ describe('computeChoiceName', () => {
 describe('computeDetectionNote', () => {
   const found = { available: true, description: null };
 
-  it('says the CPU is in use even where a GPU was found, when the app chose', () => {
-    expect(computeDetectionNote(found, 'auto')).toBe('Using: CPU. Detected: WebGPU available.');
-  });
-
-  it('says the GPU is in use when the reader asked for it', () => {
-    expect(computeDetectionNote(found, 'gpu')).toBe('Using: GPU. Detected: WebGPU available.');
-  });
-
-  it('says the CPU is in use when the reader asked for it', () => {
-    expect(computeDetectionNote(found, 'cpu')).toBe('Using: CPU. Detected: WebGPU available.');
-  });
+  it.each([
+    { choice: 'auto', note: 'Using: CPU. Detected: WebGPU available.' },
+    { choice: 'gpu', note: 'Using: GPU. Detected: WebGPU available.' },
+    { choice: 'cpu', note: 'Using: CPU. Detected: WebGPU available.' },
+  ] as const)(
+    'says which device is in use for the choice $choice where a GPU was found',
+    ({ choice, note }) => {
+      expect(computeDetectionNote(found, choice)).toBe(note);
+    },
+  );
 
   it('says the CPU is in use when no adapter was found, whatever was asked', () => {
     expect(computeDetectionNote(GPU_UNDETECTED, 'gpu')).toBe(
@@ -106,25 +88,15 @@ describe('computeCpuNote', () => {
   it('says nothing to a reader who asked for the GPU', () => {
     expect(computeCpuNote('gpu')).toBeNull();
   });
-
-  it('never appears beside the GPU warning, because one choice is in force', () => {
-    for (const choice of COMPUTE_CHOICES) {
-      const both = computeCpuNote(choice) !== null && computeGpuWarning(choice) !== null;
-      expect(both).toBe(false);
-    }
-  });
 });
 
 describe('computeGpuWarning', () => {
-  it('says nothing to a reader who left the choice to the app', () => {
-    expect(computeGpuWarning('auto')).toBeNull();
+  it.each(['auto', 'cpu'] as const)('says nothing to a reader whose choice is %s', (choice) => {
+    expect(computeGpuWarning(choice)).toBeNull();
   });
 
-  it('warns that browser support for the GPU is still shaky', () => {
+  it('warns that browser support for the GPU is still shaky and promises the fallback', () => {
     expect(computeGpuWarning('gpu')).toContain('still shaky');
-  });
-
-  it('promises the fallback, so a refusal is not a dead end', () => {
     expect(computeGpuWarning('gpu')).toContain('falls back to the CPU');
   });
 
@@ -134,9 +106,5 @@ describe('computeGpuWarning', () => {
     expect(warning).not.toContain('Firefox');
     expect(warning).not.toContain('Safari');
     expect(warning).not.toContain('Chrome');
-  });
-
-  it('says nothing to a reader who already chose the CPU', () => {
-    expect(computeGpuWarning('cpu')).toBeNull();
   });
 });

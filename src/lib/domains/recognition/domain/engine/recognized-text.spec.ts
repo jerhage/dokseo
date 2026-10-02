@@ -20,12 +20,8 @@ describe('recognizedText', () => {
 });
 
 describe('hasNoText', () => {
-  it('reports an empty string as having no text', () => {
-    expect(hasNoText(recognizedText(''))).toBe(true);
-  });
-
-  it('reports a string of only whitespace as having no text', () => {
-    expect(hasNoText(recognizedText('   \n\t'))).toBe(true);
+  it.each(['', '   \n\t'])('reports %j as having no text', (raw) => {
+    expect(hasNoText(recognizedText(raw))).toBe(true);
   });
 
   it('reports a recognized line as having text', () => {
