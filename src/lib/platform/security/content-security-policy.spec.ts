@@ -62,6 +62,10 @@ describe('CONTENT_SECURITY_POLICY', () => {
     for (const host of hosts) expect(host.startsWith('https://')).toBe(true);
   });
 
+  it('admits the web app manifest from its own origin, so the app installs', () => {
+    expect(sources('manifest-src')).toEqual(['self']);
+  });
+
   it('plants nothing a page could navigate or submit through', () => {
     expect(sources('base-uri')).toEqual(['none']);
     expect(sources('form-action')).toEqual(['none']);

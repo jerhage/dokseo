@@ -62,4 +62,15 @@ describe('shellAssets', () => {
       '/favicon.svg',
     ]);
   });
+
+  it('keeps the web app manifest and its icons, so an installed app opens offline', () => {
+    const installFiles = [
+      '/manifest.webmanifest',
+      '/icons/icon-192.png',
+      '/icons/icon-maskable-512.png',
+      '/icons/apple-touch-icon.png',
+    ];
+
+    expect(shellAssets('', [], installFiles)).toEqual(['/', ...installFiles]);
+  });
 });

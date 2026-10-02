@@ -12,6 +12,7 @@ const CONTENT_SECURITY_POLICY: ContentSecurityPolicy = {
   'script-src': ['self', 'wasm-unsafe-eval', 'sha256-zt9MSkCzdyugQp42Qq7L4UQ4u5MHRIIkgZyHPQlGxi4='],
   'style-src': ['self', 'unsafe-inline', 'blob:'],
   'img-src': ['self', 'blob:', 'data:'],
+  'manifest-src': ['self'],
   'font-src': ['self', 'blob:', 'data:'],
   'media-src': ['self', 'blob:'],
   'connect-src': [
