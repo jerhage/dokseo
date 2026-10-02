@@ -14,6 +14,7 @@
     listedOf,
     shelfOf,
     shelfState,
+    unreadableBooks,
   } from './library-shelf';
   import type { ShelfRead } from './library-shelf';
 
@@ -50,6 +51,7 @@
   const failure = $derived(failureOf(held));
   const searched = $derived(books.map(listedOf));
   const counts = $derived(imageCountsOf(books));
+  const unreadable = $derived(unreadableBooks(listing.state));
 
   function reload(): void {
     if (!wanted) {
@@ -81,6 +83,9 @@
     },
     get counts() {
       return counts;
+    },
+    get unreadable() {
+      return unreadable;
     },
     reload,
   };

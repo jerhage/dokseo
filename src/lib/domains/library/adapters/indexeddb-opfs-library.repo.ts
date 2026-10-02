@@ -24,7 +24,7 @@ import type {
 } from '../domain/book/library-repository';
 import { pageListFromStored } from '../domain/book/page-list';
 import type { PageOrder, StoredPageList } from '../domain/book/page-list';
-import { bookFromStored } from '../domain/book/stored-book';
+import { bookFromStored, booksFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
@@ -125,7 +125,7 @@ function createLibraryRepository(): LibraryRepository {
     async list(): Promise<BookListing> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       const records = await listRecords<StoredBook>(await database(), BOOK_STORE);
-      return { kind: 'success', books: records.map(bookFromStored) };
+      return { kind: 'success', ...booksFromStored(records) };
     },
 
     async get(id: BookId): Promise<BookLookup> {

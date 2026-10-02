@@ -38,6 +38,7 @@
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
   import ShelfView from './ShelfView.svelte';
+  import UnreadableBooks from './UnreadableBooks.svelte';
   import UploadStrip from './UploadStrip.svelte';
   import { uploadsInProgressText } from './upload-progress-text';
   import { continueReading } from './library-shelves';
@@ -185,6 +186,16 @@
         language="ja"
         stage={view.upload.progress}
         batch={view.upload.batch}
+      />
+    {/if}
+
+    {#if shelfRead.unreadable.length > 0}
+      <UnreadableBooks
+        books={shelfRead.unreadable}
+        busy={view.changes.removing !== null}
+        onremove={(id) => void view.changes.remove(id)}
+        onremoveall={() =>
+          void view.changes.removeEach(shelfRead.unreadable.map((book) => book.id))}
       />
     {/if}
 

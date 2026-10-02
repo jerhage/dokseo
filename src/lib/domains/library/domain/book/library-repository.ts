@@ -2,12 +2,17 @@ import type { BookId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book, BookEdit } from './book';
 import type { PageList, PageOrder } from './page-list';
+import type { UnreadableBook } from './stored-book';
 import type { SourceWriteReport } from '../ingest/upload-progress';
 
 type LibraryWrite = { readonly kind: 'success' } | StorageUnavailable;
 
 type BookListing =
-  | { readonly kind: 'success'; readonly books: readonly Book[] }
+  | {
+      readonly kind: 'success';
+      readonly books: readonly Book[];
+      readonly unreadable: readonly UnreadableBook[];
+    }
   | StorageUnavailable;
 
 type BookLookup = { readonly kind: 'success'; readonly book: Book | null } | StorageUnavailable;

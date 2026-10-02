@@ -30,7 +30,7 @@ const stored: Book = {
 function fakeRepository(outcome: BookLookup) {
   const updates: UpdateCall[] = [];
   const repository: LibraryRepository = {
-    list: () => Promise.resolve({ kind: 'success', books: [] }),
+    list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve({ kind: 'success', book: null }),
     add: () => Promise.resolve({ kind: 'success' }),
     remove: () => Promise.resolve({ kind: 'success' }),

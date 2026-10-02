@@ -1,5 +1,7 @@
 import { match } from 'ts-pattern';
 import { knownStoredValue } from '$lib/shared/corrupt-row';
+import { parsedBookId } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { isLayoutKind, isPagePairing, isReadingDirection } from '$lib/shared/layout-kind';
@@ -26,6 +28,15 @@ type StoredBook = Omit<
   readonly pageFit: unknown;
 };
 
+type UnreadableBook = { readonly id: BookId; readonly title: string | null };
+
+type StoredBooks = {
+  readonly books: readonly Book[];
+  readonly unreadable: readonly UnreadableBook[];
+};
+
+type RawRow = { readonly id?: unknown; readonly title?: unknown };
+
 function storedPlace(position: ReadingPlace): ReadingPlace {
   return match(position)
     .with({ kind: 'image' }, (at) => imagePlace(at.index, at.shownThrough, at.offset))
@@ -47,5 +58,24 @@ function bookFromStored(stored: StoredBook): Book {
   };
 }
 
-export { FALLBACK_DIRECTION, FALLBACK_LANGUAGE, bookFromStored };
-export type { StoredBook };
+function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
+  const id = typeof row.id === 'string' ? parsedBookId(row.id) : null;
+  if (id === null) throw cause;
+  return { id, title: typeof row.title === 'string' ? row.title : null };
+}
+
+function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
+  const books: Book[] = [];
+  const unreadable: UnreadableBook[] = [];
+  for (const row of rows) {
+    try {
+      books.push(bookFromStored(row));
+    } catch (cause) {
+      unreadable.push(unreadableBook(row, cause));
+    }
+  }
+  return { books, unreadable };
+}
+
+export { FALLBACK_DIRECTION, FALLBACK_LANGUAGE, bookFromStored, booksFromStored };
+export type { StoredBook, StoredBooks, UnreadableBook };

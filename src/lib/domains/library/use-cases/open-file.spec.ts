@@ -42,7 +42,7 @@ const NOT_AN_EPUB: EpubInspectionAnswer = { kind: 'success', inspection: { kind:
 const WRITTEN: LibraryWrite = { kind: 'success' };
 
 function listing(books: readonly Book[]): BookListing {
-  return { kind: 'success', books };
+  return { kind: 'success', books, unreadable: [] };
 }
 
 function built(source: BuiltSource): SourceBuild {

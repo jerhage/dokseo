@@ -52,9 +52,9 @@ function newestFirst(books: readonly Book[]): readonly Book[] {
 
 function sortedListing(listed: ListBooksResult): ListBooksResult {
   return match(listed)
-    .with({ kind: 'success' }, ({ books }): ListBooksResult => ({
-      kind: 'success',
-      books: newestFirst(books),
+    .with({ kind: 'success' }, (listing): ListBooksResult => ({
+      ...listing,
+      books: newestFirst(listing.books),
     }))
     .with({ kind: 'storage-unavailable' }, (blocked) => blocked)
     .exhaustive();

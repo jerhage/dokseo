@@ -5,7 +5,12 @@ import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import { DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
 import { CorruptRow } from '$lib/shared/corrupt-row';
-import { bookFromStored, FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from './stored-book';
+import {
+  bookFromStored,
+  booksFromStored,
+  FALLBACK_DIRECTION,
+  FALLBACK_LANGUAGE,
+} from './stored-book';
 import type { StoredBook } from './stored-book';
 
 const row: StoredBook = {
@@ -195,5 +200,27 @@ describe('bookFromStored', () => {
     expect(() => bookFromStored({ ...row, sourceKind: 'mobi' })).toThrow(
       'A stored book holds an unknown source kind: mobi',
     );
+  });
+});
+
+describe('booksFromStored', () => {
+  it('reports a row whose mapping throws as unreadable and keeps the rows that read', () => {
+    const scrolled: StoredBook = { ...row, id: bookId('b-2'), layoutKind: 'scroll' };
+    const read = booksFromStored([row, scrolled]);
+
+    expect(read.books.map((book) => book.id)).toEqual(['b-1']);
+    expect(read.unreadable).toEqual([{ id: 'b-2', title: 'Yotsuba&! 1' }]);
+  });
+
+  it('reports no title for an unreadable row whose title is not a string', () => {
+    const untitled = { ...row, title: 7, layoutKind: 'scroll' } as unknown as StoredBook;
+
+    expect(booksFromStored([untitled]).unreadable).toEqual([{ id: 'b-1', title: null }]);
+  });
+
+  it('rethrows the mapping failure of a row without a usable id', () => {
+    const nameless = { ...row, id: 'a/b', layoutKind: 'scroll' } as unknown as StoredBook;
+
+    expect(() => booksFromStored([nameless])).toThrow(CorruptRow);
   });
 });

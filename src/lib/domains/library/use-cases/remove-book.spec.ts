@@ -16,7 +16,7 @@ const NO_BOOK: BookLookup = { kind: 'success', book: null };
 function fakeRepository(outcome: LibraryWrite) {
   const removed: BookId[] = [];
   const repository: LibraryRepository = {
-    list: () => Promise.resolve({ kind: 'success', books: [] }),
+    list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve(NO_BOOK),
     add: () => Promise.resolve(WRITTEN),
     remove: (id) => {

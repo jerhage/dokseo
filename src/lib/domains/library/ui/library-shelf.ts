@@ -5,6 +5,7 @@ import { effectiveDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadState } from '$lib/shared/read-state';
 import type { Book } from '../domain/book/book';
+import type { UnreadableBook } from '../domain/book/stored-book';
 import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
 import type { ListBooksResult } from '../use-cases/list-books';
 
@@ -31,6 +32,7 @@ type ShelfRead = {
   readonly failure: string | null;
   readonly searched: readonly ListedBook[];
   readonly counts: ReadonlyMap<BookId, number>;
+  readonly unreadable: readonly UnreadableBook[];
   readonly reload: () => void;
 };
 
@@ -46,6 +48,10 @@ function failureOf(state: ReadState<LibraryShelf>): string | null {
 
 function listedBooks(books: ReadState<ListBooksResult>): readonly Book[] {
   return books.kind === 'ready' && books.value.kind === 'success' ? books.value.books : [];
+}
+
+function unreadableBooks(books: ReadState<ListBooksResult>): readonly UnreadableBook[] {
+  return books.kind === 'ready' && books.value.kind === 'success' ? books.value.unreadable : [];
 }
 
 function shelfState(
@@ -97,5 +103,6 @@ export {
   listedOf,
   shelfOf,
   shelfState,
+  unreadableBooks,
 };
 export type { LibraryBody, LibraryShelf, ListedBook, ShelfRead };

@@ -48,7 +48,7 @@ function world(outcomes: Outcomes = {}): World {
   };
 
   const repository: LibraryRepository = {
-    list: () => Promise.resolve({ kind: 'success', books: [] }),
+    list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve({ kind: 'success', book: null }),
     add: () => Promise.reject(new Error('not used')),
     remove: (id) => {

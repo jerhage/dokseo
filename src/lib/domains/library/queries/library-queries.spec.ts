@@ -50,7 +50,11 @@ describe('booksQuery', () => {
       client,
       booksQuery({
         listBooks: () =>
-          Promise.resolve({ kind: 'success', books: [book('old', 1), book('new', 2)] }),
+          Promise.resolve({
+            kind: 'success',
+            books: [book('old', 1), book('new', 2)],
+            unreadable: [],
+          }),
       }),
     );
 

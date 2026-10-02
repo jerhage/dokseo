@@ -107,6 +107,14 @@ class BookChanges {
     return removed === null ? 'failed' : 'changed';
   }
 
+  async removeEach(ids: readonly BookId[]): Promise<ChangeOutcome> {
+    for (const id of ids) {
+      const outcome = await this.remove(id);
+      if (outcome !== 'changed') return outcome;
+    }
+    return 'changed';
+  }
+
   async edit(id: BookId, edit: BookEdit): Promise<ChangeOutcome> {
     if (this.#blocked()) return 'skipped';
     const edited = await this.#change({ kind: 'editing', id }, EDIT_FAILED, () =>
