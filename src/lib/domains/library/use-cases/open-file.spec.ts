@@ -345,7 +345,7 @@ describe('openFile', () => {
     expect(at(repository.added, 0).book.fileName).toBe('Yotsuba&! 1.epub');
   });
 
-  it.each([null, '   '])(
+  it.each([null, '   ', 'Untitled', 'C:\\Books\\kino.indd', 'draft.docx'])(
     'titles an EPUB by its file name when the package declares the title %j',
     async (declared) => {
       const result = await openFile(

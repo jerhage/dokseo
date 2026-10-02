@@ -8,7 +8,7 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
-import { bookTitle } from '../domain/book/title';
+import { bookTitle, plausibleTitle } from '../domain/book/title';
 import { DEFAULT_BOOK_MATCHING, joinUpload, restorableMatch } from '../domain/book/book-matching';
 import type { BookMatching, UploadIdentity, UploadJoin } from '../domain/book/book-matching';
 import type { LibraryRepository } from '../domain/book/library-repository';
@@ -176,7 +176,8 @@ function declaredLanguage(inspection: UploadInspection): Language | null {
 function declaredTitle(inspection: UploadInspection, built: BuiltSource): string | null {
   if (inspection.kind !== 'epub') return built.metadataTitle;
 
-  return inspection.packageDocument.title;
+  const declared = inspection.packageDocument.title;
+  return declared === null ? null : plausibleTitle(declared);
 }
 
 const EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE: ReadingDirection = 'ltr';
