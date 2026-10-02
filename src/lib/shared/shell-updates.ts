@@ -4,6 +4,7 @@ import {
   watchShellWorker,
 } from '$lib/platform/service-worker/shell-registration';
 import type {
+  ShellRegistration,
   ShellWorker,
   ShellWorkerContainer,
 } from '$lib/platform/service-worker/shell-registration';
@@ -17,12 +18,15 @@ const SHELL_UPDATE_ACTION = 'Reload';
 
 const SHELL_WORKER_URL = '/service-worker.js';
 
+const SHELL_RECHECK_MS = 30 * 60 * 1000;
+
 class ShellUpdates {
   #toaster: UpdateToaster;
   #container: ShellWorkerContainer;
   #reload: () => void;
   #waiting: ShellWorker | null = null;
   #shown: ToastId | null = null;
+  #registration: ShellRegistration | null = null;
 
   constructor(toaster: UpdateToaster, container: ShellWorkerContainer, reload: () => void) {
     this.#toaster = toaster;
@@ -31,9 +35,16 @@ class ShellUpdates {
   }
 
   watch(url: string): Promise<void> {
-    return watchShellWorker(this.#container, url, (waiting) => this.offer(waiting)).catch(
+    return watchShellWorker(this.#container, url, (waiting) => this.offer(waiting)).then(
+      (registration) => {
+        this.#registration = registration;
+      },
       (error: unknown) => logUnexpected('service-worker', error),
     );
+  }
+
+  recheck(): void {
+    this.#registration?.update().catch((error: unknown) => logUnexpected('service-worker', error));
   }
 
   offer(waiting: ShellWorker): void {
@@ -63,9 +74,14 @@ function watchShellUpdates(toaster: UpdateToaster): void {
 
   const updates = new ShellUpdates(toaster, navigator.serviceWorker, () => location.reload());
   void updates.watch(SHELL_WORKER_URL);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') updates.recheck();
+  });
+  setInterval(() => updates.recheck(), SHELL_RECHECK_MS);
 }
 
 export {
+  SHELL_RECHECK_MS,
   SHELL_UPDATE_ACTION,
   SHELL_UPDATE_TITLE,
   SHELL_WORKER_URL,

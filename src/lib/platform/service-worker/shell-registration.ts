@@ -9,6 +9,7 @@ type ShellWorker = {
 
 type ShellRegistration = {
   readonly waiting: ShellWorker | null;
+  update(): Promise<unknown>;
   readonly installing: ShellWorker | null;
   addEventListener(kind: 'updatefound', listen: () => void): void;
 };
@@ -23,7 +24,7 @@ async function watchShellWorker(
   container: ShellWorkerContainer,
   url: string,
   onWaiting: (waiting: ShellWorker) => void,
-): Promise<void> {
+): Promise<ShellRegistration> {
   const registration = await container.register(url);
 
   const offer = (worker: ShellWorker): void => {
@@ -39,6 +40,8 @@ async function watchShellWorker(
       if (installing.state === 'installed') offer(installing);
     });
   });
+
+  return registration;
 }
 
 function applyShellUpdate(

@@ -31,7 +31,13 @@ class FakeShellWorker implements ShellWorker {
 class FakeShellRegistration implements ShellRegistration {
   waiting: FakeShellWorker | null = null;
   installing: FakeShellWorker | null = null;
+  updates = 0;
   #updatefound: (() => void)[] = [];
+
+  update(): Promise<void> {
+    this.updates += 1;
+    return Promise.resolve();
+  }
 
   addEventListener(_kind: 'updatefound', listen: () => void): void {
     this.#updatefound.push(listen);

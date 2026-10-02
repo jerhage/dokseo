@@ -106,4 +106,15 @@ describe('ShellUpdates', () => {
     expect(logged).toHaveBeenCalledWith('Unexpected failure (service-worker)', failure);
     expect(toaster.toasts).toEqual([]);
   });
+
+  it('asks the registration for a newer worker when rechecked after watching', async () => {
+    const container = new FakeShellContainer(true);
+    const updates = new ShellUpdates(createToaster(), container, () => undefined);
+
+    updates.recheck();
+    await updates.watch('/service-worker.js');
+    updates.recheck();
+
+    expect(container.registration.updates).toBe(1);
+  });
 });
