@@ -23,48 +23,51 @@ const book: Book = {
 };
 
 describe('applyEdit', () => {
-  it('moves the position to the given index', () => {
-    expect(applyEdit(book, { position: imagePlace(imageIndex(7)) }).position).toEqual({
-      kind: 'image',
-      index: 7,
-      shownThrough: 7,
-      offset: 0,
-    });
-  });
+  it.each([
+    [
+      'an index',
+      imagePlace(imageIndex(7)),
+      { kind: 'image', index: 7, shownThrough: 7, offset: 0 },
+    ],
+    [
+      'the first index',
+      imagePlace(imageIndex(0)),
+      { kind: 'image', index: 0, shownThrough: 0, offset: 0 },
+    ],
+    [
+      'a text place',
+      textPlace('epubcfi(/6/14!/4/2/1:0)', null),
+      { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/1:0)', fraction: null },
+    ],
+  ] as const)(
+    'moves the position to %s and preserves every other field',
+    (_, position, expected) => {
+      const edited = applyEdit(book, { position });
 
-  it('accepts the first index', () => {
-    expect(applyEdit(book, { position: imagePlace(imageIndex(0)) }).position).toEqual({
-      kind: 'image',
-      index: 0,
-      shownThrough: 0,
-      offset: 0,
-    });
-  });
+      expect(edited.position).toEqual(expected);
+      expect(edited).toEqual({ ...book, position });
+    },
+  );
 
-  it('moves the position to a text place', () => {
-    expect(
-      applyEdit(book, { position: textPlace('epubcfi(/6/14!/4/2/1:0)', null) }).position,
-    ).toEqual({
-      kind: 'text',
-      cfi: 'epubcfi(/6/14!/4/2/1:0)',
-      fraction: null,
-    });
-  });
-
-  it('preserves every other field when it moves the position', () => {
-    expect(applyEdit(book, { position: imagePlace(imageIndex(7)) })).toEqual({
-      ...book,
-      position: imagePlace(imageIndex(7)),
-    });
-  });
-
-  it('replaces only the named fields and leaves the rest alone', () => {
-    expect(applyEdit(book, { title: 'Blame! 1', language: 'ko' })).toEqual({
-      ...book,
-      title: 'Blame! 1',
-      language: 'ko',
-    });
-  });
+  it.each([
+    [
+      'a title and a language',
+      { title: 'Blame! 1', language: 'ko' },
+      { title: 'Blame! 1', language: 'ko' },
+    ],
+    ['the direction a paged book already reads in', { direction: 'rtl' }, {}],
+    ['a paged layout to a paged book', { layoutKind: 'paged' }, {}],
+    [
+      'a pairing chosen for a paged book',
+      { pagePairing: 'double-after-cover' },
+      { pagePairing: 'double-after-cover' },
+    ],
+  ] as const)(
+    'replaces only the named fields and leaves the rest alone, for %s',
+    (_, edit, changed) => {
+      expect(applyEdit(book, edit)).toEqual({ ...book, ...changed });
+    },
+  );
 
   it('returns a new object and leaves the original untouched', () => {
     const edited = applyEdit(book, { title: 'Blame! 1', position: imagePlace(imageIndex(7)) });
@@ -73,81 +76,83 @@ describe('applyEdit', () => {
     expect(book.position).toEqual({ kind: 'image', index: 3, shownThrough: 3, offset: 0 });
   });
 
-  it('stamps the time the book was last read', () => {
-    expect(applyEdit(book, { lastReadAt: 1758300000000 }).lastReadAt).toBe(1758300000000);
-  });
-
-  it('keeps the last read time when the edit does not give one', () => {
-    const read: Book = { ...book, lastReadAt: 1758300000000 };
-    expect(applyEdit(read, { title: 'Blame! 1' }).lastReadAt).toBe(1758300000000);
-  });
-
-  it('clears the last read time when the edit gives null', () => {
-    const read: Book = { ...book, lastReadAt: 1758300000000 };
-    expect(applyEdit(read, { lastReadAt: null }).lastReadAt).toBeNull();
-  });
-
-  it('marks the book finished at the given time', () => {
-    expect(applyEdit(book, { finishedAt: 1758400000000 }).finishedAt).toBe(1758400000000);
-  });
-
-  it('clears the finished mark when the edit gives null', () => {
-    const finished: Book = { ...book, finishedAt: 1758400000000 };
-    expect(applyEdit(finished, { finishedAt: null }).finishedAt).toBeNull();
-  });
-
-  it('keeps the finished mark when the edit does not name it', () => {
-    const finished: Book = { ...book, finishedAt: 1758400000000 };
-    expect(applyEdit(finished, { position: imagePlace(imageIndex(0)) }).finishedAt).toBe(
+  it.each([
+    [
+      'stamps the time the book was last read',
+      {},
+      { lastReadAt: 1758300000000 },
+      'lastReadAt',
+      1758300000000,
+    ],
+    [
+      'keeps the last read time when the edit does not give one',
+      { lastReadAt: 1758300000000 },
+      { title: 'Blame! 1' },
+      'lastReadAt',
+      1758300000000,
+    ],
+    [
+      'clears the last read time when the edit gives null',
+      { lastReadAt: 1758300000000 },
+      { lastReadAt: null },
+      'lastReadAt',
+      null,
+    ],
+    [
+      'marks the book finished at the given time',
+      {},
+      { finishedAt: 1758400000000 },
+      'finishedAt',
       1758400000000,
-    );
-  });
-
-  it('keeps the direction when the edit turns the book continuous', () => {
-    const edited = applyEdit(book, { layoutKind: 'continuous' });
-    expect(edited.layoutKind).toBe('continuous');
-    expect(edited.direction).toBe('rtl');
-  });
-
-  it('stores a direction chosen for a book that is already continuous', () => {
-    const webtoon: Book = { ...book, layoutKind: 'continuous', direction: 'ltr' };
-    expect(applyEdit(webtoon, { direction: 'rtl' }).direction).toBe('rtl');
-    expect(applyEdit(webtoon, { title: 'Tower of God' }).direction).toBe('ltr');
-  });
-
-  it('keeps right to left on a paged book', () => {
-    expect(applyEdit(book, { direction: 'rtl' }).direction).toBe('rtl');
-    expect(applyEdit(book, { layoutKind: 'paged' }).direction).toBe('rtl');
-  });
-
-  it('keeps the pairing when the edit turns the book continuous', () => {
-    const edited = applyEdit(book, { layoutKind: 'continuous' });
-    expect(edited.layoutKind).toBe('continuous');
-    expect(edited.pagePairing).toBe('double');
-  });
-
-  it('stores a pairing chosen for a book that is already continuous', () => {
-    const webtoon: Book = { ...book, layoutKind: 'continuous' };
-    expect(applyEdit(webtoon, { pagePairing: 'double-after-cover' }).pagePairing).toBe(
-      'double-after-cover',
-    );
-    expect(applyEdit(webtoon, { title: 'Tower of God' }).pagePairing).toBe('double');
+    ],
+    [
+      'clears the finished mark when the edit gives null',
+      { finishedAt: 1758400000000 },
+      { finishedAt: null },
+      'finishedAt',
+      null,
+    ],
+    [
+      'keeps the finished mark when the edit does not name it',
+      { finishedAt: 1758400000000 },
+      { position: imagePlace(imageIndex(0)) },
+      'finishedAt',
+      1758400000000,
+    ],
+  ] as const)('%s', (_, stored, edit, field, expected) => {
+    expect(applyEdit({ ...book, ...stored }, edit)[field]).toBe(expected);
   });
 
   it('returns a right-to-left two-page book unharmed from a trip through continuous', () => {
     const strip = applyEdit(book, { layoutKind: 'continuous' });
     const back = applyEdit(strip, { layoutKind: 'paged' });
 
+    expect(strip.layoutKind).toBe('continuous');
+    expect(strip.direction).toBe('rtl');
+    expect(strip.pagePairing).toBe('double');
     expect(back.direction).toBe('rtl');
     expect(back.pagePairing).toBe('double');
   });
 
-  it('keeps a chosen pairing on a paged book', () => {
-    expect(applyEdit(book, { pagePairing: 'double-after-cover' }).pagePairing).toBe(
+  it.each([
+    ['direction', 'direction', { direction: 'ltr' }, { direction: 'rtl' }, 'rtl', 'ltr'],
+    [
+      'pairing',
+      'pagePairing',
+      {},
+      { pagePairing: 'double-after-cover' },
       'double-after-cover',
-    );
-    expect(applyEdit(book, { layoutKind: 'paged' }).pagePairing).toBe('double');
-  });
+      'double',
+    ],
+  ] as const)(
+    'stores a %s chosen for a book that is already continuous',
+    (_, field, stored, edit, chosen, kept) => {
+      const webtoon: Book = { ...book, layoutKind: 'continuous', ...stored };
+
+      expect(applyEdit(webtoon, edit)[field]).toBe(chosen);
+      expect(applyEdit(webtoon, { title: 'Tower of God' })[field]).toBe(kept);
+    },
+  );
 
   it('forces the fit to width when the edit turns the book continuous', () => {
     const edited = applyEdit(book, { layoutKind: 'continuous', pageFit: 'height' });
@@ -177,26 +182,18 @@ describe('applyEdit', () => {
 });
 
 describe('defaultPageFit', () => {
-  it('fits a paged book to its height', () => {
-    expect(defaultPageFit('paged')).toBe('height');
-  });
-
-  it('fits a continuous book to its width', () => {
-    expect(defaultPageFit('continuous')).toBe('width');
-  });
-
-  it('answers for a flow book, which stores the fit and never reads it', () => {
-    expect(defaultPageFit('flow')).toBe('width');
+  it.each([
+    ['fits a paged book to its height', 'paged', 'height'],
+    ['fits a continuous book to its width', 'continuous', 'width'],
+    ['answers for a flow book, which stores the fit and never reads it', 'flow', 'width'],
+  ] as const)('%s', (_, layoutKind, fit) => {
+    expect(defaultPageFit(layoutKind)).toBe(fit);
   });
 });
 
 describe('startingPlace', () => {
-  it('starts a paged book on its first image', () => {
-    expect(startingPlace(book)).toEqual({ kind: 'image', index: 0, shownThrough: 0, offset: 0 });
-  });
-
-  it('starts a continuous book on its first image', () => {
-    expect(startingPlace({ ...book, layoutKind: 'continuous' })).toEqual({
+  it.each(['paged', 'continuous'] as const)('starts a %s book on its first image', (layoutKind) => {
+    expect(startingPlace({ ...book, layoutKind })).toEqual({
       kind: 'image',
       index: 0,
       shownThrough: 0,

@@ -59,24 +59,21 @@ describe('bookFromStored', () => {
     });
   });
 
-  it('reads a stored image place back whole', () => {
-    const stored: StoredBook = { ...legacy, position: imagePlace(imageIndex(12)) };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'image',
-      index: 12,
-      shownThrough: 12,
-      offset: 0,
-    });
-  });
-
-  it('reads a stored image place back with the last image it showed', () => {
-    const stored: StoredBook = { ...legacy, position: imagePlace(imageIndex(3), imageIndex(4)) };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'image',
-      index: 3,
-      shownThrough: 4,
-      offset: 0,
-    });
+  it.each([
+    ['whole', imagePlace(imageIndex(12)), { index: 12, shownThrough: 12, offset: 0 }],
+    [
+      'with the last image it showed',
+      imagePlace(imageIndex(3), imageIndex(4)),
+      { index: 3, shownThrough: 4, offset: 0 },
+    ],
+    [
+      'with the fraction down the image it was left at',
+      imagePlace(imageIndex(3), imageIndex(4), 0.35),
+      { index: 3, shownThrough: 4, offset: 0.35 },
+    ],
+  ])('reads a stored image place back %s', (_, position, expected) => {
+    const stored: StoredBook = { ...legacy, position };
+    expect(bookFromStored(stored).position).toEqual({ kind: 'image', ...expected });
   });
 
   it('reads an image place stored before the last shown image as showing its own image', () => {
@@ -86,19 +83,6 @@ describe('bookFromStored', () => {
       index: 12,
       shownThrough: 12,
       offset: 0,
-    });
-  });
-
-  it('reads a stored image place back with the fraction down the image it was left at', () => {
-    const stored: StoredBook = {
-      ...legacy,
-      position: imagePlace(imageIndex(3), imageIndex(4), 0.35),
-    };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'image',
-      index: 3,
-      shownThrough: 4,
-      offset: 0.35,
     });
   });
 
@@ -128,18 +112,6 @@ describe('bookFromStored', () => {
     });
   });
 
-  it('reads a stored text place back whole', () => {
-    const stored: StoredBook = {
-      ...legacy,
-      position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', null),
-    };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'text',
-      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
-      fraction: null,
-    });
-  });
-
   it('reads a text place written before fractions as holding no fraction', () => {
     const stored: StoredBook = {
       ...legacy,
@@ -156,16 +128,16 @@ describe('bookFromStored', () => {
     });
   });
 
-  it('keeps a stored fraction that is present', () => {
+  it.each([0.37, null])('keeps a stored fraction of %s, or its absence, as it is', (fraction) => {
     const stored: StoredBook = {
       ...legacy,
-      position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: 0.37 },
+      position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', fraction),
     };
 
     expect(bookFromStored(stored).position).toEqual({
       kind: 'text',
       cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
-      fraction: 0.37,
+      fraction,
     });
   });
 
@@ -241,22 +213,14 @@ describe('bookFromStored', () => {
     expect(book.finishedAt).toBeNull();
   });
 
-  it('reads a stored null reading time as null', () => {
-    const book = bookFromStored({ ...legacy, lastReadAt: null, finishedAt: null });
+  it.each([
+    [1758300000000, 1758400000000],
+    [null, null],
+  ])('keeps the stored reading times %s and %s as they are', (lastReadAt, finishedAt) => {
+    const book = bookFromStored({ ...legacy, lastReadAt, finishedAt });
 
-    expect(book.lastReadAt).toBeNull();
-    expect(book.finishedAt).toBeNull();
-  });
-
-  it('keeps stored reading times that are present', () => {
-    const book = bookFromStored({
-      ...legacy,
-      lastReadAt: 1758300000000,
-      finishedAt: 1758400000000,
-    });
-
-    expect(book.lastReadAt).toBe(1758300000000);
-    expect(book.finishedAt).toBe(1758400000000);
+    expect(book.lastReadAt).toBe(lastReadAt);
+    expect(book.finishedAt).toBe(finishedAt);
   });
 
   it('returns a new object and leaves the stored record untouched', () => {

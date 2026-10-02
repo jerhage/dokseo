@@ -34,12 +34,11 @@ function book(layoutKind: LayoutKind, imageCount: number, id = 'book-1'): Book {
 const NOVEL = book('flow', 0, 'novel');
 
 describe('bookContents', () => {
-  it('counts the images of a paged book', () => {
-    expect(bookContents(book('paged', 182))).toEqual({ kind: 'images', imageCount: 182 });
-  });
-
-  it('counts the images of a continuous book', () => {
-    expect(bookContents(book('continuous', 40))).toEqual({ kind: 'images', imageCount: 40 });
+  it.each([
+    ['paged', 182],
+    ['continuous', 40],
+  ] as const)('counts the images of a %s book', (layoutKind, imageCount) => {
+    expect(bookContents(book(layoutKind, imageCount))).toEqual({ kind: 'images', imageCount });
   });
 
   it('reports flowing text for a book with no images to count', () => {

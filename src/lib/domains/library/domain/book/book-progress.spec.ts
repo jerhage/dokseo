@@ -32,26 +32,22 @@ function novel(position: ReadingPlace): Book {
 }
 
 describe('bookProgress for a book of images', () => {
-  it('numbers the page a paged book is open at against its image count', () => {
-    const paged = book('paged', 120, imagePlace(imageIndex(6)));
+  it.each([
+    ['an open book', 6, 'p.007 / 120', (7 / 120) * 100],
+    ['a book nobody has opened yet', 0, 'p.001 / 120', 5 / 6],
+  ])(
+    'numbers the page a paged book is open at against its image count, for %s',
+    (_, index, label, filled) => {
+      const paged = book('paged', 120, imagePlace(imageIndex(index)));
 
-    expect(bookProgress(paged)).toEqual({
-      kind: 'known',
-      label: 'p.007 / 120',
-      filled: (7 / 120) * 100,
-    });
-  });
+      expect(bookProgress(paged)).toEqual({ kind: 'known', label, filled });
+    },
+  );
 
   it('counts the images a continuous book has been scrolled through', () => {
     const strip = book('continuous', 40, imagePlace(imageIndex(9)));
 
     expect(bookProgress(strip)).toEqual({ kind: 'known', label: '10 / 40 images', filled: 25 });
-  });
-
-  it('shows the first page of a book nobody has opened yet', () => {
-    const paged = book('paged', 120, imagePlace(imageIndex(0)));
-
-    expect(bookProgress(paged)).toEqual({ kind: 'known', label: 'p.001 / 120', filled: 5 / 6 });
   });
 
   it('holds a stored index past the last image to the last page', () => {
@@ -60,17 +56,21 @@ describe('bookProgress for a book of images', () => {
     expect(bookProgress(paged)).toEqual({ kind: 'known', label: 'p.003 / 3', filled: 100 });
   });
 
-  it('names the last page a finished spread showed and fills the whole bar', () => {
-    const spread = book('paged', 5, imagePlace(imageIndex(3), imageIndex(4)));
+  it.each([
+    ['paged', 5, 3, 4, 'p.005 / 5'],
+    ['continuous', 40, 38, 39, '40 / 40 images'],
+  ] as const)(
+    'names the last image a %s book showed and fills the whole bar',
+    (layoutKind, imageCount, at, shownThrough, label) => {
+      const shown = book(
+        layoutKind,
+        imageCount,
+        imagePlace(imageIndex(at), imageIndex(shownThrough)),
+      );
 
-    expect(bookProgress(spread)).toEqual({ kind: 'known', label: 'p.005 / 5', filled: 100 });
-  });
-
-  it('counts a strip through the last image whose end it showed', () => {
-    const strip = book('continuous', 40, imagePlace(imageIndex(38), imageIndex(39)));
-
-    expect(bookProgress(strip)).toEqual({ kind: 'known', label: '40 / 40 images', filled: 100 });
-  });
+      expect(bookProgress(shown)).toEqual({ kind: 'known', label, filled: 100 });
+    },
+  );
 
   it('fills the whole bar for a book that holds no images at all', () => {
     const broken = book('paged', 0, imagePlace(imageIndex(0)));
@@ -80,13 +80,19 @@ describe('bookProgress for a book of images', () => {
 });
 
 describe('bookProgress for a book of flowing text', () => {
-  it('names the percentage of the text the reader has reached', () => {
-    expect(bookProgress(novel(textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.37)))).toEqual({
-      kind: 'known',
-      label: '37%',
-      filled: 37,
-    });
-  });
+  it.each([
+    ['epubcfi(/6/14!/4/2/14/1:0)', 0.37, '37%', 37],
+    ['epubcfi(/6/40!/4/2)', 1, '100%', 100],
+  ])(
+    'names the percentage of the text the reader has reached at %s',
+    (cfi, fraction, label, filled) => {
+      expect(bookProgress(novel(textPlace(cfi, fraction)))).toEqual({
+        kind: 'known',
+        label,
+        filled,
+      });
+    },
+  );
 
   it('rounds the percentage it prints the way the footer rounds it', () => {
     const at = bookProgress(novel(textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.376)));
@@ -94,29 +100,18 @@ describe('bookProgress for a book of flowing text', () => {
     expect(at).toEqual({ kind: 'known', label: '38%', filled: 37.6 });
   });
 
-  it('says nothing for a novel stored before a fraction was ever kept', () => {
-    expect(bookProgress(novel(textPlace('epubcfi(/6/14!/4/2/14/1:0)', null)))).toEqual({
-      kind: 'unknown',
-    });
+  it.each([
+    ['stored before a fraction was ever kept', textPlace('epubcfi(/6/14!/4/2/14/1:0)', null)],
+    ['nobody has opened yet', START_OF_THE_TEXT],
+  ])('says nothing for a novel %s', (_, position) => {
+    expect(bookProgress(novel(position))).toEqual({ kind: 'unknown' });
   });
 
-  it('says nothing for a novel nobody has opened yet', () => {
-    expect(bookProgress(novel(START_OF_THE_TEXT))).toEqual({ kind: 'unknown' });
-  });
-
-  it('names a whole percent rather than a bare zero at the very first character', () => {
+  it('names 0% rather than nothing at the very first character', () => {
     expect(bookProgress(novel(textPlace('epubcfi(/6/4!/2)', 0)))).toEqual({
       kind: 'known',
       label: '0%',
       filled: 0,
-    });
-  });
-
-  it('names the end of a novel the reader has finished', () => {
-    expect(bookProgress(novel(textPlace('epubcfi(/6/40!/4/2)', 1)))).toEqual({
-      kind: 'known',
-      label: '100%',
-      filled: 100,
     });
   });
 });
