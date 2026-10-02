@@ -149,6 +149,29 @@ describe('ReadSession', () => {
     expect(held.listed()).toEqual([bookId('one'), bookId('two')]);
   });
 
+  it('closes the ebook reader before a navigation away from the book', async () => {
+    const held = world('/read/one');
+    held.session.navigate();
+    await settled();
+    const closed = vi.spyOn(held.session.flow, 'close');
+
+    held.session.leaving(undefined);
+    held.session.leaving('two');
+
+    expect(closed).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the ebook reader open through a navigation within the book', async () => {
+    const held = world('/read/one');
+    held.session.navigate();
+    await settled();
+    const closed = vi.spyOn(held.session.flow, 'close');
+
+    held.session.leaving('one');
+
+    expect(closed).not.toHaveBeenCalled();
+  });
+
   it('moves to an asked image within the open book without opening it again', async () => {
     const held = world('/read/one');
     held.session.navigate();

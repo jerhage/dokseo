@@ -190,6 +190,12 @@ class ReadSession {
       .exhaustive();
   }
 
+  leaving(fileId: string | undefined): void {
+    if (parsedBookId(fileId ?? '') === this.#id) return;
+
+    this.flow.close();
+  }
+
   close(): void {
     this.reader.dispose();
     this.captures.close();

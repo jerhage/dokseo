@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useQueryClient } from '@tanstack/svelte-query';
   import { onDestroy } from 'svelte';
-  import { afterNavigate, goto, replaceState } from '$app/navigation';
+  import { afterNavigate, goto, onNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/components/toast-context';
   import { useContainer } from '$lib/context';
@@ -51,6 +51,8 @@
   const language = $derived(session.language);
 
   afterNavigate(() => session.navigate());
+
+  onNavigate((navigation) => session.leaving(navigation.to?.params?.fileId));
 
   onDestroy(() => session.close());
 </script>
