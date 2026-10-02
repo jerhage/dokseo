@@ -139,28 +139,25 @@ describe('searchRows', () => {
     expect(row.language).toBe('ko');
   });
 
-  it('opens the book at the passage for a capture anchored in text, carrying the search', () => {
-    const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }, null);
-    const found = {
-      books: [],
-      captures: [{ book: ONE, captures: [written('t', ONE, '海', anchor)] }],
-    };
+  it.each([
+    ['in no chapter across every upload', null, {}, 'no chapter'],
+    ['in a chapter across every upload', '第二章', {}, '第二章'],
+    ['in no chapter inside the current book', null, { scope: 'book', book: ONE.id }, 'no chapter'],
+  ] as const)(
+    'opens the book at the passage for a capture anchored in text %s, carrying the search',
+    (_case, chapter, overrides, place) => {
+      const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }, chapter);
+      const found = {
+        books: [],
+        captures: [{ book: ONE, captures: [written('t', ONE, '海', anchor)] }],
+      };
 
-    const row = captureAt(searchRows(input(found)).rows, 0);
+      const row = captureAt(searchRows(input(found, overrides)).rows, 0);
 
-    expect(row.href).toBe('/read/one?cfi=epubcfi(%2F6%2F2)&find=%E6%B5%B7');
-    expect(row.place).toBe('no chapter');
-  });
-
-  it('shows the chapter a capture anchored in text was lifted from as its place', () => {
-    const anchor = textAnchor('epubcfi(/6/2)', { exact: '海', prefix: '', suffix: '' }, '第二章');
-    const found = {
-      books: [],
-      captures: [{ book: ONE, captures: [written('t', ONE, '海', anchor)] }],
-    };
-
-    expect(captureAt(searchRows(input(found)).rows, 0).place).toBe('第二章');
-  });
+      expect(row.href).toBe('/read/one?cfi=epubcfi(%2F6%2F2)&find=%E6%B5%B7');
+      expect(row.place).toBe(place);
+    },
+  );
 
   it('marks a chapter place with its book language, and a page or chapterless place with none', () => {
     const quote = { exact: '海', prefix: '', suffix: '' };
@@ -183,22 +180,6 @@ describe('searchRows', () => {
     expect(captureAt(rows, 0).placeLanguage).toBe('ko');
     expect(captureAt(rows, 1).placeLanguage).toBeNull();
     expect(captureAt(rows, 2).placeLanguage).toBeNull();
-  });
-
-  it('names the passage by its cfi, with no capture id and no image, when it links a passage in the current book', () => {
-    const anchor = textAnchor('epubcfi(/6/4)', { exact: '海', prefix: '', suffix: '' }, null);
-    const found = {
-      books: [],
-      captures: [{ book: ONE, captures: [written('lifted', ONE, '海', anchor)] }],
-    };
-
-    const row = captureAt(searchRows(input(found, { scope: 'book', book: ONE.id })).rows, 0);
-    const link = new URL(row.href, 'https://reader.test');
-
-    expect(link.pathname).toBe('/read/one');
-    expect(link.searchParams.get('cfi')).toBe('epubcfi(/6/4)');
-    expect(link.searchParams.has('capture')).toBe(false);
-    expect(link.searchParams.has('image')).toBe(false);
   });
 
   it('names the book only when the capture is outside the current one', () => {
@@ -264,22 +245,20 @@ describe('searchRows', () => {
 });
 
 describe('effectiveScope', () => {
-  it('searches every upload when no book is open', () => {
-    expect(effectiveScope(null, 'book')).toBe('all');
-  });
-
-  it('keeps the chosen scope inside a book', () => {
-    expect(effectiveScope(ONE.id, 'book')).toBe('book');
-    expect(effectiveScope(ONE.id, 'all')).toBe('all');
+  it.each([
+    ['searches every upload when no book is open', null, 'book', 'all'],
+    ['keeps the chosen scope inside a book', ONE.id, 'book', 'book'],
+    ['keeps the chosen scope inside a book', ONE.id, 'all', 'all'],
+  ] as const)('%s', (_name, book, scope, effective) => {
+    expect(effectiveScope(book, scope)).toBe(effective);
   });
 });
 
 describe('searchedBooks', () => {
-  it('keeps only the open book inside one book', () => {
-    expect(searchedBooks([ONE, TWO], TWO.id, 'book')).toEqual([TWO]);
-  });
-
-  it('keeps every book across every upload', () => {
-    expect(searchedBooks([ONE, TWO], TWO.id, 'all')).toEqual([ONE, TWO]);
+  it.each([
+    ['only the open book inside one book', 'book', [TWO]],
+    ['every book across every upload', 'all', [ONE, TWO]],
+  ] as const)('keeps %s', (_case, scope, kept) => {
+    expect(searchedBooks([ONE, TWO], TWO.id, scope)).toEqual(kept);
   });
 });

@@ -42,40 +42,36 @@ function opened(carried: readonly TagId[] = [], typed = ''): TagPicker {
 }
 
 describe('TagPicker', () => {
-  it('offers every tag and no create row when nothing is typed', () => {
-    expect(labels(opened().rows)).toEqual(['sfx', 'sage', 'keigo']);
+  it.each([
+    [
+      'every tag, with its count, and no create row when nothing is typed',
+      [],
+      '',
+      ['sfx', 'sage', 'keigo'],
+      [3, 2, 1],
+    ],
+    [
+      'the matching tags and then a create row when the name is free',
+      [],
+      'sa',
+      ['sage', 'create sa'],
+      [2, -1],
+    ],
+    ['the matching tags alone when a tag already has that name', [], 'sage', ['sage'], [2]],
+    ['a create row alone when no tag matches', [], 'grammar', ['create grammar'], [-1]],
+    ['no row when the capture already carries the name typed', [SFX.id], 'sfx', [], []],
+  ])('offers %s', (_case, carried, typed, offered, counts) => {
+    const rows = opened(carried, typed).rows;
+
+    expect(labels(rows)).toEqual(offered);
+    expect(rows.map((row) => (row.kind === 'tag' ? row.count : -1))).toEqual(counts);
   });
 
-  it('offers the matching tags and then a create row when the name is free', () => {
-    expect(labels(opened([], 'sa').rows)).toEqual(['sage', 'create sa']);
-  });
-
-  it('offers the matching tags alone when a tag already has that name', () => {
-    expect(labels(opened([], 'sage').rows)).toEqual(['sage']);
-  });
-
-  it('offers a create row alone when no tag matches', () => {
-    expect(labels(opened([], 'grammar').rows)).toEqual(['create grammar']);
-  });
-
-  it('offers no row when the capture already carries the name typed', () => {
-    expect(opened([SFX.id], 'sfx').rows).toEqual([]);
-  });
-
-  it('carries the count of each tag it offers', () => {
-    const rows = opened().rows;
-
-    expect(rows.map((row) => (row.kind === 'tag' ? row.count : -1))).toEqual([3, 2, 1]);
-  });
-
-  it('holds no row and no capture while it is closed', () => {
+  it('holds no row and no capture while it is closed, and names the capture once opened', () => {
     const { picker } = world();
 
     expect(picker.rows).toEqual([]);
     expect(picker.capture).toBeNull();
-  });
-
-  it('names the capture it was opened on', () => {
     expect(opened().capture).toBe(CARD);
   });
 
@@ -96,19 +92,14 @@ describe('TagPicker', () => {
     expect(picker.query).toBe('');
   });
 
-  it('stops at the last row rather than wrapping to the first', () => {
+  it.each([
+    ['the last row rather than wrapping to the first', [99], 2],
+    ['the first row rather than wrapping to the last', [1, -5], 0],
+  ])('stops at %s', (_case, moves, highlighted) => {
     const picker = opened();
-    picker.moveBy(99);
+    for (const by of moves) picker.moveBy(by);
 
-    expect(picker.highlighted).toBe(2);
-  });
-
-  it('stops at the first row rather than wrapping to the last', () => {
-    const picker = opened();
-    picker.moveBy(1);
-    picker.moveBy(-5);
-
-    expect(picker.highlighted).toBe(0);
+    expect(picker.highlighted).toBe(highlighted);
   });
 
   it('clamps the highlight to the last row when the rows shrink under it', () => {

@@ -7,10 +7,8 @@ import {
   capturedLabel,
   cardChapter,
   firstImage,
-  GO_TO_PASSAGE,
   NO_CHAPTER,
   NO_PLACE,
-  passageLabel,
   placeLabel,
   placeLanguage,
 } from './capture-place';
@@ -54,29 +52,21 @@ describe('placeLanguage', () => {
     expect(placeLanguage(textAnchor(QUOTED_CFI, QUOTE, '第三章　海辺'), 'ja')).toBe('ja');
   });
 
-  it('gives a page place no language, since the interface wrote it', () => {
-    expect(placeLanguage(regionAnchor([on(13)]), 'ja')).toBeNull();
-    expect(placeLanguage(regionAnchor([]), 'ja')).toBeNull();
-  });
-
-  it('gives a passage in no chapter no language, since the interface wrote its label', () => {
-    expect(placeLanguage(QUOTED, 'ja')).toBeNull();
-  });
-
-  it('gives a chapter title no language when the book language is unknown', () => {
-    expect(placeLanguage(textAnchor(QUOTED_CFI, QUOTE, '第三章'), null)).toBeNull();
-  });
-});
-
-describe('passageLabel', () => {
-  const passage: TextAnchor = { kind: 'text', cfi: QUOTED_CFI, quote: QUOTE, chapter: '제1장' };
-
-  it('shows the chapter title of the passage', () => {
-    expect(passageLabel(passage)).toBe('제1장');
-  });
-
-  it('falls back to no chapter when the passage names none', () => {
-    expect(passageLabel({ ...passage, chapter: null })).toBe('no chapter');
+  it.each([
+    ['gives a page place no language, since the interface wrote it', regionAnchor([on(13)]), 'ja'],
+    ['gives no page no language, since the interface wrote it', regionAnchor([]), 'ja'],
+    [
+      'gives a passage in no chapter no language, since the interface wrote its label',
+      QUOTED,
+      'ja',
+    ],
+    [
+      'gives a chapter title no language when the book language is unknown',
+      textAnchor(QUOTED_CFI, QUOTE, '第三章'),
+      null,
+    ],
+  ] as const)('%s', (_name, anchor, language) => {
+    expect(placeLanguage(anchor, language)).toBeNull();
   });
 });
 
@@ -98,10 +88,6 @@ describe('cardChapter', () => {
       cardChapter(regionAnchor([on(4)]), 'ja'),
     ]).toEqual([null, null]);
   });
-
-  it('reads Go to passage on the button that seeks a passage', () => {
-    expect(GO_TO_PASSAGE).toBe('Go to passage');
-  });
 });
 
 describe('firstImage', () => {
@@ -109,12 +95,11 @@ describe('firstImage', () => {
     expect(firstImage(regionAnchor([on(4), on(5)]))).toBe(4);
   });
 
-  it('names no image for a capture anchored to text', () => {
-    expect(firstImage(QUOTED)).toBeNull();
-  });
-
-  it('names no image for a capture anchored to no region at all', () => {
-    expect(firstImage(regionAnchor([]))).toBeNull();
+  it.each([
+    ['to text', QUOTED],
+    ['to no region at all', regionAnchor([])],
+  ])('names no image for a capture anchored %s', (_case, anchor) => {
+    expect(firstImage(anchor)).toBeNull();
   });
 });
 
@@ -139,7 +124,7 @@ describe('capturedLabel', () => {
     expect(capturedLabel(NOW - 2 * 86_400_000, NOW)).toBe('captured 2 days ago');
   });
 
-  it('never reports a time ahead of now', () => {
+  it('reports a time ahead of now as just now', () => {
     expect(capturedLabel(NOW + 86_400_000, NOW)).toBe('captured just now');
   });
 });

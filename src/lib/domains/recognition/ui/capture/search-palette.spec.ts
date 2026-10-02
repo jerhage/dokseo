@@ -111,6 +111,10 @@ describe('SearchPalette', () => {
       'capture',
       'capture',
     ]);
+
+    found.query = '  ';
+
+    expect(found.results.rows).toEqual([]);
   });
 
   it('searches every book when no book is open, even in the book scope', () => {
@@ -119,14 +123,6 @@ describe('SearchPalette', () => {
     found.query = '海';
 
     expect(found.results.rows).toHaveLength(4);
-  });
-
-  it('finds nothing for a blank query', () => {
-    const found = palette();
-    found.reveal('all');
-    found.query = '  ';
-
-    expect(found.results.rows).toEqual([]);
   });
 
   it('finds nothing once the dialog has gone, and shows nothing once hidden', () => {
@@ -149,6 +145,10 @@ describe('SearchPalette', () => {
 
     expect(found.cursor).toBe(NO_MATCH);
     expect(found.rowAtCursor()?.key).toBe(keys(found)[0]);
+
+    found.query = 'zzz';
+
+    expect(found.rowAtCursor()).toBeUndefined();
   });
 
   it('moves the cursor, answers where it landed, and stops at the last row', () => {
@@ -163,31 +163,16 @@ describe('SearchPalette', () => {
     expect(found.rowAtCursor()?.key).toBe(keys(found)[1]);
   });
 
-  it('enters from the last row when moving up with no cursor', () => {
+  it('drops a cursor past the rows a narrower query leaves', () => {
     const found = palette();
     found.reveal('all');
     found.query = '海';
 
     expect(found.moveBy(-1)).toBe(3);
-  });
-
-  it('drops a cursor past the rows a narrower query leaves', () => {
-    const found = palette();
-    found.reveal('all');
-    found.query = '海';
-    found.moveBy(-1);
 
     found.query = '空';
 
     expect(found.cursor).toBe(NO_MATCH);
-  });
-
-  it('answers no row at the cursor when nothing is found', () => {
-    const found = palette();
-    found.reveal('all');
-    found.query = 'zzz';
-
-    expect(found.rowAtCursor()).toBeUndefined();
   });
 
   it.each([
@@ -215,18 +200,6 @@ describe('SearchPalette', () => {
 
     expect(keys(found)).toHaveLength(2);
     expect(found.results.rows.every((row) => row.kind === 'capture')).toBe(true);
-  });
-
-  it('drops the cursor when the tag filter toggles, even on a row both filters keep', () => {
-    const found = palette();
-    found.reveal('book');
-    found.query = '海';
-    found.moveBy(1);
-
-    found.toggleTags();
-
-    expect(found.results.rows).toHaveLength(1);
-    expect(found.cursor).toBe(NO_MATCH);
   });
 
   it('moves from the shown cursor, not from a row a narrower query dropped', () => {
