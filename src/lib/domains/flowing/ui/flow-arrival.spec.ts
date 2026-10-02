@@ -38,15 +38,10 @@ describe('standingAfterMove', () => {
     expect(moved).toEqual(NOT_STANDING);
   });
 
-  it('keeps the arrival when foliate re-lays the page, and follows it to where it settled', () => {
-    const moved = standingAfterMove(landedAt(PASSAGE, LANDED_PAGE), SETTLED_PAGE, REFLOWED);
-
-    expect(moved).toEqual(landedAt(PASSAGE, SETTLED_PAGE));
-  });
-
-  it('ends the arrival on travel after a re-layout moved it', () => {
+  it('keeps the arrival when foliate re-lays the page, follows it to where it settled, and ends it on travel after', () => {
     const settled = standingAfterMove(landedAt(PASSAGE, LANDED_PAGE), SETTLED_PAGE, REFLOWED);
 
+    expect(settled).toEqual(landedAt(PASSAGE, SETTLED_PAGE));
     expect(standingAfterMove(settled, ANOTHER_PAGE, TRAVELLED)).toEqual(NOT_STANDING);
   });
 

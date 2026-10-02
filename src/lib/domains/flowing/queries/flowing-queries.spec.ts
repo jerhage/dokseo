@@ -35,32 +35,24 @@ describe('readingSettingsQuery', () => {
 });
 
 describe('saveReadingSettingsMutation', () => {
-  it('resolves a refused save as an answer, not a rejection', async () => {
-    const saved: ReadingSettings[] = [];
-    const observer = new MutationObserver(
-      createTestQueryClient(),
-      saveReadingSettingsMutation({
-        saveReadingSettings: (settings) => {
-          saved.push(settings);
-          return Promise.resolve(STORAGE_UNAVAILABLE);
-        },
-      }),
-    );
+  it.each([STORAGE_UNAVAILABLE, { kind: 'success' } as const])(
+    'passes the settings on and resolves the answer %j, not a rejection',
+    async (answer) => {
+      const saved: ReadingSettings[] = [];
+      const observer = new MutationObserver(
+        createTestQueryClient(),
+        saveReadingSettingsMutation({
+          saveReadingSettings: (settings) => {
+            saved.push(settings);
+            return Promise.resolve(answer);
+          },
+        }),
+      );
 
-    expect(await observer.mutate(LARGE)).toEqual(STORAGE_UNAVAILABLE);
-    expect(saved).toEqual([LARGE]);
-  });
-
-  it('resolves a kept save', async () => {
-    const observer = new MutationObserver(
-      createTestQueryClient(),
-      saveReadingSettingsMutation({
-        saveReadingSettings: () => Promise.resolve({ kind: 'success' }),
-      }),
-    );
-
-    expect(await observer.mutate(LARGE)).toEqual({ kind: 'success' });
-  });
+      expect(await observer.mutate(LARGE)).toEqual(answer);
+      expect(saved).toEqual([LARGE]);
+    },
+  );
 });
 
 describe('saveReadingPlaceMutation', () => {

@@ -24,19 +24,13 @@ describe('passageChapter', () => {
     expect(titles.asked).toEqual([4]);
   });
 
-  it('collapses the white space inside a chapter label', () => {
-    expect(passageChapter(titled({ tocItem: { label: '  제1장\n  바다 ' } }), 0, SELECTION)).toBe(
-      '제1장 바다',
-    );
-  });
-
-  it('falls back to no chapter for a blank label', () => {
-    expect(passageChapter(titled({ tocItem: { label: '   ' } }), 0, SELECTION)).toBeNull();
-  });
-
-  it('falls back to no chapter when the selection sits under no table of contents entry', () => {
-    expect(passageChapter(titled({ tocItem: null }), 0, SELECTION)).toBeNull();
-    expect(passageChapter(titled({}), 0, SELECTION)).toBeNull();
+  it.each([
+    [{ tocItem: { label: '  제1장\n  바다 ' } }, '제1장 바다'],
+    [{ tocItem: { label: '   ' } }, null],
+    [{ tocItem: null }, null],
+    [{}, null],
+  ])('names the chapter of %j as %j, its white space collapsed', (progress, chapter) => {
+    expect(passageChapter(titled(progress), 0, SELECTION)).toBe(chapter);
   });
 
   it('falls back to no chapter when the view cannot place the selection', () => {

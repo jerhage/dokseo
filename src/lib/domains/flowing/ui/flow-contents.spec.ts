@@ -23,14 +23,12 @@ function labels(contents: FlowContents): readonly (string | null)[] {
 }
 
 describe('flowContents', () => {
-  it('reports no contents for a book that carries no navigation at all', () => {
-    expect(flowContents(null)).toEqual({ kind: 'absent' });
-    expect(flowContents(undefined)).toEqual({ kind: 'absent' });
-  });
-
-  it('reports no contents for a navigation that holds no entries', () => {
-    expect(flowContents([])).toEqual({ kind: 'absent' });
-  });
+  it.each([[null], [undefined], [[]]])(
+    'reports no contents for a navigation of %j, which holds no entries',
+    (navigation) => {
+      expect(flowContents(navigation)).toEqual({ kind: 'absent' });
+    },
+  );
 
   it('lists an entry that names a place and goes to one as a link', () => {
     const contents = flowContents([{ label: 'Chapter One', href: 'ch1.xhtml' }]);
@@ -47,30 +45,25 @@ describe('flowContents', () => {
     ]);
   });
 
-  it('lists an entry that goes nowhere as a heading rather than a link', () => {
-    expect(shape(flowContents([{ label: 'Part One', href: null }]))).toEqual(['0 0 heading']);
-    expect(shape(flowContents([{ label: 'Part One' }]))).toEqual(['0 0 heading']);
-    expect(shape(flowContents([{ label: 'Part One', href: '   ' }]))).toEqual(['0 0 heading']);
+  it.each([
+    { label: 'Part One', href: null },
+    { label: 'Part One' },
+    { label: 'Part One', href: '   ' },
+  ])('lists the entry %j, which goes nowhere, as a heading with no href to navigate to', (item) => {
+    const contents = flowContents([item]);
+
+    expect(shape(contents)).toEqual(['0 0 heading']);
+    expect(listed(contents)[0]).not.toHaveProperty('href');
   });
 
-  it('keeps no href on a heading, so nothing can navigate to one', () => {
-    const [heading] = listed(flowContents([{ label: 'Part One' }]));
-
-    expect(heading?.kind).toBe('heading');
-    expect(heading).not.toHaveProperty('href');
-  });
-
-  it('names an entry whose label is missing, empty or blank as nothing', () => {
-    expect(labels(flowContents([{ href: 'ch1.xhtml' }]))).toEqual([null]);
-    expect(labels(flowContents([{ label: null, href: 'ch1.xhtml' }]))).toEqual([null]);
-    expect(labels(flowContents([{ label: '', href: 'ch1.xhtml' }]))).toEqual([null]);
-    expect(labels(flowContents([{ label: ' \n ', href: 'ch1.xhtml' }]))).toEqual([null]);
-  });
-
-  it('collapses the whitespace a navigation heading was laid out with', () => {
-    expect(labels(flowContents([{ label: '\n  第一章\n  上\n', href: 'ch1.xhtml' }]))).toEqual([
-      '第一章 上',
-    ]);
+  it.each([
+    [{ href: 'ch1.xhtml' }, null],
+    [{ label: null, href: 'ch1.xhtml' }, null],
+    [{ label: '', href: 'ch1.xhtml' }, null],
+    [{ label: ' \n ', href: 'ch1.xhtml' }, null],
+    [{ label: '\n  第一章\n  上\n', href: 'ch1.xhtml' }, '第一章 上'],
+  ])('names the entry %j as %j, its whitespace collapsed', (item, label) => {
+    expect(labels(flowContents([item]))).toEqual([label]);
   });
 
   it('drops an entry that neither names a place nor goes to one', () => {
@@ -175,20 +168,15 @@ describe('currentEntryKey', () => {
 });
 
 describe('entryLabel', () => {
-  it('says an entry is unnamed rather than showing an empty row', () => {
-    const [entry] = listed(flowContents([{ href: 'ch1.xhtml' }]));
+  it.each([
+    [{ href: 'ch1.xhtml' }, UNNAMED_ENTRY_LABEL],
+    [{ label: 'Chapter One', href: 'ch1.xhtml' }, 'Chapter One'],
+  ])('shows the entry %j as %j, never as an empty row', (item, shown) => {
+    const [entry] = listed(flowContents([item]));
 
     expect(entry).toBeDefined();
     if (entry === undefined) return;
-    expect(entryLabel(entry)).toBe(UNNAMED_ENTRY_LABEL);
-  });
-
-  it('shows the label of an entry that has one', () => {
-    const [entry] = listed(flowContents([{ label: 'Chapter One', href: 'ch1.xhtml' }]));
-
-    expect(entry).toBeDefined();
-    if (entry === undefined) return;
-    expect(entryLabel(entry)).toBe('Chapter One');
+    expect(entryLabel(entry)).toBe(shown);
   });
 });
 

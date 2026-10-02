@@ -87,16 +87,15 @@ describe('pointIn', () => {
     expect(pointIn([4, 6], 10)).toEqual({ part: 1, offset: 6 });
   });
 
-  it('reports nothing past the end', () => {
-    expect(pointIn([4, 6], 11)).toBeNull();
+  it.each([
+    [[4, 6], 11],
+    [[], 0],
+  ])('reports nothing past the end of texts %j, at offset %i', (lengths, offset) => {
+    expect(pointIn(lengths, offset)).toBeNull();
   });
 
   it('reports nothing for a negative offset', () => {
     expect(pointIn([4, 6], -1)).toBeNull();
-  });
-
-  it('reports nothing when there is no text at all', () => {
-    expect(pointIn([], 0)).toBeNull();
   });
 });
 

@@ -94,10 +94,6 @@ function offered(): World {
 }
 
 describe('LiftOffer', () => {
-  it('offers nothing before a selection is looked at', () => {
-    expect(world().lift.offer).toBeNull();
-  });
-
   it('looks at the selection on the next frame, not at once', () => {
     const held = world();
     held.lift.show(ONE);

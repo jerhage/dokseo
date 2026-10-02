@@ -51,13 +51,18 @@ describe('hasNoBody', () => {
 });
 
 describe('spineOf', () => {
-  it('reports which sections the paginator has no body element to lay out', () => {
-    expect(spineOf(book([SVG, XHTML, XHTML, SVG]))).toEqual(spine(4, [0, 3]));
-  });
-
-  it('reports nothing missing when every section is a chapter', () => {
-    expect(spineOf(book([XHTML, XHTML]))).toEqual(spine(2, []));
-  });
+  it.each([
+    [
+      [SVG, XHTML, XHTML, SVG],
+      [0, 3],
+    ],
+    [[XHTML, XHTML], []],
+  ])(
+    'reports which sections of %j the paginator has no body element to lay out',
+    (types, missing) => {
+      expect(spineOf(book(types))).toEqual(spine(types.length, missing));
+    },
+  );
 
   it('reports a spine item the manifest does not name as a chapter', () => {
     const unlisted: Spined = {

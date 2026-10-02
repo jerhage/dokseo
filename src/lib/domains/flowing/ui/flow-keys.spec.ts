@@ -18,25 +18,18 @@ describe('keyTarget', () => {
     expect(keyTarget(target({ tagName: 7 }))).toBeNull();
   });
 
-  it('reads the tag, type, role and editability of a control', () => {
-    expect(
-      keyTarget(
-        target({ tagName: 'INPUT', type: 'range', role: 'slider', isContentEditable: false }),
-      ),
-    ).toEqual({ tagName: 'INPUT', type: 'range', role: 'slider', editable: false });
-  });
-
-  it('reads a bare element as having no type, no role and no editing', () => {
-    expect(keyTarget(target({ tagName: 'DIV' }))).toEqual({
-      tagName: 'DIV',
-      type: null,
-      role: null,
-      editable: false,
-    });
-  });
-
-  it('reads an editable host as editable', () => {
-    expect(keyTarget(target({ tagName: 'P', isContentEditable: true }))?.editable).toBe(true);
+  it.each([
+    [
+      { tagName: 'INPUT', type: 'range', role: 'slider', isContentEditable: false },
+      { tagName: 'INPUT', type: 'range', role: 'slider', editable: false },
+    ],
+    [{ tagName: 'DIV' }, { tagName: 'DIV', type: null, role: null, editable: false }],
+    [
+      { tagName: 'P', isContentEditable: true },
+      { tagName: 'P', type: null, role: null, editable: true },
+    ],
+  ])('reads the tag, type, role and editability of %j', (fields, read) => {
+    expect(keyTarget(target(fields))).toEqual(read);
   });
 });
 
