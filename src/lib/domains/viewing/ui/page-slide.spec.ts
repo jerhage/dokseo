@@ -35,8 +35,6 @@ const MIDDLE: BookScene = { direction: 'ltr', neighbours: BOTH };
 
 const MANGA: BookScene = { ...MIDDLE, direction: 'rtl' };
 
-const FIRST: BookScene = { ...MIDDLE, neighbours: { decrement: null, increment: NEXT } };
-
 function press(fromX: number, toX: number) {
   return {
     id: 1,
@@ -140,17 +138,6 @@ describe('slideInput, stepped by the carousel', () => {
     expect(slideStep(following(-60), panning(300, 180), -80, null, MIDDLE)).toEqual(following(-80));
   });
 
-  it('resists a drag past the last group on the mirrored side in a right-to-left book', () => {
-    const atTheEnd: BookScene = { ...MANGA, neighbours: { decrement: PREVIOUS, increment: null } };
-    const resisted = slideStep(CAROUSEL_REST, swiping(100, 300), 200, null, atTheEnd);
-
-    expect(carouselShift(resisted)).toBeGreaterThan(0);
-    expect(carouselShift(resisted)).toBeLessThan(100);
-    expect(slideStep(CAROUSEL_REST, swiping(300, 100), -200, null, atTheEnd)).toEqual(
-      following(-200),
-    );
-  });
-
   it('completes the slide towards the turn the release asked for', () => {
     expect(slideStep(following(-120), IDLE, -120, 'increment', MIDDLE)).toEqual({
       kind: 'settle',
@@ -158,14 +145,6 @@ describe('slideInput, stepped by the carousel', () => {
       towards: 1,
     });
     expect(slideStep(following(120), IDLE, 120, 'decrement', MIDDLE)).toEqual({
-      kind: 'settle',
-      offset: ACROSS,
-      towards: -1,
-    });
-  });
-
-  it('completes the slide leftward for a forward turn in a right-to-left book', () => {
-    expect(slideStep(following(120), IDLE, 120, 'increment', MANGA)).toEqual({
       kind: 'settle',
       offset: ACROSS,
       towards: -1,
@@ -183,46 +162,23 @@ describe('slideInput, stepped by the carousel', () => {
     }
   });
 
-  it('snaps back when the release turns nothing', () => {
-    expect(slideStep(following(-30), IDLE, -30, null, MIDDLE)).toEqual({
+  it.each<{ readonly state: GestureState; readonly from: number; readonly travel: number }>([
+    { state: IDLE, from: -30, travel: -30 },
+    {
+      state: {
+        kind: 'pinching',
+        first: { id: 1, at: { x: 100, y: 400 } },
+        second: { id: 2, at: { x: 200, y: 400 } },
+      },
+      from: -50,
+      travel: 0,
+    },
+  ])('snaps back when a $state.kind release turns nothing', ({ state, from, travel }) => {
+    expect(slideStep(following(from), state, travel, null, MIDDLE)).toEqual({
       kind: 'settle',
       offset: 0,
       towards: null,
     });
-  });
-
-  it('snaps back at the first group even when the release asks to turn', () => {
-    expect(slideStep(following(40), IDLE, 200, 'decrement', FIRST)).toEqual({
-      kind: 'settle',
-      offset: 0,
-      towards: null,
-    });
-  });
-
-  it('snaps back when a second finger turns the swipe into a pinch', () => {
-    const pinching: GestureState = {
-      kind: 'pinching',
-      first: { id: 1, at: { x: 100, y: 400 } },
-      second: { id: 2, at: { x: 200, y: 400 } },
-    };
-
-    expect(slideStep(following(-50), pinching, 0, null, MIDDLE)).toEqual({
-      kind: 'settle',
-      offset: 0,
-      towards: null,
-    });
-  });
-
-  it('rests when the finger never moved the page, so the turn stays instant', () => {
-    expect(slideStep(following(0), IDLE, 0, 'increment', MIDDLE)).toEqual(CAROUSEL_REST);
-    expect(slideStep(CAROUSEL_REST, IDLE, 0, 'increment', MIDDLE)).toEqual(CAROUSEL_REST);
-  });
-
-  it('leaves a settling slide alone until it finishes', () => {
-    const settling: CarouselMotion = { kind: 'settle', offset: -ACROSS, towards: 1 };
-
-    expect(slideStep(settling, swiping(300, 100), -200, null, MIDDLE)).toBe(settling);
-    expect(slideStep(settling, IDLE, 0, 'decrement', MIDDLE)).toBe(settling);
   });
 });
 

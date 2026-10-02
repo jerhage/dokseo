@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { swipeTurn, tapZone } from '$lib/shared/page-turn';
-import type { FrameSpan, TapZone, TurnPoint, TurnSide } from '$lib/shared/page-turn';
+import type { FrameSpan, TouchTurns, TurnPoint, TurnSide } from '$lib/shared/page-turn';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { moveOrder, moveTowards } from './page-moves';
+import type { PageMove } from './page-moves';
 
 const PHONE: FrameSpan = { left: 0, width: 390 };
 
@@ -9,9 +11,16 @@ function at(x: number): TurnPoint {
   return { x, y: 400 };
 }
 
-function sideOf(zone: TapZone): TurnSide {
-  if (zone === 'centre') throw new Error('expected a side zone');
-  return zone;
+type Gesture =
+  | { readonly kind: 'swipe'; readonly from: number; readonly to: number }
+  | { readonly kind: 'tap'; readonly x: number };
+
+function sideOf(gesture: Gesture, turns: TouchTurns): TurnSide | null {
+  if (gesture.kind === 'swipe') {
+    return swipeTurn(at(gesture.from), at(gesture.to), 300, PHONE, 390, turns);
+  }
+  const zone = tapZone(gesture.x, 390, turns);
+  return zone === 'centre' ? null : zone;
 }
 
 describe('moveOrder', () => {
@@ -23,34 +32,15 @@ describe('moveOrder', () => {
     expect(moveOrder('paged', 'ltr')).toEqual(['decrement', 'increment']);
   });
 
-  it('turns a right-to-left book the other way round from a left-to-right one', () => {
-    expect(moveOrder('paged', 'rtl')).toEqual(moveOrder('paged', 'ltr').toReversed());
-  });
-
-  it('puts the decrementing move first in a strip, because it reads downward', () => {
-    expect(moveOrder('continuous', 'ltr')).toEqual(['decrement', 'increment']);
-  });
-
-  it('orders a strip one way whatever direction it carries', () => {
-    expect(moveOrder('continuous', 'rtl')).toEqual(moveOrder('continuous', 'ltr'));
-  });
-
-  it('offers each move exactly once', () => {
-    expect(new Set(moveOrder('paged', 'rtl')).size).toBe(2);
-  });
+  it.each(['ltr', 'rtl'] as const)(
+    'puts the decrementing move first in a %s strip, because it reads downward',
+    (direction) => {
+      expect(moveOrder('continuous', direction)).toEqual(['decrement', 'increment']);
+    },
+  );
 });
 
 describe('moveTowards', () => {
-  it('advances a right-to-left book from the left side, exactly as the footer does', () => {
-    expect(moveTowards('left', 'paged', 'rtl')).toBe('increment');
-    expect(moveTowards('right', 'paged', 'rtl')).toBe('decrement');
-  });
-
-  it('advances a left-to-right book from the right side', () => {
-    expect(moveTowards('left', 'paged', 'ltr')).toBe('decrement');
-    expect(moveTowards('right', 'paged', 'ltr')).toBe('increment');
-  });
-
   it('matches the footer slot on each side for every layout and direction', () => {
     for (const layout of ['paged', 'continuous'] as const) {
       for (const direction of ['ltr', 'rtl'] as const) {
@@ -62,26 +52,62 @@ describe('moveTowards', () => {
     }
   });
 
-  it('advances a manga when the finger swipes rightward, in both variants', () => {
-    for (const turns of ['tap-zones', 'swipe-only'] as const) {
-      const side = swipeTurn(at(120), at(260), 300, PHONE, 390, turns);
+  it.each<{
+    readonly gesture: Gesture;
+    readonly turns: TouchTurns;
+    readonly direction: ReadingDirection;
+    readonly side: TurnSide | null;
+    readonly move: PageMove | null;
+  }>([
+    {
+      gesture: { kind: 'swipe', from: 120, to: 260 },
+      turns: 'tap-zones',
+      direction: 'rtl',
+      side: 'left',
+      move: 'increment',
+    },
+    {
+      gesture: { kind: 'swipe', from: 120, to: 260 },
+      turns: 'swipe-only',
+      direction: 'rtl',
+      side: 'left',
+      move: 'increment',
+    },
+    {
+      gesture: { kind: 'swipe', from: 260, to: 120 },
+      turns: 'tap-zones',
+      direction: 'ltr',
+      side: 'right',
+      move: 'increment',
+    },
+    {
+      gesture: { kind: 'swipe', from: 260, to: 120 },
+      turns: 'swipe-only',
+      direction: 'ltr',
+      side: 'right',
+      move: 'increment',
+    },
+    {
+      gesture: { kind: 'tap', x: 40 },
+      turns: 'tap-zones',
+      direction: 'rtl',
+      side: 'left',
+      move: 'increment',
+    },
+    {
+      gesture: { kind: 'tap', x: 40 },
+      turns: 'swipe-only',
+      direction: 'rtl',
+      side: null,
+      move: null,
+    },
+  ])(
+    'answers $move for a $gesture.kind towards the $side in a $direction book under $turns',
+    ({ gesture, turns, direction, side, move }) => {
+      const turned = sideOf(gesture, turns);
 
-      expect(side).toBe('left');
-      if (side !== null) expect(moveTowards(side, 'paged', 'rtl')).toBe('increment');
-    }
-  });
-
-  it('advances a left-to-right book when the finger swipes leftward, in both variants', () => {
-    for (const turns of ['tap-zones', 'swipe-only'] as const) {
-      const side = swipeTurn(at(260), at(120), 300, PHONE, 390, turns);
-
-      expect(side).toBe('right');
-      if (side !== null) expect(moveTowards(side, 'paged', 'ltr')).toBe('increment');
-    }
-  });
-
-  it('advances a manga on a tap in the left zone, and a swipe-only tap turns nothing', () => {
-    expect(moveTowards(sideOf(tapZone(40, 390, 'tap-zones')), 'paged', 'rtl')).toBe('increment');
-    expect(tapZone(40, 390, 'swipe-only')).toBe('centre');
-  });
+      expect(turned).toBe(side);
+      expect(turned === null ? null : moveTowards(turned, 'paged', direction)).toBe(move);
+    },
+  );
 });

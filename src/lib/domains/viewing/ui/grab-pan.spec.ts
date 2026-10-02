@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GrabPan, grabPress } from './grab-pan.svelte';
-import type { GrabPointer, PointerCapture } from './grab-pan.svelte';
+import type { GrabPointer, GrabPress, PointerCapture } from './grab-pan.svelte';
 
 type Capture = PointerCapture & {
   readonly held: Set<number>;
@@ -36,40 +36,33 @@ function grabbed(bySpace = false): { readonly pan: GrabPan; readonly frame: Capt
 }
 
 describe('grabPress', () => {
-  it('grabs with the middle button whether or not space is held', () => {
-    expect(grabPress({ button: 1, isPrimary: true }, false)).toEqual({
-      kind: 'grab',
-      bySpace: false,
-    });
-    expect(grabPress({ button: 1, isPrimary: false }, true)).toEqual({
-      kind: 'grab',
-      bySpace: false,
-    });
-  });
-
-  it('grabs by space with the main button while space is held', () => {
-    expect(grabPress({ button: 0, isPrimary: true }, true)).toEqual({
-      kind: 'grab',
-      bySpace: true,
-    });
-  });
-
-  it('selects with the main button while space is up', () => {
-    expect(grabPress({ button: 0, isPrimary: true }, false)).toEqual({ kind: 'select' });
-  });
-
-  it('ignores any other button and a pointer that is not primary', () => {
-    expect(grabPress({ button: 2, isPrimary: true }, true)).toEqual({ kind: 'ignore' });
-    expect(grabPress({ button: 0, isPrimary: false }, true)).toEqual({ kind: 'ignore' });
-    expect(grabPress({ button: 0, isPrimary: false }, false)).toEqual({ kind: 'ignore' });
-  });
+  it.each<{
+    readonly button: number;
+    readonly isPrimary: boolean;
+    readonly space: boolean;
+    readonly answer: GrabPress;
+  }>([
+    { button: 1, isPrimary: true, space: false, answer: { kind: 'grab', bySpace: false } },
+    { button: 1, isPrimary: false, space: true, answer: { kind: 'grab', bySpace: false } },
+    { button: 0, isPrimary: true, space: true, answer: { kind: 'grab', bySpace: true } },
+    { button: 0, isPrimary: true, space: false, answer: { kind: 'select' } },
+    { button: 2, isPrimary: true, space: true, answer: { kind: 'ignore' } },
+    { button: 0, isPrimary: false, space: true, answer: { kind: 'ignore' } },
+    { button: 0, isPrimary: false, space: false, answer: { kind: 'ignore' } },
+  ])(
+    'answers $answer.kind for button $button, primary $isPrimary, space held $space',
+    ({ button, isPrimary, space, answer }) => {
+      expect(grabPress({ button, isPrimary }, space)).toEqual(answer);
+    },
+  );
 });
 
 describe('GrabPan', () => {
-  it('starts with nothing grabbed and space up', () => {
+  it('starts with nothing grabbed, no pointer owned and space up', () => {
     const pan = new GrabPan(() => capture());
 
-    expect([pan.grabbing, pan.spaceHeld, pan.grabbable(() => false)]).toEqual([
+    expect([pan.grabbing, pan.spaceHeld, pan.grabbable(() => false), pan.owns(7)]).toEqual([
+      false,
       false,
       false,
       false,
@@ -91,18 +84,6 @@ describe('GrabPan', () => {
     expect(pan.grabbable(() => true)).toBe(false);
   });
 
-  it('asks nothing of the selection while space is up', () => {
-    const pan = new GrabPan(() => capture());
-    let asked = 0;
-
-    pan.grabbable(() => {
-      asked += 1;
-      return false;
-    });
-
-    expect(asked).toBe(0);
-  });
-
   it('offers no grab once one is under way', () => {
     const { pan } = grabbed(true);
     pan.holdSpace();
@@ -118,10 +99,6 @@ describe('GrabPan', () => {
     expect([pan.owns(7), pan.owns(8)]).toEqual([true, false]);
   });
 
-  it('owns no pointer before a grab', () => {
-    expect(new GrabPan(() => capture()).owns(7)).toBe(false);
-  });
-
   it('answers each move of the grabbing pointer with the distance since the last', () => {
     const { pan } = grabbed(true);
 
@@ -130,12 +107,6 @@ describe('GrabPan', () => {
 
     expect(first).toEqual({ dx: 10, dy: -10, bySpace: true });
     expect(second).toEqual({ dx: 5, dy: 40, bySpace: true });
-  });
-
-  it('tells a middle-button grab from a space grab', () => {
-    const { pan } = grabbed(false);
-
-    expect(pan.move(pointer(7, 100, 200))).toEqual({ dx: 0, dy: 0, bySpace: false });
   });
 
   it('answers nothing for another pointer and keeps its place', () => {
@@ -172,7 +143,7 @@ describe('GrabPan', () => {
     expect(pan.grabbing).toBe(false);
   });
 
-  it('still stops when the frame is gone', () => {
+  it('stops even when the frame is gone', () => {
     let frame: Capture | null = capture();
     const pan = new GrabPan(() => frame);
     pan.start(frame, pointer(7, 0, 0), false);

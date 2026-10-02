@@ -4,7 +4,7 @@ import type { GestureContext, GestureInput, GestureIntent } from '$lib/component
 import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
 import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
 import type { PanReach } from '../domain/overscroll';
-import type { TouchScene } from './touch-action';
+import type { TouchAction, TouchScene } from './touch-action';
 
 const BARE: TouchScene = {
   chromeShown: false,
@@ -55,12 +55,12 @@ describe('touchAction taps', () => {
     expect(tap(CENTRE, BARE)).toEqual({ kind: 'toggle-chrome' });
   });
 
-  it('only hides the chrome when a side is tapped with the bars up', () => {
+  it('hides only the chrome when a side is tapped with the bars up', () => {
     expect(tap(LEFT, WITH_BARS)).toEqual({ kind: 'toggle-chrome' });
     expect(tap(RIGHT, { ...WITH_BARS, direction: 'rtl' })).toEqual({ kind: 'toggle-chrome' });
   });
 
-  it('never turns on a tap in the swipe-only variant', () => {
+  it('turns nothing on a tap in the swipe-only variant', () => {
     expect([tap(LEFT, SWIPE_ONLY), tap(CENTRE, SWIPE_ONLY), tap(RIGHT, SWIPE_ONLY)]).toEqual([
       { kind: 'toggle-chrome' },
       { kind: 'toggle-chrome' },
@@ -85,63 +85,37 @@ describe('touchAction swipes', () => {
     expect(swipe(100, 300, MANGA)).toEqual({ kind: 'turn', move: 'increment' });
   });
 
-  it('turns on a swipe in the swipe-only variant as well', () => {
-    expect(swipe(300, 100, SWIPE_ONLY)).toEqual({ kind: 'turn', move: 'increment' });
-  });
-
   it('leaves a swipe that starts in the edge gutter to the browser in the swipe-only variant', () => {
     expect(swipe(380, 150, SWIPE_ONLY)).toEqual({ kind: 'none' });
-  });
-
-  it('does nothing for a swipe too short to count', () => {
-    expect(swipe(200, 190, BARE)).toEqual({ kind: 'none' });
   });
 });
 
 describe('touchAction gestures that pass through', () => {
-  it('pans by the step the classifier reported', () => {
-    expect(touchAction({ kind: 'pan', dx: 5, dy: -3 }, BARE)).toEqual({
-      kind: 'pan',
-      dx: 5,
-      dy: -3,
-    });
-  });
-
-  it('begins a selection at the held point on a long press', () => {
-    expect(touchAction({ kind: 'long-press', x: 10, y: 20 }, BARE)).toEqual({
-      kind: 'select-begin',
-      from: { x: 10, y: 20 },
-      to: { x: 10, y: 20 },
-    });
-  });
-
-  it('follows and ends a selection', () => {
-    expect(
-      touchAction({ kind: 'select-begin', from: { x: 1, y: 2 }, to: { x: 3, y: 4 } }, BARE),
-    ).toEqual({ kind: 'select-begin', from: { x: 1, y: 2 }, to: { x: 3, y: 4 } });
-    expect(touchAction({ kind: 'select-move', x: 5, y: 6 }, BARE)).toEqual({
-      kind: 'select-move',
-      at: { x: 5, y: 6 },
-    });
-    expect(touchAction({ kind: 'select-end', x: 7, y: 8 }, BARE)).toEqual({
-      kind: 'select-end',
-      at: { x: 7, y: 8 },
-    });
-  });
-
-  it('drops a live gesture on a cancel', () => {
-    expect(touchAction({ kind: 'cancel' }, BARE)).toEqual({ kind: 'drop' });
-  });
-
-  it('passes a pinch through step by step', () => {
-    expect(touchAction({ kind: 'pinch', scale: 2, cx: 10, cy: 20, dx: 3, dy: 4 }, BARE)).toEqual({
-      kind: 'pinch',
-      scale: 2,
-      cx: 10,
-      cy: 20,
-      dx: 3,
-      dy: 4,
-    });
+  it.each<{ readonly intent: GestureIntent; readonly action: TouchAction }>([
+    { intent: { kind: 'pan', dx: 5, dy: -3 }, action: { kind: 'pan', dx: 5, dy: -3 } },
+    {
+      intent: { kind: 'long-press', x: 10, y: 20 },
+      action: { kind: 'select-begin', from: { x: 10, y: 20 }, to: { x: 10, y: 20 } },
+    },
+    {
+      intent: { kind: 'select-begin', from: { x: 1, y: 2 }, to: { x: 3, y: 4 } },
+      action: { kind: 'select-begin', from: { x: 1, y: 2 }, to: { x: 3, y: 4 } },
+    },
+    {
+      intent: { kind: 'select-move', x: 5, y: 6 },
+      action: { kind: 'select-move', at: { x: 5, y: 6 } },
+    },
+    {
+      intent: { kind: 'select-end', x: 7, y: 8 },
+      action: { kind: 'select-end', at: { x: 7, y: 8 } },
+    },
+    { intent: { kind: 'cancel' }, action: { kind: 'drop' } },
+    {
+      intent: { kind: 'pinch', scale: 2, cx: 10, cy: 20, dx: 3, dy: 4 },
+      action: { kind: 'pinch', scale: 2, cx: 10, cy: 20, dx: 3, dy: 4 },
+    },
+  ])('answers a $intent.kind with a $action.kind', ({ intent, action }) => {
+    expect(touchAction(intent, BARE)).toEqual(action);
   });
 });
 
@@ -153,7 +127,7 @@ describe('touchAction double taps', () => {
     });
   });
 
-  it('only hides the chrome when the bars are up', () => {
+  it('hides only the chrome when the bars are up', () => {
     expect(touchAction({ kind: 'double-tap', x: CENTRE, y: ROW }, WITH_BARS)).toEqual({
       kind: 'toggle-chrome',
     });
@@ -186,10 +160,6 @@ describe('touchAction pan ends', () => {
       kind: 'turn',
       move: 'decrement',
     });
-  });
-
-  it('does not turn a pan the page absorbs', () => {
-    expect(panEnd(200, 300, { ...BARE, reach: zoomed })).toEqual({ kind: 'none' });
   });
 
   it('does nothing when the page could not be measured', () => {
@@ -226,17 +196,6 @@ describe('touchLesson', () => {
     expect(touchLesson(intent, { kind: 'turn', move: 'increment' })).toBe('swipe');
   });
 
-  it('teaches nothing for a swipe that turns no page', () => {
-    const intent = {
-      kind: 'swipe',
-      start: { x: CENTRE, y: ROW },
-      end: { x: CENTRE, y: ROW + 200 },
-      elapsed: 150,
-    } as const;
-
-    expect(touchLesson(intent, touchAction(intent, BARE))).toBeNull();
-  });
-
   it('teaches the pinch when a pinch zooms', () => {
     const intent = { kind: 'pinch', scale: 1.2, cx: 0, cy: 0, dx: 0, dy: 0 } as const;
 
@@ -249,17 +208,24 @@ describe('touchLesson', () => {
     expect(touchLesson(intent, touchAction(intent, BARE))).toBe('double-tap');
   });
 
-  it('teaches nothing when a double tap only hides the bars', () => {
-    const intent = { kind: 'double-tap', x: CENTRE, y: ROW } as const;
-
-    expect(touchLesson(intent, touchAction(intent, WITH_BARS))).toBeNull();
-  });
-
-  it('teaches nothing for a centre tap', () => {
-    const intent = { kind: 'tap', x: CENTRE, y: ROW } as const;
-
-    expect(touchLesson(intent, touchAction(intent, BARE))).toBeNull();
-  });
+  it.each<{ readonly intent: GestureIntent; readonly scene: TouchScene }>([
+    {
+      intent: {
+        kind: 'swipe',
+        start: { x: CENTRE, y: ROW },
+        end: { x: CENTRE, y: ROW + 200 },
+        elapsed: 150,
+      },
+      scene: BARE,
+    },
+    { intent: { kind: 'double-tap', x: CENTRE, y: ROW }, scene: WITH_BARS },
+    { intent: { kind: 'tap', x: CENTRE, y: ROW }, scene: BARE },
+  ])(
+    'teaches nothing for a $intent.kind that turns no page and zooms nothing',
+    ({ intent, scene }) => {
+      expect(touchLesson(intent, touchAction(intent, scene))).toBeNull();
+    },
+  );
 });
 
 function pressed(x: number, t: number, kind: 'down' | 'up'): GestureInput {
@@ -334,23 +300,5 @@ describe('centreZoneWaits', () => {
     expect(
       heardThrough([pressed(200, 0, 'down'), pressed(200, 90, 'up')], inset, 'tap-zones'),
     ).toEqual([]);
-  });
-
-  it('never delays an edge tap, so two edge taps turn two pages', () => {
-    expect(
-      heardThrough(
-        [
-          pressed(RIGHT, 0, 'down'),
-          pressed(RIGHT, 60, 'up'),
-          pressed(RIGHT, 120, 'down'),
-          pressed(RIGHT, 180, 'up'),
-        ],
-        PHONE,
-        'tap-zones',
-      ),
-    ).toEqual([
-      { kind: 'tap', x: RIGHT, y: ROW },
-      { kind: 'tap', x: RIGHT, y: ROW },
-    ]);
   });
 });

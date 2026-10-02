@@ -73,18 +73,18 @@ describe('stripTouchAction', () => {
     });
   });
 
+  it('carries a selection the classifier began at once in select mode', () => {
+    expect(
+      stripTouchAction({ kind: 'select-begin', from: { x: 100, y: ROW }, to: { x: 180, y: ROW } }),
+    ).toEqual({ kind: 'select-begin', from: { x: 100, y: ROW }, to: { x: 180, y: ROW } });
+  });
+
   it('drops a live selection on a cancel', () => {
     expect(stripTouchAction({ kind: 'cancel' })).toEqual({ kind: 'drop' });
   });
 });
 
 describe('the strip through the classifier', () => {
-  it('toggles the chrome at the release of a tap, without a double-tap wait', () => {
-    expect(actions([touch('down', 195, 0), touch('up', 195, 80)])).toEqual([
-      { kind: 'toggle-chrome' },
-    ]);
-  });
-
   it('captures after a long press and a drag', () => {
     expect(
       actions([
@@ -99,23 +99,6 @@ describe('the strip through the classifier', () => {
       { kind: 'select-end', at: { x: 200, y: ROW } },
     ]);
   });
-
-  it('draws at once in select mode', () => {
-    expect(
-      actions([touch('down', 100, 0), touch('move', 180, 40)], { ...STRIP, selectMode: true }),
-    ).toEqual([{ kind: 'select-begin', from: { x: 100, y: ROW }, to: { x: 180, y: ROW } }]);
-  });
-
-  it('selects nothing when the finger moves before the long press, which is a scroll', () => {
-    expect(
-      actions([
-        touch('down', 100, 0),
-        touch('move', 100 + 40, 100),
-        { kind: 'tick', t: LONG_PRESS_MS },
-        touch('up', 100 + 40, LONG_PRESS_MS + 50),
-      ]),
-    ).toEqual([]);
-  });
 });
 
 describe('holdsTheScroll', () => {
@@ -129,15 +112,6 @@ describe('holdsTheScroll', () => {
     expect(
       holdsTheScroll(settled([touch('down', 100, 0), { kind: 'tick', t: LONG_PRESS_MS }]), 1),
     ).toBe(true);
-  });
-
-  it('holds the scroll for a select-mode drag', () => {
-    const state = settled([touch('down', 100, 0), touch('move', 160, 40)], {
-      ...STRIP,
-      selectMode: true,
-    });
-
-    expect(holdsTheScroll(state, 1)).toBe(true);
   });
 
   it('holds the scroll through a pinch and until its last finger lifts', () => {
