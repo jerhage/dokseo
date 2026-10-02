@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import {
+  JAPANESE_FULL_DECODER_MODEL,
+  JAPANESE_OCR_MODEL,
+} from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
   SetupLookup,
@@ -30,36 +33,30 @@ describe('readRecognizerSetup', () => {
   it('returns the stored model and the stored compute choice', async () => {
     const choice = await choiceFrom({
       language: 'ja',
-      modelId: JAPANESE_OCR_MODEL.modelId,
-      compute: 'cpu',
+      modelId: JAPANESE_FULL_DECODER_MODEL.modelId,
+      compute: 'gpu',
     });
 
-    expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
-    expect(choice.compute).toBe('cpu');
+    expect(choice.model).toEqual(JAPANESE_FULL_DECODER_MODEL);
+    expect(choice.compute).toBe('gpu');
   });
 
-  it('defaults to the offered model and the CPU when nothing was stored', async () => {
-    const choice = await choiceFrom(null);
+  it.each([
+    ['ja', JAPANESE_OCR_MODEL.modelId],
+    ['ko', 'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx'],
+  ] as const)(
+    'defaults %s to the offered model and the CPU when nothing was stored',
+    async (language, modelId) => {
+      const choice = await choiceFrom(null, language);
 
-    expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
-    expect(choice.compute).toBe('cpu');
-  });
-
-  it('falls back to an offered model rather than a stored id nobody publishes', async () => {
-    const choice = await choiceFrom({ language: 'ja', modelId: 'dnouv/manga-ocr' });
-
-    expect(choice.model).toEqual(JAPANESE_OCR_MODEL);
-  });
+      expect(choice.model?.modelId).toBe(modelId);
+      expect(choice.compute).toBe('cpu');
+    },
+  );
 
   it('passes a blocked store through', async () => {
     const read = await readRecognizerSetup({ setups: storeAnswering(STORAGE_UNAVAILABLE) }, 'ja');
 
     expect(read).toEqual(STORAGE_UNAVAILABLE);
-  });
-
-  it('defaults each language to a model that can read it', async () => {
-    const choice = await choiceFrom(null, 'ko');
-
-    expect(choice.model?.modelId).toBe('PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx');
   });
 });

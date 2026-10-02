@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { ModelConsentStore } from '../../domain/model/model-consent';
-import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import { JAPANESE_FULL_DECODER_MODEL } from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
@@ -47,22 +47,16 @@ const blocked: ModelConsentStore = {
 };
 
 describe('readModelConsent', () => {
-  it('reports a recorded language as granted', async () => {
-    const decision = await readModelConsent(
+  it.each([
+    ['ja', 'granted'],
+    ['ko', 'undecided'],
+  ] as const)('reports the decision the store holds for %s', async (language, decision) => {
+    const read = await readModelConsent(
       { consent: storeHolding(['ja']), setups: setupsHolding(null) },
-      'ja',
+      language,
     );
 
-    expect(decision).toEqual({ kind: 'success', decision: 'granted' });
-  });
-
-  it('reports a language with no record as undecided', async () => {
-    const decision = await readModelConsent(
-      { consent: storeHolding(['ja']), setups: setupsHolding(null) },
-      'ko',
-    );
-
-    expect(decision).toEqual({ kind: 'success', decision: 'undecided' });
+    expect(read).toEqual({ kind: 'success', decision });
   });
 
   it('asks about the model the reader chose, not the language default', async () => {
@@ -71,12 +65,12 @@ describe('readModelConsent', () => {
     await readModelConsent(
       {
         consent: storeRecording(seen),
-        setups: setupsHolding({ language: 'ja', modelId: JAPANESE_OCR_MODEL.modelId }),
+        setups: setupsHolding({ language: 'ja', modelId: JAPANESE_FULL_DECODER_MODEL.modelId }),
       },
       'ja',
     );
 
-    expect(seen).toEqual([JAPANESE_OCR_MODEL]);
+    expect(seen).toEqual([JAPANESE_FULL_DECODER_MODEL]);
   });
 
   it('asks about the model that reads the language it was asked about', async () => {

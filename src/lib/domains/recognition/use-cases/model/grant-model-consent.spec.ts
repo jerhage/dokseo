@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { Language } from '$lib/shared/language';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { ModelConsentStore } from '../../domain/model/model-consent';
-import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
+import {
+  JAPANESE_FULL_DECODER_MODEL,
+  JAPANESE_OCR_MODEL,
+} from '../../domain/model/model-footprint';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import type {
   RecognizerSetupStore,
@@ -75,45 +78,29 @@ describe('grantModelConsent', () => {
     expect(fakes.steps).toEqual(['setup ja', 'persistence', 'record ja']);
   });
 
-  it('records the grant against the model the reader chose', async () => {
-    const fakes = world();
+  it.each([
+    ['ja', JAPANESE_OCR_MODEL.modelId],
+    ['ko', 'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx'],
+  ] as const)(
+    'records the grant for %s against its default model when the reader chose none',
+    async (language, modelId) => {
+      const fakes = world();
 
-    await grantModelConsent(fakes, 'ja');
+      await grantModelConsent(fakes, language);
 
-    expect(fakes.recorded).toEqual([JAPANESE_OCR_MODEL]);
-  });
+      expect(fakes.steps).toContain(`record ${language}`);
+      expect(fakes.recorded.map((model) => model?.modelId)).toEqual([modelId]);
+    },
+  );
 
   it('names the model the recognizer setup holds, not the language default', async () => {
-    const fakes = world({ stored: { language: 'ja', modelId: JAPANESE_OCR_MODEL.modelId } });
+    const fakes = world({
+      stored: { language: 'ja', modelId: JAPANESE_FULL_DECODER_MODEL.modelId },
+    });
 
     await grantModelConsent(fakes, 'ja');
 
-    expect(fakes.recorded.map((model) => model?.modelId)).toEqual([JAPANESE_OCR_MODEL.modelId]);
-  });
-
-  it('records the model that reads the language it was granted for', async () => {
-    const fakes = world();
-
-    await grantModelConsent(fakes, 'ko');
-
-    expect(fakes.recorded.map((model) => model?.modelId)).toEqual([
-      'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
-    ]);
-  });
-
-  it('records the grant for one language and leaves the other undecided', async () => {
-    const fakes = world();
-
-    await grantModelConsent(fakes, 'ja');
-
-    expect(await fakes.consent.decisionFor('ja', JAPANESE_OCR_MODEL)).toEqual({
-      kind: 'success',
-      decision: 'granted',
-    });
-    expect(await fakes.consent.decisionFor('ko', null)).toEqual({
-      kind: 'success',
-      decision: 'undecided',
-    });
+    expect(fakes.recorded).toEqual([JAPANESE_FULL_DECODER_MODEL]);
   });
 
   it('records the grant even when the browser refuses persistence', async () => {

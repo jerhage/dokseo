@@ -36,11 +36,22 @@ function world(options: { readonly failing?: boolean } = {}) {
 }
 
 describe('cancelModelLoad', () => {
-  it('discards the part-downloaded file, because a cancel is not a pause', async () => {
-    const { deps } = world();
+  it.each([
+    [
+      'the discarded file, because a cancel is not a pause',
+      false,
+      { kind: 'success', report: DISCARDED },
+    ],
+    [
+      'a store that could not be swept rather than a clean cancel',
+      true,
+      { kind: 'partials-unavailable' },
+    ],
+  ] as const)('reports %s', async (_outcome, failing, result) => {
+    const { deps } = world({ failing });
     const discarded = await cancelModelLoad(deps, MODEL);
 
-    expect(discarded).toEqual({ kind: 'success', report: DISCARDED });
+    expect(discarded).toEqual(result);
   });
 
   it('stops the worker before it deletes what the worker was writing', async () => {
@@ -48,12 +59,5 @@ describe('cancelModelLoad', () => {
     await cancelModelLoad(deps, MODEL);
 
     expect(steps).toEqual(['cancel', `discard ${MODEL}`]);
-  });
-
-  it('reports a store that could not be swept rather than claiming a clean cancel', async () => {
-    const { deps } = world({ failing: true });
-    const discarded = await cancelModelLoad(deps, MODEL);
-
-    expect(discarded).toEqual({ kind: 'partials-unavailable' });
   });
 });

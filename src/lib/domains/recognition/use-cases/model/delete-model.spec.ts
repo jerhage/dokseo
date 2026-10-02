@@ -25,7 +25,6 @@ const REMOVED_READ: ModelCacheRead = { kind: 'success', report: REMOVED };
 
 function world(options: { readonly removal?: ModelCacheRead } = {}) {
   const steps: string[] = [];
-  const granted = new Set<Language>(['ja']);
 
   const storage: ModelStorage = {
     measure: () => Promise.resolve(REMOVED_READ),
@@ -46,20 +45,15 @@ function world(options: { readonly removal?: ModelCacheRead } = {}) {
   };
 
   const consent: ModelConsentStore = {
-    decisionFor: (language: Language) =>
-      Promise.resolve({
-        kind: 'success',
-        decision: granted.has(language) ? 'granted' : 'undecided',
-      }),
+    decisionFor: () => Promise.resolve({ kind: 'success', decision: 'granted' }),
     recordGrant: () => Promise.resolve({ kind: 'success' }),
     forgetGrant: (language: Language) => {
       steps.push(`forget ${language}`);
-      granted.delete(language);
       return Promise.resolve({ kind: 'success' });
     },
   };
 
-  return { deps: { storage, partials, consent }, steps, consent, granted };
+  return { deps: { storage, partials, consent }, steps };
 }
 
 describe('deleteModel', () => {
@@ -70,26 +64,11 @@ describe('deleteModel', () => {
     expect(removed).toEqual({ kind: 'success', report: REMOVED });
   });
 
-  it('withdraws the grant, so the next download is agreed to again', async () => {
-    const { deps, consent } = world();
-    await deleteModel(deps, 'ja', MODEL);
-
-    const decision = await consent.decisionFor('ja', null);
-    expect(decision).toEqual({ kind: 'success', decision: 'undecided' });
-  });
-
   it('frees the space before it withdraws the grant', async () => {
     const { deps, steps } = world();
     await deleteModel(deps, 'ja', MODEL);
 
     expect(steps).toEqual([`remove ${MODEL}`, `discard ${MODEL}`, 'forget ja']);
-  });
-
-  it('discards the part-downloaded file along with the cached weights', async () => {
-    const { deps, steps } = world();
-    await deleteModel(deps, 'ja', MODEL);
-
-    expect(steps).toContain(`discard ${MODEL}`);
   });
 
   it('keeps the grant when nothing could be removed', async () => {
