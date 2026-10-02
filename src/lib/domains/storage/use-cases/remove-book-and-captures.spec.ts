@@ -28,14 +28,12 @@ type World = {
   readonly steps: readonly string[];
   readonly cleared: readonly BookId[];
   readonly removed: readonly BookId[];
-  readonly booksWithCaptures: () => readonly BookId[];
 };
 
 function world(outcomes: Outcomes = {}): World {
   const steps: string[] = [];
   const cleared: BookId[] = [];
   const removed: BookId[] = [];
-  let held: readonly BookId[] = [bookId('book-1'), bookId('book-2')];
 
   const captures: CaptureRepository = {
     listForBook: () => Promise.resolve({ kind: 'success', captures: NO_CAPTURES }),
@@ -45,9 +43,7 @@ function world(outcomes: Outcomes = {}): World {
     clearBook: (book) => {
       steps.push('cleared');
       cleared.push(book);
-      const outcome = outcomes.clearing ?? WRITTEN;
-      if (outcome.kind === 'success') held = held.filter((each) => each !== book);
-      return Promise.resolve(outcome);
+      return Promise.resolve(outcomes.clearing ?? WRITTEN);
     },
   };
 
@@ -73,12 +69,11 @@ function world(outcomes: Outcomes = {}): World {
     steps,
     cleared,
     removed,
-    booksWithCaptures: () => held,
   };
 }
 
 describe('removeBookAndCaptures', () => {
-  it('clears the captures of the book it removes', async () => {
+  it('clears the captures of the book it removes, before it removes the book', async () => {
     const origin = world();
 
     const result = await removeBookAndCaptures(origin.deps, bookId('book-1'));
@@ -86,13 +81,6 @@ describe('removeBookAndCaptures', () => {
     expect(result).toEqual(WRITTEN);
     expect(origin.cleared).toEqual(['book-1']);
     expect(origin.removed).toEqual(['book-1']);
-  });
-
-  it('clears the captures before it removes the book', async () => {
-    const origin = world();
-
-    await removeBookAndCaptures(origin.deps, bookId('book-1'));
-
     expect(origin.steps).toEqual(['cleared', 'removed']);
   });
 
@@ -112,13 +100,5 @@ describe('removeBookAndCaptures', () => {
 
     expect(result).toEqual(STORAGE_UNAVAILABLE);
     expect(origin.cleared).toEqual(['book-1']);
-  });
-
-  it('leaves the captures of another book alone', async () => {
-    const origin = world();
-
-    await removeBookAndCaptures(origin.deps, bookId('book-1'));
-
-    expect(origin.booksWithCaptures()).toEqual(['book-2']);
   });
 });

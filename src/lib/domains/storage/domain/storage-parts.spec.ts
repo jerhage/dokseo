@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountOf, measuredBytes, tallyDetail, tallyOf } from './storage-parts';
+import { accountOf, tallyDetail, tallyOf } from './storage-parts';
 import type { StoragePart } from './storage-parts';
 
 function part(key: string, bytes: number | null): StoragePart {
@@ -19,30 +19,19 @@ describe('accountOf', () => {
     expect(account.measured).toBe(232_000_000);
   });
 
-  it('reports nothing left over when the parts sum to the origin total', () => {
-    const account = accountOf([MODEL, RUNTIME], { usage: 232_000_000, quota: 1 }, true);
+  it.each([
+    { parts: [MODEL, RUNTIME], usage: 232_000_000, remainder: 0 },
+    { parts: [MODEL], usage: 395_000_000, remainder: 190_000_000 },
+    { parts: [MODEL, RUNTIME, RECORDS], usage: 395_000_000, remainder: 163_000_000 },
+    { parts: [MODEL, RUNTIME], usage: 200_000_000, remainder: -32_000_000 },
+  ])(
+    'reports the difference between the parts and an origin total of $usage as $remainder',
+    ({ parts, usage, remainder }) => {
+      const account = accountOf(parts, { usage, quota: 1 }, true);
 
-    expect(account.remainder).toBe(0);
-  });
-
-  it('reports the difference when the parts fall short of the origin total', () => {
-    const account = accountOf([MODEL], { usage: 395_000_000, quota: 1 }, true);
-
-    expect(account.remainder).toBe(190_000_000);
-  });
-
-  it('reports what every part and the remainder together make up', () => {
-    const account = accountOf([MODEL, RUNTIME, RECORDS], { usage: 395_000_000, quota: 1 }, true);
-    const remainder = account.remainder ?? 0;
-
-    expect(measuredBytes(account.parts) + remainder).toBe(account.usage);
-  });
-
-  it('reports the overshoot when the parts exceed the origin total', () => {
-    const account = accountOf([MODEL, RUNTIME], { usage: 200_000_000, quota: 1 }, true);
-
-    expect(account.remainder).toBe(-32_000_000);
-  });
+      expect(account.remainder).toBe(remainder);
+    },
+  );
 
   it('leaves an unmeasurable part out of the measured total rather than counting it as zero', () => {
     const account = accountOf([MODEL, RECORDS], { usage: 395_000_000, quota: 1 }, true);

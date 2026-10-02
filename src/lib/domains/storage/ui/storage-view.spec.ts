@@ -3,7 +3,6 @@ import { accountOf } from '../domain/storage-parts';
 import type { StorageAccount, StoragePart } from '../domain/storage-parts';
 import {
   allowanceNote,
-  measuredFigure,
   partFigure,
   persistenceNote,
   unnamedFigure,
@@ -36,10 +35,6 @@ describe('partFigure', () => {
 });
 
 describe('unnamedFigure', () => {
-  it('names the bytes the parts do not explain', () => {
-    expect(unnamedFigure(account([MODEL], 395_000_000))).toBe('190 MB');
-  });
-
   it('reports nothing unnamed when the browser gives no total', () => {
     expect(unnamedFigure(account([MODEL], null))).toBeNull();
   });
@@ -64,12 +59,6 @@ describe('unnamedNote', () => {
 
   it('says the parts overshoot when they come to more than the browser reports', () => {
     expect(unnamedNote(account([MODEL], 200_000_000))).toContain('more than the browser reports');
-  });
-});
-
-describe('measuredFigure', () => {
-  it('leaves an unmeasurable part out of the measured total', () => {
-    expect(measuredFigure(account([MODEL, RECORDS], 395_000_000))).toBe('205 MB');
   });
 });
 

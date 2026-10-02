@@ -61,32 +61,36 @@ describe('readStorageAccount', () => {
     expect(partNamed(account, 'partials')).toBe(3_000_000);
   });
 
-  it('accounts for every byte the origin reports', async () => {
-    const account = await accountOf(fullSurvey());
+  it.each([
+    { survey: fullSurvey(), remainder: 0 },
+    { survey: { cached: [], files: [] }, remainder: USAGE },
+  ])(
+    'accounts for every byte the origin reports, leaving $remainder unexplained',
+    async ({ survey, remainder }) => {
+      const account = await accountOf(survey);
 
-    expect(measuredBytes(account.parts) + (account.remainder ?? 0)).toBe(USAGE);
-    expect(account.remainder).toBe(0);
-  });
+      expect(measuredBytes(account.parts) + (account.remainder ?? 0)).toBe(USAGE);
+      expect(account.remainder).toBe(remainder);
+    },
+  );
 
-  it('reports the bytes no part explains rather than swallowing them', async () => {
-    const account = await accountOf({ cached: [], files: [] });
+  it.each([
+    { survey: fullSurvey(), measured: USAGE, unmeasured: ['records'] },
+    {
+      survey: { cached: null, files: null },
+      measured: 0,
+      unmeasured: ['cached', 'files', 'records'],
+    },
+  ])(
+    'reports the browser database and a store this browser does not expose as unmeasurable',
+    async ({ survey, measured, unmeasured }) => {
+      const account = await accountOf(survey);
 
-    expect(account.remainder).toBe(USAGE);
-  });
-
-  it('reports the browser database as unmeasurable rather than as nothing', async () => {
-    const account = await accountOf(fullSurvey());
-
-    expect(partNamed(account, 'records')).toBeNull();
-    expect(account.unmeasured.map((part) => part.key)).toEqual(['records']);
-  });
-
-  it('reports a store this browser does not expose as unmeasurable', async () => {
-    const account = await accountOf({ cached: null, files: null });
-
-    expect(account.measured).toBe(0);
-    expect(account.unmeasured.map((part) => part.key)).toEqual(['cached', 'files', 'records']);
-  });
+      expect(partNamed(account, 'records')).toBeNull();
+      expect(account.measured).toBe(measured);
+      expect(account.unmeasured.map((part) => part.key)).toEqual(unmeasured);
+    },
+  );
 
   it('names a cached file that belongs to no model and is no runtime', async () => {
     const account = await accountOf({

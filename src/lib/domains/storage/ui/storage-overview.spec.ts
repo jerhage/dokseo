@@ -46,19 +46,38 @@ function keys(shown: StorageAccount): readonly string[] {
 }
 
 describe('breakdownRows', () => {
-  it('orders the measured parts largest first', () => {
-    expect(keys(account([RUNTIME, MODEL, BOOKS], null))).toEqual(['books', 'model', 'runtime']);
-  });
+  it.each([
+    {
+      parts: [RUNTIME, MODEL, BOOKS],
+      rows: [
+        ['books', '480 MB'],
+        ['model', '205 MB'],
+        ['runtime', '27 MB'],
+      ],
+    },
+    {
+      parts: [RECORDS, RUNTIME, MODEL],
+      rows: [
+        ['model', '205 MB'],
+        ['runtime', '27 MB'],
+        ['records', 'not measurable'],
+      ],
+    },
+    {
+      parts: [RECORDS, { ...RUNTIME, bytes: 0 }],
+      rows: [
+        ['runtime', '0 kB'],
+        ['records', 'not measurable'],
+      ],
+    },
+  ])(
+    'orders the measured parts largest first and a part that cannot be measured last',
+    ({ parts, rows }) => {
+      const shown = breakdownRows(account(parts, null)).map((row) => [row.key, row.figure]);
 
-  it('puts a part that cannot be measured after every measured part', () => {
-    expect(keys(account([RECORDS, RUNTIME, MODEL], null))).toEqual(['model', 'runtime', 'records']);
-  });
-
-  it('keeps an empty measured part ahead of one that cannot be measured', () => {
-    const empty: StoragePart = { ...RUNTIME, bytes: 0 };
-
-    expect(keys(account([RECORDS, empty], null))).toEqual(['runtime', 'records']);
-  });
+      expect(shown).toEqual(rows);
+    },
+  );
 
   it('adds the bytes no part explains as the last row when the browser reports a total', () => {
     const rows = breakdownRows(account([MODEL, RECORDS], 395_000_000));
@@ -80,26 +99,19 @@ describe('breakdownRows', () => {
     expect(unnamed?.bytes).toBeNull();
     expect(unnamed?.figure).toBe('−5 MB');
   });
-
-  it('prints not measurable for a part without a size', () => {
-    const rows = breakdownRows(account([RECORDS], null));
-
-    expect(rows[0]?.figure).toBe('not measurable');
-  });
 });
 
 describe('breakdownScale', () => {
-  it('scales the shares to the browser total when it is the larger', () => {
-    expect(breakdownScale(account([MODEL], 395_000_000))).toBe(395_000_000);
-  });
-
-  it('scales the shares to the measured total when the parts overshoot', () => {
-    expect(breakdownScale(account([MODEL], 200_000_000))).toBe(205_000_000);
-  });
-
-  it('scales the shares to the measured total when the browser gives none', () => {
-    expect(breakdownScale(account([MODEL, RUNTIME], null))).toBe(232_000_000);
-  });
+  it.each([
+    { parts: [MODEL], usage: 395_000_000, scale: 395_000_000 },
+    { parts: [MODEL], usage: 200_000_000, scale: 205_000_000 },
+    { parts: [MODEL, RUNTIME], usage: null, scale: 232_000_000 },
+  ])(
+    'scales the shares to the larger of the browser total $usage and the measured total',
+    ({ parts, usage, scale }) => {
+      expect(breakdownScale(account(parts, usage))).toBe(scale);
+    },
+  );
 });
 
 describe('usedHeadline', () => {

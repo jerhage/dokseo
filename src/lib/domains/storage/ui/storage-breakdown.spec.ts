@@ -49,12 +49,6 @@ describe('StorageBreakdown', () => {
     expect(html).not.toContain('aria-label="Book records, share of the space used"');
   });
 
-  it('lists the largest part first', () => {
-    const html = markup(null);
-
-    expect(html.indexOf('Books and their covers')).toBeLessThan(html.indexOf('manga-ocr base'));
-  });
-
   it('names the measured total and the browser total when the browser reports one', () => {
     const html = markup(900_000_000);
 
