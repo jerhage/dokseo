@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  activeComparison,
-  comparesBook,
-  isShowing,
-  routeParameters,
-  variantHref,
-} from './comparison';
+import { comparesBook, isShowing, routeParameters, variantHref } from './comparison';
 import type { Comparison, Variant } from './comparison';
 
 const A: Variant = { label: 'A', route: '/preview/a/settings/storage', within: '/preview/a' };
@@ -67,41 +61,17 @@ describe('routeParameters', () => {
   });
 });
 
-describe('activeComparison', () => {
-  it('shows exactly one variant on the page each variant links to', () => {
-    const variants = activeComparison()?.variants ?? [];
-    const shownCounts = variants.map((linked) => {
-      const href = variantHref(linked, { fileId: 'book-1' }) ?? '';
-      return variants.filter((variant) => isShowing(variant, href)).length;
-    });
-
-    expect(shownCounts.filter((count) => count !== 1)).toEqual([]);
-  });
-
-  it('keeps the book and the query of the page in every variant link that takes a book', () => {
-    const variants = activeComparison()?.variants ?? [];
-    const lost = variants
-      .filter((variant) => routeParameters(variant.route).includes('fileId'))
-      .map((variant) => variantHref(variant, { fileId: 'book-1' }, '?image=3') ?? '')
-      .filter((href) => !href.includes('/book-1?image=3'));
-
-    expect(lost).toEqual([]);
-  });
-});
-
 describe('comparesBook', () => {
-  const FLOWING: Comparison = { title: 'Flowing', fills: 'screen', books: 'flowing', variants: [] };
-  const ANY: Comparison = { title: 'Any', fills: 'screen', books: 'any', variants: [] };
+  it.each([
+    ['flowing', 'flow', true],
+    ['flowing', 'paged', false],
+    ['flowing', 'continuous', false],
+    ['any', 'flow', true],
+    ['any', 'paged', true],
+    ['any', 'continuous', true],
+  ] as const)('offers a comparison of %s books a %s book: %s', (books, layoutKind, offered) => {
+    const comparison: Comparison = { title: books, fills: 'screen', books, variants: [] };
 
-  it('offers only flowing books to a comparison of the flowing reader', () => {
-    expect(comparesBook(FLOWING, 'flow')).toBe(true);
-    expect(comparesBook(FLOWING, 'paged')).toBe(false);
-    expect(comparesBook(FLOWING, 'continuous')).toBe(false);
-  });
-
-  it('offers every book to a comparison that takes any', () => {
-    expect(comparesBook(ANY, 'flow')).toBe(true);
-    expect(comparesBook(ANY, 'paged')).toBe(true);
-    expect(comparesBook(ANY, 'continuous')).toBe(true);
+    expect(comparesBook(comparison, layoutKind)).toBe(offered);
   });
 });

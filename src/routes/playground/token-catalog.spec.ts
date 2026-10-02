@@ -25,28 +25,21 @@ function sorted(names: readonly string[]): readonly string[] {
 }
 
 describe('the playground token catalog', () => {
-  it('shows a swatch for every colour and border colour token, once', () => {
-    const shown = COLOR_GROUPS.flatMap((group) => group.tokens);
-
-    expect(sorted(shown)).toEqual(defined('colors.css', /^--(color|border-color)(-|$)/u));
-  });
-
-  it('shows every font family and font size', () => {
-    expect(sorted(FONT_FAMILIES)).toEqual(defined('typography.css', /^--font-/u));
-    expect(sorted(TYPE_SCALE)).toEqual(defined('typography.css', /^--text-/u));
-  });
-
-  it('shows every spacing step and radius', () => {
-    expect(sorted(SPACING)).toEqual(defined('spacing.css', /^--sp-/u));
-    expect(sorted(RADII)).toEqual(defined('radius.css', /^--radius-/u));
-  });
-
-  it('shows every shadow and every z-index step', () => {
-    expect(sorted(SHADOWS)).toEqual(defined('elevation.css', /^--shadow-/u));
-    expect(sorted(Z_SCALE)).toEqual(defined('elevation.css', /^--z-/u));
-  });
-
-  it('shows every opacity step', () => {
-    expect(sorted(OPACITIES)).toEqual(defined('opacity.css', /^--opacity-/u));
+  it.each([
+    [
+      'colour and border colour',
+      COLOR_GROUPS.flatMap((group) => group.tokens),
+      'colors.css',
+      /^--(color|border-color)(-|$)/u,
+    ],
+    ['font family', FONT_FAMILIES, 'typography.css', /^--font-/u],
+    ['font size', TYPE_SCALE, 'typography.css', /^--text-/u],
+    ['spacing', SPACING, 'spacing.css', /^--sp-/u],
+    ['radius', RADII, 'radius.css', /^--radius-/u],
+    ['shadow', SHADOWS, 'elevation.css', /^--shadow-/u],
+    ['z-index', Z_SCALE, 'elevation.css', /^--z-/u],
+    ['opacity', OPACITIES, 'opacity.css', /^--opacity-/u],
+  ])('shows every %s token, once', (_, shown, file, pattern) => {
+    expect(sorted(shown)).toEqual(defined(file, pattern));
   });
 });

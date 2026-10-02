@@ -149,27 +149,19 @@ describe('ReadSession', () => {
     expect(held.listed()).toEqual([bookId('one'), bookId('two')]);
   });
 
-  it('closes the ebook reader before a navigation away from the book', async () => {
+  it.each([
+    ['closes', 'with no book', undefined, 1],
+    ['closes', 'to another book', 'two', 1],
+    ['keeps', 'within the book', 'one', 0],
+  ])('%s the ebook reader on a navigation %s', async (_, __, next, closes) => {
     const held = world('/read/one');
     held.session.navigate();
     await settled();
     const closed = vi.spyOn(held.session.flow, 'close');
 
-    held.session.leaving(undefined);
-    held.session.leaving('two');
+    held.session.leaving(next);
 
-    expect(closed).toHaveBeenCalledTimes(2);
-  });
-
-  it('keeps the ebook reader open through a navigation within the book', async () => {
-    const held = world('/read/one');
-    held.session.navigate();
-    await settled();
-    const closed = vi.spyOn(held.session.flow, 'close');
-
-    held.session.leaving('one');
-
-    expect(closed).not.toHaveBeenCalled();
+    expect(closed).toHaveBeenCalledTimes(closes);
   });
 
   it('moves to an asked image within the open book without opening it again', async () => {
@@ -197,13 +189,20 @@ describe('ReadSession', () => {
     expect(held.opened).toEqual([bookId('one')]);
   });
 
-  it('leaves for the library when the book is no longer there', async () => {
-    const held = world('/read/gone');
+  it.each([
+    [
+      'leaves for the library when the book is no longer there',
+      '/read/gone',
+      [LIBRARY_AFTER_MISSING_BOOK],
+    ],
+    ['stays on a book that opened', '/read/one', []],
+  ])('%s', async (_, address, left) => {
+    const held = world(address);
 
     held.session.navigate();
     await settled();
 
-    expect(held.left).toEqual([LIBRARY_AFTER_MISSING_BOOK]);
+    expect(held.left).toEqual(left);
   });
 
   it('leaves for the library without opening anything when the address names no book', async () => {
@@ -216,15 +215,6 @@ describe('ReadSession', () => {
     expect(held.opened).toEqual([]);
     expect(held.listed()).toEqual([]);
     expect(held.left).toEqual([LIBRARY_AFTER_MISSING_BOOK]);
-  });
-
-  it('stays on a book that opened', async () => {
-    const held = world('/read/one');
-
-    held.session.navigate();
-    await settled();
-
-    expect(held.left).toEqual([]);
   });
 
   it('writes the image the reader arrived at into the address', () => {

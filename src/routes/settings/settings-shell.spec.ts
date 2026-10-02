@@ -53,9 +53,11 @@ describe('SettingsShell', () => {
     expect(html).toContain('<a href="/">Library</a>');
   });
 
-  it('renders the aside only when one is given', () => {
+  it('renders the aside only when one is given, in the nav aside that drops to its own row on a narrow shell', () => {
     expect(markup({ current: 'engine' })).not.toContain('Aside');
-    expect(markup({ current: 'engine', aside: ASIDE })).toContain('<p>Aside</p>');
+    expect(markup({ current: 'engine', aside: ASIDE })).toMatch(
+      /<div class="layout-app-shell-nav-aside"><p>Aside<\/p>/u,
+    );
   });
 
   it('compacts the section navigation on a narrow shell', () => {
@@ -77,12 +79,6 @@ describe('SettingsShell', () => {
       'Theme and color scheme',
       'How a file finds its book',
     ]);
-  });
-
-  it('wraps the aside in the nav aside, so it drops to its own row on a narrow shell', () => {
-    expect(markup({ current: 'engine', aside: ASIDE })).toMatch(
-      /<div class="layout-app-shell-nav-aside"><p>Aside<\/p>/u,
-    );
   });
 
   it('drops the main padding only for a flush page', () => {

@@ -87,7 +87,23 @@ function family(name: string): string {
 }
 
 describe('the classes the markup writes', () => {
-  it('reads class attributes, class expressions and class props', () => {
+  it('reads class attributes, class props, class expressions and class directives', () => {
+    const source = [
+      '<script>let on = true;</script>',
+      `<div class="one-attribute two-attribute" pageClass="one-prop">`,
+      `<p class={['one-expression', { 'two-expression': on }]} class:one-directive={on}></p>`,
+      '</div>',
+    ].join('\n');
+
+    expect(writtenClasses(source).toSorted()).toEqual([
+      'one-attribute',
+      'one-directive',
+      'one-expression',
+      'one-prop',
+      'two-attribute',
+      'two-expression',
+    ]);
+
     const written = everyWrittenClass();
     const namesIn = (file: string): readonly string[] =>
       written.filter((found) => found.file.endsWith(file)).map((found) => found.name);

@@ -45,40 +45,32 @@ function styledThemes(): readonly string[] {
 }
 
 describe('the theme script in app.html', () => {
-  it('applies the base theme and leaves the scheme automatic when nothing is stored', () => {
-    const attributes = run(holding({}));
+  it.each([
+    ['nothing is stored', holding({})],
+    [
+      'the stored values are unknown',
+      holding({ 'reader.theme': 'neon', 'reader.color-scheme': 'auto' }),
+    ],
+    ['storage refuses to be read', REFUSING],
+  ])('applies the base theme and leaves the scheme automatic when %s', (_, storage) => {
+    const attributes = run(storage);
 
     expect(attributes.get('data-theme')).toBe('base');
     expect(attributes.has('data-color-scheme')).toBe(false);
   });
 
-  it('applies a stored theme and a stored scheme', () => {
-    const attributes = run(holding({ 'reader.theme': 'ember', 'reader.color-scheme': 'dark' }));
+  it.each([
+    ['ember', 'dark', { 'reader.theme': 'ember', 'reader.color-scheme': 'dark' }],
+    ['base', 'light', { 'reader.color-scheme': 'light' }],
+  ])(
+    'applies the %s theme and pins the %s scheme from what is stored',
+    (theme, scheme, entries) => {
+      const attributes = run(holding(entries));
 
-    expect(attributes.get('data-theme')).toBe('ember');
-    expect(attributes.get('data-color-scheme')).toBe('dark');
-  });
-
-  it('pins a stored scheme under the default theme', () => {
-    const attributes = run(holding({ 'reader.color-scheme': 'light' }));
-
-    expect(attributes.get('data-theme')).toBe('base');
-    expect(attributes.get('data-color-scheme')).toBe('light');
-  });
-
-  it('falls back to the defaults for values it does not know', () => {
-    const attributes = run(holding({ 'reader.theme': 'neon', 'reader.color-scheme': 'auto' }));
-
-    expect(attributes.get('data-theme')).toBe('base');
-    expect(attributes.has('data-color-scheme')).toBe(false);
-  });
-
-  it('falls back to the defaults when storage refuses to be read', () => {
-    const attributes = run(REFUSING);
-
-    expect(attributes.get('data-theme')).toBe('base');
-    expect(attributes.has('data-color-scheme')).toBe(false);
-  });
+      expect(attributes.get('data-theme')).toBe(theme);
+      expect(attributes.get('data-color-scheme')).toBe(scheme);
+    },
+  );
 
   it('accepts exactly the themes the stylesheet defines', () => {
     expect(acceptedThemes()).toEqual([

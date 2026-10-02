@@ -54,31 +54,37 @@ function lastState(changes: readonly [string, FileItemState][], id: string): Fil
 }
 
 describe('advanceUpload', () => {
-  it('starts a pending item uploading at zero', () => {
-    expect(advanceUpload({ state: 'pending' }, 5)).toEqual({ state: 'uploading', progress: 0 });
-  });
+  const failed: FileItemState = { state: 'error', message: 'File type not allowed' };
 
-  it('adds the amount to an uploading item', () => {
-    expect(advanceUpload({ state: 'uploading', progress: 40 }, 7)).toEqual({
-      state: 'uploading',
-      progress: 47,
-    });
-  });
-
-  it('completes an item that reaches or passes one hundred', () => {
-    expect([
-      advanceUpload({ state: 'uploading', progress: 95 }, 5),
-      advanceUpload({ state: 'uploading', progress: 98 }, 7),
-    ]).toEqual([{ state: 'complete' }, { state: 'complete' }]);
-  });
-
-  it('leaves a complete or a failed item as it is', () => {
-    const failed: FileItemState = { state: 'error', message: 'File type not allowed' };
-
-    expect([advanceUpload({ state: 'complete' }, 5), advanceUpload(failed, 5)]).toEqual([
+  it.each<[string, FileItemState, number, FileItemState]>([
+    [
+      'starts a pending item uploading at zero',
+      { state: 'pending' },
+      5,
+      { state: 'uploading', progress: 0 },
+    ],
+    [
+      'adds the amount to an uploading item',
+      { state: 'uploading', progress: 40 },
+      7,
+      { state: 'uploading', progress: 47 },
+    ],
+    [
+      'completes an item that reaches one hundred',
+      { state: 'uploading', progress: 95 },
+      5,
       { state: 'complete' },
-      failed,
-    ]);
+    ],
+    [
+      'completes an item that passes one hundred',
+      { state: 'uploading', progress: 98 },
+      7,
+      { state: 'complete' },
+    ],
+    ['leaves a complete item as it is', { state: 'complete' }, 5, { state: 'complete' }],
+    ['leaves a failed item as it is', failed, 5, failed],
+  ])('%s', (_, item, amount, expected) => {
+    expect(advanceUpload(item, amount)).toEqual(expected);
   });
 });
 
