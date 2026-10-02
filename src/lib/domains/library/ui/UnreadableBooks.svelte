@@ -19,7 +19,8 @@
 
 <Alert variant="warning" title={unreadableBooksTitle(books.length)}>
   <p>
-    These books were stored in a shape this version cannot read. Remove them to clear this notice.
+    These books were stored in a shape this version cannot read. Upload the same file again to
+    repair it. Remove them to clear this notice.
   </p>
   <ListGroup variant="inset">
     {#each books as book (book.id)}
