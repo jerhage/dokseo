@@ -20,18 +20,30 @@ const SHELL_WORKER_URL = '/service-worker.js';
 
 const SHELL_RECHECK_MS = 30 * 60 * 1000;
 
+function isNetworkFailure(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  return error instanceof DOMException && error.name === 'NetworkError';
+}
+
 class ShellUpdates {
   #toaster: UpdateToaster;
   #container: ShellWorkerContainer;
   #reload: () => void;
+  #online: () => boolean;
   #waiting: ShellWorker | null = null;
   #shown: ToastId | null = null;
   #registration: ShellRegistration | null = null;
 
-  constructor(toaster: UpdateToaster, container: ShellWorkerContainer, reload: () => void) {
+  constructor(
+    toaster: UpdateToaster,
+    container: ShellWorkerContainer,
+    reload: () => void,
+    online: () => boolean,
+  ) {
     this.#toaster = toaster;
     this.#container = container;
     this.#reload = reload;
+    this.#online = online;
   }
 
   watch(url: string): Promise<void> {
@@ -44,7 +56,12 @@ class ShellUpdates {
   }
 
   recheck(): void {
-    this.#registration?.update().catch((error: unknown) => logUnexpected('service-worker', error));
+    if (!this.#online()) return;
+
+    this.#registration?.update().catch((error: unknown) => {
+      if (isNetworkFailure(error)) return;
+      logUnexpected('service-worker', error);
+    });
   }
 
   offer(waiting: ShellWorker): void {
@@ -72,7 +89,12 @@ class ShellUpdates {
 function watchShellUpdates(toaster: UpdateToaster): void {
   if (!('serviceWorker' in navigator)) return;
 
-  const updates = new ShellUpdates(toaster, navigator.serviceWorker, () => location.reload());
+  const updates = new ShellUpdates(
+    toaster,
+    navigator.serviceWorker,
+    () => location.reload(),
+    () => navigator.onLine,
+  );
   void updates.watch(SHELL_WORKER_URL);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') updates.recheck();
@@ -86,6 +108,7 @@ export {
   SHELL_UPDATE_TITLE,
   SHELL_WORKER_URL,
   ShellUpdates,
+  isNetworkFailure,
   watchShellUpdates,
 };
 export type { UpdateToaster };

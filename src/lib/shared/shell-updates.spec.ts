@@ -7,6 +7,14 @@ import { FakeShellContainer, FakeShellWorker } from './testing/fake-shell-worker
 
 let logged: MockInstance<typeof console.error>;
 
+function online(): boolean {
+  return true;
+}
+
+function offline(): boolean {
+  return false;
+}
+
 beforeEach(() => {
   logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
@@ -18,7 +26,12 @@ afterEach(() => {
 describe('ShellUpdates', () => {
   it('shows one lasting info toast with a Reload action for a waiting worker', () => {
     const toaster = createToaster();
-    const updates = new ShellUpdates(toaster, new FakeShellContainer(true), () => undefined);
+    const updates = new ShellUpdates(
+      toaster,
+      new FakeShellContainer(true),
+      () => undefined,
+      online,
+    );
 
     updates.offer(new FakeShellWorker('installed'));
 
@@ -34,7 +47,7 @@ describe('ShellUpdates', () => {
   it('keeps one toast while it shows and points its action at the latest worker', () => {
     const toaster = createToaster();
     const container = new FakeShellContainer(true);
-    const updates = new ShellUpdates(toaster, container, () => undefined);
+    const updates = new ShellUpdates(toaster, container, () => undefined, online);
     const older = new FakeShellWorker('installed');
     const newer = new FakeShellWorker('installed');
 
@@ -51,7 +64,12 @@ describe('ShellUpdates', () => {
 
   it('shows the toast again for a worker found after the first was dismissed', () => {
     const toaster = createToaster();
-    const updates = new ShellUpdates(toaster, new FakeShellContainer(true), () => undefined);
+    const updates = new ShellUpdates(
+      toaster,
+      new FakeShellContainer(true),
+      () => undefined,
+      online,
+    );
 
     updates.offer(new FakeShellWorker('installed'));
     const first = toaster.toasts[0];
@@ -66,7 +84,7 @@ describe('ShellUpdates', () => {
     const toaster = createToaster();
     const container = new FakeShellContainer(true);
     const reload = vi.fn();
-    const updates = new ShellUpdates(toaster, container, reload);
+    const updates = new ShellUpdates(toaster, container, reload, online);
 
     updates.offer(new FakeShellWorker('installed'));
     container.changeController();
@@ -85,7 +103,7 @@ describe('ShellUpdates', () => {
     const toaster = createToaster();
     const container = new FakeShellContainer(true);
     container.registration.waiting = new FakeShellWorker('installed');
-    const updates = new ShellUpdates(toaster, container, () => undefined);
+    const updates = new ShellUpdates(toaster, container, () => undefined, online);
 
     await updates.watch('/service-worker.js');
 
@@ -99,6 +117,7 @@ describe('ShellUpdates', () => {
       toaster,
       new FakeShellContainer(false, failure),
       () => undefined,
+      online,
     );
 
     await updates.watch('/service-worker.js');
@@ -109,12 +128,50 @@ describe('ShellUpdates', () => {
 
   it('asks the registration for a newer worker when rechecked after watching', async () => {
     const container = new FakeShellContainer(true);
-    const updates = new ShellUpdates(createToaster(), container, () => undefined);
+    const updates = new ShellUpdates(createToaster(), container, () => undefined, online);
 
     updates.recheck();
     await updates.watch('/service-worker.js');
     updates.recheck();
 
     expect(container.registration.updates).toBe(1);
+  });
+
+  it('skips the update request while the device is offline', async () => {
+    const container = new FakeShellContainer(true);
+    const updates = new ShellUpdates(createToaster(), container, () => undefined, offline);
+
+    await updates.watch('/service-worker.js');
+    updates.recheck();
+
+    expect(container.registration.updates).toBe(0);
+  });
+
+  it('logs nothing when the update request fails to reach the network', async () => {
+    const container = new FakeShellContainer(true);
+    const updates = new ShellUpdates(createToaster(), container, () => undefined, online);
+    await updates.watch('/service-worker.js');
+
+    container.registration.updateFailure = new TypeError('Failed to fetch');
+    updates.recheck();
+    container.registration.updateFailure = new DOMException('Offline', 'NetworkError');
+    updates.recheck();
+    await new Promise((settle) => setTimeout(settle, 0));
+
+    expect(logged).not.toHaveBeenCalled();
+  });
+
+  it('logs an update request that fails for any other reason', async () => {
+    const container = new FakeShellContainer(true);
+    const updates = new ShellUpdates(createToaster(), container, () => undefined, online);
+    await updates.watch('/service-worker.js');
+    const failure = new DOMException('Not allowed', 'SecurityError');
+
+    container.registration.updateFailure = failure;
+    updates.recheck();
+
+    await vi.waitFor(() =>
+      expect(logged).toHaveBeenCalledWith('Unexpected failure (service-worker)', failure),
+    );
   });
 });
