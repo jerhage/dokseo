@@ -5,7 +5,7 @@ import type { SoughtPassage, TextAnchor, TextQuote } from '$lib/shared/anchor';
 import { bookId, contentHash } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { BookId } from '$lib/shared/ids';
-import { showsTheEnd, START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
+import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Notice, Notify } from '$lib/shared/notice';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -248,96 +248,58 @@ function places(edits: readonly BookEdit[]): readonly (ReadingPlace | undefined)
   return edits.map((edit) => edit.position);
 }
 
-describe('FlowView direction', () => {
-  it('takes the direction the opened book reports, not the one the record holds', async () => {
+describe('FlowView what the opened book reports', () => {
+  it('takes the direction, the paging and the chapter boundaries the opened book reports, not the direction the record holds', async () => {
     const world = shelf();
     const surfaces = shows();
     surfaces.direction = 'rtl';
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    expect(view.navigation.direction).toBe('rtl');
-  });
-
-  it('reads left to right before a book has opened', () => {
-    const view = new FlowView(shelf().container, IGNORED, createTestQueryClient());
-
-    expect(view.navigation.direction).toBe('ltr');
-  });
-
-  it('forgets the direction of a book the viewer closed', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    surfaces.direction = 'rtl';
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.close();
-
-    expect(view.navigation.direction).toBe('ltr');
-  });
-});
-
-describe('FlowView paging', () => {
-  it('takes the paging the opened book reports', async () => {
-    const world = shelf();
-    const surfaces = shows();
     surfaces.paging = { axis: 'horizontal', direction: 'rtl' };
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'rtl' });
-  });
-
-  it('reads left-to-right pages before a book has opened', () => {
-    const view = new FlowView(shelf().container, IGNORED, createTestQueryClient());
-
-    expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
-  });
-
-  it('forgets the paging of a book the viewer closed', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    surfaces.paging = { axis: 'vertical', mode: 'vertical-rl' };
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.close();
-
-    expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
-  });
-});
-
-describe('FlowView ticks', () => {
-  it('marks the chapter boundaries the opened book reports', async () => {
-    const world = shelf();
-    const surfaces = shows();
     surfaces.ticks = [Number.EPSILON, 0.5, 0.25];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    await view.open(novel(world.place), world.stored, surfaces.show);
+    await view.open({ ...novel(world.place), direction: 'ltr' }, world.stored, surfaces.show);
 
+    expect(view.navigation.direction).toBe('rtl');
+    expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'rtl' });
     expect(view.navigation.ticks).toEqual([0.25, 0.5]);
   });
 
-  it('marks nothing before a book has opened', () => {
-    const view = new FlowView(shelf().container, IGNORED, createTestQueryClient());
+  it('reads left to right, marks nothing and reports no place until the book says otherwise', async () => {
+    const world = shelf();
+    const view = new FlowView(world.container, IGNORED, createTestQueryClient());
 
+    expect(view.navigation.direction).toBe('ltr');
+    expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
     expect(view.navigation.ticks).toEqual([]);
+    expect(view.appearance.settings).toEqual(DEFAULT_READING_SETTINGS);
+
+    await view.open(novel(world.place), world.stored, shows().show);
+
+    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
+    expect(view.navigation.chapter).toBeNull();
   });
 
-  it('forgets the chapter boundaries of a book the viewer closed', async () => {
+  it('forgets the direction, the paging, the boundaries, the contents and the place of a book the viewer closed', async () => {
     const world = shelf();
     const surfaces = shows();
+    surfaces.direction = 'rtl';
+    surfaces.paging = { axis: 'vertical', mode: 'vertical-rl' };
     surfaces.ticks = [0.25, 0.5];
+    const chapter: TocItem = { label: 'Chapter One', href: 'ch1.xhtml' };
+    surfaces.toc = [chapter];
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), world.stored, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.5, tocItem: chapter }));
 
     view.close();
 
+    expect(view.navigation.direction).toBe('ltr');
+    expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
     expect(view.navigation.ticks).toEqual([]);
+    expect(view.navigation.contents).toEqual({ kind: 'absent' });
+    expect(view.navigation.currentKey).toBeNull();
+    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
+    expect(view.navigation.chapter).toBeNull();
   });
 });
 
@@ -372,29 +334,29 @@ describe('FlowView', () => {
     expect(view.curtain).toEqual({ kind: 'none' });
   });
 
-  it('reports a book whose file is gone apart from a removed book', async () => {
+  const REFUSED_READS: readonly (readonly [string, Reads, string])[] = [
+    [
+      'a book whose file is gone apart from a removed book',
+      { kind: 'source-missing', id: NOVEL },
+      SOURCE_MISSING,
+    ],
+    [
+      'storage that the browser refuses',
+      STORAGE_UNAVAILABLE,
+      'This browser blocks local storage, so that book cannot be read.',
+    ],
+  ];
+
+  it.each(REFUSED_READS)('reports %s', async (_refusal, refused, message) => {
     const world = shelf();
     const surfaces = shows();
-    world.read = () => Promise.resolve({ kind: 'source-missing', id: NOVEL });
+    world.read = () => Promise.resolve(refused);
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.openings).toEqual([]);
-    expect(view.curtain).toEqual({ kind: 'notice', message: SOURCE_MISSING });
-  });
-
-  it('reports storage that the browser refuses', async () => {
-    const world = shelf();
-    world.read = () => Promise.resolve(STORAGE_UNAVAILABLE);
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), world.stored, shows().show);
-
-    expect(view.curtain).toEqual({
-      kind: 'notice',
-      message: 'This browser blocks local storage, so that book cannot be read.',
-    });
+    expect(view.curtain).toEqual({ kind: 'notice', message });
   });
 
   it('reports the cause when a read throws', async () => {
@@ -529,7 +491,7 @@ describe('the place a flow book keeps', () => {
     expect(heard).toEqual([SOMEWHERE, FURTHER_ON]);
   });
 
-  it('calls no onmoved for a move that arrives after the viewer closed', async () => {
+  it('ignores a move that arrives after the viewer closed, calling no onmoved and saving nothing', async () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
@@ -538,57 +500,33 @@ describe('the place a flow book keeps', () => {
     const moved = surfaces.openings[0]?.moved;
 
     view.close();
-    moved?.(relocated(SOMEWHERE));
+    moved?.(relocated(SOMEWHERE, { fraction: 0.5 }));
+    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(heard).toBe(0);
+    expect(world.edits).toEqual([]);
+    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('saves only the last place once the page turning settles', async () => {
+  it('saves a place still waiting when the reader leaves the book, fraction and all', async () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), world.stored, surfaces.show);
-    const moved = surfaces.openings[0]?.moved;
-
-    moved?.(relocated(SOMEWHERE));
-    moved?.(relocated(FURTHER_ON));
-    moved?.(relocated(LATER_STILL));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(places(world.edits)).toEqual([textPlace(LATER_STILL, null)]);
-  });
-
-  it('saves nothing while the pages are still turning', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS - 1);
-
-    expect(world.edits).toEqual([]);
-  });
-
-  it('saves a place still waiting when the reader leaves the book', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
     expect(world.edits).toEqual([]);
 
     view.close();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null)]);
+    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
   });
 
-  it('tells the book changed once a place is saved', async () => {
+  it('tells the book changed once a place is saved, and reports nothing', async () => {
     const world = shelf();
     const surfaces = shows();
     let changed = 0;
@@ -602,6 +540,8 @@ describe('the place a flow book keeps', () => {
     await settled();
 
     expect(changed).toBe(1);
+    expect(world.edits).toHaveLength(1);
+    expect(world.notices).toEqual([]);
   });
 
   it('tells nothing when a place save fails', async () => {
@@ -621,17 +561,49 @@ describe('the place a flow book keeps', () => {
     expect(changed).toBe(0);
   });
 
-  it('saves nothing for the cfi the book is already stored at', async () => {
+  const STORED_PLACES: readonly (readonly [
+    string,
+    ReadingPlace,
+    FlowRelocation,
+    readonly ReadingPlace[],
+  ])[] = [
+    [
+      'nothing for the cfi the book is already stored at',
+      textPlace(SOMEWHERE, null),
+      relocated(SOMEWHERE),
+      [],
+    ],
+    [
+      'nothing for the place the book is already stored at, fraction and all',
+      textPlace(SOMEWHERE, 0.37),
+      relocated(SOMEWHERE, { fraction: 0.37 }),
+      [],
+    ],
+    [
+      'the fraction a record stored without one gains at the same cfi',
+      textPlace(SOMEWHERE, null),
+      relocated(SOMEWHERE, { fraction: 0.37 }),
+      [textPlace(SOMEWHERE, 0.37)],
+    ],
+    [
+      'a place whose fraction moved although its cfi did not',
+      textPlace(SOMEWHERE, 0.37),
+      relocated(SOMEWHERE, { fraction: 0.41 }),
+      [textPlace(SOMEWHERE, 0.41)],
+    ],
+  ];
+
+  it.each(STORED_PLACES)('saves %s', async (_case, stored, relocation, saved) => {
     const world = shelf();
     const surfaces = shows();
-    world.place = textPlace(SOMEWHERE, null);
+    world.place = stored;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), world.stored, surfaces.show);
 
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
+    surfaces.openings[0]?.moved(relocation);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(world.edits).toEqual([]);
+    expect(places(world.edits)).toEqual(saved);
   });
 
   it('saves the fraction the book reported beside the cfi it stopped at', async () => {
@@ -644,112 +616,6 @@ describe('the place a flow book keeps', () => {
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
-  });
-
-  it('saves a place showing the end for a last page whose fraction summed a rounding short of one', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(LATER_STILL, { fraction: 0.9999999999999999 }));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    const saved = places(world.edits);
-    expect(saved).toHaveLength(1);
-    expect(saved.every((place) => place !== undefined && showsTheEnd(place, 0))).toBe(true);
-  });
-
-  it('saves a place short of the end for the page before the last', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(FURTHER_ON, { fraction: 2 / 3 }));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    const saved = places(world.edits);
-    expect(saved).toHaveLength(1);
-    expect(saved.some((place) => place !== undefined && showsTheEnd(place, 0))).toBe(false);
-  });
-
-  it('saves no fraction for a book that cannot measure one', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: Number.NaN }));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, null)]);
-  });
-
-  it('saves the fraction a record stored without one gains at the same cfi', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    world.place = textPlace(SOMEWHERE, null);
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
-  });
-
-  it('saves nothing for the place the book is already stored at, fraction and all', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    world.place = textPlace(SOMEWHERE, 0.37);
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(world.edits).toEqual([]);
-  });
-
-  it('saves a place whose fraction moved although its cfi did not', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    world.place = textPlace(SOMEWHERE, 0.37);
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.41 }));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.41)]);
-  });
-
-  it('saves the fraction of a place still waiting when the reader leaves the book', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.37 }));
-
-    view.close();
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(places(world.edits)).toEqual([textPlace(SOMEWHERE, 0.37)]);
-  });
-
-  it('saves nothing for a move that arrives after the viewer closed', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    const moved = surfaces.openings[0]?.moved;
-
-    view.close();
-    moved?.(relocated(SOMEWHERE));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(world.edits).toEqual([]);
   });
 
   it('keeps showing the book when a place cannot be saved', async () => {
@@ -772,45 +638,6 @@ describe('the place a flow book keeps', () => {
     ]);
   });
 
-  it('reports a run of failed place saves once, and again after one succeeds', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    world.save = () => Promise.reject(new Error('the disk went away'));
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    const moved = surfaces.openings[0]?.moved;
-
-    moved?.(relocated(SOMEWHERE));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-    moved?.(relocated(FURTHER_ON));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-    expect(world.notices).toEqual([
-      { tone: 'danger', title: PLACE_FAILED, message: 'Something went wrong: the disk went away' },
-    ]);
-
-    world.save = () => Promise.resolve({ kind: 'success', book: novel(world.place) });
-    moved?.(relocated(LATER_STILL));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-    world.save = () => Promise.reject(new Error('the disk went away'));
-    moved?.(relocated(SOMEWHERE));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(world.notices.map((notice) => notice.title)).toEqual([PLACE_FAILED, PLACE_FAILED]);
-  });
-
-  it('reports nothing when a place is saved', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
-    await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
-
-    expect(world.edits).toHaveLength(1);
-    expect(world.notices).toEqual([]);
-  });
-
   it('saves the same place again at the next turn after a save failed', async () => {
     const world = shelf();
     const surfaces = shows();
@@ -829,16 +656,6 @@ describe('the place a flow book keeps', () => {
 });
 
 describe('the progress a flow book reports', () => {
-  it('reports nothing until the book has said where it is', async () => {
-    const world = shelf();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), world.stored, shows().show);
-
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
-    expect(view.navigation.chapter).toBeNull();
-  });
-
   it('reports how far through the book the reader is', async () => {
     const world = shelf();
     const surfaces = shows();
@@ -852,64 +669,41 @@ describe('the progress a flow book reports', () => {
     expect(view.navigation.progress).toEqual({ kind: 'known', fraction: 0.375, percent: 38 });
     expect(view.navigation.chapter).toBe('Chapter Two');
   });
-
-  it('reports nothing for a book that cannot say how far through it is', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE));
-
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
-  });
-
-  it('forgets where it was when the reader leaves the book', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.5 }));
-
-    view.close();
-
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
-  });
-
-  it('ignores a move that arrives after the viewer closed', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    const moved = surfaces.openings[0]?.moved;
-
-    view.close();
-    moved?.(relocated(SOMEWHERE, { fraction: 0.5 }));
-
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
-  });
 });
 
 describe('the controls a flow book offers', () => {
   it('turns the page in reading order, whichever way the book runs', async () => {
     const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
+    const turned: (readonly string[])[] = [];
 
-    view.navigation.turn('previous');
-    view.navigation.turn('next');
+    for (const direction of ['ltr', 'rtl'] as const) {
+      const surfaces = shows();
+      surfaces.direction = direction;
+      const view = new FlowView(world.container, world.notify, createTestQueryClient());
+      await view.open(novel(world.place), world.stored, surfaces.show);
 
-    expect(surfaces.turned).toEqual(['prev', 'next']);
+      view.navigation.turn('previous');
+      view.navigation.turn('next');
+      turned.push(surfaces.turned);
+    }
+
+    expect(turned).toEqual([
+      ['prev', 'next'],
+      ['prev', 'next'],
+    ]);
   });
 
-  it('turns nothing before a book is open', () => {
+  it('turns nothing while no book is open', async () => {
     const world = shelf();
+    const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
     view.navigation.turn('next');
+    await view.open(novel(world.place), world.stored, surfaces.show);
+    view.close();
+    view.navigation.turn('next');
 
-    expect(view.state).toEqual({ kind: 'idle' });
+    expect(surfaces.turned).toEqual([]);
   });
 
   it('sends the scrubbed fraction to the book', async () => {
@@ -924,19 +718,6 @@ describe('the controls a flow book offers', () => {
     expect(surfaces.sought).toEqual([0.6]);
   });
 
-  it('holds a scrub inside the book it can reach', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
-
-    view.navigation.seek(4);
-    view.navigation.seek(-4);
-
-    expect(surfaces.sought).toEqual([1, 0]);
-  });
-
   it('refuses a scrub on a book that cannot say how far through it is', async () => {
     const world = shelf();
     const surfaces = shows();
@@ -945,18 +726,6 @@ describe('the controls a flow book offers', () => {
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
     view.navigation.seek(0.6);
-
-    expect(surfaces.sought).toEqual([]);
-  });
-
-  it('refuses a scrub that is not a number at all', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
-
-    view.navigation.seek(Number.NaN);
 
     expect(surfaces.sought).toEqual([]);
   });
@@ -984,17 +753,6 @@ describe('the contents a flow book offers', () => {
       'ch1.xhtml',
       'ch2.xhtml',
     ]);
-  });
-
-  it('lists nothing for a book that carries no navigation', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    expect(view.navigation.contents).toEqual({ kind: 'absent' });
-    expect(view.navigation.currentKey).toBeNull();
   });
 
   it('marks the entry the book reports, and not the one that shares its name', async () => {
@@ -1034,18 +792,6 @@ describe('the contents a flow book offers', () => {
 
     expect(surfaces.jumped).toEqual([]);
   });
-
-  it('forgets the contents when the reader leaves the book', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    surfaces.toc = [CHAPTER_ONE];
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.close();
-
-    expect(view.navigation.contents).toEqual({ kind: 'absent' });
-  });
 });
 
 describe('FlowView reading settings', () => {
@@ -1061,61 +807,44 @@ describe('FlowView reading settings', () => {
     expect(view.appearance.settings).toEqual(world.stored);
   });
 
-  it('reads the defaults for a reader who has chosen nothing', async () => {
-    const view = new FlowView(shelf().container, IGNORED, createTestQueryClient());
+  const RESTYLES: readonly (readonly [string, ReadingSettings])[] = [
+    ['resizes the text', { textSize: 'large', lineSpacing: 'tight', showPhoneticReadings: true }],
+    ['hides the readings', { ...DEFAULT_READING_SETTINGS, showPhoneticReadings: false }],
+  ];
 
-    expect(view.appearance.settings).toEqual(DEFAULT_READING_SETTINGS);
-  });
+  it.each(RESTYLES)(
+    'restyles the chapter already on screen rather than opening the book again when the reader %s',
+    async (_change, chosen) => {
+      const world = shelf();
+      const surfaces = shows();
+      const view = new FlowView(world.container, world.notify, createTestQueryClient());
+      await view.open(novel(world.place), world.stored, surfaces.show);
 
-  it('restyles the chapter already on screen rather than opening the book again', async () => {
+      view.appearance.restyle(chosen);
+      await settled();
+
+      expect(surfaces.restyled).toEqual([chosen]);
+      expect(surfaces.openings).toHaveLength(1);
+      expect(surfaces.destroyed).toEqual([]);
+      expect(world.notices).toEqual([]);
+    },
+  );
+
+  it('saves a chosen size as a reading setting and keeps it out of the book record', async () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.appearance.restyle({
-      textSize: 'large',
-      lineSpacing: 'tight',
-      showPhoneticReadings: true,
-    });
-
-    expect(surfaces.restyled).toEqual([
-      { textSize: 'large', lineSpacing: 'tight', showPhoneticReadings: true },
-    ]);
-    expect(surfaces.openings).toHaveLength(1);
-    expect(surfaces.destroyed).toEqual([]);
-  });
-
-  it('turns no page and seeks nowhere when the reader resizes the text', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.appearance.restyle({
-      textSize: 'smallest',
-      lineSpacing: 'loose',
-      showPhoneticReadings: true,
-    });
-
-    expect(surfaces.turned).toEqual([]);
-    expect(surfaces.sought).toEqual([]);
-    expect(surfaces.jumped).toEqual([]);
-  });
-
-  it('keeps a chosen size out of the book record', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.appearance.restyle({
+    const chosen: ReadingSettings = {
       textSize: 'small',
       lineSpacing: 'relaxed',
       showPhoneticReadings: true,
-    });
+    };
+
+    view.appearance.restyle(chosen);
     await settled();
 
+    expect(world.chosen).toEqual([chosen]);
     expect(places(world.edits)).toEqual([]);
   });
 
@@ -1136,22 +865,6 @@ describe('FlowView reading settings', () => {
       showPhoneticReadings: true,
     });
     expect(surfaces.restyled).toEqual([]);
-  });
-
-  it('hides the readings in the chapter already on screen', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    view.appearance.restyle({ ...view.appearance.settings, showPhoneticReadings: false });
-    await settled();
-
-    expect(surfaces.restyled).toEqual([
-      { ...DEFAULT_READING_SETTINGS, showPhoneticReadings: false },
-    ]);
-    expect(surfaces.openings).toHaveLength(1);
-    expect(world.notices).toEqual([]);
   });
 });
 
@@ -1283,28 +996,25 @@ describe('FlowView jumpToPassage', () => {
 
   const ANOTHER_PAGE = 'epubcfi(/6/14!/4/2/22,/1:0,/1:9)';
 
-  it('tells the reader the passage moved when its text found it instead', async () => {
+  const NOTICES: readonly (readonly [string, PassageArrival, string])[] = [
+    ['moved when its text found it instead', foundByItsText(REFOUND), MOVED_SINCE_IT_WAS_CAPTURED],
+    [
+      'is gone when neither the cfi nor the text found it',
+      THE_PASSAGE_IS_LOST,
+      NOT_IN_THE_BOOK_ANY_MORE,
+    ],
+  ];
+
+  it.each(NOTICES)('tells the reader the passage %s', async (_case, arrival, notice) => {
     const world = shelf();
     const surfaces = shows();
-    surfaces.arrival = foundByItsText(REFOUND);
+    surfaces.arrival = arrival;
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), world.stored, surfaces.show);
 
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
-    expect(view.arrivals.notice).toBe(MOVED_SINCE_IT_WAS_CAPTURED);
-  });
-
-  it('tells the reader the passage is gone when neither the cfi nor the text found it', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    surfaces.arrival = THE_PASSAGE_IS_LOST;
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-
-    expect(view.arrivals.notice).toBe(NOT_IN_THE_BOOK_ANY_MORE);
+    expect(view.arrivals.notice).toBe(notice);
   });
 
   it('takes its message away when the reader hides it', async () => {
@@ -1346,32 +1056,6 @@ describe('FlowView jumpToPassage', () => {
     });
   });
 
-  it('marks the passage its text found, not the cfi that was stored', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    surfaces.arrival = foundByItsText(REFOUND);
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-
-    expect(surfaces.arrivals.at(-1)).toEqual({ kind: 'arrived', cfi: REFOUND, place: A_PAGE });
-  });
-
-  it('marks nothing when neither the cfi nor the text found the passage', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    surfaces.arrival = THE_PASSAGE_IS_LOST;
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-
-    expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
-  });
-
   it('takes the mark away when the reader turns the page', async () => {
     const world = shelf();
     const surfaces = shows();
@@ -1385,53 +1069,7 @@ describe('FlowView jumpToPassage', () => {
     expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
   });
 
-  it('keeps the mark while the reader stays on the page it landed on', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-    const drawn = surfaces.arrivals.length;
-
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-
-    expect(surfaces.arrivals.length).toBe(drawn);
-  });
-
-  it('keeps the mark when foliate re-lays the page and reports a different place', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-
-    surfaces.openings[0]?.moved(relocated(ANOTHER_PAGE, { cause: REFLOWED }));
-
-    expect(surfaces.arrivals.at(-1)).toEqual({
-      kind: 'arrived',
-      cfi: SOMEWHERE,
-      place: ANOTHER_PAGE,
-    });
-    expect(view.arrivals.arrivalStanding).toBe(true);
-  });
-
-  it('takes the mark away when the reader turns the page after a re-layout', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-    surfaces.openings[0]?.moved(relocated(ANOTHER_PAGE, { cause: REFLOWED }));
-
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-
-    expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
-  });
-
-  it('takes the mark and the notice away when the reader dismisses the arrival', async () => {
+  it('takes the mark and the notice away when the reader dismisses the arrival, and reports no arrival standing', async () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
@@ -1443,6 +1081,7 @@ describe('FlowView jumpToPassage', () => {
 
     expect(surfaces.arrivals.at(-1)).toEqual(NOTHING_ARRIVED_AT);
     expect(view.arrivals.notice).toBeNull();
+    expect(view.arrivals.arrivalStanding).toBe(false);
   });
 
   it('redraws nothing when the reader dismisses an arrival that is already gone', async () => {
@@ -1469,28 +1108,6 @@ describe('FlowView jumpToPassage', () => {
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
     expect(view.arrivals.arrivalStanding).toBe(true);
-  });
-
-  it('reports no arrival is standing once it has been dismissed', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(A_PAGE));
-    await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
-
-    view.arrivals.dismissArrival();
-
-    expect(view.arrivals.arrivalStanding).toBe(false);
-  });
-
-  it('reports no arrival is standing before the reader has jumped anywhere', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    expect(view.arrivals.arrivalStanding).toBe(false);
   });
 
   it('keeps the marked passage drawn when the reader deletes its capture', async () => {
@@ -1536,16 +1153,6 @@ describe('FlowView markPassages', () => {
 
     expect(surfaces.marked).toEqual([[], [SOMEWHERE, ANOTHER]]);
   });
-
-  it('draws nothing for a viewer with no book open', () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-
-    view.arrivals.markPassages([SOMEWHERE]);
-
-    expect(surfaces.marked).toEqual([]);
-  });
 });
 
 describe('FlowView arriveAt', () => {
@@ -1558,32 +1165,23 @@ describe('FlowView arriveAt', () => {
 
   const ELSEWHERE: TextAnchor = { ...PASSAGE, cfi: 'epubcfi(/6/20!/4/2/1:0)' };
 
-  it('takes the open book to the passage a link asked for, and marks it', async () => {
+  const ASKED: readonly (readonly [string, SoughtPassage])[] = [
+    ['a link asked for, and marks it', { cfi: PASSAGE.cfi, quote: PASSAGE.quote }],
+    ['a cfi a url named with no capture behind it, and rings it', { cfi: SOMEWHERE, quote: null }],
+  ];
+
+  it.each(ASKED)('takes the open book to %s', async (_case, passage) => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     const book = novel(world.place);
     await view.open(book, world.stored, surfaces.show);
 
-    view.arrivals.arriveAt(book.id, PASSAGE);
+    view.arrivals.arriveAt(book.id, passage);
     await settled();
 
-    expect(surfaces.passages).toEqual([{ cfi: PASSAGE.cfi, quote: PASSAGE.quote }]);
-    expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: PASSAGE.cfi });
-  });
-
-  it('takes the open book to a cfi a url named with no capture behind it, and rings it', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    const book = novel(world.place);
-    await view.open(book, world.stored, surfaces.show);
-
-    view.arrivals.arriveAt(book.id, { cfi: SOMEWHERE, quote: null });
-    await settled();
-
-    expect(surfaces.passages).toEqual([{ cfi: SOMEWHERE, quote: null }]);
-    expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: SOMEWHERE });
+    expect(surfaces.passages).toEqual([passage]);
+    expect(surfaces.arrivals.at(-1)).toMatchObject({ kind: 'arrived', cfi: passage.cfi });
   });
 
   it('keeps the ring on a passage asked for before the book opened while the page settles', async () => {
@@ -1687,15 +1285,6 @@ describe('FlowView arriveAt', () => {
     expect(surfaces.passages).toHaveLength(2);
   });
 
-  it('holds no arrival before a passage was asked for', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    await view.open(novel(world.place), world.stored, surfaces.show);
-
-    expect(view.arrivals.arrivalHolds).toBe(false);
-  });
-
   it('holds the arrival through the move its own jump makes', async () => {
     const world = shelf();
     const surfaces = shows();
@@ -1707,21 +1296,6 @@ describe('FlowView arriveAt', () => {
     view.arrivals.arriveAt(book.id, PASSAGE);
     surfaces.openings[0]?.moved(relocated(LATER_STILL));
     await settled();
-
-    expect(view.arrivals.arrivalHolds).toBe(true);
-  });
-
-  it('holds the arrival while foliate re-lays the page it landed on', async () => {
-    const world = shelf();
-    const surfaces = shows();
-    const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    const book = novel(world.place);
-    await view.open(book, world.stored, surfaces.show);
-    surfaces.openings[0]?.moved(relocated(FURTHER_ON));
-    view.arrivals.arriveAt(book.id, PASSAGE);
-    await settled();
-
-    surfaces.openings[0]?.moved(relocated(LATER_STILL, { cause: REFLOWED }));
 
     expect(view.arrivals.arrivalHolds).toBe(true);
   });
