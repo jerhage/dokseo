@@ -2,6 +2,7 @@
   import { version } from '$app/environment';
   import Button from '$lib/components/Button.svelte';
   import Stat from '$lib/components/Stat.svelte';
+  import { APP_VERSION } from '$lib/shared/app-version';
   import { useShellUpdates } from '$lib/shared/shell-updates-context';
 
   const updates = useShellUpdates();
@@ -26,7 +27,10 @@
 
   <section class="surface bordered rounded-container p-5" aria-label="Version">
     <div class="row wrap items-center justify-between gap-3">
-      <Stat class="p-0" label="Version" value={version} size="sm" />
+      <div class="col gap-1">
+        <Stat class="p-0" label="Version" value={APP_VERSION} size="sm" />
+        <span class="text-xs text-faint">Build {version}</span>
+      </div>
       <Button onclick={check} disabled={checking}>
         {checking ? 'Checking…' : 'Check for updates'}
       </Button>

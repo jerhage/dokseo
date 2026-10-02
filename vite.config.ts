@@ -55,6 +55,18 @@ function runtimeServedFromCdn(): Plugin {
 
 const SUPPORTS_LIGHT_DARK = ['chrome123', 'firefox120', 'safari17.5'];
 
+function packageVersion(): string {
+  const manifest: unknown = JSON.parse(readFileSync('package.json', 'utf8'));
+  if (
+    typeof manifest === 'object' &&
+    manifest !== null &&
+    'version' in manifest &&
+    typeof manifest.version === 'string'
+  )
+    return manifest.version;
+  throw new Error('package.json has no version');
+}
+
 const DEV_KEY = '.certs/dev-key.pem';
 
 const DEV_CERT = '.certs/dev-cert.pem';
@@ -70,6 +82,7 @@ function localHttps() {
 
 export default defineConfig({
   oxc: { target: LOWERS_EXPLICIT_RESOURCE_MANAGEMENT },
+  define: { 'import.meta.env.APP_VERSION': JSON.stringify(packageVersion()) },
   server: localHttps(),
   optimizeDeps: { include: ['@huggingface/transformers'] },
   build: { cssTarget: SUPPORTS_LIGHT_DARK },
