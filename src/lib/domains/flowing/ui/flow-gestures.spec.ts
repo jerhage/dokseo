@@ -273,3 +273,51 @@ describe('FlowGestures', () => {
     expect(reader.calls).toEqual([]);
   });
 });
+
+describe('FlowGestures given the touch end after a release', () => {
+  it('claims the touch end of a finger tap that turned the page, once', () => {
+    const gestures = new FlowGestures(foliateLike('ltr').pages);
+
+    gestures.pressed(pressAt(760, { pointerType: 'touch' }));
+    gestures.released(releaseAt(760));
+
+    expect([gestures.claimsTouchEnd(), gestures.claimsTouchEnd()]).toEqual([true, false]);
+  });
+
+  it('leaves the touch end of a finger tap in the middle of the page to foliate', () => {
+    const gestures = new FlowGestures(foliateLike('ltr').pages);
+
+    gestures.pressed(pressAt(400, { pointerType: 'touch' }));
+    gestures.released(releaseAt(400));
+
+    expect(gestures.claimsTouchEnd()).toBe(false);
+  });
+
+  it('leaves the touch end of a swipe to foliate', () => {
+    const gestures = new FlowGestures(foliateLike('ltr').pages);
+
+    gestures.pressed(pressAt(600, { pointerType: 'touch' }));
+    gestures.released(releaseAt(760));
+
+    expect(gestures.claimsTouchEnd()).toBe(false);
+  });
+
+  it('claims nothing after a mouse click turned the page', () => {
+    const gestures = new FlowGestures(foliateLike('ltr').pages);
+
+    gestures.pressed(pressAt(760));
+    gestures.released(releaseAt(760));
+
+    expect(gestures.claimsTouchEnd()).toBe(false);
+  });
+
+  it('drops the claim of a turning tap when the next press begins', () => {
+    const gestures = new FlowGestures(foliateLike('ltr').pages);
+
+    gestures.pressed(pressAt(760, { pointerType: 'touch' }));
+    gestures.released(releaseAt(760));
+    gestures.pressed(pressAt(400, { pointerType: 'touch' }));
+
+    expect(gestures.claimsTouchEnd()).toBe(false);
+  });
+});

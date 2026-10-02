@@ -20,9 +20,12 @@ type Release = {
 
 const DID_NOTHING: FlowAction = { kind: 'nothing' };
 
+const TOUCH_POINTER = 'touch';
+
 class FlowGestures {
   #pages: PageTurner;
   #press: Press | null = null;
+  #touchTurned = false;
 
   constructor(pages: PageTurner) {
     this.#pages = pages;
@@ -30,6 +33,7 @@ class FlowGestures {
 
   pressed(press: Press): void {
     this.#press = press;
+    this.#touchTurned = false;
   }
 
   released(release: Release): FlowAction {
@@ -53,6 +57,7 @@ class FlowGestures {
       .with({ kind: 'nothing' }, () => undefined)
       .with({ kind: 'chrome' }, () => undefined)
       .with({ kind: 'turn' }, (turning) => {
+        this.#touchTurned = began.pointerType === TOUCH_POINTER;
         turnPage(this.#pages, turning.move);
       })
       .exhaustive();
@@ -61,7 +66,16 @@ class FlowGestures {
   }
 
   cancelled(pointerId: number): void {
-    if (this.#press?.pointerId === pointerId) this.#press = null;
+    if (this.#press?.pointerId !== pointerId) return;
+
+    this.#press = null;
+    this.#touchTurned = false;
+  }
+
+  claimsTouchEnd(): boolean {
+    const claimed = this.#touchTurned;
+    this.#touchTurned = false;
+    return claimed;
   }
 
   keyed(press: KeyPress): FlowMove {

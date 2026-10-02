@@ -238,6 +238,10 @@
     lift.release();
   }
 
+  function keepTurningTapFromFoliate(event: TouchEvent): void {
+    if (gestures?.claimsTouchEnd() === true) event.stopPropagation();
+  }
+
   function frameOrigin(doc: Document): Point {
     const frame = doc.defaultView?.frameElement;
     if (frame === null || frame === undefined) return FRAME_NOWHERE_ON_THE_STAGE;
@@ -306,6 +310,7 @@
       release(event, spotOn(host, event, frameOrigin(doc))),
     );
     doc.addEventListener('pointercancel', cancel);
+    doc.addEventListener('touchend', keepTurningTapFromFoliate, { capture: true });
   }
 
   $effect(() => {
@@ -327,6 +332,7 @@
     host.addEventListener('pointerdown', began);
     host.addEventListener('pointerup', ended);
     host.addEventListener('pointercancel', cancel);
+    host.addEventListener('touchend', keepTurningTapFromFoliate, { capture: true });
 
     void untrack(() =>
       view.open(
@@ -340,6 +346,7 @@
       host.removeEventListener('pointerdown', began);
       host.removeEventListener('pointerup', ended);
       host.removeEventListener('pointercancel', cancel);
+      host.removeEventListener('touchend', keepTurningTapFromFoliate, { capture: true });
       view.close();
       lift.close();
       gestures = null;
