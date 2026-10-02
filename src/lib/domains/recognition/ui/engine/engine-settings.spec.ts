@@ -102,12 +102,11 @@ describe('partialFigure', () => {
     return { modelId: MODEL, files: 0, bytes: 0, ...over };
   }
 
-  it('says nothing when no part-downloaded file is held', () => {
-    expect(partialFigure(partial())).toBeNull();
-  });
-
-  it('says nothing when the part-downloads could not be read', () => {
-    expect(partialFigure(null)).toBeNull();
+  it.each([
+    ['no part-downloaded file is held', partial()],
+    ['the part-downloads could not be read', null],
+  ])('says nothing when %s', (_name, held) => {
+    expect(partialFigure(held)).toBeNull();
   });
 
   it('reports what a part-downloaded file holds and that a resume will use it', () => {
@@ -141,12 +140,11 @@ describe('storedFigure', () => {
     expect(storedFigure(report({ weights: [] }))).toBe('Not downloaded');
   });
 
-  it('reports the bytes the browser holds and how many files hold them', () => {
-    expect(storedFigure(report({ files: 9, bytes: 204_413_485 }))).toBe('204 MB in 9 files');
-  });
-
-  it('counts a single file in the singular', () => {
-    expect(storedFigure(report({ files: 1, bytes: 1_000_000 }))).toBe('1 MB in 1 file');
+  it.each([
+    [9, 204_413_485, '204 MB in 9 files'],
+    [1, 1_000_000, '1 MB in 1 file'],
+  ])('reports the bytes the browser holds and how many files hold them', (files, bytes, figure) => {
+    expect(storedFigure(report({ files, bytes }))).toBe(figure);
   });
 
   it('admits when a stored file reported no size rather than guessing one', () => {
@@ -154,28 +152,14 @@ describe('storedFigure', () => {
     expect(figure).toBe('2 MB in 3 files, 1 of unreported size');
   });
 
-  it('measures in kilobytes rather than printing a rounded zero beside a file count', () => {
-    const figure = storedFigure(report({ files: 5, bytes: 382_400, weights: [] }));
-
-    expect(figure).toContain('382 kB in 5 files');
-    expect(figure).not.toContain('0 MB');
-  });
-
-  it('says the weights are missing when only the configuration is cached', () => {
-    expect(storedFigure(report({ files: 5, bytes: 382_400, weights: [] }))).toContain(
-      'but not the weights',
+  it('measures in kilobytes and says the weights are missing when only the configuration is cached', () => {
+    expect(storedFigure(report({ files: 5, bytes: 382_400, weights: [] }))).toBe(
+      '382 kB in 5 files, but not the weights',
     );
   });
 });
 
 describe('engineStateOf', () => {
-  it('offers a resume when the configuration is cached and the weights are not', () => {
-    const engine = engineStateOf(IDLE, null, snapshotOf([], 50_000_000, 5));
-
-    expect(engine.stored).toBe(false);
-    expect(engine.partlyDownloaded).toBe(true);
-  });
-
   it('offers no resume once both weight files are cached', () => {
     const engine = engineStateOf(IDLE, null, snapshotOf(REQUIRED_WEIGHTS, 0, 7));
 

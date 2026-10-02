@@ -192,24 +192,20 @@ async function started(calls: readonly Call[], index: number): Promise<Call> {
 }
 
 describe('warmthOf', () => {
-  it('reports an unread storage as unchecked', () => {
-    expect(warmthOf(null)).toEqual({ kind: 'unchecked' });
-  });
+  const cases: readonly (readonly [string, ModelStorageSnapshot | null, EngineWarmth])[] = [
+    ['an unread storage as unchecked', null, { kind: 'unchecked' }],
+    [
+      'every required weight on disk as stored',
+      snapshot('m', REQUIRED_WEIGHTS.length, 0),
+      { kind: 'stored' },
+    ],
+    ['some cached weights as partial', snapshot('m', 1, 0), { kind: 'partial' }],
+    ['a part-downloaded file as partial', snapshot('m', 0, 10), { kind: 'partial' }],
+    ['nothing on disk as missing', snapshot('m', 0, 0), { kind: 'missing' }],
+  ];
 
-  it('reports every required weight on disk as stored', () => {
-    expect(warmthOf(snapshot('m', REQUIRED_WEIGHTS.length, 0))).toEqual({ kind: 'stored' });
-  });
-
-  it('reports some cached weights as partial', () => {
-    expect(warmthOf(snapshot('m', 1, 0))).toEqual({ kind: 'partial' });
-  });
-
-  it('reports a part-downloaded file as partial', () => {
-    expect(warmthOf(snapshot('m', 0, 10))).toEqual({ kind: 'partial' });
-  });
-
-  it('reports nothing on disk as missing', () => {
-    expect(warmthOf(snapshot('m', 0, 0))).toEqual({ kind: 'missing' });
+  it.each(cases)('reports %s', (_name, storage, warmth) => {
+    expect(warmthOf(storage)).toEqual(warmth);
   });
 });
 
@@ -384,54 +380,48 @@ describe('EngineWarmup', () => {
     expect(world.stored).toEqual(['ja']);
   });
 
-  it('opens nothing and reads no storage when the setup read failed', async () => {
-    const world = fakes();
-    world.setupReads = 'failed';
+  const failedReads: readonly (readonly [string, 'setupReads' | 'storageReadsAs', number])[] = [
+    ['setup', 'setupReads', 0],
+    ['storage', 'storageReadsAs', 1],
+  ];
 
-    await world.warmup.warm('ja');
-    await world.warmup.resume('ja');
+  it.each(failedReads)(
+    'opens nothing, and reads the storage no further, when the %s read failed',
+    async (_name, read, storageReads) => {
+      const world = fakes();
+      world[read] = 'failed';
 
-    expect(world.storageReads).toEqual([]);
-    expect(world.opens).toEqual([]);
-    expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
-  });
+      await world.warmup.warm('ja');
 
-  it('opens nothing when the storage read failed', async () => {
-    const world = fakes();
-    world.storageReadsAs = 'failed';
+      expect(world.storageReads).toHaveLength(storageReads);
+      expect(world.opens).toEqual([]);
+      expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
 
-    await world.warmup.warm('ja');
+      await world.warmup.resume('ja');
 
-    expect(world.opens).toEqual([]);
-    expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
-  });
+      expect(world.storageReads).toHaveLength(storageReads);
+      expect(world.opens).toEqual([]);
+      expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
+    },
+  );
 
-  it('stops warming when the book changes before the setup is read', async () => {
-    const world = fakes();
-    world.setupReads = 'loading';
-    await world.warmup.warm('ja');
+  it.each(failedReads)(
+    'stops warming when the book changes before the %s is read',
+    async (_name, read, storageReads) => {
+      const world = fakes();
+      world[read] = 'loading';
+      await world.warmup.warm('ja');
 
-    world.bump();
-    world.setupReads = 'ready';
-    await world.warmup.resume('ja');
+      world.bump();
+      world[read] = 'ready';
+      await world.warmup.resume('ja');
 
-    expect(world.storageReads).toEqual([]);
-    expect(world.opens).toEqual([]);
-  });
-
-  it('stops warming when the book changes before the storage is read', async () => {
-    const world = fakes();
-    world.storageReadsAs = 'loading';
-    await world.warmup.warm('ja');
-
-    world.bump();
-    world.storageReadsAs = 'ready';
-    await world.warmup.resume('ja');
-
-    expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
-    expect(world.opens).toEqual([]);
-    expect(world.stored).toEqual([]);
-  });
+      expect(world.storageReads).toHaveLength(storageReads);
+      expect(world.warmup.warmth).toEqual({ kind: 'unchecked' });
+      expect(world.opens).toEqual([]);
+      expect(world.stored).toEqual([]);
+    },
+  );
 
   it('warms only the language asked last once the reads settle', async () => {
     const world = fakes();
@@ -444,16 +434,6 @@ describe('EngineWarmup', () => {
     await world.warmup.resume('ko');
 
     expect(world.opens).toEqual(['ko']);
-  });
-
-  it('warms a language again on the next book', async () => {
-    const world = fakes();
-    await world.warmup.warm('ja');
-
-    world.bump();
-    await world.warmup.warm('ja');
-
-    expect(world.opens).toEqual(['ja', 'ja']);
   });
 
   it('holds the load progress until the last recognition in flight settles', async () => {
@@ -500,23 +480,24 @@ describe('EngineWarmup', () => {
     await reading;
   });
 
-  it('warms a second language on the same book', async () => {
-    const world = fakes();
+  const warmings: readonly (readonly [string, Language, boolean, readonly Language[]])[] = [
+    ['the same language twice', 'ja', false, ['ja']],
+    ['a second language on the same book', 'ko', false, ['ja', 'ko']],
+    ['the language again on the next book', 'ja', true, ['ja', 'ja']],
+  ];
 
-    await world.warmup.warm('ja');
-    await world.warmup.warm('ko');
+  it.each(warmings)(
+    'warms a language once per book: %s',
+    async (_name, second, nextBook, opened) => {
+      const world = fakes();
+      await world.warmup.warm('ja');
 
-    expect(world.opens).toEqual(['ja', 'ko']);
-  });
+      if (nextBook) world.bump();
+      await world.warmup.warm(second);
 
-  it('warms a language once per book', async () => {
-    const world = fakes();
-
-    await world.warmup.warm('ja');
-    await world.warmup.warm('ja');
-
-    expect(world.opens).toEqual(['ja']);
-  });
+      expect(world.opens).toEqual(opened);
+    },
+  );
 
   it('closes the recognizer of the old language once and clears its state on a switch', async () => {
     const world = fakes();

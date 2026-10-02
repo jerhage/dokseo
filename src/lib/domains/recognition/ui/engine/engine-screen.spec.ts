@@ -111,12 +111,15 @@ describe('removalMb', () => {
 });
 
 describe('the aside summary', () => {
-  it('names no engine when no model is chosen', () => {
-    expect(activeEngine(null)).toBe('None');
-  });
-
-  it('names the on-device engine and the model runtime', () => {
-    expect(activeEngine(JAPANESE_OCR_MODEL)).toBe(`On-device · ${JAPANESE_OCR_MODEL.engine}`);
+  it.each([
+    ['no engine when no model is chosen', null, 'None'],
+    [
+      'the on-device engine and the model runtime',
+      JAPANESE_OCR_MODEL,
+      `On-device · ${JAPANESE_OCR_MODEL.engine}`,
+    ],
+  ])('names %s', (_name, model, engine) => {
+    expect(activeEngine(model)).toBe(engine);
   });
 
   it('gives the status word until a session is open, then the device', () => {

@@ -58,18 +58,15 @@ describe('EnginePill', () => {
     );
   });
 
-  it('offers every engine and disables each one that is not installed', () => {
-    const inputs = [...markup(IDLE, 'ja').matchAll(/<input[^>]*>/gu)].map((found) => found[0]);
+  it('offers every engine as a radio tile and disables each one that is not installed', () => {
+    const html = markup(IDLE, 'ja');
+    const inputs = [...html.matchAll(/<input[^>]*>/gu)].map((found) => found[0]);
+    const labels = [...html.matchAll(/<label[^>]*>/gu)].map((found) => found[0]);
 
     expect(inputs).toHaveLength(3);
     expect(inputs.filter((input) => /\sdisabled/u.test(input))).toHaveLength(2);
     expect(inputs[0]).toContain('value="on-device"');
     expect(inputs[0]).not.toMatch(/\sdisabled/u);
-  });
-
-  it('draws every engine as a radio tile', () => {
-    const labels = [...markup(IDLE, 'ja').matchAll(/<label[^>]*>/gu)].map((found) => found[0]);
-
     expect(labels).toHaveLength(3);
     expect(labels.every((label) => label.includes('class="radio-wrapper radio-tile"'))).toBe(true);
   });
