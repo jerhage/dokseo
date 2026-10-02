@@ -50,12 +50,6 @@ describe('downloadStep', () => {
     expect(downloadStep(running, { kind: 'held' })).toEqual({ kind: 'paused', load: HALFWAY });
   });
 
-  it('ignores progress that arrives after the reader paused', () => {
-    const paused = downloadStep(loading(), { kind: 'held' });
-
-    expect(downloadStep(paused, { kind: 'advanced', load: HALFWAY })).toEqual(paused);
-  });
-
   it('leaves a paused load paused when the cancelled load finally settles', () => {
     const paused = downloadStep(loading(), { kind: 'held' });
     const settled = downloadStep(paused, { kind: 'settled', error: { kind: 'cancelled' } });
@@ -77,13 +71,15 @@ describe('downloadStep', () => {
     expect(stopped).toEqual({ kind: 'cancelled' });
   });
 
-  it('ignores progress that arrives before anything was started', () => {
-    expect(downloadStep(IDLE, { kind: 'advanced', load: HALFWAY })).toEqual(IDLE);
-  });
-
-  it('ignores progress that arrives after the download was cancelled', () => {
-    const cancelled = downloadStep(loading(), { kind: 'stopped' });
-    expect(downloadStep(cancelled, { kind: 'advanced', load: HALFWAY })).toEqual(cancelled);
+  it.each([
+    { when: 'after the reader paused', state: downloadStep(loading(), { kind: 'held' }) },
+    { when: 'before anything was started', state: IDLE },
+    {
+      when: 'after the download was cancelled',
+      state: downloadStep(loading(), { kind: 'stopped' }),
+    },
+  ])('ignores progress that arrives $when', ({ state }) => {
+    expect(downloadStep(state, { kind: 'advanced', load: HALFWAY })).toEqual(state);
   });
 
   it('stays cancelled when the terminated worker still reports a session', () => {

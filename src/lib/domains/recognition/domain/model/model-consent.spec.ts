@@ -53,85 +53,98 @@ describe('consentFromStored', () => {
 });
 
 describe('grantedConsent', () => {
-  it('records the model the reader was shown and the bytes it weighs', () => {
-    expect(grantedConsent('ja', GRANTED_AT, japanese())).toEqual({
+  it.each([
+    {
+      what: 'the model the reader was shown and the bytes it weighs',
       language: 'ja',
-      grantedAt: GRANTED_AT,
+      model: japanese(),
       modelId: japanese().modelId,
       weightsBytes: japanese().weightsBytes,
-    });
-  });
-
-  it('records the model that was chosen rather than the one the language defaults to', () => {
-    expect(grantedConsent('ja', GRANTED_AT, SECOND_JAPANESE_MODEL)).toEqual({
+    },
+    {
+      what: 'the model that was chosen rather than the one the language defaults to',
       language: 'ja',
-      grantedAt: GRANTED_AT,
-      modelId: SECOND_JAPANESE_MODEL.modelId,
-      weightsBytes: SECOND_JAPANESE_MODEL.weightsBytes,
-    });
-  });
-
-  it('records no model for a language whose model has not been chosen', () => {
-    expect(grantedConsent('ko', GRANTED_AT, null)).toEqual({
+      model: SECOND_JAPANESE_MODEL,
+      modelId: 'DigitalLarynx/manga-ocr-onnx-small',
+      weightsBytes: 96_000_000,
+    },
+    {
+      what: 'no model for a language whose model has not been chosen',
       language: 'ko',
-      grantedAt: GRANTED_AT,
+      model: null,
       modelId: null,
       weightsBytes: null,
+    },
+  ] as const)('records $what', ({ language, model, modelId, weightsBytes }) => {
+    expect(grantedConsent(language, GRANTED_AT, model)).toEqual({
+      language,
+      grantedAt: GRANTED_AT,
+      modelId,
+      weightsBytes,
     });
   });
 });
 
 describe('decisionOf', () => {
-  it('reports a grant for the model in use as granted', () => {
-    expect(decisionOf(read(grantedConsent('ja', GRANTED_AT, japanese())), japanese())).toBe(
-      'granted',
-    );
-  });
+  const grantFor = (model: ModelFootprint): ModelConsent =>
+    read(grantedConsent('ja', GRANTED_AT, model));
 
-  it('reports a grant for the default model as undecided once another is chosen', () => {
-    const agreedToTheDefault = read(grantedConsent('ja', GRANTED_AT, japanese()));
-
-    expect(decisionOf(agreedToTheDefault, SECOND_JAPANESE_MODEL)).toBe('undecided');
-  });
-
-  it('reports a grant for a chosen model as granted against that same model', () => {
-    const agreedToTheSecond = read(grantedConsent('ja', GRANTED_AT, SECOND_JAPANESE_MODEL));
-
-    expect(decisionOf(agreedToTheSecond, SECOND_JAPANESE_MODEL)).toBe('granted');
-    expect(decisionOf(agreedToTheSecond, japanese())).toBe('undecided');
-  });
-
-  it('reports a grant recorded against another model as undecided', () => {
-    const agreedToBefore = read({
-      language: 'ja',
-      grantedAt: GRANTED_AT,
-      modelId: PREVIOUS_MODEL_ID,
-      weightsBytes: PREVIOUS_WEIGHTS_BYTES,
-    });
-
-    expect(agreedToBefore.weightsBytes).toBeGreaterThan(japanese().weightsBytes);
-    expect(decisionOf(agreedToBefore, japanese())).toBe('undecided');
-  });
-
-  it('reports a record naming no model as undecided', () => {
-    expect(decisionOf(read({ language: 'ja', grantedAt: GRANTED_AT }), japanese())).toBe(
-      'undecided',
-    );
-  });
-
-  it('reports no record at all as undecided', () => {
-    expect(decisionOf(null, japanese())).toBe('undecided');
-  });
-
-  it('reports no offered model at all as undecided', () => {
-    expect(decisionOf(read(grantedConsent('ja', GRANTED_AT, japanese())), null)).toBe('undecided');
-  });
-
-  it('reports a grant for one language as undecided for the other', () => {
-    const japaneseGrant = read(grantedConsent('ja', GRANTED_AT, japanese()));
-    const korean: ModelFootprint = { ...japanese(), languages: ['ko'] };
-
-    expect(decisionOf(japaneseGrant, japanese())).toBe('granted');
-    expect(decisionOf(japaneseGrant, korean)).toBe('undecided');
+  it.each([
+    {
+      what: 'a grant for the model in use',
+      consent: grantFor(japanese()),
+      model: japanese(),
+      decision: 'granted',
+    },
+    {
+      what: 'a grant for the default model once another is chosen',
+      consent: grantFor(japanese()),
+      model: SECOND_JAPANESE_MODEL,
+      decision: 'undecided',
+    },
+    {
+      what: 'a grant for a chosen model against that same model',
+      consent: grantFor(SECOND_JAPANESE_MODEL),
+      model: SECOND_JAPANESE_MODEL,
+      decision: 'granted',
+    },
+    {
+      what: 'a grant for a chosen model against the default',
+      consent: grantFor(SECOND_JAPANESE_MODEL),
+      model: japanese(),
+      decision: 'undecided',
+    },
+    {
+      what: 'a grant recorded against another model',
+      consent: read({
+        language: 'ja',
+        grantedAt: GRANTED_AT,
+        modelId: PREVIOUS_MODEL_ID,
+        weightsBytes: PREVIOUS_WEIGHTS_BYTES,
+      }),
+      model: japanese(),
+      decision: 'undecided',
+    },
+    {
+      what: 'a record naming no model',
+      consent: read({ language: 'ja', grantedAt: GRANTED_AT }),
+      model: japanese(),
+      decision: 'undecided',
+    },
+    { what: 'no record at all', consent: null, model: japanese(), decision: 'undecided' },
+    {
+      what: 'no offered model at all',
+      consent: grantFor(japanese()),
+      model: null,
+      decision: 'undecided',
+    },
+    {
+      what: 'a grant for one language against a model of the other',
+      consent: grantFor(japanese()),
+      model: { ...japanese(), languages: ['ko'] },
+      decision: 'undecided',
+    },
+  ] as const)('reports $what as $decision', ({ consent, model, decision }) => {
+    expect(decisionOf(consent, model)).toBe(decision);
   });
 });

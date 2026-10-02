@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { belongsToModel, entriesOfModel, isPartlyStored, isStored, reportOf } from './model-cache';
+import { belongsToModel, isPartlyStored, isStored, reportOf } from './model-cache';
 import type { CacheEntry } from './model-cache';
 import { JAPANESE_OCR_MODEL } from './model-footprint';
 
@@ -18,31 +18,21 @@ describe('belongsToModel', () => {
     );
   });
 
-  it('rejects a model whose id merely starts with the same characters', () => {
-    const other = `https://huggingface.co/${MODEL}-large/resolve/main/config.json`;
-    expect(belongsToModel(other, MODEL)).toBe(false);
-  });
-
-  it('rejects the onnx runtime, which no model owns', () => {
-    const runtime = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-wasm-simd.wasm';
-    expect(belongsToModel(runtime, MODEL)).toBe(false);
-  });
-
-  it('rejects another publisher who used the same model name', () => {
-    const other = 'https://huggingface.co/someone/manga-ocr-onnx/resolve/main/config.json';
-    expect(belongsToModel(other, MODEL)).toBe(false);
-  });
-});
-
-describe('entriesOfModel', () => {
-  it('keeps only the entries belonging to the model asked for', () => {
-    const entries = [
-      weights('config.json', 1_000),
-      { url: 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.wasm', bytes: 26_000_000 },
-      { url: 'https://huggingface.co/another/model/resolve/main/config.json', bytes: 2_000 },
-    ];
-
-    expect(entriesOfModel(entries, MODEL)).toEqual([weights('config.json', 1_000)]);
+  it.each([
+    {
+      owner: 'a model whose id merely starts with the same characters',
+      url: `https://huggingface.co/${MODEL}-large/resolve/main/config.json`,
+    },
+    {
+      owner: 'the onnx runtime, which no model owns',
+      url: 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort-wasm-simd.wasm',
+    },
+    {
+      owner: 'another publisher who used the same model name',
+      url: 'https://huggingface.co/someone/manga-ocr-onnx/resolve/main/config.json',
+    },
+  ])('rejects $owner', ({ url }) => {
+    expect(belongsToModel(url, MODEL)).toBe(false);
   });
 });
 
@@ -53,6 +43,7 @@ describe('reportOf', () => {
         weights('onnx/encoder_model_quantized.onnx', 87_007_436),
         weights('onnx/decoder_model_merged_quantized.onnx', 29_643_116),
         { url: 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.wasm', bytes: 26_861_777 },
+        { url: 'https://huggingface.co/another/model/resolve/main/config.json', bytes: 2_000 },
       ],
       MODEL,
     );
@@ -106,14 +97,26 @@ describe('isStored', () => {
     expect(isPartlyStored(report)).toBe(true);
   });
 
-  it('refuses to call a model stored when one of its two weight files is missing', () => {
-    const report = reportOf(
-      [...configs, weights('onnx/encoder_model_quantized.onnx', 86_967_767)],
-      MODEL,
-    );
+  it.each([
+    {
+      missing: 'the decoder',
+      held: [weights('onnx/encoder_model_quantized.onnx', 86_967_767)],
+      found: ['onnx/encoder_model_quantized.onnx'],
+    },
+    {
+      missing: 'the encoder, though the loader probed the unsuffixed one it never downloads',
+      held: [
+        weights('onnx/encoder_model.onnx', 343_377_067),
+        weights('onnx/decoder_model_merged_quantized.onnx', 29_643_116),
+      ],
+      found: ['onnx/decoder_model_merged_quantized.onnx'],
+    },
+  ])('refuses to call a model stored when it misses $missing', ({ held, found }) => {
+    const report = reportOf([...configs, ...held], MODEL);
 
     expect(isStored(report)).toBe(false);
     expect(isPartlyStored(report)).toBe(true);
+    expect(report.weights).toEqual(found);
   });
 
   it('calls a model stored once both weight files the engine opens are cached', () => {
@@ -128,20 +131,6 @@ describe('isStored', () => {
 
     expect(isStored(report)).toBe(true);
     expect(isPartlyStored(report)).toBe(false);
-  });
-
-  it('ignores the unsuffixed encoder the loader probes but never downloads', () => {
-    const report = reportOf(
-      [
-        ...configs,
-        weights('onnx/encoder_model.onnx', 343_377_067),
-        weights('onnx/decoder_model_merged_quantized.onnx', 29_643_116),
-      ],
-      MODEL,
-    );
-
-    expect(isStored(report)).toBe(false);
-    expect(report.weights).toEqual(['onnx/decoder_model_merged_quantized.onnx']);
   });
 
   it('calls nothing part-stored when the cache holds no file of the model', () => {

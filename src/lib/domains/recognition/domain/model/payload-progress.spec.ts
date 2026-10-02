@@ -14,12 +14,6 @@ function tracked(): readonly PayloadFile[] {
 }
 
 describe('payloadProgress', () => {
-  it('totals only the files being transferred, never one merely probed', () => {
-    const progress = payloadProgress(tracked(), 'network');
-
-    expect(progress.totalBytes).toBe(204_413_485);
-  });
-
   it('reports nothing loaded and no fraction before a file is registered', () => {
     const progress = payloadProgress(NO_PAYLOAD, 'cache');
 
@@ -43,6 +37,7 @@ describe('payloadProgress', () => {
   it('registers a file once, so a retried transfer restates it rather than doubling it', () => {
     const restated = trackedPayload(tracked(), ENCODER, 86_967_767, 8_000_000);
 
+    expect(payloadProgress(tracked(), 'network').totalBytes).toBe(204_413_485);
     expect(payloadProgress(restated, 'network').totalBytes).toBe(204_413_485);
     expect(payloadProgress(restated, 'network').loadedBytes).toBe(8_000_000);
   });

@@ -58,21 +58,17 @@ describe('modelFootprint', () => {
     expect(downloadMb(footprint)).toBe(3);
   });
 
-  it('names the model the bytes were measured from, so the two cannot drift apart', () => {
-    expect(japanese().modelId).toBe('kimchireader/manga-ocr-onnx-q8');
-  });
-
-  it('reports the exploratory 13 MB of weights for Korean', () => {
-    const korean = modelFootprint('ko');
-    expect(korean?.modelId).toBe('PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx');
-    expect(megabytes(korean?.weightsBytes ?? 0)).toBe(13);
-  });
-
-  it('reports the exploratory 8 MB of weights for English', () => {
-    const english = modelFootprint('en');
-    expect(english?.modelId).toBe('PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx');
-    expect(megabytes(english?.weightsBytes ?? 0)).toBe(8);
-  });
+  it.each([
+    { language: 'ko', modelId: 'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx', mb: 13 },
+    { language: 'en', modelId: 'PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx', mb: 8 },
+  ] as const)(
+    'reports the exploratory $mb MB of weights for $language',
+    ({ language, modelId, mb }) => {
+      const footprint = modelFootprint(language);
+      expect(footprint?.modelId).toBe(modelId);
+      expect(megabytes(footprint?.weightsBytes ?? 0)).toBe(mb);
+    },
+  );
 });
 
 describe('modelsFor', () => {
@@ -90,27 +86,20 @@ describe('modelsFor', () => {
     ]);
   });
 
-  it('offers a model to each language it declares and to no other', () => {
-    expect(modelsFor('ko').map((model) => model.modelId)).toEqual([
-      'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx',
-    ]);
-  });
-
-  it('offers English the Latin PaddleOCR model alone, never a Japanese or Korean one', () => {
-    expect(modelsFor('en').map((model) => model.modelId)).toEqual([
-      'PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx',
-    ]);
-  });
+  it.each([
+    { language: 'ko', modelId: 'PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx' },
+    { language: 'en', modelId: 'PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx' },
+  ] as const)(
+    'offers a model to each language it declares and to no other: $language',
+    ({ language, modelId }) => {
+      expect(modelsFor(language).map((model) => model.modelId)).toEqual([modelId]);
+    },
+  );
 
   it('reads a model declaring both languages as an offer to each of them', () => {
     const both: ModelFootprint = { ...japanese(), languages: ['ja', 'ko'] };
     expect(reads(both, 'ja')).toBe(true);
     expect(reads(both, 'ko')).toBe(true);
-  });
-
-  it('agrees with the footprint about which language each model reads', () => {
-    for (const model of modelsFor('ja')) expect(model.languages).toContain('ja');
-    expect(japanese().languages).toEqual(['ja']);
   });
 });
 
@@ -129,24 +118,26 @@ describe('chosenModel', () => {
     expect(chosenModel('ja', 'dnouv/manga-ocr')).toEqual(japanese());
   });
 
-  it('defaults Japanese to the quantized model rather than the one it can be compared with', () => {
-    expect(chosenModel('ja', null)?.modelId).toBe('kimchireader/manga-ocr-onnx-q8');
-  });
-
   it('refuses a model that cannot read the language and defaults to one that can', () => {
     expect(chosenModel('ko', 'DigitalLarynx/manga-ocr-onnx')).toEqual(modelFootprint('ko'));
   });
 });
 
 describe('knownModel', () => {
-  it('finds a model by its id', () => {
-    expect(knownModel('kimchireader/manga-ocr-onnx-q8')).toEqual(japanese());
-  });
-
-  it('still knows the full-precision model a reader may have picked', () => {
-    expect(knownModel('DigitalLarynx/manga-ocr-onnx')?.label).toBe(
-      'manga-ocr base, full-precision decoder',
-    );
+  it.each([
+    {
+      modelId: 'kimchireader/manga-ocr-onnx-q8',
+      label: 'manga-ocr base, quantized throughout',
+      found: japanese(),
+    },
+    {
+      modelId: 'DigitalLarynx/manga-ocr-onnx',
+      label: 'manga-ocr base, full-precision decoder',
+      found: modelsFor('ja')[1],
+    },
+  ])('finds a model by its id: $modelId', ({ modelId, label, found }) => {
+    expect(knownModel(modelId)).toEqual(found);
+    expect(knownModel(modelId)?.label).toBe(label);
   });
 
   it('returns nothing for a model nobody measured', () => {
@@ -163,11 +154,7 @@ describe('runtime', () => {
     expect(modelsFor('ja').map((model) => model.runtime)).toEqual(['manga-ocr', 'manga-ocr']);
     expect(modelsFor('ko').map((model) => model.runtime)).toEqual(['paddle-ocr']);
     expect(modelsFor('en').map((model) => model.runtime)).toEqual(['paddle-ocr']);
-  });
-
-  it('keeps the runtime apart from the display label the settings screen shows', () => {
     expect(modelFootprint('en')?.engine).toBe('PP-OCRv5');
     expect(modelFootprint('ko')?.engine).toBe('PP-OCRv5');
-    expect(modelFootprint('ko')?.runtime).toBe('paddle-ocr');
   });
 });

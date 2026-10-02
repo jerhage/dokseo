@@ -3,7 +3,6 @@ import {
   isPartlyDownloaded,
   partialName,
   partialReportOf,
-  partialsOfModel,
   resumesModelWeights,
   urlOfPartial,
 } from './model-partial';
@@ -41,20 +40,18 @@ describe('resumesModelWeights', () => {
     expect(resumesModelWeights({ url: WEIGHTS, partial: true }, MODEL)).toBe(false);
   });
 
-  it('leaves a configuration file alone', () => {
-    expect(resumesModelWeights({ url: `${REPO}/tokenizer.json`, partial: false }, MODEL)).toBe(
-      false,
-    );
-  });
-
-  it('leaves the runtime binary alone, because no model owns it', () => {
-    const runtime = 'https://cdn.example/ort-wasm-simd-threaded.jsep.wasm';
-    expect(resumesModelWeights({ url: runtime, partial: false }, MODEL)).toBe(false);
-  });
-
-  it('leaves another model of the same prefix alone', () => {
-    const other = `https://huggingface.co/${MODEL}-large/resolve/main/onnx/encoder_model.onnx`;
-    expect(resumesModelWeights({ url: other, partial: false }, MODEL)).toBe(false);
+  it.each([
+    { what: 'a configuration file', url: `${REPO}/tokenizer.json` },
+    {
+      what: 'the runtime binary, because no model owns it',
+      url: 'https://cdn.example/ort-wasm-simd-threaded.jsep.wasm',
+    },
+    {
+      what: 'another model of the same prefix',
+      url: `https://huggingface.co/${MODEL}-large/resolve/main/onnx/encoder_model.onnx`,
+    },
+  ])('leaves $what alone', ({ url }) => {
+    expect(resumesModelWeights({ url, partial: false }, MODEL)).toBe(false);
   });
 });
 
@@ -64,10 +61,6 @@ describe('partialReportOf', () => {
     { url: `${REPO}/onnx/decoder_model_merged.onnx`, bytes: 8_000_000 },
     { url: `https://huggingface.co/${MODEL}-large/resolve/main/onnx/x.onnx`, bytes: 5 },
   ];
-
-  it('counts only the files the model owns', () => {
-    expect(partialsOfModel(held, MODEL)).toHaveLength(2);
-  });
 
   it('sums the bytes a half-finished download occupies', () => {
     expect(partialReportOf(held, MODEL)).toEqual({
