@@ -16,11 +16,13 @@ type Seen = {
 function saving(
   share: ((data: ShareData) => Promise<void>) | null,
   canShare = true,
+  touchDevice = true,
 ): { saving: FileSaving; seen: Seen } {
   const seen: Seen = { shared: [], downloaded: [] };
   return {
     seen,
     saving: {
+      touchDevice,
       sharing:
         share === null
           ? null
@@ -60,6 +62,30 @@ describe('saveFile', () => {
     expect(await saveFile(through, EXPORT)).toEqual({ kind: 'downloaded' });
     expect(seen.shared).toEqual([]);
     expect(seen.downloaded.map((file) => file.name)).toEqual([EXPORT.name]);
+  });
+
+  it('downloads the file on a desktop even when the browser can share it', async () => {
+    const { saving: through, seen } = saving(() => Promise.resolve(), true, false);
+
+    expect(await saveFile(through, EXPORT)).toEqual({ kind: 'downloaded' });
+    expect(seen.shared).toEqual([]);
+    expect(seen.downloaded.map((file) => file.name)).toEqual([EXPORT.name]);
+  });
+
+  it('shares the file on a touch device that can share it', async () => {
+    const { saving: through, seen } = saving(() => Promise.resolve(), true, true);
+
+    expect(await saveFile(through, EXPORT)).toEqual({ kind: 'shared' });
+    expect(seen.downloaded).toEqual([]);
+    expect(seen.shared).toHaveLength(1);
+  });
+
+  it('downloads the file on a touch device that cannot share it', async () => {
+    const { saving: through, seen } = saving(() => Promise.resolve(), false, true);
+
+    expect(await saveFile(through, EXPORT)).toEqual({ kind: 'downloaded' });
+    expect(seen.shared).toEqual([]);
+    expect(seen.downloaded).toHaveLength(1);
   });
 
   it('downloads the file when the browser has no share sheet', async () => {
