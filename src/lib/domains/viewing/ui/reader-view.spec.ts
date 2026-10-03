@@ -320,6 +320,8 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
     storage: {
       readStorageAccount: () => Promise.reject(new Error('not used')),
       exportCaptures: () => Promise.reject(new Error('not used')),
+      previewCapturesImport: () => Promise.reject(new Error('not used')),
+      applyCapturesImport: () => Promise.reject(new Error('not used')),
     },
   };
 

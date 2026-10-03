@@ -7,6 +7,12 @@ import { listRemovedShelf } from '../domains/library/use-cases/list-removed-shel
 import { createTagRepository } from '../domains/recognition/adapters/tag/indexeddb-tags.repo';
 import type { CaptureRepository } from '../domains/recognition/domain/capture/capture-repository';
 import { createOriginStores } from '../domains/storage/adapters/browser-origin-stores';
+import { applyCapturesImport } from '../domains/storage/use-cases/apply-captures-import';
+import type {
+  ApplyCapturesImportResult,
+  ConflictResolution,
+} from '../domains/storage/use-cases/apply-captures-import';
+import type { CapturesImportPlan } from '../domains/storage/use-cases/captures-import-plan';
 import { deleteRemovedBookCaptures } from '../domains/storage/use-cases/delete-removed-book-captures';
 import type { DeleteRemovedBookCapturesResult } from '../domains/storage/use-cases/delete-removed-book-captures';
 import { exportCaptures } from '../domains/storage/use-cases/export-captures';
@@ -15,6 +21,8 @@ import { mergeIntoBook } from '../domains/storage/use-cases/merge-into-book';
 import type { MergeIntoBookResult } from '../domains/storage/use-cases/merge-into-book';
 import { removeBookAndCaptures } from '../domains/storage/use-cases/remove-book-and-captures';
 import type { RemoveBookAndCapturesResult } from '../domains/storage/use-cases/remove-book-and-captures';
+import { previewCapturesImport } from '../domains/storage/use-cases/preview-captures-import';
+import type { PreviewCapturesImportResult } from '../domains/storage/use-cases/preview-captures-import';
 import { readStorageAccount } from '../domains/storage/use-cases/read-storage-account';
 import type { ReadStorageAccountResult } from '../domains/storage/use-cases/read-storage-account';
 
@@ -24,6 +32,14 @@ type StorageUseCases = {
 
 type CapturesExports = {
   readonly exportCaptures: () => Promise<ExportCapturesResult>;
+};
+
+type CapturesImports = {
+  readonly previewCapturesImport: (text: string) => Promise<PreviewCapturesImportResult>;
+  readonly applyCapturesImport: (
+    plan: CapturesImportPlan,
+    resolution: ConflictResolution,
+  ) => Promise<ApplyCapturesImportResult>;
 };
 
 type RemovedBooks = {
@@ -61,6 +77,39 @@ function buildCapturesExports(
   };
 }
 
+function buildCapturesImports(
+  repository: LibraryRepository,
+  captures: CaptureRepository,
+): CapturesImports {
+  const tags = createTagRepository();
+
+  return {
+    previewCapturesImport: (text: string) =>
+      previewCapturesImport(
+        {
+          shelf: { repository },
+          restorable: { repository },
+          tags: { tags },
+          captures: { captures },
+          newId: () => crypto.randomUUID(),
+          now: Date.now,
+        },
+        text,
+      ),
+    applyCapturesImport: (plan: CapturesImportPlan, resolution: ConflictResolution) =>
+      applyCapturesImport(
+        {
+          holding: { repository },
+          tagging: { tags },
+          saving: { captures },
+          now: Date.now,
+        },
+        plan,
+        resolution,
+      ),
+  };
+}
+
 function buildRemovedBooks(
   repository: LibraryRepository,
   captures: CaptureRepository,
@@ -83,5 +132,5 @@ function buildRemovedBooks(
   };
 }
 
-export { buildStorage, buildCapturesExports, buildRemovedBooks };
-export type { StorageUseCases, CapturesExports, RemovedBooks };
+export { buildStorage, buildCapturesExports, buildCapturesImports, buildRemovedBooks };
+export type { StorageUseCases, CapturesExports, CapturesImports, RemovedBooks };
