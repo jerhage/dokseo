@@ -11,8 +11,8 @@ import type {
   RecognitionProgress,
   RecognitionSessionReport,
 } from './composition/recognizers';
-import { buildRemovedBooks, buildStorage } from './composition/storage';
-import type { RemovedBooks, StorageUseCases } from './composition/storage';
+import { buildCapturesExports, buildRemovedBooks, buildStorage } from './composition/storage';
+import type { CapturesExports, RemovedBooks, StorageUseCases } from './composition/storage';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
 
@@ -21,7 +21,7 @@ type Container = {
   readonly library: LibraryUseCases & RemovedBooks;
   readonly flowing: FlowingUseCases;
   readonly recognition: RecognitionUseCases;
-  readonly storage: StorageUseCases;
+  readonly storage: StorageUseCases & CapturesExports;
 };
 
 function buildContainer(): Container {
@@ -37,7 +37,7 @@ function buildContainer(): Container {
     },
     flowing: buildFlowing(),
     recognition: buildRecognition(captures),
-    storage: buildStorage(),
+    storage: { ...buildStorage(), ...buildCapturesExports(repository, captures) },
   };
 }
 
