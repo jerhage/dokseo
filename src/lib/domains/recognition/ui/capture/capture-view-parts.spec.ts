@@ -72,6 +72,7 @@ function fakes(): Fakes {
       deleteRemovedBookCaptures: unused,
       removeBookAndCaptures: unused,
       mergeIntoBook: unused,
+      exportBookCaptures: unused,
       editBook: unused,
       saveReadingPlace: unused,
       markFinished: unused,
@@ -133,6 +134,7 @@ function fakes(): Fakes {
       prepareRecognizer: unused,
       pauseModelLoad: unused,
       cancelModelLoad: unused,
+      exportBookCaptures: () => Promise.resolve({ kind: 'nothing-to-export' }),
       closeRecognizer: unused,
     },
     flowing: {
