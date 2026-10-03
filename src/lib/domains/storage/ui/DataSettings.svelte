@@ -6,8 +6,10 @@
   import { browserFileSaving, saveFile } from '$lib/platform/files/save-file';
   import { CapturesExportView, exportStatus } from './captures-export.svelte';
   import type { CapturesExporting } from './captures-export.svelte';
+  import type { CapturesImporting } from './captures-import.svelte';
+  import CapturesImport from './CapturesImport.svelte';
 
-  type Props = { readonly data: CapturesExporting };
+  type Props = { readonly data: CapturesExporting & CapturesImporting };
 
   let { data }: Props = $props();
 
@@ -67,4 +69,6 @@
       </Alert>
     {/if}
   {/if}
+
+  <CapturesImport {data} />
 </div>
