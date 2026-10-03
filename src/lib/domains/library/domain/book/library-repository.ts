@@ -53,6 +53,7 @@ interface LibraryRepository {
   remove(id: BookId): Promise<LibraryWrite>;
   listRemoved(): Promise<RemovedListing>;
   listRestorable(): Promise<RestorableListing>;
+  addRemoved(book: RemovedBook): Promise<LibraryWrite>;
   forgetRemoved(id: BookId): Promise<LibraryWrite>;
   update(id: BookId, edit: BookEdit): Promise<BookLookup>;
   readSource(id: BookId): Promise<FileLookup>;

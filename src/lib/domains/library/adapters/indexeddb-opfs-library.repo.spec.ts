@@ -224,6 +224,39 @@ describe('createLibraryRepository', () => {
     expect(held.blobs.has('old-1.cover')).toBe(false);
   });
 
+  it('stores a removed record it is given, which the restorable list then offers', async () => {
+    const repository = createLibraryRepository();
+
+    await repository.addRemoved({
+      id: bookId('held-1'),
+      title: 'Aria 3',
+      alias: null,
+      contentHash: 'fedcba',
+      fileName: 'aria-3.pdf',
+      language: 'ja',
+      direction: 'rtl',
+      addedAt: 5,
+    });
+    const restorable = await repository.listRestorable();
+
+    expect(restorable).toEqual({
+      kind: 'success',
+      removed: [
+        {
+          id: 'held-1',
+          title: 'Aria 3',
+          alias: null,
+          contentHash: 'fedcba',
+          fileName: 'aria-3.pdf',
+          language: 'ja',
+          direction: 'rtl',
+          addedAt: 5,
+        },
+      ],
+      unreadable: [],
+    });
+  });
+
   it('forgets a removed record by its id', async () => {
     store('removed-books').set('gone-1', { id: 'gone-1', title: 'Gone' });
     const repository = createLibraryRepository();

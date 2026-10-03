@@ -42,6 +42,7 @@ function world(outcomes: Outcomes = {}) {
     remove: notUsed,
     listRemoved: notUsed,
     listRestorable: notUsed,
+    addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: (id) => {
       steps.push(`forgot ${id}`);
       return Promise.resolve(outcomes.forgetting ?? WRITTEN);

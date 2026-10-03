@@ -46,6 +46,7 @@ function repositoryWith(outcomes: Outcomes): LibraryRepository {
     savePageList: notUsed,
     remove: notUsed,
     listRestorable: notUsed,
+    addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: notUsed,
     update: notUsed,
     readSource: notUsed,

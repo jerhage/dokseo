@@ -116,6 +116,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
           : { kind: 'success', removed: holdings.removed ?? [REMOVED] },
       ),
     listRestorable: notUsed,
+    addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: notUsed,
     update: notUsed,
     readSource: notUsed,
