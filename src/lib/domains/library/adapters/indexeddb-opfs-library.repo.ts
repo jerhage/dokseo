@@ -27,7 +27,7 @@ import type {
 import { pageListFromStored } from '../domain/book/page-list';
 import type { PageOrder, StoredPageList } from '../domain/book/page-list';
 import { removedBookFrom, removedBooksFrom } from '../domain/book/removed-book';
-import type { RetiredRow } from '../domain/book/removed-book';
+import type { RemovedBook, RetiredRow } from '../domain/book/removed-book';
 import { bookFromStored, booksFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
@@ -207,6 +207,12 @@ function createLibraryRepository(): LibraryRepository {
         removed: removedBooksFrom(removed),
         unreadable: removedBooksFrom(broken),
       };
+    },
+
+    async addRemoved(book: RemovedBook): Promise<LibraryWrite> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      await putRecord(await database(), REMOVED_BOOK_STORE, book);
+      return WRITTEN;
     },
 
     async forgetRemoved(id: BookId): Promise<LibraryWrite> {

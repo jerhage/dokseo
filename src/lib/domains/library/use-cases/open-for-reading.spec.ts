@@ -88,6 +88,7 @@ function fakeRepository(
     savePageList: () => Promise.resolve(WRITTEN),
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [] }),
     listRestorable: () => Promise.resolve({ kind: 'success', removed: [], unreadable: [] }),
+    addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
   };
 }
