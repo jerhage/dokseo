@@ -10,7 +10,7 @@
   import type { SettingsSection } from './settings-sections';
 
   type Props = {
-    readonly current: SettingsSection;
+    readonly current: SettingsSection | null;
     readonly root?: string;
     readonly flush?: boolean;
     readonly aside?: Snippet;
@@ -21,11 +21,11 @@
 
   const sections = $derived(settingsSections(root));
   const shown = $derived(sections.find((section) => section.id === current));
-  const crumbs = $derived([
-    { label: 'Library', href: '/' },
-    { label: 'Settings', href: root },
-    { label: shown?.name ?? 'Settings' },
-  ]);
+  const crumbs = $derived(
+    shown === undefined
+      ? [{ label: 'Library', href: '/' }, { label: 'Settings' }]
+      : [{ label: 'Library', href: '/' }, { label: 'Settings', href: root }, { label: shown.name }],
+  );
 </script>
 
 <div class="layout-app-shell">
@@ -38,7 +38,10 @@
     </div>
   </header>
 
-  <nav class="layout-app-shell-nav layout-app-shell-nav-compact wrap" aria-label="Settings">
+  <nav
+    class="layout-app-shell-nav layout-app-shell-nav-compact layout-app-shell-wide-only wrap"
+    aria-label="Settings"
+  >
     {#each sections as section (section.id)}
       <NavLink href={section.href} current={section.id === current} class="py-2">
         {#snippet icon()}

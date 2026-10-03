@@ -15,6 +15,7 @@ type SectionLink = {
   readonly summary: string;
   readonly icon: Component<IconProps>;
   readonly href: string;
+  readonly pageHref: string;
 };
 
 function settingsSections(root: string): readonly SectionLink[] {
@@ -25,6 +26,7 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'Where recognition runs',
       icon: ScanText,
       href: root,
+      pageHref: `${root}/engine`,
     },
     {
       id: 'storage',
@@ -32,6 +34,7 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'What this device keeps',
       icon: HardDrive,
       href: `${root}/storage`,
+      pageHref: `${root}/storage`,
     },
     {
       id: 'data',
@@ -39,6 +42,7 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'Export your captures',
       icon: Database,
       href: `${root}/data`,
+      pageHref: `${root}/data`,
     },
     {
       id: 'appearance',
@@ -46,6 +50,7 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'Theme and color scheme',
       icon: Palette,
       href: `${root}/appearance`,
+      pageHref: `${root}/appearance`,
     },
     {
       id: 'library',
@@ -53,6 +58,7 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'How a file finds its book',
       icon: File,
       href: `${root}/library`,
+      pageHref: `${root}/library`,
     },
     {
       id: 'app',
@@ -60,6 +66,7 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'Version and updates',
       icon: Info,
       href: `${root}/app`,
+      pageHref: `${root}/app`,
     },
   ];
 }

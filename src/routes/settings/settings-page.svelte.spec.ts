@@ -6,7 +6,7 @@ import { TOASTER } from '$lib/components/toast-context';
 import { createToaster } from '$lib/components/toaster.svelte';
 import type { Language } from '$lib/shared/language';
 import WithQueryClient from '$lib/shared/testing/WithQueryClient.svelte';
-import SettingsPage from './+page.svelte';
+import SettingsPage from './EngineSettingsPage.svelte';
 
 const calls = vi.hoisted(() => ({ setups: [] as string[], probes: 0 }));
 

@@ -50,6 +50,19 @@ describe('SettingsShell', () => {
     expect(html).toContain('<span aria-current="page">Storage</span>');
   });
 
+  it('ends the breadcrumb at Settings on the section list', () => {
+    const html = markup({ current: null });
+
+    expect(html).toContain('<span aria-current="page">Settings</span>');
+    expect(navCurrent(html)).toEqual([]);
+  });
+
+  it('hides the section navigation on a narrow shell', () => {
+    expect(markup({ current: 'data' })).toMatch(
+      /<nav class="[^"]*\blayout-app-shell-wide-only\b[^"]*" aria-label="Settings"/u,
+    );
+  });
+
   it('keeps the library mark and the way back to the library', () => {
     const html = markup({ current: 'engine' });
 
