@@ -1,3 +1,5 @@
+import { mediaMatches } from '$lib/platform/dom/media-matches';
+
 type FileToSave = {
   readonly text: string;
   readonly name: string;
@@ -18,6 +20,7 @@ type FileSharing = {
 };
 
 type FileSaving = {
+  readonly touchDevice: boolean;
   readonly sharing: FileSharing | null;
   readonly download: (file: File) => void;
 };
@@ -33,6 +36,8 @@ const REFUSALS: Readonly<Record<string, ShareRefusal>> = {
 
 const REVOKE_AFTER_MS = 40_000;
 
+const TOUCH_POINTER_QUERY = '(any-pointer: coarse)';
+
 function shareRefusal(error: unknown): ShareRefusal | null {
   if (!(error instanceof DOMException)) return null;
   return REFUSALS[error.name] ?? null;
@@ -42,7 +47,7 @@ async function saveFile(saving: FileSaving, toSave: FileToSave): Promise<SaveFil
   const file = new File([toSave.text], toSave.name, { type: toSave.type });
   const data: ShareData = { files: [file] };
   const sharing = saving.sharing;
-  if (sharing === null || !sharing.canShare(data)) {
+  if (sharing === null || !saving.touchDevice || !sharing.canShare(data)) {
     saving.download(file);
     return DOWNLOADED;
   }
@@ -82,7 +87,11 @@ function browserDownload(file: File): void {
 }
 
 function browserFileSaving(): FileSaving {
-  return { sharing: browserSharing(), download: browserDownload };
+  return {
+    touchDevice: mediaMatches(TOUCH_POINTER_QUERY),
+    sharing: browserSharing(),
+    download: browserDownload,
+  };
 }
 
 export { browserFileSaving, saveFile, shareRefusal };
