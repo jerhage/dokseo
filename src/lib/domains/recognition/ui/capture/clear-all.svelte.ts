@@ -1,3 +1,5 @@
+import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
+import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
@@ -22,13 +24,20 @@ type Emptied = {
 };
 
 class ClearAll {
+  readonly capturesExport: BookCapturesExport;
   #notify: Notify;
   #list: CaptureList;
   #cache: CaptureCache;
   #confirming = $state(false);
   #clearing: WriteQuery<ClearCapturesResult, BookId>;
 
-  constructor(recognition: CaptureWrites, notify: Notify, list: CaptureList, cache: CaptureCache) {
+  constructor(
+    recognition: CaptureWrites & BookCapturesExporting,
+    notify: Notify,
+    list: CaptureList,
+    cache: CaptureCache,
+  ) {
+    this.capturesExport = new BookCapturesExport(recognition);
     this.#notify = notify;
     this.#list = list;
     this.#cache = cache;
@@ -62,6 +71,8 @@ class ClearAll {
   ask(): void {
     if (this.#list.count === 0) return;
     this.#confirming = true;
+    const book = this.#list.book;
+    if (book !== null) void this.capturesExport.prepare(book);
   }
 
   dismiss(): void {

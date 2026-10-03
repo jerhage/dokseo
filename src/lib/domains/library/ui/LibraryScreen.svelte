@@ -311,6 +311,7 @@
   <RemoveBook
     book={removeBook}
     removing={view.changes.removing === removeBook.id}
+    exporting={view.exporting}
     onremove={(removal) => void remove(removeBook.id, removal)}
     onclose={() => (removeFor = null)}
   />
@@ -320,6 +321,7 @@
   <DeleteRemovedCaptures
     book={deleteCaptures}
     deleting={view.removed.deleting === deleteCaptures.id}
+    exporting={view.exporting}
     ondelete={() => void deleteRemovedCaptures(deleteCaptures.id)}
     onclose={() => (deleteCapturesFor = null)}
   />

@@ -17,6 +17,7 @@
   import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
   import Trash from '$lib/components/icons/Trash.svelte';
   import type { TextAnchor } from '$lib/shared/anchor';
+  import BookCapturesExportButton from '$lib/shared/BookCapturesExportButton.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
@@ -249,6 +250,7 @@
   onclose={() => view.clearAll.dismiss()}
 >
   <p class="m-0">{panel.warning}</p>
+  <BookCapturesExportButton view={view.clearAll.capturesExport} />
   {#snippet footer(close)}
     <Button variant="ghost" onclick={close}>Keep them</Button>
     <Button variant="danger" onclick={() => void view.clearAll.clear()}>

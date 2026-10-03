@@ -2,6 +2,9 @@
   import Button from '$lib/components/Button.svelte';
   import Checkbox from '$lib/components/Checkbox.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
+  import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
+  import BookCapturesExportButton from '$lib/shared/BookCapturesExportButton.svelte';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
   import {
@@ -15,14 +18,23 @@
   type Props = {
     readonly book: Book;
     readonly removing: boolean;
+    readonly exporting: BookCapturesExporting;
     readonly onremove: (removal: BookRemoval) => void;
     readonly onclose: () => void;
   };
 
-  let { book, removing, onremove, onclose }: Props = $props();
+  let { book, removing, exporting, onremove, onclose }: Props = $props();
 
   let open = $state(true);
   let removal = $state<BookRemoval>(DEFAULT_REMOVAL);
+  const capturesExport = new BookCapturesExport({
+    exportBookCaptures: (id) => exporting.exportBookCaptures(id),
+  });
+
+  function chooseRemoval(next: boolean): void {
+    removal = removalChosen(next);
+    if (removal === 'delete-captures') void capturesExport.ensurePrepared(book.id);
+  }
 
   function requestOpen(next: boolean): void {
     if (removing) return;
@@ -36,12 +48,13 @@
     {removalNote(removal)}
   </p>
 
-  <Checkbox
-    bind:checked={() => removal === 'delete-captures', (next) => (removal = removalChosen(next))}
-    disabled={removing}
-  >
+  <Checkbox bind:checked={() => removal === 'delete-captures', chooseRemoval} disabled={removing}>
     {DELETE_CAPTURES_CHOICE}
   </Checkbox>
+
+  {#if removal === 'delete-captures'}
+    <BookCapturesExportButton view={capturesExport} />
+  {/if}
 
   {#snippet footer(close)}
     <Button disabled={removing} onclick={close}>Cancel</Button>
