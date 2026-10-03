@@ -21,7 +21,7 @@
     <ListGroup variant="inset">
       {#each sections as section (section.id)}
         <li>
-          <NavLink href={section.pageHref} class="py-2">
+          <NavLink href={section.pageHref} strong class="py-2">
             {#snippet icon()}
               <Avatar shape="square" size="sm"><section.icon class="avatar-icon" /></Avatar>
             {/snippet}

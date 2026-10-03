@@ -24,6 +24,9 @@
     color var(--transition-hover-text),
     box-shadow var(--transition-sweep);
 }
+.nav-link-strong {
+  color: var(--color-text);
+}
 .nav-link:hover {
   color: var(--color-hover-text, var(--color-text));
   background-size: 100% 100%;

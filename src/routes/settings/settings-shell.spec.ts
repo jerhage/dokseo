@@ -54,6 +54,7 @@ describe('SettingsShell', () => {
     const html = markup({ current: null });
 
     expect(html).toContain('<span aria-current="page">Settings</span>');
+    expect(html).not.toContain('<a href="/settings">Settings</a>');
     expect(navCurrent(html)).toEqual([]);
   });
 
@@ -93,7 +94,7 @@ describe('SettingsShell', () => {
     expect(details).toEqual([
       'Where recognition runs',
       'What this device keeps',
-      'Export your captures',
+      'Export and import captures',
       'Theme and color scheme',
       'How a file finds its book',
       'Version and updates',

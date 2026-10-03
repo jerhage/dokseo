@@ -39,7 +39,7 @@ function settingsSections(root: string): readonly SectionLink[] {
     {
       id: 'data',
       name: 'Your data',
-      summary: 'Export your captures',
+      summary: 'Export and import captures',
       icon: Database,
       href: `${root}/data`,
       pageHref: `${root}/data`,

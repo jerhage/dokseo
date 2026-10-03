@@ -5,6 +5,7 @@
   type Props = HTMLAnchorAttributes & {
     href: string;
     current?: boolean;
+    strong?: boolean;
     icon?: Snippet;
     ref?: HTMLAnchorElement | null | undefined;
   };
@@ -12,6 +13,7 @@
   let {
     href,
     current = false,
+    strong = false,
     icon,
     ref = $bindable(),
     class: className,
@@ -25,7 +27,7 @@
   bind:this={ref}
   {href}
   aria-current={current ? 'page' : undefined}
-  class={['nav-link', { 'is-active': current }, className]}
+  class={['nav-link', { 'nav-link-strong': strong, 'is-active': current }, className]}
 >
   {#if icon}
     <span aria-hidden="true">{@render icon()}</span>
