@@ -8,7 +8,7 @@ type LibrarySection = {
 const LIBRARY_SECTIONS: readonly LibrarySection[] = [
   { href: '/', name: 'Library', current: true },
   { href: '/tags', name: 'Tags', title: 'Tags across your documents', current: false },
-  { href: '/settings', name: 'Settings', title: 'OCR engine settings', current: false },
+  { href: '/settings', name: 'Settings', title: 'Settings', current: false },
 ];
 
 export { LIBRARY_SECTIONS };

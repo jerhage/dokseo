@@ -84,9 +84,7 @@
         tooltip={false}
         onclick={showList}
       />
-      <Button href="/settings" variant="ghost" size="sm" title="OCR engine settings"
-        >Settings</Button
-      >
+      <Button href="/settings" variant="ghost" size="sm" title="Settings">Settings</Button>
     </div>
   </header>
 
