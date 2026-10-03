@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { QueryClient } from '@tanstack/svelte-query';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
+import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import type { BookId } from '$lib/shared/ids';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { CaptureWrites } from '../../queries/capture-queries';
 import { CaptureCache } from './capture-cache';
@@ -29,7 +31,7 @@ function written(id: string): PanelCapture {
   };
 }
 
-function opened(): { list: CaptureList; clearing: ClearAll } {
+function opened(asked: BookId[] = []): { list: CaptureList; clearing: ClearAll } {
   const list = new CaptureList(() => ({
     state: READ,
     captures: [],
@@ -39,7 +41,12 @@ function opened(): { list: CaptureList; clearing: ClearAll } {
   }));
   list.open(ONE);
   const clearing = new ClearAll(
-    {} as CaptureWrites,
+    {
+      exportBookCaptures: (id: BookId) => {
+        asked.push(id);
+        return Promise.resolve({ kind: 'nothing-to-export' });
+      },
+    } as CaptureWrites & BookCapturesExporting,
     () => undefined,
     list,
     new CaptureCache({} as QueryClient),
@@ -68,6 +75,26 @@ describe('ClearAll', () => {
     clearing.dismiss();
 
     expect(clearing.confirming).toBe(false);
+  });
+
+  it('prepares the export of the open book when it asks for a confirmation', () => {
+    const asked: BookId[] = [];
+    const { list, clearing } = opened(asked);
+    list.unsaved.put(written('one'));
+
+    clearing.ask();
+
+    expect(asked).toEqual([ONE]);
+    expect(clearing.capturesExport.state).toEqual({ kind: 'preparing' });
+  });
+
+  it('prepares no export while the list holds no capture', () => {
+    const asked: BookId[] = [];
+    const { clearing } = opened(asked);
+
+    clearing.ask();
+
+    expect(asked).toEqual([]);
   });
 
   it('closes the confirmation as the clear starts', () => {
