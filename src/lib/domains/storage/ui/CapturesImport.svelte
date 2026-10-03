@@ -16,6 +16,7 @@
     previewRows,
     unreadableLines,
   } from './captures-import-text';
+  import ConflictReview from './ConflictReview.svelte';
 
   type Props = { readonly data: CapturesImporting };
 
@@ -122,6 +123,10 @@
           {/each}
         </div>
       </Fieldset>
+    {/if}
+
+    {#if planned.kind === 'reviewing'}
+      <ConflictReview {view} review={planned} />
     {/if}
 
     <div class="row wrap justify-end gap-2">
