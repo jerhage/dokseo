@@ -10,6 +10,8 @@ import { imagePlace } from '$lib/shared/reading-place';
 import { buildCapturesFile } from './build-captures-file';
 import type { CapturesFileContents } from './build-captures-file';
 import type { BooklessCapture } from './captures-file';
+import { readCapturesFile } from './read-captures-file';
+import type { ReadCapturesFileResult } from './read-captures-file';
 
 function shelfBook(id: string, title: string): Book {
   return {
@@ -100,6 +102,28 @@ const CONTENTS: CapturesFileContents = {
 
 const BUILT = buildCapturesFile(CONTENTS);
 
+type Edit = (file: Record<string, unknown>) => void;
+
+function edited(edit: Edit): string {
+  const file: Record<string, unknown> = JSON.parse(BUILT.json);
+  edit(file);
+  return JSON.stringify(file);
+}
+
+function entries(file: Record<string, unknown>, section: string): Record<string, unknown>[] {
+  return file[section] as Record<string, unknown>[];
+}
+
+function entry(file: Record<string, unknown>, section: string, index: number) {
+  return entries(file, section)[index] as Record<string, unknown>;
+}
+
+function read(text: string) {
+  const result = readCapturesFile(text);
+  if (result.kind !== 'read') throw new Error(`expected a read file, got ${result.kind}`);
+  return result;
+}
+
 function bookless(capture: Capture): BooklessCapture {
   const { bookId: _bookId, ...rest } = capture;
   return rest;
@@ -173,5 +197,160 @@ describe('buildCapturesFile', () => {
     });
 
     expect(shuffled.json).toBe(BUILT.json);
+  });
+});
+
+describe('readCapturesFile', () => {
+  it('gives back the books, tags and captures the builder wrote', () => {
+    const file = read(BUILT.json);
+
+    expect(file.books).toEqual(BUILT.file.books);
+    expect(file.tags).toEqual([GRAMMAR, KANJI]);
+    expect(file.captures.map(({ book, capture }) => [book.title, capture])).toEqual([
+      ['Aria 3', bookless(WRITTEN)],
+      ['Yotsuba&! 1', bookless(LIFTED)],
+      ['Yotsuba&! 1', bookless(RECOGNIZED)],
+    ]);
+    expect(file.unreadable).toEqual([]);
+    expect(file.droppedTags).toEqual([]);
+    expect([file.exportedAt, file.appVersion]).toEqual([1759449600000, '0.9.3']);
+  });
+
+  it('reads a removed book with its null fields', () => {
+    expect(read(BUILT.json).books[0]).toMatchObject({
+      layoutKind: null,
+      sourceKind: null,
+      imageCount: null,
+    });
+  });
+
+  it.each([
+    ['text that is not JSON', 'not json {'],
+    ['a JSON array', '[]'],
+    ['another format', edited((raw) => (raw.format = 'other-app'))],
+    ['a missing format', edited((raw) => delete raw.format)],
+    ['a version that is not a number', edited((raw) => (raw.version = '1'))],
+    ['an older version', edited((raw) => (raw.version = 0))],
+    ['a missing section', edited((raw) => delete raw.captures)],
+    ['a missing app version', edited((raw) => delete raw.appVersion)],
+  ])('reports %s as not an export', (_, text) => {
+    expect(readCapturesFile(text)).toEqual<ReadCapturesFileResult>({ kind: 'not-an-export' });
+  });
+
+  it('reports a newer version with its number', () => {
+    const text = edited((raw) => (raw.version = 2));
+
+    expect(readCapturesFile(text)).toEqual<ReadCapturesFileResult>({
+      kind: 'newer-version',
+      version: 2,
+    });
+  });
+
+  it('rejects an unknown capture origin that the stored mapper would read as recognized', () => {
+    const file = read(edited((raw) => (entry(raw, 'captures', 0).origin = 'dreamed')));
+
+    expect(file.unreadable).toEqual([
+      {
+        section: 'captures',
+        index: 0,
+        reason: { kind: 'invalid', detail: 'A stored capture holds an unknown origin: dreamed' },
+      },
+    ]);
+    expect(file.captures.map(({ capture }) => capture.id)).toEqual([LIFTED.id, RECOGNIZED.id]);
+  });
+
+  it('rejects an unknown tag colour that the stored mapper would read as the first colour', () => {
+    const file = read(edited((raw) => (entry(raw, 'tags', 1).colour = 'gold')));
+
+    expect(file.unreadable).toEqual([
+      {
+        section: 'tags',
+        index: 1,
+        reason: { kind: 'invalid', detail: 'A stored tag holds an unknown colour: gold' },
+      },
+    ]);
+    expect(file.tags).toEqual([GRAMMAR]);
+  });
+
+  it('rejects a capture that lacks a field, and reads the rest', () => {
+    const file = read(edited((raw) => delete entry(raw, 'captures', 1).text));
+
+    expect(file.unreadable).toEqual([
+      {
+        section: 'captures',
+        index: 1,
+        reason: { kind: 'invalid', detail: 'A stored capture lacks its text' },
+      },
+    ]);
+    expect(file.captures).toHaveLength(2);
+  });
+
+  it('rejects a book with a bad field, and with it every capture of that book', () => {
+    const file = read(edited((raw) => (entry(raw, 'books', 1).language = 'xx')));
+
+    expect(file.books.map((book) => book.key)).toEqual(['book-1']);
+    expect(file.unreadable).toEqual([
+      {
+        section: 'books',
+        index: 1,
+        reason: { kind: 'invalid', detail: 'A stored book holds an unknown language: xx' },
+      },
+      { section: 'captures', index: 1, reason: { kind: 'unknown-book', bookKey: 'book-2' } },
+      { section: 'captures', index: 2, reason: { kind: 'unknown-book', bookKey: 'book-2' } },
+    ]);
+    expect(file.captures.map(({ capture }) => capture.id)).toEqual([WRITTEN.id]);
+  });
+
+  it('rejects a capture whose book key names no book', () => {
+    const file = read(edited((raw) => (entry(raw, 'captures', 0).bookKey = 'book-9')));
+
+    expect(file.unreadable).toEqual([
+      { section: 'captures', index: 0, reason: { kind: 'unknown-book', bookKey: 'book-9' } },
+    ]);
+  });
+
+  it('drops a tag id the file does not hold, keeps the other tags, and reports the loss', () => {
+    const file = read(edited((raw) => entries(raw, 'tags').pop()));
+
+    expect(file.captures.map(({ capture }) => [capture.id, capture.tagIds])).toEqual([
+      [WRITTEN.id, []],
+      [LIFTED.id, []],
+      [RECOGNIZED.id, [GRAMMAR.id]],
+    ]);
+    expect(file.droppedTags).toEqual([
+      { captureId: WRITTEN.id, tagId: KANJI.id },
+      { captureId: RECOGNIZED.id, tagId: KANJI.id },
+    ]);
+    expect(file.unreadable).toEqual([]);
+  });
+
+  it('rejects a repeated book key, tag id and capture id after the first', () => {
+    const file = read(
+      edited((raw) => {
+        for (const section of ['books', 'tags', 'captures']) {
+          const list = entries(raw, section);
+          list.push(entry(raw, section, 0));
+        }
+      }),
+    );
+
+    expect(file.unreadable).toEqual([
+      { section: 'books', index: 2, reason: { kind: 'repeated', id: 'book-1' } },
+      { section: 'tags', index: 2, reason: { kind: 'repeated', id: GRAMMAR.id } },
+      { section: 'captures', index: 3, reason: { kind: 'repeated', id: WRITTEN.id } },
+    ]);
+    expect([file.books.length, file.tags.length, file.captures.length]).toEqual([2, 2, 3]);
+  });
+
+  it('rejects an entry that is not an object', () => {
+    const file = read(edited((raw) => (entries(raw, 'tags')[0] = 'kanji' as never)));
+
+    expect(file.unreadable).toEqual([
+      {
+        section: 'tags',
+        index: 0,
+        reason: { kind: 'invalid', detail: 'A stored tag holds an unknown entry: kanji' },
+      },
+    ]);
   });
 });
