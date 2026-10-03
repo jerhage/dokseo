@@ -142,6 +142,8 @@ function fakes(): Fakes {
     storage: {
       readStorageAccount: unused,
       exportCaptures: unused,
+      previewCapturesImport: unused,
+      applyCapturesImport: unused,
     },
   };
 

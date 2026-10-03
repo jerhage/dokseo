@@ -212,6 +212,8 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     storage: {
       readStorageAccount: unused,
       exportCaptures: unused,
+      previewCapturesImport: unused,
+      applyCapturesImport: unused,
     },
   };
 
