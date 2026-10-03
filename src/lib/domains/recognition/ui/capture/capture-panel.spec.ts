@@ -184,6 +184,7 @@ function containerOf(store: Store): Container {
     },
     storage: {
       readStorageAccount: unused,
+      exportCaptures: unused,
     },
   };
 }

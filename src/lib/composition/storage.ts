@@ -1,12 +1,16 @@
 import { isPersisted, storageEstimate } from '$lib/platform/storage/persistence';
+import { APP_VERSION } from '$lib/shared/app-version';
 import type { BookId } from '$lib/shared/ids';
 import type { LibraryRepository } from '../domains/library/domain/book/library-repository';
 import type { RemovedShelf } from '../domains/library/domain/book/removed-book';
 import { listRemovedShelf } from '../domains/library/use-cases/list-removed-shelf';
+import { createTagRepository } from '../domains/recognition/adapters/tag/indexeddb-tags.repo';
 import type { CaptureRepository } from '../domains/recognition/domain/capture/capture-repository';
 import { createOriginStores } from '../domains/storage/adapters/browser-origin-stores';
 import { deleteRemovedBookCaptures } from '../domains/storage/use-cases/delete-removed-book-captures';
 import type { DeleteRemovedBookCapturesResult } from '../domains/storage/use-cases/delete-removed-book-captures';
+import { exportCaptures } from '../domains/storage/use-cases/export-captures';
+import type { ExportCapturesResult } from '../domains/storage/use-cases/export-captures';
 import { mergeIntoBook } from '../domains/storage/use-cases/merge-into-book';
 import type { MergeIntoBookResult } from '../domains/storage/use-cases/merge-into-book';
 import { removeBookAndCaptures } from '../domains/storage/use-cases/remove-book-and-captures';
@@ -16,6 +20,10 @@ import type { ReadStorageAccountResult } from '../domains/storage/use-cases/read
 
 type StorageUseCases = {
   readonly readStorageAccount: () => Promise<ReadStorageAccountResult>;
+};
+
+type CapturesExports = {
+  readonly exportCaptures: () => Promise<ExportCapturesResult>;
 };
 
 type RemovedBooks = {
@@ -31,6 +39,25 @@ function buildStorage(): StorageUseCases {
   return {
     readStorageAccount: () =>
       readStorageAccount({ stores, estimate: storageEstimate, persisted: isPersisted }),
+  };
+}
+
+function buildCapturesExports(
+  repository: LibraryRepository,
+  captures: CaptureRepository,
+): CapturesExports {
+  const tags = createTagRepository();
+
+  return {
+    exportCaptures: () =>
+      exportCaptures({
+        shelf: { repository },
+        removed: { repository },
+        tags: { tags },
+        captures: { captures },
+        now: Date.now,
+        appVersion: APP_VERSION,
+      }),
   };
 }
 
@@ -56,5 +83,5 @@ function buildRemovedBooks(
   };
 }
 
-export { buildStorage, buildRemovedBooks };
-export type { StorageUseCases, RemovedBooks };
+export { buildStorage, buildCapturesExports, buildRemovedBooks };
+export type { StorageUseCases, CapturesExports, RemovedBooks };
