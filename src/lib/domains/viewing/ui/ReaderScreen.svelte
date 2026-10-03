@@ -14,7 +14,7 @@
   import Pencil from '$lib/components/icons/Pencil.svelte';
   import SearchIcon from '$lib/components/icons/Search.svelte';
   import SquareDashedMousePointer from '$lib/components/icons/SquareDashedMousePointer.svelte';
-  import { anyPointer } from '$lib/platform/dom/any-pointer';
+  import { mediaMatches } from '$lib/platform/dom/media-matches';
   import { lockScrolling } from '$lib/platform/dom/scroll-lock';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { Arrangement } from '$lib/shared/arrangement';
@@ -110,7 +110,7 @@
   const touchGuide = $derived(paged?.offersGuide() ?? strip?.offersGuide() ?? false);
 
   function presentTurnSettings(): ShownTurnSettings {
-    return shownTurnSettings(anyPointer('coarse'), anyPointer('fine'));
+    return shownTurnSettings(mediaMatches);
   }
 
   function openSettings(): void {

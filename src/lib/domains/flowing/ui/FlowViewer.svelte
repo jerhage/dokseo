@@ -3,7 +3,7 @@
   import type { Component, Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
-  import { anyPointer } from '$lib/platform/dom/any-pointer';
+  import { mediaMatches } from '$lib/platform/dom/media-matches';
   import { relayKeydownsTo } from '$lib/platform/dom/key-relay';
   import Alert from '$lib/components/Alert.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -148,7 +148,7 @@
   const guideLesson = $derived(flowSwipeLesson(view.navigation.paging));
 
   function presentTurnSettings(): ShownTurnSettings {
-    return shownTurnSettings(anyPointer('coarse'), anyPointer('fine'));
+    return shownTurnSettings(mediaMatches);
   }
 
   function openSettings(): void {
