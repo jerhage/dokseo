@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.5](https://github.com/jerhage/dokseo/compare/v0.9.4...v0.9.5) (2026-10-03)
+
+
+### Features
+
+* **settings:** list the sections on a phone and open each one full width ([7134ccb](https://github.com/jerhage/dokseo/commit/7134ccbf108c8ce4b13988062c6412e23c84d7c8))
+* **settings:** name each section of the phone list in the full text colour and say Your data imports too ([96c7c72](https://github.com/jerhage/dokseo/commit/96c7c72ecf8878a57498ea7264797a9dacd93255))
+
+
+### Fixes
+
+* **library:** title the Settings links to /settings Settings ([236468e](https://github.com/jerhage/dokseo/commit/236468e1553024ff2902f9f7de1117993806c2b2))
+* **settings:** send the engine settings links to /settings/engine ([42390d6](https://github.com/jerhage/dokseo/commit/42390d6ce794f48e974c917cabf3f59339b4f91e))
+
 ## [0.9.4](https://github.com/jerhage/dokseo/compare/v0.9.3...v0.9.4) (2026-10-03)
 
 
