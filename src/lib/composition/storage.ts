@@ -15,6 +15,8 @@ import type {
 import type { CapturesImportPlan } from '../domains/storage/use-cases/captures-import-plan';
 import { deleteRemovedBookCaptures } from '../domains/storage/use-cases/delete-removed-book-captures';
 import type { DeleteRemovedBookCapturesResult } from '../domains/storage/use-cases/delete-removed-book-captures';
+import { exportBookCaptures } from '../domains/storage/use-cases/export-book-captures';
+import type { ExportBookCapturesResult } from '../domains/storage/use-cases/export-book-captures';
 import { exportCaptures } from '../domains/storage/use-cases/export-captures';
 import type { ExportCapturesResult } from '../domains/storage/use-cases/export-captures';
 import { mergeIntoBook } from '../domains/storage/use-cases/merge-into-book';
@@ -32,6 +34,10 @@ type StorageUseCases = {
 
 type CapturesExports = {
   readonly exportCaptures: () => Promise<ExportCapturesResult>;
+};
+
+type BookCapturesExports = {
+  readonly exportBookCaptures: (id: BookId) => Promise<ExportBookCapturesResult>;
 };
 
 type CapturesImports = {
@@ -74,6 +80,28 @@ function buildCapturesExports(
         now: Date.now,
         appVersion: APP_VERSION,
       }),
+  };
+}
+
+function buildBookCapturesExports(
+  repository: LibraryRepository,
+  captures: CaptureRepository,
+): BookCapturesExports {
+  const tags = createTagRepository();
+
+  return {
+    exportBookCaptures: (id: BookId) =>
+      exportBookCaptures(
+        {
+          shelf: { repository },
+          removed: { repository },
+          tags: { tags },
+          captures: { captures },
+          now: Date.now,
+          appVersion: APP_VERSION,
+        },
+        id,
+      ),
   };
 }
 
@@ -132,5 +160,17 @@ function buildRemovedBooks(
   };
 }
 
-export { buildStorage, buildCapturesExports, buildCapturesImports, buildRemovedBooks };
-export type { StorageUseCases, CapturesExports, CapturesImports, RemovedBooks };
+export {
+  buildStorage,
+  buildBookCapturesExports,
+  buildCapturesExports,
+  buildCapturesImports,
+  buildRemovedBooks,
+};
+export type {
+  StorageUseCases,
+  BookCapturesExports,
+  CapturesExports,
+  CapturesImports,
+  RemovedBooks,
+};

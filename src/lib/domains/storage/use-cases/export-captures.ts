@@ -48,10 +48,13 @@ function twoDigits(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-function capturesFileName(exportedAt: number): string {
+function exportDate(exportedAt: number): string {
   const day = new Date(exportedAt);
-  const date = `${day.getFullYear()}-${twoDigits(day.getMonth() + 1)}-${twoDigits(day.getDate())}`;
-  return `dokseo-captures-${date}.json`;
+  return `${day.getFullYear()}-${twoDigits(day.getMonth() + 1)}-${twoDigits(day.getDate())}`;
+}
+
+function capturesFileName(exportedAt: number): string {
+  return `dokseo-captures-${exportDate(exportedAt)}.json`;
 }
 
 async function exportCaptures(deps: ExportCapturesDeps): Promise<ExportCapturesResult> {
@@ -96,5 +99,5 @@ async function exportCaptures(deps: ExportCapturesDeps): Promise<ExportCapturesR
   };
 }
 
-export { CAPTURES_FILE_TYPE, capturesFileName, exportCaptures };
+export { CAPTURES_FILE_TYPE, capturesFileName, exportCaptures, exportDate };
 export type { CapturesExport, ExportCapturesDeps, ExportCapturesResult, UnreadableRows };

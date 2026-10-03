@@ -147,6 +147,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       deleteRemovedBookCaptures: unused,
       removeBookAndCaptures: unused,
       mergeIntoBook: unused,
+      exportBookCaptures: unused,
       editBook: unused,
       saveReadingPlace: unused,
       markFinished: unused,
@@ -200,6 +201,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       },
       pauseModelLoad: unused,
       cancelModelLoad: unused,
+      exportBookCaptures: () => Promise.resolve({ kind: 'nothing-to-export' }),
       closeRecognizer: (language: Language) => {
         engine.closes.push(language);
         return Promise.resolve();

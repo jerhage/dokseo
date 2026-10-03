@@ -12,12 +12,14 @@ import type {
   RecognitionSessionReport,
 } from './composition/recognizers';
 import {
+  buildBookCapturesExports,
   buildCapturesExports,
   buildCapturesImports,
   buildRemovedBooks,
   buildStorage,
 } from './composition/storage';
 import type {
+  BookCapturesExports,
   CapturesExports,
   CapturesImports,
   RemovedBooks,
@@ -28,9 +30,9 @@ import { createCaptureRepository } from './domains/recognition/adapters/capture/
 
 type Container = {
   readonly beginTrace: TraceFactory;
-  readonly library: LibraryUseCases & RemovedBooks;
+  readonly library: LibraryUseCases & RemovedBooks & BookCapturesExports;
   readonly flowing: FlowingUseCases;
-  readonly recognition: RecognitionUseCases;
+  readonly recognition: RecognitionUseCases & BookCapturesExports;
   readonly storage: StorageUseCases & CapturesExports & CapturesImports;
 };
 
@@ -38,15 +40,17 @@ function buildContainer(): Container {
   const repository = createLibraryRepository();
   const captures = createCaptureRepository();
   const removedBooks = buildRemovedBooks(repository, captures);
+  const bookExports = buildBookCapturesExports(repository, captures);
 
   return {
     beginTrace,
     library: {
       ...buildLibrary(repository, removedBooks.mergeIntoBook),
       ...removedBooks,
+      ...bookExports,
     },
     flowing: buildFlowing(),
-    recognition: buildRecognition(captures),
+    recognition: { ...buildRecognition(captures), ...bookExports },
     storage: {
       ...buildStorage(),
       ...buildCapturesExports(repository, captures),

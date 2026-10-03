@@ -237,6 +237,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       deleteRemovedBookCaptures: () => Promise.reject(new Error('not used')),
       removeBookAndCaptures: () => Promise.reject(new Error('not used')),
       mergeIntoBook: () => Promise.reject(new Error('not used')),
+      exportBookCaptures: () => Promise.reject(new Error('not used')),
       editBook: async (id, edit) => {
         if (edit.position !== undefined) throw new Error('a place is saved with saveReadingPlace');
         edits.push({
@@ -311,6 +312,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       prepareRecognizer: () => Promise.reject(new Error('not used')),
       pauseModelLoad: () => Promise.reject(new Error('not used')),
       cancelModelLoad: () => Promise.reject(new Error('not used')),
+      exportBookCaptures: () => Promise.resolve({ kind: 'nothing-to-export' }),
       closeRecognizer: () => Promise.reject(new Error('not used')),
     },
     flowing: {
