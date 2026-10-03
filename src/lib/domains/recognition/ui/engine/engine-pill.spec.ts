@@ -71,6 +71,10 @@ describe('EnginePill', () => {
     expect(labels.every((label) => label.includes('class="radio-wrapper radio-tile"'))).toBe(true);
   });
 
+  it('links to the engine settings page, which a phone opens in place of the section list', () => {
+    expect(markup(IDLE, 'ja')).toContain('<a href="/settings/engine">Engine settings…</a>');
+  });
+
   it('warns when the open session cannot read the book language', () => {
     expect(text(markup(RUNNING, 'ko'))).toContain('does not read Korean');
     expect(text(markup(RUNNING, 'ja'))).not.toContain('does not read');

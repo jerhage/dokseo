@@ -9,7 +9,7 @@
 
   type Props = { readonly storage: StorageReads; readonly engineHref?: string };
 
-  let { storage, engineHref = '/settings' }: Props = $props();
+  let { storage, engineHref = '/settings/engine' }: Props = $props();
 </script>
 
 <div class="col gap-6 prose">

@@ -78,7 +78,7 @@
         <p class={aside}>{fellBack}</p>
       {/if}
       <p class={[aside, 'text-muted']}>{status.note}</p>
-      <p class="text-sm px-2 pt-2 pb-1"><a href="/settings">Engine settings…</a></p>
+      <p class="text-sm px-2 pt-2 pb-1"><a href="/settings/engine">Engine settings…</a></p>
     </Popover>
   </div>
 {/if}
