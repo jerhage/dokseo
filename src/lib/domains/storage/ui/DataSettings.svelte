@@ -26,8 +26,8 @@
   <header class="col gap-1">
     <h1 class="text-lg">Your data</h1>
     <p class="text-sm text-muted">
-      Save your captures to a file, to keep a copy or to move them to another device. Book files are
-      not included.
+      Save your captures to a file, or load them from one, to keep a copy or move them between
+      devices. Book files are not included.
     </p>
   </header>
 
