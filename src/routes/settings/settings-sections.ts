@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import Database from '$lib/components/icons/Database.svelte';
 import File from '$lib/components/icons/File.svelte';
 import HardDrive from '$lib/components/icons/HardDrive.svelte';
 import type { IconProps } from '$lib/components/icons/icon';
@@ -6,7 +7,7 @@ import Info from '$lib/components/icons/Info.svelte';
 import Palette from '$lib/components/icons/Palette.svelte';
 import ScanText from '$lib/components/icons/ScanText.svelte';
 
-type SettingsSection = 'engine' | 'storage' | 'appearance' | 'library' | 'app';
+type SettingsSection = 'engine' | 'storage' | 'data' | 'appearance' | 'library' | 'app';
 
 type SectionLink = {
   readonly id: SettingsSection;
@@ -31,6 +32,13 @@ function settingsSections(root: string): readonly SectionLink[] {
       summary: 'What this device keeps',
       icon: HardDrive,
       href: `${root}/storage`,
+    },
+    {
+      id: 'data',
+      name: 'Your data',
+      summary: 'Export your captures',
+      icon: Database,
+      href: `${root}/data`,
     },
     {
       id: 'appearance',

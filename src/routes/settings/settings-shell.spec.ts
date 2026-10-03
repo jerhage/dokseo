@@ -27,6 +27,7 @@ describe('SettingsShell', () => {
   it('marks only the current section as the current page', () => {
     expect(navCurrent(markup({ current: 'storage' }))).toEqual(['/settings/storage']);
     expect(navCurrent(markup({ current: 'engine' }))).toEqual(['/settings']);
+    expect(navCurrent(markup({ current: 'data' }))).toEqual(['/settings/data']);
     expect(navCurrent(markup({ current: 'appearance' }))).toEqual(['/settings/appearance']);
     expect(navCurrent(markup({ current: 'library' }))).toEqual(['/settings/library']);
     expect(navCurrent(markup({ current: 'app' }))).toEqual(['/settings/app']);
@@ -37,6 +38,7 @@ describe('SettingsShell', () => {
 
     expect(html).toContain('href="/elsewhere/settings"');
     expect(html).toContain('href="/elsewhere/settings/storage"');
+    expect(html).toContain('href="/elsewhere/settings/data"');
     expect(html).toContain('href="/elsewhere/settings/appearance"');
     expect(html).toContain('href="/elsewhere/settings/library"');
     expect(html).toContain('href="/elsewhere/settings/app"');
@@ -78,6 +80,7 @@ describe('SettingsShell', () => {
     expect(details).toEqual([
       'Where recognition runs',
       'What this device keeps',
+      'Export your captures',
       'Theme and color scheme',
       'How a file finds its book',
       'Version and updates',
