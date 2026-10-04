@@ -427,4 +427,11 @@ describe('planCapturesImport', () => {
 
     expect(plan.summary).toMatchObject({ unreadable: 1, droppedTags: 1 });
   });
+
+  it('counts the unreadable rows the file keeps and plans no write for them', () => {
+    const plan = planCapturesImport(read([], { storedUnreadable: 3 }), holdings(), minting());
+
+    expect(plan.summary.storedUnreadable).toBe(3);
+    expect([plan.books, plan.records, plan.tags, plan.captures]).toEqual([[], [], [], []]);
+  });
 });

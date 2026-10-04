@@ -81,6 +81,11 @@ function previewRows(summary: CapturesImportSummary): readonly PreviewRow[] {
     },
     { count: summary.newTags, title: 'New tags' },
     { count: summary.unreadable, title: 'Could not be read' },
+    {
+      count: summary.storedUnreadable,
+      title: 'Unreadable rows kept in the file',
+      description: 'Not imported. The file keeps them as they were stored.',
+    },
   ];
   return rows
     .filter((row) => row.count > 0)
