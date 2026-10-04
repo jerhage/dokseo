@@ -40,6 +40,7 @@
   import LibrarySearch from './LibrarySearch.svelte';
   import RemoveBook from './RemoveBook.svelte';
   import RemovedBooks from './RemovedBooks.svelte';
+  import { removedEntryFor } from './removed-books';
   import type { BookRemoval } from './removed-books';
   import ShelfView from './ShelfView.svelte';
   import UnreadableBooks from './UnreadableBooks.svelte';
@@ -71,7 +72,9 @@
   );
   const removeBook = $derived(shelfRead.books.find((book) => book.id === removeFor) ?? null);
   const deleteCaptures = $derived(
-    shelfRead.removed.find((book) => book.id === deleteCapturesFor) ?? null,
+    deleteCapturesFor === null
+      ? null
+      : removedEntryFor(deleteCapturesFor, shelfRead.removed, shelfRead.unreadableRemoved),
   );
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
@@ -257,9 +260,10 @@
       {/snippet}
     </LibraryBooksData>
 
-    {#if shelfRead.removed.length > 0}
+    {#if shelfRead.removed.length > 0 || shelfRead.unreadableRemoved.length > 0}
       <RemovedBooks
         books={shelfRead.removed}
+        unreadable={shelfRead.unreadableRemoved}
         busy={view.removed.deleting !== null}
         ondelete={(id) => (deleteCapturesFor = id)}
       />

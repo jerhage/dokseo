@@ -19,7 +19,11 @@ async function listRemovedShelf(deps: ListRemovedShelfDeps): Promise<RemovedShel
     ...shelf.unreadable.map((book) => book.id),
   ]);
 
-  return { kind: 'success', books: removed.removed.filter((book) => !held.has(book.id)) };
+  return {
+    kind: 'success',
+    books: removed.removed.filter((book) => !held.has(book.id)),
+    unreadable: removed.unreadable.filter((book) => !held.has(book.id)),
+  };
 }
 
 export { listRemovedShelf };

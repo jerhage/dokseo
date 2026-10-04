@@ -21,6 +21,7 @@
     shelfOf,
     shelfState,
     unreadableBooks,
+    unreadableRemovedEntries,
   } from './library-shelf';
   import type { ShelfRead } from './library-shelf';
 
@@ -60,6 +61,7 @@
   const counts = $derived(imageCountsOf(books));
   const unreadable = $derived(unreadableBooks(listing.state));
   const removed = $derived(removedEntries(removedRead.state));
+  const unreadableRemoved = $derived(unreadableRemovedEntries(removedRead.state));
 
   function reload(): void {
     if (!wanted) {
@@ -98,6 +100,9 @@
     },
     get removed() {
       return removed;
+    },
+    get unreadableRemoved() {
+      return unreadableRemoved;
     },
     reload,
   };

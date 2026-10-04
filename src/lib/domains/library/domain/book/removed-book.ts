@@ -7,6 +7,8 @@ import {
 } from '$lib/shared/corrupt-row';
 import { parsedBookId, seriesId } from '$lib/shared/ids';
 import type { BookId, SeriesId } from '$lib/shared/ids';
+import { isLanguage } from '$lib/shared/language';
+import type { Language } from '$lib/shared/language';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Book } from './book';
 import { bookFromStored } from './stored-book';
@@ -26,13 +28,22 @@ type RestoreCandidate = {
   readonly addedAt: number | null;
 };
 
+type UnreadableRemovedBook = RestoreCandidate & {
+  readonly language: Language | null;
+  readonly stored: StoredRemovedBook;
+};
+
 type StoredRemovedBooks = {
   readonly removed: readonly RemovedBook[];
   readonly unreadable: readonly StoredRemovedBook[];
 };
 
 type RemovedShelf =
-  | { readonly kind: 'success'; readonly books: readonly RemovedBook[] }
+  | {
+      readonly kind: 'success';
+      readonly books: readonly RemovedBook[];
+      readonly unreadable: readonly UnreadableRemovedBook[];
+    }
   | StorageUnavailable;
 
 type CapturesDeletion = { readonly kind: 'success' } | StorageUnavailable;
@@ -123,6 +134,17 @@ function restoreCandidatesFrom(rows: readonly RetiredRow[]): readonly RestoreCan
   });
 }
 
+function unreadableRemovedBooksFrom(
+  rows: readonly StoredRemovedBook[],
+): readonly UnreadableRemovedBook[] {
+  return rows.flatMap((stored) => {
+    const candidate = restoreCandidateFrom(stored);
+    if (candidate === null) return [];
+    const language = isLanguage(stored.language) ? stored.language : null;
+    return [{ ...candidate, language, stored }];
+  });
+}
+
 export {
   UNTITLED_BOOK,
   removedBookFromStored,
@@ -130,6 +152,7 @@ export {
   removedRecord,
   restoreCandidateFrom,
   restoreCandidatesFrom,
+  unreadableRemovedBooksFrom,
 };
 export type {
   CapturesDeletion,
@@ -140,4 +163,5 @@ export type {
   RetiredRow,
   StoredRemovedBook,
   StoredRemovedBooks,
+  UnreadableRemovedBook,
 };

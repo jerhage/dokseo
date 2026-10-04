@@ -1,9 +1,13 @@
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { LibraryRepository } from '../domain/book/library-repository';
-import type { RemovedBook } from '../domain/book/removed-book';
+import type { RemovedBook, UnreadableRemovedBook } from '../domain/book/removed-book';
 
 type ListRemovedBooksResult =
-  | { readonly kind: 'success'; readonly removed: readonly RemovedBook[] }
+  | {
+      readonly kind: 'success';
+      readonly removed: readonly RemovedBook[];
+      readonly unreadable: readonly UnreadableRemovedBook[];
+    }
   | StorageUnavailable;
 
 type ListRemovedBooksDeps = {

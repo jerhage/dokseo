@@ -3,8 +3,9 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { LOADING, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import type { RemovedBook } from '../domain/book/removed-book';
-import { removedEntries } from './library-shelf';
+import { unreadableRemovedBooksFrom } from '../domain/book/removed-book';
+import type { RemovedBook, RemovedShelf, StoredRemovedBook } from '../domain/book/removed-book';
+import { removedEntries, unreadableRemovedEntries } from './library-shelf';
 import {
   DEFAULT_REMOVAL,
   DELETE_CAPTURES_CHOICE,
@@ -12,9 +13,12 @@ import {
   REMOVAL_DELETES_CAPTURES,
   RESTORE_HINT,
   REMOVAL_KEEPS_CAPTURES,
+  UNREADABLE_REMOVED_HINT,
   removalChosen,
   removalNote,
   removedBookName,
+  removedEntryFor,
+  unreadableRemovedBookName,
 } from './removed-books';
 
 const REMOVED: RemovedBook = {
@@ -90,10 +94,89 @@ describe('DELETED_CAPTURES_FATE', () => {
   });
 });
 
+function unreadableRecord(row: StoredRemovedBook) {
+  const [record] = unreadableRemovedBooksFrom([row]);
+  if (record === undefined) throw new Error('no record');
+  return record;
+}
+
+const OLD = unreadableRecord({
+  id: 'old-1',
+  title: 'よつばと! 2',
+  language: 'ja',
+  contentHash: 'a'.repeat(64),
+  removedAt: 3,
+});
+
+const LISTED: RemovedShelf = { kind: 'success', books: [REMOVED], unreadable: [OLD] };
+
 describe('removedEntries', () => {
   it('lists the removed books of a read answer, and none while loading or blocked', () => {
-    expect(removedEntries(readReady({ kind: 'success', books: [REMOVED] }))).toEqual([REMOVED]);
+    const read = readReady(LISTED);
+
+    expect(removedEntries(read)).toEqual([REMOVED]);
     expect(removedEntries(LOADING)).toEqual([]);
     expect(removedEntries(readReady(STORAGE_UNAVAILABLE))).toEqual([]);
+  });
+});
+
+describe('unreadableRemovedEntries', () => {
+  it('lists the unreadable removed records of a read answer, and none while loading or blocked', () => {
+    const read = readReady(LISTED);
+
+    expect(unreadableRemovedEntries(read)).toEqual([OLD]);
+    expect(unreadableRemovedEntries(LOADING)).toEqual([]);
+    expect(unreadableRemovedEntries(readReady(STORAGE_UNAVAILABLE))).toEqual([]);
+  });
+});
+
+describe('unreadableRemovedBookName', () => {
+  it('names an unreadable removed record by its alias, then its title, then its file name', () => {
+    const named = { id: 'old-1', removedAt: 3 };
+
+    expect(
+      unreadableRemovedBookName(unreadableRecord({ ...named, alias: 'Mine', title: 'T' })),
+    ).toBe('Mine');
+    expect(
+      unreadableRemovedBookName(unreadableRecord({ ...named, title: ' T ', fileName: 'f.cbz' })),
+    ).toBe('T');
+    expect(
+      unreadableRemovedBookName(unreadableRecord({ ...named, title: 7, fileName: 'f.cbz' })),
+    ).toBe('f.cbz');
+    expect(unreadableRemovedBookName(unreadableRecord(named))).toBe('Untitled book');
+  });
+});
+
+describe('UNREADABLE_REMOVED_HINT', () => {
+  it('says the record could not be read and how to restore it', () => {
+    expect(UNREADABLE_REMOVED_HINT).toBe(
+      'Could not be read. Upload the same file again to restore it with its captures',
+    );
+  });
+});
+
+describe('removedEntryFor', () => {
+  it('finds a removed book or an unreadable removed record by id, with its name and language', () => {
+    expect(removedEntryFor(REMOVED.id, [REMOVED], [OLD])).toEqual({
+      id: 'gone-1',
+      name: 'よつばと! 1',
+      language: 'ja',
+    });
+    expect(removedEntryFor(OLD.id, [REMOVED], [OLD])).toEqual({
+      id: 'old-1',
+      name: 'よつばと! 2',
+      language: 'ja',
+    });
+    expect(removedEntryFor(bookId('nowhere'), [REMOVED], [OLD])).toBeNull();
+  });
+
+  it('gives no language for an unreadable removed record whose language does not read', () => {
+    const record = unreadableRecord({ id: 'old-2', title: 'Old', language: 'xx' });
+
+    expect(removedEntryFor(record.id, [], [record])).toEqual({
+      id: 'old-2',
+      name: 'Old',
+      language: null,
+    });
   });
 });

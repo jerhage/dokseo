@@ -5,7 +5,8 @@ import type {
   LibraryRepository,
   RemovedListing,
 } from '../domain/book/library-repository';
-import type { RemovedBook } from '../domain/book/removed-book';
+import { unreadableRemovedBooksFrom } from '../domain/book/removed-book';
+import type { RemovedBook, UnreadableRemovedBook } from '../domain/book/removed-book';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -39,6 +40,14 @@ function removedBook(id: string): RemovedBook {
   };
 }
 
+function unreadableRecord(id: string): UnreadableRemovedBook {
+  const [record] = unreadableRemovedBooksFrom([
+    { id, title: `Old ${id}`, contentHash: 'a'.repeat(64), removedAt: 3 },
+  ]);
+  if (record === undefined) throw new Error('no record');
+  return record;
+}
+
 function heldBook(id: string): Book {
   return { id: bookId(id) } as Book;
 }
@@ -51,7 +60,8 @@ type Outcomes = {
 function repositoryWith(outcomes: Outcomes): LibraryRepository {
   return {
     list: () => Promise.resolve(outcomes.shelf ?? { kind: 'success', books: [], unreadable: [] }),
-    listRemoved: () => Promise.resolve(outcomes.removed ?? { kind: 'success', removed: [] }),
+    listRemoved: () =>
+      Promise.resolve(outcomes.removed ?? { kind: 'success', removed: [], unreadable: [] }),
     get: notUsed,
     add: notUsed,
     readPageList: notUsed,
@@ -68,9 +78,13 @@ function repositoryWith(outcomes: Outcomes): LibraryRepository {
 }
 
 describe('listRemovedShelf', () => {
-  it('lists every removed record', async () => {
+  it('lists every removed record, the ones that read and the ones that do not', async () => {
     const repository = repositoryWith({
-      removed: { kind: 'success', removed: [removedBook('gone-1'), removedBook('gone-2')] },
+      removed: {
+        kind: 'success',
+        removed: [removedBook('gone-1'), removedBook('gone-2')],
+        unreadable: [unreadableRecord('old-1')],
+      },
     });
 
     const result = await listRemovedShelf({ repository });
@@ -78,6 +92,7 @@ describe('listRemovedShelf', () => {
     expect(result).toEqual({
       kind: 'success',
       books: [removedBook('gone-1'), removedBook('gone-2')],
+      unreadable: [unreadableRecord('old-1')],
     });
   });
 
@@ -93,12 +108,17 @@ describe('listRemovedShelf', () => {
       removed: {
         kind: 'success',
         removed: [removedBook('gone-1'), removedBook('gone-2'), removedBook('gone-3')],
+        unreadable: [unreadableRecord('gone-1'), unreadableRecord('old-1')],
       },
     });
 
     const result = await listRemovedShelf({ repository });
 
-    expect(result).toEqual({ kind: 'success', books: [removedBook('gone-3')] });
+    expect(result).toEqual({
+      kind: 'success',
+      books: [removedBook('gone-3')],
+      unreadable: [unreadableRecord('old-1')],
+    });
   });
 
   it('passes a blocked store through', async () => {

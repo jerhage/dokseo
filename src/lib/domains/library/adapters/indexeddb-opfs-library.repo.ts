@@ -31,6 +31,7 @@ import {
   removedBooksFromStored,
   removedRecord,
   restoreCandidatesFrom,
+  unreadableRemovedBooksFrom,
 } from '../domain/book/removed-book';
 import type { RemovedBook, StoredRemovedBook } from '../domain/book/removed-book';
 import { bookFromStored, booksFromStored, storedBookRead } from '../domain/book/stored-book';
@@ -204,7 +205,12 @@ function createLibraryRepository(): LibraryRepository {
     async listRemoved(): Promise<RemovedListing> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       const rows = await listRecords<StoredRemovedBook>(await database(), REMOVED_BOOK_STORE);
-      return { kind: 'success', removed: removedBooksFromStored(rows).removed };
+      const records = removedBooksFromStored(rows);
+      return {
+        kind: 'success',
+        removed: records.removed,
+        unreadable: unreadableRemovedBooksFrom(records.unreadable),
+      };
     },
 
     async listRestorable(): Promise<RestorableListing> {
