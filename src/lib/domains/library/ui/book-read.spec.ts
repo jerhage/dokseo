@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
-import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
+import { LIBRARY_UNAVAILABLE, UNREADABLE_BOOK } from '../queries/library-error-text';
 import { bookReadOf, flowingBook, readingTitle } from './book-read';
 import type { BookRead } from './book-read';
 
@@ -51,6 +51,12 @@ describe('bookReadOf', () => {
     },
   ] as const)('lifts $read into its own state', ({ state, answer }) => {
     expect(bookReadOf(state)).toEqual(answer);
+  });
+
+  it('names a stored row it cannot read as a failed read that points to the repair', () => {
+    expect(
+      bookReadOf({ kind: 'ready', value: { kind: 'unreadable-book', id: bookId('broken') } }),
+    ).toEqual({ kind: 'failed', message: UNREADABLE_BOOK });
   });
 
   it('names a blocked store as a failed read', () => {

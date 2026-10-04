@@ -8,6 +8,7 @@ import { at } from '$lib/shared/testing/at';
 import type { Book } from '../domain/book/book';
 import type {
   BookLookup,
+  HeldBookLookup,
   FileLookup,
   LibraryRepository,
   LibraryWrite,
@@ -74,7 +75,7 @@ function fakePageSource(): PageSource {
 }
 
 function fakeRepository(
-  record: BookLookup = found(book()),
+  record: HeldBookLookup = found(book()),
   source: FileLookup = file(new Blob(['source bytes'])),
 ): LibraryRepository {
   return {
@@ -133,6 +134,25 @@ describe('openForReading', () => {
   it('answers not-found when the record is missing', async () => {
     const result = await openForReading(deps({ repository: fakeRepository(NO_BOOK) }), ID);
     expect(result).toEqual({ kind: 'not-found', id: ID });
+  });
+
+  it('answers unreadable-book, and reads no source, for a stored row it cannot read', async () => {
+    const read: string[] = [];
+    const repository: LibraryRepository = {
+      ...fakeRepository({
+        kind: 'unreadable-book',
+        book: { id: ID, title: 'Kino', alias: null, contentHash: '', fileName: '' },
+      }),
+      readSource: () => {
+        read.push('source');
+        return Promise.resolve(file(null));
+      },
+    };
+
+    const result = await openForReading(deps({ repository }), ID);
+
+    expect(result).toEqual({ kind: 'unreadable-book', id: ID });
+    expect(read).toEqual([]);
   });
 
   it('passes a blocked store through when the source cannot be read', async () => {

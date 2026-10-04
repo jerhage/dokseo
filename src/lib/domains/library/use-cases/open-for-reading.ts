@@ -24,6 +24,7 @@ type OpenForReadingResult =
   | { readonly kind: 'images'; readonly book: Book; readonly pages: PageSource }
   | { readonly kind: 'flow'; readonly book: Book }
   | { readonly kind: 'not-found'; readonly id: BookId }
+  | { readonly kind: 'unreadable-book'; readonly id: BookId }
   | { readonly kind: 'source-missing'; readonly id: BookId }
   | { readonly kind: 'unreadable'; readonly failure: PageSourceError }
   | StorageUnavailable;
@@ -86,6 +87,7 @@ async function openIntrinsic(
 
 async function openForReading(deps: OpenForReadingDeps, id: BookId): Promise<OpenForReadingResult> {
   const found = await deps.repository.get(id);
+  if (found.kind === 'unreadable-book') return { kind: 'unreadable-book', id };
   if (found.kind !== 'success') return found;
   const book = found.book;
   if (book === null) return { kind: 'not-found', id };

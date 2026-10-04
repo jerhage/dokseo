@@ -38,6 +38,9 @@ type LanguageKnown = (book: BookId, language: Language) => void;
 const SOURCE_MISSING =
   'The file of this book is missing from this device. Remove the book and add it again.';
 
+const UNREADABLE_BOOK =
+  'This book was stored in a shape this version cannot read. Upload the same file again in the library to repair it.';
+
 function describeSourceFailure(error: PageSourceError): string {
   return match(error)
     .with(
@@ -66,6 +69,7 @@ function describeOpenFailure(error: OpenFailure): string {
     .with({ kind: 'unreadable' }, (failed) => describeSourceFailure(failed.failure))
     .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, describeEditFailure)
     .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
+    .with({ kind: 'unreadable-book' }, () => UNREADABLE_BOOK)
     .exhaustive();
 }
 

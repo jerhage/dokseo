@@ -18,6 +18,11 @@ type BookListing =
 
 type BookLookup = { readonly kind: 'success'; readonly book: Book | null } | StorageUnavailable;
 
+type HeldBookLookup =
+  | { readonly kind: 'success'; readonly book: Book | null }
+  | { readonly kind: 'unreadable-book'; readonly book: UnreadableBook }
+  | StorageUnavailable;
+
 type PageListLookup =
   | { readonly kind: 'success'; readonly pageList: PageList }
   | StorageUnavailable;
@@ -40,7 +45,7 @@ type ByteCount = { readonly kind: 'success'; readonly bytes: number } | StorageU
 
 interface LibraryRepository {
   list(): Promise<BookListing>;
-  get(id: BookId): Promise<BookLookup>;
+  get(id: BookId): Promise<HeldBookLookup>;
   add(
     book: Book,
     source: Blob,
@@ -66,6 +71,7 @@ export type {
   BookLookup,
   ByteCount,
   FileLookup,
+  HeldBookLookup,
   LibraryRepository,
   LibraryWrite,
   PageListLookup,

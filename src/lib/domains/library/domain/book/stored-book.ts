@@ -38,6 +38,10 @@ type StoredBooks = {
   readonly unreadable: readonly UnreadableBook[];
 };
 
+type StoredBookRead =
+  | { readonly kind: 'readable'; readonly book: Book }
+  | { readonly kind: 'unreadable'; readonly book: UnreadableBook };
+
 type RawRow = {
   readonly id?: unknown;
   readonly title?: unknown;
@@ -155,18 +159,25 @@ function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
   };
 }
 
+function storedBookRead(row: StoredBook): StoredBookRead {
+  try {
+    const book = bookFromStored(row);
+    return { kind: 'readable', book };
+  } catch (cause) {
+    return { kind: 'unreadable', book: unreadableBook(row, cause) };
+  }
+}
+
 function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   const books: Book[] = [];
   const unreadable: UnreadableBook[] = [];
   for (const row of rows) {
-    try {
-      books.push(bookFromStored(row));
-    } catch (cause) {
-      unreadable.push(unreadableBook(row, cause));
-    }
+    const read = storedBookRead(row);
+    if (read.kind === 'readable') books.push(read.book);
+    else unreadable.push(read.book);
   }
   return { books, unreadable };
 }
 
-export { bookFromStored, booksFromStored };
-export type { StoredBook, StoredBooks, UnreadableBook };
+export { bookFromStored, booksFromStored, storedBookRead };
+export type { StoredBook, StoredBookRead, StoredBooks, UnreadableBook };
