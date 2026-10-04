@@ -18,51 +18,51 @@ function group(y: number, height: number, label: string, tone: DiagramTone): Dia
   return { kind: 'group', x: 0, y, width: 360, height, label, tone };
 }
 
-const newTabSaves = box(
+const newTabOpens = box(
   0,
   0,
   360,
-  'A tab on the new version saves',
-  'the row gains newField',
+  'Tab B on 1.1 opens the database',
+  'at a higher version than the one stored',
   'primary',
 );
-const rowWithField = box(
+const oldTabCloses = box(
   0,
   96,
   360,
-  'The book row in IndexedDB',
-  'known fields and newField',
-  'accent',
+  'Tab A on 1.0 receives versionchange',
+  'and closes its connection',
 );
-const oldTabReads = box(
+const rowsMigrated = box(
   0,
   192,
   360,
-  'A tab still on the old version reads it',
-  'bookFromStored: newField never reaches the app',
+  'The upgrade rewrites every book row',
+  'each row gains newField',
+  'accent',
 );
 const oldTabSaves = box(
   0,
   288,
   360,
-  'That tab saves a new reading place',
-  'update() writes the row',
+  'Tab A saves a new reading place',
+  'it reopens at the old, lower version',
 );
-const builtFromBook = box(0, 384, 170, 'Row built from Book', 'newField is gone');
-const storedPlusBook = box(190, 384, 170, 'Stored row, then Book', 'newField is kept', 'primary');
+const openFails = box(0, 384, 170, 'VersionError', 'nothing is written');
+const oldTabReloads = box(190, 384, 170, 'Reload', 'tab A runs 1.1', 'primary');
 
 const ROW_ACROSS_VERSIONS: DiagramSpec = {
   label:
-    'A tab on the new version of Dokseo saves a book, and the row in IndexedDB gains a field called newField. A tab still running the old version reads the same row with bookFromStored, which builds a book from the fields its Book type names, so newField never reaches the old app. That tab then saves a new reading place. If the save wrote a row built from the book alone, newField would be gone. Dokseo writes the stored row first and the checked book over it, so newField is kept.',
+    'Tab B, on version 1.1 of Dokseo, opens the database at a higher version than the one stored. Tab A, still on 1.0, receives versionchange and closes its connection. The upgrade rewrites every book row, and each row gains a field called newField. Tab A then saves a new reading place: it reopens the database at its old, lower version, the open fails with a VersionError, and nothing is written. After a reload, tab A runs 1.1.',
   width: 360,
   height: 436,
-  nodes: [newTabSaves, rowWithField, oldTabReads, oldTabSaves, builtFromBook, storedPlusBook],
+  nodes: [newTabOpens, oldTabCloses, rowsMigrated, oldTabSaves, openFails, oldTabReloads],
   edges: [
-    { from: newTabSaves, to: rowWithField, label: 'put' },
-    { from: rowWithField, to: oldTabReads, label: 'get' },
-    { from: oldTabReads, to: oldTabSaves },
-    { from: oldTabSaves, to: builtFromBook },
-    { from: oldTabSaves, to: storedPlusBook },
+    { from: newTabOpens, to: oldTabCloses },
+    { from: oldTabCloses, to: rowsMigrated, label: 'upgrade' },
+    { from: rowsMigrated, to: oldTabSaves },
+    { from: oldTabSaves, to: openFails, label: 'open' },
+    { from: openFails, to: oldTabReloads },
   ],
 };
 
