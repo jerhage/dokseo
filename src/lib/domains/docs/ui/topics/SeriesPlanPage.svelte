@@ -2,6 +2,8 @@
   import DocsPage from '../DocsPage.svelte';
   import { SERIES_PLAN_SECTIONS } from './series-plan/series-sections';
   import SeriesConcepts from './series-plan/SeriesConcepts.svelte';
+  import SeriesFormats from './series-plan/SeriesFormats.svelte';
+  import SeriesPlanBuilt from './series-plan/SeriesPlanBuilt.svelte';
 </script>
 
 <DocsPage slug="series-plan" sections={Object.values(SERIES_PLAN_SECTIONS)}>
@@ -11,4 +13,6 @@
     the groundwork already in place before 1.0, the decisions behind it, and what remains.
   {/snippet}
   <SeriesConcepts />
+  <SeriesFormats />
+  <SeriesPlanBuilt />
 </DocsPage>
