@@ -30,13 +30,7 @@
   </Field>
   <CodeBlock code={json} label="The row in the books store" />
   {#if result.kind === 'read'}
-    <Alert variant="success" title="Read as a book">
-      {#if result.fallbacks.length === 0}
-        Every field passed its check.
-      {:else}
-        Filled with a default: <code>{result.fallbacks.join(', ')}</code>
-      {/if}
-    </Alert>
+    <Alert variant="success" title="Read as a book">Every field passed its check.</Alert>
   {:else if result.kind === 'set-aside'}
     <Alert variant="warning" title="Set aside as unreadable">
       <code>{result.reason}</code>. The shelf lists it under "1 book could not be read", by its

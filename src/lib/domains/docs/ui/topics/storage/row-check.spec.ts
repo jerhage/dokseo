@@ -7,23 +7,15 @@ function checked(damage: RowDamage) {
 }
 
 describe('checkedRow', () => {
-  it('reads the stored row unchanged, with no field filled in', () => {
+  it('reads the stored row unchanged', () => {
     const result = checked('none');
 
-    expect(result.kind).toBe('read');
-    expect(result.kind === 'read' ? result.fallbacks : null).toEqual([]);
+    expect(result).toEqual({ kind: 'read', book: STORED_ROW });
   });
 
   it.each([
-    { damage: 'language-unknown', fallback: 'language: fr → ja' },
-    { damage: 'direction-missing', fallback: 'direction: missing → rtl' },
-  ] as const)('fills $damage with its default and says so', ({ damage, fallback }) => {
-    const result = checked(damage);
-
-    expect(result.kind === 'read' ? result.fallbacks : null).toEqual([fallback]);
-  });
-
-  it.each([
+    { damage: 'language-unknown', reason: 'A stored book holds an unknown language: fr' },
+    { damage: 'direction-missing', reason: 'A stored book lacks its direction' },
     { damage: 'layout-unknown', reason: 'A stored book holds an unknown layout kind: scroll' },
     { damage: 'title-missing', reason: 'A stored book lacks its title' },
     { damage: 'position-unknown', reason: 'A stored book holds an unknown position kind: page' },

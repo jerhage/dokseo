@@ -44,9 +44,11 @@
     IndexedDB stores whatever value it is given and checks none of it. A row read back may have been
     written by an older version of Dokseo, before a field existed, or by a bug. So the library types
     a stored book as a record whose every field is <code>unknown</code>, and checks each field on
-    the way out. A field with a safe default gets it: an unknown language reads as Japanese, a
-    missing direction as right to left. A field with no safe default, such as the title, the layout
-    kind or the reading place, throws a <code>CorruptRow</code> that names the field.
+    the way out. No field has a default. A missing direction, an unknown language, an image count of
+    <code>NaN</code>
+    or a content hash in an old format all throw a <code>CorruptRow</code> that names the field, the same
+    as a missing title or an unknown reading place. A default would turn a row the app cannot explain
+    into one that looks fine, and the next save would write the guess back as if it had been stored.
   </p>
   <DocsCode label={KNOWN_STORED_VALUE.label} code={KNOWN_STORED_VALUE.code} />
   <p>
@@ -62,12 +64,11 @@
   <RowCheckDemo />
   <p>
     A save goes through the same checks. To store a new reading place, the library reads the row
-    with <code>bookFromStored</code>, applies the change, and writes the checked fields over the
-    stored row with <code>savedBookRow</code>. A field the running version of Dokseo does not name
-    stays in the row as it was, unchecked, and never reaches the app. So a tab left open on an older
-    version does not erase a field that a newer version added (<a
-      href="/docs/series-plan#an-old-tab-across-a-deploy">An old tab across a deploy</a
-    >).
+    with <code>bookFromStored</code>, applies the change, and writes the edited book. A field the
+    running version of Dokseo does not name is not written back. From 1.0 on, that is safe because a
+    change to a stored row comes with a new database version and a migration, and a tab still
+    running the older version cannot open the upgraded database, so it cannot save over the new row
+    (<a href="/docs/series-plan#an-old-tab-across-a-deploy">An old tab across a deploy</a>).
   </p>
 </DocsSection>
 

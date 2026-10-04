@@ -113,7 +113,7 @@ return recorded;`,
 };
 
 const KNOWN_STORED_VALUE: SourceSnippet = {
-  label: 'A stored field with no safe default',
+  label: 'A stored field that fails its check',
   file: 'src/lib/shared/corrupt-row.ts',
   code: `function knownStoredValue<T>(
   row: string,
@@ -129,15 +129,22 @@ const KNOWN_STORED_VALUE: SourceSnippet = {
 const BOOKS_FROM_STORED: SourceSnippet = {
   label: 'Reading every book row',
   file: 'src/lib/domains/library/domain/book/stored-book.ts',
-  code: `function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
+  code: `function storedBookRead(row: StoredBook): StoredBookRead {
+  try {
+    const book = bookFromStored(row);
+    return { kind: 'readable', book };
+  } catch (cause) {
+    return { kind: 'unreadable', book: unreadableBook(row, cause) };
+  }
+}
+
+function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   const books: Book[] = [];
   const unreadable: UnreadableBook[] = [];
   for (const row of rows) {
-    try {
-      books.push(bookFromStored(row));
-    } catch (cause) {
-      unreadable.push(unreadableBook(row, cause));
-    }
+    const read = storedBookRead(row);
+    if (read.kind === 'readable') books.push(read.book);
+    else unreadable.push(read.book);
   }
   return { books, unreadable };
 }`,
