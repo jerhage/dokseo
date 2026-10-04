@@ -64,12 +64,12 @@
 
 <DocsSection title={STORAGE_SECTIONS.rule}>
   <p>
-    Every store this page has shown is a cache in the browser's eyes until the origin is persistent:
-    the weights, the book files, the records and the captures can all be evicted, and in a Safari
-    tab they can be removed after seven days of Safari use without a visit. Dokseo's rule follows
-    from that. Caching is not durability. Request the persistence grant at a moment that earns it,
-    never on first paint; check it with <code>persisted()</code> and say so when it is missing;
-    report space with
+    Every store described above is a cache in the browser's eyes until the origin is persistent: the
+    weights, the book files, the records and the captures can all be evicted, and in a Safari tab
+    they can be removed after seven days of Safari use without a visit. Dokseo's rule follows from
+    that. Caching is not durability. Request the persistence grant at a moment that earns it, never
+    on first paint; check it with <code>persisted()</code> and say so when it is missing; report
+    space with
     <code>estimate()</code>; and keep a way out for whatever is lost or unreadable, such as
     exporting the captures from Settings › Your data.
   </p>

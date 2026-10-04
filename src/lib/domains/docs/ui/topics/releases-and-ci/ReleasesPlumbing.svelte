@@ -63,10 +63,10 @@ on:
     </StepItem>
   </StepList>
   <p>
-    There are two ways out. One is to give release-please a personal access token or a GitHub App
-    token instead, since events made with those do start workflows. The other is to put the deploy
-    in the same workflow as a second job that runs after release-please and checks its output.
-    Dokseo does the second, so no extra credential exists.
+    One way out is to give release-please a personal access token or a GitHub App token instead,
+    since events made with those do start workflows. The other is to put the deploy in the same
+    workflow as a second job that runs after release-please and checks its output. Dokseo does the
+    second, so no extra credential exists.
   </p>
   <p>
     The rule has exceptions. A <code>workflow_dispatch</code> event, the kind a run started by hand

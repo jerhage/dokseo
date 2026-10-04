@@ -57,8 +57,8 @@
     {#snippet caption()}The way in, from the first entry to the chapters.{/snippet}
   </Figure>
   <p>
-    The demos on this page use a small Japanese novella written for them, three chapters long. The
-    page builds the EPUB from strings when it loads and never reads a book from your library.
+    The EPUB demos use a small Japanese novella written for them, three chapters long. The page
+    builds the EPUB from strings when it loads and never reads a book from your library.
   </p>
   <ArchiveDemo />
   <DocsCode label="META-INF/container.xml in the sample" code={container} />
@@ -104,9 +104,8 @@
     (<code>readEpubPackage</code>, run in the demo under
     <a href={epubSectionHref('title')}>the title from the metadata</a>). An EPUB whose every spine
     item is one full-page picture opens in the image reader, page by page, like a CBZ. A reflowable
-    EPUB opens in the flow reader, which is the subject of the rest of this page. A fixed-layout
-    EPUB that is not one picture per page is refused, and the message says that only an EPUB of one
-    full-page image per page can be read yet.
+    EPUB opens in the flow reader. A fixed-layout EPUB that is not one picture per page is refused,
+    and the message says that only an EPUB of one full-page image per page can be read yet.
   </p>
 </DocsSection>
 
@@ -117,7 +116,7 @@
     <code>html</code>, <code>body</code> and <code>p</code>, sizes in <code>rem</code>. Suppose a
     reader pasted a chapter's markup into its own document. The book's <code>p</code> rule would restyle
     the reader's settings dialog, the reader's own rules would restyle the book, and a script in the chapter
-    would run as part of the reader. There are three ways to show a chapter, each with a cost.
+    would run as part of the reader. Each way to show a chapter has a cost.
   </p>
   <ul>
     <li>

@@ -91,7 +91,7 @@
     </StepItem>
   </StepList>
   <p>
-    The demos on this page call <code>openFlowSurface</code> and the capture function
+    The EPUB demos call <code>openFlowSurface</code> and the capture function
     <code>selectedPassage</code> directly. The docs pages may not import another domain's UI, so the
     <code>/docs/epub-rendering</code> route imports both and passes them to the page, together with the
     probe that reads the theme's colors.
@@ -227,9 +227,9 @@
     <StepItem title="Horizontal">If neither says vertical, the book is horizontal.</StepItem>
   </StepList>
   <p>
-    The sample book declares nothing, so every demo on this page runs the measurement. A first
-    attempt at the bug took the swipe away from foliate-js and turned pages from Dokseo's own touch
-    code instead. On the phone it sent pages back and forth and left foliate-js's turn lock stuck,
-    which is the subject of <a href={epubSectionHref('lock')}>the turn lock</a>.
+    The sample book declares nothing, so every EPUB demo runs the measurement. A first attempt at
+    the bug took the swipe away from foliate-js and turned pages from Dokseo's own touch code
+    instead. On the phone it sent pages back and forth and left foliate-js's turn lock stuck, which
+    is the subject of <a href={epubSectionHref('lock')}>the turn lock</a>.
   </p>
 </DocsSection>

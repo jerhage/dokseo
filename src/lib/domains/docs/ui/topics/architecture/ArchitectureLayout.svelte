@@ -173,7 +173,7 @@
   <DocsCode label={LEAF_RULE.label} code={LEAF_RULE.code} />
   <p>
     Any domain folder not in the list is a non-leaf, and <code>non-leaves-import-only-leaves</code>
-    lets it import its own folders and the leaves, nothing else. There are two.
+    lets it import its own folders and the leaves, nothing else. Dokseo has two non-leaves.
     <code>storage</code> reports what the origin holds and owns operations that span two leaves:
     removing a book with its captures composes the library's <code>removeBook</code> and
     recognition's

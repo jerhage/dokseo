@@ -299,7 +299,7 @@
     quarter of the device's RAM, and refused a new canvas past it with "Total canvas memory use
     exceeds the maximum limit". That check is not in the branches from Safari 17 on. Beyond the
     canvas caps, iOS ends a web content process that uses too much memory, and the tab reloads.
-    Apple does not publish that limit, so this page gives no number for it.
+    Apple does not publish that limit.
   </p>
 </DocsSection>
 

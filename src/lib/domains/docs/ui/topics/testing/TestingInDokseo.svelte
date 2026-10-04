@@ -138,7 +138,7 @@
     Runes work in the unit project, but not the way they work in the app. Node has no DOM, so the
     unit project's environment is <code>node</code>, and the Svelte plugin compiles every
     <code>.svelte.ts</code> file for the server there. Here is one small module compiled both ways by
-    the installed Svelte compiler (a unit test on this page compiles it again and checks the output):
+    the installed Svelte compiler (a unit test compiles it again and checks this output):
   </p>
   <CodeBlock code={RUNE_MODULE} label="plan.svelte.ts" />
   <CodeBlock code={SERVER_OUTPUT} label="Compiled for the server, as the unit project runs it" />
@@ -203,10 +203,10 @@
   <DocsCode label={WRITE_QUERY_MOCK.label} code={WRITE_QUERY_MOCK.code} />
   <DocsCode label={IDLE_WRITE_QUERY.label} code={IDLE_WRITE_QUERY.code} />
   <p>
-    There are three stand-ins in <code>shared/testing/</code>: an idle one whose run never settles,
-    one that rejects every run and records its variables, and one that runs the real mutation
-    options through a <code>MutationObserver</code>. Each spec picks the one whose behavior it
-    needs. The use cases underneath are tested separately with doubles of their ports, as in
+    <code>shared/testing/</code> holds three stand-ins: an idle one whose run never settles, one
+    that rejects every run and records its variables, and one that runs the real mutation options
+    through a <code>MutationObserver</code>. Each spec picks the one whose behavior it needs. The
+    use cases underneath are tested separately with doubles of their ports, as in
     <a href={ARCHITECTURE_REHEARSAL_HREF}>A use case with a fake port</a>.
   </p>
 </DocsSection>

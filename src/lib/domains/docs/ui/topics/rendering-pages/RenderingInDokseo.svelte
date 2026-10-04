@@ -238,7 +238,7 @@
     <code>pdf-build-entries.spec.ts</code> reads every source file as text and fails if any file but the
     adapter names a pdf.js entry that way, and checks that the adapter loads exactly a modern and a legacy
     library, each paired with the worker of its own build. Because it reads text, it would also fail on
-    a quotation of that line, which is why this page describes it rather than quoting it.
+    a quotation of that line, which is why the line is described here and not quoted.
   </p>
 </DocsSection>
 

@@ -185,7 +185,7 @@
       destroyed after its chapter frame had left the document. It could no longer stop observing the
       chapter's body, and WebKit and Gecko then delivered that observer's callback to a view with no
       document, which threw. The read route now closes the book in <code>onNavigate</code>, before
-      SvelteKit swaps the page. The demos on this page close their books the same way.
+      SvelteKit swaps the page. The EPUB demos close their books the same way.
     </StepItem>
     <StepItem title="The first tap after opening, still open">
       On a phone, the first tap after opening an EPUB neither turns the page nor toggles the bars.

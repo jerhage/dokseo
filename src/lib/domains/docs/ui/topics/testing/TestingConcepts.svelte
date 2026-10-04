@@ -185,10 +185,10 @@
     cannot fail.
   </p>
   <p>
-    The only proof is to run it against the broken code and watch it fail. There are two ways. Undo
-    the fix in the working copy, run the test, see it fail, and put the fix back. Or, when the bug
-    is one wrong condition, change that condition back by hand. Either way the result to record is
-    "this test fails without the fix, and passes with it".
+    The only proof is to run it against the broken code and watch it fail. Undo the fix in the
+    working copy, run the test, see it fail, and put the fix back. Or, when the bug is one wrong
+    condition, change that condition back by hand. Either way the result to record is "this test
+    fails without the fix, and passes with it".
   </p>
   <p>
     A case from Dokseo. Downloading an OCR model needs the reader's consent, and the consent was
@@ -255,10 +255,9 @@
     Every page under <code>/docs</code> has one. Each quoted snippet records the file it came from,
     and a spec reads that file and checks the quote is still in it, ignoring indentation. The
     architecture page's ported import rules are checked against
-    <code>.dependency-cruiser.cjs</code>. On this page, the <code>tapZone</code> copy in the
-    mutation demo must equal the real function's text and return the real function's results on a
-    grid of inputs; the recorded case names must still appear in the real specs; and the compiler
-    output in
+    <code>.dependency-cruiser.cjs</code>. The <code>tapZone</code> copy in the mutation demo must
+    equal the real function's text and return the real function's results on a grid of inputs; the
+    recorded case names must still appear in the real specs; and the compiler output in
     <a href={testingHref('runes')}>Runes in the Node project</a> is produced by compiling the module again
     inside the test.
   </p>
