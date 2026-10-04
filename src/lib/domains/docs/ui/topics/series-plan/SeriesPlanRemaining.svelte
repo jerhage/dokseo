@@ -47,19 +47,20 @@
 <DocsSection title={SERIES_PLAN_SECTIONS.edges}>
   <ul class="col gap-2">
     <li>
-      Only <code>update()</code> keeps unknown fields. Adding a book writes a whole new row, so when
-      an upload repairs an unreadable row by restoring over it (<a href={IDENTITY_UNREADABLE_HREF}
+      A field that a book row holds and <code>Book</code> does not name is not rejected. It is left out
+      of the read, and the next save of that book drops it. Only a migration adds a field to every row,
+      so such a field comes from a bug or a hand edit, never from another version.
+    </li>
+    <li>
+      Every format change after 1.0 needs a database version and a migration, even an optional field
+      that every reader would leave empty. A series store in the <code>reader</code> database would raise
+      the version for a different reason, a new store, but no book row would change for it.
+    </li>
+    <li>
+      A row from before 1.0 that does not match the strict format is unreadable, with no migration.
+      A book is repaired by uploading the same file again (<a href={IDENTITY_UNREADABLE_HREF}
         >Rows Dokseo can no longer read</a
-      >), any field the running version does not name is replaced.
-    </li>
-    <li>
-      Removing a book builds the removed record from the fields the running version names, so a
-      field it does not name stays out of the record and is gone after a restore. Series ids and
-      volumes are named from 1.0 on, which is why they were reserved before it.
-    </li>
-    <li>
-      A kept field is kept unchecked. The version that added it checks it on the way in, like any
-      other field, and a damaged value makes the row unreadable there.
+      >).
     </li>
   </ul>
 </DocsSection>
@@ -67,10 +68,8 @@
 <DocsSection title={SERIES_PLAN_SECTIONS.order}>
   <StepList>
     <StepItem title="Data and mapper, built">
-      The save that keeps unknown fields, the reserved <code>seriesId</code> and
-      <code>volume</code>, removal and restore (<a href={seriesPlanHref('built')}
-        >What is built before 1.0</a
-      >).
+      The reserved <code>seriesId</code> and <code>volume</code> in the strict 1.0 book row, removal
+      and restore (<a href={seriesPlanHref('built')}>What is built before 1.0</a>).
     </StepItem>
     <StepItem title="Export fields, built">
       Both fields on every book entry of the captures file, still version 1.

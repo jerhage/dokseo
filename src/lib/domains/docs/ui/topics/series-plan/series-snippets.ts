@@ -14,30 +14,32 @@ const BOOK_SERIES_FIELDS: SourceSnippet = {
 const STORED_SERIES_FIELDS: SourceSnippet = {
   label: 'Reading them from a stored row',
   file: 'src/lib/domains/library/domain/book/stored-book.ts',
-  code: `function storedSeriesId(value: unknown): SeriesId | null {
-  if (value === undefined) return null;
-  const stored = bookField('series id', value, isTextOrNull);
-  return stored === null ? null : seriesId(stored);
+  code: `function isSeriesIdOrNull(value: unknown): value is string | null {
+  return value === null || (isText(value) && value.length > 0);
 }
 
-function storedVolume(value: unknown): number | null {
-  return value === undefined ? null : bookField('volume', value, isFiniteNumberOrNull);
+function storedSeriesId(value: unknown): SeriesId | null {
+  const stored = bookField('series id', value, isSeriesIdOrNull);
+  return stored === null ? null : seriesId(stored);
 }`,
 };
 
-const FINITE_NUMBER_OR_NULL: SourceSnippet = {
-  label: 'The volume guard',
-  file: 'src/lib/shared/corrupt-row.ts',
-  code: `function isFiniteNumberOrNull(value: unknown): value is number | null {
-  return value === null || (isNumber(value) && Number.isFinite(value));
-}`,
-};
-
-const SAVED_BOOK_ROW: SourceSnippet = {
-  label: 'The row a save writes',
+const BOOK_FROM_STORED_SERIES: SourceSnippet = {
+  label: 'Two of the fields bookFromStored checks',
   file: 'src/lib/domains/library/domain/book/stored-book.ts',
-  code: `function savedBookRow(stored: StoredFields, book: Book): StoredFields {
-  return { ...stored, ...book };
+  code: `seriesId: storedSeriesId(stored.seriesId),
+volume: bookField('volume', stored.volume, isNumberOrNull),`,
+};
+
+const FINITE_NUMBER: SourceSnippet = {
+  label: 'A stored number is finite',
+  file: 'src/lib/shared/corrupt-row.ts',
+  code: `function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isNumberOrNull(value: unknown): value is number | null {
+  return value === null || isNumber(value);
 }`,
 };
 
@@ -50,20 +52,34 @@ const REPOSITORY_UPDATE: SourceSnippet = {
   const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
   if (record === undefined) return { kind: 'success', book: null };
   const updated = applyEdit(bookFromStored(record), edit);
-  await putRecord(db, BOOK_STORE, savedBookRow(record, updated));
+  await putRecord(db, BOOK_STORE, updated);
   return { kind: 'success', book: updated };
 }`,
 };
 
+const REMOVED_RECORD: SourceSnippet = {
+  label: 'A removed record is the whole book and a time',
+  file: 'src/lib/domains/library/domain/book/removed-book.ts',
+  code: `function removedRecord(book: Book, removedAt: number): RemovedBook {
+  return { ...book, removedAt };
+}
+
+function removedBookFromStored(stored: StoredRemovedBook): RemovedBook {
+  const book = bookFromStored(stored);
+  const removedAt = knownStoredValue('removed book', 'removed time', stored.removedAt, isNumber);
+  return removedRecord(book, removedAt);
+}`,
+};
+
 const REMOVED_SERIES_FIELDS: SourceSnippet = {
-  label: 'The removed-book record reads them leniently',
+  label: 'A record that fails the strict read offers them when they pass',
   file: 'src/lib/domains/library/domain/book/removed-book.ts',
   code: `function seriesIdOf(value: unknown): SeriesId | null {
-  return isText(value) ? seriesId(value) : null;
+  return isText(value) && value.length > 0 ? seriesId(value) : null;
 }
 
 function volumeOf(value: unknown): number | null {
-  return isFiniteNumberOrNull(value) ? value : null;
+  return isNumberOrNull(value) ? value : null;
 }`,
 };
 
@@ -85,7 +101,7 @@ const FILE_SERIES_FIELDS: SourceSnippet = {
 }
 
 function fileVolume(value: unknown): number | null {
-  return value === undefined ? null : field('book', 'volume', value, isFiniteNumberOrNull);
+  return value === undefined ? null : field('book', 'volume', value, isNumberOrNull);
 }`,
 };
 
@@ -102,9 +118,10 @@ const FOLIATE_SERIES: SourceSnippet = {
 const SERIES_SNIPPETS: readonly SourceSnippet[] = [
   BOOK_SERIES_FIELDS,
   STORED_SERIES_FIELDS,
-  FINITE_NUMBER_OR_NULL,
-  SAVED_BOOK_ROW,
+  BOOK_FROM_STORED_SERIES,
+  FINITE_NUMBER,
   REPOSITORY_UPDATE,
+  REMOVED_RECORD,
   REMOVED_SERIES_FIELDS,
   RESTORE_SERIES_FIELDS,
   FILE_SERIES_FIELDS,
@@ -112,14 +129,15 @@ const SERIES_SNIPPETS: readonly SourceSnippet[] = [
 ];
 
 export {
+  BOOK_FROM_STORED_SERIES,
   BOOK_SERIES_FIELDS,
   FILE_SERIES_FIELDS,
-  FINITE_NUMBER_OR_NULL,
+  FINITE_NUMBER,
   FOLIATE_SERIES,
+  REMOVED_RECORD,
   REMOVED_SERIES_FIELDS,
   REPOSITORY_UPDATE,
   RESTORE_SERIES_FIELDS,
-  SAVED_BOOK_ROW,
   SERIES_SNIPPETS,
   STORED_SERIES_FIELDS,
 };

@@ -74,24 +74,38 @@
     A change of type is worse. If <code>volume</code> became text, every stored number would fail
     the field's check, and each book would be listed as unreadable instead of opening (<a
       href={STORAGE_ROWS_HREF}>Reading a stored row back</a
-    >). Adding an optional field breaks nothing: a row written before it existed lacks it, and the
-    reading code gives the absence a meaning, such as <code>null</code>. After 1.0, any change of
-    the first kind is a major version, and it has to come with a way out for the reader.
+    >). Adding a field is a change too. Dokseo reads every row strictly, with no defaults, so a row
+    written before the field existed lacks it and fails the same way. Before 1.0, Dokseo owes the
+    rows of a pre-release build nothing: a row in an older format is listed as unreadable, with a
+    way out. From 1.0 on, every change to what a row holds comes with a migration.
   </p>
 </DocsSection>
 
-<DocsSection title={SERIES_PLAN_SECTIONS.forward}>
+<DocsSection title={SERIES_PLAN_SECTIONS.versions}>
   <p>
-    <em>Backward compatibility</em> means a new version reads what an older version wrote. Dokseo
-    has it through the reading code above: an absent field takes a default.
+    <em>Backward compatibility</em> means a new version reads what an older version wrote.
     <em>Forward compatibility</em> means an older version copes with what a newer version wrote, without
-    damaging it.
+    damaging it. In a browser both matter, because two versions of the app can run against the same database
+    at the same time.
   </p>
   <p>
-    In a browser both matter, because two versions of the app can run against the same database at
-    the same time. An older version has no code to check a field that did not exist when it was
-    built. The safe answer is to leave that field exactly as it is, and keep it out of the app: read
-    strictly, and write back only what was read and checked.
+    One way to get both is in the reading code: every version gives an absent field a default, and
+    every save starts from the stored row so that a field it does not name stays as it was. Each
+    read then has to cope with any row any version ever wrote. A default also hides damage: a row
+    with an unknown language reads as if it were Japanese, and the next save stores that guess.
+  </p>
+  <p>
+    Dokseo uses the version number IndexedDB already gives each database instead. From 1.0 on, a
+    change to a stored row raises the database version, and the upgrade that runs on the next open
+    rewrites every row into the new format. That migration is the backward compatibility: the new
+    version only ever reads rows in its own format. Forward compatibility is replaced by a refusal:
+    an older build cannot open a database at a higher version than its own, so it never reads or
+    writes a row it does not know. That is why reads can stay strict, with one rule per field and no
+    defaults, and why a save can write the edited book as it is.
+  </p>
+  <p>
+    The cost is that every format change, even one new optional field, needs a version and a
+    migration, and every tab still open on the old build has to reload before it can save again.
   </p>
 </DocsSection>
 
@@ -107,34 +121,38 @@
       A reader has Dokseo open in two tabs, A and B, both on version 1.0.
     </StepItem>
     <StepItem title="A deploy">
-      Version 1.1 adds a field to the book row. Tab B offers the update, the reader takes it, and B
+      Version 1.1 adds a field to the book row, so it raises the database version, and its upgrade
+      writes the field into every stored book. Tab B offers the update, the reader takes it, and B
       reloads into 1.1. Tab A keeps running the 1.0 code it loaded.
     </StepItem>
-    <StepItem title="The new field is written">
-      In tab B the reader sets something that 1.1 stores in the new field.
+    <StepItem title="The upgrade runs">
+      Tab B opens the database at the new version. IndexedDB sends <code>versionchange</code> to tab A's
+      connection, Dokseo closes it, and the upgrade rewrites the rows.
     </StepItem>
     <StepItem title="The old tab saves">
-      The reader goes back to tab A and turns a page. Version 1.0 saves the reading place: it reads
-      the row, builds a book from the fields its type names, applies the change and writes.
+      The reader goes back to tab A and turns a page. Saving the reading place reopens the database
+      at the version 1.0 was built with, which is now lower than the stored one, and the open fails
+      with a <code>VersionError</code>. Nothing is written, and the message asks the reader to
+      reload the page.
     </StepItem>
-    <StepItem title="The field is gone, or not">
-      If the write is the book alone, the new field is deleted, with no error and nothing on screen.
-      If the write starts from the stored row, the field survives.
+    <StepItem title="The reload">
+      Tab A reloads into 1.1, which reads the rows in the format it wrote.
     </StepItem>
   </StepList>
   <Figure>
     <Diagram {...ROW_ACROSS_VERSIONS} />
     {#snippet caption()}
-      One book row across two versions of Dokseo. The left ending is what a save that rebuilds the
-      row would do; the right is what Dokseo does since the series groundwork.
+      One database across two versions of Dokseo. The old tab cannot save over the new rows, because
+      it cannot open the database at all.
     {/snippet}
   </Figure>
   <p>
-    A new store is a different matter. Adding a store raises the database version, and the open tab
-    on the old version receives <code>versionchange</code> and has to close its connection (<a
-      href={INDEXEDDB_TABS_HREF}>Blocked upgrades and VersionError</a
-    >). A new field raises nothing, so no event reaches the old tab, and only the write itself can
-    protect the field. Dokseo's write is described under
-    <a href={seriesPlanHref('save')}>The save that keeps unknown fields</a>.
+    A build of 1.0 that starts after the upgrade, from a cached copy for example, meets the same
+    <code>VersionError</code> on its first open (<a href={INDEXEDDB_TABS_HREF}
+      >Blocked upgrades and VersionError</a
+    >). Without the version, nothing would reach the old tab. It would read the new rows with the
+    1.0 rules, and its next save would write a book built from the fields 1.0 names, which drops the
+    new field. Dokseo's save is described under
+    <a href={seriesPlanHref('read')}>A strict read, and a save of the edited book</a>.
   </p>
 </DocsSection>

@@ -206,7 +206,7 @@ const DOCS_TOPICS = [
     slug: 'series-plan',
     title: 'Plan: series',
     summary:
-      'Volumes and reading order, identity and grouping, forward-compatible stored data, series metadata in EPUB and ComicInfo, and the plan for series in Dokseo.',
+      'Volumes and reading order, identity and grouping, stored data across versions, series metadata in EPUB and ComicInfo, and the plan for series in Dokseo.',
     status: 'published',
     kind: 'plan',
     buildsAfter: '1.0',
