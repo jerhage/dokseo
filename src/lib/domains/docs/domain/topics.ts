@@ -24,8 +24,9 @@ const DOCS_TOPICS = [
   {
     slug: 'ocr',
     title: 'How OCR works',
-    summary: 'Text recognition in general, then in Dokseo.',
-    status: 'planned',
+    summary:
+      'Detection and recognition, encoder and decoder, model tokens and greedy decoding, then how Dokseo runs manga-ocr and PaddleOCR in a browser worker.',
+    status: 'published',
   },
   {
     slug: 'ui-library',
