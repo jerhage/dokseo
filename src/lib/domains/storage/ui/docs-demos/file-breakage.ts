@@ -42,7 +42,7 @@ const FILE_BREAKS: readonly BreakOption<FileBreak>[] = [
 const ENTRY_BREAKS: readonly BreakOption<EntryBreak>[] = [
   { value: 'capture-text', label: 'Capture 2 loses its text' },
   { value: 'capture-origin', label: "Capture 1 has origin 'drawn'" },
-  { value: 'tag-colour', label: "Tag 2 has colour 'purple'" },
+  { value: 'tag-colour', label: "Tag 2 has color 'purple'" },
   { value: 'book-language', label: "Book 2 has language 'fr'" },
   { value: 'repeated-capture', label: 'Capture 1 appears twice' },
   { value: 'missing-tag', label: 'Capture 2 names a tag the file lacks' },

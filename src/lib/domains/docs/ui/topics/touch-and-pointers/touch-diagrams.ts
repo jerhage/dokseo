@@ -62,7 +62,7 @@ const lateTap = outcome(488, 'Tap', '300 ms late');
 
 const GESTURE_TREE: Diagram = {
   label:
-    'A finger goes down. A second finger before a plan makes a pinch. A move of 12 px makes a drag, which is a selection, a pan or a swipe by context. A finger held still for 400 ms makes a long press. A finger lifted earlier is a tap at once, unless it is in the centre with double taps on: then a second tap within 300 ms and 40 px makes a double tap, and otherwise the tap is reported 300 ms late.',
+    'A finger goes down. A second finger before a plan makes a pinch. A move of 12 px makes a drag, which is a selection, a pan or a swipe by context. A finger held still for 400 ms makes a long press. A finger lifted earlier is a tap at once, unless it is in the center with double taps on: then a second tap within 300 ms and 40 px makes a double tap, and otherwise the tap is reported 300 ms late.',
   width: DIAGRAM_WIDTH,
   height: 544,
   nodes: [

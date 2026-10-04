@@ -81,7 +81,7 @@
     </TableBody>
   </Table>
   <p>
-    A tag entry is the stored tag as it is: id, name, colour and creation time. A capture entry is
+    A tag entry is the stored tag as it is: id, name, color and creation time. A capture entry is
     the stored capture with <code>bookId</code> replaced by <code>bookKey</code>; its own id, its
     tag ids, its anchor on the page, its text, note and times are copied unchanged. For the same
     book file the anchor means the same place on every device, because it names an image index and a
@@ -120,7 +120,7 @@
     rows from Dokseo's own database, <code>captureFromStored</code> and
     <code>tagFromStored</code>, but two checks run first. Reading the database falls back when it
     meets an unknown <code>origin</code> (it reads the capture as recognized) or an unknown tag
-    colour (it uses the first colour). The file reader rejects both, for the reason in
+    color (it uses the first color). The file reader rejects both, for the reason in
     <a href="#reading-strictly-entry-by-entry">reading strictly</a>.
   </p>
   <DocsCode label={FILE_CAPTURE.label} code={FILE_CAPTURE.code} />
@@ -191,9 +191,9 @@
   </p>
   <DocsCode label={PLAN_TAGS.label} code={PLAN_TAGS.code} />
   <p>
-    A file tag whose name matches a tag here maps onto it, and the tag here keeps its colour. A new
-    name is created with the file's id, colour and creation time, unless a tag here, readable or
-    not, already holds that id, in which case it gets a new one. Two file tags that differ only in
-    case become one. Every capture's tag ids are then mapped through this table.
+    A file tag whose name matches a tag here maps onto it, and the tag here keeps its color. A new
+    name is created with the file's id, color and creation time, unless a tag here, readable or not,
+    already holds that id, in which case it gets a new one. Two file tags that differ only in case
+    become one. Every capture's tag ids are then mapped through this table.
   </p>
 </DocsSection>
