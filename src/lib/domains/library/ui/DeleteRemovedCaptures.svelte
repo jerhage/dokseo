@@ -5,11 +5,11 @@
   import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
   import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
   import BookCapturesExportButton from '$lib/shared/BookCapturesExportButton.svelte';
-  import type { RemovedBook } from '../domain/book/removed-book';
-  import { DELETED_CAPTURES_FATE, removedBookName } from './removed-books';
+  import { DELETED_CAPTURES_FATE } from './removed-books';
+  import type { RemovedEntry } from './removed-books';
 
   type Props = {
-    readonly book: RemovedBook;
+    readonly book: RemovedEntry;
     readonly deleting: boolean;
     readonly exporting: BookCapturesExporting;
     readonly ondelete: () => void;
@@ -36,7 +36,7 @@
 <Modal bind:open={() => open, requestOpen} title="Delete these captures?" size="sm" {onclose}>
   <p class="text-sm">
     The captures kept from
-    <strong lang={book.language}>{removedBookName(book)}</strong>
+    <strong lang={book.language ?? undefined}>{book.name}</strong>
     {DELETED_CAPTURES_FATE}
   </p>
 

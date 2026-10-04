@@ -126,7 +126,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
       Promise.resolve(
         holdings.unavailable === 'removed'
           ? STORAGE_UNAVAILABLE
-          : { kind: 'success', removed: holdings.removed ?? [REMOVED] },
+          : { kind: 'success', removed: holdings.removed ?? [REMOVED], unreadable: [] },
       ),
     listRestorable: notUsed,
     addRemoved: () => Promise.reject(new Error('not used')),

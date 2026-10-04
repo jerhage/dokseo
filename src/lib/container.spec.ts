@@ -56,7 +56,7 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
       held.removed.push(id);
       return Promise.resolve({ kind: 'success' });
     },
-    listRemoved: () => Promise.resolve({ kind: 'success', removed: [GONE] }),
+    listRemoved: () => Promise.resolve({ kind: 'success', removed: [GONE], unreadable: [] }),
     listRestorable: notUsed,
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: (id: BookId) => {
@@ -127,6 +127,6 @@ describe('buildContainer', () => {
   it('lists the removed books without reading a capture', async () => {
     const result = await buildContainer().library.listRemovedBooks();
 
-    expect(result).toEqual({ kind: 'success', books: [GONE] });
+    expect(result).toEqual({ kind: 'success', books: [GONE], unreadable: [] });
   });
 });

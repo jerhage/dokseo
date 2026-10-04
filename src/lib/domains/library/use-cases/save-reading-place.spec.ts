@@ -56,7 +56,7 @@ function fakeRepository(outcome: BookLookup) {
     storedBytes: () => Promise.resolve({ kind: 'success', bytes: 0 }),
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),
-    listRemoved: () => Promise.resolve({ kind: 'success', removed: [] }),
+    listRemoved: () => Promise.resolve({ kind: 'success', removed: [], unreadable: [] }),
     listRestorable: () => Promise.resolve({ kind: 'success', removed: [], unreadable: [] }),
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
