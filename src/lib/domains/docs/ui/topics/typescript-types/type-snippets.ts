@@ -144,14 +144,25 @@ type NotableCapture = RecognizedCapture | LiftedCapture;`,
 const CAPTURE_ORIGIN_MATCH: SourceSnippet = {
   label: 'Building the variant from a stored origin',
   file: 'src/lib/domains/recognition/domain/capture/capture.ts',
-  code: `return match(storedOrigin(stored))
-  .with('written', () => ({ ...held, origin: 'written' as const }))
-  .with('lifted', () => ({ ...held, origin: 'lifted' as const, note: storedNote(stored) }))
+  code: `return match(origin)
+  .with('written', () => {
+    refuseForeignField(stored, 'note', origin);
+    refuseForeignField(stored, 'confidence', origin);
+    return { ...held, origin: 'written' as const };
+  })
+  .with('lifted', () => {
+    refuseForeignField(stored, 'confidence', origin);
+    return {
+      ...held,
+      origin: 'lifted' as const,
+      note: captureField('note', stored.note, isTextOrNull),
+    };
+  })
   .with('recognized', () => ({
     ...held,
     origin: 'recognized' as const,
-    note: storedNote(stored),
-    confidence: storedConfidence(stored),
+    note: captureField('note', stored.note, isTextOrNull),
+    confidence: captureField('confidence', stored.confidence, isNumberOrNull),
   }))
   .exhaustive();`,
 };

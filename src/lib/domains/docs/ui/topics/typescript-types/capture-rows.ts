@@ -13,6 +13,7 @@ type RowDamage =
   | 'written-confidence'
   | 'note-missing'
   | 'region-x-text'
+  | 'rect-outside'
   | 'tag-number'
   | 'anchor-kind'
   | 'anchor-text'
@@ -22,7 +23,7 @@ type RowDamage =
 type DamageOption = { readonly damage: RowDamage; readonly label: string };
 
 type CaptureRowCheck =
-  | { readonly kind: 'read'; readonly capture: Capture; readonly defaults: readonly string[] }
+  | { readonly kind: 'read'; readonly capture: Capture }
   | { readonly kind: 'set-aside'; readonly id: string; readonly reason: string }
   | { readonly kind: 'listing-fails'; readonly reason: string }
   | { readonly kind: 'not-a-row'; readonly reason: string };
@@ -46,9 +47,10 @@ const STORED_CAPTURE = {
 const DAMAGE_OPTIONS: readonly DamageOption[] = [
   { damage: 'none', label: 'As stored' },
   { damage: 'origin-missing', label: 'origin missing' },
-  { damage: 'written-confidence', label: "origin: 'written', confidence kept" },
+  { damage: 'written-confidence', label: "origin: 'written', note and confidence kept" },
   { damage: 'note-missing', label: 'note missing' },
   { damage: 'region-x-text', label: "region x: '0.12'" },
+  { damage: 'rect-outside', label: 'region width: 0.95' },
   { damage: 'tag-number', label: 'tagIds: [7]' },
   { damage: 'anchor-kind', label: "anchor.kind: 'page'" },
   { damage: 'anchor-text', label: "anchor: 'region'" },
@@ -76,6 +78,10 @@ function damagedCapture(damage: RowDamage): Readonly<Record<string, unknown>> {
       ...row,
       anchor: { ...row.anchor, regions: [{ ...region, rect: { ...region.rect, x: '0.12' } }] },
     }))
+    .with('rect-outside', () => ({
+      ...row,
+      anchor: { ...row.anchor, regions: [{ ...region, rect: { ...region.rect, width: 0.95 } }] },
+    }))
     .with('tag-number', () => ({ ...row, tagIds: [7] }))
     .with('anchor-kind', () => ({ ...row, anchor: { ...row.anchor, kind: 'page' } }))
     .with('anchor-text', () => ({ ...row, anchor: 'region' }))
@@ -97,21 +103,6 @@ function parsedRow(text: string): unknown {
   }
 }
 
-function defaultsApplied(row: StoredCapture, capture: Capture): readonly string[] {
-  const origin =
-    row.origin === capture.origin
-      ? []
-      : [
-          `origin: ${row.origin === undefined ? 'missing' : JSON.stringify(row.origin)} → '${capture.origin}'`,
-        ];
-  const note = row.note === undefined && 'note' in capture ? ['note: missing → null'] : [];
-  const confidence =
-    row.confidence !== undefined && !('confidence' in capture)
-      ? [`confidence: ${String(row.confidence)} dropped, a written capture has none`]
-      : [];
-  return [...origin, ...note, ...confidence];
-}
-
 function readCheck(row: StoredCapture): CaptureRowCheck {
   let listed: ReturnType<typeof capturesFromStored>;
   try {
@@ -120,9 +111,7 @@ function readCheck(row: StoredCapture): CaptureRowCheck {
     return { kind: 'listing-fails', reason: describeCause(cause) };
   }
   const [capture] = listed.captures;
-  if (capture !== undefined) {
-    return { kind: 'read', capture, defaults: defaultsApplied(row, capture) };
-  }
+  if (capture !== undefined) return { kind: 'read', capture };
   const [unreadable] = listed.unreadable;
   if (unreadable === undefined) throw new Error('The stored row was neither read nor set aside');
   return { kind: 'set-aside', id: unreadable.id, reason: setAsideReason(row) };

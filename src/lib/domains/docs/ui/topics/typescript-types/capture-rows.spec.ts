@@ -7,42 +7,33 @@ function checked(damage: RowDamage) {
 }
 
 describe('checkedCaptureRow', () => {
-  it('reads the undamaged row as a recognized capture with no defaults', () => {
+  it('reads the undamaged row as a recognized capture', () => {
     const result = checked('none');
 
     expect(result.kind).toBe('read');
     if (result.kind !== 'read') return;
     expect(result.capture.origin).toBe('recognized');
-    expect(result.defaults).toEqual([]);
   });
 
-  it('fills a missing origin and a missing note with their defaults', () => {
-    expect(checked('origin-missing')).toMatchObject({
-      kind: 'read',
-      defaults: ["origin: missing → 'recognized'"],
-    });
-    expect(checked('note-missing')).toMatchObject({
-      kind: 'read',
-      defaults: ['note: missing → null'],
-    });
+  it.each([
+    { damage: 'origin-missing', reason: 'A stored capture lacks its origin' },
+    { damage: 'note-missing', reason: 'A stored capture lacks its note' },
+    {
+      damage: 'written-confidence',
+      reason: 'A stored capture holds an unknown note for a written capture: null',
+    },
+  ] as const)('sets the $damage row aside, with no default for the field', ({ damage, reason }) => {
+    expect(checked(damage)).toEqual({ kind: 'set-aside', id: 'c-41', reason });
   });
 
-  it('drops the confidence of a written capture, which its type has no field for', () => {
-    const result = checked('written-confidence');
-
-    expect(result).toMatchObject({
-      kind: 'read',
-      defaults: ['confidence: 0.94 dropped, a written capture has none'],
-    });
-    if (result.kind !== 'read') return;
-    expect('confidence' in result.capture).toBe(false);
-  });
-
-  it('sets a row aside and names the field when a field has no safe default', () => {
+  it('sets a row aside and names the field that fails its check', () => {
     expect(checked('region-x-text')).toEqual({
       kind: 'set-aside',
       id: 'c-41',
       reason: 'A stored capture holds an unknown region x: 0.12',
+    });
+    expect(checked('rect-outside')).toMatchObject({
+      reason: 'A stored capture holds an unknown region rect outside the page: 0.12,0.05,0.95,0.2',
     });
     expect(checked('tag-number')).toMatchObject({
       reason: 'A stored capture holds an unknown tag ids: 7',

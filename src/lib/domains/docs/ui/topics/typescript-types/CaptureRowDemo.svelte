@@ -46,11 +46,7 @@
     </Field>
     {#if result.kind === 'read'}
       <Alert variant="success" title="Read as a {result.capture.origin} capture">
-        {#if result.defaults.length === 0}
-          Every field passed its check.
-        {:else}
-          Filled or dropped: <code>{result.defaults.join(', ')}</code>
-        {/if}
+        Every field passed its check.
       </Alert>
       <CodeBlock
         code={JSON.stringify(result.capture, null, 2)}

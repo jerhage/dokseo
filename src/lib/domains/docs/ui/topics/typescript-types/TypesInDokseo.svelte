@@ -125,10 +125,10 @@
   <p>
     <code>match(anchor.kind)</code> runs on an <code>unknown</code> value, so it ends in
     <code>.otherwise</code> rather than <code>.exhaustive()</code>: an unknown kind is a damaged
-    row, and the arm throws. Fields with a safe default take it instead of throwing: a missing
-    origin reads as <code>'recognized'</code>, a missing note as <code>null</code>. A row that
-    throws is set aside by its id, so one bad capture does not stop the others from loading. Try it
-    on a real row:
+    row, and the arm throws. No field has a default: a missing origin or a missing note throws like
+    a missing text, because a guess would look like data and the next save would store it. A row
+    that throws is set aside by its id, so one bad capture does not stop the others from loading.
+    Try it on a real row:
   </p>
   <CaptureRowDemo />
   <p>
@@ -155,10 +155,13 @@
   </p>
   <DocsCode label={WRITE_NOTE.label} code={WRITE_NOTE.code} />
   <p>
-    The stored row is not a union, because rows written before a variant existed must still read.
-    The mapper builds the variant from the stored origin, and copies only the fields that variant
-    has, so a stored confidence on a written row is dropped, because the written variant has no
-    field for it. The demo above shows that with the <q>origin: 'written', confidence kept</q> row.
+    The stored row is not a union: its type is every field of the widest variant, each
+    <code>unknown</code>, because nothing about a row is known before it is checked. The mapper
+    reads the origin first and builds that variant. A field the variant has must be present, with
+    <code>null</code> allowed for a note or a confidence, and a field the variant does not have must
+    be absent, so a written row with a note or a confidence is unreadable rather than trimmed. The
+    demo above shows that with the
+    <q>origin: 'written', note and confidence kept</q> row.
   </p>
   <DocsCode label={CAPTURE_ORIGIN_MATCH.label} code={CAPTURE_ORIGIN_MATCH.code} />
 </DocsSection>
@@ -346,8 +349,7 @@
     </li>
     <li>
       Type stored and parsed data as <code>unknown</code>, and check it field by field where it
-      enters. Give a field a default only when the default is safe; otherwise throw a
-      <code>CorruptRow</code> and set the row aside by its id.
+      enters. Give no field a default: throw a <code>CorruptRow</code> and set the row aside by its id.
     </li>
     <li>
       Write no <code>as</code> cast in application code. Construct the value so its type follows,
