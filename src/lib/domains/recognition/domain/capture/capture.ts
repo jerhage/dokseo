@@ -10,12 +10,12 @@ import {
   isStoredFields,
   isStoredList,
   isText,
-  isTextList,
   isTextOrNull,
+  isWholeNumber,
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
+import { captureId, imageIndex, parsedBookId, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 
@@ -92,7 +92,7 @@ function storedRegion(value: unknown): ImageRegion {
   const region = captureField('region', value, isStoredFields);
   const rect = captureField('region rect', region.rect, isStoredFields);
   return {
-    index: imageIndex(captureField('region index', region.index, isNumber)),
+    index: imageIndex(captureField('region index', region.index, isWholeNumber)),
     rect: imageRect(
       captureField('region x', rect.x, isNumber),
       captureField('region y', rect.y, isNumber),
@@ -129,38 +129,70 @@ function storedAnchor(value: unknown): Anchor {
     });
 }
 
-function storedOrigin(stored: StoredCapture): CaptureOrigin {
-  return isCaptureOrigin(stored.origin) ? stored.origin : 'recognized';
+function isKey(value: unknown): value is string {
+  return isText(value) && value.length > 0;
 }
 
-function storedNote(stored: StoredCapture): string | null {
-  return stored.note === undefined ? null : captureField('note', stored.note, isTextOrNull);
+function isTagIdList(value: unknown): value is readonly string[] {
+  return isStoredList(value) && value.every(isKey) && new Set(value).size === value.length;
 }
 
-function storedConfidence(stored: StoredCapture): number | null {
-  if (stored.confidence === undefined) return null;
-  return captureField('confidence', stored.confidence, isNumberOrNull);
+function storedBookId(value: unknown): BookId {
+  const id = isText(value) ? parsedBookId(value) : null;
+  if (id === null) throw new CorruptRow('capture', 'book id', value);
+  return id;
+}
+
+function storedEditedAt(value: unknown, createdAt: number): number | null {
+  const editedAt = captureField('edited time', value, isNumberOrNull);
+  if (editedAt !== null && editedAt < createdAt) {
+    throw new CorruptRow('capture', 'edited time before its created time', editedAt);
+  }
+  return editedAt;
+}
+
+function refuseForeignField(
+  stored: StoredCapture,
+  field: 'note' | 'confidence',
+  origin: string,
+): void {
+  if (Object.hasOwn(stored, field)) {
+    throw new CorruptRow('capture', `${field} for a ${origin} capture`, stored[field]);
+  }
 }
 
 function captureFromStored(stored: StoredCapture): Capture {
+  const origin = captureField('origin', stored.origin, isCaptureOrigin);
+  const createdAt = captureField('created time', stored.createdAt, isNumber);
   const held = {
-    id: captureId(captureField('id', stored.id, isText)),
-    bookId: bookId(captureField('book id', stored.bookId, isText)),
+    id: captureId(captureField('id', stored.id, isKey)),
+    bookId: storedBookId(stored.bookId),
     anchor: storedAnchor(stored.anchor),
     text: captureField('text', stored.text, isText),
-    createdAt: captureField('created time', stored.createdAt, isNumber),
-    editedAt: captureField('edited time', stored.editedAt, isNumberOrNull),
-    tagIds: captureField('tag ids', stored.tagIds, isTextList).map(tagId),
+    createdAt,
+    editedAt: storedEditedAt(stored.editedAt, createdAt),
+    tagIds: captureField('tag ids', stored.tagIds, isTagIdList).map(tagId),
   };
 
-  return match(storedOrigin(stored))
-    .with('written', () => ({ ...held, origin: 'written' as const }))
-    .with('lifted', () => ({ ...held, origin: 'lifted' as const, note: storedNote(stored) }))
+  return match(origin)
+    .with('written', () => {
+      refuseForeignField(stored, 'note', origin);
+      refuseForeignField(stored, 'confidence', origin);
+      return { ...held, origin: 'written' as const };
+    })
+    .with('lifted', () => {
+      refuseForeignField(stored, 'confidence', origin);
+      return {
+        ...held,
+        origin: 'lifted' as const,
+        note: captureField('note', stored.note, isTextOrNull),
+      };
+    })
     .with('recognized', () => ({
       ...held,
       origin: 'recognized' as const,
-      note: storedNote(stored),
-      confidence: storedConfidence(stored),
+      note: captureField('note', stored.note, isTextOrNull),
+      confidence: captureField('confidence', stored.confidence, isNumberOrNull),
     }))
     .exhaustive();
 }
@@ -183,6 +215,15 @@ function capturesFromStored(rows: readonly StoredCapture[]): StoredCaptures {
   return { captures, unreadable };
 }
 
+function movedCapture(row: StoredCapture, book: BookId): StoredCapture {
+  try {
+    return { ...captureFromStored(row), bookId: book };
+  } catch (cause) {
+    if (!(cause instanceof CorruptRow)) throw cause;
+    return { ...row, bookId: book };
+  }
+}
+
 function editedText(previous: string, text: string, origin: CaptureOrigin): string {
   const trimmed = text.trim();
   if (trimmed.length > 0) return trimmed;
@@ -195,7 +236,11 @@ function editedText(previous: string, text: string, origin: CaptureOrigin): stri
 }
 
 function editedCapture(capture: Capture, text: string, editedAt: number): Capture {
-  return { ...capture, text: editedText(capture.text, text, capture.origin), editedAt };
+  return {
+    ...capture,
+    text: editedText(capture.text, text, capture.origin),
+    editedAt: Math.max(editedAt, capture.createdAt),
+  };
 }
 
 function notedCapture<T extends NotableCapture>(capture: T, note: string): T {
@@ -211,11 +256,11 @@ export {
   takenCapture,
   captureFromStored,
   capturesFromStored,
+  movedCapture,
   editedText,
   editedCapture,
   notedCapture,
   oldestFirst,
-  storedOrigin,
 };
 export type {
   CaptureDraft,

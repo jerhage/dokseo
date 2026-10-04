@@ -46,9 +46,13 @@ describe('editCaptureText', () => {
   it('stores the new text over the record it was given, stamped with its clock', async () => {
     const { captures, saved } = repository();
 
-    const edited = await editCaptureText({ captures, now: () => 9 }, CAPTURE, 'こっちに来い');
+    const edited = await editCaptureText(
+      { captures, now: () => 1_700_000_000_009 },
+      CAPTURE,
+      'こっちに来い',
+    );
 
-    const expected = { ...CAPTURE, text: 'こっちに来い', editedAt: 9 };
+    const expected = { ...CAPTURE, text: 'こっちに来い', editedAt: 1_700_000_000_009 };
     expect(edited).toEqual({ kind: 'success', capture: expected });
     expect(saved).toEqual([expected]);
   });
