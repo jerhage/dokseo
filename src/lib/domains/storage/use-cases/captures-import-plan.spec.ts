@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Book } from '$lib/domains/library/domain/book/book';
-import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book';
+import type { RestoreCandidate } from '$lib/domains/library/domain/book/removed-book';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, seriesId, tagId } from '$lib/shared/ids';
-import { imagePlace } from '$lib/shared/reading-place';
+import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { BooklessCapture, FileBook } from './captures-file';
 import { planCapturesImport } from './captures-import-plan';
 import type { LocalHoldings, PlanMinting, ReadCapturesFile } from './captures-import-plan';
@@ -34,22 +34,22 @@ const SHELF: Book = {
   finishedAt: null,
 };
 
-const REMOVED: RemovedBook = {
+const OTHER_HASH = 'fedcba9876543210fedcba9876543210';
+
+const REMOVED: RestoreCandidate = {
   id: bookId('gone-1'),
   title: 'Aria 3',
   alias: null,
   seriesId: null,
   volume: null,
-  contentHash: 'fedcba',
+  contentHash: OTHER_HASH,
   fileName: 'aria-3.pdf',
-  language: 'ja',
-  direction: 'rtl',
   addedAt: 4,
 };
 
 const FILE_BOOK: FileBook = {
   key: 'book-1',
-  contentHash: HASH,
+  contentHash: contentHash(HASH),
   fileName: 'yotsuba-1.cbz',
   title: 'Yotsuba&! 1',
   alias: null,
@@ -65,12 +65,15 @@ const FILE_BOOK: FileBook = {
 const ELSEWHERE: FileBook = {
   ...FILE_BOOK,
   key: 'book-2',
-  contentHash: 'aaaa',
+  contentHash: contentHash('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
   fileName: 'kiki.epub',
   title: 'Kiki',
   alias: 'Witch',
   language: 'ja',
   direction: 'ltr',
+  layoutKind: 'flow',
+  sourceKind: 'epub',
+  imageCount: 0,
 };
 
 const KANJI: Tag = { id: tagId('tag-kanji'), name: 'Kanji', colour: 'sage', createdAt: 10 };
@@ -155,7 +158,10 @@ describe('planCapturesImport', () => {
   it('matches a file book to the shelf book by file name when the hash differs', () => {
     const plan = planCapturesImport(
       read([
-        { book: { ...FILE_BOOK, contentHash: 'zzz', title: 'Other' }, capture: bookless('c1') },
+        {
+          book: { ...FILE_BOOK, contentHash: contentHash(OTHER_HASH), title: 'Other' },
+          capture: bookless('c1'),
+        },
       ]),
       holdings(),
       minting(),
@@ -167,7 +173,10 @@ describe('planCapturesImport', () => {
   it('matches a file book to the shelf book by title when hash and file name differ', () => {
     const plan = planCapturesImport(
       read([
-        { book: { ...FILE_BOOK, contentHash: 'zzz', fileName: 'x.cbz' }, capture: bookless('c1') },
+        {
+          book: { ...FILE_BOOK, contentHash: contentHash(OTHER_HASH), fileName: 'x.cbz' },
+          capture: bookless('c1'),
+        },
       ]),
       holdings(),
       minting(),
@@ -180,7 +189,7 @@ describe('planCapturesImport', () => {
     const plan = planCapturesImport(
       read([
         {
-          book: { ...ELSEWHERE, contentHash: 'fedcba', fileName: 'aria-3.pdf' },
+          book: { ...ELSEWHERE, contentHash: contentHash(OTHER_HASH), fileName: 'aria-3.pdf' },
           capture: bookless('c1'),
         },
       ]),
@@ -196,7 +205,7 @@ describe('planCapturesImport', () => {
     expect(plan.summary.notOnThisDevice).toEqual({ books: 1, captures: 1 });
   });
 
-  it('creates one removed record from the file identity for an absent book and holds every capture under it', () => {
+  it('creates one removed record, a whole book at its start, from the file identity for an absent book and holds every capture under it', () => {
     const plan = planCapturesImport(
       read([
         { book: ELSEWHERE, capture: bookless('c1') },
@@ -213,11 +222,20 @@ describe('planCapturesImport', () => {
         alias: 'Witch',
         seriesId: null,
         volume: null,
-        contentHash: 'aaaa',
-        fileName: 'kiki.epub',
         language: 'ja',
+        layoutKind: 'flow',
         direction: 'ltr',
+        pagePairing: 'auto',
+        pageFit: 'width',
+        sourceKind: 'epub',
+        contentHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        fileName: 'kiki.epub',
+        imageCount: 0,
         addedAt: 500,
+        position: START_OF_THE_TEXT,
+        lastReadAt: null,
+        finishedAt: null,
+        removedAt: 500,
       },
     ]);
     expect(

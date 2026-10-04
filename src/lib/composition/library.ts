@@ -95,7 +95,7 @@ function buildLibrary(repository: LibraryRepository, mergeInto: MergeInto): Libr
     readCover: (id: BookId) => readCover({ repository }, id),
     readSource: (id: BookId) => readSource({ repository }, id),
     editBook: (id: BookId, edit: BookEdit) => editBook({ repository }, id, edit),
-    removeBook: (id: BookId) => removeBook({ repository }, id),
+    removeBook: (id: BookId) => removeBook({ repository, now: Date.now }, id),
     saveReadingPlace: (id: BookId, place: ReadingPlace) =>
       saveReadingPlace({ repository, now: Date.now }, id, place),
     markFinished: (id: BookId) => markFinished({ repository, now: Date.now }, id),

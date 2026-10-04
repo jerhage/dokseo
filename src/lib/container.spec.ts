@@ -3,7 +3,7 @@ import { buildContainer } from './container';
 import type { LibraryRepository } from './domains/library/domain/book/library-repository';
 import type { CaptureRepository } from './domains/recognition/domain/capture/capture-repository';
 import { bookId } from './shared/ids';
-import type { BookId } from './shared/ids';
+import type { BookId, ContentHash } from './shared/ids';
 
 const GONE = vi.hoisted(() => ({
   id: 'gone-1' as BookId,
@@ -11,11 +11,20 @@ const GONE = vi.hoisted(() => ({
   alias: null,
   seriesId: null,
   volume: null,
-  contentHash: '0123456789abcdef0123456789abcdef',
-  fileName: 'gone.epub',
   language: 'ja' as const,
+  layoutKind: 'flow' as const,
   direction: 'rtl' as const,
-  addedAt: null,
+  pagePairing: 'auto' as const,
+  pageFit: 'width' as const,
+  sourceKind: 'epub' as const,
+  contentHash: '0123456789abcdef0123456789abcdef' as ContentHash,
+  fileName: 'gone.epub',
+  imageCount: 0,
+  addedAt: 1,
+  position: { kind: 'text' as const, cfi: '', fraction: null },
+  lastReadAt: null,
+  finishedAt: null,
+  removedAt: 2,
 }));
 
 const held = vi.hoisted(() => ({

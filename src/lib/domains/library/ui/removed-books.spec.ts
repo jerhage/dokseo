@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { bookId } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { imagePlace } from '$lib/shared/reading-place';
 import { LOADING, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { RemovedBook } from '../domain/book/removed-book';
@@ -22,11 +23,20 @@ const REMOVED: RemovedBook = {
   alias: null,
   seriesId: null,
   volume: null,
-  contentHash: '0123456789abcdef0123456789abcdef',
-  fileName: 'yotsuba-1.epub',
   language: 'ja',
+  layoutKind: 'paged',
   direction: 'rtl',
-  addedAt: null,
+  pagePairing: 'auto',
+  pageFit: 'height',
+  sourceKind: 'epub',
+  contentHash: contentHash('0123456789abcdef0123456789abcdef'),
+  fileName: 'yotsuba-1.epub',
+  imageCount: 12,
+  addedAt: 1,
+  position: imagePlace(imageIndex(0)),
+  lastReadAt: null,
+  finishedAt: null,
+  removedAt: 2,
 };
 
 describe('removedBookName', () => {

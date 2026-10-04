@@ -3,7 +3,7 @@ import type { FileSelection } from '$lib/components/file-selection';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { bookId, captureId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type {
@@ -28,7 +28,7 @@ import type { ImportFile } from './captures-import.svelte';
 
 const BOOK: FileBook = {
   key: 'book-1',
-  contentHash: 'abc',
+  contentHash: contentHash('0123456789abcdef0123456789abcdef'),
   fileName: 'volume-1.cbz',
   title: 'Volume 1',
   alias: null,

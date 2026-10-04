@@ -82,6 +82,8 @@ const OLD_SHAPE = {
   position: 45,
 };
 
+const REMOVED_AT = 1758500000000;
+
 beforeEach(() => {
   held.stores.clear();
   held.blobs.clear();
@@ -132,7 +134,7 @@ describe('createLibraryRepository', () => {
     held.blobs.set('old-1.cover', new Blob(['cover']));
     const repository = createLibraryRepository();
 
-    const removed = await repository.remove(bookId('old-1'));
+    const removed = await repository.remove(bookId('old-1'), REMOVED_AT);
     const listed = await repository.list();
 
     expect(removed).toEqual({ kind: 'success' });
@@ -142,30 +144,28 @@ describe('createLibraryRepository', () => {
     expect(listed).toEqual({ kind: 'success', books: [], unreadable: [] });
   });
 
-  it('keeps a removed record with the title, hash and file name of a book it removes', async () => {
-    store('books').set(GOOD.id, GOOD);
+  it('keeps the whole book it removes, with the time of removal, as the removed record', async () => {
+    const stored = { ...GOOD, alias: 'Mine', seriesId: 'series-1', volume: 4 };
+    store('books').set(GOOD.id, stored);
     const repository = createLibraryRepository();
 
-    await repository.remove(bookId('good-1'));
+    await repository.remove(bookId('good-1'), REMOVED_AT);
     const removed = await repository.listRemoved();
 
+    expect(store('removed-books').get('good-1')).toEqual({ ...stored, removedAt: REMOVED_AT });
     expect(removed).toEqual({
       kind: 'success',
-      removed: [
-        {
-          id: 'good-1',
-          title: 'Yotsuba&! 1',
-          alias: null,
-          seriesId: null,
-          volume: null,
-          contentHash: HASH,
-          fileName: 'Yotsuba&! 1.cbz',
-          language: 'ja',
-          direction: 'rtl',
-          addedAt: 1758240000000,
-        },
-      ],
+      removed: [{ ...bookFromStored(stored), removedAt: REMOVED_AT }],
     });
+  });
+
+  it('writes no field a book row does not know into the removed record', async () => {
+    store('books').set(GOOD.id, { ...GOOD, shelfColour: 'teal' });
+    const repository = createLibraryRepository();
+
+    await repository.remove(bookId('good-1'), REMOVED_AT);
+
+    expect(store('removed-books').get('good-1')).toEqual({ ...GOOD, removedAt: REMOVED_AT });
   });
 
   it('stores a rename as the alias and keeps the original title in the row', async () => {
@@ -210,42 +210,24 @@ describe('createLibraryRepository', () => {
     expect(store('books').get('good-1')).toBe(corrupt);
   });
 
-  it('keeps the series id and volume of a book it removes in the removed record', async () => {
-    store('books').set(GOOD.id, { ...GOOD, seriesId: 'series-1', volume: 4 });
-    const repository = createLibraryRepository();
-
-    await repository.remove(bookId('good-1'));
-    const removed = await repository.listRemoved();
-
-    expect(removed.kind === 'success' && removed.removed[0]).toMatchObject({
-      seriesId: 'series-1',
-      volume: 4,
-    });
-  });
-
-  it('keeps the alias of a book it removes in the removed record', async () => {
-    store('books').set(GOOD.id, { ...GOOD, alias: 'Mine' });
-    const repository = createLibraryRepository();
-
-    await repository.remove(bookId('good-1'));
-    const removed = await repository.listRemoved();
-
-    expect(removed.kind === 'success' && removed.removed[0]).toMatchObject({
-      title: 'Yotsuba&! 1',
-      alias: 'Mine',
-    });
-  });
-
-  it('keeps a removed record read from the raw fields of an unreadable row', async () => {
+  it('keeps the row of an unreadable book it removes as it is, which only a re-upload can match', async () => {
     store('books').set(OLD_SHAPE.id, { ...OLD_SHAPE, fileName: 'Yotsuba&! 2.cbz' });
     const repository = createLibraryRepository();
 
-    await repository.remove(bookId('old-1'));
+    await repository.remove(bookId('old-1'), REMOVED_AT);
     const removed = await repository.listRemoved();
+    const restorable = await repository.listRestorable();
 
-    expect(removed).toEqual({
+    expect(store('removed-books').get('old-1')).toEqual({
+      ...OLD_SHAPE,
+      fileName: 'Yotsuba&! 2.cbz',
+      removedAt: REMOVED_AT,
+    });
+    expect(removed).toEqual({ kind: 'success', removed: [] });
+    expect(restorable).toEqual({
       kind: 'success',
-      removed: [
+      removed: [],
+      unreadable: [
         {
           id: 'old-1',
           title: 'Yotsuba&! 2',
@@ -254,18 +236,32 @@ describe('createLibraryRepository', () => {
           volume: null,
           contentHash: '',
           fileName: 'Yotsuba&! 2.cbz',
-          language: 'ja',
-          direction: 'rtl',
           addedAt: 1758240000001,
         },
       ],
     });
   });
 
+  it.each([
+    ['without its removed time', { ...GOOD, id: 'gone-1' }],
+    [
+      'with a legacy content hash',
+      { ...GOOD, id: 'gone-1', contentHash: 'a'.repeat(64), removedAt: 1 },
+    ],
+    ['without its language', { ...GOOD, id: 'gone-1', language: undefined, removedAt: 1 }],
+  ])('lists no removed record stored %s', async (_, record) => {
+    store('removed-books').set('gone-1', record);
+
+    const removed = await createLibraryRepository().listRemoved();
+
+    expect(removed).toEqual({ kind: 'success', removed: [] });
+  });
+
   it('offers removed records and unreadable rows as restorable, and no readable book', async () => {
     store('books').set(GOOD.id, GOOD);
     store('books').set(OLD_SHAPE.id, OLD_SHAPE);
-    store('removed-books').set('gone-1', { id: 'gone-1', title: 'Gone', contentHash: 'abc' });
+    store('removed-books').set('gone-1', { ...GOOD, id: 'gone-1', removedAt: 1 });
+    store('removed-books').set('gone-2', { id: 'gone-2', title: 'Gone', contentHash: 'abc' });
 
     const restorable = await createLibraryRepository().listRestorable();
 
@@ -274,6 +270,7 @@ describe('createLibraryRepository', () => {
     ]);
     expect(restorable.kind === 'success' && restorable.unreadable.map((book) => book.id)).toEqual([
       'old-1',
+      'gone-2',
     ]);
   });
 
@@ -300,40 +297,14 @@ describe('createLibraryRepository', () => {
   });
 
   it('stores a removed record it is given, which the restorable list then offers', async () => {
+    const record = { ...bookFromStored({ ...GOOD, id: 'held-1' }), removedAt: 5 };
     const repository = createLibraryRepository();
 
-    await repository.addRemoved({
-      id: bookId('held-1'),
-      title: 'Aria 3',
-      alias: null,
-      seriesId: null,
-      volume: null,
-      contentHash: 'fedcba',
-      fileName: 'aria-3.pdf',
-      language: 'ja',
-      direction: 'rtl',
-      addedAt: 5,
-    });
+    await repository.addRemoved(record);
     const restorable = await repository.listRestorable();
 
-    expect(restorable).toEqual({
-      kind: 'success',
-      removed: [
-        {
-          id: 'held-1',
-          title: 'Aria 3',
-          alias: null,
-          seriesId: null,
-          volume: null,
-          contentHash: 'fedcba',
-          fileName: 'aria-3.pdf',
-          language: 'ja',
-          direction: 'rtl',
-          addedAt: 5,
-        },
-      ],
-      unreadable: [],
-    });
+    expect(store('removed-books').get('held-1')).toEqual(record);
+    expect(restorable).toEqual({ kind: 'success', removed: [record], unreadable: [] });
   });
 
   it('reads a stored page list that lacks its names as unreadable', async () => {

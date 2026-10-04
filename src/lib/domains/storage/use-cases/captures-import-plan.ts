@@ -1,11 +1,17 @@
 import { match } from 'ts-pattern';
+import {
+  defaultPageFit,
+  DEFAULT_PAGE_PAIRING,
+  placeToStart,
+} from '$lib/domains/library/domain/book/book';
 import type { Book } from '$lib/domains/library/domain/book/book';
 import { restorableMatch, shelfMatch } from '$lib/domains/library/domain/book/book-matching';
 import type {
   MatchProbe,
   RestorableCandidates,
 } from '$lib/domains/library/domain/book/book-matching';
-import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book';
+import { removedRecord } from '$lib/domains/library/domain/book/removed-book';
+import type { RemovedBook, RestoreCandidate } from '$lib/domains/library/domain/book/removed-book';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { sameTagName } from '$lib/domains/recognition/domain/tag/tag';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
@@ -23,7 +29,7 @@ type ReadCapturesFile = Extract<ReadCapturesFileResult, { readonly kind: 'read' 
 
 type LocalHoldings = {
   readonly shelf: readonly Book[];
-  readonly restorable: RestorableCandidates<RemovedBook>;
+  readonly restorable: RestorableCandidates<RestoreCandidate>;
   readonly tags: readonly Tag[];
   readonly unreadableTagIds: readonly TagId[];
   readonly captures: readonly Capture[];
@@ -36,7 +42,7 @@ type PlanMinting = {
 
 type BookMatch =
   | { readonly kind: 'shelf'; readonly book: Book }
-  | { readonly kind: 'restorable'; readonly book: RemovedBook }
+  | { readonly kind: 'restorable'; readonly book: RestoreCandidate }
   | { readonly kind: 'absent'; readonly record: RemovedBook };
 
 type PlannedBook = { readonly file: FileBook; readonly match: BookMatch };
@@ -100,18 +106,28 @@ function probeOf(file: FileBook): MatchProbe {
 }
 
 function absentRecord(file: FileBook, minting: PlanMinting): RemovedBook {
-  return {
+  const now = minting.now();
+  const book: Book = {
     id: bookId(minting.newId()),
     title: file.title,
     alias: file.alias,
     seriesId: file.seriesId,
     volume: file.volume,
+    language: file.language,
+    layoutKind: file.layoutKind,
+    direction: file.direction,
+    pagePairing: DEFAULT_PAGE_PAIRING,
+    pageFit: defaultPageFit(file.layoutKind),
+    sourceKind: file.sourceKind,
     contentHash: file.contentHash,
     fileName: file.fileName,
-    language: file.language,
-    direction: file.direction,
-    addedAt: minting.now(),
+    imageCount: file.imageCount,
+    addedAt: now,
+    position: placeToStart(file.layoutKind),
+    lastReadAt: null,
+    finishedAt: null,
   };
+  return removedRecord(book, now);
 }
 
 function bookMatch(file: FileBook, holdings: LocalHoldings, minting: PlanMinting): BookMatch {

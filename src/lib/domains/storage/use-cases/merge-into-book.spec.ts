@@ -61,7 +61,7 @@ function world(outcomes: Outcomes = {}) {
   };
   const deps: MergeIntoBookDeps = {
     moving: { captures },
-    removing: { repository },
+    removing: { repository, now: () => 1 },
     forgetting: { repository },
   };
   return { deps, steps };

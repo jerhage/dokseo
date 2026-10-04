@@ -47,11 +47,20 @@ const REMOVED: RemovedBook = {
   alias: null,
   seriesId: null,
   volume: null,
-  contentHash: 'fedcba',
-  fileName: 'kaze.pdf',
   language: 'ja',
+  layoutKind: 'paged',
   direction: 'rtl',
-  addedAt: null,
+  pagePairing: 'auto',
+  pageFit: 'height',
+  sourceKind: 'pdf',
+  contentHash: contentHash('fedcba9876543210fedcba9876543210'),
+  fileName: 'kaze.pdf',
+  imageCount: 40,
+  addedAt: 1,
+  position: imagePlace(imageIndex(0)),
+  lastReadAt: null,
+  finishedAt: null,
+  removedAt: 2,
 };
 
 const KANJI: Tag = { id: tagId('tag-kanji'), name: 'kanji', colour: 'sage', createdAt: 10 };
@@ -174,7 +183,7 @@ describe('exportBookCaptures', () => {
 
     expect(read).toMatchObject({
       kind: 'read',
-      books: [{ title: '風の谷', layoutKind: null }],
+      books: [{ title: '風の谷', layoutKind: 'paged' }],
       captures: [{ capture: { id: 'capture-3' } }],
     });
   });

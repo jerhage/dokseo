@@ -14,7 +14,7 @@ import type {
   LibraryWrite,
 } from '../domain/book/library-repository';
 import type { PageOrder } from '../domain/book/page-list';
-import type { RemovedBook } from '../domain/book/removed-book';
+import type { RemovedBook, RestoreCandidate } from '../domain/book/removed-book';
 import type { ContentDigest } from '../domain/ingest/content-hasher';
 import type { EpubInspectionAnswer } from '../domain/ingest/epub-inspection';
 import type { EpubInspector } from '../domain/ingest/epub-inspector';
@@ -118,8 +118,8 @@ function fakeRepository(
   outcome: LibraryWrite = WRITTEN,
   writes: readonly (readonly [number, number])[] = [],
   held: BookListing = listing([]),
-  restorable: readonly RemovedBook[] = [],
-  unreadable: readonly RemovedBook[] = [],
+  restorable: readonly RestoreCandidate[] = [],
+  unreadable: readonly RestoreCandidate[] = [],
 ) {
   const added: AddCall[] = [];
   const repository: LibraryRepository = {
@@ -138,11 +138,26 @@ function fakeRepository(
     readPageList: () => Promise.resolve({ kind: 'success', pageList: { kind: 'unlisted' } }),
     savePageList: () => Promise.resolve(WRITTEN),
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [] }),
-    listRestorable: () => Promise.resolve({ kind: 'success', removed: restorable, unreadable }),
+    listRestorable: () =>
+      Promise.resolve({ kind: 'success', removed: restorable.map(removedBookOf), unreadable }),
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
   };
   return { repository, added };
+}
+
+function removedBookOf(candidate: RestoreCandidate): RemovedBook {
+  return {
+    ...heldBook(contentHash(candidate.contentHash)),
+    id: candidate.id,
+    title: candidate.title,
+    alias: candidate.alias,
+    seriesId: candidate.seriesId,
+    volume: candidate.volume,
+    fileName: candidate.fileName,
+    addedAt: candidate.addedAt ?? 0,
+    removedAt: 0,
+  };
 }
 
 function fakeBuilder(outcome: SourceBuild, stages: readonly UploadStage[] = []) {
@@ -285,7 +300,7 @@ const folder: readonly File[] = [
 
 const OTHER_DIGEST = '0123456789abcdef0123456789abcdef';
 
-function removedRecord(overrides: Partial<RemovedBook> = {}): RemovedBook {
+function removedRecord(overrides: Partial<RestoreCandidate> = {}): RestoreCandidate {
   return {
     id: bookId('gone-1'),
     title: 'Yotsuba&! 1',
@@ -294,8 +309,6 @@ function removedRecord(overrides: Partial<RemovedBook> = {}): RemovedBook {
     volume: null,
     contentHash: OTHER_DIGEST,
     fileName: 'other.cbz',
-    language: 'ja',
-    direction: 'rtl',
     addedAt: null,
     ...overrides,
   };
@@ -986,7 +999,7 @@ describe('openFile', () => {
     };
   }
 
-  function brokenKino(overrides: Partial<RemovedBook> = {}): RemovedBook {
+  function brokenKino(overrides: Partial<RestoreCandidate> = {}): RestoreCandidate {
     return removedRecord({
       id: bookId('a816bb74-9c83-4e11-a8bf-ce63119b9e24'),
       title: KINO,

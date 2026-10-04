@@ -20,7 +20,7 @@ import type { LayoutKind } from '$lib/shared/layout-kind';
 import { isPageFit } from '$lib/shared/page-fit';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import { isSourceKind } from './book';
+import { isSourceKind, sourceFitsLayout } from './book';
 import type { Book, SourceKind } from './book';
 
 type StoredBook = { readonly [Field in keyof Book]?: unknown };
@@ -73,8 +73,8 @@ function storedSeriesId(value: unknown): SeriesId | null {
 
 function storedSourceKind(value: unknown, layoutKind: LayoutKind): SourceKind {
   const sourceKind = bookField('source kind', value, isSourceKind);
-  if (layoutKind === 'flow' && sourceKind !== 'epub') {
-    throw new CorruptRow('book', 'source kind for a flow book', sourceKind);
+  if (!sourceFitsLayout(layoutKind, sourceKind)) {
+    throw new CorruptRow('book', `source kind for a ${layoutKind} book`, sourceKind);
   }
   return sourceKind;
 }

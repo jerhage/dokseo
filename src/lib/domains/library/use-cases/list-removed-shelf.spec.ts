@@ -6,7 +6,8 @@ import type {
   RemovedListing,
 } from '../domain/book/library-repository';
 import type { RemovedBook } from '../domain/book/removed-book';
-import { bookId } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { listRemovedShelf } from './list-removed-shelf';
 
@@ -21,11 +22,20 @@ function removedBook(id: string): RemovedBook {
     alias: null,
     seriesId: null,
     volume: null,
-    contentHash: '0123456789abcdef0123456789abcdef',
-    fileName: `${id}.cbz`,
     language: 'ja',
+    layoutKind: 'paged',
     direction: 'rtl',
-    addedAt: null,
+    pagePairing: 'auto',
+    pageFit: 'height',
+    sourceKind: 'epub',
+    contentHash: contentHash('0123456789abcdef0123456789abcdef'),
+    fileName: `${id}.cbz`,
+    imageCount: 12,
+    addedAt: 1,
+    position: imagePlace(imageIndex(0)),
+    lastReadAt: null,
+    finishedAt: null,
+    removedAt: 2,
   };
 }
 

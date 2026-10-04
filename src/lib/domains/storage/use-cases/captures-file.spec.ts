@@ -41,16 +41,16 @@ const SHELF = shelfBook('shelf-1', 'Yotsuba&! 1');
 const IDLE = shelfBook('idle-1', 'Aaa idle');
 
 const REMOVED: RemovedBook = {
-  id: bookId('gone-1'),
-  title: 'Aria 3',
+  ...shelfBook('gone-1', 'Aria 3'),
   alias: null,
-  seriesId: null,
-  volume: null,
-  contentHash: 'fedcba',
-  fileName: 'aria-3.pdf',
   language: 'ko',
+  layoutKind: 'continuous',
   direction: 'ltr',
-  addedAt: null,
+  sourceKind: 'pdf',
+  contentHash: contentHash('fedcba9876543210fedcba9876543210'),
+  fileName: 'aria-3.pdf',
+  imageCount: 40,
+  removedAt: 3,
 };
 
 const KANJI: Tag = { id: tagId('tag-kanji'), name: 'kanji', colour: 'sage', createdAt: 10 };
@@ -150,10 +150,10 @@ describe('buildCapturesFile', () => {
     ]);
   });
 
-  it('writes a removed book with null layout kind, source kind and image count', () => {
+  it('writes a removed book with the layout kind, source kind and image count its record keeps', () => {
     expect(BUILT.file.books[0]).toEqual({
       key: 'book-1',
-      contentHash: 'fedcba',
+      contentHash: 'fedcba9876543210fedcba9876543210',
       fileName: 'aria-3.pdf',
       title: 'Aria 3',
       alias: null,
@@ -161,9 +161,9 @@ describe('buildCapturesFile', () => {
       volume: null,
       language: 'ko',
       direction: 'ltr',
-      layoutKind: null,
-      sourceKind: null,
-      imageCount: null,
+      layoutKind: 'continuous',
+      sourceKind: 'pdf',
+      imageCount: 40,
     });
   });
 
@@ -269,11 +269,31 @@ describe('readCapturesFile', () => {
     });
   });
 
-  it('reads a removed book with its null fields', () => {
-    expect(read(BUILT.json).books[0]).toMatchObject({
-      layoutKind: null,
-      sourceKind: null,
-      imageCount: null,
+  it.each([
+    ['a null layout kind', 'layoutKind', null, 'A stored book holds an unknown layout kind: null'],
+    ['a null source kind', 'sourceKind', null, 'A stored book holds an unknown source kind: null'],
+    ['a null image count', 'imageCount', null, 'A stored book holds an unknown image count: null'],
+    ['a negative image count', 'imageCount', -1, 'A stored book holds an unknown image count: -1'],
+    [
+      'a content hash that is not a partial MD5',
+      'contentHash',
+      'fedcba',
+      'A stored book holds an unknown content hash: fedcba',
+    ],
+    [
+      'an EPUB-only layout from a PDF',
+      'layoutKind',
+      'flow',
+      'A stored book holds an unknown source kind for a flow book: pdf',
+    ],
+  ])('rejects a book entry with %s', (_, name, value, detail) => {
+    const file = read(edited((raw) => (entry(raw, 'books', 0)[name] = value)));
+
+    expect(file.books.map((book) => book.key)).toEqual(['book-2']);
+    expect(file.unreadable[0]).toEqual({
+      section: 'books',
+      index: 0,
+      reason: { kind: 'invalid', detail },
     });
   });
 

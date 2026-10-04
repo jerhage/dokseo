@@ -1,13 +1,21 @@
-import { isNumber, isNumberOrNull, isText } from '$lib/shared/corrupt-row';
+import {
+  CorruptRow,
+  isNumber,
+  isNumberOrNull,
+  isText,
+  knownStoredValue,
+} from '$lib/shared/corrupt-row';
 import { parsedBookId, seriesId } from '$lib/shared/ids';
 import type { BookId, SeriesId } from '$lib/shared/ids';
-import { isLanguage } from '$lib/shared/language';
-import type { Language } from '$lib/shared/language';
-import { effectiveDirection, isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
-import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { Book } from './book';
+import { bookFromStored } from './stored-book';
 
-type RemovedBook = {
+type RemovedBook = Book & { readonly removedAt: number };
+
+type StoredRemovedBook = { readonly [Field in keyof RemovedBook]?: unknown };
+
+type RestoreCandidate = {
   readonly id: BookId;
   readonly title: string;
   readonly alias: string | null;
@@ -15,9 +23,12 @@ type RemovedBook = {
   readonly volume: number | null;
   readonly contentHash: string;
   readonly fileName: string;
-  readonly language: Language;
-  readonly direction: ReadingDirection;
   readonly addedAt: number | null;
+};
+
+type StoredRemovedBooks = {
+  readonly removed: readonly RemovedBook[];
+  readonly unreadable: readonly StoredRemovedBook[];
 };
 
 type RemovedShelf =
@@ -39,17 +50,34 @@ type RetiredRow = {
   readonly volume?: unknown;
   readonly contentHash?: unknown;
   readonly fileName?: unknown;
-  readonly language?: unknown;
-  readonly direction?: unknown;
-  readonly layoutKind?: unknown;
   readonly addedAt?: unknown;
 };
 
 const UNTITLED_BOOK = 'Untitled book';
 
-const FALLBACK_LANGUAGE: Language = 'ja';
+function removedRecord(book: Book, removedAt: number): RemovedBook {
+  return { ...book, removedAt };
+}
 
-const FALLBACK_DIRECTION: ReadingDirection = 'rtl';
+function removedBookFromStored(stored: StoredRemovedBook): RemovedBook {
+  const book = bookFromStored(stored);
+  const removedAt = knownStoredValue('removed book', 'removed time', stored.removedAt, isNumber);
+  return removedRecord(book, removedAt);
+}
+
+function removedBooksFromStored(rows: readonly StoredRemovedBook[]): StoredRemovedBooks {
+  const removed: RemovedBook[] = [];
+  const unreadable: StoredRemovedBook[] = [];
+  for (const row of rows) {
+    try {
+      removed.push(removedBookFromStored(row));
+    } catch (error) {
+      if (!(error instanceof CorruptRow)) throw error;
+      unreadable.push(row);
+    }
+  }
+  return { removed, unreadable };
+}
 
 function textOf(value: unknown): string {
   return isText(value) ? value : '';
@@ -66,19 +94,14 @@ function aliasOf(value: unknown): string | null {
 }
 
 function seriesIdOf(value: unknown): SeriesId | null {
-  return isText(value) ? seriesId(value) : null;
+  return isText(value) && value.length > 0 ? seriesId(value) : null;
 }
 
 function volumeOf(value: unknown): number | null {
   return isNumberOrNull(value) ? value : null;
 }
 
-function directionOf(row: RetiredRow): ReadingDirection {
-  const direction = isReadingDirection(row.direction) ? row.direction : FALLBACK_DIRECTION;
-  return isLayoutKind(row.layoutKind) ? effectiveDirection(direction, row.layoutKind) : direction;
-}
-
-function removedBookFrom(row: RetiredRow): RemovedBook | null {
+function restoreCandidateFrom(row: RetiredRow): RestoreCandidate | null {
   const id = isText(row.id) ? parsedBookId(row.id) : null;
   if (id === null) return null;
   return {
@@ -89,18 +112,32 @@ function removedBookFrom(row: RetiredRow): RemovedBook | null {
     volume: volumeOf(row.volume),
     contentHash: textOf(row.contentHash),
     fileName: textOf(row.fileName),
-    language: isLanguage(row.language) ? row.language : FALLBACK_LANGUAGE,
-    direction: directionOf(row),
     addedAt: isNumber(row.addedAt) ? row.addedAt : null,
   };
 }
 
-function removedBooksFrom(rows: readonly RetiredRow[]): readonly RemovedBook[] {
+function restoreCandidatesFrom(rows: readonly RetiredRow[]): readonly RestoreCandidate[] {
   return rows.flatMap((row) => {
-    const removed = removedBookFrom(row);
-    return removed === null ? [] : [removed];
+    const candidate = restoreCandidateFrom(row);
+    return candidate === null ? [] : [candidate];
   });
 }
 
-export { UNTITLED_BOOK, removedBookFrom, removedBooksFrom };
-export type { CapturesDeletion, RemovalWithCaptures, RemovedBook, RemovedShelf, RetiredRow };
+export {
+  UNTITLED_BOOK,
+  removedBookFromStored,
+  removedBooksFromStored,
+  removedRecord,
+  restoreCandidateFrom,
+  restoreCandidatesFrom,
+};
+export type {
+  CapturesDeletion,
+  RemovalWithCaptures,
+  RemovedBook,
+  RemovedShelf,
+  RestoreCandidate,
+  RetiredRow,
+  StoredRemovedBook,
+  StoredRemovedBooks,
+};

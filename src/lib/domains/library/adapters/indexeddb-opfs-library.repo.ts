@@ -26,8 +26,12 @@ import type {
 } from '../domain/book/library-repository';
 import { pageListFromStored } from '../domain/book/page-list';
 import type { PageOrder, StoredPageList } from '../domain/book/page-list';
-import { removedBookFrom, removedBooksFrom } from '../domain/book/removed-book';
-import type { RemovedBook, RetiredRow } from '../domain/book/removed-book';
+import {
+  removedBooksFromStored,
+  removedRecord,
+  restoreCandidatesFrom,
+} from '../domain/book/removed-book';
+import type { RemovedBook, StoredRemovedBook } from '../domain/book/removed-book';
 import { bookFromStored, booksFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
@@ -75,6 +79,11 @@ function upgrade(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(REMOVED_BOOK_STORE)) {
     db.createObjectStore(REMOVED_BOOK_STORE, { keyPath: 'id' });
   }
+}
+
+function retired(row: StoredBook, removedAt: number): StoredRemovedBook {
+  const [book] = booksFromStored([row]).books;
+  return book === undefined ? { ...row, removedAt } : removedRecord(book, removedAt);
 }
 
 async function discard(keys: BlobKeys): Promise<void> {
@@ -173,13 +182,12 @@ function createLibraryRepository(): LibraryRepository {
       return WRITTEN;
     },
 
-    async remove(id: BookId): Promise<LibraryWrite> {
+    async remove(id: BookId, removedAt: number): Promise<LibraryWrite> {
       if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
       const keys = blobKeys(id);
       const db = await database();
-      const row = await getRecord<RetiredRow>(db, BOOK_STORE, id);
-      const kept = row === undefined ? null : removedBookFrom(row);
-      if (kept !== null) await putRecord(db, REMOVED_BOOK_STORE, kept);
+      const row = await getRecord<StoredBook>(db, BOOK_STORE, id);
+      if (row !== undefined) await putRecord(db, REMOVED_BOOK_STORE, retired(row, removedAt));
       await deleteRecord(db, BOOK_STORE, id);
       await deleteRecord(db, PAGE_LIST_STORE, id);
       return unlessRefused<LibraryWrite>(async () => {
@@ -191,21 +199,23 @@ function createLibraryRepository(): LibraryRepository {
 
     async listRemoved(): Promise<RemovedListing> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-      const rows = await listRecords<RetiredRow>(await database(), REMOVED_BOOK_STORE);
-      return { kind: 'success', removed: removedBooksFrom(rows) };
+      const rows = await listRecords<StoredRemovedBook>(await database(), REMOVED_BOOK_STORE);
+      return { kind: 'success', removed: removedBooksFromStored(rows).removed };
     },
 
     async listRestorable(): Promise<RestorableListing> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       const db = await database();
-      const removed = await listRecords<RetiredRow>(db, REMOVED_BOOK_STORE);
+      const records = removedBooksFromStored(
+        await listRecords<StoredRemovedBook>(db, REMOVED_BOOK_STORE),
+      );
       const rows = await listRecords<StoredBook>(db, BOOK_STORE);
       const unreadable = new Set<unknown>(booksFromStored(rows).unreadable.map((book) => book.id));
       const broken = rows.filter((row) => unreadable.has(row.id));
       return {
         kind: 'success',
-        removed: removedBooksFrom(removed),
-        unreadable: removedBooksFrom(broken),
+        removed: records.removed,
+        unreadable: restoreCandidatesFrom([...broken, ...records.unreadable]),
       };
     },
 
