@@ -42,23 +42,23 @@
       store: 'removed-books',
       key: 'id',
       holds:
-        'What is kept of a removed book, so its captures still have a title and a new upload of it can be matched',
+        'The whole row of a removed book plus the time it was removed, so its captures still have a title and a new upload of it can be matched',
     },
     {
-      database: 'recognition v4',
+      database: 'recognition v5',
       store: 'captures',
-      key: 'id, indexed by bookId',
+      key: 'id, indexed by bookId and by each tag id',
       holds: 'Recognized text, its regions on the page, note and tags',
     },
-    { database: 'recognition v4', store: 'tags', key: 'id', holds: 'The tags a capture can have' },
+    { database: 'recognition v5', store: 'tags', key: 'id', holds: 'The tags a capture can have' },
     {
-      database: 'recognition v4',
+      database: 'recognition v5',
       store: 'model-consent',
       key: 'language',
       holds: "The agreement to download a language's model, naming the model",
     },
     {
-      database: 'recognition v4',
+      database: 'recognition v5',
       store: 'recognizer-setup',
       key: 'language',
       holds: 'The chosen model and compute for a language',
@@ -152,7 +152,10 @@
   <p>
     An upgrade creates only the stores that are missing, and never touches a row. That is how
     <code>reader</code> reached version 3: removing a book started keeping a record of it, which
-    needed the <code>removed-books</code> store, and the books already stored stayed as they were.
+    needed the <code>removed-books</code> store, and the books already stored stayed as they were. From
+    1.0 on, the same steps are the only way to change what a stored row holds: a new version, and an upgrade
+    that rewrites the rows to the new format. An older build then cannot open the database at all, so
+    no build ever reads a row in a format it does not know.
   </p>
   <DocsCode label={READER_UPGRADE.label} code={READER_UPGRADE.code} />
 </DocsSection>

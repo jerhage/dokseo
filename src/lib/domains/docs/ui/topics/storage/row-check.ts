@@ -14,7 +14,7 @@ type RowDamage =
   | 'id-unsafe';
 
 type RowCheck =
-  | { readonly kind: 'read'; readonly book: Book; readonly fallbacks: readonly string[] }
+  | { readonly kind: 'read'; readonly book: Book }
   | { readonly kind: 'set-aside'; readonly unreadable: UnreadableBook; readonly reason: string }
   | { readonly kind: 'listing-fails'; readonly reason: string };
 
@@ -24,6 +24,8 @@ const STORED_ROW: StoredBook = {
   id: 'b7f3c2a0-5d1e-4c8a-9f2b-1e6d3a4c5b70',
   title: 'Harbor Lights, Volume 1',
   alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
@@ -49,8 +51,6 @@ const DAMAGE_OPTIONS: readonly DamageOption[] = [
   { damage: 'id-unsafe', label: "id: '../books'" },
 ];
 
-const FALLBACK_FIELDS = ['language', 'direction', 'pagePairing', 'pageFit'] as const;
-
 function isRowDamage(value: string): value is RowDamage {
   return DAMAGE_OPTIONS.some((option) => option.damage === value);
 }
@@ -71,13 +71,6 @@ function damagedRow(row: StoredBook, damage: RowDamage): StoredBook {
     .exhaustive();
 }
 
-function fallbackFields(row: StoredBook, book: Book): readonly string[] {
-  return FALLBACK_FIELDS.filter((field) => row[field] !== book[field]).map(
-    (field) =>
-      `${field}: ${row[field] === undefined ? 'missing' : String(row[field])} → ${book[field]}`,
-  );
-}
-
 function corruptReason(row: StoredBook): string {
   try {
     bookFromStored(row);
@@ -96,7 +89,7 @@ function checkedRow(row: StoredBook): RowCheck {
   }
 
   const [book] = listed.books;
-  if (book !== undefined) return { kind: 'read', book, fallbacks: fallbackFields(row, book) };
+  if (book !== undefined) return { kind: 'read', book };
 
   const [unreadable] = listed.unreadable;
   if (unreadable === undefined) throw new Error('The stored row was neither read nor set aside');
