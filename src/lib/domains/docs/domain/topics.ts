@@ -151,7 +151,7 @@ const DOCS_TOPICS = [
     title: 'IndexedDB as a database',
     summary:
       'Stores, keys and indexes, transactions, version upgrades, and joining data in code because IndexedDB has no joins.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'accessibility',

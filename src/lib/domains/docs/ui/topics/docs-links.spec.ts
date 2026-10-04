@@ -9,6 +9,7 @@ import * as asyncCorrectness from './async-correctness/async-sections';
 import * as bookIdentity from './book-identity/sections';
 import * as epubRendering from './epub-rendering/epub-sections';
 import * as exportImport from './export-import/export-import-sections';
+import * as indexedDb from './indexeddb/indexeddb-sections';
 import * as ocr from './ocr/ocr-sections';
 import * as offline from './offline/sections';
 import * as releasesAndCi from './releases-and-ci/sections';
@@ -50,7 +51,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   workers: workers.WORKERS_SECTIONS,
   'typescript-types': typescriptTypes.TYPE_SECTIONS,
   'async-correctness': asyncCorrectness.ASYNC_SECTIONS,
-  indexeddb: {},
+  indexeddb: indexedDb.INDEXEDDB_SECTIONS,
   accessibility: {},
 };
 
@@ -60,6 +61,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'book-identity/sections.ts': bookIdentity,
   'epub-rendering/epub-sections.ts': epubRendering,
   'export-import/export-import-sections.ts': exportImport,
+  'indexeddb/indexeddb-sections.ts': indexedDb,
   'ocr/ocr-sections.ts': ocr,
   'offline/sections.ts': offline,
   'releases-and-ci/sections.ts': releasesAndCi,
