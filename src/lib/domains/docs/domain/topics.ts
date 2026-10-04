@@ -93,8 +93,9 @@ const DOCS_TOPICS = [
   {
     slug: 'releases-and-ci',
     title: 'Releases and CI',
-    summary: 'How a change becomes a release.',
-    status: 'planned',
+    summary:
+      'Semantic versions, Conventional Commits, release pull requests and CI, then how Dokseo releases with release-please and GitHub Actions and deploys to Cloudflare Workers.',
+    status: 'published',
   },
   {
     slug: 'testing',
