@@ -1,5 +1,7 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
+  import DeliverySection from './security-headers/DeliverySection.svelte';
+  import IsolationSection from './security-headers/IsolationSection.svelte';
   import PolicySection from './security-headers/PolicySection.svelte';
   import { SECTIONS } from './security-headers/sections';
 </script>
@@ -12,4 +14,6 @@
   {/snippet}
 
   <PolicySection />
+  <DeliverySection />
+  <IsolationSection />
 </DocsPage>
