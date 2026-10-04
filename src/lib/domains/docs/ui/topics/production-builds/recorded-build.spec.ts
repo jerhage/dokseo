@@ -31,7 +31,11 @@ function devOnlyFilesNamed(pattern: RegExp): number {
   ).length;
 }
 
-const STATIC_FILES = filesUnder('static').map((path) => relative('static', path));
+const OS_METADATA_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
+
+const STATIC_FILES = filesUnder('static')
+  .filter((path) => !OS_METADATA_FILES.has(path.split(/[/\\]/u).at(-1) ?? ''))
+  .map((path) => relative('static', path));
 
 describe('the recorded builds', () => {
   it.each([BUILD_WITH_PLUGIN, BUILD_WITHOUT_PLUGIN])(
