@@ -104,6 +104,62 @@ const DOCS_TOPICS = [
       'Unit, browser and end-to-end tests, fakes and mocks, regression, mutation and drift tests, then Vitest’s two projects, the verify ladder and probes in Dokseo.',
     status: 'published',
   },
+  {
+    slug: 'sql-set-theory',
+    title: 'SQL as set theory',
+    summary:
+      'Relations as sets, and each SQL operator as a set operation: selection, projection, joins, semi-joins, anti-joins, union, intersection, difference and grouping.',
+    status: 'planned',
+  },
+  {
+    slug: 'sql-patterns',
+    title: 'SQL patterns',
+    summary:
+      'If you want this, write that: N+1 and how to avoid it, projections, existence checks, rows with no match, conditional aggregation and window functions.',
+    status: 'planned',
+  },
+  {
+    slug: 'unicode',
+    title: 'Unicode and Japanese text',
+    summary:
+      'Code points, UTF-16 and graphemes, normalization, vertical writing and ruby, and how Dokseo handles Japanese text.',
+    status: 'planned',
+  },
+  {
+    slug: 'workers',
+    title: 'Workers and data transfer',
+    summary:
+      'Dedicated workers, cloning and transferring data, SharedArrayBuffer and Atomics, and how Dokseo uses workers.',
+    status: 'planned',
+  },
+  {
+    slug: 'typescript-types',
+    title: 'TypeScript type design',
+    summary:
+      'Discriminated unions, exhaustive matching, brands, and solving a type problem by construction instead of with a cast.',
+    status: 'planned',
+  },
+  {
+    slug: 'async-correctness',
+    title: 'Async correctness',
+    summary:
+      'Races and stale answers, cancellation, promises that never settle, and the patterns Dokseo uses against them.',
+    status: 'planned',
+  },
+  {
+    slug: 'indexeddb',
+    title: 'IndexedDB as a database',
+    summary:
+      'Stores, keys and indexes, transactions, version upgrades, and joining data in code because IndexedDB has no joins.',
+    status: 'planned',
+  },
+  {
+    slug: 'accessibility',
+    title: 'Accessibility in a reader',
+    summary:
+      'Focus, keyboard paging, modals and focus traps, roles and live regions, applied to Dokseo.',
+    status: 'planned',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];

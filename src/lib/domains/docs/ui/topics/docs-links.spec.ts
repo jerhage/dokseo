@@ -38,6 +38,14 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'rendering-pages': renderingPages.RENDERING_SECTIONS,
   'releases-and-ci': releasesAndCi.RELEASE_SECTIONS,
   testing: testing.TESTING_SECTIONS,
+  'sql-set-theory': {},
+  'sql-patterns': {},
+  unicode: {},
+  workers: {},
+  'typescript-types': {},
+  'async-correctness': {},
+  indexeddb: {},
+  accessibility: {},
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
