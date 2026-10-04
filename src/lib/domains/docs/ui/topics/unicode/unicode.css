@@ -1,0 +1,36 @@
+@layer features {
+  @scope (.unicode-vertical) {
+    .stage {
+      block-size: var(--layout-list-height);
+      inline-size: 100%;
+      overflow: auto;
+      padding: var(--sp-4);
+      font-size: var(--text-xl);
+      line-height: var(--lh-loose);
+    }
+    .mode-horizontal-tb {
+      writing-mode: horizontal-tb;
+    }
+    .mode-vertical-rl {
+      writing-mode: vertical-rl;
+    }
+    .mode-vertical-lr {
+      writing-mode: vertical-lr;
+    }
+    .orientation-mixed {
+      text-orientation: mixed;
+    }
+    .orientation-upright {
+      text-orientation: upright;
+    }
+    .orientation-sideways {
+      text-orientation: sideways;
+    }
+    .combined {
+      text-combine-upright: all;
+    }
+    .readings-hidden :is(rt, rp) {
+      display: none;
+    }
+  }
+}
