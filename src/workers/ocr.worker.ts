@@ -1,6 +1,5 @@
 import { chosenDevice } from '$lib/domains/recognition/domain/engine/compute-choice';
 import type { ComputeChoice } from '$lib/domains/recognition/domain/engine/compute-choice';
-import { japaneseOcrText } from '$lib/domains/recognition/domain/engine/japanese-ocr-text';
 import { mostLikelyToken } from '$lib/domains/recognition/domain/engine/most-likely-token';
 import type { DecoderLogits } from '$lib/domains/recognition/domain/engine/most-likely-token';
 import type { RecognizerDevice } from '$lib/domains/recognition/domain/engine/recognizer-session';
@@ -9,6 +8,7 @@ import { knownModel } from '$lib/domains/recognition/domain/model/model-footprin
 import { QUANTIZED_THROUGHOUT } from '$lib/domains/recognition/domain/model/model-weights';
 import { describeCause } from '$lib/shared/cause';
 import { guardFirstGpuRun, openOnDevice, reopenOnCpu } from './device-fallback';
+import { jaOcrText } from './ja-ocr-text';
 import { installModelFetch } from './model-fetch';
 import { explainUnreachable } from './network-reach';
 import type { OcrReply, OcrRequest } from './ocr-worker-protocol';
@@ -144,7 +144,7 @@ async function openSession(
       }
 
       const decoded: string = tokenizer.decode(tokens, { skip_special_tokens: true });
-      return japaneseOcrText(decoded);
+      return jaOcrText(decoded);
     },
   };
 }

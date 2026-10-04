@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { japaneseOcrText } from './japanese-ocr-text';
+import { jaOcrText } from './ja-ocr-text';
 
-describe('japaneseOcrText', () => {
+describe('jaOcrText', () => {
   it('strips every space the decoder put between characters', () => {
-    expect(japaneseOcrText('お は よ う')).toBe('おはよう');
-    expect(japaneseOcrText('こん\nに\tちは ')).toBe('こんにちは');
+    expect(jaOcrText('お は よ う')).toBe('おはよう');
+    expect(jaOcrText('こん\nに\tちは ')).toBe('こんにちは');
   });
 
   it.each([
@@ -17,6 +17,6 @@ describe('japaneseOcrText', () => {
     'これは本です',
     'ドラゴン・ボール',
   ])('leaves %j as the model wrote it', (text) => {
-    expect(japaneseOcrText(text)).toBe(text);
+    expect(jaOcrText(text)).toBe(text);
   });
 });
