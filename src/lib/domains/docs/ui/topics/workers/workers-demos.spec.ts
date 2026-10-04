@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { ROOT_WORKER_SOURCE } from '../../../domain/demo-protocol';
-import { BUFFER_WORKER_SOURCE, ECHO_WORKER_SOURCE, PRIMES_WORKER_SOURCE } from './demo-workers';
+import {
+  BUFFER_WORKER_SOURCE,
+  COUNTER_WORKER_SOURCE,
+  ECHO_WORKER_SOURCE,
+  PRIMES_WORKER_SOURCE,
+} from './demo-workers';
 import type { DemoPort, StartDemoWorker } from './demo-workers';
 import { JankDemo } from './jank-demo.svelte';
 import type { FrameClock } from './jank-demo.svelte';
 import { POST_SAMPLES } from './post-samples';
 import { PostTester } from './post-tester.svelte';
 import { ProtocolDemo, TERMINATED } from './protocol-demo.svelte';
+import { SharedCounter } from './shared-counter.svelte';
 import { TransferDemo } from './transfer-demo.svelte';
 
 type Scope = { onmessage: ((event: { data: unknown }) => void) | null };
@@ -202,5 +208,43 @@ describe('ProtocolDemo', () => {
     expect(demo.rows.map((row) => row.state)).toEqual(
       Array.from({ length: 4 }, () => ({ kind: 'abandoned', cause: TERMINATED })),
     );
+  });
+});
+
+describe('SharedCounter', () => {
+  it('adds every increment with Atomics.add from two workers', async () => {
+    const counter = new SharedCounter({
+      startWorker: inProcess().start,
+      now: () => 0,
+      times: 1000,
+    });
+
+    await counter.count('atomic');
+
+    expect(COUNTER_WORKER_SOURCE).toContain('Atomics.add');
+    expect(counter.runs[0]).toMatchObject({ mode: 'atomic', expected: 2000, total: 2000 });
+  });
+
+  it('reports what Atomics.wait does on the calling thread', () => {
+    const counter = new SharedCounter({ startWorker: inProcess().start, now: () => 0 });
+
+    counter.waitOnPage();
+
+    expect(counter.pageWait).toBe('Returned "timed-out"');
+  });
+
+  it('wakes a waiting worker with Atomics.notify', async () => {
+    const posted: unknown[] = [];
+    const counter = new SharedCounter({
+      startWorker: inProcess((m) => posted.push(m)).start,
+      now: () => 0,
+    });
+
+    counter.startWaiter();
+    expect(counter.wake()).toBe(0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(posted).toMatchObject([{ mode: 'wait' }]);
+    expect(counter.waiter).toEqual({ kind: 'woke', result: 'not-equal' });
   });
 });
