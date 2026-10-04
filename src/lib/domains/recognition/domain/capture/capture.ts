@@ -106,6 +106,10 @@ function storedRegion(value: unknown): ImageRegion {
   };
 }
 
+function isRegionList(value: unknown): value is readonly unknown[] {
+  return isStoredList(value) && value.length > 0;
+}
+
 function storedQuote(value: unknown): TextQuote {
   const quote = captureField('quote', value, isStoredFields);
   return {
@@ -119,7 +123,7 @@ function storedAnchor(value: unknown): Anchor {
   const anchor = captureField('anchor', value, isStoredFields);
   return match(anchor.kind)
     .with('region', () =>
-      regionAnchor(captureField('regions', anchor.regions, isStoredList).map(storedRegion)),
+      regionAnchor(captureField('regions', anchor.regions, isRegionList).map(storedRegion)),
     )
     .with('text', () =>
       textAnchor(

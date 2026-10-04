@@ -191,7 +191,7 @@ const CAPTURE_NOTES: readonly FieldNote[] = [
     path: 'anchor.regions[].index',
     type: 'number',
     meaning: 'Region: the image the box is on.',
-    rule: 'A whole number',
+    rule: 'A whole number; the list holds at least one region',
   },
   {
     path: 'anchor.regions[].rect.x',

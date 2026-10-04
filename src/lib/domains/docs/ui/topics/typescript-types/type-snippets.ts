@@ -106,7 +106,7 @@ const STORED_ANCHOR: SourceSnippet = {
   const anchor = captureField('anchor', value, isStoredFields);
   return match(anchor.kind)
     .with('region', () =>
-      regionAnchor(captureField('regions', anchor.regions, isStoredList).map(storedRegion)),
+      regionAnchor(captureField('regions', anchor.regions, isRegionList).map(storedRegion)),
     )
     .with('text', () =>
       textAnchor(
