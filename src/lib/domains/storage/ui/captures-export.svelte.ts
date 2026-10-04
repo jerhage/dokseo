@@ -22,6 +22,7 @@ type LeftOut = {
 type ExportSummary = LeftOut & {
   readonly captures: number;
   readonly books: number;
+  readonly storedUnreadable: number;
 };
 
 type CapturesExportState =
@@ -76,6 +77,21 @@ function leftOutNotes(leftOut: LeftOut): readonly string[] {
   ].filter((note) => note !== null);
 }
 
+function storedUnreadableNote(count: number): string | null {
+  if (count === 0) return null;
+  return count === 1
+    ? '1 stored row that could not be read is kept in the file as it was stored. Import does not bring it back.'
+    : `${count} stored rows that could not be read are kept in the file as they were stored. Import does not bring them back.`;
+}
+
+function savedNotes(summary: ExportSummary): readonly string[] {
+  const { bookless, unreadable, storedUnreadable } = summary;
+  return [
+    ...leftOutNotes({ bookless, unreadable: { books: unreadable.books, tags: 0, captures: 0 } }),
+    storedUnreadableNote(storedUnreadable),
+  ].filter((note) => note !== null);
+}
+
 function exportStatus(state: CapturesExportState): ExportStatus | null {
   return match(state)
     .returnType<ExportStatus | null>()
@@ -83,7 +99,7 @@ function exportStatus(state: CapturesExportState): ExportStatus | null {
     .with({ kind: 'saved' }, ({ summary }) => ({
       variant: 'success',
       message: savedText(summary),
-      notes: leftOutNotes(summary),
+      notes: savedNotes(summary),
     }))
     .with({ kind: 'nothing-to-export' }, ({ leftOut }) => ({
       variant: 'info',
@@ -117,6 +133,7 @@ function summaryOf(exported: CapturesExport): ExportSummary {
     books: exported.books,
     bookless: exported.bookless,
     unreadable: exported.unreadable,
+    storedUnreadable: exported.storedUnreadable,
   };
 }
 
@@ -196,7 +213,7 @@ class CapturesExportView {
   }
 }
 
-export { CapturesExportView, exportStatus, leftOutNotes, savedText };
+export { CapturesExportView, exportStatus, leftOutNotes, savedNotes, savedText };
 export type {
   CapturesExportState,
   CapturesExporting,
