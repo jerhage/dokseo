@@ -20,7 +20,7 @@ import {
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import type { StoredFields } from '$lib/shared/corrupt-row';
-import type { CaptureId, SeriesId, TagId } from '$lib/shared/ids';
+import type { CaptureId, TagId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import { isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
 import { CAPTURES_FILE_FORMAT, CAPTURES_FILE_VERSION } from './captures-file';
@@ -94,14 +94,6 @@ function isKey(value: unknown): value is string {
   return isText(value) && value.length > 0;
 }
 
-function fileSeriesId(value: unknown): SeriesId | null {
-  return value === undefined ? null : storedSeriesId(value);
-}
-
-function fileVolume(value: unknown): number | null {
-  return value === undefined ? null : field('book', 'volume', value, isNumberOrNull);
-}
-
 function fileBook(entry: unknown): FileBook {
   const book = fields('book', entry);
   const layoutKind = field('book', 'layout kind', book.layoutKind, isLayoutKind);
@@ -111,8 +103,8 @@ function fileBook(entry: unknown): FileBook {
     fileName: field('book', 'file name', book.fileName, isText),
     title: field('book', 'title', book.title, isText),
     alias: field('book', 'alias', book.alias, isTextOrNull),
-    seriesId: fileSeriesId(book.seriesId),
-    volume: fileVolume(book.volume),
+    seriesId: storedSeriesId(book.seriesId),
+    volume: field('book', 'volume', book.volume, isNumberOrNull),
     language: field('book', 'language', book.language, isLanguage),
     direction: field('book', 'direction', book.direction, isReadingDirection),
     layoutKind,

@@ -92,15 +92,10 @@ volume: restoring?.volume ?? null,`,
 };
 
 const FILE_SERIES_FIELDS: SourceSnippet = {
-  label: 'The export file reads them as optional',
+  label: 'The export file reads them with the book row checks',
   file: 'src/lib/domains/storage/use-cases/read-captures-file.ts',
-  code: `function fileSeriesId(value: unknown): SeriesId | null {
-  return value === undefined ? null : storedSeriesId(value);
-}
-
-function fileVolume(value: unknown): number | null {
-  return value === undefined ? null : field('book', 'volume', value, isNumberOrNull);
-}`,
+  code: `seriesId: storedSeriesId(book.seriesId),
+volume: field('book', 'volume', book.volume, isNumberOrNull),`,
 };
 
 const FOLIATE_SERIES: SourceSnippet = {

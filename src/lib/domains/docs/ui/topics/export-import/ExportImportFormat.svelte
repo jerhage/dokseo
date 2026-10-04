@@ -33,7 +33,7 @@
     {
       field: 'seriesId, volume',
       holds:
-        'Reserved for series, null for every book today. Optional: a file without them reads them as null.',
+        'Reserved for series, null for every book today. Required: an entry without them is skipped.',
     },
     {
       field: 'language, direction',

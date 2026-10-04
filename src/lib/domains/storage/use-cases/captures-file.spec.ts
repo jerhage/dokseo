@@ -397,22 +397,18 @@ describe('readCapturesFile', () => {
     expect(read(built.json).books).toEqual(built.file.books);
   });
 
-  it('reads a file whose books carry no series id or volume as books in no series', () => {
-    const text = edited((raw) => {
-      for (const book of entries(raw, 'books')) {
-        delete book.seriesId;
-        delete book.volume;
-      }
+  it.each([
+    ['series id', 'seriesId', 'A stored book lacks its series id'],
+    ['volume', 'volume', 'A stored book lacks its volume'],
+  ])('rejects a book entry that lacks its %s, as a stored book row', (_, name, detail) => {
+    const file = read(edited((raw) => delete entry(raw, 'books', 1)[name]));
+
+    expect(file.books.map((book) => book.key)).toEqual(['book-1']);
+    expect(file.unreadable[0]).toEqual({
+      section: 'books',
+      index: 1,
+      reason: { kind: 'invalid', detail },
     });
-
-    const file = read(text);
-
-    expect(file.unreadable).toEqual([]);
-    expect(file.books).toEqual(BUILT.file.books);
-    expect(file.books.map((book) => [book.seriesId, book.volume])).toEqual([
-      [null, null],
-      [null, null],
-    ]);
   });
 
   it.each([
