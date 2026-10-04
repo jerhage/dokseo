@@ -1,0 +1,12 @@
+@layer features {
+  @scope (.rendering-url-demo) {
+    .shown {
+      inline-size: 100%;
+      block-size: auto;
+      background-color: var(--color-surface);
+    }
+    .url {
+      overflow-wrap: anywhere;
+    }
+  }
+}
