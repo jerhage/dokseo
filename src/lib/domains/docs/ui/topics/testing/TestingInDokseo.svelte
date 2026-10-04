@@ -215,7 +215,8 @@
   <p>
     Some rules are about the source itself: no Svelte file has a <code>&lt;style&gt;</code> block, every
     class the markup writes is defined in a stylesheet, design-system internals appear only in the design-system
-    folders. Neither the type checker nor the linter states rules like these, but a unit test can: list
+    folders. The docs pages are exempt from the first and the last, so that they can quote CSS as it is
+    written. Neither the type checker nor the linter states rules like these, but a unit test can: list
     the files, read each as text, and collect the offenders.
   </p>
   <DocsCode label={SOURCE_WALKER.label} code={SOURCE_WALKER.code} />

@@ -197,8 +197,10 @@ const SOURCE_WALKER: SourceSnippet = {
 const STYLE_BLOCK_TEST: SourceSnippet = {
   label: 'A rule as a test, in styles/source-styling.spec.ts',
   file: 'src/lib/styles/source-styling.spec.ts',
-  code: `it('has no <style> block in any Svelte file', () => {
-  const offenders = sourceFiles(['.svelte']).filter((path) => /<style[\\s>]/u.test(read(path)));
+  code: `it('has no <style> block in any Svelte file outside the docs', () => {
+  const offenders = sourceFiles(['.svelte'])
+    .filter((path) => !path.startsWith(DOCS_FOLDER))
+    .filter((path) => /<style[\\s>]/u.test(read(path)));
 
   expect(offenders).toEqual([]);
 });`,

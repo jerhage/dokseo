@@ -629,9 +629,10 @@ describe('the design system stylesheets', () => {
     expect(positions).toEqual(positions.toSorted((left, right) => left - right));
   });
 
-  it('keeps every --ds- name inside base and tokens', () => {
+  it('keeps every --ds- name inside base and tokens, apart from the docs that quote them', () => {
     const offenders = filesUnder(SOURCE, ['.css', '.svelte', '.html'])
       .filter((path) => !/^lib\/styles\/(base|tokens)\//u.test(path))
+      .filter((path) => !path.startsWith('lib/domains/docs/'))
       .filter((path) => read(new URL(path, SOURCE)).includes('--ds-'));
 
     expect(offenders).toEqual([]);

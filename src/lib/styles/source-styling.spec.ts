@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const SOURCE = new URL('../../', import.meta.url);
 const FEATURE_FOLDERS = ['lib/domains/', 'lib/shared/', 'routes/'];
+const DOCS_FOLDER = 'lib/domains/docs/';
 const TEXT_EXTENSIONS = ['.css', '.svelte', '.ts', '.js', '.html'];
 const LEGACY_PROPERTY = new RegExp('(?<![\\w-])--[cfsr]-[\\w-]+', 'u');
 
@@ -44,8 +45,10 @@ function isOneScopedFeatureBlock(source: string): boolean {
 }
 
 describe('the styling of the source tree', () => {
-  it('has no <style> block in any Svelte file', () => {
-    const offenders = sourceFiles(['.svelte']).filter((path) => /<style[\s>]/u.test(read(path)));
+  it('has no <style> block in any Svelte file outside the docs', () => {
+    const offenders = sourceFiles(['.svelte'])
+      .filter((path) => !path.startsWith(DOCS_FOLDER))
+      .filter((path) => /<style[\s>]/u.test(read(path)));
 
     expect(offenders).toEqual([]);
   });
