@@ -1,0 +1,17 @@
+@layer features {
+  @scope (.workers-jank-demo) {
+    .track {
+      container-type: inline-size;
+      block-size: var(--sp-6);
+      border-radius: var(--radius-pill);
+      background-color: var(--color-active);
+    }
+    .dot {
+      inline-size: var(--sp-6);
+      block-size: var(--sp-6);
+      border-radius: var(--radius-pill);
+      background-color: var(--color-primary);
+      translate: calc(var(--jank-position, 0) * (100cqi - var(--sp-6))) 0;
+    }
+  }
+}
