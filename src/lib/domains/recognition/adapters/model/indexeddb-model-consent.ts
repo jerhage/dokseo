@@ -6,7 +6,6 @@ import type {
   ConsentLookup,
   ConsentWrite,
   ModelConsentStore,
-  StoredModelConsent,
 } from '../../domain/model/model-consent';
 import type { ModelFootprint } from '../../domain/model/model-footprint';
 import { CONSENT_STORE, recognitionDatabase, recordsAvailable } from '../recognition-database';
@@ -17,13 +16,8 @@ function createModelConsentStore(now: () => number = Date.now): ModelConsentStor
   return {
     async decisionFor(language: Language, model: ModelFootprint | null): Promise<ConsentLookup> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-      const record = await getRecord<StoredModelConsent>(
-        await recognitionDatabase(),
-        CONSENT_STORE,
-        language,
-      );
-      const consent = record === undefined ? null : consentFromStored(record);
-      return { kind: 'success', decision: decisionOf(consent, model) };
+      const record = await getRecord<unknown>(await recognitionDatabase(), CONSENT_STORE, language);
+      return { kind: 'success', decision: decisionOf(consentFromStored(record), model) };
     },
 
     async recordGrant(language: Language, model: ModelFootprint | null): Promise<ConsentWrite> {
