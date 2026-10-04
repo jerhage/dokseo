@@ -324,6 +324,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
       pauseModelLoad: () => Promise.reject(new Error('not used')),
       cancelModelLoad: () => Promise.reject(new Error('not used')),
       exportBookCaptures: () => Promise.resolve({ kind: 'nothing-to-export' }),
+      exportUnreadableRows: () => ({ kind: 'nothing-to-export' }),
       closeRecognizer: () => Promise.reject(new Error('not used')),
     },
     flowing: {

@@ -17,6 +17,7 @@ import {
   buildCapturesImports,
   buildRemovedBooks,
   buildStorage,
+  buildUnreadableRowsExports,
 } from './composition/storage';
 import type {
   BookCapturesExports,
@@ -24,6 +25,7 @@ import type {
   CapturesImports,
   RemovedBooks,
   StorageUseCases,
+  UnreadableRowsExports,
 } from './composition/storage';
 import { createLibraryRepository } from './domains/library/adapters/indexeddb-opfs-library.repo';
 import { createCaptureRepository } from './domains/recognition/adapters/capture/indexeddb-captures.repo';
@@ -32,7 +34,7 @@ type Container = {
   readonly beginTrace: TraceFactory;
   readonly library: LibraryUseCases & RemovedBooks & BookCapturesExports;
   readonly flowing: FlowingUseCases;
-  readonly recognition: RecognitionUseCases & BookCapturesExports;
+  readonly recognition: RecognitionUseCases & BookCapturesExports & UnreadableRowsExports;
   readonly storage: StorageUseCases & CapturesExports & CapturesImports;
 };
 
@@ -50,7 +52,11 @@ function buildContainer(): Container {
       ...bookExports,
     },
     flowing: buildFlowing(),
-    recognition: { ...buildRecognition(captures), ...bookExports },
+    recognition: {
+      ...buildRecognition(captures),
+      ...bookExports,
+      ...buildUnreadableRowsExports(),
+    },
     storage: {
       ...buildStorage(),
       ...buildCapturesExports(repository, captures),

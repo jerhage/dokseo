@@ -202,6 +202,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
       pauseModelLoad: unused,
       cancelModelLoad: unused,
       exportBookCaptures: () => Promise.resolve({ kind: 'nothing-to-export' }),
+      exportUnreadableRows: () => ({ kind: 'nothing-to-export' }),
       closeRecognizer: (language: Language) => {
         engine.closes.push(language);
         return Promise.resolve();

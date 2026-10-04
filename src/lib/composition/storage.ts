@@ -19,6 +19,11 @@ import { exportBookCaptures } from '../domains/storage/use-cases/export-book-cap
 import type { ExportBookCapturesResult } from '../domains/storage/use-cases/export-book-captures';
 import { exportCaptures } from '../domains/storage/use-cases/export-captures';
 import type { ExportCapturesResult } from '../domains/storage/use-cases/export-captures';
+import { exportUnreadableRows } from '../domains/storage/use-cases/export-unreadable-rows';
+import type {
+  ExportUnreadableRowsResult,
+  UnreadableRowsToExport,
+} from '../domains/storage/use-cases/export-unreadable-rows';
 import { mergeIntoBook } from '../domains/storage/use-cases/merge-into-book';
 import type { MergeIntoBookResult } from '../domains/storage/use-cases/merge-into-book';
 import { removeBookAndCaptures } from '../domains/storage/use-cases/remove-book-and-captures';
@@ -38,6 +43,10 @@ type CapturesExports = {
 
 type BookCapturesExports = {
   readonly exportBookCaptures: (id: BookId) => Promise<ExportBookCapturesResult>;
+};
+
+type UnreadableRowsExports = {
+  readonly exportUnreadableRows: (rows: UnreadableRowsToExport) => ExportUnreadableRowsResult;
 };
 
 type CapturesImports = {
@@ -102,6 +111,13 @@ function buildBookCapturesExports(
         },
         id,
       ),
+  };
+}
+
+function buildUnreadableRowsExports(): UnreadableRowsExports {
+  return {
+    exportUnreadableRows: (rows: UnreadableRowsToExport) =>
+      exportUnreadableRows({ now: Date.now, appVersion: APP_VERSION }, rows),
   };
 }
 
@@ -174,6 +190,7 @@ export {
   buildCapturesExports,
   buildCapturesImports,
   buildRemovedBooks,
+  buildUnreadableRowsExports,
 };
 export type {
   StorageUseCases,
@@ -181,4 +198,5 @@ export type {
   CapturesExports,
   CapturesImports,
   RemovedBooks,
+  UnreadableRowsExports,
 };

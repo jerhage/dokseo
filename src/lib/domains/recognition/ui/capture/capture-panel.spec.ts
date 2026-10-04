@@ -178,6 +178,7 @@ function containerOf(store: Store): Container {
       pauseModelLoad: unused,
       cancelModelLoad: unused,
       exportBookCaptures: () => Promise.resolve({ kind: 'nothing-to-export' }),
+      exportUnreadableRows: () => ({ kind: 'nothing-to-export' }),
       closeRecognizer: unused,
     },
     flowing: {
