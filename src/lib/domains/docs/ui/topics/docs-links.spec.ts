@@ -21,6 +21,7 @@ import * as seriesPlan from './series-plan/series-sections';
 import * as sqlPatterns from './sql-patterns/sql-patterns-sections';
 import * as sqlSetTheory from './sql-set-theory/sql-set-sections';
 import * as storage from './storage/storage-sections';
+import * as storedFormat from './stored-format/stored-format-sections';
 import * as testing from './testing/testing-sections';
 import * as touchAndPointers from './touch-and-pointers/sections';
 import * as uiLibrary from './ui-library/sections';
@@ -41,6 +42,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   ocr: ocr.OCR_SECTIONS,
   offline: offline.OFFLINE_SECTIONS,
   storage: storage.STORAGE_SECTIONS,
+  'stored-format': storedFormat.STORED_FORMAT_SECTIONS,
   'epub-rendering': epubRendering.EPUB_SECTIONS,
   'book-identity': bookIdentity.IDENTITY_SECTIONS,
   'export-import': exportImport.EXPORT_IMPORT_SECTIONS,
@@ -80,6 +82,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'sql-patterns/sql-patterns-sections.ts': sqlPatterns,
   'sql-set-theory/sql-set-sections.ts': sqlSetTheory,
   'storage/storage-sections.ts': storage,
+  'stored-format/stored-format-sections.ts': storedFormat,
   'testing/testing-sections.ts': testing,
   'touch-and-pointers/sections.ts': touchAndPointers,
   'ui-library/sections.ts': uiLibrary,
