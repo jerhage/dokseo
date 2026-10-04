@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bookId } from '$lib/shared/ids';
+import { bookId, tagId } from '$lib/shared/ids';
 import { layoutOf, RECOGNITION_DATABASE } from '$lib/shared/testing/stored-format/database-layout';
 import type { OpenedDatabase, Upgrade } from '$lib/shared/testing/stored-format/database-layout';
 import {
   LIFTED_CAPTURE_ROW,
   RECOGNIZED_CAPTURE_ROW,
   SCORED_CAPTURE_ROW,
+  VOCABULARY_TAG_ROW,
   WRITTEN_CAPTURE_ROW,
 } from '$lib/shared/testing/stored-format/recognition-rows';
 import {
@@ -17,7 +18,7 @@ import {
 import { captureFromStored } from '../../domain/capture/capture';
 import { createCaptureRepository } from './indexeddb-captures.repo';
 
-type HeldRow = { readonly id: unknown; readonly bookId?: unknown };
+type HeldRow = { readonly id: unknown; readonly bookId?: unknown; readonly tagIds?: unknown };
 
 const held = vi.hoisted(() => ({
   opened: [] as OpenedDatabase[],
@@ -37,11 +38,15 @@ vi.mock('$lib/platform/idb/connection', () => ({
   rewriteByIndex: (
     _db: unknown,
     _store: string,
-    _index: string,
+    index: string,
     key: unknown,
     rewrite: (row: HeldRow) => HeldRow,
   ) => {
-    for (const row of [...held.rows.values()].filter((stored) => stored.bookId === key)) {
+    const indexed = (stored: HeldRow): boolean =>
+      index === 'tagIds'
+        ? Array.isArray(stored.tagIds) && stored.tagIds.includes(key)
+        : stored.bookId === key;
+    for (const row of [...held.rows.values()].filter(indexed)) {
       held.rows.set(row.id, rewrite(row));
     }
     return Promise.resolve();
@@ -172,6 +177,12 @@ const VARIANTS = [
 
 const CAPTURE_FORMAT_CHANGED = formatChanged('a capture row');
 
+function tagsOf(row: { readonly tagIds: readonly string[] }): readonly string[] {
+  return row.tagIds;
+}
+
+const TAGGED_VARIANTS = VARIANTS.filter(({ row }) => tagsOf(row).includes(VOCABULARY_TAG_ROW.id));
+
 beforeEach(() => {
   held.rows.clear();
   vi.stubGlobal('indexedDB', {});
@@ -209,6 +220,19 @@ describe('the 1.x capture row', () => {
       const written = held.rows.get(row.id);
       expect(written, CAPTURE_FORMAT_CHANGED).toStrictEqual({ ...row, bookId: another });
       expect(shapeOf(written), CAPTURE_FORMAT_CHANGED).toStrictEqual(shape);
+    });
+  }
+
+  for (const { name, row, fields } of TAGGED_VARIANTS) {
+    it(`writes ${name} with exactly the 1.x fields and field types when it untags it everywhere`, async () => {
+      held.rows.set(row.id, row);
+
+      await createCaptureRepository().untagEverywhere(tagId(VOCABULARY_TAG_ROW.id));
+
+      const written = held.rows.get(row.id);
+      const untagged = tagsOf(row).filter((id) => id !== VOCABULARY_TAG_ROW.id);
+      expect(written, CAPTURE_FORMAT_CHANGED).toStrictEqual({ ...row, tagIds: untagged });
+      expect(sortedKeys(written ?? {}), CAPTURE_FORMAT_CHANGED).toStrictEqual(fields);
     });
   }
 
