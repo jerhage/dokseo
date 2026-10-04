@@ -13,7 +13,7 @@
 
 <DocsDemo label="Sorting page names">
   {#snippet caption()}
-    The left column is the real <code>compareNatural</code>; the right is the default
+    The first list is the real <code>compareNatural</code>; the second is the default
     <code>sort()</code>, by UTF-16 code units.
   {/snippet}
   <div class="stack-md">

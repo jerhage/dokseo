@@ -112,7 +112,9 @@
       {#each forms as piece (piece.form)}
         <span class="me-2"
           ><code>{piece.form}</code>
-          {piece.changed ? `changes it (${piece.text.length} units)` : 'leaves it alone'}</span
+          {piece.changed
+            ? `changes it (${piece.text.length} ${piece.text.length === 1 ? 'unit' : 'units'})`
+            : 'leaves it alone'}</span
         >
       {/each}
     </p>

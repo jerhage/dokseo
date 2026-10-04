@@ -58,7 +58,10 @@
       {/each}
     </p>
     <p class="m-0 text-sm text-muted">
-      {segments.length} segments{granularity === 'word' ? `, ${words} of them word-like` : ''}.
+      {segments.length}
+      {segments.length === 1 ? 'segment' : 'segments'}{granularity === 'word'
+        ? `, ${words} of them word-like`
+        : ''}.
       <code>text.split(' ')</code> gives {parts.length}
       {parts.length === 1 ? 'part' : 'parts'}.
     </p>
