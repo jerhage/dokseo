@@ -115,7 +115,7 @@ const DOCS_TOPICS = [
     slug: 'sql-patterns',
     title: 'SQL patterns',
     summary:
-      'If you want this, write that: N+1 and how to avoid it, projections, existence checks, rows with no match, conditional aggregation and window functions.',
+      'If you want this, write that: N+1 and how to avoid it, projections, existence checks, rows with no match, conditional aggregation, window functions, common table expressions and recursive queries.',
     status: 'published',
   },
   {

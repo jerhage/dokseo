@@ -47,6 +47,36 @@ const RECIPES: readonly Recipe[] = [
     section: 'dedupe',
   },
   { want: 'two lists as one', use: 'UNION ALL, or UNION', section: 'combine' },
+  {
+    want: 'a name for each step of a long query',
+    use: 'WITH name AS (…), a common table expression',
+    section: 'cte',
+  },
+  {
+    want: 'one intermediate result used twice',
+    use: 'a CTE referenced twice',
+    section: 'cteSteps',
+  },
+  {
+    want: 'control over whether a CTE runs once',
+    use: 'MATERIALIZED or NOT MATERIALIZED',
+    section: 'cteCost',
+  },
+  {
+    want: 'every row below or above a node in a tree',
+    use: 'WITH RECURSIVE',
+    section: 'recursive',
+  },
+  {
+    want: 'a row for every day, even days with no data',
+    use: 'a counting WITH RECURSIVE, or generate_series in Postgres',
+    section: 'series',
+  },
+  {
+    want: 'to choose where an intermediate result lives',
+    use: 'a subquery, a CTE, a view or a temporary table',
+    section: 'cteChoice',
+  },
 ];
 
 export { RECIPES };
