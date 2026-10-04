@@ -14,6 +14,12 @@ const SQL_PATTERNS_SECTIONS = {
   label: 'Compute a label',
   dedupe: 'Remove duplicates',
   combine: 'Combine two lists',
+  cte: 'Name a subquery with WITH',
+  cteSteps: 'Write a query as named steps',
+  cteCost: 'What a CTE costs',
+  recursive: 'Walk a tree with WITH RECURSIVE',
+  series: 'Generate a series of rows',
+  cteChoice: 'CTE, subquery, view or temporary table',
 } as const;
 
 type SqlPatternsSectionKey = keyof typeof SQL_PATTERNS_SECTIONS;
