@@ -17,6 +17,7 @@ import * as storage from './storage/storage-sections';
 import * as testing from './testing/testing-sections';
 import * as touchAndPointers from './touch-and-pointers/sections';
 import * as uiLibrary from './ui-library/sections';
+import * as unicode from './unicode/unicode-sections';
 
 type DocsLink = {
   readonly file: string;
@@ -40,7 +41,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   testing: testing.TESTING_SECTIONS,
   'sql-set-theory': {},
   'sql-patterns': {},
-  unicode: {},
+  unicode: unicode.UNICODE_SECTIONS,
   workers: {},
   'typescript-types': {},
   'async-correctness': {},
@@ -62,6 +63,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'testing/testing-sections.ts': testing,
   'touch-and-pointers/sections.ts': touchAndPointers,
   'ui-library/sections.ts': uiLibrary,
+  'unicode/unicode-sections.ts': unicode,
 };
 
 const TOPICS_FOLDER = join('src', 'lib', 'domains', 'docs', 'ui', 'topics');

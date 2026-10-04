@@ -123,7 +123,7 @@ const DOCS_TOPICS = [
     title: 'Unicode and Japanese text',
     summary:
       'Code points, UTF-16 and graphemes, normalization, vertical writing and ruby, and how Dokseo handles Japanese text.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'workers',
