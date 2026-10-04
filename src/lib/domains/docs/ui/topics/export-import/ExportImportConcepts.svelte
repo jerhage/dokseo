@@ -173,12 +173,13 @@
     by a build with a bug. Reading it takes two separate decisions.
   </p>
   <p>
-    The first is how strict to be about one field. An app reading its own database can sometimes
-    fall back to a default: Dokseo reads an unknown language in a stored book row as Japanese, as
-    <a href="/docs/storage#reading-a-stored-row-back">reading a stored row back</a> shows. An import should
-    not guess. A guessed language or reading direction would be written into this device's database as
-    if it were real, and nothing would mark it as a guess afterwards. So an import checks every field
-    and rejects an entry with a bad one.
+    The first is how strict to be about one field. A reader could fall back to a default, for
+    example read an unknown language as Japanese. That is a guess, and an import should not guess. A
+    guessed language or reading direction would be written into this device's database as if it were
+    real, and nothing would mark it as a guess afterwards. So an import checks every field and
+    rejects an entry with a bad one. Dokseo reads its own database the same way, with no defaults,
+    as <a href="/docs/storage#reading-a-stored-row-back">reading a stored row back</a> shows, and a file
+    entry goes through the same checks as a stored row.
   </p>
   <p>
     The second is how much one bad entry costs. Rejection works per entry, not per file. A file of

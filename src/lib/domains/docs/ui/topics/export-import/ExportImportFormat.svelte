@@ -24,7 +24,10 @@
       field: 'key',
       holds: 'book-1, book-2 and so on, in title order. Only means something in the file.',
     },
-    { field: 'contentHash', holds: 'The partial MD5 of the book file.' },
+    {
+      field: 'contentHash',
+      holds: 'The partial MD5 of the book file: 32 lowercase hexadecimal characters.',
+    },
     { field: 'fileName', holds: 'The name of the file that was added.' },
     { field: 'title, alias', holds: 'The title, and the name the reader gave it, if any.' },
     {
@@ -38,12 +41,16 @@
     },
     {
       field: 'layoutKind, sourceKind, imageCount',
-      holds: 'Paged or continuous, the kind of file, the page count. null for a removed book.',
+      holds:
+        'paged, continuous or flow; images, pdf, archive or epub; the page count, a whole number. A flow book comes from an EPUB.',
     },
   ] as const;
 
   const READ_OUTCOMES = [
-    { reason: 'invalid', when: 'A field is missing or holds a value outside the known set.' },
+    {
+      reason: 'invalid',
+      when: 'A field is missing, holds a value outside the known set, or breaks a rule such as a rect inside the page.',
+    },
     { reason: 'repeated', when: 'A book key, tag id or capture id already appeared earlier.' },
     {
       reason: 'unknown-book',
@@ -87,22 +94,54 @@
     the stored capture with <code>bookId</code> replaced by <code>bookKey</code>; its own id, its
     tag ids, its anchor on the page, its text, note and times are copied unchanged. For the same
     book file the anchor means the same place on every device, because it names an image index and a
-    rectangle, or for an EPUB a CFI location and a quote of the text.
+    rectangle, or for an EPUB a CFI location and a quote of the text. The rectangle is stored as
+    fractions of the page image, from 0 to 1, not as pixels: a pixel rectangle would depend on the
+    size the page was decoded or, for a PDF, rendered at, and a fraction of the page does not.
   </p>
   <p>
-    A few rules govern what gets in. Only books with at least one capture are written. A removed
-    book, of which Dokseo keeps only a record, writes <code>null</code> for the three fields the record
-    does not keep. A capture whose book is in neither the shelf nor the removed records is left out, and
-    the export reports it: "1 capture belongs to no book and was left out." Books are sorted by title
-    then device id, tags and captures by creation time then id, so the same holdings always give the same
-    text, and two exports can be compared with a diff.
+    A few rules govern what gets in. Only books with at least one capture are written. When a book
+    is removed, Dokseo keeps its whole book row as a removed record, with the time of removal, so a
+    removed book's entry is as complete as a shelf book's. A capture whose book is in neither the
+    shelf nor the removed records is left out, and the export reports it: "1 capture belongs to no
+    book and was left out." Books are sorted by title then device id, tags and captures by creation
+    time then id, so the same holdings always give the same text, and two exports can be compared
+    with a diff.
+  </p>
+  <p>
+    Export all captures writes every capture that can be read, including one whose book row could
+    not be read, on the shelf or among the removed records. That book's entry copies the identity
+    fields its row stores, as they are. When those fields pass the checks below, the entry imports
+    like any other. When they do not, for example a content hash in an old format, the reader
+    rejects the entry and skips its captures, but the file still holds them.
+  </p>
+  <p>
+    Rows that could not be read at all go in a section of their own, <code>unreadable</code>, with
+    three lists: <code>books</code>, <code>tags</code> and <code>captures</code>. Every capture and
+    tag row that failed its read is copied in as it was stored, sorted by id. A book row that failed
+    its read goes in only when a capture names its id, and a removed record whose book is back on
+    the shelf is left out. The section is written only when it holds a row, so the file of a library
+    with nothing unreadable has no <code>unreadable</code> field at all. After the export, Your data says,
+    for example, "2 stored rows that could not be read are kept in the file as they were stored. Import
+    does not bring them back."
+  </p>
+  <p>
+    A stored row is whatever IndexedDB was given, and the structured clone algorithm keeps values
+    that JSON cannot: <code>JSON.stringify</code> writes <code>NaN</code> as <code>null</code>, a
+    <code>Map</code> as <code>{'{}'}</code>, and throws on a <code>BigInt</code> or a cycle. So each
+    row first goes through <code>jsonSafe</code>, which writes every value in a form JSON keeps:
+    <code>NaN</code>, an infinity and an invalid date become <code>null</code>; a date becomes its
+    ISO text and a <code>BigInt</code> its decimal text; a <code>Map</code> becomes a list of key
+    and value pairs, a <code>Set</code> a list, and binary data a list of bytes; a cycle becomes
+    <code>null</code>. <code>undefined</code>, a function and a symbol are dropped, or become
+    <code>null</code> inside a list.
   </p>
   <DocsDemo label="Build a captures file" resettable>
     <CapturesFileBuilder />
     {#snippet caption()}
       Sample holdings in memory, written by the real <code>buildCapturesFile</code>. Edit a capture,
-      toggle a tag, remove a book or add a capture with no book, and watch the file change. The real
-      file is written without indentation.
+      toggle a tag, remove a book, add a capture with no book, or add a stored row that the real
+      <code>capturesFromStored</code> could not read, and watch the file change. The real file is written
+      without indentation.
     {/snippet}
   </DocsDemo>
 </DocsSection>
@@ -120,20 +159,36 @@
   <p>
     Every entry is then read on its own. A capture or tag goes through the same functions that read
     rows from Dokseo's own database, <code>captureFromStored</code> and
-    <code>tagFromStored</code>, but two checks run first. Reading the database falls back when it
-    meets an unknown <code>origin</code> (it reads the capture as recognized) or an unknown tag
-    color (it uses the first color). The file reader rejects both, for the reason in
-    <a href="#reading-strictly-entry-by-entry">reading strictly</a>.
+    <code>tagFromStored</code>, so a file entry and a stored row follow one set of rules, with no
+    fallback in either, for the reason in
+    <a href="#reading-strictly-entry-by-entry">reading strictly</a>. An unknown
+    <code>origin</code> or an unknown tag color rejects the entry. A field the reader does not name,
+    such as <code>bookKey</code> once it has been read, is not checked.
   </p>
   <DocsCode label={FILE_CAPTURE.label} code={FILE_CAPTURE.code} />
   <p>
-    A book entry with any bad field is rejected whole, with no fallback for its language or
-    direction, and its captures are skipped as <code>unknown-book</code>. The two series fields were
-    added later without a new version: an entry that lacks them reads them as
+    Which fields a capture must have depends on its origin. A recognized capture has a
+    <code>note</code> and a <code>confidence</code>, and a capture lifted from an EPUB's own text
+    has a <code>note</code>; either may be <code>null</code>, but neither may be missing. A capture
+    typed by hand has neither, and a <code>note</code> or <code>confidence</code> on an origin without
+    it rejects the entry. Each region's rect has to fit on its page: finite, x and y at least 0, width
+    and height above 0, and x plus width, y plus height, at most 1.
+  </p>
+  <p>
+    A book entry with any bad field is rejected whole, and its captures are skipped as
+    <code>unknown-book</code>. It needs a <code>layoutKind</code> and a <code>sourceKind</code>, a
+    whole-number <code>imageCount</code>, a content hash that is a partial MD5, and a source the
+    layout allows, so a <code>flow</code> book with an <code>archive</code> source is rejected. The
+    two series fields were added later without a new version: an entry that lacks them reads them as
     <code>null</code>, and only a value of the wrong type rejects the entry. A tag id that a capture
     names but the file does not hold is taken off that capture and reported separately, and the
-    capture keeps its other tags. Two fields stay lenient: a capture with no <code>note</code> or no
-    <code>confidence</code> reads as <code>null</code> instead of being rejected.
+    capture keeps its other tags.
+  </p>
+  <p>
+    The <code>unreadable</code> section is not read into anything: an import never brings those rows back.
+    The reader only counts them, and the preview shows the count as "Unreadable rows kept in the file",
+    with "Not imported. The file keeps them as they were stored." A section of the wrong form, such as
+    text where the lists should be, counts as zero and does not refuse the file.
   </p>
   <Table size="sm">
     <TableHeader>
@@ -171,12 +226,13 @@
   </p>
   <DocsCode label={BOOK_MATCH.label} code={BOOK_MATCH.code} />
   <p>
-    The hash alone is not enough, because the same book does not always have the same hash: an older
-    row can hold a hash computed another way, and a file name can be empty. Within one list, every
-    candidate is tried at a step before the next step starts, so a hash match beats a file name
-    match; and any match on the shelf, even by title, wins over the removed records. A title match
-    skips empty titles and "Untitled book". The cost is accepted: two different books with the same
-    title, and no matching hash or file name, match each other.
+    The hash alone is not enough, because the same book does not always have the same hash: a row
+    that could not be read, kept from a pre-release build, can hold a hash computed another way and
+    an empty file name, and those rows are matched too. Within one list, every candidate is tried at
+    a step before the next step starts, so a hash match beats a file name match; and any match on
+    the shelf, even by title, wins over the removed records. A title match skips empty titles and
+    "Untitled book". The cost is accepted: two different books with the same title, and no matching
+    hash or file name, match each other.
   </p>
   <p>
     A book that matches nothing is absent. The import does not invent a shelf book for it, since

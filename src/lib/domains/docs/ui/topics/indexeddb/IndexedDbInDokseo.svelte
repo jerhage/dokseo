@@ -191,10 +191,11 @@
   </p>
   <DocsCode label={EXPORT_JOIN.label} code={EXPORT_JOIN.code} />
   <p>
-    <code>held</code> is the set of book ids that captures point at, and filtering the known books
-    by it is a semi-join. <code>keys</code> maps each kept book to its key in the file, and looking
-    each capture up in it is a hash join. A capture whose book is in neither list is collected as
-    <code>bookless</code>, an anti-join, and left out of the file.
+    <code>known</code> holds every book a capture can name: the shelf and the removed records,
+    including rows that could not be read. <code>held</code> is the set of book ids that captures
+    point at, and filtering the known books by it is a semi-join. <code>keys</code> maps each kept
+    book to its key in the file, and looking each capture up in it is a hash join. A capture whose
+    book is not known is collected as <code>bookless</code>, an anti-join, and left out of the file.
   </p>
   <p>
     Deleting a tag needs no join in memory. A capture keeps its tags as a <code>tagIds</code> array,

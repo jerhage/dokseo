@@ -65,6 +65,21 @@
     so a card that has not been saved yet is not in the file.
   </p>
   <DocsCode label={PREPARED_ON_TICK.label} code={PREPARED_ON_TICK.code} />
+  <p>
+    Rows that could not be read have a permanent delete of their own. The notice that lists captures
+    that could not be read offers to remove them, and the one for tags offers Remove and Remove all.
+    Both notices also offer "Export these first", which saves exactly the rows the notice lists in a
+    file named <code>dokseo-unreadable-YYYY-MM-DD.json</code>. It is a version 1 captures file whose
+    <code>books</code>, <code>tags</code> and <code>captures</code> lists are empty and whose
+    <code>unreadable</code> section holds the rows, as they were stored. The file is built when the
+    notice appears, so this button's click also calls <code>share()</code> with nothing awaited before
+    it.
+  </p>
+  <p>
+    Export all captures keeps the same rows in its <code>unreadable</code> section, but it writes a file
+    only when at least one capture can be read. A library whose only captures could not be read has nothing
+    for it to export, and Export these first is the way those rows leave the device.
+  </p>
 </DocsSection>
 
 <DocsSection title={EXPORT_IMPORT_SECTIONS.proxy}>

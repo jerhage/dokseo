@@ -105,9 +105,11 @@
     <code>new</code>, and writing it replaces the damaged row with a good one.
   </p>
   <p>
-    For each absent book the plan makes one removed-book record, with a new id, the file's identity
-    and the preview's time, and only when the book receives at least one new capture. All of that
-    book's captures share the record.
+    For each absent book the plan makes one removed-book record, and only when the book receives at
+    least one new capture. The record is a whole book row: a new id, the file's identity, the
+    default page pairing and fit, a reading place at the start of the book, and the preview's time
+    as both the time it was added and the time it was removed. All of that book's captures share the
+    record.
   </p>
 </DocsSection>
 

@@ -58,7 +58,8 @@
     remove it, merge it into a shelf book that matches it, or add the same file again to repair it,
     which
     <a href="/docs/book-identity">Book identity and recovery</a> explains. Captures are read the same
-    way, and an unreadable capture is listed with a button to remove it.
+    way, and an unreadable capture is listed with a button to remove it and one to export it to a file
+    first.
   </p>
   <DocsCode label={BOOKS_FROM_STORED.label} code={BOOKS_FROM_STORED.code} />
   <RowCheckDemo />
