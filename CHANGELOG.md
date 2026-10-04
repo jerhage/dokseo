@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.6](https://github.com/jerhage/dokseo/compare/v0.9.5...v0.9.6) (2026-10-04)
+
+
+### Features
+
+* **export:** carry a book's series id and volume in the captures file ([323a10f](https://github.com/jerhage/dokseo/commit/323a10fe6b6cb40a6a3901ab02f3c516281e0d05))
+* **library:** keep the fields a book save does not know in the stored row ([0c13ce6](https://github.com/jerhage/dokseo/commit/0c13ce6b387f8944ad306914a18419c83031aaaf))
+* **library:** reserve a series id and a volume on every book ([8308753](https://github.com/jerhage/dokseo/commit/830875362033caca7613b219dc551cce16e14414))
+
+
+### Fixes
+
+* **flowing:** let the arrow keys move a focused progress slider ([9bde812](https://github.com/jerhage/dokseo/commit/9bde812e979309263e91804f30fb5c5e364f98ca))
+* **flowing:** stop an EPUB open from failing with Something went wrong ([5f7872e](https://github.com/jerhage/dokseo/commit/5f7872e1d161cf8467390ca8ac5f9690faa08d17))
+* give every screen a page title so navigation announces it ([46e5335](https://github.com/jerhage/dokseo/commit/46e53351e55d2a21a569f93263a6523bed93a7a8))
+
 ## [0.9.5](https://github.com/jerhage/dokseo/compare/v0.9.4...v0.9.5) (2026-10-03)
 
 
