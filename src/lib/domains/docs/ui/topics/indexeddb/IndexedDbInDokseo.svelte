@@ -38,26 +38,26 @@
     { database: 'reader', version: 3, store: 'removed-books', key: "keyPath 'id'", index: '' },
     {
       database: 'recognition',
-      version: 4,
+      version: 5,
       store: 'model-consent',
       key: "keyPath 'language'",
       index: '',
     },
     {
       database: 'recognition',
-      version: 4,
+      version: 5,
       store: 'captures',
       key: "keyPath 'id'",
-      index: "bookId on 'bookId', not unique",
+      index: "bookId on 'bookId', not unique; tagIds on 'tagIds', multiEntry",
     },
     {
       database: 'recognition',
-      version: 4,
+      version: 5,
       store: 'recognizer-setup',
       key: "keyPath 'language'",
       index: '',
     },
-    { database: 'recognition', version: 4, store: 'tags', key: "keyPath 'id'", index: '' },
+    { database: 'recognition', version: 5, store: 'tags', key: "keyPath 'id'", index: '' },
     {
       database: 'flowing',
       version: 1,
@@ -71,7 +71,8 @@
     { database: 'reader', steps: '1 books · 2 page-lists · 3 removed-books' },
     {
       database: 'recognition',
-      steps: '1 model-consent · 2 captures and its bookId index · 3 recognizer-setup · 4 tags',
+      steps:
+        '1 model-consent · 2 captures and its bookId index · 3 recognizer-setup · 4 tags · 5 the tagIds index',
     },
     { database: 'flowing', steps: '1 reading-settings' },
   ] as const;
@@ -114,9 +115,12 @@
     device.
   </p>
   <p>
-    There is one index in the whole app, <code>bookId</code> on <code>captures</code>, because one
-    query reads by a field other than the key: a book's captures. Each database's name, version,
-    store names and upgrade live in one place: the library repository itself for
+    There are two indexes in the whole app, both on <code>captures</code>, because two queries read
+    by a field other than the key: a book's captures through <code>bookId</code>, and a tag's
+    captures through <code>tagIds</code>, a <code>multiEntry</code> index with one entry per id in
+    the array. An index added to a store that already exists needs that store from the upgrade's own
+    transaction, which is why <code>upgrade</code> receives it. Each database's name, version, store
+    names and upgrade live in one place: the library repository itself for
     <code>reader</code>, and <code>recognition-database.ts</code> and
     <code>flowing-database.ts</code> for the other two, which several adapters share.
   </p>
@@ -165,6 +169,11 @@
   </p>
   <DocsCode label={MOVE_BOOK.label} code={MOVE_BOOK.code} />
   <p>
+    <code>movedCapture</code> writes a capture that passes the strict read as the checked capture under
+    its new book id. A row that fails the read moves as it was stored, with only the book id changed,
+    so it stays with its book and can still be found there.
+  </p>
+  <p>
     The capture repository's <code>moveBook</code> runs when captures are merged onto a book Dokseo
     holds, which <a href={IDENTITY_MERGE_HREF}>Merging captures onto a held book</a> describes. The
     <strong>Move b2's captures to b1</strong> button in the
@@ -188,15 +197,19 @@
     <code>bookless</code>, an anti-join, and left out of the file.
   </p>
   <p>
-    Deleting a tag is the case where an index is missing. A capture keeps its tags as a
-    <code>tagIds</code> array, a many-to-many relation stored on one side, and <code>captures</code>
-    has no <code>multiEntry</code> index on it. So the use case reads every capture and filters:
+    Deleting a tag needs no join in memory. A capture keeps its tags as a <code>tagIds</code> array,
+    a many-to-many relation stored on one side, and the <code>multiEntry</code> index on that array
+    finds every capture that holds the tag. The capture repository rewrites them through
+    <code>rewriteByIndex</code>:
   </p>
   <DocsCode label={DELETE_TAG.label} code={DELETE_TAG.code} />
   <p>
-    Each <code>save</code> is a <code>putRecord</code>, one transaction per capture that carried the
-    tag. One book's captures, by contrast, come from the index with <code>listByIndex</code> and are
-    then sorted by <code>createdAt</code> in memory, since no index orders them by time.
+    The read and every write share one transaction, so a failure leaves every capture as it was. A
+    row that fails the strict read keeps the tag id: <code>untaggedRow</code> answers
+    <code>null</code>, and the row is put back unchanged. The use case removes the tag record only
+    after the rewrite succeeds. One book's captures come from the other index with
+    <code>listByIndex</code> and are then sorted by <code>createdAt</code> in memory, since no index orders
+    them by time.
   </p>
 </DocsSection>
 
@@ -247,16 +260,19 @@
       <p>
         The new store is created in the same upgrade function as the old ones, behind its own
         <code>objectStoreNames.contains</code> guard, so a device at any older version gets exactly the
-        stores it lacks, and no existing row is read, rewritten or deleted.
+        stores and indexes it lacks, and no existing row is rewritten or deleted.
       </p>
     </StepItem>
-    <StepItem title="A new field in a record does not">
+    <StepItem title="A change to a record's format bumps it too, from 1.0 on">
       <p>
-        A store has no columns to change. The function that reads a row gives a missing field its
-        meaning: a capture stored before notes existed has no <code>note</code> and reads as having
-        none, and one with no <code>origin</code> reads as recognized. Saving a book keeps the fields
-        its reading code does not name, so an older version of Dokseo writing a book row leaves a newer
-        version's field in place.
+        A store has no columns, so IndexedDB needs no new version for a new field. Dokseo reads
+        every row strictly, with no defaults, so a row without the field would be unreadable. From
+        1.0 on, a format change raises the version, and the upgrade rewrites every row into the new
+        format in its own transaction. A tab still on the older build then cannot open the database,
+        so it cannot save a row in the old format over a migrated one (<a
+          href="/docs/series-plan#compatibility-through-database-versions"
+          >Compatibility through database versions</a
+        >).
       </p>
     </StepItem>
     <StepItem title="One version constant per database">
