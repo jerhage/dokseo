@@ -4,6 +4,7 @@
   import StoredFormatConcepts from './stored-format/StoredFormatConcepts.svelte';
   import StoredFormatFile from './stored-format/StoredFormatFile.svelte';
   import StoredFormatRecords from './stored-format/StoredFormatRecords.svelte';
+  import StoredFormatRecovery from './stored-format/StoredFormatRecovery.svelte';
 </script>
 
 <DocsPage slug="stored-format" sections={Object.values(STORED_FORMAT_SECTIONS)}>
@@ -16,4 +17,5 @@
   <StoredFormatConcepts />
   <StoredFormatRecords />
   <StoredFormatFile />
+  <StoredFormatRecovery />
 </DocsPage>
