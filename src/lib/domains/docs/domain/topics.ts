@@ -79,8 +79,9 @@ const DOCS_TOPICS = [
   {
     slug: 'architecture',
     title: 'Architecture',
-    summary: 'Ports and adapters, the domain graph, named unions and queries.',
-    status: 'planned',
+    summary:
+      'Ports and adapters, the composition root, use cases, the acyclic domain graph and the rules that enforce it, named unions and queries.',
+    status: 'published',
   },
   {
     slug: 'rendering-pages',
