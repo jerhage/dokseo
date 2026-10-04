@@ -15,6 +15,13 @@ const DOCS_ROOT = '/docs';
 
 const DOCS_TOPICS = [
   {
+    slug: 'ui-library',
+    title: 'The UI library',
+    summary:
+      'Layered CSS, design tokens, base components, themes and color schemes, scoped domain stylesheets and the playground.',
+    status: 'published',
+  },
+  {
     slug: 'security-headers',
     title: 'Security headers',
     summary:
@@ -26,13 +33,6 @@ const DOCS_TOPICS = [
     title: 'How OCR works',
     summary:
       'Detection and recognition, encoder and decoder, model tokens and greedy decoding, then how Dokseo runs manga-ocr and PaddleOCR in a browser worker.',
-    status: 'published',
-  },
-  {
-    slug: 'ui-library',
-    title: 'The UI library',
-    summary:
-      'Layered CSS, design tokens, base components, themes and color schemes, scoped domain stylesheets and the playground.',
     status: 'published',
   },
   {
