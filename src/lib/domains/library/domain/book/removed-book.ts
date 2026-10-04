@@ -1,4 +1,4 @@
-import { isFiniteNumberOrNull, isNumber, isText } from '$lib/shared/corrupt-row';
+import { isNumber, isNumberOrNull, isText } from '$lib/shared/corrupt-row';
 import { parsedBookId, seriesId } from '$lib/shared/ids';
 import type { BookId, SeriesId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
@@ -6,7 +6,6 @@ import type { Language } from '$lib/shared/language';
 import { effectiveDirection, isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
-import { FALLBACK_DIRECTION, FALLBACK_LANGUAGE } from './stored-book';
 
 type RemovedBook = {
   readonly id: BookId;
@@ -48,6 +47,10 @@ type RetiredRow = {
 
 const UNTITLED_BOOK = 'Untitled book';
 
+const FALLBACK_LANGUAGE: Language = 'ja';
+
+const FALLBACK_DIRECTION: ReadingDirection = 'rtl';
+
 function textOf(value: unknown): string {
   return isText(value) ? value : '';
 }
@@ -67,7 +70,7 @@ function seriesIdOf(value: unknown): SeriesId | null {
 }
 
 function volumeOf(value: unknown): number | null {
-  return isFiniteNumberOrNull(value) ? value : null;
+  return isNumberOrNull(value) ? value : null;
 }
 
 function directionOf(row: RetiredRow): ReadingDirection {

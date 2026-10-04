@@ -43,5 +43,20 @@ function contentHash(value: string): ContentHash {
   return value as ContentHash;
 }
 
-export { bookId, parsedBookId, captureId, tagId, seriesId, imageIndex, contentHash };
+const PARTIAL_MD5_FORM = /^[0-9a-f]{32}$/u;
+
+function parsedContentHash(raw: string): ContentHash | null {
+  return PARTIAL_MD5_FORM.test(raw) ? contentHash(raw) : null;
+}
+
+export {
+  bookId,
+  parsedBookId,
+  captureId,
+  tagId,
+  seriesId,
+  imageIndex,
+  contentHash,
+  parsedContentHash,
+};
 export type { BookId, CaptureId, TagId, SeriesId, ImageIndex, ContentHash };

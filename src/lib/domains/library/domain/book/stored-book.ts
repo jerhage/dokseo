@@ -1,30 +1,27 @@
 import { match } from 'ts-pattern';
 import {
   CorruptRow,
-  isFiniteNumberOrNull,
+  isFraction,
+  isFractionOrNull,
   isNumber,
   isNumberOrNull,
   isStoredFields,
   isText,
   isTextOrNull,
+  isWholeNumber,
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import type { StoredFields } from '$lib/shared/corrupt-row';
-import { contentHash, imageIndex, parsedBookId, seriesId } from '$lib/shared/ids';
-import type { BookId, SeriesId } from '$lib/shared/ids';
+import { imageIndex, parsedBookId, parsedContentHash, seriesId } from '$lib/shared/ids';
+import type { BookId, ContentHash, SeriesId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
-import type { Language } from '$lib/shared/language';
 import { isLayoutKind, isPagePairingChoice, isReadingDirection } from '$lib/shared/layout-kind';
-import type { ReadingDirection } from '$lib/shared/layout-kind';
+import type { LayoutKind } from '$lib/shared/layout-kind';
 import { isPageFit } from '$lib/shared/page-fit';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING, isSourceKind } from './book';
-import type { Book } from './book';
-
-const FALLBACK_LANGUAGE: Language = 'ja';
-
-const FALLBACK_DIRECTION: ReadingDirection = 'rtl';
+import { isSourceKind } from './book';
+import type { Book, SourceKind } from './book';
 
 type StoredBook = { readonly [Field in keyof Book]?: unknown };
 
@@ -59,39 +56,67 @@ function storedBookId(value: unknown): BookId {
   return id;
 }
 
-function storedAlias(value: unknown): string | null {
-  return value === undefined ? null : bookField('alias', value, isTextOrNull);
+function storedContentHash(value: unknown): ContentHash {
+  const hash = isText(value) ? parsedContentHash(value) : null;
+  if (hash === null) throw new CorruptRow('book', 'content hash', value);
+  return hash;
+}
+
+function isSeriesIdOrNull(value: unknown): value is string | null {
+  return value === null || (isText(value) && value.length > 0);
 }
 
 function storedSeriesId(value: unknown): SeriesId | null {
-  if (value === undefined) return null;
-  const stored = bookField('series id', value, isTextOrNull);
+  const stored = bookField('series id', value, isSeriesIdOrNull);
   return stored === null ? null : seriesId(stored);
 }
 
-function storedVolume(value: unknown): number | null {
-  return value === undefined ? null : bookField('volume', value, isFiniteNumberOrNull);
+function storedSourceKind(value: unknown, layoutKind: LayoutKind): SourceKind {
+  const sourceKind = bookField('source kind', value, isSourceKind);
+  if (layoutKind === 'flow' && sourceKind !== 'epub') {
+    throw new CorruptRow('book', 'source kind for a flow book', sourceKind);
+  }
+  return sourceKind;
 }
 
-function storedPlace(value: unknown): ReadingPlace {
+function placeKindOf(layoutKind: LayoutKind): ReadingPlace['kind'] {
+  return match(layoutKind)
+    .returnType<ReadingPlace['kind']>()
+    .with('paged', 'continuous', () => 'image')
+    .with('flow', () => 'text')
+    .exhaustive();
+}
+
+function storedImagePlace(position: StoredFields): ReadingPlace {
+  const index = bookField('position index', position.index, isWholeNumber);
+  const shownThrough = bookField('last image shown', position.shownThrough, isWholeNumber);
+  if (shownThrough < index) throw new CorruptRow('book', 'last image shown', shownThrough);
+  return imagePlace(
+    imageIndex(index),
+    imageIndex(shownThrough),
+    bookField('position offset', position.offset, isFraction),
+  );
+}
+
+function storedTextPlace(position: StoredFields): ReadingPlace {
+  return textPlace(
+    bookField('position cfi', position.cfi, isText),
+    bookField('position fraction', position.fraction, isFractionOrNull),
+  );
+}
+
+function storedPlace(value: unknown, layoutKind: LayoutKind): ReadingPlace {
   const position = bookField('position', value, isStoredFields);
-  return match(position.kind)
-    .with('image', () =>
-      imagePlace(
-        imageIndex(bookField('position index', position.index, isNumber)),
-        imageIndex(bookField('last image shown', position.shownThrough, isNumber)),
-        bookField('position offset', position.offset, isNumber),
-      ),
-    )
-    .with('text', () =>
-      textPlace(
-        bookField('position cfi', position.cfi, isText),
-        bookField('position fraction', position.fraction, isNumberOrNull),
-      ),
-    )
+  const place = match(position.kind)
+    .with('image', () => storedImagePlace(position))
+    .with('text', () => storedTextPlace(position))
     .otherwise((kind) => {
       throw new CorruptRow('book', 'position kind', kind);
     });
+  if (place.kind !== placeKindOf(layoutKind)) {
+    throw new CorruptRow('book', `position kind for a ${layoutKind} book`, place.kind);
+  }
+  return place;
 }
 
 function bookFromStored(stored: StoredBook): Book {
@@ -99,22 +124,20 @@ function bookFromStored(stored: StoredBook): Book {
   return {
     id: storedBookId(stored.id),
     title: bookField('title', stored.title, isText),
-    alias: storedAlias(stored.alias),
+    alias: bookField('alias', stored.alias, isTextOrNull),
     seriesId: storedSeriesId(stored.seriesId),
-    volume: storedVolume(stored.volume),
-    language: isLanguage(stored.language) ? stored.language : FALLBACK_LANGUAGE,
+    volume: bookField('volume', stored.volume, isNumberOrNull),
+    language: bookField('language', stored.language, isLanguage),
     layoutKind,
-    direction: isReadingDirection(stored.direction) ? stored.direction : FALLBACK_DIRECTION,
-    pagePairing: isPagePairingChoice(stored.pagePairing)
-      ? stored.pagePairing
-      : DEFAULT_PAGE_PAIRING,
-    pageFit: isPageFit(stored.pageFit) ? stored.pageFit : defaultPageFit(layoutKind),
-    sourceKind: bookField('source kind', stored.sourceKind, isSourceKind),
-    contentHash: contentHash(bookField('content hash', stored.contentHash, isText)),
+    direction: bookField('direction', stored.direction, isReadingDirection),
+    pagePairing: bookField('page pairing', stored.pagePairing, isPagePairingChoice),
+    pageFit: bookField('page fit', stored.pageFit, isPageFit),
+    sourceKind: storedSourceKind(stored.sourceKind, layoutKind),
+    contentHash: storedContentHash(stored.contentHash),
     fileName: bookField('file name', stored.fileName, isText),
-    imageCount: bookField('image count', stored.imageCount, isNumber),
+    imageCount: bookField('image count', stored.imageCount, isWholeNumber),
     addedAt: bookField('added time', stored.addedAt, isNumber),
-    position: storedPlace(stored.position),
+    position: storedPlace(stored.position, layoutKind),
     lastReadAt: bookField('last read time', stored.lastReadAt, isNumberOrNull),
     finishedAt: bookField('finished time', stored.finishedAt, isNumberOrNull),
   };
@@ -149,5 +172,5 @@ function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   return { books, unreadable };
 }
 
-export { FALLBACK_DIRECTION, FALLBACK_LANGUAGE, bookFromStored, savedBookRow, booksFromStored };
+export { bookFromStored, savedBookRow, booksFromStored };
 export type { StoredBook, StoredBooks, UnreadableBook };

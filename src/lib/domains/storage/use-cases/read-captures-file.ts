@@ -9,7 +9,6 @@ import { isTagColour } from '$lib/domains/recognition/domain/tag/tag-colour';
 import { isCaptureOrigin } from '$lib/shared/capture-origin';
 import {
   CorruptRow,
-  isFiniteNumberOrNull,
   isNumber,
   isNumberOrNull,
   isStoredFields,
@@ -108,7 +107,7 @@ function fileSeriesId(value: unknown): SeriesId | null {
 }
 
 function fileVolume(value: unknown): number | null {
-  return value === undefined ? null : field('book', 'volume', value, isFiniteNumberOrNull);
+  return value === undefined ? null : field('book', 'volume', value, isNumberOrNull);
 }
 
 function fileBook(entry: unknown): FileBook {

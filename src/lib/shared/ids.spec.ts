@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, parsedBookId } from './ids';
+import { bookId, contentHash, parsedBookId, parsedContentHash } from './ids';
 
 describe('parsedBookId', () => {
   it.each([
@@ -17,5 +17,24 @@ describe('parsedBookId', () => {
     ['two dots alone', '..'],
   ])('rejects %s', (_name, id) => {
     expect(parsedBookId(id)).toBeNull();
+  });
+});
+
+describe('parsedContentHash', () => {
+  it('passes a partial MD5 digest of 32 lowercase hex characters', () => {
+    const digest = '9f86d081884c7d659a2feaa0c55ad015';
+
+    expect(parsedContentHash(digest)).toBe(contentHash(digest));
+  });
+
+  it.each([
+    ['the empty string', ''],
+    ['a SHA-256 digest', 'a'.repeat(64)],
+    ['a short digest', '9f86d081'],
+    ['an uppercase digest', '9F86D081884C7D659A2FEAA0C55AD015'],
+    ['a digest with a space', ' 9f86d081884c7d659a2feaa0c55ad01'],
+    ['32 characters that are not hex', 'g'.repeat(32)],
+  ])('rejects %s', (_name, raw) => {
+    expect(parsedContentHash(raw)).toBeNull();
   });
 });

@@ -47,16 +47,21 @@ vi.mock('$lib/platform/opfs/blob-store', () => ({
   totalBytes: () => Promise.resolve(0),
 }));
 
+const HASH = '9f86d081884c7d659a2feaa0c55ad015';
+
 const GOOD: StoredBook = {
   id: bookId('good-1'),
   title: 'Yotsuba&! 1',
+  alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
   pagePairing: 'single',
   pageFit: 'width',
   sourceKind: 'archive',
-  contentHash: contentHash('9f86d081'),
+  contentHash: contentHash(HASH),
   fileName: 'Yotsuba&! 1.cbz',
   imageCount: 182,
   addedAt: 1758240000000,
@@ -88,6 +93,26 @@ afterEach(() => {
 });
 
 describe('createLibraryRepository', () => {
+  it('reports a row whose content hash is not a partial MD5 as unreadable', async () => {
+    store('books').set(GOOD.id, { ...GOOD, contentHash: 'a'.repeat(64) });
+
+    const listed = await createLibraryRepository().list();
+
+    expect(listed).toEqual({
+      kind: 'success',
+      books: [],
+      unreadable: [
+        {
+          id: 'good-1',
+          title: 'Yotsuba&! 1',
+          alias: null,
+          contentHash: 'a'.repeat(64),
+          fileName: 'Yotsuba&! 1.cbz',
+        },
+      ],
+    });
+  });
+
   it('lists the rows that read and reports an old-shape row as unreadable with its id and title', async () => {
     store('books').set(GOOD.id, GOOD);
     store('books').set(OLD_SHAPE.id, OLD_SHAPE);
@@ -133,7 +158,7 @@ describe('createLibraryRepository', () => {
           alias: null,
           seriesId: null,
           volume: null,
-          contentHash: '9f86d081',
+          contentHash: HASH,
           fileName: 'Yotsuba&! 1.cbz',
           language: 'ja',
           direction: 'rtl',
@@ -166,12 +191,12 @@ describe('createLibraryRepository', () => {
   });
 
   it('writes every known field from the book it read when it saves an edit', async () => {
-    store('books').set(GOOD.id, { ...GOOD, language: 'xx', shelfColour: 'teal' });
+    store('books').set(GOOD.id, { ...GOOD, alias: 'Old', shelfColour: 'teal' });
     const repository = createLibraryRepository();
 
     const updated = await repository.update(bookId('good-1'), { alias: 'Mine' });
 
-    expect(updated.kind === 'success' && updated.book).toMatchObject({ language: 'ja' });
+    expect(updated.kind === 'success' && updated.book).toMatchObject({ alias: 'Mine' });
     expect(store('books').get('good-1')).toEqual(
       updated.kind === 'success' && { ...updated.book, shelfColour: 'teal' },
     );
