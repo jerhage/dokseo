@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Size } from '$lib/shared/geometry';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { BookId, ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -69,7 +69,7 @@ function drawnWidth(picture: PagePicture | null): number | null {
 }
 
 function region(index: number): ImageRegion {
-  return { index: imageIndex(index), rect: imageRect(10, 20, 92, 104) };
+  return { index: imageIndex(index), rect: pageRect(0.01, 0.02, 0.092, 0.104) };
 }
 
 function bitmap(size: Size): ImageBitmap {

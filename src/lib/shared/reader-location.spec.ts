@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { imageRect } from './geometry';
+import { pageRect } from './geometry';
 import { bookId, imageIndex } from './ids';
 import {
   IMAGE_ARRIVAL_NONE,
@@ -265,19 +265,21 @@ describe('readerHref', () => {
 });
 
 describe('captureHref', () => {
-  const REGION = { index: imageIndex(7), rect: imageRect(12.3456, 0.004, 300, 88.125) };
+  const REGION = { index: imageIndex(7), rect: pageRect(0.12345678, 0.0000004, 0.3, 0.088125) };
 
-  it('names the image and the region in image pixels to hundredths', () => {
-    expect(captureHref(bookId('one'), REGION)).toBe('/read/one?image=7&region=12.35,0,300,88.13');
+  it('names the image and the region in fractions of the page to millionths', () => {
+    expect(captureHref(bookId('one'), REGION)).toBe(
+      '/read/one?image=7&region=0.123457,0,0.3,0.088125',
+    );
   });
 
   it('carries the search after the region', () => {
     expect(captureHref(bookId('one'), REGION, '海')).toBe(
-      '/read/one?image=7&region=12.35,0,300,88.13&find=%E6%B5%B7',
+      '/read/one?image=7&region=0.123457,0,0.3,0.088125&find=%E6%B5%B7',
     );
   });
 
-  it('reads back as the same image, with the region within a hundredth of a pixel', () => {
+  it('reads back as the same image, with the region within a millionth of the page', () => {
     const found = readArrival(
       new URL(captureHref(bookId('one'), REGION, '海'), 'https://r.test').searchParams,
     );
@@ -290,7 +292,7 @@ describe('captureHref', () => {
 
 describe('readRegion', () => {
   it('reads four comma separated coordinates', () => {
-    expect(readRegion('0,1.25,2,3')).toEqual(imageRect(0, 1.25, 2, 3));
+    expect(readRegion('0,0.125,0.2,0.3')).toEqual(pageRect(0, 0.125, 0.2, 0.3));
   });
 
   it('treats a malformed region as absent', () => {
@@ -355,12 +357,12 @@ describe('readArrival', () => {
   it('reads the region a capture link names beside its image', () => {
     expect(
       readArrival(
-        new URL('https://r.test/read/one?image=4&region=1.5,2,30.25,40&find=a').searchParams,
+        new URL('https://r.test/read/one?image=4&region=0.15,0.2,0.3025,0.4&find=a').searchParams,
       ),
     ).toEqual({
       kind: 'image',
       index: imageIndex(4),
-      region: imageRect(1.5, 2, 30.25, 40),
+      region: pageRect(0.15, 0.2, 0.3025, 0.4),
       query: 'a',
     });
   });

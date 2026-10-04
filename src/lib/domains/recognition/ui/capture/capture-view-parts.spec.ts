@@ -3,7 +3,7 @@ import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -167,7 +167,7 @@ const ONE = bookId('book-one');
 const TWO = bookId('book-two');
 
 function regions(index = 13): readonly ImageRegion[] {
-  return [{ index: imageIndex(index), rect: imageRect(0, 0, 40, 20) }];
+  return [{ index: imageIndex(index), rect: pageRect(0, 0, 0.04, 0.02) }];
 }
 
 function storedRow(id: string, book: BookId, text: string, createdAt: number): Capture {
@@ -269,19 +269,24 @@ describe('CaptureView arrivals', () => {
   function storedAt(id: string, x: number): Capture {
     return {
       ...storedRow(id, ONE, id, 1),
-      anchor: regionAnchor([{ index: imageIndex(4), rect: imageRect(x, 12.5, 40, 20) }]),
+      anchor: regionAnchor([{ index: imageIndex(4), rect: pageRect(x, 0.125, 0.4, 0.2) }]),
     };
   }
 
   it('arrives at only the stored capture at the image and region a url names', async () => {
     const world = fakes();
-    world.store.rows = [storedAt('one', 100.333), storedAt('two', 10.666)];
+    world.store.rows = [storedAt('one', 0.1003333), storedAt('two', 0.1066666)];
     const view = viewOf(world);
     view.list.open(ONE);
 
     const arrival = arrivalFrom(
       view.list.read,
-      { kind: 'image', index: imageIndex(4), region: imageRect(10.67, 12.5, 40, 20), query: null },
+      {
+        kind: 'image',
+        index: imageIndex(4),
+        region: pageRect(0.106667, 0.125, 0.4, 0.2),
+        query: null,
+      },
       'rtl',
       byCfi,
     );
@@ -291,7 +296,7 @@ describe('CaptureView arrivals', () => {
 
   it('arrives at no capture for a url naming an image without a region', async () => {
     const world = fakes();
-    world.store.rows = [storedAt('one', 100), storedAt('two', 10)];
+    world.store.rows = [storedAt('one', 0.1), storedAt('two', 0.01)];
     const view = viewOf(world);
     view.list.open(ONE);
 

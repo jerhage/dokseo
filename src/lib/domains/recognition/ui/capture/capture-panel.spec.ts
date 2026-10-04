@@ -3,7 +3,7 @@ import type { StringStore } from '$lib/platform/storage/remembered-string';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -70,7 +70,7 @@ function unused(): never {
 }
 
 function regions(index: number): readonly ImageRegion[] {
-  return [{ index: imageIndex(index), rect: imageRect(0, 0, 40, 20) }];
+  return [{ index: imageIndex(index), rect: pageRect(0, 0, 0.04, 0.02) }];
 }
 
 function storedRow(
@@ -260,7 +260,7 @@ const LOADING_HALF = {
 function placedRow(id: string, x: number, createdAt: number): Capture {
   return {
     ...storedRow(id, id, createdAt),
-    anchor: regionAnchor([{ index: imageIndex(3), rect: imageRect(x, 0, 40, 20) }]),
+    anchor: regionAnchor([{ index: imageIndex(3), rect: pageRect(x, 0, 40, 20) }]),
   };
 }
 

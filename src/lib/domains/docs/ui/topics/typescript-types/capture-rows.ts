@@ -33,7 +33,7 @@ const STORED_CAPTURE = {
   origin: 'recognized',
   anchor: {
     kind: 'region',
-    regions: [{ index: 12, rect: { x: 120, y: 64, width: 88, height: 240 } }],
+    regions: [{ index: 12, rect: { x: 0.12, y: 0.05, width: 0.088, height: 0.2 } }],
   },
   text: 'ありがとう',
   note: null,
@@ -48,7 +48,7 @@ const DAMAGE_OPTIONS: readonly DamageOption[] = [
   { damage: 'origin-missing', label: 'origin missing' },
   { damage: 'written-confidence', label: "origin: 'written', confidence kept" },
   { damage: 'note-missing', label: 'note missing' },
-  { damage: 'region-x-text', label: "region x: '120'" },
+  { damage: 'region-x-text', label: "region x: '0.12'" },
   { damage: 'tag-number', label: 'tagIds: [7]' },
   { damage: 'anchor-kind', label: "anchor.kind: 'page'" },
   { damage: 'anchor-text', label: "anchor: 'region'" },
@@ -74,7 +74,7 @@ function damagedCapture(damage: RowDamage): Readonly<Record<string, unknown>> {
     .with('note-missing', () => without(row, 'note'))
     .with('region-x-text', () => ({
       ...row,
-      anchor: { ...row.anchor, regions: [{ ...region, rect: { ...region.rect, x: '120' } }] },
+      anchor: { ...row.anchor, regions: [{ ...region, rect: { ...region.rect, x: '0.12' } }] },
     }))
     .with('tag-number', () => ({ ...row, tagIds: [7] }))
     .with('anchor-kind', () => ({ ...row, anchor: { ...row.anchor, kind: 'page' } }))

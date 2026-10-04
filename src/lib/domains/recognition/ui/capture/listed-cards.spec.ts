@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { Capture } from '../../domain/capture/capture';
 import { captureHolds } from '../../domain/capture/capture-results';
@@ -10,7 +10,7 @@ import type { PanelCapture } from './panel-capture';
 
 const ONE = bookId('book-one');
 
-const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 40, 20) }]);
+const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.04, 0.02) }]);
 
 const PASSAGE = textAnchor('epubcfi(/6/4)', { exact: '灯台', prefix: '', suffix: '' }, null);
 

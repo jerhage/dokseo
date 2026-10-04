@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import type { PanelCapture } from './panel-capture';
 import { UnsavedCards } from './unsaved-cards.svelte';
 
-const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 40, 20) }]);
+const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.04, 0.02) }]);
 
 function pending(id: string): PanelCapture {
   return {

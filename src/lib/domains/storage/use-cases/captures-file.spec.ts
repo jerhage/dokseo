@@ -4,7 +4,7 @@ import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book'
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, seriesId, tagId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { buildCapturesFile } from './build-captures-file';
@@ -60,7 +60,7 @@ const GRAMMAR: Tag = { id: tagId('tag-grammar'), name: 'grammar', colour: 'rose'
 const RECOGNIZED: Capture = {
   id: captureId('capture-b'),
   bookId: SHELF.id,
-  anchor: regionAnchor([{ index: imageIndex(4), rect: imageRect(10, 20, 30, 40) }]),
+  anchor: regionAnchor([{ index: imageIndex(4), rect: pageRect(0.01, 0.02, 0.03, 0.04) }]),
   text: 'よつば',
   origin: 'recognized',
   confidence: 0.92,
@@ -382,6 +382,16 @@ describe('readCapturesFile', () => {
       2,
       (capture: Record<string, unknown>) => (capture.editedAt = 150),
       'A stored capture holds an unknown edited time before its created time: 150',
+    ],
+    [
+      'a capture whose region rect is in pixels rather than fractions of the page',
+      2,
+      (capture: Record<string, unknown>) =>
+        (capture.anchor = {
+          kind: 'region',
+          regions: [{ index: 4, rect: { x: 120, y: 64, width: 88, height: 240 } }],
+        }),
+      'A stored capture holds an unknown region rect outside the page: 120,64,88,240',
     ],
   ])('rejects %s, as a stored row is rejected', (_what, index, change, detail) => {
     const file = read(edited((raw) => void change(entry(raw, 'captures', index))));

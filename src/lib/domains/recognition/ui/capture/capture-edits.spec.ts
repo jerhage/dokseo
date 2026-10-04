@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { QueryClient } from '@tanstack/svelte-query';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { Notice } from '$lib/shared/notice';
 import type { Capture } from '../../domain/capture/capture';
@@ -16,7 +16,7 @@ vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unru
 
 const ONE = bookId('book-one');
 
-const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 40, 20) }]);
+const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.04, 0.02) }]);
 
 const WRITTEN: Capture = {
   id: captureId('written'),

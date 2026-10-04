@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
 import type { Capture } from '../../domain/capture/capture';
@@ -12,7 +12,7 @@ import type { PanelCapture } from './panel-capture';
 
 const ONE = bookId('book-one');
 
-const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 40, 20) }]);
+const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.04, 0.02) }]);
 
 function storedRow(id: string, text: string, createdAt: number, note: string | null): Capture {
   return {

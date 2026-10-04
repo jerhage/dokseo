@@ -1,6 +1,6 @@
 import { toImageRect, toPageFraction } from '$lib/domains/viewing/domain/placement';
 import type { PageFraction } from '$lib/domains/viewing/domain/placement';
-import { screenRect } from '$lib/shared/geometry';
+import { pageRectOf, screenRect } from '$lib/shared/geometry';
 import type { ImageRect, ScreenRect, Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 
@@ -54,13 +54,15 @@ function captureAt(
   const natural = renderedSize(scale);
   const rect = toImageRect({ index: imageIndex(0), onScreen: display, natural }, selection);
   if (rect === null) return null;
-  const box = toPageFraction(natural, rect);
+  const stored = pageRectOf(rect, natural);
+  const box = stored === null ? null : toPageFraction(stored);
   if (box === null) return null;
   return { scale, natural, rect, box };
 }
 
 function readAgainstScale(rect: ImageRect, scale: number): PageFraction | null {
-  return toPageFraction(renderedSize(scale), rect);
+  const misread = pageRectOf(rect, renderedSize(scale));
+  return misread === null ? null : toPageFraction(misread);
 }
 
 function devicePixelsPerPagePixel(cssWidth: number, ratio: number, naturalWidth: number): number {

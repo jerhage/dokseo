@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import { LOADING, readFailed as stateFailed, readReady } from '$lib/shared/read-state';
 import type { Capture } from '../../domain/capture/capture';
@@ -10,7 +10,7 @@ import { READ, READING, captureListBody, captureReadOf, readFailed } from './cap
 const ROW: Capture = {
   id: captureId('a'),
   bookId: bookId('one'),
-  anchor: regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 10, 10) }]),
+  anchor: regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.01, 0.01) }]),
   text: '海',
   origin: 'written',
   createdAt: 1,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { StoredCapture } from '../../domain/capture/capture';
 import { createCaptureRepository } from './indexeddb-captures.repo';
@@ -45,7 +45,7 @@ vi.mock('$lib/platform/idb/connection', () => ({
 
 const BOOK = bookId('book-one');
 
-const REGIONS = [{ index: imageIndex(2), rect: imageRect(10, 20, 100, 40) }];
+const REGIONS = [{ index: imageIndex(2), rect: pageRect(0.01, 0.02, 0.1, 0.04) }];
 
 const GOOD: StoredCapture = {
   id: captureId('good'),

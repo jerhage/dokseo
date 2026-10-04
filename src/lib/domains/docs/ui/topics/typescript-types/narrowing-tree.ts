@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { DiagramBox, DiagramTone } from '$lib/components/diagram';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
@@ -32,7 +32,7 @@ const NARROWING_SAMPLES: readonly NarrowingSample[] = [
   {
     name: 'region',
     label: 'A region anchor',
-    value: regionAnchor([{ index: imageIndex(12), rect: imageRect(120, 64, 88, 240) }]),
+    value: regionAnchor([{ index: imageIndex(12), rect: pageRect(0.12, 0.05, 0.088, 0.2) }]),
   },
   {
     name: 'quote',

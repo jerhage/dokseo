@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
-import type { ImageRect } from '$lib/shared/geometry';
+import type { PageRect } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 
@@ -24,11 +24,11 @@ function orderingOf(anchor: Anchor): Ordering {
   return { kind: 'by-geometry', regions: anchor.regions };
 }
 
-function alongReading(rect: ImageRect, direction: ReadingDirection): number {
+function alongReading(rect: PageRect, direction: ReadingDirection): number {
   return direction === 'rtl' ? -(rect.x + rect.width) : rect.y;
 }
 
-function acrossReading(rect: ImageRect, direction: ReadingDirection): number {
+function acrossReading(rect: PageRect, direction: ReadingDirection): number {
   return direction === 'rtl' ? rect.y : rect.x;
 }
 

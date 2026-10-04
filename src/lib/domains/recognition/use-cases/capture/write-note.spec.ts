@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -14,7 +14,7 @@ const BOOK = bookId('book-one');
 const NOTE = captureId('a');
 
 const REGIONS: readonly ImageRegion[] = [
-  { index: imageIndex(13), rect: imageRect(10, 20, 100, 40) },
+  { index: imageIndex(13), rect: pageRect(0.01, 0.02, 0.1, 0.04) },
 ];
 
 const ANCHOR: Anchor = regionAnchor(REGIONS);

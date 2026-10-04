@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { EMPTY_NOTE } from './capture-card';
@@ -22,7 +22,7 @@ const IN_CHAPTER_ONE = textAnchor('/6/4!/2', { exact: 'ねこ', prefix: '', suff
 
 const CHAPTER_ONE = { text: '第一章', lang: 'ja' };
 
-const AT_PAGE_THREE = regionAnchor([{ index: imageIndex(2), rect: imageRect(0, 0, 10, 10) }]);
+const AT_PAGE_THREE = regionAnchor([{ index: imageIndex(2), rect: pageRect(0, 0, 0.1, 0.1) }]);
 
 function read(id: string, text: string, note: string | null = null): PanelCapture {
   return {
@@ -164,7 +164,7 @@ describe('cardOf', () => {
   });
 
   it('links a card to the image and region it was taken from, naming no capture id', () => {
-    expect(cardFor(read('c1', 'ねこ')).href).toBe('/read/book-1?image=2&region=0,0,10,10');
+    expect(cardFor(read('c1', 'ねこ')).href).toBe('/read/book-1?image=2&region=0,0,0.1,0.1');
   });
 
   it('links nowhere when no book is open', () => {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, sameAnchorKind, textAnchor } from './anchor';
-import { imageRect } from './geometry';
+import { pageRect } from './geometry';
 import { imageIndex } from './ids';
 import type { ImageRegion } from './image-region';
 
 function region(index: number): ImageRegion {
-  return { index: imageIndex(index), rect: imageRect(index, index, 10, 10) };
+  return { index: imageIndex(index), rect: pageRect(index / 100, index / 100, 0.1, 0.1) };
 }
 
 const quote = { exact: '猫である', prefix: '吾輩は', suffix: '。' };

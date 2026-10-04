@@ -17,7 +17,7 @@
   import type { ImageRegion } from '$lib/shared/image-region';
   import { regionsIn } from '../domain/placement';
   import type { PlacedImage } from '../domain/placement';
-  import { drawnSize, MIN_SELECTION_PX, selectionSize, sizeLabel } from '../domain/selection';
+  import { drawnSize, MIN_SELECTION_PX, sizeLabel } from '../domain/selection';
   import type { Point } from '../domain/selection';
   import { placedImages } from './page-placements';
 
@@ -98,7 +98,8 @@
         })
         .with({ kind: 'selection' }, ({ selection }) => {
           const rect = screenRect(selection.x, selection.y, selection.width, selection.height);
-          const regions = regionsIn(placementsIn(stroke.surface, trace), rect);
+          const placed = placementsIn(stroke.surface, trace);
+          const regions = regionsIn(placed, rect);
           trace.step('regions', { count: regions.length });
           for (const region of regions) {
             trace.step('region', { index: region.index, rect: region.rect });
@@ -109,7 +110,7 @@
           }
 
           marquee?.keep(selection);
-          captured = selectionSize(regions, arrangement);
+          captured = drawnSize(placed, rect, arrangement);
           trace.step('selected', { regions: regions.length, size: captured });
           select(regions);
         })

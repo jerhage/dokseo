@@ -5,6 +5,7 @@ import { own } from '$lib/platform/image/bitmap';
 import type { OwnedBitmap } from '$lib/platform/image/bitmap';
 import { cropFrom, scaleBy, stitch, toGrayscale } from '$lib/platform/image/pixels';
 import type { Arrangement } from '$lib/shared/arrangement';
+import { imageRectOf } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource } from '$lib/shared/page-source';
 import { MANGA_OCR_INPUT } from '../../../domain/ocr-crop';
@@ -38,7 +39,8 @@ async function cropStages(
     if (read.kind !== 'success') throw new Error(`The sample page did not decode: ${read.kind}`);
 
     using page = own(read.image);
-    parts.push(held.use(await cropFrom(page.bitmap, region.rect)).bitmap);
+    const natural = { width: page.bitmap.width, height: page.bitmap.height };
+    parts.push(held.use(await cropFrom(page.bitmap, imageRectOf(region.rect, natural))).bitmap);
   }
 
   using stitched = stitch(parts, arrangement);

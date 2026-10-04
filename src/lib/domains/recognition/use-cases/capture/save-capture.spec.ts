@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import type { Capture, CaptureDraft } from '../../domain/capture/capture';
@@ -12,7 +12,7 @@ const BOOK = bookId('book-one');
 const DRAFT: CaptureDraft = {
   id: captureId('a'),
   bookId: BOOK,
-  anchor: regionAnchor([{ index: imageIndex(13), rect: imageRect(10, 20, 100, 40) }]),
+  anchor: regionAnchor([{ index: imageIndex(13), rect: pageRect(0.01, 0.02, 0.1, 0.04) }]),
   text: 'こっちに来て',
   confidence: null,
   origin: 'recognized',

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { CapturesImportSummary } from '../use-cases/captures-import-plan';
 import {
@@ -28,7 +28,7 @@ const NOTHING: CapturesImportSummary = {
 const CAPTURE: Capture = {
   id: captureId('c'),
   bookId: bookId('b'),
-  anchor: regionAnchor([{ index: imageIndex(0), rect: imageRect(1, 2, 3, 4) }]),
+  anchor: regionAnchor([{ index: imageIndex(0), rect: pageRect(0.001, 0.002, 0.003, 0.004) }]),
   text: 'text',
   origin: 'written',
   createdAt: 100,

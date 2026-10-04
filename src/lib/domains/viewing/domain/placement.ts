@@ -1,5 +1,5 @@
-import { clampTo, imageRect, isEmpty, normalize } from '$lib/shared/geometry';
-import type { ImageRect, ScreenRect, Size } from '$lib/shared/geometry';
+import { clampTo, imageRect, isEmpty, normalize, pageRect, pageRectOf } from '$lib/shared/geometry';
+import type { ImageRect, PageRect, ScreenRect, Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 
@@ -50,30 +50,33 @@ function toImageRect(placed: PlacedImage, selection: ScreenRect): ImageRect | nu
   );
 }
 
-function toPageFraction(natural: Size, rect: ImageRect): PageFraction | null {
-  if (!isPositiveFinite(natural.width) || !isPositiveFinite(natural.height)) return null;
-
-  const box = clampTo(normalize(rect), imageRect(0, 0, natural.width, natural.height));
+function toPageFraction(rect: PageRect): PageFraction | null {
+  const box = clampTo(normalize(rect), pageRect(0, 0, 1, 1));
   if (isEmpty(box)) return null;
 
   return {
-    left: (box.x / natural.width) * 100,
-    top: (box.y / natural.height) * 100,
-    width: (box.width / natural.width) * 100,
-    height: (box.height / natural.height) * 100,
+    left: box.x * 100,
+    top: box.y * 100,
+    width: box.width * 100,
+    height: box.height * 100,
   };
+}
+
+function pixelRectsIn(placed: readonly PlacedImage[], selection: ScreenRect): readonly ImageRect[] {
+  return placed.flatMap((image) => toImageRect(image, selection) ?? []);
 }
 
 function regionsIn(placed: readonly PlacedImage[], selection: ScreenRect): readonly ImageRegion[] {
   const regions: ImageRegion[] = [];
 
   for (const image of placed) {
-    const rect = toImageRect(image, selection);
+    const pixels = toImageRect(image, selection);
+    const rect = pixels === null ? null : pageRectOf(pixels, image.natural);
     if (rect !== null) regions.push({ index: image.index, rect });
   }
 
   return regions;
 }
 
-export { toImageRect, toPageFraction, regionsIn };
+export { toImageRect, toPageFraction, pixelRectsIn, regionsIn };
 export type { PageFraction, PlacedImage };
