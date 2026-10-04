@@ -36,4 +36,16 @@
       </Button>
     </div>
   </section>
+
+  {#if import.meta.env.DEV}
+    <section class="surface bordered rounded-container p-5" aria-label="Developer">
+      <div class="col gap-3">
+        <h2 class="text-base weight-semibold">Developer</h2>
+        <div class="row wrap gap-3">
+          <Button href="/docs">Docs</Button>
+          <Button href="/playground">Component playground</Button>
+        </div>
+      </div>
+    </section>
+  {/if}
 </div>
