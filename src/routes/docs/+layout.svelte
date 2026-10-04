@@ -6,5 +6,5 @@
 
 <div class="surface-bg min-h-screen">
   <div class="row justify-end px-4 py-2"><AppearanceSwitcher /></div>
-  <main class="page-wrap pb-8">{@render children()}</main>
+  <main class="page-wrap page-wrap-fluid pb-8">{@render children()}</main>
 </div>

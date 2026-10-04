@@ -35,7 +35,7 @@
     <aside class="layout-sidebar-aside">
       <TableOfContents {entries} />
     </aside>
-    <div class="layout-sidebar-content prose">
+    <div class="layout-sidebar-content">
       {@render children()}
     </div>
   </div>

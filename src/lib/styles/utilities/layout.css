@@ -2,6 +2,9 @@
   display: grid;
   grid-template-columns: 1fr min(var(--container-wide), 100% - 2 * var(--page-gutter)) 1fr;
 }
+.page-wrap-fluid {
+  grid-template-columns: 1fr calc(100% - 2 * var(--page-gutter)) 1fr;
+}
 .page-wrap > * {
   grid-column: 2;
 }
