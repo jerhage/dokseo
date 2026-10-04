@@ -1,0 +1,33 @@
+@layer features {
+  @scope (.sql-diagram) {
+    .set-outline {
+      fill: none;
+      stroke: var(--color-text-muted);
+      stroke-width: var(--border-width-strong);
+    }
+    .universe {
+      fill: none;
+      stroke: var(--border-color);
+      stroke-width: var(--border-width);
+    }
+    .region {
+      fill: var(--color-primary-soft);
+    }
+    .pair-line {
+      stroke: var(--color-primary);
+      stroke-width: var(--border-width-strong);
+    }
+    .is-dropped {
+      opacity: var(--opacity-muted);
+    }
+    .cell {
+      fill: var(--color-surface);
+      stroke: var(--border-color);
+      stroke-width: var(--border-width);
+    }
+    .cell-matched {
+      fill: var(--color-primary-soft);
+      stroke: var(--color-primary);
+    }
+  }
+}
