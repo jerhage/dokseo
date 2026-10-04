@@ -1,0 +1,50 @@
+@layer features {
+  @scope (.touch-demo) {
+    .surface {
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .surface img {
+      inline-size: 100%;
+      block-size: auto;
+      pointer-events: none;
+    }
+    .pad-zones {
+      display: grid;
+      grid-template-columns:
+        calc(var(--side-share) * 100%)
+        1fr
+        calc(var(--side-share) * 100%);
+    }
+    .band {
+      position: absolute;
+      inset-block: 0;
+      left: var(--band-from);
+      width: var(--band-width);
+      background-color: var(--color-overlay);
+    }
+    .band + .band {
+      border-inline-start: var(--border-width-strong) dashed var(--color-text-on-scrim);
+    }
+    .band-centre {
+      background-color: transparent;
+    }
+    .mark {
+      position: absolute;
+      left: var(--mark-x);
+      top: var(--mark-y);
+      inline-size: var(--sp-4);
+      block-size: var(--sp-4);
+      translate: -50% -50%;
+      border-radius: var(--radius-full);
+      border: var(--border-width-strong) solid var(--color-text-on-scrim);
+      background-color: var(--color-accent);
+    }
+    .trace {
+      max-block-size: var(--layout-list-height);
+      overflow-y: auto;
+    }
+  }
+}
