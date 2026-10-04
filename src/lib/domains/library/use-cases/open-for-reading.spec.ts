@@ -141,7 +141,14 @@ describe('openForReading', () => {
     const repository: LibraryRepository = {
       ...fakeRepository({
         kind: 'unreadable-book',
-        book: { id: ID, title: 'Kino', alias: null, contentHash: '', fileName: '' },
+        book: {
+          id: ID,
+          title: 'Kino',
+          alias: null,
+          contentHash: '',
+          fileName: '',
+          stored: { id: ID, title: 'Kino' },
+        },
       }),
       readSource: () => {
         read.push('source');

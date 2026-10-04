@@ -96,7 +96,7 @@ describe('tagFromStored', () => {
 });
 
 describe('tagsFromStored', () => {
-  it('keeps the rows that read and lists the rest apart by id and any stored name', () => {
+  it('keeps the rows that read and lists the rest apart by id, any stored name and the stored row', () => {
     const rows: StoredTag[] = [
       { id: 'good', name: 'sfx', colour: 'plum', createdAt: 1 },
       { id: 'nameless', colour: 'plum', createdAt: 2 },
@@ -106,8 +106,8 @@ describe('tagsFromStored', () => {
     expect(tagsFromStored(rows)).toEqual({
       tags: [{ id: 'good', name: 'sfx', colour: 'plum', createdAt: 1 }],
       unreadable: [
-        { id: 'nameless', name: null },
-        { id: 'undated', name: 'keigo' },
+        { id: 'nameless', name: null, stored: rows[1] },
+        { id: 'undated', name: 'keigo', stored: rows[2] },
       ],
     });
   });

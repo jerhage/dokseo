@@ -14,7 +14,11 @@ type Tag = {
 
 type StoredTag = { readonly [Field in keyof Tag]?: unknown };
 
-type UnreadableTag = { readonly id: TagId; readonly name: string | null };
+type UnreadableTag = {
+  readonly id: TagId;
+  readonly name: string | null;
+  readonly stored: StoredTag;
+};
 
 type StoredTags = {
   readonly tags: readonly Tag[];
@@ -62,7 +66,11 @@ function tagFromStored(stored: StoredTag): Tag {
 
 function unreadableTag(row: StoredTag, cause: unknown): UnreadableTag {
   if (typeof row.id !== 'string' || row.id.length === 0) throw cause;
-  return { id: tagId(row.id), name: typeof row.name === 'string' ? row.name : null };
+  return {
+    id: tagId(row.id),
+    name: typeof row.name === 'string' ? row.name : null,
+    stored: row,
+  };
 }
 
 function tagsFromStored(rows: readonly StoredTag[]): StoredTags {

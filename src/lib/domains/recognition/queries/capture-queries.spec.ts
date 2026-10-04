@@ -231,7 +231,7 @@ describe('storedTags', () => {
 });
 
 describe('unreadableTags', () => {
-  const NAMELESS = { id: tagId('nameless'), name: null };
+  const NAMELESS = { id: tagId('nameless'), name: null, stored: { id: 'nameless' } };
 
   it.each([
     { state: LOADING, expected: [] },

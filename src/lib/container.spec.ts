@@ -45,7 +45,14 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
         kind: 'success',
         books: [],
         unreadable: [
-          { id: 'broken-1' as BookId, title: 'Gone', alias: null, contentHash: '', fileName: '' },
+          {
+            id: 'broken-1' as BookId,
+            title: 'Gone',
+            alias: null,
+            contentHash: '',
+            fileName: '',
+            stored: { id: 'broken-1', title: 'Gone' },
+          },
         ],
       }),
     get: notUsed,
