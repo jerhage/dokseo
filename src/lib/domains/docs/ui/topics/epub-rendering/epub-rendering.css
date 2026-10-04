@@ -1,0 +1,32 @@
+@layer features {
+  @scope (.epub-rendering) {
+    .book-frame {
+      position: relative;
+      overflow: hidden;
+    }
+    .book-stage {
+      block-size: var(--layout-list-height);
+    }
+    .book-stage > foliate-view {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+    }
+    .book-notice {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: var(--sp-4);
+      text-align: center;
+    }
+    .wrap-anywhere {
+      overflow-wrap: anywhere;
+    }
+    .byte-row {
+      overflow-x: auto;
+    }
+  }
+}
