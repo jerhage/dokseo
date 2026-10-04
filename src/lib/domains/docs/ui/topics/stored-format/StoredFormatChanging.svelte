@@ -22,7 +22,12 @@
     {
       spec: 'src/lib/domains/library/adapters/book-row-format.spec.ts',
       holds:
-        'The three book fixtures read back exactly; add and update write exactly their keys and types; the reader database layout.',
+        'The three book fixtures read back exactly; add and update write exactly their keys and types; the known values of language, layout, direction, pairing, fit and source; the reader database layout.',
+    },
+    {
+      spec: 'src/lib/domains/library/adapters/book-files-format.spec.ts',
+      holds:
+        'add writes, and readSource and readCover read, a book’s files under blobs/<bookId>.src and blobs/<bookId>.cover.',
     },
     {
       spec: 'src/lib/domains/library/adapters/page-list-row-format.spec.ts',
@@ -35,11 +40,11 @@
     {
       spec: 'src/lib/domains/recognition/adapters/capture/capture-row-format.spec.ts',
       holds:
-        'The four capture fixtures read back; save and moveBook write exactly their keys; the recognition database layout.',
+        'The four capture fixtures read back; save, moveBook and untagEverywhere write exactly their keys; the capture origins; the recognition database layout.',
     },
     {
       spec: 'src/lib/domains/recognition/adapters/tag/tag-row-format.spec.ts',
-      holds: 'Both tag fixtures read back, and save writes them unchanged.',
+      holds: 'Both tag fixtures read back, save writes them unchanged, and the 16 tag colours.',
     },
     {
       spec: 'src/lib/domains/storage/use-cases/captures-file-v1-golden.spec.ts',
