@@ -1,0 +1,21 @@
+@layer features {
+  @scope (.ui-library) {
+    .token-value {
+      overflow-wrap: anywhere;
+    }
+    .token-swatch {
+      inline-size: var(--swatch-size);
+      block-size: var(--swatch-size);
+      background-color: var(--token-swatch, transparent);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+    .theme-frame {
+      display: block;
+      block-size: var(--theme-frame-height, auto);
+    }
+    .shell-stage {
+      inline-size: var(--shell-width, 100%);
+    }
+  }
+}
