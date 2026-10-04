@@ -12,10 +12,12 @@
     removeUnreadableLabel,
     unreadableCapturesTitle,
   } from './unreadable-captures';
+  import type { UnreadableRowsExporting } from './unreadable-rows-export.svelte';
+  import UnreadableRowsExportButton from './UnreadableRowsExportButton.svelte';
 
   type Props = {
     readonly captures: readonly UnreadableCapture[];
-    readonly recognition: Pick<CaptureWrites, 'removeUnreadableCaptures'>;
+    readonly recognition: Pick<CaptureWrites, 'removeUnreadableCaptures'> & UnreadableRowsExporting;
   };
 
   let { captures, recognition }: Props = $props();
@@ -37,6 +39,7 @@
 {#if captures.length > 0}
   <Alert variant="warning" title={unreadableCapturesTitle(captures.length)}>
     These captures were stored in a shape this version cannot read.
+    <UnreadableRowsExportButton rows={{ captures, tags: [] }} exporting={recognition} />
     {#if problem !== null}
       <p>{problem}</p>
     {/if}
