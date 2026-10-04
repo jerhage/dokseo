@@ -6,5 +6,5 @@ function isCaptureOrigin(value: unknown): value is CaptureOrigin {
   return CAPTURE_ORIGINS.some((origin) => origin === value);
 }
 
-export { isCaptureOrigin };
+export { CAPTURE_ORIGINS, isCaptureOrigin };
 export type { CaptureOrigin };
