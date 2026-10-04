@@ -1,5 +1,6 @@
 const LEAF_DOMAINS = ['library', 'viewing', 'flowing', 'recognition'];
 const LEAF_DOMAIN_PATH = `^src/lib/domains/(${LEAF_DOMAINS.join('|')})/`;
+const DOCS_DOMAIN_PATH = '^src/lib/domains/docs/';
 
 module.exports = {
   forbidden: [
@@ -19,7 +20,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: '^src/lib/domains/([^/]+)/adapters/|^src/',
-        pathNot: ['^src/lib/container\\.ts$', '^src/lib/composition/'],
+        pathNot: ['^src/lib/container\\.ts$', '^src/lib/composition/', DOCS_DOMAIN_PATH],
       },
       to: {
         path: '^src/lib/domains/[^/]+/adapters/',
@@ -32,7 +33,7 @@ module.exports = {
       comment:
         "A domain's domain/ folder is the innermost ring: ports, entities and value objects, plain TypeScript, testable in bare Node. It may not import an adapter, a use case, a UI module, or anything from another domain. If domain code needs something from outside, that something is a port it should declare, not a module it should import.",
       severity: 'error',
-      from: { path: '^src/lib/domains/([^/]+)/domain/' },
+      from: { path: '^src/lib/domains/([^/]+)/domain/', pathNot: DOCS_DOMAIN_PATH },
       to: {
         path: '^src/lib/domains/',
         pathNot: '^src/lib/domains/$1/domain/',
@@ -44,7 +45,7 @@ module.exports = {
       comment:
         "A domain's queries/ folder holds its query keys and the factories that return queryOptions: a key and a call to a use case the caller hands in. It sits between use-cases/ and ui/, so it may import its own domain/ for types, shared/ and npm, and it may not import any ui/ (its own included, since ui/ imports queries/), any adapters/, container.ts, context.ts or the builders in composition/. A factory types its parameter structurally as the use cases it calls, so a spec passes a plain object and the composition root stays above it.",
       severity: 'error',
-      from: { path: '^src/lib/domains/[^/]+/queries/' },
+      from: { path: '^src/lib/domains/[^/]+/queries/', pathNot: DOCS_DOMAIN_PATH },
       to: {
         path: [
           '^src/lib/domains/[^/]+/(ui|adapters)/',
@@ -60,7 +61,7 @@ module.exports = {
       comment:
         "A query factory calls a use case through the parameter it is given, never by importing the use case's module, so the container stays the one place a use case is wired to its dependencies. A type-only import from use-cases/ (an error type a use case declares) is allowed.",
       severity: 'error',
-      from: { path: '^src/lib/domains/[^/]+/queries/' },
+      from: { path: '^src/lib/domains/[^/]+/queries/', pathNot: DOCS_DOMAIN_PATH },
       to: {
         path: '^src/lib/domains/[^/]+/use-cases/',
         dependencyTypesNot: ['type-only'],
@@ -72,7 +73,10 @@ module.exports = {
       comment:
         "queries/ sits above use-cases/ and below ui/, so only a ui/ module (and another file in queries/) may import it. A domain/, use-cases/ or adapters/ file that imported a query would point the layering upward. Another domain's queries/ is already refused by cross-domain-contract-only, and a route's by routes-are-thin.",
       severity: 'error',
-      from: { path: '^src/lib/domains/[^/]+/(domain|use-cases|adapters)/' },
+      from: {
+        path: '^src/lib/domains/[^/]+/(domain|use-cases|adapters)/',
+        pathNot: DOCS_DOMAIN_PATH,
+      },
       to: { path: '^src/lib/domains/[^/]+/queries/' },
     },
 
@@ -81,7 +85,7 @@ module.exports = {
       comment:
         "Another domain's contract is its domain/ folder and its use-cases/ folder: the types it speaks in and the operations it offers. Its adapters/ and its ui/ are internals, and importing one couples you to how that domain happens to be built today. The back-reference exempts a domain from itself — inside one domain every folder is fair game, subject to the other rules.",
       severity: 'error',
-      from: { path: '^src/lib/domains/([^/]+)/' },
+      from: { path: '^src/lib/domains/([^/]+)/', pathNot: DOCS_DOMAIN_PATH },
       to: {
         path: '^src/lib/domains/',
         pathNot: [
@@ -111,7 +115,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: '^src/lib/domains/([^/]+)/',
-        pathNot: LEAF_DOMAIN_PATH,
+        pathNot: [LEAF_DOMAIN_PATH, DOCS_DOMAIN_PATH],
       },
       to: {
         path: '^src/lib/domains/',
@@ -124,7 +128,7 @@ module.exports = {
       comment:
         "The composition root and the routes sit above every domain: src/lib/container.ts and the builders in src/lib/composition/ assemble the domains, and a route in src/routes/ renders them. A domain that imported either would point the layering upward and could reach the adapters the composition root builds. A type-only import is allowed, because a view model in a domain's ui/ names the Container type it is handed, and a type erases at build time.",
       severity: 'error',
-      from: { path: '^src/lib/domains/' },
+      from: { path: '^src/lib/domains/', pathNot: DOCS_DOMAIN_PATH },
       to: {
         path: ['^src/routes/', '^src/lib/container\\.ts$', '^src/lib/composition/'],
         dependencyTypesNot: ['type-only'],
@@ -157,8 +161,18 @@ module.exports = {
           '^src/lib/assets/',
           '^src/lib/components/',
           '^src/lib/domains/[^/]+/ui/',
+          DOCS_DOMAIN_PATH,
         ],
       },
+    },
+
+    {
+      name: 'nothing-imports-docs',
+      comment:
+        "The docs domain is the developer documentation: pages that explain how the app works, with live demos built from the real modules. It sits above everything, so it may import any module at all (another domain's adapters and ui/, container.ts, composition/, platform/), and every rule above that would refuse such an import exempts it. The price is that nothing outside it may import it: only its own files and the routes under src/routes/docs/ reach it. Without this half, a reader or a domain could come to depend on a demo, and the docs could never be left out of the production build.",
+      severity: 'error',
+      from: { pathNot: [DOCS_DOMAIN_PATH, '^src/routes/docs/'] },
+      to: { path: DOCS_DOMAIN_PATH },
     },
 
     {
@@ -187,7 +201,9 @@ module.exports = {
       comment:
         "pdf.js ships a modern build and a legacy build, and library/adapters/pdf-page-source.ts chooses one at runtime by feature detection and loads only that build's library and worker. A static, dynamic or type import of pdfjs-dist, or of any path inside it, from any other module would fix a build in advance or put one in a chunk the other kind of browser fetches, so only the adapter may import it. The worker is named as new URL('pdfjs-dist/...', import.meta.url), which dependency-cruiser does not see as an edge; library/adapters/pdf-build-entries.spec.ts holds that form, and which build each entry belongs to.",
       severity: 'error',
-      from: { pathNot: '^src/lib/domains/library/adapters/pdf-page-source\\.ts$' },
+      from: {
+        pathNot: ['^src/lib/domains/library/adapters/pdf-page-source\\.ts$', DOCS_DOMAIN_PATH],
+      },
       to: { path: '(^|/)node_modules/(pdfjs-dist|.*/pdfjs-dist)/' },
     },
 

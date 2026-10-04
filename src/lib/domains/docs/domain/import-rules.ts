@@ -16,6 +16,8 @@ const LEAF_DOMAINS = ['library', 'viewing', 'flowing', 'recognition'] as const;
 
 const LEAF_DOMAIN_PATH = `^src/lib/domains/(${LEAF_DOMAINS.join('|')})/`;
 
+const DOCS_DOMAIN_PATH = '^src/lib/domains/docs/';
+
 const UNPORTED_RULES = ['no-circular', 'no-unresolvable'] as const;
 
 const PATH_RULES: readonly PathRule[] = [
@@ -23,7 +25,7 @@ const PATH_RULES: readonly PathRule[] = [
     name: 'only-the-container-builds-adapters',
     from: {
       path: '^src/lib/domains/([^/]+)/adapters/|^src/',
-      pathNot: ['^src/lib/container\\.ts$', '^src/lib/composition/'],
+      pathNot: ['^src/lib/container\\.ts$', '^src/lib/composition/', DOCS_DOMAIN_PATH],
     },
     to: {
       path: '^src/lib/domains/[^/]+/adapters/',
@@ -32,7 +34,7 @@ const PATH_RULES: readonly PathRule[] = [
   },
   {
     name: 'domain-ring-is-pure',
-    from: { path: '^src/lib/domains/([^/]+)/domain/' },
+    from: { path: '^src/lib/domains/([^/]+)/domain/', pathNot: DOCS_DOMAIN_PATH },
     to: {
       path: '^src/lib/domains/',
       pathNot: '^src/lib/domains/$1/domain/',
@@ -40,7 +42,7 @@ const PATH_RULES: readonly PathRule[] = [
   },
   {
     name: 'queries-know-no-ui-or-wiring',
-    from: { path: '^src/lib/domains/[^/]+/queries/' },
+    from: { path: '^src/lib/domains/[^/]+/queries/', pathNot: DOCS_DOMAIN_PATH },
     to: {
       path: [
         '^src/lib/domains/[^/]+/(ui|adapters)/',
@@ -52,7 +54,7 @@ const PATH_RULES: readonly PathRule[] = [
   },
   {
     name: 'queries-call-use-cases-they-are-handed',
-    from: { path: '^src/lib/domains/[^/]+/queries/' },
+    from: { path: '^src/lib/domains/[^/]+/queries/', pathNot: DOCS_DOMAIN_PATH },
     to: {
       path: '^src/lib/domains/[^/]+/use-cases/',
       dependencyTypesNot: ['type-only'],
@@ -60,12 +62,15 @@ const PATH_RULES: readonly PathRule[] = [
   },
   {
     name: 'only-ui-reads-queries',
-    from: { path: '^src/lib/domains/[^/]+/(domain|use-cases|adapters)/' },
+    from: {
+      path: '^src/lib/domains/[^/]+/(domain|use-cases|adapters)/',
+      pathNot: DOCS_DOMAIN_PATH,
+    },
     to: { path: '^src/lib/domains/[^/]+/queries/' },
   },
   {
     name: 'cross-domain-contract-only',
-    from: { path: '^src/lib/domains/([^/]+)/' },
+    from: { path: '^src/lib/domains/([^/]+)/', pathNot: DOCS_DOMAIN_PATH },
     to: {
       path: '^src/lib/domains/',
       pathNot: [
@@ -87,11 +92,19 @@ const PATH_RULES: readonly PathRule[] = [
     name: 'non-leaves-import-only-leaves',
     from: {
       path: '^src/lib/domains/([^/]+)/',
-      pathNot: LEAF_DOMAIN_PATH,
+      pathNot: [LEAF_DOMAIN_PATH, DOCS_DOMAIN_PATH],
     },
     to: {
       path: '^src/lib/domains/',
       pathNot: ['^src/lib/domains/$1/', LEAF_DOMAIN_PATH],
+    },
+  },
+  {
+    name: 'domains-know-no-wiring-or-routes',
+    from: { path: '^src/lib/domains/', pathNot: DOCS_DOMAIN_PATH },
+    to: {
+      path: ['^src/routes/', '^src/lib/container\\.ts$', '^src/lib/composition/'],
+      dependencyTypesNot: ['type-only'],
     },
   },
   {
@@ -113,8 +126,14 @@ const PATH_RULES: readonly PathRule[] = [
         '^src/lib/assets/',
         '^src/lib/components/',
         '^src/lib/domains/[^/]+/ui/',
+        DOCS_DOMAIN_PATH,
       ],
     },
+  },
+  {
+    name: 'nothing-imports-docs',
+    from: { pathNot: [DOCS_DOMAIN_PATH, '^src/routes/docs/'] },
+    to: { path: DOCS_DOMAIN_PATH },
   },
   {
     name: 'base-components-know-no-app',
@@ -131,7 +150,9 @@ const PATH_RULES: readonly PathRule[] = [
   },
   {
     name: 'only-the-pdf-adapter-loads-pdfjs',
-    from: { pathNot: '^src/lib/domains/library/adapters/pdf-page-source\\.ts$' },
+    from: {
+      pathNot: ['^src/lib/domains/library/adapters/pdf-page-source\\.ts$', DOCS_DOMAIN_PATH],
+    },
     to: { path: '(^|/)node_modules/(pdfjs-dist|.*/pdfjs-dist)/' },
   },
 ];
@@ -193,6 +214,7 @@ function sourcePath(raw: string): string {
 }
 
 export {
+  DOCS_DOMAIN_PATH,
   LEAF_DOMAINS,
   LEAF_DOMAIN_PATH,
   PATH_RULES,

@@ -147,11 +147,39 @@ describe('the ported path rules', () => {
   it('refuses one non-leaf importing another', () => {
     expect(
       refusingRules(
-        'src/lib/domains/docs/ui/topics/Page.svelte',
+        'src/lib/domains/sync/ui/SyncPanel.svelte',
         'src/lib/domains/storage/domain/storage-parts.ts',
         'value',
       ),
     ).toEqual(['non-leaves-import-only-leaves']);
+  });
+
+  it('passes docs importing an adapter, the container and another domain ui', () => {
+    const from = 'src/lib/domains/docs/ui/topics/Page.svelte';
+
+    for (const to of [
+      'src/lib/domains/storage/adapters/storage-account.ts',
+      'src/lib/domains/storage/ui/StorageSummary.svelte',
+      'src/lib/container.ts',
+      'src/lib/composition/library.ts',
+      'src/lib/platform/idb/connection.ts',
+      'node_modules/pdfjs-dist/build/pdf.mjs',
+    ]) {
+      expect(refusingRules(from, to, 'value')).toEqual([]);
+    }
+  });
+
+  it('refuses every module outside docs and its routes an import of docs', () => {
+    const to = 'src/lib/domains/docs/domain/sample.ts';
+
+    expect(refusingRules('src/lib/domains/storage/ui/StorageSummary.svelte', to, 'value')).toEqual([
+      'non-leaves-import-only-leaves',
+      'nothing-imports-docs',
+    ]);
+    expect(refusingRules('src/routes/+page.svelte', to, 'type-only')).toEqual([
+      'nothing-imports-docs',
+    ]);
+    expect(refusingRules('src/routes/docs/storage/+page.svelte', to, 'value')).toEqual([]);
   });
 
   it('passes a worker that imports a use case', () => {
