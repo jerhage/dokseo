@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { consentFromStored, decisionOf, grantedConsent } from './model-consent';
-import type { ModelConsent, StoredModelConsent } from './model-consent';
+import type { ModelConsent } from './model-consent';
 import { modelFootprint } from './model-footprint';
 import type { ModelFootprint } from './model-footprint';
 
@@ -23,20 +23,39 @@ const SECOND_JAPANESE_MODEL: ModelFootprint = {
   weightsBytes: 96_000_000,
 };
 
-function read(stored: StoredModelConsent): ModelConsent {
-  return consentFromStored(stored);
+function read(stored: unknown): ModelConsent {
+  const consent = consentFromStored(stored);
+  if (consent === null) throw new Error('That record reads as no consent');
+  return consent;
 }
 
 describe('consentFromStored', () => {
-  it('reads a record written before the model was named as naming none', () => {
-    const consent = read({ language: 'ja', grantedAt: GRANTED_AT });
-
-    expect(consent).toEqual({
-      language: 'ja',
-      grantedAt: GRANTED_AT,
-      modelId: null,
-      weightsBytes: null,
-    });
+  it.each([
+    ['no record', undefined],
+    ['a record that is not an object', 'ja'],
+    ['a record written before the model was named', { language: 'ja', grantedAt: GRANTED_AT }],
+    [
+      'an unknown language',
+      { language: 'xx', grantedAt: GRANTED_AT, modelId: null, weightsBytes: null },
+    ],
+    [
+      'a grant time of the wrong type',
+      { language: 'ja', grantedAt: '1', modelId: null, weightsBytes: null },
+    ],
+    [
+      'a grant time that is not finite',
+      { language: 'ja', grantedAt: Number.NaN, modelId: null, weightsBytes: null },
+    ],
+    [
+      'a model id of the wrong type',
+      { language: 'ja', grantedAt: GRANTED_AT, modelId: 7, weightsBytes: null },
+    ],
+    [
+      'a size of the wrong type',
+      { language: 'ja', grantedAt: GRANTED_AT, modelId: null, weightsBytes: '442' },
+    ],
+  ])('reads %s as no consent, which asks again', (_what, stored) => {
+    expect(consentFromStored(stored)).toBeNull();
   });
 
   it('keeps the model and the size a newer record already carries', () => {
@@ -127,7 +146,7 @@ describe('decisionOf', () => {
     },
     {
       what: 'a record naming no model',
-      consent: read({ language: 'ja', grantedAt: GRANTED_AT }),
+      consent: read({ language: 'ja', grantedAt: GRANTED_AT, modelId: null, weightsBytes: null }),
       model: japanese(),
       decision: 'undecided',
     },

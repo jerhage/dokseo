@@ -1,3 +1,5 @@
+import { isNumber, isNumberOrNull, isStoredFields, isTextOrNull } from '$lib/shared/corrupt-row';
+import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import { reads } from './model-footprint';
@@ -11,13 +13,6 @@ type ConsentLookup =
 
 type ConsentWrite = { readonly kind: 'success' } | StorageUnavailable;
 
-type StoredModelConsent = {
-  readonly language: Language;
-  readonly grantedAt: number;
-  readonly modelId?: string | null;
-  readonly weightsBytes?: number | null;
-};
-
 type ModelConsent = {
   readonly language: Language;
   readonly grantedAt: number;
@@ -25,19 +20,19 @@ type ModelConsent = {
   readonly weightsBytes: number | null;
 };
 
-function consentFromStored(stored: StoredModelConsent): ModelConsent {
-  return {
-    ...stored,
-    modelId: stored.modelId ?? null,
-    weightsBytes: stored.weightsBytes ?? null,
-  };
+function consentFromStored(stored: unknown): ModelConsent | null {
+  if (!isStoredFields(stored)) return null;
+  const { language, grantedAt, modelId, weightsBytes } = stored;
+  if (!isLanguage(language) || !isNumber(grantedAt)) return null;
+  if (!isTextOrNull(modelId) || !isNumberOrNull(weightsBytes)) return null;
+  return { language, grantedAt, modelId, weightsBytes };
 }
 
 function grantedConsent(
   language: Language,
   grantedAt: number,
   model: ModelFootprint | null,
-): StoredModelConsent {
+): ModelConsent {
   return {
     language,
     grantedAt,
@@ -63,11 +58,4 @@ interface ModelConsentStore {
 }
 
 export { consentFromStored, grantedConsent, decisionOf };
-export type {
-  ConsentLookup,
-  ConsentWrite,
-  ModelConsentDecision,
-  StoredModelConsent,
-  ModelConsent,
-  ModelConsentStore,
-};
+export type { ConsentLookup, ConsentWrite, ModelConsentDecision, ModelConsent, ModelConsentStore };
