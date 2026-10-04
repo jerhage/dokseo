@@ -45,8 +45,9 @@ const DOCS_TOPICS = [
   {
     slug: 'storage',
     title: 'Storage that lasts',
-    summary: 'IndexedDB, OPFS, eviction and the persistence grant.',
-    status: 'planned',
+    summary:
+      'localStorage, IndexedDB, the Cache API and OPFS, quotas and eviction, the persistence grant, and where Dokseo keeps each kind of data.',
+    status: 'published',
   },
   {
     slug: 'epub-rendering',
