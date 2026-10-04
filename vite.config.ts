@@ -53,6 +53,20 @@ function runtimeServedFromCdn(): Plugin {
   };
 }
 
+const DEV_ONLY_ROUTE_COMPONENT =
+  /\/src\/routes\/(?:docs|playground|preview)\/(?:.+\/)?\+(?:page|layout)\.svelte$/u;
+
+function devOnlyRoutesLeftOut(): Plugin {
+  return {
+    name: 'dev-only-routes-left-out',
+    apply: 'build',
+    enforce: 'pre',
+    load(id) {
+      return DEV_ONLY_ROUTE_COMPONENT.test(id) ? '' : null;
+    },
+  };
+}
+
 const SUPPORTS_LIGHT_DARK = ['chrome123', 'firefox120', 'safari17.5'];
 
 function packageVersion(): string {
@@ -87,6 +101,7 @@ export default defineConfig({
   optimizeDeps: { include: ['@huggingface/transformers'] },
   build: { cssTarget: SUPPORTS_LIGHT_DARK },
   plugins: [
+    devOnlyRoutesLeftOut(),
     sveltekit({
       compilerOptions: {
         runes: ({ filename }) =>
