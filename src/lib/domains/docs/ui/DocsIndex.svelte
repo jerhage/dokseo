@@ -25,12 +25,18 @@
           <Card href={entry.href} heading="h2" class="flex-1">
             {#snippet title()}{entry.topic.title}{/snippet}
             {#snippet description()}{entry.topic.summary}{/snippet}
+            {#if entry.topic.kind === 'plan'}
+              <div class="row"><Badge variant="accent">Plan</Badge></div>
+            {/if}
           </Card>
         {:else}
           <Card heading="h2" class="flex-1">
             {#snippet title()}{entry.topic.title}{/snippet}
             {#snippet description()}{entry.topic.summary}{/snippet}
-            <div class="row"><Badge>Coming</Badge></div>
+            <div class="row gap-2">
+              <Badge>Coming</Badge>
+              {#if entry.topic.kind === 'plan'}<Badge variant="accent">Plan</Badge>{/if}
+            </div>
           </Card>
         {/if}
       </li>

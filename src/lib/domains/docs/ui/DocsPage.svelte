@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import Badge from '$lib/components/Badge.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import TableOfContents from '$lib/components/TableOfContents.svelte';
   import { contentsEntries } from '$lib/components/table-of-contents';
-  import { DOCS_ROOT, docsTopic } from '../domain/topics';
+  import { DOCS_ROOT, docsTopic, docsTopicStanding } from '../domain/topics';
   import type { DocsTopicSlug } from '../domain/topics';
 
   type Props = {
@@ -16,6 +17,7 @@
   let { slug, sections, lead, children }: Props = $props();
 
   const topic = $derived(docsTopic(slug));
+  const standing = $derived(docsTopicStanding(topic));
   const entries = $derived(contentsEntries(sections.map((title) => ({ title }))));
 </script>
 
@@ -27,6 +29,11 @@
   <header class="stack-sm">
     <Breadcrumb items={[{ label: 'Docs', href: DOCS_ROOT }, { label: topic.title }]} />
     <h1>{topic.title}</h1>
+    {#if standing !== null}
+      <p class="row items-center gap-2 m-0 text-muted">
+        <Badge variant="accent">Plan</Badge>{standing}
+      </p>
+    {/if}
     {#if lead !== undefined}
       <p class="text-lg text-muted prose">{@render lead()}</p>
     {/if}

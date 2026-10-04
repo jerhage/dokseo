@@ -1,7 +1,13 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { DOCS_TOPICS, docsIndexEntries, docsTopic, docsTopicHref } from './topics';
+import {
+  DOCS_TOPICS,
+  docsIndexEntries,
+  docsTopic,
+  docsTopicHref,
+  docsTopicStanding,
+} from './topics';
 import type { DocsTopic } from './topics';
 
 const DOCS_ROUTES = join('src', 'routes', 'docs');
@@ -18,6 +24,7 @@ const written: DocsTopic = {
   title: 'Written',
   summary: 'A page that exists.',
   status: 'published',
+  kind: 'explainer',
 };
 
 const coming: DocsTopic = {
@@ -25,6 +32,16 @@ const coming: DocsTopic = {
   title: 'Coming',
   summary: 'A page not yet written.',
   status: 'planned',
+  kind: 'explainer',
+};
+
+const plan: DocsTopic = {
+  slug: 'plan',
+  title: 'Plan',
+  summary: 'A feature decided and not built.',
+  status: 'published',
+  kind: 'plan',
+  buildsAfter: '2.0',
 };
 
 describe('docsIndexEntries', () => {
@@ -33,6 +50,24 @@ describe('docsIndexEntries', () => {
       { kind: 'coming', topic: coming },
       { kind: 'link', topic: written, href: '/docs/written' },
     ]);
+  });
+
+  it('lists every plan after every explainer, keeping each group in order', () => {
+    expect(docsIndexEntries([plan, coming, written]).map((entry) => entry.topic.slug)).toEqual([
+      'coming',
+      'written',
+      'plan',
+    ]);
+  });
+});
+
+describe('docsTopicStanding', () => {
+  it('states when a plan is to be built', () => {
+    expect(docsTopicStanding(plan)).toBe('Planned after 2.0. Not built yet.');
+  });
+
+  it('gives an explainer no standing line', () => {
+    expect(docsTopicStanding(written)).toBeNull();
   });
 });
 

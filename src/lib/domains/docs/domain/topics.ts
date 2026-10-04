@@ -1,11 +1,15 @@
 type DocsTopicStatus = 'published' | 'planned';
 
-type DocsTopic = {
+type DocsTopicText = {
   readonly slug: string;
   readonly title: string;
   readonly summary: string;
   readonly status: DocsTopicStatus;
 };
+
+type DocsTopic =
+  | (DocsTopicText & { readonly kind: 'explainer' })
+  | (DocsTopicText & { readonly kind: 'plan'; readonly buildsAfter: string });
 
 type DocsIndexEntry =
   | { readonly kind: 'link'; readonly topic: DocsTopic; readonly href: string }
@@ -20,6 +24,7 @@ const DOCS_TOPICS = [
     summary:
       'Layered CSS, design tokens, base components, themes and color schemes, scoped domain stylesheets and the playground.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'security-headers',
@@ -27,6 +32,7 @@ const DOCS_TOPICS = [
     summary:
       'CSP, COOP and COEP, cross-origin isolation, and how Dokseo runs threaded OCR and EPUB frames under them.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'ocr',
@@ -34,6 +40,7 @@ const DOCS_TOPICS = [
     summary:
       'Detection and recognition, encoder and decoder, model tokens and greedy decoding, then how Dokseo runs manga-ocr and PaddleOCR in a browser worker.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'offline',
@@ -41,6 +48,7 @@ const DOCS_TOPICS = [
     summary:
       'Service workers, the Cache API, cache strategies, installing, and how an open app finds and applies an update.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'storage',
@@ -48,12 +56,14 @@ const DOCS_TOPICS = [
     summary:
       'localStorage, IndexedDB, the Cache API and OPFS, quotas and eviction, the persistence grant, and where Dokseo keeps each kind of data.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'epub-rendering',
     title: 'EPUB rendering',
     summary: 'foliate-js, blob frames, CFI locations, the turn lock and vertical text.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'book-identity',
@@ -61,6 +71,7 @@ const DOCS_TOPICS = [
     summary:
       'Hashing by content or by sample, KOReader’s partial MD5, matching an upload to a book, and recovering removed and unreadable books.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'export-import',
@@ -68,6 +79,7 @@ const DOCS_TOPICS = [
     summary:
       'Local and global ids, a versioned file read entry by entry, merging and conflicts, and saving through the share sheet or a download.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'touch-and-pointers',
@@ -75,6 +87,7 @@ const DOCS_TOPICS = [
     summary:
       'Pointer events, touch-action, telling a tap from a swipe, pointer media queries and the Apple Pencil on iPad, then Dokseo’s tap zones, edge clicks and selections.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'architecture',
@@ -82,6 +95,7 @@ const DOCS_TOPICS = [
     summary:
       'Ports and adapters, the composition root, use cases, the acyclic domain graph and the rules that enforce it, named unions and queries.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'rendering-pages',
@@ -89,6 +103,7 @@ const DOCS_TOPICS = [
     summary:
       'Decoding, img or canvas, object URLs, render scale, pdf.js and ZIP reading, iOS canvas limits, and how Dokseo pairs, windows and releases its pages.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'releases-and-ci',
@@ -96,6 +111,7 @@ const DOCS_TOPICS = [
     summary:
       'Semantic versions, Conventional Commits, release pull requests and CI, then how Dokseo releases with release-please and GitHub Actions and deploys to Cloudflare Workers.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'testing',
@@ -103,6 +119,7 @@ const DOCS_TOPICS = [
     summary:
       'Unit, browser and end-to-end tests, fakes and mocks, regression, mutation and drift tests, then Vitest’s two projects, the verify ladder and probes in Dokseo.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'sql-set-theory',
@@ -110,6 +127,7 @@ const DOCS_TOPICS = [
     summary:
       'Relations as sets, and each SQL operator as a set operation: selection, projection, joins, semi-joins, anti-joins, union, intersection, difference and grouping.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'sql-patterns',
@@ -117,6 +135,7 @@ const DOCS_TOPICS = [
     summary:
       'If you want this, write that: N+1 and how to avoid it, projections, existence checks, rows with no match, conditional aggregation, window functions, common table expressions and recursive queries.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'unicode',
@@ -124,6 +143,7 @@ const DOCS_TOPICS = [
     summary:
       'Code points, UTF-16 and graphemes, normalization, vertical writing and ruby, and how Dokseo handles Japanese text.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'workers',
@@ -131,6 +151,7 @@ const DOCS_TOPICS = [
     summary:
       'Dedicated workers, cloning and transferring data, SharedArrayBuffer and Atomics, and how Dokseo uses workers.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'typescript-types',
@@ -138,6 +159,7 @@ const DOCS_TOPICS = [
     summary:
       'Structural typing, unions and narrowing, exhaustive matching, brands, parsing at the boundary, and solving a type problem by construction instead of with a cast.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'async-correctness',
@@ -145,6 +167,7 @@ const DOCS_TOPICS = [
     summary:
       'Races and stale answers, cancellation, promises that never settle, and the patterns Dokseo uses against them.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'indexeddb',
@@ -152,6 +175,7 @@ const DOCS_TOPICS = [
     summary:
       'Stores, keys and indexes, transactions, version upgrades, and joining data in code because IndexedDB has no joins.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'accessibility',
@@ -159,6 +183,7 @@ const DOCS_TOPICS = [
     summary:
       'The accessibility tree, names and roles, focus, keyboard paging, modal dialogs and focus traps, live regions, motion, contrast and recognized text, applied to Dokseo.',
     status: 'published',
+    kind: 'explainer',
   },
   {
     slug: 'production-builds',
@@ -166,6 +191,7 @@ const DOCS_TOPICS = [
     summary:
       'Chunks and code splitting, minification, hashed file names, tree shaking and side effects, dead code behind build flags and the precache, then how Dokseo keeps its build small.',
     status: 'published',
+    kind: 'explainer',
   },
 ] as const satisfies readonly DocsTopic[];
 
@@ -181,13 +207,19 @@ function docsTopic(slug: DocsTopicSlug): DocsTopic {
   return topic;
 }
 
+function docsTopicStanding(topic: DocsTopic): string | null {
+  return topic.kind === 'plan' ? `Planned after ${topic.buildsAfter}. Not built yet.` : null;
+}
+
 function docsIndexEntries(topics: readonly DocsTopic[]): readonly DocsIndexEntry[] {
-  return topics.map((topic) =>
+  const explainers = topics.filter((topic) => topic.kind === 'explainer');
+  const plans = topics.filter((topic) => topic.kind === 'plan');
+  return [...explainers, ...plans].map((topic) =>
     topic.status === 'published'
       ? { kind: 'link', topic, href: docsTopicHref(topic.slug) }
       : { kind: 'coming', topic },
   );
 }
 
-export { DOCS_ROOT, DOCS_TOPICS, docsIndexEntries, docsTopic, docsTopicHref };
+export { DOCS_ROOT, DOCS_TOPICS, docsIndexEntries, docsTopic, docsTopicHref, docsTopicStanding };
 export type { DocsIndexEntry, DocsTopic, DocsTopicSlug, DocsTopicStatus };
