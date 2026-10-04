@@ -1,0 +1,25 @@
+const EXPORT_IMPORT_SECTIONS = {
+  problem: 'Moving work without a server',
+  ids: 'Local ids and global ids',
+  identity: 'Identity in the file, not local keys',
+  versions: 'A versioned file format',
+  strict: 'Reading strictly, entry by entry',
+  merge: 'Merging: add and update, never delete',
+  conflicts: 'Conflicts and the rules that settle them',
+  saving: 'Saving a file: the share sheet or a download',
+  activation: 'User activation, and why an await can cost it',
+  format: 'The dokseo-captures format',
+  reading: 'Reading a captures file',
+  books: 'Matching books across devices',
+  tags: 'Tags merged by name',
+  plan: 'Planning an import',
+  apply: 'Writing an import',
+  devices: 'Two devices, simulated',
+  screen: 'The import screen',
+  saveFile: "Dokseo's saveFile",
+  exportFirst: 'Export before a permanent delete',
+  proxy: 'A proxy IndexedDB could not clone',
+  rule: 'The file names things, the device keys them',
+} as const;
+
+export { EXPORT_IMPORT_SECTIONS };
