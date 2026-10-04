@@ -89,7 +89,7 @@ const LIFTED: Capture = {
 const WRITTEN: Capture = {
   id: captureId('capture-c'),
   bookId: REMOVED.id,
-  anchor: regionAnchor([]),
+  anchor: regionAnchor([{ index: imageIndex(0), rect: pageRect(0.1, 0.2, 0.3, 0.4) }]),
   text: 'written',
   origin: 'written',
   createdAt: 100,
@@ -603,6 +603,20 @@ describe('readCapturesFile', () => {
       index: 0,
       reason: { kind: 'invalid', detail: 'A stored book holds an unknown key: book/1' },
     });
+  });
+
+  it('rejects a capture entry whose region anchor holds no region, as a stored capture row', () => {
+    const file = read(
+      edited((raw) => (entry(raw, 'captures', 0).anchor = { kind: 'region', regions: [] })),
+    );
+
+    expect(file.unreadable).toEqual([
+      {
+        section: 'captures',
+        index: 0,
+        reason: { kind: 'invalid', detail: 'A stored capture holds an unknown regions: ' },
+      },
+    ]);
   });
 
   it('rejects a capture whose book key names no book', () => {

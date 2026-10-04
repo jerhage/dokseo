@@ -491,6 +491,7 @@ describe('capturesFromStored', () => {
     ['confidence', 'high'],
     ['anchor', 'region'],
     ['anchor', { kind: 'region' }],
+    ['anchor', { kind: 'region', regions: [] }],
     ['anchor', { kind: 'region', regions: [{ index: 13 }] }],
     ['anchor', { kind: 'region', regions: [{ index: 13, rect: { x: 0.1, y: 0.2, width: 0.3 } }] }],
     ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE }],
@@ -532,6 +533,12 @@ describe('capturesFromStored', () => {
 
     expect(read.captures).toEqual([]);
     expect(read.unreadable.map((row) => row.id)).toEqual(['full']);
+  });
+
+  it('names the regions of a region anchor that holds none', () => {
+    expect(() =>
+      captureFromStored({ ...complete, anchor: { kind: 'region', regions: [] } }),
+    ).toThrow('A stored capture holds an unknown regions: ');
   });
 
   it('names the region rect when it does not fit on the page', () => {
