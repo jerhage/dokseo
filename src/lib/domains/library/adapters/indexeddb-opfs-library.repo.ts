@@ -233,7 +233,7 @@ function createLibraryRepository(): LibraryRepository {
 
     async readPageList(id: BookId): Promise<PageListLookup> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
-      const record = await getRecord<StoredPageList>(await database(), PAGE_LIST_STORE, id);
+      const record = await getRecord<unknown>(await database(), PAGE_LIST_STORE, id);
       return { kind: 'success', pageList: pageListFromStored(record) };
     },
 

@@ -309,6 +309,27 @@ describe('openForReading a book of listed pages', () => {
     expect(saved).toEqual([]);
   });
 
+  it('reports an unreadable source naming the page list, and lists, stores and opens nothing, when the stored list is unreadable', async () => {
+    const cause = 'A stored page list lacks its page names';
+    const { repository, saved } = pageListRepository({ kind: 'unreadable', cause });
+    const opener = fakeListedOpener();
+    const lister = fakeLister({ kind: 'success', names: RULE_NAMES });
+
+    const result = await openForReading(
+      deps({
+        repository,
+        openListedPages: opener.openListedPages,
+        listPageNames: lister.listPageNames,
+      }),
+      ID,
+    );
+
+    expect(result).toEqual({ kind: 'unreadable', failure: { kind: 'source-unreadable', cause } });
+    expect(lister.calls).toEqual([]);
+    expect(saved).toEqual([]);
+    expect(opener.calls).toEqual([]);
+  });
+
   it('passes a blocked store through and opens nothing when the list will not store', async () => {
     const { repository } = pageListRepository({ kind: 'unlisted' }, STORAGE_UNAVAILABLE);
     const opener = fakeListedOpener();

@@ -46,8 +46,21 @@ function opened(opening: PageSourceOpening): PagesOpened {
 async function pageNamesOf(deps: OpenForReadingDeps, id: BookId, blob: Blob): Promise<PageNames> {
   const stored = await deps.repository.readPageList(id);
   if (stored.kind !== 'success') return stored;
-  if (stored.pageList.kind === 'listed') return { kind: 'success', names: stored.pageList.names };
+  return match(stored.pageList)
+    .returnType<Promise<PageNames>>()
+    .with({ kind: 'listed' }, ({ names }) => Promise.resolve({ kind: 'success', names }))
+    .with({ kind: 'unreadable' }, ({ cause }) =>
+      Promise.resolve({ kind: 'unreadable', failure: { kind: 'source-unreadable', cause } }),
+    )
+    .with({ kind: 'unlisted' }, () => listedFromTheSource(deps, id, blob))
+    .exhaustive();
+}
 
+async function listedFromTheSource(
+  deps: OpenForReadingDeps,
+  id: BookId,
+  blob: Blob,
+): Promise<PageNames> {
   const listed = await deps.listPageNames(blob);
   if (listed.kind !== 'success') return { kind: 'unreadable', failure: listed };
   const saved = await savePageList(deps, id, listed.names);
