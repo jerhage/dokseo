@@ -183,10 +183,11 @@
   </p>
   <p>
     <code>picture()</code> and <code>image()</code> are the same render, so the page shown and the
-    page cropped for OCR are the same pixels. That matters for captures. A capture stores an image
-    index and a rectangle in that image's pixels, as the <a href={OCR_CAPTURE_HREF}>OCR page</a>
-    shows. For a PDF those are pixels of the scale 2 render. Change the scale, or make it follow the screen,
-    and every rectangle already stored lands in the wrong place, with nothing failing. A test in
+    page cropped for OCR are the same pixels. A capture stores an image index and a rectangle in
+    fractions of that image, as the <a href={OCR_CAPTURE_HREF}>OCR page</a> shows, so a stored
+    rectangle does not depend on the scale: the reader and the cropper each turn the fractions into
+    pixels of the render in front of them. Had it stored pixels of the scale 2 render, changing the
+    scale would put every stored rectangle in the wrong place, with nothing failing. A test in
     <code>pdf-page-source.spec.ts</code> renders a portrait page and a landscape spread and checks that
     picture and image come out at the same size; one geometry would not catch a scale derived from the
     screen width, since such a scale agrees with a constant on exactly one aspect ratio.

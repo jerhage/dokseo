@@ -62,9 +62,10 @@
       A capture keeps the text, where it came from, when it was taken, and the reader's tags and
       note. Its anchor is a list of image regions: the index of each page image in the book's <code
         >PageSource</code
-      > and a rect in that image's own pixels. It holds no page number: the label a capture card shows
-      is derived from the index when it is displayed. It holds no picture of the crop either. The regions
-      are what Dokseo uses to return to the bubble and outline it on the page.
+      > and a rect in fractions of that image, from 0 to 1, so it names the same area at any size the
+      page is drawn or rendered at. It holds no page number: the label a capture card shows is derived
+      from the index when it is displayed. It holds no picture of the crop either. The regions are what
+      Dokseo uses to return to the bubble and outline it on the page.
     </p>
     <CaptureRecord {regions} text={reading.text} confidence={reading.confidence} />
     <p>

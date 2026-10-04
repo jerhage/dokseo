@@ -191,7 +191,8 @@
   <p>
     The scale also sets what a pixel coordinate means. A rectangle measured in pixels of a scale 2
     render covers twice the numbers of the same rectangle at scale 1. Anything stored as page pixels
-    is tied to the scale it was measured at. The demo for that is further down, in
+    is tied to the scale it was measured at, which is why Dokseo stores a capture's rectangle as
+    fractions of the page instead. The demo for that is further down, in
     <a href={PDF_SCALE_HREF}>{RENDERING_SECTIONS.pdfScale}</a>.
   </p>
 </DocsSection>

@@ -51,14 +51,16 @@
       <p>
         The rectangle arrives in screen pixels. <code>regionsIn</code> in
         <code>viewing/domain/placement.ts</code> intersects it with each page image under it and
-        rescales the overlap into that image's own pixels. The result is an
-        <code>ImageRegion</code>: an image index and a rect, independent of zoom and screen size.
+        rescales the overlap into that image's own pixels, then states it as fractions of the
+        image's natural size. The result is an <code>ImageRegion</code>: an image index and a rect
+        from 0 to 1, independent of zoom, screen size and render scale.
       </p>
     </StepItem>
     <StepItem title="The use case crops the page">
       <p>
         <code>recognizeRegion</code> hands the regions to the cropper port. The canvas cropper
-        decodes each image from the book's <code>PageSource</code>, cuts the rect out with
+        decodes each image from the book's <code>PageSource</code>, turns the fractions into pixels
+        of that bitmap, cuts the rect out with
         <code>createImageBitmap</code>, and stitches the pieces of a selection that spans two pages
         side by side, or stacked for a continuous book, on a white ground.
       </p>
