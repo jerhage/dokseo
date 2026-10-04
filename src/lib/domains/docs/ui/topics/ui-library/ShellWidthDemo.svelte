@@ -2,10 +2,14 @@
   import Button from '$lib/components/Button.svelte';
   import NavLink from '$lib/components/NavLink.svelte';
   import Slider from '$lib/components/Slider.svelte';
+  import { anchorSlug } from '$lib/components/table-of-contents';
   import { remPixels } from '../../../domain/css-units';
   import DocsDemo from '../../DocsDemo.svelte';
+  import { UI_LIBRARY_SECTIONS } from './sections';
 
   const LINKS = ['Library', 'Tags', 'Settings'];
+
+  const SECTION_HREF = `#${anchorSlug(UI_LIBRARY_SECTIONS.containers)}`;
 
   const STEP = 8;
 
@@ -56,7 +60,7 @@
           <nav class="layout-app-shell-nav" aria-label="Shell demo">
             {#each LINKS as link (link)}
               <NavLink
-                href="#shell"
+                href={SECTION_HREF}
                 current={current === link}
                 onclick={(event) => {
                   event.preventDefault();
