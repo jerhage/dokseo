@@ -160,6 +160,13 @@ const DOCS_TOPICS = [
       'The accessibility tree, names and roles, focus, keyboard paging, modal dialogs and focus traps, live regions, motion, contrast and recognized text, applied to Dokseo.',
     status: 'published',
   },
+  {
+    slug: 'production-builds',
+    title: 'Optimizing production builds',
+    summary:
+      'Chunks and code splitting, minification, hashed file names, tree shaking and side effects, dead code behind build flags and the precache, then how Dokseo keeps its build small.',
+    status: 'published',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];

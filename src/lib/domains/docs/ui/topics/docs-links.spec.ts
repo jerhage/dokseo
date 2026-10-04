@@ -12,6 +12,7 @@ import * as epubRendering from './epub-rendering/epub-sections';
 import * as exportImport from './export-import/export-import-sections';
 import * as indexedDb from './indexeddb/indexeddb-sections';
 import * as ocr from './ocr/ocr-sections';
+import * as productionBuilds from './production-builds/build-sections';
 import * as offline from './offline/sections';
 import * as releasesAndCi from './releases-and-ci/sections';
 import * as renderingPages from './rendering-pages/rendering-sections';
@@ -54,6 +55,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'async-correctness': asyncCorrectness.ASYNC_SECTIONS,
   indexeddb: indexedDb.INDEXEDDB_SECTIONS,
   accessibility: accessibility.ACCESSIBILITY_SECTIONS,
+  'production-builds': productionBuilds.BUILD_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
@@ -66,6 +68,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'indexeddb/indexeddb-sections.ts': indexedDb,
   'ocr/ocr-sections.ts': ocr,
   'offline/sections.ts': offline,
+  'production-builds/build-sections.ts': productionBuilds,
   'releases-and-ci/sections.ts': releasesAndCi,
   'rendering-pages/rendering-sections.ts': renderingPages,
   'security-headers/sections.ts': securityHeaders,
