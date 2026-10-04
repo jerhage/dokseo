@@ -42,7 +42,7 @@
 <DocsSection title={STORAGE_SECTIONS.rows}>
   <p>
     IndexedDB stores whatever value it is given and checks none of it. A row read back may have been
-    written by an older version of Dokseo, before a field existed, or by a bug. So the library types
+    written by a pre-release version of Dokseo in an older format, or by a bug. So the library types
     a stored book as a record whose every field is <code>unknown</code>, and checks each field on
     the way out. No field has a default. A missing direction, an unknown language, an image count of
     <code>NaN</code>
