@@ -1,6 +1,7 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
   import { STORED_FORMAT_SECTIONS } from './stored-format/stored-format-sections';
+  import StoredFormatChanging from './stored-format/StoredFormatChanging.svelte';
   import StoredFormatConcepts from './stored-format/StoredFormatConcepts.svelte';
   import StoredFormatFile from './stored-format/StoredFormatFile.svelte';
   import StoredFormatRecords from './stored-format/StoredFormatRecords.svelte';
@@ -18,4 +19,5 @@
   <StoredFormatRecords />
   <StoredFormatFile />
   <StoredFormatRecovery />
+  <StoredFormatChanging />
 </DocsPage>
