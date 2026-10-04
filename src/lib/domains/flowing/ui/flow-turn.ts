@@ -12,8 +12,7 @@ type KeyPress = {
   readonly ctrlKey: boolean;
   readonly metaKey: boolean;
   readonly shiftKey: boolean;
-  readonly typing: boolean;
-  readonly pressesOnSpace: boolean;
+  readonly focus: KeyFocus;
 };
 
 type PointerRelease = {
@@ -44,6 +43,12 @@ type KeyTarget = {
   readonly role: string | null;
   readonly editable: boolean;
 };
+
+type KeyFocus =
+  | { readonly kind: 'typing' }
+  | { readonly kind: 'slider' }
+  | { readonly kind: 'button' }
+  | { readonly kind: 'elsewhere' };
 
 type FlowMove =
   | { readonly kind: 'stay' }
@@ -90,6 +95,14 @@ const BACKWARD: FlowMove = { kind: 'backward' };
 
 const FORWARD: FlowMove = { kind: 'forward' };
 
+const TYPING: KeyFocus = { kind: 'typing' };
+
+const SLIDER: KeyFocus = { kind: 'slider' };
+
+const BUTTON: KeyFocus = { kind: 'button' };
+
+const ELSEWHERE: KeyFocus = { kind: 'elsewhere' };
+
 const LEFT_EDGE: ClickRegion = { kind: 'left-edge' };
 
 const MIDDLE: ClickRegion = { kind: 'middle' };
@@ -112,6 +125,17 @@ const PRESSED_ON_SPACE = new Set(['BUTTON']);
 
 const BUTTON_ROLE = 'button';
 
+const STEPPED_BY_A_SLIDER = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+]);
+
 function isTyping(target: KeyTarget | null): boolean {
   if (target === null) return false;
   if (target.editable) return true;
@@ -127,14 +151,22 @@ function pressesOnSpace(target: KeyTarget | null): boolean {
   return PRESSED_ON_SPACE.has(target.tagName.toUpperCase());
 }
 
-function keyMove(press: KeyPress): FlowMove {
-  if (press.typing) return STAY;
-  if (press.altKey || press.ctrlKey || press.metaKey) return STAY;
-  if (press.key === ' ') {
-    if (press.pressesOnSpace) return STAY;
+function isSlider(target: KeyTarget | null): boolean {
+  if (target === null || target.editable) return false;
 
-    return press.shiftKey ? BACKWARD : FORWARD;
-  }
+  return target.type !== null && STEPPED_INSTEAD.has(target.type.toLowerCase());
+}
+
+function keyFocus(target: KeyTarget | null): KeyFocus {
+  if (isTyping(target)) return TYPING;
+  if (isSlider(target)) return SLIDER;
+  if (pressesOnSpace(target)) return BUTTON;
+
+  return ELSEWHERE;
+}
+
+function pagingMove(press: KeyPress): FlowMove {
+  if (press.key === ' ') return press.shiftKey ? BACKWARD : FORWARD;
   if (press.shiftKey) return STAY;
 
   return match(press.key)
@@ -143,6 +175,17 @@ function keyMove(press: KeyPress): FlowMove {
     .with('ArrowUp', 'PageUp', () => BACKWARD)
     .with('ArrowDown', 'PageDown', () => FORWARD)
     .otherwise(() => STAY);
+}
+
+function keyMove(press: KeyPress): FlowMove {
+  if (press.altKey || press.ctrlKey || press.metaKey) return STAY;
+
+  return match(press.focus)
+    .with({ kind: 'typing' }, () => STAY)
+    .with({ kind: 'slider' }, () => (STEPPED_BY_A_SLIDER.has(press.key) ? STAY : pagingMove(press)))
+    .with({ kind: 'button' }, () => (press.key === ' ' ? STAY : pagingMove(press)))
+    .with({ kind: 'elsewhere' }, () => pagingMove(press))
+    .exhaustive();
 }
 
 function tapOnStage(at: Point, origin: Point, stage: StageBox): StageTap {
@@ -268,6 +311,7 @@ export {
   FRAME_NOWHERE_ON_THE_STAGE,
   HOST_VIEWPORT_ORIGIN,
   isTyping,
+  keyFocus,
   keyMove,
   moveForEnd,
   moveForRegion,
@@ -288,6 +332,7 @@ export type {
   FlowAction,
   FlowMove,
   FlowTurn,
+  KeyFocus,
   KeyPress,
   KeyTarget,
   PageTurner,

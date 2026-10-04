@@ -48,8 +48,7 @@
     dismissesTheArrival,
     FRAME_NOWHERE_ON_THE_STAGE,
     HOST_VIEWPORT_ORIGIN,
-    isTyping,
-    pressesOnSpace,
+    keyFocus,
     tapOnStage,
     turnOrder,
   } from './flow-turn';
@@ -206,8 +205,7 @@
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,
       shiftKey: event.shiftKey,
-      typing: isTyping(pressed),
-      pressesOnSpace: pressesOnSpace(pressed),
+      focus: keyFocus(pressed),
     });
     if (move.kind !== 'stay') event.preventDefault();
   }

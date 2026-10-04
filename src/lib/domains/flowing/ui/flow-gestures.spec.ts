@@ -47,8 +47,7 @@ function pressing(key: string, held: Partial<Omit<KeyPress, 'key'>> = {}): KeyPr
     ctrlKey: false,
     metaKey: false,
     shiftKey: false,
-    typing: false,
-    pressesOnSpace: false,
+    focus: { kind: 'elsewhere' },
     ...held,
   };
 }
@@ -219,7 +218,7 @@ const KEYS: readonly (readonly [
   ['ArrowDown', {}, { kind: 'forward' }, ['next']],
   ['k', {}, { kind: 'stay' }, []],
   ['r', { metaKey: true }, { kind: 'stay' }, []],
-  ['ArrowRight', { typing: true }, { kind: 'stay' }, []],
+  ['ArrowRight', { focus: { kind: 'typing' } }, { kind: 'stay' }, []],
 ];
 
 describe('FlowGestures', () => {

@@ -6,6 +6,7 @@ import {
   FRAME_NOWHERE_ON_THE_STAGE,
   HOST_VIEWPORT_ORIGIN,
   isTyping,
+  keyFocus,
   keyMove,
   moveForEnd,
   moveForTurn,
@@ -50,8 +51,7 @@ function pressing(key: string, held: Partial<Omit<KeyPress, 'key'>> = {}): KeyPr
     ctrlKey: false,
     metaKey: false,
     shiftKey: false,
-    typing: false,
-    pressesOnSpace: false,
+    focus: { kind: 'elsewhere' },
     ...held,
   };
 }
@@ -65,11 +65,7 @@ function over(
   target: KeyTarget | null,
   held: Partial<Omit<KeyPress, 'key'>> = {},
 ): KeyPress {
-  return pressing(key, {
-    typing: isTyping(target),
-    pressesOnSpace: pressesOnSpace(target),
-    ...held,
-  });
+  return pressing(key, { focus: keyFocus(target), ...held });
 }
 
 const SCRUB: KeyTarget = targeting('INPUT', { type: 'range' });
@@ -199,9 +195,11 @@ describe('keyMove', () => {
   });
 
   it('stays put while the reader is typing in a field', () => {
-    expect(keyMove(pressing('ArrowLeft', { typing: true }))).toEqual(STAY);
-    expect(keyMove(pressing(' ', { typing: true }))).toEqual(STAY);
-    expect(keyMove(pressing('PageDown', { typing: true }))).toEqual(STAY);
+    const typing = { focus: { kind: 'typing' } } as const;
+
+    expect(keyMove(pressing('ArrowLeft', typing))).toEqual(STAY);
+    expect(keyMove(pressing(' ', typing))).toEqual(STAY);
+    expect(keyMove(pressing('PageDown', typing))).toEqual(STAY);
   });
 
   it('stays put on a key it does not own', () => {
@@ -281,10 +279,35 @@ describe('pressesOnSpace', () => {
   });
 });
 
+describe('keyFocus', () => {
+  it('names a field, a select, a text area and an editable element as typing', () => {
+    for (const target of [FIELD, targeting('SELECT'), targeting('TEXTAREA')]) {
+      expect(keyFocus(target)).toEqual({ kind: 'typing' });
+    }
+    expect(keyFocus(targeting('DIV', { editable: true }))).toEqual({ kind: 'typing' });
+  });
+
+  it('names a range input as a slider, however it is cased', () => {
+    expect(keyFocus(SCRUB)).toEqual({ kind: 'slider' });
+    expect(keyFocus(targeting('input', { type: 'Range' }))).toEqual({ kind: 'slider' });
+  });
+
+  it('names a button and anything wearing its role as a button', () => {
+    expect(keyFocus(TOOL)).toEqual({ kind: 'button' });
+    expect(keyFocus(WIDGET)).toEqual({ kind: 'button' });
+  });
+
+  it('names a link, an ordinary element and nothing as elsewhere', () => {
+    for (const target of [BACK_LINK, targeting('P'), null]) {
+      expect(keyFocus(target)).toEqual({ kind: 'elsewhere' });
+    }
+  });
+});
+
 describe('the keys over a focused progress slider', () => {
-  it('turns the page on every key that moves a reader through a book', () => {
-    for (const key of TURNING_KEYS) {
-      expect(keyMove(over(key, SCRUB))).not.toEqual(STAY);
+  it('leaves every arrow, Page Up, Page Down, Home and End to the slider', () => {
+    for (const key of [...TURNING_KEYS.filter((turning) => turning !== ' '), 'Home', 'End']) {
+      expect(keyMove(over(key, SCRUB))).toEqual(STAY);
     }
   });
 
