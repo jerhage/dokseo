@@ -1,0 +1,238 @@
+{
+  "format": "dokseo-captures",
+  "version": 1,
+  "exportedAt": 1791000000000,
+  "appVersion": "1.0.0",
+  "books": [
+    {
+      "key": "book-1",
+      "contentHash": "cd5f19e330b6d12e492a85b7821b5664",
+      "fileName": "aria-03.pdf",
+      "title": "ARIA 3",
+      "alias": null,
+      "seriesId": "effd3821-7581-4548-8a82-f007ae1bc025",
+      "volume": 3,
+      "language": "ja",
+      "direction": "rtl",
+      "layoutKind": "paged",
+      "sourceKind": "pdf",
+      "imageCount": 180
+    },
+    {
+      "key": "book-2",
+      "contentHash": "87da02b5816927229818ac7c75164359",
+      "fileName": "Yotsuba&! v01.cbz",
+      "title": "よつばと! 1",
+      "alias": "Yotsuba 1",
+      "seriesId": "95c66331-bc4d-4ca2-a6ff-95e86d108ba0",
+      "volume": 1,
+      "language": "ja",
+      "direction": "rtl",
+      "layoutKind": "paged",
+      "sourceKind": "archive",
+      "imageCount": 222
+    },
+    {
+      "key": "book-3",
+      "contentHash": "44cb8abd6a44e00655198c9780fc1805",
+      "fileName": "ginga-tetsudo-no-yoru.epub",
+      "title": "銀河鉄道の夜",
+      "alias": null,
+      "seriesId": null,
+      "volume": null,
+      "language": "ja",
+      "direction": "rtl",
+      "layoutKind": "flow",
+      "sourceKind": "epub",
+      "imageCount": 0
+    },
+    {
+      "key": "book-4",
+      "contentHash": "1379117c97a45f169dc134c3a09fd3b8",
+      "fileName": "episode-012",
+      "title": "나 혼자만 레벨업 12화",
+      "alias": null,
+      "seriesId": null,
+      "volume": null,
+      "language": "ko",
+      "direction": "ltr",
+      "layoutKind": "continuous",
+      "sourceKind": "images",
+      "imageCount": 64
+    }
+  ],
+  "tags": [
+    {
+      "id": "1a7b9e68-c134-46f0-97a1-2e0f06b70649",
+      "name": "vocabulary",
+      "colour": "sage",
+      "createdAt": 1787897000000
+    },
+    {
+      "id": "d1a711cd-d4f9-4725-b59a-09e7610aae90",
+      "name": "文法 grammar",
+      "colour": "plum",
+      "createdAt": 1788600000000
+    }
+  ],
+  "captures": [
+    {
+      "id": "20a2a984-4963-4b43-87a1-ca4acc3bb21d",
+      "anchor": {
+        "kind": "region",
+        "regions": [
+          {
+            "index": 17,
+            "rect": {
+              "x": 0.104167,
+              "y": 0.902344,
+              "width": 0.415625,
+              "height": 0.097656
+            }
+          },
+          {
+            "index": 18,
+            "rect": {
+              "x": 0.104167,
+              "y": 0,
+              "width": 0.415625,
+              "height": 0.041016
+            }
+          }
+        ]
+      },
+      "text": "나는 혼자서 레벨업한다",
+      "createdAt": 1788003500000,
+      "editedAt": null,
+      "tagIds": [],
+      "origin": "recognized",
+      "note": null,
+      "confidence": 0.934218,
+      "bookKey": "book-4"
+    },
+    {
+      "id": "4685dfb1-a355-4a53-8848-385d9217f118",
+      "anchor": {
+        "kind": "region",
+        "regions": [
+          {
+            "index": 23,
+            "rect": {
+              "x": 0.05,
+              "y": 0.71875,
+              "width": 0.3125,
+              "height": 0.1875
+            }
+          }
+        ]
+      },
+      "text": "ウンディーネ = water sprite, the gondoliers of Neo-Venezia",
+      "createdAt": 1788950000000,
+      "editedAt": null,
+      "tagIds": ["1a7b9e68-c134-46f0-97a1-2e0f06b70649"],
+      "origin": "written",
+      "bookKey": "book-1"
+    },
+    {
+      "id": "ab1fc743-cbbf-44d3-9373-99b2546981f8",
+      "anchor": {
+        "kind": "region",
+        "regions": [
+          {
+            "index": 41,
+            "rect": {
+              "x": 0.612305,
+              "y": 0.084961,
+              "width": 0.091797,
+              "height": 0.287109
+            }
+          }
+        ]
+      },
+      "text": "とーちゃん!",
+      "createdAt": 1790845100000,
+      "editedAt": 1790845160000,
+      "tagIds": ["1a7b9e68-c134-46f0-97a1-2e0f06b70649", "d1a711cd-d4f9-4725-b59a-09e7610aae90"],
+      "origin": "recognized",
+      "note": "Yotsuba calling her father",
+      "confidence": null,
+      "bookKey": "book-2"
+    },
+    {
+      "id": "ad87a95f-0721-43fc-a7eb-c636ae3770cc",
+      "anchor": {
+        "kind": "text",
+        "cfi": "epubcfi(/6/14!/4/2/38,/1:96,/1:112)",
+        "quote": {
+          "exact": "銀河ステーション",
+          "prefix": "どこかで不思議な声が、",
+          "suffix": "、銀河ステーションと"
+        },
+        "chapter": "六、銀河ステーション"
+      },
+      "text": "銀河ステーション",
+      "createdAt": 1790932700000,
+      "editedAt": null,
+      "tagIds": [],
+      "origin": "lifted",
+      "note": null,
+      "bookKey": "book-3"
+    }
+  ],
+  "unreadable": {
+    "books": [
+      {
+        "id": "c5d69377-7fce-4aac-9f32-d56ff6dea7f6",
+        "title": "Blame! 1",
+        "alias": null,
+        "seriesId": null,
+        "volume": null,
+        "language": "ja",
+        "layoutKind": "paged",
+        "direction": "rtl",
+        "pagePairing": "auto",
+        "pageFit": "height",
+        "sourceKind": "archive",
+        "contentHash": "beb96399e08aabef626fc042f25b24c2d8b5b1c837a88c42d9479ae464ce2658",
+        "fileName": "blame-01.cbz",
+        "imageCount": 210,
+        "addedAt": 1785000000000,
+        "position": {
+          "kind": "image",
+          "index": 12,
+          "shownThrough": 13,
+          "offset": 0
+        },
+        "lastReadAt": 1785003600000,
+        "finishedAt": null
+      }
+    ],
+    "tags": [
+      {
+        "id": "b49af40d-30c9-4a26-9f71-0dff8f181f6b",
+        "name": "onomatopoeia",
+        "colour": "teal",
+        "createdAt": 1785000100000
+      }
+    ],
+    "captures": [
+      {
+        "id": "cb8faef5-a153-4f86-bec7-9773225f4e47",
+        "bookId": "c5d69377-7fce-4aac-9f32-d56ff6dea7f6",
+        "regions": [
+          {
+            "index": 12,
+            "rect": {
+              "x": 812,
+              "y": 96,
+              "width": 140,
+              "height": 512
+            }
+          }
+        ],
+        "text": "ネットスフィア",
+        "createdAt": 1785003500000
+      }
+    ]
+  }
+}
