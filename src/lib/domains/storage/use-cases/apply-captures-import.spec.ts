@@ -107,6 +107,7 @@ function exported(from: World): string {
   return buildCapturesFile({
     books: from.shelf,
     removedBooks: [...from.removed.values()],
+    unreadableRemovedBooks: [],
     tags: [...from.tags.values()],
     captures: [...from.captures.values()],
     exportedAt: 1,

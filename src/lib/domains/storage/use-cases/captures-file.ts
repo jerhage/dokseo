@@ -24,6 +24,10 @@ type FileBook = {
   readonly imageCount: number;
 };
 
+type RetiredFileBook = { readonly key: string } & {
+  readonly [Field in Exclude<keyof FileBook, 'key'>]?: unknown;
+};
+
 type WithoutBook<C> = C extends unknown ? Omit<C, 'bookId'> : never;
 
 type BooklessCapture = WithoutBook<Capture>;
@@ -35,10 +39,10 @@ type CapturesFile = {
   readonly version: typeof CAPTURES_FILE_VERSION;
   readonly exportedAt: number;
   readonly appVersion: string;
-  readonly books: readonly FileBook[];
+  readonly books: readonly (FileBook | RetiredFileBook)[];
   readonly tags: readonly Tag[];
   readonly captures: readonly FileCapture[];
 };
 
 export { CAPTURES_FILE_FORMAT, CAPTURES_FILE_VERSION };
-export type { BooklessCapture, CapturesFile, FileBook, FileCapture };
+export type { BooklessCapture, CapturesFile, FileBook, FileCapture, RetiredFileBook };

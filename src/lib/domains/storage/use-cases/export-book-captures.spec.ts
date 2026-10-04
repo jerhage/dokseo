@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Book } from '$lib/domains/library/domain/book/book';
 import type { LibraryRepository } from '$lib/domains/library/domain/book/library-repository';
-import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book';
+import { unreadableRemovedBooksFrom } from '$lib/domains/library/domain/book/removed-book';
+import type {
+  RemovedBook,
+  StoredRemovedBook,
+  UnreadableRemovedBook,
+} from '$lib/domains/library/domain/book/removed-book';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { CaptureRepository } from '$lib/domains/recognition/domain/capture/capture-repository';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
@@ -63,6 +68,33 @@ const REMOVED: RemovedBook = {
   removedAt: 2,
 };
 
+const LEGACY_ROW: StoredRemovedBook = {
+  id: 'old-1',
+  title: '風の谷 2',
+  alias: 'Valley',
+  language: 'ja',
+  layoutKind: 'paged',
+  direction: 'rtl',
+  sourceKind: 'archive',
+  contentHash: 'a'.repeat(64),
+  fileName: 'kaze-2.cbz',
+  imageCount: 40,
+  addedAt: 1,
+  position: 45,
+  removedAt: 2,
+};
+
+const SOUND_IDENTITY_ROW: StoredRemovedBook = {
+  ...REMOVED,
+  id: 'old-2',
+  title: '風の谷 3',
+  position: 45,
+};
+
+function unreadableRecords(rows: readonly StoredRemovedBook[]): readonly UnreadableRemovedBook[] {
+  return unreadableRemovedBooksFrom(rows);
+}
+
 const KANJI: Tag = { id: tagId('tag-kanji'), name: 'kanji', colour: 'sage', createdAt: 10 };
 
 const GRAMMAR: Tag = { id: tagId('tag-grammar'), name: 'grammar', colour: 'rose', createdAt: 11 };
@@ -87,6 +119,7 @@ function notUsed(): Promise<never> {
 type Holdings = {
   readonly books?: readonly Book[];
   readonly removed?: readonly RemovedBook[];
+  readonly unreadableRemoved?: readonly UnreadableRemovedBook[];
   readonly tags?: readonly Tag[];
   readonly captures?: readonly Capture[];
   readonly unavailable?: 'shelf' | 'removed' | 'tags' | 'captures';
@@ -109,7 +142,11 @@ function deps(holdings: Holdings = {}): ExportBookCapturesDeps {
       Promise.resolve(
         holdings.unavailable === 'removed'
           ? STORAGE_UNAVAILABLE
-          : { kind: 'success', removed: holdings.removed ?? [REMOVED], unreadable: [] },
+          : {
+              kind: 'success',
+              removed: holdings.removed ?? [REMOVED],
+              unreadable: holdings.unreadableRemoved ?? [],
+            },
       ),
     listRestorable: notUsed,
     addRemoved: notUsed,
@@ -186,6 +223,57 @@ describe('exportBookCaptures', () => {
       kind: 'read',
       books: [{ title: '風の谷', layoutKind: 'paged' }],
       captures: [{ capture: { id: 'capture-3' } }],
+    });
+  });
+
+  it('writes the captures of a removed record that does not read, under the fields its row holds', async () => {
+    const exported = await exportBookCaptures(
+      deps({
+        unreadableRemoved: unreadableRecords([LEGACY_ROW]),
+        captures: [capture('capture-4', 'old-1')],
+      }),
+      bookId('old-1'),
+    );
+    if (exported.kind !== 'success') throw new Error(exported.kind);
+    const written: unknown = JSON.parse(exported.exported.file.text);
+
+    expect(exported.exported).toMatchObject({
+      captures: 1,
+      file: { name: 'dokseo-captures-valley-2026-10-03.json' },
+    });
+    expect(written).toMatchObject({
+      books: [
+        {
+          key: 'book-1',
+          contentHash: 'a'.repeat(64),
+          fileName: 'kaze-2.cbz',
+          title: '風の谷 2',
+          alias: 'Valley',
+          language: 'ja',
+          direction: 'rtl',
+          layoutKind: 'paged',
+          sourceKind: 'archive',
+          imageCount: 40,
+        },
+      ],
+      captures: [{ id: 'capture-4', bookKey: 'book-1' }],
+    });
+  });
+
+  it('writes a removed record that does not read but keeps a whole identity as a book the file reads back', async () => {
+    const read = await readBack(
+      {
+        unreadableRemoved: unreadableRecords([SOUND_IDENTITY_ROW]),
+        captures: [capture('capture-5', 'old-2')],
+      },
+      bookId('old-2'),
+    );
+
+    expect(read).toMatchObject({
+      kind: 'read',
+      books: [{ title: '風の谷 3', sourceKind: 'pdf', imageCount: 40 }],
+      captures: [{ capture: { id: 'capture-5' } }],
+      unreadable: [],
     });
   });
 
