@@ -18,7 +18,7 @@ const DOCS_TOPICS = [
     slug: 'security-headers',
     title: 'Security headers',
     summary: 'CSP, COOP and COEP, cross-origin isolation, and why SharedArrayBuffer needs them.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'ocr',
