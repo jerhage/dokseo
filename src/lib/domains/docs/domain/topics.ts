@@ -202,6 +202,15 @@ const DOCS_TOPICS = [
     kind: 'plan',
     buildsAfter: '1.0',
   },
+  {
+    slug: 'series-plan',
+    title: 'Plan: series',
+    summary:
+      'Volumes and reading order, identity and grouping, forward-compatible stored data, series metadata in EPUB and ComicInfo, and the plan for series in Dokseo.',
+    status: 'published',
+    kind: 'plan',
+    buildsAfter: '1.0',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];

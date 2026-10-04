@@ -17,6 +17,7 @@ import * as offline from './offline/sections';
 import * as releasesAndCi from './releases-and-ci/sections';
 import * as renderingPages from './rendering-pages/rendering-sections';
 import * as securityHeaders from './security-headers/sections';
+import * as seriesPlan from './series-plan/series-sections';
 import * as sqlPatterns from './sql-patterns/sql-patterns-sections';
 import * as sqlSetTheory from './sql-set-theory/sql-set-sections';
 import * as storage from './storage/storage-sections';
@@ -58,6 +59,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   accessibility: accessibility.ACCESSIBILITY_SECTIONS,
   'production-builds': productionBuilds.BUILD_SECTIONS,
   'word-analysis-plan': wordAnalysisPlan.WORD_PLAN_SECTIONS,
+  'series-plan': seriesPlan.SERIES_PLAN_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
@@ -74,6 +76,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'releases-and-ci/sections.ts': releasesAndCi,
   'rendering-pages/rendering-sections.ts': renderingPages,
   'security-headers/sections.ts': securityHeaders,
+  'series-plan/series-sections.ts': seriesPlan,
   'sql-patterns/sql-patterns-sections.ts': sqlPatterns,
   'sql-set-theory/sql-set-sections.ts': sqlSetTheory,
   'storage/storage-sections.ts': storage,
