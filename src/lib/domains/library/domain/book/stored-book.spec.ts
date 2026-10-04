@@ -2,34 +2,40 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
-import { DEFAULT_PAGE_PAIRING } from './book';
 import type { Book } from './book';
 import { CorruptRow } from '$lib/shared/corrupt-row';
-import {
-  bookFromStored,
-  booksFromStored,
-  FALLBACK_DIRECTION,
-  FALLBACK_LANGUAGE,
-  savedBookRow,
-} from './stored-book';
+import { bookFromStored, booksFromStored, savedBookRow } from './stored-book';
 import type { StoredBook } from './stored-book';
+
+const HASH = '9f86d081884c7d659a2feaa0c55ad015';
 
 const row: StoredBook = {
   id: bookId('b-1'),
   title: 'Yotsuba&! 1',
+  alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
   pagePairing: 'single',
   pageFit: 'width',
   sourceKind: 'archive',
-  contentHash: contentHash('9f86d081'),
+  contentHash: contentHash(HASH),
   fileName: 'Yotsuba&! 1.cbz',
   imageCount: 182,
   addedAt: 1758240000000,
   position: imagePlace(imageIndex(3), imageIndex(4), 0.35),
   lastReadAt: 1758300000000,
   finishedAt: null,
+};
+
+const flowRow: StoredBook = {
+  ...row,
+  layoutKind: 'flow',
+  sourceKind: 'epub',
+  imageCount: 0,
+  position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', 0.37),
 };
 
 describe('bookFromStored', () => {
@@ -71,22 +77,9 @@ describe('bookFromStored', () => {
     expect(bookFromStored(stored).position).toEqual({ kind: 'image', ...expected });
   });
 
-  it('reads a stored offset outside the image back inside it', () => {
-    const stored: StoredBook = {
-      ...row,
-      position: { kind: 'image', index: imageIndex(12), shownThrough: imageIndex(12), offset: 7 },
-    };
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'image',
-      index: 12,
-      shownThrough: 12,
-      offset: 1,
-    });
-  });
-
   it.each([0.37, null])('keeps a stored fraction of %s, or its absence, as it is', (fraction) => {
     const stored: StoredBook = {
-      ...row,
+      ...flowRow,
       position: textPlace('epubcfi(/6/14!/4/2/14/1:0)', fraction),
     };
 
@@ -97,28 +90,10 @@ describe('bookFromStored', () => {
     });
   });
 
-  it('reads a stored fraction the book could never have reached as no fraction', () => {
-    const stored: StoredBook = {
-      ...row,
-      position: { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)', fraction: Number.NaN },
-    };
-
-    expect(bookFromStored(stored).position).toEqual({
-      kind: 'text',
-      cfi: 'epubcfi(/6/14!/4/2/14/1:0)',
-      fraction: null,
-    });
-  });
-
   it('keeps a stored content hash that is present', () => {
-    const stored: StoredBook = { ...row, contentHash: contentHash('a1b2c3d4') };
+    const stored: StoredBook = { ...row, contentHash: '0123456789abcdef0123456789abcdef' };
 
-    expect(bookFromStored(stored).contentHash).toBe('a1b2c3d4');
-  });
-
-  it('reads a row stored without an alias as a book with none', () => {
-    expect('alias' in row).toBe(false);
-    expect(bookFromStored(row).alias).toBeNull();
+    expect(bookFromStored(stored).contentHash).toBe('0123456789abcdef0123456789abcdef');
   });
 
   it.each(['Mine', null])('keeps a stored alias %j', (alias) => {
@@ -126,12 +101,6 @@ describe('bookFromStored', () => {
 
     expect(renamed.alias).toBe(alias);
     expect(renamed.title).toBe('Yotsuba&! 1');
-  });
-
-  it('reads a row stored without a series id or volume as a book in no series', () => {
-    expect('seriesId' in row).toBe(false);
-    expect('volume' in row).toBe(false);
-    expect(bookFromStored(row)).toMatchObject({ seriesId: null, volume: null });
   });
 
   it('keeps a stored null series id and volume', () => {
@@ -152,11 +121,14 @@ describe('bookFromStored', () => {
     expect(book.volume).toBe(1.5);
   });
 
-  it.each([7, true, { id: 'series-1' }])('throws a corrupt row for a stored series id %j', (id) => {
-    expect(() => bookFromStored({ ...row, seriesId: id })).toThrow(
-      `A stored book holds an unknown series id: ${String(id)}`,
-    );
-  });
+  it.each([7, true, { id: 'series-1' }, ''])(
+    'throws a corrupt row for a stored series id %j',
+    (id) => {
+      expect(() => bookFromStored({ ...row, seriesId: id })).toThrow(
+        `A stored book holds an unknown series id: ${String(id)}`,
+      );
+    },
+  );
 
   it.each(['2', Number.NaN, Number.POSITIVE_INFINITY, true])(
     'throws a corrupt row for a stored volume %s',
@@ -184,7 +156,7 @@ describe('bookFromStored', () => {
       pagePairing: 'single',
       pageFit: 'width',
       sourceKind: 'archive',
-      contentHash: contentHash('9f86d081'),
+      contentHash: contentHash(HASH),
       fileName: 'Yotsuba&! 1.cbz',
       imageCount: 182,
       addedAt: 1758240000000,
@@ -206,20 +178,14 @@ describe('bookFromStored', () => {
   });
 
   it('returns a new object and leaves the stored record untouched', () => {
-    const stored: StoredBook = { ...row, pagePairing: 'triple' };
+    const stored: StoredBook = { ...row };
     const book = bookFromStored(stored);
     expect(book).not.toBe(stored);
-    expect(stored.pagePairing).toBe('triple');
+    expect(stored).toEqual(row);
   });
 
   it('keeps every stored language, layout kind, direction and source kind it knows', () => {
-    const book = bookFromStored({
-      ...row,
-      language: 'ko',
-      layoutKind: 'flow',
-      direction: 'ltr',
-      sourceKind: 'epub',
-    });
+    const book = bookFromStored({ ...flowRow, language: 'ko', direction: 'ltr' });
 
     expect([book.language, book.layoutKind, book.direction, book.sourceKind]).toEqual([
       'ko',
@@ -229,25 +195,39 @@ describe('bookFromStored', () => {
     ]);
   });
 
-  it('falls back to the first language for a stored language it does not know', () => {
-    expect(bookFromStored({ ...row, language: 'xx' }).language).toBe(FALLBACK_LANGUAGE);
-    expect(FALLBACK_LANGUAGE).toBe('ja');
+  it.each([
+    ['language', 'xx', 'A stored book holds an unknown language: xx'],
+    ['direction', 'down', 'A stored book holds an unknown direction: down'],
+    ['pagePairing', 'triple', 'A stored book holds an unknown page pairing: triple'],
+    ['pageFit', 7, 'A stored book holds an unknown page fit: 7'],
+  ])('throws a corrupt row for a stored %s it does not know', (field, value, message) => {
+    expect(() => bookFromStored({ ...row, [field]: value })).toThrow(message);
   });
 
-  it('falls back to right to left for a stored direction it does not know', () => {
-    expect(bookFromStored({ ...row, direction: 'down' }).direction).toBe(FALLBACK_DIRECTION);
-    expect(FALLBACK_DIRECTION).toBe('rtl');
+  it.each([
+    ['a flow book stored from a PDF', { ...flowRow, sourceKind: 'pdf' }],
+    ['a flow book stored from an archive', { ...flowRow, sourceKind: 'archive' }],
+    ['a paged book stored at a text place', { ...row, position: textPlace('', null) }],
+    [
+      'a continuous book stored at a text place',
+      { ...row, layoutKind: 'continuous', position: textPlace('', null) },
+    ],
+    ['a flow book stored at an image place', { ...flowRow, position: imagePlace(imageIndex(0)) }],
+  ])('throws a corrupt row for %s', (_, stored) => {
+    expect(() => bookFromStored(stored)).toThrow(CorruptRow);
   });
 
-  it('falls back to the default pairing for a stored pairing it does not know', () => {
-    expect(bookFromStored({ ...row, pagePairing: 'triple' }).pagePairing).toBe(
-      DEFAULT_PAGE_PAIRING,
+  it.each(['pdf', 'epub', 'images', 'archive'])(
+    'reads a paged book stored from a %s source',
+    (sourceKind) => {
+      expect(bookFromStored({ ...row, sourceKind }).sourceKind).toBe(sourceKind);
+    },
+  );
+
+  it('names the layout kind a stored place contradicts', () => {
+    expect(() => bookFromStored({ ...row, position: textPlace('', null) })).toThrow(
+      'A stored book holds an unknown position kind for a paged book: text',
     );
-    expect(DEFAULT_PAGE_PAIRING).toBe('auto');
-  });
-
-  it('falls back to the fit of the layout kind for a stored fit it does not know', () => {
-    expect(bookFromStored({ ...row, layoutKind: 'continuous', pageFit: 7 }).pageFit).toBe('width');
   });
 
   it('throws a corrupt row for a stored layout kind it does not know', () => {
@@ -274,13 +254,13 @@ describe('savedBookRow', () => {
   });
 
   it('writes every known field from the book, over the stored value', () => {
-    const stored = { ...row, language: 'xx', pagePairing: 'triple', shelfColour: 'teal' };
+    const stored = { ...row, alias: 'Old', shelfColour: 'teal' };
     const book = { ...bookFromStored(stored), alias: 'Mine' };
 
     const saved = savedBookRow(stored, book);
 
     expect(saved).toEqual({ ...book, shelfColour: 'teal' });
-    expect(saved).toMatchObject({ language: 'ja', pagePairing: 'auto', alias: 'Mine' });
+    expect(saved).toMatchObject({ alias: 'Mine' });
   });
 
   it('leaves the stored row untouched', () => {
@@ -299,7 +279,14 @@ function without(field: string): StoredBook {
 describe('booksFromStored', () => {
   it.each([
     'title',
+    'alias',
+    'seriesId',
+    'volume',
+    'language',
     'layoutKind',
+    'direction',
+    'pagePairing',
+    'pageFit',
     'sourceKind',
     'contentHash',
     'fileName',
@@ -320,17 +307,37 @@ describe('booksFromStored', () => {
     ['alias', 7],
     ['alias', { name: 'Mine' }],
     ['contentHash', null],
+    ['contentHash', ''],
+    ['contentHash', '9f86d081'],
+    ['contentHash', 'a'.repeat(64)],
+    ['contentHash', '9F86D081884C7D659A2FEAA0C55AD015'],
+    ['contentHash', `${HASH} `],
+    ['contentHash', 'g'.repeat(32)],
     ['fileName', 12],
     ['imageCount', '182'],
+    ['imageCount', -1],
+    ['imageCount', 1.5],
+    ['imageCount', Number.NaN],
+    ['imageCount', Number.POSITIVE_INFINITY],
     ['addedAt', null],
+    ['addedAt', Number.NaN],
+    ['addedAt', Number.NEGATIVE_INFINITY],
     ['lastReadAt', '1758300000000'],
+    ['lastReadAt', Number.POSITIVE_INFINITY],
     ['finishedAt', false],
+    ['finishedAt', Number.NaN],
     ['position', 45],
     ['position', { kind: 'page', index: 3 }],
     ['position', { kind: 'image', index: 3, offset: 0 }],
     ['position', { kind: 'image', index: 3, shownThrough: 3 }],
-    ['position', { kind: 'text', fraction: 0.5 }],
-    ['position', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' }],
+    ['position', { kind: 'image', index: -1, shownThrough: 3, offset: 0 }],
+    ['position', { kind: 'image', index: 1.5, shownThrough: 3, offset: 0 }],
+    ['position', { kind: 'image', index: Number.NaN, shownThrough: 3, offset: 0 }],
+    ['position', { kind: 'image', index: 3, shownThrough: Number.POSITIVE_INFINITY, offset: 0 }],
+    ['position', { kind: 'image', index: 4, shownThrough: 3, offset: 0 }],
+    ['position', { kind: 'image', index: 3, shownThrough: 3, offset: 7 }],
+    ['position', { kind: 'image', index: 3, shownThrough: 3, offset: -0.1 }],
+    ['position', { kind: 'image', index: 3, shownThrough: 3, offset: Number.NaN }],
   ])('reports a row whose %s holds %j as unreadable', (field, value) => {
     const read = booksFromStored([{ ...row, [field]: value }]);
 
@@ -338,12 +345,35 @@ describe('booksFromStored', () => {
     expect(read.unreadable.map((book) => book.id)).toEqual(['b-1']);
   });
 
-  it.each(['language', 'direction', 'pagePairing', 'pageFit'])(
-    'reads a row without its %s through the fallback',
-    (field) => {
-      expect(booksFromStored([without(field)]).books.map((book) => book.id)).toEqual(['b-1']);
-    },
-  );
+  it.each([
+    ['without its cfi', { kind: 'text', fraction: 0.5 }],
+    ['without its fraction', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/14/1:0)' }],
+    ['past the end of the text', { kind: 'text', cfi: '', fraction: 1.5 }],
+    ['before the start of the text', { kind: 'text', cfi: '', fraction: -0.1 }],
+    ['at no number', { kind: 'text', cfi: '', fraction: Number.NaN }],
+  ])('reports a flow row whose place is %s as unreadable', (_, position) => {
+    const read = booksFromStored([{ ...flowRow, position }]);
+
+    expect(read.books).toEqual([]);
+    expect(read.unreadable.map((book) => book.id)).toEqual(['b-1']);
+  });
+
+  it('reads an image place at the first image, at the top, as it is', () => {
+    expect(bookFromStored({ ...row, position: imagePlace(imageIndex(0)) }).position).toEqual({
+      kind: 'image',
+      index: 0,
+      shownThrough: 0,
+      offset: 0,
+    });
+  });
+
+  it.each([0, 1])('reads a text place at the fraction %s as it is', (fraction) => {
+    expect(bookFromStored({ ...flowRow, position: textPlace('', fraction) }).position).toEqual({
+      kind: 'text',
+      cfi: '',
+      fraction,
+    });
+  });
 
   it('names the field a stored book lacks', () => {
     expect(() => bookFromStored(without('lastReadAt'))).toThrow(
@@ -361,7 +391,7 @@ describe('booksFromStored', () => {
         id: 'b-2',
         title: 'Yotsuba&! 1',
         alias: null,
-        contentHash: '9f86d081',
+        contentHash: HASH,
         fileName: 'Yotsuba&! 1.cbz',
       },
     ]);
@@ -371,7 +401,7 @@ describe('booksFromStored', () => {
     const untitled = { ...row, title: 7, layoutKind: 'scroll' } as unknown as StoredBook;
 
     expect(booksFromStored([untitled]).unreadable).toEqual([
-      { id: 'b-1', title: null, alias: null, contentHash: '9f86d081', fileName: 'Yotsuba&! 1.cbz' },
+      { id: 'b-1', title: null, alias: null, contentHash: HASH, fileName: 'Yotsuba&! 1.cbz' },
     ]);
   });
 
@@ -383,7 +413,7 @@ describe('booksFromStored', () => {
         id: 'b-1',
         title: 'Yotsuba&! 1',
         alias: 'Mine',
-        contentHash: '9f86d081',
+        contentHash: HASH,
         fileName: 'Yotsuba&! 1.cbz',
       },
     ]);

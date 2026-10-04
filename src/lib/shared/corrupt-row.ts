@@ -40,15 +40,23 @@ function isTextOrNull(value: unknown): value is string | null {
 }
 
 function isNumber(value: unknown): value is number {
-  return typeof value === 'number';
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
 function isNumberOrNull(value: unknown): value is number | null {
   return value === null || isNumber(value);
 }
 
-function isFiniteNumberOrNull(value: unknown): value is number | null {
-  return value === null || (isNumber(value) && Number.isFinite(value));
+function isWholeNumber(value: unknown): value is number {
+  return Number.isSafeInteger(value) && isNumber(value) && value >= 0;
+}
+
+function isFraction(value: unknown): value is number {
+  return isNumber(value) && value >= 0 && value <= 1;
+}
+
+function isFractionOrNull(value: unknown): value is number | null {
+  return value === null || isFraction(value);
 }
 
 function isTextList(value: unknown): value is readonly string[] {
@@ -57,7 +65,8 @@ function isTextList(value: unknown): value is readonly string[] {
 
 export {
   CorruptRow,
-  isFiniteNumberOrNull,
+  isFraction,
+  isFractionOrNull,
   isNumber,
   isNumberOrNull,
   isStoredFields,
@@ -65,6 +74,7 @@ export {
   isText,
   isTextList,
   isTextOrNull,
+  isWholeNumber,
   knownStoredValue,
 };
 export type { StoredFields };
