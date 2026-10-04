@@ -9,3 +9,15 @@
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-container);
 }
+.codeblock-frame {
+  position: relative;
+  min-inline-size: 0;
+}
+.codeblock-frame > .codeblock {
+  padding-inline-end: calc(var(--control-h-sm) + var(--sp-3));
+}
+.codeblock-copy {
+  position: absolute;
+  inset-block-start: var(--sp-2);
+  inset-inline-end: var(--sp-2);
+}

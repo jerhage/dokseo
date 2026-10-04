@@ -75,6 +75,7 @@
 @import 'components/skeleton.css' layer(components);
 @import 'components/divider.css' layer(components);
 @import 'components/codeblock.css' layer(components);
+@import 'components/figure.css' layer(components);
 @import 'components/key-hints.css' layer(components);
 @import 'components/empty-state.css' layer(components);
 @import 'components/chrome-bar.css' layer(components);

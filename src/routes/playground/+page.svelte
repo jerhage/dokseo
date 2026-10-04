@@ -16,12 +16,14 @@
   import ChromeBarSection from './ChromeBarSection.svelte';
   import ChromeSection from './ChromeSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
+  import CodeBlockSection from './CodeBlockSection.svelte';
   import CommandSection from './CommandSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DockSection from './DockSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import EmptyStateSection from './EmptyStateSection.svelte';
   import EyebrowSection from './EyebrowSection.svelte';
+  import FigureSection from './FigureSection.svelte';
   import FileUploadSection from './FileUploadSection.svelte';
   import FormSection from './FormSection.svelte';
   import GestureSection from './GestureSection.svelte';
@@ -111,6 +113,8 @@
     SliderSection,
     StatSection,
     DividerSection,
+    CodeBlockSection,
+    FigureSection,
     LayoutsIntro,
     PageWrapSection,
     AppShellSection,

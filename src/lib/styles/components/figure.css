@@ -1,0 +1,39 @@
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-inline-size: 0;
+}
+.figure-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-block-size: var(--control-h-sm);
+}
+.figure-title {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-faint);
+}
+.figure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.figure-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-inline-size: 0;
+  padding: var(--sp-4);
+  overflow-x: auto;
+  background-color: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+}
+.figure-caption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
