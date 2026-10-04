@@ -130,7 +130,7 @@ const DOCS_TOPICS = [
     title: 'Workers and data transfer',
     summary:
       'Dedicated workers, cloning and transferring data, SharedArrayBuffer and Atomics, and how Dokseo uses workers.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'typescript-types',

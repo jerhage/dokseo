@@ -20,6 +20,7 @@ import * as testing from './testing/testing-sections';
 import * as touchAndPointers from './touch-and-pointers/sections';
 import * as uiLibrary from './ui-library/sections';
 import * as unicode from './unicode/unicode-sections';
+import * as workers from './workers/workers-sections';
 
 type DocsLink = {
   readonly file: string;
@@ -44,7 +45,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'sql-set-theory': sqlSetTheory.SQL_SET_SECTIONS,
   'sql-patterns': sqlPatterns.SQL_PATTERNS_SECTIONS,
   unicode: unicode.UNICODE_SECTIONS,
-  workers: {},
+  workers: workers.WORKERS_SECTIONS,
   'typescript-types': {},
   'async-correctness': {},
   indexeddb: {},
@@ -68,6 +69,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'touch-and-pointers/sections.ts': touchAndPointers,
   'ui-library/sections.ts': uiLibrary,
   'unicode/unicode-sections.ts': unicode,
+  'workers/workers-sections.ts': workers,
 };
 
 const TOPICS_FOLDER = join('src', 'lib', 'domains', 'docs', 'ui', 'topics');
