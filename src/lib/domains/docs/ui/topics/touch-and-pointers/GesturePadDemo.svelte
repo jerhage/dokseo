@@ -142,7 +142,7 @@
               {/if}
             </li>
           {:else}
-            <li class="text-muted">Tap, hold, swipe or drag on the pad.</li>
+            <li class="list-reset text-muted">Tap, hold, swipe or drag on the pad.</li>
           {/each}
         </ol>
       </div>

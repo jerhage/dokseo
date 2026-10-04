@@ -213,7 +213,7 @@
               <span class="text-xs">{logged.pointer}: {endText(logged.end, logged.pointer)}</span>
             </li>
           {:else}
-            <li class="text-muted">Click, or drag a small and a large rectangle.</li>
+            <li class="list-reset text-muted">Click, or drag a small and a large rectangle.</li>
           {/each}
         </ol>
       </div>

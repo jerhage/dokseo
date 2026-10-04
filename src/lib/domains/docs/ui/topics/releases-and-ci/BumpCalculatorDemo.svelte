@@ -80,7 +80,7 @@
           </Button>
         </li>
       {:else}
-        <li class="text-muted">No commits since the last release.</li>
+        <li class="list-reset text-muted">No commits since the last release.</li>
       {/each}
     </ol>
     <SegmentedControl label="Bump settings" options={SETTINGS} bind:value={calculator.settings} />
