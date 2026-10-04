@@ -79,6 +79,7 @@ const SUMMARY: CapturesImportSummary = {
   newTags: 0,
   unreadable: 0,
   droppedTags: 0,
+  storedUnreadable: 0,
 };
 
 const FIRST = conflict('first');

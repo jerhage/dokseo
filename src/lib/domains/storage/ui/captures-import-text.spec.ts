@@ -23,6 +23,7 @@ const NOTHING: CapturesImportSummary = {
   newTags: 0,
   unreadable: 0,
   droppedTags: 0,
+  storedUnreadable: 0,
 };
 
 const CAPTURE: Capture = {
@@ -80,6 +81,17 @@ describe('previewRows', () => {
     expect(
       previewRows({ ...NOTHING, conflicts: 2, unreadable: 1 }).map((row) => row.title),
     ).toEqual(['Conflicts', 'Could not be read']);
+  });
+
+  it('says how many unreadable rows the file keeps without importing them', () => {
+    expect(previewRows({ ...NOTHING, added: 1, storedUnreadable: 4 })).toEqual([
+      { title: 'New captures', description: undefined, value: '1' },
+      {
+        title: 'Unreadable rows kept in the file',
+        description: 'Not imported. The file keeps them as they were stored.',
+        value: '4',
+      },
+    ]);
   });
 });
 

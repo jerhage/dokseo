@@ -78,6 +78,7 @@ type CapturesImportSummary = {
   readonly newTags: number;
   readonly unreadable: number;
   readonly droppedTags: number;
+  readonly storedUnreadable: number;
 };
 
 type CapturesImportPlan = {
@@ -296,6 +297,7 @@ function summaryOf(
     newTags: tags.filter((planned) => planned.kind === 'created').length,
     unreadable: read.unreadable.length,
     droppedTags: read.droppedTags.length,
+    storedUnreadable: read.storedUnreadable,
   };
 }
 
