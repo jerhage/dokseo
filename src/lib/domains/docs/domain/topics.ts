@@ -86,8 +86,9 @@ const DOCS_TOPICS = [
   {
     slug: 'rendering-pages',
     title: 'Rendering pages',
-    summary: 'PDF.js scale, ImageBitmaps, object URLs and memory.',
-    status: 'planned',
+    summary:
+      'Decoding, img or canvas, object URLs, render scale, pdf.js and ZIP reading, iOS canvas limits, and how Dokseo pairs, windows and releases its pages.',
+    status: 'published',
   },
   {
     slug: 'releases-and-ci',
