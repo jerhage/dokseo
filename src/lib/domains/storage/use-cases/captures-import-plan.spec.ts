@@ -113,6 +113,7 @@ function read(
     captures,
     unreadable: [],
     droppedTags: [],
+    storedUnreadable: 0,
     ...more,
   };
 }

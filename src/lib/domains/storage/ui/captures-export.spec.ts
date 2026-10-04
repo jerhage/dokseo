@@ -19,6 +19,7 @@ const EXPORTED: CapturesExport = {
   books: 3,
   bookless: 1,
   unreadable: NONE_UNREADABLE,
+  storedUnreadable: 0,
 };
 
 const SUMMARY: ExportSummary = {

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Book } from '$lib/domains/library/domain/book/book';
-import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book';
-import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
-import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
+import type {
+  RemovedBook,
+  UnreadableRemovedBook,
+} from '$lib/domains/library/domain/book/removed-book';
+import type { UnreadableBook } from '$lib/domains/library/domain/book/stored-book';
+import type { Capture, UnreadableCapture } from '$lib/domains/recognition/domain/capture/capture';
+import type { Tag, UnreadableTag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, seriesId, tagId } from '$lib/shared/ids';
@@ -99,13 +103,83 @@ const CONTENTS: CapturesFileContents = {
   books: [SHELF, IDLE],
   removedBooks: [REMOVED],
   unreadableRemovedBooks: [],
+  unreadableBooks: [],
   tags: [KANJI, GRAMMAR],
+  unreadableTags: [],
   captures: [RECOGNIZED, WRITTEN, LIFTED, STRAY],
+  unreadableCaptures: [],
   exportedAt: 1759449600000,
   appVersion: '0.9.3',
 };
 
 const BUILT = buildCapturesFile(CONTENTS);
+
+const BROKEN_ROW = { ...shelfBook('broken-1', 'Broken 1'), position: 45 };
+
+const BROKEN: UnreadableBook = {
+  id: BROKEN_ROW.id,
+  title: BROKEN_ROW.title,
+  alias: BROKEN_ROW.alias,
+  contentHash: BROKEN_ROW.contentHash,
+  fileName: BROKEN_ROW.fileName,
+  stored: BROKEN_ROW,
+};
+
+const UNNAMED_BROKEN: UnreadableBook = {
+  ...BROKEN,
+  id: bookId('broken-2'),
+  stored: { ...BROKEN_ROW, id: bookId('broken-2') },
+};
+
+const RETIRED_ROW = {
+  id: 'retired-1',
+  title: 'Old hash',
+  contentHash: 'a'.repeat(64),
+  removedAt: 4,
+};
+
+const RETIRED: UnreadableRemovedBook = {
+  id: bookId('retired-1'),
+  title: 'Old hash',
+  alias: null,
+  seriesId: null,
+  volume: null,
+  contentHash: 'a'.repeat(64),
+  fileName: '',
+  addedAt: null,
+  language: null,
+  stored: RETIRED_ROW,
+};
+
+const OLD_CAPTURE: UnreadableCapture = {
+  id: captureId('old-capture'),
+  stored: { id: 'old-capture', bookId: 'retired-1', text: 'あ', anchor: null },
+};
+
+const ODD_CAPTURE: UnreadableCapture = {
+  id: captureId('a-odd-capture'),
+  stored: { id: 'a-odd-capture', bookId: 'nowhere', confidence: Number.NaN },
+};
+
+const NAMELESS_TAG: UnreadableTag = {
+  id: tagId('nameless'),
+  name: null,
+  stored: { id: 'nameless', colour: 'gold' },
+};
+
+const WITH_UNREADABLE: CapturesFileContents = {
+  ...CONTENTS,
+  unreadableBooks: [BROKEN, UNNAMED_BROKEN],
+  unreadableRemovedBooks: [RETIRED],
+  unreadableTags: [NAMELESS_TAG],
+  unreadableCaptures: [OLD_CAPTURE, ODD_CAPTURE],
+  captures: [
+    ...CONTENTS.captures,
+    { ...LIFTED, id: captureId('capture-broken'), bookId: BROKEN.id },
+  ],
+};
+
+const BUILT_WITH_UNREADABLE = buildCapturesFile(WITH_UNREADABLE);
 
 type Edit = (file: Record<string, unknown>) => void;
 
@@ -195,6 +269,67 @@ describe('buildCapturesFile', () => {
     expect(BUILT.bookless).toEqual([STRAY.id]);
   });
 
+  it('writes no unreadable section when every row reads', () => {
+    expect(BUILT.file).not.toHaveProperty('unreadable');
+    expect(BUILT.json).not.toContain('"unreadable"');
+  });
+
+  it('keeps the unreadable captures and tags as they were stored, in id order', () => {
+    const section = BUILT_WITH_UNREADABLE.file.unreadable;
+
+    expect(section?.tags).toEqual([{ id: 'nameless', colour: 'gold' }]);
+    expect(section?.captures).toEqual([
+      { id: 'a-odd-capture', bookId: 'nowhere', confidence: null },
+      { id: 'old-capture', bookId: 'retired-1', text: 'あ', anchor: null },
+    ]);
+  });
+
+  it('keeps the stored row of an unreadable book or removed record only when a capture names it', () => {
+    expect(BUILT_WITH_UNREADABLE.file.unreadable?.books).toEqual([BROKEN_ROW, RETIRED_ROW]);
+  });
+
+  it('keeps no removed record whose id is back on the shelf', () => {
+    const built = buildCapturesFile({
+      ...WITH_UNREADABLE,
+      unreadableRemovedBooks: [
+        { ...RETIRED, id: SHELF.id, stored: { ...RETIRED_ROW, id: SHELF.id } },
+      ],
+      unreadableCaptures: [{ ...OLD_CAPTURE, stored: { ...OLD_CAPTURE.stored, bookId: SHELF.id } }],
+    });
+
+    expect(built.file.unreadable?.books).toEqual([BROKEN_ROW]);
+  });
+
+  it('writes a readable capture of an unreadable shelf book under the identity its row stores', () => {
+    const book = BUILT_WITH_UNREADABLE.file.books.find((held) => held.title === 'Broken 1');
+
+    expect(book).toEqual({
+      key: 'book-2',
+      contentHash: BROKEN_ROW.contentHash,
+      fileName: 'broken-1.cbz',
+      title: 'Broken 1',
+      alias: 'Yotsuba',
+      seriesId: null,
+      volume: null,
+      language: 'ja',
+      direction: 'rtl',
+      layoutKind: 'paged',
+      sourceKind: 'archive',
+      imageCount: 182,
+    });
+    expect(BUILT_WITH_UNREADABLE.file.captures.map((capture) => capture.bookKey)).toContain(
+      'book-2',
+    );
+    expect(BUILT_WITH_UNREADABLE.bookless).toEqual([STRAY.id]);
+  });
+
+  it('writes the unreadable section as JSON whatever the stored rows hold', () => {
+    const written = JSON.parse(BUILT_WITH_UNREADABLE.json);
+
+    expect(written.unreadable).toEqual(BUILT_WITH_UNREADABLE.file.unreadable);
+    expect(written.unreadable.captures[0].confidence).toBeNull();
+  });
+
   it('writes the same text whatever order the input arrives in', () => {
     const shuffled = buildCapturesFile({
       ...CONTENTS,
@@ -221,6 +356,30 @@ describe('readCapturesFile', () => {
     expect(file.unreadable).toEqual([]);
     expect(file.droppedTags).toEqual([]);
     expect([file.exportedAt, file.appVersion]).toEqual([1759449600000, '0.9.3']);
+  });
+
+  it('reads a file without an unreadable section as keeping no stored unreadable rows', () => {
+    expect(read(BUILT.json).storedUnreadable).toBe(0);
+  });
+
+  it('counts the rows of an unreadable section and imports none of them', () => {
+    const file = read(BUILT_WITH_UNREADABLE.json);
+
+    expect(file.storedUnreadable).toBe(5);
+    expect(file.unreadable).toEqual([]);
+    expect(file.tags).toEqual([GRAMMAR, KANJI]);
+    expect(file.captures.map(({ capture }) => capture.id)).not.toContain(OLD_CAPTURE.id);
+    expect(file.captures).toHaveLength(4);
+  });
+
+  it.each([
+    ['a section that is not an object', 'kept', 0],
+    ['a section whose lists are not lists', { books: 'x', tags: null, captures: [{}, 1] }, 2],
+  ])('reads a file with %s and counts only its lists', (_, section, count) => {
+    const file = read(edited((raw) => (raw.unreadable = section)));
+
+    expect(file.storedUnreadable).toBe(count);
+    expect(file.captures).toHaveLength(3);
   });
 
   it('gives back the series id and volume the builder wrote for a shelf book and a removed record', () => {

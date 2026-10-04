@@ -52,6 +52,7 @@ type ReadCapturesFileResult =
       readonly captures: readonly ReadCapture[];
       readonly unreadable: readonly UnreadableEntry[];
       readonly droppedTags: readonly DroppedTag[];
+      readonly storedUnreadable: number;
     }
   | { readonly kind: 'not-an-export' }
   | { readonly kind: 'newer-version'; readonly version: number };
@@ -62,6 +63,7 @@ type Sections = {
   readonly books: readonly unknown[];
   readonly tags: readonly unknown[];
   readonly captures: readonly unknown[];
+  readonly storedUnreadable: number;
 };
 
 type Entry<T> =
@@ -158,11 +160,21 @@ function entryOf<T>(read: () => T): Entry<T> {
   }
 }
 
+function rowsIn(value: unknown): number {
+  return isStoredList(value) ? value.length : 0;
+}
+
+function storedUnreadableIn(section: unknown): number {
+  if (!isStoredFields(section)) return 0;
+  return rowsIn(section.books) + rowsIn(section.tags) + rowsIn(section.captures);
+}
+
 function sectionsOf(file: StoredFields): Sections | null {
   const { exportedAt, appVersion, books, tags, captures } = file;
   if (!isNumber(exportedAt) || !isText(appVersion)) return null;
   if (!isStoredList(books) || !isStoredList(tags) || !isStoredList(captures)) return null;
-  return { exportedAt, appVersion, books, tags, captures };
+  const storedUnreadable = storedUnreadableIn(file.unreadable);
+  return { exportedAt, appVersion, books, tags, captures, storedUnreadable };
 }
 
 function readSections(sections: Sections): ReadCapturesFileResult {
@@ -215,6 +227,7 @@ function readSections(sections: Sections): ReadCapturesFileResult {
     captures: [...captures.values()],
     unreadable,
     droppedTags,
+    storedUnreadable: sections.storedUnreadable,
   };
 }
 
