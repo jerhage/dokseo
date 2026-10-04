@@ -105,8 +105,8 @@
 
 <DocsSection title={TYPE_SECTIONS.rows}>
   <p>
-    IndexedDB stores any structured value and checks none of it, so a row read back may come from an
-    older version of Dokseo or from a bug. The
+    IndexedDB stores any structured value and checks none of it, so a row read back may come from a
+    pre-release version of Dokseo or from a bug. The
     <a href={STORAGE_ROWS_HREF}>storage page</a> follows a damaged book row through the library;
     here the interest is the types. A stored row's type maps every field of the domain type to
     <code>unknown</code>, and makes it optional:
