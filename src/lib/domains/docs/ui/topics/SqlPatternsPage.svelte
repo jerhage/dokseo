@@ -12,7 +12,8 @@
     Recipes for the queries that come up again and again: loading a list without a query per item,
     counting and filtering groups, asking whether a row exists or has no match, ranking, running
     totals, removing duplicates, naming the steps of a query with common table expressions, and
-    walking a tree. Each one runs on the same sample tables, with its real result.
+    walking a tree. Each one runs on the same sample tables, with its real result, and the tree
+    recipe adds one more table, <code>categories</code>.
   {/snippet}
   <PatternsAggregates />
   <PatternsRows />
