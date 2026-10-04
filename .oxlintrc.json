@@ -14,7 +14,8 @@
     "import/no-unassigned-import": "off",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "import/exports-last": "error",
-    "import/group-exports": "error"
+    "import/group-exports": "error",
+    "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }]
   },
   "env": {
     "builtin": true
@@ -25,6 +26,26 @@
       "rules": {
         "import/exports-last": "off",
         "import/group-exports": "off"
+      }
+    },
+    {
+      "files": ["**/*.spec.ts"],
+      "rules": {
+        "typescript/consistent-type-assertions": "off"
+      }
+    },
+    {
+      "files": [
+        "src/lib/shared/ids.ts",
+        "src/lib/shared/geometry.ts",
+        "src/lib/domains/library/adapters/pdf-page-source.ts",
+        "src/workers/ocr.worker.ts",
+        "src/workers/paddle-ocr.worker.ts",
+        "src/workers/opfs-writer.worker.ts",
+        "src/service-worker.ts"
+      ],
+      "rules": {
+        "typescript/consistent-type-assertions": "off"
       }
     }
   ]
