@@ -11,4 +11,8 @@ function rowCountLabel(count: number): string {
   return count === 1 ? '1 row' : `${count} rows`;
 }
 
-export { numericColumns, rowCountLabel };
+function planText(rows: readonly SqlRow[]): string {
+  return rows.map((row) => String(row[0] ?? '')).join('\n');
+}
+
+export { numericColumns, planText, rowCountLabel };

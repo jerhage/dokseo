@@ -38,6 +38,12 @@ CREATE TABLE orders (
   created_at DATE NOT NULL
 );`;
 
+const SQL_CATEGORY_SCHEMA = `CREATE TABLE categories (
+  id INTEGER PRIMARY KEY,
+  parent_id INTEGER REFERENCES categories (id),
+  name TEXT NOT NULL
+);`;
+
 const SQL_TABLES = {
   users: {
     name: 'users',
@@ -73,6 +79,18 @@ const SQL_TABLES = {
       [6, 3, 25, 'completed', '2026-09-05'],
       [7, 3, 25, 'completed', '2026-09-10'],
       [8, 3, 40, 'canceled', '2026-09-14'],
+    ],
+  },
+  categories: {
+    name: 'categories',
+    columns: ['id', 'parent_id', 'name'],
+    rows: [
+      [1, null, 'Books'],
+      [2, 1, 'Comics'],
+      [3, 2, 'Manga'],
+      [4, 2, 'Webtoons'],
+      [5, 1, 'Novels'],
+      [6, 3, 'Shonen'],
     ],
   },
 } as const satisfies Readonly<Record<string, SqlTable>>;
@@ -983,12 +1001,396 @@ ORDER BY user_id;`,
       [3, 90],
     ],
   },
+  spendingFromSubquery: {
+    engine: 'sqlite',
+    sql: `SELECT u.name, s.spent
+FROM users u
+JOIN (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  WHERE status = 'completed'
+  GROUP BY user_id
+) s ON s.user_id = u.id
+ORDER BY u.id;`,
+    columns: ['name', 'spent'],
+    rows: [
+      ['Alice', 50],
+      ['Chen', 50],
+    ],
+  },
+  spendingCorrelated: {
+    engine: 'sqlite',
+    sql: `SELECT
+  u.name,
+  (
+    SELECT SUM(o.total)
+    FROM orders o
+    WHERE o.user_id = u.id
+      AND o.status = 'completed'
+  ) AS spent
+FROM users u
+ORDER BY u.id;`,
+    columns: ['name', 'spent'],
+    rows: [
+      ['Alice', 50],
+      ['Bob', null],
+      ['Chen', 50],
+      ['Dana', null],
+    ],
+  },
+  spendingCte: {
+    engine: 'sqlite',
+    sql: `WITH spending AS (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  WHERE status = 'completed'
+  GROUP BY user_id
+)
+SELECT u.name, s.spent
+FROM users u
+JOIN spending s ON s.user_id = u.id
+ORDER BY u.id;`,
+    columns: ['name', 'spent'],
+    rows: [
+      ['Alice', 50],
+      ['Chen', 50],
+    ],
+  },
+  spendingCteLeft: {
+    engine: 'sqlite',
+    sql: `WITH spending AS (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  WHERE status = 'completed'
+  GROUP BY user_id
+)
+SELECT u.name, s.spent
+FROM users u
+LEFT JOIN spending s ON s.user_id = u.id
+ORDER BY u.id;`,
+    columns: ['name', 'spent'],
+    rows: [
+      ['Alice', 50],
+      ['Bob', null],
+      ['Chen', 50],
+      ['Dana', null],
+    ],
+  },
+  rankedNested: {
+    engine: 'sqlite',
+    sql: `SELECT u.name, r.spent, r.orders, r.place
+FROM (
+  SELECT
+    user_id,
+    spent,
+    orders,
+    RANK() OVER (ORDER BY spent DESC) AS place
+  FROM (
+    SELECT user_id, SUM(total) AS spent, COUNT(*) AS orders
+    FROM (
+      SELECT user_id, total
+      FROM orders
+      WHERE status <> 'canceled'
+    ) kept
+    GROUP BY user_id
+  ) spending
+) r
+JOIN users u ON u.id = r.user_id
+ORDER BY r.place, u.name;`,
+    columns: ['name', 'spent', 'orders', 'place'],
+    rows: [
+      ['Bob', 60, 1, 1],
+      ['Alice', 50, 2, 2],
+      ['Chen', 50, 2, 2],
+    ],
+  },
+  rankedSteps: {
+    engine: 'sqlite',
+    sql: `WITH kept AS (
+  SELECT user_id, total
+  FROM orders
+  WHERE status <> 'canceled'
+),
+spending AS (
+  SELECT user_id, SUM(total) AS spent, COUNT(*) AS orders
+  FROM kept
+  GROUP BY user_id
+),
+ranked AS (
+  SELECT
+    user_id,
+    spent,
+    orders,
+    RANK() OVER (ORDER BY spent DESC) AS place
+  FROM spending
+)
+SELECT u.name, r.spent, r.orders, r.place
+FROM ranked r
+JOIN users u ON u.id = r.user_id
+ORDER BY r.place, u.name;`,
+    columns: ['name', 'spent', 'orders', 'place'],
+    rows: [
+      ['Bob', 60, 1, 1],
+      ['Alice', 50, 2, 2],
+      ['Chen', 50, 2, 2],
+    ],
+  },
+  aboveAverage: {
+    engine: 'sqlite',
+    sql: `WITH spending AS (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+)
+SELECT user_id, spent
+FROM spending
+WHERE spent > (SELECT AVG(spent) FROM spending)
+ORDER BY user_id;`,
+    columns: ['user_id', 'spent'],
+    rows: [
+      [1, 95],
+      [3, 90],
+    ],
+  },
+  composedCte: {
+    engine: 'sqlite',
+    sql: `WITH
+  authors AS (
+    SELECT user_id FROM posts WHERE status = 'published'
+  ),
+  busy AS (
+    SELECT user_id FROM orders
+    GROUP BY user_id HAVING COUNT(*) >= 2
+  ),
+  pending AS (
+    SELECT user_id FROM orders WHERE status = 'pending'
+  )
+SELECT user_id FROM authors
+INTERSECT
+SELECT user_id FROM busy
+EXCEPT
+SELECT user_id FROM pending
+ORDER BY user_id;`,
+    columns: ['user_id'],
+    rows: [[1]],
+  },
+  planInlined: {
+    engine: 'postgres',
+    sql: `EXPLAIN (COSTS OFF)
+WITH spending AS (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+)
+SELECT * FROM spending WHERE user_id = 1;`,
+    columns: ['QUERY PLAN'],
+    rows: [
+      ['GroupAggregate'],
+      ['  Group Key: orders.user_id'],
+      ['  ->  Seq Scan on orders'],
+      ['        Filter: (user_id = 1)'],
+    ],
+  },
+  planMaterialized: {
+    engine: 'postgres',
+    sql: `EXPLAIN (COSTS OFF)
+WITH spending AS MATERIALIZED (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+)
+SELECT * FROM spending WHERE user_id = 1;`,
+    columns: ['QUERY PLAN'],
+    rows: [
+      ['CTE Scan on spending'],
+      ['  Filter: (user_id = 1)'],
+      ['  CTE spending'],
+      ['    ->  HashAggregate'],
+      ['          Group Key: orders.user_id'],
+      ['          ->  Seq Scan on orders'],
+    ],
+  },
+  planTwice: {
+    engine: 'postgres',
+    sql: `EXPLAIN (COSTS OFF)
+WITH spending AS (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+)
+SELECT user_id, spent
+FROM spending
+WHERE spent > (SELECT AVG(spent) FROM spending);`,
+    columns: ['QUERY PLAN'],
+    rows: [
+      ['CTE Scan on spending'],
+      ['  Filter: ((spent)::numeric > $1)'],
+      ['  CTE spending'],
+      ['    ->  HashAggregate'],
+      ['          Group Key: orders.user_id'],
+      ['          ->  Seq Scan on orders'],
+      ['  InitPlan 2 (returns $1)'],
+      ['    ->  Aggregate'],
+      ['          ->  CTE Scan on spending spending_1'],
+    ],
+  },
+  planTwiceInlined: {
+    engine: 'postgres',
+    sql: `EXPLAIN (COSTS OFF)
+WITH spending AS NOT MATERIALIZED (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+)
+SELECT user_id, spent
+FROM spending
+WHERE spent > (SELECT AVG(spent) FROM spending);`,
+    columns: ['QUERY PLAN'],
+    rows: [
+      ['HashAggregate'],
+      ['  Group Key: orders.user_id'],
+      ['  Filter: ((sum(orders.total))::numeric > $0)'],
+      ['  InitPlan 1 (returns $0)'],
+      ['    ->  Aggregate'],
+      ['          ->  HashAggregate'],
+      ['                Group Key: orders_1.user_id'],
+      ['                ->  Seq Scan on orders orders_1'],
+      ['  ->  Seq Scan on orders'],
+    ],
+  },
+  subtree: {
+    engine: 'sqlite',
+    sql: `WITH RECURSIVE tree (id, name, depth, path) AS (
+  SELECT id, name, 0, name
+  FROM categories
+  WHERE id = 1
+  UNION ALL
+  SELECT c.id, c.name, t.depth + 1, t.path || ' > ' || c.name
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT id, name, depth, path
+FROM tree
+ORDER BY path;`,
+    columns: ['id', 'name', 'depth', 'path'],
+    rows: [
+      [1, 'Books', 0, 'Books'],
+      [2, 'Comics', 1, 'Books > Comics'],
+      [3, 'Manga', 2, 'Books > Comics > Manga'],
+      [6, 'Shonen', 3, 'Books > Comics > Manga > Shonen'],
+      [4, 'Webtoons', 2, 'Books > Comics > Webtoons'],
+      [5, 'Novels', 1, 'Books > Novels'],
+    ],
+  },
+  ancestors: {
+    engine: 'sqlite',
+    sql: `WITH RECURSIVE ancestors (id, parent_id, name, depth) AS (
+  SELECT id, parent_id, name, 0
+  FROM categories
+  WHERE id = 6
+  UNION ALL
+  SELECT c.id, c.parent_id, c.name, a.depth + 1
+  FROM categories c
+  JOIN ancestors a ON c.id = a.parent_id
+)
+SELECT name, depth
+FROM ancestors
+ORDER BY depth DESC;`,
+    columns: ['name', 'depth'],
+    rows: [
+      ['Books', 3],
+      ['Comics', 2],
+      ['Manga', 1],
+      ['Shonen', 0],
+    ],
+  },
+  counter: {
+    engine: 'sqlite',
+    sql: `WITH RECURSIVE counter (n) AS (
+  SELECT 1
+  UNION ALL
+  SELECT n + 1 FROM counter WHERE n < 5
+)
+SELECT n FROM counter;`,
+    columns: ['n'],
+    rows: [[1], [2], [3], [4], [5]],
+  },
+  dailyOrders: {
+    engine: 'sqlite',
+    sql: `WITH RECURSIVE days (day) AS (
+  SELECT '2026-09-01'
+  UNION ALL
+  SELECT date(day, '+1 day')
+  FROM days
+  WHERE day < '2026-09-07'
+)
+SELECT
+  d.day,
+  COUNT(o.id) AS orders,
+  COALESCE(SUM(o.total), 0) AS total
+FROM days d
+LEFT JOIN orders o ON o.created_at = d.day
+GROUP BY d.day
+ORDER BY d.day;`,
+    columns: ['day', 'orders', 'total'],
+    rows: [
+      ['2026-09-01', 1, 30],
+      ['2026-09-02', 1, 60],
+      ['2026-09-03', 1, 45],
+      ['2026-09-04', 0, 0],
+      ['2026-09-05', 1, 25],
+      ['2026-09-06', 0, 0],
+      ['2026-09-07', 0, 0],
+    ],
+  },
+  dailyOrdersSeries: {
+    engine: 'postgres',
+    sql: `SELECT
+  d.day::date AS day,
+  COUNT(o.id) AS orders,
+  COALESCE(SUM(o.total), 0) AS total
+FROM generate_series(
+  DATE '2026-09-01',
+  DATE '2026-09-07',
+  INTERVAL '1 day'
+) AS d (day)
+LEFT JOIN orders o ON o.created_at = d.day
+GROUP BY d.day
+ORDER BY d.day;`,
+    columns: ['day', 'orders', 'total'],
+    rows: [
+      ['2026-09-01', 1, 30],
+      ['2026-09-02', 1, 60],
+      ['2026-09-03', 1, 45],
+      ['2026-09-04', 0, 0],
+      ['2026-09-05', 1, 25],
+      ['2026-09-06', 0, 0],
+      ['2026-09-07', 0, 0],
+    ],
+  },
+  aboveAverageMaterialized: {
+    engine: 'sqlite',
+    sql: `WITH spending AS MATERIALIZED (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+)
+SELECT user_id, spent
+FROM spending
+WHERE spent > (SELECT AVG(spent) FROM spending)
+ORDER BY user_id;`,
+    columns: ['user_id', 'spent'],
+    rows: [
+      [1, 95],
+      [3, 90],
+    ],
+  },
 } as const satisfies Readonly<Record<string, SqlExample>>;
 
 type SqlExampleKey = keyof typeof SQL_EXAMPLES;
 
 type SqlTableName = keyof typeof SQL_TABLES;
 
-export { SQL_EXAMPLES, SQL_SCHEMA, SQL_TABLES };
+export { SQL_CATEGORY_SCHEMA, SQL_EXAMPLES, SQL_SCHEMA, SQL_TABLES };
 
 export type { SqlEngine, SqlExample, SqlExampleKey, SqlRow, SqlTable, SqlTableName, SqlValue };

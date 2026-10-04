@@ -1,11 +1,12 @@
 import { DatabaseSync } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
-import { SQL_EXAMPLES, SQL_SCHEMA, SQL_TABLES } from './sql-examples';
+import { SQL_CATEGORY_SCHEMA, SQL_EXAMPLES, SQL_SCHEMA, SQL_TABLES } from './sql-examples';
 import type { SqlExampleKey, SqlRow } from './sql-examples';
 
 function sampleDatabase(): DatabaseSync {
   const database = new DatabaseSync(':memory:');
   database.exec(SQL_SCHEMA);
+  database.exec(SQL_CATEGORY_SCHEMA);
   for (const table of Object.values(SQL_TABLES)) {
     const marks = table.columns.map(() => '?').join(', ');
     const insert = database.prepare(
@@ -140,5 +141,36 @@ describe('the SQL examples', () => {
 
   it('returns the same newest post per user from ROW_NUMBER and from DISTINCT ON', () => {
     expect(rowsOf('distinctOn')).toEqual(rowsOf('latestPost'));
+  });
+
+  it('returns the same rows from a subquery in FROM and from the CTE that names it', () => {
+    expect(rowsOf('spendingCte')).toEqual(rowsOf('spendingFromSubquery'));
+    expect(rowsOf('rankedSteps')).toEqual(rowsOf('rankedNested'));
+  });
+
+  it('keeps every user in the correlated subquery, as a left join to the CTE does', () => {
+    expect(rowsOf('spendingCteLeft')).toEqual(rowsOf('spendingCorrelated'));
+    expect(rowsOf('spendingCorrelated')).toHaveLength(SQL_TABLES.users.rows.length);
+    expect(rowsOf('spendingCte').length).toBeLessThan(rowsOf('spendingCorrelated').length);
+  });
+
+  it('returns the same users from the composed CTEs and the composed set query', () => {
+    expect(rowsOf('composedCte')).toEqual(rowsOf('composedSets'));
+  });
+
+  it('returns the same rows with and without the MATERIALIZED hint', () => {
+    expect(rowsOf('aboveAverageMaterialized')).toEqual(rowsOf('aboveAverage'));
+  });
+
+  it('reaches every category once from the root, and walks up from the leaf to the root', () => {
+    expect(column('subtree', 'id').toSorted()).toEqual(
+      SQL_TABLES.categories.rows.map((row) => row[0]),
+    );
+    expect(column('ancestors', 'name')).toEqual(['Books', 'Comics', 'Manga', 'Shonen']);
+  });
+
+  it('counts from 1 to 5 and gives every day a row, as generate_series does', () => {
+    expect(column('counter', 'n')).toEqual([1, 2, 3, 4, 5]);
+    expect(rowsOf('dailyOrdersSeries')).toEqual(rowsOf('dailyOrders'));
   });
 });

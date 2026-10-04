@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { numericColumns, rowCountLabel } from './sql-result';
+import { numericColumns, planText, rowCountLabel } from './sql-result';
 
 describe('numericColumns', () => {
   it('marks a column numeric when every value but NULL is a number', () => {
@@ -22,5 +22,13 @@ describe('rowCountLabel', () => {
       '1 row',
       '5 rows',
     ]);
+  });
+});
+
+describe('planText', () => {
+  it('joins the first column of each plan row into lines and keeps the indentation', () => {
+    expect(planText([['CTE Scan on spending'], ['  Filter: (user_id = 1)']])).toBe(
+      'CTE Scan on spending\n  Filter: (user_id = 1)',
+    );
   });
 });
