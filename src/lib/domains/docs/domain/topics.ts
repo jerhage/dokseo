@@ -58,8 +58,9 @@ const DOCS_TOPICS = [
   {
     slug: 'book-identity',
     title: 'Book identity and recovery',
-    summary: 'Partial MD5, matching a file to a book, and removed books.',
-    status: 'planned',
+    summary:
+      'Hashing by content or by sample, KOReader’s partial MD5, matching an upload to a book, and recovering removed and unreadable books.',
+    status: 'published',
   },
   {
     slug: 'export-import',
