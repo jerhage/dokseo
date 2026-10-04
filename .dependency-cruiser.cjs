@@ -120,6 +120,18 @@ module.exports = {
     },
 
     {
+      name: 'domains-know-no-wiring-or-routes',
+      comment:
+        "The composition root and the routes sit above every domain: src/lib/container.ts and the builders in src/lib/composition/ assemble the domains, and a route in src/routes/ renders them. A domain that imported either would point the layering upward and could reach the adapters the composition root builds. A type-only import is allowed, because a view model in a domain's ui/ names the Container type it is handed, and a type erases at build time.",
+      severity: 'error',
+      from: { path: '^src/lib/domains/' },
+      to: {
+        path: ['^src/routes/', '^src/lib/container\\.ts$', '^src/lib/composition/'],
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+
+    {
       name: 'the-base-layers-know-no-domain',
       comment:
         'shared/ is the kernel and platform/ is technical capability with zero domain vocabulary, so neither may import a domain. Breaking this inverts the layering and opens a cycle that nothing else would catch: library -> shared -> recognition makes library depend on recognition transitively, with no rule firing and no module cycle for no-circular to find. If a kernel file needs a domain type, the type belongs in the kernel or the dependency belongs the other way round.',
