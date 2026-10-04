@@ -15,9 +15,11 @@
   import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
   import {
     LANTERNS,
+    PIXEL_RECT_ROWS,
     SAMPLE_HOLDINGS,
     SAMPLE_START,
     bookTitle,
+    fileContents,
     hasOrphan,
     isRemoved,
     sampleTime,
@@ -29,10 +31,14 @@
 
   let holdings = $state.raw(SAMPLE_HOLDINGS);
   let minute = $state(60);
+  let keepsUnreadable = $state(false);
 
   const built = $derived(
-    buildCapturesFile({ ...holdings, exportedAt: SAMPLE_START, appVersion: APP_VERSION }),
+    buildCapturesFile(
+      fileContents(holdings, SAMPLE_START, APP_VERSION, keepsUnreadable ? PIXEL_RECT_ROWS : []),
+    ),
   );
+  const keptRows = $derived(built.file.unreadable?.captures.length ?? 0);
   const shown = $derived(JSON.stringify(built.file, null, 2));
   const bytes = $derived(new TextEncoder().encode(built.json).length);
   const keyed = $derived(
@@ -92,6 +98,12 @@
     >
       Add a capture whose book this device no longer has
     </Checkbox>
+    <Checkbox
+      checked={keepsUnreadable}
+      onchange={(event) => (keepsUnreadable = event.currentTarget.checked)}
+    >
+      Add a stored capture row that could not be read: its rect is in pixels
+    </Checkbox>
   </div>
 
   <Table size="sm">
@@ -118,6 +130,9 @@
     <Badge>{bytes.toLocaleString()} bytes</Badge>
     {#if built.bookless.length > 0}
       <Badge variant="warning">{built.bookless.length} left out: no book</Badge>
+    {/if}
+    {#if keptRows > 0}
+      <Badge variant="warning">{keptRows} unreadable row kept as stored</Badge>
     {/if}
   </p>
   <CodeBlock code={shown} label="The file, indented for reading" />

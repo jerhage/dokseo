@@ -8,9 +8,10 @@ const CAPTURES_FILE_TYPE: SourceSnippet = {
   readonly version: typeof CAPTURES_FILE_VERSION;
   readonly exportedAt: number;
   readonly appVersion: string;
-  readonly books: readonly FileBook[];
+  readonly books: readonly (FileBook | RetiredFileBook)[];
   readonly tags: readonly Tag[];
   readonly captures: readonly FileCapture[];
+  readonly unreadable?: UnreadableSection;
 };`,
 };
 
@@ -39,7 +40,6 @@ const FILE_CAPTURE: SourceSnippet = {
   file: 'src/lib/domains/storage/use-cases/read-captures-file.ts',
   code: `function fileCapture(entry: unknown): { readonly bookKey: string; readonly capture: Capture } {
   const capture = fields('capture', entry);
-  field('capture', 'origin', capture.origin, isCaptureOrigin);
   const bookKey = field('capture', 'book key', capture.bookKey, isKey);
   return { bookKey, capture: captureFromStored({ ...capture, bookId: bookKey }) };
 }`,

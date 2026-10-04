@@ -11,13 +11,9 @@
   import { unreadableLines } from '$lib/domains/storage/ui/captures-import-text';
   import { ENTRY_BREAKS, FILE_BREAKS, brokenText, isFileBreak } from './file-breakage';
   import type { EntryBreak, FileBreak } from './file-breakage';
-  import { SAMPLE_HOLDINGS, SAMPLE_START } from './sample-holdings';
+  import { SAMPLE_HOLDINGS, SAMPLE_START, fileContents } from './sample-holdings';
 
-  const FILE = buildCapturesFile({
-    ...SAMPLE_HOLDINGS,
-    exportedAt: SAMPLE_START,
-    appVersion: APP_VERSION,
-  }).file;
+  const FILE = buildCapturesFile(fileContents(SAMPLE_HOLDINGS, SAMPLE_START, APP_VERSION)).file;
 
   let whole = $state<FileBreak>('none');
   let entries = $state.raw<ReadonlySet<EntryBreak>>(new Set());

@@ -12,8 +12,10 @@ type FileBreak =
 type EntryBreak =
   | 'capture-text'
   | 'capture-origin'
+  | 'capture-rect'
   | 'tag-colour'
   | 'book-language'
+  | 'book-hash'
   | 'repeated-capture'
   | 'missing-tag'
   | 'unknown-book-key';
@@ -42,14 +44,23 @@ const FILE_BREAKS: readonly BreakOption<FileBreak>[] = [
 const ENTRY_BREAKS: readonly BreakOption<EntryBreak>[] = [
   { value: 'capture-text', label: 'Capture 2 loses its text' },
   { value: 'capture-origin', label: "Capture 1 has origin 'drawn'" },
+  { value: 'capture-rect', label: "Capture 1's rect runs past the page edge" },
   { value: 'tag-colour', label: "Tag 2 has color 'purple'" },
   { value: 'book-language', label: "Book 2 has language 'fr'" },
+  { value: 'book-hash', label: 'Book 1 has a 64-character SHA-256 hash' },
   { value: 'repeated-capture', label: 'Capture 1 appears twice' },
   { value: 'missing-tag', label: 'Capture 2 names a tag the file lacks' },
   { value: 'unknown-book-key', label: "Capture 3 names bookKey 'book-9'" },
 ];
 
 const ABSENT_TAG = '00000000-0000-4000-8000-000000000000';
+
+const SHA_256_HASH = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+
+const PAST_THE_EDGE = {
+  kind: 'region',
+  regions: [{ index: 4, rect: { x: 0.572, y: 0.095, width: 0.6, height: 0.238 } }],
+} as const;
 
 function isFileBreak(value: string): value is FileBreak {
   return FILE_BREAKS.some((option) => option.value === value);
@@ -69,6 +80,14 @@ function replacedAt(list: readonly unknown[], index: number, change: (entry: unk
   return list.map((entry, at) => (at === index ? change(entry) : entry));
 }
 
+function bookChanged(file: LooseFile, index: number, field: string, value: unknown): LooseFile {
+  if (!Array.isArray(file.books)) return file;
+  return {
+    ...file,
+    books: replacedAt(file.books, index, (entry) => withField(entry, field, value)),
+  };
+}
+
 function entryBroken(file: LooseFile, broken: EntryBreak): LooseFile {
   return match(broken)
     .returnType<LooseFile>()
@@ -80,16 +99,16 @@ function entryBroken(file: LooseFile, broken: EntryBreak): LooseFile {
       ...file,
       captures: replacedAt(file.captures, 0, (entry) => withField(entry, 'origin', 'drawn')),
     }))
+    .with('capture-rect', () => ({
+      ...file,
+      captures: replacedAt(file.captures, 0, (entry) => withField(entry, 'anchor', PAST_THE_EDGE)),
+    }))
     .with('tag-colour', () => ({
       ...file,
       tags: replacedAt(file.tags, 1, (entry) => withField(entry, 'colour', 'purple')),
     }))
-    .with('book-language', () => ({
-      ...file,
-      books: Array.isArray(file.books)
-        ? replacedAt(file.books, 1, (entry) => withField(entry, 'language', 'fr'))
-        : file.books,
-    }))
+    .with('book-language', () => bookChanged(file, 1, 'language', 'fr'))
+    .with('book-hash', () => bookChanged(file, 0, 'contentHash', SHA_256_HASH))
     .with('repeated-capture', () => ({
       ...file,
       captures: [...file.captures, file.captures[0]],

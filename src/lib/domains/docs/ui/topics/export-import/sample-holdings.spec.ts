@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
 import {
   HARBOR_FIRST,
   LANTERNS,
   ORPHAN,
+  PIXEL_RECT_ROWS,
   SAMPLE_HOLDINGS,
   VOCAB,
   bookTitle,
+  fileContents,
   hasOrphan,
   isRemoved,
   sampleTime,
@@ -51,5 +54,23 @@ describe('the sample holdings', () => {
     expect(withTagToggled(untagged, HARBOR_FIRST.id, VOCAB.id).captures[0]?.tagIds).toEqual([
       VOCAB.id,
     ]);
+  });
+
+  it('reads the stored row with a pixel rect as unreadable', () => {
+    expect(PIXEL_RECT_ROWS).toHaveLength(1);
+    expect(PIXEL_RECT_ROWS[0]?.stored.text).toBe('雨の音');
+  });
+
+  it('writes the unreadable section only when it holds a row', () => {
+    const clean = buildCapturesFile(fileContents(SAMPLE_HOLDINGS, 1, '1.0.0')).file;
+    const kept = buildCapturesFile(fileContents(SAMPLE_HOLDINGS, 1, '1.0.0', PIXEL_RECT_ROWS)).file;
+
+    expect(clean.unreadable).toBeUndefined();
+    expect(kept.unreadable).toEqual({
+      books: [],
+      tags: [],
+      captures: [PIXEL_RECT_ROWS[0]?.stored],
+    });
+    expect(kept.captures).toEqual(clean.captures);
   });
 });
