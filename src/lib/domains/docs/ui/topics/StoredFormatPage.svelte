@@ -2,6 +2,7 @@
   import DocsPage from '../DocsPage.svelte';
   import { STORED_FORMAT_SECTIONS } from './stored-format/stored-format-sections';
   import StoredFormatConcepts from './stored-format/StoredFormatConcepts.svelte';
+  import StoredFormatFile from './stored-format/StoredFormatFile.svelte';
   import StoredFormatRecords from './stored-format/StoredFormatRecords.svelte';
 </script>
 
@@ -14,4 +15,5 @@
   {/snippet}
   <StoredFormatConcepts />
   <StoredFormatRecords />
+  <StoredFormatFile />
 </DocsPage>
