@@ -109,6 +109,7 @@ function startingPlace(book: Book): ReadingPlace {
 
 export {
   DEFAULT_PAGE_PAIRING,
+  SOURCE_KINDS,
   defaultPageFit,
   applyEdit,
   isSourceKind,

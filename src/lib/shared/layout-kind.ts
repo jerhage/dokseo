@@ -56,8 +56,10 @@ function effectivePairing(
 }
 
 export {
+  LAYOUT_KINDS,
   PAGE_PAIRINGS,
   PAGE_PAIRING_CHOICE_VALUES,
+  READING_DIRECTIONS,
   imageLayoutKind,
   effectiveDirection,
   effectivePairing,
