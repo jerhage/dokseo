@@ -24,6 +24,7 @@ type CapturesExport = {
   readonly books: number;
   readonly bookless: number;
   readonly unreadable: UnreadableRows;
+  readonly storedUnreadable: number;
 };
 
 type ExportCapturesResult =
@@ -73,9 +74,12 @@ async function exportCaptures(deps: ExportCapturesDeps): Promise<ExportCapturesR
   const built = buildCapturesFile({
     books: shelf.books,
     removedBooks: removed.removed,
-    unreadableRemovedBooks: [],
+    unreadableRemovedBooks: removed.unreadable,
+    unreadableBooks: shelf.unreadable,
     tags: tags.tags,
+    unreadableTags: tags.unreadable,
     captures: captures.captures,
+    unreadableCaptures: captures.unreadable,
     exportedAt,
     appVersion: deps.appVersion,
   });
@@ -85,6 +89,9 @@ async function exportCaptures(deps: ExportCapturesDeps): Promise<ExportCapturesR
     captures: captures.unreadable.length,
   };
   const bookless = built.bookless.length;
+  const kept = built.file.unreadable;
+  const storedUnreadable =
+    kept === undefined ? 0 : kept.books.length + kept.tags.length + kept.captures.length;
   if (built.file.captures.length === 0) return { kind: 'nothing-to-export', bookless, unreadable };
 
   return {
@@ -96,6 +103,7 @@ async function exportCaptures(deps: ExportCapturesDeps): Promise<ExportCapturesR
       books: built.file.books.length,
       bookless,
       unreadable,
+      storedUnreadable,
     },
   };
 }

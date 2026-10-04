@@ -4,6 +4,7 @@ import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import type { ContentHash, SeriesId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
+import type { JsonValue } from './json-safe';
 
 const CAPTURES_FILE_FORMAT = 'dokseo-captures';
 
@@ -34,6 +35,12 @@ type BooklessCapture = WithoutBook<Capture>;
 
 type FileCapture = BooklessCapture & { readonly bookKey: string };
 
+type UnreadableSection = {
+  readonly books: readonly JsonValue[];
+  readonly tags: readonly JsonValue[];
+  readonly captures: readonly JsonValue[];
+};
+
 type CapturesFile = {
   readonly format: typeof CAPTURES_FILE_FORMAT;
   readonly version: typeof CAPTURES_FILE_VERSION;
@@ -42,7 +49,15 @@ type CapturesFile = {
   readonly books: readonly (FileBook | RetiredFileBook)[];
   readonly tags: readonly Tag[];
   readonly captures: readonly FileCapture[];
+  readonly unreadable?: UnreadableSection;
 };
 
 export { CAPTURES_FILE_FORMAT, CAPTURES_FILE_VERSION };
-export type { BooklessCapture, CapturesFile, FileBook, FileCapture, RetiredFileBook };
+export type {
+  BooklessCapture,
+  CapturesFile,
+  FileBook,
+  FileCapture,
+  RetiredFileBook,
+  UnreadableSection,
+};

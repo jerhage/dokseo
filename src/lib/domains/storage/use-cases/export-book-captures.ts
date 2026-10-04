@@ -82,8 +82,11 @@ async function exportBookCaptures(
     books: shelf.books.filter((held) => held.id === id),
     removedBooks: removed.removed.filter((held) => held.id === id),
     unreadableRemovedBooks: removed.unreadable.filter((held) => held.id === id),
+    unreadableBooks: [],
     tags: tagsUsedBy(tags.tags, captures.captures),
+    unreadableTags: [],
     captures: captures.captures,
+    unreadableCaptures: [],
     exportedAt,
     appVersion: deps.appVersion,
   });

@@ -108,8 +108,11 @@ function exported(from: World): string {
     books: from.shelf,
     removedBooks: [...from.removed.values()],
     unreadableRemovedBooks: [],
+    unreadableBooks: [],
     tags: [...from.tags.values()],
+    unreadableTags: [],
     captures: [...from.captures.values()],
+    unreadableCaptures: [],
     exportedAt: 1,
     appVersion: '0.9.3',
   }).json;

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Book } from '$lib/domains/library/domain/book/book';
 import type { LibraryRepository } from '$lib/domains/library/domain/book/library-repository';
-import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book';
+import { unreadableRemovedBooksFrom } from '$lib/domains/library/domain/book/removed-book';
+import type {
+  RemovedBook,
+  StoredRemovedBook,
+  UnreadableRemovedBook,
+} from '$lib/domains/library/domain/book/removed-book';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { CaptureRepository } from '$lib/domains/recognition/domain/capture/capture-repository';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
@@ -80,6 +85,13 @@ function capture(id: string, book: string): Capture {
   };
 }
 
+const SOUND_IDENTITY_ROW: StoredRemovedBook = {
+  ...REMOVED,
+  id: 'old-2',
+  title: 'Aria 4',
+  position: 45,
+};
+
 function notUsed(): Promise<never> {
   return Promise.reject(new Error('not used'));
 }
@@ -90,6 +102,7 @@ type Holdings = {
   readonly tags?: readonly Tag[];
   readonly captures?: readonly Capture[];
   readonly unreadableBooks?: number;
+  readonly unreadableRemoved?: readonly UnreadableRemovedBook[];
   readonly unreadableTags?: number;
   readonly unreadableCaptures?: number;
   readonly unavailable?: 'shelf' | 'removed' | 'tags' | 'captures';
@@ -127,7 +140,11 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
       Promise.resolve(
         holdings.unavailable === 'removed'
           ? STORAGE_UNAVAILABLE
-          : { kind: 'success', removed: holdings.removed ?? [REMOVED], unreadable: [] },
+          : {
+              kind: 'success',
+              removed: holdings.removed ?? [REMOVED],
+              unreadable: holdings.unreadableRemoved ?? [],
+            },
       ),
     listRestorable: notUsed,
     addRemoved: () => Promise.reject(new Error('not used')),
@@ -166,7 +183,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
               captures: holdings.captures ?? [capture('capture-1', 'shelf-1')],
               unreadable: ids(holdings.unreadableCaptures ?? 0).map((id) => ({
                 id: captureId(id),
-                stored: { id },
+                stored: { id, bookId: 'shelf-1', confidence: Number.NaN },
               })),
             },
       ),
@@ -255,6 +272,60 @@ describe('exportCaptures', () => {
     expect(exported).toMatchObject({
       exported: { unreadable: { books: 1, tags: 2, captures: 3 } },
     });
+  });
+
+  it('keeps the stored rows of unreadable tags and captures in the file, and counts them', async () => {
+    const exported = await exportCaptures(deps({ unreadableTags: 1, unreadableCaptures: 2 }));
+    if (exported.kind !== 'success') throw new Error(exported.kind);
+
+    expect(exported.exported.storedUnreadable).toBe(3);
+    expect(JSON.parse(exported.exported.json).unreadable).toEqual({
+      books: [],
+      tags: [{ id: 'unreadable-0' }],
+      captures: [
+        { id: 'unreadable-0', bookId: 'shelf-1', confidence: null },
+        { id: 'unreadable-1', bookId: 'shelf-1', confidence: null },
+      ],
+    });
+  });
+
+  it('keeps the stored row of an unreadable shelf book a capture names', async () => {
+    const exported = await exportCaptures(
+      deps({
+        unreadableBooks: 1,
+        captures: [capture('capture-1', 'shelf-1'), capture('capture-2', 'unreadable-0')],
+      }),
+    );
+    if (exported.kind !== 'success') throw new Error(exported.kind);
+
+    expect(JSON.parse(exported.exported.json).unreadable.books).toEqual([{ id: 'unreadable-0' }]);
+    expect(exported.exported.storedUnreadable).toBe(1);
+  });
+
+  it('writes the captures of an unreadable removed record under the identity its row stores, and keeps the row', async () => {
+    const exported = await exportCaptures(
+      deps({
+        unreadableRemoved: unreadableRemovedBooksFrom([SOUND_IDENTITY_ROW]),
+        captures: [capture('capture-1', 'shelf-1'), capture('capture-2', 'old-2')],
+      }),
+    );
+    if (exported.kind !== 'success') throw new Error(exported.kind);
+
+    const read = readCapturesFile(exported.exported.json);
+    expect(exported.exported).toMatchObject({ captures: 2, books: 2, bookless: 0 });
+    expect(read.kind === 'read' && read.captures.map(({ book }) => book.title)).toEqual([
+      'Yotsuba&! 1',
+      'Aria 4',
+    ]);
+    expect(JSON.parse(exported.exported.json).unreadable.books).toEqual([SOUND_IDENTITY_ROW]);
+  });
+
+  it('writes no unreadable section when every stored row reads', async () => {
+    const exported = await exportCaptures(deps());
+    if (exported.kind !== 'success') throw new Error(exported.kind);
+
+    expect(exported.exported.storedUnreadable).toBe(0);
+    expect(JSON.parse(exported.exported.json)).not.toHaveProperty('unreadable');
   });
 
   it('reports nothing to export when no capture is held', async () => {
