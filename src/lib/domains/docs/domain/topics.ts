@@ -53,7 +53,7 @@ const DOCS_TOPICS = [
     slug: 'epub-rendering',
     title: 'EPUB rendering',
     summary: 'foliate-js, blob frames, CFI locations, the turn lock and vertical text.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'book-identity',
