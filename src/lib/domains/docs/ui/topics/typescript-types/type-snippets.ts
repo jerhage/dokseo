@@ -46,6 +46,8 @@ type ScreenRect = Rect<'screen'>;
 
 type ImageRect = Rect<'image'>;
 
+type PageRect = Rect<'page'>;
+
 function rect<S extends string>(x: number, y: number, width: number, height: number): Rect<S> {
   return { x, y, width, height } as Rect<S>;
 }`,
