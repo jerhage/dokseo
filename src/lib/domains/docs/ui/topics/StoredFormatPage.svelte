@@ -2,6 +2,7 @@
   import DocsPage from '../DocsPage.svelte';
   import { STORED_FORMAT_SECTIONS } from './stored-format/stored-format-sections';
   import StoredFormatConcepts from './stored-format/StoredFormatConcepts.svelte';
+  import StoredFormatRecords from './stored-format/StoredFormatRecords.svelte';
 </script>
 
 <DocsPage slug="stored-format" sections={Object.values(STORED_FORMAT_SECTIONS)}>
@@ -12,4 +13,5 @@
     that does not match.
   {/snippet}
   <StoredFormatConcepts />
+  <StoredFormatRecords />
 </DocsPage>
