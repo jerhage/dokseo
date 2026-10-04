@@ -107,18 +107,10 @@ const STORED_PAGE_SOURCE: SourceSnippet = {
 const PDF_BUILD_FILES: SourceSnippet = {
   label: 'src/lib/domains/library/adapters/pdf-page-source.ts',
   file: 'src/lib/domains/library/adapters/pdf-page-source.ts',
-  code: `function pdfJsBuildFiles(build: PdfBuild): PdfJsBuildFiles {
-  if (build === 'modern') {
-    return {
-      library: import('pdfjs-dist'),
-      workerSrc: new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href,
-    };
-  }
-  return {
-    library: import('pdfjs-dist/legacy/build/pdf.mjs'),
-    workerSrc: new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).href,
-  };
-}`,
+  code: `async function loadPdfJsRuntime(): Promise<PdfJsRuntime> {
+  const files = pdfJsBuildFiles(choosePdfBuild(globalThis));
+  const pdfjs = await files.library;
+  pdfjs.GlobalWorkerOptions.workerSrc = files.workerSrc;`,
 };
 
 const PDF_RULE: SourceSnippet = {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
   import BuildConcepts from './production-builds/BuildConcepts.svelte';
+  import BuildsInDokseo from './production-builds/BuildsInDokseo.svelte';
   import ShakingConcepts from './production-builds/ShakingConcepts.svelte';
   import { BUILD_SECTIONS } from './production-builds/build-sections';
 </script>
@@ -13,4 +14,5 @@
   {/snippet}
   <BuildConcepts />
   <ShakingConcepts />
+  <BuildsInDokseo />
 </DocsPage>
