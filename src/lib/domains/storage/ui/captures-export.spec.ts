@@ -6,6 +6,7 @@ import {
   CapturesExportView,
   exportStatus,
   leftOutNotes,
+  savedNotes,
   savedText,
 } from './captures-export.svelte';
 import type { ExportSummary } from './captures-export.svelte';
@@ -27,6 +28,7 @@ const SUMMARY: ExportSummary = {
   books: 3,
   bookless: 1,
   unreadable: NONE_UNREADABLE,
+  storedUnreadable: 0,
 };
 
 const FILE: FileToSave = {
@@ -254,6 +256,26 @@ describe('leftOutNotes', () => {
   });
 });
 
+describe('savedNotes', () => {
+  it('says nothing about kept rows when the file keeps none', () => {
+    expect(savedNotes({ ...SUMMARY, bookless: 0 })).toEqual([]);
+  });
+
+  it('writes a single kept row in the singular, after the unreadable books', () => {
+    expect(
+      savedNotes({
+        ...SUMMARY,
+        bookless: 0,
+        unreadable: { books: 1, tags: 0, captures: 1 },
+        storedUnreadable: 1,
+      }),
+    ).toEqual([
+      '1 stored book could not be read.',
+      '1 stored row that could not be read is kept in the file as it was stored. Import does not bring it back.',
+    ]);
+  });
+});
+
 describe('exportStatus', () => {
   it('shows nothing while idle or exporting', () => {
     expect(exportStatus({ kind: 'idle' })).toBeNull();
@@ -266,6 +288,19 @@ describe('exportStatus', () => {
       message: 'Exported 12 captures from 3 books.',
       notes: ['1 capture belongs to no book and was left out.'],
     });
+  });
+
+  it('reports the stored rows kept in the file when there are any', () => {
+    const summary = {
+      ...SUMMARY,
+      unreadable: { books: 0, tags: 2, captures: 3 },
+      storedUnreadable: 5,
+    };
+
+    expect(exportStatus({ kind: 'saved', summary })?.notes).toEqual([
+      '1 capture belongs to no book and was left out.',
+      '5 stored rows that could not be read are kept in the file as they were stored. Import does not bring them back.',
+    ]);
   });
 
   it('says there is nothing to export, with what was left out', () => {
