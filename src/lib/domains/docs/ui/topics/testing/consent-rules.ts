@@ -49,8 +49,14 @@ const SECOND_JAPANESE_MODEL: ModelFootprint = {
   weightsBytes: 96_000_000,
 };
 
+function read(stored: unknown): ModelConsent {
+  const consent = consentFromStored(stored);
+  if (consent === null) throw new Error('That record reads as no consent');
+  return consent;
+}
+
 function grantFor(model: ModelFootprint): ModelConsent {
-  return consentFromStored(grantedConsent('ja', GRANTED_AT, model));
+  return read(grantedConsent('ja', GRANTED_AT, model));
 }
 
 const CONSENT_CASES: readonly ConsentCase[] = [
@@ -80,7 +86,7 @@ const CONSENT_CASES: readonly ConsentCase[] = [
   },
   {
     what: 'a grant recorded against another model',
-    consent: consentFromStored({
+    consent: read({
       language: 'ja',
       grantedAt: GRANTED_AT,
       modelId: PREVIOUS_MODEL_ID,
@@ -91,7 +97,7 @@ const CONSENT_CASES: readonly ConsentCase[] = [
   },
   {
     what: 'a record naming no model',
-    consent: consentFromStored({ language: 'ja', grantedAt: GRANTED_AT }),
+    consent: read({ language: 'ja', grantedAt: GRANTED_AT, modelId: null, weightsBytes: null }),
     model: japanese(),
     decision: 'undecided',
   },
