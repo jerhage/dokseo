@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.9.8](https://github.com/jerhage/dokseo/compare/v0.9.7...v0.9.8) (2026-10-04)
+
+
+### Features
+
+* **docs-pages:** add the 1.x stored format page with what a stored-format promise is and why reads are strict and changes go through database versions ([36a409d](https://github.com/jerhage/dokseo/commit/36a409d38d4f8a84185fc71b967949f66878057b))
+* **docs-pages:** describe every field of the 1.x stored rows, held to the frozen fixtures by a drift test ([c1ed2a8](https://github.com/jerhage/dokseo/commit/c1ed2a81cf3f71015e753aaca2757b06d327eac7))
+* **docs-pages:** describe the captures file v1 and read its golden file with the real reader on the stored format page ([ada5df5](https://github.com/jerhage/dokseo/commit/ada5df5acbe0a2a2b848771b8d9d233a236fcfd6))
+* **docs-pages:** list the specs that pin the 1.x stored format and how to change it after 1.0, and re-measure the recorded builds for the new page ([5c7b7b5](https://github.com/jerhage/dokseo/commit/5c7b7b52c7475d9e826de92c6c02911384efafbd))
+* **docs-pages:** render the 1.x databases and every stored record's fields from the pinned layouts and fixtures ([1d3d5a6](https://github.com/jerhage/dokseo/commit/1d3d5a6f9d646e8b6284cd91a3966b585b3e38b2))
+* **docs-pages:** show where an unreadable row appears and its way out, with a demo that damages a frozen row and reads it with the real mapper ([7f3a09d](https://github.com/jerhage/dokseo/commit/7f3a09deb461d45112d9bbc6730e7816ffc9c50d))
+* **export:** build a file of just the unreadable captures and tags given, for recognition ([b0bd685](https://github.com/jerhage/dokseo/commit/b0bd685185b4b1a1b8ba051d5889c36249ff5824))
+* **export:** keep the stored row on every unreadable book, capture and tag ([609701a](https://github.com/jerhage/dokseo/commit/609701a2cfe765c1d1000e25b7ffea6a1311af5a))
+* **export:** keep unreadable rows as stored in an unreadable section of the captures file ([01fdb1c](https://github.com/jerhage/dokseo/commit/01fdb1c205695568e368687fb0aa8dd87c605cb6))
+* **export:** say how many unreadable rows the exported file keeps ([287ceb9](https://github.com/jerhage/dokseo/commit/287ceb95738ccfbc1c122e8767e03a1e8397a7ef))
+* **export:** show the unreadable rows a file keeps in the import preview, without importing them ([284170c](https://github.com/jerhage/dokseo/commit/284170c134b110525eeb3dde8126815c37fd7f25))
+* **library:** answer an unreadable book row by name when /read opens it ([be1f2e2](https://github.com/jerhage/dokseo/commit/be1f2e26656b79db4190e0d50f1f158217f65cbc))
+* **library:** check a stored page list and report an unreadable one when the book opens ([9a688be](https://github.com/jerhage/dokseo/commit/9a688befcee631c28506da9fa7bf175a2d2305af))
+* **library:** export the captures of a removed record that does not read ([7ee2a58](https://github.com/jerhage/dokseo/commit/7ee2a58a302610bd7f8f6493418eea91de7daee7))
+* **library:** keep the whole book row, with its removal time, as the removed record ([1bcb20a](https://github.com/jerhage/dokseo/commit/1bcb20a99142839ac773f931ce7d07158dae6dec))
+* **library:** list an unreadable removed record under Removed books ([cd681a8](https://github.com/jerhage/dokseo/commit/cd681a8643a1804c037404e1519ec5702078f65f))
+* **library:** read every book field strictly, with finite numbers and a partial MD5 hash ([5677a99](https://github.com/jerhage/dokseo/commit/5677a99a0b5ef0bff555cff9a33d3c979a35690c))
+* **recognition:** check each field of a stored model consent rather than spreading it ([eb2825b](https://github.com/jerhage/dokseo/commit/eb2825bce5b5a7fd035f40fee4c802e561567958))
+* **recognition:** offer to export unreadable captures and tags before removing them ([8097e78](https://github.com/jerhage/dokseo/commit/8097e78bfd8667e2840d1e4ff2a4fb4f2aff9d1a))
+* **recognition:** read every capture field strictly, with no origin, note or confidence fallback ([b341e9b](https://github.com/jerhage/dokseo/commit/b341e9b05582231291ca34be9c3cea85f8f1259c))
+* **recognition:** read every tag field strictly, with no colour fallback ([4c06c14](https://github.com/jerhage/dokseo/commit/4c06c14d603e4a1093671d99b39623b9e9f81d17))
+* **recognition:** store a region capture's rect as fractions of its page ([9151c5d](https://github.com/jerhage/dokseo/commit/9151c5de1f6d401b03e1b19f39b4c12fb391a395))
+* **settings:** link the docs and the component playground from Settings → App in a dev build ([41bdc65](https://github.com/jerhage/dokseo/commit/41bdc657ca49f3c03efe2d9958aed888610ef563))
+
+
+### Fixes
+
+* **docs-pages:** build the export-import demos from the strict 1.0 shapes and the unreadable section, and refresh the drifted quotes ([03010c8](https://github.com/jerhage/dokseo/commit/03010c877216aa99430e399ed949b77e7cf35d0f))
+* **docs-pages:** build the testing page's consent cases from whole records, as the strict consent read requires ([de75073](https://github.com/jerhage/dokseo/commit/de75073385778909d6ce8fdc6e8fc0cbe137fc30))
+* **docs-pages:** describe the removed record as the whole book row and a legacy hash as unreadable on the book identity page ([0d4c85a](https://github.com/jerhage/dokseo/commit/0d4c85a9923977ee655b2fcbd7deeb1dc5364443))
+* **docs-pages:** describe the strict book read on the storage page, with no field defaults ([85bcfec](https://github.com/jerhage/dokseo/commit/85bcfece99683a17b33c62016178f3775fcdbf9e))
+* **docs-pages:** describe the strict captures file, page-fraction rects, the unreadable section and Export these first on the export-import page ([a280414](https://github.com/jerhage/dokseo/commit/a28041472dc12e5d76e0e06190bf8aedb72eb032))
+* **docs-pages:** list the OPFS file, tag removal and known-value pins on the stored format page ([87ef392](https://github.com/jerhage/dokseo/commit/87ef3922aabab67d4ff2df9987d042d97b865ab4))
+* **docs-pages:** read captures strictly on the TypeScript page, with no origin or note defaults ([42cb867](https://github.com/jerhage/dokseo/commit/42cb8674984514b02c0c320b154c00f6e75f42fa))
+* **docs-pages:** rewrite the series plan for strict 1.0 rows and database version migrations, with a strict read demo ([a7eef73](https://github.com/jerhage/dokseo/commit/a7eef7382af194be58a8128ba5d71df14eb70222))
+* **docs-pages:** say an older-format row comes from a pre-release build on the storage and TypeScript pages ([167d284](https://github.com/jerhage/dokseo/commit/167d2841c2c7928d65980aed45e9c588bb76ccd5))
+* **docs-pages:** show the tagIds index, recognition v5 and format migrations on the IndexedDB page ([c3bd9a6](https://github.com/jerhage/dokseo/commit/c3bd9a6f14c97bebd443f2cd123e993e8c341e74))
+* **export:** read a book entry's key with the flat book id rule its captures' book key is read by ([843f92a](https://github.com/jerhage/dokseo/commit/843f92af2aa944fad19a33d69b3ddf57616957d5))
+* **export:** read a book entry's series id, content hash and source kind with the stored book row's own checks, so an empty series id is refused ([c928d2c](https://github.com/jerhage/dokseo/commit/c928d2c559dedbb2a71fed91e6b279644c089e2e))
+* **export:** require a book entry's series id and volume as a stored book row does, instead of reading an absent one as null ([a6538f2](https://github.com/jerhage/dokseo/commit/a6538f2fe17a1e0cd6a19332ac2f78399be48d5c))
+* **library:** pin the 1.x values of every book row field read against a known set, so a renamed or added value fails the format spec ([696bbb7](https://github.com/jerhage/dokseo/commit/696bbb75308dc79f7a5cab057a1b30cc5f01dcc7))
+* **recognition:** pin the 1.x capture origins and tag colours, so a renamed or added value fails the format spec ([7c6df23](https://github.com/jerhage/dokseo/commit/7c6df23497e449b4e7b31316e1edef48d1eea518))
+* **recognition:** refuse a stored region anchor that holds no region, in a capture row and in a captures file entry ([95efa9c](https://github.com/jerhage/dokseo/commit/95efa9c863c164f2836fba7c7d0f9b6a13a1b7b0))
+* **recognition:** refuse a stored text anchor with an empty cfi, quoted passage or chapter, which no lift writes ([d11ecce](https://github.com/jerhage/dokseo/commit/d11ecced6df8d6d9855dfe319ebcaa079fa4e833))
+* **styles:** set code inside a table header cell in its own case and normal tracking, under the header's eyebrow style ([c404d43](https://github.com/jerhage/dokseo/commit/c404d434d50bc1d5caeec1d81eb6f8f6f9a24299))
+
+
+### Performance
+
+* **recognition:** untag a deleted tag's captures through a multi-entry tag index ([6f7f108](https://github.com/jerhage/dokseo/commit/6f7f108eb970fc29ceb628617cb0d877d693690e))
+
 ## [0.9.7](https://github.com/jerhage/dokseo/compare/v0.9.6...v0.9.7) (2026-10-04)
 
 
