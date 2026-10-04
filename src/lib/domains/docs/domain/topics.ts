@@ -38,8 +38,9 @@ const DOCS_TOPICS = [
   {
     slug: 'offline',
     title: 'Offline and the PWA',
-    summary: 'How Dokseo opens and reads without a network.',
-    status: 'planned',
+    summary:
+      'Service workers, the Cache API, cache strategies, installing, and how an open app finds and applies an update.',
+    status: 'published',
   },
   {
     slug: 'storage',
