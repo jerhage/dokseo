@@ -434,6 +434,7 @@ describe('readCapturesFile', () => {
     ['a null source kind', 'sourceKind', null, 'A stored book holds an unknown source kind: null'],
     ['a null image count', 'imageCount', null, 'A stored book holds an unknown image count: null'],
     ['a negative image count', 'imageCount', -1, 'A stored book holds an unknown image count: -1'],
+    ['an empty series id', 'seriesId', '', 'A stored book holds an unknown series id: '],
     [
       'a content hash that is not a partial MD5',
       'contentHash',

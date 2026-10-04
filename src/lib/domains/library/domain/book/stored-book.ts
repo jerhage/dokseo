@@ -173,5 +173,12 @@ function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   return { books, unreadable };
 }
 
-export { bookFromStored, booksFromStored, storedBookRead };
+export {
+  bookFromStored,
+  booksFromStored,
+  storedBookRead,
+  storedContentHash,
+  storedSeriesId,
+  storedSourceKind,
+};
 export type { StoredBook, StoredBookRead, StoredBooks, UnreadableBook };
