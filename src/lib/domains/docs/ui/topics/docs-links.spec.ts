@@ -19,6 +19,7 @@ import * as storage from './storage/storage-sections';
 import * as testing from './testing/testing-sections';
 import * as touchAndPointers from './touch-and-pointers/sections';
 import * as uiLibrary from './ui-library/sections';
+import * as typescriptTypes from './typescript-types/type-sections';
 import * as unicode from './unicode/unicode-sections';
 import * as workers from './workers/workers-sections';
 
@@ -46,7 +47,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'sql-patterns': sqlPatterns.SQL_PATTERNS_SECTIONS,
   unicode: unicode.UNICODE_SECTIONS,
   workers: workers.WORKERS_SECTIONS,
-  'typescript-types': {},
+  'typescript-types': typescriptTypes.TYPE_SECTIONS,
   'async-correctness': {},
   indexeddb: {},
   accessibility: {},
@@ -68,6 +69,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'testing/testing-sections.ts': testing,
   'touch-and-pointers/sections.ts': touchAndPointers,
   'ui-library/sections.ts': uiLibrary,
+  'typescript-types/type-sections.ts': typescriptTypes,
   'unicode/unicode-sections.ts': unicode,
   'workers/workers-sections.ts': workers,
 };

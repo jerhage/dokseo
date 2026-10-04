@@ -136,8 +136,8 @@ const DOCS_TOPICS = [
     slug: 'typescript-types',
     title: 'TypeScript type design',
     summary:
-      'Discriminated unions, exhaustive matching, brands, and solving a type problem by construction instead of with a cast.',
-    status: 'planned',
+      'Structural typing, unions and narrowing, exhaustive matching, brands, parsing at the boundary, and solving a type problem by construction instead of with a cast.',
+    status: 'published',
   },
   {
     slug: 'async-correctness',
