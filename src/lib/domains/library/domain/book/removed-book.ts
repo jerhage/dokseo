@@ -1,6 +1,6 @@
-import { isNumber, isText } from '$lib/shared/corrupt-row';
-import { parsedBookId } from '$lib/shared/ids';
-import type { BookId } from '$lib/shared/ids';
+import { isFiniteNumberOrNull, isNumber, isText } from '$lib/shared/corrupt-row';
+import { parsedBookId, seriesId } from '$lib/shared/ids';
+import type { BookId, SeriesId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { effectiveDirection, isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
@@ -12,6 +12,8 @@ type RemovedBook = {
   readonly id: BookId;
   readonly title: string;
   readonly alias: string | null;
+  readonly seriesId: SeriesId | null;
+  readonly volume: number | null;
   readonly contentHash: string;
   readonly fileName: string;
   readonly language: Language;
@@ -34,6 +36,8 @@ type RetiredRow = {
   readonly id?: unknown;
   readonly title?: unknown;
   readonly alias?: unknown;
+  readonly seriesId?: unknown;
+  readonly volume?: unknown;
   readonly contentHash?: unknown;
   readonly fileName?: unknown;
   readonly language?: unknown;
@@ -58,6 +62,14 @@ function aliasOf(value: unknown): string | null {
   return alias.length === 0 ? null : alias;
 }
 
+function seriesIdOf(value: unknown): SeriesId | null {
+  return isText(value) ? seriesId(value) : null;
+}
+
+function volumeOf(value: unknown): number | null {
+  return isFiniteNumberOrNull(value) ? value : null;
+}
+
 function directionOf(row: RetiredRow): ReadingDirection {
   const direction = isReadingDirection(row.direction) ? row.direction : FALLBACK_DIRECTION;
   return isLayoutKind(row.layoutKind) ? effectiveDirection(direction, row.layoutKind) : direction;
@@ -70,6 +82,8 @@ function removedBookFrom(row: RetiredRow): RemovedBook | null {
     id,
     title: titleOf(row.title),
     alias: aliasOf(row.alias),
+    seriesId: seriesIdOf(row.seriesId),
+    volume: volumeOf(row.volume),
     contentHash: textOf(row.contentHash),
     fileName: textOf(row.fileName),
     language: isLanguage(row.language) ? row.language : FALLBACK_LANGUAGE,

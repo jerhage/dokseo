@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex, seriesId } from '$lib/shared/ids';
 import type { ContentHash } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -96,6 +96,8 @@ function heldBook(hash: ContentHash): Book {
     id: bookId('book-1'),
     title: 'Yotsuba&! 1',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',
@@ -288,6 +290,8 @@ function removedRecord(overrides: Partial<RemovedBook> = {}): RemovedBook {
     id: bookId('gone-1'),
     title: 'Yotsuba&! 1',
     alias: null,
+    seriesId: null,
+    volume: null,
     contentHash: OTHER_DIGEST,
     fileName: 'other.cbz',
     language: 'ja',
@@ -766,10 +770,27 @@ describe('openFile', () => {
     expect(at(repository.added, 0).book).toMatchObject({ title: 'Nichijou 3', alias: 'Mine' });
   });
 
+  it('restores a removed book with the series id and volume its record kept', async () => {
+    const repository = fakeRepository(WRITTEN, [], listing([]), [
+      removedRecord({ contentHash: DIGEST, seriesId: seriesId('series-1'), volume: 2 }),
+    ]);
+
+    const result = await openFile(deps({ repository: repository.repository }), files);
+
+    expect(result.kind).toBe('restored');
+    expect(at(repository.added, 0).book).toMatchObject({ seriesId: 'series-1', volume: 2 });
+  });
+
   it('adds a new book with no alias', async () => {
     const result = await openFile(deps(), files);
 
     expect(openedBook(result).alias).toBeNull();
+  });
+
+  it('adds a new book in no series', async () => {
+    const result = await openFile(deps(), files);
+
+    expect(openedBook(result)).toMatchObject({ seriesId: null, volume: null });
   });
 
   it('restores by file name a record whose hash is no partial MD5 digest', async () => {

@@ -19,6 +19,8 @@ function removedBook(id: string): RemovedBook {
     id: bookId(id),
     title: `Title ${id}`,
     alias: null,
+    seriesId: null,
+    volume: null,
     contentHash: '0123456789abcdef0123456789abcdef',
     fileName: `${id}.cbz`,
     language: 'ja',

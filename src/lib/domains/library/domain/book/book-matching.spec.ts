@@ -12,6 +12,8 @@ function book(id: string, hash: string, fileName: string): Book {
     id: bookId(id),
     title: id,
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

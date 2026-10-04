@@ -12,6 +12,8 @@ function book(layoutKind: LayoutKind, imageCount: number, position: ReadingPlace
     id: bookId('book-1'),
     title: 'Yotsuba&! 1',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind,
     direction: 'rtl',

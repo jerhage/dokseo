@@ -11,6 +11,8 @@ function book(layoutKind: Book['layoutKind']): Book {
     id: bookId('one'),
     title: 'Kokoro',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind,
     direction: 'rtl',

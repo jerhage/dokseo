@@ -25,6 +25,8 @@ function book(id: string, title: string): Book {
     id: bookId(id),
     title,
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

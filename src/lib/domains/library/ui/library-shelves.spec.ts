@@ -21,6 +21,8 @@ function comic(title: string, page: number, imageCount = 10, addedAt = 0): Book 
     id: bookId(title),
     title,
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

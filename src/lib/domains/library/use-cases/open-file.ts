@@ -278,6 +278,8 @@ async function openFile(
     id: restoring?.id ?? bookId(deps.newId()),
     title,
     alias: restoring?.alias ?? null,
+    seriesId: restoring?.seriesId ?? null,
+    volume: restoring?.volume ?? null,
     language: declaredLanguage(inspection) ?? languageOfTitle(title) ?? DEFAULT_LANGUAGE,
     layoutKind,
     direction: declaredDirection(inspection),

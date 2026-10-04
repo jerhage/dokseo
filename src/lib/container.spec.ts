@@ -9,6 +9,8 @@ const GONE = vi.hoisted(() => ({
   id: 'gone-1' as BookId,
   title: 'Gone',
   alias: null,
+  seriesId: null,
+  volume: null,
   contentHash: '0123456789abcdef0123456789abcdef',
   fileName: 'gone.epub',
   language: 'ja' as const,

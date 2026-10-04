@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import { imageIndex } from '$lib/shared/ids';
-import type { BookId, ContentHash } from '$lib/shared/ids';
+import type { BookId, ContentHash, SeriesId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type {
   ImageLayoutKind,
@@ -25,6 +25,8 @@ type Book = {
   readonly id: BookId;
   readonly title: string;
   readonly alias: string | null;
+  readonly seriesId: SeriesId | null;
+  readonly volume: number | null;
   readonly language: Language;
   readonly layoutKind: LayoutKind;
   readonly direction: ReadingDirection;
@@ -54,6 +56,8 @@ function defaultPageFit(layoutKind: LayoutKind): PageFit {
 
 type BookEdit = {
   readonly alias?: string | null;
+  readonly seriesId?: SeriesId | null;
+  readonly volume?: number | null;
   readonly language?: Language;
   readonly layoutKind?: ImageLayoutKind;
   readonly direction?: ReadingDirection;
@@ -75,6 +79,8 @@ function applyEdit(book: Book, edit: BookEdit): Book {
   return {
     ...book,
     alias: editedAlias(book, edit),
+    seriesId: edit.seriesId === undefined ? book.seriesId : edit.seriesId,
+    volume: edit.volume === undefined ? book.volume : edit.volume,
     language: edit.language ?? book.language,
     layoutKind,
     direction: edit.direction ?? book.direction,

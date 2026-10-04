@@ -104,6 +104,8 @@ function absentRecord(file: FileBook, minting: PlanMinting): RemovedBook {
     id: bookId(minting.newId()),
     title: file.title,
     alias: file.alias,
+    seriesId: null,
+    volume: null,
     contentHash: file.contentHash,
     fileName: file.fileName,
     language: file.language,

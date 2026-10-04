@@ -17,6 +17,8 @@ const comic: Book = {
   id: bookId('book-7'),
   title: 'Blame! 1',
   alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',

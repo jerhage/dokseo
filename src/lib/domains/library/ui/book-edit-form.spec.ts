@@ -10,6 +10,8 @@ function book(overrides: Partial<Book> = {}): Book {
     id: bookId('one'),
     title: '月光食堂',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

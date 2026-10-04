@@ -20,6 +20,8 @@ const REMOVED: RemovedBook = {
   id: bookId('gone-1'),
   title: 'よつばと! 1',
   alias: null,
+  seriesId: null,
+  volume: null,
   contentHash: '0123456789abcdef0123456789abcdef',
   fileName: 'yotsuba-1.epub',
   language: 'ja',

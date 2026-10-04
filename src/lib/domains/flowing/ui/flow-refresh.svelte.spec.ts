@@ -51,6 +51,8 @@ function novel(): FlowBook {
     id: bookId('refresh'),
     title: 'Refresh',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'flow',
     direction: 'rtl',

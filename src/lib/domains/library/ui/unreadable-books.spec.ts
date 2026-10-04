@@ -76,6 +76,8 @@ function shelfBook(overrides: Partial<Book> = {}): Book {
     id: bookId('6a7bd926-held'),
     title: KINO,
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

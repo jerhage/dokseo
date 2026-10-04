@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
+import { bookId, contentHash, imageIndex, seriesId } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, imagePlace, textPlace } from '$lib/shared/reading-place';
 import { applyEdit, defaultPageFit, startingPlace } from './book';
 import type { Book } from './book';
@@ -8,6 +8,8 @@ const book: Book = {
   id: bookId('b-1'),
   title: 'Yotsuba&! 1',
   alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',
@@ -69,6 +71,30 @@ describe('applyEdit', () => {
       expect(applyEdit(book, edit)).toEqual({ ...book, ...changed });
     },
   );
+
+  it('sets the series id and volume an edit names', () => {
+    const edited = applyEdit(book, { seriesId: seriesId('series-1'), volume: 3 });
+
+    expect(edited).toEqual({ ...book, seriesId: 'series-1', volume: 3 });
+  });
+
+  it('keeps the series id and volume when the edit does not name them', () => {
+    const inSeries = { ...book, seriesId: seriesId('series-1'), volume: 3 };
+
+    expect(applyEdit(inSeries, { alias: 'Mine' })).toMatchObject({
+      seriesId: 'series-1',
+      volume: 3,
+    });
+  });
+
+  it('clears the series id and volume when the edit gives null', () => {
+    const inSeries = { ...book, seriesId: seriesId('series-1'), volume: 3 };
+
+    expect(applyEdit(inSeries, { seriesId: null, volume: null })).toMatchObject({
+      seriesId: null,
+      volume: null,
+    });
+  });
 
   it('returns a new object and leaves the original untouched', () => {
     const edited = applyEdit(book, { alias: 'Blame! 1', position: imagePlace(imageIndex(7)) });

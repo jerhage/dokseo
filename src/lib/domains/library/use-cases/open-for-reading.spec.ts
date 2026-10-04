@@ -39,6 +39,8 @@ function book(overrides: Partial<Book> = {}): Book {
     id: ID,
     title: 'Yotsuba&! 1',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

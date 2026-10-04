@@ -47,12 +47,17 @@ function isNumberOrNull(value: unknown): value is number | null {
   return value === null || isNumber(value);
 }
 
+function isFiniteNumberOrNull(value: unknown): value is number | null {
+  return value === null || (isNumber(value) && Number.isFinite(value));
+}
+
 function isTextList(value: unknown): value is readonly string[] {
   return isStoredList(value) && value.every(isText);
 }
 
 export {
   CorruptRow,
+  isFiniteNumberOrNull,
   isNumber,
   isNumberOrNull,
   isStoredFields,

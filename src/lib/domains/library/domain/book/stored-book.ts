@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import {
   CorruptRow,
+  isFiniteNumberOrNull,
   isNumber,
   isNumberOrNull,
   isStoredFields,
@@ -9,8 +10,8 @@ import {
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import type { StoredFields } from '$lib/shared/corrupt-row';
-import { contentHash, imageIndex, parsedBookId } from '$lib/shared/ids';
-import type { BookId } from '$lib/shared/ids';
+import { contentHash, imageIndex, parsedBookId, seriesId } from '$lib/shared/ids';
+import type { BookId, SeriesId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { isLayoutKind, isPagePairingChoice, isReadingDirection } from '$lib/shared/layout-kind';
@@ -62,6 +63,16 @@ function storedAlias(value: unknown): string | null {
   return value === undefined ? null : bookField('alias', value, isTextOrNull);
 }
 
+function storedSeriesId(value: unknown): SeriesId | null {
+  if (value === undefined) return null;
+  const stored = bookField('series id', value, isTextOrNull);
+  return stored === null ? null : seriesId(stored);
+}
+
+function storedVolume(value: unknown): number | null {
+  return value === undefined ? null : bookField('volume', value, isFiniteNumberOrNull);
+}
+
 function storedPlace(value: unknown): ReadingPlace {
   const position = bookField('position', value, isStoredFields);
   return match(position.kind)
@@ -89,6 +100,8 @@ function bookFromStored(stored: StoredBook): Book {
     id: storedBookId(stored.id),
     title: bookField('title', stored.title, isText),
     alias: storedAlias(stored.alias),
+    seriesId: storedSeriesId(stored.seriesId),
+    volume: storedVolume(stored.volume),
     language: isLanguage(stored.language) ? stored.language : FALLBACK_LANGUAGE,
     layoutKind,
     direction: isReadingDirection(stored.direction) ? stored.direction : FALLBACK_DIRECTION,

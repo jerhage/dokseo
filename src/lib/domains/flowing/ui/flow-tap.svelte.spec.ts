@@ -75,6 +75,8 @@ function novel(direction: 'ltr' | 'rtl'): FlowBook {
     id: bookId('taps'),
     title: 'Taps',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'flow',
     direction,

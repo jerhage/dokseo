@@ -18,6 +18,8 @@ describe('removedBookFrom', () => {
       id: 'book-1',
       title: 'Yotsuba&! 1',
       alias: 'Mine',
+      seriesId: null,
+      volume: null,
       contentHash: '9f86d081',
       fileName: 'Yotsuba&! 1.cbz',
       language: 'ko',
@@ -31,6 +33,8 @@ describe('removedBookFrom', () => {
       id: 'book-1',
       title: 'Untitled book',
       alias: null,
+      seriesId: null,
+      volume: null,
       contentHash: '',
       fileName: '',
       language: 'ja',
@@ -46,6 +50,27 @@ describe('removedBookFrom', () => {
     ['not text', 7],
   ])('keeps no alias when the row holds one that is %s', (_, alias) => {
     expect(removedBookFrom({ id: 'book-1', title: 'x', alias })?.alias).toBeNull();
+  });
+
+  it('keeps the series id and volume a row holds', () => {
+    expect(
+      removedBookFrom({ id: 'book-1', title: 'x', seriesId: 'series-1', volume: 2.5 }),
+    ).toMatchObject({ seriesId: 'series-1', volume: 2.5 });
+  });
+
+  it.each([
+    ['absent', undefined, undefined],
+    ['null', null, null],
+    ['of the wrong type', 7, '2'],
+  ])('reads a series id and volume that are %s as null', (_, seriesId, volume) => {
+    expect(removedBookFrom({ id: 'book-1', title: 'x', seriesId, volume })).toMatchObject({
+      seriesId: null,
+      volume: null,
+    });
+  });
+
+  it('reads a volume that is not finite as null', () => {
+    expect(removedBookFrom({ id: 'book-1', title: 'x', volume: Number.NaN })?.volume).toBeNull();
   });
 
   it('stores the direction a continuous book reads in, not the one it was set to', () => {

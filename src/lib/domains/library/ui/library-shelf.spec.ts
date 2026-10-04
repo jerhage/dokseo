@@ -19,6 +19,8 @@ const BOOK: Book = {
   id: bookId('one'),
   title: 'one',
   alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   layoutKind: 'paged',
   direction: 'rtl',

@@ -58,6 +58,8 @@ function novel(position: ReadingPlace): FlowBook {
     id: NOVEL,
     title: 'Kokoro',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'flow',
     direction: 'rtl',

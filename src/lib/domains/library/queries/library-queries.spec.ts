@@ -28,6 +28,8 @@ function book(id: string, addedAt: number): Book {
     id: bookId(id),
     title: id,
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

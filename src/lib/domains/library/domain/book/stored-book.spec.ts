@@ -128,6 +128,43 @@ describe('bookFromStored', () => {
     expect(renamed.title).toBe('Yotsuba&! 1');
   });
 
+  it('reads a row stored without a series id or volume as a book in no series', () => {
+    expect('seriesId' in row).toBe(false);
+    expect('volume' in row).toBe(false);
+    expect(bookFromStored(row)).toMatchObject({ seriesId: null, volume: null });
+  });
+
+  it('keeps a stored null series id and volume', () => {
+    expect(bookFromStored({ ...row, seriesId: null, volume: null })).toMatchObject({
+      seriesId: null,
+      volume: null,
+    });
+  });
+
+  it('keeps a stored series id and volume', () => {
+    const book = bookFromStored({
+      ...row,
+      seriesId: '0f8e2c4a-6b1d-4e7f-9a3c-5d2b8e1f7a60',
+      volume: 1.5,
+    });
+
+    expect(book.seriesId).toBe('0f8e2c4a-6b1d-4e7f-9a3c-5d2b8e1f7a60');
+    expect(book.volume).toBe(1.5);
+  });
+
+  it.each([7, true, { id: 'series-1' }])('throws a corrupt row for a stored series id %j', (id) => {
+    expect(() => bookFromStored({ ...row, seriesId: id })).toThrow(
+      `A stored book holds an unknown series id: ${String(id)}`,
+    );
+  });
+
+  it.each(['2', Number.NaN, Number.POSITIVE_INFINITY, true])(
+    'throws a corrupt row for a stored volume %s',
+    (volume) => {
+      expect(() => bookFromStored({ ...row, volume })).toThrow(CorruptRow);
+    },
+  );
+
   it('keeps a stored file name that is present', () => {
     expect(bookFromStored({ ...row, fileName: 'Yotsuba&! 2.cbz' }).fileName).toBe(
       'Yotsuba&! 2.cbz',
@@ -139,6 +176,8 @@ describe('bookFromStored', () => {
       id: bookId('b-1'),
       title: 'Yotsuba&! 1',
       alias: null,
+      seriesId: null,
+      volume: null,
       language: 'ja',
       layoutKind: 'paged',
       direction: 'rtl',

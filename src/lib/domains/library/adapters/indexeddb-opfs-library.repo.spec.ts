@@ -131,6 +131,8 @@ describe('createLibraryRepository', () => {
           id: 'good-1',
           title: 'Yotsuba&! 1',
           alias: null,
+          seriesId: null,
+          volume: null,
           contentHash: '9f86d081',
           fileName: 'Yotsuba&! 1.cbz',
           language: 'ja',
@@ -175,6 +177,30 @@ describe('createLibraryRepository', () => {
     );
   });
 
+  it('refuses to save an edit to a row whose series id is not text, and leaves the row', async () => {
+    const corrupt = { ...GOOD, seriesId: 7, shelfColour: 'teal' };
+    store('books').set(GOOD.id, corrupt);
+    const repository = createLibraryRepository();
+
+    await expect(repository.update(bookId('good-1'), { alias: 'Mine' })).rejects.toThrow(
+      'A stored book holds an unknown series id: 7',
+    );
+    expect(store('books').get('good-1')).toBe(corrupt);
+  });
+
+  it('keeps the series id and volume of a book it removes in the removed record', async () => {
+    store('books').set(GOOD.id, { ...GOOD, seriesId: 'series-1', volume: 4 });
+    const repository = createLibraryRepository();
+
+    await repository.remove(bookId('good-1'));
+    const removed = await repository.listRemoved();
+
+    expect(removed.kind === 'success' && removed.removed[0]).toMatchObject({
+      seriesId: 'series-1',
+      volume: 4,
+    });
+  });
+
   it('keeps the alias of a book it removes in the removed record', async () => {
     store('books').set(GOOD.id, { ...GOOD, alias: 'Mine' });
     const repository = createLibraryRepository();
@@ -202,6 +228,8 @@ describe('createLibraryRepository', () => {
           id: 'old-1',
           title: 'Yotsuba&! 2',
           alias: null,
+          seriesId: null,
+          volume: null,
           contentHash: '',
           fileName: 'Yotsuba&! 2.cbz',
           language: 'ja',
@@ -256,6 +284,8 @@ describe('createLibraryRepository', () => {
       id: bookId('held-1'),
       title: 'Aria 3',
       alias: null,
+      seriesId: null,
+      volume: null,
       contentHash: 'fedcba',
       fileName: 'aria-3.pdf',
       language: 'ja',
@@ -271,6 +301,8 @@ describe('createLibraryRepository', () => {
           id: 'held-1',
           title: 'Aria 3',
           alias: null,
+          seriesId: null,
+          volume: null,
           contentHash: 'fedcba',
           fileName: 'aria-3.pdf',
           language: 'ja',

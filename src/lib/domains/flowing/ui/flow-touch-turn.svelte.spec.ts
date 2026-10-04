@@ -75,6 +75,8 @@ function novel(): FlowBook {
     id: bookId('touch-turns'),
     title: 'Touch',
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'flow',
     direction: 'ltr',
