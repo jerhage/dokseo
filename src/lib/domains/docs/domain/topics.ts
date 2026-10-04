@@ -59,6 +59,14 @@ const DOCS_TOPICS = [
     kind: 'explainer',
   },
   {
+    slug: 'stored-format',
+    title: 'The 1.x stored format',
+    summary:
+      'What a stored-format promise is, strict reads and database version migrations, every record Dokseo keeps field by field, the captures file and its golden copy, and unreadable rows.',
+    status: 'published',
+    kind: 'explainer',
+  },
+  {
     slug: 'epub-rendering',
     title: 'EPUB rendering',
     summary: 'foliate-js, blob frames, CFI locations, the turn lock and vertical text.',
