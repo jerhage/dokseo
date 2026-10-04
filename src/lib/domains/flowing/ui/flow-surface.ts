@@ -245,6 +245,14 @@ function redrawPassages(view: Annotatable, shown: ReadonlyMap<string, PassageWei
   for (const cfi of shown.keys()) drawn(view, { value: cfi });
 }
 
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+}
+
 async function openAt(view: Navigable, spine: Spine, at: string | null): Promise<boolean> {
   if (at !== null) {
     const resumed = await navigate(view, spine, at);
@@ -308,6 +316,7 @@ async function openFlowSurface(
       opening.moved(flowRelocation(here, moved.detail.reason));
     });
     view.renderer.setStyles(flowStyles(opening.settings, opening.ink, mode));
+    await nextFrame();
     const laidOut = await openAt(view, spine, opening.at);
     if (!laidOut) throw new Error('its first section could not be laid out');
   } catch (cause) {
