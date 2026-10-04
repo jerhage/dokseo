@@ -14,6 +14,7 @@
     CLAIMED_ROW,
     COMPARED_BRANDS,
     COVARIANT_SPACE,
+    DERIVED_UNION,
     DOUBLE_ASSERTION,
     GENERIC_IDS,
     IMPOSSIBLE_ASSERTION,
@@ -167,6 +168,17 @@
   <CompiledComparison
     label="A tuple and an array"
     items={[{ title: 'TAG_COLOURS[0] and ANNOTATED[0]', example: LIST_SATISFIES }]}
+  />
+  <p>
+    Completeness stops being a question when the list comes first and the union is taken from it.
+    <code>typeof TAG_COLOURS</code> is the readonly tuple <code>as const</code> produced, and
+    indexing it with <code>[number]</code> gives the union of its entries. A color is in the type exactly
+    when it is in the list, so a list that leaves a color out cannot exist: leaving it out of the list
+    removes it from the type, and every use of it fails to compile.
+  </p>
+  <CompiledComparison
+    label="A union taken from its list"
+    items={[{ title: '(typeof TAG_COLOURS)[number]', example: DERIVED_UNION }]}
   />
 </DocsSection>
 

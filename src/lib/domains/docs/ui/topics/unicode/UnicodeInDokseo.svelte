@@ -221,8 +221,9 @@
     Japanese captures are read by manga-ocr, whose tokenizer works one character at a time and puts
     a space between every pair when it turns token ids back into text: <span lang="ja"
       >こ ん に ち は</span
-    >. The <a href={OCR_TOKENS_HREF}>model tokens</a> section of the OCR page shows why. The worker removes
-    every run of whitespace before it posts the text back:
+    >. The <a href={OCR_TOKENS_HREF}>model tokens</a> section of the OCR page shows why. Before the
+    worker posts the text back, <code>jaOcrText</code>, a function in a file beside the manga-ocr
+    worker, removes every run of whitespace:
   </p>
   <DocsCode label={OCR_TEXT.label} code={OCR_TEXT.code} />
   <p>

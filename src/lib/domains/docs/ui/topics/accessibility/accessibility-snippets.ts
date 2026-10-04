@@ -3,14 +3,8 @@ import type { SourceSnippet } from '../ocr/ocr-snippets';
 const FLOW_KEY_MOVE: SourceSnippet = {
   label: 'The EPUB reader decides per key, in src/lib/domains/flowing/ui/flow-turn.ts',
   file: 'src/lib/domains/flowing/ui/flow-turn.ts',
-  code: `function keyMove(press: KeyPress): FlowMove {
-  if (press.typing) return STAY;
-  if (press.altKey || press.ctrlKey || press.metaKey) return STAY;
-  if (press.key === ' ') {
-    if (press.pressesOnSpace) return STAY;
-
-    return press.shiftKey ? BACKWARD : FORWARD;
-  }
+  code: `function pagingMove(press: KeyPress): FlowMove {
+  if (press.key === ' ') return press.shiftKey ? BACKWARD : FORWARD;
   if (press.shiftKey) return STAY;
 
   return match(press.key)
@@ -19,18 +13,68 @@ const FLOW_KEY_MOVE: SourceSnippet = {
     .with('ArrowUp', 'PageUp', () => BACKWARD)
     .with('ArrowDown', 'PageDown', () => FORWARD)
     .otherwise(() => STAY);
+}
+
+function keyMove(press: KeyPress): FlowMove {
+  if (press.altKey || press.ctrlKey || press.metaKey) return STAY;
+
+  return match(press.focus)
+    .with({ kind: 'typing' }, () => STAY)
+    .with({ kind: 'slider' }, () => (STEPPED_BY_A_SLIDER.has(press.key) ? STAY : pagingMove(press)))
+    .with({ kind: 'button' }, () => (press.key === ' ' ? STAY : pagingMove(press)))
+    .with({ kind: 'elsewhere' }, () => pagingMove(press))
+    .exhaustive();
 }`,
 };
 
-const FLOW_PRESSES_ON_SPACE: SourceSnippet = {
-  label: 'What counts as pressed by Space, in the same file',
+const FLOW_KEY_FOCUS: SourceSnippet = {
+  label: 'Where focus is, as a union, in the same file',
+  file: 'src/lib/domains/flowing/ui/flow-turn.ts',
+  code: `type KeyFocus =
+  | { readonly kind: 'typing' }
+  | { readonly kind: 'slider' }
+  | { readonly kind: 'button' }
+  | { readonly kind: 'elsewhere' };`,
+};
+
+const FLOW_FOCUS_KINDS: SourceSnippet = {
+  label: 'How the focused element is sorted into one of them',
   file: 'src/lib/domains/flowing/ui/flow-turn.ts',
   code: `function pressesOnSpace(target: KeyTarget | null): boolean {
   if (target === null) return false;
   if (target.role !== null && target.role.toLowerCase() === BUTTON_ROLE) return true;
 
   return PRESSED_ON_SPACE.has(target.tagName.toUpperCase());
+}
+
+function isSlider(target: KeyTarget | null): boolean {
+  if (target === null || target.editable) return false;
+
+  return target.type !== null && STEPPED_INSTEAD.has(target.type.toLowerCase());
+}
+
+function keyFocus(target: KeyTarget | null): KeyFocus {
+  if (isTyping(target)) return TYPING;
+  if (isSlider(target)) return SLIDER;
+  if (pressesOnSpace(target)) return BUTTON;
+
+  return ELSEWHERE;
 }`,
+};
+
+const FLOW_SLIDER_KEYS: SourceSnippet = {
+  label: 'The keys a focused slider keeps',
+  file: 'src/lib/domains/flowing/ui/flow-turn.ts',
+  code: `const STEPPED_BY_A_SLIDER = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+]);`,
 };
 
 const FLOW_ONKEY: SourceSnippet = {
@@ -43,8 +87,7 @@ const move = gestures.keyed({
   ctrlKey: event.ctrlKey,
   metaKey: event.metaKey,
   shiftKey: event.shiftKey,
-  typing: isTyping(pressed),
-  pressesOnSpace: pressesOnSpace(pressed),
+  focus: keyFocus(pressed),
 });
 if (move.kind !== 'stay') event.preventDefault();`,
 };
@@ -237,7 +280,9 @@ const CAPTURE_TEXT: SourceSnippet = {
 
 const ACCESSIBILITY_SNIPPETS: readonly SourceSnippet[] = [
   FLOW_KEY_MOVE,
-  FLOW_PRESSES_ON_SPACE,
+  FLOW_KEY_FOCUS,
+  FLOW_FOCUS_KINDS,
+  FLOW_SLIDER_KEYS,
   FLOW_ONKEY,
   READER_ARROWS,
   HANDLES_OWN_SPACE,
@@ -270,9 +315,11 @@ export {
   CHROME_BAR_INERT,
   FIELD_CONTROL,
   FIELD_LABEL,
+  FLOW_FOCUS_KINDS,
+  FLOW_KEY_FOCUS,
   FLOW_KEY_MOVE,
   FLOW_ONKEY,
-  FLOW_PRESSES_ON_SPACE,
+  FLOW_SLIDER_KEYS,
   HANDLES_OWN_SPACE,
   ICON_BUTTON_FACE,
   MODAL_SHOW,

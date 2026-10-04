@@ -17,9 +17,11 @@
     CHROME_BAR_INERT,
     FIELD_CONTROL,
     FIELD_LABEL,
+    FLOW_FOCUS_KINDS,
+    FLOW_KEY_FOCUS,
     FLOW_KEY_MOVE,
     FLOW_ONKEY,
-    FLOW_PRESSES_ON_SPACE,
+    FLOW_SLIDER_KEYS,
     HANDLES_OWN_SPACE,
     ICON_BUTTON_FACE,
     MODAL_SHOW,
@@ -71,18 +73,29 @@
   <p>
     The EPUB reader follows the per-key rule from <a href={accessibilityHref('keys')}
       >Turning pages with keys</a
-    >. Its decision is a pure function in the flowing domain:
+    >. Its decision is a pure function in the flowing domain. First it sorts the focused element
+    into one of four kinds:
+  </p>
+  <DocsCode label={FLOW_KEY_FOCUS.label} code={FLOW_KEY_FOCUS.code} />
+  <DocsCode label={FLOW_FOCUS_KINDS.label} code={FLOW_FOCUS_KINDS.code} />
+  <p>
+    A text field, a select or editable content is <code>typing</code>. A range input is a
+    <code>slider</code>, not typing. A <code>BUTTON</code> or anything with
+    <code>role="button"</code> is a <code>button</code>. Everything else, the page itself included,
+    is <code>elsewhere</code>. Then each kind gets its own rule:
   </p>
   <DocsCode label={FLOW_KEY_MOVE.label} code={FLOW_KEY_MOVE.code} />
-  <DocsCode label={FLOW_PRESSES_ON_SPACE.label} code={FLOW_PRESSES_ON_SPACE.code} />
+  <DocsCode label={FLOW_SLIDER_KEYS.label} code={FLOW_SLIDER_KEYS.code} />
   <p>
-    Space goes forward and Shift+Space back, except over a <code>BUTTON</code> or anything with
-    <code>role="button"</code>, where the browser presses the control instead. The arrows, Page Up
-    and Page Down turn the page whatever has focus, and the left and right arrows move toward that
-    side of the screen, so in a right-to-left book the left arrow goes forward. A text field, a
-    select or editable content keeps every key; a range slider does not count as typing, so over the
-    reader's progress slider every turning key turns the page. Any press with Alt, Ctrl or Meta is
-    left alone.
+    Space goes forward and Shift+Space back. The arrows, Page Up and Page Down turn the page, and
+    the left and right arrows move toward that side of the screen, so in a right-to-left book the
+    left arrow goes forward. Typing keeps every key. A focused button keeps Space, which the browser
+    uses to press it, and every other key still turns the page. A focused slider, such as the
+    reader's progress slider, keeps the arrows, Page Up, Page Down, Home and End, so the browser
+    steps the slider; its <code>change</code> goes through the same seek as a drag, so the reading
+    position moves with the slider. Space over the slider still turns the page. Any press with Alt,
+    Ctrl or Meta is left alone. Because <code>keyMove</code> matches on a union with
+    <code>.exhaustive()</code>, a fifth kind of focus would not compile until it had a rule.
   </p>
   <DocsCode label={FLOW_ONKEY.label} code={FLOW_ONKEY.code} />
   <p>
@@ -91,7 +104,8 @@
     pressed while focus is inside the frame fires in that document, not in the host window, so the
     reader adds the same listener to each chapter document as well. The specs in
     <code>flow-turn.spec.ts</code> state the rule as test names, among them "leaves Space to a button
-    and to anything wearing its role" and "turns the page on every other key over a focused button".
+    and to anything wearing its role", "turns the page on every other key over a focused button" and "leaves
+    every arrow, Page Up, Page Down, Home and End to the slider".
   </p>
   <p>
     The image reader has the same split, for a different reason. Its side arrows turn the page and

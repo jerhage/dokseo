@@ -129,9 +129,9 @@ const WITHOUT_READINGS: SourceSnippet = {
 };
 
 const OCR_TEXT: SourceSnippet = {
-  label: 'recognition/domain/engine/japanese-ocr-text.ts',
-  file: 'src/lib/domains/recognition/domain/engine/japanese-ocr-text.ts',
-  code: `function japaneseOcrText(decoded: string): string {
+  label: 'src/workers/ja-ocr-text.ts',
+  file: 'src/workers/ja-ocr-text.ts',
+  code: `function jaOcrText(decoded: string): string {
   return decoded.replace(/\\s+/gu, '');
 }`,
 };

@@ -264,9 +264,9 @@ const state = $derived(readStateOf(query));`,
 const LANGUAGE: SourceSnippet = {
   label: 'src/lib/shared/language.ts',
   file: 'src/lib/shared/language.ts',
-  code: `type Language = 'ja' | 'ko' | 'en';
+  code: `const LANGUAGES = ['ja', 'ko', 'en'] as const;
 
-const LANGUAGES: readonly Language[] = ['ja', 'ko', 'en'];
+type Language = (typeof LANGUAGES)[number];
 
 const LANGUAGE_LEGEND = 'Language';
 
@@ -324,11 +324,12 @@ const DOCK_TOKENS: SourceSnippet = {
 };
 
 const TAG_COLOURS_TAIL: SourceSnippet = {
-  label: 'The end of the color list, in recognition/domain/tag/tag-colour.ts',
+  label:
+    'The end of the color list and the union taken from it, in recognition/domain/tag/tag-colour.ts',
   file: 'src/lib/domains/recognition/domain/tag/tag-colour.ts',
-  code: `] as const satisfies readonly TagColour[];
+  code: `] as const;
 
-const FIRST_TAG_COLOUR: TagColour = TAG_COLOURS[0];`,
+type TagColour = (typeof TAG_COLOURS)[number];`,
 };
 
 const REMEMBERED_SET: SourceSnippet = {

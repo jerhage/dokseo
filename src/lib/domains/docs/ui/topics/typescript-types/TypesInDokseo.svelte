@@ -262,11 +262,13 @@
     Adding a fourth language works the same way: every <code>.exhaustive()</code> over
     <code>Language</code> fails to compile until it has an arm, as
     <a href={typeHref('exhaustive')}>Exhaustive checks with never and match</a> showed with
-    <code>'zh'</code>. Two places sit outside that check. <code>LANGUAGES</code> is annotated as
-    <code>readonly Language[]</code>, which checks each entry but not that every language is listed,
-    and <code>isLanguage</code> is a guard over that list. The tag color list has the same property,
-    and so does the dock's token table in the other direction: there
-    <code>satisfies</code> does check every key.
+    <code>'zh'</code>. The list of languages cannot fall out of step with the union, because the
+    union is taken from the list: <code>LANGUAGES</code> is written first with
+    <code>as const</code>, and <code>Language</code> is <code>(typeof LANGUAGES)[number]</code>, as
+    <a href={typeHref('satisfies')}>as const and satisfies</a> showed. A language missing from the
+    list is missing from the type too, and <code>isLanguage</code>, a guard over that list, accepts
+    every member. The tag color list is built the same way. The dock's token table goes the other
+    direction, union first, and there <code>satisfies</code> checks that every key is present.
   </p>
   <DocsCode label={TAG_COLOURS_TAIL.label} code={TAG_COLOURS_TAIL.code} />
   <DocsCode label={DOCK_TOKENS.label} code={DOCK_TOKENS.code} />

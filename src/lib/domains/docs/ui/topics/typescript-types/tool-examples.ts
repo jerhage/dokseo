@@ -163,6 +163,18 @@ const FIRST_ANNOTATED: TagColour = ANNOTATED[0];`,
   Type 'undefined' is not assignable to type 'TagColour'.`,
 };
 
+const DERIVED_UNION: CompiledExample = {
+  file: 'derived.ts',
+  flags: STRICT_INDEXED,
+  code: `const TAG_COLOURS = ['slate', 'clay', 'sage'] as const;
+
+type TagColour = (typeof TAG_COLOURS)[number];
+
+const FIRST_TAG_COLOUR: TagColour = TAG_COLOURS[0];
+const TEAL: TagColour = 'teal';`,
+  errors: `derived.ts(6,7): error TS2322: Type '"teal"' is not assignable to type '"slate" | "clay" | "sage"'.`,
+};
+
 const SHALLOW_READONLY: CompiledExample = {
   file: 'shallow.ts',
   flags: STRICT,
@@ -294,6 +306,7 @@ const TOOL_EXAMPLES: readonly CompiledExample[] = [
   ANNOTATED_TOKENS,
   SATISFIED_TOKENS,
   LIST_SATISFIES,
+  DERIVED_UNION,
   SHALLOW_READONLY,
   READONLY_LIST,
   ALIASED_READONLY,
@@ -314,6 +327,7 @@ export {
   CLAIMED_ROW,
   COMPARED_BRANDS,
   COVARIANT_SPACE,
+  DERIVED_UNION,
   DOUBLE_ASSERTION,
   GENERIC_IDS,
   IMPOSSIBLE_ASSERTION,

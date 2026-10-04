@@ -59,7 +59,7 @@ const DECODE_LOOP: SourceSnippet = {
   }
 
   const decoded: string = tokenizer.decode(tokens, { skip_special_tokens: true });
-  return japaneseOcrText(decoded);
+  return jaOcrText(decoded);
 },`,
 };
 

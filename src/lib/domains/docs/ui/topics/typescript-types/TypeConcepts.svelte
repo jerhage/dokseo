@@ -273,8 +273,8 @@
   />
   <p>
     A guard also has to compile in the first place. The obvious body for a guard over a list of
-    literals does not, because <code>includes</code> on a <code>readonly Language[]</code> takes a
-    <code>Language</code>, and the value is still <code>unknown</code>. Comparing each member with
+    literals does not, because <code>includes</code> on a readonly tuple of languages takes one of
+    those languages, and the value is still <code>unknown</code>. Comparing each member with
     <code>===</code> works, because equality is allowed on <code>unknown</code>:
   </p>
   <CompiledComparison

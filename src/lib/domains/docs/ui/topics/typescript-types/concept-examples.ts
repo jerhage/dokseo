@@ -173,22 +173,22 @@ const kept: readonly string[] = Array.isArray(parsed)
 const INCLUDES_GUARD: CompiledExample = {
   file: 'includes.ts',
   flags: STRICT,
-  code: `type Language = 'ja' | 'ko' | 'en';
+  code: `const LANGUAGES = ['ja', 'ko', 'en'] as const;
 
-const LANGUAGES: readonly Language[] = ['ja', 'ko', 'en'];
+type Language = (typeof LANGUAGES)[number];
 
 function isLanguage(value: unknown): value is Language {
   return LANGUAGES.includes(value);
 }`,
-  errors: `includes.ts(6,29): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Language'.`,
+  errors: `includes.ts(6,29): error TS2345: Argument of type 'unknown' is not assignable to parameter of type '"ja" | "ko" | "en"'.`,
 };
 
 const SOME_GUARD: CompiledExample = {
   file: 'some.ts',
   flags: STRICT,
-  code: `type Language = 'ja' | 'ko' | 'en';
+  code: `const LANGUAGES = ['ja', 'ko', 'en'] as const;
 
-const LANGUAGES: readonly Language[] = ['ja', 'ko', 'en'];
+type Language = (typeof LANGUAGES)[number];
 
 function isLanguage(value: unknown): value is Language {
   return LANGUAGES.some((language) => language === value);
