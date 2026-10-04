@@ -15,6 +15,9 @@ type MarkUnreadDeps = {
 
 async function markUnread(deps: MarkUnreadDeps, id: BookId): Promise<MarkUnreadResult> {
   const found = await deps.repository.get(id);
+  if (found.kind === 'unreadable-book') {
+    throw new Error(`The book ${id} is stored in a shape this version cannot read`);
+  }
   if (found.kind !== 'success') return found;
   if (found.book === null) return { kind: 'not-found', id };
 

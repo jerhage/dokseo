@@ -18,6 +18,7 @@ import type {
   BookLookup,
   ByteCount,
   FileLookup,
+  HeldBookLookup,
   LibraryRepository,
   LibraryWrite,
   PageListLookup,
@@ -32,7 +33,7 @@ import {
   restoreCandidatesFrom,
 } from '../domain/book/removed-book';
 import type { RemovedBook, StoredRemovedBook } from '../domain/book/removed-book';
-import { bookFromStored, booksFromStored } from '../domain/book/stored-book';
+import { bookFromStored, booksFromStored, storedBookRead } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
@@ -146,10 +147,13 @@ function createLibraryRepository(): LibraryRepository {
       return { kind: 'success', ...booksFromStored(records) };
     },
 
-    async get(id: BookId): Promise<BookLookup> {
+    async get(id: BookId): Promise<HeldBookLookup> {
       if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
       const record = await getRecord<StoredBook>(await database(), BOOK_STORE, id);
-      return { kind: 'success', book: record === undefined ? null : bookFromStored(record) };
+      if (record === undefined) return { kind: 'success', book: null };
+      const read = storedBookRead(record);
+      if (read.kind === 'unreadable') return { kind: 'unreadable-book', book: read.book };
+      return { kind: 'success', book: read.book };
     },
 
     async add(

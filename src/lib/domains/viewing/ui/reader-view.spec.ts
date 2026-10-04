@@ -173,7 +173,7 @@ type Fakes = {
   readonly container: Container;
   readonly pages: FakeSource;
   readonly edits: Edit[];
-  opening: ReaderBook | 'unreadable' | 'missing' | 'no-file' | 'flow';
+  opening: ReaderBook | 'unreadable' | 'missing' | 'no-file' | 'unreadable-book' | 'flow';
   editing: 'ok' | 'failed';
   gate: Promise<void> | null;
   stored: ReaderBook;
@@ -194,7 +194,13 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
     notify: (notice: Notice) => {
       notices.push(notice);
     },
-    opening: opened as ReaderBook | 'unreadable' | 'missing' | 'no-file' | 'flow',
+    opening: opened as
+      | ReaderBook
+      | 'unreadable'
+      | 'missing'
+      | 'no-file'
+      | 'unreadable-book'
+      | 'flow',
     editing: 'ok' as 'ok' | 'failed',
     gate: null as Promise<void> | null,
     stored: opened,
@@ -211,6 +217,9 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
         }
         if (world.opening === 'no-file') {
           return Promise.resolve({ kind: 'source-missing', id: bookId('one') } as const);
+        }
+        if (world.opening === 'unreadable-book') {
+          return Promise.resolve({ kind: 'unreadable-book', id: bookId('one') } as const);
         }
         if (world.opening === 'unreadable') {
           return Promise.resolve({
@@ -1710,6 +1719,20 @@ describe('the reading place in the url', () => {
     await view.open(bookId('one'));
 
     expect(view.opening).toEqual({ kind: 'failed', message: SOURCE_MISSING });
+  });
+
+  it('reports a book whose stored row it cannot read as failed, pointing to the repair', async () => {
+    const world = fakes();
+    world.opening = 'unreadable-book';
+    const view = new ReaderView(world.container, world.notify);
+
+    await view.open(bookId('one'));
+
+    expect(view.opening).toEqual({
+      kind: 'failed',
+      message:
+        'This book was stored in a shape this version cannot read. Upload the same file again in the library to repair it.',
+    });
   });
 });
 

@@ -127,6 +127,28 @@ describe('createLibraryRepository', () => {
     ]);
   });
 
+  it('answers a stored row it cannot read as an unreadable book, by its id and title', async () => {
+    store('books').set(OLD_SHAPE.id, OLD_SHAPE);
+
+    const read = await createLibraryRepository().get(bookId('old-1'));
+
+    expect(read).toEqual({
+      kind: 'unreadable-book',
+      book: { id: 'old-1', title: 'Yotsuba&! 2', alias: null, contentHash: '', fileName: '' },
+    });
+  });
+
+  it('answers a stored row it reads as the book, and no row as null', async () => {
+    store('books').set(GOOD.id, GOOD);
+    const repository = createLibraryRepository();
+
+    expect(await repository.get(bookId('good-1'))).toEqual({
+      kind: 'success',
+      book: bookFromStored(GOOD),
+    });
+    expect(await repository.get(bookId('none-1'))).toEqual({ kind: 'success', book: null });
+  });
+
   it('removes an unreadable row by its id with its page list and files', async () => {
     store('books').set(OLD_SHAPE.id, OLD_SHAPE);
     store('page-lists').set(OLD_SHAPE.id, { id: OLD_SHAPE.id, names: ['a.jpg'] });
