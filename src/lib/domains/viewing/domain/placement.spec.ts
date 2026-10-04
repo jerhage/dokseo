@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { imageRect, screenRect } from '$lib/shared/geometry';
-import type { ImageRect, ScreenRect } from '$lib/shared/geometry';
+import { pageRect, screenRect } from '$lib/shared/geometry';
+import type { ImageRect, PageRect, ScreenRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { regionsIn, toImageRect, toPageFraction } from './placement';
 import type { PlacedImage } from './placement';
@@ -11,8 +11,15 @@ const page: PlacedImage = {
   natural: { width: 800, height: 1200 },
 };
 
-function plain(r: ScreenRect | ImageRect): { x: number; y: number; width: number; height: number } {
+type Plain = { x: number; y: number; width: number; height: number };
+
+function plain(r: ScreenRect | ImageRect): Plain {
   return { x: r.x, y: r.y, width: r.width, height: r.height };
+}
+
+function rounded(r: PageRect): Plain {
+  const near = (value: number): number => Number(value.toFixed(12));
+  return { x: near(r.x), y: near(r.y), width: near(r.width), height: near(r.height) };
 }
 
 function mapped(placed: PlacedImage, selection: ScreenRect): ImageRect {
@@ -103,28 +110,28 @@ describe('regionsIn', () => {
     {
       placed: [page],
       selection: screenRect(200, 200, 100, 150),
-      regions: [{ index: 0, rect: { x: 200, y: 300, width: 200, height: 300 } }],
+      regions: [{ index: 0, rect: { x: 0.25, y: 0.25, width: 0.25, height: 0.25 } }],
     },
     {
       placed: [slice(0, 0), slice(1, 1000)],
       selection: screenRect(100, 900, 200, 200),
       regions: [
-        { index: 0, rect: { x: 100, y: 900, width: 200, height: 100 } },
-        { index: 1, rect: { x: 100, y: 0, width: 200, height: 100 } },
+        { index: 0, rect: { x: 0.125, y: 0.9, width: 0.25, height: 0.1 } },
+        { index: 1, rect: { x: 0.125, y: 0, width: 0.25, height: 0.1 } },
       ],
     },
     {
       placed: [square(0, 0), square(1, 300), square(2, 100)],
       selection: screenRect(0, 0, 100, 200),
       regions: [
-        { index: 0, rect: { x: 0, y: 0, width: 100, height: 100 } },
-        { index: 2, rect: { x: 0, y: 0, width: 100, height: 100 } },
+        { index: 0, rect: { x: 0, y: 0, width: 1, height: 1 } },
+        { index: 2, rect: { x: 0, y: 0, width: 1, height: 1 } },
       ],
     },
     {
       placed: [slice(0, 0), { ...slice(1, 1000), natural: { width: 800, height: Number.NaN } }],
       selection: screenRect(100, 900, 200, 200),
-      regions: [{ index: 0, rect: { x: 100, y: 900, width: 200, height: 100 } }],
+      regions: [{ index: 0, rect: { x: 0.125, y: 0.9, width: 0.25, height: 0.1 } }],
     },
     {
       placed: [slice(0, 0), slice(1, 1000)],
@@ -133,23 +140,46 @@ describe('regionsIn', () => {
     },
     { placed: [], selection: screenRect(0, 0, 100, 100), regions: [] },
   ])(
-    'returns one region per overlapped image, in order, omitting an untouched or unmeasured one',
+    'returns one region per overlapped image, in fractions of its page, in order, omitting an untouched or unmeasured one',
     ({ placed, selection, regions }) => {
       const found = regionsIn(placed, selection).map((region) => ({
         index: region.index,
-        rect: plain(region.rect),
+        rect: rounded(region.rect),
       }));
 
       expect(found).toEqual(regions);
     },
   );
+
+  it('stores the same fractions for a PDF page rendered at any scale', () => {
+    const pagePoints = { width: 360, height: 504 };
+    const onScreen = screenRect(20, 40, 300, 420);
+    const selection = screenRect(183.3, 73.7, 108.4, 76.6);
+
+    const stored = [1, 2, 3, 1.5].map((scale) => {
+      const natural = {
+        width: Math.ceil(pagePoints.width * scale),
+        height: Math.ceil(pagePoints.height * scale),
+      };
+      const [region] = regionsIn([{ index: imageIndex(0), onScreen, natural }], selection);
+      if (region === undefined) throw new Error('expected a region');
+      return rounded(region.rect);
+    });
+
+    expect(new Set(stored.map((rect) => JSON.stringify(rect))).size).toBe(1);
+  });
+
+  it('keeps every stored rect on the page, however far the selection overruns it', () => {
+    const regions = regionsIn([page], screenRect(-1000, -1000, 5000, 5000));
+
+    expect(regions.map((region) => region.rect.x + region.rect.width)).toEqual([1]);
+    expect(regions.map((region) => region.rect.y + region.rect.height)).toEqual([1]);
+  });
 });
 
 describe('toPageFraction', () => {
-  const natural = { width: 200, height: 400 };
-
   it('states a rect as a percentage of the page it sits on', () => {
-    expect(toPageFraction(natural, imageRect(50, 100, 100, 200))).toEqual({
+    expect(toPageFraction(pageRect(0.25, 0.25, 0.5, 0.5))).toEqual({
       left: 25,
       top: 25,
       width: 50,
@@ -158,7 +188,7 @@ describe('toPageFraction', () => {
   });
 
   it('holds a rect that overruns the page inside it', () => {
-    expect(toPageFraction(natural, imageRect(100, 200, 400, 800))).toEqual({
+    expect(toPageFraction(pageRect(0.5, 0.5, 2, 2))).toEqual({
       left: 50,
       top: 50,
       width: 50,
@@ -167,7 +197,7 @@ describe('toPageFraction', () => {
   });
 
   it('turns a rect drawn backwards the right way round', () => {
-    expect(toPageFraction(natural, imageRect(150, 300, -100, -200))).toEqual({
+    expect(toPageFraction(pageRect(0.75, 0.75, -0.5, -0.5))).toEqual({
       left: 25,
       top: 25,
       width: 50,
@@ -175,10 +205,10 @@ describe('toPageFraction', () => {
     });
   });
 
-  it.each([
-    { natural: { width: 0, height: 0 }, rect: imageRect(0, 0, 10, 10) },
-    { natural, rect: imageRect(400, 0, 10, 10) },
-  ])('reports nothing for a page with no measured size or a rect lying off it', (row) => {
-    expect(toPageFraction(row.natural, row.rect)).toBeNull();
-  });
+  it.each([pageRect(0.1, 0.1, 0, 0), pageRect(2, 0, 0.1, 0.1)])(
+    'reports nothing for an empty rect or a rect lying off the page',
+    (rect) => {
+      expect(toPageFraction(rect)).toBeNull();
+    },
+  );
 });

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAX_MODEL_INPUT_EDGE } from '../../domain/engine/model-input';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -10,20 +10,20 @@ import type { ImageRead, PageSource } from '$lib/shared/page-source';
 import { createCanvasCropper } from './canvas-cropper';
 
 const REGIONS: readonly ImageRegion[] = [
-  { index: imageIndex(2), rect: imageRect(10, 20, 100, 40) },
+  { index: imageIndex(2), rect: pageRect(0.05, 0.25, 0.5, 0.5) },
 ];
 
 const ARRANGEMENT: Arrangement = 'row';
 
-const WIDE_REGIONS: readonly ImageRegion[] = [
-  { index: imageIndex(0), rect: imageRect(0, 0, 6000, 900) },
-];
+const WIDE_REGIONS: readonly ImageRegion[] = [{ index: imageIndex(0), rect: pageRect(0, 0, 1, 1) }];
 
 function stubBitmap(width: number, height: number): ImageBitmap {
   return { width, height, close: () => undefined } as unknown as ImageBitmap;
 }
 
-function stubPixelWork(): void {
+type SourceRect = { x: number; y: number; width: number; height: number };
+
+function stubPixelWork(asked: SourceRect[] = []): void {
   function FakeCanvas(this: unknown, width: number, height: number): unknown {
     const canvas = {
       getContext: () => context,
@@ -45,8 +45,10 @@ function stubPixelWork(): void {
   vi.stubGlobal('OffscreenCanvas', FakeCanvas);
   vi.stubGlobal(
     'createImageBitmap',
-    (_source: ImageBitmap, _x: number, _y: number, width: number, height: number) =>
-      Promise.resolve(stubBitmap(width, height)),
+    (_source: ImageBitmap, x: number, y: number, width: number, height: number) => {
+      asked.push({ x, y, width, height });
+      return Promise.resolve(stubBitmap(width, height));
+    },
   );
 }
 
@@ -80,6 +82,10 @@ function unreadableSource(): PageSource {
 
 function decodedSource(): PageSource {
   return pageSource(() => ({ kind: 'success', image: stubBitmap(200, 80) }));
+}
+
+function sourceOf(width: number, height: number): PageSource {
+  return pageSource(() => ({ kind: 'success', image: stubBitmap(width, height) }));
 }
 
 function wideSource(): PageSource {
@@ -134,6 +140,30 @@ describe('createCanvasCropper', () => {
     expect(result.crop.width).toBe(6000);
     expect(result.crop.height).toBe(900);
     expect(result.crop.width).toBeGreaterThan(MAX_MODEL_INPUT_EDGE);
+  });
+
+  it('cuts the stored fractions out of the pixels of the page as decoded', async () => {
+    const asked: SourceRect[] = [];
+    stubPixelWork(asked);
+
+    await createCanvasCropper().crop(sourceOf(200, 80), REGIONS, ARRANGEMENT);
+
+    expect(asked).toEqual([{ x: 10, y: 20, width: 100, height: 40 }]);
+  });
+
+  it('cuts the same part of a PDF page at any render scale', async () => {
+    const asked: SourceRect[] = [];
+    stubPixelWork(asked);
+    const stored = [{ index: imageIndex(0), rect: pageRect(0.25, 0.125, 0.5, 0.25) }];
+    const cropper = createCanvasCropper();
+
+    await cropper.crop(sourceOf(720, 1008), stored, ARRANGEMENT);
+    await cropper.crop(sourceOf(1440, 2016), stored, ARRANGEMENT);
+
+    expect(asked).toEqual([
+      { x: 180, y: 126, width: 360, height: 252 },
+      { x: 360, y: 252, width: 720, height: 504 },
+    ]);
   });
 
   it('crops without a trace factory', async () => {

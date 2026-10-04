@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
 import type { Capture } from '../../domain/capture/capture';
@@ -38,7 +38,7 @@ function regional(name: string, id: string, tags: readonly TagId[], index = 0): 
   return {
     id: captureId(name),
     bookId: bookId(id),
-    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(0, 0, 100, 60) }]),
+    anchor: regionAnchor([{ index: imageIndex(index), rect: pageRect(0, 0, 0.1, 0.06) }]),
     text: name,
     note: null,
     confidence: null,
@@ -158,7 +158,7 @@ describe('taggedShelves', () => {
   });
 
   it('links each row to its image and region in the reader, naming no capture id', () => {
-    expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4&region=0,0,100,60');
+    expect(shelves[0]?.rows[0]?.href).toBe('/read/one?image=4&region=0,0,0.1,0.06');
     expect(shelves[0]?.rows[0]?.jump).toBe('Jump to p.005');
     expect(shelves[0]?.rows[0]?.place).toBe('p.005');
     expect(shelves[0]?.rows[0]?.when).toBe('captured 3 min ago');

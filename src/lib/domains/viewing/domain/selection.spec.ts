@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { imageRect, screenRect } from '$lib/shared/geometry';
+import type { ImageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
-import type { ImageRegion } from '$lib/shared/image-region';
 import type { PlacedImage } from './placement';
 import { drawnSize, selectionSize, sizeLabel } from './selection';
 
-function region(index: number, width: number, height: number): ImageRegion {
-  return { index: imageIndex(index), rect: imageRect(0, 0, width, height) };
+function drawn(width: number, height: number): ImageRect {
+  return imageRect(0, 0, width, height);
 }
 
 describe('selectionSize', () => {
   it.each([
-    { regions: [region(0, 120, 300), region(1, 80, 260)], arrangement: 'row', size: [200, 300] },
-    { regions: [region(0, 120, 300), region(1, 80, 260)], arrangement: 'column', size: [120, 560] },
-    { regions: [region(4, 92, 104)], arrangement: 'row', size: [92, 104] },
-    { regions: [region(4, 92, 104)], arrangement: 'column', size: [92, 104] },
-    { regions: [region(0, 0, 300), region(1, 80, 260)], arrangement: 'row', size: [80, 300] },
-    { regions: [region(0, 120, 0), region(1, 80, 260)], arrangement: 'column', size: [120, 260] },
+    { regions: [drawn(120, 300), drawn(80, 260)], arrangement: 'row', size: [200, 300] },
+    { regions: [drawn(120, 300), drawn(80, 260)], arrangement: 'column', size: [120, 560] },
+    { regions: [drawn(92, 104)], arrangement: 'row', size: [92, 104] },
+    { regions: [drawn(92, 104)], arrangement: 'column', size: [92, 104] },
+    { regions: [drawn(0, 300), drawn(80, 260)], arrangement: 'row', size: [80, 300] },
+    { regions: [drawn(120, 0), drawn(80, 260)], arrangement: 'column', size: [120, 260] },
   ] as const)(
     'sums the regions along a $arrangement and takes the largest across it',
     ({ regions, arrangement, size: [width, height] }) => {
@@ -30,7 +30,7 @@ describe('selectionSize', () => {
   });
 
   it('measures a backwards region by its extents rather than its sign', () => {
-    const flipped: ImageRegion = { index: imageIndex(0), rect: imageRect(200, 400, -50, -60) };
+    const flipped = imageRect(200, 400, -50, -60);
     expect(selectionSize([flipped], 'row')).toEqual({ width: 50, height: 60 });
   });
 });

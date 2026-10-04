@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { Capture } from '../../domain/capture/capture';
@@ -21,7 +21,7 @@ const ONE = bookId('book-one');
 
 const TWO = bookId('book-two');
 
-const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 40, 20) }]);
+const ANCHOR = regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.04, 0.02) }]);
 
 const CROWN_TAG = namedTag(tagId('tag-crown'), 'crown', 'slate', 1);
 

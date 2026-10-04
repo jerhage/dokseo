@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFailed, readReady } from '$lib/shared/read-state';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import type { Capture } from '../../domain/capture/capture';
@@ -33,7 +33,7 @@ function written(
   return {
     id: captureId(id),
     bookId: book.id,
-    anchor: regionAnchor([{ index: imageIndex(page), rect: imageRect(0, 0, 10, 10) }]),
+    anchor: regionAnchor([{ index: imageIndex(page), rect: pageRect(0, 0, 0.01, 0.01) }]),
     text,
     origin: 'written',
     createdAt: 1,

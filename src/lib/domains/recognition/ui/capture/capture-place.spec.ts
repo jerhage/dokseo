@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextAnchor, TextQuote } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import {
   capturedLabel,
@@ -22,7 +22,7 @@ const QUOTE: TextQuote = { exact: 'こっちに来て', prefix: 'そして', suf
 const QUOTED: Anchor = textAnchor(QUOTED_CFI, QUOTE, null);
 
 function on(index: number) {
-  return { index: imageIndex(index), rect: imageRect(0, 0, 100, 60) };
+  return { index: imageIndex(index), rect: pageRect(0, 0, 0.1, 0.06) };
 }
 
 describe('placeLabel', () => {

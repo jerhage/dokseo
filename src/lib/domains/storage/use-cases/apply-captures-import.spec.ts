@@ -7,7 +7,7 @@ import type { CaptureRepository } from '$lib/domains/recognition/domain/capture/
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import type { TagRepository } from '$lib/domains/recognition/domain/tag/tag-repository';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
@@ -72,7 +72,7 @@ function recognized(
   return {
     id: captureId(id),
     bookId: bookId(book),
-    anchor: regionAnchor([{ index: imageIndex(4), rect: imageRect(10, 20, 30, 40) }]),
+    anchor: regionAnchor([{ index: imageIndex(4), rect: pageRect(0.01, 0.02, 0.03, 0.04) }]),
     text: `text of ${id}`,
     origin: 'recognized',
     confidence: null,

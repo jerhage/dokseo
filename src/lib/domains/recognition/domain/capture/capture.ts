@@ -14,7 +14,7 @@ import {
   isWholeNumber,
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
-import { imageRect } from '$lib/shared/geometry';
+import { fitsOnPage, pageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex, parsedBookId, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -90,15 +90,21 @@ function captureField<T>(field: string, value: unknown, known: (value: unknown) 
 
 function storedRegion(value: unknown): ImageRegion {
   const region = captureField('region', value, isStoredFields);
-  const rect = captureField('region rect', region.rect, isStoredFields);
+  const stored = captureField('region rect', region.rect, isStoredFields);
+  const rect = pageRect(
+    captureField('region x', stored.x, isNumber),
+    captureField('region y', stored.y, isNumber),
+    captureField('region width', stored.width, isNumber),
+    captureField('region height', stored.height, isNumber),
+  );
+  if (!fitsOnPage(rect)) {
+    const edges = [rect.x, rect.y, rect.width, rect.height].join(',');
+    throw new CorruptRow('capture', 'region rect outside the page', edges);
+  }
+
   return {
     index: imageIndex(captureField('region index', region.index, isWholeNumber)),
-    rect: imageRect(
-      captureField('region x', rect.x, isNumber),
-      captureField('region y', rect.y, isNumber),
-      captureField('region width', rect.width, isNumber),
-      captureField('region height', rect.height, isNumber),
-    ),
+    rect,
   };
 }
 

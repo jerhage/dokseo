@@ -6,7 +6,7 @@ import { noTrace } from '$lib/platform/trace/pipeline-trace';
 import type { Trace, TraceFactory } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import { isEmpty, normalize } from '$lib/shared/geometry';
+import { imageRectOf, isEmpty, normalize } from '$lib/shared/geometry';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { PageSource, PageSourceError } from '$lib/shared/page-source';
 import type { CropError, Cropping, RegionCropper } from '../../domain/engine/region-cropper';
@@ -33,7 +33,8 @@ async function cropOne(source: PageSource, region: ImageRegion): Promise<RegionC
   }
 
   using page = own(image.image);
-  const cropped = await cropFrom(page.bitmap, region.rect);
+  const natural = { width: page.bitmap.width, height: page.bitmap.height };
+  const cropped = await cropFrom(page.bitmap, imageRectOf(region.rect, natural));
   return { kind: 'success', part: cropped };
 }
 

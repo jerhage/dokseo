@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
@@ -94,7 +94,7 @@ function fakes(
 const source = {} as PageSource;
 
 function regions(): readonly ImageRegion[] {
-  return [{ index: imageIndex(13), rect: imageRect(0, 0, 40, 20) }];
+  return [{ index: imageIndex(13), rect: pageRect(0, 0, 0.04, 0.02) }];
 }
 
 function selection(language: Language = 'ja'): PendingRecognition {

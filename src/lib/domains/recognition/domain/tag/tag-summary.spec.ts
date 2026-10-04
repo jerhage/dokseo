@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
 import { alsoTagged, tagSummary } from './tag-summary';
@@ -18,7 +18,7 @@ function member(book: string, tags: readonly TagId[], createdAt: number): TagMem
   return {
     origin: 'written',
     bookId: bookId(book),
-    anchor: regionAnchor([{ index: imageIndex(0), rect: imageRect(0, 0, 100, 60) }]),
+    anchor: regionAnchor([{ index: imageIndex(0), rect: pageRect(0, 0, 0.1, 0.06) }]),
     text: '海',
     tagIds: tags,
     createdAt,

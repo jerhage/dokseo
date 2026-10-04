@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { CropPipeline } from './crop-pipeline.svelte';
@@ -18,7 +18,9 @@ function stages(name: string): CropStages {
   };
 }
 
-const REGION: readonly ImageRegion[] = [{ index: imageIndex(0), rect: imageRect(1, 2, 3, 4) }];
+const REGION: readonly ImageRegion[] = [
+  { index: imageIndex(0), rect: pageRect(0.001, 0.002, 0.003, 0.004) },
+];
 
 type Pending = { readonly resolve: (stages: CropStages) => void };
 

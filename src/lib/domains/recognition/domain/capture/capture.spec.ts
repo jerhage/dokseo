@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextQuote } from '$lib/shared/anchor';
 import { CorruptRow } from '$lib/shared/corrupt-row';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import {
@@ -24,7 +24,7 @@ import type {
 const BOOK = bookId('book-one');
 
 const REGIONS: readonly ImageRegion[] = [
-  { index: imageIndex(13), rect: imageRect(10, 20, 100, 40) },
+  { index: imageIndex(13), rect: pageRect(0.01, 0.02, 0.1, 0.04) },
 ];
 
 const ANCHOR: Anchor = regionAnchor(REGIONS);
@@ -456,17 +456,23 @@ describe('capturesFromStored', () => {
     ['tagIds', ['']],
     [
       'anchor',
-      { kind: 'region', regions: [{ index: -1, rect: { x: 1, y: 2, width: 3, height: 4 } }] },
-    ],
-    [
-      'anchor',
-      { kind: 'region', regions: [{ index: 1.5, rect: { x: 1, y: 2, width: 3, height: 4 } }] },
+      {
+        kind: 'region',
+        regions: [{ index: -1, rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 } }],
+      },
     ],
     [
       'anchor',
       {
         kind: 'region',
-        regions: [{ index: 1, rect: { x: 1, y: 2, width: 3, height: Number.NaN } }],
+        regions: [{ index: 1.5, rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 } }],
+      },
+    ],
+    [
+      'anchor',
+      {
+        kind: 'region',
+        regions: [{ index: 1, rect: { x: 0.1, y: 0.2, width: 0.3, height: Number.NaN } }],
       },
     ],
     ['text', null],
@@ -479,7 +485,7 @@ describe('capturesFromStored', () => {
     ['anchor', 'region'],
     ['anchor', { kind: 'region' }],
     ['anchor', { kind: 'region', regions: [{ index: 13 }] }],
-    ['anchor', { kind: 'region', regions: [{ index: 13, rect: { x: 1, y: 2, width: 3 } }] }],
+    ['anchor', { kind: 'region', regions: [{ index: 13, rect: { x: 0.1, y: 0.2, width: 0.3 } }] }],
     ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE }],
     ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', chapter: null }],
     ['anchor', { kind: 'text', quote: QUOTE, chapter: null }],
@@ -497,6 +503,46 @@ describe('capturesFromStored', () => {
 
     expect(read.captures).toEqual([]);
     expect(read.unreadable).toEqual([{ id: 'full' }]);
+  });
+
+  function onPage(rect: Readonly<Record<string, number>>): StoredCapture {
+    return { ...complete, anchor: { kind: 'region', regions: [{ index: 13, rect }] } };
+  }
+
+  it.each([
+    ['in pixels', { x: 120, y: 64, width: 88, height: 240 }],
+    ['with a negative x', { x: -0.1, y: 0.2, width: 0.3, height: 0.4 }],
+    ['with a negative y', { x: 0.1, y: -0.2, width: 0.3, height: 0.4 }],
+    ['with a zero width', { x: 0.1, y: 0.2, width: 0, height: 0.4 }],
+    ['with a zero height', { x: 0.1, y: 0.2, width: 0.3, height: 0 }],
+    ['drawn backwards', { x: 0.4, y: 0.2, width: -0.3, height: 0.4 }],
+    ['past the right edge', { x: 0.8, y: 0.2, width: 0.3, height: 0.4 }],
+    ['past the bottom edge', { x: 0.1, y: 0.7, width: 0.3, height: 0.4 }],
+    ['a float hair past the right edge', { x: 0.5, y: 0, width: 0.5000000002, height: 1 }],
+    ['with an infinite width', { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 0.5 }],
+  ])('reports a row with a region rect %s as unreadable', (_name, rect) => {
+    const read = capturesFromStored([onPage(rect)]);
+
+    expect(read.captures).toEqual([]);
+    expect(read.unreadable).toEqual([{ id: 'full' }]);
+  });
+
+  it('names the region rect when it does not fit on the page', () => {
+    expect(() => captureFromStored(onPage({ x: 0.8, y: 0, width: 0.3, height: 1 }))).toThrow(
+      'A stored capture holds an unknown region rect outside the page: 0.8,0,0.3,1',
+    );
+  });
+
+  it.each([
+    ['the whole page', { x: 0, y: 0, width: 1, height: 1 }],
+    ['a rect touching the right and bottom edges', { x: 0.75, y: 0.5, width: 0.25, height: 0.5 }],
+    ['a sliver', { x: 0.999, y: 0, width: 0.001, height: 0.000001 }],
+  ])('reads a region rect covering %s', (_name, rect) => {
+    const read = capturesFromStored([onPage(rect)]);
+
+    expect(read.captures.map((capture) => capture.anchor)).toEqual([
+      { kind: 'region', regions: [{ index: 13, rect }] },
+    ]);
   });
 
   it('reports a lifted row without its note as unreadable', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Arrangement } from '$lib/shared/arrangement';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -13,7 +13,7 @@ import { recognizeRegion } from './recognize-region';
 import type { RecognizeRegionDeps } from './recognize-region';
 
 const REGIONS: readonly ImageRegion[] = [
-  { index: imageIndex(3), rect: imageRect(10, 20, 100, 40) },
+  { index: imageIndex(3), rect: pageRect(0.01, 0.02, 0.1, 0.04) },
 ];
 
 const ARRANGEMENT: Arrangement = 'row';

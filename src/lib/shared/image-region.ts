@@ -1,8 +1,8 @@
 import type { CaptureOrigin } from './capture-origin';
-import type { ImageRect } from './geometry';
+import type { PageRect } from './geometry';
 import type { ImageIndex } from './ids';
 
-type ImageRegion = { readonly index: ImageIndex; readonly rect: ImageRect };
+type ImageRegion = { readonly index: ImageIndex; readonly rect: PageRect };
 
 type GlowRegion = ImageRegion & { readonly origin: CaptureOrigin };
 

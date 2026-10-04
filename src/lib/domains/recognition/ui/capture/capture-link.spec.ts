@@ -1,29 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex } from '$lib/shared/ids';
 import { captureLink } from './capture-link';
 
 const PASSAGE = textAnchor('epubcfi(/6/4!/4/2/1:0)', { exact: '海', prefix: '', suffix: '' }, null);
 
-const PAGE = regionAnchor([{ index: imageIndex(6), rect: imageRect(0, 0, 10, 10) }]);
+const PAGE = regionAnchor([{ index: imageIndex(6), rect: pageRect(0, 0, 0.1, 0.1) }]);
 
 const BESIDE = regionAnchor([
-  { index: imageIndex(6), rect: imageRect(120.4567, 33.3333, 48.5, 90.125) },
-  { index: imageIndex(7), rect: imageRect(0, 0, 10, 10) },
+  { index: imageIndex(6), rect: pageRect(0.1204567891, 0.3333333333, 0.485, 0.30125) },
+  { index: imageIndex(7), rect: pageRect(0, 0, 0.1, 0.1) },
 ]);
 
 describe('captureLink', () => {
   it('opens an image book at the image and region of a capture anchored on it, naming no capture id', () => {
     expect(captureLink(bookId('one'), { anchor: PAGE }, null)).toEqual({
-      href: '/read/one?image=6&region=0,0,10,10',
+      href: '/read/one?image=6&region=0,0,0.1,0.1',
       jump: 'Jump to p.007',
     });
   });
 
   it('names the second capture on an image by its own first region', () => {
     expect(captureLink(bookId('one'), { anchor: BESIDE }, '海').href).toBe(
-      '/read/one?image=6&region=120.46,33.33,48.5,90.13&find=%E6%B5%B7',
+      '/read/one?image=6&region=0.120457,0.333333,0.485,0.30125&find=%E6%B5%B7',
     );
   });
 

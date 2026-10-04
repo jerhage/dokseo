@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -21,7 +21,7 @@ type Row = {
 };
 
 function at(index: number, x: number, y: number): Anchor {
-  return regionAnchor([{ index: imageIndex(index), rect: imageRect(x, y, 10, 10) }]);
+  return regionAnchor([{ index: imageIndex(index), rect: pageRect(x, y, 0.1, 0.1) }]);
 }
 
 function row(id: string, text: string, anchor: Anchor): Row {
@@ -32,10 +32,10 @@ function byCfi(earlier: string, later: string): number {
   return earlier.localeCompare(later);
 }
 
-const FIRST = row('a', '海が見える', at(3, 100, 10));
-const SECOND = row('b', '海まであと少し', at(3, 10, 10));
-const THIRD = row('c', '海の匂い', at(9, 10, 10));
-const OTHER = row('d', '山の上', at(1, 10, 10));
+const FIRST = row('a', '海が見える', at(3, 0.5, 0.05));
+const SECOND = row('b', '海まであと少し', at(3, 0.05, 0.05));
+const THIRD = row('c', '海の匂い', at(9, 0.05, 0.05));
+const OTHER = row('d', '山の上', at(1, 0.05, 0.05));
 
 const ALL = [THIRD, OTHER, SECOND, FIRST];
 
@@ -65,7 +65,7 @@ describe('arrivalAt', () => {
   }
 
   function near(index: number, x: number, y: number): ImageRegion {
-    return { index: imageIndex(index), rect: imageRect(x, y, 10, 10) };
+    return { index: imageIndex(index), rect: pageRect(x, y, 0.1, 0.1) };
   }
 
   it('arrives at the one capture the position names when two sit on its image', () => {
@@ -110,26 +110,30 @@ describe('arrivalAt', () => {
 
   it('reports nothing for a position where this book holds no capture', () => {
     expect(arrivalAt([FIRST, SECOND], null, 'rtl', position(THIRD), byCfi)).toBeNull();
-    expect(arrivalAt(ALL, '海', 'rtl', near(3, 50, 10), byCfi)).toBeNull();
+    expect(arrivalAt(ALL, '海', 'rtl', near(3, 0.25, 0.05), byCfi)).toBeNull();
   });
 
-  it('matches a position rounded to hundredths of a pixel back to the stored rect', () => {
-    const exact = row('x', '海', at(4, 12.3456789, 98.7654321));
+  it('matches a position rounded to millionths of the page back to the stored rect', () => {
+    const exact = row('x', '海', at(4, 0.123456789, 0.887654321));
 
-    expect(arrivalAt([exact], null, 'rtl', near(4, 12.35, 98.77), byCfi)?.at.id).toBe(exact.id);
+    expect(arrivalAt([exact], null, 'rtl', near(4, 0.123457, 0.887654), byCfi)?.at.id).toBe(
+      exact.id,
+    );
   });
 
-  it('rejects a position more than a hundredth of a pixel from every stored rect', () => {
-    const exact = row('x', '海', at(4, 12.3456789, 98.7654321));
+  it('rejects a position more than a millionth of the page from every stored rect', () => {
+    const exact = row('x', '海', at(4, 0.123456789, 0.887654321));
 
-    expect(arrivalAt([exact], null, 'rtl', near(4, 12.4, 98.77), byCfi)).toBeNull();
+    expect(arrivalAt([exact], null, 'rtl', near(4, 0.123459, 0.887654), byCfi)).toBeNull();
   });
 
   it('picks the nearer of two captures within the tolerance', () => {
-    const left = row('l', '海', at(4, 20, 20));
-    const right = row('r', '海', at(4, 20.004, 20));
+    const left = row('l', '海', at(4, 0.2, 0.2));
+    const right = row('r', '海', at(4, 0.2000004, 0.2));
 
-    expect(arrivalAt([left, right], null, 'rtl', near(4, 20.004, 20), byCfi)?.at.id).toBe(right.id);
+    expect(arrivalAt([left, right], null, 'rtl', near(4, 0.2000004, 0.2), byCfi)?.at.id).toBe(
+      right.id,
+    );
   });
 
   it('names a capture by the image its first region sits on', () => {
@@ -137,8 +141,8 @@ describe('arrivalAt', () => {
       's',
       '海',
       regionAnchor([
-        { index: imageIndex(6), rect: imageRect(0, 0, 10, 10) },
-        { index: imageIndex(7), rect: imageRect(0, 0, 10, 10) },
+        { index: imageIndex(6), rect: pageRect(0, 0, 0.1, 0.1) },
+        { index: imageIndex(7), rect: pageRect(0, 0, 0.1, 0.1) },
       ]),
     );
 
@@ -148,9 +152,9 @@ describe('arrivalAt', () => {
 });
 
 describe('arrivalAt for a capture the query never matched', () => {
-  const wanted = row('tagged', 'この坂を上れば', at(0, 10, 10));
-  const other = row('other', '海が見える', at(1, 10, 10));
-  const place = { index: imageIndex(0), rect: imageRect(10, 10, 10, 10) };
+  const wanted = row('tagged', 'この坂を上れば', at(0, 0.05, 0.05));
+  const other = row('other', '海が見える', at(1, 0.05, 0.05));
+  const place = { index: imageIndex(0), rect: pageRect(0.05, 0.05, 0.1, 0.1) };
 
   it('arrives at a capture whose text holds none of the query, so the box is drawn, and offers no stepping there', () => {
     const arrival = arrivalAt([other, wanted], '海', 'rtl', place, byCfi);

@@ -1,21 +1,20 @@
 import type { Arrangement } from '$lib/shared/arrangement';
 import { normalize } from '$lib/shared/geometry';
-import type { ScreenRect, Size } from '$lib/shared/geometry';
-import type { ImageRegion } from '$lib/shared/image-region';
-import { regionsIn } from './placement';
+import type { ImageRect, ScreenRect, Size } from '$lib/shared/geometry';
+import { pixelRectsIn } from './placement';
 import type { PlacedImage } from './placement';
 
 type Point = { readonly x: number; readonly y: number };
 
 const MIN_SELECTION_PX = 12;
 
-function selectionSize(regions: readonly ImageRegion[], arrangement: Arrangement): Size {
+function selectionSize(rects: readonly ImageRect[], arrangement: Arrangement): Size {
   const stacked = arrangement === 'column';
   let width = 0;
   let height = 0;
 
-  for (const region of regions) {
-    const rect = normalize(region.rect);
+  for (const drawn of rects) {
+    const rect = normalize(drawn);
     if (stacked) {
       width = Math.max(width, rect.width);
       height += rect.height;
@@ -33,8 +32,8 @@ function drawnSize(
   selection: ScreenRect,
   arrangement: Arrangement,
 ): Size | null {
-  const regions = regionsIn(placed, selection);
-  return regions.length === 0 ? null : selectionSize(regions, arrangement);
+  const rects = pixelRectsIn(placed, selection);
+  return rects.length === 0 ? null : selectionSize(rects, arrangement);
 }
 
 function sizeLabel(size: Size): string {

@@ -40,7 +40,7 @@
 
   const boxes = $derived(
     regions.flatMap((region) => {
-      const fraction = toPageFraction(SAMPLE_PAGE_SIZE, region.rect);
+      const fraction = toPageFraction(region.rect);
       return fraction === null ? [] : [fraction];
     }),
   );

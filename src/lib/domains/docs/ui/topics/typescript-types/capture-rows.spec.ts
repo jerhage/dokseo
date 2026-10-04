@@ -42,7 +42,7 @@ describe('checkedCaptureRow', () => {
     expect(checked('region-x-text')).toEqual({
       kind: 'set-aside',
       id: 'c-41',
-      reason: 'A stored capture holds an unknown region x: 120',
+      reason: 'A stored capture holds an unknown region x: 0.12',
     });
     expect(checked('tag-number')).toMatchObject({
       reason: 'A stored capture holds an unknown tag ids: 7',

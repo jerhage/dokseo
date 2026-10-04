@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { StringStore } from '$lib/platform/storage/remembered-string';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
 import { recognizedText } from '../../domain/engine/recognized-text';
@@ -29,7 +29,7 @@ class FakeStore implements StringStore {
 }
 
 function region(index: number, x: number): ImageRegion {
-  return { index: imageIndex(index), rect: imageRect(x, 0, 10, 10) };
+  return { index: imageIndex(index), rect: pageRect(x, 0, 10, 10) };
 }
 
 function read(id: string, text: string, note: string | null = null, x = 0): PanelCapture {

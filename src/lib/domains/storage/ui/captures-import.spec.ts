@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FileSelection } from '$lib/components/file-selection';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -45,7 +45,7 @@ function capture(id: string, fields: Partial<Capture> = {}): Capture {
   return {
     id: captureId(id),
     bookId: bookId('device-book'),
-    anchor: regionAnchor([{ index: imageIndex(2), rect: imageRect(1, 2, 3, 4) }]),
+    anchor: regionAnchor([{ index: imageIndex(2), rect: pageRect(0.001, 0.002, 0.003, 0.004) }]),
     text: `device text of ${id}`,
     origin: 'recognized',
     confidence: null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -21,7 +21,7 @@ function capture(id: string, tagIds: readonly TagId[]): Capture {
       {
         id: captureId(id),
         bookId: bookId('book-one'),
-        anchor: regionAnchor([{ index: imageIndex(1), rect: imageRect(0, 0, 10, 10) }]),
+        anchor: regionAnchor([{ index: imageIndex(1), rect: pageRect(0, 0, 0.01, 0.01) }]),
         text: '海',
         confidence: null,
         origin: 'recognized',

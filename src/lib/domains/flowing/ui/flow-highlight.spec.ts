@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import {
   ARRIVED_BORDER_WIDTH_PROPERTY,
@@ -47,7 +47,7 @@ function onAPage(): Anchor {
   return regionAnchor([
     {
       index: imageIndex(13),
-      rect: imageRect(10, 20, 100, 40),
+      rect: pageRect(0.01, 0.02, 0.1, 0.04),
     },
   ]);
 }

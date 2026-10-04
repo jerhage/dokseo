@@ -40,11 +40,10 @@
   let natural = $state.raw<Size | null>(null);
 
   const boxes = $derived.by(() => {
-    const size = natural;
-    if (size === null || phase !== 'shown') return [];
+    if (natural === null || phase !== 'shown') return [];
 
     return glow.flatMap((region) => {
-      const box = toPageFraction(size, region.rect);
+      const box = toPageFraction(region.rect);
       return box === null ? [] : [{ box, origin: region.origin }];
     });
   });

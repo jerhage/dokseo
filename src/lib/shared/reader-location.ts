@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
-import { imageRect } from './geometry';
-import type { ImageRect } from './geometry';
+import { pageRect } from './geometry';
+import type { PageRect } from './geometry';
 import { imageIndex } from './ids';
 import type { BookId, ImageIndex } from './ids';
 import type { ImageRegion } from './image-region';
@@ -13,9 +13,9 @@ const FIND_PARAMETER = 'find';
 
 const REGION_PARAMETER = 'region';
 
-const REGION_DECIMALS = 2;
+const REGION_DECIMALS = 6;
 
-const REGION_TOLERANCE = 0.01;
+const REGION_TOLERANCE = 0.000001;
 
 const CFI_PARAMETER = 'cfi';
 
@@ -32,7 +32,7 @@ type ReaderArrival =
   | {
       readonly kind: 'image';
       readonly index: ImageIndex;
-      readonly region: ImageRect | null;
+      readonly region: PageRect | null;
       readonly query: string | null;
     }
   | { readonly kind: 'passage'; readonly cfi: string; readonly query: string | null };
@@ -139,7 +139,7 @@ function regionCoordinate(value: number): string {
   return String(Number(value.toFixed(REGION_DECIMALS)));
 }
 
-function regionValue(rect: ImageRect): string {
+function regionValue(rect: PageRect): string {
   return [rect.x, rect.y, rect.width, rect.height].map(regionCoordinate).join(',');
 }
 
@@ -151,7 +151,7 @@ function readCoordinate(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function readRegion(value: string | null | undefined): ImageRect | null {
+function readRegion(value: string | null | undefined): PageRect | null {
   if (value === null || value === undefined) return null;
 
   const parts = value.split(',');
@@ -160,10 +160,10 @@ function readRegion(value: string | null | undefined): ImageRect | null {
   const [x = null, y = null, width = null, height = null] = parts.map(readCoordinate);
   if (x === null || y === null || width === null || height === null) return null;
 
-  return imageRect(x, y, width, height);
+  return pageRect(x, y, width, height);
 }
 
-function regionDistance(named: ImageRect, stored: ImageRect): number {
+function regionDistance(named: PageRect, stored: PageRect): number {
   return Math.max(
     Math.abs(named.x - stored.x),
     Math.abs(named.y - stored.y),

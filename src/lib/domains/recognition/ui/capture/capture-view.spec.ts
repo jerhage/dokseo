@@ -4,7 +4,7 @@ import type { Container, RecognitionNotices } from '$lib/container';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { TextQuote } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, TagId } from '$lib/shared/ids';
 import type { ImageRegion } from '$lib/shared/image-region';
@@ -275,7 +275,7 @@ function gates(world: Fakes): readonly string[] {
 }
 
 function regions(index = 13): readonly ImageRegion[] {
-  return [{ index: imageIndex(index), rect: imageRect(0, 0, 40, 20) }];
+  return [{ index: imageIndex(index), rect: pageRect(0, 0, 0.04, 0.02) }];
 }
 
 function read(view: CaptureView): Promise<void> {

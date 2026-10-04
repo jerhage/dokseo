@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Container, RecognitionNotices } from '$lib/container';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { PageSource } from '$lib/shared/page-source';
@@ -175,7 +175,7 @@ function selection(language: Language = 'ja'): PendingRecognition {
   return {
     source,
     language,
-    regions: [{ index: imageIndex(13), rect: imageRect(0, 0, 40, 20) }],
+    regions: [{ index: imageIndex(13), rect: pageRect(0, 0, 0.04, 0.02) }],
     arrangement: 'row',
   };
 }

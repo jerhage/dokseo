@@ -128,12 +128,11 @@ describe('placedImages', () => {
     const onLoaded = regionsIn(placedImages([image('0', 1200, 1700)]), selection);
     const onUnloaded = regionsIn(placedImages([image('0', 0, 0)]), selection);
 
-    expect(onLoaded).toEqual([
-      {
-        index: 0,
-        rect: { x: 200, y: 188.88888888888889, width: 400, height: 377.77777777777777 },
-      },
-    ]);
+    expect(onLoaded.map((region) => region.index)).toEqual([0]);
+    expect(onLoaded[0]?.rect.x).toBeCloseTo(1 / 6, 12);
+    expect(onLoaded[0]?.rect.y).toBeCloseTo(1 / 9, 12);
+    expect(onLoaded[0]?.rect.width).toBeCloseTo(1 / 3, 12);
+    expect(onLoaded[0]?.rect.height).toBeCloseTo(2 / 9, 12);
     expect(onUnloaded).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor, TextAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { inBookOrder, inPassageOrder } from './capture-order';
 
@@ -10,7 +10,7 @@ type Placed = { readonly name: string; readonly anchor: Anchor };
 function at(name: string, index: number, x: number, y: number, width = 100, height = 60): Placed {
   return {
     name,
-    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(x, y, width, height) }]),
+    anchor: regionAnchor([{ index: imageIndex(index), rect: pageRect(x, y, width, height) }]),
   };
 }
 
@@ -94,8 +94,8 @@ describe('inBookOrder', () => {
     const spanning: Placed = {
       name: 'spanning',
       anchor: regionAnchor([
-        { index: imageIndex(4), rect: imageRect(0, 900, 100, 60) },
-        { index: imageIndex(5), rect: imageRect(0, 0, 100, 60) },
+        { index: imageIndex(4), rect: pageRect(0, 0.9, 0.1, 0.06) },
+        { index: imageIndex(5), rect: pageRect(0, 0, 0.1, 0.06) },
       ]),
     };
     const ordered = inBookOrder([at('single', 5, 0, 0), spanning], 'ltr', byCfi);

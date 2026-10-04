@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { captureId, imageIndex } from '$lib/shared/ids';
 import type { ArrivalCapture } from '../../domain/capture/capture-arrival';
 import { arrivalGlow, everyOtherGlow } from './capture-glow';
@@ -10,7 +10,7 @@ function onImage(id: string, index: number, x: number): ArrivalCapture {
     id: captureId(id),
     origin: 'written',
     text: id,
-    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(x, 0, 10, 10) }]),
+    anchor: regionAnchor([{ index: imageIndex(index), rect: pageRect(x, 0, 10, 10) }]),
   };
 }
 

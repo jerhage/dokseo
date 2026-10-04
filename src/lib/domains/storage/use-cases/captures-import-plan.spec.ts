@@ -4,7 +4,7 @@ import type { RestoreCandidate } from '$lib/domains/library/domain/book/removed-
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, seriesId, tagId } from '$lib/shared/ids';
 import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { BooklessCapture, FileBook } from './captures-file';
@@ -83,7 +83,7 @@ const SFX: Tag = { id: tagId('tag-sfx'), name: 'sfx', colour: 'clay', createdAt:
 function bookless(id: string, fields: Partial<BooklessCapture> = {}): BooklessCapture {
   return {
     id: captureId(id),
-    anchor: regionAnchor([{ index: imageIndex(4), rect: imageRect(10, 20, 30, 40) }]),
+    anchor: regionAnchor([{ index: imageIndex(4), rect: pageRect(0.01, 0.02, 0.03, 0.04) }]),
     text: `text of ${id}`,
     origin: 'recognized',
     confidence: null,

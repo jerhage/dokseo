@@ -4,7 +4,7 @@ import { editedCapture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
@@ -92,7 +92,9 @@ function sampleCapture(sample: SampleCapture): Capture {
   return {
     id: captureId(sample.id),
     bookId: sample.book,
-    anchor: regionAnchor([{ index: imageIndex(sample.page), rect: imageRect(412, 96, 88, 240) }]),
+    anchor: regionAnchor([
+      { index: imageIndex(sample.page), rect: pageRect(0.572, 0.095, 0.122, 0.238) },
+    ]),
     text: sample.text,
     origin: 'recognized',
     confidence: 0.94,

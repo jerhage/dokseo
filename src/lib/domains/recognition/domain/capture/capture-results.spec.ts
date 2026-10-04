@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, TagId } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
@@ -31,7 +31,7 @@ function capture(name: string, id: string, text: string, index = 0, x = 0, y = 0
     name,
     origin: 'recognized',
     bookId: bookId(id),
-    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(x, y, 100, 60) }]),
+    anchor: regionAnchor([{ index: imageIndex(index), rect: pageRect(x, y, 100, 60) }]),
     text,
     note: null,
   };

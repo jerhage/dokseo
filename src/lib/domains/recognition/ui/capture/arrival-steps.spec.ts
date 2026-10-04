@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { ArrivalCapture } from '../../domain/capture/capture-arrival';
 import { arrivalSteps } from './arrival-steps';
@@ -13,7 +13,7 @@ function onImage(id: string, index: number, x: number): ArrivalCapture {
     origin: 'recognized',
     text: 'ねこ',
     note: null,
-    anchor: regionAnchor([{ index: imageIndex(index), rect: imageRect(x, 20.5, 10, 30.125) }]),
+    anchor: regionAnchor([{ index: imageIndex(index), rect: pageRect(x, 0.205, 0.1, 0.30125) }]),
   };
 }
 
@@ -49,15 +49,17 @@ describe('arrivalSteps', () => {
     const stepping = {
       ordinal: 2,
       total: 5,
-      previous: onImage('a', 1, 4),
-      next: onImage('b', 1, 60),
+      previous: onImage('a', 1, 0.04),
+      next: onImage('b', 1, 0.6),
     };
     const steps = arrivalSteps(BOOK, 'ねこ', stepping);
 
     expect(steps.previous).toBe(
-      '/read/book-1?image=1&region=4,20.5,10,30.13&find=%E3%81%AD%E3%81%93',
+      '/read/book-1?image=1&region=0.04,0.205,0.1,0.30125&find=%E3%81%AD%E3%81%93',
     );
-    expect(steps.next).toBe('/read/book-1?image=1&region=60,20.5,10,30.13&find=%E3%81%AD%E3%81%93');
+    expect(steps.next).toBe(
+      '/read/book-1?image=1&region=0.6,0.205,0.1,0.30125&find=%E3%81%AD%E3%81%93',
+    );
   });
 
   it('links a neighbour anchored in text to its passage with the query carried and no capture id', () => {

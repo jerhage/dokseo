@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import type { Anchor } from '$lib/shared/anchor';
-import { imageRect } from '$lib/shared/geometry';
+import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { BookId, TagId } from '$lib/shared/ids';
 import { at } from '$lib/shared/testing/at';
@@ -26,7 +26,7 @@ const TAGS: readonly Tag[] = [
 ];
 
 function onPage(index: number): Anchor {
-  return regionAnchor([{ index: imageIndex(index), rect: imageRect(0, 0, 10, 10) }]);
+  return regionAnchor([{ index: imageIndex(index), rect: pageRect(0, 0, 0.1, 0.1) }]);
 }
 
 function written(id: string, book: SearchedBook, text: string, anchor: Anchor): Capture {
@@ -134,7 +134,7 @@ describe('searchRows', () => {
 
     const row = captureAt(searchRows(input(found)).rows, 0);
 
-    expect(row.href).toBe('/read/two?image=2&region=0,0,10,10&find=%E6%B5%B7');
+    expect(row.href).toBe('/read/two?image=2&region=0,0,0.1,0.1&find=%E6%B5%B7');
     expect(row.place).toBe('p.003');
     expect(row.language).toBe('ko');
   });
