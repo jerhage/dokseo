@@ -3,6 +3,7 @@
   import { WORD_PLAN_SECTIONS } from './word-analysis-plan/plan-sections';
   import WordConcepts from './word-analysis-plan/WordConcepts.svelte';
   import WordPlanDomain from './word-analysis-plan/WordPlanDomain.svelte';
+  import WordPlanRuntime from './word-analysis-plan/WordPlanRuntime.svelte';
 </script>
 
 <DocsPage slug="word-analysis-plan" sections={Object.values(WORD_PLAN_SECTIONS)}>
@@ -13,4 +14,5 @@
   {/snippet}
   <WordConcepts />
   <WordPlanDomain />
+  <WordPlanRuntime />
 </DocsPage>
