@@ -6,10 +6,11 @@ type RemoveBookResult = { readonly kind: 'success' } | StorageUnavailable;
 
 type RemoveBookDeps = {
   readonly repository: LibraryRepository;
+  readonly now: () => number;
 };
 
 function removeBook(deps: RemoveBookDeps, id: BookId): Promise<RemoveBookResult> {
-  return deps.repository.remove(id);
+  return deps.repository.remove(id, deps.now());
 }
 
 export { removeBook };

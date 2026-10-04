@@ -206,13 +206,20 @@ function applyDeps(into: World): ApplyCapturesImportDeps {
 
 const HASH = '0123456789abcdef0123456789abcdef';
 
+const KIKI_HASH = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 const YOTSUBA_THERE = shelfBook('there-yotsuba', 'Yotsuba&! 1', HASH, 'yotsuba-1.cbz');
 
-const KIKI_THERE = shelfBook('there-kiki', 'Kiki', 'kiki-hash', 'kiki.epub');
+const KIKI_THERE = shelfBook('there-kiki', 'Kiki', KIKI_HASH, 'kiki.epub');
 
 const YOTSUBA_HERE = shelfBook('here-yotsuba', 'Yotsuba&! 1', HASH, 'yotsuba-1.cbz');
 
-const OTHER_HERE = shelfBook('here-other', 'Other', 'other-hash', 'other.cbz');
+const OTHER_HERE = shelfBook(
+  'here-other',
+  'Other',
+  'fedcba9876543210fedcba9876543210',
+  'other.cbz',
+);
 
 const KANJI: Tag = { id: tagId('tag-kanji'), name: 'kanji', colour: 'sage', createdAt: 10 };
 
@@ -295,16 +302,11 @@ describe('applyCapturesImport', () => {
     expect(result).toMatchObject({ kind: 'imported', counts: { added: 2, held: 2 } });
     expect([...here.removed.values()]).toEqual([
       {
+        ...KIKI_THERE,
         id: 'minted-1',
-        title: 'Kiki',
-        alias: null,
-        seriesId: null,
-        volume: null,
-        contentHash: 'kiki-hash',
-        fileName: 'kiki.epub',
-        language: 'ja',
-        direction: 'rtl',
         addedAt: 1000,
+        position: imagePlace(imageIndex(0)),
+        removedAt: 1000,
       },
     ]);
     expect([held(here, 'k1')?.bookId, held(here, 'k2')?.bookId]).toEqual(['minted-1', 'minted-1']);

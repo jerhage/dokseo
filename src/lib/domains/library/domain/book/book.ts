@@ -21,6 +21,10 @@ function isSourceKind(value: unknown): value is SourceKind {
   return SOURCE_KINDS.some((kind) => kind === value);
 }
 
+function sourceFitsLayout(layoutKind: LayoutKind, sourceKind: SourceKind): boolean {
+  return layoutKind !== 'flow' || sourceKind === 'epub';
+}
+
 type Book = {
   readonly id: BookId;
   readonly title: string;
@@ -92,12 +96,24 @@ function applyEdit(book: Book, edit: BookEdit): Book {
   };
 }
 
-function startingPlace(book: Book): ReadingPlace {
-  return match(book.layoutKind)
+function placeToStart(layoutKind: LayoutKind): ReadingPlace {
+  return match(layoutKind)
     .with('paged', 'continuous', () => imagePlace(imageIndex(0)))
     .with('flow', () => START_OF_THE_TEXT)
     .exhaustive();
 }
 
-export { DEFAULT_PAGE_PAIRING, defaultPageFit, applyEdit, isSourceKind, startingPlace };
+function startingPlace(book: Book): ReadingPlace {
+  return placeToStart(book.layoutKind);
+}
+
+export {
+  DEFAULT_PAGE_PAIRING,
+  defaultPageFit,
+  applyEdit,
+  isSourceKind,
+  placeToStart,
+  sourceFitsLayout,
+  startingPlace,
+};
 export type { SourceKind, Book, BookEdit };

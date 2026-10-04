@@ -28,7 +28,7 @@ function byCodeUnits(left: string, right: string): number {
   return left > right ? 1 : 0;
 }
 
-function shelfIdentity(book: Book): BookIdentity {
+function bookIdentity(book: Book): BookIdentity {
   return {
     id: book.id,
     contentHash: book.contentHash,
@@ -45,27 +45,10 @@ function shelfIdentity(book: Book): BookIdentity {
   };
 }
 
-function removedIdentity(book: RemovedBook): BookIdentity {
-  return {
-    id: book.id,
-    contentHash: book.contentHash,
-    fileName: book.fileName,
-    title: book.title,
-    alias: book.alias,
-    seriesId: book.seriesId,
-    volume: book.volume,
-    language: book.language,
-    direction: book.direction,
-    layoutKind: null,
-    sourceKind: null,
-    imageCount: null,
-  };
-}
-
 function identities(contents: CapturesFileContents): ReadonlyMap<BookId, BookIdentity> {
   const known = new Map<BookId, BookIdentity>();
-  for (const removed of contents.removedBooks) known.set(removed.id, removedIdentity(removed));
-  for (const book of contents.books) known.set(book.id, shelfIdentity(book));
+  for (const removed of contents.removedBooks) known.set(removed.id, bookIdentity(removed));
+  for (const book of contents.books) known.set(book.id, bookIdentity(book));
   return known;
 }
 

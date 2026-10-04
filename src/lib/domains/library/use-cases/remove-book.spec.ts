@@ -14,13 +14,13 @@ const WRITTEN: LibraryWrite = { kind: 'success' };
 const NO_BOOK: BookLookup = { kind: 'success', book: null };
 
 function fakeRepository(outcome: LibraryWrite) {
-  const removed: BookId[] = [];
+  const removed: (readonly [BookId, number])[] = [];
   const repository: LibraryRepository = {
     list: () => Promise.resolve({ kind: 'success', books: [], unreadable: [] }),
     get: () => Promise.resolve(NO_BOOK),
     add: () => Promise.resolve(WRITTEN),
-    remove: (id) => {
-      removed.push(id);
+    remove: (id, removedAt) => {
+      removed.push([id, removedAt]);
       return Promise.resolve(outcome);
     },
     update: () => Promise.resolve(NO_BOOK),
@@ -38,11 +38,14 @@ function fakeRepository(outcome: LibraryWrite) {
 }
 
 describe('removeBook', () => {
-  it('passes the id to the repository and returns what the repository returned', async () => {
+  it('passes the id and the time of removal to the repository and returns what the repository returned', async () => {
     const outcome = STORAGE_UNAVAILABLE;
     const repository = fakeRepository(outcome);
-    const result = await removeBook({ repository: repository.repository }, bookId('book-7'));
-    expect(repository.removed).toEqual(['book-7']);
+    const result = await removeBook(
+      { repository: repository.repository, now: () => 1758240000000 },
+      bookId('book-7'),
+    );
+    expect(repository.removed).toEqual([['book-7', 1758240000000]]);
     expect(result).toEqual(outcome);
   });
 });

@@ -44,11 +44,20 @@ const REMOVED: RemovedBook = {
   alias: null,
   seriesId: null,
   volume: null,
-  contentHash: 'fedcba',
-  fileName: 'aria-3.pdf',
   language: 'ja',
+  layoutKind: 'paged',
   direction: 'rtl',
-  addedAt: null,
+  pagePairing: 'auto',
+  pageFit: 'height',
+  sourceKind: 'pdf',
+  contentHash: contentHash('fedcba9876543210fedcba9876543210'),
+  fileName: 'aria-3.pdf',
+  imageCount: 40,
+  addedAt: 1,
+  position: imagePlace(imageIndex(0)),
+  lastReadAt: null,
+  finishedAt: null,
+  removedAt: 2,
 };
 
 const KANJI: Tag = {

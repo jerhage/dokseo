@@ -60,7 +60,7 @@ function world(outcomes: Outcomes = {}) {
     storedBytes: notUsed,
   };
   const deps: RemoveBookAndCapturesDeps = {
-    removing: { repository },
+    removing: { repository, now: () => 1 },
     clearing: { captures },
     forgetting: { repository },
   };

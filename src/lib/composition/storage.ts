@@ -148,12 +148,20 @@ function buildRemovedBooks(
       deleteRemovedBookCaptures({ clearing: { captures }, forgetting: { repository } }, id),
     removeBookAndCaptures: (id: BookId) =>
       removeBookAndCaptures(
-        { removing: { repository }, clearing: { captures }, forgetting: { repository } },
+        {
+          removing: { repository, now: Date.now },
+          clearing: { captures },
+          forgetting: { repository },
+        },
         id,
       ),
     mergeIntoBook: (into: BookId, strays: readonly BookId[]) =>
       mergeIntoBook(
-        { moving: { captures }, removing: { repository }, forgetting: { repository } },
+        {
+          moving: { captures },
+          removing: { repository, now: Date.now },
+          forgetting: { repository },
+        },
         into,
         strays,
       ),
