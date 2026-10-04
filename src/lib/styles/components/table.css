@@ -28,6 +28,10 @@
   background-color: var(--color-surface-sunken);
   border-block-end: var(--border-width) solid var(--border-color);
 }
+.table th code {
+  letter-spacing: var(--ls-normal);
+  text-transform: none;
+}
 .table td {
   padding: var(--sp-3) var(--sp-4);
   vertical-align: middle;

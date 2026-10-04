@@ -895,6 +895,13 @@ describe('the design system stylesheets', () => {
     expect(copies).toEqual([]);
   });
 
+  it('sets code inside a table header cell in its own case and normal tracking, and nothing else', () => {
+    expect(declarations(ruleBody(style('components/table.css'), '.table th code'))).toEqual([
+      'letter-spacing: var(--ls-normal)',
+      'text-transform: none',
+    ]);
+  });
+
   it('colours every component eyebrow faint', () => {
     const colours = [
       { file: 'components/card.css', selector: '.card-eyebrow' },
