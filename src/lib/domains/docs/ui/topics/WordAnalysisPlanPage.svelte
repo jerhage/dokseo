@@ -2,6 +2,7 @@
   import DocsPage from '../DocsPage.svelte';
   import { WORD_PLAN_SECTIONS } from './word-analysis-plan/plan-sections';
   import WordConcepts from './word-analysis-plan/WordConcepts.svelte';
+  import WordPlanDomain from './word-analysis-plan/WordPlanDomain.svelte';
 </script>
 
 <DocsPage slug="word-analysis-plan" sections={Object.values(WORD_PLAN_SECTIONS)}>
@@ -11,4 +12,5 @@
     adding word analysis and lookup to Dokseo, decision by decision.
   {/snippet}
   <WordConcepts />
+  <WordPlanDomain />
 </DocsPage>
