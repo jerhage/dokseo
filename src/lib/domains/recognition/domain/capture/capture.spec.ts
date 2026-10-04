@@ -497,6 +497,17 @@ describe('capturesFromStored', () => {
     ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE }],
     ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', chapter: null }],
     ['anchor', { kind: 'text', quote: QUOTE, chapter: null }],
+    ['anchor', { kind: 'text', cfi: '', quote: QUOTE, chapter: null }],
+    [
+      'anchor',
+      {
+        kind: 'text',
+        cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)',
+        quote: { ...QUOTE, exact: '' },
+        chapter: null,
+      },
+    ],
+    ['anchor', { kind: 'text', cfi: 'epubcfi(/6/14!/4/2/6,/1:0,/1:5)', quote: QUOTE, chapter: '' }],
     [
       'anchor',
       {
@@ -533,6 +544,16 @@ describe('capturesFromStored', () => {
 
     expect(read.captures).toEqual([]);
     expect(read.unreadable.map((row) => row.id)).toEqual(['full']);
+  });
+
+  it('reads a text anchor at the very start and end of its chapter, with no prefix and no suffix', () => {
+    const edges = textAnchor(
+      'epubcfi(/6/14!/4/2/6,/1:0,/1:5)',
+      { exact: 'こっちに来て', prefix: '', suffix: '' },
+      null,
+    );
+
+    expect(captureFromStored({ ...complete, anchor: edges }).anchor).toEqual(edges);
   });
 
   it('names the regions of a region anchor that holds none', () => {

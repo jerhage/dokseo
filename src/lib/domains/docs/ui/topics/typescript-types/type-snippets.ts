@@ -110,9 +110,9 @@ const STORED_ANCHOR: SourceSnippet = {
     )
     .with('text', () =>
       textAnchor(
-        captureField('anchor cfi', anchor.cfi, isText),
+        captureField('anchor cfi', anchor.cfi, isFilledText),
         storedQuote(anchor.quote),
-        captureField('chapter', anchor.chapter, isTextOrNull),
+        captureField('chapter', anchor.chapter, isFilledTextOrNull),
       ),
     )
     .otherwise((kind) => {

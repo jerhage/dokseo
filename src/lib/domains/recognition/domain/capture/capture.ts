@@ -106,6 +106,14 @@ function storedRegion(value: unknown): ImageRegion {
   };
 }
 
+function isFilledText(value: unknown): value is string {
+  return isText(value) && value.length > 0;
+}
+
+function isFilledTextOrNull(value: unknown): value is string | null {
+  return value === null || isFilledText(value);
+}
+
 function isRegionList(value: unknown): value is readonly unknown[] {
   return isStoredList(value) && value.length > 0;
 }
@@ -113,7 +121,7 @@ function isRegionList(value: unknown): value is readonly unknown[] {
 function storedQuote(value: unknown): TextQuote {
   const quote = captureField('quote', value, isStoredFields);
   return {
-    exact: captureField('quoted text', quote.exact, isText),
+    exact: captureField('quoted text', quote.exact, isFilledText),
     prefix: captureField('quote prefix', quote.prefix, isText),
     suffix: captureField('quote suffix', quote.suffix, isText),
   };
@@ -127,9 +135,9 @@ function storedAnchor(value: unknown): Anchor {
     )
     .with('text', () =>
       textAnchor(
-        captureField('anchor cfi', anchor.cfi, isText),
+        captureField('anchor cfi', anchor.cfi, isFilledText),
         storedQuote(anchor.quote),
-        captureField('chapter', anchor.chapter, isTextOrNull),
+        captureField('chapter', anchor.chapter, isFilledTextOrNull),
       ),
     )
     .otherwise((kind) => {
