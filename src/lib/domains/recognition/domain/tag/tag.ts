@@ -2,7 +2,7 @@ import { isNumber, isText, knownStoredValue } from '$lib/shared/corrupt-row';
 import { tagId } from '$lib/shared/ids';
 import type { TagId } from '$lib/shared/ids';
 import { foldForSearch } from '$lib/shared/text-search';
-import { FIRST_TAG_COLOUR, isTagColour } from './tag-colour';
+import { isTagColour } from './tag-colour';
 import type { TagColour } from './tag-colour';
 
 type Tag = {
@@ -43,11 +43,19 @@ function tagField<T>(field: string, value: unknown, known: (value: unknown) => v
   return knownStoredValue('tag', field, value, known);
 }
 
+function isKey(value: unknown): value is string {
+  return isText(value) && value.length > 0;
+}
+
+function isTagName(value: unknown): value is string {
+  return isText(value) && tagName(value).length > 0;
+}
+
 function tagFromStored(stored: StoredTag): Tag {
   return {
-    id: tagId(tagField('id', stored.id, isText)),
-    name: tagField('name', stored.name, isText),
-    colour: isTagColour(stored.colour) ? stored.colour : FIRST_TAG_COLOUR,
+    id: tagId(tagField('id', stored.id, isKey)),
+    name: tagField('name', stored.name, isTagName),
+    colour: tagField('colour', stored.colour, isTagColour),
     createdAt: tagField('created time', stored.createdAt, isNumber),
   };
 }

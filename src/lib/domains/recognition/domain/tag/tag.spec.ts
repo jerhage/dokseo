@@ -28,13 +28,15 @@ describe('namedTag', () => {
 
 describe('tagFromStored', () => {
   it.each([
-    { stored: { id: tagId('one'), name: 'sfx', createdAt: 1 }, colour: 'slate' },
-    { stored: { id: tagId('one'), name: 'sfx', colour: 'ember', createdAt: 1 }, colour: 'slate' },
-    { stored: { id: tagId('one'), name: 'sfx', colour: 'copper', createdAt: 1 }, colour: 'copper' },
-  ] satisfies { stored: StoredTag; colour: string }[])(
-    'reads the stored colour $stored.colour as $colour, the first palette colour unless it knows it',
-    ({ stored, colour }) => {
-      expect(tagFromStored(stored).colour).toBe(colour);
+    { stored: { id: tagId('one'), name: 'sfx', createdAt: 1 }, colour: undefined },
+    { stored: { id: tagId('one'), name: 'sfx', colour: 'ember', createdAt: 1 }, colour: 'ember' },
+  ] satisfies { stored: StoredTag; colour: string | undefined }[])(
+    'rejects the stored colour $colour rather than reading a fallback',
+    ({ stored }) => {
+      expect(() => tagFromStored(stored)).toThrow(CorruptRow);
+      expect(() => tagFromStored(stored)).toThrow(
+        /A stored tag (lacks its|holds an unknown) colour/u,
+      );
     },
   );
 
@@ -54,14 +56,38 @@ describe('tagFromStored', () => {
     ['id', { id: 7, name: 'sfx', createdAt: 1 }, 'A stored tag holds an unknown id: 7'],
     ['name', { id: 'one', createdAt: 1 }, 'A stored tag lacks its name'],
     ['name', { id: 'one', name: 3, createdAt: 1 }, 'A stored tag holds an unknown name: 3'],
-    ['creation time', { id: 'one', name: 'sfx' }, 'A stored tag lacks its created time'],
+    [
+      'id',
+      { id: '', name: 'sfx', colour: 'plum', createdAt: 1 },
+      'A stored tag holds an unknown id: ',
+    ],
+    [
+      'name',
+      { id: 'one', name: '', colour: 'plum', createdAt: 1 },
+      'A stored tag holds an unknown name: ',
+    ],
+    [
+      'name',
+      { id: 'one', name: ' \t ', colour: 'plum', createdAt: 1 },
+      'A stored tag holds an unknown name:',
+    ],
     [
       'creation time',
-      { id: 'one', name: 'sfx', createdAt: '1' },
+      { id: 'one', name: 'sfx', colour: 'plum' },
+      'A stored tag lacks its created time',
+    ],
+    [
+      'creation time',
+      { id: 'one', name: 'sfx', colour: 'plum', createdAt: '1' },
       'A stored tag holds an unknown created time: 1',
     ],
+    [
+      'creation time',
+      { id: 'one', name: 'sfx', colour: 'plum', createdAt: Number.NaN },
+      'A stored tag holds an unknown created time: NaN',
+    ],
   ] satisfies [string, StoredTag, string][])(
-    'rejects a row whose %s is missing or of the wrong type',
+    'rejects a row whose %s is missing, empty or of the wrong type',
     (_field, stored, message) => {
       expect(() => tagFromStored(stored)).toThrow(CorruptRow);
       expect(() => tagFromStored(stored)).toThrow(message);

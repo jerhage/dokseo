@@ -5,7 +5,6 @@ import { captureFromStored } from '$lib/domains/recognition/domain/capture/captu
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { tagFromStored } from '$lib/domains/recognition/domain/tag/tag';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
-import { isTagColour } from '$lib/domains/recognition/domain/tag/tag-colour';
 import {
   CorruptRow,
   isNumber,
@@ -136,9 +135,7 @@ function fileBook(entry: unknown): FileBook {
 }
 
 function fileTag(entry: unknown): Tag {
-  const tag = fields('tag', entry);
-  field('tag', 'colour', tag.colour, isTagColour);
-  return tagFromStored(tag);
+  return tagFromStored(fields('tag', entry));
 }
 
 function strippedOfBook(capture: Capture): BooklessCapture {
