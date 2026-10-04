@@ -130,7 +130,7 @@ describe('Reanchor', () => {
 });
 
 describe('arrivalSummary and arrivalTone', () => {
-  it('describe each arrival', () => {
+  it('describes each arrival', () => {
     const arrivals = [
       { kind: 'cfi' as const, cfi: 'a' },
       { kind: 'quote' as const, cfi: 'b' },

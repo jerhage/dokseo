@@ -74,6 +74,7 @@
         "src/workers/ocr.worker.ts",
         "src/workers/paddle-ocr.worker.ts",
         "src/workers/opfs-writer.worker.ts",
+        "src/lib/domains/docs/ui/topics/storage/scratch-file.worker.ts",
         "src/service-worker.ts"
       ],
       "rules": {

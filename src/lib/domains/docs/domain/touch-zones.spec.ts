@@ -28,7 +28,7 @@ describe('zoneOutcome', () => {
     expect(zoneOutcome(0.05, { ...touchZones, turns: 'swipe-only' })).toBe('menu');
   });
 
-  it('only hides the bars on a touch while they show', () => {
+  it('hides the bars on a touch only while they show', () => {
     expect(zoneOutcome(0.05, { ...touchZones, chromeShown: true })).toBe('hide-menu');
   });
 
