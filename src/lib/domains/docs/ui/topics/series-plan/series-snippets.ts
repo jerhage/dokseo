@@ -95,9 +95,7 @@ const FILE_SERIES_FIELDS: SourceSnippet = {
   label: 'The export file reads them as optional',
   file: 'src/lib/domains/storage/use-cases/read-captures-file.ts',
   code: `function fileSeriesId(value: unknown): SeriesId | null {
-  if (value === undefined) return null;
-  const read = field('book', 'series id', value, isTextOrNull);
-  return read === null ? null : seriesId(read);
+  return value === undefined ? null : storedSeriesId(value);
 }
 
 function fileVolume(value: unknown): number | null {

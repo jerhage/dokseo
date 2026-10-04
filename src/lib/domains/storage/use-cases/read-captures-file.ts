@@ -1,6 +1,9 @@
 import { match, P } from 'ts-pattern';
-import { isSourceKind, sourceFitsLayout } from '$lib/domains/library/domain/book/book';
-import type { SourceKind } from '$lib/domains/library/domain/book/book';
+import {
+  storedContentHash,
+  storedSeriesId,
+  storedSourceKind,
+} from '$lib/domains/library/domain/book/stored-book';
 import { captureFromStored } from '$lib/domains/recognition/domain/capture/capture';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { tagFromStored } from '$lib/domains/recognition/domain/tag/tag';
@@ -17,11 +20,9 @@ import {
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import type { StoredFields } from '$lib/shared/corrupt-row';
-import { parsedContentHash, seriesId } from '$lib/shared/ids';
-import type { CaptureId, ContentHash, SeriesId, TagId } from '$lib/shared/ids';
+import type { CaptureId, SeriesId, TagId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import { isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
-import type { LayoutKind } from '$lib/shared/layout-kind';
 import { CAPTURES_FILE_FORMAT, CAPTURES_FILE_VERSION } from './captures-file';
 import type { BooklessCapture, FileBook } from './captures-file';
 
@@ -89,28 +90,12 @@ function fields(row: string, value: unknown): StoredFields {
   return field(row, 'entry', value, isStoredFields);
 }
 
-function fileContentHash(value: unknown): ContentHash {
-  const hash = isText(value) ? parsedContentHash(value) : null;
-  if (hash === null) throw new CorruptRow('book', 'content hash', value);
-  return hash;
-}
-
-function fileSourceKind(book: StoredFields, layoutKind: LayoutKind): SourceKind {
-  const sourceKind = field('book', 'source kind', book.sourceKind, isSourceKind);
-  if (!sourceFitsLayout(layoutKind, sourceKind)) {
-    throw new CorruptRow('book', `source kind for a ${layoutKind} book`, sourceKind);
-  }
-  return sourceKind;
-}
-
 function isKey(value: unknown): value is string {
   return isText(value) && value.length > 0;
 }
 
 function fileSeriesId(value: unknown): SeriesId | null {
-  if (value === undefined) return null;
-  const read = field('book', 'series id', value, isTextOrNull);
-  return read === null ? null : seriesId(read);
+  return value === undefined ? null : storedSeriesId(value);
 }
 
 function fileVolume(value: unknown): number | null {
@@ -122,7 +107,7 @@ function fileBook(entry: unknown): FileBook {
   const layoutKind = field('book', 'layout kind', book.layoutKind, isLayoutKind);
   return {
     key: field('book', 'key', book.key, isKey),
-    contentHash: fileContentHash(book.contentHash),
+    contentHash: storedContentHash(book.contentHash),
     fileName: field('book', 'file name', book.fileName, isText),
     title: field('book', 'title', book.title, isText),
     alias: field('book', 'alias', book.alias, isTextOrNull),
@@ -131,7 +116,7 @@ function fileBook(entry: unknown): FileBook {
     language: field('book', 'language', book.language, isLanguage),
     direction: field('book', 'direction', book.direction, isReadingDirection),
     layoutKind,
-    sourceKind: fileSourceKind(book, layoutKind),
+    sourceKind: storedSourceKind(book.sourceKind, layoutKind),
     imageCount: field('book', 'image count', book.imageCount, isWholeNumber),
   };
 }
