@@ -32,6 +32,8 @@ const BOOK: FileBook = {
   fileName: 'volume-1.cbz',
   title: 'Volume 1',
   alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   direction: 'rtl',
   layoutKind: 'paged',

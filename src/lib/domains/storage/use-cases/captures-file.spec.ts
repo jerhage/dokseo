@@ -5,7 +5,7 @@ import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, contentHash, imageIndex, tagId } from '$lib/shared/ids';
+import { bookId, captureId, contentHash, imageIndex, seriesId, tagId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import { buildCapturesFile } from './build-captures-file';
 import type { CapturesFileContents } from './build-captures-file';
@@ -157,6 +157,8 @@ describe('buildCapturesFile', () => {
       fileName: 'aria-3.pdf',
       title: 'Aria 3',
       alias: null,
+      seriesId: null,
+      volume: null,
       language: 'ko',
       direction: 'ltr',
       layoutKind: null,
@@ -218,6 +220,53 @@ describe('readCapturesFile', () => {
     expect(file.unreadable).toEqual([]);
     expect(file.droppedTags).toEqual([]);
     expect([file.exportedAt, file.appVersion]).toEqual([1759449600000, '0.9.3']);
+  });
+
+  it('gives back the series id and volume the builder wrote for a shelf book and a removed record', () => {
+    const built = buildCapturesFile({
+      ...CONTENTS,
+      books: [{ ...SHELF, seriesId: seriesId('series-1'), volume: 1.5 }, IDLE],
+      removedBooks: [{ ...REMOVED, seriesId: seriesId('series-2'), volume: 3 }],
+    });
+
+    const written = built.file.books.map((book) => [book.title, book.seriesId, book.volume]);
+    expect(written).toEqual([
+      ['Aria 3', 'series-2', 3],
+      ['Yotsuba&! 1', 'series-1', 1.5],
+    ]);
+    expect(read(built.json).books).toEqual(built.file.books);
+  });
+
+  it('reads a file whose books carry no series id or volume as books in no series', () => {
+    const text = edited((raw) => {
+      for (const book of entries(raw, 'books')) {
+        delete book.seriesId;
+        delete book.volume;
+      }
+    });
+
+    const file = read(text);
+
+    expect(file.unreadable).toEqual([]);
+    expect(file.books).toEqual(BUILT.file.books);
+    expect(file.books.map((book) => [book.seriesId, book.volume])).toEqual([
+      [null, null],
+      [null, null],
+    ]);
+  });
+
+  it.each([
+    ['series id', 'seriesId', 7, 'A stored book holds an unknown series id: 7'],
+    ['volume', 'volume', '2', 'A stored book holds an unknown volume: 2'],
+  ])('rejects a book whose %s has the wrong type', (_, name, value, detail) => {
+    const file = read(edited((raw) => (entry(raw, 'books', 1)[name] = value)));
+
+    expect(file.books.map((book) => book.key)).toEqual(['book-1']);
+    expect(file.unreadable[0]).toEqual({
+      section: 'books',
+      index: 1,
+      reason: { kind: 'invalid', detail },
+    });
   });
 
   it('reads a removed book with its null fields', () => {

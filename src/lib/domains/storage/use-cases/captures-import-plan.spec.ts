@@ -5,7 +5,7 @@ import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, contentHash, imageIndex, tagId } from '$lib/shared/ids';
+import { bookId, captureId, contentHash, imageIndex, seriesId, tagId } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { BooklessCapture, FileBook } from './captures-file';
 import { planCapturesImport } from './captures-import-plan';
@@ -53,6 +53,8 @@ const FILE_BOOK: FileBook = {
   fileName: 'yotsuba-1.cbz',
   title: 'Yotsuba&! 1',
   alias: null,
+  seriesId: null,
+  volume: null,
   language: 'ja',
   direction: 'rtl',
   layoutKind: 'paged',
@@ -222,6 +224,19 @@ describe('planCapturesImport', () => {
       plan.captures.map((planned) => planned.kind === 'new' && planned.capture.bookId),
     ).toEqual(['minted-1', 'minted-1']);
     expect(plan.summary.notOnThisDevice).toEqual({ books: 1, captures: 2 });
+  });
+
+  it('keeps the series id and volume of a file book in the removed record it creates', () => {
+    const inSeries = { ...ELSEWHERE, seriesId: seriesId('series-1'), volume: 2 };
+
+    const plan = planCapturesImport(
+      read([{ book: inSeries, capture: bookless('c1') }]),
+      holdings(),
+      minting(),
+    );
+
+    expect(plan.records).toHaveLength(1);
+    expect(plan.records[0]).toMatchObject({ seriesId: 'series-1', volume: 2 });
   });
 
   it('creates no record for an absent book whose captures are all held on this device already', () => {

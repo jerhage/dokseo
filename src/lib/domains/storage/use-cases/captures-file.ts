@@ -1,6 +1,7 @@
 import type { SourceKind } from '$lib/domains/library/domain/book/book';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
+import type { SeriesId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
 import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
 
@@ -14,6 +15,8 @@ type FileBook = {
   readonly fileName: string;
   readonly title: string;
   readonly alias: string | null;
+  readonly seriesId: SeriesId | null;
+  readonly volume: number | null;
   readonly language: Language;
   readonly direction: ReadingDirection;
   readonly layoutKind: LayoutKind | null;
