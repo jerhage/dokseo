@@ -143,10 +143,6 @@ function bookFromStored(stored: StoredBook): Book {
   };
 }
 
-function savedBookRow(stored: StoredFields, book: Book): StoredFields {
-  return { ...stored, ...book };
-}
-
 function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
   const id = typeof row.id === 'string' ? parsedBookId(row.id) : null;
   if (id === null) throw cause;
@@ -172,5 +168,5 @@ function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   return { books, unreadable };
 }
 
-export { bookFromStored, savedBookRow, booksFromStored };
+export { bookFromStored, booksFromStored };
 export type { StoredBook, StoredBooks, UnreadableBook };

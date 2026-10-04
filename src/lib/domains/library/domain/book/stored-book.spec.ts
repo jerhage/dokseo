@@ -4,7 +4,7 @@ import { PAGE_PAIRINGS } from '$lib/shared/layout-kind';
 import { imagePlace, textPlace } from '$lib/shared/reading-place';
 import type { Book } from './book';
 import { CorruptRow } from '$lib/shared/corrupt-row';
-import { bookFromStored, booksFromStored, savedBookRow } from './stored-book';
+import { bookFromStored, booksFromStored } from './stored-book';
 import type { StoredBook } from './stored-book';
 
 const HASH = '9f86d081884c7d659a2feaa0c55ad015';
@@ -241,34 +241,6 @@ describe('bookFromStored', () => {
     expect(() => bookFromStored({ ...row, sourceKind: 'mobi' })).toThrow(
       'A stored book holds an unknown source kind: mobi',
     );
-  });
-});
-
-describe('savedBookRow', () => {
-  it('keeps every stored field the book does not know', () => {
-    const stored = { ...row, shelfColour: 'teal', series: { name: 'Yotsuba&!' } };
-
-    const saved = savedBookRow(stored, bookFromStored(stored));
-
-    expect(saved).toMatchObject({ shelfColour: 'teal', series: { name: 'Yotsuba&!' } });
-  });
-
-  it('writes every known field from the book, over the stored value', () => {
-    const stored = { ...row, alias: 'Old', shelfColour: 'teal' };
-    const book = { ...bookFromStored(stored), alias: 'Mine' };
-
-    const saved = savedBookRow(stored, book);
-
-    expect(saved).toEqual({ ...book, shelfColour: 'teal' });
-    expect(saved).toMatchObject({ alias: 'Mine' });
-  });
-
-  it('leaves the stored row untouched', () => {
-    const stored = { ...row, shelfColour: 'teal' };
-
-    savedBookRow(stored, { ...bookFromStored(stored), alias: 'Mine' });
-
-    expect(stored).toEqual({ ...row, shelfColour: 'teal' });
   });
 });
 

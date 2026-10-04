@@ -177,29 +177,26 @@ describe('createLibraryRepository', () => {
     expect(store('books').get('good-1')).toMatchObject({ title: 'Yotsuba&! 1', alias: 'Mine' });
   });
 
-  it('keeps a stored field it does not know when it saves an edit', async () => {
+  it('drops a stored field it does not know when it saves an edit', async () => {
     store('books').set(GOOD.id, { ...GOOD, shelfColour: 'teal', series: { name: 'Yotsuba&!' } });
     const repository = createLibraryRepository();
 
     await repository.update(bookId('good-1'), { position: imagePlace(imageIndex(9)) });
 
-    expect(store('books').get('good-1')).toMatchObject({
-      shelfColour: 'teal',
-      series: { name: 'Yotsuba&!' },
-      position: { kind: 'image', index: 9 },
+    expect(store('books').get('good-1')).toEqual({
+      ...GOOD,
+      position: { kind: 'image', index: 9, shownThrough: 9, offset: 0 },
     });
   });
 
-  it('writes every known field from the book it read when it saves an edit', async () => {
+  it('writes exactly the book it read and edited when it saves an edit', async () => {
     store('books').set(GOOD.id, { ...GOOD, alias: 'Old', shelfColour: 'teal' });
     const repository = createLibraryRepository();
 
     const updated = await repository.update(bookId('good-1'), { alias: 'Mine' });
 
     expect(updated.kind === 'success' && updated.book).toMatchObject({ alias: 'Mine' });
-    expect(store('books').get('good-1')).toEqual(
-      updated.kind === 'success' && { ...updated.book, shelfColour: 'teal' },
-    );
+    expect(store('books').get('good-1')).toEqual(updated.kind === 'success' && updated.book);
   });
 
   it('refuses to save an edit to a row whose series id is not text, and leaves the row', async () => {
