@@ -14,11 +14,11 @@ describe('unreadableTagsTitle', () => {
 
 describe('unreadableTagName', () => {
   it('names the tag by its stored name', () => {
-    expect(unreadableTagName({ id: tagId('t-1'), name: 'keigo' })).toBe('keigo');
+    expect(unreadableTagName({ id: tagId('t-1'), name: 'keigo', stored: {} })).toBe('keigo');
   });
 
   it.each([null, '  '])('names a tag without a name %j by a short id', (name) => {
-    expect(unreadableTagName({ id: tagId('0123456789abcdef'), name })).toBe(
+    expect(unreadableTagName({ id: tagId('0123456789abcdef'), name, stored: {} })).toBe(
       'Unnamed tag (01234567)',
     );
   });

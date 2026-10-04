@@ -91,7 +91,9 @@ describe('createCaptureRepository', () => {
       const listed = await list();
 
       expect(listed.kind === 'success' && listed.captures.map((row) => row.id)).toEqual(['good']);
-      expect(listed.kind === 'success' && listed.unreadable).toEqual([{ id: 'old' }]);
+      expect(listed.kind === 'success' && listed.unreadable).toEqual([
+        { id: 'old', stored: OLD_SHAPE },
+      ]);
     },
   );
 

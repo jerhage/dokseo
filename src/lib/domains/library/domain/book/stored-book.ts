@@ -31,6 +31,7 @@ type UnreadableBook = {
   readonly alias: string | null;
   readonly contentHash: string;
   readonly fileName: string;
+  readonly stored: StoredBook;
 };
 
 type StoredBooks = {
@@ -41,14 +42,6 @@ type StoredBooks = {
 type StoredBookRead =
   | { readonly kind: 'readable'; readonly book: Book }
   | { readonly kind: 'unreadable'; readonly book: UnreadableBook };
-
-type RawRow = {
-  readonly id?: unknown;
-  readonly title?: unknown;
-  readonly alias?: unknown;
-  readonly contentHash?: unknown;
-  readonly fileName?: unknown;
-};
 
 function bookField<T>(field: string, value: unknown, known: (value: unknown) => value is T): T {
   return knownStoredValue('book', field, value, known);
@@ -147,7 +140,7 @@ function bookFromStored(stored: StoredBook): Book {
   };
 }
 
-function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
+function unreadableBook(row: StoredBook, cause: unknown): UnreadableBook {
   const id = typeof row.id === 'string' ? parsedBookId(row.id) : null;
   if (id === null) throw cause;
   return {
@@ -156,6 +149,7 @@ function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
     alias: typeof row.alias === 'string' ? row.alias : null,
     contentHash: typeof row.contentHash === 'string' ? row.contentHash : '',
     fileName: typeof row.fileName === 'string' ? row.fileName : '',
+    stored: row,
   };
 }
 

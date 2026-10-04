@@ -114,6 +114,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
                 alias: null,
                 contentHash: '',
                 fileName: '',
+                stored: { id },
               })),
             },
       ),
@@ -147,6 +148,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
               unreadable: ids(holdings.unreadableTags ?? 0).map((id) => ({
                 id: tagId(id),
                 name: null,
+                stored: { id },
               })),
             },
       ),
@@ -164,6 +166,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
               captures: holdings.captures ?? [capture('capture-1', 'shelf-1')],
               unreadable: ids(holdings.unreadableCaptures ?? 0).map((id) => ({
                 id: captureId(id),
+                stored: { id },
               })),
             },
       ),

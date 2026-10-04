@@ -365,6 +365,7 @@ describe('booksFromStored', () => {
         alias: null,
         contentHash: HASH,
         fileName: 'Yotsuba&! 1.cbz',
+        stored: scrolled,
       },
     ]);
   });
@@ -373,7 +374,14 @@ describe('booksFromStored', () => {
     const untitled = { ...row, title: 7, layoutKind: 'scroll' } as unknown as StoredBook;
 
     expect(booksFromStored([untitled]).unreadable).toEqual([
-      { id: 'b-1', title: null, alias: null, contentHash: HASH, fileName: 'Yotsuba&! 1.cbz' },
+      {
+        id: 'b-1',
+        title: null,
+        alias: null,
+        contentHash: HASH,
+        fileName: 'Yotsuba&! 1.cbz',
+        stored: untitled,
+      },
     ]);
   });
 
@@ -387,6 +395,7 @@ describe('booksFromStored', () => {
         alias: 'Mine',
         contentHash: HASH,
         fileName: 'Yotsuba&! 1.cbz',
+        stored: renamed,
       },
     ]);
   });

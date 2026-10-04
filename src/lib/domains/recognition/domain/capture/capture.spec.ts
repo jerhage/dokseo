@@ -409,7 +409,14 @@ describe('capturesFromStored', () => {
     const read = capturesFromStored([kept, anchorless]);
 
     expect(read.captures.map((capture) => capture.id)).toEqual(['kept']);
-    expect(read.unreadable).toEqual([{ id: 'old' }]);
+    expect(read.unreadable.map((row) => row.id)).toEqual(['old']);
+  });
+
+  it('keeps the row an unreadable capture was stored as, unknown fields included', () => {
+    const stored = { id: 'old', text: 7, pinned: true } as unknown as StoredCapture;
+
+    expect(capturesFromStored([stored]).unreadable).toEqual([{ id: 'old', stored }]);
+    expect(capturesFromStored([stored]).unreadable[0]?.stored).toBe(stored);
   });
 
   const complete = {
@@ -443,7 +450,7 @@ describe('capturesFromStored', () => {
     const read = capturesFromStored([without(field)]);
 
     expect(read.captures).toEqual([]);
-    expect(read.unreadable).toEqual([{ id: 'full' }]);
+    expect(read.unreadable.map((row) => row.id)).toEqual(['full']);
   });
 
   it.each([
@@ -502,7 +509,7 @@ describe('capturesFromStored', () => {
     const read = capturesFromStored([{ ...complete, [field]: value }]);
 
     expect(read.captures).toEqual([]);
-    expect(read.unreadable).toEqual([{ id: 'full' }]);
+    expect(read.unreadable.map((row) => row.id)).toEqual(['full']);
   });
 
   function onPage(rect: Readonly<Record<string, number>>): StoredCapture {
@@ -524,7 +531,7 @@ describe('capturesFromStored', () => {
     const read = capturesFromStored([onPage(rect)]);
 
     expect(read.captures).toEqual([]);
-    expect(read.unreadable).toEqual([{ id: 'full' }]);
+    expect(read.unreadable.map((row) => row.id)).toEqual(['full']);
   });
 
   it('names the region rect when it does not fit on the page', () => {
@@ -559,7 +566,7 @@ describe('capturesFromStored', () => {
       },
     ]);
 
-    expect(read.unreadable).toEqual([{ id: 'lifted' }]);
+    expect(read.unreadable.map((row) => row.id)).toEqual(['lifted']);
   });
 
   it('reads a row edited at the moment it was taken', () => {

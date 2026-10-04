@@ -102,7 +102,14 @@ describe('listRemovedShelf', () => {
         kind: 'success',
         books: [heldBook('gone-1')],
         unreadable: [
-          { id: bookId('gone-2'), title: null, alias: null, contentHash: '', fileName: '' },
+          {
+            id: bookId('gone-2'),
+            title: null,
+            alias: null,
+            contentHash: '',
+            fileName: '',
+            stored: { id: 'gone-2' },
+          },
         ],
       },
       removed: {

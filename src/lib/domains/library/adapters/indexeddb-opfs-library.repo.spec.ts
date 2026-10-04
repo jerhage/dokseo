@@ -110,6 +110,7 @@ describe('createLibraryRepository', () => {
           alias: null,
           contentHash: 'a'.repeat(64),
           fileName: 'Yotsuba&! 1.cbz',
+          stored: { ...GOOD, contentHash: 'a'.repeat(64) },
         },
       ],
     });
@@ -123,7 +124,14 @@ describe('createLibraryRepository', () => {
 
     expect(listed.kind === 'success' && listed.books.map((book) => book.id)).toEqual(['good-1']);
     expect(listed.kind === 'success' && listed.unreadable).toEqual([
-      { id: 'old-1', title: 'Yotsuba&! 2', alias: null, contentHash: '', fileName: '' },
+      {
+        id: 'old-1',
+        title: 'Yotsuba&! 2',
+        alias: null,
+        contentHash: '',
+        fileName: '',
+        stored: OLD_SHAPE,
+      },
     ]);
   });
 
@@ -134,7 +142,14 @@ describe('createLibraryRepository', () => {
 
     expect(read).toEqual({
       kind: 'unreadable-book',
-      book: { id: 'old-1', title: 'Yotsuba&! 2', alias: null, contentHash: '', fileName: '' },
+      book: {
+        id: 'old-1',
+        title: 'Yotsuba&! 2',
+        alias: null,
+        contentHash: '',
+        fileName: '',
+        stored: OLD_SHAPE,
+      },
     });
   });
 

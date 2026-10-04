@@ -44,7 +44,7 @@ describe('createTagRepository', () => {
     expect(listed).toEqual({
       kind: 'success',
       tags: [KEIGO, SFX],
-      unreadable: [{ id: 'nameless', name: null }],
+      unreadable: [{ id: 'nameless', name: null, stored: NAMELESS }],
     });
   });
 

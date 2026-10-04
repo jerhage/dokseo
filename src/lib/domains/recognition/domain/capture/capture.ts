@@ -65,14 +65,12 @@ type NotableCapture = RecognizedCapture | LiftedCapture;
 
 type StoredCapture = { readonly [Field in keyof RecognizedCapture]?: unknown };
 
-type UnreadableCapture = { readonly id: CaptureId };
+type UnreadableCapture = { readonly id: CaptureId; readonly stored: StoredCapture };
 
 type StoredCaptures = {
   readonly captures: readonly Capture[];
   readonly unreadable: readonly UnreadableCapture[];
 };
-
-type RawRow = { readonly id?: unknown };
 
 function takenCapture(draft: CaptureDraft, createdAt: number): Capture {
   const history: CaptureHistory = { createdAt, editedAt: null, tagIds: [] };
@@ -203,9 +201,9 @@ function captureFromStored(stored: StoredCapture): Capture {
     .exhaustive();
 }
 
-function unreadableCapture(row: RawRow, cause: unknown): UnreadableCapture {
+function unreadableCapture(row: StoredCapture, cause: unknown): UnreadableCapture {
   if (typeof row.id !== 'string' || row.id.length === 0) throw cause;
-  return { id: captureId(row.id) };
+  return { id: captureId(row.id), stored: row };
 }
 
 function capturesFromStored(rows: readonly StoredCapture[]): StoredCaptures {

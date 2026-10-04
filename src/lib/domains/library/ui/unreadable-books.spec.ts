@@ -28,6 +28,7 @@ describe('unreadableBookName', () => {
         alias: null,
         contentHash: '',
         fileName: '',
+        stored: {},
       }),
     ).toBe('Yotsuba&! 2');
   });
@@ -40,6 +41,7 @@ describe('unreadableBookName', () => {
         alias: 'Mine',
         contentHash: '',
         fileName: '',
+        stored: {},
       }),
     ).toBe('Mine (originally Yotsuba&! 2)');
   });
@@ -52,6 +54,7 @@ describe('unreadableBookName', () => {
         alias: 'Mine',
         contentHash: '',
         fileName: '',
+        stored: {},
       }),
     ).toBe('Mine');
   });
@@ -64,6 +67,7 @@ describe('unreadableBookName', () => {
         alias: null,
         contentHash: '',
         fileName: '',
+        stored: {},
       }),
     ).toBe('Untitled book (01234567)');
   });
@@ -102,6 +106,7 @@ function broken(overrides: Partial<UnreadableBook> = {}): UnreadableBook {
     alias: null,
     contentHash: 'a'.repeat(64),
     fileName: '',
+    stored: {},
     ...overrides,
   };
 }
