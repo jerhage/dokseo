@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DiagramSpec } from '../testing/testing-diagrams';
 import {
@@ -9,11 +10,30 @@ import {
 } from './narrowing-tree';
 import { PARSE_BOUNDARY } from './type-diagrams';
 import { TYPE_SECTIONS } from './type-sections';
+import { TYPE_SNIPPETS } from './type-snippets';
+
+function unindented(code: string): string {
+  return code
+    .split('\n')
+    .map((line) => line.trimStart())
+    .join('\n');
+}
 
 function toneOf(diagram: DiagramSpec, label: string): string | undefined {
   const node = diagram.nodes.find((candidate) => candidate.label === label);
   return node?.tone;
 }
+
+describe('the TypeScript page snippets', () => {
+  it.each(TYPE_SNIPPETS.map((snippet) => [snippet.label, snippet] as const))(
+    'quotes %s exactly as the source file has it',
+    (_label, snippet) => {
+      const source = readFileSync(snippet.file, 'utf8');
+
+      expect(unindented(source)).toContain(unindented(snippet.code));
+    },
+  );
+});
 
 describe('narrowingPath', () => {
   it('ends each sample at its own leaf, passing the checks above it', () => {
