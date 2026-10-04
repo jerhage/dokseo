@@ -2,11 +2,13 @@
   import DocsPage from '../DocsPage.svelte';
   import DeliverySection from './security-headers/DeliverySection.svelte';
   import DirectivesSection from './security-headers/DirectivesSection.svelte';
+  import DownloadsSection from './security-headers/DownloadsSection.svelte';
   import EmbedderSection from './security-headers/EmbedderSection.svelte';
   import FramesSection from './security-headers/FramesSection.svelte';
   import IsolationSection from './security-headers/IsolationSection.svelte';
   import PolicySection from './security-headers/PolicySection.svelte';
   import { SECTIONS } from './security-headers/sections';
+  import SourcesSection from './security-headers/SourcesSection.svelte';
   import WorkersSection from './security-headers/WorkersSection.svelte';
 </script>
 
@@ -24,4 +26,6 @@
   <WorkersSection />
   <FramesSection />
   <DirectivesSection />
+  <SourcesSection />
+  <DownloadsSection />
 </DocsPage>
