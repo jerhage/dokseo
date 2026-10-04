@@ -208,29 +208,40 @@ const book: Book = {
 const REPOSITORY_REMOVE: SourceSnippet = {
   label: 'Removing a book keeps a record',
   file: 'src/lib/domains/library/adapters/indexeddb-opfs-library.repo.ts',
-  code: `async remove(id: BookId): Promise<LibraryWrite> {
-  if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
-  const keys = blobKeys(id);
-  const db = await database();
-  const row = await getRecord<RetiredRow>(db, BOOK_STORE, id);
-  const kept = row === undefined ? null : removedBookFrom(row);
-  if (kept !== null) await putRecord(db, REMOVED_BOOK_STORE, kept);
-  await deleteRecord(db, BOOK_STORE, id);
-  await deleteRecord(db, PAGE_LIST_STORE, id);`,
+  code: `function retired(row: StoredBook, removedAt: number): StoredRemovedBook {
+  const [book] = booksFromStored([row]).books;
+  return book === undefined ? { ...row, removedAt } : removedRecord(book, removedAt);
+}`,
+};
+
+const REPOSITORY_REMOVE_CALL: SourceSnippet = {
+  label: 'The record is written before the row goes',
+  file: 'src/lib/domains/library/adapters/indexeddb-opfs-library.repo.ts',
+  code: `const row = await getRecord<StoredBook>(db, BOOK_STORE, id);
+if (row !== undefined) await putRecord(db, REMOVED_BOOK_STORE, retired(row, removedAt));
+await deleteRecord(db, BOOK_STORE, id);
+await deleteRecord(db, PAGE_LIST_STORE, id);`,
 };
 
 const BOOKS_FROM_STORED: SourceSnippet = {
   label: 'One row at a time',
   file: 'src/lib/domains/library/domain/book/stored-book.ts',
-  code: `function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
+  code: `function storedBookRead(row: StoredBook): StoredBookRead {
+  try {
+    const book = bookFromStored(row);
+    return { kind: 'readable', book };
+  } catch (cause) {
+    return { kind: 'unreadable', book: unreadableBook(row, cause) };
+  }
+}
+
+function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   const books: Book[] = [];
   const unreadable: UnreadableBook[] = [];
   for (const row of rows) {
-    try {
-      books.push(bookFromStored(row));
-    } catch (cause) {
-      unreadable.push(unreadableBook(row, cause));
-    }
+    const read = storedBookRead(row);
+    if (read.kind === 'readable') books.push(read.book);
+    else unreadable.push(read.book);
   }
   return { books, unreadable };
 }`,
@@ -285,6 +296,7 @@ const IDENTITY_SNIPPETS: readonly SourceSnippet[] = [
   OPEN_FILE_JOIN,
   OPEN_FILE_RESTORE,
   REPOSITORY_REMOVE,
+  REPOSITORY_REMOVE_CALL,
   BOOKS_FROM_STORED,
   MERGE_STRAY,
   MATCHING_OPTIONS,
@@ -303,6 +315,7 @@ export {
   PARTIAL_MD5,
   PLAUSIBLE_TITLE,
   REPOSITORY_REMOVE,
+  REPOSITORY_REMOVE_CALL,
   RESTORABLE_MATCH,
   SHOWN_TITLE,
   UPLOAD_MANIFEST,
