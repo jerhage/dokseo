@@ -1,5 +1,6 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
+  import ChaptersSection from './security-headers/ChaptersSection.svelte';
   import DeliverySection from './security-headers/DeliverySection.svelte';
   import DirectivesSection from './security-headers/DirectivesSection.svelte';
   import DownloadsSection from './security-headers/DownloadsSection.svelte';
@@ -9,6 +10,7 @@
   import PolicySection from './security-headers/PolicySection.svelte';
   import { SECTIONS } from './security-headers/sections';
   import SourcesSection from './security-headers/SourcesSection.svelte';
+  import WebkitSection from './security-headers/WebkitSection.svelte';
   import WorkersSection from './security-headers/WorkersSection.svelte';
 </script>
 
@@ -28,4 +30,6 @@
   <DirectivesSection />
   <SourcesSection />
   <DownloadsSection />
+  <ChaptersSection />
+  <WebkitSection />
 </DocsPage>

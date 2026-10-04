@@ -17,7 +17,8 @@ const DOCS_TOPICS = [
   {
     slug: 'security-headers',
     title: 'Security headers',
-    summary: 'CSP, COOP and COEP, cross-origin isolation, and why SharedArrayBuffer needs them.',
+    summary:
+      'CSP, COOP and COEP, cross-origin isolation, and how Dokseo runs threaded OCR and EPUB frames under them.',
     status: 'published',
   },
   {
