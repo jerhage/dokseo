@@ -28,7 +28,7 @@
     same crop again, so the request still gets its text.
   </p>
   <DocsCode label={FIRST_RUN.label} code={FIRST_RUN.code} />
-  <p>Three details follow from the earlier sections:</p>
+  <p>A few details follow from the earlier sections:</p>
   <ul>
     <li>
       The run that lost is abandoned, not canceled: ONNX Runtime has no way to stop a running

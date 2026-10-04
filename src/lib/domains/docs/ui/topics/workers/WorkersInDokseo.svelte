@@ -123,7 +123,7 @@
     A crop is an <code>ImageBitmap</code>, and it goes to the worker in the transfer list, so its
     pixels are not copied. A transfer detaches the sender's bitmap, so the adapter never sends the
     bitmap it was given. <code>preparedFor</code> first draws the caller's crop into a new bitmap, capped
-    in size and converted to grey when the model needs that, and the new one is sent:
+    in size and converted to gray when the model needs that, and the new one is sent:
   </p>
   <DocsCode label={RECOGNIZER_SEND.label} code={RECOGNIZER_SEND.code} />
   <p>

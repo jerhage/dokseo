@@ -69,8 +69,7 @@ pixels.byteLength;`;
     <StepItem title="Dedicated worker">
       <p>
         <code>new Worker(url)</code> starts one for the script that created it, and only that script can
-        message it. When the page goes away, so does the worker. Everything else on this page is about
-        this kind.
+        message it. When the page goes away, so does the worker. Every demo below starts this kind.
       </p>
     </StepItem>
     <StepItem title="Shared worker">

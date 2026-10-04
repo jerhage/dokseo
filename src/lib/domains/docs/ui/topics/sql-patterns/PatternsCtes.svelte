@@ -133,7 +133,7 @@
     query when the parent references it once, and computed separately when it references it more
     than once. Two keywords override the default: <code>MATERIALIZED</code> forces the separate
     computation, and <code>NOT MATERIALIZED</code> forces the inlining. The difference shows in the plan.
-    Here is a CTE referenced once, filtered to one user:
+    A CTE referenced once, filtered to one user, shows it:
   </p>
   {@render plan(SQL_EXAMPLES.planInlined, 'A CTE referenced once')}
   <p>

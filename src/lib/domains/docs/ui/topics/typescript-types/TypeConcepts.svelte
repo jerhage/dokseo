@@ -345,7 +345,7 @@
     A union only protects code that handles every member, and that goes on handling every member
     after someone adds one. The <a href={ARCHITECTURE_EXHAUSTIVE_HREF}>architecture page</a> shows
     the problem on a real use case result: a new variant falls into the last <code>else</code> of an if
-    chain, and the code still compiles. Two techniques make the compiler report it instead.
+    chain, and the code still compiles. Either of two techniques makes the compiler report it instead.
   </p>
   <p>
     The first needs no library. The <code>never</code> type has no values, and in the handbook's

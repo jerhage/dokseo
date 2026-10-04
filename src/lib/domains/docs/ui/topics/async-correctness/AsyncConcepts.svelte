@@ -53,10 +53,10 @@
       frame is due.{/snippet}
   </Figure>
   <p>
-    Two consequences matter for everything below. Nothing on the page updates while a task runs, so
-    a long task freezes the page. And a microtask that keeps queuing microtasks never lets the loop
-    reach the next task or the next frame, so it freezes the page too. The program below queues one
-    of each kind; press the button to see the order this browser runs them in.
+    Nothing on the page updates while a task runs, so a long task freezes the page. And a microtask
+    that keeps queuing microtasks never lets the loop reach the next task or the next frame, so it
+    freezes the page too. The program below queues one of each kind; press the button to see the
+    order this browser runs them in.
   </p>
   <EventLoopDemo />
   <p>
@@ -196,8 +196,8 @@
   <p>
     Note what is missing: there is no way to cancel a promise. A promise is a placeholder for a
     result, not a handle on the work that produces it, and nothing in the language reaches from a
-    promise back to that work. Aborting works only when the code doing the work listens to the
-    signal. For work that does not, the only option is to stop waiting for it, as the request id
+    promise back to that work. Aborting works only when the code that performs the work listens to
+    the signal. For work that does not, the only option is to stop waiting for it, as the request id
     does, and to make sure its late answer can do no harm.
   </p>
 </DocsSection>

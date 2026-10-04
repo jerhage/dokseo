@@ -138,7 +138,7 @@
     while it shows only an icon.
   </p>
   <DocsCode
-    label="A label, a description, an aria-label and a labelling heading"
+    label="A label, a description, an aria-label and a labeling heading"
     code={NAMES_EXAMPLE}
   />
   <p>

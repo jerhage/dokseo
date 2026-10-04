@@ -65,8 +65,8 @@ request.onsuccess = () => {
     IndexedDB is a database built into every browser, with one set of databases per origin.
     <a href={STORAGE_APIS_HREF}>Where a web app can keep data</a> places it beside
     <code>localStorage</code>, the Cache API and the origin private file system, and
-    <a href={STORAGE_EVICTION_HREF}>Eviction</a> explains why the browser may delete all of it. This page
-    treats it as a database, for someone who knows SQL.
+    <a href={STORAGE_EVICTION_HREF}>Eviction</a> explains why the browser may delete all of it. Someone
+    who knows SQL can treat it as a database.
   </p>
   <p>
     A <em>database</em> has a name and an integer version. It holds <em>object stores</em>, the

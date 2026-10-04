@@ -324,7 +324,7 @@ const DOCK_TOKENS: SourceSnippet = {
 };
 
 const TAG_COLOURS_TAIL: SourceSnippet = {
-  label: 'The end of the colour list, in recognition/domain/tag/tag-colour.ts',
+  label: 'The end of the color list, in recognition/domain/tag/tag-colour.ts',
   file: 'src/lib/domains/recognition/domain/tag/tag-colour.ts',
   code: `] as const satisfies readonly TagColour[];
 

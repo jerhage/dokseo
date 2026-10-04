@@ -203,7 +203,7 @@ ratio = (L1 + 0.05) / (L2 + 0.05)`;
   <p>
     WCAG 2.2's 1.4.1, Use of Color (level A), adds that color must not be the only way to tell
     something. A field whose border turns red on an error conveys nothing to someone who cannot tell
-    red from grey, or to a screen reader; an icon, a written message and <code>aria-invalid</code> say
+    red from gray, or to a screen reader; an icon, a written message and <code>aria-invalid</code> say
     it in three other ways.
   </p>
 </DocsSection>

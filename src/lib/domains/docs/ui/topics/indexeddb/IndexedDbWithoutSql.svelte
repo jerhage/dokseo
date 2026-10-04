@@ -48,7 +48,7 @@ request.onsuccess = () => {
 
 <DocsSection title={INDEXEDDB_SECTIONS.join}>
   <p>
-    The examples in this part use the demo's two stores, <code>books</code> and
+    The examples below use the demo's two stores, <code>books</code> and
     <code>captures</code>, where each capture holds the <code>bookId</code> of its book and
     <code>captures</code> has an index on <code>bookId</code>. The <code>all</code> helper wraps a
     request in a promise. The goal is the result of

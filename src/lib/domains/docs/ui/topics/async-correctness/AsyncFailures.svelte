@@ -165,7 +165,7 @@
       imported.
     </StepItem>
   </StepList>
-  <p>There are two ways to stop the second save, and they protect different things:</p>
+  <p>Each of these stops the second save, and they protect different things:</p>
   <ul>
     <li>
       <strong>Disable the button</strong> while the save runs. This also shows that something is happening.
@@ -197,7 +197,7 @@
     <code>try</code> block returns or throws, and after an awaited promise in it fulfills or rejects:
   </p>
   <DocsCode label="The spinner goes away on every outcome" code={FINALLY_SPINNER} />
-  <p>Three details are easy to miss:</p>
+  <p>Some details are easy to miss:</p>
   <ul>
     <li>
       <code>finally</code> runs when the wait ends. If the awaited promise never settles, it never
