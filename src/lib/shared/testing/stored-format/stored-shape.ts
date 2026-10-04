@@ -34,6 +34,13 @@ function schemaChanged(database: string): string {
   ].join(' ');
 }
 
+const BOOK_FILES_CHANGED = [
+  'The 1.x stored format of the OPFS book files changed.',
+  'A stored book finds its uploaded file and its cover by this folder and these names:',
+  'after 1.0 a rename takes a migration that renames every file already stored,',
+  'and only then this pin.',
+].join(' ');
+
 const CAPTURES_FILE_CHANGED = [
   'The captures file v1 this build writes changed.',
   'Within 1.x a v1 file may only gain an optional part that every 1.x reader ignores,',
@@ -49,6 +56,7 @@ const GOLDEN_FILE_MUST_IMPORT = [
 ].join(' ');
 
 export {
+  BOOK_FILES_CHANGED,
   CAPTURES_FILE_CHANGED,
   GOLDEN_FILE_MUST_IMPORT,
   formatChanged,
