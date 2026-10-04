@@ -1,0 +1,24 @@
+@layer features {
+  @scope (.ocr-crop-demo) {
+    .page {
+      align-self: start;
+      cursor: crosshair;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .page img {
+      inline-size: 100%;
+      block-size: auto;
+      pointer-events: none;
+    }
+    .stage {
+      block-size: auto;
+      background-color: var(--color-surface);
+    }
+    .model-input {
+      image-rendering: pixelated;
+    }
+  }
+}
