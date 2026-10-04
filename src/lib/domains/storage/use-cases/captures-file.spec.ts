@@ -587,6 +587,24 @@ describe('readCapturesFile', () => {
     expect(file.captures.map(({ capture }) => capture.id)).toEqual([WRITTEN.id]);
   });
 
+  it('rejects a book entry whose key is not a flat book id, the rule its captures are read by', () => {
+    const file = read(
+      edited((raw) => {
+        entry(raw, 'books', 0).key = 'book/1';
+        for (const capture of entries(raw, 'captures')) {
+          if (capture.bookKey === 'book-1') capture.bookKey = 'book/1';
+        }
+      }),
+    );
+
+    expect(file.books.map((book) => book.key)).toEqual(['book-2']);
+    expect(file.unreadable[0]).toEqual({
+      section: 'books',
+      index: 0,
+      reason: { kind: 'invalid', detail: 'A stored book holds an unknown key: book/1' },
+    });
+  });
+
   it('rejects a capture whose book key names no book', () => {
     const file = read(edited((raw) => (entry(raw, 'captures', 0).bookKey = 'book-9')));
 
