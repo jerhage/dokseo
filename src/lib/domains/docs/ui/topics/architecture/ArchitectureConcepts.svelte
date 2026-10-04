@@ -197,7 +197,7 @@
     </StepItem>
     <StepItem title="Dependency types">
       <p>
-        Every import carries types such as <code>local</code>, <code>npm</code> or
+        Every import has types such as <code>local</code>, <code>npm</code> or
         <code>type-only</code> (an <code>import type</code>). <code>dependencyTypesNot</code> excludes
         imports of the listed types from a rule.
       </p>

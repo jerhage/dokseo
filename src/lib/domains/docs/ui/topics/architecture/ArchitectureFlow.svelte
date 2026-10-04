@@ -141,7 +141,7 @@
 
 <DocsSection title={ARCHITECTURE_SECTIONS.languages}>
   <p>
-    A book carries its language, and each language needs its own OCR model: manga-ocr for Japanese,
+    A book records its language, and each language needs its own OCR model: manga-ocr for Japanese,
     PaddleOCR for Korean. The use cases that read text receive a <code>TextRecognizer</code> and
     never branch on the language; the composition root picks the adapter. In
     <code>composition/recognizers.ts</code>, <code>recognizerFor</code> reads the engine settings for

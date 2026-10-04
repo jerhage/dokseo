@@ -5,7 +5,7 @@ const SECTIONS = {
   delivery: 'Header or meta tag',
   isolation: 'Cross-origin isolation',
   embedder: 'Responses under require-corp',
-  workers: 'Workers carry their own policy',
+  workers: 'Workers have their own policy',
   frames: 'Blob documents inherit the policy',
   directives: "Dokseo's policy, directive by directive",
   sources: "Where Dokseo's headers come from",

@@ -119,7 +119,7 @@
     and tearing a dead worker down, is shared in <code>worker-recognizer.ts</code>.
   </p>
   <p>
-    The composition root picks the adapter. A book carries its language, the stored engine settings
+    The composition root picks the adapter. A book records its language, the stored engine settings
     choose a model for that language, and the model names its runtime.
     <code>recognizerFor</code> matches on the runtime and loads the adapter with a dynamic import, so
     an engine's code is fetched only when a book needs it. The recognizer is kept per language, and a

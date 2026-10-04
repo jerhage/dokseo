@@ -16,7 +16,7 @@ const EPUB_SECTIONS = {
   probe: "Finding a book's writing mode",
   anchoring: 'How a capture anchors its text',
   lock: 'The turn lock',
-  bugs: 'Bugs that shaped the reader',
+  bugs: 'Bugs that changed the reader',
   title: 'The title from the metadata',
   rules: 'Rules for changing the reader',
 } as const;
