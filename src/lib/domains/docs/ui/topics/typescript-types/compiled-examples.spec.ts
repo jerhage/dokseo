@@ -3,12 +3,13 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import type { CompiledExample, CompilerFlag } from './compiled-example';
 import { CONCEPT_EXAMPLES } from './concept-examples';
+import { TOOL_EXAMPLES } from './tool-examples';
 
 const EXAMPLE_FOLDER = join(process.cwd(), 'typescript-examples');
 
 const COMPILE_TIMEOUT_MS = 60_000;
 
-const COMPILED_EXAMPLES: readonly CompiledExample[] = CONCEPT_EXAMPLES;
+const COMPILED_EXAMPLES: readonly CompiledExample[] = [...CONCEPT_EXAMPLES, ...TOOL_EXAMPLES];
 
 function optionsFor(flags: readonly CompilerFlag[]): ts.CompilerOptions {
   return {
