@@ -1,7 +1,9 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
   import DeliverySection from './security-headers/DeliverySection.svelte';
+  import DirectivesSection from './security-headers/DirectivesSection.svelte';
   import EmbedderSection from './security-headers/EmbedderSection.svelte';
+  import FramesSection from './security-headers/FramesSection.svelte';
   import IsolationSection from './security-headers/IsolationSection.svelte';
   import PolicySection from './security-headers/PolicySection.svelte';
   import { SECTIONS } from './security-headers/sections';
@@ -20,4 +22,6 @@
   <IsolationSection />
   <EmbedderSection />
   <WorkersSection />
+  <FramesSection />
+  <DirectivesSection />
 </DocsPage>
