@@ -81,9 +81,9 @@
   <p>
     The entries reuse the row rules. Tags and captures go through the same mappers as stored rows,
     and a book entry holds the identity fields of a book row with the same checks: a partial MD5, a
-    source kind that fits the layout, a whole-number image count. <code>seriesId</code> and
-    <code>volume</code> may be absent from a book entry and then read as null. The first book entry and
-    the first capture entry of the golden file below:
+    source kind that fits the layout, a whole-number image count, a <code>seriesId</code> and a
+    <code>volume</code> present as in the row. The first book entry and the first capture entry of the
+    golden file below:
   </p>
   <DocsCode label="captures-v1.golden.json, books[0]" code={goldenPart('books')} />
   <DocsCode label="captures-v1.golden.json, captures[0]" code={goldenPart('captures')} />

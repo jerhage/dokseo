@@ -112,9 +112,10 @@
   <p>
     The captures export writes both fields on every book entry (<a href={EXPORT_FORMAT_HREF}
       >The dokseo-captures format</a
-    >). Reading a file treats them as optional, so a file written before they existed still imports,
-    and only a value of the wrong type rejects the entry. An import that holds captures under a new
-    removed record, for a book this device lacks, keeps both fields there too.
+    >). Reading a file checks them with the book row's own checks: both must be present, and a
+    missing field, a value of the wrong type or an empty series id rejects the entry. An import that
+    holds captures under a new removed record, for a book this device lacks, keeps both fields there
+    too.
   </p>
   <DocsCode label={FILE_SERIES_FIELDS.file} code={FILE_SERIES_FIELDS.code} />
 </DocsSection>
