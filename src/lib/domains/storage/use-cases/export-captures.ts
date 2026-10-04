@@ -73,6 +73,7 @@ async function exportCaptures(deps: ExportCapturesDeps): Promise<ExportCapturesR
   const built = buildCapturesFile({
     books: shelf.books,
     removedBooks: removed.removed,
+    unreadableRemovedBooks: [],
     tags: tags.tags,
     captures: captures.captures,
     exportedAt,

@@ -98,6 +98,7 @@ const STRAY: Capture = { ...WRITTEN, id: captureId('capture-stray'), bookId: boo
 const CONTENTS: CapturesFileContents = {
   books: [SHELF, IDLE],
   removedBooks: [REMOVED],
+  unreadableRemovedBooks: [],
   tags: [KANJI, GRAMMAR],
   captures: [RECOGNIZED, WRITTEN, LIFTED, STRAY],
   exportedAt: 1759449600000,

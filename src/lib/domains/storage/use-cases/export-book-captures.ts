@@ -72,13 +72,16 @@ async function exportBookCaptures(
   if (captures.kind !== 'success') return captures;
 
   const book =
-    shelf.books.find((held) => held.id === id) ?? removed.removed.find((held) => held.id === id);
+    shelf.books.find((held) => held.id === id) ??
+    removed.removed.find((held) => held.id === id) ??
+    removed.unreadable.find((held) => held.id === id);
   if (book === undefined) return { kind: 'nothing-to-export' };
 
   const exportedAt = deps.now();
   const built = buildCapturesFile({
     books: shelf.books.filter((held) => held.id === id),
     removedBooks: removed.removed.filter((held) => held.id === id),
+    unreadableRemovedBooks: removed.unreadable.filter((held) => held.id === id),
     tags: tagsUsedBy(tags.tags, captures.captures),
     captures: captures.captures,
     exportedAt,
