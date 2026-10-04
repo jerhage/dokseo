@@ -336,6 +336,17 @@ describe('createLibraryRepository', () => {
     });
   });
 
+  it('reads a stored page list that lacks its names as unreadable', async () => {
+    store('page-lists').set('good-1', { id: 'good-1' });
+
+    const read = await createLibraryRepository().readPageList(bookId('good-1'));
+
+    expect(read).toEqual({
+      kind: 'success',
+      pageList: { kind: 'unreadable', cause: 'A stored page list lacks its page names' },
+    });
+  });
+
   it('forgets a removed record by its id', async () => {
     store('removed-books').set('gone-1', { id: 'gone-1', title: 'Gone' });
     const repository = createLibraryRepository();
