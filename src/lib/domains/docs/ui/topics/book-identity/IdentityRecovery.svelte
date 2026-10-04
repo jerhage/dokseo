@@ -6,8 +6,13 @@
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { BOOK_LIFE } from './identity-diagrams';
-  import { BOOKS_FROM_STORED, MERGE_STRAY, REPOSITORY_REMOVE } from './identity-snippets';
-  import { IDENTITY_SECTIONS, identityHref } from './sections';
+  import {
+    BOOKS_FROM_STORED,
+    MERGE_STRAY,
+    REPOSITORY_REMOVE,
+    REPOSITORY_REMOVE_CALL,
+  } from './identity-snippets';
+  import { IDENTITY_SECTIONS } from './sections';
 </script>
 
 <DocsSection title={IDENTITY_SECTIONS.life}>
@@ -48,18 +53,24 @@
 <DocsSection title={IDENTITY_SECTIONS.removed}>
   <p>
     Removing a book frees its space: the stored file, the cover, the page list and the book row go.
-    Before the row goes, the repository copies its identity into a separate
+    Before the row goes, the repository writes a record of it into a separate
     <code>removed-books</code> store:
+  </p>
+  <DocsCode label={REPOSITORY_REMOVE_CALL.file} code={REPOSITORY_REMOVE_CALL.code} />
+  <p>
+    The record is the whole book plus <code>removedAt</code>, the time of the removal. It keeps the
+    identity fields for matching, the language and direction its captures need, and the two series
+    fields, which every book holds as <code>null</code> until series exist. A row that fails the strict
+    read is kept as it was stored, with the time added, so removing it loses nothing:
   </p>
   <DocsCode label={REPOSITORY_REMOVE.file} code={REPOSITORY_REMOVE.code} />
   <p>
-    The record keeps the id, title, alias, hash, file name, language, direction, series id, volume
-    and the time the book was added: the identity fields for matching, the language and direction
-    its captures need, and the two series fields, which every book holds as <code>null</code> until
-    series exist.
-    <code>removedBookFrom</code> reads the row leniently, field by field, so a row too broken to be a
-    book still becomes a record as long as it has an id. The captures stay in their own store, untouched,
-    still filed under the id.
+    The captures stay in their own store, untouched, still filed under the id. Records are read back
+    with the same strict <code>bookFromStored</code>. A record that fails it, such as a raw row or a
+    record with an old hash, is still listed under Removed books, by its alias, title or file name,
+    with "Could not be read. Upload the same file again to restore it with its captures". For that
+    match, its id, title, alias, series fields, hash and file name are read one at a time, each
+    where it passes its check.
   </p>
   <p>
     The library lists removed records under Removed books, each with "Upload the same file again to
@@ -97,10 +108,10 @@
   <DocsCode label={BOOKS_FROM_STORED.file} code={BOOKS_FROM_STORED.code} />
   <p>
     <code>bookFromStored</code> checks every field with a type guard and throws a
-    <code>CorruptRow</code> error for the first one it cannot read, so a missing file name lands here
-    too, not only a bad enum. An unreadable book keeps what can still be read leniently: its id, and its
-    title, alias, hash and file name where they are strings. Only a row with no usable id still fails
-    the read.
+    <code>CorruptRow</code> error for the first one it cannot read. No field has a default, so a
+    missing file name, an unknown language, a count of <code>NaN</code> and an old 64-character hash all
+    land here, not only a bad enum. An unreadable book keeps what can still be read: its id, and its title,
+    alias, hash and file name where they are strings. Only a row with no usable id still fails the read.
   </p>
   <p>
     The library shows unreadable books in a warning above the shelf, "1 book could not be read",
@@ -164,9 +175,10 @@
     the step compares both titles.
   </p>
   <p>
-    An old row that still reads in full stays on the shelf, and the shelf join never looks at
-    titles. The same file uploaded again is added beside it as a second book, with a new id. Try it
-    in the <a href={identityHref('playground')}>matcher demo</a> by setting a shelf row's hash to 64 characters.
+    Since the stored format was fixed for 1.0, the content hash must be a partial MD5, so a row with
+    a 64-character hash fails the strict read and is always listed apart as unreadable. It never
+    stays on the shelf beside a new copy: the same file uploaded again finds it by file name or
+    title in the restore stage and repairs it in place.
   </p>
 </DocsSection>
 
