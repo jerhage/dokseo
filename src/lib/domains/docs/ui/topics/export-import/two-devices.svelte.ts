@@ -3,12 +3,12 @@ import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { APP_VERSION } from '$lib/shared/app-version';
 import { bookId, tagId } from '$lib/shared/ids';
 import type { CaptureId } from '$lib/shared/ids';
-import { applyCapturesImport } from '../../use-cases/apply-captures-import';
-import { buildCapturesFile } from '../../use-cases/build-captures-file';
-import { capturesFileName } from '../../use-cases/export-captures';
-import { previewCapturesImport } from '../../use-cases/preview-captures-import';
-import { CapturesImportView } from '../captures-import.svelte';
-import type { ImportFile } from '../captures-import.svelte';
+import { applyCapturesImport } from '$lib/domains/storage/use-cases/apply-captures-import';
+import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
+import { capturesFileName } from '$lib/domains/storage/use-cases/export-captures';
+import { previewCapturesImport } from '$lib/domains/storage/use-cases/preview-captures-import';
+import { CapturesImportView } from '$lib/domains/storage/ui/captures-import.svelte';
+import type { ImportFile } from '$lib/domains/storage/ui/captures-import.svelte';
 import {
   HARBOR,
   HARBOR_FIRST,

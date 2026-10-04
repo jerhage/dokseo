@@ -12,7 +12,7 @@
   import TagToggle from '$lib/components/TagToggle.svelte';
   import { APP_VERSION } from '$lib/shared/app-version';
   import type { CaptureId } from '$lib/shared/ids';
-  import { buildCapturesFile } from '../../use-cases/build-captures-file';
+  import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
   import {
     LANTERNS,
     SAMPLE_HOLDINGS,

@@ -1,22 +1,21 @@
 <script lang="ts">
+  import { selectedPassage } from '$lib/domains/flowing/ui/flow-passage';
+  import { openFlowSurface } from '$lib/domains/flowing/ui/flow-surface';
+  import PageInkProbe from '$lib/domains/flowing/ui/PageInkProbe.svelte';
   import DocsPage from '../DocsPage.svelte';
   import AnchorSections from './epub-rendering/AnchorSections.svelte';
   import ConceptSections from './epub-rendering/ConceptSections.svelte';
   import { EPUB_SECTIONS } from './epub-rendering/epub-sections';
-  import type { CapturePassage, InkProbe, OpenFlow } from './epub-rendering/flow-kit';
+  import type { DemoInk, FlowKit } from './epub-rendering/flow-kit';
   import ReaderSections from './epub-rendering/ReaderSections.svelte';
   import './epub-rendering/epub-rendering.css';
 
-  type Props = {
-    open: OpenFlow;
-    passage: CapturePassage;
-    ink: InkProbe;
-  };
-
-  let { open, passage, ink }: Props = $props();
-
-  const kit = $derived({ open, passage, ink });
+  const kit: FlowKit = { open: openFlowSurface, passage: selectedPassage, ink };
 </script>
+
+{#snippet ink(onink: (ink: DemoInk) => void)}
+  <PageInkProbe {onink} />
+{/snippet}
 
 <DocsPage slug="epub-rendering" sections={Object.values(EPUB_SECTIONS)}>
   {#snippet lead()}

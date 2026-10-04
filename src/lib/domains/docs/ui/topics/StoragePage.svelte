@@ -1,14 +1,9 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import DocsPage from '../DocsPage.svelte';
   import StorageConcepts from './storage/StorageConcepts.svelte';
   import StorageDurability from './storage/StorageDurability.svelte';
   import StorageInDokseo from './storage/StorageInDokseo.svelte';
   import { STORAGE_SECTIONS } from './storage/storage-sections';
-
-  type Props = { account: Snippet };
-
-  let { account }: Props = $props();
 </script>
 
 <DocsPage slug="storage" sections={Object.values(STORAGE_SECTIONS)}>
@@ -18,6 +13,6 @@
   {/snippet}
 
   <StorageConcepts />
-  <StorageInDokseo {account} />
+  <StorageInDokseo />
   <StorageDurability />
 </DocsPage>

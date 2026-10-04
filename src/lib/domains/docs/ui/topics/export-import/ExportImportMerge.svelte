@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import Diagram from '$lib/components/Diagram.svelte';
   import Figure from '$lib/components/Figure.svelte';
   import Table from '$lib/components/Table.svelte';
@@ -14,10 +13,7 @@
   import { IMPORT_PIPELINE } from './export-import-diagrams';
   import { EXPORT_IMPORT_SECTIONS } from './export-import-sections';
   import { APPLY_IMPORT, NEWER_SIDE, PLAN_CAPTURE } from './export-import-snippets';
-
-  type Props = { devices: Snippet };
-
-  let { devices }: Props = $props();
+  import TwoDevices from './TwoDevices.svelte';
 
   const CLASSES = [
     {
@@ -171,7 +167,7 @@
     </li>
   </ul>
   <DocsDemo label="Two devices" resettable>
-    {@render devices()}
+    <TwoDevices />
     {#snippet caption()}
       Each device is held in memory. Export runs the real <code>buildCapturesFile</code>, and import
       runs the real <code>previewCapturesImport</code> and <code>applyCapturesImport</code> through the

@@ -92,9 +92,8 @@
   </StepList>
   <p>
     The EPUB demos call <code>openFlowSurface</code> and the capture function
-    <code>selectedPassage</code> directly. The docs pages may not import another domain's UI, so the
-    <code>/docs/epub-rendering</code> route imports both and passes them to the page, together with the
-    probe that reads the theme's colors.
+    <code>selectedPassage</code> directly, imported from the flowing domain's <code>ui/</code>
+    together with the probe that reads the theme's colors.
   </p>
 </DocsSection>
 

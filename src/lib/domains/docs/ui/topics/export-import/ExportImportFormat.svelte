@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import Table from '$lib/components/Table.svelte';
   import TableBody from '$lib/components/TableBody.svelte';
   import TableCell from '$lib/components/TableCell.svelte';
@@ -9,6 +8,8 @@
   import DocsCode from '../../DocsCode.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import DocsSection from '../../DocsSection.svelte';
+  import CapturesFileBuilder from './CapturesFileBuilder.svelte';
+  import CapturesFileReader from './CapturesFileReader.svelte';
   import { EXPORT_IMPORT_SECTIONS } from './export-import-sections';
   import {
     BOOK_MATCH,
@@ -17,10 +18,6 @@
     PLAN_TAGS,
     READ_FILE,
   } from './export-import-snippets';
-
-  type Props = { builder: Snippet; reader: Snippet };
-
-  let { builder, reader }: Props = $props();
 
   const BOOK_FIELDS = [
     {
@@ -96,7 +93,7 @@
     text, and two exports can be compared with a diff.
   </p>
   <DocsDemo label="Build a captures file" resettable>
-    {@render builder()}
+    <CapturesFileBuilder />
     {#snippet caption()}
       Sample holdings in memory, written by the real <code>buildCapturesFile</code>. Edit a capture,
       toggle a tag, remove a book or add a capture with no book, and watch the file change. The real
@@ -148,7 +145,7 @@
     </TableBody>
   </Table>
   <DocsDemo label="Break a captures file" resettable>
-    {@render reader()}
+    <CapturesFileReader />
     {#snippet caption()}
       The text goes through the real <code>readCapturesFile</code>, and the sentences under it come
       from the import screen's real wording. Break the whole file, break single entries, or edit the

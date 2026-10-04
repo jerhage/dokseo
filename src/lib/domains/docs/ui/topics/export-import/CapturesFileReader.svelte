@@ -6,9 +6,9 @@
   import Select from '$lib/components/Select.svelte';
   import Textarea from '$lib/components/Textarea.svelte';
   import { APP_VERSION } from '$lib/shared/app-version';
-  import { buildCapturesFile } from '../../use-cases/build-captures-file';
-  import { readCapturesFile } from '../../use-cases/read-captures-file';
-  import { unreadableLines } from '../captures-import-text';
+  import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
+  import { readCapturesFile } from '$lib/domains/storage/use-cases/read-captures-file';
+  import { unreadableLines } from '$lib/domains/storage/ui/captures-import-text';
   import { ENTRY_BREAKS, FILE_BREAKS, brokenText, isFileBreak } from './file-breakage';
   import type { EntryBreak, FileBreak } from './file-breakage';
   import { SAMPLE_HOLDINGS, SAMPLE_START } from './sample-holdings';

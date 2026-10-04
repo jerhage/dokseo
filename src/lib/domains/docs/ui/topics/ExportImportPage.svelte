@@ -1,15 +1,10 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import DocsPage from '../DocsPage.svelte';
   import ExportImportConcepts from './export-import/ExportImportConcepts.svelte';
   import ExportImportFormat from './export-import/ExportImportFormat.svelte';
   import ExportImportMerge from './export-import/ExportImportMerge.svelte';
   import ExportImportSaving from './export-import/ExportImportSaving.svelte';
   import { EXPORT_IMPORT_SECTIONS } from './export-import/export-import-sections';
-
-  type Props = { builder: Snippet; reader: Snippet; devices: Snippet };
-
-  let { builder, reader, devices }: Props = $props();
 </script>
 
 <DocsPage slug="export-import" sections={Object.values(EXPORT_IMPORT_SECTIONS)}>
@@ -19,7 +14,7 @@
   {/snippet}
 
   <ExportImportConcepts />
-  <ExportImportFormat {builder} {reader} />
-  <ExportImportMerge {devices} />
+  <ExportImportFormat />
+  <ExportImportMerge />
   <ExportImportSaving />
 </DocsPage>

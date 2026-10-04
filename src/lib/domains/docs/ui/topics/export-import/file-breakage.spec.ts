@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildCapturesFile } from '../../use-cases/build-captures-file';
-import { readCapturesFile } from '../../use-cases/read-captures-file';
+import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
+import { readCapturesFile } from '$lib/domains/storage/use-cases/read-captures-file';
 import { brokenText } from './file-breakage';
 import type { EntryBreak, FileBreak } from './file-breakage';
 import { SAMPLE_HOLDINGS } from './sample-holdings';

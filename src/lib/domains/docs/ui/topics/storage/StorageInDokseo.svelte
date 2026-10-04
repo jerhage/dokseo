@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import Diagram from '$lib/components/Diagram.svelte';
   import Figure from '$lib/components/Figure.svelte';
   import StepItem from '$lib/components/StepItem.svelte';
@@ -10,6 +9,10 @@
   import TableHeader from '$lib/components/TableHeader.svelte';
   import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
   import TableRow from '$lib/components/TableRow.svelte';
+  import { useContainer } from '$lib/context';
+  import StorageBreakdown from '$lib/domains/storage/ui/StorageBreakdown.svelte';
+  import StorageData from '$lib/domains/storage/ui/StorageData.svelte';
+  import StorageSummary from '$lib/domains/storage/ui/StorageSummary.svelte';
   import { BLOCKED_PATIENCE_MS } from '$lib/platform/idb/connection';
   import { WRITE_CHUNK_BYTES } from '$workers/blob-chunks';
   import DocsCode from '../../DocsCode.svelte';
@@ -19,9 +22,7 @@
   import { STORAGE_SECTIONS } from './storage-sections';
   import { READER_UPGRADE, STORAGE_ACCOUNT, WRITER_LOOP } from './storage-snippets';
 
-  type Props = { account: Snippet };
-
-  let { account }: Props = $props();
+  const storage = useContainer().storage;
 
   const DATABASE_STORES = [
     {
@@ -233,7 +234,12 @@
   </p>
   <DocsCode label={STORAGE_ACCOUNT.label} code={STORAGE_ACCOUNT.code} />
   <DocsDemo label="This origin's storage account" resettable resetLabel="Read again">
-    {@render account()}
+    <StorageData {storage}>
+      {#snippet children(held)}
+        <StorageSummary account={held} />
+        <StorageBreakdown account={held} />
+      {/snippet}
+    </StorageData>
     {#snippet caption()}
       The real use case and the real Settings › Storage components, reading this origin. After a
       scratch demo above writes something, read again to see it appear.

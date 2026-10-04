@@ -4,8 +4,8 @@ import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { CaptureRepository } from '$lib/domains/recognition/domain/capture/capture-repository';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import type { TagRepository } from '$lib/domains/recognition/domain/tag/tag-repository';
-import type { ApplyCapturesImportDeps } from '../../use-cases/apply-captures-import';
-import type { PreviewCapturesImportDeps } from '../../use-cases/preview-captures-import';
+import type { ApplyCapturesImportDeps } from '$lib/domains/storage/use-cases/apply-captures-import';
+import type { PreviewCapturesImportDeps } from '$lib/domains/storage/use-cases/preview-captures-import';
 import type { Holdings } from './sample-holdings';
 
 type DeviceName = 'phone' | 'laptop';

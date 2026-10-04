@@ -13,8 +13,8 @@
     importStatus,
     nothingToWrite,
     previewRows,
-  } from '../captures-import-text';
-  import ConflictReview from '../ConflictReview.svelte';
+  } from '$lib/domains/storage/ui/captures-import-text';
+  import ConflictReview from '$lib/domains/storage/ui/ConflictReview.svelte';
   import { bookTitle, isRemoved } from './sample-holdings';
   import type { SimulatedDevice } from './simulated-device.svelte';
   import { TwoDevicesView } from './two-devices.svelte';

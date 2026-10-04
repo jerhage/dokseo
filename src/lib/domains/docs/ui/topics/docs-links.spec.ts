@@ -82,11 +82,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
 
 const TOPICS_FOLDER = join('src', 'lib', 'domains', 'docs', 'ui', 'topics');
 
-const SOURCE_FOLDERS = [
-  join('src', 'lib', 'domains', 'docs'),
-  join('src', 'lib', 'domains', 'storage', 'ui', 'docs-demos'),
-  join('src', 'routes', 'docs'),
-];
+const SOURCE_FOLDERS = [join('src', 'lib', 'domains', 'docs'), join('src', 'routes', 'docs')];
 
 const HREF_ATTRIBUTE = /href="([^"{}]*)"/gu;
 

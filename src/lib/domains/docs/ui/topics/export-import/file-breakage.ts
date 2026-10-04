@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { CapturesFile } from '../../use-cases/captures-file';
+import type { CapturesFile } from '$lib/domains/storage/use-cases/captures-file';
 
 type FileBreak =
   | 'none'

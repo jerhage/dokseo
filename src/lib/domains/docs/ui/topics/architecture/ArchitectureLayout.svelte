@@ -173,29 +173,31 @@
   <DocsCode label={LEAF_RULE.label} code={LEAF_RULE.code} />
   <p>
     Any domain folder not in the list is a non-leaf, and <code>non-leaves-import-only-leaves</code>
-    lets it import its own folders and the leaves, nothing else. Dokseo has two non-leaves.
+    lets it import its own folders and the leaves, nothing else.
     <code>storage</code> reports what the origin holds and owns operations that span two leaves:
     removing a book with its captures composes the library's <code>removeBook</code> and
     recognition's
     <code>clearCaptures</code>, and an import of captures is planned and written there too (see
-    <a href={IMPORT_PLAN_HREF}>Planning an import</a>). <code>docs</code> holds these pages, whose demos
-    run the leaves' real code.
+    <a href={IMPORT_PLAN_HREF}>Planning an import</a>). <code>docs</code> holds these pages and is
+    the exception to every rule: it may import any module, adapters and the container included, and
+    <code>nothing-imports-docs</code> forbids every module outside it and
+    <code>src/routes/docs/</code> from importing it.
   </p>
   <Figure>
     <Diagram {...DOMAIN_GRAPH} />
     {#snippet caption()}
-      The domain imports that exist today. No arrow leaves a leaf and none ends at a non-leaf, so no
-      path can return to where it started.
+      The domain imports that exist today, apart from <code>docs</code>, which may import every
+      domain and is imported by none. No arrow leaves a leaf and none ends at a non-leaf, so no path
+      can return to where it started.
     {/snippet}
   </Figure>
   <p>
-    Two non-leaves cannot import each other either. The storage page shows the real storage account
-    in a demo, and <code>docs</code> may not import <code>storage</code>, so the route
-    <code>src/routes/docs/storage/+page.svelte</code>
-    renders the storage domain's component and passes it into the page as a snippet; see
-    <a href={STORAGE_ACCOUNT_HREF}>The storage account</a>. The read route composes the readers with
-    the capture panel the same way, as the EPUB page describes for
-    <a href={EPUB_FLOWING_HREF}>the flowing domain</a>.
+    Two non-leaves cannot import each other either. When a screen needs two domains, the route
+    composes them and passes one into the other as a snippet: the read route composes the readers
+    with the capture panel, as the EPUB page describes for
+    <a href={EPUB_FLOWING_HREF}>the flowing domain</a>. The docs pages need no such route, because
+    <code>docs</code> imports the storage domain's components directly to show the real storage
+    account; see <a href={STORAGE_ACCOUNT_HREF}>The storage account</a>.
   </p>
   <ImportMapDemo />
 </DocsSection>

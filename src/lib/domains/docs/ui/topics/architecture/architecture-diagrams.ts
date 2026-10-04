@@ -126,28 +126,16 @@ const libraryDomain = box(0, 110, 76, 'library', 'leaf');
 const recognitionDomain = box(88, 110, 96, 'recognition', 'leaf');
 const viewingDomain = box(196, 110, 76, 'viewing', 'leaf');
 const flowingDomain = box(284, 110, 76, 'flowing', 'leaf');
-const docsDomain = box(0, 220, 360, 'docs', 'non-leaf', 'primary');
 
 const DOMAIN_GRAPH: DiagramSpec = {
   label:
-    'storage imports library and recognition. docs imports library, recognition, viewing and flowing. The four leaves import no domain, and nothing imports storage or docs.',
+    'storage imports library and recognition. The four leaves import no domain, and nothing imports storage.',
   width: 360,
-  height: 264,
-  nodes: [
-    storageDomain,
-    docsDomain,
-    libraryDomain,
-    recognitionDomain,
-    viewingDomain,
-    flowingDomain,
-  ],
+  height: 154,
+  nodes: [storageDomain, libraryDomain, recognitionDomain, viewingDomain, flowingDomain],
   edges: [
     { from: storageDomain, to: libraryDomain },
     { from: storageDomain, to: recognitionDomain },
-    { from: docsDomain, to: libraryDomain },
-    { from: docsDomain, to: recognitionDomain },
-    { from: docsDomain, to: viewingDomain },
-    { from: docsDomain, to: flowingDomain },
   ],
 };
 
