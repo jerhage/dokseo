@@ -72,8 +72,9 @@ const DOCS_TOPICS = [
   {
     slug: 'touch-and-pointers',
     title: 'Touch and pointers',
-    summary: 'Tap zones, swipes, the Apple Pencil on iPad and any-pointer.',
-    status: 'planned',
+    summary:
+      'Pointer events, touch-action, telling a tap from a swipe, pointer media queries and the Apple Pencil on iPad, then Dokseo’s tap zones, edge clicks and selections.',
+    status: 'published',
   },
   {
     slug: 'architecture',
