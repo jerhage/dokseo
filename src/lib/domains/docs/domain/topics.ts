@@ -144,7 +144,7 @@ const DOCS_TOPICS = [
     title: 'Async correctness',
     summary:
       'Races and stale answers, cancellation, promises that never settle, and the patterns Dokseo uses against them.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'indexeddb',

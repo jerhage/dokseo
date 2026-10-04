@@ -5,6 +5,7 @@ import { contentsEntries } from '$lib/components/table-of-contents';
 import { DOCS_ROOT, DOCS_TOPICS } from '../../domain/topics';
 import type { DocsTopicSlug } from '../../domain/topics';
 import * as architecture from './architecture/architecture-sections';
+import * as asyncCorrectness from './async-correctness/async-sections';
 import * as bookIdentity from './book-identity/sections';
 import * as epubRendering from './epub-rendering/epub-sections';
 import * as exportImport from './export-import/export-import-sections';
@@ -48,13 +49,14 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   unicode: unicode.UNICODE_SECTIONS,
   workers: workers.WORKERS_SECTIONS,
   'typescript-types': typescriptTypes.TYPE_SECTIONS,
-  'async-correctness': {},
+  'async-correctness': asyncCorrectness.ASYNC_SECTIONS,
   indexeddb: {},
   accessibility: {},
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'architecture/architecture-sections.ts': architecture,
+  'async-correctness/async-sections.ts': asyncCorrectness,
   'book-identity/sections.ts': bookIdentity,
   'epub-rendering/epub-sections.ts': epubRendering,
   'export-import/export-import-sections.ts': exportImport,
