@@ -107,6 +107,8 @@ function shelfBook(holding: Holding): Book {
     id: bookId(holding.id),
     title: holding.title,
     alias: null,
+    seriesId: null,
+    volume: null,
     language: 'ja',
     layoutKind: 'paged',
     direction: 'rtl',

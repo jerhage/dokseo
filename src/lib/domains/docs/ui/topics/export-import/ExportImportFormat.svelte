@@ -28,6 +28,11 @@
     { field: 'fileName', holds: 'The name of the file that was added.' },
     { field: 'title, alias', holds: 'The title, and the name the reader gave it, if any.' },
     {
+      field: 'seriesId, volume',
+      holds:
+        'Reserved for series, null for every book today. Optional: a file without them reads them as null.',
+    },
+    {
       field: 'language, direction',
       holds: 'What the captures are written in, and how pages turn.',
     },
@@ -123,7 +128,9 @@
   <DocsCode label={FILE_CAPTURE.label} code={FILE_CAPTURE.code} />
   <p>
     A book entry with any bad field is rejected whole, with no fallback for its language or
-    direction, and its captures are skipped as <code>unknown-book</code>. A tag id that a capture
+    direction, and its captures are skipped as <code>unknown-book</code>. The two series fields were
+    added later without a new version: an entry that lacks them reads them as
+    <code>null</code>, and only a value of the wrong type rejects the entry. A tag id that a capture
     names but the file does not hold is taken off that capture and reported separately, and the
     capture keeps its other tags. Two fields stay lenient: a capture with no <code>note</code> or no
     <code>confidence</code> reads as <code>null</code> instead of being rejected.

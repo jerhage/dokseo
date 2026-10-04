@@ -224,7 +224,7 @@
     </li>
     <li>This stage ignores the Match books by setting.</li>
   </ul>
-  <p>A match hands its id, and its alias, to the new book:</p>
+  <p>A match hands its id, its alias, and its series id and volume to the new book:</p>
   <DocsCode label="{OPEN_FILE_RESTORE.file}, the restore" code={OPEN_FILE_RESTORE.code} />
   <p>
     The title step has a known cost. Two different books with the same title, where neither the hash

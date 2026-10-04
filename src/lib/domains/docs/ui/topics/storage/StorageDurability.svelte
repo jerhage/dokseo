@@ -60,6 +60,13 @@
   </p>
   <DocsCode label={BOOKS_FROM_STORED.label} code={BOOKS_FROM_STORED.code} />
   <RowCheckDemo />
+  <p>
+    A save goes through the same checks. To store a new reading place, the library reads the row
+    with <code>bookFromStored</code>, applies the change, and writes the checked fields over the
+    stored row with <code>savedBookRow</code>. A field the running version of Dokseo does not name
+    stays in the row as it was, unchecked, and never reaches the app. So a tab left open on an older
+    version does not erase a field that a newer version added.
+  </p>
 </DocsSection>
 
 <DocsSection title={STORAGE_SECTIONS.rule}>

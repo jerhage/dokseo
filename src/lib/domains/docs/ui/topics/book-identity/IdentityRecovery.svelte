@@ -53,9 +53,10 @@
   </p>
   <DocsCode label={REPOSITORY_REMOVE.file} code={REPOSITORY_REMOVE.code} />
   <p>
-    The record keeps the id, title, alias, hash, file name, language, direction and the time the
-    book was added: the identity fields for matching, and the language and direction its captures
-    need.
+    The record keeps the id, title, alias, hash, file name, language, direction, series id, volume
+    and the time the book was added: the identity fields for matching, the language and direction
+    its captures need, and the two series fields, which every book holds as <code>null</code> until
+    series exist.
     <code>removedBookFrom</code> reads the row leniently, field by field, so a row too broken to be a
     book still becomes a record as long as it has an id. The captures stay in their own store, untouched,
     still filed under the id.
@@ -63,9 +64,9 @@
   <p>
     The library lists removed records under Removed books, each with "Upload the same file again to
     restore it with its captures". When an upload matches one, the new book is stored under the
-    record's id and alias, and storing it deletes the record. The remove dialog offers "Also delete
-    its captures", unticked each time it opens, and each removed record has Delete captures, which
-    deletes the captures and forgets the record.
+    record's id, alias, series id and volume, and storing it deletes the record. The remove dialog
+    offers "Also delete its captures", unticked each time it opens, and each removed record has
+    Delete captures, which deletes the captures and forgets the record.
   </p>
 </DocsSection>
 

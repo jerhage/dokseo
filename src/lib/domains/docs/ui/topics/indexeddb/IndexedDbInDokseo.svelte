@@ -254,7 +254,9 @@
       <p>
         A store has no columns to change. The function that reads a row gives a missing field its
         meaning: a capture stored before notes existed has no <code>note</code> and reads as having
-        none, and one with no <code>origin</code> reads as recognized.
+        none, and one with no <code>origin</code> reads as recognized. Saving a book keeps the fields
+        its reading code does not name, so an older version of Dokseo writing a book row leaves a newer
+        version's field in place.
       </p>
     </StepItem>
     <StepItem title="One version constant per database">
