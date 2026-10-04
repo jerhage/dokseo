@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { contentsEntries } from '$lib/components/table-of-contents';
 import { DOCS_ROOT, DOCS_TOPICS } from '../../domain/topics';
 import type { DocsTopicSlug } from '../../domain/topics';
+import * as accessibility from './accessibility/accessibility-sections';
 import * as architecture from './architecture/architecture-sections';
 import * as asyncCorrectness from './async-correctness/async-sections';
 import * as bookIdentity from './book-identity/sections';
@@ -52,10 +53,11 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'typescript-types': typescriptTypes.TYPE_SECTIONS,
   'async-correctness': asyncCorrectness.ASYNC_SECTIONS,
   indexeddb: indexedDb.INDEXEDDB_SECTIONS,
-  accessibility: {},
+  accessibility: accessibility.ACCESSIBILITY_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  'accessibility/accessibility-sections.ts': accessibility,
   'architecture/architecture-sections.ts': architecture,
   'async-correctness/async-sections.ts': asyncCorrectness,
   'book-identity/sections.ts': bookIdentity,

@@ -157,8 +157,8 @@ const DOCS_TOPICS = [
     slug: 'accessibility',
     title: 'Accessibility in a reader',
     summary:
-      'Focus, keyboard paging, modals and focus traps, roles and live regions, applied to Dokseo.',
-    status: 'planned',
+      'The accessibility tree, names and roles, focus, keyboard paging, modal dialogs and focus traps, live regions, motion, contrast and recognized text, applied to Dokseo.',
+    status: 'published',
   },
 ] as const satisfies readonly DocsTopic[];
 
