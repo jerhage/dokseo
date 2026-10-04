@@ -1,0 +1,12 @@
+@layer features {
+  @scope (.identity-sample-bar) {
+    .bar {
+      block-size: var(--sp-6);
+      overflow: hidden;
+    }
+    .sample {
+      min-inline-size: var(--border-width-strong);
+      background-color: var(--color-primary);
+    }
+  }
+}
