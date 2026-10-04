@@ -77,6 +77,7 @@
 @import 'components/codeblock.css' layer(components);
 @import 'components/figure.css' layer(components);
 @import 'components/table-of-contents.css' layer(components);
+@import 'components/diagram.css' layer(components);
 @import 'components/key-hints.css' layer(components);
 @import 'components/empty-state.css' layer(components);
 @import 'components/chrome-bar.css' layer(components);

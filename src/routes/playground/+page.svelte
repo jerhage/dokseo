@@ -18,6 +18,7 @@
   import ChoicesSection from './ChoicesSection.svelte';
   import CodeBlockSection from './CodeBlockSection.svelte';
   import CommandSection from './CommandSection.svelte';
+  import DiagramSection from './DiagramSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DockSection from './DockSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
@@ -117,6 +118,7 @@
     CodeBlockSection,
     FigureSection,
     TableOfContentsSection,
+    DiagramSection,
     LayoutsIntro,
     PageWrapSection,
     AppShellSection,
