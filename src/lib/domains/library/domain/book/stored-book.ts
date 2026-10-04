@@ -8,6 +8,7 @@ import {
   isTextOrNull,
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
+import type { StoredFields } from '$lib/shared/corrupt-row';
 import { contentHash, imageIndex, parsedBookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
@@ -106,6 +107,10 @@ function bookFromStored(stored: StoredBook): Book {
   };
 }
 
+function savedBookRow(stored: StoredFields, book: Book): StoredFields {
+  return { ...stored, ...book };
+}
+
 function unreadableBook(row: RawRow, cause: unknown): UnreadableBook {
   const id = typeof row.id === 'string' ? parsedBookId(row.id) : null;
   if (id === null) throw cause;
@@ -131,5 +136,5 @@ function booksFromStored(rows: readonly StoredBook[]): StoredBooks {
   return { books, unreadable };
 }
 
-export { FALLBACK_DIRECTION, FALLBACK_LANGUAGE, bookFromStored, booksFromStored };
+export { FALLBACK_DIRECTION, FALLBACK_LANGUAGE, bookFromStored, savedBookRow, booksFromStored };
 export type { StoredBook, StoredBooks, UnreadableBook };

@@ -28,7 +28,7 @@ import { pageListFromStored } from '../domain/book/page-list';
 import type { PageOrder, StoredPageList } from '../domain/book/page-list';
 import { removedBookFrom, removedBooksFrom } from '../domain/book/removed-book';
 import type { RemovedBook, RetiredRow } from '../domain/book/removed-book';
-import { bookFromStored, booksFromStored } from '../domain/book/stored-book';
+import { bookFromStored, booksFromStored, savedBookRow } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
 import type { SourceWriteReport } from '../domain/ingest/upload-progress';
 
@@ -227,7 +227,7 @@ function createLibraryRepository(): LibraryRepository {
       const record = await getRecord<StoredBook>(db, BOOK_STORE, id);
       if (record === undefined) return { kind: 'success', book: null };
       const updated = applyEdit(bookFromStored(record), edit);
-      await putRecord(db, BOOK_STORE, updated);
+      await putRecord(db, BOOK_STORE, savedBookRow(record, updated));
       return { kind: 'success', book: updated };
     },
 

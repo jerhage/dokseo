@@ -150,6 +150,31 @@ describe('createLibraryRepository', () => {
     expect(store('books').get('good-1')).toMatchObject({ title: 'Yotsuba&! 1', alias: 'Mine' });
   });
 
+  it('keeps a stored field it does not know when it saves an edit', async () => {
+    store('books').set(GOOD.id, { ...GOOD, shelfColour: 'teal', series: { name: 'Yotsuba&!' } });
+    const repository = createLibraryRepository();
+
+    await repository.update(bookId('good-1'), { position: imagePlace(imageIndex(9)) });
+
+    expect(store('books').get('good-1')).toMatchObject({
+      shelfColour: 'teal',
+      series: { name: 'Yotsuba&!' },
+      position: { kind: 'image', index: 9 },
+    });
+  });
+
+  it('writes every known field from the book it read when it saves an edit', async () => {
+    store('books').set(GOOD.id, { ...GOOD, language: 'xx', shelfColour: 'teal' });
+    const repository = createLibraryRepository();
+
+    const updated = await repository.update(bookId('good-1'), { alias: 'Mine' });
+
+    expect(updated.kind === 'success' && updated.book).toMatchObject({ language: 'ja' });
+    expect(store('books').get('good-1')).toEqual(
+      updated.kind === 'success' && { ...updated.book, shelfColour: 'teal' },
+    );
+  });
+
   it('keeps the alias of a book it removes in the removed record', async () => {
     store('books').set(GOOD.id, { ...GOOD, alias: 'Mine' });
     const repository = createLibraryRepository();
