@@ -1,9 +1,11 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
   import DeliverySection from './security-headers/DeliverySection.svelte';
+  import EmbedderSection from './security-headers/EmbedderSection.svelte';
   import IsolationSection from './security-headers/IsolationSection.svelte';
   import PolicySection from './security-headers/PolicySection.svelte';
   import { SECTIONS } from './security-headers/sections';
+  import WorkersSection from './security-headers/WorkersSection.svelte';
 </script>
 
 <DocsPage slug="security-headers" sections={Object.values(SECTIONS)}>
@@ -16,4 +18,6 @@
   <PolicySection />
   <DeliverySection />
   <IsolationSection />
+  <EmbedderSection />
+  <WorkersSection />
 </DocsPage>
