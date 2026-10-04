@@ -17,6 +17,7 @@ import {
   LANTERN_FIRST,
   GRAMMAR,
   VOCAB,
+  fileContents,
   sampleCapture,
   sampleTime,
   withText,
@@ -131,11 +132,9 @@ class TwoDevicesView {
 
   async send(from: DeviceName): Promise<void> {
     const exportedAt = this.now();
-    const built = buildCapturesFile({
-      ...this.device(from).holdings,
-      exportedAt,
-      appVersion: APP_VERSION,
-    });
+    const built = buildCapturesFile(
+      fileContents(this.device(from).holdings, exportedAt, APP_VERSION),
+    );
     this.#transfer = {
       from,
       to: otherDevice(from),

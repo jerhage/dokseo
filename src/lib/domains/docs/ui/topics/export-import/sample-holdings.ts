@@ -1,8 +1,10 @@
 import type { Book } from '$lib/domains/library/domain/book/book';
+import { removedRecord } from '$lib/domains/library/domain/book/removed-book';
 import type { RemovedBook } from '$lib/domains/library/domain/book/removed-book';
-import { editedCapture } from '$lib/domains/recognition/domain/capture/capture';
-import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
+import { capturesFromStored, editedCapture } from '$lib/domains/recognition/domain/capture/capture';
+import type { Capture, UnreadableCapture } from '$lib/domains/recognition/domain/capture/capture';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
+import type { CapturesFileContents } from '$lib/domains/storage/use-cases/build-captures-file';
 import { regionAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';
 import { bookId, captureId, contentHash, imageIndex, tagId } from '$lib/shared/ids';
@@ -42,6 +44,8 @@ const HARBOR_HASH = '5f2a9c41e07b3d86a1c4f0e9b2d7a361';
 
 const LANTERN_HASH = 'c81e728d9d4c2f636f067f89cc14862c';
 
+const REMOVED_MINUTE = 50;
+
 function sampleTime(minute: number): number {
   return SAMPLE_START + minute * MINUTE;
 }
@@ -66,21 +70,6 @@ function sampleBook(sample: SampleBook): Book {
     position: imagePlace(imageIndex(0)),
     lastReadAt: null,
     finishedAt: null,
-  };
-}
-
-function removedRecord(book: Book): RemovedBook {
-  return {
-    id: book.id,
-    title: book.title,
-    alias: book.alias,
-    seriesId: book.seriesId,
-    volume: book.volume,
-    contentHash: book.contentHash,
-    fileName: book.fileName,
-    language: book.language,
-    direction: book.direction,
-    addedAt: book.addedAt,
   };
 }
 
@@ -162,12 +151,43 @@ const ORPHAN = sampleCapture({
   minute: 25,
 });
 
+const PIXEL_RECT_ROWS: readonly UnreadableCapture[] = capturesFromStored([
+  {
+    ...HARBOR_SECOND,
+    id: '2f7a0c94-6e1d-4b38-8a52-c9d3e1b70f46',
+    anchor: {
+      kind: 'region',
+      regions: [{ index: 18, rect: { x: 1144, y: 190, width: 244, height: 476 } }],
+    },
+    text: '雨の音',
+    note: null,
+    createdAt: sampleTime(14),
+  },
+]).unreadable;
+
 const SAMPLE_HOLDINGS: Holdings = {
   books: [HARBOR, LANTERNS],
   removedBooks: [],
   tags: [VOCAB, GRAMMAR],
   captures: [HARBOR_FIRST, HARBOR_SECOND, LANTERN_FIRST],
 };
+
+function fileContents(
+  holdings: Holdings,
+  exportedAt: number,
+  appVersion: string,
+  unreadableCaptures: readonly UnreadableCapture[] = [],
+): CapturesFileContents {
+  return {
+    ...holdings,
+    unreadableRemovedBooks: [],
+    unreadableBooks: [],
+    unreadableTags: [],
+    unreadableCaptures,
+    exportedAt,
+    appVersion,
+  };
+}
 
 function isRemoved(holdings: Holdings, id: BookId): boolean {
   return holdings.removedBooks.some((book) => book.id === id);
@@ -181,7 +201,7 @@ function withBookRemoved(holdings: Holdings, id: BookId, removed: boolean): Hold
     return {
       ...holdings,
       books: holdings.books.filter((held) => held.id !== id),
-      removedBooks: [...holdings.removedBooks, removedRecord(book)],
+      removedBooks: [...holdings.removedBooks, removedRecord(book, sampleTime(REMOVED_MINUTE))],
     };
   }
   const original = [HARBOR, LANTERNS].find((book) => book.id === id);
@@ -246,13 +266,14 @@ export {
   LANTERN_FIRST,
   MINUTE,
   ORPHAN,
+  PIXEL_RECT_ROWS,
   SAMPLE_HOLDINGS,
   SAMPLE_START,
   VOCAB,
   bookTitle,
+  fileContents,
   hasOrphan,
   isRemoved,
-  removedRecord,
   sampleBook,
   sampleCapture,
   sampleTag,

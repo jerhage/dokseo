@@ -93,7 +93,8 @@ class SimulatedDevice {
       readPageList: notInTheDemo,
       savePageList: notInTheDemo,
       remove: notInTheDemo,
-      listRemoved: () => Promise.resolve({ kind: 'success', removed: this.#holdings.removedBooks }),
+      listRemoved: () =>
+        Promise.resolve({ kind: 'success', removed: this.#holdings.removedBooks, unreadable: [] }),
       listRestorable: () =>
         Promise.resolve({
           kind: 'success',
@@ -129,6 +130,7 @@ class SimulatedDevice {
       remove: notInTheDemo,
       clearBook: notInTheDemo,
       moveBook: notInTheDemo,
+      untagEverywhere: notInTheDemo,
     };
     return { library, tags, captures };
   }

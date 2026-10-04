@@ -76,7 +76,11 @@ const BUILD_CONTAINER: SourceSnippet = {
       ...bookExports,
     },
     flowing: buildFlowing(),
-    recognition: { ...buildRecognition(captures), ...bookExports },
+    recognition: {
+      ...buildRecognition(captures),
+      ...bookExports,
+      ...buildUnreadableRowsExports(),
+    },
     storage: {
       ...buildStorage(),
       ...buildCapturesExports(repository, captures),

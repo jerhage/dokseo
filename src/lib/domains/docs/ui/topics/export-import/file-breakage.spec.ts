@@ -3,9 +3,9 @@ import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures
 import { readCapturesFile } from '$lib/domains/storage/use-cases/read-captures-file';
 import { brokenText } from './file-breakage';
 import type { EntryBreak, FileBreak } from './file-breakage';
-import { SAMPLE_HOLDINGS } from './sample-holdings';
+import { SAMPLE_HOLDINGS, fileContents } from './sample-holdings';
 
-const FILE = buildCapturesFile({ ...SAMPLE_HOLDINGS, exportedAt: 1, appVersion: '1.0.0' }).file;
+const FILE = buildCapturesFile(fileContents(SAMPLE_HOLDINGS, 1, '1.0.0')).file;
 
 function readWith(whole: FileBreak, entries: readonly EntryBreak[] = []) {
   return readCapturesFile(brokenText(FILE, whole, new Set(entries)));
@@ -81,5 +81,18 @@ describe('brokenText', () => {
       [0, 'invalid'],
       [2, 'unknown-book'],
     ]);
+  });
+
+  it('refuses a rect past the page edge and a hash that is not a partial MD5', () => {
+    const read = readEntries('none', ['capture-rect', 'book-hash']);
+
+    expect(read.unreadable.map((entry) => [entry.section, entry.index, entry.reason.kind])).toEqual(
+      [
+        ['books', 0, 'invalid'],
+        ['captures', 0, 'invalid'],
+        ['captures', 1, 'unknown-book'],
+      ],
+    );
+    expect(read.captures.map((entry) => entry.capture.text)).toEqual(['紙の提灯']);
   });
 });
