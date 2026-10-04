@@ -13,6 +13,17 @@ import {
   sortedKeys,
 } from '$lib/shared/testing/stored-format/stored-shape';
 import { bookId } from '$lib/shared/ids';
+import { LANGUAGES, isLanguage } from '$lib/shared/language';
+import {
+  LAYOUT_KINDS,
+  PAGE_PAIRING_CHOICE_VALUES,
+  READING_DIRECTIONS,
+  isLayoutKind,
+  isPagePairingChoice,
+  isReadingDirection,
+} from '$lib/shared/layout-kind';
+import { PAGE_FITS, isPageFit } from '$lib/shared/page-fit';
+import { SOURCE_KINDS, isSourceKind } from '../domain/book/book';
 import { INTRINSIC_ORDER } from '../domain/book/page-list';
 import { bookFromStored } from '../domain/book/stored-book';
 import { createLibraryRepository } from './indexeddb-opfs-library.repo';
@@ -151,6 +162,15 @@ const VARIANTS = [
 
 const BOOK_FORMAT_CHANGED = formatChanged('a book row');
 
+const KNOWN_BOOK_VALUES = {
+  language: ['en', 'ja', 'ko'],
+  layoutKind: ['continuous', 'flow', 'paged'],
+  direction: ['ltr', 'rtl'],
+  pagePairing: ['auto', 'double', 'double-after-cover', 'single'],
+  pageFit: ['height', 'width'],
+  sourceKind: ['archive', 'epub', 'images', 'pdf'],
+};
+
 beforeEach(() => {
   held.stores.clear();
   vi.stubGlobal('indexedDB', {});
@@ -195,6 +215,28 @@ describe('the 1.x book row', () => {
       expect(shapeOf(written), BOOK_FORMAT_CHANGED).toStrictEqual(shape);
     });
   }
+
+  it('holds exactly the 1.x values in each field read against a known set', () => {
+    const defined = {
+      language: LANGUAGES.toSorted(),
+      layoutKind: LAYOUT_KINDS.toSorted(),
+      direction: READING_DIRECTIONS.toSorted(),
+      pagePairing: PAGE_PAIRING_CHOICE_VALUES.toSorted(),
+      pageFit: PAGE_FITS.toSorted(),
+      sourceKind: SOURCE_KINDS.toSorted(),
+    };
+    const read = {
+      language: KNOWN_BOOK_VALUES.language.filter(isLanguage),
+      layoutKind: KNOWN_BOOK_VALUES.layoutKind.filter(isLayoutKind),
+      direction: KNOWN_BOOK_VALUES.direction.filter(isReadingDirection),
+      pagePairing: KNOWN_BOOK_VALUES.pagePairing.filter(isPagePairingChoice),
+      pageFit: KNOWN_BOOK_VALUES.pageFit.filter(isPageFit),
+      sourceKind: KNOWN_BOOK_VALUES.sourceKind.filter(isSourceKind),
+    };
+
+    expect(defined, BOOK_FORMAT_CHANGED).toStrictEqual(KNOWN_BOOK_VALUES);
+    expect(read, BOOK_FORMAT_CHANGED).toStrictEqual(KNOWN_BOOK_VALUES);
+  });
 
   it('opens the reader database at the 1.x version with the 1.x stores', async () => {
     await createLibraryRepository().list();

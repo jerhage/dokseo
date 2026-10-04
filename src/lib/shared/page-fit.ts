@@ -6,5 +6,5 @@ function isPageFit(value: unknown): value is PageFit {
   return PAGE_FITS.some((fit) => fit === value);
 }
 
-export { isPageFit };
+export { PAGE_FITS, isPageFit };
 export type { PageFit };
