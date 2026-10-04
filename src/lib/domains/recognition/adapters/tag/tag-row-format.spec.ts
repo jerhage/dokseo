@@ -12,6 +12,7 @@ import {
   sortedKeys,
 } from '$lib/shared/testing/stored-format/stored-shape';
 import { tagFromStored } from '../../domain/tag/tag';
+import { TAG_COLOURS, isTagColour } from '../../domain/tag/tag-colour';
 import { createTagRepository } from './indexeddb-tags.repo';
 
 type HeldRow = { readonly id: unknown };
@@ -73,6 +74,30 @@ describe('the 1.x tag row', () => {
       expect(shapeOf(written), TAG_FORMAT_CHANGED).toStrictEqual(TAG_SHAPE);
     });
   }
+
+  it('holds exactly the 16 tag colours of 1.x', () => {
+    const colours = [
+      'clay',
+      'copper',
+      'cyan',
+      'fern',
+      'ice',
+      'indigo',
+      'magenta',
+      'olive',
+      'plum',
+      'rose',
+      'ruby',
+      'sage',
+      'sky',
+      'slate',
+      'stone',
+      'violet',
+    ];
+
+    expect(TAG_COLOURS.toSorted(), TAG_FORMAT_CHANGED).toStrictEqual(colours);
+    expect(colours.filter(isTagColour), TAG_FORMAT_CHANGED).toStrictEqual(colours);
+  });
 
   it('opens the recognition database at the 1.x version with the 1.x stores and indexes', async () => {
     await createTagRepository().list();

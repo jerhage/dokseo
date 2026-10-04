@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CAPTURE_ORIGINS, isCaptureOrigin } from '$lib/shared/capture-origin';
 import { bookId, tagId } from '$lib/shared/ids';
 import { layoutOf, RECOGNITION_DATABASE } from '$lib/shared/testing/stored-format/database-layout';
 import type { OpenedDatabase, Upgrade } from '$lib/shared/testing/stored-format/database-layout';
@@ -235,6 +236,13 @@ describe('the 1.x capture row', () => {
       expect(sortedKeys(written ?? {}), CAPTURE_FORMAT_CHANGED).toStrictEqual(fields);
     });
   }
+
+  it('holds exactly the 1.x capture origins', () => {
+    const origins = ['lifted', 'recognized', 'written'];
+
+    expect(CAPTURE_ORIGINS.toSorted(), CAPTURE_FORMAT_CHANGED).toStrictEqual(origins);
+    expect(origins.filter(isCaptureOrigin), CAPTURE_FORMAT_CHANGED).toStrictEqual(origins);
+  });
 
   it('opens the recognition database at the 1.x version with the 1.x stores and indexes', async () => {
     await createCaptureRepository().listEverything();
