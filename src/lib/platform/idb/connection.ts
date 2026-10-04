@@ -10,10 +10,12 @@ function unsupported(): Error {
 
 const BLOCKED_PATIENCE_MS = 10_000;
 
+type Upgrade = (db: IDBDatabase, upgrading: IDBTransaction) => void;
+
 type Registration = {
   readonly name: string;
   readonly version: number;
-  readonly upgrade: (db: IDBDatabase) => void;
+  readonly upgrade: Upgrade;
 };
 
 const connections = new Map<string, Promise<IDBDatabase>>();
@@ -68,7 +70,11 @@ function openConnection(registration: Registration, retire: () => void): Promise
 
     try {
       const request = indexedDB.open(name, version);
-      request.onupgradeneeded = () => upgrade(request.result);
+      request.onupgradeneeded = () => {
+        const upgrading = request.transaction;
+        if (upgrading === null) throw new Error(`Database "${name}" opened no upgrade transaction`);
+        upgrade(request.result, upgrading);
+      };
       request.onsuccess = () => {
         stopWaiting();
         const db = request.result;
@@ -106,11 +112,7 @@ function connect(registration: Registration): Promise<IDBDatabase> {
   return opening;
 }
 
-function openDatabase(
-  name: string,
-  version: number,
-  upgrade: (db: IDBDatabase) => void,
-): Promise<IDBDatabase> {
+function openDatabase(name: string, version: number, upgrade: Upgrade): Promise<IDBDatabase> {
   if (!isSupported()) return Promise.reject(unsupported());
   return connect({ name, version, upgrade });
 }

@@ -42,6 +42,7 @@ function repository(broken = false) {
     },
     clearBook: () => Promise.resolve({ kind: 'success' as const }),
     moveBook: () => Promise.resolve({ kind: 'success' as const }),
+    untagEverywhere: () => Promise.reject(new Error('not used')),
   };
 
   return { captures, remaining: () => rows.map((row) => row.id) };

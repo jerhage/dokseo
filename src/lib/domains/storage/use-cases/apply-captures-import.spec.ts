@@ -175,6 +175,7 @@ function repositories(into: World) {
       return notUsed();
     },
     moveBook: notUsed,
+    untagEverywhere: notUsed,
   };
   return { repository, tags, captures };
 }

@@ -68,6 +68,7 @@ function deps(refusal: Refusal = 'none'): PreviewCapturesImportDeps {
     remove: notUsed,
     clearBook: notUsed,
     moveBook: notUsed,
+    untagEverywhere: notUsed,
   };
   return {
     shelf: { repository },

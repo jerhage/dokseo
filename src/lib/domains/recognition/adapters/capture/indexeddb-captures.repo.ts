@@ -6,18 +6,21 @@ import {
   putRecord,
   rewriteByIndex,
 } from '$lib/platform/idb/connection';
-import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { capturesFromStored, movedCapture, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, StoredCapture } from '../../domain/capture/capture';
 import type {
   CaptureListing,
   CaptureRepository,
+  CaptureUntagging,
   CaptureWrite,
 } from '../../domain/capture/capture-repository';
+import { untaggedRow } from '../../domain/tag/capture-tags';
 import {
   CAPTURE_BOOK_INDEX,
   CAPTURE_STORE,
+  CAPTURE_TAG_INDEX,
   recognitionDatabase,
   recordsAvailable,
 } from '../recognition-database';
@@ -76,6 +79,24 @@ function createCaptureRepository(): CaptureRepository {
         (row) => movedCapture(row, to),
       );
       return WRITTEN;
+    },
+
+    async untagEverywhere(tag: TagId): Promise<CaptureUntagging> {
+      if (!recordsAvailable()) return STORAGE_UNAVAILABLE;
+      let untagged = 0;
+      await rewriteByIndex<StoredCapture>(
+        await recognitionDatabase(),
+        CAPTURE_STORE,
+        CAPTURE_TAG_INDEX,
+        tag,
+        (row) => {
+          const rewritten = untaggedRow(row, tag);
+          if (rewritten === null) return row;
+          untagged += 1;
+          return rewritten;
+        },
+      );
+      return { kind: 'success', untagged };
     },
   };
 }

@@ -7,6 +7,7 @@ import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { takenCapture } from '../../domain/capture/capture';
 import type { Capture } from '../../domain/capture/capture';
 import type { CaptureRepository } from '../../domain/capture/capture-repository';
+import { untaggedCapture } from '../../domain/tag/capture-tags';
 import type { TagRepository } from '../../domain/tag/tag-repository';
 import { removeUnreadableTags } from './remove-unreadable-tags';
 
@@ -47,6 +48,11 @@ function stores(rows: readonly Capture[], failAt: TagId | null = null) {
     remove: () => Promise.resolve({ kind: 'success' as const }),
     clearBook: () => Promise.resolve({ kind: 'success' as const }),
     moveBook: () => Promise.resolve({ kind: 'success' as const }),
+    untagEverywhere: (tag: TagId) => {
+      const carrying = rows.filter((row) => row.tagIds.includes(tag));
+      saved.push(...carrying.map((row) => untaggedCapture(row, tag)));
+      return Promise.resolve({ kind: 'success' as const, untagged: carrying.length });
+    },
   };
 
   const tags: TagRepository = {

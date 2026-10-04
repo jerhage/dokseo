@@ -32,6 +32,7 @@ function world(outcomes: Outcomes = {}) {
     save: notUsed,
     remove: notUsed,
     moveBook: notUsed,
+    untagEverywhere: notUsed,
     clearBook: (book) => {
       steps.push(`cleared ${book}`);
       return Promise.resolve(outcomes.clearing ?? WRITTEN);

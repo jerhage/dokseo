@@ -5,6 +5,7 @@ type Handler = (() => void) | null;
 
 class FakeRequest {
   result: FakeDatabase | undefined;
+  transaction: object | null = null;
   error: DOMException | null = null;
   onupgradeneeded: Handler = null;
   onsuccess: Handler = null;
@@ -24,6 +25,12 @@ class FakeRequest {
 
   block(): void {
     this.onblocked?.();
+  }
+
+  upgrade(db: FakeDatabase, transaction: object): void {
+    this.result = db;
+    this.transaction = transaction;
+    this.onupgradeneeded?.();
   }
 
   fail(error: DOMException): void {
@@ -138,6 +145,20 @@ describe('openDatabase', () => {
     expect(reopened).not.toBe(db);
     expect(factory.requests).toHaveLength(2);
     expect(factory.last().version).toBe(version);
+  });
+
+  it('hands the upgrade the database and its version change transaction', async () => {
+    factory.holding = true;
+    const seen: unknown[] = [];
+    const opening = openDatabase(freshName(), 2, (db, upgrading) => seen.push(db, upgrading));
+    const db = new FakeDatabase();
+    const upgrading = { mode: 'versionchange' };
+
+    factory.last().upgrade(db, upgrading);
+    factory.last().succeed(db);
+
+    await expect(opening).resolves.toBe(db);
+    expect(seen).toEqual([db, upgrading]);
   });
 
   it('resolves once a blocked upgrade is unblocked', async () => {

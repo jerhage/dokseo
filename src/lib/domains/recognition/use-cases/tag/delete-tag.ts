@@ -1,7 +1,6 @@
 import type { TagId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { CaptureRepository } from '../../domain/capture/capture-repository';
-import { untaggedCapture } from '../../domain/tag/capture-tags';
 import type { TagRepository } from '../../domain/tag/tag-repository';
 
 type DeleteTagResult = { readonly kind: 'success'; readonly untagged: number } | StorageUnavailable;
@@ -12,20 +11,13 @@ type DeleteTagDeps = {
 };
 
 async function deleteTag(deps: DeleteTagDeps, tag: TagId): Promise<DeleteTagResult> {
-  const everything = await deps.captures.listEverything();
-  if (everything.kind !== 'success') return everything;
-
-  const carrying = everything.captures.filter((capture) => capture.tagIds.includes(tag));
-
-  for (const capture of carrying) {
-    const stored = await deps.captures.save(untaggedCapture(capture, tag));
-    if (stored.kind !== 'success') return stored;
-  }
+  const untagging = await deps.captures.untagEverywhere(tag);
+  if (untagging.kind !== 'success') return untagging;
 
   const removed = await deps.tags.remove(tag);
   if (removed.kind !== 'success') return removed;
 
-  return { kind: 'success', untagged: carrying.length };
+  return { kind: 'success', untagged: untagging.untagged };
 }
 
 export { deleteTag };

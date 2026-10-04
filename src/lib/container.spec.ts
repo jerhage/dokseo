@@ -76,6 +76,7 @@ vi.mock('./domains/recognition/adapters/capture/indexeddb-captures.repo', () => 
     listEverything: notUsed,
     save: notUsed,
     remove: notUsed,
+    untagEverywhere: notUsed,
     moveBook: (from: BookId, to: BookId) => {
       held.moved.push(`${from} -> ${to}`);
       return Promise.resolve({ kind: 'success' });

@@ -171,6 +171,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
     remove: notUsed,
     clearBook: notUsed,
     moveBook: notUsed,
+    untagEverywhere: notUsed,
   };
   return {
     shelf: { repository },

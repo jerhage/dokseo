@@ -1,11 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { regionAnchor } from '$lib/shared/anchor';
 import { imageRect } from '$lib/shared/geometry';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { bookId, captureId, imageIndex, tagId } from '$lib/shared/ids';
 import type { StoredCapture } from '../../domain/capture/capture';
 import { createCaptureRepository } from './indexeddb-captures.repo';
 
-const held = vi.hoisted(() => ({ rows: new Map<unknown, { id?: unknown; bookId?: unknown }>() }));
+type HeldRow = { id?: unknown; bookId?: unknown; tagIds?: unknown };
+
+const held = vi.hoisted(() => ({ rows: new Map<unknown, HeldRow>(), rewrites: [] as string[] }));
+
+function indexed(row: HeldRow, index: string, key: unknown): boolean {
+  if (index === 'tagIds') return Array.isArray(row.tagIds) && row.tagIds.includes(key);
+  return row.bookId === key;
+}
 
 vi.mock('$lib/platform/idb/connection', () => ({
   openDatabase: () => Promise.resolve({}),
@@ -24,11 +31,12 @@ vi.mock('$lib/platform/idb/connection', () => ({
   rewriteByIndex: (
     _db: unknown,
     _store: string,
-    _index: string,
+    index: string,
     key: unknown,
-    rewrite: (row: { id?: unknown; bookId?: unknown }) => { id?: unknown; bookId?: unknown },
+    rewrite: (row: HeldRow) => HeldRow,
   ) => {
-    for (const row of [...held.rows.values()].filter((stored) => stored.bookId === key)) {
+    held.rewrites.push(index);
+    for (const row of [...held.rows.values()].filter((stored) => indexed(stored, index, key))) {
       held.rows.set(row.id, rewrite(row));
     }
     return Promise.resolve();
@@ -62,6 +70,7 @@ const OLD_SHAPE = {
 
 beforeEach(() => {
   held.rows.clear();
+  held.rewrites.length = 0;
   vi.stubGlobal('indexedDB', {});
 });
 
@@ -113,5 +122,24 @@ describe('createCaptureRepository', () => {
       captures: [],
       unreadable: [],
     });
+  });
+
+  it('untags every readable capture carrying a tag through the tag index and counts them', async () => {
+    const sfx = tagId('sfx');
+    const keigo = tagId('keigo');
+    const tagged = { ...GOOD, tagIds: [sfx, keigo] };
+    const other = { ...GOOD, id: captureId('other'), tagIds: [keigo] };
+    const broken = { ...OLD_SHAPE, tagIds: [sfx] };
+    held.rows.set(tagged.id, tagged);
+    held.rows.set(other.id, other);
+    held.rows.set(broken.id, broken);
+
+    const untagged = await createCaptureRepository().untagEverywhere(sfx);
+
+    expect(untagged).toEqual({ kind: 'success', untagged: 1 });
+    expect(held.rewrites).toEqual(['tagIds']);
+    expect(held.rows.get('good')).toEqual({ ...GOOD, tagIds: [keigo] });
+    expect(held.rows.get('other')).toEqual(other);
+    expect(held.rows.get('old')).toEqual(broken);
   });
 });
