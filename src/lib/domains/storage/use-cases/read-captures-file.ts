@@ -20,6 +20,7 @@ import {
   knownStoredValue,
 } from '$lib/shared/corrupt-row';
 import type { StoredFields } from '$lib/shared/corrupt-row';
+import { parsedBookId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import { isLanguage } from '$lib/shared/language';
 import { isLayoutKind, isReadingDirection } from '$lib/shared/layout-kind';
@@ -91,7 +92,7 @@ function fields(row: string, value: unknown): StoredFields {
 }
 
 function isKey(value: unknown): value is string {
-  return isText(value) && value.length > 0;
+  return isText(value) && parsedBookId(value) !== null;
 }
 
 function fileBook(entry: unknown): FileBook {
