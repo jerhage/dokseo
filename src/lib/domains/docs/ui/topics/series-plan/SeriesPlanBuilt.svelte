@@ -1,6 +1,7 @@
 <script lang="ts">
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
+  import RowSaveDemo from './RowSaveDemo.svelte';
   import {
     EXPORT_FORMAT_HREF,
     IDENTITY_REMOVED_HREF,
@@ -65,6 +66,7 @@
     A save also changes only the fields in its edit. <code>update()</code> reads the row at the moment
     of saving, so a page turn in one tab does not undo a rename made in another.
   </p>
+  <RowSaveDemo />
 </DocsSection>
 
 <DocsSection title={SERIES_PLAN_SECTIONS.reserved}>

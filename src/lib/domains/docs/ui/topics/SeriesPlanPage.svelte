@@ -4,6 +4,7 @@
   import SeriesConcepts from './series-plan/SeriesConcepts.svelte';
   import SeriesFormats from './series-plan/SeriesFormats.svelte';
   import SeriesPlanBuilt from './series-plan/SeriesPlanBuilt.svelte';
+  import SeriesPlanDecisions from './series-plan/SeriesPlanDecisions.svelte';
 </script>
 
 <DocsPage slug="series-plan" sections={Object.values(SERIES_PLAN_SECTIONS)}>
@@ -15,4 +16,5 @@
   <SeriesConcepts />
   <SeriesFormats />
   <SeriesPlanBuilt />
+  <SeriesPlanDecisions />
 </DocsPage>
