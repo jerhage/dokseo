@@ -193,6 +193,15 @@ const DOCS_TOPICS = [
     status: 'published',
     kind: 'explainer',
   },
+  {
+    slug: 'word-analysis-plan',
+    title: 'Plan: word analysis and dictionary',
+    summary:
+      'Word boundaries, readings and base forms from a morphological analyzer, dictionary lookup with JMdict and KRDict, and the plan for adding both to Dokseo.',
+    status: 'published',
+    kind: 'plan',
+    buildsAfter: '1.0',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];

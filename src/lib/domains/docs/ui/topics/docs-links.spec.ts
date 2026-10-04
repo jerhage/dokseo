@@ -25,6 +25,7 @@ import * as touchAndPointers from './touch-and-pointers/sections';
 import * as uiLibrary from './ui-library/sections';
 import * as typescriptTypes from './typescript-types/type-sections';
 import * as unicode from './unicode/unicode-sections';
+import * as wordAnalysisPlan from './word-analysis-plan/plan-sections';
 import * as workers from './workers/workers-sections';
 
 type DocsLink = {
@@ -56,6 +57,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   indexeddb: indexedDb.INDEXEDDB_SECTIONS,
   accessibility: accessibility.ACCESSIBILITY_SECTIONS,
   'production-builds': productionBuilds.BUILD_SECTIONS,
+  'word-analysis-plan': wordAnalysisPlan.WORD_PLAN_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
@@ -81,6 +83,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'typescript-types/type-sections.ts': typescriptTypes,
   'unicode/unicode-sections.ts': unicode,
   'workers/workers-sections.ts': workers,
+  'word-analysis-plan/plan-sections.ts': wordAnalysisPlan,
 };
 
 const TOPICS_FOLDER = join('src', 'lib', 'domains', 'docs', 'ui', 'topics');
