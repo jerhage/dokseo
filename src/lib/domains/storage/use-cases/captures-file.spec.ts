@@ -319,7 +319,7 @@ describe('readCapturesFile', () => {
     });
   });
 
-  it('rejects an unknown capture origin that the stored mapper would read as recognized', () => {
+  it('rejects an unknown capture origin', () => {
     const file = read(edited((raw) => (entry(raw, 'captures', 0).origin = 'dreamed')));
 
     expect(file.unreadable).toEqual([
@@ -332,7 +332,7 @@ describe('readCapturesFile', () => {
     expect(file.captures.map(({ capture }) => capture.id)).toEqual([LIFTED.id, RECOGNIZED.id]);
   });
 
-  it('rejects an unknown tag colour that the stored mapper would read as the first colour', () => {
+  it('rejects an unknown tag colour', () => {
     const file = read(edited((raw) => (entry(raw, 'tags', 1).colour = 'gold')));
 
     expect(file.unreadable).toEqual([
@@ -343,6 +343,52 @@ describe('readCapturesFile', () => {
       },
     ]);
     expect(file.tags).toEqual([GRAMMAR]);
+  });
+
+  it.each([
+    [
+      'a recognized capture without its note',
+      2,
+      (capture: Record<string, unknown>) => delete capture.note,
+      'A stored capture lacks its note',
+    ],
+    [
+      'a recognized capture without its confidence',
+      2,
+      (capture: Record<string, unknown>) => delete capture.confidence,
+      'A stored capture lacks its confidence',
+    ],
+    [
+      'a written capture carrying a note',
+      0,
+      (capture: Record<string, unknown>) => (capture.note = null),
+      'A stored capture holds an unknown note for a written capture: null',
+    ],
+    [
+      'a lifted capture carrying a confidence',
+      1,
+      (capture: Record<string, unknown>) => (capture.confidence = 0.5),
+      'A stored capture holds an unknown confidence for a lifted capture: 0.5',
+    ],
+    [
+      'a capture naming one tag twice',
+      2,
+      (capture: Record<string, unknown>) => (capture.tagIds = [KANJI.id, KANJI.id]),
+      'A stored capture holds an unknown tag ids: tag-kanji,tag-kanji',
+    ],
+    [
+      'a capture edited before it was taken',
+      2,
+      (capture: Record<string, unknown>) => (capture.editedAt = 150),
+      'A stored capture holds an unknown edited time before its created time: 150',
+    ],
+  ])('rejects %s, as a stored row is rejected', (_what, index, change, detail) => {
+    const file = read(edited((raw) => void change(entry(raw, 'captures', index))));
+
+    expect(file.unreadable).toEqual([
+      { section: 'captures', index, reason: { kind: 'invalid', detail } },
+    ]);
+    expect(file.captures).toHaveLength(2);
   });
 
   it('rejects a capture that lacks a field, and reads the rest', () => {

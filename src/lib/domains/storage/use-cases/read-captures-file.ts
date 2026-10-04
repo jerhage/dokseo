@@ -6,7 +6,6 @@ import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { tagFromStored } from '$lib/domains/recognition/domain/tag/tag';
 import type { Tag } from '$lib/domains/recognition/domain/tag/tag';
 import { isTagColour } from '$lib/domains/recognition/domain/tag/tag-colour';
-import { isCaptureOrigin } from '$lib/shared/capture-origin';
 import {
   CorruptRow,
   isNumber,
@@ -149,7 +148,6 @@ function strippedOfBook(capture: Capture): BooklessCapture {
 
 function fileCapture(entry: unknown): { readonly bookKey: string; readonly capture: Capture } {
   const capture = fields('capture', entry);
-  field('capture', 'origin', capture.origin, isCaptureOrigin);
   const bookKey = field('capture', 'book key', capture.bookKey, isKey);
   return { bookKey, capture: captureFromStored({ ...capture, bookId: bookKey }) };
 }

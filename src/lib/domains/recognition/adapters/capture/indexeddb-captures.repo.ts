@@ -8,7 +8,7 @@ import {
 } from '$lib/platform/idb/connection';
 import type { BookId, CaptureId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
-import { capturesFromStored, oldestFirst } from '../../domain/capture/capture';
+import { capturesFromStored, movedCapture, oldestFirst } from '../../domain/capture/capture';
 import type { Capture, StoredCapture } from '../../domain/capture/capture';
 import type {
   CaptureListing,
@@ -73,7 +73,7 @@ function createCaptureRepository(): CaptureRepository {
         CAPTURE_STORE,
         CAPTURE_BOOK_INDEX,
         from,
-        (row) => ({ ...row, bookId: to }),
+        (row) => movedCapture(row, to),
       );
       return WRITTEN;
     },

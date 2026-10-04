@@ -198,21 +198,23 @@ describe('captureFromStored', () => {
     expect(captureFromStored(stored).origin).toBe('written');
   });
 
-  it('reads a stored origin it does not know as recognized, carrying no note and no confidence', () => {
+  it('rejects a stored origin it does not know rather than reading it as recognized', () => {
     const stored: StoredCapture = {
       id: captureId('a'),
       bookId: BOOK,
       anchor: ANCHOR,
       text: 'こっちに来て',
+      note: null,
+      confidence: null,
       createdAt: 42,
       editedAt: null,
       origin: 'dictated',
       tagIds: [],
     };
 
-    const read = asRecognized(captureFromStored(stored));
-
-    expect([read.origin, read.note, read.confidence]).toEqual(['recognized', null, null]);
+    expect(() => captureFromStored(stored)).toThrow(
+      'A stored capture holds an unknown origin: dictated',
+    );
   });
 
   it('throws a corrupt row for a stored anchor kind it does not know', () => {
@@ -259,40 +261,28 @@ describe('captureFromStored', () => {
     });
   });
 
-  for (const { origin, stored } of [
-    {
-      origin: 'lifted',
-      stored: {
+  it.each([
+    ['confidence', 'lifted', { anchor: QUOTED, note: null, confidence: 0.5, origin: 'lifted' }],
+    ['confidence', 'written', { anchor: ANCHOR, confidence: 0.5, origin: 'written' }],
+    ['note', 'written', { anchor: ANCHOR, note: null, origin: 'written' }],
+  ] satisfies [string, string, StoredCapture][])(
+    'rejects a %s a stored %s record carries rather than dropping it',
+    (field, origin, fields) => {
+      const stored: StoredCapture = {
         id: captureId('a'),
         bookId: BOOK,
-        anchor: QUOTED,
         text: 'こっちに来て',
-        confidence: 0.5,
         createdAt: 42,
         editedAt: null,
-        origin: 'lifted',
         tagIds: [],
-      },
+        ...fields,
+      };
+
+      expect(() => captureFromStored(stored)).toThrow(
+        `A stored capture holds an unknown ${field} for a ${origin} capture`,
+      );
     },
-    {
-      origin: 'written',
-      stored: {
-        id: captureId('a'),
-        bookId: BOOK,
-        anchor: ANCHOR,
-        text: 'my own words',
-        confidence: 0.5,
-        createdAt: 42,
-        editedAt: null,
-        origin: 'written',
-        tagIds: [],
-      },
-    },
-  ]) {
-    it(`drops a confidence a stored ${origin} record happens to carry`, () => {
-      expect('confidence' in captureFromStored(stored)).toBe(false);
-    });
-  }
+  );
 });
 
 describe('editedCapture', () => {
@@ -327,6 +317,12 @@ describe('editedCapture', () => {
       expect(edited.editedAt).toBe(77);
     });
   }
+
+  it('stamps an edit no earlier than the moment the capture was taken', () => {
+    const edited = editedCapture(taken('a', 500), 'べつのことば', 77);
+
+    expect(edited.editedAt).toBe(500);
+  });
 
   it('keeps everything the reader did not change', () => {
     const before = taken('a', 1);
@@ -433,18 +429,46 @@ describe('capturesFromStored', () => {
     return Object.fromEntries(Object.entries(complete).filter(([key]) => key !== field));
   }
 
-  it.each(['bookId', 'anchor', 'text', 'createdAt', 'editedAt', 'tagIds'])(
-    'reports a row without its %s as unreadable',
-    (field) => {
-      const read = capturesFromStored([without(field)]);
+  it.each([
+    'bookId',
+    'anchor',
+    'text',
+    'createdAt',
+    'editedAt',
+    'tagIds',
+    'note',
+    'confidence',
+    'origin',
+  ])('reports a row without its %s as unreadable', (field) => {
+    const read = capturesFromStored([without(field)]);
 
-      expect(read.captures).toEqual([]);
-      expect(read.unreadable).toEqual([{ id: 'full' }]);
-    },
-  );
+    expect(read.captures).toEqual([]);
+    expect(read.unreadable).toEqual([{ id: 'full' }]);
+  });
 
   it.each([
     ['bookId', 7],
+    ['bookId', ''],
+    ['bookId', '../book-one'],
+    ['bookId', 'shelf/book-one'],
+    ['editedAt', 0],
+    ['tagIds', [tagId('grammar'), tagId('grammar')]],
+    ['tagIds', ['']],
+    [
+      'anchor',
+      { kind: 'region', regions: [{ index: -1, rect: { x: 1, y: 2, width: 3, height: 4 } }] },
+    ],
+    [
+      'anchor',
+      { kind: 'region', regions: [{ index: 1.5, rect: { x: 1, y: 2, width: 3, height: 4 } }] },
+    ],
+    [
+      'anchor',
+      {
+        kind: 'region',
+        regions: [{ index: 1, rect: { x: 1, y: 2, width: 3, height: Number.NaN } }],
+      },
+    ],
     ['text', null],
     ['createdAt', '1'],
     ['editedAt', '99'],
@@ -475,14 +499,28 @@ describe('capturesFromStored', () => {
     expect(read.unreadable).toEqual([{ id: 'full' }]);
   });
 
-  it.each(['note', 'confidence', 'origin'])(
-    'reads a row without its %s through the fallback',
-    (field) => {
-      expect(capturesFromStored([without(field)]).captures.map((capture) => capture.id)).toEqual([
-        'full',
-      ]);
-    },
-  );
+  it('reports a lifted row without its note as unreadable', () => {
+    const read = capturesFromStored([
+      {
+        id: captureId('lifted'),
+        bookId: BOOK,
+        anchor: QUOTED,
+        text: 'こっちに来て',
+        createdAt: 1,
+        editedAt: null,
+        origin: 'lifted',
+        tagIds: [],
+      },
+    ]);
+
+    expect(read.unreadable).toEqual([{ id: 'lifted' }]);
+  });
+
+  it('reads a row edited at the moment it was taken', () => {
+    const read = capturesFromStored([{ ...complete, createdAt: 5, editedAt: 5 }]);
+
+    expect(read.captures.map((capture) => capture.editedAt)).toEqual([5]);
+  });
 
   it('reads a complete current row back as it was written', () => {
     expect(capturesFromStored([complete, { ...complete, id: 'text', anchor: QUOTED }])).toEqual({
@@ -492,6 +530,12 @@ describe('capturesFromStored', () => {
       ],
       unreadable: [],
     });
+  });
+
+  it('rejects an empty id', () => {
+    expect(() => captureFromStored({ ...complete, id: '' })).toThrow(
+      'A stored capture holds an unknown id: ',
+    );
   });
 
   it('names the field a stored capture lacks', () => {

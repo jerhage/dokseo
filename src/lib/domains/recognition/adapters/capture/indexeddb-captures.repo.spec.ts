@@ -86,9 +86,10 @@ describe('createCaptureRepository', () => {
     },
   );
 
-  it('moves every row of a book, readable or not, onto another book and keeps its other fields', async () => {
+  it('moves every row of a book onto another book, writing a readable row as its mapped capture', async () => {
     const other = { ...GOOD, id: captureId('other'), bookId: bookId('book-two') };
-    held.rows.set(GOOD.id, GOOD);
+    const retired = { ...GOOD, retired: 'dropped' };
+    held.rows.set(GOOD.id, retired);
     held.rows.set(OLD_SHAPE.id, OLD_SHAPE);
     held.rows.set(other.id, other);
 
