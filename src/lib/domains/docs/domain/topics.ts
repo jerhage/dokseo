@@ -65,8 +65,9 @@ const DOCS_TOPICS = [
   {
     slug: 'export-import',
     title: 'Export and import',
-    summary: 'The format, ids across devices, conflicts and Web Share.',
-    status: 'planned',
+    summary:
+      'Local and global ids, a versioned file read entry by entry, merging and conflicts, and saving through the share sheet or a download.',
+    status: 'published',
   },
   {
     slug: 'touch-and-pointers',
