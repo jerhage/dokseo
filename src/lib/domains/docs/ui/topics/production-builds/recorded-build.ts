@@ -53,13 +53,13 @@ const GROUP_FOLDERS: Readonly<Record<OutputGroupName, string>> = {
 };
 
 const BUILD_WITH_PLUGIN: RecordedBuild = {
-  bytes: 6_757_889,
+  bytes: 6_769_842,
   files: 208,
   precache: 184,
-  precacheBytes: 6_659_915,
-  preloaded: 35,
-  preloadedBytes: 417_475,
-  stubNodes: 26,
+  precacheBytes: 6_671_866,
+  preloaded: 34,
+  preloadedBytes: 424_727,
+  stubNodes: 27,
   guardNodes: 3,
   groups: [
     {
@@ -67,21 +67,21 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.entry,
       holds: "SvelteKit's start script and the app",
       files: 2,
-      bytes: 12_617,
+      bytes: 12_728,
     },
     {
       name: 'nodes',
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
-      files: 42,
-      bytes: 430_710,
+      files: 43,
+      bytes: 435_369,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
-      files: 99,
-      bytes: 1_587_938,
+      files: 98,
+      bytes: 1_595_094,
     },
     {
       name: 'assets',
@@ -95,7 +95,7 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.workers,
       holds: 'the two OCR workers and the OPFS writer',
       files: 3,
-      bytes: 1_203_615,
+      bytes: 1_203_712,
     },
     {
       name: 'app',
@@ -116,18 +116,18 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 19_813,
+      bytes: 19_743,
     },
   ],
 };
 
 const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
-  bytes: 8_635_271,
-  files: 351,
-  precache: 327,
-  precacheBytes: 8_531_612,
-  preloaded: 69,
-  preloadedBytes: 431_720,
+  bytes: 8_727_273,
+  files: 359,
+  precache: 335,
+  precacheBytes: 8_623_300,
+  preloaded: 73,
+  preloadedBytes: 439_968,
   stubNodes: 0,
   guardNodes: 0,
   groups: [
@@ -136,21 +136,21 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.entry,
       holds: "SvelteKit's start script and the app",
       files: 2,
-      bytes: 21_067,
+      bytes: 21_783,
     },
     {
       name: 'nodes',
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
-      files: 42,
-      bytes: 2_007_657,
+      files: 43,
+      bytes: 2_085_947,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
-      files: 228,
-      bytes: 1_816_115,
+      files: 235,
+      bytes: 1_828_417,
     },
     {
       name: 'assets',
@@ -164,7 +164,7 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.workers,
       holds: 'the two OCR workers and the OPFS writer',
       files: 5,
-      bytes: 1_204_391,
+      bytes: 1_204_488,
     },
     {
       name: 'app',
@@ -185,7 +185,7 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 27_912,
+      bytes: 28_509,
     },
   ],
 };
@@ -202,8 +202,8 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'the pdf.js worker, modern build',
   },
   {
-    path: '_app/immutable/workers/paddle-ocr.worker-BtFo_Kfn.js',
-    bytes: 601_635,
+    path: '_app/immutable/workers/paddle-ocr.worker-CFFrc18X.js',
+    bytes: 601_732,
     holds: 'the PaddleOCR worker, with transformers.js',
   },
   {
@@ -222,8 +222,8 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'pdf.js, modern build',
   },
   {
-    path: '_app/immutable/nodes/32.TQHzXIwh.js',
-    bytes: 248_303,
+    path: '_app/immutable/nodes/33.CWtQyDFN.js',
+    bytes: 248_505,
     holds: 'the reader route',
   },
   {
@@ -237,8 +237,8 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'zip.js, for archives and EPUBs',
   },
   {
-    path: '_app/immutable/nodes/0.LWAV1CYD.js',
-    bytes: 69_940,
+    path: '_app/immutable/nodes/0.CTNFMTg_.js',
+    bytes: 72_780,
     holds: 'the root layout',
   },
 ];
