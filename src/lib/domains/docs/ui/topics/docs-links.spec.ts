@@ -13,6 +13,8 @@ import * as offline from './offline/sections';
 import * as releasesAndCi from './releases-and-ci/sections';
 import * as renderingPages from './rendering-pages/rendering-sections';
 import * as securityHeaders from './security-headers/sections';
+import * as sqlPatterns from './sql-patterns/sql-patterns-sections';
+import * as sqlSetTheory from './sql-set-theory/sql-set-sections';
 import * as storage from './storage/storage-sections';
 import * as testing from './testing/testing-sections';
 import * as touchAndPointers from './touch-and-pointers/sections';
@@ -39,8 +41,8 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'rendering-pages': renderingPages.RENDERING_SECTIONS,
   'releases-and-ci': releasesAndCi.RELEASE_SECTIONS,
   testing: testing.TESTING_SECTIONS,
-  'sql-set-theory': {},
-  'sql-patterns': {},
+  'sql-set-theory': sqlSetTheory.SQL_SET_SECTIONS,
+  'sql-patterns': sqlPatterns.SQL_PATTERNS_SECTIONS,
   unicode: unicode.UNICODE_SECTIONS,
   workers: {},
   'typescript-types': {},
@@ -59,6 +61,8 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'releases-and-ci/sections.ts': releasesAndCi,
   'rendering-pages/rendering-sections.ts': renderingPages,
   'security-headers/sections.ts': securityHeaders,
+  'sql-patterns/sql-patterns-sections.ts': sqlPatterns,
+  'sql-set-theory/sql-set-sections.ts': sqlSetTheory,
   'storage/storage-sections.ts': storage,
   'testing/testing-sections.ts': testing,
   'touch-and-pointers/sections.ts': touchAndPointers,

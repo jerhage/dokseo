@@ -109,7 +109,7 @@ const DOCS_TOPICS = [
     title: 'SQL as set theory',
     summary:
       'Relations as sets, and each SQL operator as a set operation: selection, projection, joins, semi-joins, anti-joins, union, intersection, difference and grouping.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'sql-patterns',
