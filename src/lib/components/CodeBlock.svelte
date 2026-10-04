@@ -7,6 +7,7 @@
   type Props = Omit<HTMLAttributes<HTMLPreElement>, 'oncopy'> & {
     code?: string | undefined;
     label?: string | undefined;
+    wrap?: boolean;
     oncopy?: ((text: string) => void) | undefined;
     copied?: boolean;
     copyLabel?: string;
@@ -16,6 +17,7 @@
   let {
     code,
     label,
+    wrap = false,
     oncopy,
     copied = false,
     copyLabel = 'Copy the code',
@@ -43,10 +45,10 @@
 {/snippet}
 
 {#if oncopy === undefined}
-  {@render block(['codeblock', className])}
+  {@render block(['codeblock', wrap && 'codeblock-wrap', className])}
 {:else}
   <div class={['codeblock-frame', className]}>
-    {@render block('codeblock')}
+    {@render block(['codeblock', wrap && 'codeblock-wrap'])}
     <IconButton
       size="sm"
       class="codeblock-copy"

@@ -9,6 +9,10 @@
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-container);
 }
+.codeblock-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .codeblock-frame {
   position: relative;
   min-inline-size: 0;

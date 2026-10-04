@@ -32,7 +32,7 @@
         {:else if item.example.errors === ''}
           <Alert variant="success" title="Compiles">tsc prints no error.</Alert>
         {:else}
-          <CodeBlock code={item.example.errors} label="tsc {item.example.flags.join(' ')}" />
+          <CodeBlock code={item.example.errors} label="tsc {item.example.flags.join(' ')}" wrap />
         {/if}
       </div>
     {/each}
