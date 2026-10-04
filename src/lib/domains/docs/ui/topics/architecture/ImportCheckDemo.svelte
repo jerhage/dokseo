@@ -62,8 +62,9 @@
   {#snippet caption()}
     The verdict comes from a copy of the path rules in <code>.dependency-cruiser.cjs</code> and the
     way dependency-cruiser matches them, including the <code>$1</code> back-references. A test
-    compares the copy with the config file and with dependency-cruiser's own validator on every pair
-    of sample paths. <code>no-circular</code> and <code>no-unresolvable</code> need the whole import graph,
-    so they are not run here.
+    compares the copy with the config file, then writes sample files that import one another and
+    runs dependency-cruiser's <code>cruise</code> on them, so its verdict on every pair of sample
+    paths must match the copy's. <code>no-circular</code> and <code>no-unresolvable</code> need the whole
+    import graph, so they are not run here.
   {/snippet}
 </DocsDemo>

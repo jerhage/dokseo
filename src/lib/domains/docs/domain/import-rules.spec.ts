@@ -1,51 +1,21 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { dirname, join, posix, resolve } from 'node:path';
+import { cruise } from 'dependency-cruiser';
+import type { ICruiseResult, IRegularForbiddenRuleType } from 'dependency-cruiser';
 import { describe, expect, it } from 'vitest';
 import { PATH_RULES, UNPORTED_RULES, refusingRules, sourcePath } from './import-rules';
 import type { ImportKind } from './import-rules';
 
-type CruiserRule = {
-  readonly name: string;
-  readonly comment?: string;
-  readonly severity?: string;
-  readonly from: object;
-  readonly to: object;
+type CruiserConfig = {
+  readonly forbidden: readonly (IRegularForbiddenRuleType & { readonly name: string })[];
+  readonly options: { readonly enhancedResolveOptions: object };
 };
-
-type Verdict = { readonly valid: boolean; readonly rules?: readonly { readonly name: string }[] };
-
-type Validate = (
-  ruleSet: object,
-  from: { readonly source: string },
-  to: {
-    readonly resolved: string;
-    readonly dependencyTypes: readonly string[];
-    readonly circular: boolean;
-    readonly couldNotResolve: boolean;
-  },
-) => Verdict;
 
 const requireFromRoot = createRequire(resolve('package.json'));
 
-const config = requireFromRoot('./.dependency-cruiser.cjs') as {
-  readonly forbidden: readonly CruiserRule[];
-};
-
-async function cruiserValidator(): Promise<{
-  readonly validate: Validate;
-  readonly rules: object;
-}> {
-  const validation = (await import(
-    resolve('node_modules/dependency-cruiser/src/validate/index.mjs')
-  )) as { readonly validateDependency: Validate };
-  const normalizing = (await import(
-    resolve('node_modules/dependency-cruiser/src/main/rule-set/normalize.mjs')
-  )) as { readonly default: (ruleSet: object) => object };
-  return {
-    validate: validation.validateDependency,
-    rules: normalizing.default({ forbidden: config.forbidden }),
-  };
-}
+const config = requireFromRoot('./.dependency-cruiser.cjs') as CruiserConfig;
 
 const DOMAIN_FOLDERS = ['domain', 'use-cases', 'adapters', 'queries', 'ui'] as const;
 
@@ -53,6 +23,7 @@ const DOMAINS = ['library', 'recognition', 'viewing', 'storage', 'docs', 'sync']
 
 const SAMPLE_PATHS = [
   'src/routes/+page.svelte',
+  'src/routes/docs/storage/+page.svelte',
   'src/routes/read/[fileId]/read-session.svelte.ts',
   'src/lib/container.ts',
   'src/lib/context.ts',
@@ -76,8 +47,81 @@ const SAMPLE_PATHS = [
 
 const KINDS: readonly ImportKind[] = ['value', 'type-only'];
 
-function cruiserTypes(kind: ImportKind): readonly string[] {
-  return kind === 'type-only' ? ['local', 'type-only', 'import'] : ['local', 'import'];
+function importerOf(sample: string): string | null {
+  if (sample.startsWith('node_modules/')) return null;
+  return sample.endsWith('.ts') ? sample : `${sample}.ts`;
+}
+
+function importLine(from: string, to: string, kind: ImportKind): string {
+  const relative = posix.relative(posix.dirname(from), to);
+  const specifier = relative.startsWith('.') ? relative : `./${relative}`;
+  return kind === 'type-only' ? `import type {} from '${specifier}';` : `import '${specifier}';`;
+}
+
+function writeSamples(root: string, kind: ImportKind): readonly string[] {
+  const importers = SAMPLE_PATHS.flatMap((sample) => {
+    const importer = importerOf(sample);
+    return importer === null ? [] : [importer];
+  });
+  for (const path of new Set([...SAMPLE_PATHS, ...importers])) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    const lines = importers.includes(path)
+      ? SAMPLE_PATHS.filter((to) => to !== path).map((to) => importLine(path, to, kind))
+      : [];
+    writeFileSync(join(root, path), lines.join('\n'));
+  }
+  return importers;
+}
+
+function ruleOrder(names: readonly string[]): string {
+  const order = config.forbidden.map((rule) => rule.name);
+  return names.toSorted((left, right) => order.indexOf(left) - order.indexOf(right)).join(',');
+}
+
+type CruiserVerdicts = {
+  readonly edges: ReadonlySet<string>;
+  readonly refused: ReadonlyMap<string, string>;
+};
+
+async function cruiserVerdicts(kind: ImportKind): Promise<CruiserVerdicts> {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'import-rules-')));
+  try {
+    const importers = writeSamples(root, kind);
+    const forbidden = config.forbidden.filter(
+      (rule) => !UNPORTED_RULES.some((name) => name === rule.name),
+    );
+    const { output } = await cruise([...importers], {
+      baseDir: root,
+      validate: true,
+      ruleSet: { forbidden },
+      doNotFollow: { path: 'node_modules' },
+      tsPreCompilationDeps: true,
+      enhancedResolveOptions: config.options.enhancedResolveOptions,
+    });
+    if (typeof output === 'string') throw new Error('dependency-cruiser returned text');
+    return verdictsOf(output);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function verdictsOf(result: ICruiseResult): CruiserVerdicts {
+  const edges = new Set(
+    result.modules.flatMap((module) =>
+      module.dependencies
+        .filter((dependency) => !dependency.couldNotResolve)
+        .map((dependency) => `${module.source} -> ${dependency.resolved}`),
+    ),
+  );
+  const refused = new Map<string, string[]>();
+  for (const violation of result.summary.violations) {
+    const key = `${violation.from} -> ${violation.to}`;
+    refused.set(key, [...(refused.get(key) ?? []), violation.rule.name]);
+  }
+  return {
+    edges,
+    refused: new Map([...refused].map(([key, names]) => [key, ruleOrder(names)])),
+  };
 }
 
 describe('the ported path rules', () => {
@@ -93,32 +137,27 @@ describe('the ported path rules', () => {
   });
 
   it('refuses exactly what dependency-cruiser refuses for every pair of sample paths', async () => {
-    const { validate, rules } = await cruiserValidator();
     const disagreements: string[] = [];
 
-    for (const from of SAMPLE_PATHS) {
-      for (const to of SAMPLE_PATHS) {
-        for (const kind of KINDS) {
-          const verdict = validate(
-            rules,
-            { source: from },
-            {
-              resolved: to,
-              dependencyTypes: cruiserTypes(kind),
-              circular: false,
-              couldNotResolve: false,
-            },
-          );
-          const theirs = (verdict.rules ?? []).map((rule) => rule.name).join(',');
-          const ours = refusingRules(from, to, kind).join(',');
-          if (theirs !== ours)
-            disagreements.push(`${from} -> ${to} (${kind}): ${theirs} / ${ours}`);
+    for (const kind of KINDS) {
+      const theirs = await cruiserVerdicts(kind);
+      for (const from of SAMPLE_PATHS) {
+        const importer = importerOf(from);
+        if (importer === null) continue;
+        for (const to of SAMPLE_PATHS) {
+          if (to === importer) continue;
+          const edge = `${importer} -> ${to}`;
+          const cruised = theirs.edges.has(edge) ? (theirs.refused.get(edge) ?? '') : 'not cruised';
+          const ours = ruleOrder(refusingRules(importer, to, kind));
+          if (cruised !== ours) {
+            disagreements.push(`${importer} -> ${to} (${kind}): ${cruised} / ${ours}`);
+          }
         }
       }
     }
 
     expect(disagreements).toEqual([]);
-  });
+  }, 60_000);
 
   it('refuses a route that reaches an adapter under two rules', () => {
     expect(
