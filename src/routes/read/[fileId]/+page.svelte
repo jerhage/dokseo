@@ -17,7 +17,7 @@
   import EngineGateData from '$lib/domains/recognition/ui/engine/EngineGateData.svelte';
   import ModelConsentDialog from '$lib/domains/recognition/ui/engine/ModelConsentDialog.svelte';
   import BookData from '$lib/domains/library/ui/BookData.svelte';
-  import { flowingBook } from '$lib/domains/library/ui/book-read';
+  import { flowingBook, readingTitle } from '$lib/domains/library/ui/book-read';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import FlowViewer from '$lib/domains/flowing/ui/FlowViewer.svelte';
   import ReadingSettingsData from '$lib/domains/flowing/ui/ReadingSettingsData.svelte';
@@ -25,6 +25,7 @@
   import ReaderScreen from '$lib/domains/viewing/ui/ReaderScreen.svelte';
   import { edgeClicksTurn } from '$lib/shared/edge-clicks.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
   import { ReadSession } from './read-session.svelte';
 
   let search = $state<ReturnType<typeof SearchDialog> | null>();
@@ -87,6 +88,7 @@
 <BookData library={container.library} {id}>
   {#snippet children(read)}
     {@const flowing = flowingBook(read)}
+    <PageTitle screen={readingTitle(read)} />
     {#if flowing !== null}
       <ReadingSettingsData
         flowing={container.flowing}

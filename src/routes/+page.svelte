@@ -12,6 +12,7 @@
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
   import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
 
@@ -36,6 +37,8 @@
     replaceState(missing.cleaned, page.state);
   });
 </script>
+
+<PageTitle screen="Library" />
 
 <LibraryShelfData library={container.library}>
   {#snippet children(shelf)}

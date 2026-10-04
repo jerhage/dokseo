@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import { imageLayoutKind } from '$lib/shared/layout-kind';
 import type { ReadState } from '$lib/shared/read-state';
+import { shownTitle } from '$lib/shared/shown-title';
 import type { Book } from '../domain/book/book';
 import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
 import type { ReadBookResult } from '../use-cases/read-book';
@@ -14,6 +15,8 @@ type BookRead =
 const BOOK_LOADING: BookRead = { kind: 'loading' };
 
 const NO_BOOK: BookRead = { kind: 'missing' };
+
+const UNTITLED_READER = 'Reader';
 
 function bookReadOf(state: ReadState<ReadBookResult>): BookRead {
   return match(state)
@@ -40,5 +43,12 @@ function flowingBook(read: BookRead): Book | null {
     .exhaustive();
 }
 
-export { bookReadOf, flowingBook };
+function readingTitle(read: BookRead): string {
+  return match(read)
+    .with({ kind: 'ready' }, ({ book }) => shownTitle(book))
+    .with({ kind: 'loading' }, { kind: 'failed' }, { kind: 'missing' }, () => UNTITLED_READER)
+    .exhaustive();
+}
+
+export { bookReadOf, flowingBook, readingTitle };
 export type { BookRead };

@@ -8,6 +8,7 @@
   import UnreadableTags from '$lib/domains/recognition/ui/tag/UnreadableTags.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
   import { readTagName, TAG_PARAMETER } from '$lib/shared/tag-location';
 
   const container = useContainer();
@@ -19,6 +20,8 @@
     comparePassages,
   );
 </script>
+
+<PageTitle screen="Tags" section={wanted} />
 
 <LibraryShelfData bind:this={shelf} library={container.library}>
   {#snippet children(read)}

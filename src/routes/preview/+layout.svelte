@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import NavLink from '$lib/components/NavLink.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
   import { activeComparison, isShowing, variantHref } from './comparison';
 
   let { children } = $props();
@@ -15,6 +16,8 @@
     }),
   );
 </script>
+
+<PageTitle screen="Design preview" section={comparison?.title ?? null} />
 
 <div class={['surface-bg col gap-0', screen ? 'h-screen' : 'min-h-screen']}>
   <div

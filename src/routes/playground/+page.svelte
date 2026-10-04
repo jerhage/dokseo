@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import Divider from '$lib/components/Divider.svelte';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
   import AccordionSection from './AccordionSection.svelte';
   import AlertSection from './AlertSection.svelte';
   import AppShellSection from './AppShellSection.svelte';
@@ -126,9 +127,7 @@
   ];
 </script>
 
-<svelte:head>
-  <title>Component library</title>
-</svelte:head>
+<PageTitle screen="Component library" />
 
 <div class="surface-bg min-h-screen">
   <PlaygroundHeader />

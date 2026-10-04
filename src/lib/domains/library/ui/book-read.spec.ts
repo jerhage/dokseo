@@ -3,7 +3,7 @@ import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import { LIBRARY_UNAVAILABLE } from '../queries/library-error-text';
-import { bookReadOf, flowingBook } from './book-read';
+import { bookReadOf, flowingBook, readingTitle } from './book-read';
 import type { BookRead } from './book-read';
 
 function book(layoutKind: Book['layoutKind']): Book {
@@ -76,5 +76,27 @@ describe('flowingBook', () => {
     ];
 
     expect(reads.map(flowingBook)).toEqual([null, null, null, null, null]);
+  });
+});
+
+describe('readingTitle', () => {
+  it('names a ready book by its title', () => {
+    expect(readingTitle({ kind: 'ready', book: book('flow') })).toBe('Kokoro');
+  });
+
+  it('names a ready book by the alias its reader gave it', () => {
+    expect(readingTitle({ kind: 'ready', book: { ...book('paged'), alias: 'Heart' } })).toBe(
+      'Heart',
+    );
+  });
+
+  it('names the reader while the book is loading, failed or missing', () => {
+    const reads: readonly BookRead[] = [
+      { kind: 'loading' },
+      { kind: 'failed', message: 'denied' },
+      { kind: 'missing' },
+    ];
+
+    expect(reads.map(readingTitle)).toEqual(['Reader', 'Reader', 'Reader']);
   });
 });

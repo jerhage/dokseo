@@ -6,6 +6,7 @@
   import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
   import NavLink from '$lib/components/NavLink.svelte';
   import SelectedShelfIcon from '$lib/components/icons/SelectedShelf.svelte';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
   import { settingsSections } from './settings-sections';
   import type { SettingsSection } from './settings-sections';
 
@@ -27,6 +28,8 @@
       : [{ label: 'Library', href: '/' }, { label: 'Settings', href: root }, { label: shown.name }],
   );
 </script>
+
+<PageTitle screen="Settings" section={shown?.name ?? null} />
 
 <div class="layout-app-shell">
   <header class="layout-app-shell-header wrap">

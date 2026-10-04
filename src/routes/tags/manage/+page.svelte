@@ -8,6 +8,7 @@
   import TagPageData from '$lib/domains/recognition/ui/tag/TagPageData.svelte';
   import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
   import { toastNotify } from '$lib/shared/notice-toast';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
 
   const container = useContainer();
   const notify = toastNotify(getToaster());
@@ -19,6 +20,8 @@
   );
   const manage = new ManageTagsView(container.recognition, notify);
 </script>
+
+<PageTitle screen="Manage tags" />
 
 <LibraryShelfData bind:this={shelf} library={container.library}>
   {#snippet children()}
