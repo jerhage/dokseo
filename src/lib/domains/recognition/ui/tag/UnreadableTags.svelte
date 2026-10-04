@@ -7,6 +7,8 @@
   import type { TagId } from '$lib/shared/ids';
   import { writeQuery } from '$lib/shared/write-query.svelte';
   import type { UnreadableTag } from '../../domain/tag/tag';
+  import type { UnreadableRowsExporting } from '../capture/unreadable-rows-export.svelte';
+  import UnreadableRowsExportButton from '../capture/UnreadableRowsExportButton.svelte';
   import { recognitionKeys } from '../../queries/recognition-keys';
   import { removeUnreadableTagsMutation } from '../../queries/tag-queries';
   import type { TagWrites } from '../../queries/tag-queries';
@@ -14,7 +16,7 @@
 
   type Props = {
     readonly tags: readonly UnreadableTag[];
-    readonly recognition: Pick<TagWrites, 'removeUnreadableTags'>;
+    readonly recognition: Pick<TagWrites, 'removeUnreadableTags'> & UnreadableRowsExporting;
   };
 
   let { tags, recognition }: Props = $props();
@@ -45,6 +47,7 @@
       These tags were stored in a shape this version cannot read. Remove them to clear this notice.
       Removing a tag takes it off every capture that carries it.
     </p>
+    <UnreadableRowsExportButton rows={{ captures: [], tags }} exporting={recognition} />
     {#if problem !== null}
       <p>{problem}</p>
     {/if}
