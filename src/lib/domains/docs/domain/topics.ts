@@ -100,8 +100,9 @@ const DOCS_TOPICS = [
   {
     slug: 'testing',
     title: 'Testing strategy',
-    summary: 'Unit tests by default, and when a browser test earns its place.',
-    status: 'planned',
+    summary:
+      'Unit, browser and end-to-end tests, fakes and mocks, regression, mutation and drift tests, then Vitest’s two projects, the verify ladder and probes in Dokseo.',
+    status: 'published',
   },
 ] as const satisfies readonly DocsTopic[];
 
