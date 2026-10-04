@@ -51,24 +51,6 @@ type StatTrend = 'flat' | 'up' | 'down';
 
 type StatSize = 'sm' | 'md';
 
-type TagColour =
-  | 'slate'
-  | 'clay'
-  | 'sage'
-  | 'plum'
-  | 'rose'
-  | 'ice'
-  | 'ruby'
-  | 'copper'
-  | 'olive'
-  | 'fern'
-  | 'cyan'
-  | 'sky'
-  | 'indigo'
-  | 'violet'
-  | 'magenta'
-  | 'stone';
-
 type ClassList = readonly string[];
 
 const BUTTON_VARIANTS: Readonly<Record<ButtonVariant, ClassList>> = {
@@ -243,7 +225,7 @@ const STAT_SIZES: Readonly<Record<StatSize, ClassList>> = {
   md: [],
 };
 
-const TAG_COLOURS: readonly TagColour[] = [
+const TAG_COLOURS = [
   'slate',
   'clay',
   'sage',
@@ -260,7 +242,9 @@ const TAG_COLOURS: readonly TagColour[] = [
   'violet',
   'magenta',
   'stone',
-];
+] as const;
+
+type TagColour = (typeof TAG_COLOURS)[number];
 
 const TAG_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
   slate: ['tag-color-slate'],

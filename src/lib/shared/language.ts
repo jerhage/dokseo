@@ -1,8 +1,8 @@
 import { match } from 'ts-pattern';
 
-type Language = 'ja' | 'ko' | 'en';
+const LANGUAGES = ['ja', 'ko', 'en'] as const;
 
-const LANGUAGES: readonly Language[] = ['ja', 'ko', 'en'];
+type Language = (typeof LANGUAGES)[number];
 
 const LANGUAGE_LEGEND = 'Language';
 

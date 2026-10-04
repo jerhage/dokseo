@@ -1,23 +1,3 @@
-type TagColour =
-  | 'slate'
-  | 'clay'
-  | 'sage'
-  | 'plum'
-  | 'rose'
-  | 'ice'
-  | 'ruby'
-  | 'copper'
-  | 'olive'
-  | 'fern'
-  | 'cyan'
-  | 'sky'
-  | 'indigo'
-  | 'violet'
-  | 'magenta'
-  | 'stone';
-
-type ColouredTag = { readonly colour: TagColour };
-
 const TAG_COLOURS = [
   'slate',
   'clay',
@@ -35,7 +15,11 @@ const TAG_COLOURS = [
   'violet',
   'magenta',
   'stone',
-] as const satisfies readonly TagColour[];
+] as const;
+
+type TagColour = (typeof TAG_COLOURS)[number];
+
+type ColouredTag = { readonly colour: TagColour };
 
 const FIRST_TAG_COLOUR: TagColour = TAG_COLOURS[0];
 
