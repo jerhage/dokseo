@@ -1,0 +1,13 @@
+@layer features {
+  @scope (.rendering-scale-demo) {
+    .page {
+      align-self: start;
+    }
+    .page canvas {
+      display: block;
+      inline-size: 100%;
+      block-size: auto;
+      background-color: var(--color-surface);
+    }
+  }
+}

@@ -1,0 +1,26 @@
+@layer features {
+  @scope (.rendering-pairing-demo) {
+    .spreads {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-3);
+    }
+    .spreads.is-rtl {
+      flex-direction: row-reverse;
+    }
+    .spread {
+      display: flex;
+      block-size: var(--thumbnail-width-lg);
+      padding: var(--sp-1);
+    }
+    .spread.is-rtl {
+      flex-direction: row-reverse;
+    }
+    .sheet {
+      block-size: 100%;
+      aspect-ratio: var(--sheet-ratio);
+      display: grid;
+      place-items: center;
+    }
+  }
+}
