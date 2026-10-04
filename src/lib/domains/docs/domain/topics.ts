@@ -31,7 +31,7 @@ const DOCS_TOPICS = [
     title: 'The UI library',
     summary:
       'Layered CSS, design tokens, base components, themes and color schemes, scoped domain stylesheets and the playground.',
-    status: 'planned',
+    status: 'published',
   },
   {
     slug: 'offline',
