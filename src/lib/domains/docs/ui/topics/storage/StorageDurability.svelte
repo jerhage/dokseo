@@ -65,7 +65,9 @@
     with <code>bookFromStored</code>, applies the change, and writes the checked fields over the
     stored row with <code>savedBookRow</code>. A field the running version of Dokseo does not name
     stays in the row as it was, unchecked, and never reaches the app. So a tab left open on an older
-    version does not erase a field that a newer version added.
+    version does not erase a field that a newer version added (<a
+      href="/docs/series-plan#an-old-tab-across-a-deploy">An old tab across a deploy</a
+    >).
   </p>
 </DocsSection>
 
