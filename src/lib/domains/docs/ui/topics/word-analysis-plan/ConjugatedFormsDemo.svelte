@@ -17,9 +17,11 @@
     { text: '行きます', headword: '行く', meaning: 'will go (polite)' },
   ] as const;
 
-  const rows = FORMS.map((form) => ({
-    ...form,
-    segments: segmentedText(form.text, 'word').filter((one) => one.wordLike),
+  const rows = FORMS.map(({ text, headword, meaning }) => ({
+    text,
+    headword,
+    meaning,
+    segments: segmentedText(text, 'word').filter((one) => one.wordLike),
   }));
 </script>
 
