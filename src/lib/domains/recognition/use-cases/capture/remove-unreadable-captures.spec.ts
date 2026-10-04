@@ -17,6 +17,7 @@ function repository(outcome: CaptureWrite) {
     },
     clearBook: () => Promise.reject(new Error('not used')),
     moveBook: () => Promise.reject(new Error('not used')),
+    untagEverywhere: () => Promise.reject(new Error('not used')),
   };
   return { captures, removed };
 }

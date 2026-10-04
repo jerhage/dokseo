@@ -1,5 +1,7 @@
+import { CorruptRow } from '$lib/shared/corrupt-row';
 import type { TagId } from '$lib/shared/ids';
-import type { Capture } from '../capture/capture';
+import { captureFromStored } from '../capture/capture';
+import type { Capture, StoredCapture } from '../capture/capture';
 
 type TaggedRecord = { readonly tagIds: readonly TagId[] };
 
@@ -23,5 +25,14 @@ function untaggedCapture(capture: Capture, tag: TagId): Capture {
   return { ...capture, tagIds: capture.tagIds.filter((held) => held !== tag) };
 }
 
-export { tagCounts, taggedCapture, untaggedCapture };
+function untaggedRow(row: StoredCapture, tag: TagId): Capture | null {
+  try {
+    return untaggedCapture(captureFromStored(row), tag);
+  } catch (cause) {
+    if (!(cause instanceof CorruptRow)) throw cause;
+    return null;
+  }
+}
+
+export { tagCounts, taggedCapture, untaggedCapture, untaggedRow };
 export type { TaggedRecord };

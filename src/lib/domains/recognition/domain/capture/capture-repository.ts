@@ -1,4 +1,4 @@
-import type { BookId, CaptureId } from '$lib/shared/ids';
+import type { BookId, CaptureId, TagId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { Capture, UnreadableCapture } from './capture';
 
@@ -12,6 +12,10 @@ type CaptureListing =
 
 type CaptureWrite = { readonly kind: 'success' } | StorageUnavailable;
 
+type CaptureUntagging =
+  | { readonly kind: 'success'; readonly untagged: number }
+  | StorageUnavailable;
+
 interface CaptureRepository {
   listForBook(book: BookId): Promise<CaptureListing>;
   listEverything(): Promise<CaptureListing>;
@@ -19,6 +23,7 @@ interface CaptureRepository {
   remove(capture: CaptureId): Promise<CaptureWrite>;
   clearBook(book: BookId): Promise<CaptureWrite>;
   moveBook(from: BookId, to: BookId): Promise<CaptureWrite>;
+  untagEverywhere(tag: TagId): Promise<CaptureUntagging>;
 }
 
-export type { CaptureListing, CaptureRepository, CaptureWrite };
+export type { CaptureListing, CaptureRepository, CaptureUntagging, CaptureWrite };

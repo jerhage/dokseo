@@ -32,6 +32,7 @@ function world(outcomes: Outcomes = {}) {
     save: notUsed,
     remove: notUsed,
     clearBook: notUsed,
+    untagEverywhere: notUsed,
     moveBook: (from, to) => {
       steps.push(`moved ${from} to ${to}`);
       return Promise.resolve(outcomes.moving?.(from) ?? WRITTEN);
