@@ -90,8 +90,9 @@
   </p>
   <DocsCode label={SPACE_RECT.label} code={SPACE_RECT.code} />
   <p>
-    <code>rect</code> holds the only assertion, and only <code>screenRect</code> and
-    <code>imageRect</code> call it. One function in the viewing domain converts from one space to the
+    <code>rect</code> holds the only assertion, and only <code>screenRect</code>,
+    <code>imageRect</code> and <code>pageRect</code> call it. A <code>PageRect</code> is the stored space:
+    fractions of the page from 0 to 1. One function in the viewing domain converts from one space to the
     other, using where the image is drawn on screen and its natural size:
   </p>
   <DocsCode label={SCREEN_TO_IMAGE.label} code={SCREEN_TO_IMAGE.code} />
