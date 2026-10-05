@@ -1,5 +1,6 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
+  import SubtreeSections from './vendored-ui-plan/SubtreeSections.svelte';
   import VendoringConcepts from './vendored-ui-plan/VendoringConcepts.svelte';
   import { VENDORED_PLAN_SECTIONS } from './vendored-ui-plan/vendored-sections';
 </script>
@@ -11,4 +12,5 @@
     alternative, and the plan for turning Dokseo's UI library into one that other apps vendor.
   {/snippet}
   <VendoringConcepts />
+  <SubtreeSections />
 </DocsPage>
