@@ -99,7 +99,7 @@
       <TableRow>
         <TableHeaderCell scope="row"><code>verify:tests</code></TableHeaderCell>
         <TableCell
-          >The static checks, then every test: the unit project and the browser project</TableCell
+          >The static checks, then every test: the unit project, then the browser project</TableCell
         >
         <TableCell>Locally, while working</TableCell>
       </TableRow>

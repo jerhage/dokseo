@@ -153,7 +153,7 @@ const WRANGLER_CONFIG: SourceSnippet = {
 const VERIFY_SCRIPTS: SourceSnippet = {
   label: 'The verify scripts in package.json',
   file: 'package.json',
-  code: `    "test": "vitest --run",
+  code: `    "test": "vitest --run --project unit && vitest --run --project browser",
     "test:watch": "vitest",
     "test:ci": "vitest --run --project unit",
     "verify:static": "npm run check && npm run lint && npm run format:check && npm run lint:deps",

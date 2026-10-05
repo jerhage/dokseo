@@ -44,7 +44,7 @@
   <p>
     Dokseo's tests run on <a href="https://vitest.dev/">Vitest</a>, configured in
     <code>vite.config.ts</code> as two <em>projects</em>, two sets of test files with their own
-    environment, run together by one <code>vitest</code> command:
+    environment:
   </p>
   <DocsCode label={VITEST_PROJECTS.label} code={VITEST_PROJECTS.code} />
   <p>
@@ -53,6 +53,13 @@
     <code>.svelte.spec.ts</code> is excluded from <code>unit</code> and runs in the
     <code>browser</code> project, inside headless Chromium driven by Playwright. Most of the suite is
     unit tests; at the time of writing the browser project holds a dozen files.
+  </p>
+  <p>
+    <code>test</code> runs the two projects one after the other, unit first, and the browser project
+    runs one file at a time (<code>fileParallelism: false</code>). Run together, with Vitest's
+    default of one file per core in each project, they started about nine Node workers and about ten
+    Chromium pages at once, more than 3 GB for the pages alone, and on a busy machine tests in both
+    projects crossed the 5 second timeout.
   </p>
   <p>
     The unit project's setup file runs before every test and replaces <code>localStorage</code> with an
@@ -259,7 +266,7 @@
   <p>
     <code>verify:static</code> runs <code>svelte-check</code> (types, including every spec file),
     oxlint, oxfmt in check mode, and dependency-cruiser. <code>verify:tests</code> adds both test
-    projects.
+    projects, the unit project first.
     <code>verify</code> adds the production build. Locally, I run <code>verify:tests</code> while
     working and the full <code>verify</code> once before a commit. The project's tasks run through
     Deno, so the commands are <code>deno task verify</code> and so on.

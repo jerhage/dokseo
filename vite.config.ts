@@ -157,6 +157,7 @@ export default defineConfig({
         extends: './vite.config.ts',
         test: {
           name: 'browser',
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright(),
