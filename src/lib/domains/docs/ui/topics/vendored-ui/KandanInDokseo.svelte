@@ -126,7 +126,7 @@
 
 <DocsSection title={VENDORED_SECTIONS.ignore}>
   <p>
-    Inside Dokseo, those files must change nothing: Dokseo's own configuration decides how the
+    Inside Dokseo, those files must change nothing: Dokseo's own configuration sets how the
     library's files are checked, and the library's specs must run once, not twice. Each tool needs
     its own answer.
   </p>

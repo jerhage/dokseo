@@ -27,26 +27,31 @@
   const REJECTED = [
     {
       fix: 'split --onto',
+      command: true,
       does: 'Tries to connect the split to an existing history.',
       why: 'The removal commit still maps to itself, so it stays in the split.',
     },
     {
       fix: 'split --ignore-joins',
+      command: true,
       does: 'Ignores earlier --rejoin commits and walks the whole history.',
       why: 'The walk still meets the removal commit.',
     },
     {
       fix: 'split --rejoin',
+      command: true,
       does: 'Merges the split back into Dokseo, so later splits start from that join.',
       why: 'The split it joins already holds the removal commit, and without --squash the join merges library commits into Dokseo.',
     },
     {
       fix: 'A permanent replace ref',
-      does: 'git replace --graft on its own makes every local command see the merge with the right parents.',
+      command: false,
+      does: 'git replace --graft on its own makes every local command treat the merge as having the right parents.',
       why: 'Replace refs stay local. Every clone that splits would need the same ref, set up by hand.',
     },
     {
       fix: 'format-patch --relative, then git am',
+      command: false,
       does: 'Exports the three new commits with paths relative to the folder and applies them in the library repository.',
       why: 'It works once. Every later split would stay bloated, so every later fix would need the same detour.',
     },
@@ -127,8 +132,8 @@
   <p>The third step is this branch of git-subtree's split:</p>
   <DocsCode label={SPLIT_KEEPS_NO_TREE.label} code={SPLIT_KEEPS_NO_TREE.code} />
   <p>
-    and the fourth is the end of the function that decides whether a commit can be skipped in favor
-    of an identical parent:
+    and the fourth is the end of the function that either skips a commit in favor of an identical
+    parent or copies it:
   </p>
   <DocsCode label={SPLIT_COPIES_MERGE.label} code={SPLIT_COPIES_MERGE.code} />
   <p>
@@ -155,8 +160,8 @@
   <DocsCode label={REWRITE_COMMANDS.label} code={REWRITE_COMMANDS.code} />
   <DocsCode label={AFTER_REWRITE.label} code={AFTER_REWRITE.code} />
   <p>
-    Every commit after the merge got a new id, and the tree at the tip of the branch was the same
-    object before and after. A split now holds 13 commits in one line, with no merge:
+    The merge and every commit after it got a new id, and the tree at the tip of the branch was the
+    same object before and after. A split now holds 13 commits in one line, with no merge:
   </p>
   <DocsCode label={CLEAN_SPLIT.label} code={CLEAN_SPLIT.code} />
   <p>
@@ -184,7 +189,9 @@
     <TableBody>
       {#each REJECTED as row (row.fix)}
         <TableRow>
-          <TableHeaderCell scope="row"><code>{row.fix}</code></TableHeaderCell>
+          <TableHeaderCell scope="row"
+            >{#if row.command}<code>{row.fix}</code>{:else}{row.fix}{/if}</TableHeaderCell
+          >
           <TableCell>{row.does}</TableCell>
           <TableCell>{row.why}</TableCell>
         </TableRow>

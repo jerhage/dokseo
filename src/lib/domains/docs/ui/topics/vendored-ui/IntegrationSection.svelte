@@ -104,7 +104,7 @@
   <p>
     They are not build files in SvelteKit's sense, so the service worker leaves them out of the
     precache, and they exist only in a build: under <code>vite dev</code> they answer 404. The plugin
-    is Dokseo's; another app decides for itself whether and where it publishes the licenses.
+    is Dokseo's; whether and where another app publishes the licenses is up to that app's author.
   </p>
 </DocsSection>
 

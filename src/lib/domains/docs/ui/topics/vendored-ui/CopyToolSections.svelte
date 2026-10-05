@@ -148,8 +148,10 @@
     I chose <code>git subtree</code>. It has nothing to write or maintain. Local edits merge with
     the same three-way merge as any branch, and a conflict looks like any other conflict. A fix made
     in an app goes back with <code>push</code> as a real commit with its message, so the library
-    keeps the reason for each change. And <code>split</code> extracts the library from Dokseo, where it
-    was built, with its history from the folder on.
+    keeps the reason for each change. And <code>split</code> could extract the library from Dokseo,
+    where it was built, with its history from the folder on (<a href={vendoredHref('extracted')}
+      >How the library was extracted</a
+    >).
   </p>
   <p>
     The price is the merge commits: one when an app adds the library, and one per update (<a

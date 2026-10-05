@@ -2,7 +2,7 @@
   import DocsPage from '../DocsPage.svelte';
   import CopyToolSections from './vendored-ui/CopyToolSections.svelte';
   import ExtractionHistory from './vendored-ui/ExtractionHistory.svelte';
-  import DokseoPreparation from './vendored-ui/DokseoPreparation.svelte';
+  import ExtractionPreparation from './vendored-ui/ExtractionPreparation.svelte';
   import IntegrationSection from './vendored-ui/IntegrationSection.svelte';
   import KandanInDokseo from './vendored-ui/KandanInDokseo.svelte';
   import SubtreeSections from './vendored-ui/SubtreeSections.svelte';
@@ -24,6 +24,6 @@
   <KandanInDokseo />
   <IntegrationSection />
   <UpdatingSections />
-  <DokseoPreparation />
+  <ExtractionPreparation />
   <ExtractionHistory />
 </DocsPage>

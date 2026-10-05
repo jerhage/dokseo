@@ -3,21 +3,21 @@ import type { RecordedRun } from './subtree-runs';
 const SPLIT_SQUASH_JOIN: RecordedRun = {
   label: 'git-subtree in Git 2.46.1, find_existing_splits: a squash commit only becomes a mapping',
   code: `END)
-	debug "Main is: '$main'"
-	if test -z "$main" && test -n "$sub"
-	then
-		# squash commits refer to a subtree
-		debug "  Squash: $sq from $sub"
-		cache_set "$sq" "$sub"
-	fi
-	if test -n "$main" && test -n "$sub"
-	then
-		debug "  Prior: $main -> $sub"
-		cache_set $main $sub
-		cache_set $sub $sub
-		try_remove_previous "$main"
-		try_remove_previous "$sub"
-	fi`,
+  debug "Main is: '$main'"
+  if test -z "$main" && test -n "$sub"
+  then
+    # squash commits refer to a subtree
+    debug "  Squash: $sq from $sub"
+    cache_set "$sq" "$sub"
+  fi
+  if test -n "$main" && test -n "$sub"
+  then
+    debug "  Prior: $main -> $sub"
+    cache_set $main $sub
+    cache_set $sub $sub
+    try_remove_previous "$main"
+    try_remove_previous "$sub"
+  fi`,
 };
 
 const FIRST_SPLIT: RecordedRun = {
@@ -79,12 +79,12 @@ const SPLIT_KEEPS_NO_TREE: RecordedRun = {
   label: 'git-subtree in Git 2.46.1, process_split_commit: a commit without the folder',
   code: `if test -z "$tree"
 then
-	set_notree "$rev"
-	if test -n "$newparents"
-	then
-		cache_set "$rev" "$rev"
-	fi
-	return
+  set_notree "$rev"
+  if test -n "$newparents"
+  then
+    cache_set "$rev" "$rev"
+  fi
+  return
 fi`,
 };
 
@@ -92,18 +92,18 @@ const SPLIT_COPIES_MERGE: RecordedRun = {
   label: 'git-subtree in Git 2.46.1, copy_or_skip: when a merge is kept',
   code: `if test -n "$identical" && test -n "$nonidentical"
 then
-	extras=$(git rev-list --count $identical..$nonidentical)
-	if test "$extras" -ne 0
-	then
-		# we need to preserve history along the other branch
-		copycommit=1
-	fi
+  extras=$(git rev-list --count $identical..$nonidentical)
+  if test "$extras" -ne 0
+  then
+    # we need to preserve history along the other branch
+    copycommit=1
+  fi
 fi
 if test -n "$identical" && test -z "$copycommit"
 then
-	echo $identical
+  echo $identical
 else
-	copy_commit "$rev" "$tree" "$p" || exit $?
+  copy_commit "$rev" "$tree" "$p" || exit $?
 fi`,
 };
 
