@@ -1,0 +1,25 @@
+{
+  "component": "code-block",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "hands its text to the copy callback when the copy button is clicked",
+      "fixture": "code-block/copy",
+      "when": [
+        {
+          "event": "click",
+          "target": ".codeblock-copy"
+        }
+      ],
+      "emits": [
+        {
+          "callback": "oncopy",
+          "with": "const a = 1;"
+        }
+      ],
+      "source": "CodeBlock.svelte (copy)",
+      "certain": true,
+      "note": "The text is the code prop, or the text content of the code element when the code is given as children. The block does not write to the clipboard itself, and it does not switch to the copied look itself: the copied prop does (fixture code-block/copied)."
+    }
+  ]
+}

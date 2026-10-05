@@ -1,0 +1,55 @@
+<aside aria-label="Notes" class="col dock dock-sheet gap-0 min-h-0 shrink-0">
+  <div class="border-t col dock-drawer gap-0 surface">
+    <button
+      aria-controls="id-1"
+      aria-label="Resize notes"
+      class="btn btn-block btn-ghost btn-sm dock-handle shrink-0"
+      type="button"
+    >
+      <span aria-hidden="true" class="dock-handle-grip"></span>
+    </button>
+    <div
+      aria-hidden="true"
+      class="dock-probe"
+      style="--dock-probe-height: var(--layout-sheet-height);"
+    >
+    </div>
+    <div
+      aria-hidden="true"
+      class="dock-probe"
+      style="--dock-probe-height: var(--layout-sheet-height-tall);"
+    >
+    </div>
+    <button
+      aria-controls="id-1"
+      aria-expanded="true"
+      aria-label="Hide notes"
+      class="btn btn-block btn-ghost btn-sm shrink-0"
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        class="btn-icon lucide lucide-chevron-down"
+        fill="none"
+        height="24"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="m6 9 6 6 6-6"></path>
+      </svg>
+      Hide notes
+    </button>
+    <div
+      class="dock-panel gap-0 min-h-0 row"
+      id="id-1"
+      style="--dock-sheet-height: var(--layout-sheet-height);"
+    >
+      <p>Panel</p>
+    </div>
+  </div>
+</aside>

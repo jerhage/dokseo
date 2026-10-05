@@ -1,0 +1,90 @@
+{
+  "component": "accordion-item",
+  "behaviour": "native",
+  "rules": [
+    {
+      "name": "opens a closed item when its summary is clicked",
+      "fixture": "accordion-item/closed",
+      "given": [
+        {
+          "selector": ".accordion-item",
+          "attributes": {
+            "open": null
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".accordion-trigger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".accordion-item",
+          "attributes": {
+            "open": ""
+          }
+        }
+      ],
+      "source": "AccordionItem.svelte: <details> and <summary>; the browser toggles open",
+      "certain": true
+    },
+    {
+      "name": "closes an open item when its summary is clicked",
+      "fixture": "accordion-item/open",
+      "given": [
+        {
+          "selector": ".accordion-item",
+          "attributes": {
+            "open": ""
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".accordion-trigger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".accordion-item",
+          "attributes": {
+            "open": null
+          }
+        }
+      ],
+      "source": "AccordionItem.svelte: <details> and <summary>; the browser toggles open",
+      "certain": true
+    },
+    {
+      "name": "toggles from the keyboard with Enter or Space on the focused summary",
+      "fixture": "accordion-item/closed",
+      "given": [
+        {
+          "selector": ".accordion-trigger",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "Enter",
+          "target": ".accordion-trigger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".accordion-item",
+          "attributes": {
+            "open": ""
+          }
+        }
+      ],
+      "source": "native <summary> activation",
+      "certain": true,
+      "note": "Space works the same way; no script is involved."
+    }
+  ]
+}

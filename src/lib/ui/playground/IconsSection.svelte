@@ -3,7 +3,6 @@
   import Alert from '../components/Alert.svelte';
   import Button from '../components/Button.svelte';
   import Card from '../components/Card.svelte';
-  import { TAG_COLOURS } from '../components/classes';
   import ChevronRight from '../components/icons/ChevronRight.svelte';
   import CircleCheck from '../components/icons/CircleCheck.svelte';
   import CircleX from '../components/icons/CircleX.svelte';
@@ -14,6 +13,7 @@
   import Pencil from '../components/icons/Pencil.svelte';
   import TriangleAlert from '../components/icons/TriangleAlert.svelte';
   import Upload from '../components/icons/Upload.svelte';
+  import { TAG_COLOURS } from '../core/tag-colours.js';
   import DemoSection from './DemoSection.svelte';
   import { iconCatalog } from './icon-catalog';
 

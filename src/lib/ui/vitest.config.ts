@@ -20,7 +20,7 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['**/*.{test,spec}.{js,ts}'],
-          exclude: [...configDefaults.exclude, '**/*.svelte.{test,spec}.{js,ts}'],
+          exclude: [...configDefaults.exclude, 'core/**', '**/*.svelte.{test,spec}.{js,ts}'],
         },
       },
     ],

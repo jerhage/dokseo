@@ -1,0 +1,145 @@
+{
+  "component": "window-dropzone",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "shows the overlay when a drag carrying files enters the window",
+      "fixture": "window-dropzone/idle",
+      "when": [
+        {
+          "event": "dragenter",
+          "target": "window",
+          "files": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".window-dropzone",
+          "present": true,
+          "open": true,
+          "attributes": {
+            "popover": "manual",
+            "aria-hidden": "true"
+          }
+        },
+        {
+          "selector": ".window-dropzone-panel",
+          "present": true
+        },
+        {
+          "selector": ".window-dropzone-title",
+          "present": true
+        }
+      ],
+      "source": "WindowDropzone.svelte (enter, leave, hover, drop) and window-drag.ts",
+      "certain": false,
+      "note": "The overlay is not in any fixture: a server render never shows it, so its markup is not machine-checked. From the source: div.window-dropzone[popover=manual][aria-hidden=true] > div.window-dropzone-panel > (span.window-dropzone-icon-frame > upload icon with class window-dropzone-icon) + span.window-dropzone-title holding the children. A drag counts as carrying files when dataTransfer.types holds \"Files\". Nothing shows while disabled."
+    },
+    {
+      "name": "keeps the overlay while the drag moves between elements inside the window",
+      "fixture": "window-dropzone/idle",
+      "when": [
+        {
+          "event": "dragenter",
+          "target": "window",
+          "files": true
+        },
+        {
+          "event": "dragenter",
+          "target": "window",
+          "files": true
+        },
+        {
+          "event": "dragleave",
+          "target": "window"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".window-dropzone",
+          "present": true
+        }
+      ],
+      "source": "WindowDropzone.svelte (enter, leave, hover, drop) and window-drag.ts",
+      "certain": true,
+      "note": "Every dragenter with files adds one to a depth and every dragleave takes one away; moving onto a child element fires dragenter on it before dragleave on the one it left."
+    },
+    {
+      "name": "hides the overlay when the drag leaves the window",
+      "fixture": "window-dropzone/idle",
+      "when": [
+        {
+          "event": "dragenter",
+          "target": "window",
+          "files": true
+        },
+        {
+          "event": "dragenter",
+          "target": "window",
+          "files": true
+        },
+        {
+          "event": "dragleave",
+          "target": "window"
+        },
+        {
+          "event": "dragleave",
+          "target": "window"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".window-dropzone",
+          "present": false
+        }
+      ],
+      "source": "WindowDropzone.svelte (enter, leave, hover, drop) and window-drag.ts",
+      "certain": true,
+      "note": "The overlay hides when the depth falls back to zero."
+    },
+    {
+      "name": "accepts a file drag over the window as a copy",
+      "fixture": "window-dropzone/idle",
+      "when": [
+        {
+          "event": "dragover",
+          "target": "window",
+          "files": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true,
+        "dropEffect": "copy"
+      },
+      "source": "WindowDropzone.svelte (enter, leave, hover, drop) and window-drag.ts",
+      "certain": true,
+      "note": "dropEffect is \"none\" while disabled. A dragover that an inner handler already prevented, or that carries no files, is left alone."
+    },
+    {
+      "name": "hides the overlay and reports the dropped files",
+      "fixture": "window-dropzone/idle",
+      "when": [
+        {
+          "event": "drop",
+          "target": "window",
+          "files": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".window-dropzone",
+          "present": false
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onfiles",
+          "with": "a file selection of the dropped files, any type accepted"
+        }
+      ],
+      "source": "WindowDropzone.svelte (enter, leave, hover, drop) and window-drag.ts, drop-reading.ts, file-selection.ts (ANY_FILE_POLICY)",
+      "certain": true,
+      "note": "A drop already prevented by an inner dropzone, a drop without files, a drop while disabled, and a drop that yields no files report nothing."
+    }
+  ]
+}

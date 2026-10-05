@@ -1,0 +1,116 @@
+{
+  "component": "dropzone",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "marks itself while a drag is over it",
+      "fixture": "dropzone/default",
+      "when": [
+        {
+          "event": "dragenter",
+          "target": ".dropzone"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropzone",
+          "classes": {
+            "is-dragover": true
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true,
+        "dropEffect": "copy"
+      },
+      "source": "Dropzone.svelte (hover, leave, drop, choose) and file-selection.ts (selectFiles)",
+      "certain": true,
+      "note": "dragenter and dragover are both handled this way; while disabled dropEffect is \"none\" and the class is not added."
+    },
+    {
+      "name": "drops the mark when the drag leaves it",
+      "fixture": "dropzone/default",
+      "given": [
+        {
+          "selector": ".dropzone",
+          "classes": {
+            "is-dragover": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "dragleave",
+          "target": ".dropzone"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropzone",
+          "classes": {
+            "is-dragover": false
+          }
+        }
+      ],
+      "source": "Dropzone.svelte (hover, leave, drop, choose) and file-selection.ts (selectFiles)",
+      "certain": true,
+      "note": "A dragleave whose relatedTarget is inside the dropzone keeps the mark."
+    },
+    {
+      "name": "reports the dropped files, checked against its accept list, size limit and multiple",
+      "fixture": "dropzone/titled",
+      "when": [
+        {
+          "event": "drop",
+          "target": ".dropzone",
+          "files": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropzone",
+          "classes": {
+            "is-dragover": false
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onfiles",
+          "with": "a file selection: accepted and rejected files with reasons"
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Dropzone.svelte (hover, leave, drop, choose) and file-selection.ts (selectFiles), drop-reading.ts",
+      "certain": true,
+      "note": "Nothing is reported while disabled or when no file arrives."
+    },
+    {
+      "name": "reports the chosen files and clears the input",
+      "fixture": "dropzone/default",
+      "when": [
+        {
+          "event": "change",
+          "target": ".dropzone-input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropzone-input",
+          "properties": {
+            "value": ""
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onfiles"
+        }
+      ],
+      "source": "Dropzone.svelte (hover, leave, drop, choose) and file-selection.ts (selectFiles)",
+      "certain": true
+    }
+  ]
+}

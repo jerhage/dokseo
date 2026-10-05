@@ -4,8 +4,9 @@
   import Card from '../components/Card.svelte';
   import Tag from '../components/Tag.svelte';
   import TagToggle from '../components/TagToggle.svelte';
-  import { TAG_COLOURS } from '../components/classes';
-  import type { BadgeVariant, TagColour } from '../components/classes';
+  import type { BadgeVariant } from '../components/classes';
+  import { TAG_COLOURS } from '../core/tag-colours.js';
+  import type { TagColour } from '../core/tag-colours.js';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly BadgeVariant[] = [

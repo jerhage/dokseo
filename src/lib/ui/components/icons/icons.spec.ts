@@ -3,11 +3,13 @@ import { createRawSnippet } from 'svelte';
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
+import { iconComponents } from '../../scripts/icon-components.js';
 import X from './X.svelte';
 import { iconStroke } from './icon';
 
 const ICONS = new URL('./', import.meta.url);
 const BASE = 'Icon.svelte';
+const SOURCES = new URL('../../core/icons/', import.meta.url);
 
 type Attributes = Record<string, unknown>;
 
@@ -119,5 +121,24 @@ describe('the icon set', () => {
     const indexes = readdirSync(ICONS).filter((file) => file.startsWith('index.'));
 
     expect(indexes).toEqual([]);
+  });
+});
+
+describe('the generated icon components', () => {
+  it('holds one component for each SVG in the core and no other', () => {
+    expect(iconFiles()).toEqual(
+      iconComponents(SOURCES)
+        .map((icon) => icon.file)
+        .toSorted(),
+    );
+  });
+
+  it('matches what scripts/generate-icons.js writes from the core SVG of each icon', () => {
+    for (const { file, source } of iconComponents(SOURCES)) {
+      expect({ file, source: readFileSync(new URL(file, ICONS), 'utf8') }).toEqual({
+        file,
+        source,
+      });
+    }
   });
 });

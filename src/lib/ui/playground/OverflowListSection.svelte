@@ -3,7 +3,7 @@
   import Button from '../components/Button.svelte';
   import Card from '../components/Card.svelte';
   import OverflowList from '../components/OverflowList.svelte';
-  import type { TagColour } from '../components/classes';
+  import type { TagColour } from '../core/tag-colours.js';
   import DemoSection from './DemoSection.svelte';
 
   type Chip = { readonly name: string; readonly colour: TagColour };

@@ -27,11 +27,11 @@ import {
   TABLE_SIZES,
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
-  TAG_COLOURS,
   TOAST_REGION_PLACEMENTS,
   TOAST_VARIANTS,
 } from './classes';
 import type { ClassList } from './classes';
+import { TAG_COLOURS } from '../core/tag-colours.js';
 import { fileItemView } from './file-item';
 import type { FileItemData } from './file-item';
 
@@ -42,7 +42,7 @@ const FILE_ITEMS: readonly FileItemData[] = [
   { id: 'error', name: 'a.pdf', size: 1, state: 'error', message: 'Failed' },
 ];
 
-const STYLES = new URL('../styles/', import.meta.url);
+const STYLES = new URL('../core/styles/', import.meta.url);
 const COMPONENTS = new URL('./', import.meta.url);
 
 const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {

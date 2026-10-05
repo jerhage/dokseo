@@ -1,3 +1,5 @@
+import type { TagColour } from '../core/tag-colours.js';
+
 type ButtonVariant =
   | 'default'
   | 'primary'
@@ -225,27 +227,6 @@ const STAT_SIZES: Readonly<Record<StatSize, ClassList>> = {
   md: [],
 };
 
-const TAG_COLOURS = [
-  'slate',
-  'clay',
-  'sage',
-  'plum',
-  'rose',
-  'ice',
-  'ruby',
-  'copper',
-  'olive',
-  'fern',
-  'cyan',
-  'sky',
-  'indigo',
-  'violet',
-  'magenta',
-  'stone',
-] as const;
-
-type TagColour = (typeof TAG_COLOURS)[number];
-
 const TAG_COLOUR_CLASSES: Readonly<Record<TagColour, ClassList>> = {
   slate: ['tag-color-slate'],
   clay: ['tag-color-clay'],
@@ -291,7 +272,6 @@ export {
   TABLE_SIZES,
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
-  TAG_COLOURS,
   TOAST_REGION_PLACEMENTS,
   TOAST_VARIANTS,
 };
@@ -319,6 +299,5 @@ export type {
   StatusVariant,
   TableSize,
   TabsVariant,
-  TagColour,
   ToastPlacement,
 };

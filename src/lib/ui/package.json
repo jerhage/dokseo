@@ -1,16 +1,20 @@
 {
   "name": "kandan-ui-svelte",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "vitest --run",
     "test:unit": "vitest --run --project unit",
     "test:watch": "vitest",
+    "test:browser": "vitest --run --config vitest.browser.config.ts",
+    "test:core": "node --test \"core/**/*.test.js\"",
+    "generate:icons": "node scripts/generate-icons.js",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "oxlint .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "verify": "npm run check && npm run lint && npm run format:check && npm run test"
+    "verify": "npm run check && npm run lint && npm run format:check && npm run test && npm run test:core"
   },
   "dependencies": {
     "svelte": "^5.57.1",

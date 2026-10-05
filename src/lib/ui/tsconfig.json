@@ -27,5 +27,5 @@
     "sourceMap": true
   },
   "include": ["**/*.js", "**/*.ts", "**/*.svelte"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "vitest.browser.config.ts"]
 }

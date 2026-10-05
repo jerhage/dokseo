@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
   import { BADGE_COLOUR_CLASSES, BADGE_EMPHASES, BADGE_VARIANTS } from './classes';
-  import type { BadgeEmphasis, BadgeVariant, TagColour } from './classes';
+  import type { TagColour } from '../core/tag-colours.js';
+  import type { BadgeEmphasis, BadgeVariant } from './classes';
 
   type Tone =
     | { variant?: BadgeVariant; color?: undefined }

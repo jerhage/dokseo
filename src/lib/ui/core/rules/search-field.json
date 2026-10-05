@@ -1,0 +1,84 @@
+{
+  "component": "search-field",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "shows the clear button once a clearable field holds text",
+      "fixture": "search-field/clearable-empty",
+      "when": [
+        {
+          "event": "input",
+          "target": ".input",
+          "value": "moby"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".search-field-clear",
+          "present": true
+        }
+      ],
+      "source": "SearchField.svelte (keepFocus, clear) and search-field.ts (showsClear)",
+      "certain": true,
+      "note": "The markup with the button is the fixture search-field/clearable-filled."
+    },
+    {
+      "name": "keeps focus in the field when the clear button is pressed",
+      "fixture": "search-field/clearable-filled",
+      "given": [
+        {
+          "selector": ".input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "mousedown",
+          "target": ".search-field-clear"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".input",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "SearchField.svelte (keepFocus, clear) and search-field.ts (showsClear)",
+      "certain": true,
+      "note": "Preventing the mousedown keeps the button from taking focus."
+    },
+    {
+      "name": "empties the field, keeps focus in it and hides the clear button on a click",
+      "fixture": "search-field/clearable-filled",
+      "when": [
+        {
+          "event": "click",
+          "target": ".search-field-clear"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".input",
+          "properties": {
+            "value": ""
+          },
+          "focused": true
+        },
+        {
+          "selector": ".search-field-clear",
+          "present": false
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onclear"
+        }
+      ],
+      "source": "SearchField.svelte (keepFocus, clear) and search-field.ts (showsClear)",
+      "certain": true
+    }
+  ]
+}

@@ -1,0 +1,342 @@
+{
+  "component": "dropdown",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "opens the menu on a pointer click and leaves focus on the trigger",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".dropdown-trigger",
+          "detail": 1
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        },
+        {
+          "selector": ".dropdown-trigger",
+          "attributes": {
+            "aria-expanded": "true"
+          },
+          "focused": true
+        },
+        {
+          "selector": ".dropdown-menu",
+          "open": true,
+          "style": {
+            "--menu-top": "set",
+            "--menu-left": "set"
+          }
+        }
+      ],
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true,
+      "note": "The menu is a manual popover shown with showPopover(); its place is written to --menu-top, --menu-left, --menu-anchor-width and --menu-max-width and follows scroll and resize."
+    },
+    {
+      "name": "opens the menu and focuses the first item on a keyboard click",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".dropdown-trigger",
+          "detail": 0
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        },
+        {
+          "selector": ".dropdown-menu .dropdown-item:nth-child(2)",
+          "focused": true
+        }
+      ],
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true,
+      "note": "Enter and Space on the trigger fire a click with detail 0. The first .dropdown-item is the second child here, after the label."
+    },
+    {
+      "name": "opens the menu and focuses the first enabled item on ArrowDown",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".dropdown-trigger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        },
+        {
+          "selector": ".dropdown-menu .dropdown-item:nth-child(2)",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true
+    },
+    {
+      "name": "opens the menu and focuses the last enabled item on ArrowUp",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowUp",
+          "target": ".dropdown-trigger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        },
+        {
+          "selector": ".dropdown-menu .dropdown-item-danger",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true
+    },
+    {
+      "name": "moves focus to the next enabled item on ArrowDown and wraps from the last to the first",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        },
+        {
+          "selector": ".dropdown-item-danger",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".dropdown-item-danger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu .dropdown-item:nth-child(2)",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true,
+      "note": "ArrowUp moves to the previous enabled item and wraps from the first to the last; Home and End go to the first and the last. Items that match :disabled or [aria-disabled=\"true\"] are skipped."
+    },
+    {
+      "name": "closes on Escape and returns focus to the trigger",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        },
+        {
+          "selector": ".dropdown-item-danger",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".dropdown-item-danger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        },
+        {
+          "selector": ".dropdown-trigger",
+          "attributes": {
+            "aria-expanded": "false"
+          },
+          "focused": true
+        },
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true
+    },
+    {
+      "name": "closes when an item is chosen and returns focus to the trigger",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".dropdown-item-danger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        },
+        {
+          "selector": ".dropdown-trigger",
+          "focused": true
+        },
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        }
+      ],
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn), DropdownItem.svelte (chosen)",
+      "certain": true,
+      "note": "The item's own click handler runs first; if it prevents the default action the menu stays open."
+    },
+    {
+      "name": "closes without moving focus when the trigger is clicked again",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".dropdown-trigger",
+          "detail": 1
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        },
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        }
+      ],
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true
+    },
+    {
+      "name": "closes on a press outside, on focus leaving it, and on the window losing focus",
+      "fixture": "dropdown/default",
+      "given": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": "document"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown",
+          "classes": {
+            "is-open": false
+          }
+        },
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        }
+      ],
+      "source": "Dropdown.svelte (toggle, keydown, focusBy, close, outside, focusout, left), menu.ts (menuOpening), roving.ts (menuMove, landOn)",
+      "certain": true,
+      "note": "The pointerdown target is any node outside .dropdown. A focusout whose relatedTarget is outside .dropdown, and a blur of the window, close it the same way, without moving focus."
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "component": "toast",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "starts leaving when its time runs out",
+      "fixture": "toast/timed",
+      "when": [
+        {
+          "event": "time",
+          "ms": 8000
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Toast.svelte (startTimer, focusout, the leaving effect), toast-timer.ts, toaster.svelte.ts",
+      "certain": true,
+      "note": "A timed toast uses its own duration (written to --toast-timeout); a default toast reads --toast-duration from its computed style. When neither gives a positive time, or the toast has an action and no duration, it has no timer and gets the class toast-persistent."
+    },
+    {
+      "name": "is removed once its leaving animations have finished",
+      "fixture": "toast/info",
+      "given": [
+        {
+          "selector": ".toast",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "animationsend",
+          "target": ".toast"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast",
+          "present": false
+        }
+      ],
+      "source": "Toast.svelte (startTimer, focusout, the leaving effect), toast-timer.ts, toaster.svelte.ts, animations.ts",
+      "certain": true
+    },
+    {
+      "name": "pauses its timer while hovered or focused and resumes when both end",
+      "fixture": "toast/timed",
+      "when": [
+        {
+          "event": "mouseenter",
+          "target": ".toast"
+        },
+        {
+          "event": "time",
+          "ms": 9000
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast",
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "source": "Toast.svelte (startTimer, focusout, the leaving effect), toast-timer.ts, toaster.svelte.ts",
+      "certain": true,
+      "note": "mouseenter and focusin each hold the timer; mouseleave and a focusout to an element outside the toast release their hold; it runs on with the time that was left once no hold remains."
+    },
+    {
+      "name": "starts leaving when its close button is clicked",
+      "fixture": "toast/info",
+      "when": [
+        {
+          "event": "click",
+          "target": ".toast-close"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Toast.svelte (startTimer, focusout, the leaving effect), toast-timer.ts, toaster.svelte.ts",
+      "certain": true
+    },
+    {
+      "name": "runs its action and then starts leaving when the action is clicked",
+      "fixture": "toast/action",
+      "when": [
+        {
+          "event": "click",
+          "target": ".toast-actions .btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "action.run"
+        }
+      ],
+      "source": "Toast.svelte (startTimer, focusout, the leaving effect), toast-timer.ts, toaster.svelte.ts (act)",
+      "certain": true
+    }
+  ]
+}

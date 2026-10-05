@@ -1,0 +1,115 @@
+{
+  "component": "carousel",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "follows a primary pointer drag with the slides",
+      "fixture": "carousel/default",
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".carousel",
+          "pointerType": "touch"
+        },
+        {
+          "event": "pointermove",
+          "target": ".carousel",
+          "dx": -40
+        }
+      ],
+      "then": [
+        {
+          "selector": ".carousel-slot:nth-child(2)",
+          "style": {
+            "--carousel-shift": "-40px"
+          }
+        }
+      ],
+      "source": "Carousel.svelte (onpointerdown, onpointermove, drive) and carousel.ts (carouselStep, carouselOffset)",
+      "certain": true,
+      "note": "The shift is the travel in px toward a side that holds a neighbour, clamped to the carousel width plus the gap; toward a missing neighbour it is resisted (carousel.ts). With prefers-reduced-motion the shift stays 0px. A mouse drags only with button 0, only primary pointers count, and the carousel captures the pointer. Every slot carries the same shift."
+    },
+    {
+      "name": "settles toward the neighbour after a far drag or a flick and then reports the side",
+      "fixture": "carousel/default",
+      "when": [
+        {
+          "event": "pointerup",
+          "target": ".carousel",
+          "dx": -120
+        },
+        {
+          "event": "transitionend",
+          "target": ".carousel-slot"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".carousel-slot:nth-child(2)",
+          "classes": {
+            "is-settling": false
+          },
+          "style": {
+            "--carousel-shift": "0px"
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onsettled",
+          "with": 1
+        }
+      ],
+      "source": "Carousel.svelte (onpointerup, settled, finish) and carousel.ts (swipeRelease, isFlick)",
+      "certain": false,
+      "note": "A release reveals a side when the travel is at least 25% of the carousel width or is a flick (at least 24px at 0.4px/ms or faster). While settling every slot has is-settling and its shift animates; the transform transitionend on a slot (or a fallback timer from its transition duration plus 220ms) finishes it. The side is +1 or -1 in screen terms adjusted for dir. The app is expected to replace the slides on onsettled."
+    },
+    {
+      "name": "settles back without reporting after a short drag or a cancelled pointer",
+      "fixture": "carousel/default",
+      "when": [
+        {
+          "event": "pointercancel",
+          "target": ".carousel"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".carousel-slot:nth-child(2)",
+          "style": {
+            "--carousel-shift": "0px"
+          }
+        }
+      ],
+      "source": "Carousel.svelte (onpointercancel) and carousel.ts",
+      "certain": false,
+      "note": "Animated through is-settling like a settle toward a side."
+    },
+    {
+      "name": "ignores the pointer when it is driven",
+      "fixture": "carousel/driven",
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".carousel"
+        },
+        {
+          "event": "pointermove",
+          "target": ".carousel",
+          "dx": -40
+        }
+      ],
+      "then": [
+        {
+          "selector": ".carousel-slot:nth-child(2)",
+          "style": {
+            "--carousel-shift": "0px"
+          }
+        }
+      ],
+      "source": "Carousel.svelte (driven)",
+      "certain": true,
+      "note": "A driven carousel moves only through its drive() and finish() methods, called by the app."
+    }
+  ]
+}
