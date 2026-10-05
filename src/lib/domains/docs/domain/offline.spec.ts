@@ -39,7 +39,6 @@ describe('the sample scope', () => {
       '/',
       '/_app/immutable/entry/start.js',
       '/_app/immutable/chunks/reader.js',
-      '/fonts/archivo.woff2',
       '/manifest.webmanifest',
     ]);
   });

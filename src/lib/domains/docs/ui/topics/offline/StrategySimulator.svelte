@@ -19,7 +19,7 @@
   const REQUESTS: readonly { readonly value: RequestPick; readonly label: string }[] = [
     { value: 'navigation', label: 'Open a screen (a navigation)' },
     { value: 'build-file', label: 'A JavaScript chunk under /_app/immutable/' },
-    { value: 'static-file', label: 'A font from static/' },
+    { value: 'static-file', label: 'The web manifest from static/' },
     { value: 'version-file', label: "SvelteKit's /_app/version.json" },
     { value: 'model-file', label: 'A model file from huggingface.co' },
   ];

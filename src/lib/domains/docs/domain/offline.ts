@@ -57,20 +57,14 @@ const MODEL_CACHE = 'transformers-cache';
 
 const SAMPLE_BUILD = ['/_app/immutable/entry/start.js', '/_app/immutable/chunks/reader.js'];
 
-const SAMPLE_STATIC = [
-  '/_headers',
-  '/fonts/archivo.woff2',
-  '/fonts/archivo.OFL.txt',
-  '/licenses.txt',
-  '/manifest.webmanifest',
-];
+const SAMPLE_STATIC = ['/_headers', '/licenses.txt', '/manifest.webmanifest'];
 
 const REQUEST_PATHS: Readonly<
   Record<RequestPick, { readonly path: string; readonly mode: string }>
 > = {
   navigation: { path: '/read/42', mode: 'navigate' },
   'build-file': { path: '/_app/immutable/chunks/reader.js', mode: 'cors' },
-  'static-file': { path: '/fonts/archivo.woff2', mode: 'cors' },
+  'static-file': { path: '/manifest.webmanifest', mode: 'cors' },
   'version-file': { path: '/_app/version.json', mode: 'cors' },
   'model-file': {
     path: 'https://huggingface.co/PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx/resolve/main/inference.yml',

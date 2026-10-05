@@ -18,8 +18,8 @@
 
 <DocsSection title={OFFLINE_SECTIONS.shell}>
   <p>
-    Dokseo is a static single-page app: one HTML document, the scripts and styles Vite builds, and
-    the fonts, icons and manifest in <code>static/</code>. Together they are the app shell. The
+    Dokseo is a static single-page app: one HTML document, the scripts, styles and fonts Vite
+    builds, and the icons and manifest in <code>static/</code>. Together they are the app shell. The
     books, captures and model weights already live on the device, in IndexedDB, the origin private
     file system and the Cache API, so the shell was the one part that still needed the network.
   </p>

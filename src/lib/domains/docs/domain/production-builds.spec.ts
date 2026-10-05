@@ -41,7 +41,7 @@ describe('loadSummary', () => {
       [
         resource('/src/a.ts', 'script', 100),
         resource('/src/b.svelte', 'script', 300),
-        resource('/fonts/x.woff2', 'css', 50),
+        resource('/_app/immutable/assets/x.Bq3kX9aZ.woff2', 'css', 50),
         resource('https://cdn.jsdelivr.net/npm/x.wasm', 'fetch', 9000),
       ],
       ORIGIN,
