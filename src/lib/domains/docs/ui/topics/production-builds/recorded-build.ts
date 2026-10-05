@@ -6,6 +6,7 @@ type OutputGroupName =
   | 'workers'
   | 'app'
   | 'static'
+  | 'licenses'
   | 'shell';
 
 type OutputGroup = {
@@ -49,16 +50,17 @@ const GROUP_FOLDERS: Readonly<Record<OutputGroupName, string>> = {
   workers: '_app/immutable/workers/',
   app: '_app/version.json',
   static: 'copied from static/',
+  licenses: 'fonts/',
   shell: 'index.html, service-worker.js',
 };
 
 const BUILD_WITH_PLUGIN: RecordedBuild = {
-  bytes: 6_769_949,
+  bytes: 6_769_891,
   files: 209,
   precache: 185,
-  precacheBytes: 6_671_932,
+  precacheBytes: 6_671_820,
   preloaded: 34,
-  preloadedBytes: 424_695,
+  preloadedBytes: 424_583,
   stubNodes: 28,
   guardNodes: 3,
   groups: [
@@ -86,9 +88,9 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
     {
       name: 'assets',
       folder: GROUP_FOLDERS.assets,
-      holds: 'extracted CSS and the pdf.js workers',
-      files: 4,
-      bytes: 2_761_255,
+      holds: 'extracted CSS, the fonts and the pdf.js workers',
+      files: 32,
+      bytes: 3_397_079,
     },
     {
       name: 'workers',
@@ -107,27 +109,34 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
     {
       name: 'static',
       folder: GROUP_FOLDERS.static,
-      holds: 'fonts, icons, the web manifest, licenses, _headers',
-      files: 55,
-      bytes: 741_981,
+      holds: 'icons, the web manifest, licenses, _headers',
+      files: 9,
+      bytes: 26_878,
+    },
+    {
+      name: 'licenses',
+      folder: GROUP_FOLDERS.licenses,
+      holds: "the fonts' licenses, written by a build plugin",
+      files: 18,
+      bytes: 79_086,
     },
     {
       name: 'shell',
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 19_784,
+      bytes: 19_919,
     },
   ],
 };
 
 const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
-  bytes: 8_790_520,
+  bytes: 8_790_868,
   files: 360,
   precache: 336,
-  precacheBytes: 8_686_506,
+  precacheBytes: 8_686_800,
   preloaded: 73,
-  preloadedBytes: 440_040,
+  preloadedBytes: 439_924,
   stubNodes: 0,
   guardNodes: 0,
   groups: [
@@ -143,21 +152,21 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
       files: 44,
-      bytes: 2_148_775,
+      bytes: 2_149_186,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
       files: 235,
-      bytes: 1_828_486,
+      bytes: 1_828_482,
     },
     {
       name: 'assets',
       folder: GROUP_FOLDERS.assets,
-      holds: 'extracted CSS and the pdf.js workers',
-      files: 16,
-      bytes: 2_816_188,
+      holds: 'extracted CSS, the fonts and the pdf.js workers',
+      files: 44,
+      bytes: 3_452_012,
     },
     {
       name: 'workers',
@@ -176,16 +185,23 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
     {
       name: 'static',
       folder: GROUP_FOLDERS.static,
-      holds: 'fonts, icons, the web manifest, licenses, _headers',
-      files: 55,
-      bytes: 741_981,
+      holds: 'icons, the web manifest, licenses, _headers',
+      files: 9,
+      bytes: 26_878,
+    },
+    {
+      name: 'licenses',
+      folder: GROUP_FOLDERS.licenses,
+      holds: "the fonts' licenses, written by a build plugin",
+      files: 18,
+      bytes: 79_086,
     },
     {
       name: 'shell',
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 28_551,
+      bytes: 28_685,
     },
   ],
 };
@@ -222,13 +238,13 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'pdf.js, modern build',
   },
   {
-    path: '_app/immutable/nodes/34.Dj39P83h.js',
+    path: '_app/immutable/nodes/34.sD4xDZvp.js',
     bytes: 248_505,
     holds: 'the reader route',
   },
   {
-    path: '_app/immutable/assets/0.NXypynlP.css',
-    bytes: 177_122,
+    path: '_app/immutable/assets/0.CxsqCt3M.css',
+    bytes: 177_010,
     holds: 'the global stylesheet',
   },
   {
@@ -237,7 +253,7 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'zip.js, for archives and EPUBs',
   },
   {
-    path: '_app/immutable/nodes/0.HVtNmsfW.js',
+    path: '_app/immutable/nodes/0.PiEr6Y9Z.js',
     bytes: 72_407,
     holds: 'the root layout',
   },

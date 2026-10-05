@@ -305,9 +305,11 @@
     them, which is why the removal is needed.
   </p>
   <p>
-    The fonts get the same year, although their names in <code>static/fonts/</code> have no hash. That
-    makes a font file's name its version: a changed font has to be saved under a new name, or browsers
-    keep the old one for up to a year.
+    The fonts are among those files. The stylesheet names them by relative URLs, so Vite copies each
+    into <code>_app/immutable/assets/</code> with a content hash in its name, and a changed font
+    gets a new URL instead of a year-old copy. Their licenses keep their URLs,
+    <code>/fonts/&lt;name&gt;.OFL.txt</code>: a small build plugin writes them there, and the first
+    rule covers them.
   </p>
 </DocsSection>
 
@@ -323,11 +325,12 @@
   <DocsCode label={PRECACHE.label} code={PRECACHE.code} />
   <p>
     In this build that is {shipped.precache} URLs and {byteFigure(shipped.precacheBytes)}: the
-    document, the {immutableFiles(shipped)} files under <code>_app/immutable/</code> and
-    {precachedStatic(shipped)} of the {staticFiles(shipped)} files from <code>static/</code>, the
-    fonts, icons and manifest. It includes both pdf.js builds and both OCR workers, though a device
-    runs at most one of each pair. That is the cost of a precache that holds every chunk: splitting
-    keeps the first load small, and the install still downloads everything once per release.
+    document, the {immutableFiles(shipped)} files under <code>_app/immutable/</code>, the fonts
+    among them, and {precachedStatic(shipped)} of the {staticFiles(shipped)} files from
+    <code>static/</code>, the icons and manifest. It includes both pdf.js builds and both OCR
+    workers, though a device runs at most one of each pair. That is the cost of a precache that
+    holds every chunk: splitting keeps the first load small, and the install still downloads
+    everything once per release.
   </p>
 </DocsSection>
 

@@ -267,7 +267,7 @@
       <code>static/_headers</code> is copied into <code>build/</code> and sets the response headers:
       cross-origin isolation, <code>frame-ancestors 'self'</code>, <code>no-cache</code> for most
       files, and a year of <code>immutable</code> caching for the hashed files under
-      <code>/_app/immutable/</code> and for the fonts. The
+      <code>/_app/immutable/</code>, the fonts among them. The
       <a href="/docs/security-headers#where-dokseo-s-headers-come-from">security headers</a> page explains
       each one.
     </li>

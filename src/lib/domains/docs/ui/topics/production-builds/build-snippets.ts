@@ -82,10 +82,6 @@ const HEADERS: SourceSnippet = {
 
 /_app/immutable/*
   ! Cache-Control
-  Cache-Control: public, max-age=31536000, immutable
-
-/fonts/*
-  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable`,
 };
 
