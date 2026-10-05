@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import adapter from '@sveltejs/adapter-static';
@@ -48,6 +48,28 @@ function runtimeServedFromCdn(): Plugin {
     generateBundle(_options, bundle) {
       for (const name of Object.keys(bundle)) {
         if (BUNDLED_RUNTIME.test(name)) delete bundle[name];
+      }
+    },
+  };
+}
+
+const FONT_FOLDER = 'src/lib/ui/fonts';
+
+const FONT_LICENSE = /\.OFL\.txt$/u;
+
+function fontLicensesPublished(): Plugin {
+  return {
+    name: 'font-licenses-published',
+    apply: 'build',
+    applyToEnvironment: (environment) => environment.config.consumer === 'client',
+    generateBundle() {
+      for (const name of readdirSync(FONT_FOLDER)) {
+        if (!FONT_LICENSE.test(name)) continue;
+        this.emitFile({
+          type: 'asset',
+          fileName: `fonts/${name}`,
+          source: readFileSync(`${FONT_FOLDER}/${name}`),
+        });
       }
     },
   };
@@ -115,6 +137,7 @@ export default defineConfig({
     }),
     crossOriginIsolation(),
     runtimeServedFromCdn(),
+    fontLicensesPublished(),
   ],
   test: {
     expect: { requireAssertions: true },
