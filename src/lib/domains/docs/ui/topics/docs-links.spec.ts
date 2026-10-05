@@ -9,6 +9,7 @@ import * as architecture from './architecture/architecture-sections';
 import * as asyncCorrectness from './async-correctness/async-sections';
 import * as bookIdentity from './book-identity/sections';
 import * as epubRendering from './epub-rendering/epub-sections';
+import * as exampleDrift from './example-drift/drift-sections';
 import * as exportImport from './export-import/export-import-sections';
 import * as indexedDb from './indexeddb/indexeddb-sections';
 import * as ocr from './ocr/ocr-sections';
@@ -52,6 +53,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'rendering-pages': renderingPages.RENDERING_SECTIONS,
   'releases-and-ci': releasesAndCi.RELEASE_SECTIONS,
   testing: testing.TESTING_SECTIONS,
+  'example-drift': exampleDrift.DRIFT_SECTIONS,
   'sql-set-theory': sqlSetTheory.SQL_SET_SECTIONS,
   'sql-patterns': sqlPatterns.SQL_PATTERNS_SECTIONS,
   unicode: unicode.UNICODE_SECTIONS,
@@ -72,6 +74,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'async-correctness/async-sections.ts': asyncCorrectness,
   'book-identity/sections.ts': bookIdentity,
   'epub-rendering/epub-sections.ts': epubRendering,
+  'example-drift/drift-sections.ts': exampleDrift,
   'export-import/export-import-sections.ts': exportImport,
   'indexeddb/indexeddb-sections.ts': indexedDb,
   'ocr/ocr-sections.ts': ocr,

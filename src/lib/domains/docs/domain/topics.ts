@@ -138,6 +138,14 @@ const DOCS_TOPICS = [
     kind: 'explainer',
   },
   {
+    slug: 'example-drift',
+    title: 'Keeping code examples from drifting',
+    summary:
+      'Quotes kept as data with their source path, a unit test that finds each one in its file, CI that runs it, the same idea for recorded SQL results, compiler errors and bundles, and what no check covers.',
+    status: 'published',
+    kind: 'explainer',
+  },
+  {
     slug: 'sql-set-theory',
     title: 'SQL as set theory',
     summary:
