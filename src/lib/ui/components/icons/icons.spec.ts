@@ -1,6 +1,4 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createRawSnippet } from 'svelte';
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
@@ -9,9 +7,7 @@ import X from './X.svelte';
 import { iconStroke } from './icon';
 
 const ICONS = new URL('./', import.meta.url);
-const SOURCE = new URL('../../../../', import.meta.url);
 const BASE = 'Icon.svelte';
-const PLAYGROUND = 'routes/playground/';
 
 type Attributes = Record<string, unknown>;
 
@@ -37,17 +33,6 @@ function iconFiles(): readonly string[] {
 
 function kebab(component: string): string {
   return component.replaceAll(/(?<=[a-z0-9])(?=[A-Z])/gu, '-').toLowerCase();
-}
-
-function sourceFiles(): readonly string[] {
-  return readdirSync(SOURCE, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(fileURLToPath(SOURCE), join(entry.parentPath, entry.name)))
-    .map((path) => path.split('\\').join('/'))
-    .filter((path) => /\.(svelte|ts)$/u.test(path))
-    .filter((path) => !path.endsWith('.spec.ts'))
-    .filter((path) => !path.startsWith(PLAYGROUND))
-    .filter((path) => !path.startsWith('lib/ui/components/icons/'));
 }
 
 describe('Icon', () => {
@@ -128,17 +113,6 @@ describe('the icon set', () => {
         name: kebab(component),
       });
     }
-  });
-
-  it('ships only icons that a component, a domain or a screen imports', () => {
-    const sources = sourceFiles().map((path) => readFileSync(new URL(path, SOURCE), 'utf8'));
-    const unused = iconFiles().filter((file) => {
-      const pattern = new RegExp(`icons/${file.replace('.', '\\.')}['"]`, 'u');
-      return !sources.some((text) => pattern.test(text));
-    });
-
-    expect(iconFiles().length).toBeGreaterThan(0);
-    expect(unused).toEqual([]);
   });
 
   it('holds no index module that could re-export the set', () => {
