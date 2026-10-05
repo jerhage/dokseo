@@ -12,6 +12,7 @@ import * as epubRendering from './epub-rendering/epub-sections';
 import * as exampleDrift from './example-drift/drift-sections';
 import * as exportImport from './export-import/export-import-sections';
 import * as indexedDb from './indexeddb/indexeddb-sections';
+import * as kandanCorePlan from './kandan-core-plan/core-sections';
 import * as ocr from './ocr/ocr-sections';
 import * as productionBuilds from './production-builds/build-sections';
 import * as offline from './offline/sections';
@@ -66,6 +67,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'word-analysis-plan': wordAnalysisPlan.WORD_PLAN_SECTIONS,
   'series-plan': seriesPlan.SERIES_PLAN_SECTIONS,
   'vendored-ui': vendoredUi.VENDORED_SECTIONS,
+  'kandan-core-plan': kandanCorePlan.KANDAN_CORE_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
@@ -77,6 +79,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'example-drift/drift-sections.ts': exampleDrift,
   'export-import/export-import-sections.ts': exportImport,
   'indexeddb/indexeddb-sections.ts': indexedDb,
+  'kandan-core-plan/core-sections.ts': kandanCorePlan,
   'ocr/ocr-sections.ts': ocr,
   'offline/sections.ts': offline,
   'production-builds/build-sections.ts': productionBuilds,

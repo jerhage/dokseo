@@ -235,6 +235,15 @@ const DOCS_TOPICS = [
     kind: 'plan',
     buildsAfter: '1.0',
   },
+  {
+    slug: 'kandan-core-plan',
+    title: 'Plan: Kandan UI without a framework',
+    summary:
+      'Which parts of a component library depend on a framework, fixtures as a markup contract checked by rendering each component in Node, native elements before scripts, and a framework-free core vendored inside kandan-ui-svelte.',
+    status: 'published',
+    kind: 'plan',
+    buildsAfter: '1.0',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];
