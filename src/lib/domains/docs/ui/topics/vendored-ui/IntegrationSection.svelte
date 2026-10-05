@@ -37,8 +37,9 @@
 
 <DocsSection title={VENDORED_SECTIONS.integrate}>
   <p>
-    The library ships its integration guide in its own folder, <code>src/lib/ui/README.md</code>, so
-    a developer finds it in the vendored copy. Dokseo follows it like any app:
+    The library ships its integration guide in its own folder, <code>src/lib/ui/GUIDE.md</code>, so
+    a developer finds it in the vendored copy; <code>README.md</code> holds only the subtree commands.
+    Dokseo follows it like any app:
   </p>
   <StepList>
     <StepItem title="Vendor the library">

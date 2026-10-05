@@ -46,7 +46,8 @@
       <code>playground/</code>: every demo section and <code>Playground.svelte</code>, which renders
       them all.
     </li>
-    <li><code>README.md</code>: the library's own guide, for any app that vendors it.</li>
+    <li><code>README.md</code>: the origin of the library and the subtree commands.</li>
+    <li><code>GUIDE.md</code>: the library's own guide, for any app that vendors it.</li>
     <li>
       <code>package.json</code>, <code>vitest.config.ts</code>, <code>tsconfig.json</code>,
       <code>.oxlintrc.json</code>, <code>.oxfmtrc.json</code> and <code>.gitignore</code>: the
