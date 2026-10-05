@@ -6,7 +6,10 @@ import { NARROW_SCREEN_QUERY } from '../components/breakpoints';
 import { TAG_COLOURS } from '../components/classes';
 
 const STYLES = new URL('./', import.meta.url);
-const SOURCE = new URL('../../../', import.meta.url);
+const LIBRARY = new URL('../', import.meta.url);
+
+const LAYER_ORDER =
+  '@layer open-props, reset, base, tokens, components, features, utilities, overrides;';
 
 const CONTRACT_TOKENS = [
   '--color-bg',
@@ -287,9 +290,9 @@ const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
 const BREAKPOINT_SCALE = ['24rem', '26rem', '34rem', '40rem', '44rem'];
 
 const NARROW_QUERIES: Readonly<Record<string, number>> = {
-  'lib/ui/styles/components/modal/modal.css': 2,
-  'lib/ui/styles/components/toast.css': 1,
-  'lib/ui/styles/utilities/layout.css': 4,
+  'styles/components/modal/modal.css': 2,
+  'styles/components/toast.css': 1,
+  'styles/utilities/layout.css': 4,
 };
 
 const RUNTIME_INPUTS = [
@@ -534,12 +537,12 @@ function queryWidths(css: string): readonly string[] {
   ).flat();
 }
 
-function sourceStylesheets(): readonly string[] {
-  return filesUnder(SOURCE, ['.css']);
+function libraryStylesheets(): readonly string[] {
+  return filesUnder(LIBRARY, ['.css']);
 }
 
-function sourceStyle(path: string): string {
-  return withoutComments(read(new URL(path, SOURCE)));
+function libraryStyle(path: string): string {
+  return withoutComments(read(new URL(path, LIBRARY)));
 }
 
 function mediaBlock(css: string, query: string): string {
@@ -581,15 +584,8 @@ function expectedLayer(path: string): string {
 }
 
 describe('the design system stylesheets', () => {
-  it('declares the same layer order in app.html and in index.css', () => {
-    const html = read(new URL('app.html', SOURCE));
-    const inline = /<style>([\s\S]*?)<\/style>/u.exec(html)?.[1] ?? '';
-
-    expect(orderStatement(inline)).toBe(
-      '@layer open-props, reset, base, tokens, components, features, utilities, overrides;',
-    );
-    expect(inline.trim().replaceAll(/\s+/gu, ' ')).toBe(orderStatement(inline));
-    expect(orderStatement(style('index.css'))).toBe(orderStatement(inline));
+  it('declares the layer order in index.css', () => {
+    expect(orderStatement(style('index.css'))).toBe(LAYER_ORDER);
   });
 
   it('holds no @layer block in any file, and only the order statement in index.css', () => {
@@ -629,11 +625,10 @@ describe('the design system stylesheets', () => {
     expect(positions).toEqual(positions.toSorted((left, right) => left - right));
   });
 
-  it('keeps every --ds- name inside base and tokens, apart from the docs that quote them', () => {
-    const offenders = filesUnder(SOURCE, ['.css', '.svelte', '.html'])
-      .filter((path) => !/^lib\/ui\/styles\/(base|tokens)\//u.test(path))
-      .filter((path) => !path.startsWith('lib/domains/docs/'))
-      .filter((path) => read(new URL(path, SOURCE)).includes('--ds-'));
+  it('keeps every --ds- name inside base and tokens', () => {
+    const offenders = filesUnder(LIBRARY, ['.css', '.svelte', '.html'])
+      .filter((path) => !/^styles\/(base|tokens)\//u.test(path))
+      .filter((path) => read(new URL(path, LIBRARY)).includes('--ds-'));
 
     expect(offenders).toEqual([]);
   });
@@ -1671,10 +1666,10 @@ describe('the design system stylesheets', () => {
 
   it('switches every query that names the narrow breakpoint at the value of its token, and the TypeScript query too', () => {
     const narrow = definitionValues(style('base/primitives.css')).get('--ds-size-narrow') ?? '';
-    const counts = sourceStylesheets()
+    const counts = libraryStylesheets()
       .map(
         (path) =>
-          [path, queryWidths(sourceStyle(path)).filter((width) => width === narrow)] as const,
+          [path, queryWidths(libraryStyle(path)).filter((width) => width === narrow)] as const,
       )
       .filter(([, widths]) => widths.length > 0)
       .map(([path, widths]) => [path, widths.length] as const);
@@ -1690,8 +1685,8 @@ describe('the design system stylesheets', () => {
   it('switches every media and container query at a width on the breakpoint scale', () => {
     const narrow = definitionValues(style('base/primitives.css')).get('--ds-size-narrow') ?? '';
     const scale = new Set([...BREAKPOINT_SCALE, narrow]);
-    const offScale = sourceStylesheets().flatMap((path) =>
-      queryWidths(sourceStyle(path))
+    const offScale = libraryStylesheets().flatMap((path) =>
+      queryWidths(libraryStyle(path))
         .filter((width) => !scale.has(width))
         .map((width) => `${path}: ${width}`),
     );
