@@ -120,11 +120,12 @@
   <DocsCode label={CHECK_ICON.label} code={CHECK_ICON.code} />
   <DocsCode label={ICON_SVG.label} code={ICON_SVG.code} />
   <p>
-    Those elements are data inside Svelte files, so a plain page cannot use them. In the core, each
-    icon becomes an <code>.svg</code> file holding the same elements, and the Svelte files are generated
-    from those. Lucide's license is ISC (MIT for the icons that came from Feather), on the condition that
-    its copyright notice and permission notice appear in all copies. The library folder holds no license
-    file for the icons today; the core's icon folder is the place for one.
+    Those elements are data inside Svelte files, so a page without Svelte cannot use them. In the
+    core, each icon becomes an <code>.svg</code> file holding the same elements, and the Svelte
+    files are generated from those. Lucide's license is ISC (MIT for the icons that came from
+    Feather), on the condition that its copyright notice and permission notice appear in all copies,
+    so the license file that Kandan keeps beside its icons,
+    <code>components/icons/LICENSE.txt</code>, moves to the core with the SVG files.
   </p>
 </DocsSection>
 
@@ -151,8 +152,9 @@
   <p>
     "Markup only" means the component writes HTML from its props and passes events on to the caller.
     Some of these compute their markup with a plain TypeScript helper, such as the edge geometry in
-    <code>diagram.ts</code> or the page window in <code>pagination-window.ts</code>; a plain page
-    writes that markup by hand or calls the same helper. The other {scripted}:
+    <code>diagram.ts</code> or the page window in <code>pagination-window.ts</code>;
+    <code>kandan-ui-vanilla</code> needs the same computation in plain JavaScript, or a page writes
+    that markup by hand. The other {scripted}:
   </p>
   <Table size="sm" caption="The components whose behavior is more than markup">
     <TableHeader>
@@ -175,7 +177,7 @@
   <p>
     These are the components that need rules beside their fixtures (<a
       href={kandanCoreHref('rules')}>Behavior the markup cannot hold</a
-    >) and a behavior module in the plain version.
+    >) and a behavior module in <code>kandan-ui-vanilla</code>.
   </p>
 </DocsSection>
 

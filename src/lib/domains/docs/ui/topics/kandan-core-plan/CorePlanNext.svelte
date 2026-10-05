@@ -13,6 +13,11 @@
     kandanCoreHref,
   } from './core-sections';
 
+  type SettledPoint = {
+    readonly title: string;
+    readonly text: string;
+  };
+
   type OpenDecision = {
     readonly title: string;
     readonly options: string;
@@ -21,13 +26,39 @@
 
   const markupOnly = behaviourCount('markup');
 
+  const SETTLED: readonly SettledPoint[] = [
+    {
+      title: 'When',
+      text: 'After 1.0.',
+    },
+    {
+      title: 'What the core holds',
+      text: "CSS, fonts with their licenses, SVG icons with Lucide's license, the fixtures with their written behavior rules, and the appearance script. No component behavior.",
+    },
+    {
+      title: 'The plain JavaScript version',
+      text: 'kandan-ui-vanilla, a framework version beside kandan-ui-svelte that vendors the core at core/ and runs the same contract spec.',
+    },
+    {
+      title: 'Two hops',
+      text: 'A fix made in an app reaches the core in two pushes, and that is accepted.',
+    },
+  ];
+
   const OPEN_DECISIONS: readonly OpenDecision[] = [
     {
       title: 'Fixture format',
       options:
         'One .html file per variant (fixtures/badge/success.html); one file per component with a <template> per variant; or fixture strings in a JavaScript module.',
       recommendation:
-        'One .html file per variant. A browser and the static playground read it as it is, a diff shows one variant, and the spec maps the file name to a case.',
+        "One .html file per variant. A browser and kandan-ui-vanilla's static playground read it as it is, a diff shows one variant, and each contract spec maps the file name to a case.",
+    },
+    {
+      title: 'How the behavior rules are written',
+      options:
+        'As prose beside each fixture; or as structured data (the state before, the key or event, the state after) in a file next to it.',
+      recommendation:
+        'Structured data. Both framework versions can then run every rule from the same file, where prose would have to be turned into specs twice by hand.',
     },
     {
       title: 'Generated ids in a fixture',
@@ -37,25 +68,25 @@
         'Placeholders. The fixture writes id-1, id-2; the normalizer renames each distinct value of id, popovertarget, aria-controls and aria-labelledby on both sides in order of first appearance, so the spec still checks that the trigger and the sheet name the same id.',
     },
     {
-      title: 'The normalizer',
+      title: 'Where the normalizer lives',
       options:
-        'A few regular expressions, as in the demo above, or an HTML parser package as a dev dependency of the Svelte version.',
+        'A copy in each framework version; or in the core beside the fixtures, as test tooling rather than component behavior. The ruling on what the core holds does not name it.',
       recommendation:
-        'Start with the regular expressions and their spec; switch to a parser when a fixture needs something they cannot read.',
+        'In the core, so both versions compare with the same rules, if that fits the ruling; it needs that word first. Either way, regular expressions first, and an HTML parser package only when a fixture needs something they cannot read.',
     },
     {
-      title: 'Where the icons are generated',
+      title: 'Where the Svelte icons are generated',
       options:
-        'The core ships SVG files only and the Svelte version has a script that writes components/icons/*.svelte; or a build plugin that generates them at build time.',
+        "A script in kandan-ui-svelte that writes components/icons/*.svelte from the core's SVG files; or a build plugin that generates them at build time. kandan-ui-vanilla uses the SVG files directly.",
       recommendation:
-        'A script in the Svelte version whose output is committed, with a spec that fails when a committed icon differs from what the script writes. The folder then stays plain files that work at any prefix.',
+        'A script whose output is committed, with a spec that fails when a committed icon differs from what the script writes. The folder then stays plain files that work at any prefix.',
     },
     {
-      title: "The core's language",
+      title: "The appearance script's language",
       options:
         'Plain JavaScript with JSDoc types, checked with checkJs; or TypeScript with erasable syntax and a build step that writes .js.',
       recommendation:
-        "Plain JavaScript with JSDoc types. A browser and Node load the same files with no build, and both of Kandan's tsconfig files already set allowJs and checkJs.",
+        "Plain JavaScript with JSDoc types. A browser and Node load the same file with no build, and both of Kandan's tsconfig files already set allowJs and checkJs.",
     },
     {
       title: 'ts-pattern in the core',
@@ -67,26 +98,27 @@
       title: "The core's test runner",
       options: "Node's own test runner, or Vitest.",
       recommendation:
-        'node --test. It needs no package, and the core has no Svelte files to compile.',
+        'node --test. It needs no package, and the core holds no Svelte files to compile.',
     },
     {
-      title: 'Packaging of the plain behaviors',
+      title: "Packaging of kandan-ui-vanilla's behaviors",
       options:
         'One ES module per component exporting a function that connects it to an element and returns a disconnect function; custom elements; or one script that scans data attributes on load.',
       recommendation:
         'One module per component with an explicit connect and disconnect. A custom element would add an element the fixtures do not have.',
     },
     {
-      title: 'Shared helper logic',
+      title: "kandan-ui-vanilla's helper logic",
       options:
-        'Move the plain helpers a behavior needs (such as roving.ts for the tab keys) into the core, so both versions run the same code; or write them again for the plain version.',
-      recommendation: 'Move each helper when its first plain behavior is written, not before.',
+        "Start from copies of the Svelte version's plain helpers (such as roving.ts for the tab keys); or write them again from the rules. The core holds no behavior code, so neither version can import the other's.",
+      recommendation:
+        "Start from copies. The rules and each version's specs keep the two copies agreeing.",
     },
     {
       title: 'Versions of the core',
-      options: 'The Svelte version pulls tags, or pulls main.',
+      options: 'The framework versions pull tags, or pull main.',
       recommendation:
-        'Semantic version tags in kandan-ui. The Svelte version pulls a tag and names it in the pull message, as in the run: chore(core): update the core to v0.2.0.',
+        'Semantic version tags in kandan-ui. Each framework version pulls a tag and names it in the pull message, as in the run: chore(core): update the core to v0.2.0.',
     },
     {
       title: 'Import paths in apps',
@@ -97,9 +129,9 @@
     },
     {
       title: 'Order of the last two steps',
-      options: 'Move Dokseo onto the core first, or build the plain version first.',
+      options: 'Move Dokseo onto the core first, or start kandan-ui-vanilla first.',
       recommendation:
-        'Dokseo first. The contract and the Svelte version are what Dokseo runs on; the plain version has no consumer yet.',
+        'Dokseo first. The contract and the Svelte version are what Dokseo runs on; kandan-ui-vanilla has no consumer yet.',
     },
   ];
 </script>
@@ -129,9 +161,9 @@
 
 <DocsSection title={KANDAN_CORE_SECTIONS.order}>
   <StepList>
-    <StepItem title="Start kandan-ui">
-      The stylesheets and fonts as they are, the appearance code as JavaScript, the icons as SVG
-      with Lucide's license, their specs on Node's test runner, and a first tag.
+    <StepItem title="Start kandan-ui, after 1.0">
+      The stylesheets and fonts as they are, the appearance script as JavaScript, the icons as SVG
+      with Lucide's license, the first fixtures, their specs on Node's test runner, and a first tag.
     </StepItem>
     <StepItem title="Vendor the core in kandan-ui-svelte">
       Remove the moved files in one commit and run <code>git subtree add --prefix=core</code> in the
@@ -153,16 +185,23 @@
       One subtree pull on <code>main</code>, then the path updates and the refreshed docs quotes in
       the next commit.
     </StepItem>
-    <StepItem title="The plain version">
-      Behavior modules for the components that need a script, and the static playground page.
+    <StepItem title="Start kandan-ui-vanilla">
+      Vendor the core at <code>core/</code> the same way, then the behavior modules for the components
+      that need a script, the same contract spec and rule specs, and the static playground page.
     </StepItem>
   </StepList>
 </DocsSection>
 
 <DocsSection title={KANDAN_CORE_SECTIONS.open}>
+  <p>Settled:</p>
+  <ul>
+    {#each SETTLED as point (point.title)}
+      <li><strong>{point.title}.</strong> {point.text}</li>
+    {/each}
+  </ul>
   <p>
-    These are not settled. Each has the option I would take first; see <a
-      href={kandanCoreHref('core')}>What the core holds</a
+    Still open, each with the option I would take first; see <a href={kandanCoreHref('core')}
+      >What the core holds</a
     > for the parts they apply to.
   </p>
   <ol class="stack-md">

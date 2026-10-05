@@ -22,20 +22,22 @@ const core = box(
   'CSS, fonts, icons, appearance, fixtures',
   'primary',
 );
-const svelteVersion = box(0, 120, 200, 'kandan-ui-svelte', 'components, core/ inside', 'accent');
-const plainPage = box(220, 120, 140, 'A plain page', 'links the CSS');
-const dokseo = box(0, 240, 200, 'Dokseo', 'src/lib/ui/, core/ inside');
+const svelteVersion = box(0, 120, 170, 'kandan-ui-svelte', 'Svelte, core/ inside', 'accent');
+const vanillaVersion = box(190, 120, 170, 'kandan-ui-vanilla', 'plain JS, core/ inside', 'accent');
+const dokseo = box(0, 240, 170, 'Dokseo', 'src/lib/ui/, core/ inside');
+const plainApp = box(190, 240, 170, 'An app with no framework', 'its own prefix');
 
 const CORE_CHAIN: DiagramSpec = {
   label:
-    'The planned chain. The core repository kandan-ui holds the CSS, fonts, icons, the appearance code and the fixtures. kandan-ui-svelte vendors it at core/ with git subtree. Dokseo vendors kandan-ui-svelte at src/lib/ui/ with git subtree, so the core arrives inside it at src/lib/ui/core/. A plain HTML page uses the core directly by linking its stylesheet.',
+    'The planned chain. The core repository kandan-ui holds the CSS, fonts, SVG icons, the appearance script and the fixtures, and no component behavior. Two framework versions vendor it at core/ with git subtree: kandan-ui-svelte and kandan-ui-vanilla, which uses plain JavaScript. Dokseo vendors kandan-ui-svelte at src/lib/ui/, so the core arrives inside it at src/lib/ui/core/. An app with no framework vendors kandan-ui-vanilla the same way.',
   width: 360,
   height: 292,
-  nodes: [core, svelteVersion, plainPage, dokseo],
+  nodes: [core, svelteVersion, vanillaVersion, dokseo, plainApp],
   edges: [
     { from: core, to: svelteVersion, label: 'subtree' },
-    { from: core, to: plainPage, label: 'link' },
+    { from: core, to: vanillaVersion, label: 'subtree' },
     { from: svelteVersion, to: dokseo, label: 'subtree' },
+    { from: vanillaVersion, to: plainApp, label: 'subtree' },
   ],
 };
 

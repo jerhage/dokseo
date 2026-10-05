@@ -19,7 +19,7 @@ const KANDAN_CORE_SECTIONS = {
   spec: 'The contract spec',
   check: 'A fixture against a real component',
   rules: 'Behavior the markup cannot hold',
-  plain: 'The plain version',
+  plain: 'kandan-ui-vanilla, a version with no framework',
   nested: 'A subtree inside a subtree',
   updates: 'An update from the core to Dokseo',
   fixBack: 'Sending a fix back in two hops',

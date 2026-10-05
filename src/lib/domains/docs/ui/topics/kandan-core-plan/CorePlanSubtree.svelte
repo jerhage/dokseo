@@ -28,8 +28,10 @@
     2.46.1:
     <code>core</code> stands for <code>kandan-ui</code> (a badge stylesheet and its fixture, tagged
     <code>v0.1.0</code>), <code>middle</code> for <code>kandan-ui-svelte</code> (a
-    <code>Badge.svelte</code>), and <code>app</code> for Dokseo. Paths are written relative to the repository
-    the command runs in.
+    <code>Badge.svelte</code>), and <code>app</code> for Dokseo. <code>kandan-ui-vanilla</code>
+    takes the same place as <code>middle</code>, with the same commands, and an app with no
+    framework the place of <code>app</code>. Paths are written relative to the repository the
+    command runs in.
   </p>
   <DocsCode label={MIDDLE_ADD.label} code={MIDDLE_ADD.code} />
   <DocsCode label={MIDDLE_AFTER_ADD.label} code={MIDDLE_AFTER_ADD.code} />
@@ -80,8 +82,9 @@
   <DocsCode label={ROUND_TRIP.label} code={ROUND_TRIP.code} />
   <p>
     So a CSS fix made in Dokseo takes two pushes and two merges to reach the core, then two pulls to
-    come back. Made in the core repository first, the same fix is one commit and two pulls. CSS
-    changes belong in the core repository.
+    come back. Made in the core repository first, the same fix is one commit and two pulls. Both are
+    accepted: CSS changes belong in the core repository, and a fix made in an app first may take the
+    two hops. The other framework version receives the fix with its own next pull of the core.
   </p>
 </DocsSection>
 

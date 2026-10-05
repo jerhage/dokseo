@@ -88,9 +88,9 @@
     Kandan UI is the library Dokseo vendors, and it exists only as Svelte 5 components today, in the <code
       >kandan-ui-svelte</code
     >
-    repository. The plan is to split it into a core,
-    <code>kandan-ui</code>, holding everything that does not depend on a framework, and the Svelte
-    version built on that core.
+    repository. The plan is to split it into a core, <code>kandan-ui</code>, holding only what no
+    framework touches, and framework versions built on that core: the Svelte one, and
+    <code>kandan-ui-vanilla</code> for apps that use no framework at all.
   </p>
 </DocsSection>
 
@@ -173,8 +173,8 @@
   </ul>
   <DocsCode label={DROPZONE_FOCUS.label} code={DROPZONE_FOCUS.code} />
   <p>
-    Each of these behaves the same whichever framework wrote the element. A plain page gets the
-    behavior from the fixture's markup alone.
+    Each of these behaves the same whichever framework wrote the element. A page that copies the
+    fixture's markup gets the behavior with no script at all.
   </p>
 </DocsSection>
 

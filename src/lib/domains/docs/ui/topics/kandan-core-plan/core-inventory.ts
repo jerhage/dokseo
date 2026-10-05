@@ -67,7 +67,7 @@ const INVENTORY: readonly InventoryRow[] = [
   {
     path: 'components/icons/',
     fate: 'work',
-    note: 'Lucide icons written by hand as Svelte components. The SVG source moves to the core; the components are generated from it.',
+    note: 'Lucide icons written by hand as Svelte components. The SVG source and Lucide’s license move to the core; the components are generated from it.',
   },
   {
     path: 'components/breakpoints.ts',
@@ -87,7 +87,7 @@ const INVENTORY: readonly InventoryRow[] = [
   {
     path: 'components/*.ts',
     fate: 'svelte',
-    note: 'Helpers. Most import no Svelte, so a plain behavior could share them later.',
+    note: 'Helpers. Most import no Svelte, so kandan-ui-vanilla can start from copies of them.',
   },
   {
     path: 'components/*.spec.ts',
@@ -97,7 +97,7 @@ const INVENTORY: readonly InventoryRow[] = [
   {
     path: 'playground/',
     fate: 'svelte',
-    note: 'Svelte sections and a Playground component; it uses import.meta.glob, so it needs Vite. The core gets a static page instead.',
+    note: 'Svelte sections and a Playground component; it uses import.meta.glob, so it needs Vite. kandan-ui-vanilla gets a static page instead.',
   },
   {
     path: 'library-files.ts',

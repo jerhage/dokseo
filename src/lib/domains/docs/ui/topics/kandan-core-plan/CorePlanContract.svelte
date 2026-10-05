@@ -24,24 +24,34 @@
 </script>
 
 <DocsSection title={KANDAN_CORE_SECTIONS.core}>
-  <p>The core, <code>kandan-ui</code>, holds the parts no framework owns:</p>
+  <p>
+    The core, <code>kandan-ui</code>, holds only the parts no framework touches, and no component
+    behavior:
+  </p>
   <ul>
     <li><code>styles/</code>: the layered CSS, tokens, themes and component classes.</li>
     <li><code>fonts/</code>: the font files with their licenses.</li>
     <li><code>icons/</code>: one SVG file per icon, with Lucide's license.</li>
     <li>
-      The appearance contract in plain JavaScript: <code>THEMES</code>, the <code>data-theme</code>
-      and
-      <code>data-color-scheme</code> attributes, <code>applyAppearance</code>,
-      <code>readAppearance</code> and <code>themeBootScript</code>.
+      The small appearance script, the one piece of JavaScript: <code>THEMES</code>, the
+      <code>data-theme</code> and <code>data-color-scheme</code> attributes,
+      <code>applyAppearance</code>, <code>readAppearance</code> and <code>themeBootScript</code>.
     </li>
-    <li><code>fixtures/</code>: the markup contract, one HTML file per component and variant.</li>
-    <li>Its own specs, a static playground page, and its own guide.</li>
+    <li>
+      <code>fixtures/</code>: the markup contract, one HTML file per component and variant, with the
+      written behavior rules and their ARIA states beside them.
+    </li>
+    <li>Its own specs and its own guide.</li>
   </ul>
+  <p>
+    Every component behavior, from a focus move to a pointer drag, lives in a framework version.
+    There are two: <code>kandan-ui-svelte</code>, and <code>kandan-ui-vanilla</code>, which writes
+    the behaviors as plain JavaScript modules. Both vendor the core the same way.
+  </p>
   <Figure>
     <Diagram {...CORE_CHAIN} />
     {#snippet caption()}
-      The planned chain. The Svelte version vendors the core at <code>core/</code>; Dokseo still
+      The planned chain. Each framework version vendors the core at <code>core/</code>; Dokseo still
       vendors only the Svelte version, and receives the core inside it.
     {/snippet}
   </Figure>
@@ -93,8 +103,10 @@
 
 <DocsSection title={KANDAN_CORE_SECTIONS.spec}>
   <p>
-    The contract spec lives in each framework's repository. For each fixture it renders the
-    framework's component with the props of that variant and compares the two.
+    The contract spec lives in each framework version's repository, so both
+    <code>kandan-ui-svelte</code> and <code>kandan-ui-vanilla</code> run it against the same fixtures.
+    In the Svelte version, for each fixture it renders the component with the props of that variant and
+    compares the two.
   </p>
   <Figure>
     <Diagram {...CONTRACT_FLOW} />
@@ -161,7 +173,8 @@
   <DocsCode label={TAB_BUTTON.label} code={TAB_BUTTON.code} />
   <p>
     A fixture can show the tabs with the second one selected. It cannot show that ArrowRight got
-    them there. That part is a rule, written beside the fixture as states before and after a key:
+    them there. That part is a rule, written in the core beside the fixture as states before and
+    after a key:
   </p>
   <ul>
     <li>
@@ -175,25 +188,28 @@
   <DocsCode label={TAB_KEYS.label} code={TAB_KEYS.code} />
   <p>
     Each framework then has a unit spec per rule. In the Svelte version the key mapping already has
-    one, <code>roving.spec.ts</code>, and the same rules describe what the plain version's tabs
-    module has to do. Native elements shrink the list: the accordion needs no rule at all, and the
-    modal's rules start after <code>showModal()</code>, because inertness and Escape come from the
-    browser:
+    one, <code>roving.spec.ts</code>, and the same rules describe what the tabs module in
+    <code>kandan-ui-vanilla</code> has to do. Native elements shrink the list: the accordion needs
+    no rule at all, and the modal's rules start after <code>showModal()</code>, because inertness
+    and Escape come from the browser:
   </p>
   <DocsCode label={MODAL_SHOW.label} code={MODAL_SHOW.code} />
 </DocsSection>
 
 <DocsSection title={KANDAN_CORE_SECTIONS.plain}>
   <p>
-    The plain version is the core itself: the stylesheet, the fixtures, small JavaScript modules for
-    the components that need a script, and a static playground page that shows every fixture. A
-    plain page links <code>styles/index.css</code>, copies a fixture's markup, and imports a module
-    where the component needs one. The fixtures are what both versions share, so a markup change in
-    the core shows up in two places: the plain page, and a failing contract spec in the Svelte
-    version until its component matches again.
+    <code>kandan-ui-vanilla</code> is a framework version like the Svelte one, with no framework in
+    it: no Svelte and no React. It vendors the core at <code>core/</code> with git subtree, exactly
+    as
+    <code>kandan-ui-svelte</code> does, writes the behaviors as plain JavaScript modules for the
+    components that need a script, and has a static playground page that shows every fixture. An app
+    with no framework vendors it, links <code>core/styles/index.css</code>, copies a fixture's
+    markup, and imports a module where the component needs one.
   </p>
   <p>
-    How the modules are packaged is still open (<a href={kandanCoreHref('open')}>Open decisions</a
-    >).
+    It runs the same contract spec against the same fixtures, on the markup its modules write or
+    change, and unit specs for the same behavior rules. A markup change in the core therefore fails
+    both framework versions' specs until each matches again. How its modules are packaged is still
+    open (<a href={kandanCoreHref('open')}>Open decisions</a>).
   </p>
 </DocsSection>
