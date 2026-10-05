@@ -1,5 +1,6 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
+  import CopyToolSections from './vendored-ui-plan/CopyToolSections.svelte';
   import SubtreeSections from './vendored-ui-plan/SubtreeSections.svelte';
   import VendoringConcepts from './vendored-ui-plan/VendoringConcepts.svelte';
   import { VENDORED_PLAN_SECTIONS } from './vendored-ui-plan/vendored-sections';
@@ -13,4 +14,5 @@
   {/snippet}
   <VendoringConcepts />
   <SubtreeSections />
+  <CopyToolSections />
 </DocsPage>
