@@ -105,7 +105,7 @@ const FIRST_PAINT_SCRIPT: SourceSnippet = {
   label: 'The first-paint script in src/app.html',
   file: 'src/app.html',
   code: `{
-  const themes = ['base', 'ember', 'mono', 'forge', 'crayon', 'moss', 'petal', 'yorha'];
+  const themes = ['base', 'petal', 'yorha', 'crayon', 'ember', 'mono', 'forge', 'moss'];
   const schemes = ['light', 'dark'];
   let theme = 'base';
   let scheme = null;
@@ -123,7 +123,7 @@ const FIRST_PAINT_SCRIPT: SourceSnippet = {
 const SCRIPT_HASH: SourceSnippet = {
   label: 'The script admitted by its hash in the content security policy',
   file: 'src/lib/platform/security/content-security-policy.ts',
-  code: `'script-src': ['self', 'wasm-unsafe-eval', 'sha256-zt9MSkCzdyugQp42Qq7L4UQ4u5MHRIIkgZyHPQlGxi4='],`,
+  code: `'script-src': ['self', 'wasm-unsafe-eval', 'sha256-0ENZ8B9jcs8Jymy5KvsUKuyqtbGemMuKf9ZH5XdsHcQ='],`,
 };
 
 const SCHEME_RULES: SourceSnippet = {
