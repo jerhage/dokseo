@@ -7,7 +7,7 @@ folder, and is updated with `git subtree`.
 The folder holds:
 
 - `components/`: the base components, their helpers, and the Lucide icons in `components/icons/`,
-  one component per icon.
+  one component per icon, with Lucide's license in `components/icons/LICENSE.txt`.
 - `styles/`: the layered stylesheets and their entry file, `index.css`.
 - `fonts/`: the font files and the license of each font.
 - `appearance.ts`: the theme names, the color schemes, and the functions that apply them.
