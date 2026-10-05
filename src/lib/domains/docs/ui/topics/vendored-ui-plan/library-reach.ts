@@ -15,7 +15,9 @@ const STYLES_FOLDER = 'src/lib/ui/styles';
 
 const FONT_FACES_FILE = 'src/lib/ui/styles/base/fonts.css';
 
-const ABSOLUTE_FONT_URLS = 28;
+const ABSOLUTE_FONT_URLS = 0;
+
+const RELATIVE_FONT_URLS = 28;
 
 const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
   source: {
@@ -63,5 +65,12 @@ const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
   },
 };
 
-export { ABSOLUTE_FONT_URLS, FONT_FACES_FILE, LIBRARY_FOLDER, LIBRARY_REACH, STYLES_FOLDER };
+export {
+  ABSOLUTE_FONT_URLS,
+  FONT_FACES_FILE,
+  LIBRARY_FOLDER,
+  LIBRARY_REACH,
+  RELATIVE_FONT_URLS,
+  STYLES_FOLDER,
+};
 export type { LibraryFiles, LibraryReach };

@@ -7,6 +7,7 @@ import {
   FONT_FACES_FILE,
   LIBRARY_FOLDER,
   LIBRARY_REACH,
+  RELATIVE_FONT_URLS,
   STYLES_FOLDER,
 } from './library-reach';
 
@@ -51,6 +52,12 @@ describe('the recorded reach of the UI library', () => {
   it('counts the font URLs that point at the app root', () => {
     const css = readFileSync(FONT_FACES_FILE, 'utf8');
 
-    expect(css.match(/url\('\/fonts\//gu)?.length).toBe(ABSOLUTE_FONT_URLS);
+    expect(css.match(/url\('\/fonts\//gu) ?? []).toHaveLength(ABSOLUTE_FONT_URLS);
+  });
+
+  it('counts the font URLs relative to the stylesheet', () => {
+    const css = readFileSync(FONT_FACES_FILE, 'utf8');
+
+    expect(css.match(/url\('\.\.\/\.\.\/fonts\//gu) ?? []).toHaveLength(RELATIVE_FONT_URLS);
   });
 });

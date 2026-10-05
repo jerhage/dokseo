@@ -21,7 +21,23 @@ const FONT_FACE: SourceSnippet = {
   file: 'src/lib/ui/styles/base/fonts.css',
   code: `@font-face {
   font-family: 'Bricolage Grotesque';
-  src: url('/fonts/bricolage-grotesque.woff2') format('woff2');`,
+  src: url('../../fonts/bricolage-grotesque.woff2') format('woff2');`,
+};
+
+const FONT_LICENSES: SourceSnippet = {
+  label: 'vite.config.ts, the plugin that publishes the font licenses',
+  file: 'vite.config.ts',
+  code: `applyToEnvironment: (environment) => environment.config.consumer === 'client',
+generateBundle() {
+  for (const name of readdirSync(FONT_FOLDER)) {
+    if (!FONT_LICENSE.test(name)) continue;
+    this.emitFile({
+      type: 'asset',
+      fileName: \`fonts/\${name}\`,
+      source: readFileSync(\`\${FONT_FOLDER}/\${name}\`),
+    });
+  }
+},`,
 };
 
 const STYLESHEET_IMPORT: SourceSnippet = {
@@ -150,6 +166,7 @@ const VENDORED_SNIPPETS: readonly SourceSnippet[] = [
   NO_APP_RULE,
   NO_APP_RULE_PATHS,
   FONT_FACE,
+  FONT_LICENSES,
   STYLESHEET_IMPORT,
   LAYER_ORDER,
   APPEARANCE,
@@ -167,6 +184,7 @@ export {
   APPLY_APPEARANCE,
   FIRST_PAINT_SCRIPT,
   FONT_FACE,
+  FONT_LICENSES,
   LAYER_ORDER,
   NO_APP_RULE,
   NO_APP_RULE_PATHS,
