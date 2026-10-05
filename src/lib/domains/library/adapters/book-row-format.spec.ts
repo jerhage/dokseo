@@ -33,6 +33,10 @@ const held = vi.hoisted(() => ({
   stores: new Map<string, Map<unknown, unknown>>(),
 }));
 
+type StoreWrite =
+  | { readonly kind: 'put'; readonly store: string; readonly record: { readonly id: unknown } }
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown };
+
 function store(name: string): Map<unknown, unknown> {
   const found = held.stores.get(name);
   if (found !== undefined) return found;
@@ -54,6 +58,13 @@ vi.mock('$lib/platform/idb/connection', () => ({
   },
   deleteRecord: (_db: unknown, name: string, key: unknown) => {
     store(name).delete(key);
+    return Promise.resolve();
+  },
+  writeRecords: (_db: unknown, writes: readonly StoreWrite[]) => {
+    for (const write of writes) {
+      if (write.kind === 'put') store(write.store).set(write.record.id, write.record);
+      else store(write.store).delete(write.key);
+    }
     return Promise.resolve();
   },
 }));

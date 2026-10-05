@@ -8,6 +8,7 @@ import {
   writeRecords,
 } from '$lib/platform/idb/connection';
 import type { RecordWrite } from '$lib/platform/idb/connection';
+import { holdingLock, holdingLockIfFree } from '$lib/platform/locks/web-locks';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { isPrivateWindowRefusal } from '$lib/platform/opfs/directory';
 import { parsedBookId } from '$lib/shared/ids';
@@ -112,6 +113,20 @@ function removalWrites(
   ];
 }
 
+function pageListWrite(id: BookId, order: PageOrder): RecordWrite {
+  if (order.kind === 'intrinsic') return { kind: 'delete', store: PAGE_LIST_STORE, key: id };
+  const pageList: StoredPageList = { id, names: order.names };
+  return { kind: 'put', store: PAGE_LIST_STORE, record: pageList };
+}
+
+function additionWrites(book: Book, order: PageOrder): readonly RecordWrite[] {
+  return [
+    pageListWrite(book.id, order),
+    { kind: 'put', store: BOOK_STORE, record: book },
+    { kind: 'delete', store: REMOVED_BOOK_STORE, key: book.id },
+  ];
+}
+
 function erasureWrites(id: BookId): readonly RecordWrite[] {
   return [...shelfDeletes(id), { kind: 'delete', store: REMOVED_BOOK_STORE, key: id }];
 }
@@ -127,6 +142,17 @@ function removeFiles(keys: BlobKeys): Promise<LibraryWrite> {
 async function discard(keys: BlobKeys): Promise<void> {
   await blobs.remove(keys.source).catch(() => undefined);
   await blobs.remove(keys.cover).catch(() => undefined);
+}
+
+function fileLock(id: BookId): string {
+  return `book-files:${id}`;
+}
+
+function fileOwner(name: string): BookId | null {
+  const id = parsedBookId(name.replace(/\.(?:src|cover)$/u, ''));
+  if (id === null) return null;
+  const keys = blobKeys(id);
+  return name === keys.source || name === keys.cover ? id : null;
 }
 
 function createLibraryRepository(): LibraryRepository {
@@ -152,14 +178,6 @@ function createLibraryRepository(): LibraryRepository {
     });
   };
 
-  const forgetPageList = async (id: BookId): Promise<void> => {
-    try {
-      await deleteRecord(await database(), PAGE_LIST_STORE, id);
-    } catch {
-      return;
-    }
-  };
-
   const writeBlobs = async (
     keys: BlobKeys,
     source: Blob,
@@ -168,12 +186,51 @@ function createLibraryRepository(): LibraryRepository {
   ): Promise<LibraryWrite> => {
     try {
       await blobs.put(keys.source, source, report);
-      if (cover !== null) await blobs.put(keys.cover, cover);
+      if (cover === null) await blobs.remove(keys.cover).catch(() => undefined);
+      else await blobs.put(keys.cover, cover);
       return WRITTEN;
     } catch (cause) {
       await discard(keys);
       if (isPrivateWindowRefusal(cause)) return STORAGE_UNAVAILABLE;
       throw cause;
+    }
+  };
+
+  const writeBook = async (
+    book: Book,
+    source: Blob,
+    cover: Blob | null,
+    order: PageOrder,
+    report: SourceWriteReport,
+  ): Promise<LibraryWrite> => {
+    const keys = blobKeys(book.id);
+    const written = await writeBlobs(keys, source, cover, report);
+    if (written.kind !== 'success') return written;
+    try {
+      await writeRecords(await database(), additionWrites(book, order));
+    } catch (cause) {
+      await discard(keys);
+      throw cause;
+    }
+    return WRITTEN;
+  };
+
+  const reclaimStrayFiles = async (): Promise<void> => {
+    const db = await database();
+    const rows = await listRecords<StoredBook>(db, BOOK_STORE);
+    const shelved = new Set<unknown>(rows.map((row) => row.id));
+    const strays = new Set(
+      (await blobs.keys()).flatMap((name) => {
+        const owner = fileOwner(name);
+        return owner === null || shelved.has(owner) ? [] : [owner];
+      }),
+    );
+    for (const id of strays) {
+      await holdingLockIfFree(fileLock(id), async () => {
+        if ((await getRecord<StoredBook>(db, BOOK_STORE, id)) === undefined) {
+          await discard(blobKeys(id));
+        }
+      });
     }
   };
 
@@ -201,26 +258,11 @@ function createLibraryRepository(): LibraryRepository {
       report: SourceWriteReport = () => undefined,
     ): Promise<LibraryWrite> {
       if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
-      const keys = blobKeys(book.id);
-      const written = await writeBlobs(keys, source, cover, report);
-      if (written.kind !== 'success') return written;
-      try {
-        const db = await database();
-        if (order.kind === 'listed') {
-          const pageList: StoredPageList = { id: book.id, names: order.names };
-          await putRecord(db, PAGE_LIST_STORE, pageList);
-        } else {
-          await deleteRecord(db, PAGE_LIST_STORE, book.id);
-        }
-        await putRecord(db, BOOK_STORE, book);
-      } catch (cause) {
-        await discard(keys);
-        await forgetPageList(book.id);
-        throw cause;
-      }
-      if (cover === null) await blobs.remove(keys.cover).catch(() => undefined);
-      await deleteRecord(await database(), REMOVED_BOOK_STORE, book.id);
-      return WRITTEN;
+      const added = await holdingLock(fileLock(book.id), () =>
+        writeBook(book, source, cover, order, report),
+      );
+      if (added.kind === 'success') await reclaimStrayFiles().catch(() => undefined);
+      return added;
     },
 
     async remove(id: BookId, removedAt: number): Promise<LibraryWrite> {

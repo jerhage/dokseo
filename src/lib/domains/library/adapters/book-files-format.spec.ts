@@ -18,6 +18,7 @@ vi.mock('$lib/platform/idb/connection', () => ({
   openDatabase: () => Promise.resolve({}),
   putRecord: () => Promise.resolve(),
   deleteRecord: () => Promise.resolve(),
+  writeRecords: () => Promise.resolve(),
 }));
 
 const reached: FileReach[] = [];

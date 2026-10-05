@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { INTRINSIC_ORDER } from '../domain/book/page-list';
+import type { PageOrder } from '../domain/book/page-list';
 import { imagePlace } from '$lib/shared/reading-place';
 import { bookFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
@@ -21,6 +22,10 @@ const held = vi.hoisted(() => ({
   blobs: new Map<string, Blob>(),
   failingStore: null as string | null,
   failingBlob: null as BlobFailure | null,
+  failingPut: null as BlobFailure | null,
+  locks: new Set<string>(),
+  lockedDuringPut: [] as string[],
+  onLockGranted: null as ((name: string) => void) | null,
   transactions: 0,
 }));
 
@@ -71,13 +76,40 @@ vi.mock('$lib/platform/idb/connection', () => ({
   ) => commit(decide(store(read.store).get(read.key))),
 }));
 
+vi.mock('$lib/platform/locks/web-locks', () => ({
+  holdingLock: async (name: string, work: () => Promise<unknown>) => {
+    held.locks.add(name);
+    try {
+      return await work();
+    } finally {
+      held.locks.delete(name);
+    }
+  },
+  holdingLockIfFree: async (name: string, work: () => Promise<void>) => {
+    if (held.locks.has(name)) return;
+    held.locks.add(name);
+    held.onLockGranted?.(name);
+    try {
+      await work();
+    } finally {
+      held.locks.delete(name);
+    }
+  },
+}));
+
 vi.mock('$lib/platform/opfs/blob-store', () => ({
   isAvailable: () => true,
   get: (key: string) => Promise.resolve(held.blobs.get(key) ?? null),
   put: (key: string, blob: Blob) => {
+    held.lockedDuringPut.push(...held.locks);
+    if (held.failingPut?.key === key) {
+      held.blobs.set(key, new Blob(['partial']));
+      return Promise.reject(held.failingPut.error);
+    }
     held.blobs.set(key, blob);
     return Promise.resolve();
   },
+  keys: () => Promise.resolve([...held.blobs.keys()]),
   remove: (key: string) => {
     if (held.failingBlob?.key === key) return Promise.reject(held.failingBlob.error);
     held.blobs.delete(key);
@@ -128,6 +160,10 @@ beforeEach(() => {
   held.blobs.clear();
   held.failingStore = null;
   held.failingBlob = null;
+  held.failingPut = null;
+  held.locks.clear();
+  held.lockedDuringPut = [];
+  held.onLockGranted = null;
   held.transactions = 0;
   vi.stubGlobal('indexedDB', {});
 });
@@ -616,5 +652,187 @@ describe('erase', () => {
 
     expect(erased).toEqual({ kind: 'success' });
     expectErased();
+  });
+});
+
+describe('an add stopped part way', () => {
+  const ADDED = bookFromStored({ ...GOOD, id: 'new-1' });
+
+  const SOURCE = new Blob(['source']);
+
+  const COVER = new Blob(['cover']);
+
+  const LISTED: PageOrder = { kind: 'listed', names: ['a.jpg', 'b.jpg'] };
+
+  function add(repository = createLibraryRepository()) {
+    return repository.add(ADDED, SOURCE, COVER, LISTED, () => undefined);
+  }
+
+  function expectNothingAdded(): void {
+    expect(store('books').size).toBe(0);
+    expect(store('page-lists').size).toBe(0);
+    expect(held.blobs.size).toBe(0);
+  }
+
+  function expectAdded(): void {
+    expect(store('books').get('new-1')).toEqual(ADDED);
+    expect(store('page-lists').get('new-1')).toEqual({ id: 'new-1', names: ['a.jpg', 'b.jpg'] });
+    expect(store('removed-books').has('new-1')).toBe(false);
+    expect(held.blobs.get('new-1.src')).toBe(SOURCE);
+    expect(held.blobs.get('new-1.cover')).toBe(COVER);
+  }
+
+  it('writes the page list, the row and the removed record deletion in one transaction', async () => {
+    store('removed-books').set('new-1', { ...ADDED, removedAt: REMOVED_AT });
+
+    const added = await add();
+
+    expect(added).toEqual({ kind: 'success' });
+    expect(held.transactions).toBe(1);
+    expectAdded();
+  });
+
+  it('holds the lock of the book files while it writes them', async () => {
+    await add();
+
+    expect(new Set(held.lockedDuringPut)).toEqual(new Set(['book-files:new-1']));
+    expect(held.locks.size).toBe(0);
+  });
+
+  it('leaves nothing stored when the browser refuses to write the file, and adds the book on a second try', async () => {
+    held.failingPut = { key: 'new-1.src', error: new Error(PRIVATE_WINDOW) };
+    const repository = createLibraryRepository();
+
+    const refused = await add(repository);
+
+    expect(refused).toEqual(STORAGE_UNAVAILABLE);
+    expectNothingAdded();
+
+    held.failingPut = null;
+    const added = await add(repository);
+
+    expect(added).toEqual({ kind: 'success' });
+    expectAdded();
+  });
+
+  it('discards the written file when the cover cannot be written, and adds the book on a second try', async () => {
+    held.failingPut = { key: 'new-1.cover', error: new Error('Key "new-1.cover" is locked') };
+    const repository = createLibraryRepository();
+
+    await expect(add(repository)).rejects.toThrow('locked');
+
+    expectNothingAdded();
+
+    held.failingPut = null;
+    await add(repository);
+
+    expectAdded();
+  });
+
+  it('commits none of the page list, the row and the removed record deletion when the transaction fails, discards the files, and adds the book on a second try', async () => {
+    const record = { ...ADDED, removedAt: REMOVED_AT };
+    store('removed-books').set('new-1', record);
+    held.failingStore = 'removed-books';
+    const repository = createLibraryRepository();
+
+    await expect(add(repository)).rejects.toThrow('removed-books');
+
+    expectNothingAdded();
+    expect(store('removed-books').get('new-1')).toEqual(record);
+
+    held.failingStore = null;
+    const added = await add(repository);
+
+    expect(added).toEqual({ kind: 'success' });
+    expectAdded();
+  });
+
+  it('reclaims the files that an add stopped before its transaction left behind, on the next add', async () => {
+    held.blobs.set('stray-1.src', new Blob(['partial']));
+    held.blobs.set('stray-1.cover', new Blob(['cover']));
+
+    await add();
+
+    expect([...held.blobs.keys()].toSorted()).toEqual(['new-1.cover', 'new-1.src']);
+  });
+
+  it('replaces the files that a stopped add of the same book left behind, and lists the book', async () => {
+    held.blobs.set('new-1.src', new Blob(['partial']));
+    const repository = createLibraryRepository();
+
+    await add(repository);
+    const listed = await repository.list();
+
+    expect(listed.kind === 'success' && listed.books).toEqual([ADDED]);
+    expectAdded();
+  });
+
+  it('reclaims the files of a stopped restore and keeps its removed record', async () => {
+    const record = { ...GOOD, id: 'gone-1', removedAt: REMOVED_AT };
+    store('removed-books').set('gone-1', record);
+    held.blobs.set('gone-1.src', new Blob(['partial']));
+
+    await add();
+
+    expect(held.blobs.has('gone-1.src')).toBe(false);
+    expect(store('removed-books').get('gone-1')).toEqual(record);
+  });
+
+  it('keeps the files of a book that another tab is still adding', async () => {
+    held.locks.add('book-files:busy-1');
+    held.blobs.set('busy-1.src', new Blob(['half written']));
+
+    await add();
+
+    expect(held.blobs.has('busy-1.src')).toBe(true);
+  });
+
+  it('keeps the files of a book whose add in another tab commits its row before the lock is granted', async () => {
+    const late = { ...GOOD, id: 'late-1' };
+    held.blobs.set('late-1.src', new Blob(['source']));
+    held.onLockGranted = (name) => {
+      if (name === 'book-files:late-1') store('books').set('late-1', late);
+    };
+
+    await add();
+
+    expect(held.blobs.has('late-1.src')).toBe(true);
+  });
+
+  it('keeps the files of every book on the shelf, readable or not, and a file that names no book', async () => {
+    store('books').set(GOOD.id, GOOD);
+    store('books').set(OLD_SHAPE.id, OLD_SHAPE);
+    held.blobs.set('good-1.src', new Blob(['source']));
+    held.blobs.set('old-1.cover', new Blob(['cover']));
+    held.blobs.set('notes.txt', new Blob(['notes']));
+
+    await add();
+
+    expect([...held.blobs.keys()].toSorted()).toEqual([
+      'good-1.src',
+      'new-1.cover',
+      'new-1.src',
+      'notes.txt',
+      'old-1.cover',
+    ]);
+  });
+
+  it('answers the add as written when a stray file cannot be reclaimed', async () => {
+    held.blobs.set('stray-1.src', new Blob(['partial']));
+    held.failingBlob = { key: 'stray-1.src', error: new Error('Key "stray-1.src" is locked') };
+
+    const added = await add();
+
+    expect(added).toEqual({ kind: 'success' });
+    expectAdded();
+  });
+
+  it('reclaims nothing when the add fails', async () => {
+    held.blobs.set('stray-1.src', new Blob(['partial']));
+    held.failingStore = 'books';
+
+    await expect(add()).rejects.toThrow('books');
+
+    expect([...held.blobs.keys()]).toEqual(['stray-1.src']);
   });
 });

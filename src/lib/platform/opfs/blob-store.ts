@@ -46,6 +46,15 @@ async function totalBytes(): Promise<number> {
   return total;
 }
 
+async function keys(): Promise<string[]> {
+  const parent = await directory();
+  const names: string[] = [];
+  for await (const handle of parent.values()) {
+    if (handle.kind === 'file') names.push(handle.name);
+  }
+  return names;
+}
+
 async function remove(key: string): Promise<void> {
   const name = flatName(key);
   const parent = await directory();
@@ -57,5 +66,5 @@ async function remove(key: string): Promise<void> {
   }
 }
 
-export { isAvailable, put, get, totalBytes, remove };
+export { isAvailable, put, get, totalBytes, keys, remove };
 export type { BytesWritten };
