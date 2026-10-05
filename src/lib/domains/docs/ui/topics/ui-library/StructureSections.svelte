@@ -93,7 +93,9 @@
 <DocsSection title={UI_LIBRARY_SECTIONS.rules}>
   <p>
     The rules above are checked by unit tests that read the stylesheets and the source as text, so a
-    break fails <code>deno task test</code> rather than waiting for someone to notice a screen.
+    break fails <code>deno task test</code> rather than waiting for someone to notice a screen. The
+    library's specs read only <code>src/lib/ui/</code>; the checks on Dokseo's own source and
+    <code>app.html</code> live in <code>src/app-rules/</code>, under the same file names.
   </p>
   <ul>
     <li>
@@ -122,8 +124,10 @@
       stylesheets define.
     </li>
     <li>
-      <code>theme-before-first-paint.spec.ts</code>: the script in <code>app.html</code> accepts exactly
-      the themes the stylesheets define.
+      <code>theme-boot.spec.ts</code>: the first-paint script the library generates accepts exactly
+      the themes the stylesheets define; <code>theme-before-first-paint.spec.ts</code>, in
+      <code>src/app-rules/</code>: the script in <code>app.html</code> is that script, admitted by its
+      hash.
     </li>
   </ul>
 </DocsSection>

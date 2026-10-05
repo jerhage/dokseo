@@ -136,9 +136,9 @@
   <DocsCode label={REBASED_PULL.label} code={REBASED_PULL.code} />
   <p>
     GitHub's "Rebase and merge" adds a pull request's commits "onto the base branch individually
-    without a merge commit", so a library update cannot reach <code>main</code> that way (<a
-      href={vendoredPlanHref('open')}>Open questions</a
-    >).
+    without a merge commit", so a library update cannot reach <code>main</code> that way. I run
+    <code>git subtree pull</code> on <code>main</code> directly, without a pull request, and accept its
+    merge commit for library updates only.
   </p>
 </DocsSection>
 
@@ -228,6 +228,8 @@
   <DocsCode label={SPLIT_AFTER_MOVE.label} code={SPLIT_AFTER_MOVE.code} />
   <p>
     The two commits before the move are not in it. They stay in the app's history, where
-    <code>git log --follow</code> on a single file still finds them.
+    <code>git log --follow</code> on a single file still finds them. I accept that for Kandan UI:
+    its repository's history starts at the move into <code>src/lib/ui/</code>, and the older commits
+    stay in Dokseo.
   </p>
 </DocsSection>

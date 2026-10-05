@@ -24,16 +24,16 @@
     THEME_IMPORTS,
   } from './vendored-snippets';
 
-  const VENDOR_COMMANDS = `git subtree add --prefix=src/lib/ui <library repository> <tag> --squash
-git subtree pull --prefix=src/lib/ui <library repository> <tag> --squash
-git subtree push --prefix=src/lib/ui <library repository> <branch>`;
+  const VENDOR_COMMANDS = `git subtree add --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <tag> --squash
+git subtree pull --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <tag> --squash
+git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <branch>`;
 </script>
 
 <DocsSection title={VENDORED_PLAN_SECTIONS.integrate}>
   <p>
-    This is the guide a second app would follow, written against Dokseo's code as it is today. Once
-    the library has its own repository, its README will carry the same guide, so an app's developer
-    finds it in the vendored folder.
+    This is the guide a second app follows, written against Dokseo's code. The library carries the
+    same guide in its own folder, <code>src/lib/ui/README.md</code>, so an app's developer finds it
+    in the vendored copy; the README is the reference, and this section shows Dokseo's side of it.
   </p>
   <StepList>
     <StepItem title="Vendor the library">
@@ -103,10 +103,12 @@ git subtree push --prefix=src/lib/ui <library repository> <branch>`;
   </p>
   <DocsCode label={SCRIPT_HASH.label} code={SCRIPT_HASH.code} />
   <p>
-    Today the theme list in the script is a second copy of <code>THEMES</code>, and
-    <code>theme-before-first-paint.spec.ts</code> checks that it matches the themes the stylesheets define
-    and that the script applies what is stored. With the library's reference source, the test becomes
-    simpler: the app's inline script must equal the library's output for the app's keys.
+    The script is not written by hand. <code>themeBootScript</code> in the library builds it from
+    <code>THEMES</code> and the two keys, and the library's own spec runs it against stored,
+    missing, unknown and unreadable values. Dokseo's
+    <code>src/app-rules/theme-before-first-paint.spec.ts</code> checks that the inline script in
+    <code>app.html</code> equals that output for Dokseo's keys, line by line with the formatter's indentation
+    set aside, and that the policy lists the hash of the text as written.
   </p>
 
   <h3>The attribute contract</h3>

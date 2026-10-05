@@ -26,14 +26,27 @@
     </li>
     <li><code>fonts/</code>: 28 font files and 18 license files.</li>
     <li><code>appearance.ts</code>: the theme names and the attributes that apply them.</li>
+    <li>
+      <code>theme-boot.ts</code>: <code>themeBootScript</code>, the source of the first-paint
+      script.
+    </li>
+    <li>
+      <code>playground/</code>: every demo section and <code>Playground.svelte</code>, which renders
+      them all.
+    </li>
+    <li><code>README.md</code>: the library's own guide, for any app that vendors it.</li>
   </ul>
-  <p>A few pieces sit outside it:</p>
+  <p>A few pieces sit outside it, in Dokseo:</p>
   <ul class="col gap-2">
     <li>
-      The first-paint script and the layer order, inline in <code>src/app.html</code>, and
+      The layer order and the first-paint script, inline in <code>src/app.html</code>, and
       <code>saved-appearance.ts</code> in <code>src/lib/shared/</code>.
     </li>
-    <li>The playground route, <code>src/routes/playground/</code>.</li>
+    <li>
+      The playground route, <code>src/routes/playground/</code>, which mounts the library's
+      playground.
+    </li>
+    <li>The specs about Dokseo's use of the library, in <code>src/app-rules/</code>.</li>
   </ul>
   <p>
     A folder can be vendored only if it builds without the app around it, so the first question is
@@ -41,9 +54,11 @@
   </p>
   <LibraryReachDemo />
   <p>
-    The components import Svelte, <code>ts-pattern</code> and each other, and nothing else. The specs
-    are different: two component specs and all four stylesheet specs reach above their folder, and the
-    next sections deal with each kind.
+    The components import Svelte, <code>ts-pattern</code> and each other, and nothing else. A spec
+    that reaches above its folder reaches only into the library: one component spec reads
+    <code>../styles/</code>, the three stylesheet specs read <code>../</code>, and one of them also
+    reads <code>../components/</code>. None reads the rest of Dokseo; the next sections say how they
+    got there.
   </p>
 </DocsSection>
 
@@ -122,11 +137,10 @@
 
 <DocsSection title={VENDORED_PLAN_SECTIONS.outside}>
   <p>
-    The theme code splits in three. <code>appearance.ts</code> goes into the library: it holds the
-    theme names, the <code>data-theme</code> and <code>data-color-scheme</code> attributes, and
+    The theme code splits in three. <code>appearance.ts</code> is in the library: it holds the theme
+    names, the <code>data-theme</code> and <code>data-color-scheme</code> attributes, and
     <code>applyAppearance</code> and <code>readAppearance</code>, which every app using the
-    stylesheets needs. On the way, the <code>Theme</code> union will be derived from an
-    <code>as const</code>
+    stylesheets needs. The <code>Theme</code> union is derived from an <code>as const</code>
     <code>THEMES</code> list, so the list and the type cannot disagree.
   </p>
   <p>
@@ -138,44 +152,85 @@
   <p>
     The first-paint script stays in each app's <code>app.html</code>. It has to be inline: it sets
     the attributes before the first paint, before any module has loaded, or the page would paint in
-    the default theme and then switch. The library will ship its reference source as a string built
-    from
-    <code>THEMES</code>, with the storage keys as parameters. Each app pastes the output for its
-    keys, updates its content security policy hash, and keeps a drift test that its inline script
-    equals the library's output. Dokseo's <code>theme-before-first-paint.spec.ts</code> becomes that test.
+    the default theme and then switch. The library ships its source:
+    <code>themeBootScript</code> in <code>theme-boot.ts</code> builds it from <code>THEMES</code>,
+    with the storage keys as parameters. Each app pastes the output for its keys, updates its
+    content security policy hash, and keeps a drift test that its inline script equals the library's
+    output. Dokseo's is <code>src/app-rules/theme-before-first-paint.spec.ts</code>
+    (<a href={vendoredPlanHref('integrate')}>Integrating the library into an app</a>).
   </p>
 </DocsSection>
 
 <DocsSection title={VENDORED_PLAN_SECTIONS.tests}>
   <p>
-    A vendored library has to test itself, or each app inherits code nothing checks. The specs that
-    read only the library move with it. The demo shows which ones read more:
+    A vendored library has to test itself, or each app inherits code nothing checks. Five specs used
+    to read more than the library: the icon spec read the whole of <code>src/</code> to check that
+    every icon is imported somewhere outside the playground, three stylesheet specs read
+    <code>src/</code> to check how the app's markup and its own stylesheets use the design system,
+    and the first-paint spec read <code>app.html</code>.
+  </p>
+  <p>
+    Each check about an app's use of the library split off into a Dokseo spec, in
+    <code>src/app-rules/</code>, and the half about the library stayed in the vendored folder,
+    reading only paths relative to itself (<a href={UI_LIBRARY_RULES_HREF}
+      >Rules the tests enforce</a
+    >):
   </p>
   <ul class="col gap-2">
     <li>
-      The icon spec reads the whole of <code>src/</code> to check that every icon is imported somewhere
-      outside the playground.
+      <code>design-system.spec.ts</code>: the library half checks the layer order in
+      <code>index.css</code>, the <code>--ds-</code> names and the query widths of the library's
+      stylesheets; the Dokseo half checks the layer order in <code>app.html</code>, and the same
+      names and widths in Dokseo's own files.
     </li>
     <li>
-      The stylesheet specs read <code>src/</code> to check how the app's markup and its domain
-      stylesheets use the design system, and the first-paint spec reads <code>app.html</code>.
+      <code>source-styling.spec.ts</code> and <code>markup-classes.spec.ts</code>: each half applies
+      the same rules to its own files, and the playground's stylesheets follow the feature-layer
+      rule inside the library.
+    </li>
+    <li>
+      <code>icons.spec.ts</code>: rendering and naming stay in the library; the check that every
+      icon is imported by Dokseo outside the playground is Dokseo's.
+    </li>
+    <li>
+      <code>theme-before-first-paint.spec.ts</code>: the library's
+      <code>theme-boot.spec.ts</code> runs the generated script against stored, missing, unknown and
+      unreadable values; Dokseo's checks that <code>app.html</code> holds that script and that the policy
+      admits its hash.
     </li>
   </ul>
   <p>
-    Those are checks on an app's use of the library, so each splits: the half about the library
-    moves into the vendored folder, and the half about Dokseo stays in Dokseo (<a
-      href={UI_LIBRARY_RULES_HREF}>Rules the tests enforce</a
-    >).
-  </p>
-  <p>
     The playground (<a href={UI_LIBRARY_PLAYGROUND_HREF}>The playground</a>) is the library's visual
-    test: one page with every component. It is a SvelteKit route, and today it imports the
-    components through <code>$lib</code>, reads <code>$app/environment</code>, shows the favicon
-    from
-    <code>src/lib/assets/</code>, and uses four modules from <code>src/lib/shared/</code>, among
-    them the appearance switcher. It can move only once those imports are relative or part of the
-    library.
+    test: one page with every component. Its sections now live in
+    <code>src/lib/ui/playground/</code>, with <code>Playground.svelte</code> rendering them all and two
+    optional snippets: the app's appearance switcher for the header, and the app's own extra demos. Moving
+    it meant replacing every import from outside the library:
   </p>
+  <ul class="col gap-2">
+    <li><code>$lib/ui/…</code>: relative paths, including the icon glob.</li>
+    <li>
+      The favicon from <code>src/lib/assets/</code>: a sample image of the library's own,
+      <code>sample-avatar.svg</code>.
+    </li>
+    <li>
+      <code>shared/AppearanceSwitcher.svelte</code>: the <code>appearanceControl</code> snippet, which
+      Dokseo's route fills with its switcher.
+    </li>
+    <li>
+      <code>shared/PageTitle.svelte</code>: the route sets the title.
+    </li>
+    <li>
+      <code>shared/text-search.ts</code>: <code>marked-segments.ts</code>, a case-insensitive match
+      that is enough for the highlight demo.
+    </li>
+    <li>
+      <code>shared/composing-key.ts</code>: a copy in the playground, for the command demo.
+    </li>
+    <li>
+      <code>$app/environment</code>: only the route's <code>+page.ts</code> used it, and it stays in Dokseo
+      with the 404 outside development.
+    </li>
+  </ul>
 </DocsSection>
 
 <DocsSection title={VENDORED_PLAN_SECTIONS.extract}>

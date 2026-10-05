@@ -10,9 +10,11 @@
     <StepItem title="This plan">Both ways to vendor, and the choice of git subtree.</StepItem>
     <StepItem title="Prepare Dokseo">
       One <code>src/lib/ui/</code> folder with the components, the styles and the fonts; fonts by
-      relative URL; no app aliases; <code>appearance.ts</code> moved in, with the first-paint
-      script's reference source and its drift test; the specs and the playground split between the
-      library and Dokseo (<a href={vendoredPlanHref('folder')}>One folder for the library</a>).
+      relative URL; no app aliases; <code>appearance.ts</code> moved in, with
+      <code>themeBootScript</code> and Dokseo's drift test; the specs split between the library and
+      Dokseo; the playground inside the library; the library's README with the integration guide (<a
+        href={vendoredPlanHref('folder')}>One folder for the library</a
+      >).
     </StepItem>
     <StepItem title="Extract the library">
       <code>git subtree split</code> into a new repository, then remove the folder from Dokseo and
@@ -21,36 +23,20 @@
         >Extracting the library and vendoring it back</a
       >).
     </StepItem>
-    <StepItem title="Write the library's README">
-      The integration guide, in the library repository (<a href={vendoredPlanHref('integrate')}
-        >Integrating the library into an app</a
-      >).
-    </StepItem>
   </StepList>
 </DocsSection>
 
 <DocsSection title={VENDORED_PLAN_SECTIONS.open}>
-  <ul class="col gap-2">
-    <li>The library repository's name.</li>
-    <li>
-      Whether the playground ships inside the vendored folder. Today it is a route of Dokseo with
-      app imports (<a href={vendoredPlanHref('tests')}>The playground and the specs</a>).
-    </li>
-    <li>
-      How a library update reaches Dokseo's <code>main</code>. Pull requests merge by rebase, which
-      drops the merge a <code>pull</code> creates (<a href={vendoredPlanHref('squash')}
-        >What --squash leaves in the history</a
-      >), so an update needs another way in.
-    </li>
-    <li>
-      Whether the library repository needs history from before the move into
-      <code>src/lib/ui/</code>. A split starts at the move, and the older commits stay in Dokseo.
-    </li>
-  </ul>
   <p>
-    Where the theme script lives is settled: each app keeps it in its own <code>app.html</code>,
-    built from the library's reference source (<a href={vendoredPlanHref('outside')}
-      >What stays in each app</a
+    None is open. The library repository is <code>kandan-ui-svelte</code>; the playground ships
+    inside the vendored folder (<a href={vendoredPlanHref('tests')}>The playground and the specs</a
+    >); a library update is pulled on <code>main</code> directly (<a
+      href={vendoredPlanHref('squash')}>What --squash leaves in the history</a
+    >); and the library's history starts at the move into <code>src/lib/ui/</code> (<a
+      href={vendoredPlanHref('split')}>Extracting a library with split</a
+    >). Where the theme script lives is settled too: each app keeps it in its own
+    <code>app.html</code>, built from the library's <code>themeBootScript</code> (<a
+      href={vendoredPlanHref('outside')}>What stays in each app</a
     >).
   </p>
 </DocsSection>

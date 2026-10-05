@@ -224,7 +224,9 @@
   <p>
     Four specs work this way: <code>design-system.spec.ts</code>,
     <code>source-styling.spec.ts</code>,
-    <code>markup-classes.spec.ts</code> and <code>classes.spec.ts</code>.
+    <code>markup-classes.spec.ts</code> and <code>classes.spec.ts</code>. The first three come in
+    two halves: one in the UI library, reading only its own folder, and one in
+    <code>src/app-rules/</code>, reading Dokseo's source.
     <a href={UI_RULES_HREF}>Rules the tests enforce</a> lists what each one checks. Asserting
     <code>toEqual([])</code> on a list of offenders has a practical benefit: a failure prints every offending
     file, not only the first.
