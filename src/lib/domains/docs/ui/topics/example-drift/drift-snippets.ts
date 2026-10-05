@@ -39,27 +39,56 @@ const QUOTE_RENDERED: SourceSnippet = {
 const SNIPPET_SPEC: SourceSnippet = {
   label: 'ocr/ocr-snippets.spec.ts, the check one page runs',
   file: 'src/lib/domains/docs/ui/topics/ocr/ocr-snippets.spec.ts',
-  code: `function unindented(code: string): string {
-  return code
-    .split('\\n')
-    .map((line) => line.trimStart())
-    .join('\\n');
+  code: `import { checkSnippets } from '../snippet-checks';
+import * as quotes from './ocr-snippets';
+
+checkSnippets('the OCR page snippets', quotes.OCR_SNIPPETS, quotes);`,
+};
+
+const SNIPPET_CHECKS: SourceSnippet = {
+  label: 'topics/snippet-checks.ts, the tests every page’s spec registers',
+  file: 'src/lib/domains/docs/ui/topics/snippet-checks.ts',
+  code: `function checkSnippets(
+  title: string,
+  snippets: readonly SourceSnippet[],
+  module: SnippetModule,
+): void {
+  describe(title, () => {
+    it.each(snippets.map((snippet) => [snippet.label, snippet] as const))(
+      'quotes %s exactly as the source file has it',
+      (_label, snippet) => {
+        const source = readFileSync(snippet.file, 'utf8');
+
+        expect(unindented(source)).toContain(unindented(snippet.code));
+      },
+    );
+
+    it('lists every quote its module exports', () => {
+      expect(unlistedSnippets(module, snippets)).toEqual([]);
+    });
+  });
+}`,
+};
+
+const EXPORTED_SNIPPETS: SourceSnippet = {
+  label: 'topics/snippet-checks.ts, the quotes a module exports',
+  file: 'src/lib/domains/docs/ui/topics/snippet-checks.ts',
+  code: `function exportedSnippets(module: SnippetModule): readonly SourceSnippet[] {
+  return Object.values(module).flatMap((value) => {
+    if (Array.isArray(value)) return value.filter(isSourceSnippet);
+    return isSourceSnippet(value) ? [value] : [];
+  });
 }
 
-describe('the OCR page snippets', () => {
-  it.each(OCR_SNIPPETS.map((snippet) => [snippet.label, snippet] as const))(
-    'quotes %s exactly as the source file has it',
-    (_label, snippet) => {
-      const source = readFileSync(snippet.file, 'utf8');
-
-      expect(unindented(source)).toContain(unindented(snippet.code));
-    },
-  );
-});`,
+function unlistedSnippets(module: SnippetModule, snippets: readonly SourceSnippet[]): string[] {
+  return exportedSnippets(module)
+    .filter((snippet) => !snippets.includes(snippet))
+    .map((snippet) => snippet.label);
+}`,
 };
 
 const DEMO_UNINDENTED: SourceSnippet = {
-  label: 'docs/domain/quote-drift.ts, the copy the live check below runs',
+  label: 'docs/domain/quote-drift.ts, the function the specs and the live check below run',
   file: 'src/lib/domains/docs/domain/quote-drift.ts',
   code: `function unindented(code: string): string {
   return code
@@ -256,6 +285,8 @@ const DRIFT_SNIPPETS: readonly SourceSnippet[] = [
   QUOTE_ENTRY,
   QUOTE_RENDERED,
   SNIPPET_SPEC,
+  SNIPPET_CHECKS,
+  EXPORTED_SNIPPETS,
   DEMO_UNINDENTED,
   CI_TRIGGER,
   CI_STEP,
@@ -284,6 +315,7 @@ export {
   COUNT_IN_MARKUP,
   DEMO_UNINDENTED,
   DRIFT_SNIPPETS,
+  EXPORTED_SNIPPETS,
   LINK_CHECK,
   OCR_RUN_END,
   QUOTED_SOURCE,
@@ -291,6 +323,7 @@ export {
   QUOTE_RENDERED,
   ROLLDOWN_BUILD,
   ROLLDOWN_COMPARE,
+  SNIPPET_CHECKS,
   SNIPPET_SPEC,
   SNIPPET_TYPE,
   SQL_ENGINE,

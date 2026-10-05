@@ -31,16 +31,10 @@
       A short quote can pass because the same lines occur somewhere else in the file. A quote of a
       closing brace proves nothing.
     </StepItem>
-    <StepItem title="Only the array is checked">
-      The spec runs over the page's array. A quote constant that a section renders but the array
-      leaves out is never checked, and nothing enforces membership. Today every quote constant is in
-      its array.
-    </StepItem>
-    <StepItem title="One page has no quote check">
-      The UI library page keeps its examples in <code>ui-library/snippets.ts</code> as plain strings with
-      no file path. Some are excerpts that join lines from different places in a stylesheet, such as a
-      theme color and the rule that uses it, which a containment check cannot accept. Nothing compares
-      them with the stylesheets.
+    <StepItem title="Only the snippets module is searched">
+      The membership test sees what a page's snippets module exports. Code typed straight into a
+      component has no file to compare with. The UI library page has one such example: two layers of
+      made-up rules that explain the cascade, which quote nothing in Dokseo.
     </StepItem>
     <StepItem title="Recorded output that is not run again">
       The PostgreSQL results, the sizes of Dokseo's build and the recorded OCR run are checked for
@@ -58,9 +52,9 @@
 <DocsSection title={DRIFT_SECTIONS.self}>
   <p>
     The quotes on this page follow the same pattern. All {DRIFT_SNIPPETS.length} of them live in
-    <code>example-drift/drift-snippets.ts</code>, and its spec checks each one against its file. Two
-    of them are the same five lines of <code>unindented</code>, once from the OCR page's spec and
-    once from the copy the demo runs, so the two copies cannot differ while the spec passes.
+    <code>example-drift/drift-snippets.ts</code>, and its spec checks each one against its file. The
+    code of <code>checkSnippets</code> above is one of them, so the page cannot show a check that differs
+    from the one that runs.
   </p>
   <p>
     The recorded Vitest report is partly checked. Running a failing test inside a passing one would
@@ -84,7 +78,8 @@
       Only the indentation may change. To show two places in a file, write two quotes.
     </StepItem>
     <StepItem title="List every quote">
-      Add each constant to the array its spec runs over, in the same change.
+      Add each constant to the array its spec runs over, in the same change. The spec fails while an
+      exported quote is missing from it.
     </StepItem>
     <StepItem title="Record output with its input">
       Keep both as data, render both from it, and run the tool again in a spec when it can run in

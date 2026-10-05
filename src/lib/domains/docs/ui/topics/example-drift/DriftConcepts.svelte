@@ -9,9 +9,11 @@
   import { QUOTE_FLOW } from './drift-diagrams';
   import {
     DEMO_UNINDENTED,
+    EXPORTED_SNIPPETS,
     QUOTED_SOURCE,
     QUOTE_ENTRY,
     QUOTE_RENDERED,
+    SNIPPET_CHECKS,
     SNIPPET_SPEC,
     SNIPPET_TYPE,
   } from './drift-snippets';
@@ -83,7 +85,8 @@
   <DocsCode label={QUOTE_RENDERED.label} code={QUOTE_RENDERED.code} />
   <p>
     So the text a reader sees and the text the test checks are one string. The array is what the
-    test runs over: a constant that the page renders but the array leaves out is never checked.
+    test runs over, so a constant that the page renders but the array leaves out would never be
+    checked. A second test, described below, fails when there is such a constant.
   </p>
   <Figure>
     <Diagram {...QUOTE_FLOW} />
@@ -100,6 +103,11 @@
   </p>
   <DocsCode label={SNIPPET_SPEC.label} code={SNIPPET_SPEC.code} />
   <p>
+    Every page's spec makes the same one call, with its own title, its own array and its whole
+    module. <code>checkSnippets</code> registers the tests:
+  </p>
+  <DocsCode label={SNIPPET_CHECKS.label} code={SNIPPET_CHECKS.code} />
+  <p>
     <code>it.each</code> turns the array into one test per quote, named after its label, so a
     failure names the quote. Each test reads the file with Node's <code>readFileSync</code> and
     asserts that its text contains the quote. The path is resolved against the working directory,
@@ -111,8 +119,16 @@
     The quoted lines must be consecutive: there is no way to leave lines out in the middle of a quote.
   </p>
   <p>
-    There is no shared helper. Every snippet spec carries its own copy of
-    <code>unindented</code>, the same five lines.
+    The last test checks the array itself. <code>import * as quotes</code> gives the spec the module
+    as one object with a property for every export. Any exported value with a string
+    <code>label</code>, <code>file</code> and <code>code</code> counts as a quote, and so does any such
+    value inside an exported array. A quote that is not in the array fails the test, and the failure lists
+    its label:
+  </p>
+  <DocsCode label={EXPORTED_SNIPPETS.label} code={EXPORTED_SNIPPETS.code} />
+  <p>
+    <code>includes</code> compares objects by identity, so a second object with the same text as a listed
+    quote still counts as left out.
   </p>
 </DocsSection>
 
@@ -134,9 +150,9 @@
 <DocsSection title={DRIFT_SECTIONS.demo}>
   <p>
     The demo runs the same check in the browser, on two real quotes and their real source files. The
-    buttons apply one edit each to the quote; the text area takes any other. The function it runs is
-    a copy of the specs' <code>unindented</code>, and the copy is itself a quote on this page, so a
-    spec fails if the two ever differ (<a href={driftHref('self')}>The quotes on this page</a>):
+    buttons apply one edit each to the quote; the text area takes any other. It removes indentation
+    with the same <code>unindented</code> the specs import, from the same file, and that function is
+    itself a quote on this page (<a href={driftHref('self')}>The quotes on this page</a>):
   </p>
   <DocsCode label={DEMO_UNINDENTED.label} code={DEMO_UNINDENTED.code} />
   <QuoteCheckDemo />

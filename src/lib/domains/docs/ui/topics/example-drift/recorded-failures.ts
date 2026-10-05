@@ -8,7 +8,7 @@ const DECODE_LOOP_BEFORE = DECODE_LOOP.code.replace(QUOTED_LINE_NOW, QUOTED_LINE
 
 const FILE_BEFORE = 'src/lib/domains/recognition/domain/engine/japanese-ocr-text.ts';
 
-const RENAME_REPORT_HEAD = ` ❯ |unit| src/lib/domains/docs/ui/topics/ocr/ocr-snippets.spec.ts (5 tests | 1 failed) 38ms
+const RENAME_REPORT_HEAD = ` ❯ |unit| src/lib/domains/docs/ui/topics/ocr/ocr-snippets.spec.ts (6 tests | 1 failed) 40ms
      × quotes The greedy decode loop in the manga-ocr worker exactly as the source file has it 35ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -29,34 +29,34 @@ const RENAME_REPORT_CHANGE = `@@ -13,7 +142,85 @@
 + return jaOcrText(decoded);
   },`;
 
-const RENAME_REPORT_END = ` ❯ src/lib/domains/docs/ui/topics/ocr/ocr-snippets.spec.ts:18:34
-     16|       const source = readFileSync(snippet.file, 'utf8');
-     17|
-     18|       expect(unindented(source)).toContain(unindented(snippet.code));
-       |                                  ^
-     19|     },
-     20|   );
+const RENAME_REPORT_END = ` ❯ src/lib/domains/docs/ui/topics/snippet-checks.ts:45:36
+     43|         const source = readFileSync(snippet.file, 'utf8');
+     44|
+     45|         expect(unindented(source)).toContain(unindented(snippet.code));
+       |                                    ^
+     46|       },
+     47|     );
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
  Test Files  1 failed (1)
-      Tests  1 failed | 4 passed (5)`;
+      Tests  1 failed | 5 passed (6)`;
 
-const MOVED_FILE_REPORT = ` ❯ |unit| src/lib/domains/docs/ui/topics/unicode/unicode-snippets.spec.ts (15 tests | 1 failed) 6ms
+const MOVED_FILE_REPORT = ` ❯ |unit| src/lib/domains/docs/ui/topics/unicode/unicode-snippets.spec.ts (16 tests | 1 failed) 13ms
      × quotes recognition/domain/engine/japanese-ocr-text.ts exactly as the source file has it 2ms
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  |unit| src/lib/domains/docs/ui/topics/unicode/unicode-snippets.spec.ts > the Unicode page snippets > quotes recognition/domain/engine/japanese-ocr-text.ts exactly as the source file has it
 Error: ENOENT: no such file or directory, open 'src/lib/domains/recognition/domain/engine/japanese-ocr-text.ts'
- ❯ src/lib/domains/docs/ui/topics/unicode/unicode-snippets.spec.ts:18:22
-     16|     'quotes %s exactly as the source file has it',
-     17|     (_label, snippet) => {
-     18|       const source = readFileSync(snippet.file, 'utf8');
-       |                      ^
-     19|
-     20|       expect(unindented(source)).toContain(unindented(snippet.code));
+ ❯ src/lib/domains/docs/ui/topics/snippet-checks.ts:43:24
+     41|       'quotes %s exactly as the source file has it',
+     42|       (_label, snippet) => {
+     43|         const source = readFileSync(snippet.file, 'utf8');
+       |                        ^
+     44|
+     45|         expect(unindented(source)).toContain(unindented(snippet.code));
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯`;
 

@@ -36,7 +36,10 @@
     The line that matters comes much further down:
   </p>
   <DocsCode label="The changed line, in the second part of the diff" code={RENAME_REPORT_CHANGE} />
-  <p>The report ends on the assertion that failed:</p>
+  <p>
+    The report ends on the assertion that failed. The lines it shows are from
+    <code>snippet-checks.ts</code>, the file every page's spec calls, not from the OCR page's spec:
+  </p>
   <DocsCode label="The end of the report" code={RENAME_REPORT_END} />
   <p>
     The fix is to copy the line from the file into the quote, then read the prose around the quote
