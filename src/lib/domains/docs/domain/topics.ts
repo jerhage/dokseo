@@ -35,6 +35,14 @@ const DOCS_TOPICS = [
     kind: 'explainer',
   },
   {
+    slug: 'kandan-core-plan',
+    title: 'A framework-free core: Kandan UI',
+    summary:
+      'Which parts of a component library depend on a framework, fixtures as a markup contract every framework version is tested against, native elements before scripts, the core kandan-ui-svelte vendors and Dokseo receives inside it, and how the core was built.',
+    status: 'published',
+    kind: 'explainer',
+  },
+  {
     slug: 'security-headers',
     title: 'Security headers',
     summary:
@@ -231,15 +239,6 @@ const DOCS_TOPICS = [
     title: 'Plan: series',
     summary:
       'Volumes and reading order, identity and grouping, stored data across versions, series metadata in EPUB and ComicInfo, and the plan for series in Dokseo.',
-    status: 'published',
-    kind: 'plan',
-    buildsAfter: '1.0',
-  },
-  {
-    slug: 'kandan-core-plan',
-    title: 'Plan: Kandan UI without a framework',
-    summary:
-      'Which parts of a component library depend on a framework, fixtures as a markup contract checked by rendering each component in Node, native elements before scripts, and the core with no component behavior that kandan-ui-svelte vendors, and kandan-ui-vanilla will after 1.0.',
     status: 'published',
     kind: 'plan',
     buildsAfter: '1.0',

@@ -9,25 +9,32 @@ const KANDAN_CORE_SECTIONS = {
   contract: 'A markup contract',
   native: 'Native elements before scripts',
   options: 'Ways to keep two versions in step',
-  today: 'Kandan UI before the core',
-  appearance: 'Appearance code without Svelte',
-  icons: 'Icons written as Svelte',
-  behavior: 'Which components run a script',
-  specs: 'Which specs moved',
   core: 'What the core holds',
-  fixtures: 'One fixture per variant',
-  spec: 'The contract spec',
+  fixtures: 'What the fixtures are for',
+  normalize: 'The normalizer and the comparison',
+  spec: 'The contract spec in kandan-ui-svelte',
   check: 'A fixture against a real component',
   rules: 'Behavior the markup cannot hold',
-  plain: 'kandan-ui-vanilla, a version with no framework',
+  coreChecks: "The core's own checks",
+  appearance: 'The appearance script in plain JavaScript',
+  icons: 'Icons drawn once as SVG',
+  behavior: 'Which components run a script',
   nested: 'A subtree inside a subtree',
   updates: 'An update from the core to Dokseo',
   fixBack: 'Sending a fix back in two hops',
   shortcut: 'No shortcut past kandan-ui-svelte',
+  pullAfterPush: 'A pull after a push conflicts',
   rejected: 'Rejected: two prefixes in each app',
-  dokseo: 'What changed in Dokseo',
-  order: 'Order of work',
-  open: 'Decisions',
+  dokseo: 'The core in Dokseo',
+  built: 'How the core was built',
+  today: 'Kandan UI before the core',
+  specs: 'Which specs moved',
+  phaseCore: 'Building kandan-ui from the Svelte renders',
+  phaseSvelte: 'Moving kandan-ui-svelte onto the core',
+  phaseDokseo: 'Pulling the core into Dokseo',
+  findings: 'What the trial runs found',
+  choices: 'The choices and their alternatives',
+  next: 'Next, after 1.0: kandan-ui-vanilla',
 } as const;
 
 type KandanCoreSectionKey = keyof typeof KANDAN_CORE_SECTIONS;
@@ -37,6 +44,8 @@ function kandanCoreHref(key: KandanCoreSectionKey): string {
 }
 
 const VENDORED_SUBTREE_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.subtree)}`;
+
+const VENDORED_SQUASH_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.squash)}`;
 
 const VENDORED_PUSH_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.push)}`;
 
@@ -72,6 +81,7 @@ export {
   VENDORED_PUSH_HREF,
   VENDORED_REVENDOR_HREF,
   VENDORED_RULES_HREF,
+  VENDORED_SQUASH_HREF,
   VENDORED_STRAY_HREF,
   VENDORED_SUBTREE_HREF,
   kandanCoreHref,

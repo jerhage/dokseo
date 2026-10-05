@@ -314,6 +314,24 @@ const UNCERTAIN_RULE_COUNT = 5;
 
 const PLANNED_DOKSEO_FILE_COUNT = 20;
 
+const CORE_TEST_FILES = [
+  'appearance.test.js',
+  'theme-boot.test.js',
+  'contract/compare.test.js',
+  'contract/format.test.js',
+  'contract/normalize.test.js',
+  'fixtures/fixtures.test.js',
+  'rules/rules.test.js',
+  'icons/icons.test.js',
+  'styles/design-system.test.js',
+  'styles/source-styling.test.js',
+  'library-files.test.js',
+] as const;
+
+function fixtureFolder(component: string): string {
+  return component.replaceAll(/(?<=[a-z0-9])(?=[A-Z])/gu, '-').toLowerCase();
+}
+
 const CORE_PATH = /ui\/core\//u;
 
 const DOKSEO_FILES_NAMING_CORE_PATHS = [
@@ -456,6 +474,7 @@ export {
   BEHAVIOURS,
   COMPONENTS,
   CORE_PATH,
+  CORE_TEST_FILES,
   DOKSEO_FILES_NAMING_CORE_PATHS,
   FIXTURE_COUNT,
   ICON_COUNT,
@@ -471,5 +490,6 @@ export {
   behaviourOf,
   fateCount,
   fateLabel,
+  fixtureFolder,
 };
 export type { AddedRow, BehaviourRow, ComponentBehaviour, CoreFate, InventoryRow };

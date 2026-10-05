@@ -1,11 +1,12 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   ADDED,
   BEHAVIOURS,
   COMPONENTS,
   CORE_PATH,
+  CORE_TEST_FILES,
   DOKSEO_FILES_NAMING_CORE_PATHS,
   FIXTURE_COUNT,
   ICON_COUNT,
@@ -17,6 +18,7 @@ import {
   UNCERTAIN_RULE_COUNT,
   behaviourCount,
   behaviourOf,
+  fixtureFolder,
 } from './core-inventory';
 
 function matchingFiles(pattern: string): readonly string[] {
@@ -130,5 +132,23 @@ describe('the Kandan UI inventory', () => {
       .toSorted();
 
     expect(naming).toEqual([...DOKSEO_FILES_NAMING_CORE_PATHS].toSorted());
+  });
+
+  it('holds one fixture folder for each component', () => {
+    const folders = readdirSync(join(LIBRARY_ROOT, 'core', 'fixtures'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .toSorted();
+
+    expect(folders).toEqual(COMPONENTS.map(fixtureFolder).toSorted());
+  });
+
+  it("lists every one of the core's node --test files", () => {
+    const tests = sourceFiles(join(LIBRARY_ROOT, 'core'))
+      .filter((path) => path.endsWith('.test.js'))
+      .map((path) => relative(join(LIBRARY_ROOT, 'core'), path))
+      .toSorted();
+
+    expect(tests).toEqual([...CORE_TEST_FILES].toSorted());
   });
 });

@@ -84,7 +84,7 @@
     The styles, the fonts and the appearance code moved once more later, into the framework-free
     core that Kandan UI vendors at <code>core/</code>, so in Dokseo they now sit under
     <code>src/lib/ui/core/</code> (<a href="/docs/kandan-core-plan"
-      >Plan: Kandan UI without a framework</a
+      >A framework-free core: Kandan UI</a
     >).
   </p>
 </DocsSection>

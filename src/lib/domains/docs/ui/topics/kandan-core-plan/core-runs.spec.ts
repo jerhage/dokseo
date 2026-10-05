@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createRawSnippet } from 'svelte';
 import type { Component } from 'svelte';
 import { render } from 'svelte/server';
@@ -6,12 +7,16 @@ import AccordionItem from '$lib/ui/components/AccordionItem.svelte';
 import Badge from '$lib/ui/components/Badge.svelte';
 import Button from '$lib/ui/components/Button.svelte';
 import Popover from '$lib/ui/components/Popover.svelte';
+import CaseHost from '$lib/ui/contract/CaseHost.svelte';
+import { CASES } from '$lib/ui/contract/cases';
+import { compareMarkup } from '$lib/ui/core/contract/compare.js';
 import { normalizedMarkup } from '../../../domain/markup-contract';
 import {
   ACCORDION_RENDER,
   BADGE_RENDER,
   BUTTON_RENDER,
   CONTRACT_FAILURE,
+  CORE_MISMATCH,
   POPOVER_RENDER,
 } from './core-runs';
 
@@ -59,5 +64,14 @@ describe('the recorded server renders of the Kandan core plan', () => {
 
     expect(CONTRACT_FAILURE.code).toContain(`Expected: "${expected}"`);
     expect(CONTRACT_FAILURE.code).toContain(`Received: "${received}"`);
+  });
+
+  it("reproduces the core comparison's message for the warning badge against the success fixture", () => {
+    const shown = CASES.find((candidate) => candidate.path === 'badge/warning');
+    if (shown === undefined) throw new Error('The library has no badge/warning case');
+    const fixture = readFileSync('src/lib/ui/core/fixtures/badge/success.html', 'utf8');
+    const result = compareMarkup(render(CaseHost, { props: { shown } }).body, fixture);
+
+    expect(result.kind === 'mismatch' ? result.message : result.kind).toBe(CORE_MISMATCH.code);
   });
 });

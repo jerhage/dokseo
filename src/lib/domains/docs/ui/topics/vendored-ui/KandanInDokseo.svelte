@@ -28,8 +28,8 @@
     it at <code>src/lib/ui/</code> with <code>git subtree</code>, exactly as any other app would.
     Kandan UI in turn vendors its framework-free core,
     <a href="https://github.com/jerhage/kandan-ui">kandan-ui</a>, at <code>core/</code>, so the core
-    arrives inside it (<a href="/docs/kandan-core-plan">Plan: Kandan UI without a framework</a>).
-    The folder holds:
+    arrives inside it (<a href="/docs/kandan-core-plan">A framework-free core: Kandan UI</a>). The
+    folder holds:
   </p>
   <ul class="col gap-2">
     <li>

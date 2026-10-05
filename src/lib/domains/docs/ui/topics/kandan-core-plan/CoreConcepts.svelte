@@ -7,8 +7,12 @@
   import TableRow from '$lib/ui/components/TableRow.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
-  import { contractCase } from './contract-cases';
-  import { ACCORDION_DETAILS, DROPZONE_FOCUS, POPOVER_ATTRIBUTES } from './core-snippets';
+  import {
+    ACCORDION_DETAILS,
+    BADGE_FIXTURE,
+    DROPZONE_FOCUS,
+    POPOVER_ATTRIBUTES,
+  } from './core-snippets';
   import {
     ACCESSIBILITY_DIALOGS_HREF,
     ACCESSIBILITY_NATIVE_HREF,
@@ -85,12 +89,11 @@
     app and wrong in the other.
   </p>
   <p>
-    Kandan UI is the library Dokseo vendors, and it exists only as Svelte 5 components today, in the <code
-      >kandan-ui-svelte</code
-    >
-    repository. The plan is to split it into a core, <code>kandan-ui</code>, holding only what no
-    framework touches, and framework versions built on that core: the Svelte one, and
-    <code>kandan-ui-vanilla</code> for apps that use no framework at all.
+    Kandan UI is the library Dokseo vendors. It started as Svelte 5 components only, in the
+    <code>kandan-ui-svelte</code> repository. It is now split into a core,
+    <code>kandan-ui</code>, holding only what no framework touches, and framework versions built on
+    that core. <code>kandan-ui-svelte</code> is the one that exists;
+    <code>kandan-ui-vanilla</code>, for apps that use no framework at all, comes after 1.0.
   </p>
 </DocsSection>
 
@@ -125,16 +128,16 @@
   <p>
     Since every version has to write the same HTML for the CSS to work, that HTML can be written
     down once, outside any framework. A <em>fixture</em> is such a file: the exact elements, classes,
-    attributes and ARIA states a component writes for one variant. The fixture for a success badge with
-    the text "Read":
+    attributes and ARIA states a component writes for one variant. Kandan's fixture for a success badge
+    with the text "Read" is one line:
   </p>
-  <DocsCode label="A fixture: Badge, success" code={contractCase('badge-success').fixture} />
+  <DocsCode label={BADGE_FIXTURE.label} code={BADGE_FIXTURE.code} />
   <p>
     A fixture becomes a <em>contract</em> when a test holds each framework to it: the test renders
     that framework's component for the same variant and fails if the HTML differs. The CSS is then
     written against the fixtures alone, because every version is checked to write the same markup.
     How such a test reads and compares HTML is covered in
-    <a href={kandanCoreHref('spec')}>The contract spec</a>.
+    <a href={kandanCoreHref('normalize')}>The normalizer and the comparison</a>.
   </p>
 </DocsSection>
 
@@ -199,8 +202,9 @@
     </TableBody>
   </Table>
   <p>
-    I chose the last. Kandan's components are mostly markup, as the next sections show, so most of
-    the library moves into the core or is checked against it, and the behavior left to write per
-    framework is small.
+    I chose the last. Kandan's components are mostly markup (<a href={kandanCoreHref('behavior')}
+      >Which components run a script</a
+    >), so most of the library lives in the core or is checked against it, and the behavior left to
+    write per framework is small.
   </p>
 </DocsSection>
