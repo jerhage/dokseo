@@ -40,5 +40,13 @@ function applyAppearance(root: RootAttributes, appearance: Appearance): void {
   else root.setAttribute(SCHEME_ATTRIBUTE, pinned);
 }
 
-export { COLOR_SCHEMES, THEMES, applyAppearance, pinnedScheme, readAppearance };
+export {
+  COLOR_SCHEMES,
+  SCHEME_ATTRIBUTE,
+  THEMES,
+  THEME_ATTRIBUTE,
+  applyAppearance,
+  pinnedScheme,
+  readAppearance,
+};
 export type { Appearance, ColorScheme, RootAttributes, Theme };
