@@ -99,7 +99,10 @@ The scripts:
 
 The specs are `*.spec.ts` files beside the code they test. They run in Node, without a DOM, in the
 `unit` project of `vitest.config.ts`, which compiles every `.svelte` file in runes mode. They read
-the stylesheets and components by paths relative to themselves, so they pass at any prefix. They
+the stylesheets and components by paths relative to themselves, so they pass at any prefix. The
+specs that scan the whole tree list its files through `library-files.ts`, which skips
+`node_modules/`, `build/`, `dist/`, `coverage/` and every dot folder, so a clone with its own
+installed packages checks only the library's files. They
 check the components' markup, the helpers, the layer order, the tokens and themes, the classes the
 markup writes, the icon set, the first-paint script and the playground's catalogs. The library has
 no browser specs, so its config has no browser project.

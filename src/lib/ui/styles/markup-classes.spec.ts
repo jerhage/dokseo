@@ -1,22 +1,12 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { filesUnder } from '../library-files';
 
 const LIBRARY = new URL('../', import.meta.url);
 const STYLES = new URL('./', import.meta.url);
 const LIBRARY_FOLDERS = ['components/', 'utilities/', 'overrides/'];
 
 type Written = { readonly file: string; readonly name: string; readonly defined: boolean };
-
-function filesUnder(root: URL, extension: string): readonly string[] {
-  return readdirSync(root, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(fileURLToPath(root), join(entry.parentPath, entry.name)))
-    .filter((path) => path.endsWith(extension))
-    .map((path) => path.split('\\').join('/'))
-    .toSorted();
-}
 
 function read(root: URL, path: string): string {
   return readFileSync(new URL(path, root), 'utf8');
@@ -63,11 +53,11 @@ function writtenClasses(source: string): readonly string[] {
 }
 
 function everyWrittenClass(): readonly Written[] {
-  const stylesheets = filesUnder(LIBRARY, '.css')
+  const stylesheets = filesUnder(LIBRARY, ['.css'])
     .map((path) => read(LIBRARY, path))
     .join('\n');
   const defined = classesIn(stylesheets);
-  return filesUnder(LIBRARY, '.svelte').flatMap((file) => {
+  return filesUnder(LIBRARY, ['.svelte']).flatMap((file) => {
     const source = read(LIBRARY, file);
     const local = classesIn(ownStyles(source));
     return writtenClasses(source).map((name) => ({
@@ -81,7 +71,7 @@ function everyWrittenClass(): readonly Written[] {
 function libraryFamilies(): ReadonlySet<string> {
   const css = LIBRARY_FOLDERS.flatMap((folder) => {
     const root = new URL(folder, STYLES);
-    return filesUnder(root, '.css').map((path) => read(root, path));
+    return filesUnder(root, ['.css']).map((path) => read(root, path));
   }).join('\n');
   return new Set(Array.from(classesIn(css), (name) => name.split('-')[0] ?? ''));
 }

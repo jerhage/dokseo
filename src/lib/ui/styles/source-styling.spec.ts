@@ -1,7 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { filesUnder } from '../library-files';
 
 const LIBRARY = new URL('../', import.meta.url);
 const TEXT_EXTENSIONS = ['.css', '.svelte', '.ts', '.js', '.html'];
@@ -9,12 +8,7 @@ const PLAYGROUND = 'playground/';
 const LEGACY_PROPERTY = new RegExp('(?<![\\w-])--[cfsr]-[\\w-]+', 'u');
 
 function libraryFiles(extensions: readonly string[]): readonly string[] {
-  return readdirSync(LIBRARY, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(fileURLToPath(LIBRARY), join(entry.parentPath, entry.name)))
-    .map((path) => path.split('\\').join('/'))
-    .filter((path) => extensions.some((extension) => path.endsWith(extension)))
-    .toSorted();
+  return filesUnder(LIBRARY, extensions);
 }
 
 function read(path: string): string {

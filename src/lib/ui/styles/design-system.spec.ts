@@ -1,9 +1,8 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { NARROW_SCREEN_QUERY } from '../components/breakpoints';
 import { TAG_COLOURS } from '../components/classes';
+import { filesUnder } from '../library-files';
 
 const STYLES = new URL('./', import.meta.url);
 const LIBRARY = new URL('../', import.meta.url);
@@ -395,15 +394,6 @@ function oklchLightness(colour: string): number | null {
 
 function withoutComments(css: string): string {
   return css.replaceAll(/\/\*[\s\S]*?\*\//gu, '');
-}
-
-function filesUnder(root: URL, extensions: readonly string[]): readonly string[] {
-  return readdirSync(root, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(fileURLToPath(root), join(entry.parentPath, entry.name)))
-    .filter((path) => extensions.some((extension) => path.endsWith(extension)))
-    .map((path) => path.split('\\').join('/'))
-    .toSorted();
 }
 
 function designSystemFiles(): readonly string[] {
