@@ -219,6 +219,15 @@ const DOCS_TOPICS = [
     kind: 'plan',
     buildsAfter: '1.0',
   },
+  {
+    slug: 'vendored-ui-plan',
+    title: 'Plan: a vendored UI library',
+    summary:
+      'Vendoring against a published package, git submodule, git subtree and a copy tool with a manifest, and the plan for vendoring Dokseo’s UI library into other apps with git subtree.',
+    status: 'published',
+    kind: 'plan',
+    buildsAfter: '0.9.8',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];

@@ -27,6 +27,7 @@ import * as touchAndPointers from './touch-and-pointers/sections';
 import * as uiLibrary from './ui-library/sections';
 import * as typescriptTypes from './typescript-types/type-sections';
 import * as unicode from './unicode/unicode-sections';
+import * as vendoredUiPlan from './vendored-ui-plan/vendored-sections';
 import * as wordAnalysisPlan from './word-analysis-plan/plan-sections';
 import * as workers from './workers/workers-sections';
 
@@ -62,6 +63,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'production-builds': productionBuilds.BUILD_SECTIONS,
   'word-analysis-plan': wordAnalysisPlan.WORD_PLAN_SECTIONS,
   'series-plan': seriesPlan.SERIES_PLAN_SECTIONS,
+  'vendored-ui-plan': vendoredUiPlan.VENDORED_PLAN_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
@@ -88,6 +90,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'ui-library/sections.ts': uiLibrary,
   'typescript-types/type-sections.ts': typescriptTypes,
   'unicode/unicode-sections.ts': unicode,
+  'vendored-ui-plan/vendored-sections.ts': vendoredUiPlan,
   'workers/workers-sections.ts': workers,
   'word-analysis-plan/plan-sections.ts': wordAnalysisPlan,
 };
