@@ -1,8 +1,9 @@
 # Kandan UI
 
 Kandan UI is a set of Svelte 5 base components with the stylesheets, themes, fonts and icons they
-are drawn with. An app does not install it from a registry. It vendors the library: the full
-source lives in the app's own repository, in one folder, and is updated with `git subtree`.
+are drawn with. It grew out of Dokseo, a manga reader. An app does not install it from a
+registry. It vendors the library: the full source lives in the app's own repository, in one
+folder, and is updated with `git subtree`.
 
 The folder holds:
 
@@ -15,6 +16,9 @@ The folder holds:
   first paint.
 - `playground/`: a page that shows every component and utility, for an app to mount on a
   development route.
+- `package.json`, `vitest.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json` and
+  `.gitignore`: the library's own tooling, used in the library's repository. An app that vendors
+  the library ignores them (see [Apps ignore the library's tooling](#apps-ignore-the-librarys-tooling)).
 
 Every file reaches the others by relative path. Nothing imports an app alias such as `$lib`, so
 the folder works at any prefix. It needs Svelte 5 in runes mode, `ts-pattern`, and a Vite build
@@ -57,6 +61,95 @@ library is an ordinary commit and goes through review like any other change; sen
 `git subtree add` refuses a prefix that already exists. To replace a copy, remove the folder in one
 commit and add it in the next.
 
+## Working on the library
+
+A change can start on either side.
+
+- In an app. Edit the vendored folder and commit there like any other change, then send the
+  commits to the library with `git subtree push --prefix=src/lib/ui <repo> <branch>` and merge
+  that branch in the library's repository. Only the commits that touch the folder travel, with
+  the folder as the root.
+- In the library's repository. Edit, run its checks, and merge to `main`. Each app then takes the
+  change with `git subtree pull --prefix=src/lib/ui <repo> main --squash`, run on the app's `main`.
+
+Either way, run the library's own checks in its repository before a change reaches `main`. An app
+runs the library's specs with its own, but it does not run the library's type check, lint or
+format check with the library's settings.
+
+## Running the library's checks
+
+In a clone of the library's repository, install the dependencies once:
+
+```sh
+npm install
+```
+
+Any package manager that reads `package.json` works the same way (`pnpm install`,
+`deno install`). The library has no browser specs, so no Playwright browser is needed.
+
+The scripts:
+
+- `npm run test`: every spec, once. `npm run test:unit` runs the `unit` project alone, and
+  `npm run test:watch` watches.
+- `npm run check`: `svelte-check` with the library's `tsconfig.json`. It also refuses an import
+  of an app alias such as `$lib`, which the library's own config does not define.
+- `npm run lint`: oxlint with `.oxlintrc.json`.
+- `npm run format:check`: oxfmt with `.oxfmtrc.json`; `npm run format` rewrites.
+- `npm run verify`: all four in turn, the check to run before a change reaches `main`.
+
+The specs are `*.spec.ts` files beside the code they test. They run in Node, without a DOM, in the
+`unit` project of `vitest.config.ts`, which compiles every `.svelte` file in runes mode. They read
+the stylesheets and components by paths relative to themselves, so they pass at any prefix. They
+check the components' markup, the helpers, the layer order, the tokens and themes, the classes the
+markup writes, the icon set, the first-paint script and the playground's catalogs. The library has
+no browser specs, so its config has no browser project.
+
+## Apps ignore the library's tooling
+
+The tooling files travel with every `git subtree pull`, so they sit inside the app's vendored
+folder. They do nothing there unless the app's own tools go looking for them:
+
+- Package manager. A nested `package.json` is not a workspace member unless the app's own
+  `package.json` (`workspaces`) or `deno.json` (`workspace`) names the folder. Do not name it: the
+  app installs `svelte` and `ts-pattern` itself, and its lockfile stays its own.
+- Vite and Vitest. Each loads the config at the app's root only. Vitest finds a nested
+  `vitest.config.ts` only when the app's `test.projects` lists a glob that matches it; list the
+  projects inline, or with a glob that does not reach the folder.
+- The type check. `svelte-check --tsconfig ./tsconfig.json` checks the folder with the app's
+  `tsconfig.json`, not the library's.
+- Vite's TypeScript transform reads the nearest `tsconfig.json` for each file, so it reads the
+  library's for the files in the folder. The library sets the options that matter to the transform
+  the way a SvelteKit app does (`target` `esnext`, `verbatimModuleSyntax`), and it sets no
+  decorators or JSX options.
+- oxlint and oxfmt. Both load a nested config file for the files under it. Run them with
+  `--disable-nested-config` so the app's config decides for the whole tree:
+
+  ```json
+  {
+    "lint": "oxlint --disable-nested-config src",
+    "format": "oxfmt --disable-nested-config .",
+    "format:check": "oxfmt --disable-nested-config --check ."
+  }
+  ```
+
+- dependency-cruiser, if the app uses it. `vitest.config.ts` imports
+  `@sveltejs/vite-plugin-svelte`, which a rule that keeps the folder to `svelte`, `ts-pattern` and
+  `vitest` would refuse. It is tooling, not library code, so exclude it:
+
+  ```js
+  options: {
+    exclude: { path: ['^src/lib/ui/vitest\\.config\\.ts$'] },
+  },
+  ```
+
+The app's own test run keeps running the library's specs: an app that runs every
+`src/**/*.spec.ts` in a Node project, compiled in runes mode, runs them with its own. To run them
+alone there:
+
+```sh
+npx vitest --run src/lib/ui
+```
+
 ## Integrating the library into an app
 
 ### The stylesheet and the layer order
@@ -90,17 +183,17 @@ URL. The app has nothing to copy into its `static/` folder.
 
 Each font ships with its SIL Open Font License in `fonts/<name>.OFL.txt`. Nothing imports the
 license files, so a build leaves them out. The app decides whether and where it publishes them.
-Dokseo publishes them at `/fonts/<name>.OFL.txt` with a small Vite plugin, applied to the client
-build only:
+A small Vite plugin, applied to the client build only, publishes them at
+`/fonts/<name>.OFL.txt`:
 
 ```ts
 const FONT_FOLDER = 'src/lib/ui/fonts';
 
 const FONT_LICENSE = /\.OFL\.txt$/u;
 
-function fontLicensesPublished(): Plugin {
+function publishFontLicenses(): Plugin {
   return {
-    name: 'font-licenses-published',
+    name: 'publish-font-licenses',
     apply: 'build',
     applyToEnvironment: (environment) => environment.config.consumer === 'client',
     generateBundle() {
@@ -144,31 +237,31 @@ that stores the theme and the scheme under its own keys, in its own storage, and
 `applyAppearance`. Store the scheme only when it is pinned, and remove it for `automatic`: the
 first-paint script reads a missing scheme as "follow the system".
 
-Dokseo's version, `src/lib/shared/saved-appearance.ts`. `rememberedString` is Dokseo's wrapper
-around `localStorage`; another app uses its own:
+An example with `localStorage` and the keys `app.theme` and `app.color-scheme`:
 
 ```ts
-const THEME_KEY = 'reader.theme';
+import { applyAppearance, pinnedScheme } from '$lib/ui/appearance';
+import type { Appearance } from '$lib/ui/appearance';
 
-const SCHEME_KEY = 'reader.color-scheme';
+const THEME_KEY = 'app.theme';
 
-function chooseAppearance(
-  root: RootAttributes,
-  appearance: Appearance,
-  locate?: LocateStore,
-): void {
-  applyAppearance(root, appearance);
-  rememberedString(THEME_KEY, locate).write(appearance.theme);
-  const scheme = rememberedString(SCHEME_KEY, locate);
-  const pinned = pinnedScheme(appearance.colorScheme);
-  if (pinned === undefined) scheme.forget();
-  else scheme.write(pinned);
+const SCHEME_KEY = 'app.color-scheme';
+
+function chooseAppearance(appearance: Appearance): void {
+  applyAppearance(document.documentElement, appearance);
+  try {
+    localStorage.setItem(THEME_KEY, appearance.theme);
+    const pinned = pinnedScheme(appearance.colorScheme);
+    if (pinned === undefined) localStorage.removeItem(SCHEME_KEY);
+    else localStorage.setItem(SCHEME_KEY, pinned);
+  } catch {
+    return;
+  }
 }
 ```
 
-Dokseo's settings screen and its appearance switcher call this with `document.documentElement`
-when a theme or a scheme is picked, and read the current choice with
-`readAppearance(document.documentElement)`.
+The app's theme and scheme controls call this when a theme or a scheme is picked, and read the
+current choice with `readAppearance(document.documentElement)`.
 
 ### What the app writes: app.html
 
@@ -178,28 +271,32 @@ inline script in its `head`. The library builds the script's source from `THEMES
 storage keys as parameters:
 
 ```ts
-themeBootScript({ themeKey: 'reader.theme', schemeKey: 'reader.color-scheme' });
+themeBootScript({ themeKey: 'app.theme', schemeKey: 'app.color-scheme' });
 ```
 
 It returns a block that reads both keys from `localStorage`, accepts only a known theme and a
 pinned scheme, and sets `data-theme` (falling back to `base`) and, when a scheme is pinned,
 `data-color-scheme`. If reading storage throws, as it does when the browser blocks storage for the
 site, the defaults stay. Paste the output between `<script>` and `</script>` in `app.html`, after
-the layer order and before `%sveltekit.head%`. The formatter may indent it; that does not matter.
+the layer order and before `%sveltekit.head%`. A formatter may indent it; that does not matter.
 
 If the app has a content security policy, admit the script by its hash in `script-src`: the
 SHA-256 of the exact text between the tags, indentation included, in base64, as
 `'sha256-…'`. Recompute it whenever the formatted text changes.
 
-Keep a drift test, so that a new theme in the library or an edited script fails until `app.html`
-is regenerated. Dokseo's, `src/app-rules/theme-before-first-paint.spec.ts`, compares the inline
-script with the library's output line by line, ignoring indentation, and checks the hash. Until
-the script is pasted, its failure message prints the text to paste:
+Keep a drift test in the app, so that a new theme in the library or an edited script fails until
+`app.html` is regenerated. This one sits in `src/` beside `app.html`, compares the inline script
+with the library's output line by line, ignoring indentation, and prints the text to paste in its
+failure message until the script is pasted:
 
 ```ts
-const HTML = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { themeBootScript } from '$lib/ui/theme-boot';
 
-const KEYS = { themeKey: 'reader.theme', schemeKey: 'reader.color-scheme' };
+const HTML = readFileSync(new URL('./app.html', import.meta.url), 'utf8');
+
+const KEYS = { themeKey: 'app.theme', schemeKey: 'app.color-scheme' };
 
 function inlineScripts(): readonly string[] {
   return Array.from(HTML.matchAll(/<script>([\s\S]*?)<\/script>/gu), (found) => found[1] ?? '');
@@ -213,24 +310,25 @@ function unindented(code: string): string {
     .trim();
 }
 
-function hashOf(script: string): string {
-  return `sha256-${createHash('sha256').update(script, 'utf8').digest('base64')}`;
-}
-
 describe('the theme script in app.html', () => {
-  it("holds the library's first-paint script for Dokseo's storage keys, as the formatter indents it", () => {
+  it("holds the library's first-paint script for the app's storage keys", () => {
     const scripts = inlineScripts();
 
     expect(scripts).toHaveLength(1);
     expect(unindented(scripts[0] ?? '')).toBe(unindented(themeBootScript(KEYS)));
   });
-
-  it('hashes to a source that script-src admits', () => {
-    const scriptSources = CONTENT_SECURITY_POLICY['script-src'] ?? [];
-
-    expect(scriptSources).toContain(hashOf(inlineScripts()[0] ?? ''));
-  });
 });
+```
+
+An app with a content security policy adds a test that its `script-src` list contains the hash
+of the script as written:
+
+```ts
+import { createHash } from 'node:crypto';
+
+function hashOf(script: string): string {
+  return `sha256-${createHash('sha256').update(script, 'utf8').digest('base64')}`;
+}
 ```
 
 ## Adding a theme
@@ -255,43 +353,27 @@ variants, sizes and states. An app mounts it on a development route, and may pas
   which saves the choice the app's way.
 - `demos`, rendered after the library's sections: demos of the app's own components.
 
-Dokseo's `src/routes/playground/+page.svelte`:
+An example route, `src/routes/playground/+page.svelte`, with the app's switcher in
+`$lib/ThemeSwitcher.svelte`:
 
 ```svelte
 <script lang="ts">
-  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
-  import PageTitle from '$lib/shared/PageTitle.svelte';
+  import ThemeSwitcher from '$lib/ThemeSwitcher.svelte';
   import Playground from '$lib/ui/playground/Playground.svelte';
 </script>
 
-<PageTitle screen="Component library" />
-
 <Playground>
   {#snippet appearanceControl()}
-    <AppearanceSwitcher />
+    <ThemeSwitcher />
   {/snippet}
 </Playground>
 ```
 
-Keeping the route out of a production build is the app's choice. Dokseo answers 404 outside
-development from the route's `+page.ts`, and a Vite plugin replaces the route's component with an
-empty module in a build, so the playground never reaches the bundle.
+Keeping the route out of a production build is the app's choice. A `+page.ts` can answer 404
+outside development by throwing `error(404)` when `dev` from `$app/environment` is false.
 
-## Running the library's specs
-
-The specs are `*.spec.ts` files beside the code they test. They run in Node, without a DOM, and
-read the stylesheets and components by paths relative to themselves, so they pass at any prefix.
-They check the components' markup, the helpers, the layer order, the tokens and themes, the
-classes the markup writes, the icon set, the first-paint script and the playground's catalogs.
-
-The library has no Vitest configuration of its own: the app's configuration includes the folder,
-in the `node` environment. Dokseo runs every `src/**/*.spec.ts` in its `unit` project, so
-`deno task test` runs the library's specs with its own. To run the library's specs alone:
-
-```sh
-npx vitest --run src/lib/ui
-```
+## The app's checks on its use of the library
 
 Checks about how an app uses the library (that its markup names only defined classes, that its own
 stylesheets keep to the layer rules, that `app.html` holds the current script) belong to the app,
-next to its own source. Dokseo keeps them in `src/app-rules/`.
+next to its own source, not in this folder.
