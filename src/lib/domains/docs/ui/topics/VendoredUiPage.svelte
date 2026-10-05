@@ -5,6 +5,7 @@
   import IntegrationSection from './vendored-ui/IntegrationSection.svelte';
   import KandanInDokseo from './vendored-ui/KandanInDokseo.svelte';
   import SubtreeSections from './vendored-ui/SubtreeSections.svelte';
+  import UpdatingSections from './vendored-ui/UpdatingSections.svelte';
   import VendoringConcepts from './vendored-ui/VendoringConcepts.svelte';
   import { VENDORED_SECTIONS } from './vendored-ui/vendored-sections';
 </script>
@@ -21,5 +22,6 @@
   <CopyToolSections />
   <KandanInDokseo />
   <IntegrationSection />
+  <UpdatingSections />
   <DokseoPreparation />
 </DocsPage>

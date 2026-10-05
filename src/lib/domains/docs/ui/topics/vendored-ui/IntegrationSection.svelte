@@ -43,7 +43,7 @@
   <StepList>
     <StepItem title="Vendor the library">
       Add a version at one prefix, update with <code>pull</code>, and send fixes back with
-      <code>push</code> (<a href={vendoredHref('subtree')}>How git subtree works</a>).
+      <code>push</code> (<a href={vendoredHref('update')}>Taking a library update</a>).
     </StepItem>
     <StepItem title="Import the stylesheet once">
       The root layout imports the entry stylesheet, and <code>app.html</code> declares the layer order
