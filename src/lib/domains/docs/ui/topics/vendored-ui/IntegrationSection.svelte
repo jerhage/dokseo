@@ -8,8 +8,8 @@
     UI_LIBRARY_LAYERS_HREF,
     UI_LIBRARY_SCHEMES_HREF,
     UI_LIBRARY_THEMES_HREF,
-    VENDORED_PLAN_SECTIONS,
-    vendoredPlanHref,
+    VENDORED_SECTIONS,
+    vendoredHref,
   } from './vendored-sections';
   import {
     APPEARANCE,
@@ -29,7 +29,7 @@ git subtree pull --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte
 git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <branch>`;
 </script>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.integrate}>
+<DocsSection title={VENDORED_SECTIONS.integrate}>
   <p>
     This is the guide a second app follows, written against Dokseo's code. The library carries the
     same guide in its own folder, <code>src/lib/ui/README.md</code>, so an app's developer finds it
@@ -38,7 +38,7 @@ git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte
   <StepList>
     <StepItem title="Vendor the library">
       Add a tagged version at one prefix, update with <code>pull</code>, and send fixes back with
-      <code>push</code> (<a href={vendoredPlanHref('subtree')}>How git subtree works</a>).
+      <code>push</code> (<a href={vendoredHref('subtree')}>How git subtree works</a>).
     </StepItem>
     <StepItem title="Import the stylesheet once">
       The app's root layout imports the entry stylesheet, and <code>app.html</code> declares the layer

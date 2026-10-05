@@ -29,12 +29,12 @@
   import { SQUASH_PULL_HISTORY, VENDORING_FLOW } from './vendored-diagrams';
   import {
     RELEASES_MERGE_HREF,
-    VENDORED_PLAN_SECTIONS,
-    vendoredPlanHref,
+    VENDORED_SECTIONS,
+    vendoredHref,
   } from './vendored-sections';
 </script>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.subtree}>
+<DocsSection title={VENDORED_SECTIONS.subtree}>
   <p>
     <code>git subtree</code> is a shell script in git's <code>contrib/subtree</code> folder, so
     whether an installation has it depends on who packaged git. The Homebrew build of Git 2.46.1
@@ -69,7 +69,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.add}>
+<DocsSection title={VENDORED_SECTIONS.add}>
   <p>
     <code>add</code> fetches a commit of the library and creates the folder. In app A, whose only
     commit so far was <code>chore: start app A</code>:
@@ -95,7 +95,7 @@
   <DocsCode label={NO_SQUASH_HISTORY.label} code={NO_SQUASH_HISTORY.code} />
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.squash}>
+<DocsSection title={VENDORED_SECTIONS.squash}>
   <p>
     The documentation describes <code>--squash</code> as producing "only a single commit that
     contains all the differences you want to merge", and gives the reason: "People rarely want to
@@ -142,7 +142,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.pull}>
+<DocsSection title={VENDORED_SECTIONS.pull}>
   <p>
     Before taking <code>v1.1.0</code>, app A had edited its copy: commit <code>054d890</code> gave
     the button an explicit <code>type="button"</code> on line 5 of <code>Button.svelte</code>. The
@@ -164,7 +164,7 @@
   <DocsCode label={PULL_REFUSALS.label} code={PULL_REFUSALS.code} />
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.conflict}>
+<DocsSection title={VENDORED_SECTIONS.conflict}>
   <p>
     Next, app A let the button be disabled by editing line 5 again, while the library's
     <code>v1.2.0</code> added a variant class to the same line. The pull stopped:
@@ -180,10 +180,10 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.push}>
+<DocsSection title={VENDORED_SECTIONS.push}>
   <p>
     A fix made in an app belongs in the library, or the next app has to make it again.
-    <code>push</code> runs <code>split</code> (<a href={vendoredPlanHref('split')}
+    <code>push</code> runs <code>split</code> (<a href={vendoredHref('split')}
       >Extracting a library with split</a
     >) on the app's history and pushes the result to a branch of the library repository. I sent app
     A's explicit type fix back to a branch, so the library could review it before merging:
@@ -204,7 +204,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.split}>
+<DocsSection title={VENDORED_SECTIONS.split}>
   <p>
     <code>split</code> is the command that turns a folder of one repository into a history of its own.
     The documentation: "The new history includes only the commits (including merges) that affected &lt;prefix&gt;,

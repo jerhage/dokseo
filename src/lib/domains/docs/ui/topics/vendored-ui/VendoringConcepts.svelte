@@ -10,8 +10,8 @@
   import { ADD_TREE, SUBMODULE_TREE } from './subtree-runs';
   import {
     UI_LIBRARY_PLAYGROUND_HREF,
-    VENDORED_PLAN_SECTIONS,
-    vendoredPlanHref,
+    VENDORED_SECTIONS,
+    vendoredHref,
   } from './vendored-sections';
 
   const COMPARISON = [
@@ -68,7 +68,7 @@
   ] as const;
 </script>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.vendoring}>
+<DocsSection title={VENDORED_SECTIONS.vendoring}>
   <p>
     An npm package reaches an app through a registry. The app's <code>package.json</code> names the
     package and a version range, the lockfile pins the exact version, and an install downloads the
@@ -83,7 +83,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.why}>
+<DocsSection title={VENDORED_SECTIONS.why}>
   <p>
     Dokseo's UI library is its base components, its layered stylesheets with their design tokens and
     themes, and its fonts (<a href={UI_LIBRARY_PLAYGROUND_HREF}>The playground</a> shows every
@@ -101,7 +101,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.tradeoffs}>
+<DocsSection title={VENDORED_SECTIONS.tradeoffs}>
   <Table size="sm" caption="A published package and a vendored copy">
     <TableHeader>
       <TableRow>
@@ -128,7 +128,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.ways}>
+<DocsSection title={VENDORED_SECTIONS.ways}>
   <Table size="sm" caption="Ways to put a library's source in an app repository">
     <TableHeader>
       <TableRow>
@@ -150,12 +150,12 @@
   <p>
     The next sections take them in that order: why a submodule does not count, how
     <code>git subtree</code> works command by command, and what a copy tool would be (<a
-      href={vendoredPlanHref('copyTool')}>A copy tool with a manifest</a
+      href={vendoredHref('copyTool')}>A copy tool with a manifest</a
     >).
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.submodule}>
+<DocsSection title={VENDORED_SECTIONS.submodule}>
   <p>
     A git submodule puts one repository inside another. <code>git submodule add</code> clones the
     library into the folder and records two things in the app: a <code>.gitmodules</code> file with the

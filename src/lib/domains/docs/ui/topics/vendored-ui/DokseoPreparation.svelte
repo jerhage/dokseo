@@ -8,13 +8,13 @@
     UI_LIBRARY_DIRECTION_HREF,
     UI_LIBRARY_PLAYGROUND_HREF,
     UI_LIBRARY_RULES_HREF,
-    VENDORED_PLAN_SECTIONS,
-    vendoredPlanHref,
+    VENDORED_SECTIONS,
+    vendoredHref,
   } from './vendored-sections';
   import { FONT_FACE, FONT_LICENSES, NO_APP_RULE, NO_APP_RULE_PATHS } from './vendored-snippets';
 </script>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.today}>
+<DocsSection title={VENDORED_SECTIONS.today}>
   <p>The library lives in one folder of Dokseo, <code>src/lib/ui/</code>:</p>
   <ul class="col gap-2">
     <li>
@@ -62,7 +62,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.folder}>
+<DocsSection title={VENDORED_SECTIONS.folder}>
   <p>
     Every git subtree command works on one <code>--prefix</code>. Three folders would be three
     subtrees, three squash commits per update, and three pushes for a fix that touches a component
@@ -79,11 +79,11 @@
     spec's
     <code>../styles/</code> still resolves. The move is also where the library's own history begins:
     <code>split</code> follows the prefix, and the commits from before the move stay in Dokseo's
-    history (<a href={vendoredPlanHref('split')}>Extracting a library with split</a>).
+    history (<a href={vendoredHref('split')}>Extracting a library with split</a>).
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.fonts}>
+<DocsSection title={VENDORED_SECTIONS.fonts}>
   <p>
     The fonts used to be served from <code>static/</code>, which SvelteKit copies to the root of the
     build unchanged, and the stylesheet named them by absolute URL, such as
@@ -119,7 +119,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.aliases}>
+<DocsSection title={VENDORED_SECTIONS.aliases}>
   <p>
     An app alias such as <code>$lib</code> means "this app's <code>src/lib</code>". Inside a
     vendored library it would point at whichever app the copy sits in, so the library has to reach
@@ -135,7 +135,7 @@
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.outside}>
+<DocsSection title={VENDORED_SECTIONS.outside}>
   <p>
     The theme code splits in three. <code>appearance.ts</code> is in the library: it holds the theme
     names, the <code>data-theme</code> and <code>data-color-scheme</code> attributes, and
@@ -157,11 +157,11 @@
     with the storage keys as parameters. Each app pastes the output for its keys, updates its
     content security policy hash, and keeps a drift test that its inline script equals the library's
     output. Dokseo's is <code>src/app-rules/theme-before-first-paint.spec.ts</code>
-    (<a href={vendoredPlanHref('integrate')}>Integrating the library into an app</a>).
+    (<a href={vendoredHref('integrate')}>Integrating the library into an app</a>).
   </p>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.tests}>
+<DocsSection title={VENDORED_SECTIONS.tests}>
   <p>
     A vendored library has to test itself, or each app inherits code nothing checks. Five specs used
     to read more than the library: the icon spec read the whole of <code>src/</code> to check that
@@ -233,7 +233,7 @@
   </ul>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.extract}>
+<DocsSection title={VENDORED_SECTIONS.extract}>
   <p>
     Once <code>src/lib/ui/</code> stands on its own,
     <code>git subtree split --prefix=src/lib/ui</code>

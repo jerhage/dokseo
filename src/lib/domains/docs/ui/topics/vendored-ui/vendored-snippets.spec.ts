@@ -9,7 +9,7 @@ function unindented(code: string): string {
     .join('\n');
 }
 
-describe('the vendored UI library plan snippets', () => {
+describe('the vendored UI library snippets', () => {
   it.each(VENDORED_SNIPPETS.map((snippet) => [snippet.label, snippet] as const))(
     'quotes %s exactly as the source file has it',
     (_label, snippet) => {

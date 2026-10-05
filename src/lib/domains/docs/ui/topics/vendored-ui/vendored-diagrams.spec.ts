@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SQUASH_PULL_HISTORY, VENDORING_FLOW } from './vendored-diagrams';
 
-describe('the vendored UI library plan diagrams', () => {
+describe('the vendored UI library diagrams', () => {
   it.each([VENDORING_FLOW, SQUASH_PULL_HISTORY])(
     'keeps every node inside the drawing',
     (diagram) => {

@@ -3,7 +3,7 @@ import { UI_LIBRARY_SECTIONS } from '../ui-library/sections';
 import { RELEASE_SECTIONS } from '../releases-and-ci/sections';
 import { SECTIONS as SECURITY_SECTIONS } from '../security-headers/sections';
 
-const VENDORED_PLAN_SECTIONS = {
+const VENDORED_SECTIONS = {
   vendoring: 'What vendoring means',
   why: 'Why vendor a UI library',
   tradeoffs: 'A vendored copy against a published package',
@@ -27,14 +27,12 @@ const VENDORED_PLAN_SECTIONS = {
   tests: 'The playground and the specs',
   extract: 'Extracting the library and vendoring it back',
   integrate: 'Integrating the library into an app',
-  order: 'Order of work',
-  open: 'Open questions',
 } as const;
 
-type VendoredPlanSectionKey = keyof typeof VENDORED_PLAN_SECTIONS;
+type VendoredSectionKey = keyof typeof VENDORED_SECTIONS;
 
-function vendoredPlanHref(key: VendoredPlanSectionKey): string {
-  return `#${anchorSlug(VENDORED_PLAN_SECTIONS[key])}`;
+function vendoredHref(key: VendoredSectionKey): string {
+  return `#${anchorSlug(VENDORED_SECTIONS[key])}`;
 }
 
 const UI_LIBRARY_LAYERS_HREF = `/docs/ui-library#${anchorSlug(UI_LIBRARY_SECTIONS.dokseoLayers)}`;
@@ -62,7 +60,7 @@ export {
   UI_LIBRARY_RULES_HREF,
   UI_LIBRARY_SCHEMES_HREF,
   UI_LIBRARY_THEMES_HREF,
-  VENDORED_PLAN_SECTIONS,
-  vendoredPlanHref,
+  VENDORED_SECTIONS,
+  vendoredHref,
 };
-export type { VendoredPlanSectionKey };
+export type { VendoredSectionKey };

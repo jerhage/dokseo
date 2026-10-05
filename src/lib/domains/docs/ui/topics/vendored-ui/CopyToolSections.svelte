@@ -8,7 +8,7 @@
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { COPY_MANIFEST, LOCAL_EDIT_HASH } from './subtree-runs';
-  import { VENDORED_PLAN_SECTIONS, vendoredPlanHref } from './vendored-sections';
+  import { VENDORED_SECTIONS, vendoredHref } from './vendored-sections';
 
   const FILE_STATES = [
     {
@@ -68,7 +68,7 @@
   ] as const;
 </script>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.copyTool}>
+<DocsSection title={VENDORED_SECTIONS.copyTool}>
   <p>
     shadcn/ui shares components another way. Its documentation says of it: "This is not a component
     library. It is how you build your component library." A command-line tool copies a component's
@@ -112,7 +112,7 @@
   </Table>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.copyCost}>
+<DocsSection title={VENDORED_SECTIONS.copyCost}>
   <p>
     None of that exists yet. The tool would have to fetch a tag of the library repository, hash
     files, read and write the manifest, list the four cases before changing anything, and merge an
@@ -143,7 +143,7 @@
   </Table>
 </DocsSection>
 
-<DocsSection title={VENDORED_PLAN_SECTIONS.decision}>
+<DocsSection title={VENDORED_SECTIONS.decision}>
   <p>
     I chose <code>git subtree</code>. It has nothing to write or maintain. Local edits merge with
     the same three-way merge as any branch, and a conflict looks like any other conflict. A fix made
@@ -153,7 +153,7 @@
   </p>
   <p>
     The price is the merge commits: one when an app adds the library, and one per update (<a
-      href={vendoredPlanHref('squash')}>What --squash leaves in the history</a
+      href={vendoredHref('squash')}>What --squash leaves in the history</a
     >). I accept them for this folder only. The copy tool stays documented here as the alternative,
     for an app that needs only part of the library or a history without merges.
   </p>
