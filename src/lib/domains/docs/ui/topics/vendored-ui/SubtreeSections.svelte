@@ -27,11 +27,7 @@
     SPLIT_SOURCE,
   } from './subtree-runs';
   import { SQUASH_PULL_HISTORY, VENDORING_FLOW } from './vendored-diagrams';
-  import {
-    RELEASES_MERGE_HREF,
-    VENDORED_SECTIONS,
-    vendoredHref,
-  } from './vendored-sections';
+  import { RELEASES_MERGE_HREF, VENDORED_SECTIONS, vendoredHref } from './vendored-sections';
 </script>
 
 <DocsSection title={VENDORED_SECTIONS.subtree}>

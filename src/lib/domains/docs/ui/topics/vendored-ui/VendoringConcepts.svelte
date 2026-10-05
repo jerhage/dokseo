@@ -8,11 +8,7 @@
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { ADD_TREE, SUBMODULE_TREE } from './subtree-runs';
-  import {
-    UI_LIBRARY_PLAYGROUND_HREF,
-    VENDORED_SECTIONS,
-    vendoredHref,
-  } from './vendored-sections';
+  import { UI_LIBRARY_PLAYGROUND_HREF, VENDORED_SECTIONS, vendoredHref } from './vendored-sections';
 
   const COMPARISON = [
     {

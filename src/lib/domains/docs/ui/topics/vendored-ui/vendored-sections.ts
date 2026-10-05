@@ -2,6 +2,7 @@ import { anchorSlug } from '$lib/ui/components/table-of-contents';
 import { UI_LIBRARY_SECTIONS } from '../ui-library/sections';
 import { RELEASE_SECTIONS } from '../releases-and-ci/sections';
 import { SECTIONS as SECURITY_SECTIONS } from '../security-headers/sections';
+import { TESTING_SECTIONS } from '../testing/testing-sections';
 
 const VENDORED_SECTIONS = {
   vendoring: 'What vendoring means',
@@ -19,14 +20,22 @@ const VENDORED_SECTIONS = {
   copyTool: 'A copy tool with a manifest',
   copyCost: 'What a copy tool would need',
   decision: 'The choice: git subtree',
-  today: 'The library in Dokseo today',
-  folder: 'One folder for the library',
-  fonts: 'Fonts through relative URLs',
+  today: 'Kandan UI in Dokseo',
   aliases: 'No app aliases',
+  tooling: "The library's own tooling",
+  ignore: 'How Dokseo ignores that tooling',
+  integrate: 'Integrating the library into an app',
+  fonts: 'Fonts through relative URLs',
+  appearance: 'Saving the appearance',
+  firstPaint: 'The script before the first paint',
+  contract: 'The attribute contract',
+  addTheme: 'Adding a theme',
+  playground: 'The playground route',
+  specs: 'Specs in the library and in Dokseo',
+  folder: 'One folder for the library',
   outside: 'What stays in each app',
   tests: 'The playground and the specs',
   extract: 'Extracting the library and vendoring it back',
-  integrate: 'Integrating the library into an app',
 } as const;
 
 type VendoredSectionKey = keyof typeof VENDORED_SECTIONS;
@@ -51,9 +60,15 @@ const RELEASES_MERGE_HREF = `/docs/releases-and-ci#${anchorSlug(RELEASE_SECTIONS
 
 const SECURITY_DIRECTIVES_HREF = `/docs/security-headers#${anchorSlug(SECURITY_SECTIONS.directives)}`;
 
+const TESTING_DRIFT_HREF = `/docs/testing#${anchorSlug(TESTING_SECTIONS.drift)}`;
+
+const TESTING_PROJECTS_HREF = `/docs/testing#${anchorSlug(TESTING_SECTIONS.projects)}`;
+
 export {
   RELEASES_MERGE_HREF,
   SECURITY_DIRECTIVES_HREF,
+  TESTING_DRIFT_HREF,
+  TESTING_PROJECTS_HREF,
   UI_LIBRARY_DIRECTION_HREF,
   UI_LIBRARY_LAYERS_HREF,
   UI_LIBRARY_PLAYGROUND_HREF,

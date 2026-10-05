@@ -3,9 +3,13 @@
   import StepList from '$lib/ui/components/StepList.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
+  import { RELATIVE_FONT_URLS } from './library-reach';
   import {
     SECURITY_DIRECTIVES_HREF,
+    TESTING_DRIFT_HREF,
     UI_LIBRARY_LAYERS_HREF,
+    UI_LIBRARY_PLAYGROUND_HREF,
+    UI_LIBRARY_RULES_HREF,
     UI_LIBRARY_SCHEMES_HREF,
     UI_LIBRARY_THEMES_HREF,
     VENDORED_SECTIONS,
@@ -14,8 +18,14 @@
   import {
     APPEARANCE,
     APPLY_APPEARANCE,
+    DRIFT_KEYS,
+    DRIFT_TESTS,
     FIRST_PAINT_SCRIPT,
+    FONT_FACE,
+    FONT_LICENSES,
     LAYER_ORDER,
+    PLAYGROUND_GUARD,
+    PLAYGROUND_ROUTE,
     SAVED_APPEARANCE,
     SCHEME_RULES,
     SCRIPT_HASH,
@@ -23,42 +33,39 @@
     THEME_FILE,
     THEME_IMPORTS,
   } from './vendored-snippets';
-
-  const VENDOR_COMMANDS = `git subtree add --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <tag> --squash
-git subtree pull --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <tag> --squash
-git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte <branch>`;
 </script>
 
 <DocsSection title={VENDORED_SECTIONS.integrate}>
   <p>
-    This is the guide a second app follows, written against Dokseo's code. The library carries the
-    same guide in its own folder, <code>src/lib/ui/README.md</code>, so an app's developer finds it
-    in the vendored copy; the README is the reference, and this section shows Dokseo's side of it.
+    The library carries its integration guide in its own folder, <code>src/lib/ui/README.md</code>,
+    so a developer finds it in the vendored copy. Dokseo follows it like any app:
   </p>
   <StepList>
     <StepItem title="Vendor the library">
-      Add a tagged version at one prefix, update with <code>pull</code>, and send fixes back with
+      Add a version at one prefix, update with <code>pull</code>, and send fixes back with
       <code>push</code> (<a href={vendoredHref('subtree')}>How git subtree works</a>).
     </StepItem>
     <StepItem title="Import the stylesheet once">
-      The app's root layout imports the entry stylesheet, and <code>app.html</code> declares the layer
-      order inline before any stylesheet loads.
+      The root layout imports the entry stylesheet, and <code>app.html</code> declares the layer order
+      inline before any stylesheet loads.
     </StepItem>
-    <StepItem title="Nothing to do for the fonts">
-      The stylesheet loads them by relative URL, and the app's bundler emits them.
+    <StepItem title="Let the bundler emit the fonts">
+      The stylesheet loads them by relative URL. Publishing their licenses is the app's choice (<a
+        href={vendoredHref('fonts')}>Fonts through relative URLs</a
+      >).
     </StepItem>
     <StepItem title="Save the appearance">
-      The app's own version of <code>saved-appearance.ts</code>: store the theme and the scheme
-      under its own keys, and call <code>applyAppearance</code>.
+      The app's own <code>saved-appearance.ts</code>: store the theme and the scheme under its own
+      keys, and call <code>applyAppearance</code>.
     </StepItem>
     <StepItem title="Apply it before the first paint">
       The inline script in <code>app.html</code>, its content security policy hash, and a drift
       test.
     </StepItem>
+    <StepItem title="Mount the playground">
+      A development route that renders <code>Playground</code>.
+    </StepItem>
   </StepList>
-  <DocsCode label="The three commands an app uses" code={VENDOR_COMMANDS} />
-
-  <h3>The stylesheet and the layer order</h3>
   <p>Dokseo imports the entry file once, in its root layout:</p>
   <DocsCode label={STYLESHEET_IMPORT.label} code={STYLESHEET_IMPORT.code} />
   <p>
@@ -69,49 +76,91 @@ git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte
     >):
   </p>
   <DocsCode label={LAYER_ORDER.label} code={LAYER_ORDER.code} />
+</DocsSection>
 
-  <h3>What the app writes</h3>
+<DocsSection title={VENDORED_SECTIONS.fonts}>
+  <p>
+    A vendored library cannot count on files in the app's <code>static/</code> folder: every app
+    would have to copy 46 font and license files there by hand and keep them in step. So the fonts
+    sit in
+    <code>src/lib/ui/fonts/</code>, and the {RELATIVE_FONT_URLS} URLs in <code>fonts.css</code> are relative
+    to the stylesheet:
+  </p>
+  <DocsCode label={FONT_FACE.label} code={FONT_FACE.code} />
+  <p>
+    Vite resolves them at build time; its documentation says <code>url()</code> references in CSS
+    are handled like imported assets, which "will get hashed file names". Each font lands in
+    <code>_app/immutable/assets/</code> with the rest of the build, as
+    <code>bricolage-grotesque.DLoelf7F.woff2</code> for the one above, under the cache rule Dokseo's
+    <code>_headers</code> already has for that folder. A changed font gets a new name, so a year of caching
+    never serves an old one, and the service worker precaches the fonts as build files.
+  </p>
+  <p>
+    The license files sit next to their fonts. Nothing imports them, so Vite would not copy them.
+    Dokseo keeps their URLs, <code>/fonts/&lt;name&gt;.OFL.txt</code>, with a small plugin,
+    <code>fontLicensesPublished</code>, that writes each one into the client build:
+  </p>
+  <DocsCode label={FONT_LICENSES.label} code={FONT_LICENSES.code} />
+  <p>
+    They are not build files in SvelteKit's sense, so the service worker leaves them out of the
+    precache, and they exist only in a build: under <code>vite dev</code> they answer 404. The plugin
+    is Dokseo's; another app decides for itself whether and where it publishes the licenses.
+  </p>
+</DocsSection>
+
+<DocsSection title={VENDORED_SECTIONS.appearance}>
   <p>
     The library's part of the appearance is the vocabulary and the function that sets the
-    attributes. Today, in <code>src/lib/ui/appearance.ts</code>:
+    attributes, in <code>src/lib/ui/appearance.ts</code>. The <code>Theme</code> union is derived
+    from an <code>as const</code> <code>THEMES</code> list, so the list and the type cannot disagree:
   </p>
   <DocsCode label={APPEARANCE.label} code={APPEARANCE.code} />
   <DocsCode label={APPLY_APPEARANCE.label} code={APPLY_APPEARANCE.code} />
   <p>
-    The app's part is where the choice is kept. Dokseo's version, which an app copies and adapts to
-    its own keys and storage:
+    Where the choice is kept is each app's part. Dokseo writes two <code>localStorage</code> keys
+    through its own <code>platform/storage</code> module, which the library may not import:
   </p>
   <DocsCode label={SAVED_APPEARANCE.label} code={SAVED_APPEARANCE.code} />
   <p>
-    <code>rememberedString</code> is Dokseo's wrapper around <code>localStorage</code>, from its
-    <code>platform/storage</code> module. The scheme key is removed, not set, when the scheme follows
-    the system, which is the state the script below reads as "no pinned scheme".
+    <code>rememberedString</code> is Dokseo's wrapper around <code>localStorage</code>. The scheme
+    key is removed, not set, when the scheme follows the system, which is the state the first-paint
+    script reads as "no pinned scheme". Another app stores the choice its own way, under its own
+    keys.
   </p>
+</DocsSection>
 
-  <h3>The app.html script</h3>
+<DocsSection title={VENDORED_SECTIONS.firstPaint}>
   <p>
-    The script runs while the browser parses <code>app.html</code>, before the first paint. It reads
-    the two keys, accepts only known values, and sets the attributes on the <code>html</code> element.
-    If reading storage throws, as it does when the browser blocks storage for the site, the defaults stay:
+    The saved appearance has to be on the <code>html</code> element before the first paint, or the
+    page paints in the default theme and then switches. A module loads too late for that, so the
+    script is inline in <code>app.html</code> and runs while the browser parses it. It reads the two keys,
+    accepts only known values, and sets the attributes. If reading storage throws, as it does when the
+    browser blocks storage for the site, the defaults stay:
   </p>
   <DocsCode label={FIRST_PAINT_SCRIPT.label} code={FIRST_PAINT_SCRIPT.code} />
   <p>
-    An app with a content security policy has to admit this inline script by its hash (<a
+    The script is not written by hand. <code>themeBootScript</code> in the library builds it from
+    <code>THEMES</code> and an app's two keys, and the library's own spec runs the result against stored,
+    missing, unknown and unreadable values. Dokseo pasted the output for its keys:
+  </p>
+  <DocsCode label={DRIFT_KEYS.label} code={DRIFT_KEYS.code} />
+  <p>
+    Dokseo's content security policy admits the inline script by its hash (<a
       href={SECURITY_DIRECTIVES_HREF}>Dokseo's policy, directive by directive</a
-    >). Dokseo lists it in <code>script-src</code>, and a spec hashes every inline script in
-    <code>app.html</code> and fails if the policy does not list the hash:
+    >):
   </p>
   <DocsCode label={SCRIPT_HASH.label} code={SCRIPT_HASH.code} />
   <p>
-    The script is not written by hand. <code>themeBootScript</code> in the library builds it from
-    <code>THEMES</code> and the two keys, and the library's own spec runs it against stored,
-    missing, unknown and unreadable values. Dokseo's
-    <code>src/app-rules/theme-before-first-paint.spec.ts</code> checks that the inline script in
-    <code>app.html</code> equals that output for Dokseo's keys, line by line with the formatter's indentation
-    set aside, and that the policy lists the hash of the text as written.
+    A drift test in <code>src/app-rules/</code> keeps the pasted copy and the hash honest (<a
+      href={TESTING_DRIFT_HREF}>Drift tests</a
+    >). The formatter re-indents the script inside <code>app.html</code>, so the first check
+    compares line by line with indentation set aside. The hash covers the text exactly as written,
+    so the second check hashes it as it stands:
   </p>
+  <DocsCode label={DRIFT_TESTS.label} code={DRIFT_TESTS.code} />
+</DocsSection>
 
-  <h3>The attribute contract</h3>
+<DocsSection title={VENDORED_SECTIONS.contract}>
   <p>
     The stylesheets read two attributes on the <code>html</code> element, and nothing else about the appearance:
   </p>
@@ -128,8 +177,9 @@ git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte
     </li>
   </ul>
   <DocsCode label={SCHEME_RULES.label} code={SCHEME_RULES.code} />
+</DocsSection>
 
-  <h3>Adding a theme</h3>
+<DocsSection title={VENDORED_SECTIONS.addTheme}>
   <p>
     A theme is a stylesheet in <code>styles/base/themes/</code> whose rules start with its own
     selector, imported by <code>index.css</code> next to the others:
@@ -138,7 +188,56 @@ git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte
   <DocsCode label={THEME_IMPORTS.label} code={THEME_IMPORTS.code} />
   <p>
     Its name joins <code>THEMES</code> in the library. Each app then takes the update with a
-    <code>pull</code>, pastes the new script output into <code>app.html</code> and updates the hash; until
+    <code>pull</code>, pastes the new script output into <code>app.html</code> and updates the hash. Until
     it does, its drift test fails and shows the difference.
   </p>
+</DocsSection>
+
+<DocsSection title={VENDORED_SECTIONS.playground}>
+  <p>
+    The playground (<a href={UI_LIBRARY_PLAYGROUND_HREF}>The playground</a>) is the library's visual
+    test: one page with every component and utility in its variants, sizes and states. It ships
+    inside the library as <code>playground/Playground.svelte</code>, which takes two optional
+    snippets: <code>appearanceControl</code> for the app's own theme and scheme switcher in the
+    header, and <code>demos</code> for the app's own extra sections. Dokseo's route passes its switcher
+    and sets the title:
+  </p>
+  <DocsCode label={PLAYGROUND_ROUTE.label} code={PLAYGROUND_ROUTE.code} />
+  <p>
+    Keeping the page out of production is Dokseo's business, not the library's. The route's
+    <code>+page.ts</code> answers 404 outside development, and the build plugin
+    <code>devOnlyRoutesLeftOut</code> empties the route's component in a production build:
+  </p>
+  <DocsCode label={PLAYGROUND_GUARD.label} code={PLAYGROUND_GUARD.code} />
+</DocsSection>
+
+<DocsSection title={VENDORED_SECTIONS.specs}>
+  <p>
+    The library tests itself, and each app checks its own use of it. The library's specs read only
+    paths relative to themselves, so they pass at any prefix (<a href={UI_LIBRARY_RULES_HREF}
+      >Rules the tests enforce</a
+    >). The checks on how Dokseo uses the library live in <code>src/app-rules/</code>, under the
+    same file names as the library halves they complement:
+  </p>
+  <ul class="col gap-2">
+    <li>
+      <code>design-system.spec.ts</code>: the library half checks the layer order in
+      <code>index.css</code>, the <code>--ds-</code> names and the query widths of the library's
+      stylesheets; Dokseo's half checks the layer order in <code>app.html</code>, and the same names
+      and widths in Dokseo's own files.
+    </li>
+    <li>
+      <code>source-styling.spec.ts</code> and <code>markup-classes.spec.ts</code>: each half applies
+      the same rules to its own files.
+    </li>
+    <li>
+      <code>icons.spec.ts</code>: rendering and naming are the library's; the check that a
+      component, a domain or a screen of Dokseo imports every icon the library ships is Dokseo's.
+    </li>
+    <li>
+      <code>theme-before-first-paint.spec.ts</code>: Dokseo's drift test for <code>app.html</code>
+      (<a href={vendoredHref('firstPaint')}>The script before the first paint</a>), against the
+      library's <code>theme-boot.spec.ts</code>.
+    </li>
+  </ul>
 </DocsSection>

@@ -53,7 +53,7 @@ const LAYER_ORDER: SourceSnippet = {
 };
 
 const APPEARANCE: SourceSnippet = {
-  label: 'src/lib/ui/appearance.ts, the part that moved into the library',
+  label: 'src/lib/ui/appearance.ts, the theme names and the appearance types',
   file: 'src/lib/ui/appearance.ts',
   code: `type ColorScheme = 'automatic' | 'light' | 'dark';
 
@@ -153,7 +153,141 @@ const THEME_IMPORTS: SourceSnippet = {
 @import 'base/themes/ember.css' layer(base);`,
 };
 
+const LIBRARY_SCRIPTS: SourceSnippet = {
+  label: "src/lib/ui/package.json, the library's own scripts",
+  file: 'src/lib/ui/package.json',
+  code: `"name": "kandan-ui-svelte",
+"private": true,
+"type": "module",
+"scripts": {
+  "test": "vitest --run",
+  "test:unit": "vitest --run --project unit",
+  "test:watch": "vitest",
+  "check": "svelte-check --tsconfig ./tsconfig.json",
+  "lint": "oxlint .",
+  "format": "oxfmt .",
+  "format:check": "oxfmt --check .",
+  "verify": "npm run check && npm run lint && npm run format:check && npm run test"
+},`,
+};
+
+const LIBRARY_DEPENDENCIES: SourceSnippet = {
+  label: 'src/lib/ui/package.json, what the library runs on',
+  file: 'src/lib/ui/package.json',
+  code: `"dependencies": {
+  "svelte": "^5.57.1",
+  "ts-pattern": "^5.9.0"
+},`,
+};
+
+const LIBRARY_VITEST: SourceSnippet = {
+  label: "src/lib/ui/vitest.config.ts, the library's one test project",
+  file: 'src/lib/ui/vitest.config.ts',
+  code: `projects: [
+  {
+    extends: true,
+    test: {
+      name: 'unit',
+      environment: 'node',
+      include: ['**/*.{test,spec}.{js,ts}'],
+      exclude: [...configDefaults.exclude, '**/*.svelte.{test,spec}.{js,ts}'],
+    },
+  },
+],`,
+};
+
+const NESTED_CONFIG_OFF: SourceSnippet = {
+  label: "package.json, Dokseo's lint and format scripts",
+  file: 'package.json',
+  code: `"lint": "oxlint --disable-nested-config src",
+"lint:deps": "depcruise src --config .dependency-cruiser.cjs",
+"format": "oxfmt --disable-nested-config .",
+"format:check": "oxfmt --disable-nested-config --check .",`,
+};
+
+const DEPCRUISE_EXCLUDE: SourceSnippet = {
+  label: '.dependency-cruiser.cjs, the files the rules never read',
+  file: '.dependency-cruiser.cjs',
+  code: String.raw`exclude: { path: ['^(\\.svelte-kit|build)/', '^src/lib/ui/vitest\\.config\\.ts$'] },`,
+};
+
+const DOKSEO_UNIT_PROJECT: SourceSnippet = {
+  label: "vite.config.ts, Dokseo's unit project, listed inline",
+  file: 'vite.config.ts',
+  code: `name: 'unit',
+environment: 'node',
+setupFiles: ['src/lib/shared/testing/fresh-local-storage.ts'],
+include: ['src/**/*.{test,spec}.{js,ts}'],
+exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],`,
+};
+
+const DOKSEO_CHECK: SourceSnippet = {
+  label: "package.json, Dokseo's type check",
+  file: 'package.json',
+  code: `"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",`,
+};
+
+const DRIFT_KEYS: SourceSnippet = {
+  label: "src/app-rules/theme-before-first-paint.spec.ts, Dokseo's keys",
+  file: 'src/app-rules/theme-before-first-paint.spec.ts',
+  code: `const KEYS = { themeKey: 'reader.theme', schemeKey: 'reader.color-scheme' };`,
+};
+
+const DRIFT_TESTS: SourceSnippet = {
+  label: 'src/app-rules/theme-before-first-paint.spec.ts, the two checks',
+  file: 'src/app-rules/theme-before-first-paint.spec.ts',
+  code: `it("holds the library's first-paint script for Dokseo's storage keys, as the formatter indents it", () => {
+  const scripts = inlineScripts();
+
+  expect(scripts).toHaveLength(1);
+  expect(unindented(scripts[0] ?? '')).toBe(unindented(themeBootScript(KEYS)));
+});
+
+it('hashes to a source that script-src admits', () => {
+  const scriptSources = CONTENT_SECURITY_POLICY['script-src'] ?? [];
+
+  expect(scriptSources).toContain(hashOf(inlineScripts()[0] ?? ''));
+});`,
+};
+
+const PLAYGROUND_ROUTE: SourceSnippet = {
+  label: 'src/routes/playground/+page.svelte',
+  file: 'src/routes/playground/+page.svelte',
+  code: `<script lang="ts">
+  import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import PageTitle from '$lib/shared/PageTitle.svelte';
+  import Playground from '$lib/ui/playground/Playground.svelte';
+</script>
+
+<PageTitle screen="Component library" />
+
+<Playground>
+  {#snippet appearanceControl()}
+    <AppearanceSwitcher />
+  {/snippet}
+</Playground>`,
+};
+
+const PLAYGROUND_GUARD: SourceSnippet = {
+  label: 'src/routes/playground/+page.ts',
+  file: 'src/routes/playground/+page.ts',
+  code: `function load(): void {
+  if (!dev) error(404, 'Not found');
+}`,
+};
+
 const VENDORED_SNIPPETS: readonly SourceSnippet[] = [
+  LIBRARY_SCRIPTS,
+  LIBRARY_DEPENDENCIES,
+  LIBRARY_VITEST,
+  NESTED_CONFIG_OFF,
+  DEPCRUISE_EXCLUDE,
+  DOKSEO_UNIT_PROJECT,
+  DOKSEO_CHECK,
+  DRIFT_KEYS,
+  DRIFT_TESTS,
+  PLAYGROUND_ROUTE,
+  PLAYGROUND_GUARD,
   NO_APP_RULE,
   NO_APP_RULE_PATHS,
   FONT_FACE,
@@ -173,12 +307,23 @@ const VENDORED_SNIPPETS: readonly SourceSnippet[] = [
 export {
   APPEARANCE,
   APPLY_APPEARANCE,
+  DEPCRUISE_EXCLUDE,
+  DOKSEO_CHECK,
+  DOKSEO_UNIT_PROJECT,
+  DRIFT_KEYS,
+  DRIFT_TESTS,
   FIRST_PAINT_SCRIPT,
   FONT_FACE,
   FONT_LICENSES,
   LAYER_ORDER,
+  LIBRARY_DEPENDENCIES,
+  LIBRARY_SCRIPTS,
+  LIBRARY_VITEST,
+  NESTED_CONFIG_OFF,
   NO_APP_RULE,
   NO_APP_RULE_PATHS,
+  PLAYGROUND_GUARD,
+  PLAYGROUND_ROUTE,
   SAVED_APPEARANCE,
   SCHEME_RULES,
   SCRIPT_HASH,

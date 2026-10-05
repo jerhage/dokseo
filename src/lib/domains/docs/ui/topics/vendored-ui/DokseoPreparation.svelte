@@ -1,66 +1,14 @@
 <script lang="ts">
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
-  import { RELATIVE_FONT_URLS } from './library-reach';
-  import LibraryReachDemo from './LibraryReachDemo.svelte';
   import { ADD_EXISTING, REVENDOR_HISTORY } from './subtree-runs';
   import {
-    UI_LIBRARY_DIRECTION_HREF,
     UI_LIBRARY_PLAYGROUND_HREF,
     UI_LIBRARY_RULES_HREF,
     VENDORED_SECTIONS,
     vendoredHref,
   } from './vendored-sections';
-  import { FONT_FACE, FONT_LICENSES, NO_APP_RULE, NO_APP_RULE_PATHS } from './vendored-snippets';
 </script>
-
-<DocsSection title={VENDORED_SECTIONS.today}>
-  <p>The library lives in one folder of Dokseo, <code>src/lib/ui/</code>:</p>
-  <ul class="col gap-2">
-    <li>
-      <code>components/</code>: the base components, their helpers and the icons, with their specs.
-    </li>
-    <li>
-      <code>styles/</code>: the layered stylesheets (reset, tokens, base, components, utilities,
-      overrides) and their entry file <code>index.css</code>, with four specs.
-    </li>
-    <li><code>fonts/</code>: 28 font files and 18 license files.</li>
-    <li><code>appearance.ts</code>: the theme names and the attributes that apply them.</li>
-    <li>
-      <code>theme-boot.ts</code>: <code>themeBootScript</code>, the source of the first-paint
-      script.
-    </li>
-    <li>
-      <code>playground/</code>: every demo section and <code>Playground.svelte</code>, which renders
-      them all.
-    </li>
-    <li><code>README.md</code>: the library's own guide, for any app that vendors it.</li>
-  </ul>
-  <p>A few pieces sit outside it, in Dokseo:</p>
-  <ul class="col gap-2">
-    <li>
-      The layer order and the first-paint script, inline in <code>src/app.html</code>, and
-      <code>saved-appearance.ts</code> in <code>src/lib/shared/</code>.
-    </li>
-    <li>
-      The playground route, <code>src/routes/playground/</code>, which mounts the library's
-      playground.
-    </li>
-    <li>The specs about Dokseo's use of the library, in <code>src/app-rules/</code>.</li>
-  </ul>
-  <p>
-    A folder can be vendored only if it builds without the app around it, so the first question is
-    what each file imports:
-  </p>
-  <LibraryReachDemo />
-  <p>
-    The components import Svelte, <code>ts-pattern</code> and each other, and nothing else. A spec
-    that reaches above its folder reaches only into the library: one component spec reads
-    <code>../styles/</code>, the three stylesheet specs read <code>../</code>, and one of them also
-    reads <code>../components/</code>. None reads the rest of Dokseo; the next sections say how they
-    got there.
-  </p>
-</DocsSection>
 
 <DocsSection title={VENDORED_SECTIONS.folder}>
   <p>
@@ -80,58 +28,6 @@
     <code>../styles/</code> still resolves. The move is also where the library's own history begins:
     <code>split</code> follows the prefix, and the commits from before the move stay in Dokseo's
     history (<a href={vendoredHref('split')}>Extracting a library with split</a>).
-  </p>
-</DocsSection>
-
-<DocsSection title={VENDORED_SECTIONS.fonts}>
-  <p>
-    The fonts used to be served from <code>static/</code>, which SvelteKit copies to the root of the
-    build unchanged, and the stylesheet named them by absolute URL, such as
-    <code>/fonts/geist.woff2</code>. A vendored library cannot count on a file in the app's
-    <code>static/</code> folder: a second app would have to copy 46 files there by hand and keep them
-    in step.
-  </p>
-  <p>
-    The fonts now sit in <code>src/lib/ui/fonts/</code>, and the {RELATIVE_FONT_URLS} URLs in
-    <code>fonts.css</code> are relative to the stylesheet:
-  </p>
-  <DocsCode label={FONT_FACE.label} code={FONT_FACE.code} />
-  <p>
-    Vite resolves them at build time; its documentation says <code>url()</code> references in CSS
-    are handled like imported assets, which "will get hashed file names". Each font lands in
-    <code>_app/immutable/assets/</code> with the rest of the build, as
-    <code>bricolage-grotesque.DLoelf7F.woff2</code> for the one above, under the cache rule Dokseo's
-    <code>_headers</code>
-    already has for that folder. The separate <code>/fonts/*</code>
-    rule is gone. A changed font gets a new name, so a year of caching never serves an old one, and the
-    service worker precaches the fonts as build files.
-  </p>
-  <p>
-    The license files stay next to their fonts and keep their URLs,
-    <code>/fonts/&lt;name&gt;.OFL.txt</code>. Nothing imports them, so Vite would not copy them; a
-    small plugin writes each one into the client build:
-  </p>
-  <DocsCode label={FONT_LICENSES.label} code={FONT_LICENSES.code} />
-  <p>
-    They are not build files in SvelteKit's sense, so the service worker leaves them out of the
-    precache, as it did when they sat in <code>static/</code>. The plugin is Dokseo's: another app
-    decides for itself whether and where it publishes the licenses.
-  </p>
-</DocsSection>
-
-<DocsSection title={VENDORED_SECTIONS.aliases}>
-  <p>
-    An app alias such as <code>$lib</code> means "this app's <code>src/lib</code>". Inside a
-    vendored library it would point at whichever app the copy sits in, so the library has to reach
-    its own files by relative path only. Dokseo holds the whole of <code>src/lib/ui/</code> to that,
-    with a dependency rule (<a href={UI_LIBRARY_DIRECTION_HREF}>Dependency direction</a>):
-  </p>
-  <DocsCode label={NO_APP_RULE.label} code={NO_APP_RULE.code} />
-  <DocsCode label={NO_APP_RULE_PATHS.label} code={NO_APP_RULE_PATHS.code} />
-  <p>
-    A file in the library may import its siblings, <code>svelte</code>, <code>ts-pattern</code>
-    and, in a spec, <code>vitest</code>, and nothing else under <code>src/</code>. The demo above
-    shows the result: no component imports an alias.
   </p>
 </DocsSection>
 
