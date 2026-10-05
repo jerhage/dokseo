@@ -18,11 +18,11 @@ const sourceFile = box(0, 0, 170, 'Source file', 'ja-ocr-text.ts');
 const quoteList = box(190, 0, 170, 'Quote list', 'unicode-snippets.ts', 'primary');
 const driftSpec = box(0, 124, 170, 'Drift spec', 'unicode-snippets.spec.ts', 'accent');
 const docsPage = box(190, 124, 170, 'Docs page', 'DocsCode');
-const verifyCi = box(0, 248, 360, 'deno task verify:ci', 'the unit project runs every spec');
+const verifyCi = box(0, 248, 360, 'npm run verify:ci', 'the unit project runs every spec');
 
 const QUOTE_FLOW: DiagramSpec = {
   label:
-    'A source file, ja-ocr-text.ts, and a quote list, unicode-snippets.ts. The docs page renders each quote from the list with DocsCode. The drift spec imports the same list, reads the source file, and checks that the file contains each quote. CI runs the spec through deno task verify:ci.',
+    'A source file, ja-ocr-text.ts, and a quote list, unicode-snippets.ts. The docs page renders each quote from the list with DocsCode. The drift spec imports the same list, reads the source file, and checks that the file contains each quote. CI runs the spec through npm run verify:ci.',
   width: 360,
   height: 300,
   nodes: [sourceFile, quoteList, driftSpec, docsPage, verifyCi],

@@ -60,12 +60,12 @@
       to the repository.
     </li>
     <li>
-      Deno is pinned to the version used locally, so CI and a local run resolve and run the same
-      way. <code>deno install --frozen</code> fails if <code>deno.lock</code> is out of date, instead
-      of updating it.
+      Deno is pinned to the version used locally, so CI and a local run resolve the same
+      dependencies. <code>deno install --frozen</code> fails if <code>deno.lock</code> is out of date,
+      instead of updating it. Node 24 runs the scripts, as it does locally.
     </li>
     <li>
-      <code>deno task verify:ci</code> is the whole check. The next section explains what it runs.
+      <code>npm run verify:ci</code> is the whole check. The next section explains what it runs.
     </li>
   </ul>
 </DocsSection>
@@ -260,8 +260,8 @@
       <code>&lt;name&gt;.&lt;subdomain&gt;.workers.dev</code> address, and
       <code>preview_urls: true</code> turns on preview URLs of the form
       <code>&lt;version&gt;-&lt;name&gt;.&lt;subdomain&gt;.workers.dev</code>.
-      <code>deno task deploy:preview</code> runs <code>wrangler versions upload</code>, which
-      uploads a version without making it the deployed one.
+      <code>npm run deploy:preview</code> runs <code>wrangler versions upload</code>, which uploads
+      a version without making it the deployed one.
     </li>
     <li>
       <code>static/_headers</code> is copied into <code>build/</code> and sets the response headers:
@@ -273,8 +273,8 @@
     </li>
   </ul>
   <p>
-    <code>deno task deploy</code> runs the same <code>wrangler deploy</code> by hand, from whatever
-    is in <code>build/</code>. The workflow is the only automatic deploy.
+    <code>npm run deploy</code> runs the same <code>wrangler deploy</code> by hand, from whatever is
+    in <code>build/</code>. The workflow is the only automatic deploy.
   </p>
 </DocsSection>
 

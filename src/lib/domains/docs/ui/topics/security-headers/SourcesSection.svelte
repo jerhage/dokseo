@@ -82,12 +82,12 @@ function crossOriginIsolation(): Plugin {
     </TableHeader>
     <TableBody>
       <TableRow>
-        <TableCell><code>deno task dev</code></TableCell>
+        <TableCell><code>npm run dev</code></TableCell>
         <TableCell>The isolation plugin</TableCell>
         <TableCell>A header from SvelteKit</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell><code>deno task preview</code></TableCell>
+        <TableCell><code>npm run preview</code></TableCell>
         <TableCell>The isolation plugin</TableCell>
         <TableCell>A header from SvelteKit</TableCell>
       </TableRow>

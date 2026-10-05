@@ -123,7 +123,7 @@ const CI_STEP: SourceSnippet = {
   file: '.github/workflows/ci.yml',
   code: `- run: deno install --frozen
 
-- run: deno task verify:ci`,
+- run: npm run verify:ci`,
 };
 
 const OBSERVED_READ: SourceSnippet = {

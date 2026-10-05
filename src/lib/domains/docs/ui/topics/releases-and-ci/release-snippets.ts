@@ -27,9 +27,13 @@ jobs:
         with:
           deno-version: v2.9.7
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
       - run: deno install --frozen
 
-      - run: deno task verify:ci`,
+      - run: npm run verify:ci`,
 };
 
 const RELEASE_TRIGGER: SourceSnippet = {
@@ -90,9 +94,13 @@ const DEPLOY_JOB: SourceSnippet = {
         with:
           deno-version: v2.9.7
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
       - run: deno install --frozen
 
-      - run: deno task build
+      - run: npm run build
 
       - env:
           CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}

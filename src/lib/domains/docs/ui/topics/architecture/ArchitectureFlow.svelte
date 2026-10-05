@@ -222,7 +222,7 @@
 <DocsSection title={ARCHITECTURE_SECTIONS.limits}>
   <p>
     A path rule protects only the paths it matches. Each of these imports passes
-    <code>deno task lint:deps</code> today (checked with the checker above), and only convention governs
+    <code>npm run lint:deps</code> today (checked with the checker above), and only convention governs
     it:
   </p>
   <ul>
@@ -279,7 +279,7 @@
     <li>No barrel files, and no <code>as</code> casts outside brands and library boundaries.</li>
     <li>
       Prove a new or changed rule: write the forbidden import, run
-      <code>deno task lint:deps</code>, read the rule's name in the failure, and delete the import.
+      <code>npm run lint:deps</code>, read the rule's name in the failure, and delete the import.
     </li>
   </ul>
 </DocsSection>

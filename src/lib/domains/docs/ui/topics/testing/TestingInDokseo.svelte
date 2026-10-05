@@ -268,8 +268,10 @@
     oxlint, oxfmt in check mode, and dependency-cruiser. <code>verify:tests</code> adds both test
     projects, the unit project first.
     <code>verify</code> adds the production build. Locally, I run <code>verify:tests</code> while
-    working and the full <code>verify</code> once before a commit. The project's tasks run through
-    Deno, so the commands are <code>deno task verify</code> and so on.
+    working and the full <code>verify</code> once before a commit. Deno installs the dependencies,
+    and npm runs the scripts, so the commands are <code>npm run verify</code> and so on. Run through
+    <code>deno task</code>, every tool ran inside Deno, and the unit project took 90 to 100 seconds
+    against 30 through npm on the same machine.
   </p>
   <DocsCode label={CI_STEP.label} code={CI_STEP.code} />
   <p>

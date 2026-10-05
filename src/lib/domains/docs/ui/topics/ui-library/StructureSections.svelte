@@ -52,8 +52,8 @@
     default, such as <code>closeLabel</code>.
   </p>
   <p>
-    A dependency-cruiser rule enforces the boundary, and <code>deno task verify:static</code> fails on
-    any import that crosses it.
+    A dependency-cruiser rule enforces the boundary, and <code>npm run verify:static</code> fails on any
+    import that crosses it.
   </p>
   <DocsCode label={RULE_NAME.label} code={RULE_NAME.code} />
   <DocsCode label={RULE_PATHS.label} code={RULE_PATHS.code} />
@@ -72,7 +72,7 @@
 <DocsSection title={UI_LIBRARY_SECTIONS.rules}>
   <p>
     The rules above are checked by unit tests that read the stylesheets and the source as text, so a
-    break fails <code>deno task test</code> rather than waiting for someone to notice a screen. The
+    break fails <code>npm run test</code> rather than waiting for someone to notice a screen. The
     library's specs read only <code>src/lib/ui/</code>; the checks on Dokseo's own source and
     <code>app.html</code> live in <code>src/app-rules/</code>, under the same file names.
   </p>

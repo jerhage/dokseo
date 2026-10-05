@@ -205,10 +205,10 @@
 <DocsSection title={ARCHITECTURE_SECTIONS.rules}>
   <p>
     <code>.dependency-cruiser.cjs</code> holds {RULE_NAMES.length} forbidden rules, each with its reason
-    in a <code>comment</code>. <code>deno task lint:deps</code> runs
+    in a <code>comment</code>. <code>npm run lint:deps</code> runs
     <code>depcruise src --config .dependency-cruiser.cjs</code>, and
-    <code>deno task verify:static</code> runs it with the type check, the linter and the format check,
-    so an import that breaks a rule fails the same command as a type error.
+    <code>npm run verify:static</code> runs it with the type check, the linter and the format check, so
+    an import that breaks a rule fails the same command as a type error.
   </p>
   <Table size="sm">
     <TableHeader>

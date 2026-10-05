@@ -114,7 +114,7 @@ function verifyOutcome(facts: EventFacts): JobOutcome {
       kind: 'awaits-approval',
       why: 'A pull request event caused by GITHUB_TOKEN creates a run that waits for approval.',
     };
-  return { kind: 'runs', does: 'deno task verify:ci: static checks, unit tests, build.' };
+  return { kind: 'runs', does: 'npm run verify:ci: static checks, unit tests, build.' };
 }
 
 function releasePleaseOutcome(facts: EventFacts): JobOutcome {

@@ -18,6 +18,10 @@ jobs:
         with:
           deno-version: v2.9.7
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
       - run: deno install --frozen
 
-      - run: deno task verify:ci
+      - run: npm run verify:ci

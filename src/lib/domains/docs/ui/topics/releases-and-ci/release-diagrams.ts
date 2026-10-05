@@ -29,12 +29,12 @@ function box(
 }
 
 const ciPush = box(LEFT_X, 8, 'Push or pull request', 'to main, or any PR');
-const ciVerify = box(RIGHT_X, 8, 'CI: verify job', 'deno task verify:ci', 'primary');
+const ciVerify = box(RIGHT_X, 8, 'CI: verify job', 'npm run verify:ci', 'primary');
 const ciCheck = box(RIGHT_X, 88, 'A check on the commit', 'passed or failed');
 
 const CI_FLOW: Diagram = {
   label:
-    'A push to main or a pull request starts the CI workflow. Its verify job runs deno task verify:ci, and the result shows as a check on the commit or pull request.',
+    'A push to main or a pull request starts the CI workflow. Its verify job runs npm run verify:ci, and the result shows as a check on the commit or pull request.',
   width: DIAGRAM_WIDTH,
   height: 144,
   nodes: [ciPush, ciVerify, ciCheck],

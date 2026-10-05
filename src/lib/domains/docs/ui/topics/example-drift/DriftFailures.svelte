@@ -69,20 +69,20 @@
   </p>
   <DocsCode label={UNIT_PROJECT.label} code={UNIT_PROJECT.code} />
   <p>
-    On my machine they run with every other test in <code>deno task verify:tests</code> (<a
+    On my machine they run with every other test in <code>npm run verify:tests</code> (<a
       href={TESTING_LADDER_HREF}>The verify ladder</a
     >). On GitHub, the CI workflow runs on every pull request and on every push to
     <code>main</code>:
   </p>
   <DocsCode label={CI_TRIGGER.label} code={CI_TRIGGER.code} />
   <p>
-    Its one job checks out the code, sets up Deno, installs the locked dependencies and runs one
-    task:
+    Its one job checks out the code, sets up Deno and Node, installs the locked dependencies with
+    Deno and runs one script:
   </p>
   <DocsCode label={CI_STEP.label} code={CI_STEP.code} />
   <p>
-    <code>deno task</code> runs the <code>package.json</code> script of that name. It runs the static
-    checks, then the unit project alone, then the build:
+    <code>npm run</code> runs the <code>package.json</code> script of that name. It runs the static checks,
+    then the unit project alone, then the build:
   </p>
   <DocsCode label={VERIFY_CI.label} code={VERIFY_CI.code} />
   <DocsCode label={CI_SCRIPTS.label} code={CI_SCRIPTS.code} />

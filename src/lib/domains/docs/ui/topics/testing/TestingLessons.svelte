@@ -55,13 +55,14 @@
     </StepItem>
     <StepItem title="localStorage that outlived the run">
       <p>
-        <code>deno task</code> runs Vitest inside Deno, and Deno gives every script a
+        <code>deno task</code> ran Vitest inside Deno, and Deno gives every script a
         <code>localStorage</code> that persists on disk between runs. Run through Node, the same
         tests had no <code>localStorage</code> at all. An earlier run had left a sort order saved,
         so every test that built the capture list without its own store saw the newest-first order
         under <code>deno task</code> and passed when run through Node. The fix is the setup file in
         <a href={testingHref('projects')}>Vitest's two projects</a>: a fresh in-memory
-        <code>localStorage</code> before every test, so no test can read what another left.
+        <code>localStorage</code> before every test, so no test can read what another left. The scripts
+        now run through npm, in Node, and the setup file stays.
       </p>
     </StepItem>
     <StepItem title="Offline is not one switch">
