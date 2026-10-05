@@ -142,6 +142,7 @@ function fakeRepository(
       Promise.resolve({ kind: 'success', removed: restorable.map(removedBookOf), unreadable }),
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
+    erase: () => Promise.resolve({ kind: 'success' }),
   };
   return { repository, added };
 }

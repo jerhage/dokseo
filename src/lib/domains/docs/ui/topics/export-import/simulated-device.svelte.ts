@@ -107,6 +107,7 @@ class SimulatedDevice {
           removedBooks: upserted(this.#holdings.removedBooks, book),
         }),
       forgetRemoved: notInTheDemo,
+      erase: notInTheDemo,
       update: notInTheDemo,
       readSource: notInTheDemo,
       readCover: notInTheDemo,

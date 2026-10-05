@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BLOCKED_PATIENCE_MS, getRecord, openDatabase } from './connection';
+import {
+  BLOCKED_PATIENCE_MS,
+  getRecord,
+  openDatabase,
+  writeAfterRead,
+  writeRecords,
+} from './connection';
 
 type Handler = (() => void) | null;
 
@@ -270,4 +276,124 @@ describe('getRecord', () => {
       expect(factory.last().version).toBe(version);
     },
   );
+});
+
+type Placed = { readonly store: string; readonly kind: 'put' | 'delete'; readonly value: unknown };
+
+class RecordingTransaction {
+  readonly placed: Placed[] = [];
+  aborted = false;
+  error: DOMException | null = null;
+  oncomplete: Handler = null;
+  onabort: Handler = null;
+  onerror: Handler = null;
+
+  readonly #stores: readonly string[];
+  readonly #rows: ReadonlyMap<string, unknown>;
+
+  constructor(stores: readonly string[], rows: ReadonlyMap<string, unknown>) {
+    this.#stores = stores;
+    this.#rows = rows;
+    setTimeout(() => {
+      if (!this.aborted) this.oncomplete?.();
+    });
+  }
+
+  objectStore(store: string) {
+    if (!this.#stores.includes(store)) throw new DOMException(store, 'NotFoundError');
+    return {
+      get: (key: string) => {
+        const request = { result: this.#rows.get(`${store}/${key}`), onsuccess: null as Handler };
+        queueMicrotask(() => request.onsuccess?.());
+        return request;
+      },
+      put: (value: unknown) => {
+        if (typeof value === 'function') throw new DOMException('function', 'DataCloneError');
+        this.placed.push({ store, kind: 'put', value });
+      },
+      delete: (value: unknown) => this.placed.push({ store, kind: 'delete', value }),
+    };
+  }
+
+  abort(): void {
+    this.aborted = true;
+    queueMicrotask(() => this.onabort?.());
+  }
+}
+
+class RecordingDatabase {
+  readonly opened: { readonly stores: readonly string[]; readonly mode: string }[] = [];
+  readonly transactions: RecordingTransaction[] = [];
+  readonly rows = new Map<string, unknown>();
+
+  transaction(stores: readonly string[], mode: string): RecordingTransaction {
+    this.opened.push({ stores, mode });
+    const transaction = new RecordingTransaction(stores, this.rows);
+    this.transactions.push(transaction);
+    return transaction;
+  }
+}
+
+function recordingConnection(db: RecordingDatabase): IDBDatabase {
+  return db as unknown as IDBDatabase;
+}
+
+describe('writeRecords', () => {
+  it('places every write in one readwrite transaction across the stores they name', async () => {
+    const db = new RecordingDatabase();
+
+    await writeRecords(recordingConnection(db), [
+      { kind: 'delete', store: 'books', key: 'a' },
+      { kind: 'delete', store: 'page-lists', key: 'a' },
+      { kind: 'put', store: 'books', record: { id: 'b' } },
+    ]);
+
+    expect(db.opened).toEqual([{ stores: ['books', 'page-lists'], mode: 'readwrite' }]);
+    expect(db.transactions[0]?.placed).toEqual([
+      { store: 'books', kind: 'delete', value: 'a' },
+      { store: 'page-lists', kind: 'delete', value: 'a' },
+      { store: 'books', kind: 'put', value: { id: 'b' } },
+    ]);
+  });
+
+  it('aborts the transaction, so no placed write commits, when a later write cannot be placed', async () => {
+    const db = new RecordingDatabase();
+
+    const writing = writeRecords(recordingConnection(db), [
+      { kind: 'delete', store: 'books', key: 'a' },
+      { kind: 'put', store: 'books', record: () => undefined },
+    ]);
+
+    await expect(writing).rejects.toThrow('are not usable');
+    expect(db.transactions[0]?.placed).toHaveLength(1);
+    expect(db.transactions[0]?.aborted).toBe(true);
+  });
+});
+
+describe('writeAfterRead', () => {
+  it('places the writes decided from the record it read inside the same transaction', async () => {
+    const db = new RecordingDatabase();
+    db.rows.set('books/a', { id: 'a', title: 'Kept' });
+    const seen: unknown[] = [];
+
+    await writeAfterRead<{ id: string; title: string }>(
+      recordingConnection(db),
+      ['books', 'removed-books'],
+      { store: 'books', key: 'a' },
+      (found) => {
+        seen.push(found);
+        return [
+          { kind: 'put', store: 'removed-books', record: { ...found, removedAt: 1 } },
+          { kind: 'delete', store: 'books', key: 'a' },
+        ];
+      },
+    );
+
+    expect(seen).toEqual([{ id: 'a', title: 'Kept' }]);
+    expect(db.opened).toEqual([{ stores: ['books', 'removed-books'], mode: 'readwrite' }]);
+    expect(db.transactions[0]?.placed).toEqual([
+      { store: 'removed-books', kind: 'put', value: { id: 'a', title: 'Kept', removedAt: 1 } },
+      { store: 'books', kind: 'delete', value: 'a' },
+    ]);
+  });
 });

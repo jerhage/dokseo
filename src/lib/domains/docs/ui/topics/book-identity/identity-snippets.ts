@@ -215,12 +215,19 @@ const REPOSITORY_REMOVE: SourceSnippet = {
 };
 
 const REPOSITORY_REMOVE_CALL: SourceSnippet = {
-  label: 'The record is written before the row goes',
+  label: 'The record is written in the transaction that deletes the row',
   file: 'src/lib/domains/library/adapters/indexeddb-opfs-library.repo.ts',
-  code: `const row = await getRecord<StoredBook>(db, BOOK_STORE, id);
-if (row !== undefined) await putRecord(db, REMOVED_BOOK_STORE, retired(row, removedAt));
-await deleteRecord(db, BOOK_STORE, id);
-await deleteRecord(db, PAGE_LIST_STORE, id);`,
+  code: `function removalWrites(
+  id: BookId,
+  row: StoredBook | undefined,
+  removedAt: number,
+): readonly RecordWrite[] {
+  if (row === undefined) return shelfDeletes(id);
+  return [
+    { kind: 'put', store: REMOVED_BOOK_STORE, record: retired(row, removedAt) },
+    ...shelfDeletes(id),
+  ];
+}`,
 };
 
 const BOOKS_FROM_STORED: SourceSnippet = {
@@ -257,10 +264,8 @@ const MERGE_STRAY: SourceSnippet = {
 ): Promise<StrayMerge> {
   const moved = await moveCaptures(deps.moving, stray, into);
   if (moved.kind !== 'success') return moved;
-  const removed = await removeBook(deps.removing, stray);
-  if (removed.kind !== 'success') return { kind: 'captures-moved' };
-  const forgotten = await forgetRemovedBook(deps.forgetting, stray);
-  if (forgotten.kind !== 'success') return { kind: 'captures-moved' };
+  const erased = await eraseBook(deps.erasing, stray);
+  if (erased.kind !== 'success') return { kind: 'captures-moved' };
 
   return { kind: 'merged' };
 }`,

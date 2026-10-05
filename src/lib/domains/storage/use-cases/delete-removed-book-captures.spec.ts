@@ -48,6 +48,7 @@ function world(outcomes: Outcomes = {}) {
       steps.push(`forgot ${id}`);
       return Promise.resolve(outcomes.forgetting ?? WRITTEN);
     },
+    erase: notUsed,
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,

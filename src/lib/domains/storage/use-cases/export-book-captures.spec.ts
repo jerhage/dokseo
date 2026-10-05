@@ -151,6 +151,7 @@ function deps(holdings: Holdings = {}): ExportBookCapturesDeps {
     listRestorable: notUsed,
     addRemoved: notUsed,
     forgetRemoved: notUsed,
+    erase: notUsed,
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,

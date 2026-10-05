@@ -4,7 +4,10 @@ import {
   listRecords,
   openDatabase,
   putRecord,
+  writeAfterRead,
+  writeRecords,
 } from '$lib/platform/idb/connection';
+import type { RecordWrite } from '$lib/platform/idb/connection';
 import * as blobs from '$lib/platform/opfs/blob-store';
 import { isPrivateWindowRefusal } from '$lib/platform/opfs/directory';
 import { parsedBookId } from '$lib/shared/ids';
@@ -48,6 +51,8 @@ const PAGE_LIST_STORE = 'page-lists';
 
 const REMOVED_BOOK_STORE = 'removed-books';
 
+const BOOK_RECORD_STORES = [BOOK_STORE, PAGE_LIST_STORE, REMOVED_BOOK_STORE];
+
 const WRITTEN: LibraryWrite = { kind: 'success' };
 
 type BlobKeys = { readonly source: string; readonly cover: string };
@@ -86,6 +91,37 @@ function upgrade(db: IDBDatabase): void {
 function retired(row: StoredBook, removedAt: number): StoredRemovedBook {
   const [book] = booksFromStored([row]).books;
   return book === undefined ? { ...row, removedAt } : removedRecord(book, removedAt);
+}
+
+function shelfDeletes(id: BookId): readonly RecordWrite[] {
+  return [
+    { kind: 'delete', store: BOOK_STORE, key: id },
+    { kind: 'delete', store: PAGE_LIST_STORE, key: id },
+  ];
+}
+
+function removalWrites(
+  id: BookId,
+  row: StoredBook | undefined,
+  removedAt: number,
+): readonly RecordWrite[] {
+  if (row === undefined) return shelfDeletes(id);
+  return [
+    { kind: 'put', store: REMOVED_BOOK_STORE, record: retired(row, removedAt) },
+    ...shelfDeletes(id),
+  ];
+}
+
+function erasureWrites(id: BookId): readonly RecordWrite[] {
+  return [...shelfDeletes(id), { kind: 'delete', store: REMOVED_BOOK_STORE, key: id }];
+}
+
+function removeFiles(keys: BlobKeys): Promise<LibraryWrite> {
+  return unlessRefused<LibraryWrite>(async () => {
+    await blobs.remove(keys.source);
+    await blobs.remove(keys.cover);
+    return WRITTEN;
+  });
 }
 
 async function discard(keys: BlobKeys): Promise<void> {
@@ -189,17 +225,23 @@ function createLibraryRepository(): LibraryRepository {
 
     async remove(id: BookId, removedAt: number): Promise<LibraryWrite> {
       if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
-      const keys = blobKeys(id);
-      const db = await database();
-      const row = await getRecord<StoredBook>(db, BOOK_STORE, id);
-      if (row !== undefined) await putRecord(db, REMOVED_BOOK_STORE, retired(row, removedAt));
-      await deleteRecord(db, BOOK_STORE, id);
-      await deleteRecord(db, PAGE_LIST_STORE, id);
-      return unlessRefused<LibraryWrite>(async () => {
-        await blobs.remove(keys.source);
-        await blobs.remove(keys.cover);
-        return WRITTEN;
-      });
+      const filesRemoved = await removeFiles(blobKeys(id));
+      if (filesRemoved.kind !== 'success') return filesRemoved;
+      await writeAfterRead<StoredBook>(
+        await database(),
+        BOOK_RECORD_STORES,
+        { store: BOOK_STORE, key: id },
+        (row) => removalWrites(id, row, removedAt),
+      );
+      return WRITTEN;
+    },
+
+    async erase(id: BookId): Promise<LibraryWrite> {
+      if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
+      const filesRemoved = await removeFiles(blobKeys(id));
+      if (filesRemoved.kind !== 'success') return filesRemoved;
+      await writeRecords(await database(), erasureWrites(id));
+      return WRITTEN;
     },
 
     async listRemoved(): Promise<RemovedListing> {

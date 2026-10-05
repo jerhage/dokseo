@@ -1,8 +1,6 @@
 import { match } from 'ts-pattern';
-import { forgetRemovedBook } from '$lib/domains/library/use-cases/forget-removed-book';
-import type { ForgetRemovedBookDeps } from '$lib/domains/library/use-cases/forget-removed-book';
-import { removeBook } from '$lib/domains/library/use-cases/remove-book';
-import type { RemoveBookDeps } from '$lib/domains/library/use-cases/remove-book';
+import { eraseBook } from '$lib/domains/library/use-cases/erase-book';
+import type { EraseBookDeps } from '$lib/domains/library/use-cases/erase-book';
 import { moveCaptures } from '$lib/domains/recognition/use-cases/capture/move-captures';
 import type { MoveCapturesDeps } from '$lib/domains/recognition/use-cases/capture/move-captures';
 import type { BookId } from '$lib/shared/ids';
@@ -15,8 +13,7 @@ type MergeIntoBookResult =
 
 type MergeIntoBookDeps = {
   readonly moving: MoveCapturesDeps;
-  readonly removing: RemoveBookDeps;
-  readonly forgetting: ForgetRemovedBookDeps;
+  readonly erasing: EraseBookDeps;
 };
 
 type StrayMerge =
@@ -35,10 +32,8 @@ async function mergeStray(
 ): Promise<StrayMerge> {
   const moved = await moveCaptures(deps.moving, stray, into);
   if (moved.kind !== 'success') return moved;
-  const removed = await removeBook(deps.removing, stray);
-  if (removed.kind !== 'success') return { kind: 'captures-moved' };
-  const forgotten = await forgetRemovedBook(deps.forgetting, stray);
-  if (forgotten.kind !== 'success') return { kind: 'captures-moved' };
+  const erased = await eraseBook(deps.erasing, stray);
+  if (erased.kind !== 'success') return { kind: 'captures-moved' };
 
   return { kind: 'merged' };
 }

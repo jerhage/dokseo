@@ -60,6 +60,7 @@ interface LibraryRepository {
   readPageList(id: BookId): Promise<PageListLookup>;
   savePageList(id: BookId, names: readonly string[]): Promise<LibraryWrite>;
   remove(id: BookId, removedAt: number): Promise<LibraryWrite>;
+  erase(id: BookId): Promise<LibraryWrite>;
   listRemoved(): Promise<RemovedListing>;
   listRestorable(): Promise<RestorableListing>;
   addRemoved(book: RemovedBook): Promise<LibraryWrite>;

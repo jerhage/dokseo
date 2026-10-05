@@ -130,22 +130,28 @@
 <DocsSection title={INDEXEDDB_SECTIONS.helpers}>
   <p>
     No adapter calls <code>db.transaction</code> itself. They all go through
-    <code>src/lib/platform/idb/connection.ts</code>, which exports seven helpers:
+    <code>src/lib/platform/idb/connection.ts</code>, which exports nine helpers. Seven of them,
     <code>getRecord</code>, <code>putRecord</code>, <code>deleteRecord</code>,
     <code>listRecords</code>, <code>listByIndex</code>, <code>deleteByIndex</code> and
-    <code>rewriteByIndex</code>. Each one opens one transaction on one store, places its requests,
-    and resolves when the transaction fires <code>complete</code>, not when the request succeeds, so
-    a write that resolved is committed.
+    <code>rewriteByIndex</code>, each open one transaction on one store, place their requests, and
+    resolve when the transaction fires <code>complete</code>, not when the request succeeds, so a
+    write that resolved is committed. The other two, <code>writeRecords</code> and
+    <code>writeAfterRead</code>, open one transaction across several stores of one database.
   </p>
   <DocsCode label={TRANSACT.label} code={TRANSACT.code} />
   <DocsCode label={LIST_BY_INDEX.label} code={LIST_BY_INDEX.code} />
   <p>
     The cost of that design is that an operation built from several helper calls is several
-    transactions. Removing a book in the library repository reads the book row, writes a
-    <code>removed-books</code> record, deletes the book row and deletes its page list: up to four
-    transactions in sequence, so a failure after the second leaves the first two committed. A merge
-    of captures from one book into another spans two databases, and a transaction never spans two
-    databases, which is why the merge use case has a <code>partly-merged</code> result.
+    transactions. Removing a book used to be four in sequence: read the book row, write a
+    <code>removed-books</code> record, delete the book row, delete its page list. A failure after
+    the second left the record written and the book still on the shelf, and a failure after the
+    third left a page list nothing could reach. I moved the removal to <code>writeAfterRead</code>:
+    one transaction over <code>books</code>, <code>page-lists</code> and
+    <code>removed-books</code> reads the row, and the read's success handler places the record and
+    both deletes, so they commit together or not at all. The book's files in OPFS go first, outside
+    any transaction, so a failure there leaves the book on the shelf, and removing it again finishes
+    the job. A transaction never spans two databases, so a merge of captures from one book into
+    another still has a <code>partly-merged</code> result.
   </p>
 </DocsSection>
 

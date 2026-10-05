@@ -32,6 +32,7 @@ const held = vi.hoisted(() => ({
   cleared: [] as string[],
   forgotten: [] as string[],
   moved: [] as string[],
+  erased: [] as string[],
 }));
 
 function notUsed(): Promise<never> {
@@ -68,6 +69,10 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: (id: BookId) => {
       held.forgotten.push(id);
+      return Promise.resolve({ kind: 'success' });
+    },
+    erase: (id: BookId) => {
+      held.erased.push(id);
       return Promise.resolve({ kind: 'success' });
     },
     update: notUsed,
@@ -114,15 +119,15 @@ describe('buildContainer', () => {
     expect(held.forgotten).toEqual(['book-2']);
   });
 
-  it('merges an unreadable book by moving its captures onto the shelf book, then removing it and its record', async () => {
+  it('merges an unreadable book by moving its captures onto the shelf book, then erasing it', async () => {
     const result = await buildContainer().library.mergeIntoBook(bookId('held-1'), [
       bookId('broken-1'),
     ]);
 
     expect(result).toEqual({ kind: 'merged' });
     expect(held.moved).toEqual(['broken-1 -> held-1']);
-    expect(held.removed).toContain('broken-1');
-    expect(held.forgotten).toContain('broken-1');
+    expect(held.erased).toEqual(['broken-1']);
+    expect(held.removed).not.toContain('broken-1');
   });
 
   it('lists a shelf holding an unreadable book without reading a capture', async () => {

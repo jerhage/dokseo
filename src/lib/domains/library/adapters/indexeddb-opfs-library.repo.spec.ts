@@ -4,11 +4,24 @@ import { INTRINSIC_ORDER } from '../domain/book/page-list';
 import { imagePlace } from '$lib/shared/reading-place';
 import { bookFromStored } from '../domain/book/stored-book';
 import type { StoredBook } from '../domain/book/stored-book';
+import { PRIVATE_WINDOW } from '$lib/platform/opfs/directory';
+import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { createLibraryRepository } from './indexeddb-opfs-library.repo';
+
+type FakeWrite =
+  | { readonly kind: 'put'; readonly store: string; readonly record: { readonly id: unknown } }
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown };
+
+type FakeRead = { readonly store: string; readonly key: unknown };
+
+type BlobFailure = { readonly key: string; readonly error: Error };
 
 const held = vi.hoisted(() => ({
   stores: new Map<string, Map<unknown, unknown>>(),
   blobs: new Map<string, Blob>(),
+  failingStore: null as string | null,
+  failingBlob: null as BlobFailure | null,
+  transactions: 0,
 }));
 
 function store(name: string): Map<unknown, unknown> {
@@ -19,18 +32,43 @@ function store(name: string): Map<unknown, unknown> {
   return created;
 }
 
+function attempt(stores: readonly string[], write: () => void): Promise<void> {
+  held.transactions += 1;
+  const failing = stores.find((name) => name === held.failingStore);
+  if (failing !== undefined) {
+    return Promise.reject(new Error(`Store "${failing}" failed the transaction`));
+  }
+  write();
+  return Promise.resolve();
+}
+
+function commit(writes: readonly FakeWrite[]): Promise<void> {
+  return attempt(
+    writes.map((write) => write.store),
+    () => {
+      for (const write of writes) {
+        if (write.kind === 'put') store(write.store).set(write.record.id, write.record);
+        else store(write.store).delete(write.key);
+      }
+    },
+  );
+}
+
 vi.mock('$lib/platform/idb/connection', () => ({
   openDatabase: () => Promise.resolve({}),
   listRecords: (_db: unknown, name: string) => Promise.resolve([...store(name).values()]),
   getRecord: (_db: unknown, name: string, key: unknown) => Promise.resolve(store(name).get(key)),
-  putRecord: (_db: unknown, name: string, row: { id: unknown }) => {
-    store(name).set(row.id, row);
-    return Promise.resolve();
-  },
-  deleteRecord: (_db: unknown, name: string, key: unknown) => {
-    store(name).delete(key);
-    return Promise.resolve();
-  },
+  putRecord: (_db: unknown, name: string, row: { id: unknown }) =>
+    attempt([name], () => store(name).set(row.id, row)),
+  deleteRecord: (_db: unknown, name: string, key: unknown) =>
+    attempt([name], () => store(name).delete(key)),
+  writeRecords: (_db: unknown, writes: readonly FakeWrite[]) => commit(writes),
+  writeAfterRead: (
+    _db: unknown,
+    _stores: readonly string[],
+    read: FakeRead,
+    decide: (found: unknown) => readonly FakeWrite[],
+  ) => commit(decide(store(read.store).get(read.key))),
 }));
 
 vi.mock('$lib/platform/opfs/blob-store', () => ({
@@ -41,6 +79,7 @@ vi.mock('$lib/platform/opfs/blob-store', () => ({
     return Promise.resolve();
   },
   remove: (key: string) => {
+    if (held.failingBlob?.key === key) return Promise.reject(held.failingBlob.error);
     held.blobs.delete(key);
     return Promise.resolve();
   },
@@ -87,6 +126,9 @@ const REMOVED_AT = 1758500000000;
 beforeEach(() => {
   held.stores.clear();
   held.blobs.clear();
+  held.failingStore = null;
+  held.failingBlob = null;
+  held.transactions = 0;
   vi.stubGlobal('indexedDB', {});
 });
 
@@ -434,5 +476,145 @@ describe('createLibraryRepository', () => {
     await repository.forgetRemoved(bookId('gone-1'));
 
     expect(store('removed-books').size).toBe(0);
+  });
+});
+
+describe('a removal stopped part way', () => {
+  function shelve(): void {
+    store('books').set(GOOD.id, GOOD);
+    store('page-lists').set(GOOD.id, { id: GOOD.id, names: ['a.jpg'] });
+    held.blobs.set('good-1.src', new Blob(['source']));
+    held.blobs.set('good-1.cover', new Blob(['cover']));
+  }
+
+  function expectRemoved(): void {
+    expect(store('books').size).toBe(0);
+    expect(store('page-lists').size).toBe(0);
+    expect(store('removed-books').get('good-1')).toEqual({ ...GOOD, removedAt: REMOVED_AT });
+    expect(held.blobs.size).toBe(0);
+  }
+
+  it('writes the removed record and deletes the row and its page list in one transaction', async () => {
+    shelve();
+
+    await createLibraryRepository().remove(bookId('good-1'), REMOVED_AT);
+
+    expect(held.transactions).toBe(1);
+    expectRemoved();
+  });
+
+  it('leaves the book whole on the shelf when the browser refuses to remove its files', async () => {
+    shelve();
+    held.failingBlob = { key: 'good-1.src', error: new Error(PRIVATE_WINDOW) };
+
+    const removed = await createLibraryRepository().remove(bookId('good-1'), REMOVED_AT);
+
+    expect(removed).toEqual(STORAGE_UNAVAILABLE);
+    expect(store('books').get('good-1')).toEqual(GOOD);
+    expect(store('page-lists').has('good-1')).toBe(true);
+    expect(store('removed-books').size).toBe(0);
+    expect(held.blobs.size).toBe(2);
+  });
+
+  it('keeps the book on the shelf without its file when its cover cannot be removed, and removes it on a second try', async () => {
+    shelve();
+    held.failingBlob = { key: 'good-1.cover', error: new Error('Key "good-1.cover" is locked') };
+    const repository = createLibraryRepository();
+
+    await expect(repository.remove(bookId('good-1'), REMOVED_AT)).rejects.toThrow('locked');
+
+    expect(store('books').get('good-1')).toEqual(GOOD);
+    expect(store('removed-books').size).toBe(0);
+    expect([...held.blobs.keys()]).toEqual(['good-1.cover']);
+
+    held.failingBlob = null;
+    const removed = await repository.remove(bookId('good-1'), REMOVED_AT);
+
+    expect(removed).toEqual({ kind: 'success' });
+    expectRemoved();
+  });
+
+  it('commits none of the record, the row deletion and the page list deletion when the transaction fails, and removes the book on a second try', async () => {
+    shelve();
+    held.failingStore = 'page-lists';
+    const repository = createLibraryRepository();
+
+    await expect(repository.remove(bookId('good-1'), REMOVED_AT)).rejects.toThrow('page-lists');
+
+    expect(store('books').get('good-1')).toEqual(GOOD);
+    expect(store('page-lists').has('good-1')).toBe(true);
+    expect(store('removed-books').size).toBe(0);
+
+    held.failingStore = null;
+    const removed = await repository.remove(bookId('good-1'), REMOVED_AT);
+
+    expect(removed).toEqual({ kind: 'success' });
+    expectRemoved();
+  });
+
+  it('keeps the removed record when it removes a book a second time after the row is gone', async () => {
+    shelve();
+    const repository = createLibraryRepository();
+    await repository.remove(bookId('good-1'), REMOVED_AT);
+
+    const again = await repository.remove(bookId('good-1'), REMOVED_AT + 1);
+
+    expect(again).toEqual({ kind: 'success' });
+    expectRemoved();
+  });
+});
+
+describe('erase', () => {
+  function shelveUnreadable(): void {
+    store('books').set(OLD_SHAPE.id, OLD_SHAPE);
+    store('page-lists').set(OLD_SHAPE.id, { id: OLD_SHAPE.id, names: ['a.jpg'] });
+    store('removed-books').set(OLD_SHAPE.id, { ...OLD_SHAPE, removedAt: 1 });
+    held.blobs.set('old-1.src', new Blob(['source']));
+    held.blobs.set('old-1.cover', new Blob(['cover']));
+  }
+
+  function expectErased(): void {
+    expect(store('books').size).toBe(0);
+    expect(store('page-lists').size).toBe(0);
+    expect(store('removed-books').size).toBe(0);
+    expect(held.blobs.size).toBe(0);
+  }
+
+  it('deletes the row, its page list, any removed record and its files, and keeps no removed record, in one transaction', async () => {
+    shelveUnreadable();
+
+    const erased = await createLibraryRepository().erase(bookId('old-1'));
+
+    expect(erased).toEqual({ kind: 'success' });
+    expect(held.transactions).toBe(1);
+    expectErased();
+  });
+
+  it('leaves the row on the shelf when the browser refuses to remove its files', async () => {
+    shelveUnreadable();
+    held.failingBlob = { key: 'old-1.src', error: new Error(PRIVATE_WINDOW) };
+
+    const erased = await createLibraryRepository().erase(bookId('old-1'));
+
+    expect(erased).toEqual(STORAGE_UNAVAILABLE);
+    expect(store('books').get('old-1')).toEqual(OLD_SHAPE);
+  });
+
+  it('leaves every row when the transaction fails, and erases the book on a second try', async () => {
+    shelveUnreadable();
+    held.failingStore = 'removed-books';
+    const repository = createLibraryRepository();
+
+    await expect(repository.erase(bookId('old-1'))).rejects.toThrow('removed-books');
+
+    expect(store('books').get('old-1')).toEqual(OLD_SHAPE);
+    expect(store('page-lists').has('old-1')).toBe(true);
+    expect(store('removed-books').has('old-1')).toBe(true);
+
+    held.failingStore = null;
+    const erased = await repository.erase(bookId('old-1'));
+
+    expect(erased).toEqual({ kind: 'success' });
+    expectErased();
   });
 });

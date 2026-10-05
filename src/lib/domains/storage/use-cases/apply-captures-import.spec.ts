@@ -142,6 +142,7 @@ function repositories(into: World) {
       into.deleted.push(id);
       return notUsed();
     },
+    erase: notUsed,
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,

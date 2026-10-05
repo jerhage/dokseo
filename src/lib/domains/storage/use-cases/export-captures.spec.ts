@@ -149,6 +149,7 @@ function deps(holdings: Holdings = {}): ExportCapturesDeps {
     listRestorable: notUsed,
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: notUsed,
+    erase: notUsed,
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,

@@ -175,8 +175,7 @@ function buildRemovedBooks(
       mergeIntoBook(
         {
           moving: { captures },
-          removing: { repository, now: Date.now },
-          forgetting: { repository },
+          erasing: { repository },
         },
         into,
         strays,

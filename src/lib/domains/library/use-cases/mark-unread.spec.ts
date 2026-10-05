@@ -66,6 +66,7 @@ function fakeRepository(found: BookLookup, outcome = found) {
     listRestorable: () => Promise.resolve({ kind: 'success', removed: [], unreadable: [] }),
     addRemoved: () => Promise.reject(new Error('not used')),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
+    erase: () => Promise.resolve({ kind: 'success' }),
   };
   return { repository, updates };
 }

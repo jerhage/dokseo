@@ -53,8 +53,9 @@
 <DocsSection title={IDENTITY_SECTIONS.removed}>
   <p>
     Removing a book frees its space: the stored file, the cover, the page list and the book row go.
-    Before the row goes, the repository writes a record of it into a separate
-    <code>removed-books</code> store:
+    The files go first. Then one transaction reads the book row, writes a record of it into a
+    separate <code>removed-books</code> store, and deletes the row and its page list, so the record and
+    the deletes commit together:
   </p>
   <DocsCode label={REPOSITORY_REMOVE_CALL.file} code={REPOSITORY_REMOVE_CALL.code} />
   <p>
@@ -147,11 +148,11 @@
   <DocsCode label={MERGE_STRAY.file} code={MERGE_STRAY.code} />
   <p>
     Moving the captures rewrites every capture of the row to the held book's id in one IndexedDB
-    transaction. Removing the row then writes a removed record like any removal, and forgetting
-    deletes that record. Captures and books live in different databases, so no transaction spans the
-    three steps; the order makes a partial failure safe instead. If the captures moved but the row
-    stayed, the row is still unreadable and still matches, so its Merge button finishes the job. If
-    only the record is left over, it shows under Removed books.
+    transaction. Erasing the row then removes its files and, in one transaction, deletes its book
+    row, its page list and any removed record, without writing a new one. Captures and books live in
+    different databases, so no transaction spans the two steps; the order makes a partial failure
+    safe instead. If the captures moved but the row stayed, the row is still unreadable and still
+    matches, so its Merge button finishes the job.
   </p>
   <p>
     The upload toast then reads "Its old captures were moved onto it." Only unreadable rows merge

@@ -15,6 +15,10 @@ import { bookId } from '$lib/shared/ids';
 import { removedBookFromStored } from '../domain/book/removed-book';
 import { createLibraryRepository } from './indexeddb-opfs-library.repo';
 
+type StoreWrite =
+  | { readonly kind: 'put'; readonly store: string; readonly record: { readonly id: unknown } }
+  | { readonly kind: 'delete'; readonly store: string; readonly key: unknown };
+
 const held = vi.hoisted(() => ({
   opened: [] as OpenedDatabase[],
   stores: new Map<string, Map<unknown, unknown>>(),
@@ -41,6 +45,18 @@ vi.mock('$lib/platform/idb/connection', () => ({
   },
   deleteRecord: (_db: unknown, name: string, key: unknown) => {
     store(name).delete(key);
+    return Promise.resolve();
+  },
+  writeAfterRead: (
+    _db: unknown,
+    _stores: readonly string[],
+    read: { store: string; key: unknown },
+    decide: (found: unknown) => readonly StoreWrite[],
+  ) => {
+    for (const write of decide(store(read.store).get(read.key))) {
+      if (write.kind === 'put') store(write.store).set(write.record.id, write.record);
+      else store(write.store).delete(write.key);
+    }
     return Promise.resolve();
   },
 }));

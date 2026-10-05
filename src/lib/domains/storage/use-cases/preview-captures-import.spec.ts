@@ -43,6 +43,7 @@ function deps(refusal: Refusal = 'none'): PreviewCapturesImportDeps {
       ),
     addRemoved: notUsed,
     forgetRemoved: notUsed,
+    erase: notUsed,
     update: notUsed,
     readSource: notUsed,
     readCover: notUsed,

@@ -154,6 +154,72 @@ async function transact<T>(
   });
 }
 
+type RecordWrite =
+  | { readonly kind: 'put'; readonly store: string; readonly record: unknown }
+  | { readonly kind: 'delete'; readonly store: string; readonly key: IDBValidKey };
+
+type RecordRead = { readonly store: string; readonly key: IDBValidKey };
+
+function place(transaction: IDBTransaction, write: RecordWrite): void {
+  const objectStore = transaction.objectStore(write.store);
+  if (write.kind === 'put') objectStore.put(write.record);
+  else objectStore.delete(write.key);
+}
+
+async function transactAcross(
+  db: IDBDatabase,
+  stores: readonly string[],
+  run: (transaction: IDBTransaction) => void,
+): Promise<void> {
+  if (!isSupported()) throw unsupported();
+
+  const live = await current(db);
+  const named = stores.join('", "');
+
+  return new Promise((resolve, reject) => {
+    let transaction: IDBTransaction | null = null;
+    try {
+      const opened = live.transaction([...stores], 'readwrite');
+      transaction = opened;
+      opened.oncomplete = () => resolve();
+      opened.onabort = () =>
+        reject(
+          new Error(`Stores "${named}" aborted the transaction: ${describeCause(opened.error)}`),
+        );
+      opened.onerror = () =>
+        reject(
+          new Error(`Stores "${named}" failed the transaction: ${describeCause(opened.error)}`),
+        );
+      run(opened);
+    } catch (cause) {
+      transaction?.abort();
+      reject(new Error(`Stores "${named}" are not usable: ${describeCause(cause)}`, { cause }));
+    }
+  });
+}
+
+async function writeRecords(db: IDBDatabase, writes: readonly RecordWrite[]): Promise<void> {
+  const stores = [...new Set(writes.map((write) => write.store))];
+  await transactAcross(db, stores, (transaction) => {
+    for (const write of writes) place(transaction, write);
+  });
+}
+
+async function writeAfterRead<T>(
+  db: IDBDatabase,
+  stores: readonly string[],
+  read: RecordRead,
+  decide: (found: T | undefined) => readonly RecordWrite[],
+): Promise<void> {
+  await transactAcross(db, stores, (transaction) => {
+    const reading = transaction.objectStore(read.store).get(read.key);
+    reading.onsuccess = () => {
+      const found: T | undefined = reading.result;
+      for (const write of decide(found)) place(transaction, write);
+    };
+  });
+}
+
 function getRecord<T>(db: IDBDatabase, store: string, key: IDBValidKey): Promise<T | undefined> {
   return transact(db, store, 'readonly', (objectStore) => objectStore.get(key));
 }
@@ -225,4 +291,7 @@ export {
   listByIndex,
   deleteByIndex,
   rewriteByIndex,
+  writeRecords,
+  writeAfterRead,
 };
+export type { RecordRead, RecordWrite };
