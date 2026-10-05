@@ -42,23 +42,19 @@ describe('shellAssets', () => {
   it('lists the document, every build file and the static files the app loads', () => {
     const assets = shellAssets(
       '',
-      ['/_app/immutable/entry/start.js', '/_app/immutable/assets/0.css'],
       [
-        '/_headers',
-        '/fonts/geist.woff2',
-        '/fonts/geist.OFL.txt',
-        '/licenses.txt',
-        '/robots.txt',
-        '/.well-known/security.txt',
-        '/favicon.svg',
+        '/_app/immutable/entry/start.js',
+        '/_app/immutable/assets/0.css',
+        '/_app/immutable/assets/geist.BgDaEnEv.woff2',
       ],
+      ['/_headers', '/licenses.txt', '/robots.txt', '/.well-known/security.txt', '/favicon.svg'],
     );
 
     expect(assets).toEqual([
       '/',
       '/_app/immutable/entry/start.js',
       '/_app/immutable/assets/0.css',
-      '/fonts/geist.woff2',
+      '/_app/immutable/assets/geist.BgDaEnEv.woff2',
       '/favicon.svg',
     ]);
   });

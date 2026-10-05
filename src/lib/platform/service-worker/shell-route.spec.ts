@@ -7,7 +7,7 @@ const ORIGIN = 'https://reader.test';
 const scope: ShellScope = {
   origin: ORIGIN,
   base: '',
-  precached: new Set(['/', '/fonts/geist.woff2']),
+  precached: new Set(['/', '/manifest.webmanifest']),
 };
 
 function get(url: string, mode = 'cors'): ShellRequest {
@@ -22,10 +22,15 @@ describe('shellRoute', () => {
     expect(shellRoute(get(`${ORIGIN}/_app/immutable/workers/ocr.worker-x.js`), scope)).toEqual({
       kind: 'cache-first',
     });
+    expect(shellRoute(get(`${ORIGIN}/_app/immutable/assets/geist.BgDaEnEv.woff2`), scope)).toEqual({
+      kind: 'cache-first',
+    });
   });
 
   it('answers a precached static file from the cache first', () => {
-    expect(shellRoute(get(`${ORIGIN}/fonts/geist.woff2`), scope)).toEqual({ kind: 'cache-first' });
+    expect(shellRoute(get(`${ORIGIN}/manifest.webmanifest`), scope)).toEqual({
+      kind: 'cache-first',
+    });
   });
 
   it('asks the network first for every navigation', () => {
