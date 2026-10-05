@@ -3,33 +3,8 @@
   import DocsSection from '../../DocsSection.svelte';
   import SchemeDemo from './SchemeDemo.svelte';
   import { UI_LIBRARY_SECTIONS } from './sections';
-  import { PRIMITIVE_NAMES } from './snippets';
+  import { FRAME, PRIMITIVE_NAMES, SCHEME, SCHEME_UTILITIES } from './snippets';
   import ThemeFrame from './ThemeFrame.svelte';
-
-  const SCHEME = `:root {
-  color-scheme: light dark;
-}
-:root[data-color-scheme='light'] {
-  color-scheme: light;
-}
-:root[data-color-scheme='dark'] {
-  color-scheme: dark;
-}`;
-
-  const SCHEME_UTILITIES = `.scheme-light {
-  color-scheme: light;
-  color: var(--color-text);
-}
-.scheme-dark {
-  color-scheme: dark;
-  color: var(--color-text);
-}`;
-
-  const FRAME = `const inner = frame.contentDocument;
-for (const node of Array.from(document.head.querySelectorAll(PAGE_STYLES)))
-  inner.head.append(node.cloneNode(true));
-applyAppearance(inner.documentElement, appearance);
-const specimen = mount(ThemeSpecimen, { target: inner.body });`;
 </script>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.schemes}>
@@ -47,7 +22,7 @@ const specimen = mount(ThemeSpecimen, { target: inner.body });`;
     <code>b</code> when it is dark. Dokseo writes every color that differs between schemes once, as
     such a pair, and switches only the <code>color-scheme</code> property.
   </p>
-  <DocsCode label="src/lib/ui/styles/base/scheme.css, excerpt" code={SCHEME} />
+  <DocsCode label={SCHEME.label} code={SCHEME.code} />
   <p>
     Automatic is the absence of the attribute, so removing <code>data-color-scheme</code> returns to
     the system's choice with no script. Form controls and scrollbars follow
@@ -58,7 +33,7 @@ const specimen = mount(ThemeSpecimen, { target: inner.body });`;
     Because <code>color-scheme</code> inherits and <code>light-dark()</code> resolves on the element that
     uses the color, any subtree can pin its own scheme. Two utilities do exactly that.
   </p>
-  <DocsCode label="src/lib/ui/styles/utilities/surface.css, excerpt" code={SCHEME_UTILITIES} />
+  <DocsCode label={SCHEME_UTILITIES.label} code={SCHEME_UTILITIES.code} />
   <SchemeDemo />
 </DocsSection>
 
@@ -78,7 +53,7 @@ const specimen = mount(ThemeSpecimen, { target: inner.body });`;
     <code>--color-primary</code>, which it inherits ready-made. To show a second theme next to this
     page, the demo uses a second document: an <code>iframe</code> with its own root element.
   </p>
-  <DocsCode label="ThemeFrame.svelte, the mount step, simplified" code={FRAME} />
+  <DocsCode label={FRAME.label} code={FRAME.code} />
   <ThemeFrame />
   <p>
     The attributes on the real page are set before it first paints. An inline script in

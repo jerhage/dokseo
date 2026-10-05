@@ -6,26 +6,22 @@
   import { TOKEN_DIAGRAM } from './diagrams';
   import { UI_LIBRARY_SECTIONS } from './sections';
   import {
-    BASE_THEME,
-    EMBER_THEME,
+    BASE_PALETTE,
+    BASE_ROLES,
+    BUTTON_TONE,
+    EMBER_PALETTE,
+    EMBER_ROLES,
+    PIXEL_LENGTH,
     PRIMITIVE_NAMES,
     REGISTERED,
-    SEMANTIC,
+    REGISTERED_VALUE,
+    SEMANTIC_COLOR,
+    SEMANTIC_RADIUS,
+    SEMANTIC_SPACE,
     TOKEN_DIAGRAM_LABEL,
   } from './snippets';
   import TokenInspector from './TokenInspector.svelte';
   import TokenLengthDemo from './TokenLengthDemo.svelte';
-
-  const COMPONENT = `.btn-primary {
-  --_btn-tone-fg: var(--color-text-on-primary);
-  --_btn-tone-bg: var(--color-primary);
-  --_btn-tone-border: var(--color-primary);
-}`;
-
-  const PIXEL_LENGTH = `function pixelLength(style: StyleSource, property: string): number {
-  const parsed = Number.parseFloat(style.getPropertyValue(property));
-  return Number.isFinite(parsed) ? parsed : 0;
-}`;
 </script>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.tokens}>
@@ -76,10 +72,14 @@
     />
     {#snippet caption()}From a raw color to a component, under the default theme.{/snippet}
   </Figure>
-  <DocsCode label="src/lib/ui/styles/base/themes/base.css, excerpt" code={BASE_THEME} />
-  <DocsCode label="src/lib/ui/styles/base/themes/ember.css, excerpt" code={EMBER_THEME} />
-  <DocsCode label="src/lib/ui/styles/tokens/, excerpts" code={SEMANTIC} />
-  <DocsCode label="src/lib/ui/styles/components/btn.css, excerpt" code={COMPONENT} />
+  <DocsCode label={BASE_PALETTE.label} code={BASE_PALETTE.code} />
+  <DocsCode label={BASE_ROLES.label} code={BASE_ROLES.code} />
+  <DocsCode label={EMBER_PALETTE.label} code={EMBER_PALETTE.code} />
+  <DocsCode label={EMBER_ROLES.label} code={EMBER_ROLES.code} />
+  <DocsCode label={SEMANTIC_COLOR.label} code={SEMANTIC_COLOR.code} />
+  <DocsCode label={SEMANTIC_SPACE.label} code={SEMANTIC_SPACE.code} />
+  <DocsCode label={SEMANTIC_RADIUS.label} code={SEMANTIC_RADIUS.code} />
+  <DocsCode label={BUTTON_TONE.label} code={BUTTON_TONE.code} />
   <p>
     The button rule reads <code>--color-primary</code> into custom properties of its own. A leading
     underscore, as in <code>--_btn-tone-bg</code>, marks a property private to one component: the
@@ -118,8 +118,9 @@
     in pixels, and <code>getPropertyValue('--carousel-gap')</code> returns <code>"16px"</code>. The
     declaration stays an ordinary token, so the rest of the system treats it like any other.
   </p>
-  <DocsCode label="src/lib/ui/styles/tokens/spacing.css, excerpt" code={REGISTERED} />
-  <DocsCode label="src/lib/ui/components/css-length.ts" code={PIXEL_LENGTH} />
+  <DocsCode label={REGISTERED.label} code={REGISTERED.code} />
+  <DocsCode label={REGISTERED_VALUE.label} code={REGISTERED_VALUE.code} />
+  <DocsCode label={PIXEL_LENGTH.label} code={PIXEL_LENGTH.code} />
   <TokenLengthDemo />
   <p>
     Media and container queries cannot read a custom property at all, so a breakpoint is written out

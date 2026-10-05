@@ -5,31 +5,8 @@
   import DocsSection from '../../DocsSection.svelte';
   import { DIRECTION_DIAGRAM } from './diagrams';
   import { UI_LIBRARY_SECTIONS } from './sections';
-  import { PRIMITIVE_NAMES } from './snippets';
+  import { PRIMITIVE_NAMES, RULE_NAME, RULE_PATHS, SHELL, SHELL_NARROW } from './snippets';
   import ShellWidthDemo from './ShellWidthDemo.svelte';
-
-  const SHELL = `.layout-app-shell {
-  container: app-shell / inline-size;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-}
-@container app-shell (max-width: 48rem) {
-  .layout-app-shell-nav {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    flex-direction: row;
-  }
-}`;
-
-  const RULE = `{
-  name: 'base-components-know-no-app',
-  severity: 'error',
-  from: { path: '^src/lib/ui/' },
-  to: {
-    path: ['^src/', '(^|/)node_modules/'],
-    pathNot: ['^src/lib/ui/', '(^|/)node_modules/(svelte|ts-pattern|vitest)/'],
-  },
-}`;
 </script>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.containers}>
@@ -44,7 +21,8 @@
     <code>app-shell</code>, and below <code>48rem</code> of its own width the navigation leaves the side
     column and becomes a row under the header.
   </p>
-  <DocsCode label="src/lib/ui/styles/utilities/layout.css, excerpt" code={SHELL} />
+  <DocsCode label={SHELL.label} code={SHELL.code} />
+  <DocsCode label={SHELL_NARROW.label} code={SHELL_NARROW.code} />
   <ShellWidthDemo />
 </DocsSection>
 
@@ -77,7 +55,8 @@
     A dependency-cruiser rule enforces the boundary, and <code>deno task verify:static</code> fails on
     any import that crosses it.
   </p>
-  <DocsCode label=".dependency-cruiser.cjs, the rule, without its comment" code={RULE} />
+  <DocsCode label={RULE_NAME.label} code={RULE_NAME.code} />
+  <DocsCode label={RULE_PATHS.label} code={RULE_PATHS.code} />
 </DocsSection>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.playground}>

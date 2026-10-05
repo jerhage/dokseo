@@ -2,38 +2,8 @@
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { UI_LIBRARY_SECTIONS } from './sections';
+  import { CLASS_TABLES, FEATURE, RUNTIME_MARKUP } from './snippets';
   import VariantGallery from './VariantGallery.svelte';
-
-  const TABLES = `const BUTTON_VARIANTS: Readonly<Record<ButtonVariant, ClassList>> = {
-  default: [],
-  primary: ['btn-primary'],
-  accent: ['btn-accent'],
-  outline: ['btn-outline', 'btn-primary'],
-  ghost: ['btn-ghost'],
-  danger: ['btn-danger'],
-  'ghost-danger': ['btn-ghost', 'btn-danger'],
-};
-
-const BUTTON_SIZES: Readonly<Record<ControlSize, ClassList>> = {
-  sm: ['btn-sm'],
-  md: [],
-  lg: ['btn-lg'],
-};`;
-
-  const RUNTIME_MARKUP = `<div class="page-frame" style:--page-ratio={ratio}>`;
-
-  const FEATURE = `@layer features {
-  @scope (.page-frame) {
-    :scope {
-      block-size: 100%;
-      aspect-ratio: var(--page-ratio, var(--ratio-portrait));
-    }
-    .picture {
-      position: absolute;
-      inset: 0;
-    }
-  }
-}`;
 </script>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.components}>
@@ -51,7 +21,7 @@ const BUTTON_SIZES: Readonly<Record<ControlSize, ClassList>> = {
     variant fails to compile until it has classes. A default adds no class: <code>md</code> is the
     size <code>.btn</code> already has.
   </p>
-  <DocsCode label="src/lib/ui/components/classes.ts, excerpt" code={TABLES} />
+  <DocsCode label={CLASS_TABLES.label} code={CLASS_TABLES.code} />
   <VariantGallery />
   <p>
     Some values exist only at runtime: the aspect ratio of a page image, the position of a
@@ -59,7 +29,7 @@ const BUTTON_SIZES: Readonly<Record<ControlSize, ClassList>> = {
     property set with Svelte's <code>style:</code> directive, and a stylesheet reads the property with
     a fallback. The page frame of the image reader measures its picture and passes the ratio.
   </p>
-  <DocsCode label="PageFrame.svelte, the binding, simplified" code={RUNTIME_MARKUP} />
+  <DocsCode label={RUNTIME_MARKUP.label} code={RUNTIME_MARKUP.code} />
   <p>
     The binding holds a measurement and nothing else. Colors, spacing and every other design value
     stay in a layered stylesheet, where a theme can reach them.
@@ -120,7 +90,7 @@ const BUTTON_SIZES: Readonly<Record<ControlSize, ClassList>> = {
     selector inside it to the subtree under the component's root element, so a short class such as
     <code>.picture</code> cannot match anything elsewhere on the page.
   </p>
-  <DocsCode label="src/lib/domains/viewing/ui/page-frame.css, excerpt" code={FEATURE} />
+  <DocsCode label={FEATURE.label} code={FEATURE.code} />
   <p>
     The position of <code>features</code> in the layer order is deliberate. It comes after
     <code>components</code>, so a feature rule can place and size a library component. It comes

@@ -6,7 +6,7 @@
   import { LAYER_DIAGRAM } from './diagrams';
   import LayerDemo from './LayerDemo.svelte';
   import { UI_LIBRARY_SECTIONS } from './sections';
-  import { ORDER_STATEMENT } from './snippets';
+  import { IMPORTS_FIRST, IMPORTS_LAST, IMPORTS_MIDDLE, ORDER_STATEMENT } from './snippets';
 
   const TWO_LAYERS = `@layer components, utilities;
 
@@ -21,20 +21,6 @@
     color: red;
   }
 }`;
-
-  const IMPORTS = `@import 'reset.css' layer(reset);
-
-@import 'base/primitives.css' layer(base);
-@import 'base/scheme.css' layer(base);
-@import 'base/themes/base.css' layer(base);
-
-@import 'tokens/colors.css' layer(tokens);
-
-@import 'components/btn.css' layer(components);
-
-@import 'utilities/text.css' layer(utilities);
-
-@import 'overrides/overrides.css' layer(overrides);`;
 </script>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.problem}>
@@ -89,7 +75,7 @@
     reach the page before the design system's entry file, and if that stylesheet were the first to
     name <code>features</code>, it would place <code>features</code> before every other layer.
   </p>
-  <DocsCode label="src/app.html" code={ORDER_STATEMENT} />
+  <DocsCode label={ORDER_STATEMENT.label} code={ORDER_STATEMENT.code} />
   <Figure>
     <Diagram
       label="The eight layers in declared order, from open-props to overrides; each layer is beaten by the one after it"
@@ -107,7 +93,9 @@
     rule lives. The root layout imports <code>index.css</code> once, and every class it defines is global
     from then on.
   </p>
-  <DocsCode label="src/lib/ui/styles/index.css, a few of its imports" code={IMPORTS} />
+  <DocsCode label={IMPORTS_FIRST.label} code={IMPORTS_FIRST.code} />
+  <DocsCode label={IMPORTS_MIDDLE.label} code={IMPORTS_MIDDLE.code} />
+  <DocsCode label={IMPORTS_LAST.label} code={IMPORTS_LAST.code} />
   <ul>
     <li><code>open-props</code> is declared and receives no import.</li>
     <li><code>reset</code> holds Josh W. Comeau's modern CSS reset, element selectors only.</li>
