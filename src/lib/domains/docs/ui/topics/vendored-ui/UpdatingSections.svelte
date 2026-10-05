@@ -61,7 +61,9 @@ git merge --ff-only <branch>`;
   <p>
     At the time of writing the answer is 13: the library's first ten commits and three made since. A
     number in the thousands means Dokseo's own history is about to go out with it, which happened
-    once while the library was being extracted.
+    once while the library was being extracted (<a href={vendoredHref('stray')}
+      >The commit that pulled in all of Dokseo</a
+    >).
   </p>
 </DocsSection>
 

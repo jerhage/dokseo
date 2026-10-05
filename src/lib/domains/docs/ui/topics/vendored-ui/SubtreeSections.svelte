@@ -75,7 +75,7 @@
   <p>
     With <code>--squash</code>, <code>add</code> made two commits. The first, <code>ba921a0</code>,
     has no parent: it holds the library's files as they were at tag <code>v1.0.0</code>, library
-    commit <code>c71a4fc</code>. Its message carries the two lines git subtree reads back later:
+    commit <code>c71a4fc</code>. Its message holds the two lines git subtree reads back later:
   </p>
   <DocsCode label={ADD_SQUASH_MESSAGE.label} code={ADD_SQUASH_MESSAGE.code} />
   <p>
@@ -214,8 +214,8 @@
     The branch holds the two commits that touched <code>src/lib/ui</code>, with the files at the
     root, and new hashes because their trees changed. A commit that touched the library and the app
     at once keeps its whole message: <code>feat(library): add a shelf with spaced cards</code> is now
-    a library commit that only adds a token. The app's commit scopes and wording carry over into the library's
-    log.
+    a library commit that only adds a token. The app's commit scopes and wording stay as they were in
+    the library's log.
   </p>
   <p>
     <code>split</code> follows the prefix, not the files. When the library reached

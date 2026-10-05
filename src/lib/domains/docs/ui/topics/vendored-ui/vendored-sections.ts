@@ -39,6 +39,12 @@ const VENDORED_SECTIONS = {
   outside: 'What stays in each app',
   tests: 'The playground and the specs',
   extract: 'Extracting the library and vendoring it back',
+  splitRun: 'Ten commits from the move on',
+  revendor: 'Vendoring the library back into Dokseo',
+  stray: 'The commit that pulled in all of Dokseo',
+  rewrite: 'Rewriting the unpushed branch',
+  rejected: 'Fixes I did not use',
+  lesson: 'What the extraction taught me',
 } as const;
 
 type VendoredSectionKey = keyof typeof VENDORED_SECTIONS;

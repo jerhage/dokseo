@@ -1,6 +1,7 @@
 <script lang="ts">
   import DocsPage from '../DocsPage.svelte';
   import CopyToolSections from './vendored-ui/CopyToolSections.svelte';
+  import ExtractionHistory from './vendored-ui/ExtractionHistory.svelte';
   import DokseoPreparation from './vendored-ui/DokseoPreparation.svelte';
   import IntegrationSection from './vendored-ui/IntegrationSection.svelte';
   import KandanInDokseo from './vendored-ui/KandanInDokseo.svelte';
@@ -24,4 +25,5 @@
   <IntegrationSection />
   <UpdatingSections />
   <DokseoPreparation />
+  <ExtractionHistory />
 </DocsPage>
