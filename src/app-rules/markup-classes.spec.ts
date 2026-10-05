@@ -3,8 +3,9 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const LIBRARY = new URL('../', import.meta.url);
-const STYLES = new URL('./', import.meta.url);
+const SOURCE = new URL('../', import.meta.url);
+const STYLES = new URL('lib/ui/styles/', SOURCE);
+const LIBRARY_FOLDER = 'lib/ui/';
 const LIBRARY_FOLDERS = ['components/', 'utilities/', 'overrides/'];
 
 type Written = { readonly file: string; readonly name: string; readonly defined: boolean };
@@ -63,12 +64,13 @@ function writtenClasses(source: string): readonly string[] {
 }
 
 function everyWrittenClass(): readonly Written[] {
-  const stylesheets = filesUnder(LIBRARY, '.css')
-    .map((path) => read(LIBRARY, path))
+  const stylesheets = filesUnder(SOURCE, '.css')
+    .map((path) => read(SOURCE, path))
     .join('\n');
   const defined = classesIn(stylesheets);
-  return filesUnder(LIBRARY, '.svelte').flatMap((file) => {
-    const source = read(LIBRARY, file);
+  const markup = filesUnder(SOURCE, '.svelte').filter((file) => !file.startsWith(LIBRARY_FOLDER));
+  return markup.flatMap((file) => {
+    const source = read(SOURCE, file);
     const local = classesIn(ownStyles(source));
     return writtenClasses(source).map((name) => ({
       file,
@@ -90,7 +92,7 @@ function family(name: string): string {
   return name.split('-')[0] ?? '';
 }
 
-describe('the classes the library markup writes', () => {
+describe("the classes Dokseo's markup writes", () => {
   it('reads class attributes, class props, class expressions and class directives', () => {
     const source = [
       '<script>let on = true;</script>',
@@ -111,11 +113,13 @@ describe('the classes the library markup writes', () => {
     const written = everyWrittenClass();
     const namesIn = (file: string): readonly string[] =>
       written.filter((found) => found.file.endsWith(file)).map((found) => found.name);
-    const header = namesIn('components/PageHeader.svelte');
-    const card = namesIn('components/Card.svelte');
+    const library = namesIn('domains/library/ui/LibraryScreen.svelte');
+    const shelf = namesIn('domains/library/ui/ShelfView.svelte');
 
-    expect(header).toEqual(expect.arrayContaining(['page-header', 'text-faint', 'truncate']));
-    expect(card).toEqual(expect.arrayContaining(['card-body', 'card-eyebrow', 'eyebrow']));
+    expect(library).toEqual(
+      expect.arrayContaining(['layout-app-shell-header', 'layout-app-shell-wide-only']),
+    );
+    expect(shelf).toContain('layout-app-shell-narrow-nowrap');
   });
 
   it('finds every class of a design system family in some stylesheet', () => {

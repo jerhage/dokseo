@@ -182,21 +182,22 @@ const IDLE_WRITE_QUERY: SourceSnippet = {
 };
 
 const SOURCE_WALKER: SourceSnippet = {
-  label: 'Listing the source files, in styles/source-styling.spec.ts',
-  file: 'src/lib/ui/styles/source-styling.spec.ts',
+  label: 'Listing the source files, in app-rules/source-styling.spec.ts',
+  file: 'src/app-rules/source-styling.spec.ts',
   code: `function sourceFiles(extensions: readonly string[]): readonly string[] {
   return readdirSync(SOURCE, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => relative(fileURLToPath(SOURCE), join(entry.parentPath, entry.name)))
     .map((path) => path.split('\\\\').join('/'))
+    .filter((path) => !path.startsWith(LIBRARY_FOLDER))
     .filter((path) => extensions.some((extension) => path.endsWith(extension)))
     .toSorted();
 }`,
 };
 
 const STYLE_BLOCK_TEST: SourceSnippet = {
-  label: 'A rule as a test, in styles/source-styling.spec.ts',
-  file: 'src/lib/ui/styles/source-styling.spec.ts',
+  label: 'A rule as a test, in app-rules/source-styling.spec.ts',
+  file: 'src/app-rules/source-styling.spec.ts',
   code: `it('has no <style> block in any Svelte file outside the docs', () => {
   const offenders = sourceFiles(['.svelte'])
     .filter((path) => !path.startsWith(DOCS_FOLDER))
