@@ -21,7 +21,7 @@ const RELATIVE_FONT_URLS = 28;
 
 const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
   source: {
-    files: 165,
+    files: 166,
     aliased: 0,
     above: 0,
     tallies: [
