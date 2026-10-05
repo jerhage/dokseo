@@ -72,13 +72,16 @@
 <DocsSection title={UI_LIBRARY_SECTIONS.rules}>
   <p>
     The rules above are checked by unit tests that read the stylesheets and the source as text, so a
-    break fails <code>npm run test</code> rather than waiting for someone to notice a screen. The
-    library's specs read only <code>src/lib/ui/</code>; the checks on Dokseo's own source and
-    <code>app.html</code> live in <code>src/app-rules/</code>, under the same file names.
+    break fails a test run rather than waiting for someone to notice a screen. The rules on the
+    stylesheets themselves belong to the core in <code>src/lib/ui/core/</code>, and run with Node's
+    own test runner in the core's repository and in kandan-ui-svelte's, not in Dokseo. The library's
+    other specs read only <code>src/lib/ui/</code> and run in Dokseo's <code>npm run test</code>;
+    the checks on Dokseo's own source and <code>app.html</code> live in <code>src/app-rules/</code>.
   </p>
   <ul>
     <li>
-      <code>design-system.spec.ts</code>: the layer order in <code>app.html</code> and
+      <code>core/styles/design-system.test.js</code>, with Dokseo's half in
+      <code>src/app-rules/design-system.spec.ts</code>: the layer order in <code>app.html</code> and
       <code>index.css</code> is the same; no design-system file holds an <code>@layer</code> block;
       every file is imported once, into the layer its folder names;
       <code>{PRIMITIVE_NAMES.prefix}</code>
@@ -90,8 +93,9 @@
     </li>
     <li>
       <code>source-styling.spec.ts</code>: no Svelte file has a <code>&lt;style&gt;</code> block,
-      and every domain, shared and route stylesheet is one <code>@layer features</code> block
-      holding one
+      and, in Dokseo's half, every domain, shared and route stylesheet is one
+      <code>@layer features</code>
+      block holding one
       <code>@scope</code> block.
     </li>
     <li>
@@ -103,8 +107,8 @@
       stylesheets define.
     </li>
     <li>
-      <code>theme-boot.spec.ts</code>: the first-paint script the library generates accepts exactly
-      the themes the stylesheets define; <code>theme-before-first-paint.spec.ts</code>, in
+      <code>core/theme-boot.test.js</code>: the first-paint script the core generates accepts
+      exactly the themes the stylesheets define; <code>theme-before-first-paint.spec.ts</code>, in
       <code>src/app-rules/</code>: the script in <code>app.html</code> is that script, admitted by its
       hash.
     </li>

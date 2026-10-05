@@ -55,6 +55,14 @@
     unit tests; at the time of writing the browser project holds a dozen files.
   </p>
   <p>
+    Both leave out files of the vendored UI library that are not Dokseo's to run. The
+    <code>unit</code> project skips <code>src/lib/ui/core/</code>, whose specs are written for
+    Node's own test runner, and the <code>browser</code> project skips <code>src/lib/ui/</code>,
+    whose browser spec belongs to the library's own run (<a
+      href="/docs/vendored-ui#how-dokseo-ignores-that-tooling">How Dokseo ignores that tooling</a
+    >).
+  </p>
+  <p>
     <code>test</code> runs the two projects one after the other, unit first, and the browser project
     runs one file at a time (<code>fileParallelism: false</code>). Run together, with Vitest's
     default of one file per core in each project, they started about nine Node workers and about ten

@@ -9,11 +9,11 @@ const KANDAN_CORE_SECTIONS = {
   contract: 'A markup contract',
   native: 'Native elements before scripts',
   options: 'Ways to keep two versions in step',
-  today: 'Kandan UI today',
+  today: 'Kandan UI before the core',
   appearance: 'Appearance code without Svelte',
   icons: 'Icons written as Svelte',
   behavior: 'Which components run a script',
-  specs: 'Which specs move',
+  specs: 'Which specs moved',
   core: 'What the core holds',
   fixtures: 'One fixture per variant',
   spec: 'The contract spec',
@@ -25,9 +25,9 @@ const KANDAN_CORE_SECTIONS = {
   fixBack: 'Sending a fix back in two hops',
   shortcut: 'No shortcut past kandan-ui-svelte',
   rejected: 'Rejected: two prefixes in each app',
-  dokseo: 'What changes in Dokseo',
+  dokseo: 'What changed in Dokseo',
   order: 'Order of work',
-  open: 'Open decisions',
+  open: 'Decisions',
 } as const;
 
 type KandanCoreSectionKey = keyof typeof KANDAN_CORE_SECTIONS;
@@ -45,6 +45,8 @@ const VENDORED_CONTRACT_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS
 const VENDORED_FIRST_PAINT_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.firstPaint)}`;
 
 const VENDORED_RULES_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.rules)}`;
+
+const VENDORED_IGNORE_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.ignore)}`;
 
 const VENDORED_STRAY_HREF = `/docs/vendored-ui#${anchorSlug(VENDORED_SECTIONS.stray)}`;
 
@@ -66,6 +68,7 @@ export {
   KANDAN_CORE_SECTIONS,
   VENDORED_CONTRACT_HREF,
   VENDORED_FIRST_PAINT_HREF,
+  VENDORED_IGNORE_HREF,
   VENDORED_PUSH_HREF,
   VENDORED_REVENDOR_HREF,
   VENDORED_RULES_HREF,

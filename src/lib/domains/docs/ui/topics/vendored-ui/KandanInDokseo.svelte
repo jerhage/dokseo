@@ -26,32 +26,42 @@
     Dokseo's UI library is Kandan UI. It has its own repository,
     <a href="https://github.com/jerhage/kandan-ui-svelte">kandan-ui-svelte</a>, and Dokseo vendors
     it at <code>src/lib/ui/</code> with <code>git subtree</code>, exactly as any other app would.
+    Kandan UI in turn vendors its framework-free core,
+    <a href="https://github.com/jerhage/kandan-ui">kandan-ui</a>, at <code>core/</code>, so the core
+    arrives inside it (<a href="/docs/kandan-core-plan">Plan: Kandan UI without a framework</a>).
     The folder holds:
   </p>
   <ul class="col gap-2">
     <li>
-      <code>components/</code>: the base components, their helpers and the icons, with their specs.
+      <code>core/</code>: the core, with the layered stylesheets in <code>styles/</code> (reset,
+      tokens, base, components, utilities, overrides, and their entry file <code>index.css</code>),
+      28 font files and 18 license files in <code>fonts/</code>, the icon sources in
+      <code>icons/</code>, the theme names and the attributes that apply them in
+      <code>appearance.js</code>, <code>themeBootScript</code> in <code>theme-boot.js</code>, the
+      markup contract in <code>fixtures/</code>, <code>rules/</code> and <code>contract/</code>, and
+      its own specs, guide and tooling.
     </li>
     <li>
-      <code>styles/</code>: the layered stylesheets (reset, tokens, base, components, utilities,
-      overrides) and their entry file <code>index.css</code>, with their specs.
+      <code>components/</code>: the base components, their helpers and the icons generated from the
+      core's, with their specs.
     </li>
-    <li><code>fonts/</code>: 28 font files and 18 license files.</li>
-    <li><code>appearance.ts</code>: the theme names and the attributes that apply them.</li>
     <li>
-      <code>theme-boot.ts</code>: <code>themeBootScript</code>, the source of the first-paint
-      script.
+      <code>contract/</code>: the cases and specs that hold the components to the core's fixtures
+      and behavior rules.
     </li>
     <li>
       <code>playground/</code>: every demo section and <code>Playground.svelte</code>, which renders
       them all.
     </li>
+    <li><code>scripts/</code>: the script that writes the icon components.</li>
     <li><code>README.md</code>: the origin of the library and the subtree commands.</li>
     <li><code>GUIDE.md</code>: the library's own guide, for any app that vendors it.</li>
     <li>
-      <code>package.json</code>, <code>vitest.config.ts</code>, <code>tsconfig.json</code>,
-      <code>.oxlintrc.json</code>, <code>.oxfmtrc.json</code> and <code>.gitignore</code>: the
-      library's own tooling (<a href={vendoredHref('tooling')}>The library's own tooling</a>).
+      <code>package.json</code>, <code>vitest.config.ts</code>,
+      <code>vitest.browser.config.ts</code>,
+      <code>tsconfig.json</code>, <code>.oxlintrc.json</code>, <code>.oxfmtrc.json</code>,
+      <code>.gitignore</code>, <code>.github/</code> and <code>LICENSE</code>: the library's own
+      tooling and license (<a href={vendoredHref('tooling')}>The library's own tooling</a>).
     </li>
   </ul>
   <p>Dokseo's side of the integration sits outside the folder:</p>
@@ -76,10 +86,12 @@
   </p>
   <LibraryReachDemo />
   <p>
-    The components import Svelte, <code>ts-pattern</code> and each other, and nothing else. A spec
-    that reaches above its folder reaches only into the library: one component spec reads
-    <code>../styles/</code>, the three stylesheet specs read <code>../</code>, and one of them also
-    reads <code>../components/</code>. None reads the rest of Dokseo.
+    The components import Svelte, <code>ts-pattern</code> and each other, and four of them import
+    the tag color type from the core's <code>tag-colours.js</code>. A spec that reaches above its
+    folder reaches only into the library: <code>classes.spec.ts</code> reads the core's
+    <code>tag-colours.js</code> and stylesheets, the icon spec reads the core's SVG files and the
+    generator in <code>scripts/</code>, and the core's two stylesheet specs read the core's own
+    folder. None reads the rest of Dokseo.
   </p>
 </DocsSection>
 
@@ -112,8 +124,11 @@
   <p>
     The development dependencies are the tools behind those scripts, at the versions Dokseo's
     lockfile holds.
-    <code>vitest.config.ts</code> compiles every <code>.svelte</code> file in runes mode and has one project,
-    in Node, because the library has no browser specs:
+    <code>vitest.config.ts</code> compiles every <code>.svelte</code> file in runes mode and has one
+    project, in Node, which leaves out the core's specs. The browser specs have a config of their
+    own,
+    <code>vitest.browser.config.ts</code>, which only <code>npm run test:browser</code> reads, so
+    neither <code>test</code> nor <code>verify</code> starts a browser:
   </p>
   <DocsCode label={LIBRARY_VITEST.label} code={LIBRARY_VITEST.code} />
   <p>
@@ -121,7 +136,9 @@
     because the library's repository has no SvelteKit. <code>.oxlintrc.json</code> and
     <code>.oxfmtrc.json</code> repeat Dokseo's rules that apply to library code: no
     <code>as</code> casts, type imports in their own statement, exports at the end, and the test
-    name pattern. In the library's repository, <code>npm run verify</code> runs all four checks.
+    name pattern. In the library's repository, <code>npm run verify</code> runs the type check, the
+    lint, the format check, the unit specs and the core's specs, which <code>test:core</code>
+    runs with Node's own test runner.
   </p>
 </DocsSection>
 
@@ -143,16 +160,21 @@
     dependency-cruiser reads every file under <code>src/</code>, and the library's
     <code>vitest.config.ts</code> imports <code>@sveltejs/vite-plugin-svelte</code>, which the rule
     keeping the library to <code>svelte</code>, <code>ts-pattern</code> and <code>vitest</code>
-    refuses (<a href={vendoredHref('aliases')}>No app aliases</a>). The file is tooling, not library
-    code, so Dokseo excludes it:
+    refuses (<a href={vendoredHref('aliases')}>No app aliases</a>), as it refuses
+    <code>vitest.browser.config.ts</code>'s import of <code>@vitest/browser-playwright</code>. Both
+    files are tooling, not library code, and so are the icon generator in <code>scripts/</code> and
+    the core's <code>node --test</code> specs, so Dokseo excludes them:
   </p>
   <DocsCode label={DEPCRUISE_EXCLUDE.label} code={DEPCRUISE_EXCLUDE.code} />
   <p>
     Vitest reads Dokseo's <code>vite.config.ts</code>, which lists its two projects inline instead
     of naming config files to load, so the library's <code>vitest.config.ts</code> is never read (<a
       href={TESTING_PROJECTS_HREF}>Vitest's two projects</a
-    >). The unit project's pattern already covers the library's specs, so they run once, with
-    Dokseo's:
+    >). The unit project's pattern covers the library's specs, the contract specs among them, so
+    they run once, with Dokseo's. It leaves out <code>src/lib/ui/core/</code>: the core's specs are
+    written for Node's own test runner, not for Vitest. The browser project leaves out the whole of
+    <code>src/lib/ui/</code>, because the library's browser spec, which runs the core's behavior
+    rules against the components, belongs to the library's own browser run:
   </p>
   <DocsCode label={DOKSEO_UNIT_PROJECT.label} code={DOKSEO_UNIT_PROJECT.code} />
   <p>

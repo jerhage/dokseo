@@ -40,7 +40,7 @@
 <DocsSection title={UI_LIBRARY_SECTIONS.themes}>
   <p>
     A theme is the <code>data-theme</code> attribute on <code>&lt;html&gt;</code>. Each theme is one
-    file in <code>src/lib/ui/styles/base/themes/</code> with two rules, both on
+    file in <code>src/lib/ui/core/styles/base/themes/</code> with two rules, both on
     <code>:root[data-theme='name']</code>: its palette, then its role primitives. The default
     theme's rules also match a bare <code>:root</code>, so a page with no attribute still renders
     completely. A theme never touches a semantic token or a component.

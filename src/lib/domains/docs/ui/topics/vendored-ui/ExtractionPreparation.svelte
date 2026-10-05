@@ -80,6 +80,13 @@
     >). I accepted that: the older commits still exist, and <code>git log --follow</code> on a file finds
     them in Dokseo.
   </p>
+  <p>
+    The styles, the fonts and the appearance code moved once more later, into the framework-free
+    core that Kandan UI vendors at <code>core/</code>, so in Dokseo they now sit under
+    <code>src/lib/ui/core/</code> (<a href="/docs/kandan-core-plan"
+      >Plan: Kandan UI without a framework</a
+    >).
+  </p>
 </DocsSection>
 
 <DocsSection title={VENDORED_SECTIONS.outside}>

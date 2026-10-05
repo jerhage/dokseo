@@ -5,6 +5,12 @@ type CoreFate = 'core' | 'svelte' | 'both' | 'work';
 type InventoryRow = {
   readonly path: string;
   readonly fate: CoreFate;
+  readonly now: readonly string[];
+  readonly note: string;
+};
+
+type AddedRow = {
+  readonly path: string;
   readonly note: string;
 };
 
@@ -22,132 +28,197 @@ const INVENTORY: readonly InventoryRow[] = [
   {
     path: 'styles/',
     fate: 'core',
+    now: ['core/styles/'],
     note: 'Plain CSS: reset, tokens, themes, base, component classes, utilities and overrides, joined by relative @import statements in index.css.',
   },
   {
     path: 'fonts/',
     fate: 'core',
+    now: ['core/fonts/'],
     note: 'woff2 files and their OFL licenses. fonts.css names them by URLs relative to itself.',
   },
   {
     path: 'appearance.ts',
     fate: 'work',
-    note: 'No Svelte, but TypeScript, and pinnedScheme uses match from ts-pattern.',
+    now: ['core/appearance.js'],
+    note: 'No Svelte, but TypeScript, and pinnedScheme used match from ts-pattern.',
   },
   {
     path: 'appearance.spec.ts',
     fate: 'core',
-    note: 'Moves with appearance.ts; it reads the theme stylesheets to check THEMES.',
+    now: ['core/appearance.test.js'],
+    note: 'Moved with appearance.ts; it reads the theme stylesheets to check THEMES.',
   },
   {
     path: 'theme-boot.ts',
     fate: 'work',
-    note: 'No Svelte; imports only appearance.ts. TypeScript, like it.',
+    now: ['core/theme-boot.js'],
+    note: 'No Svelte; imported only appearance.ts. TypeScript, like it.',
   },
   {
     path: 'theme-boot.spec.ts',
     fate: 'core',
-    note: 'Moves with theme-boot.ts.',
+    now: ['core/theme-boot.test.js'],
+    note: 'Moved with theme-boot.ts.',
   },
   {
     path: 'styles/design-system.spec.ts',
     fate: 'work',
-    note: 'Reads only CSS, but imports NARROW_SCREEN_QUERY from components/breakpoints.ts and TAG_COLOURS from components/classes.ts.',
+    now: ['core/styles/design-system.test.js'],
+    note: 'Read only CSS, but imported NARROW_SCREEN_QUERY from components/breakpoints.ts and TAG_COLOURS from components/classes.ts.',
   },
   {
     path: 'styles/markup-classes.spec.ts',
     fate: 'svelte',
+    now: ['markup-classes.spec.ts'],
     note: 'Reads the class names written in .svelte files.',
   },
   {
     path: 'styles/source-styling.spec.ts',
     fate: 'work',
-    note: 'Mixed: no <style> block in Svelte files and the playground stylesheets stay with Svelte; the legacy custom property check reads CSS too.',
+    now: ['source-styling.spec.ts', 'core/styles/source-styling.test.js'],
+    note: 'Mixed: no <style> block in Svelte files and the playground stylesheets stayed with Svelte; the legacy custom property check reads CSS too.',
   },
   {
     path: 'components/icons/',
     fate: 'work',
-    note: 'Lucide icons written by hand as Svelte components. The SVG source and Lucide’s license move to the core; the components are generated from it.',
+    now: ['components/icons/', 'core/icons/'],
+    note: 'Lucide icons written by hand as Svelte components. The SVG sources and Lucide’s license moved to the core; the components are generated from them.',
   },
   {
     path: 'components/breakpoints.ts',
     fate: 'work',
+    now: ['core/breakpoints.js'],
     note: 'The query widths the stylesheets use; the core needs them for its own spec.',
   },
   {
     path: 'components/classes.ts',
     fate: 'work',
-    note: 'Class names per variant. The vocabulary, such as TAG_COLOURS, is the core’s; the maps from props to classes stay with the components.',
+    now: ['components/classes.ts', 'core/tag-colours.js'],
+    note: 'Class names per variant. The vocabulary, TAG_COLOURS, went to the core; the maps from props to classes stayed with the components.',
   },
   {
     path: 'components/*.svelte',
     fate: 'svelte',
+    now: ['components/*.svelte'],
     note: 'The components. Their markup is what the core’s fixtures describe.',
   },
   {
     path: 'components/*.ts',
     fate: 'svelte',
+    now: ['components/*.ts'],
     note: 'Helpers. Most import no Svelte, so kandan-ui-vanilla can start from copies of them.',
   },
   {
     path: 'components/*.spec.ts',
     fate: 'svelte',
-    note: 'Component and helper specs; many already render with svelte/server.',
+    now: ['components/*.spec.ts'],
+    note: 'Component and helper specs; many render with svelte/server.',
   },
   {
     path: 'playground/',
     fate: 'svelte',
+    now: ['playground/'],
     note: 'Svelte sections and a Playground component; it uses import.meta.glob, so it needs Vite. kandan-ui-vanilla gets a static page instead.',
   },
   {
     path: 'library-files.ts',
     fate: 'both',
-    note: 'A Node helper that lists the library’s files for specs; each repository needs one.',
+    now: ['library-files.ts', 'core/library-files.js'],
+    note: 'A Node helper that lists the library’s files for specs; each repository has one.',
   },
   {
     path: 'library-files.spec.ts',
     fate: 'both',
-    note: 'Moves with library-files.ts.',
+    now: ['library-files.spec.ts', 'core/library-files.test.js'],
+    note: 'Moved with library-files.ts.',
   },
   {
     path: 'README.md',
     fate: 'both',
+    now: ['README.md', 'core/README.md'],
     note: 'Each repository has its own.',
   },
   {
     path: 'GUIDE.md',
     fate: 'both',
-    note: 'Each repository has its own; the integration steps for CSS, fonts and the attribute contract move to the core’s.',
+    now: ['GUIDE.md', 'core/GUIDE.md'],
+    note: 'Each repository has its own; the integration steps for CSS, fonts and the attribute contract are in the core’s.',
   },
   {
     path: 'package.json',
     fate: 'svelte',
-    note: 'Declares svelte, ts-pattern and the Svelte tooling. The core needs its own, smaller one.',
+    now: ['package.json', 'core/package.json', 'core/package-lock.json'],
+    note: 'Declares svelte, ts-pattern and the Svelte tooling. The core has its own, smaller one.',
   },
   {
     path: 'vitest.config.ts',
     fate: 'svelte',
+    now: ['vitest.config.ts'],
     note: 'The Svelte version’s test runner setup.',
   },
   {
     path: 'tsconfig.json',
     fate: 'svelte',
-    note: 'Already sets allowJs and checkJs.',
+    now: ['tsconfig.json', 'core/jsconfig.json'],
+    note: 'Already set allowJs and checkJs. The core checks its JSDoc types with its own jsconfig.json.',
   },
   {
     path: '.oxlintrc.json',
     fate: 'svelte',
+    now: ['.oxlintrc.json'],
     note: 'Lint settings for the Svelte version.',
   },
   {
     path: '.oxfmtrc.json',
     fate: 'svelte',
+    now: ['.oxfmtrc.json'],
     note: 'Format settings for the Svelte version.',
   },
   {
     path: '.gitignore',
     fate: 'svelte',
-    note: 'The Svelte version’s ignore list.',
+    now: ['.gitignore', 'core/.gitignore'],
+    note: 'The Svelte version’s ignore list; the core has its own.',
+  },
+];
+
+const ADDED: readonly AddedRow[] = [
+  {
+    path: 'core/fixtures/',
+    note: 'The markup contract: one HTML file per component and variant.',
+  },
+  {
+    path: 'core/rules/',
+    note: 'The behavior rules as JSON, one file per component that needs a native element or a script, with the schema and the spec that checks their form.',
+  },
+  {
+    path: 'core/contract/',
+    note: 'The normalizer and the comparison both framework versions use.',
+  },
+  {
+    path: 'core/LICENSE',
+    note: 'The core’s MIT license.',
+  },
+  {
+    path: 'contract/',
+    note: 'The Svelte cases for every fixture, the contract spec, and the rule subjects with their specs.',
+  },
+  {
+    path: 'scripts/',
+    note: 'The script that writes the icon components from the core’s SVG files.',
+  },
+  {
+    path: 'vitest.browser.config.ts',
+    note: 'The browser project that runs the behavior rules, kept out of test and verify.',
+  },
+  {
+    path: '.github/',
+    note: 'The library’s CI workflow.',
+  },
+  {
+    path: 'LICENSE',
+    note: 'The library’s MIT license.',
   },
 ];
 
@@ -233,7 +304,17 @@ const ICON_COUNT = 37;
 
 const SERVER_RENDER_SPEC_COUNT = 24;
 
-const CORE_PATH = /lib\/ui\/(styles|fonts|appearance|theme-boot)/u;
+const FIXTURE_COUNT = 329;
+
+const RULE_FILE_COUNT = 15;
+
+const RULE_COUNT = 60;
+
+const UNCERTAIN_RULE_COUNT = 5;
+
+const PLANNED_DOKSEO_FILE_COUNT = 20;
+
+const CORE_PATH = /ui\/core\//u;
 
 const DOKSEO_FILES_NAMING_CORE_PATHS = [
   'src/app-rules/design-system.spec.ts',
@@ -245,6 +326,9 @@ const DOKSEO_FILES_NAMING_CORE_PATHS = [
   'src/lib/domains/flowing/ui/flow-tap.svelte.spec.ts',
   'src/lib/domains/flowing/ui/flow-touch-turn.svelte.spec.ts',
   'src/lib/domains/library/ui/LibraryMenu.svelte',
+  'src/lib/domains/recognition/domain/tag/tag-colour.spec.ts',
+  'src/lib/domains/recognition/ui/capture/SearchDialog.svelte',
+  'src/lib/domains/recognition/ui/capture/tag-colours.spec.ts',
   'src/lib/domains/viewing/ui/viewer-drag.svelte.spec.ts',
   'src/lib/shared/AppearanceChoices.svelte',
   'src/lib/shared/AppearanceSwitcher.svelte',
@@ -253,6 +337,7 @@ const DOKSEO_FILES_NAMING_CORE_PATHS = [
   'src/lib/shared/saved-appearance.ts',
   'src/lib/shared/toast-top-layer.svelte.spec.ts',
   'src/routes/+layout.svelte',
+  'src/routes/settings/+page.svelte',
   'src/routes/settings/AppearanceSettings.svelte',
   'src/routes/settings/appearance-options.ts',
   'vite.config.ts',
@@ -367,18 +452,24 @@ function fateCount(fate: CoreFate): number {
 }
 
 export {
+  ADDED,
   BEHAVIOURS,
   COMPONENTS,
   CORE_PATH,
   DOKSEO_FILES_NAMING_CORE_PATHS,
+  FIXTURE_COUNT,
   ICON_COUNT,
   INVENTORY,
   LIBRARY_ROOT,
+  PLANNED_DOKSEO_FILE_COUNT,
+  RULE_COUNT,
+  RULE_FILE_COUNT,
   SERVER_RENDER_SPEC_COUNT,
+  UNCERTAIN_RULE_COUNT,
   behaviourCount,
   behaviourLabel,
   behaviourOf,
   fateCount,
   fateLabel,
 };
-export type { BehaviourRow, ComponentBehaviour, CoreFate, InventoryRow };
+export type { AddedRow, BehaviourRow, ComponentBehaviour, CoreFate, InventoryRow };

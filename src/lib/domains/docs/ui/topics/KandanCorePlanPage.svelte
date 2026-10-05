@@ -11,10 +11,10 @@
 <DocsPage slug="kandan-core-plan" sections={Object.values(KANDAN_CORE_SECTIONS)}>
   {#snippet lead()}
     Which parts of a component library depend on a framework, how a markup contract keeps several
-    versions writing the same HTML, and the plan for Kandan UI after 1.0: a core, kandan-ui, with
-    the CSS, fonts, icons, fixtures and the appearance script and no component behavior, vendored
-    with git subtree by two framework versions, kandan-ui-svelte and kandan-ui-vanilla, each held to
-    the fixtures by a contract spec, and the update chain from the core to Dokseo.
+    versions writing the same HTML, and how Kandan UI moved onto a core, kandan-ui, with the CSS,
+    fonts, icons, fixtures and the appearance script and no component behavior. kandan-ui-svelte
+    vendors the core with git subtree and is held to its fixtures by a contract spec, and Dokseo
+    takes both with one pull. The second framework version, kandan-ui-vanilla, is planned after 1.0.
   {/snippet}
   <CoreConcepts />
   <KandanToday />

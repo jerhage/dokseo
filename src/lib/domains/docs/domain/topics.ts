@@ -239,7 +239,7 @@ const DOCS_TOPICS = [
     slug: 'kandan-core-plan',
     title: 'Plan: Kandan UI without a framework',
     summary:
-      'Which parts of a component library depend on a framework, fixtures as a markup contract checked by rendering each component in Node, native elements before scripts, and a core with no component behavior vendored by kandan-ui-svelte and kandan-ui-vanilla.',
+      'Which parts of a component library depend on a framework, fixtures as a markup contract checked by rendering each component in Node, native elements before scripts, and the core with no component behavior that kandan-ui-svelte vendors, and kandan-ui-vanilla will after 1.0.',
     status: 'published',
     kind: 'plan',
     buildsAfter: '1.0',

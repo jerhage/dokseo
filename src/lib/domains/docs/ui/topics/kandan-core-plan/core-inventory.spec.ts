@@ -2,14 +2,19 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  ADDED,
   BEHAVIOURS,
   COMPONENTS,
   CORE_PATH,
   DOKSEO_FILES_NAMING_CORE_PATHS,
+  FIXTURE_COUNT,
   ICON_COUNT,
   INVENTORY,
   LIBRARY_ROOT,
+  RULE_COUNT,
+  RULE_FILE_COUNT,
   SERVER_RENDER_SPEC_COUNT,
+  UNCERTAIN_RULE_COUNT,
   behaviourCount,
   behaviourOf,
 } from './core-inventory';
@@ -30,22 +35,29 @@ function sourceFiles(folder: string): readonly string[] {
 }
 
 describe('the Kandan UI inventory', () => {
-  it('lists every file and folder at the top of the library', () => {
-    const unlisted = readdirSync(LIBRARY_ROOT).filter(
-      (name) =>
-        name !== 'node_modules' &&
-        !INVENTORY.some((row) => row.path === name || row.path.startsWith(`${name}/`)),
+  it('accounts for every file and folder at the top of the library and of its core', () => {
+    const named = [...INVENTORY.flatMap((row) => row.now), ...ADDED.map((row) => row.path)];
+    const entries = [
+      ...readdirSync(LIBRARY_ROOT).filter((name) => name !== 'node_modules'),
+      ...readdirSync(join(LIBRARY_ROOT, 'core')).map((name) => `core/${name}`),
+    ];
+    const unlisted = entries.filter(
+      (entry) =>
+        !named.some(
+          (path) => path === entry || path === `${entry}/` || path.startsWith(`${entry}/`),
+        ),
     );
 
     expect(unlisted).toEqual([]);
   });
 
-  it('names only paths that exist', () => {
-    const missing = INVENTORY.filter((row) =>
-      row.path.includes('*')
-        ? matchingFiles(row.path).length === 0
-        : !existsSync(join(LIBRARY_ROOT, row.path)),
-    ).map((row) => row.path);
+  it('names only paths that exist now', () => {
+    const missing = [
+      ...INVENTORY.flatMap((row) => row.now),
+      ...ADDED.map((row) => row.path),
+    ].filter((path) =>
+      path.includes('*') ? matchingFiles(path).length === 0 : !existsSync(join(LIBRARY_ROOT, path)),
+    );
 
     expect(missing).toEqual([]);
   });
@@ -93,7 +105,25 @@ describe('the Kandan UI inventory', () => {
     expect(specs).toHaveLength(SERVER_RENDER_SPEC_COUNT);
   });
 
-  it('lists every Dokseo file that names a path the core takes over', () => {
+  it('counts the fixtures, the rule files and the rules the core holds', () => {
+    const fixtures = sourceFiles(join(LIBRARY_ROOT, 'core', 'fixtures')).filter((path) =>
+      path.endsWith('.html'),
+    );
+    const ruleFiles = readdirSync(join(LIBRARY_ROOT, 'core', 'rules')).filter((name) =>
+      name.endsWith('.json'),
+    );
+    const rules = ruleFiles.flatMap(
+      (name): readonly { readonly certain: boolean }[] =>
+        JSON.parse(readFileSync(join(LIBRARY_ROOT, 'core', 'rules', name), 'utf8')).rules,
+    );
+
+    expect(fixtures).toHaveLength(FIXTURE_COUNT);
+    expect(ruleFiles).toHaveLength(RULE_FILE_COUNT);
+    expect(rules).toHaveLength(RULE_COUNT);
+    expect(rules.filter((rule) => !rule.certain)).toHaveLength(UNCERTAIN_RULE_COUNT);
+  });
+
+  it('lists every Dokseo file that names a path in the core', () => {
     const naming = [...sourceFiles('src'), 'vite.config.ts']
       .filter((path) => !LEFT_OUT.some((folder) => path.startsWith(folder)))
       .filter((path) => CORE_PATH.test(readFileSync(path, 'utf8')))

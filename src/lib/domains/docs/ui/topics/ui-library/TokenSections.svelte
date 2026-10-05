@@ -51,7 +51,7 @@
   <p>
     In Dokseo every primitive starts with <code>{PRIMITIVE_NAMES.prefix}</code> and lives in the
     <code>base</code>
-    layer, in <code>src/lib/ui/styles/base/</code>. A value no theme changes, such as a spacing
+    layer, in <code>src/lib/ui/core/styles/base/</code>. A value no theme changes, such as a spacing
     step, is a plain primitive in <code>base/primitives.css</code>. A value a theme can change takes
     one more step. Each theme file names its palette after the color (<code
       >{PRIMITIVE_NAMES.spruce}</code

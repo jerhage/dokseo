@@ -87,8 +87,8 @@
     {#snippet caption()}Declared order, top to bottom. The last layer wins.{/snippet}
   </Figure>
   <p>
-    The entry file, <code>src/lib/ui/styles/index.css</code>, repeats the statement, which changes
-    nothing, and then imports every design-system file. Each import names its layer with
+    The entry file, <code>src/lib/ui/core/styles/index.css</code>, repeats the statement, which
+    changes nothing, and then imports every design-system file. Each import names its layer with
     <code>layer()</code>, and the files themselves hold bare rules, so one file shows where every
     rule lives. The root layout imports <code>index.css</code> once, and every class it defines is global
     from then on.

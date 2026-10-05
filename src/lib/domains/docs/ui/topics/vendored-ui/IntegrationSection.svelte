@@ -83,9 +83,9 @@
   <p>
     A vendored library cannot count on files in the app's <code>static/</code> folder: every app
     would have to copy 46 font and license files there by hand and keep them in step. So the fonts
-    sit in
-    <code>src/lib/ui/fonts/</code>, and the {RELATIVE_FONT_URLS} URLs in <code>fonts.css</code> are relative
-    to the stylesheet:
+    sit in the core, in
+    <code>src/lib/ui/core/fonts/</code>, and the {RELATIVE_FONT_URLS} URLs in <code>fonts.css</code> are
+    relative to the stylesheet:
   </p>
   <DocsCode label={FONT_FACE.label} code={FONT_FACE.code} />
   <p>
@@ -112,8 +112,11 @@
 <DocsSection title={VENDORED_SECTIONS.appearance}>
   <p>
     The library's part of the appearance is the vocabulary and the function that sets the
-    attributes, in <code>src/lib/ui/appearance.ts</code>. The <code>Theme</code> union is derived
-    from an <code>as const</code> <code>THEMES</code> list, so the list and the type cannot disagree:
+    attributes, in the core's <code>src/lib/ui/core/appearance.js</code>. It is plain JavaScript, so
+    a page with no build step can load it, and its types are JSDoc comments that Dokseo's type check
+    reads like TypeScript. The <code>Theme</code> type is derived from the
+    <code>THEMES</code> list, which a JSDoc <code>@type {'{const}'}</code> marks as constant, so the list
+    and the type cannot disagree:
   </p>
   <DocsCode label={APPEARANCE.label} code={APPEARANCE.code} />
   <DocsCode label={APPLY_APPEARANCE.label} code={APPLY_APPEARANCE.code} />
@@ -140,9 +143,10 @@
   </p>
   <DocsCode label={FIRST_PAINT_SCRIPT.label} code={FIRST_PAINT_SCRIPT.code} />
   <p>
-    The script is not written by hand. <code>themeBootScript</code> in the library builds it from
-    <code>THEMES</code> and an app's two keys, and the library's own spec runs the result against stored,
-    missing, unknown and unreadable values. Dokseo pasted the output for its keys:
+    The script is not written by hand. <code>themeBootScript</code> in the core's
+    <code>theme-boot.js</code> builds it from <code>THEMES</code> and an app's two keys, and the core's
+    own spec runs the result against stored, missing, unknown and unreadable values. Dokseo pasted the
+    output for its keys:
   </p>
   <DocsCode label={DRIFT_KEYS.label} code={DRIFT_KEYS.code} />
   <p>
@@ -182,15 +186,17 @@
 
 <DocsSection title={VENDORED_SECTIONS.addTheme}>
   <p>
-    A theme is a stylesheet in <code>styles/base/themes/</code> whose rules start with its own
-    selector, imported by <code>index.css</code> next to the others:
+    A theme is a stylesheet in the core's <code>styles/base/themes/</code> whose rules start with
+    its own selector, imported by <code>index.css</code> next to the others:
   </p>
   <DocsCode label={THEME_FILE.label} code={THEME_FILE.code} />
   <DocsCode label={THEME_IMPORTS.label} code={THEME_IMPORTS.code} />
   <p>
-    Its name joins <code>THEMES</code> in the library. Each app then takes the update with a
-    <code>pull</code>, pastes the new script output into <code>app.html</code> and updates the hash. Until
-    it does, its drift test fails and shows the difference.
+    Its name joins <code>THEMES</code> in the core, and the core gets a new version tag, because the
+    first-paint script changes. Kandan UI takes the tag with a <code>pull</code> into
+    <code>core/</code>, and each app then takes Kandan UI's update with a <code>pull</code>, pastes
+    the new script output into <code>app.html</code> and updates the hash. Until it does, its drift test
+    fails and shows the difference.
   </p>
 </DocsSection>
 
@@ -217,19 +223,23 @@
     The library tests itself, and each app checks its own use of it. The library's specs read only
     paths relative to themselves, so they pass at any prefix (<a href={UI_LIBRARY_RULES_HREF}
       >Rules the tests enforce</a
-    >). The checks on how Dokseo uses the library live in <code>src/app-rules/</code>, under the
-    same file names as the library halves they complement:
+    >). The specs of the stylesheets and the appearance script belong to the core and run with
+    Node's own test runner, in the core's repository and in Kandan UI's; Dokseo does not run them.
+    The checks on how Dokseo uses the library live in <code>src/app-rules/</code>, each beside the
+    library or core half it complements:
   </p>
   <ul class="col gap-2">
     <li>
-      <code>design-system.spec.ts</code>: the library half checks the layer order in
-      <code>index.css</code>, the <code>--ds-</code> names and the query widths of the library's
+      <code>design-system.spec.ts</code>: the core's half,
+      <code>core/styles/design-system.test.js</code>, checks the layer order in
+      <code>index.css</code>, the <code>--ds-</code> names and the query widths of the core's
       stylesheets; Dokseo's half checks the layer order in <code>app.html</code>, and the same names
       and widths in Dokseo's own files.
     </li>
     <li>
       <code>source-styling.spec.ts</code> and <code>markup-classes.spec.ts</code>: each half applies
-      the same rules to its own files.
+      the same rules to its own files, and the core's <code>styles/source-styling.test.js</code>
+      applies them to the stylesheets.
     </li>
     <li>
       <code>icons.spec.ts</code>: rendering and naming are the library's; the check that a
@@ -238,7 +248,7 @@
     <li>
       <code>theme-before-first-paint.spec.ts</code>: Dokseo's drift test for <code>app.html</code>
       (<a href={vendoredHref('firstPaint')}>The script before the first paint</a>), against the
-      library's <code>theme-boot.spec.ts</code>.
+      core's <code>theme-boot.test.js</code>.
     </li>
   </ul>
 </DocsSection>
