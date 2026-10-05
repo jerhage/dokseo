@@ -1,0 +1,13 @@
+.popover {
+  inset: auto;
+  top: var(--popover-top, auto);
+  left: var(--popover-left, auto);
+  inline-size: min(var(--popover-width), 100% - 2 * var(--overlay-edge));
+  margin: 0;
+  padding: var(--sp-4);
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-lg);
+}

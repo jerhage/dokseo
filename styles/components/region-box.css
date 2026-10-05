@@ -1,0 +1,14 @@
+.region-box {
+  --_region-color: var(--color-primary);
+  --_region-glow: var(--color-primary-glow);
+  border: var(--border-width-strong) solid var(--_region-color);
+  background-color: var(--color-selected);
+}
+.region-box-accent {
+  --_region-color: var(--color-accent);
+  --_region-glow: var(--color-accent-glow);
+  background-color: transparent;
+}
+.region-box-glow {
+  box-shadow: 0 0 0 var(--glow-ring-width) var(--_region-glow);
+}

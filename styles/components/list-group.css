@@ -1,0 +1,96 @@
+.list-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.list-group-title {
+  padding-inline: var(--sp-1);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-faint);
+}
+.list-group-box {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+}
+.list-group-separated > .list-group-box {
+  overflow: hidden;
+}
+.list-group-inset > .list-group-box {
+  padding: var(--sp-1);
+}
+.list-group-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  list-style: none;
+}
+.list-group-summary {
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text);
+  background-color: var(--color-surface-sunken);
+  border-block-start: var(--border-width) solid var(--border-color);
+}
+.list-group-separated .list-group-list > * + *,
+.list-group-summary > * + * {
+  border-block-start: var(--border-width) solid var(--border-color);
+}
+.list-row {
+  padding: var(--sp-3) var(--sp-4);
+}
+.list-row-sm {
+  padding-block: var(--sp-2);
+}
+.list-row-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.list-row-main {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.list-row-main-value {
+  align-items: flex-start;
+}
+.list-row-main-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.list-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-inline-size: 0;
+}
+.list-row-main-value > .list-row-text {
+  flex: 1;
+}
+.list-row-main-actions > .list-row-text {
+  flex: 1 1 var(--grid-min-col);
+}
+.list-row-title {
+  font-size: var(--text-sm);
+}
+.list-row-description {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.list-row-value {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+.list-row-value-faint {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+  color: var(--color-text-faint);
+}
+.list-row-strong .list-row-title,
+.list-row-strong .list-row-value {
+  font-weight: var(--weight-semibold);
+}

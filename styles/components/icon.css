@@ -1,0 +1,13 @@
+:where(.lucide:not([data-fixed-stroke])) {
+  stroke-width: var(--icon-stroke);
+}
+.icon-highlight {
+  fill: var(--color-accent);
+}
+
+.brand-mark {
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
+  flex: none;
+  color: var(--color-primary);
+}

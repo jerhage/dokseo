@@ -1,0 +1,76 @@
+[hidden]:not([hidden='until-found']) {
+  display: none;
+}
+.btn.btn-pill {
+  border-radius: var(--radius-pill);
+}
+html:has(.modal-backdrop[open]) {
+  overflow: hidden;
+}
+html:has(.modal-backdrop[open][data-page-scrollbar]) {
+  scrollbar-gutter: stable;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s;
+    transition-delay: 0s;
+    scroll-behavior: auto;
+  }
+  .a-fade-in,
+  .a-slide-up,
+  .toast,
+  .toast.is-leaving,
+  .modal-backdrop[open],
+  .modal-backdrop[open] .modal,
+  .modal-backdrop.is-leaving,
+  .modal-backdrop.is-leaving .modal,
+  .dropdown.is-open .dropdown-menu,
+  .file-item,
+  .tab-panel,
+  .accordion-body,
+  .skeleton {
+    animation: none;
+  }
+  .toast::after {
+    display: none;
+  }
+}
+@media print {
+  .toast-region,
+  .modal-backdrop,
+  .dropdown-menu,
+  .alert-close,
+  .tag-remove,
+  .file-item-remove {
+    display: none;
+  }
+  .card,
+  .alert,
+  .table-wrapper,
+  .modal {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
+@media (forced-colors: active) {
+  .checkbox-input:checked,
+  .checkbox-input:indeterminate,
+  .radio-input:checked,
+  .toggle-input:checked,
+  .progress-fill,
+  .pagination-item.is-active {
+    background-color: Highlight;
+  }
+  .toggle-input,
+  .progress-track {
+    border: var(--border-width) solid CanvasText;
+  }
+  .toggle-input::before {
+    background-color: CanvasText;
+  }
+  .tab.is-active::after {
+    background-color: Highlight;
+  }
+}

@@ -1,0 +1,157 @@
+:root[data-theme='yorha'] {
+  --ds-khaki-canvas: light-dark(oklch(0.86 0.03 95), oklch(0.27 0.012 85));
+  --ds-khaki-paper: light-dark(oklch(0.89 0.028 95), oklch(0.31 0.013 85));
+  --ds-khaki-raised: light-dark(oklch(0.92 0.022 95), oklch(0.35 0.014 85));
+  --ds-khaki-sunken: light-dark(oklch(0.82 0.032 92), oklch(0.23 0.01 85));
+  --ds-khaki-well: light-dark(oklch(0.79 0.03 92), oklch(0.37 0.014 85));
+
+  --ds-khaki-ink: light-dark(oklch(0.38 0.015 85), oklch(0.86 0.03 95));
+  --ds-khaki-ink-hover: light-dark(oklch(0.3 0.012 85), oklch(0.93 0.022 95));
+  --ds-khaki-ink-deep: light-dark(oklch(0.32 0.014 85), oklch(0.9 0.025 95));
+  --ds-khaki-ink-muted: light-dark(oklch(0.43 0.02 85), oklch(0.76 0.03 95));
+  --ds-khaki-ink-faint: light-dark(oklch(0.52 0.022 85), oklch(0.64 0.025 92));
+  --ds-khaki-on-ink: light-dark(oklch(0.89 0.028 95), oklch(0.27 0.012 85));
+  --ds-khaki-50: light-dark(oklch(0.83 0.03 92), oklch(0.34 0.014 85));
+  --ds-khaki-100: light-dark(oklch(0.8 0.03 92), oklch(0.38 0.016 85));
+  --ds-khaki-line: light-dark(oklch(0.38 0.015 85 / 0.3), oklch(0.86 0.03 95 / 0.22));
+  --ds-khaki-line-strong: light-dark(oklch(0.38 0.015 85 / 0.7), oklch(0.86 0.03 95 / 0.6));
+  --ds-khaki-ink-a3: light-dark(oklch(0.38 0.015 85 / 0.04), oklch(0.86 0.03 95 / 0.04));
+  --ds-khaki-ink-a5: light-dark(oklch(0.38 0.015 85 / 0.1), oklch(0.86 0.03 95 / 0.09));
+  --ds-khaki-ink-a9: light-dark(oklch(0.38 0.015 85 / 0.18), oklch(0.86 0.03 95 / 0.16));
+  --ds-khaki-ink-a25: light-dark(oklch(0.38 0.015 85 / 0.26), oklch(0.86 0.03 95 / 0.24));
+  --ds-khaki-glow: light-dark(oklch(0.38 0.015 85 / 0.22), oklch(0.86 0.03 95 / 0.2));
+  --ds-khaki-ink-a35: light-dark(oklch(0.38 0.015 85 / 0.35), oklch(0.86 0.03 95 / 0.3));
+  --ds-khaki-ink-a55: light-dark(oklch(0.38 0.015 85 / 0.55), oklch(0.86 0.03 95 / 0.5));
+  --ds-khaki-ink-a15: light-dark(oklch(0.38 0.015 85 / 0.16), oklch(0.86 0.03 95 / 0.14));
+  --ds-grid-line: light-dark(oklch(0.38 0.015 85 / 0.035), oklch(0.86 0.03 95 / 0.03));
+
+  --ds-rust-50: light-dark(oklch(0.84 0.045 60), oklch(0.33 0.04 45));
+  --ds-rust-200: light-dark(oklch(0.6 0.12 38 / 0.4), oklch(0.7 0.12 40 / 0.4));
+  --ds-rust-300: light-dark(oklch(0.6 0.12 38 / 0.6), oklch(0.7 0.12 40 / 0.6));
+  --ds-rust-500: light-dark(oklch(0.53 0.12 38), oklch(0.7 0.12 40));
+  --ds-rust-700: light-dark(oklch(0.44 0.11 35), oklch(0.8 0.09 45));
+  --ds-rust-on: light-dark(oklch(0.94 0.02 95), oklch(0.2 0.01 85));
+  --ds-rust-glow: light-dark(oklch(0.6 0.12 38 / 0.3), oklch(0.7 0.12 40 / 0.3));
+}
+
+:root[data-theme='yorha'] {
+  --ds-bg: var(--ds-khaki-canvas);
+  --ds-bg-raised: var(--ds-khaki-paper);
+  --ds-surface: var(--ds-khaki-paper);
+  --ds-surface-raised: var(--ds-khaki-raised);
+  --ds-surface-bright: var(--ds-khaki-raised);
+  --ds-surface-sunken: var(--ds-khaki-sunken);
+
+  --ds-primary: var(--ds-khaki-ink);
+  --ds-primary-hover: var(--ds-khaki-ink-hover);
+  --ds-primary-subtle: var(--ds-khaki-50);
+  --ds-primary-soft: var(--ds-khaki-100);
+  --ds-primary-muted: var(--ds-khaki-ink-a55);
+  --ds-primary-glow: var(--ds-khaki-glow);
+  --ds-brand-tint: var(--ds-khaki-50);
+  --ds-brand-border: var(--ds-khaki-ink-a35);
+  --ds-brand-border-mid: var(--ds-khaki-ink-a55);
+  --ds-brand-text: var(--ds-khaki-ink-deep);
+
+  --ds-accent: var(--ds-rust-500);
+  --ds-accent-hover: var(--ds-khaki-ink-hover);
+  --ds-accent-surface: var(--ds-rust-50);
+  --ds-accent-border: var(--ds-rust-200);
+  --ds-accent-mid: var(--ds-rust-300);
+  --ds-accent-text: var(--ds-rust-700);
+  --ds-accent-glow: var(--ds-rust-glow);
+
+  --ds-text: var(--ds-khaki-ink);
+  --ds-text-muted: var(--ds-khaki-ink-muted);
+  --ds-text-faint: var(--ds-khaki-ink-faint);
+  --ds-text-inverse: var(--ds-khaki-on-ink);
+  --ds-text-on-primary: var(--ds-khaki-on-ink);
+  --ds-text-on-accent: var(--ds-rust-on);
+  --ds-text-link: var(--ds-khaki-ink-deep);
+  --ds-text-link-hover: var(--ds-khaki-ink-hover);
+
+  --ds-hover: var(--ds-khaki-ink-a5);
+  --ds-active: var(--ds-khaki-ink-a9);
+  --ds-selected: var(--ds-khaki-ink-a15);
+  --ds-disabled: var(--ds-khaki-ink-faint);
+  --ds-disabled-bg: var(--ds-khaki-well);
+
+  --ds-spinner-track: var(--ds-khaki-ink-a25);
+  --ds-table-stripe: var(--ds-khaki-ink-a3);
+  --ds-table-row-hover: var(--ds-khaki-ink-a5);
+  --ds-skeleton-base: var(--ds-khaki-well);
+  --ds-skeleton-shine: var(--ds-khaki-raised);
+  --ds-code-bg: var(--ds-khaki-sunken);
+  --ds-code-text: var(--ds-khaki-ink-deep);
+
+  --ds-border: var(--ds-khaki-line);
+  --ds-border-strong: var(--ds-khaki-line-strong);
+  --ds-border-focus: var(--ds-khaki-ink);
+  --ds-border-width: var(--ds-border-1);
+  --ds-border-width-strong: var(--ds-border-2);
+  --ds-icon-stroke: 2;
+
+  --ds-font-display: 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
+  --ds-font-body: 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
+  --ds-font-mono: 'Share Tech Mono', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-5);
+  --ds-weight-semibold: var(--ds-fw-5);
+  --ds-tracking-tight: 0.02em;
+  --ds-tracking-wider: 0.16em;
+  --ds-tracking-widest: 0.3em;
+
+  --ds-corner-xs: var(--ds-radius-none);
+  --ds-corner-sm: var(--ds-radius-none);
+  --ds-corner-md: var(--ds-radius-none);
+  --ds-corner-lg: var(--ds-radius-none);
+  --ds-radius-control: var(--ds-radius-none);
+  --ds-radius-container: var(--ds-radius-none);
+  --ds-radius-overlay: var(--ds-radius-none);
+  --ds-radius-pill: var(--ds-radius-none);
+  --ds-radius-round: var(--ds-radius-none);
+
+  --ds-shadow-1: 2px 2px 0 light-dark(oklch(0.38 0.015 85 / 0.18), oklch(0 0 0 / 0.3));
+  --ds-shadow-2: 4px 4px 0 light-dark(oklch(0.38 0.015 85 / 0.22), oklch(0 0 0 / 0.35));
+  --ds-shadow-3: 6px 6px 0 light-dark(oklch(0.38 0.015 85 / 0.26), oklch(0 0 0 / 0.4));
+  --ds-shadow-4: 6px 6px 0 light-dark(oklch(0.38 0.015 85 / 0.26), oklch(0 0 0 / 0.4));
+
+  --ds-shadow-inset: inset 0 0 0 1px
+    light-dark(oklch(0.38 0.015 85 / 0.12), oklch(0.86 0.03 95 / 0.1));
+
+  --ds-duration-quick: var(--ds-dur-flash);
+  --ds-dur-spring: var(--ds-dur-flash);
+  --ds-easing-spring: var(--ds-ease-crisp);
+
+  --ds-page-backdrop:
+    repeating-linear-gradient(0deg, var(--ds-grid-line) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, var(--ds-grid-line) 0 1px, transparent 1px 4px);
+
+  --ds-motion-overlay-in: kScanIn;
+  --ds-motion-overlay-out: kScanOut;
+  --ds-motion-menu-in: kScanIn;
+  --ds-motion-toast-in: kGlitchIn;
+  --ds-motion-toast-out: kGlitchOut;
+  --ds-motion-item-in: kGlitchIn;
+  --ds-motion-panel-in: kFlicker;
+  --ds-dur-exit: var(--ds-dur-moderate);
+  --ds-easing-exit: var(--ds-ease-in-out-sharp);
+
+  --ds-hover-fill: var(--ds-khaki-ink);
+  --ds-hover-fill-soft: var(--ds-khaki-ink);
+  --ds-hover-fill-solid: var(--ds-khaki-on-ink);
+  --ds-hover-text: var(--ds-khaki-on-ink);
+  --ds-hover-text-solid: var(--ds-khaki-ink);
+  --ds-press-fill: var(--ds-khaki-ink-hover);
+  --ds-chosen-fill: var(--ds-khaki-ink);
+  --ds-chosen-text: var(--ds-khaki-on-ink);
+  --ds-hover-glow: var(--ds-khaki-glow);
+  --ds-dur-sweep: 220ms;
+  --ds-easing-sweep: var(--ds-ease-in-out-sharp);
+  --ds-dur-hover-text: var(--ds-dur-sweep);
+  --ds-easing-hover-text: var(--ds-easing-sweep);
+  --ds-marker-width: 0px;
+  --ds-marker: var(--ds-khaki-ink);
+  --ds-hover-rule-width: var(--ds-border-1);
+  --ds-hover-rule-gap: 3px;
+  --ds-hover-rule: var(--ds-khaki-ink);
+}

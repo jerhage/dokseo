@@ -1,0 +1,35 @@
+.marquee-selection {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.marquee-selection-handle {
+  position: absolute;
+  inline-size: var(--handle-size);
+  block-size: var(--handle-size);
+  background-color: var(--color-primary);
+  border: var(--border-width) solid var(--color-surface);
+}
+.marquee-selection-box.region-box-accent .marquee-selection-handle {
+  background-color: var(--color-accent);
+}
+.marquee-selection-handle-north {
+  top: calc(var(--handle-size) / -2 - var(--border-width-strong));
+}
+.marquee-selection-handle-south {
+  bottom: calc(var(--handle-size) / -2 - var(--border-width-strong));
+}
+.marquee-selection-handle-west {
+  left: calc(var(--handle-size) / -2 - var(--border-width-strong));
+}
+.marquee-selection-handle-east {
+  right: calc(var(--handle-size) / -2 - var(--border-width-strong));
+}
+.marquee-selection-label {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-block-end: var(--sp-1);
+  white-space: nowrap;
+}

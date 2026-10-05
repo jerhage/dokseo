@@ -1,0 +1,119 @@
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-inline-size: 0;
+}
+.tab-list {
+  display: flex;
+  gap: var(--sp-1);
+  border-block-end: var(--border-width) solid var(--border-color);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs-header {
+  display: flex;
+  flex-wrap: var(--tabs-header-wrap, wrap);
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  min-inline-size: 0;
+}
+.tabs-header > .tab-list {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+.tabs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--sp-2);
+  margin-inline-start: auto;
+}
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-block-size: var(--control-h-md);
+  padding: 0 var(--sp-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  cursor: pointer;
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    color var(--transition-hover-text),
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep);
+}
+.tab::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: calc(var(--border-width) * -1);
+  block-size: var(--border-width-strong);
+  background-color: var(--color-primary);
+  transform: scaleX(0);
+  transition: transform var(--transition-spring);
+}
+.tab:hover {
+  color: var(--color-hover-text, var(--color-text));
+  background-size: 100% 100%;
+}
+.tab:focus-visible {
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+.tab.is-active {
+  color: var(--color-chosen-text, var(--color-text));
+  background-color: var(--color-chosen-fill, transparent);
+}
+.tab.is-active::after {
+  transform: scaleX(1);
+}
+.tab:disabled {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+  background-color: transparent;
+  background-size: 0% 100%;
+}
+.tab-panel:not([hidden]) {
+  animation: var(--transition-enter) both;
+  animation-name: var(--motion-panel-in);
+}
+.tab-panel {
+  font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--color-text-muted);
+}
+.tabs-pill .tab-list {
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  padding: var(--sp-1);
+  border: none;
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface-sunken);
+  box-shadow: var(--shadow-inset);
+}
+.tabs-pill .tabs-header > .tab-list {
+  flex: 0 1 auto;
+}
+.tabs-pill .tab {
+  min-block-size: var(--control-h-sm);
+  border-radius: var(--radius-control);
+}
+.tabs-pill .tab::after {
+  display: none;
+}
+.tabs-pill .tab.is-active {
+  background-color: var(--color-chosen-fill, var(--color-surface-raised));
+  background-size: 0% 100%;
+  box-shadow: var(--shadow-sm);
+}

@@ -1,0 +1,14 @@
+.aspect-portrait {
+  aspect-ratio: var(--ratio-portrait);
+}
+.aspect-square {
+  aspect-ratio: var(--ratio-square);
+}
+.aspect-video {
+  aspect-ratio: var(--ratio-video);
+}
+.object-cover {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}

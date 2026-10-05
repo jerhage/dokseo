@@ -1,0 +1,35 @@
+.alert-close,
+.modal-close,
+.toast-close,
+.file-item-remove {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: var(--control-h-sm);
+  block-size: var(--control-h-sm);
+  margin: calc(var(--sp-1) * -1);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-ui),
+    color var(--transition-ui);
+}
+.close-icon {
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
+}
+.close-icon-sm {
+  inline-size: var(--icon-size-sm);
+  block-size: var(--icon-size-sm);
+}
+.alert-close:hover,
+.modal-close:hover,
+.toast-close:hover,
+.file-item-remove:hover {
+  color: var(--color-text);
+  background-color: var(--color-hover);
+}

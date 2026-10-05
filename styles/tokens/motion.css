@@ -1,0 +1,42 @@
+:root {
+  --dur-instant: var(--ds-dur-instant);
+  --dur-flash: var(--ds-dur-flash);
+  --dur-quick: var(--ds-duration-quick);
+  --dur-moderate: var(--ds-dur-moderate);
+  --dur-slow: var(--ds-dur-slow);
+  --dur-crawl: var(--ds-dur-crawl);
+  --dur-long: var(--ds-dur-long);
+  --toast-duration: var(--ds-dur-toast);
+
+  --ease-smooth: var(--ds-ease-smooth);
+  --ease-in: var(--ds-ease-in);
+  --ease-out: var(--ds-ease-out);
+  --ease-crisp: var(--ds-ease-crisp);
+  --ease-in-out: var(--ds-ease-in-out);
+  --ease-in-out-sharp: var(--ds-ease-in-out-sharp);
+  --ease-spring: var(--ds-easing-spring);
+  --ease-spring-gentle: var(--ds-ease-spring-gentle);
+  --ease-bounce: var(--ds-ease-bounce);
+  --ease-elastic: var(--ds-ease-elastic);
+
+  --scale-shrink-sm: var(--ds-scale-shrink-sm);
+  --scale-shrink-md: var(--ds-scale-shrink-md);
+  --scale-shrink-lg: var(--ds-scale-shrink-lg);
+
+  --transition-ui: var(--ds-dur-flash) var(--ds-ease-smooth);
+  --transition-spring: var(--ds-dur-spring) var(--ds-easing-spring);
+  --transition-enter: var(--ds-duration-quick) var(--ds-ease-out);
+  --transition-exit: var(--ds-dur-exit) var(--ds-easing-exit);
+  --transition-bounce: var(--ds-dur-moderate) var(--ds-ease-bounce);
+  --transition-elastic: var(--ds-dur-slow) var(--ds-ease-elastic);
+  --transition-sweep: var(--ds-dur-sweep) var(--ds-easing-sweep);
+  --transition-hover-text: var(--ds-dur-hover-text) var(--ds-easing-hover-text);
+
+  --motion-overlay-in: var(--ds-motion-overlay-in);
+  --motion-overlay-out: var(--ds-motion-overlay-out);
+  --motion-menu-in: var(--ds-motion-menu-in);
+  --motion-toast-in: var(--ds-motion-toast-in);
+  --motion-toast-out: var(--ds-motion-toast-out);
+  --motion-item-in: var(--ds-motion-item-in);
+  --motion-panel-in: var(--ds-motion-panel-in);
+}

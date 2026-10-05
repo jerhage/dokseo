@@ -1,0 +1,59 @@
+.diagram {
+  inline-size: 100%;
+  max-inline-size: var(--diagram-width, 100%);
+  block-size: auto;
+  margin-inline: auto;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  overflow: visible;
+}
+.diagram-box {
+  fill: var(--color-surface-raised);
+  stroke: var(--border-color-strong);
+  stroke-width: var(--border-width-strong);
+  rx: var(--radius-control);
+}
+.diagram-box-primary {
+  fill: var(--color-primary-subtle);
+  stroke: var(--color-primary);
+}
+.diagram-box-accent {
+  fill: var(--color-accent-surface);
+  stroke: var(--color-accent-border);
+}
+.diagram-group {
+  fill: var(--color-surface);
+  stroke: var(--border-color);
+  stroke-width: var(--border-width);
+  rx: var(--radius-container);
+}
+.diagram-group-primary {
+  stroke: var(--color-primary);
+}
+.diagram-group-accent {
+  stroke: var(--color-accent-border);
+}
+.diagram-label {
+  fill: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+.diagram-detail {
+  fill: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+}
+.diagram-group-label {
+  fill: var(--color-text-faint);
+  font-weight: var(--weight-semibold);
+}
+.diagram-edge {
+  stroke: var(--color-text-muted);
+  stroke-width: var(--border-width-strong);
+}
+.diagram-edge-label {
+  fill: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+.diagram-arrowhead {
+  fill: var(--color-text-muted);
+}

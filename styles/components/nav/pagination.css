@@ -1,0 +1,75 @@
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.pagination-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-inline-size: var(--control-h-md);
+  min-block-size: var(--control-h-md);
+  padding: 0 var(--sp-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep),
+    color var(--transition-hover-text);
+}
+.pagination-item:hover {
+  color: var(--color-hover-text, var(--color-text));
+  background-size: 100% 100%;
+}
+.pagination-item.is-active {
+  color: var(--color-chosen-text, var(--color-text-on-primary));
+  background-color: var(--color-chosen-fill, var(--color-primary));
+  background-size: 0% 100%;
+}
+.pagination-item.is-disabled,
+.pagination-item:disabled,
+.pagination-item[aria-disabled='true'] {
+  color: var(--color-disabled);
+  background-color: transparent;
+  pointer-events: none;
+}
+.pagination-item::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+.pagination-item:hover::before,
+.pagination-item.is-active::before {
+  border-block-color: var(--color-hover-rule);
+}
+.pagination-prev,
+.pagination-next {
+  padding-inline: var(--sp-3);
+}
+.pagination-icon {
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
+}
+.pagination-ellipsis {
+  min-inline-size: var(--control-h-sm);
+  text-align: center;
+  color: var(--color-text-faint);
+}

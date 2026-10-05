@@ -1,0 +1,6 @@
+:root {
+  --icon-stroke: var(--ds-icon-stroke);
+  --icon-size-sm: var(--ds-size-icon-sm);
+  --icon-size-md: var(--ds-size-icon-md);
+  --icon-size-lg: var(--ds-size-icon-lg);
+}

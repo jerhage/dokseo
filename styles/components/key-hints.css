@@ -1,0 +1,25 @@
+.key-hints {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.key-hints-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.key-hints-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.key-hints-joiner {
+  color: var(--color-text-faint);
+}
+.key-hints-description {
+  white-space: nowrap;
+}
+.key-hints-sm kbd {
+  font-size: var(--text-xs);
+}

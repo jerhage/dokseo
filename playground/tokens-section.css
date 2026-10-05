@@ -1,0 +1,30 @@
+@layer features {
+  @scope (.tokens-section) {
+    .swatch {
+      block-size: var(--swatch-size);
+      background-color: var(--swatch, transparent);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+    .type-sample {
+      font-size: var(--sample-size, var(--text-base));
+      font-family: var(--sample-family, var(--font-body));
+      line-height: var(--lh-tight);
+    }
+    .space-sample {
+      inline-size: var(--sample-space, 0);
+      block-size: var(--swatch-bar-h);
+      background-color: var(--color-primary);
+      border-radius: var(--radius-xs);
+    }
+    .shape-sample {
+      inline-size: var(--swatch-size);
+      block-size: var(--swatch-size);
+      background-color: var(--color-surface-raised);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--sample-radius, var(--radius-control));
+      box-shadow: var(--sample-shadow, none);
+      opacity: var(--sample-opacity, 1);
+    }
+  }
+}

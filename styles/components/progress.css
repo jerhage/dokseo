@@ -1,0 +1,37 @@
+.progress-track {
+  --_progress-fill: var(--color-primary);
+  inline-size: 100%;
+  block-size: var(--track-h-md);
+  background-color: var(--color-active);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.progress-fill {
+  inline-size: var(--progress, 0%);
+  block-size: 100%;
+  background-color: var(--_progress-fill);
+  border-radius: inherit;
+  transition: inline-size var(--transition-spring);
+}
+.progress-success {
+  --_progress-fill: var(--color-success);
+}
+.progress-warning {
+  --_progress-fill: var(--color-warning);
+}
+.progress-danger {
+  --_progress-fill: var(--color-danger);
+}
+.progress-accent {
+  --_progress-fill: var(--color-accent);
+}
+.progress-sm {
+  block-size: var(--track-h-sm);
+}
+.progress-lg {
+  block-size: var(--track-h-lg);
+}
+.progress-track.is-indeterminate .progress-fill {
+  inline-size: calc(var(--indeterminate-share) * 100%);
+  animation: kIndeterminate var(--dur-long) var(--ease-in-out) infinite;
+}

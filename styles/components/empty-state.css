@@ -1,0 +1,20 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.empty-state-fill {
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+}
+.empty-state-fill > .empty-state-message {
+  max-inline-size: var(--container-prose);
+}
+.empty-state-inline {
+  align-items: flex-start;
+}
+.empty-state-message {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

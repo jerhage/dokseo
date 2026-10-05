@@ -1,0 +1,50 @@
+@property --lift-size {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+:root {
+  --control-h-xs: var(--ds-size-control-xs);
+  --control-h-sm: var(--ds-size-control-sm);
+  --control-h-md: var(--ds-size-control-md);
+  --control-h-lg: var(--ds-size-control-lg);
+  --control-h-touch: var(--ds-size-touch);
+  --handle-size: var(--ds-size-handle);
+  --lift-size: var(--ds-size-touch);
+
+  --icon-tile-sm: var(--ds-size-icon-tile-sm);
+  --icon-tile-lg: var(--ds-size-icon-tile-lg);
+  --avatar-size-sm: var(--ds-size-avatar-sm);
+  --avatar-size-md: var(--ds-size-avatar-md);
+  --avatar-size-lg: var(--ds-size-avatar-lg);
+  --indicator-size: var(--ds-size-indicator);
+  --indicator-dot: var(--ds-size-indicator-dot);
+  --toggle-track-w: var(--ds-size-toggle-track-w);
+  --toggle-track-h: var(--ds-size-toggle-track-h);
+  --track-h-sm: var(--ds-size-track-sm);
+  --track-h-md: var(--ds-size-track-md);
+  --track-h-lg: var(--ds-size-track-lg);
+  --thumbnail-width-sm: var(--ds-size-thumbnail-sm);
+  --thumbnail-width-md: var(--ds-size-thumbnail-md);
+  --thumbnail-width-lg: var(--ds-size-thumbnail-lg);
+  --textarea-min-height: var(--ds-size-textarea-min);
+  --skeleton-line-sm: var(--ds-size-skeleton-line-sm);
+  --skeleton-line-md: var(--ds-size-skeleton-line-md);
+  --skeleton-line-lg: var(--ds-size-skeleton-line-lg);
+  --width-sm: var(--ds-size-width-sm);
+  --width-md: var(--ds-size-width-md);
+  --width-lg: var(--ds-size-width-lg);
+  --swatch-size: var(--ds-size-swatch);
+  --swatch-bar-h: var(--ds-size-swatch-bar);
+  --indeterminate-share: var(--ds-share-indeterminate);
+
+  --modal-width-sm: var(--ds-size-dialog-sm);
+  --modal-width-md: var(--ds-size-dialog-md);
+  --modal-width-lg: var(--ds-size-dialog-lg);
+  --toast-width: var(--ds-size-toast);
+  --popover-width: var(--ds-size-popover);
+  --menu-min-width: var(--ds-size-menu);
+  --stat-min-width: var(--ds-size-stat);
+  --field-label-width: var(--ds-size-label);
+  --command-hint-max-width: var(--ds-size-hint);
+}

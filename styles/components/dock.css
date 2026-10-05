@@ -1,0 +1,44 @@
+.dock-side .dock-panel {
+  inline-size: var(--layout-list-width);
+}
+.dock-sheet,
+.dock-peek {
+  position: relative;
+  block-size: calc(var(--control-h-sm) + var(--border-width));
+}
+.dock-drawer {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: var(--z-modal);
+}
+.dock-sheet .dock-panel {
+  block-size: var(--dock-sheet-height, var(--layout-sheet-height));
+  transition: block-size var(--dur-quick) var(--ease-out);
+}
+.dock-sheet .dock-panel.is-dragging {
+  transition: none;
+}
+.dock .dock-toggle {
+  justify-content: flex-start;
+  min-inline-size: var(--control-h-md);
+}
+.dock .dock-handle {
+  justify-content: center;
+  touch-action: none;
+}
+.dock-handle-grip {
+  inline-size: var(--width-md);
+  block-size: var(--track-h-sm);
+  border-radius: var(--radius-pill);
+  background: var(--border-color-strong);
+}
+.dock-probe {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inline-size: 0;
+  block-size: var(--dock-probe-height, 0px);
+  visibility: hidden;
+  pointer-events: none;
+}

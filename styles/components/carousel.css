@@ -1,0 +1,28 @@
+.carousel {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+.carousel-swipeable {
+  touch-action: pan-y;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.carousel-slot {
+  display: flex;
+  flex: 0 0 100%;
+  overflow: hidden;
+  container-type: size;
+  transition: none;
+  transform: translateX(
+    calc(var(--carousel-beside, 0) * (100% + var(--carousel-gap)) + var(--carousel-shift, 0px))
+  );
+}
+.carousel-slot.is-beside {
+  position: absolute;
+  inset: 0;
+}
+.carousel-slot.is-settling {
+  transition: transform var(--dur-quick) var(--ease-out);
+}

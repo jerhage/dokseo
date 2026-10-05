@@ -1,0 +1,47 @@
+.input-group {
+  display: flex;
+  min-inline-size: 0;
+}
+.input-group > .input {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+.input-group > .btn {
+  flex: none;
+  box-shadow: none;
+}
+.input-group > :not(:first-child) {
+  margin-inline-start: calc(-1 * var(--border-width));
+  border-start-start-radius: var(--radius-none);
+  border-end-start-radius: var(--radius-none);
+}
+.input-group > :not(:last-child) {
+  border-start-end-radius: var(--radius-none);
+  border-end-end-radius: var(--radius-none);
+}
+.input-group > .input:hover,
+.input-group > .input:focus,
+.input-group > .input[aria-invalid='true'],
+.input-group > .btn:hover,
+.input-group > .btn:focus-visible {
+  z-index: var(--z-raised);
+}
+.input-group-addon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
+  font-size: var(--text-sm);
+  line-height: var(--lh-none);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--border-color-strong);
+  border-radius: var(--radius-control);
+}
+.input-group-addon-icon {
+  flex: none;
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
+}

@@ -1,0 +1,279 @@
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('../../fonts/bricolage-grotesque.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 93%;
+  descent-override: 27%;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('../../fonts/figtree.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 95%;
+  descent-override: 25%;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../../fonts/jetbrains-mono.woff2') format('woff2');
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 102.5%;
+  descent-override: 29.5%;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('../../fonts/archivo.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 88.7%;
+  descent-override: 20.1%;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../../fonts/ibm-plex-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 99.9%;
+  descent-override: 30.1%;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('../../fonts/ibm-plex-mono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 99.9%;
+  descent-override: 30.1%;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('../../fonts/geist.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 100.5%;
+  descent-override: 29.5%;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../../fonts/geist-mono.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 100.5%;
+  descent-override: 29.5%;
+}
+
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  src: url('../../fonts/zen-maru-gothic-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 107.4%;
+  descent-override: 37.4%;
+}
+
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  src: url('../../fonts/zen-maru-gothic-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 107.4%;
+  descent-override: 37.4%;
+}
+
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  src: url('../../fonts/zen-maru-gothic-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 107.4%;
+  descent-override: 37.4%;
+}
+
+@font-face {
+  font-family: 'Zen Maru Gothic';
+  src: url('../../fonts/zen-maru-gothic-900.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 107.4%;
+  descent-override: 37.4%;
+}
+
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  src: url('../../fonts/m-plus-rounded-1c-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 106.25%;
+  descent-override: 33.25%;
+}
+
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  src: url('../../fonts/m-plus-rounded-1c-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 106.25%;
+  descent-override: 33.25%;
+}
+
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  src: url('../../fonts/m-plus-rounded-1c-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 106.25%;
+  descent-override: 33.25%;
+}
+
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  src: url('../../fonts/m-plus-rounded-1c-900.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 106.25%;
+  descent-override: 33.25%;
+}
+
+@font-face {
+  font-family: 'M PLUS 1 Code';
+  src: url('../../fonts/m-plus-1-code.woff2') format('woff2');
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 98.25%;
+  descent-override: 25.25%;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  src: url('../../fonts/newsreader.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 83.8%;
+  descent-override: 16.2%;
+}
+
+@font-face {
+  font-family: 'Literata';
+  src: url('../../fonts/literata.woff2') format('woff2');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 109.3%;
+  descent-override: 39.2%;
+}
+
+@font-face {
+  font-family: 'Courier Prime';
+  src: url('../../fonts/courier-prime-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 85.15%;
+  descent-override: 27.15%;
+}
+
+@font-face {
+  font-family: 'Courier Prime';
+  src: url('../../fonts/courier-prime-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 85.15%;
+  descent-override: 27.15%;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('../../fonts/outfit.woff2') format('woff2');
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 98%;
+  descent-override: 28%;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../../fonts/dm-sans.woff2') format('woff2');
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 100.1%;
+  descent-override: 30.1%;
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  src: url('../../fonts/dm-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 100.1%;
+  descent-override: 30.1%;
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  src: url('../../fonts/dm-mono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 100.1%;
+  descent-override: 30.1%;
+}
+
+@font-face {
+  font-family: 'Zen Kaku Gothic New';
+  src: url('../../fonts/zen-kaku-gothic-new-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 107.4%;
+  descent-override: 37.4%;
+}
+
+@font-face {
+  font-family: 'Zen Kaku Gothic New';
+  src: url('../../fonts/zen-kaku-gothic-new-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 107.4%;
+  descent-override: 37.4%;
+}
+
+@font-face {
+  font-family: 'Share Tech Mono';
+  src: url('../../fonts/share-tech-mono.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 91.35%;
+  descent-override: 21.35%;
+}

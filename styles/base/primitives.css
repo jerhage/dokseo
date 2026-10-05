@@ -1,0 +1,188 @@
+:root {
+  --ds-font-ja: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --ds-font-ko: 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif;
+
+  --ds-fz-xxs: 0.5625rem;
+  --ds-fz-2xs: 0.6rem;
+  --ds-fz-xs: 0.6875rem;
+  --ds-fz-sm: 0.8125rem;
+  --ds-fz-base: 1rem;
+  --ds-fz-md: 1.125rem;
+  --ds-fz-lg: 1.25rem;
+  --ds-fz-xl: 1.5625rem;
+  --ds-fz-2xl: 1.875rem;
+  --ds-fz-3xl: 2.25rem;
+  --ds-fz-4xl: 3rem;
+  --ds-fz-5xl: 3.75rem;
+
+  --ds-fw-1: 100;
+  --ds-fw-2: 200;
+  --ds-fw-3: 300;
+  --ds-fw-4: 400;
+  --ds-fw-5: 500;
+  --ds-fw-6: 600;
+  --ds-fw-7: 700;
+  --ds-fw-8: 800;
+  --ds-fw-9: 900;
+  --ds-fw-light: var(--ds-fw-3);
+  --ds-fw-normal: var(--ds-fw-4);
+  --ds-fw-semibold: var(--ds-fw-6);
+  --ds-fw-bold: var(--ds-fw-7);
+  --ds-fw-extrabold: var(--ds-fw-8);
+  --ds-fw-black: var(--ds-fw-9);
+
+  --ds-ls-tight: -0.025em;
+  --ds-ls-normal: 0;
+  --ds-ls-wide: 0.04em;
+  --ds-ls-wider: 0.08em;
+  --ds-ls-widest: 0.16em;
+
+  --ds-lh-none: 1;
+  --ds-lh-tight: 1.15;
+  --ds-lh-snug: 1.35;
+  --ds-lh-normal: 1.5;
+  --ds-lh-relaxed: 1.7;
+  --ds-lh-loose: 1.85;
+
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.25rem;
+  --ds-space-6: 1.5rem;
+  --ds-space-7: 2rem;
+  --ds-space-8: 2.5rem;
+  --ds-space-9: 3rem;
+  --ds-space-10: 4rem;
+  --ds-space-12: 6rem;
+  --ds-space-16: 8rem;
+
+  --ds-radius-none: 0;
+  --ds-radius-xs: 3px;
+  --ds-radius-sm: 5px;
+  --ds-radius-md: 8px;
+  --ds-radius-lg: 12px;
+  --ds-radius-xl: 16px;
+  --ds-radius-2xl: 18px;
+  --ds-radius-full: 999px;
+
+  --ds-border-1: 1px;
+  --ds-border-2: 2px;
+  --ds-focus-offset: 2px;
+  --ds-glow-ring-width: 0.25rem;
+  --ds-underline-offset: 0.25rem;
+
+  --ds-container-prose: 68ch;
+  --ds-container-wide: 1280px;
+  --ds-layout-hero-height: 32rem;
+  --ds-layout-row-height: 12rem;
+  --ds-layout-sheet-height: 40dvh;
+  --ds-layout-sheet-height-tall: 75dvh;
+  --ds-ratio-portrait: 2 / 3;
+  --ds-ratio-square: 1 / 1;
+  --ds-ratio-video: 16 / 9;
+  --ds-size-dialog-sm: 24rem;
+  --ds-size-dialog-md: 32rem;
+  --ds-size-dialog-lg: 48rem;
+  --ds-size-toast: 22rem;
+  --ds-size-popover: 24rem;
+  --ds-size-menu: 12rem;
+  --ds-size-grid-min: 16rem;
+  --ds-size-grid-min-sm: 8rem;
+  --ds-size-grid-min-lg: 24rem;
+  --ds-size-sidebar: 15rem;
+  --ds-size-list: 18rem;
+  --ds-size-list-height: 18rem;
+  --ds-size-stat: 11rem;
+  --ds-size-label: 9rem;
+  --ds-size-hint: 10rem;
+  --ds-size-compact: 43.75rem;
+  --ds-size-narrow: 48rem;
+  --ds-size-control-xs: 1.25rem;
+  --ds-size-control-sm: 2rem;
+  --ds-size-control-md: 2.5rem;
+  --ds-size-control-lg: 3rem;
+  --ds-size-touch: 2.75rem;
+  --ds-size-handle: 0.5rem;
+  --ds-size-icon-sm: 0.75rem;
+  --ds-size-icon-md: 1rem;
+  --ds-size-icon-lg: 1.25rem;
+  --ds-size-icon-tile-sm: 2.5rem;
+  --ds-size-icon-tile-lg: 3rem;
+  --ds-size-avatar-sm: 2rem;
+  --ds-size-avatar-md: 2.5rem;
+  --ds-size-avatar-lg: 4rem;
+  --ds-size-indicator: 1rem;
+  --ds-size-indicator-dot: 0.5rem;
+  --ds-size-toggle-track-w: 2rem;
+  --ds-size-toggle-track-h: 1.25rem;
+  --ds-size-track-sm: 0.25rem;
+  --ds-size-track-md: 0.5rem;
+  --ds-size-track-lg: 0.75rem;
+  --ds-size-thumbnail-sm: 1.5rem;
+  --ds-size-thumbnail-md: 2.5rem;
+  --ds-size-thumbnail-lg: 4rem;
+  --ds-size-textarea-min: 4rem;
+  --ds-size-skeleton-line-sm: 0.75rem;
+  --ds-size-skeleton-line-md: 1rem;
+  --ds-size-skeleton-line-lg: 1.25rem;
+  --ds-size-width-sm: 1.5rem;
+  --ds-size-width-md: 2.5rem;
+  --ds-size-width-lg: 4rem;
+  --ds-size-swatch: 3rem;
+  --ds-size-swatch-bar: 0.75rem;
+
+  --ds-dur-instant: 40ms;
+  --ds-dur-flash: 90ms;
+  --ds-dur-quick: 180ms;
+  --ds-dur-moderate: 300ms;
+  --ds-dur-slow: 480ms;
+  --ds-dur-crawl: 720ms;
+  --ds-dur-long: 1100ms;
+  --ds-dur-toast: 5000ms;
+
+  --ds-ease-smooth: cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ds-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ds-ease-crisp: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-ease-in-out-sharp: cubic-bezier(0.7, 0, 0.3, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ds-ease-spring-gentle: cubic-bezier(0.34, 1.26, 0.64, 1);
+  --ds-ease-bounce: linear(0, 0.063, 0.25 18.2%, 1 36.4%, 0.813, 0.75, 0.813, 1, 0.938, 1, 1);
+  --ds-ease-elastic: linear(
+    0,
+    0.22 2%,
+    1.11 8.5%,
+    1.3 10.7%,
+    1.37 12.9%,
+    1.36 14.5%,
+    1.03 21.8%,
+    0.87 27.8%,
+    0.88 30.7%,
+    1.01 38.3%,
+    1.05 42.7%,
+    1 53.3%,
+    0.985 60.7%,
+    1.005 72%,
+    1
+  );
+
+  --ds-scale-shrink-sm: 0.98;
+  --ds-scale-shrink-md: 0.97;
+  --ds-scale-shrink-lg: 0.96;
+
+  --ds-share-indeterminate: 0.4;
+
+  --ds-opacity-muted: 0.55;
+  --ds-opacity-disabled: 0.4;
+
+  --ds-z-base: 0;
+  --ds-z-raised: 1;
+  --ds-z-dropdown: 100;
+  --ds-z-sticky: 200;
+  --ds-z-overlay: 300;
+  --ds-z-modal: 400;
+  --ds-z-toast: 500;
+  --ds-z-tooltip: 600;
+}

@@ -1,0 +1,225 @@
+@keyframes kFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes kFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes kSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-3));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes kShimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@keyframes kModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-4)) scale(var(--scale-shrink-md));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kModalOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--sp-2)) scale(var(--scale-shrink-sm));
+  }
+}
+@keyframes kToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-4)) scale(var(--scale-shrink-lg));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kToastOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(var(--sp-6));
+  }
+}
+@keyframes kToastTimer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes kDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--sp-1) * -1)) scale(var(--scale-shrink-sm));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kScanIn {
+  0% {
+    opacity: 0;
+    clip-path: inset(50% 0 50% 0);
+  }
+  35% {
+    opacity: 1;
+    clip-path: inset(calc(50% - var(--border-width)) 0 calc(50% - var(--border-width)) 0);
+  }
+  99% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(-100% -100% -100% -100%);
+  }
+}
+@keyframes kScanOut {
+  0% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+  65% {
+    opacity: 1;
+    clip-path: inset(calc(50% - var(--border-width)) 0 calc(50% - var(--border-width)) 0);
+  }
+  100% {
+    opacity: 0;
+    clip-path: inset(50% 0 50% 0);
+  }
+}
+@keyframes kGlitchIn {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(var(--sp-3) * -1));
+  }
+  15% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0.15;
+    transform: translateX(var(--sp-1));
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(calc(var(--sp-1) * -1));
+  }
+  55% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kGlitchOut {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+  18% {
+    opacity: 0.2;
+    transform: translateX(var(--sp-1));
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(calc(var(--sp-1) * -1));
+  }
+  45% {
+    opacity: 0.5;
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(var(--sp-2));
+    clip-path: inset(0 0 0 0);
+  }
+  80% {
+    opacity: 0.8;
+    clip-path: inset(calc(50% - var(--border-width)) 0 calc(50% - var(--border-width)) 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(var(--sp-4));
+    clip-path: inset(50% 0 50% 0);
+  }
+}
+@keyframes kFlicker {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0.25;
+  }
+  34% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes kIndeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(calc(100% / var(--indeterminate-share)));
+  }
+}
+.a-fade-in {
+  animation: kFadeIn var(--dur-moderate) var(--ease-smooth) both;
+}
+.a-slide-up {
+  animation: kSlideUp var(--dur-moderate) var(--ease-out) both;
+}
+.a-spin {
+  animation: kSpin var(--dur-crawl) linear infinite;
+}

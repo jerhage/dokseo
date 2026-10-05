@@ -1,0 +1,26 @@
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.search-field-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-field-clearable .search-field-clear {
+  display: none;
+}
+@media (pointer: coarse) {
+  .search-field-clearable .input {
+    padding-inline-end: var(--control-h-md);
+  }
+  .search-field-clearable .input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .search-field-clearable .search-field-clear {
+    position: absolute;
+    inset-inline-end: 0;
+    display: inline-flex;
+  }
+}

@@ -1,0 +1,158 @@
+:root[data-theme='forge'] {
+  --ds-graphite-canvas: light-dark(oklch(0.955 0.003 250), oklch(0.13 0.003 250));
+  --ds-graphite-paper: light-dark(oklch(0.985 0.002 250), oklch(0.165 0.004 250));
+  --ds-graphite-raised: light-dark(oklch(1 0 0), oklch(0.2 0.005 250));
+  --ds-graphite-sunken: light-dark(oklch(0.935 0.004 250), oklch(0.11 0.003 250));
+  --ds-steel-900: light-dark(oklch(0.18 0.005 250), oklch(0.96 0.002 250));
+  --ds-steel-800: light-dark(oklch(0.3 0.006 250), oklch(0.86 0.003 250));
+  --ds-graphite-on-steel: light-dark(oklch(0.985 0 0), oklch(0.13 0.003 250));
+  --ds-graphite-ink: light-dark(oklch(0.17 0.005 250), oklch(0.95 0.002 250));
+  --ds-graphite-ink-muted: light-dark(oklch(0.45 0.008 250), oklch(0.68 0.006 250));
+  --ds-graphite-ink-faint: light-dark(oklch(0.58 0.008 250), oklch(0.52 0.006 250));
+  --ds-graphite-line: light-dark(oklch(0.87 0.004 250), oklch(0.26 0.005 250));
+  --ds-graphite-line-strong: light-dark(oklch(0.76 0.006 250), oklch(0.34 0.006 250));
+  --ds-graphite-well: light-dark(oklch(0.92 0.004 250), oklch(0.22 0.005 250));
+  --ds-graphite-tint-3: light-dark(oklch(0.2 0.005 250 / 0.03), oklch(0.98 0 0 / 0.025));
+  --ds-graphite-tint-5: light-dark(oklch(0.2 0.005 250 / 0.05), oklch(0.98 0 0 / 0.05));
+  --ds-graphite-tint-9: light-dark(oklch(0.2 0.005 250 / 0.09), oklch(0.98 0 0 / 0.09));
+  --ds-graphite-tint-15: light-dark(oklch(0.2 0.005 250 / 0.15), oklch(0.98 0 0 / 0.15));
+
+  --ds-molten-50: light-dark(oklch(0.97 0.03 70), oklch(0.22 0.04 55));
+  --ds-molten-100: light-dark(oklch(0.93 0.06 68), oklch(0.27 0.06 55));
+  --ds-molten-200: light-dark(oklch(0.87 0.1 65), oklch(0.35 0.08 55));
+  --ds-molten-300: light-dark(oklch(0.8 0.14 62), oklch(0.48 0.12 55));
+  --ds-molten-500: light-dark(oklch(0.7 0.18 55), oklch(0.76 0.17 60));
+  --ds-molten-600: light-dark(oklch(0.64 0.18 50), oklch(0.82 0.15 65));
+  --ds-molten-700: light-dark(oklch(0.5 0.14 48), oklch(0.85 0.13 68));
+  --ds-molten-ink: oklch(0.16 0.02 50);
+  --ds-molten-a12: light-dark(oklch(0.7 0.18 55 / 0.14), oklch(0.76 0.17 60 / 0.14));
+  --ds-molten-glow: light-dark(oklch(0.7 0.18 55 / 0.35), oklch(0.76 0.17 60 / 0.3));
+}
+
+:root[data-theme='forge'] {
+  --ds-bg: var(--ds-graphite-canvas);
+  --ds-bg-raised: var(--ds-graphite-paper);
+  --ds-surface: var(--ds-graphite-paper);
+  --ds-surface-raised: var(--ds-graphite-raised);
+  --ds-surface-bright: var(--ds-graphite-raised);
+  --ds-surface-sunken: var(--ds-graphite-sunken);
+
+  --ds-primary: var(--ds-steel-900);
+  --ds-primary-hover: var(--ds-steel-800);
+  --ds-primary-subtle: var(--ds-molten-50);
+  --ds-primary-soft: var(--ds-molten-100);
+  --ds-primary-muted: var(--ds-graphite-ink-faint);
+  --ds-primary-glow: var(--ds-graphite-tint-9);
+  --ds-brand-tint: var(--ds-molten-50);
+  --ds-brand-border: var(--ds-molten-200);
+  --ds-brand-border-mid: var(--ds-molten-300);
+  --ds-brand-text: var(--ds-molten-700);
+
+  --ds-accent: var(--ds-molten-500);
+  --ds-accent-hover: var(--ds-molten-600);
+  --ds-accent-surface: var(--ds-molten-50);
+  --ds-accent-border: var(--ds-molten-200);
+  --ds-accent-mid: var(--ds-molten-300);
+  --ds-accent-text: var(--ds-molten-700);
+  --ds-accent-glow: var(--ds-molten-glow);
+
+  --ds-text: var(--ds-graphite-ink);
+  --ds-text-muted: var(--ds-graphite-ink-muted);
+  --ds-text-faint: var(--ds-graphite-ink-faint);
+  --ds-text-inverse: var(--ds-graphite-on-steel);
+  --ds-text-on-primary: var(--ds-graphite-on-steel);
+  --ds-text-on-accent: var(--ds-molten-ink);
+  --ds-text-link: var(--ds-graphite-ink);
+  --ds-text-link-hover: var(--ds-molten-600);
+
+  --ds-hover: var(--ds-graphite-tint-5);
+  --ds-active: var(--ds-graphite-tint-9);
+  --ds-selected: var(--ds-molten-a12);
+  --ds-disabled: var(--ds-graphite-ink-faint);
+  --ds-disabled-bg: var(--ds-graphite-well);
+
+  --ds-spinner-track: var(--ds-graphite-tint-15);
+  --ds-table-stripe: var(--ds-graphite-tint-3);
+  --ds-table-row-hover: var(--ds-graphite-tint-5);
+  --ds-skeleton-base: var(--ds-graphite-well);
+  --ds-skeleton-shine: var(--ds-graphite-raised);
+  --ds-code-bg: var(--ds-graphite-sunken);
+  --ds-code-text: var(--ds-molten-700);
+
+  --ds-border: var(--ds-graphite-line);
+  --ds-border-strong: var(--ds-graphite-line-strong);
+  --ds-border-focus: var(--ds-molten-500);
+  --ds-border-width: var(--ds-border-1);
+  --ds-border-width-strong: var(--ds-border-2);
+  --ds-icon-stroke: 2;
+
+  --ds-font-display: 'Geist', system-ui, sans-serif;
+  --ds-font-body: 'Geist', system-ui, sans-serif;
+  --ds-font-mono: 'Geist Mono', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-6);
+  --ds-weight-semibold: var(--ds-fw-semibold);
+  --ds-tracking-tight: -0.035em;
+  --ds-tracking-wider: 0.12em;
+  --ds-tracking-widest: 0.22em;
+
+  --ds-corner-xs: 2px;
+  --ds-corner-sm: 2px;
+  --ds-corner-md: 4px;
+  --ds-corner-lg: 4px;
+  --ds-radius-control: 2px;
+  --ds-radius-container: 4px;
+  --ds-radius-overlay: 4px;
+  --ds-radius-pill: var(--ds-radius-full);
+  --ds-radius-round: var(--ds-radius-full);
+
+  --ds-shadow-1: 0 1px 0 light-dark(oklch(0.2 0.005 250 / 0.05), oklch(0 0 0 / 0.4));
+  --ds-shadow-2:
+    0 0 0 1px light-dark(oklch(0.2 0.005 250 / 0.06), oklch(1 0 0 / 0.04)),
+    0 8px 24px light-dark(oklch(0.2 0.005 250 / 0.08), transparent),
+    0 12px 32px light-dark(transparent, oklch(0 0 0 / 0.5));
+  --ds-shadow-3:
+    0 0 0 1px light-dark(oklch(0.2 0.005 250 / 0.08), oklch(1 0 0 / 0.06)),
+    0 24px 64px light-dark(oklch(0.2 0.005 250 / 0.16), transparent),
+    0 32px 80px light-dark(transparent, oklch(0 0 0 / 0.65));
+  --ds-shadow-4:
+    0 0 0 1px light-dark(oklch(0.2 0.005 250 / 0.08), oklch(1 0 0 / 0.06)),
+    0 24px 64px light-dark(oklch(0.2 0.005 250 / 0.16), transparent),
+    0 32px 80px light-dark(transparent, oklch(0 0 0 / 0.65));
+
+  --ds-shadow-inset: inset 0 1px 2px light-dark(oklch(0.2 0.02 255 / 0.06), oklch(0 0 0 / 0.25));
+
+  --ds-duration-quick: 140ms;
+  --ds-dur-spring: var(--ds-duration-quick);
+  --ds-easing-spring: var(--ds-ease-crisp);
+
+  --ds-page-backdrop: none;
+
+  --ds-motion-overlay-in: kModalIn;
+  --ds-motion-overlay-out: kModalOut;
+  --ds-motion-menu-in: kDropIn;
+  --ds-motion-toast-in: kToastIn;
+  --ds-motion-toast-out: kToastOut;
+  --ds-motion-item-in: kSlideUp;
+  --ds-motion-panel-in: none;
+  --ds-dur-exit: var(--ds-dur-flash);
+  --ds-easing-exit: var(--ds-ease-in);
+
+  --ds-hover-fill: var(--ds-graphite-tint-5);
+  --ds-hover-fill-soft: transparent;
+  --ds-hover-fill-solid: transparent;
+  --ds-hover-text: initial;
+  --ds-hover-text-solid: initial;
+  --ds-press-fill: var(--ds-graphite-tint-9);
+  --ds-chosen-fill: initial;
+  --ds-chosen-text: initial;
+  --ds-hover-glow: initial;
+  --ds-dur-sweep: 0s;
+  --ds-easing-sweep: linear;
+  --ds-dur-hover-text: var(--ds-dur-flash);
+  --ds-easing-hover-text: var(--ds-ease-smooth);
+  --ds-marker-width: 0px;
+  --ds-marker: var(--ds-molten-500);
+  --ds-hover-rule-width: 0px;
+  --ds-hover-rule-gap: 0px;
+  --ds-hover-rule: transparent;
+}

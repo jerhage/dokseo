@@ -1,0 +1,226 @@
+.btn {
+  --_btn-tone-fg: var(--color-text);
+  --_btn-tone-bg: var(--color-surface);
+  --_btn-tone-border: var(--border-color-strong);
+  --_btn-tone-hover-bg: var(--color-surface);
+  --_btn-tone-hover-border: var(--border-color-strong);
+  --_btn-tone-hover-image: linear-gradient(var(--color-hover-fill) 0 0);
+  --_btn-tone-hover-fg: var(--color-hover-text, var(--_btn-fg));
+  --_btn-tone-hover-shadow: var(--shadow-sm);
+  --_btn-tone-press-image: linear-gradient(var(--color-press-fill) 0 0);
+  --_btn-tone-text: var(--color-text);
+  --_btn-tone-line: var(--border-color-strong);
+  --_btn-tone-soft-hover-bg: transparent;
+  --_btn-tone-soft-hover-image: linear-gradient(var(--color-hover-fill) 0 0);
+  --_btn-tone-soft-hover-fg: var(--color-hover-text, var(--_btn-fg));
+  --_btn-tone-soft-press-image: linear-gradient(var(--color-press-fill) 0 0);
+  --_btn-fg: var(--_btn-tone-fg);
+  --_btn-bg: var(--_btn-tone-bg);
+  --_btn-border: var(--_btn-tone-border);
+  --_btn-shadow: var(--shadow-sm);
+  --_btn-hover-bg: var(--_btn-tone-hover-bg);
+  --_btn-hover-border: var(--_btn-tone-hover-border);
+  --_btn-hover-image: var(--_btn-tone-hover-image);
+  --_btn-hover-fg: var(--_btn-tone-hover-fg);
+  --_btn-hover-shadow: var(--_btn-tone-hover-shadow);
+  --_btn-hover-press-image: var(--_btn-tone-press-image);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-block-size: var(--btn-min-block-size, var(--control-h-md));
+  padding: 0 var(--sp-4);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-none);
+  letter-spacing: var(--ls-normal);
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+  cursor: pointer;
+  color: var(--_btn-fg);
+  background-color: var(--_btn-bg);
+  border: var(--border-width) solid var(--_btn-border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--_btn-shadow);
+  background-image: var(--_btn-hover-image);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep),
+    border-color var(--transition-ui),
+    color var(--transition-hover-text),
+    box-shadow var(--transition-ui),
+    transform var(--transition-spring);
+}
+.btn-primary {
+  --_btn-tone-fg: var(--color-text-on-primary);
+  --_btn-tone-bg: var(--color-primary);
+  --_btn-tone-border: var(--color-primary);
+  --_btn-tone-hover-bg: var(--color-primary-hover);
+  --_btn-tone-hover-border: var(--color-primary-hover);
+  --_btn-tone-hover-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
+  --_btn-tone-hover-fg: var(--color-hover-text-solid, var(--_btn-fg));
+  --_btn-tone-hover-shadow: 0 0 0 var(--glow-ring-width)
+    var(--color-hover-glow, var(--color-primary-glow));
+  --_btn-tone-press-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
+  --_btn-tone-text: var(--color-brand-text);
+  --_btn-tone-line: var(--color-brand-border-mid);
+  --_btn-tone-soft-hover-bg: var(--color-primary-subtle);
+  --_btn-tone-soft-hover-image: linear-gradient(var(--color-hover-fill-soft) 0 0);
+  --_btn-tone-soft-hover-fg: var(--color-hover-text, var(--_btn-fg));
+  --_btn-tone-soft-press-image: linear-gradient(var(--color-hover-fill-soft) 0 0);
+}
+.btn-accent {
+  --_btn-tone-fg: var(--color-text-on-accent);
+  --_btn-tone-bg: var(--color-accent);
+  --_btn-tone-border: var(--color-accent);
+  --_btn-tone-hover-bg: var(--color-accent-hover);
+  --_btn-tone-hover-border: var(--color-accent-hover);
+  --_btn-tone-hover-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
+  --_btn-tone-hover-fg: var(--color-hover-text-solid, var(--_btn-fg));
+  --_btn-tone-hover-shadow: 0 0 0 var(--glow-ring-width)
+    var(--color-hover-glow, var(--color-accent-glow));
+  --_btn-tone-press-image: linear-gradient(var(--color-hover-fill-solid) 0 0);
+  --_btn-tone-text: var(--color-accent-text);
+  --_btn-tone-line: var(--color-accent-border);
+  --_btn-tone-soft-hover-bg: var(--color-accent-surface);
+  --_btn-tone-soft-hover-image: linear-gradient(var(--color-hover-fill-soft) 0 0);
+  --_btn-tone-soft-hover-fg: var(--color-hover-text, var(--_btn-fg));
+  --_btn-tone-soft-press-image: linear-gradient(var(--color-hover-fill-soft) 0 0);
+}
+.btn-danger {
+  --_btn-tone-fg: var(--color-text-inverse);
+  --_btn-tone-bg: var(--color-danger);
+  --_btn-tone-border: var(--color-danger);
+  --_btn-tone-hover-bg: var(--color-danger);
+  --_btn-tone-hover-border: var(--color-danger);
+  --_btn-tone-hover-image:
+    linear-gradient(var(--color-hover-fill-solid) 0 0), linear-gradient(var(--color-active) 0 0);
+  --_btn-tone-hover-fg: var(--color-hover-text-solid, var(--_btn-fg));
+  --_btn-tone-press-image:
+    linear-gradient(var(--color-hover-fill-solid) 0 0), linear-gradient(var(--color-press-fill) 0 0);
+  --_btn-tone-text: var(--color-danger);
+  --_btn-tone-line: var(--color-danger-border);
+  --_btn-tone-soft-hover-bg: var(--color-danger-muted);
+  --_btn-tone-soft-hover-image: linear-gradient(var(--color-hover-fill-soft) 0 0);
+  --_btn-tone-soft-hover-fg: var(--color-hover-text, var(--_btn-fg));
+  --_btn-tone-soft-press-image: linear-gradient(var(--color-hover-fill-soft) 0 0);
+}
+.btn-outline,
+.btn-ghost {
+  --_btn-fg: var(--_btn-tone-text);
+  --_btn-bg: transparent;
+  --_btn-shadow: none;
+  --_btn-hover-bg: var(--_btn-tone-soft-hover-bg);
+  --_btn-hover-image: var(--_btn-tone-soft-hover-image);
+  --_btn-hover-fg: var(--_btn-tone-soft-hover-fg);
+  --_btn-hover-shadow: none;
+  --_btn-hover-press-image: var(--_btn-tone-soft-press-image);
+}
+.btn-outline {
+  --_btn-border: var(--_btn-tone-line);
+  --_btn-hover-border: var(--_btn-tone-line);
+}
+.btn-ghost {
+  --_btn-border: transparent;
+  --_btn-hover-border: transparent;
+}
+.btn:hover {
+  --_btn-press-image: var(--_btn-hover-press-image);
+  color: var(--_btn-hover-fg);
+  background-color: var(--_btn-hover-bg);
+  border-color: var(--_btn-hover-border);
+  background-size: 100% 100%;
+  box-shadow: var(--_btn-hover-shadow);
+}
+.btn:active {
+  background-image: var(--_btn-press-image, linear-gradient(var(--color-active) 0 0));
+  background-size: 100% 100%;
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  inset-inline: calc(var(--border-width) * -1);
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width) + var(--border-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+.btn:hover::before,
+.btn.is-active::before {
+  border-block-color: var(--color-hover-rule);
+}
+.btn-icon {
+  inline-size: var(--icon-size-md);
+  block-size: var(--icon-size-md);
+  flex: none;
+}
+.btn-sm {
+  min-block-size: var(--btn-min-block-size, var(--control-h-sm));
+  padding-inline: var(--sp-3);
+  font-size: var(--text-xs);
+  gap: var(--sp-1);
+}
+.btn-lg {
+  min-block-size: var(--btn-min-block-size, var(--control-h-lg));
+  padding-inline: var(--sp-6);
+  font-size: var(--text-base);
+}
+.btn-square {
+  padding-inline: 0;
+  aspect-ratio: 1;
+}
+.btn-block {
+  inline-size: 100%;
+}
+.btn-wrap {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  max-inline-size: 100%;
+  white-space: normal;
+}
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  --_btn-fg: var(--color-disabled);
+  --_btn-bg: var(--color-disabled-bg);
+  --_btn-border: transparent;
+  --_btn-hover-bg: var(--color-disabled-bg);
+  --_btn-hover-border: transparent;
+  --_btn-hover-image: none;
+  --_btn-hover-fg: var(--_btn-fg);
+  --_btn-hover-shadow: none;
+  background-image: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.btn:disabled::before,
+.btn[aria-disabled='true']::before {
+  border-block-color: transparent;
+}
+.btn-loading {
+  color: transparent;
+  pointer-events: none;
+}
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: 1em;
+  block-size: 1em;
+  border: var(--border-width-strong) solid var(--color-spinner-track);
+  border-block-start-color: var(--_btn-fg);
+  border-radius: var(--radius-full);
+  animation: kSpin var(--dur-crawl) linear infinite;
+}
+.btn.is-active {
+  color: var(--color-chosen-text, var(--_btn-fg));
+  background-image: linear-gradient(var(--color-chosen-fill, var(--color-active)) 0 0);
+  background-size: 100% 100%;
+}

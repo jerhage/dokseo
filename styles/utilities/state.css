@@ -1,0 +1,24 @@
+.is-busy {
+  opacity: var(--opacity-muted);
+  transition: opacity var(--transition-ui);
+}
+.hushable {
+  transition:
+    opacity var(--dur-quick) var(--ease-smooth),
+    margin-block var(--dur-quick) var(--ease-smooth);
+}
+.is-hushed {
+  opacity: 0;
+  pointer-events: none;
+}
+.is-grabbable {
+  cursor: grab;
+}
+.is-grabbing {
+  cursor: grabbing;
+}
+@media (pointer: coarse) {
+  .hidden-on-touch {
+    display: none;
+  }
+}

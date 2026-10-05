@@ -1,0 +1,22 @@
+.chrome-bar {
+  position: absolute;
+  inset-inline: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-block: var(--sp-2);
+  padding-inline: clamp(var(--sp-4), (100% - var(--breakpoint-compact)) * 1000, var(--sp-6));
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+.chrome-bar-top {
+  inset-block-start: 0;
+  flex-wrap: wrap;
+  border-block-end: var(--border-width) solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+.chrome-bar-bottom {
+  inset-block-end: var(--chrome-bar-lift, 0px);
+  border-block-start: var(--border-width) solid var(--border-color);
+}

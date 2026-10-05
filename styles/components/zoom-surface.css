@@ -1,0 +1,5 @@
+.zoom-surface {
+  transform: translate(var(--zoom-surface-pan-x, 0px), var(--zoom-surface-pan-y, 0px))
+    scale(var(--zoom-surface-zoom, 1));
+  transform-origin: 0 0;
+}

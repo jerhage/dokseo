@@ -1,0 +1,67 @@
+.file-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-2);
+  padding: 0;
+  list-style: none;
+}
+.file-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  font-size: var(--text-sm);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+  animation: var(--transition-enter) both;
+  animation-name: var(--motion-item-in);
+}
+.file-item-icon-frame {
+  display: grid;
+  place-items: center;
+  inline-size: var(--icon-tile-sm);
+  block-size: var(--icon-tile-sm);
+  color: var(--color-brand-text);
+  background-color: var(--color-brand-tint);
+  border-radius: var(--radius-control);
+}
+.file-item-icon {
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
+}
+.file-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-inline-size: 0;
+}
+.file-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.file-item-detail {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+.file-item.is-error {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+}
+.file-item.is-error .file-item-icon-frame {
+  color: var(--color-danger);
+  background-color: var(--color-danger-muted);
+}
+.file-item.is-error .file-item-detail {
+  color: var(--color-danger);
+  font-family: var(--font-body);
+}
+.file-item.is-complete .file-item-icon-frame {
+  color: var(--color-success);
+  background-color: var(--color-success-muted);
+}

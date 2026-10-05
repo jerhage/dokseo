@@ -1,0 +1,9 @@
+.overflow-list {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-inline-size: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}

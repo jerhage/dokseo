@@ -1,0 +1,114 @@
+.toast-region {
+  --_toast-gutter: var(--sp-5);
+  position: fixed;
+  inset: auto;
+  inset-block-end: calc(
+    var(--_toast-gutter) + var(--toast-offset-block-end, 0px) + env(safe-area-inset-bottom, 0px)
+  );
+  inset-inline-end: var(--_toast-gutter);
+  z-index: var(--z-toast);
+  flex-direction: column;
+  gap: var(--sp-3);
+  inline-size: min(100% - 2 * var(--_toast-gutter), var(--toast-width));
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  color: inherit;
+  background: none;
+  border: none;
+  pointer-events: none;
+}
+.toast-region:popover-open {
+  display: flex;
+}
+.toast-region-top {
+  inset-block-start: calc(var(--_toast-gutter) + env(safe-area-inset-top, 0px));
+  inset-block-end: auto;
+  inset-inline: 0;
+  margin-inline: auto;
+}
+@media (width < 48rem) {
+  .toast-region {
+    --_toast-gutter: var(--sp-4);
+    inset-inline: var(--_toast-gutter);
+    inline-size: auto;
+  }
+}
+.toast {
+  --_toast-fg: var(--color-text-muted);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: var(--dur-moderate) var(--ease-spring) both;
+  animation-name: var(--motion-toast-in);
+}
+.toast::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--border-width-strong);
+  background-color: var(--_toast-fg);
+  transform-origin: left;
+  animation: kToastTimer var(--toast-timeout, var(--toast-duration)) linear forwards;
+}
+.toast:dir(rtl)::after {
+  transform-origin: right;
+}
+.toast:hover::after,
+.toast:focus-within::after {
+  animation-play-state: paused;
+}
+.toast-persistent::after {
+  display: none;
+}
+.toast.is-leaving {
+  animation: var(--transition-exit) forwards;
+  animation-name: var(--motion-toast-out);
+}
+.toast-success {
+  --_toast-fg: var(--color-success);
+}
+.toast-warning {
+  --_toast-fg: var(--color-warning);
+}
+.toast-danger {
+  --_toast-fg: var(--color-danger);
+}
+.toast-info {
+  --_toast-fg: var(--color-info);
+}
+.toast-icon {
+  inline-size: var(--icon-size-lg);
+  block-size: var(--icon-size-lg);
+  color: var(--_toast-fg);
+}
+.toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  min-inline-size: 0;
+}
+.toast-actions {
+  display: flex;
+  margin-block-start: var(--sp-1);
+  margin-inline-start: calc(-1 * var(--sp-3));
+}
+.toast-title {
+  font-weight: var(--weight-semibold);
+}
+.toast-description {
+  color: var(--color-text-muted);
+}

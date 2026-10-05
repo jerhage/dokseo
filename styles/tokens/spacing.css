@@ -1,0 +1,40 @@
+@property --overlay-gap {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+@property --overlay-edge {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+@property --lift-gap {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+@property --carousel-gap {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+:root {
+  --sp-1: var(--ds-space-1);
+  --sp-2: var(--ds-space-2);
+  --sp-3: var(--ds-space-3);
+  --sp-4: var(--ds-space-4);
+  --sp-5: var(--ds-space-5);
+  --sp-6: var(--ds-space-6);
+  --sp-7: var(--ds-space-7);
+  --sp-8: var(--ds-space-8);
+  --sp-9: var(--ds-space-9);
+  --sp-10: var(--ds-space-10);
+
+  --lift-gap: var(--ds-space-2);
+  --carousel-gap: var(--ds-space-4);
+
+  --page-gutter: var(--ds-space-5);
+  --overlay-gap: var(--ds-space-1);
+  --overlay-edge: var(--ds-space-2);
+  --hover-rule-gap: var(--ds-hover-rule-gap);
+}

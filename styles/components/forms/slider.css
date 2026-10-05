@@ -1,0 +1,21 @@
+.slider {
+  accent-color: var(--color-primary);
+}
+.slider-wrapper {
+  position: relative;
+}
+.slider-wrapper > .slider {
+  display: block;
+  inline-size: 100%;
+  margin-inline: 0;
+}
+.slider-tick {
+  position: absolute;
+  inset-block-start: 50%;
+  left: var(--slider-tick-at, 0%);
+  inline-size: var(--border-width);
+  block-size: var(--track-h-md);
+  background: var(--color-text-muted);
+  translate: -50% -50%;
+  pointer-events: none;
+}

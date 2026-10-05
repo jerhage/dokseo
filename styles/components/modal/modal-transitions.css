@@ -1,0 +1,14 @@
+.modal-backdrop[open] {
+  animation: kFadeIn var(--transition-enter) both;
+}
+.modal-backdrop[open] .modal {
+  animation: var(--dur-moderate) var(--ease-spring) both;
+  animation-name: var(--motion-overlay-in);
+}
+.modal-backdrop.is-leaving {
+  animation: kFadeOut var(--transition-exit) both;
+}
+.modal-backdrop.is-leaving .modal {
+  animation: var(--transition-exit) both;
+  animation-name: var(--motion-overlay-out);
+}

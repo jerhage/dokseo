@@ -1,0 +1,70 @@
+.segmented {
+  display: inline-flex;
+  gap: var(--sp-1);
+}
+.segmented-track {
+  padding: var(--sp-1);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-inset);
+}
+.segmented-item {
+  position: relative;
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-block-size: var(--control-h-sm);
+  padding: 0 var(--sp-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-none);
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  background-image: linear-gradient(var(--color-hover-fill) 0 0);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-position: left center;
+  background-size: 0% 100%;
+  transition:
+    background-color var(--transition-ui),
+    background-size var(--transition-sweep),
+    border-color var(--transition-ui),
+    color var(--transition-hover-text);
+}
+.segmented-item:hover {
+  color: var(--color-hover-text, var(--color-text));
+  background-size: 100% 100%;
+}
+.segmented-item.is-active {
+  color: var(--color-chosen-text, var(--color-text));
+  background-color: var(--color-chosen-fill, var(--color-surface-raised));
+  box-shadow: var(--shadow-sm);
+}
+.segmented-item:disabled {
+  color: var(--color-disabled);
+  background-image: none;
+  cursor: not-allowed;
+}
+.segmented-item::before {
+  content: '';
+  position: absolute;
+  inset-inline: calc(var(--border-width) * -1);
+  inset-block: calc((var(--hover-rule-gap) + var(--hover-rule-width) + var(--border-width)) * -1);
+  border-block: var(--hover-rule-width) solid transparent;
+  pointer-events: none;
+  transition: border-color var(--transition-sweep);
+}
+.segmented-item:hover::before,
+.segmented-item.is-active::before {
+  border-block-color: var(--color-hover-rule);
+}
+.segmented-item:disabled::before {
+  border-block-color: transparent;
+}

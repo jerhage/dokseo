@@ -1,0 +1,27 @@
+.codeblock {
+  padding: var(--sp-4) var(--sp-5);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--color-code-text);
+  background-color: var(--color-code-bg);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+}
+.codeblock-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.codeblock-frame {
+  position: relative;
+  min-inline-size: 0;
+}
+.codeblock-frame > .codeblock {
+  padding-inline-end: calc(var(--control-h-sm) + var(--sp-3));
+}
+.codeblock-copy {
+  position: absolute;
+  inset-block-start: var(--sp-2);
+  inset-inline-end: var(--sp-2);
+}

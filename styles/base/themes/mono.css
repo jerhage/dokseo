@@ -1,0 +1,136 @@
+:root[data-theme='mono'] {
+  --ds-gray-paper: light-dark(oklch(0.965 0 0), oklch(0.12 0 0));
+  --ds-gray-sheet: light-dark(oklch(1 0 0), oklch(0.16 0 0));
+  --ds-gray-well: light-dark(oklch(0.935 0 0), oklch(0.09 0 0));
+  --ds-gray-ink: light-dark(oklch(0.14 0 0), oklch(0.96 0 0));
+  --ds-gray-ink-2: light-dark(oklch(0.32 0 0), oklch(0.82 0 0));
+  --ds-gray-ink-muted: light-dark(oklch(0.42 0 0), oklch(0.76 0 0));
+  --ds-gray-ink-faint: light-dark(oklch(0.56 0 0), oklch(0.6 0 0));
+  --ds-gray-line-soft: light-dark(oklch(0.82 0 0), oklch(0.35 0 0));
+  --ds-lime-500: oklch(0.9 0.19 105);
+  --ds-lime-100: light-dark(oklch(0.96 0.09 105), oklch(0.3 0.06 105));
+  --ds-lime-700: light-dark(oklch(0.42 0.09 105), oklch(0.9 0.17 105));
+  --ds-gray-on-lime: oklch(0.14 0 0);
+  --ds-gray-tint-5: light-dark(oklch(0.14 0 0 / 0.06), oklch(0.96 0 0 / 0.07));
+  --ds-gray-tint-9: light-dark(oklch(0.14 0 0 / 0.12), oklch(0.96 0 0 / 0.13));
+  --ds-gray-tint-15: light-dark(oklch(0.14 0 0 / 0.18), oklch(0.96 0 0 / 0.2));
+}
+
+:root[data-theme='mono'] {
+  --ds-bg: var(--ds-gray-paper);
+  --ds-bg-raised: var(--ds-gray-well);
+  --ds-surface: var(--ds-gray-sheet);
+  --ds-surface-raised: var(--ds-gray-sheet);
+  --ds-surface-bright: var(--ds-gray-sheet);
+  --ds-surface-sunken: var(--ds-gray-well);
+
+  --ds-primary: var(--ds-gray-ink);
+  --ds-primary-hover: var(--ds-gray-ink-2);
+  --ds-primary-subtle: var(--ds-lime-100);
+  --ds-primary-soft: var(--ds-lime-100);
+  --ds-primary-muted: var(--ds-gray-ink-faint);
+  --ds-primary-glow: var(--ds-gray-tint-9);
+  --ds-brand-tint: var(--ds-lime-100);
+  --ds-brand-border: var(--ds-gray-ink);
+  --ds-brand-border-mid: var(--ds-gray-ink);
+  --ds-brand-text: var(--ds-gray-ink);
+
+  --ds-accent: var(--ds-lime-500);
+  --ds-accent-hover: var(--ds-lime-500);
+  --ds-accent-surface: var(--ds-lime-100);
+  --ds-accent-border: var(--ds-gray-ink);
+  --ds-accent-mid: var(--ds-lime-500);
+  --ds-accent-text: var(--ds-lime-700);
+  --ds-accent-glow: var(--ds-gray-tint-9);
+
+  --ds-text: var(--ds-gray-ink);
+  --ds-text-muted: var(--ds-gray-ink-muted);
+  --ds-text-faint: var(--ds-gray-ink-faint);
+  --ds-text-inverse: var(--ds-gray-sheet);
+  --ds-text-on-primary: var(--ds-gray-sheet);
+  --ds-text-on-accent: var(--ds-gray-on-lime);
+  --ds-text-link: var(--ds-gray-ink);
+  --ds-text-link-hover: var(--ds-gray-ink-muted);
+
+  --ds-hover: var(--ds-gray-tint-5);
+  --ds-active: var(--ds-gray-tint-9);
+  --ds-selected: var(--ds-lime-100);
+  --ds-disabled: var(--ds-gray-ink-faint);
+  --ds-disabled-bg: var(--ds-gray-well);
+
+  --ds-spinner-track: var(--ds-gray-tint-15);
+  --ds-table-stripe: var(--ds-gray-tint-5);
+  --ds-table-row-hover: var(--ds-gray-tint-9);
+  --ds-skeleton-base: var(--ds-gray-well);
+  --ds-skeleton-shine: var(--ds-gray-sheet);
+  --ds-code-bg: var(--ds-gray-well);
+  --ds-code-text: var(--ds-gray-ink);
+
+  --ds-border: var(--ds-gray-ink);
+  --ds-border-strong: var(--ds-gray-ink);
+  --ds-border-focus: var(--ds-gray-ink);
+  --ds-border-width: var(--ds-border-2);
+  --ds-border-width-strong: 3px;
+  --ds-icon-stroke: 2.5;
+
+  --ds-font-display: 'Archivo', system-ui, sans-serif;
+  --ds-font-body: 'Archivo', system-ui, sans-serif;
+  --ds-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-9);
+  --ds-weight-semibold: var(--ds-fw-semibold);
+  --ds-tracking-tight: var(--ds-ls-normal);
+  --ds-tracking-wider: var(--ds-ls-wider);
+  --ds-tracking-widest: var(--ds-ls-widest);
+
+  --ds-corner-xs: var(--ds-radius-none);
+  --ds-corner-sm: var(--ds-radius-none);
+  --ds-corner-md: var(--ds-radius-none);
+  --ds-corner-lg: var(--ds-radius-none);
+  --ds-radius-control: var(--ds-radius-none);
+  --ds-radius-container: var(--ds-radius-none);
+  --ds-radius-overlay: var(--ds-radius-none);
+  --ds-radius-pill: var(--ds-radius-full);
+  --ds-radius-round: var(--ds-radius-full);
+
+  --ds-shadow-1: 2px 2px 0 var(--ds-gray-ink);
+  --ds-shadow-2: 4px 4px 0 var(--ds-gray-ink);
+  --ds-shadow-3: 8px 8px 0 var(--ds-gray-ink);
+  --ds-shadow-4: 8px 8px 0 var(--ds-gray-ink);
+
+  --ds-shadow-inset: 0 0 0 transparent;
+
+  --ds-duration-quick: var(--ds-dur-quick);
+  --ds-dur-spring: var(--ds-dur-quick);
+  --ds-easing-spring: var(--ds-ease-crisp);
+
+  --ds-page-backdrop: none;
+
+  --ds-motion-overlay-in: kModalIn;
+  --ds-motion-overlay-out: kModalOut;
+  --ds-motion-menu-in: kDropIn;
+  --ds-motion-toast-in: kToastIn;
+  --ds-motion-toast-out: kToastOut;
+  --ds-motion-item-in: kSlideUp;
+  --ds-motion-panel-in: none;
+  --ds-dur-exit: var(--ds-dur-flash);
+  --ds-easing-exit: var(--ds-ease-in);
+
+  --ds-hover-fill: var(--ds-gray-tint-5);
+  --ds-hover-fill-soft: transparent;
+  --ds-hover-fill-solid: transparent;
+  --ds-hover-text: initial;
+  --ds-hover-text-solid: initial;
+  --ds-press-fill: var(--ds-gray-tint-9);
+  --ds-chosen-fill: initial;
+  --ds-chosen-text: initial;
+  --ds-hover-glow: initial;
+  --ds-dur-sweep: 0s;
+  --ds-easing-sweep: linear;
+  --ds-dur-hover-text: var(--ds-dur-flash);
+  --ds-easing-hover-text: var(--ds-ease-smooth);
+  --ds-marker-width: 0px;
+  --ds-marker: var(--ds-lime-500);
+  --ds-hover-rule-width: 0px;
+  --ds-hover-rule-gap: 0px;
+  --ds-hover-rule: transparent;
+}

@@ -1,0 +1,66 @@
+.table-wrapper {
+  overflow-x: auto;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-container);
+}
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+.table caption {
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  color: var(--color-text);
+  border-block-end: var(--border-width) solid var(--border-color);
+}
+.table th {
+  padding: var(--sp-3) var(--sp-4);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  white-space: nowrap;
+  color: var(--color-text-faint);
+  background-color: var(--color-surface-sunken);
+  border-block-end: var(--border-width) solid var(--border-color);
+}
+.table th code {
+  letter-spacing: var(--ls-normal);
+  text-transform: none;
+}
+.table td {
+  padding: var(--sp-3) var(--sp-4);
+  vertical-align: middle;
+  border-block-end: var(--border-width) solid var(--border-color);
+}
+.table tbody tr {
+  transition: background-color var(--transition-ui);
+}
+.table tbody tr:last-child td {
+  border-block-end: none;
+}
+.table tbody tr:hover {
+  background-color: var(--color-table-row-hover);
+}
+.table-striped tbody tr:nth-child(even) {
+  background-color: var(--color-table-stripe);
+}
+.table-striped tbody tr:nth-child(even):hover {
+  background-color: var(--color-table-row-hover);
+}
+.table-sm th,
+.table-sm td {
+  padding: var(--sp-2) var(--sp-3);
+}
+.table .table-numeric {
+  text-align: end;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.table .table-actions {
+  text-align: end;
+}

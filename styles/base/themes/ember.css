@@ -1,0 +1,160 @@
+:root[data-theme='ember'] {
+  --ds-sand-0: light-dark(oklch(0.995 0.004 80), oklch(0.15 0.01 50));
+  --ds-sand-50: light-dark(oklch(0.955 0.013 75), oklch(0.2 0.012 50));
+  --ds-sand-100: light-dark(oklch(0.925 0.016 72), oklch(0.24 0.014 50));
+  --ds-sand-200: light-dark(oklch(0.885 0.02 70), oklch(0.3 0.016 50));
+  --ds-sand-300: light-dark(oklch(0.82 0.024 68), oklch(0.37 0.018 52));
+  --ds-sand-400: light-dark(oklch(0.7 0.025 64), oklch(0.48 0.02 55));
+  --ds-sand-500: light-dark(oklch(0.58 0.025 60), oklch(0.62 0.022 60));
+  --ds-sand-600: light-dark(oklch(0.48 0.025 55), oklch(0.73 0.02 65));
+  --ds-sand-800: light-dark(oklch(0.32 0.02 50), oklch(0.88 0.014 72));
+  --ds-sand-900: light-dark(oklch(0.24 0.018 50), oklch(0.95 0.01 78));
+  --ds-sand-tint-3: light-dark(oklch(0.3 0.03 50 / 0.035), oklch(0.98 0.01 70 / 0.03));
+  --ds-sand-tint-5: light-dark(oklch(0.3 0.03 50 / 0.055), oklch(0.98 0.01 70 / 0.06));
+  --ds-sand-tint-9: light-dark(oklch(0.3 0.03 50 / 0.1), oklch(0.98 0.01 70 / 0.1));
+  --ds-sand-tint-15: light-dark(oklch(0.3 0.03 50 / 0.15), oklch(0.98 0.01 70 / 0.18));
+
+  --ds-copper-50: light-dark(oklch(0.97 0.02 50), oklch(0.26 0.04 40));
+  --ds-copper-100: light-dark(oklch(0.94 0.04 50), oklch(0.3 0.05 40));
+  --ds-copper-200: light-dark(oklch(0.88 0.07 48), oklch(0.37 0.07 40));
+  --ds-copper-300: light-dark(oklch(0.8 0.1 45), oklch(0.46 0.1 42));
+  --ds-copper-500: light-dark(oklch(0.6 0.16 40), oklch(0.72 0.15 45));
+  --ds-copper-600: light-dark(oklch(0.53 0.15 38), oklch(0.78 0.13 48));
+  --ds-copper-700: light-dark(oklch(0.46 0.13 36), oklch(0.85 0.1 50));
+  --ds-copper-800: light-dark(oklch(0.38 0.1 35), oklch(0.9 0.06 50));
+  --ds-copper-a12: light-dark(oklch(0.6 0.16 40 / 0.12), oklch(0.72 0.15 45 / 0.16));
+  --ds-copper-glow: light-dark(oklch(0.6 0.16 40 / 0.3), oklch(0.72 0.15 45 / 0.28));
+
+  --ds-olive-50: light-dark(oklch(0.97 0.025 130), oklch(0.26 0.04 130));
+  --ds-olive-200: light-dark(oklch(0.88 0.06 130), oklch(0.38 0.06 130));
+  --ds-olive-400: light-dark(oklch(0.68 0.1 130), oklch(0.6 0.09 130));
+  --ds-olive-500: light-dark(oklch(0.55 0.1 135), oklch(0.74 0.11 130));
+  --ds-olive-600: light-dark(oklch(0.48 0.09 135), oklch(0.8 0.1 130));
+  --ds-olive-700: light-dark(oklch(0.4 0.08 135), oklch(0.86 0.08 130));
+  --ds-olive-glow: light-dark(oklch(0.55 0.1 135 / 0.3), oklch(0.74 0.11 130 / 0.28));
+}
+
+:root[data-theme='ember'] {
+  --ds-bg: light-dark(oklch(0.975 0.01 78), oklch(0.17 0.011 50));
+  --ds-bg-raised: var(--ds-sand-50);
+  --ds-surface: light-dark(oklch(0.995 0.004 80), oklch(0.2 0.013 50));
+  --ds-surface-raised: light-dark(oklch(0.995 0.004 80), oklch(0.24 0.015 50));
+  --ds-surface-bright: light-dark(oklch(0.995 0.004 80), oklch(0.24 0.015 50));
+  --ds-surface-sunken: light-dark(oklch(0.955 0.013 75), oklch(0.15 0.01 50));
+
+  --ds-primary: var(--ds-copper-500);
+  --ds-primary-hover: var(--ds-copper-600);
+  --ds-primary-subtle: var(--ds-copper-50);
+  --ds-primary-soft: var(--ds-copper-100);
+  --ds-primary-muted: var(--ds-copper-300);
+  --ds-primary-glow: var(--ds-copper-glow);
+  --ds-brand-tint: var(--ds-copper-50);
+  --ds-brand-border: var(--ds-copper-200);
+  --ds-brand-border-mid: var(--ds-copper-300);
+  --ds-brand-text: var(--ds-copper-700);
+
+  --ds-accent: var(--ds-olive-500);
+  --ds-accent-hover: var(--ds-olive-600);
+  --ds-accent-surface: var(--ds-olive-50);
+  --ds-accent-border: var(--ds-olive-200);
+  --ds-accent-mid: var(--ds-olive-400);
+  --ds-accent-text: var(--ds-olive-700);
+  --ds-accent-glow: var(--ds-olive-glow);
+
+  --ds-text: var(--ds-sand-900);
+  --ds-text-muted: var(--ds-sand-600);
+  --ds-text-faint: var(--ds-sand-500);
+  --ds-text-inverse: var(--ds-sand-0);
+  --ds-text-on-primary: var(--ds-sand-0);
+  --ds-text-on-accent: var(--ds-sand-0);
+  --ds-text-link: var(--ds-copper-600);
+  --ds-text-link-hover: var(--ds-copper-800);
+
+  --ds-hover: var(--ds-sand-tint-5);
+  --ds-active: var(--ds-sand-tint-9);
+  --ds-selected: var(--ds-copper-a12);
+  --ds-disabled: var(--ds-sand-400);
+  --ds-disabled-bg: var(--ds-sand-100);
+
+  --ds-spinner-track: var(--ds-sand-tint-15);
+  --ds-table-stripe: var(--ds-sand-tint-3);
+  --ds-table-row-hover: var(--ds-sand-tint-5);
+  --ds-skeleton-base: var(--ds-sand-100);
+  --ds-skeleton-shine: var(--ds-sand-0);
+  --ds-code-bg: var(--ds-sand-100);
+  --ds-code-text: var(--ds-sand-800);
+
+  --ds-border: var(--ds-sand-200);
+  --ds-border-strong: var(--ds-sand-300);
+  --ds-border-focus: var(--ds-copper-500);
+  --ds-border-width: var(--ds-border-1);
+  --ds-border-width-strong: var(--ds-border-2);
+  --ds-icon-stroke: 2;
+
+  --ds-font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --ds-font-body: 'Figtree', system-ui, sans-serif;
+  --ds-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ds-weight-strong: var(--ds-fw-8);
+  --ds-weight-semibold: var(--ds-fw-semibold);
+  --ds-tracking-tight: var(--ds-ls-tight);
+  --ds-tracking-wider: var(--ds-ls-wider);
+  --ds-tracking-widest: var(--ds-ls-widest);
+
+  --ds-corner-xs: var(--ds-radius-xs);
+  --ds-corner-sm: var(--ds-radius-sm);
+  --ds-corner-md: var(--ds-radius-md);
+  --ds-corner-lg: var(--ds-radius-lg);
+  --ds-radius-control: 10px;
+  --ds-radius-container: 16px;
+  --ds-radius-overlay: 22px;
+  --ds-radius-pill: var(--ds-radius-full);
+  --ds-radius-round: var(--ds-radius-full);
+
+  --ds-shadow-1: 0 1px 2px light-dark(oklch(0.35 0.05 45 / 0.08), oklch(0 0 0 / 0.3));
+  --ds-shadow-2:
+    0 2px 6px light-dark(oklch(0.35 0.05 45 / 0.06), oklch(0 0 0 / 0.25)),
+    0 8px 24px light-dark(oklch(0.35 0.05 45 / 0.08), oklch(0 0 0 / 0.3));
+  --ds-shadow-3:
+    0 12px 24px light-dark(oklch(0.35 0.05 45 / 0.1), oklch(0 0 0 / 0.35)),
+    0 24px 56px light-dark(oklch(0.35 0.05 45 / 0.14), oklch(0 0 0 / 0.4));
+  --ds-shadow-4:
+    0 24px 48px light-dark(oklch(0.35 0.05 45 / 0.14), oklch(0 0 0 / 0.45)),
+    0 48px 112px light-dark(oklch(0.35 0.05 45 / 0.2), oklch(0 0 0 / 0.5));
+
+  --ds-shadow-inset: inset 0 1px 2px light-dark(oklch(0.2 0.02 255 / 0.06), oklch(0 0 0 / 0.25));
+
+  --ds-duration-quick: var(--ds-dur-quick);
+  --ds-dur-spring: var(--ds-dur-moderate);
+  --ds-easing-spring: var(--ds-ease-spring);
+
+  --ds-page-backdrop: none;
+
+  --ds-motion-overlay-in: kModalIn;
+  --ds-motion-overlay-out: kModalOut;
+  --ds-motion-menu-in: kDropIn;
+  --ds-motion-toast-in: kToastIn;
+  --ds-motion-toast-out: kToastOut;
+  --ds-motion-item-in: kSlideUp;
+  --ds-motion-panel-in: none;
+  --ds-dur-exit: var(--ds-dur-flash);
+  --ds-easing-exit: var(--ds-ease-in);
+
+  --ds-hover-fill: var(--ds-sand-tint-5);
+  --ds-hover-fill-soft: transparent;
+  --ds-hover-fill-solid: transparent;
+  --ds-hover-text: initial;
+  --ds-hover-text-solid: initial;
+  --ds-press-fill: var(--ds-sand-tint-9);
+  --ds-chosen-fill: initial;
+  --ds-chosen-text: initial;
+  --ds-hover-glow: initial;
+  --ds-dur-sweep: 0s;
+  --ds-easing-sweep: linear;
+  --ds-dur-hover-text: var(--ds-dur-flash);
+  --ds-easing-hover-text: var(--ds-ease-smooth);
+  --ds-marker-width: 0px;
+  --ds-marker: var(--ds-olive-500);
+  --ds-hover-rule-width: 0px;
+  --ds-hover-rule-gap: 0px;
+  --ds-hover-rule: transparent;
+}
