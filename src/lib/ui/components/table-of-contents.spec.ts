@@ -18,9 +18,9 @@ describe('anchorSlug', () => {
 
 describe('contentsEntries', () => {
   it('links each heading to the anchor its title makes, at level 2 by default', () => {
-    expect(contentsEntries([{ title: 'The headers' }, { title: 'In Dokseo', level: 3 }])).toEqual([
+    expect(contentsEntries([{ title: 'The headers' }, { title: 'In use', level: 3 }])).toEqual([
       { id: 'the-headers', href: '#the-headers', title: 'The headers', level: 2 },
-      { id: 'in-dokseo', href: '#in-dokseo', title: 'In Dokseo', level: 3 },
+      { id: 'in-use', href: '#in-use', title: 'In use', level: 3 },
     ]);
   });
 

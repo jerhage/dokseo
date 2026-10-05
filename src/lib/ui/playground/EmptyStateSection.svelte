@@ -42,7 +42,7 @@
         <EmptyState
           variant="fill"
           live
-          message="This book could not be opened. The file may be damaged, or in a format this reader does not know."
+          message="This file could not be opened. It may be damaged, or in a format this app does not know."
           class="flex-1 min-h-0 surface-bg text-center"
         >
           {#snippet action()}

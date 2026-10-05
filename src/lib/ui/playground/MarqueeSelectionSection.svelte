@@ -139,8 +139,7 @@
     Drag a rectangle with a mouse or a pen. A release inside the {CLICK_SLOP_PX} px slop is a click, one
     under {MINIMUM_PX} px on either axis is too small, and anything larger is a selection. Touch drives
     it through <code>gestureStep</code>: a long press, or any drag in Select mode, draws; the slop
-    is then {TOUCH_SLOP_PX} px. Dismiss drops the kept selection and reports it, as Escape does in the
-    reader.
+    is then {TOUCH_SLOP_PX} px. Dismiss drops the kept selection and reports it, as Escape does.
   </p>
   <div class="row wrap gap-4">
     <Toggle bind:checked={accent}>Accent</Toggle>
