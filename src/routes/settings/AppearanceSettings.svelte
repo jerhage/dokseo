@@ -1,8 +1,8 @@
 <script lang="ts">
   import Fieldset from '$lib/ui/components/Fieldset.svelte';
   import Radio from '$lib/ui/components/Radio.svelte';
-  import { readAppearance } from '$lib/ui/appearance';
-  import type { Appearance } from '$lib/ui/appearance';
+  import { readAppearance } from '$lib/ui/core/appearance.js';
+  import type { Appearance } from '$lib/ui/core/appearance.js';
   import { chooseAppearance } from '$lib/shared/saved-appearance';
   import { SCHEME_OPTIONS, THEME_OPTIONS } from './appearance-options';
 

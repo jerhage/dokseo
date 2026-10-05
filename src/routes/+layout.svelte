@@ -17,7 +17,7 @@
   } from '$lib/shared/unexpected-failure';
   import { createShellUpdates, watchShellUpdates } from '$lib/shared/shell-updates';
   import { provideShellUpdates } from '$lib/shared/shell-updates-context';
-  import '$lib/ui/styles/index.css';
+  import '$lib/ui/core/styles/index.css';
 
   let { children } = $props();
 

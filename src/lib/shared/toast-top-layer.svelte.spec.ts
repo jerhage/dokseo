@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { page } from 'vitest/browser';
-import '$lib/ui/styles/index.css';
+import '$lib/ui/core/styles/index.css';
 import Modal from '$lib/ui/components/Modal.svelte';
 import { TOASTER } from '$lib/ui/components/toast-context';
 import ToastRegion from '$lib/ui/components/ToastRegion.svelte';

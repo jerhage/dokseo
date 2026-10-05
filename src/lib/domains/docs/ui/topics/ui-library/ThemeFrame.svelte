@@ -3,8 +3,8 @@
   import Field from '$lib/ui/components/Field.svelte';
   import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import Select from '$lib/ui/components/Select.svelte';
-  import { COLOR_SCHEMES, THEMES, applyAppearance } from '$lib/ui/appearance';
-  import type { Appearance, ColorScheme } from '$lib/ui/appearance';
+  import { COLOR_SCHEMES, THEMES, applyAppearance } from '$lib/ui/core/appearance.js';
+  import type { Appearance, ColorScheme } from '$lib/ui/core/appearance.js';
   import { SCHEME_LABELS, THEME_LABELS } from '$lib/shared/appearance-labels';
   import DocsDemo from '../../DocsDemo.svelte';
   import ThemeSpecimen from './ThemeSpecimen.svelte';

@@ -34,7 +34,7 @@ const SAMPLE_PATHS = [
   'src/lib/ui/components/Button.svelte',
   'src/lib/ui/components/icons/Check.svelte',
   'src/lib/ui/components/icons/index.ts',
-  'src/lib/ui/styles/index.css',
+  'src/lib/ui/core/styles/index.css',
   'src/lib/assets/logo.svg',
   'src/workers/ocr.worker.ts',
   'src/lib/domains/library/adapters/pdf-page-source.ts',

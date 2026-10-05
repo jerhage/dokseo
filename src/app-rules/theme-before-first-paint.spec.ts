@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONTENT_SECURITY_POLICY } from '../lib/platform/security/content-security-policy';
-import { themeBootScript } from '../lib/ui/theme-boot';
+import { themeBootScript } from '../lib/ui/core/theme-boot.js';
 
 const HTML = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
 

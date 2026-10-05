@@ -5,7 +5,7 @@ import type { ImageIndex } from '$lib/shared/ids';
 import type { PagePicture } from '$lib/shared/page-source';
 import ContinuousViewer from './ContinuousViewer.svelte';
 import PagedViewer from './PagedViewer.svelte';
-import '$lib/ui/styles/index.css';
+import '$lib/ui/core/styles/index.css';
 
 const PAGE_WIDTH = 400;
 

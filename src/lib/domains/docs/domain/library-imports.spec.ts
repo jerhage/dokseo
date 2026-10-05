@@ -15,7 +15,7 @@ describe('importSpecifiers', () => {
       'import {',
       '  match,',
       "} from 'ts-pattern';",
-      "import '$lib/ui/styles/index.css';",
+      "import '$lib/ui/core/styles/index.css';",
       "const lazy = import('./lazy');",
       "const STYLES = new URL('../styles/', import.meta.url);",
       "const NESTED = new URL('components/', STYLES);",
@@ -26,7 +26,7 @@ describe('importSpecifiers', () => {
       './Button.svelte',
       'svelte',
       'ts-pattern',
-      '$lib/ui/styles/index.css',
+      '$lib/ui/core/styles/index.css',
       './lazy',
       '../styles/',
     ]);
@@ -42,7 +42,7 @@ describe('importKind', () => {
     ['svelte/elements', 'package'],
     ['./Button.svelte', 'sibling'],
     ['../styles/', 'parent'],
-    ['$lib/ui/appearance', 'alias'],
+    ['$lib/ui/core/appearance.js', 'alias'],
   ] as const)('classes %s as a %s import', (specifier, kind) => {
     expect(importKind(specifier)).toBe(kind);
   });
@@ -53,7 +53,7 @@ describe('importTarget', () => {
     expect(importTarget('./icons/X.svelte')).toBe('./');
     expect(importTarget('../styles/tokens/space.css')).toBe('../styles/tokens/');
     expect(importTarget('../../../')).toBe('../../../');
-    expect(importTarget('$lib/ui/appearance')).toBe('$lib');
+    expect(importTarget('$lib/ui/core/appearance.js')).toBe('$lib');
     expect(importTarget('svelte/attachments')).toBe('svelte/attachments');
   });
 });

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const SOURCE = new URL('../', import.meta.url);
 const LIBRARY_FOLDER = 'lib/ui/';
-const LIBRARY_STYLES = new URL('lib/ui/styles/', SOURCE);
+const LIBRARY_STYLES = new URL('lib/ui/core/styles/', SOURCE);
 const DOCS_FOLDER = 'lib/domains/docs/';
 
 function filesUnder(root: URL, extensions: readonly string[]): readonly string[] {

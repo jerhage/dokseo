@@ -53,7 +53,7 @@ function runtimeServedFromCdn(): Plugin {
   };
 }
 
-const FONT_FOLDER = 'src/lib/ui/fonts';
+const FONT_FOLDER = 'src/lib/ui/core/fonts';
 
 const FONT_LICENSE = /\.OFL\.txt$/u;
 
@@ -149,7 +149,7 @@ export default defineConfig({
           environment: 'node',
           setupFiles: ['src/lib/shared/testing/fresh-local-storage.ts'],
           include: ['src/**/*.{test,spec}.{js,ts}'],
-          exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+          exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/lib/ui/core/**'],
         },
       },
 
@@ -164,6 +164,7 @@ export default defineConfig({
             instances: [{ browser: 'chromium', headless: true }],
           },
           include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+          exclude: ['src/lib/ui/**'],
         },
       },
     ],

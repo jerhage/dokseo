@@ -5,7 +5,7 @@
   import { MediaQuery } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import Alert from '$lib/ui/components/Alert.svelte';
-  import { NARROW_SCREEN_QUERY } from '$lib/ui/components/breakpoints';
+  import { NARROW_SCREEN_QUERY } from '$lib/ui/core/breakpoints.js';
   import Button from '$lib/ui/components/Button.svelte';
   import Divider from '$lib/ui/components/Divider.svelte';
   import EmptyState from '$lib/ui/components/EmptyState.svelte';

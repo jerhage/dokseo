@@ -5,7 +5,7 @@ import type { Container } from '$lib/container';
 import { bookId, contentHash } from '$lib/shared/ids';
 import { START_OF_THE_TEXT, textPlace } from '$lib/shared/reading-place';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
-import '$lib/ui/styles/index.css';
+import '$lib/ui/core/styles/index.css';
 import FlowViewer from './FlowViewer.svelte';
 import { FlowView } from './flow-view.svelte';
 import type { FlowBook } from './flow-view.svelte';

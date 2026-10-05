@@ -5,5 +5,5 @@
   "printWidth": 100,
   "singleQuote": true,
   "svelte": true,
-  "ignorePatterns": ["CHANGELOG.md"]
+  "ignorePatterns": ["CHANGELOG.md", "src/lib/ui/core/**"]
 }

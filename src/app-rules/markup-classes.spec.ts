@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const SOURCE = new URL('../', import.meta.url);
-const STYLES = new URL('lib/ui/styles/', SOURCE);
+const STYLES = new URL('lib/ui/core/styles/', SOURCE);
 const LIBRARY_FOLDER = 'lib/ui/';
 const LIBRARY_FOLDERS = ['components/', 'utilities/', 'overrides/'];
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MediaQuery } from 'svelte/reactivity';
-  import { NARROW_SCREEN_QUERY } from '$lib/ui/components/breakpoints';
+  import { NARROW_SCREEN_QUERY } from '$lib/ui/core/breakpoints.js';
   import EngineSettingsPage from './EngineSettingsPage.svelte';
   import SettingsSectionList from './SettingsSectionList.svelte';
 

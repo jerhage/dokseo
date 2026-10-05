@@ -2,8 +2,8 @@
   import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
   import DropdownLabel from '$lib/ui/components/DropdownLabel.svelte';
   import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
-  import { COLOR_SCHEMES, THEMES } from '$lib/ui/appearance';
-  import type { Appearance } from '$lib/ui/appearance';
+  import { COLOR_SCHEMES, THEMES } from '$lib/ui/core/appearance.js';
+  import type { Appearance } from '$lib/ui/core/appearance.js';
   import { SCHEME_LABELS, THEME_LABELS } from './appearance-labels';
   import { chooseAppearance } from './saved-appearance';
 

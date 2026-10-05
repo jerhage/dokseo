@@ -5,8 +5,8 @@
   import Moon from '$lib/ui/components/icons/Moon.svelte';
   import Sun from '$lib/ui/components/icons/Sun.svelte';
   import SunMoon from '$lib/ui/components/icons/SunMoon.svelte';
-  import { readAppearance } from '$lib/ui/appearance';
-  import type { Appearance, ColorScheme } from '$lib/ui/appearance';
+  import { readAppearance } from '$lib/ui/core/appearance.js';
+  import type { Appearance, ColorScheme } from '$lib/ui/core/appearance.js';
   import AppearanceChoices from './AppearanceChoices.svelte';
   import { SCHEME_LABELS, THEME_LABELS } from './appearance-labels';
 

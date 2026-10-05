@@ -3,8 +3,8 @@
   import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
   import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
   import Menu from '$lib/ui/components/icons/Menu.svelte';
-  import { readAppearance } from '$lib/ui/appearance';
-  import type { Appearance } from '$lib/ui/appearance';
+  import { readAppearance } from '$lib/ui/core/appearance.js';
+  import type { Appearance } from '$lib/ui/core/appearance.js';
   import AppearanceChoices from '$lib/shared/AppearanceChoices.svelte';
   import { LIBRARY_SECTIONS } from './library-sections';
 
