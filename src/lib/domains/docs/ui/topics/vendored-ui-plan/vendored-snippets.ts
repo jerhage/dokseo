@@ -55,9 +55,7 @@ const LAYER_ORDER: SourceSnippet = {
 const APPEARANCE: SourceSnippet = {
   label: 'src/lib/ui/appearance.ts, the part that moved into the library',
   file: 'src/lib/ui/appearance.ts',
-  code: `type Theme = 'base' | 'ember' | 'mono' | 'forge' | 'crayon' | 'moss' | 'petal' | 'yorha';
-
-type ColorScheme = 'automatic' | 'light' | 'dark';
+  code: `type ColorScheme = 'automatic' | 'light' | 'dark';
 
 type Appearance = {
   readonly theme: Theme;
@@ -66,16 +64,9 @@ type Appearance = {
 
 type RootAttributes = Pick<Element, 'getAttribute' | 'setAttribute' | 'removeAttribute'>;
 
-const THEMES: readonly Theme[] = [
-  'base',
-  'petal',
-  'yorha',
-  'crayon',
-  'ember',
-  'mono',
-  'forge',
-  'moss',
-];`,
+const THEMES = ['base', 'petal', 'yorha', 'crayon', 'ember', 'mono', 'forge', 'moss'] as const;
+
+type Theme = (typeof THEMES)[number];`,
 };
 
 const APPLY_APPEARANCE: SourceSnippet = {
