@@ -1,8 +1,8 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import { SaveDesk } from '../../../domain/double-submit';
   import type { PressOutcome, SubmitHandling } from '../../../domain/double-submit';
   import DocsDemo from '../../DocsDemo.svelte';

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import DropdownLabel from '$lib/components/DropdownLabel.svelte';
-  import DropdownSeparator from '$lib/components/DropdownSeparator.svelte';
-  import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import DropdownLabel from '$lib/ui/components/DropdownLabel.svelte';
+  import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
+  import Ellipsis from '$lib/ui/components/icons/Ellipsis.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const SORTS = ['Newest', 'Oldest', 'Name A–Z'];

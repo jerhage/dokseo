@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Accordion from '$lib/components/Accordion.svelte';
-  import AccordionItem from '$lib/components/AccordionItem.svelte';
+  import Accordion from '$lib/ui/components/Accordion.svelte';
+  import AccordionItem from '$lib/ui/components/AccordionItem.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 

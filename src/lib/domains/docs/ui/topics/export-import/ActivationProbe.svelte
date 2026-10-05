@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
 
   type Reading = { readonly moment: string; readonly active: boolean | null };

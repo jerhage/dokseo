@@ -1,4 +1,4 @@
-import type { DiagramBox, DiagramEdge, DiagramNode } from '$lib/components/diagram';
+import type { DiagramBox, DiagramEdge, DiagramNode } from '$lib/ui/components/diagram';
 import { pointerKinds } from '$lib/shared/turn-settings';
 import { DEVICE_PRESETS, presetMatches } from '../../../domain/pointer-devices';
 

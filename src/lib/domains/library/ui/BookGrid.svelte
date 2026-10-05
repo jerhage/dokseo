@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import Thumbnail from '$lib/components/Thumbnail.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
+  import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';

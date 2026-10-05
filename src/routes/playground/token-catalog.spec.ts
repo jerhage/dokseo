@@ -11,7 +11,7 @@ import {
   Z_SCALE,
 } from './token-catalog';
 
-const TOKENS = new URL('../../lib/styles/tokens/', import.meta.url);
+const TOKENS = new URL('../../lib/ui/styles/tokens/', import.meta.url);
 
 function defined(file: string, pattern: RegExp): readonly string[] {
   const css = readFileSync(new URL(file, TOKENS), 'utf8');

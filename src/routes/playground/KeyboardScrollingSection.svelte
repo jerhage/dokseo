@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import { keyboardScrolling } from '$lib/ui/components/keyboard-scrolling';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const PARAGRAPHS = Array.from({ length: 40 }, (_, index) => index + 1);

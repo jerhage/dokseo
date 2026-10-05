@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Tag from '$lib/components/Tag.svelte';
+  import Tag from '$lib/ui/components/Tag.svelte';
 
   const LAYOUTS = [
     { id: 'l-page', label: 'Page wrap' },

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let count = $state(0);

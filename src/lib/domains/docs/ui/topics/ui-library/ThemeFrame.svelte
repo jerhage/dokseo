@@ -1,10 +1,10 @@
 <script lang="ts">
   import { mount, unmount, untrack } from 'svelte';
-  import Field from '$lib/components/Field.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import { COLOR_SCHEMES, THEMES, applyAppearance } from '$lib/shared/appearance';
-  import type { Appearance, ColorScheme } from '$lib/shared/appearance';
+  import Field from '$lib/ui/components/Field.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import { COLOR_SCHEMES, THEMES, applyAppearance } from '$lib/ui/appearance';
+  import type { Appearance, ColorScheme } from '$lib/ui/appearance';
   import { SCHEME_LABELS, THEME_LABELS } from '$lib/shared/appearance-labels';
   import DocsDemo from '../../DocsDemo.svelte';
   import ThemeSpecimen from './ThemeSpecimen.svelte';

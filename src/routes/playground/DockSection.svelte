@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Dock from '$lib/components/Dock.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import { dockPlacement } from '$lib/components/dock';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Dock from '$lib/ui/components/Dock.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import { dockPlacement } from '$lib/ui/components/dock';
   import DemoSection from './DemoSection.svelte';
 
   const frames = $state([

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import { segmentedText, spaceSplit } from '../../../domain/unicode-text';
   import type { WordGranularity } from '../../../domain/unicode-text';
   import DocsDemo from '../../DocsDemo.svelte';

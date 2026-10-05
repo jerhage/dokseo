@@ -1,8 +1,8 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Slider from '$lib/components/Slider.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Slider from '$lib/ui/components/Slider.svelte';
   import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
   import { bookId } from '$lib/shared/ids';
   import DocsDemo from '../../DocsDemo.svelte';

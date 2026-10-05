@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
   import { tagsHref } from '$lib/shared/tag-location';
   import type { Tag } from '../../domain/tag/tag';

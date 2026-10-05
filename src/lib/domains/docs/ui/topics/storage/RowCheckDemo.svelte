@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { DAMAGE_OPTIONS, STORED_ROW, checkedRow, damagedRow, isRowDamage } from './row-check';
   import type { RowDamage } from './row-check';

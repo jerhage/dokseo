@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { createScratchFileStore } from './scratch-file';
   import { SCRATCH_PATH, ScratchFile } from './scratch-file.svelte';

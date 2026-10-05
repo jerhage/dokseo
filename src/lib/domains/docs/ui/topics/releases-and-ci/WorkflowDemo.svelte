@@ -1,9 +1,9 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import type { BadgeVariant } from '$lib/components/classes';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import type { BadgeVariant } from '$lib/ui/components/classes';
   import {
     JOB_CONDITIONS,
     REPO_EVENTS,

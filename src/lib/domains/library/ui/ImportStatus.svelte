@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Progress from '$lib/components/Progress.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
   import type { Language } from '$lib/shared/language';
   import { uploadFraction } from '../domain/ingest/upload-progress';
   import type { UploadBatch, UploadStage } from '../domain/ingest/upload-progress';

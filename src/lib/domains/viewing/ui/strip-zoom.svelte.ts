@@ -1,4 +1,4 @@
-import { clampZoom, pinchZoom } from '$lib/components/pan-zoom';
+import { clampZoom, pinchZoom } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import type { ReadingPosition } from '../domain/reading-position';
 import type { Point } from '../domain/selection';

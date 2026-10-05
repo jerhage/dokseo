@@ -1,6 +1,6 @@
 <script lang="ts">
-  import BreakpointProbe from '$lib/components/BreakpointProbe.svelte';
-  import Card from '$lib/components/Card.svelte';
+  import BreakpointProbe from '$lib/ui/components/BreakpointProbe.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let breakpoint = $state(0);

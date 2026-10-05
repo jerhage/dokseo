@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
-import type { CarouselInput, CarouselSide } from '$lib/components/carousel';
-import type { GestureState } from '$lib/components/gesture';
+import type { CarouselInput, CarouselSide } from '$lib/ui/components/carousel';
+import type { GestureState } from '$lib/ui/components/gesture';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { travelPastEdge } from '../domain/overscroll';

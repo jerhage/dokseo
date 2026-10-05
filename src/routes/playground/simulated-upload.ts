@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { FileItemData, FileItemState } from '$lib/components/file-item';
+import type { FileItemData, FileItemState } from '$lib/ui/components/file-item';
 
 type Cancel = () => void;
 

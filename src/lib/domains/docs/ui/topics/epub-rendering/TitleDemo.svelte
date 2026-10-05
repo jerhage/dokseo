@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
   import { bookTitle, plausibleTitle, suggestTitle } from '$lib/domains/library/domain/book/title';
   import { readEpubPackage } from '$lib/domains/library/domain/ingest/epub-package';
   import { escapeXmlText } from '../../../domain/byte-rows';

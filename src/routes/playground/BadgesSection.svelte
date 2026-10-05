@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Tag from '$lib/components/Tag.svelte';
-  import TagToggle from '$lib/components/TagToggle.svelte';
-  import { TAG_COLOURS } from '$lib/components/classes';
-  import type { BadgeVariant, TagColour } from '$lib/components/classes';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Tag from '$lib/ui/components/Tag.svelte';
+  import TagToggle from '$lib/ui/components/TagToggle.svelte';
+  import { TAG_COLOURS } from '$lib/ui/components/classes';
+  import type { BadgeVariant, TagColour } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly BadgeVariant[] = [

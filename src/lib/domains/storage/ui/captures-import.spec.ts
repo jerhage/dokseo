@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { FileSelection } from '$lib/components/file-selection';
+import type { FileSelection } from '$lib/ui/components/file-selection';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import { regionAnchor } from '$lib/shared/anchor';
 import { pageRect } from '$lib/shared/geometry';

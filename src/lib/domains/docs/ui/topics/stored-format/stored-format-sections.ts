@@ -1,4 +1,4 @@
-import { anchorSlug } from '$lib/components/table-of-contents';
+import { anchorSlug } from '$lib/ui/components/table-of-contents';
 import { EXPORT_IMPORT_SECTIONS } from '../export-import/export-import-sections';
 import { IDENTITY_SECTIONS } from '../book-identity/sections';
 import { INDEXEDDB_SECTIONS } from '../indexeddb/indexeddb-sections';

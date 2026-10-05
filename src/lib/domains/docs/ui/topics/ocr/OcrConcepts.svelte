@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
-  import Stat from '$lib/components/Stat.svelte';
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
   import { probabilityOf, sequenceScore } from '../../../domain/ocr-decoding';
   import { RECORDED_BUBBLE_RUN } from '../../../domain/ocr-recorded-run';
   import DocsCode from '../../DocsCode.svelte';

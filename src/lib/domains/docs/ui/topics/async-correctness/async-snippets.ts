@@ -187,7 +187,7 @@ const ZIP_STOP: SourceSnippet = {
 
 const ANIMATIONS: SourceSnippet = {
   label: 'Waiting for the animations that end',
-  file: 'src/lib/components/animations.ts',
+  file: 'src/lib/ui/components/animations.ts',
   code: `function ends(animation: Settling): boolean {
   return animation.effect?.getComputedTiming().iterations !== Infinity;
 }

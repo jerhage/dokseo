@@ -1,15 +1,15 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
-  import type { BadgeVariant } from '$lib/components/classes';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import Ellipsis from '$lib/ui/components/icons/Ellipsis.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
+  import type { BadgeVariant } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   type Row = {

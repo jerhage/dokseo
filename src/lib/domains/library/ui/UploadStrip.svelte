@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Dropzone from '$lib/components/Dropzone.svelte';
-  import type { FileSelection } from '$lib/components/file-selection';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Dropzone from '$lib/ui/components/Dropzone.svelte';
+  import type { FileSelection } from '$lib/ui/components/file-selection';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import { ACCEPT_ATTRIBUTE, ACCEPTED_SUMMARY, DROP_INVITATION } from './accepted-formats';
 

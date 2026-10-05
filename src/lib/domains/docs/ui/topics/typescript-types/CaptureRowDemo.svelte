@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { checkedCaptureRow, DAMAGE_OPTIONS, isRowDamage, rowText } from './capture-rows';
   import type { RowDamage } from './capture-rows';

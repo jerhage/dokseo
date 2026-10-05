@@ -1,4 +1,4 @@
-import type { ToastId, Toaster } from '$lib/components/toaster.svelte';
+import type { ToastId, Toaster } from '$lib/ui/components/toaster.svelte';
 import { describeCause } from './cause';
 
 type FailureSite =

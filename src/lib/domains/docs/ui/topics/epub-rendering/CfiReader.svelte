@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
   import { cfiPartMeaning, readCfi } from '../../../domain/cfi-reading';
   import DocsDemo from '../../DocsDemo.svelte';
 

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Checkbox from '$lib/components/Checkbox.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import Radio from '$lib/components/Radio.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import SettingsRow from '$lib/components/SettingsRow.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import SettingsRow from '$lib/ui/components/SettingsRow.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import PageTurnSettings from '$lib/shared/PageTurnSettings.svelte';
   import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Tag from '$lib/components/Tag.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Tag from '$lib/ui/components/Tag.svelte';
 
   const SECTIONS = [
     { id: 'tokens', label: 'Tokens' },

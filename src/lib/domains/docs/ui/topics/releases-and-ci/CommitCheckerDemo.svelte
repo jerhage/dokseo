@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import { checkCommit, commitEffect, problemText } from '../../../domain/commit-check';
   import { DOKSEO_BUMP_OPTIONS, DOKSEO_CHANGELOG_SECTIONS } from '../../../domain/dokseo-release';
   import { formatVersion, parseVersion } from '../../../domain/release-bump';

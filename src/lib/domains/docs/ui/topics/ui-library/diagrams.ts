@@ -1,4 +1,4 @@
-import type { DiagramBox, DiagramEdge, DiagramTone } from '$lib/components/diagram';
+import type { DiagramBox, DiagramEdge, DiagramTone } from '$lib/ui/components/diagram';
 
 type Diagram = {
   readonly width: number;
@@ -77,7 +77,7 @@ const DIRECTION_DIAGRAM = column(
     { label: 'src/routes/', detail: 'screens, thin' },
     { label: 'src/lib/domains/*/ui/', detail: 'one domain each', tone: 'accent' },
     { label: 'src/lib/shared/', detail: 'UI more than one domain composes' },
-    { label: 'src/lib/components/', detail: 'the base library', tone: 'primary' },
+    { label: 'src/lib/ui/components/', detail: 'the base library', tone: 'primary' },
   ],
   ['imports', 'imports', 'imports'],
 );

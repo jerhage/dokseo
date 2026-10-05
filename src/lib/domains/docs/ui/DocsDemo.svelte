@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
 
   type Props = {
     label?: string;

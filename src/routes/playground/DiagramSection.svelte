@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import type { DiagramBox, DiagramGroup } from '$lib/components/diagram';
-  import Figure from '$lib/components/Figure.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import type { DiagramBox, DiagramGroup } from '$lib/ui/components/diagram';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const page: DiagramBox = { kind: 'box', x: 20, y: 20, width: 140, height: 48, label: 'Page' };

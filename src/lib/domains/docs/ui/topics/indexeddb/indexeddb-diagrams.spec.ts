@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DiagramNode } from '$lib/components/diagram';
+import type { DiagramNode } from '$lib/ui/components/diagram';
 import { DATABASE_LAYOUT, TRANSACTION_LIFETIME } from './indexeddb-diagrams';
 
 function inside(inner: DiagramNode, outer: DiagramNode): boolean {

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import { BUTTON_SIZES, BUTTON_VARIANTS } from '$lib/components/classes';
-  import type { ButtonVariant, ControlSize } from '$lib/components/classes';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import { BUTTON_SIZES, BUTTON_VARIANTS } from '$lib/ui/components/classes';
+  import type { ButtonVariant, ControlSize } from '$lib/ui/components/classes';
   import DocsDemo from '../../DocsDemo.svelte';
 
   const VARIANTS = Object.keys(BUTTON_VARIANTS).filter((name): name is ButtonVariant =>

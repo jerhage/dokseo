@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
   type Region = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Clock } from '$lib/components/clock';
+import type { Clock } from '$lib/ui/components/clock';
 import { COPIED_HOLD_MS, CopyFeedback } from './copy-feedback.svelte';
 
 type Scheduled = { readonly at: number; readonly run: () => void; cancelled: boolean };

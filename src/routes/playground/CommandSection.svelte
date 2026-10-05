@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import SearchField from '$lib/components/SearchField.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import SearchField from '$lib/ui/components/SearchField.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
   import DemoSection from './DemoSection.svelte';
 

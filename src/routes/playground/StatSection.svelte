@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Stat from '$lib/components/Stat.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 

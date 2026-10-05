@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import StepItem from '$lib/components/StepItem.svelte';
-  import StepList from '$lib/components/StepList.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import StepItem from '$lib/ui/components/StepItem.svelte';
+  import StepList from '$lib/ui/components/StepList.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 

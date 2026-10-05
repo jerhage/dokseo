@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Tabs from '$lib/components/Tabs.svelte';
-  import type { TabItem } from '$lib/components/tabs';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Tabs from '$lib/ui/components/Tabs.svelte';
+  import type { TabItem } from '$lib/ui/components/tabs';
   import DemoSection from './DemoSection.svelte';
 
   const PROJECT: readonly TabItem[] = [

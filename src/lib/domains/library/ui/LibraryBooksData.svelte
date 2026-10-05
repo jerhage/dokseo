@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import type { ReadState } from '$lib/shared/read-state';
   import { unreachable } from '$lib/shared/unreachable';
   import { DROP_INVITATION } from './accepted-formats';

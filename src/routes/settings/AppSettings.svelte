@@ -1,7 +1,7 @@
 <script lang="ts">
   import { version } from '$app/environment';
-  import Button from '$lib/components/Button.svelte';
-  import Stat from '$lib/components/Stat.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
   import { APP_VERSION } from '$lib/shared/app-version';
   import { useShellUpdates } from '$lib/shared/shell-updates-context';
 

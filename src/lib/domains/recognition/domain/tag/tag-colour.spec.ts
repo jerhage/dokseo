@@ -7,7 +7,7 @@ function coloured(colours: readonly ColouredTag['colour'][]): readonly ColouredT
   return colours.map((colour) => ({ colour }));
 }
 
-const STYLES = new URL('../../../../styles/', import.meta.url);
+const STYLES = new URL('../../../../ui/styles/', import.meta.url);
 const THEMES = new URL('base/themes/', STYLES);
 
 function valuesIn(url: URL): ReadonlyMap<string, string> {

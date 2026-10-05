@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
   import { byteFigure, exactBytes } from '../../../domain/production-builds';
   import DocsCode from '../../DocsCode.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
@@ -338,8 +338,8 @@
       href={ARCHITECTURE_BARRELS_HREF}>No barrel files</a
     >): a domain's barrel re-exported its adapters, and dependency-cruiser checks imports module by
     module, so a route could reach an adapter through the barrel without breaking a rule. It is a
-    build decision as well. Each of the icons in <code>src/lib/components/icons/</code> is its own
-    module, and the rule
+    build decision as well. Each of the icons in <code>src/lib/ui/components/icons/</code> is its
+    own module, and the rule
     <code>icons-are-imported-one-by-one</code> forbids an <code>index</code> module there, so only the
     icons a screen names reach the build.
   </p>

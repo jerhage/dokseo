@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import Stat from '$lib/components/Stat.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
   import { megabytes } from '$lib/shared/bytes';
   import { languageName } from '$lib/shared/language';
   import { downloadMb, onDiskMb } from '../../domain/model/model-footprint';

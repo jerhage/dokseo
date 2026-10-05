@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useQueryClient } from '@tanstack/svelte-query';
   import { onMount } from 'svelte';
-  import { getToaster } from '$lib/components/toast-context';
+  import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import EngineAside from '$lib/domains/recognition/ui/engine/EngineAside.svelte';
   import { EngineSettingsView } from '$lib/domains/recognition/ui/engine/engine-settings.svelte';

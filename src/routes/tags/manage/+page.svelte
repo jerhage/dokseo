@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getToaster } from '$lib/components/toast-context';
+  import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';

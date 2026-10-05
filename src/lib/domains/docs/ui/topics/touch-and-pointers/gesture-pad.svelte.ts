@@ -1,14 +1,14 @@
-import { SYSTEM_CLOCK } from '$lib/components/clock';
-import type { Clock } from '$lib/components/clock';
+import { SYSTEM_CLOCK } from '$lib/ui/components/clock';
+import type { Clock } from '$lib/ui/components/clock';
 import type {
   GestureContext,
   GestureInput,
   GestureIntent,
   GestureSample,
   GestureState,
-} from '$lib/components/gesture';
-import { GestureFeed } from '$lib/components/gesture-feed';
-import type { GesturePointer } from '$lib/components/gesture-feed';
+} from '$lib/ui/components/gesture';
+import { GestureFeed } from '$lib/ui/components/gesture-feed';
+import type { GesturePointer } from '$lib/ui/components/gesture-feed';
 import { gestureReading } from '../../../domain/gesture-reading';
 import type { GestureMark, GestureReading, SwipeArea } from '../../../domain/gesture-reading';
 

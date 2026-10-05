@@ -1,7 +1,7 @@
 import { matchesQuery } from '$lib/shared/text-search';
 import { isComposingKey } from '$lib/shared/composing-key';
 import { shownTitle } from '$lib/shared/shown-title';
-import type { KeyHint } from '$lib/components/key-hints';
+import type { KeyHint } from '$lib/ui/components/key-hints';
 import type { ComposingSignals } from '$lib/shared/composing-key';
 import type { Book } from '../domain/book/book';
 import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';

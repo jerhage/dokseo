@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import Skeleton from '$lib/components/Skeleton.svelte';
-  import type { ControlSize, ProgressVariant } from '$lib/components/classes';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
+  import Skeleton from '$lib/ui/components/Skeleton.svelte';
+  import type { ControlSize, ProgressVariant } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly ProgressVariant[] = [

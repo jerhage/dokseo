@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import Popover from '$lib/components/Popover.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import Popover from '$lib/ui/components/Popover.svelte';
   import type { ModelFootprint } from '../../domain/model/model-footprint';
   import { tradeAspectName, tradeOffsOf } from '../../domain/engine/ocr-engine';
   import type { OcrEngine } from '../../domain/engine/ocr-engine';

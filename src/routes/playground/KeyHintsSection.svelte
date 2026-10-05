@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import type { KeyHint } from '$lib/components/key-hints';
-  import KeyHints from '$lib/components/KeyHints.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import type { KeyHint } from '$lib/ui/components/key-hints';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const LIST_KEYS: readonly KeyHint[] = [

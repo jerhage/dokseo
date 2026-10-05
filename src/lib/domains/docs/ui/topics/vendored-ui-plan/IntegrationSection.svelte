@@ -1,6 +1,6 @@
 <script lang="ts">
-  import StepItem from '$lib/components/StepItem.svelte';
-  import StepList from '$lib/components/StepList.svelte';
+  import StepItem from '$lib/ui/components/StepItem.svelte';
+  import StepList from '$lib/ui/components/StepList.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import {
@@ -73,7 +73,7 @@ git subtree push --prefix=src/lib/ui <library repository> <branch>`;
   <h3>What the app writes</h3>
   <p>
     The library's part of the appearance is the vocabulary and the function that sets the
-    attributes. Today, in <code>src/lib/shared/appearance.ts</code>:
+    attributes. Today, in <code>src/lib/ui/appearance.ts</code>:
   </p>
   <DocsCode label={APPEARANCE.label} code={APPEARANCE.code} />
   <DocsCode label={APPLY_APPEARANCE.label} code={APPLY_APPEARANCE.code} />

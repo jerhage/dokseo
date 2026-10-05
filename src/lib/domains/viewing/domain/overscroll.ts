@@ -1,5 +1,5 @@
-import { clampPan, panBy } from '$lib/components/pan-zoom';
-import type { Viewport } from '$lib/components/pan-zoom';
+import { clampPan, panBy } from '$lib/ui/components/pan-zoom';
+import type { Viewport } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import { swipeTurn } from '$lib/shared/page-turn';
 import type { FrameSpan, TouchTurns, TurnPoint, TurnSide } from '$lib/shared/page-turn';

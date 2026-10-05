@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import Modal from '$lib/components/Modal.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
   import type { Language } from '$lib/shared/language';
   import { CONTENTS_LABEL, entryLabel, indentDepth } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import DropdownLabel from '$lib/components/DropdownLabel.svelte';
-  import DropdownSeparator from '$lib/components/DropdownSeparator.svelte';
-  import { COLOR_SCHEMES, THEMES } from './appearance';
-  import type { Appearance } from './appearance';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import DropdownLabel from '$lib/ui/components/DropdownLabel.svelte';
+  import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
+  import { COLOR_SCHEMES, THEMES } from '$lib/ui/appearance';
+  import type { Appearance } from '$lib/ui/appearance';
   import { SCHEME_LABELS, THEME_LABELS } from './appearance-labels';
   import { chooseAppearance } from './saved-appearance';
 

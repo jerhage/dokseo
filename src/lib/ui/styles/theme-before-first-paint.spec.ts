@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const HTML = readFileSync(new URL('../../app.html', import.meta.url), 'utf8');
+const HTML = readFileSync(new URL('../../../app.html', import.meta.url), 'utf8');
 const THEMES = new URL('base/themes/', import.meta.url);
 const THEME = readdirSync(THEMES)
   .filter((name) => name.endsWith('.css'))

@@ -9,8 +9,8 @@ import {
   panBy,
   pinchStep,
   zoomAt,
-} from '$lib/components/pan-zoom';
-import type { Pinch, Viewport, ZoomPoint } from '$lib/components/pan-zoom';
+} from '$lib/ui/components/pan-zoom';
+import type { Pinch, Viewport, ZoomPoint } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import type { ImageIndex } from '$lib/shared/ids';
 import type { PageFit } from '$lib/shared/page-fit';

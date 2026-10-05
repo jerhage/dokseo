@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import { saveFile } from '$lib/platform/files/save-file';
   import type { FileToSave } from '$lib/platform/files/save-file';
   import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';

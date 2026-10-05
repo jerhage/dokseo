@@ -1,4 +1,4 @@
-import type { DiagramBox, DiagramGroup } from '$lib/components/diagram';
+import type { DiagramBox, DiagramGroup } from '$lib/ui/components/diagram';
 import { AHEAD_SCREENS, BEHIND_SCREENS, MOST_SLICES } from '$lib/domains/viewing/domain/strip';
 import type { DiagramSpec } from '../storage/storage-diagrams';
 

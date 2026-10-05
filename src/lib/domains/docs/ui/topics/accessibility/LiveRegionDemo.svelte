@@ -1,12 +1,12 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import { announcementRole } from '$lib/components/announcement';
-  import type { AnnouncementRole } from '$lib/components/announcement';
-  import type { StatusVariant } from '$lib/components/classes';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import { getToaster } from '$lib/components/toast-context';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import { announcementRole } from '$lib/ui/components/announcement';
+  import type { AnnouncementRole } from '$lib/ui/components/announcement';
+  import type { StatusVariant } from '$lib/ui/components/classes';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import { getToaster } from '$lib/ui/components/toast-context';
   import DocsDemo from '../../DocsDemo.svelte';
 
   type Announced = {

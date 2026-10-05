@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import {

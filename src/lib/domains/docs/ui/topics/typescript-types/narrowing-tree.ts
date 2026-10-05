@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { DiagramBox, DiagramTone } from '$lib/components/diagram';
+import type { DiagramBox, DiagramTone } from '$lib/ui/components/diagram';
 import { pageRect } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';

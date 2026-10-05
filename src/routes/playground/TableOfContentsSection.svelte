@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import TableOfContents from '$lib/components/TableOfContents.svelte';
-  import { contentsEntries } from '$lib/components/table-of-contents';
+  import Card from '$lib/ui/components/Card.svelte';
+  import TableOfContents from '$lib/ui/components/TableOfContents.svelte';
+  import { contentsEntries } from '$lib/ui/components/table-of-contents';
   import DemoSection from './DemoSection.svelte';
 
   const ENTRIES = contentsEntries([

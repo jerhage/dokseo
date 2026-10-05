@@ -38,7 +38,7 @@
 
 <DocsSection title={ACCESSIBILITY_SECTIONS.dokseoNames}>
   <p>
-    Dokseo's screens are built from its own base components in <code>src/lib/components/</code>
+    Dokseo's screens are built from its own base components in <code>src/lib/ui/components/</code>
     (<a href={UI_COMPONENTS_HREF}>Base components</a>), so a name that a component guarantees is
     guaranteed on every screen. <code>IconButton</code> makes <code>label</code> a required string
     prop, and its props type removes <code>title</code>, <code>aria-label</code> and

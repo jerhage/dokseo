@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Stat from '$lib/components/Stat.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
   import { PRIMES_BELOW, countPrimes } from '../../../domain/busy-work';
   import DocsDemo from '../../DocsDemo.svelte';
   import { startBlobWorker } from './demo-workers';

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { contentsEntries } from '$lib/components/table-of-contents';
+import { contentsEntries } from '$lib/ui/components/table-of-contents';
 import { DOCS_ROOT, DOCS_TOPICS } from '../../domain/topics';
 import type { DocsTopicSlug } from '../../domain/topics';
 import * as accessibility from './accessibility/accessibility-sections';

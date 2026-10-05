@@ -1,10 +1,10 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import { simulateRequest } from '../../../domain/offline';
   import type {
     Answer,

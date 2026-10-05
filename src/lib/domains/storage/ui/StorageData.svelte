@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import Skeleton from '$lib/components/Skeleton.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import Skeleton from '$lib/ui/components/Skeleton.svelte';
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { unreachable } from '$lib/shared/unreachable';
   import type { StorageAccount } from '../domain/storage-parts';

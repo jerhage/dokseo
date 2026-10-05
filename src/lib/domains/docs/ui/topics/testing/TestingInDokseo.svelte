@@ -1,9 +1,9 @@
 <script lang="ts">
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
-  import StepItem from '$lib/components/StepItem.svelte';
-  import StepList from '$lib/components/StepList.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
+  import StepItem from '$lib/ui/components/StepItem.svelte';
+  import StepList from '$lib/ui/components/StepList.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import ProxyCloneDemo from './ProxyCloneDemo.svelte';

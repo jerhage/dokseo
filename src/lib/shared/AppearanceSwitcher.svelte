@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import type { IconProps } from '$lib/components/icons/icon';
-  import Moon from '$lib/components/icons/Moon.svelte';
-  import Sun from '$lib/components/icons/Sun.svelte';
-  import SunMoon from '$lib/components/icons/SunMoon.svelte';
-  import { readAppearance } from './appearance';
-  import type { Appearance, ColorScheme } from './appearance';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import type { IconProps } from '$lib/ui/components/icons/icon';
+  import Moon from '$lib/ui/components/icons/Moon.svelte';
+  import Sun from '$lib/ui/components/icons/Sun.svelte';
+  import SunMoon from '$lib/ui/components/icons/SunMoon.svelte';
+  import { readAppearance } from '$lib/ui/appearance';
+  import type { Appearance, ColorScheme } from '$lib/ui/appearance';
   import AppearanceChoices from './AppearanceChoices.svelte';
   import { SCHEME_LABELS, THEME_LABELS } from './appearance-labels';
 

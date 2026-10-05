@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Attachment } from 'svelte/attachments';
-  import Badge from '$lib/components/Badge.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import type { SegmentOption } from '$lib/components/segmented-control';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import type { SegmentOption } from '$lib/ui/components/segmented-control';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import { screenRect } from '$lib/shared/geometry';
   import DocsDemo from '../../DocsDemo.svelte';
   import { sizeFigure } from '../../../domain/bitmap-memory';

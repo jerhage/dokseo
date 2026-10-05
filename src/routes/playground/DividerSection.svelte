@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Divider from '$lib/components/Divider.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Divider from '$lib/ui/components/Divider.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 

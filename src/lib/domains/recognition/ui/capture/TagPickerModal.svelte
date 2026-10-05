@@ -1,13 +1,13 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
   import type { Snippet } from 'svelte';
-  import type { KeyHint } from '$lib/components/key-hints';
-  import KeyHints from '$lib/components/KeyHints.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import SearchField from '$lib/components/SearchField.svelte';
-  import Tag from '$lib/components/Tag.svelte';
+  import type { KeyHint } from '$lib/ui/components/key-hints';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import SearchField from '$lib/ui/components/SearchField.svelte';
+  import Tag from '$lib/ui/components/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
   import type { TagChip } from './tag-chip';
   import type { PickerRow, TagPicker } from './tag-picker.svelte';

@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Component } from 'svelte';
   import { match } from 'ts-pattern';
-  import ArrowLeft from '$lib/components/icons/ArrowLeft.svelte';
-  import ArrowRight from '$lib/components/icons/ArrowRight.svelte';
-  import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
-  import type { IconProps } from '$lib/components/icons/icon';
+  import ArrowLeft from '$lib/ui/components/icons/ArrowLeft.svelte';
+  import ArrowRight from '$lib/ui/components/icons/ArrowRight.svelte';
+  import ArrowUpDown from '$lib/ui/components/icons/ArrowUpDown.svelte';
+  import type { IconProps } from '$lib/ui/components/icons/icon';
   import { swipeLine } from './swipe-lesson';
   import type { SwipeLesson } from './swipe-lesson';
   import './swipe-line.css';

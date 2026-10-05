@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Skeleton from '$lib/components/Skeleton.svelte';
+  import Skeleton from '$lib/ui/components/Skeleton.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const ROWS = [

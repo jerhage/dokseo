@@ -1,6 +1,6 @@
 <script lang="ts">
-  import StatusIcon from '$lib/components/StatusIcon.svelte';
-  import type { StatusVariant } from '$lib/components/classes';
+  import StatusIcon from '$lib/ui/components/StatusIcon.svelte';
+  import type { StatusVariant } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   type Status = { readonly variant: StatusVariant; readonly tone: string };

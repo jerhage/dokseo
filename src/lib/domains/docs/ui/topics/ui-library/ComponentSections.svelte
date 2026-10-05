@@ -39,7 +39,7 @@ const BUTTON_SIZES: Readonly<Record<ControlSize, ClassList>> = {
 <DocsSection title={UI_LIBRARY_SECTIONS.components}>
   <p>
     In many component libraries each component ships its own CSS. Dokseo splits the work the other
-    way. A Svelte component in <code>src/lib/components/</code> owns the markup, the behavior and
+    way. A Svelte component in <code>src/lib/ui/components/</code> owns the markup, the behavior and
     the accessibility; the global stylesheet owns how it looks. <code>Button.svelte</code> writes
     <code>class="btn btn-primary btn-sm"</code>, and <code>components/btn.css</code> styles those classes.
     The classes also work on plain markup: the app shell, for one, is a set of layout classes written
@@ -47,11 +47,11 @@ const BUTTON_SIZES: Readonly<Record<ControlSize, ClassList>> = {
   </p>
   <p>
     A prop that picks a look maps to classes through a table in
-    <code>src/lib/components/classes.ts</code>. The table is typed by the prop's union, so a new
+    <code>src/lib/ui/components/classes.ts</code>. The table is typed by the prop's union, so a new
     variant fails to compile until it has classes. A default adds no class: <code>md</code> is the
     size <code>.btn</code> already has.
   </p>
-  <DocsCode label="src/lib/components/classes.ts, excerpt" code={TABLES} />
+  <DocsCode label="src/lib/ui/components/classes.ts, excerpt" code={TABLES} />
   <VariantGallery />
   <p>
     Some values exist only at runtime: the aspect ratio of a page image, the position of a

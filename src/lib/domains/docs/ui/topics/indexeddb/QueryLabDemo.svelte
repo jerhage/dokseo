@@ -1,15 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
   import { QUERY_PRESETS, queryPreset } from '../../../domain/indexeddb-samples';
   import type { QueryPresetKey } from '../../../domain/indexeddb-samples';
   import DocsCode from '../../DocsCode.svelte';

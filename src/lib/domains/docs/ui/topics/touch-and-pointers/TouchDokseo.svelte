@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DOUBLE_TAP_MS, LONG_PRESS_MS } from '$lib/components/gesture';
+  import { DOUBLE_TAP_MS, LONG_PRESS_MS } from '$lib/ui/components/gesture';
   import { MIN_SELECTION_PX } from '$lib/domains/viewing/domain/selection';
   import { EDGE_CLICKS_KEY, EDGE_CLICKS_LABEL } from '$lib/shared/edge-clicks-setting';
   import { TOUCH_GUIDE_LABEL } from '$lib/shared/guide-kind';
@@ -36,9 +36,9 @@
   <p>
     Dokseo has three readers: a paged image reader for manga, a vertical strip for webtoons, and an
     EPUB reader. The two image readers share one touch classifier, <code>gestureStep</code> in
-    <code>src/lib/components/gesture.ts</code>. It is a pure function: it takes the current state,
-    one input and some context, and returns the next state and an intent. It keeps no timers and
-    touches no DOM, so a unit test can play a whole gesture through it as a list of samples.
+    <code>src/lib/ui/components/gesture.ts</code>. It is a pure function: it takes the current
+    state, one input and some context, and returns the next state and an intent. It keeps no timers
+    and touches no DOM, so a unit test can play a whole gesture through it as a list of samples.
   </p>
   <p>The states name every point a touch can be at:</p>
   <DocsCode label={GESTURE_STATE.label} code={GESTURE_STATE.code} />

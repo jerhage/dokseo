@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Dropzone from '$lib/components/Dropzone.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import FileItem from '$lib/components/FileItem.svelte';
-  import FileList from '$lib/components/FileList.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import WindowDropzone from '$lib/components/WindowDropzone.svelte';
-  import type { FileItemData } from '$lib/components/file-item';
-  import { describeRejection } from '$lib/components/file-selection';
-  import type { FileSelection } from '$lib/components/file-selection';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Dropzone from '$lib/ui/components/Dropzone.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import FileItem from '$lib/ui/components/FileItem.svelte';
+  import FileList from '$lib/ui/components/FileList.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import WindowDropzone from '$lib/ui/components/WindowDropzone.svelte';
+  import type { FileItemData } from '$lib/ui/components/file-item';
+  import { describeRejection } from '$lib/ui/components/file-selection';
+  import type { FileSelection } from '$lib/ui/components/file-selection';
   import DemoSection from './DemoSection.svelte';
   import { SimulatedUploads, browserClock, withUploadState } from './simulated-upload';
 

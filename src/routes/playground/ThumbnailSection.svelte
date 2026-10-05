@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Thumbnail from '$lib/components/Thumbnail.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const SIZES = ['sm', 'md', 'lg'] as const;

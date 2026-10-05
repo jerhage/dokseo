@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import OverflowList from '$lib/components/OverflowList.svelte';
-  import type { TagColour } from '$lib/components/classes';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import OverflowList from '$lib/ui/components/OverflowList.svelte';
+  import type { TagColour } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   type Chip = { readonly name: string; readonly colour: TagColour };

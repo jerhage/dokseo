@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Clock } from '$lib/components/clock';
+import type { Clock } from '$lib/ui/components/clock';
 import { GesturePad } from './gesture-pad.svelte';
 
 type ManualClock = Clock & { advance: (ms: number) => void };

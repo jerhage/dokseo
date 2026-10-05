@@ -130,7 +130,7 @@ const PAGED_SPACE: SourceSnippet = {
 
 const ICON_BUTTON_FACE: SourceSnippet = {
   label: 'IconButton.svelte puts its required label in hidden text',
-  file: 'src/lib/components/IconButton.svelte',
+  file: 'src/lib/ui/components/IconButton.svelte',
   code: `{#snippet face()}
   {#if Icon !== undefined}
     <Icon class="btn-icon" />
@@ -142,8 +142,8 @@ const ICON_BUTTON_FACE: SourceSnippet = {
 };
 
 const VISUALLY_HIDDEN: SourceSnippet = {
-  label: 'src/lib/styles/utilities/text.css',
-  file: 'src/lib/styles/utilities/text.css',
+  label: 'src/lib/ui/styles/utilities/text.css',
+  file: 'src/lib/ui/styles/utilities/text.css',
   code: `.visually-hidden {
   position: absolute;
   inline-size: 1px;
@@ -156,13 +156,13 @@ const VISUALLY_HIDDEN: SourceSnippet = {
 
 const FIELD_LABEL: SourceSnippet = {
   label: 'Field.svelte ties its label to the control by id',
-  file: 'src/lib/components/Field.svelte',
+  file: 'src/lib/ui/components/Field.svelte',
   code: `<label class={['field-label', { 'visually-hidden': hideLabel }]} for={ids.control}>{label}</label>`,
 };
 
 const FIELD_CONTROL: SourceSnippet = {
   label: 'The attributes a Field passes to its control, in field.ts',
-  file: 'src/lib/components/field.ts',
+  file: 'src/lib/ui/components/field.ts',
   code: `function fieldControl(ids: FieldIds, hasHint: boolean, hasError: boolean): FieldControl {
   const described = [hasHint ? ids.hint : '', hasError ? ids.error : ''].filter((id) => id !== '');
   return {
@@ -175,7 +175,7 @@ const FIELD_CONTROL: SourceSnippet = {
 
 const MODAL_SHOW: SourceSnippet = {
   label: 'Modal.svelte opens the dialog as modal and focuses inside it',
-  file: 'src/lib/components/Modal.svelte',
+  file: 'src/lib/ui/components/Modal.svelte',
   code: `function focusFirst(): void {
   const first = dialog?.querySelector('[autofocus]') ?? dialog?.querySelector('.modal-close');
   if (first instanceof HTMLElement) first.focus();
@@ -184,7 +184,7 @@ const MODAL_SHOW: SourceSnippet = {
 
 const MODAL_WRAP: SourceSnippet = {
   label: "Modal's keydown, when wrapFocus is set",
-  file: 'src/lib/components/Modal.svelte',
+  file: 'src/lib/ui/components/Modal.svelte',
   code: `onkeydown?.(event);
 if (!wrapFocus || event.key !== 'Tab' || event.defaultPrevented) return;
 const stops = tabStops(event.currentTarget);
@@ -196,8 +196,8 @@ stops[target]?.focus();`,
 };
 
 const WRAPPED_STOP: SourceSnippet = {
-  label: 'src/lib/components/focus-wrap.ts',
-  file: 'src/lib/components/focus-wrap.ts',
+  label: 'src/lib/ui/components/focus-wrap.ts',
+  file: 'src/lib/ui/components/focus-wrap.ts',
   code: `function wrappedStop(stops: number, current: number, backwards: boolean): number | null {
   if (stops === 0 || current < 0) return null;
   if (backwards) return current === 0 ? stops - 1 : null;
@@ -207,27 +207,27 @@ const WRAPPED_STOP: SourceSnippet = {
 
 const CHROME_BAR_INERT: SourceSnippet = {
   label: 'ChromeBar.svelte',
-  file: 'src/lib/components/ChromeBar.svelte',
+  file: 'src/lib/ui/components/ChromeBar.svelte',
   code: `class={['chrome-bar', shape.classes, 'hushable', { 'is-hushed': !shown }, className]}
 inert={!shown}`,
 };
 
 const CAROUSEL_INERT: SourceSnippet = {
   label: 'Carousel.svelte',
-  file: 'src/lib/components/Carousel.svelte',
+  file: 'src/lib/ui/components/Carousel.svelte',
   code: `inert={item.beside !== 0}`,
 };
 
 const TOAST_REGION: SourceSnippet = {
   label: 'ToastRegion.svelte',
-  file: 'src/lib/components/ToastRegion.svelte',
+  file: 'src/lib/ui/components/ToastRegion.svelte',
   code: `popover="manual"
 aria-live="polite"`,
 };
 
 const ANNOUNCEMENT_ROLE: SourceSnippet = {
-  label: 'src/lib/components/announcement.ts',
-  file: 'src/lib/components/announcement.ts',
+  label: 'src/lib/ui/components/announcement.ts',
+  file: 'src/lib/ui/components/announcement.ts',
   code: `function announcementRole(variant: StatusVariant): AnnouncementRole {
   return match(variant)
     .returnType<AnnouncementRole>()
@@ -245,8 +245,8 @@ const CAPTURE_STATUS: SourceSnippet = {
 };
 
 const REDUCED_MOTION_CSS: SourceSnippet = {
-  label: 'The start of the block in src/lib/styles/overrides/overrides.css',
-  file: 'src/lib/styles/overrides/overrides.css',
+  label: 'The start of the block in src/lib/ui/styles/overrides/overrides.css',
+  file: 'src/lib/ui/styles/overrides/overrides.css',
   code: `@media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -259,7 +259,7 @@ const REDUCED_MOTION_CSS: SourceSnippet = {
 
 const CAROUSEL_MOTION: SourceSnippet = {
   label: 'Carousel.svelte stops a slide following the finger',
-  file: 'src/lib/components/Carousel.svelte',
+  file: 'src/lib/ui/components/Carousel.svelte',
   code: `const fed: CarouselInput =
   input.kind === 'follow' && reducedMotion.current ? { kind: 'follow', travel: 0 } : input;`,
 };

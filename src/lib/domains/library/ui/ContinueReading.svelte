@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import Thumbnail from '$lib/components/Thumbnail.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
+  import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId } from '$lib/shared/ids';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';

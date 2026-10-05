@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import { isPersisted, requestPersistence } from '$lib/platform/storage/persistence';
   import { holdsGrant, persistOutcome, persistOutcomeText } from '../../../domain/storage-figures';
   import type { PersistOutcome } from '../../../domain/storage-figures';

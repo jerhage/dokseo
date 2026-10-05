@@ -1,9 +1,9 @@
 <script lang="ts">
   import { useQueryClient } from '@tanstack/svelte-query';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
   import type { TagId } from '$lib/shared/ids';
   import { writeQuery } from '$lib/shared/write-query.svelte';
   import type { UnreadableTag } from '../../domain/tag/tag';

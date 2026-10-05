@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
   import DemoSection from './DemoSection.svelte';
   import Tile from './Tile.svelte';
 

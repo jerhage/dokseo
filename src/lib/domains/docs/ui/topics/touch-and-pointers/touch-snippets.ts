@@ -6,7 +6,7 @@ type SourceSnippet = {
 
 const GESTURE_STEP: SourceSnippet = {
   label: 'The classifier only reads touch',
-  file: 'src/lib/components/gesture.ts',
+  file: 'src/lib/ui/components/gesture.ts',
   code: `function gestureStep(
   state: GestureState,
   input: GestureInput,
@@ -26,7 +26,7 @@ const GESTURE_STEP: SourceSnippet = {
 
 const GESTURE_STATE: SourceSnippet = {
   label: 'The classifier states',
-  file: 'src/lib/components/gesture.ts',
+  file: 'src/lib/ui/components/gesture.ts',
   code: `type GestureState =
   | { readonly kind: 'idle'; readonly pending: PendingTap | null }
   | { readonly kind: 'pressed'; readonly press: Press; readonly pending: PendingTap | null }
@@ -39,7 +39,7 @@ const GESTURE_STATE: SourceSnippet = {
 
 const GESTURE_DEADLINE: SourceSnippet = {
   label: 'When the classifier needs a tick',
-  file: 'src/lib/components/gesture.ts',
+  file: 'src/lib/ui/components/gesture.ts',
   code: `function gestureDeadline(state: GestureState): number | null {
   return match<GestureState, number | null>(state)
     .with({ kind: 'idle' }, ({ pending }) => (pending === null ? null : pending.t + DOUBLE_TAP_MS))
@@ -136,7 +136,7 @@ const MEDIA_MATCHES: SourceSnippet = {
 
 const MARQUEE_END: SourceSnippet = {
   label: 'How a drag ends',
-  file: 'src/lib/components/marquee-selection.ts',
+  file: 'src/lib/ui/components/marquee-selection.ts',
   code: `type MarqueeEnd =
   | { readonly kind: 'click' }
   | { readonly kind: 'too-small'; readonly selection: MarqueeRect }
@@ -145,7 +145,7 @@ const MARQUEE_END: SourceSnippet = {
 
 const MARQUEE_END_RULE: SourceSnippet = {
   label: 'Classifying the end of a drag',
-  file: 'src/lib/components/marquee-selection.ts',
+  file: 'src/lib/ui/components/marquee-selection.ts',
   code: `function marqueeEnd(
   from: MarqueePoint,
   to: MarqueePoint,

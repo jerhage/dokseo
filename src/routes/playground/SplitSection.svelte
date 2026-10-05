@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import DropdownLabel from '$lib/components/DropdownLabel.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import Skeleton from '$lib/components/Skeleton.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import DropdownLabel from '$lib/ui/components/DropdownLabel.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import Skeleton from '$lib/ui/components/Skeleton.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const THREADS = [

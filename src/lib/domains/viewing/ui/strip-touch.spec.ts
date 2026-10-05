@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GESTURE_IDLE, LONG_PRESS_MS, gestureStep } from '$lib/components/gesture';
-import type { GestureContext, GestureInput, GestureState } from '$lib/components/gesture';
+import { GESTURE_IDLE, LONG_PRESS_MS, gestureStep } from '$lib/ui/components/gesture';
+import type { GestureContext, GestureInput, GestureState } from '$lib/ui/components/gesture';
 import { holdsTheScroll, stripTouchAction } from './strip-touch';
 
 const STRIP: GestureContext = {

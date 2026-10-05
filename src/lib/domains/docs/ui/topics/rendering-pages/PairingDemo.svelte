@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import BreakpointProbe from '$lib/components/BreakpointProbe.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import type { SegmentOption } from '$lib/components/segmented-control';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import BreakpointProbe from '$lib/ui/components/BreakpointProbe.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import type { SegmentOption } from '$lib/ui/components/segmented-control';
   import type {
     ImageLayoutKind,
     PagePairingChoice,

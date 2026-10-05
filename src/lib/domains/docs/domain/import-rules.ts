@@ -122,9 +122,8 @@ const PATH_RULES: readonly PathRule[] = [
         '^src/lib/context\\.ts$',
         '^src/lib/query-client\\.ts$',
         '^src/lib/shared/',
-        '^src/lib/styles/',
+        '^src/lib/ui/',
         '^src/lib/assets/',
-        '^src/lib/components/',
         '^src/lib/domains/[^/]+/ui/',
         DOCS_DOMAIN_PATH,
       ],
@@ -137,16 +136,16 @@ const PATH_RULES: readonly PathRule[] = [
   },
   {
     name: 'base-components-know-no-app',
-    from: { path: '^src/lib/components/' },
+    from: { path: '^src/lib/ui/' },
     to: {
-      path: '^src/lib/',
-      pathNot: ['^src/lib/components/', '^src/lib/assets/'],
+      path: ['^src/', '(^|/)node_modules/'],
+      pathNot: ['^src/lib/ui/', '(^|/)node_modules/(svelte|ts-pattern|vitest)/'],
     },
   },
   {
     name: 'icons-are-imported-one-by-one',
     from: {},
-    to: { path: '^src/lib/components/icons/index\\.' },
+    to: { path: '^src/lib/ui/components/icons/index\\.' },
   },
   {
     name: 'only-the-pdf-adapter-loads-pdfjs',

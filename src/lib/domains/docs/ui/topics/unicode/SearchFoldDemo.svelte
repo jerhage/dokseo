@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Highlight from '$lib/components/Highlight.svelte';
-  import Input from '$lib/components/Input.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Highlight from '$lib/ui/components/Highlight.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { searchFold } from './dokseo-text';
 

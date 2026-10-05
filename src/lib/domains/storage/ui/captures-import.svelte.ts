@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { FileLike, FileSelection } from '$lib/components/file-selection';
+import type { FileLike, FileSelection } from '$lib/ui/components/file-selection';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { CaptureId } from '$lib/shared/ids';
 import type {

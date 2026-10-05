@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
-import { createToaster } from '$lib/components/toaster.svelte';
-import type { Toast, Toaster } from '$lib/components/toaster.svelte';
+import { createToaster } from '$lib/ui/components/toaster.svelte';
+import type { Toast, Toaster } from '$lib/ui/components/toaster.svelte';
 import { SHELL_UPDATE_ACTION } from '$lib/shared/shell-updates';
 import {
   CHECK_DETAILS,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Radio from '$lib/components/Radio.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
   import { BOOK_MATCHING_OPTIONS } from './book-matching-setting';
   import { bookMatchingChosen, chooseBookMatching } from './book-matching.svelte';
 

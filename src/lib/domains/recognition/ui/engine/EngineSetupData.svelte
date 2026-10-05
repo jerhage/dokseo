@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import Skeleton from '$lib/components/Skeleton.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import Skeleton from '$lib/ui/components/Skeleton.svelte';
   import type { Language } from '$lib/shared/language';
   import { readQuery } from '$lib/shared/read-query.svelte';
   import { readBoth } from '$lib/shared/read-state';

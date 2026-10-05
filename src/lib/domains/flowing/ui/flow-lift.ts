@@ -1,5 +1,5 @@
-import { pixelLength } from '$lib/components/css-length';
-import type { StyleSource } from '$lib/components/css-length';
+import { pixelLength } from '$lib/ui/components/css-length';
+import type { StyleSource } from '$lib/ui/components/css-length';
 import type { TextQuote } from '$lib/shared/anchor';
 import { match } from 'ts-pattern';
 import { tapOnStage } from './flow-turn';

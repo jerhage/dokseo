@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import {
     IF_CHAIN,

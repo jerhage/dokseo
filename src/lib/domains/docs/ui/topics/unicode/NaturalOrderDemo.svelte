@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Field from '$lib/components/Field.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { codeUnitOrder, naturalOrder } from './dokseo-text';
 

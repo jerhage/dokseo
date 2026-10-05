@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import { unreachable } from '$lib/shared/unreachable';
   import type { FlowCurtain } from './flow-view.svelte';
 

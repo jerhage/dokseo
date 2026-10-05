@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import InputGroup from '$lib/components/InputGroup.svelte';
-  import InputGroupAddon from '$lib/components/InputGroupAddon.svelte';
-  import Search from '$lib/components/icons/Search.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import InputGroup from '$lib/ui/components/InputGroup.svelte';
+  import InputGroupAddon from '$lib/ui/components/InputGroupAddon.svelte';
+  import Search from '$lib/ui/components/icons/Search.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let email = $state('');

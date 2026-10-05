@@ -69,7 +69,7 @@ const MAP_AREAS: readonly MapArea[] = [
   layerArea('shared', 'shared/', 'src/lib/shared/sample.ts'),
   layerArea('platform', 'platform/', 'src/lib/platform/sample.ts'),
   layerArea('workers', 'workers/', 'src/workers/sample.ts'),
-  layerArea('components', 'components/', 'src/lib/components/Sample.svelte'),
+  layerArea('components', 'components/', 'src/lib/ui/components/Sample.svelte'),
 ];
 
 function folderPath(area: MapArea, folder: DomainFolder): string {

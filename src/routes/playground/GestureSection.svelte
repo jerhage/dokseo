@@ -1,10 +1,15 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import { DOUBLE_TAP_MS, LONG_PRESS_MS, TOUCH_SLOP_PX } from '$lib/components/gesture';
-  import type { GestureInput, GestureIntent, GestureSample, Point } from '$lib/components/gesture';
-  import { GestureFeed } from '$lib/components/gesture-feed';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import { DOUBLE_TAP_MS, LONG_PRESS_MS, TOUCH_SLOP_PX } from '$lib/ui/components/gesture';
+  import type {
+    GestureInput,
+    GestureIntent,
+    GestureSample,
+    Point,
+  } from '$lib/ui/components/gesture';
+  import { GestureFeed } from '$lib/ui/components/gesture-feed';
   import DemoSection from './DemoSection.svelte';
   import './gesture-section.css';
 

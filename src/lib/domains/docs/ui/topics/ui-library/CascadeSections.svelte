@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { LAYER_DIAGRAM } from './diagrams';
@@ -101,13 +101,13 @@
     {#snippet caption()}Declared order, top to bottom. The last layer wins.{/snippet}
   </Figure>
   <p>
-    The entry file, <code>src/lib/styles/index.css</code>, repeats the statement, which changes
+    The entry file, <code>src/lib/ui/styles/index.css</code>, repeats the statement, which changes
     nothing, and then imports every design-system file. Each import names its layer with
     <code>layer()</code>, and the files themselves hold bare rules, so one file shows where every
     rule lives. The root layout imports <code>index.css</code> once, and every class it defines is global
     from then on.
   </p>
-  <DocsCode label="src/lib/styles/index.css, a few of its imports" code={IMPORTS} />
+  <DocsCode label="src/lib/ui/styles/index.css, a few of its imports" code={IMPORTS} />
   <ul>
     <li><code>open-props</code> is declared and receives no import.</li>
     <li><code>reset</code> holds Josh W. Comeau's modern CSS reset, element selectors only.</li>

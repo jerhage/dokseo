@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import SelectedShelfIcon from '$lib/components/icons/SelectedShelf.svelte';
+  import Avatar from '$lib/ui/components/Avatar.svelte';
+  import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import { keyboardScrolling } from '$lib/ui/components/keyboard-scrolling';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import SelectedShelfIcon from '$lib/ui/components/icons/SelectedShelf.svelte';
   import PageTitle from '$lib/shared/PageTitle.svelte';
   import { settingsSections } from './settings-sections';
   import type { SettingsSection } from './settings-sections';

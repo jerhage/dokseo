@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Progress from '$lib/components/Progress.svelte';
-  import Radio from '$lib/components/Radio.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import { languageName } from '$lib/shared/language';
   import {
     COMPUTE_CHOICES,

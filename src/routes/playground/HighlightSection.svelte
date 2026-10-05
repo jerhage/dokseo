@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import Highlight from '$lib/components/Highlight.svelte';
-  import SearchField from '$lib/components/SearchField.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import Highlight from '$lib/ui/components/Highlight.svelte';
+  import SearchField from '$lib/ui/components/SearchField.svelte';
   import { segmentsOf, textMatches } from '$lib/shared/text-search';
   import DemoSection from './DemoSection.svelte';
 

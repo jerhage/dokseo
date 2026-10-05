@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Avatar from '$lib/components/Avatar.svelte';
-  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
+  import Avatar from '$lib/ui/components/Avatar.svelte';
+  import ChevronRight from '$lib/ui/components/icons/ChevronRight.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
   import { settingsSections } from './settings-sections';
   import SettingsShell from './SettingsShell.svelte';
 

@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { ToastId, ToastOptions, Toaster } from '$lib/components/toaster.svelte';
+import type { ToastId, ToastOptions, Toaster } from '$lib/ui/components/toaster.svelte';
 import {
   applyShellUpdate,
   watchShellWorker,

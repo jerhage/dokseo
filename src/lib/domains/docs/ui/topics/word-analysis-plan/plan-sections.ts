@@ -1,4 +1,4 @@
-import { anchorSlug } from '$lib/components/table-of-contents';
+import { anchorSlug } from '$lib/ui/components/table-of-contents';
 import { ACCESSIBILITY_SECTIONS } from '../accessibility/accessibility-sections';
 import { ARCHITECTURE_SECTIONS } from '../architecture/architecture-sections';
 import { OCR_SECTIONS } from '../ocr/ocr-sections';

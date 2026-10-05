@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Divider from '$lib/components/Divider.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import Pagination from '$lib/components/Pagination.svelte';
+  import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Divider from '$lib/ui/components/Divider.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import Pagination from '$lib/ui/components/Pagination.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const CRUMBS = [

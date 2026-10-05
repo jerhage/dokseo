@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import Highlight from '$lib/components/Highlight.svelte';
-  import Thumbnail from '$lib/components/Thumbnail.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import Highlight from '$lib/ui/components/Highlight.svelte';
+  import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { SearchRow } from './search-rows';
 
   type Props = {

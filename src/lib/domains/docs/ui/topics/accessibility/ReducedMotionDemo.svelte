@@ -1,7 +1,7 @@
 <script lang="ts">
   import { MediaQuery } from 'svelte/reactivity';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
 
   const reduced = new MediaQuery('prefers-reduced-motion: reduce');

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import type { ControlSize } from '$lib/components/classes';
-  import Copy from '$lib/components/icons/Copy.svelte';
-  import Pencil from '$lib/components/icons/Pencil.svelte';
-  import Search from '$lib/components/icons/Search.svelte';
-  import Tag from '$lib/components/icons/Tag.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import type { ControlSize } from '$lib/ui/components/classes';
+  import Copy from '$lib/ui/components/icons/Copy.svelte';
+  import Pencil from '$lib/ui/components/icons/Pencil.svelte';
+  import Search from '$lib/ui/components/icons/Search.svelte';
+  import Tag from '$lib/ui/components/icons/Tag.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const SIZES: readonly ControlSize[] = ['sm', 'md', 'lg'];

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { flushSync, onDestroy, untrack } from 'svelte';
   import { match } from 'ts-pattern';
-  import Carousel from '$lib/components/Carousel.svelte';
-  import KeyHints from '$lib/components/KeyHints.svelte';
-  import { CAROUSEL_REST } from '$lib/components/carousel';
-  import type { CarouselMotion, CarouselSide } from '$lib/components/carousel';
-  import type { GestureInput, GestureSample, GestureState } from '$lib/components/gesture';
-  import { GestureFeed } from '$lib/components/gesture-feed';
-  import { ZOOM_STEP, wheelPixels, wheelZoomFactor } from '$lib/components/pan-zoom';
+  import Carousel from '$lib/ui/components/Carousel.svelte';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
+  import { CAROUSEL_REST } from '$lib/ui/components/carousel';
+  import type { CarouselMotion, CarouselSide } from '$lib/ui/components/carousel';
+  import type { GestureInput, GestureSample, GestureState } from '$lib/ui/components/gesture';
+  import { GestureFeed } from '$lib/ui/components/gesture-feed';
+  import { ZOOM_STEP, wheelPixels, wheelZoomFactor } from '$lib/ui/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';

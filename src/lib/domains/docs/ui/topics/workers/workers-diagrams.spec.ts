@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DiagramNode } from '$lib/components/diagram';
+import type { DiagramNode } from '$lib/ui/components/diagram';
 import { CLONE_OR_TRANSFER, DOKSEO_WORKERS, MESSAGE_CHANNEL } from './workers-diagrams';
 
 function inside(inner: DiagramNode, outer: DiagramNode): boolean {

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import type { CompiledExample } from './compiled-example';
 

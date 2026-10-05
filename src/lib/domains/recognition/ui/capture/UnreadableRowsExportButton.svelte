@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import { UnreadableRowsExport, unreadableRowsOffer } from './unreadable-rows-export.svelte';
   import type { UnreadableRows, UnreadableRowsExporting } from './unreadable-rows-export.svelte';
 

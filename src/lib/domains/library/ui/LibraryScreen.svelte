@@ -1,15 +1,15 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import { goto } from '$app/navigation';
-  import Button from '$lib/components/Button.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import SelectedShelfIcon from '$lib/components/icons/SelectedShelf.svelte';
-  import SearchIcon from '$lib/components/icons/Search.svelte';
-  import UploadIcon from '$lib/components/icons/Upload.svelte';
-  import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
-  import KeyHints from '$lib/components/KeyHints.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import WindowDropzone from '$lib/components/WindowDropzone.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import SelectedShelfIcon from '$lib/ui/components/icons/SelectedShelf.svelte';
+  import SearchIcon from '$lib/ui/components/icons/Search.svelte';
+  import UploadIcon from '$lib/ui/components/icons/Upload.svelte';
+  import { keyboardScrolling } from '$lib/ui/components/keyboard-scrolling';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import WindowDropzone from '$lib/ui/components/WindowDropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import type { BookId } from '$lib/shared/ids';

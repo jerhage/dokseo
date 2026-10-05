@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Avatar from '$lib/components/Avatar.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import Stat from '$lib/components/Stat.svelte';
+  import Avatar from '$lib/ui/components/Avatar.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const LINKS = ['Overview', 'Projects', 'Reports', 'Team', 'Settings'];

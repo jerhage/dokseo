@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
-  import Radio from '$lib/components/Radio.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import {
     STRATEGY_OPTIONS,
     importStatus,

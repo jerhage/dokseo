@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { anchorSlug } from '$lib/components/table-of-contents';
+  import { anchorSlug } from '$lib/ui/components/table-of-contents';
 
   type Props = {
     title: string;

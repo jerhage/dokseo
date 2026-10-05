@@ -47,7 +47,7 @@ const specimen = mount(ThemeSpecimen, { target: inner.body });`;
     <code>b</code> when it is dark. Dokseo writes every color that differs between schemes once, as
     such a pair, and switches only the <code>color-scheme</code> property.
   </p>
-  <DocsCode label="src/lib/styles/base/scheme.css, excerpt" code={SCHEME} />
+  <DocsCode label="src/lib/ui/styles/base/scheme.css, excerpt" code={SCHEME} />
   <p>
     Automatic is the absence of the attribute, so removing <code>data-color-scheme</code> returns to
     the system's choice with no script. Form controls and scrollbars follow
@@ -58,14 +58,14 @@ const specimen = mount(ThemeSpecimen, { target: inner.body });`;
     Because <code>color-scheme</code> inherits and <code>light-dark()</code> resolves on the element that
     uses the color, any subtree can pin its own scheme. Two utilities do exactly that.
   </p>
-  <DocsCode label="src/lib/styles/utilities/surface.css, excerpt" code={SCHEME_UTILITIES} />
+  <DocsCode label="src/lib/ui/styles/utilities/surface.css, excerpt" code={SCHEME_UTILITIES} />
   <SchemeDemo />
 </DocsSection>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.themes}>
   <p>
     A theme is the <code>data-theme</code> attribute on <code>&lt;html&gt;</code>. Each theme is one
-    file in <code>src/lib/styles/base/themes/</code> with two rules, both on
+    file in <code>src/lib/ui/styles/base/themes/</code> with two rules, both on
     <code>:root[data-theme='name']</code>: its palette, then its role primitives. The default
     theme's rules also match a bare <code>:root</code>, so a page with no attribute still renders
     completely. A theme never touches a semantic token or a component.

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let email = $state('ada@');

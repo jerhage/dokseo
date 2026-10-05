@@ -2,10 +2,10 @@
   import { onDestroy, untrack } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { P, match } from 'ts-pattern';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import type { GestureInput, GestureIntent, GestureSample } from '$lib/components/gesture';
-  import { GestureFeed } from '$lib/components/gesture-feed';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import type { GestureInput, GestureIntent, GestureSample } from '$lib/ui/components/gesture';
+  import { GestureFeed } from '$lib/ui/components/gesture-feed';
   import {
     canPan,
     centrePan,
@@ -21,8 +21,8 @@
     wheelZoomFactor,
     zoomAt,
     ZOOM_STEP,
-  } from '$lib/components/pan-zoom';
-  import type { FitMode, Pinch, Size, Viewport, ZoomPoint } from '$lib/components/pan-zoom';
+  } from '$lib/ui/components/pan-zoom';
+  import type { FitMode, Pinch, Size, Viewport, ZoomPoint } from '$lib/ui/components/pan-zoom';
   import DemoSection from './DemoSection.svelte';
   import './pan-zoom-section.css';
 

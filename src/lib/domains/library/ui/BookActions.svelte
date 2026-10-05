@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import Ellipsis from '$lib/components/icons/Ellipsis.svelte';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import Ellipsis from '$lib/ui/components/icons/Ellipsis.svelte';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
   import { readingState } from './library-shelves';

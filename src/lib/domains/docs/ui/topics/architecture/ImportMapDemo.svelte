@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import Field from '$lib/components/Field.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
   import { MAP_AREAS } from '../../../domain/import-map';
   import DocsDemo from '../../DocsDemo.svelte';
   import { importMapDiagram } from './architecture-diagrams';

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import {
     DAMAGE_OPTIONS,

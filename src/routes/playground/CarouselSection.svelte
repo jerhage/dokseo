@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Carousel from '$lib/components/Carousel.svelte';
-  import Slider from '$lib/components/Slider.svelte';
-  import { CAROUSEL_REST, carouselAround } from '$lib/components/carousel';
-  import type { CarouselMotion, CarouselSide, CarouselSlide } from '$lib/components/carousel';
-  import type { TagColour } from '$lib/components/classes';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Carousel from '$lib/ui/components/Carousel.svelte';
+  import Slider from '$lib/ui/components/Slider.svelte';
+  import { CAROUSEL_REST, carouselAround } from '$lib/ui/components/carousel';
+  import type { CarouselMotion, CarouselSide, CarouselSlide } from '$lib/ui/components/carousel';
+  import type { TagColour } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   const COLOURS: readonly TagColour[] = ['clay', 'sage', 'sky', 'plum', 'copper'];

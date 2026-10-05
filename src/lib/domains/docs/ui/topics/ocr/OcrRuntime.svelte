@@ -1,6 +1,6 @@
 <script lang="ts">
-  import StepItem from '$lib/components/StepItem.svelte';
-  import StepList from '$lib/components/StepList.svelte';
+  import StepItem from '$lib/ui/components/StepItem.svelte';
+  import StepList from '$lib/ui/components/StepList.svelte';
   import { MAX_DEFAULT_WASM_THREADS } from '../../../domain/ocr-compute';
   import {
     JAPANESE_OCR_MODEL,

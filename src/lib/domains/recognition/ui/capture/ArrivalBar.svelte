@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import Stepper from '$lib/components/Stepper.svelte';
+  import Stepper from '$lib/ui/components/Stepper.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { ArrivalCapture, Stepping } from '../../domain/capture/capture-arrival';

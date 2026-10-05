@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Radio from '$lib/components/Radio.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
   import type { Language } from '$lib/shared/language';
   import { shownTitle } from '$lib/shared/shown-title';

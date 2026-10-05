@@ -1,4 +1,4 @@
-import { TAG_COLOURS } from '$lib/components/classes';
+import { TAG_COLOURS } from '$lib/ui/components/classes';
 
 type TokenGroup = {
   readonly title: string;

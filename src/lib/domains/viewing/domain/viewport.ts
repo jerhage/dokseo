@@ -1,6 +1,6 @@
 import { P, match } from 'ts-pattern';
-import { centrePan, fitZoom } from '$lib/components/pan-zoom';
-import type { Viewport } from '$lib/components/pan-zoom';
+import { centrePan, fitZoom } from '$lib/ui/components/pan-zoom';
+import type { Viewport } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import type { PageFit } from '$lib/shared/page-fit';
 

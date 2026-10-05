@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
-import { TOUCH_SLOP_PX } from '$lib/components/gesture';
-import type { GestureIntent, Point } from '$lib/components/gesture';
+import { TOUCH_SLOP_PX } from '$lib/ui/components/gesture';
+import type { GestureIntent, Point } from '$lib/ui/components/gesture';
 import {
   SWIPE_AXIS_RATIO,
   SWIPE_MIN_PX,

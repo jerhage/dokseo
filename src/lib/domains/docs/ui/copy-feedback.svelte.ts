@@ -1,4 +1,4 @@
-import type { Clock } from '$lib/components/clock';
+import type { Clock } from '$lib/ui/components/clock';
 
 type CopyOutcome = 'copied' | 'refused';
 

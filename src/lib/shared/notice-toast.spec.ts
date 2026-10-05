@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ToastOptions } from '$lib/components/toaster.svelte';
+import type { ToastOptions } from '$lib/ui/components/toaster.svelte';
 import { noticeToast, toastNotify } from './notice-toast';
 
 describe('noticeToast', () => {

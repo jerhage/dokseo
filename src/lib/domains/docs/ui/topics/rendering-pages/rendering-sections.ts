@@ -1,4 +1,4 @@
-import { anchorSlug } from '$lib/components/table-of-contents';
+import { anchorSlug } from '$lib/ui/components/table-of-contents';
 import { EPUB_SECTIONS } from '../epub-rendering/epub-sections';
 import { OCR_SECTIONS } from '../ocr/ocr-sections';
 import { STORAGE_SECTIONS } from '../storage/storage-sections';

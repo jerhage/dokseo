@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Avatar from '$lib/components/Avatar.svelte';
-  import AvatarStack from '$lib/components/AvatarStack.svelte';
-  import Card from '$lib/components/Card.svelte';
+  import Avatar from '$lib/ui/components/Avatar.svelte';
+  import AvatarStack from '$lib/ui/components/AvatarStack.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
   import favicon from '$lib/assets/favicon.svg';
-  import type { ControlSize } from '$lib/components/classes';
+  import type { ControlSize } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   const SIZES: readonly ControlSize[] = ['sm', 'md', 'lg'];

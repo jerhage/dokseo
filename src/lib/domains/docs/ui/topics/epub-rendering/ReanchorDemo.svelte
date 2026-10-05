@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import { DEFAULT_READING_SETTINGS } from '$lib/domains/flowing/domain/reading-settings';
   import type { SampleEdition } from '../../../domain/sample-epub';
   import DocsDemo from '../../DocsDemo.svelte';

@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { DiagramBox, DiagramEdge, DiagramNode } from '$lib/components/diagram';
+import type { DiagramBox, DiagramEdge, DiagramNode } from '$lib/ui/components/diagram';
 import { SQL_TABLES } from './sql-examples';
 
 type JoinKind = 'inner' | 'left' | 'full' | 'semi' | 'anti';

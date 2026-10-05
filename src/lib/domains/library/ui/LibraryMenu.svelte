@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import DropdownSeparator from '$lib/components/DropdownSeparator.svelte';
-  import Menu from '$lib/components/icons/Menu.svelte';
-  import { readAppearance } from '$lib/shared/appearance';
-  import type { Appearance } from '$lib/shared/appearance';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
+  import Menu from '$lib/ui/components/icons/Menu.svelte';
+  import { readAppearance } from '$lib/ui/appearance';
+  import type { Appearance } from '$lib/ui/appearance';
   import AppearanceChoices from '$lib/shared/AppearanceChoices.svelte';
   import { LIBRARY_SECTIONS } from './library-sections';
 

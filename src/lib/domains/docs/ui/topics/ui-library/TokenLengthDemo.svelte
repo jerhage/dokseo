@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import { pixelLength } from '$lib/components/css-length';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import { pixelLength } from '$lib/ui/components/css-length';
   import DocsDemo from '../../DocsDemo.svelte';
   import { PRIMITIVE_NAMES } from './snippets';
 

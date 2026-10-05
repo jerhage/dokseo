@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const SOURCE = new URL('../../', import.meta.url);
+const SOURCE = new URL('../../../', import.meta.url);
 const STYLES = new URL('./', import.meta.url);
 const LIBRARY_FOLDERS = ['components/', 'utilities/', 'overrides/'];
 

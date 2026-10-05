@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { startBlobWorker } from './demo-workers';
   import { BUFFER_SIZES_MB, TransferDemo } from './transfer-demo.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { TOKEN_DIAGRAM } from './diagrams';
@@ -55,9 +55,9 @@
   <p>
     In Dokseo every primitive starts with <code>{PRIMITIVE_NAMES.prefix}</code> and lives in the
     <code>base</code>
-    layer, in <code>src/lib/styles/base/</code>. A value no theme changes, such as a spacing step,
-    is a plain primitive in <code>base/primitives.css</code>. A value a theme can change takes one
-    more step. Each theme file names its palette after the color (<code
+    layer, in <code>src/lib/ui/styles/base/</code>. A value no theme changes, such as a spacing
+    step, is a plain primitive in <code>base/primitives.css</code>. A value a theme can change takes
+    one more step. Each theme file names its palette after the color (<code
       >{PRIMITIVE_NAMES.spruce}</code
     >), then assigns <em>role primitives</em>, names for the job such as
     <code>{PRIMITIVE_NAMES.primary}</code>
@@ -76,10 +76,10 @@
     />
     {#snippet caption()}From a raw color to a component, under the default theme.{/snippet}
   </Figure>
-  <DocsCode label="src/lib/styles/base/themes/base.css, excerpt" code={BASE_THEME} />
-  <DocsCode label="src/lib/styles/base/themes/ember.css, excerpt" code={EMBER_THEME} />
-  <DocsCode label="src/lib/styles/tokens/, excerpts" code={SEMANTIC} />
-  <DocsCode label="src/lib/styles/components/btn.css, excerpt" code={COMPONENT} />
+  <DocsCode label="src/lib/ui/styles/base/themes/base.css, excerpt" code={BASE_THEME} />
+  <DocsCode label="src/lib/ui/styles/base/themes/ember.css, excerpt" code={EMBER_THEME} />
+  <DocsCode label="src/lib/ui/styles/tokens/, excerpts" code={SEMANTIC} />
+  <DocsCode label="src/lib/ui/styles/components/btn.css, excerpt" code={COMPONENT} />
   <p>
     The button rule reads <code>--color-primary</code> into custom properties of its own. A leading
     underscore, as in <code>--_btn-tone-bg</code>, marks a property private to one component: the
@@ -118,8 +118,8 @@
     in pixels, and <code>getPropertyValue('--carousel-gap')</code> returns <code>"16px"</code>. The
     declaration stays an ordinary token, so the rest of the system treats it like any other.
   </p>
-  <DocsCode label="src/lib/styles/tokens/spacing.css, excerpt" code={REGISTERED} />
-  <DocsCode label="src/lib/components/css-length.ts" code={PIXEL_LENGTH} />
+  <DocsCode label="src/lib/ui/styles/tokens/spacing.css, excerpt" code={REGISTERED} />
+  <DocsCode label="src/lib/ui/components/css-length.ts" code={PIXEL_LENGTH} />
   <TokenLengthDemo />
   <p>
     Media and container queries cannot read a custom property at all, so a breakpoint is written out

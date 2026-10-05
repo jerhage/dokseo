@@ -1,24 +1,24 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import { TAG_COLOURS } from '$lib/components/classes';
-  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
-  import CircleCheck from '$lib/components/icons/CircleCheck.svelte';
-  import CircleX from '$lib/components/icons/CircleX.svelte';
-  import File from '$lib/components/icons/File.svelte';
-  import type { IconProps } from '$lib/components/icons/icon';
-  import Info from '$lib/components/icons/Info.svelte';
-  import Palette from '$lib/components/icons/Palette.svelte';
-  import Pencil from '$lib/components/icons/Pencil.svelte';
-  import TriangleAlert from '$lib/components/icons/TriangleAlert.svelte';
-  import Upload from '$lib/components/icons/Upload.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import { TAG_COLOURS } from '$lib/ui/components/classes';
+  import ChevronRight from '$lib/ui/components/icons/ChevronRight.svelte';
+  import CircleCheck from '$lib/ui/components/icons/CircleCheck.svelte';
+  import CircleX from '$lib/ui/components/icons/CircleX.svelte';
+  import File from '$lib/ui/components/icons/File.svelte';
+  import type { IconProps } from '$lib/ui/components/icons/icon';
+  import Info from '$lib/ui/components/icons/Info.svelte';
+  import Palette from '$lib/ui/components/icons/Palette.svelte';
+  import Pencil from '$lib/ui/components/icons/Pencil.svelte';
+  import TriangleAlert from '$lib/ui/components/icons/TriangleAlert.svelte';
+  import Upload from '$lib/ui/components/icons/Upload.svelte';
   import DemoSection from './DemoSection.svelte';
   import { iconCatalog } from './icon-catalog';
 
   const ICONS = iconCatalog(
-    import.meta.glob<Component<IconProps>>('$lib/components/icons/*.svelte', {
+    import.meta.glob<Component<IconProps>>('$lib/ui/components/icons/*.svelte', {
       eager: true,
       import: 'default',
     }),
@@ -59,7 +59,7 @@
   ]}
 >
   <p class="text-sm text-muted">
-    Lucide icons, one component per icon in src/lib/components/icons/, each imported by its own
+    Lucide icons, one component per icon in src/lib/ui/components/icons/, each imported by its own
     path. The stroke follows the theme unless a strokeWidth is given.
   </p>
   <Card>

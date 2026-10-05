@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import PageHeader from '$lib/components/PageHeader.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import PageHeader from '$lib/ui/components/PageHeader.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let compact = $state(false);

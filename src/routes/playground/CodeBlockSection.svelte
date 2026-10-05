@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const HEADERS = `Cross-Origin-Opener-Policy: same-origin

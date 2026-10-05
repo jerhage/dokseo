@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import TagIcon from '$lib/components/icons/Tag.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import TagIcon from '$lib/ui/components/icons/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
   import type { Tag } from '../../domain/tag/tag';

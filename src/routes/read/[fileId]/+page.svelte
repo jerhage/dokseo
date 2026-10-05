@@ -3,7 +3,7 @@
   import { onDestroy } from 'svelte';
   import { afterNavigate, goto, onNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
-  import { getToaster } from '$lib/components/toast-context';
+  import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import ArrivalBar from '$lib/domains/recognition/ui/capture/ArrivalBar.svelte';
   import BookCapturesData from '$lib/domains/recognition/ui/capture/BookCapturesData.svelte';

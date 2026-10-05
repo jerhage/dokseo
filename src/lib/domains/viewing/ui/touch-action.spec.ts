@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GESTURE_IDLE, gestureStep } from '$lib/components/gesture';
-import type { GestureContext, GestureInput, GestureIntent } from '$lib/components/gesture';
+import { GESTURE_IDLE, gestureStep } from '$lib/ui/components/gesture';
+import type { GestureContext, GestureInput, GestureIntent } from '$lib/ui/components/gesture';
 import type { FrameSpan, TouchTurns } from '$lib/shared/page-turn';
 import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
 import type { PanReach } from '../domain/overscroll';

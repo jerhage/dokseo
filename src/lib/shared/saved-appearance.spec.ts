@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { StringStore } from '$lib/platform/storage/remembered-string';
-import { COLOR_SCHEMES, THEMES, readAppearance } from './appearance';
-import type { Appearance, RootAttributes } from './appearance';
+import { COLOR_SCHEMES, THEMES, readAppearance } from '$lib/ui/appearance';
+import type { Appearance, RootAttributes } from '$lib/ui/appearance';
 import { SCHEME_KEY, THEME_KEY, chooseAppearance } from './saved-appearance';
 
 const HTML = readFileSync(new URL('../../app.html', import.meta.url), 'utf8');

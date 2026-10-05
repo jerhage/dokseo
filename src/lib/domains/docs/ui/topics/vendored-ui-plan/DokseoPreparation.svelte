@@ -91,15 +91,15 @@
   <p>
     An app alias such as <code>$lib</code> means "this app's <code>src/lib</code>". Inside a
     vendored library it would point at whichever app the copy sits in, so the library has to reach
-    its own files by relative path only. Dokseo already holds the components to that, with a
-    dependency rule (<a href={UI_LIBRARY_DIRECTION_HREF}>Dependency direction</a>):
+    its own files by relative path only. Dokseo holds the whole of <code>src/lib/ui/</code> to that,
+    with a dependency rule (<a href={UI_LIBRARY_DIRECTION_HREF}>Dependency direction</a>):
   </p>
   <DocsCode label={NO_APP_RULE.label} code={NO_APP_RULE.code} />
   <DocsCode label={NO_APP_RULE_PATHS.label} code={NO_APP_RULE_PATHS.code} />
   <p>
-    A component may import its siblings and <code>src/lib/assets/</code>, and nothing else under
-    <code>src/lib</code>. The demo above shows the result: no component imports an alias, and none
-    imports from <code>src/lib/assets/</code> either.
+    A file in the library may import its siblings, <code>svelte</code>, <code>ts-pattern</code>
+    and, in a spec, <code>vitest</code>, and nothing else under <code>src/</code>. The demo above
+    shows the result: no component imports an alias.
   </p>
 </DocsSection>
 

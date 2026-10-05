@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import MarqueeSelection from '$lib/components/MarqueeSelection.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import type { GestureInput, GestureSample } from '$lib/components/gesture';
-  import { GestureFeed } from '$lib/components/gesture-feed';
-  import { marqueeEnd } from '$lib/components/marquee-selection';
-  import type { MarqueeEnd, MarqueeRect } from '$lib/components/marquee-selection';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import MarqueeSelection from '$lib/ui/components/MarqueeSelection.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import type { GestureInput, GestureSample } from '$lib/ui/components/gesture';
+  import { GestureFeed } from '$lib/ui/components/gesture-feed';
+  import { marqueeEnd } from '$lib/ui/components/marquee-selection';
+  import type { MarqueeEnd, MarqueeRect } from '$lib/ui/components/marquee-selection';
   import { MIN_SELECTION_PX } from '$lib/domains/viewing/domain/selection';
   import { clickSlop } from '$lib/shared/click-slop';
   import { SAMPLE_PAGE_SIZE } from '../../../domain/ocr-sample';

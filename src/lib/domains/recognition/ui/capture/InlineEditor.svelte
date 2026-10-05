@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
-  import Button from '$lib/components/Button.svelte';
-  import type { KeyHint } from '$lib/components/key-hints';
-  import KeyHints from '$lib/components/KeyHints.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import type { KeyHint } from '$lib/ui/components/key-hints';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import type { Language } from '$lib/shared/language';
   import { writerKey } from './editor-keys';
 

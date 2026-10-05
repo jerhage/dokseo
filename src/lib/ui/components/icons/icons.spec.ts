@@ -9,7 +9,7 @@ import X from './X.svelte';
 import { iconStroke } from './icon';
 
 const ICONS = new URL('./', import.meta.url);
-const SOURCE = new URL('../../../', import.meta.url);
+const SOURCE = new URL('../../../../', import.meta.url);
 const BASE = 'Icon.svelte';
 const PLAYGROUND = 'routes/playground/';
 
@@ -47,7 +47,7 @@ function sourceFiles(): readonly string[] {
     .filter((path) => /\.(svelte|ts)$/u.test(path))
     .filter((path) => !path.endsWith('.spec.ts'))
     .filter((path) => !path.startsWith(PLAYGROUND))
-    .filter((path) => !path.startsWith('lib/components/icons/'));
+    .filter((path) => !path.startsWith('lib/ui/components/icons/'));
 }
 
 describe('Icon', () => {

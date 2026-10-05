@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Checkbox from '$lib/components/Checkbox.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Select from '$lib/components/Select.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import { APP_VERSION } from '$lib/shared/app-version';
   import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
   import { readCapturesFile } from '$lib/domains/storage/use-cases/read-captures-file';

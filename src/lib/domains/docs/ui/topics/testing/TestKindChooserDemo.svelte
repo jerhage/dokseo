@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import { BUG_PLACES, BUG_PRESETS, SIGHTINGS } from '../../../domain/test-kinds';
   import DocsDemo from '../../DocsDemo.svelte';
   import { TestKindChooser, adviceCard } from './testing-demos.svelte';

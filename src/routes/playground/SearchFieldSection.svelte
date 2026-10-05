@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import SearchField from '$lib/components/SearchField.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import SearchField from '$lib/ui/components/SearchField.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let hidden = $state('');

@@ -2,10 +2,10 @@
   import { onDestroy, untrack } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { match } from 'ts-pattern';
-  import KeyHints from '$lib/components/KeyHints.svelte';
-  import type { GestureInput, GestureSample } from '$lib/components/gesture';
-  import { GestureFeed } from '$lib/components/gesture-feed';
-  import { ZOOM_STEP, wheelPixels, wheelZoomFactor } from '$lib/components/pan-zoom';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
+  import type { GestureInput, GestureSample } from '$lib/ui/components/gesture';
+  import { GestureFeed } from '$lib/ui/components/gesture-feed';
+  import { ZOOM_STEP, wheelPixels, wheelZoomFactor } from '$lib/ui/components/pan-zoom';
   import type { CaptureOrigin } from '$lib/shared/capture-origin';
   import type { Size } from '$lib/shared/geometry';
   import type { ImageIndex } from '$lib/shared/ids';

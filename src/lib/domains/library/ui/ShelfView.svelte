@@ -1,14 +1,14 @@
 <script lang="ts">
-  import IconButton from '$lib/components/IconButton.svelte';
-  import Dropdown from '$lib/components/Dropdown.svelte';
-  import DropdownItem from '$lib/components/DropdownItem.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import ArrowUpDown from '$lib/components/icons/ArrowUpDown.svelte';
-  import LayoutGrid from '$lib/components/icons/LayoutGrid.svelte';
-  import List from '$lib/components/icons/List.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import type { SegmentOption } from '$lib/components/segmented-control';
-  import Tabs from '$lib/components/Tabs.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import Dropdown from '$lib/ui/components/Dropdown.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import ArrowUpDown from '$lib/ui/components/icons/ArrowUpDown.svelte';
+  import LayoutGrid from '$lib/ui/components/icons/LayoutGrid.svelte';
+  import List from '$lib/ui/components/icons/List.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import type { SegmentOption } from '$lib/ui/components/segmented-control';
+  import Tabs from '$lib/ui/components/Tabs.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import BookGrid from './BookGrid.svelte';

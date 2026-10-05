@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import BreakpointProbe from '$lib/components/BreakpointProbe.svelte';
-  import ChromeBar from '$lib/components/ChromeBar.svelte';
-  import Dock from '$lib/components/Dock.svelte';
-  import ToastClearance from '$lib/components/ToastClearance.svelte';
+  import BreakpointProbe from '$lib/ui/components/BreakpointProbe.svelte';
+  import ChromeBar from '$lib/ui/components/ChromeBar.svelte';
+  import Dock from '$lib/ui/components/Dock.svelte';
+  import ToastClearance from '$lib/ui/components/ToastClearance.svelte';
   import type { ReaderFrameView } from './reader-frame.svelte';
 
   type Props = {

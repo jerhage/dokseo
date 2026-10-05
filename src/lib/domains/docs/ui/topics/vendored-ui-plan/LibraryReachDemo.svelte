@@ -1,12 +1,12 @@
 <script lang="ts">
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Stat from '$lib/components/Stat.svelte';
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Stat from '$lib/ui/components/Stat.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
   import type { ImportKind } from '../../../domain/library-imports';
   import DocsDemo from '../../DocsDemo.svelte';
   import { LIBRARY_REACH } from './library-reach';
@@ -33,9 +33,9 @@
 <DocsDemo label="What the library's files import">
   {#snippet caption()}
     Every <code>import</code>, <code>import()</code> and relative <code>new URL()</code> in the
-    files of <code>src/lib/components/</code> and in the specs of <code>src/lib/styles/</code>,
-    counted once per file. A spec counts them again from the source and fails when the numbers
-    differ.
+    files of <code>src/lib/ui/components/</code> and in the specs of
+    <code>src/lib/ui/styles/</code>, counted once per file. A spec counts them again from the source
+    and fails when the numbers differ.
   {/snippet}
   <div class="stack-md">
     <SegmentedControl label="Files to read" variant="track" options={SETS} bind:value={set} />

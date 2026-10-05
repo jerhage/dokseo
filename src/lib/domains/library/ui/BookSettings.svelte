@@ -1,11 +1,11 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import Radio from '$lib/components/Radio.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
   import {
     PAGE_PAIRING_CHOICES,
     PAGE_PAIRING_LEGEND,

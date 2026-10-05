@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { GestureIntent } from '$lib/components/gesture';
+import type { GestureIntent } from '$lib/ui/components/gesture';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { swipeTurn, tapZone } from '$lib/shared/page-turn';
 import type { FrameSpan, TapZone, TouchTurns } from '$lib/shared/page-turn';

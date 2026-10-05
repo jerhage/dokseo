@@ -7,7 +7,7 @@ import { START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import { chooseTouchTurns } from '$lib/shared/chosen-touch-turns.svelte';
 import { TOUCH_TURNS_KEY } from '$lib/shared/touch-turns';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
-import '$lib/styles/index.css';
+import '$lib/ui/styles/index.css';
 import FlowViewer from './FlowViewer.svelte';
 import { FlowView } from './flow-view.svelte';
 import type { FlowBook } from './flow-view.svelte';

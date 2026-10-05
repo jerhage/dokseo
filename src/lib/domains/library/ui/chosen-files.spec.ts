@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { selectFiles } from '$lib/components/file-selection';
-import type { FileLike } from '$lib/components/file-selection';
+import { selectFiles } from '$lib/ui/components/file-selection';
+import type { FileLike } from '$lib/ui/components/file-selection';
 import { arrivedFiles } from './chosen-files';
 
 function file(name: string, type = ''): FileLike {

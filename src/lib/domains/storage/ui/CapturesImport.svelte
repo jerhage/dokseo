@@ -1,12 +1,12 @@
 <script lang="ts">
   import { useQueryClient } from '@tanstack/svelte-query';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Dropzone from '$lib/components/Dropzone.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
-  import Radio from '$lib/components/Radio.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Dropzone from '$lib/ui/components/Dropzone.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
   import { CapturesImportView } from './captures-import.svelte';
   import type { CapturesImporting } from './captures-import.svelte';
   import {

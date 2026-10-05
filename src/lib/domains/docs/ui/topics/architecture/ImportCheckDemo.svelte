@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Checkbox from '$lib/components/Checkbox.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { CHECK_PRESETS, ImportCheck } from './import-check.svelte';
   import { ruleNote } from './rule-notes';

@@ -147,7 +147,7 @@ module.exports = {
     {
       name: 'routes-are-thin',
       comment:
-        'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts, context.ts and query-client.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree, query-client.ts builds the one query cache the root layout provides), the shared kernel, style sheets and static assets, a base component from src/lib/components/, and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
+        'A route is a delivery concern at the very end of the DAG: it pulls a view model out of context and renders a component. It may import container.ts, context.ts and query-client.ts (the composition root — container.ts assembles the adapters, context.ts hands the assembled container to the tree, query-client.ts builds the one query cache the root layout provides), the shared kernel, static assets, the UI library in src/lib/ui/ (its base components, its style sheets and appearance.ts), and a domain ui/ module. Nothing else under src/lib. A route must never reach a port, a use case, an adapter, or a platform module: logic that a route can reach is logic that is not under test.',
       severity: 'error',
       from: { path: '^src/routes/' },
       to: {
@@ -157,9 +157,8 @@ module.exports = {
           '^src/lib/context\\.ts$',
           '^src/lib/query-client\\.ts$',
           '^src/lib/shared/',
-          '^src/lib/styles/',
+          '^src/lib/ui/',
           '^src/lib/assets/',
-          '^src/lib/components/',
           '^src/lib/domains/[^/]+/ui/',
           DOCS_DOMAIN_PATH,
         ],
@@ -178,22 +177,22 @@ module.exports = {
     {
       name: 'base-components-know-no-app',
       comment:
-        "src/lib/components/ is the base UI library: domain-free atoms that a route or a domain ui/ module composes into a screen. It may import static assets, its own siblings and npm packages, and nothing else under src/lib — not even the shared kernel, because shared/ holds UI that more than one domain composes from these atoms (PageBar), so shared sits above the library and an import back down would open a cycle. A base component that reached a domain, container.ts, context.ts or platform/ would carry that knowledge into every screen that renders it, and would turn the library's place at the bottom of the UI into a cycle the moment that domain's ui/ composed it. Behaviour a base component needs arrives as a prop, a snippet or a callback; the caller decides what it means.",
+        "src/lib/ui/ is the UI library, vendored into each app that uses it: the base components in components/, the layered style sheets in styles/, the fonts in fonts/ and appearance.ts. Its files are domain-free atoms that a route or a domain ui/ module composes into a screen. A file in it may import its own siblings by relative path, the npm packages svelte and ts-pattern, vitest in a spec, and nothing else: nothing under src/ outside src/lib/ui/, not even the shared kernel, because shared/ holds UI that more than one domain composes from these atoms (PageBar), so shared sits above the library and an import back down would open a cycle. Inside a vendored copy an app alias or a path into the app would point at whichever app holds the copy. A base component that reached a domain, container.ts, context.ts or platform/ would carry that knowledge into every screen that renders it, and would turn the library's place at the bottom of the UI into a cycle the moment that domain's ui/ composed it. Behaviour a base component needs arrives as a prop, a snippet or a callback; the caller decides what it means.",
       severity: 'error',
-      from: { path: '^src/lib/components/' },
+      from: { path: '^src/lib/ui/' },
       to: {
-        path: '^src/lib/',
-        pathNot: ['^src/lib/components/', '^src/lib/assets/'],
+        path: ['^src/', '(^|/)node_modules/'],
+        pathNot: ['^src/lib/ui/', '(^|/)node_modules/(svelte|ts-pattern|vitest)/'],
       },
     },
 
     {
       name: 'icons-are-imported-one-by-one',
       comment:
-        'Each icon is its own module, imported by its own path ($lib/components/icons/X.svelte), so only the icons a screen names reach the build. An index module in icons/ would re-export the whole set: one import of it would ship every icon, and it would be the barrel this project forbids. The unused-icon spec in icons/ keeps the other half: no icon file exists that nothing imports.',
+        'Each icon is its own module, imported by its own path ($lib/ui/components/icons/X.svelte), so only the icons a screen names reach the build. An index module in icons/ would re-export the whole set: one import of it would ship every icon, and it would be the barrel this project forbids. The unused-icon spec in icons/ keeps the other half: no icon file exists that nothing imports.',
       severity: 'error',
       from: {},
-      to: { path: '^src/lib/components/icons/index\\.' },
+      to: { path: '^src/lib/ui/components/icons/index\\.' },
     },
 
     {

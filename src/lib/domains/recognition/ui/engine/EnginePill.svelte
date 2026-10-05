@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
-  import Popover from '$lib/components/Popover.svelte';
-  import Radio from '$lib/components/Radio.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import ChevronDown from '$lib/ui/components/icons/ChevronDown.svelte';
+  import Popover from '$lib/ui/components/Popover.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
   import type { Language } from '$lib/shared/language';
   import { chosenModel, knownModel } from '../../domain/model/model-footprint';
   import {

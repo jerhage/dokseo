@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import TableOfContents from '$lib/components/TableOfContents.svelte';
-  import { contentsEntries } from '$lib/components/table-of-contents';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
+  import TableOfContents from '$lib/ui/components/TableOfContents.svelte';
+  import { contentsEntries } from '$lib/ui/components/table-of-contents';
   import { DOCS_ROOT, docsTopic, docsTopicStanding } from '../domain/topics';
   import type { DocsTopicSlug } from '../domain/topics';
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Diagram from '$lib/components/Diagram.svelte';
-  import type { DiagramBox } from '$lib/components/diagram';
-  import Figure from '$lib/components/Figure.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import type { DiagramBox } from '$lib/ui/components/diagram';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import { onnxDefaultThreads } from '../../../domain/security-headers';
   import DocsCode from '../../DocsCode.svelte';
   import DocsDemo from '../../DocsDemo.svelte';

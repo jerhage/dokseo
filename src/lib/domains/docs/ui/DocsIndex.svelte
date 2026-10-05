@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Card from '$lib/components/Card.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
   import { DOCS_TOPICS, docsIndexEntries } from '../domain/topics';
 
   const entries = docsIndexEntries(DOCS_TOPICS);

@@ -1,4 +1,4 @@
-import type { ColorScheme, Theme } from './appearance';
+import type { ColorScheme, Theme } from '$lib/ui/appearance';
 
 const THEME_LABELS: Readonly<Record<Theme, string>> = {
   base: 'Base',

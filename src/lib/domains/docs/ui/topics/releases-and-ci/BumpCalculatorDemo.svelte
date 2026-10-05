@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import { changelogMarkdown } from '../../../domain/release-bump';
   import DocsCode from '../../DocsCode.svelte';
   import DocsDemo from '../../DocsDemo.svelte';

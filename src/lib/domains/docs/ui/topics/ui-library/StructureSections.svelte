@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { DIRECTION_DIAGRAM } from './diagrams';
@@ -24,10 +24,10 @@
   const RULE = `{
   name: 'base-components-know-no-app',
   severity: 'error',
-  from: { path: '^src/lib/components/' },
+  from: { path: '^src/lib/ui/' },
   to: {
-    path: '^src/lib/',
-    pathNot: ['^src/lib/components/', '^src/lib/assets/'],
+    path: ['^src/', '(^|/)node_modules/'],
+    pathNot: ['^src/lib/ui/', '(^|/)node_modules/(svelte|ts-pattern|vitest)/'],
   },
 }`;
 </script>
@@ -44,16 +44,16 @@
     <code>app-shell</code>, and below <code>48rem</code> of its own width the navigation leaves the side
     column and becomes a row under the header.
   </p>
-  <DocsCode label="src/lib/styles/utilities/layout.css, excerpt" code={SHELL} />
+  <DocsCode label="src/lib/ui/styles/utilities/layout.css, excerpt" code={SHELL} />
   <ShellWidthDemo />
 </DocsSection>
 
 <DocsSection title={UI_LIBRARY_SECTIONS.direction}>
   <p>
-    The base library sits at the bottom of the UI code. A file in <code>src/lib/components/</code>
-    may import its siblings, <code>src/lib/assets/</code> and npm packages, and nothing else in
-    <code>src/lib/</code>: no domain, no <code>shared/</code>, no container. Code above it composes
-    it.
+    The base library sits at the bottom of the UI code. A file in <code>src/lib/ui/</code> may
+    import its siblings, <code>svelte</code>, <code>ts-pattern</code> and, in a spec,
+    <code>vitest</code>, and nothing else in <code>src/</code>: no domain, no <code>shared/</code>,
+    no container. Code above it composes it.
   </p>
   <Figure>
     <Diagram

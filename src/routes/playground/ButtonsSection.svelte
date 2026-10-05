@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import type { ButtonVariant, ControlSize } from '$lib/components/classes';
+  import Button from '$lib/ui/components/Button.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import type { ButtonVariant, ControlSize } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly ButtonVariant[] = [

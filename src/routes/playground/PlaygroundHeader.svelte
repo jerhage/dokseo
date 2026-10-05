@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
 </script>
 

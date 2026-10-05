@@ -63,7 +63,7 @@ const CHECK_PRESETS: readonly CheckPreset[] = [
   },
   {
     label: 'A base component reads shared',
-    from: '$lib/components/Button.svelte',
+    from: '$lib/ui/components/Button.svelte',
     to: '$lib/shared/ids.ts',
     kind: 'type-only',
   },

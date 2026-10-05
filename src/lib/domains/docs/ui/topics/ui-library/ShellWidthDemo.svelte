@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import Slider from '$lib/components/Slider.svelte';
-  import { anchorSlug } from '$lib/components/table-of-contents';
+  import Button from '$lib/ui/components/Button.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import Slider from '$lib/ui/components/Slider.svelte';
+  import { anchorSlug } from '$lib/ui/components/table-of-contents';
   import { remPixels } from '../../../domain/css-units';
   import DocsDemo from '../../DocsDemo.svelte';
   import { UI_LIBRARY_SECTIONS } from './sections';

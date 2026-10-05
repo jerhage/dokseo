@@ -2,7 +2,7 @@
   import type { Snapshot } from '@sveltejs/kit';
   import { afterNavigate, replaceState } from '$app/navigation';
   import { page } from '$app/state';
-  import { getToaster } from '$lib/components/toast-context';
+  import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';

@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { StatusVariant } from '$lib/components/classes';
+import type { StatusVariant } from '$lib/ui/components/classes';
 import type { FileToSave, SaveFileOutcome } from '$lib/platform/files/save-file';
 import { CAPTURES_FILE_TYPE } from '../use-cases/export-captures';
 import type {

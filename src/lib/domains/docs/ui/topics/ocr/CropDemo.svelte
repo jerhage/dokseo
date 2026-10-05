@@ -2,9 +2,9 @@
   import { onDestroy, onMount } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { match } from 'ts-pattern';
-  import Button from '$lib/components/Button.svelte';
-  import MarqueeSelection from '$lib/components/MarqueeSelection.svelte';
-  import type { MarqueeEnd } from '$lib/components/marquee-selection';
+  import Button from '$lib/ui/components/Button.svelte';
+  import MarqueeSelection from '$lib/ui/components/MarqueeSelection.svelte';
+  import type { MarqueeEnd } from '$lib/ui/components/marquee-selection';
   import { MAX_MODEL_INPUT_EDGE } from '$lib/domains/recognition/domain/engine/model-input';
   import { regionsIn, toPageFraction } from '$lib/domains/viewing/domain/placement';
   import { MIN_SELECTION_PX } from '$lib/domains/viewing/domain/selection';

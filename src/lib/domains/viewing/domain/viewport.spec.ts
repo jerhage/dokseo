@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { clampPan } from '$lib/components/pan-zoom';
-import type { Viewport } from '$lib/components/pan-zoom';
+import { clampPan } from '$lib/ui/components/pan-zoom';
+import type { Viewport } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import { FIT_HEIGHT_ZOOM, arrivalViewport, pageFitZoom } from './viewport';
 import type { Framing, ViewportFit } from './viewport';

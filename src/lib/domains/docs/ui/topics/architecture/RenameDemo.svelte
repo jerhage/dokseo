@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { RENAME_ARMS } from './architecture-snippets';
   import { RenameRehearsalView, STORE_MODES } from './rename-demo.svelte';

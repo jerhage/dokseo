@@ -230,7 +230,7 @@ try {
 
 const CHOSEN_FILES: SourceSnippet = {
   label: 'Copying the chosen files before clearing the input',
-  file: 'src/lib/components/Dropzone.svelte',
+  file: 'src/lib/ui/components/Dropzone.svelte',
   code: `function choose(event: Event & { currentTarget: HTMLInputElement }): void {
   const input = event.currentTarget;
   const chosen = input.files === null ? [] : [...input.files];

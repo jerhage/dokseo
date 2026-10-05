@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import Divider from '$lib/components/Divider.svelte';
+  import Divider from '$lib/ui/components/Divider.svelte';
   import PageTitle from '$lib/shared/PageTitle.svelte';
   import AccordionSection from './AccordionSection.svelte';
   import AlertSection from './AlertSection.svelte';

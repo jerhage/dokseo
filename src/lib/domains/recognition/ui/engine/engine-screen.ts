@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { BadgeVariant } from '$lib/components/classes';
+import type { BadgeVariant } from '$lib/ui/components/classes';
 import { megabytes } from '$lib/shared/bytes';
 import { languageName } from '$lib/shared/language';
 import type { ModelLoad } from '../../domain/model/model-load';

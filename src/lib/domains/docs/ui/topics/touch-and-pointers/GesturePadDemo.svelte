@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import type { GestureSample } from '$lib/components/gesture';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import type { GestureSample } from '$lib/ui/components/gesture';
   import { SIDE_ZONE_SHARE, tapZone } from '$lib/shared/page-turn';
   import type { TouchTurns } from '$lib/shared/page-turn';
   import type { GestureReading, SwipeCheck } from '../../../domain/gesture-reading';

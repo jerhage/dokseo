@@ -1,6 +1,6 @@
 <script lang="ts">
-  import StepItem from '$lib/components/StepItem.svelte';
-  import StepList from '$lib/components/StepList.svelte';
+  import StepItem from '$lib/ui/components/StepItem.svelte';
+  import StepList from '$lib/ui/components/StepList.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { VENDORED_PLAN_SECTIONS, vendoredPlanHref } from './vendored-sections';
 </script>

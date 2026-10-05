@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { THEMES, applyAppearance, readAppearance } from './appearance';
 import type { RootAttributes } from './appearance';
 
-const THEME_SHEETS = new URL('../styles/base/themes/', import.meta.url);
+const THEME_SHEETS = new URL('./styles/base/themes/', import.meta.url);
 
 function styledThemes(): readonly string[] {
   const sheets = readdirSync(THEME_SHEETS)

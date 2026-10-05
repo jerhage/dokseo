@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Progress from '$lib/components/Progress.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
   import { isPersisted, storageEstimate } from '$lib/platform/storage/persistence';
   import { quotaShare, spaceFigure } from '../../../domain/storage-figures';
   import DocsDemo from '../../DocsDemo.svelte';

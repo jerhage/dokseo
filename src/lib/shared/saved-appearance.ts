@@ -1,7 +1,7 @@
 import { rememberedString } from '$lib/platform/storage/remembered-string';
 import type { LocateStore } from '$lib/platform/storage/remembered-string';
-import { applyAppearance, pinnedScheme } from './appearance';
-import type { Appearance, RootAttributes } from './appearance';
+import { applyAppearance, pinnedScheme } from '$lib/ui/appearance';
+import type { Appearance, RootAttributes } from '$lib/ui/appearance';
 
 const THEME_KEY = 'reader.theme';
 

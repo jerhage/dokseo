@@ -1,4 +1,4 @@
-import type { Toaster, ToastOptions } from '$lib/components/toaster.svelte';
+import type { Toaster, ToastOptions } from '$lib/ui/components/toaster.svelte';
 import type { Notice, Notify } from './notice';
 
 function noticeToast(notice: Notice): ToastOptions {

@@ -1,4 +1,4 @@
-import { anchorSlug } from '$lib/components/table-of-contents';
+import { anchorSlug } from '$lib/ui/components/table-of-contents';
 import { UI_LIBRARY_SECTIONS } from '../ui-library/sections';
 import { RELEASE_SECTIONS } from '../releases-and-ci/sections';
 import { SECTIONS as SECURITY_SECTIONS } from '../security-headers/sections';

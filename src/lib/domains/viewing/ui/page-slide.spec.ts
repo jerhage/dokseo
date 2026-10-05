@@ -4,9 +4,9 @@ import {
   carouselNeighbours,
   carouselShift,
   carouselStep,
-} from '$lib/components/carousel';
-import type { CarouselMotion, CarouselScene } from '$lib/components/carousel';
-import type { GestureState } from '$lib/components/gesture';
+} from '$lib/ui/components/carousel';
+import type { CarouselMotion, CarouselScene } from '$lib/ui/components/carousel';
+import type { GestureState } from '$lib/ui/components/gesture';
 import { imageIndex } from '$lib/shared/ids';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { PanReach } from '../domain/overscroll';

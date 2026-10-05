@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Slider from '$lib/components/Slider.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Slider from '$lib/ui/components/Slider.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const PAGES = 40;

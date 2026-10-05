@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
   import type { StorageReads } from '../queries/storage-queries';
   import StorageBreakdown from './StorageBreakdown.svelte';
   import StorageData from './StorageData.svelte';

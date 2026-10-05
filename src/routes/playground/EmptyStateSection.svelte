@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 

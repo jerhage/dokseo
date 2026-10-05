@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Progress from '$lib/components/Progress.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
   import { useContainer } from '$lib/context';
   import { deviceName } from '$lib/domains/recognition/domain/engine/recognizer-session';
   import { isStored } from '$lib/domains/recognition/domain/model/model-cache';

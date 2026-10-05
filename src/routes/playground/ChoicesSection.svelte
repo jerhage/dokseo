@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Checkbox from '$lib/components/Checkbox.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Radio from '$lib/components/Radio.svelte';
-  import type { SegmentOption } from '$lib/components/segmented-control';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import SettingsRow from '$lib/components/SettingsRow.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
+  import type { SegmentOption } from '$lib/ui/components/segmented-control';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import SettingsRow from '$lib/ui/components/SettingsRow.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
   type Density = 'Compact' | 'Comfortable';

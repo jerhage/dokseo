@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Input from '$lib/components/Input.svelte';
-  import Modal from '$lib/components/Modal.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Input from '$lib/ui/components/Input.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { readElement } from './access-tree';
 

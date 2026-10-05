@@ -1,4 +1,4 @@
-import { TOUCH_SLOP_PX } from '$lib/components/gesture';
+import { TOUCH_SLOP_PX } from '$lib/ui/components/gesture';
 
 const CLICK_SLOP_PX = 3;
 

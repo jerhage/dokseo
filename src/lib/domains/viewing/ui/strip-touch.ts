@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { GestureIntent, GestureState } from '$lib/components/gesture';
+import type { GestureIntent, GestureState } from '$lib/ui/components/gesture';
 import type { Point } from '../domain/selection';
 
 type StripTouchAction =

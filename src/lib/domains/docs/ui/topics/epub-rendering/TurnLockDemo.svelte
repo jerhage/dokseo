@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import { DEFAULT_READING_SETTINGS } from '$lib/domains/flowing/domain/reading-settings';
   import type { SampleBook } from '../../../domain/sample-epub';
   import DocsDemo from '../../DocsDemo.svelte';

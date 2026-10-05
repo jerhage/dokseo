@@ -1,7 +1,7 @@
 <script lang="ts">
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
-  import Progress from '$lib/components/Progress.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
   import type { StorageAccount } from '../domain/storage-parts';
   import { measuredFigure, originFigure } from './storage-view.svelte';
   import { UNNAMED_KEY, breakdownRows, breakdownScale } from './storage-overview';

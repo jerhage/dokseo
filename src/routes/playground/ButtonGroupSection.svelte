@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import ButtonGroup from '$lib/components/ButtonGroup.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
-  import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
-  import Copy from '$lib/components/icons/Copy.svelte';
-  import Pencil from '$lib/components/icons/Pencil.svelte';
-  import Trash from '$lib/components/icons/Trash.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import ButtonGroup from '$lib/ui/components/ButtonGroup.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import ChevronLeft from '$lib/ui/components/icons/ChevronLeft.svelte';
+  import ChevronRight from '$lib/ui/components/icons/ChevronRight.svelte';
+  import Copy from '$lib/ui/components/icons/Copy.svelte';
+  import Pencil from '$lib/ui/components/icons/Pencil.svelte';
+  import Trash from '$lib/ui/components/icons/Trash.svelte';
   import DemoSection from './DemoSection.svelte';
 
   let page = $state(1);

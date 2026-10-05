@@ -1,17 +1,17 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { match } from 'ts-pattern';
-  import Alert from '$lib/components/Alert.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import type { KeyHint } from '$lib/components/key-hints';
-  import KeyHints from '$lib/components/KeyHints.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import OverflowList from '$lib/components/OverflowList.svelte';
-  import Tag from '$lib/components/Tag.svelte';
-  import Thumbnail from '$lib/components/Thumbnail.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import type { KeyHint } from '$lib/ui/components/key-hints';
+  import KeyHints from '$lib/ui/components/KeyHints.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import OverflowList from '$lib/ui/components/OverflowList.svelte';
+  import Tag from '$lib/ui/components/Tag.svelte';
+  import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
   import { tagsHref } from '$lib/shared/tag-location';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';

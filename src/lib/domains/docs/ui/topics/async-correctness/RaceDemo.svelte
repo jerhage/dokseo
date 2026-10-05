@@ -1,9 +1,9 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Slider from '$lib/components/Slider.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Slider from '$lib/ui/components/Slider.svelte';
   import { RaceSearch, delayedAnswer } from '../../../domain/async-race';
   import type { RaceEvent, RaceRequest, RaceStrategy } from '../../../domain/async-race';
   import DocsDemo from '../../DocsDemo.svelte';

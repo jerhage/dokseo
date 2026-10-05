@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Progress from '$lib/components/Progress.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const RATIOS = ['aspect-portrait', 'aspect-square', 'aspect-video'];

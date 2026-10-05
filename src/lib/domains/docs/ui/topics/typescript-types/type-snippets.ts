@@ -178,8 +178,8 @@ const WRITE_NOTE: SourceSnippet = {
 };
 
 const MARQUEE_END: SourceSnippet = {
-  label: 'src/lib/components/marquee-selection.ts',
-  file: 'src/lib/components/marquee-selection.ts',
+  label: 'src/lib/ui/components/marquee-selection.ts',
+  file: 'src/lib/ui/components/marquee-selection.ts',
   code: `type MarqueeEnd =
   | { readonly kind: 'click' }
   | { readonly kind: 'too-small'; readonly selection: MarqueeRect }
@@ -188,7 +188,7 @@ const MARQUEE_END: SourceSnippet = {
 
 const MARQUEE_CLASSIFIER: SourceSnippet = {
   label: 'The classifier, in components/marquee-selection.ts',
-  file: 'src/lib/components/marquee-selection.ts',
+  file: 'src/lib/ui/components/marquee-selection.ts',
   code: `function marqueeEnd(
   from: MarqueePoint,
   to: MarqueePoint,
@@ -328,8 +328,8 @@ const MOVE_ORDER: SourceSnippet = {
 };
 
 const DOCK_TOKENS: SourceSnippet = {
-  label: 'src/lib/components/dock.ts',
-  file: 'src/lib/components/dock.ts',
+  label: 'src/lib/ui/components/dock.ts',
+  file: 'src/lib/ui/components/dock.ts',
   code: `const DOCK_DETENT_TOKENS = {
   standard: '--layout-sheet-height',
   tall: '--layout-sheet-height-tall',

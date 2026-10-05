@@ -1,6 +1,6 @@
 <script lang="ts">
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import './unicode.css';
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { version } from '$app/environment';
-  import Badge from '$lib/components/Badge.svelte';
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
   import { APP_VERSION } from '$lib/shared/app-version';
   import {
     SHELL_RECHECK_MS,

@@ -1,5 +1,5 @@
-import { COLOR_SCHEMES, THEMES } from '$lib/shared/appearance';
-import type { ColorScheme, Theme } from '$lib/shared/appearance';
+import { COLOR_SCHEMES, THEMES } from '$lib/ui/appearance';
+import type { ColorScheme, Theme } from '$lib/ui/appearance';
 import { SCHEME_LABELS, THEME_LABELS } from '$lib/shared/appearance-labels';
 
 type ThemeOption = { readonly theme: Theme; readonly label: string };

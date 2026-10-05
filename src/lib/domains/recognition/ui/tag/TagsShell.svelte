@@ -1,15 +1,15 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import SelectedShelfIcon from '$lib/components/icons/SelectedShelf.svelte';
-  import TagIcon from '$lib/components/icons/Tag.svelte';
-  import { keyboardScrolling } from '$lib/components/keyboard-scrolling';
-  import Modal from '$lib/components/Modal.svelte';
-  import NavLink from '$lib/components/NavLink.svelte';
-  import SearchField from '$lib/components/SearchField.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import SelectedShelfIcon from '$lib/ui/components/icons/SelectedShelf.svelte';
+  import TagIcon from '$lib/ui/components/icons/Tag.svelte';
+  import { keyboardScrolling } from '$lib/ui/components/keyboard-scrolling';
+  import Modal from '$lib/ui/components/Modal.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
+  import SearchField from '$lib/ui/components/SearchField.svelte';
   import { tagsHref } from '$lib/shared/tag-location';
   import { tagsCrumbs } from './tags-crumbs';
   import type { TagsPlace } from './tags-crumbs';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import type { CascadeEntry } from '../../../domain/cascade';
   import DocsDemo from '../../DocsDemo.svelte';
   import { cascadeFor, readPageStyles } from '../../stylesheet-rules';

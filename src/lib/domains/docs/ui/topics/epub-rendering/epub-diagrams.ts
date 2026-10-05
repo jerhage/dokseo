@@ -1,4 +1,4 @@
-import type { DiagramBox, DiagramEdge, DiagramNode, DiagramTone } from '$lib/components/diagram';
+import type { DiagramBox, DiagramEdge, DiagramNode, DiagramTone } from '$lib/ui/components/diagram';
 
 type EpubDiagram = {
   readonly label: string;

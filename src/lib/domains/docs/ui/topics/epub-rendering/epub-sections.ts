@@ -1,4 +1,4 @@
-import { anchorSlug } from '$lib/components/table-of-contents';
+import { anchorSlug } from '$lib/ui/components/table-of-contents';
 
 const EPUB_SECTIONS = {
   archive: 'What is inside an EPUB',

@@ -1,11 +1,11 @@
 import type { Component } from 'svelte';
-import Database from '$lib/components/icons/Database.svelte';
-import File from '$lib/components/icons/File.svelte';
-import HardDrive from '$lib/components/icons/HardDrive.svelte';
-import type { IconProps } from '$lib/components/icons/icon';
-import Info from '$lib/components/icons/Info.svelte';
-import Palette from '$lib/components/icons/Palette.svelte';
-import ScanText from '$lib/components/icons/ScanText.svelte';
+import Database from '$lib/ui/components/icons/Database.svelte';
+import File from '$lib/ui/components/icons/File.svelte';
+import HardDrive from '$lib/ui/components/icons/HardDrive.svelte';
+import type { IconProps } from '$lib/ui/components/icons/icon';
+import Info from '$lib/ui/components/icons/Info.svelte';
+import Palette from '$lib/ui/components/icons/Palette.svelte';
+import ScanText from '$lib/ui/components/icons/ScanText.svelte';
 
 type SettingsSection = 'engine' | 'storage' | 'data' | 'appearance' | 'library' | 'app';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const SAMPLES = [

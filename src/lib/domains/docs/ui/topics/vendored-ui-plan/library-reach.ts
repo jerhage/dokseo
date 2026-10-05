@@ -9,11 +9,11 @@ type LibraryReach = {
   readonly tallies: readonly ImportTally[];
 };
 
-const LIBRARY_FOLDER = 'src/lib/components';
+const LIBRARY_FOLDER = 'src/lib/ui/components';
 
-const STYLES_FOLDER = 'src/lib/styles';
+const STYLES_FOLDER = 'src/lib/ui/styles';
 
-const FONT_FACES_FILE = 'src/lib/styles/base/fonts.css';
+const FONT_FACES_FILE = 'src/lib/ui/styles/base/fonts.css';
 
 const ABSOLUTE_FONT_URLS = 28;
 
@@ -43,7 +43,7 @@ const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
       { target: 'node:path', kind: 'package', files: 2 },
       { target: 'node:url', kind: 'package', files: 2 },
       { target: './', kind: 'sibling', files: 60 },
-      { target: '../../../', kind: 'parent', files: 1 },
+      { target: '../../../../', kind: 'parent', files: 1 },
       { target: '../styles/', kind: 'parent', files: 1 },
     ],
   },
@@ -57,7 +57,7 @@ const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
       { target: 'node:path', kind: 'package', files: 3 },
       { target: 'node:url', kind: 'package', files: 3 },
       { target: './', kind: 'sibling', files: 2 },
-      { target: '../../', kind: 'parent', files: 4 },
+      { target: '../../../', kind: 'parent', files: 4 },
       { target: '../components/', kind: 'parent', files: 1 },
     ],
   },

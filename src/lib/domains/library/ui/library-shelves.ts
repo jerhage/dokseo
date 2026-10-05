@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import { effectiveDirection } from '$lib/shared/layout-kind';
 import { readingStarted, showsTheEnd } from '$lib/shared/reading-place';
 import { shownTitle } from '$lib/shared/shown-title';
-import type { TabItem } from '$lib/components/tabs';
+import type { TabItem } from '$lib/ui/components/tabs';
 import type { Book, SourceKind } from '../domain/book/book';
 import { bookContents, describeBookContents } from '../domain/book/book-contents';
 import { bookProgress } from '../domain/book/book-progress';

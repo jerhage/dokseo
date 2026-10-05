@@ -1,7 +1,7 @@
 <script lang="ts">
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import {
     NARROWING_SAMPLES,

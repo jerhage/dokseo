@@ -1,12 +1,12 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import MarqueeSelection from '$lib/components/MarqueeSelection.svelte';
+  import MarqueeSelection from '$lib/ui/components/MarqueeSelection.svelte';
   import type {
     MarqueeEnd,
     MarqueeRect,
     MarqueeRefusal,
     MarqueeStroke,
-  } from '$lib/components/marquee-selection';
+  } from '$lib/ui/components/marquee-selection';
   import { beginTrace } from '$lib/platform/trace/pipeline-trace';
   import type { Trace } from '$lib/platform/trace/pipeline-trace';
   import type { Arrangement } from '$lib/shared/arrangement';

@@ -1,4 +1,4 @@
-import type { DiagramBox } from '$lib/components/diagram';
+import type { DiagramBox } from '$lib/ui/components/diagram';
 import type { DiagramSpec } from '../storage/storage-diagrams';
 
 const STEP_ROWS = [0, 80, 160, 240, 320] as const;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { FileItemData, FileItemState } from '$lib/components/file-item';
+import type { FileItemData, FileItemState } from '$lib/ui/components/file-item';
 import { SimulatedUploads, advanceUpload, uploadPace, withUploadState } from './simulated-upload';
 import type { Cancel, RandomSource, UploadClock } from './simulated-upload';
 

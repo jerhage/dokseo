@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { StatusVariant } from '$lib/components/classes';
+import type { StatusVariant } from '$lib/ui/components/classes';
 import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { CapturesImportCounts } from '../use-cases/apply-captures-import';
 import type { CapturesImportSummary } from '../use-cases/captures-import-plan';

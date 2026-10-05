@@ -2,11 +2,11 @@
   import { QueryClientProvider } from '@tanstack/svelte-query';
   import { dev } from '$app/environment';
   import favicon from '$lib/assets/favicon.svg';
-  import Button from '$lib/components/Button.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
-  import ToastRegion from '$lib/components/ToastRegion.svelte';
-  import { setToaster } from '$lib/components/toast-context';
-  import { createToaster } from '$lib/components/toaster.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import EmptyState from '$lib/ui/components/EmptyState.svelte';
+  import ToastRegion from '$lib/ui/components/ToastRegion.svelte';
+  import { setToaster } from '$lib/ui/components/toast-context';
+  import { createToaster } from '$lib/ui/components/toaster.svelte';
   import { buildContainer } from '$lib/container';
   import { provideContainer } from '$lib/context';
   import { createQueryClient } from '$lib/query-client';
@@ -17,7 +17,7 @@
   } from '$lib/shared/unexpected-failure';
   import { createShellUpdates, watchShellUpdates } from '$lib/shared/shell-updates';
   import { provideShellUpdates } from '$lib/shared/shell-updates-context';
-  import '$lib/styles/index.css';
+  import '$lib/ui/styles/index.css';
 
   let { children } = $props();
 

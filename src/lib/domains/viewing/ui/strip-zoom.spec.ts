@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_ZOOM, ZOOM_STEP } from '$lib/components/pan-zoom';
+import { MAX_ZOOM, ZOOM_STEP } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ReadingPosition } from '../domain/reading-position';

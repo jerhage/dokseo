@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
-import { pixelLength } from '$lib/components/css-length';
-import type { StyleSource } from '$lib/components/css-length';
+import { pixelLength } from '$lib/ui/components/css-length';
+import type { StyleSource } from '$lib/ui/components/css-length';
 import type { Anchor } from '$lib/shared/anchor';
 import type { MoveCause } from './flow-move';
 import type { PassageArrival } from './flow-quote';

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import type { UnreadableBook } from '../domain/book/stored-book';

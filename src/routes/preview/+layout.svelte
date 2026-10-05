@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import NavLink from '$lib/components/NavLink.svelte';
+  import NavLink from '$lib/ui/components/NavLink.svelte';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
   import PageTitle from '$lib/shared/PageTitle.svelte';
   import { activeComparison, isShowing, variantHref } from './comparison';

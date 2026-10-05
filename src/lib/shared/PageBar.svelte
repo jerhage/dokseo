@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import IconButton from '$lib/components/IconButton.svelte';
-  import Slider from '$lib/components/Slider.svelte';
-  import type { IconProps } from '$lib/components/icons/icon';
+  import IconButton from '$lib/ui/components/IconButton.svelte';
+  import Slider from '$lib/ui/components/Slider.svelte';
+  import type { IconProps } from '$lib/ui/components/icons/icon';
   import type { ReadingDirection } from './layout-kind';
   import { scrubStep, turnsSide } from './page-bar';
 

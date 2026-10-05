@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import Stepper from '$lib/components/Stepper.svelte';
-  import type { Step } from '$lib/components/stepper';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Stepper from '$lib/ui/components/Stepper.svelte';
+  import type { Step } from '$lib/ui/components/stepper';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const WORDS = ['kraken', 'lantern', 'harbour', 'compass', 'anchor'];

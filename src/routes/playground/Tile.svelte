@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import type { CardVariant } from '$lib/components/classes';
+  import Card from '$lib/ui/components/Card.svelte';
+  import type { CardVariant } from '$lib/ui/components/classes';
   import type { ClassValue } from 'svelte/elements';
 
   type Props = {

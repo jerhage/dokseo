@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Textarea from '$lib/components/Textarea.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Textarea from '$lib/ui/components/Textarea.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { PRESET_OPTIONS, presetText, readSummary, strictRead } from './strict-read';
 

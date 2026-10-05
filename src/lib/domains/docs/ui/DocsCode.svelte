@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import { SYSTEM_CLOCK } from '$lib/components/clock';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import { SYSTEM_CLOCK } from '$lib/ui/components/clock';
   import { CopyFeedback } from './copy-feedback.svelte';
 
   type Props = {

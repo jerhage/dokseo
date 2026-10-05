@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import DocsDemo from '../../DocsDemo.svelte';
   import { CREATE_VERSIONS } from './tag-doubles';
   import type { DoubleKind } from './tag-doubles';

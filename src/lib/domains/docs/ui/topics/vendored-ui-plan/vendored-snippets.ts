@@ -9,16 +9,16 @@ const NO_APP_RULE: SourceSnippet = {
 const NO_APP_RULE_PATHS: SourceSnippet = {
   label: 'What the rule refuses',
   file: '.dependency-cruiser.cjs',
-  code: `from: { path: '^src/lib/components/' },
+  code: `from: { path: '^src/lib/ui/' },
 to: {
-  path: '^src/lib/',
-  pathNot: ['^src/lib/components/', '^src/lib/assets/'],
+  path: ['^src/', '(^|/)node_modules/'],
+  pathNot: ['^src/lib/ui/', '(^|/)node_modules/(svelte|ts-pattern|vitest)/'],
 },`,
 };
 
 const FONT_FACE: SourceSnippet = {
-  label: 'src/lib/styles/base/fonts.css, the first font',
-  file: 'src/lib/styles/base/fonts.css',
+  label: 'src/lib/ui/styles/base/fonts.css, the first font',
+  file: 'src/lib/ui/styles/base/fonts.css',
   code: `@font-face {
   font-family: 'Bricolage Grotesque';
   src: url('/fonts/bricolage-grotesque.woff2') format('woff2');`,
@@ -27,7 +27,7 @@ const FONT_FACE: SourceSnippet = {
 const STYLESHEET_IMPORT: SourceSnippet = {
   label: 'src/routes/+layout.svelte imports the stylesheet once',
   file: 'src/routes/+layout.svelte',
-  code: `import '$lib/styles/index.css';`,
+  code: `import '$lib/ui/styles/index.css';`,
 };
 
 const LAYER_ORDER: SourceSnippet = {
@@ -37,8 +37,8 @@ const LAYER_ORDER: SourceSnippet = {
 };
 
 const APPEARANCE: SourceSnippet = {
-  label: 'src/lib/shared/appearance.ts, the part that moves into the library',
-  file: 'src/lib/shared/appearance.ts',
+  label: 'src/lib/ui/appearance.ts, the part that moved into the library',
+  file: 'src/lib/ui/appearance.ts',
   code: `type Theme = 'base' | 'ember' | 'mono' | 'forge' | 'crayon' | 'moss' | 'petal' | 'yorha';
 
 type ColorScheme = 'automatic' | 'light' | 'dark';
@@ -64,7 +64,7 @@ const THEMES: readonly Theme[] = [
 
 const APPLY_APPEARANCE: SourceSnippet = {
   label: 'applyAppearance sets the two attributes',
-  file: 'src/lib/shared/appearance.ts',
+  file: 'src/lib/ui/appearance.ts',
   code: `function applyAppearance(root: RootAttributes, appearance: Appearance): void {
   root.setAttribute(THEME_ATTRIBUTE, appearance.theme);
   const pinned = pinnedScheme(appearance.colorScheme);
@@ -120,8 +120,8 @@ const SCRIPT_HASH: SourceSnippet = {
 };
 
 const SCHEME_RULES: SourceSnippet = {
-  label: 'src/lib/styles/base/scheme.css, the scheme half of the contract',
-  file: 'src/lib/styles/base/scheme.css',
+  label: 'src/lib/ui/styles/base/scheme.css, the scheme half of the contract',
+  file: 'src/lib/ui/styles/base/scheme.css',
   code: `:root {
   color-scheme: light dark;
 }
@@ -135,13 +135,13 @@ const SCHEME_RULES: SourceSnippet = {
 
 const THEME_FILE: SourceSnippet = {
   label: 'A theme file starts with its selector',
-  file: 'src/lib/styles/base/themes/ember.css',
+  file: 'src/lib/ui/styles/base/themes/ember.css',
   code: `:root[data-theme='ember'] {`,
 };
 
 const THEME_IMPORTS: SourceSnippet = {
-  label: 'src/lib/styles/index.css imports each theme',
-  file: 'src/lib/styles/index.css',
+  label: 'src/lib/ui/styles/index.css imports each theme',
+  file: 'src/lib/ui/styles/index.css',
   code: `@import 'base/themes/base.css' layer(base);
 @import 'base/themes/ember.css' layer(base);`,
 };

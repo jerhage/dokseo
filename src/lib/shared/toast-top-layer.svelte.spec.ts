@@ -1,12 +1,12 @@
 import { afterEach, expect, test } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { page } from 'vitest/browser';
-import '$lib/styles/index.css';
-import Modal from '$lib/components/Modal.svelte';
-import { TOASTER } from '$lib/components/toast-context';
-import ToastRegion from '$lib/components/ToastRegion.svelte';
-import { createToaster } from '$lib/components/toaster.svelte';
-import type { Toaster } from '$lib/components/toaster.svelte';
+import '$lib/ui/styles/index.css';
+import Modal from '$lib/ui/components/Modal.svelte';
+import { TOASTER } from '$lib/ui/components/toast-context';
+import ToastRegion from '$lib/ui/components/ToastRegion.svelte';
+import { createToaster } from '$lib/ui/components/toaster.svelte';
+import type { Toaster } from '$lib/ui/components/toaster.svelte';
 
 afterEach(() => {
   cleanup();

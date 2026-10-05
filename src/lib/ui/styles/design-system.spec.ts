@@ -6,7 +6,7 @@ import { NARROW_SCREEN_QUERY } from '../components/breakpoints';
 import { TAG_COLOURS } from '../components/classes';
 
 const STYLES = new URL('./', import.meta.url);
-const SOURCE = new URL('../../', import.meta.url);
+const SOURCE = new URL('../../../', import.meta.url);
 
 const CONTRACT_TOKENS = [
   '--color-bg',
@@ -287,9 +287,9 @@ const GRIDS_WITHOUT_COLUMNS: Readonly<Record<string, string>> = {
 const BREAKPOINT_SCALE = ['24rem', '26rem', '34rem', '40rem', '44rem'];
 
 const NARROW_QUERIES: Readonly<Record<string, number>> = {
-  'lib/styles/components/modal/modal.css': 2,
-  'lib/styles/components/toast.css': 1,
-  'lib/styles/utilities/layout.css': 4,
+  'lib/ui/styles/components/modal/modal.css': 2,
+  'lib/ui/styles/components/toast.css': 1,
+  'lib/ui/styles/utilities/layout.css': 4,
 };
 
 const RUNTIME_INPUTS = [
@@ -631,7 +631,7 @@ describe('the design system stylesheets', () => {
 
   it('keeps every --ds- name inside base and tokens, apart from the docs that quote them', () => {
     const offenders = filesUnder(SOURCE, ['.css', '.svelte', '.html'])
-      .filter((path) => !/^lib\/styles\/(base|tokens)\//u.test(path))
+      .filter((path) => !/^lib\/ui\/styles\/(base|tokens)\//u.test(path))
       .filter((path) => !path.startsWith('lib/domains/docs/'))
       .filter((path) => read(new URL(path, SOURCE)).includes('--ds-'));
 

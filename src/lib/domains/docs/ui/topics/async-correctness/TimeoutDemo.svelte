@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import { WaitLedger, waitForEvent } from '../../../domain/event-wait';
   import type { WaitEnd, WaitHoldings, WaitStrategy } from '../../../domain/event-wait';
   import DocsDemo from '../../DocsDemo.svelte';

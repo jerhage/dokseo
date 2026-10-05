@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const SOURCE = new URL('../../', import.meta.url);
+const SOURCE = new URL('../../../', import.meta.url);
 const FEATURE_FOLDERS = ['lib/domains/', 'lib/shared/', 'routes/'];
 const DOCS_FOLDER = 'lib/domains/docs/';
 const TEXT_EXTENSIONS = ['.css', '.svelte', '.ts', '.js', '.html'];

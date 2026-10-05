@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Modal from '$lib/components/Modal.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Modal from '$lib/ui/components/Modal.svelte';
   import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
   import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
   import BookCapturesExportButton from '$lib/shared/BookCapturesExportButton.svelte';

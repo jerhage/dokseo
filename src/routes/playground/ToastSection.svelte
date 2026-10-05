@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import Toast from '$lib/components/Toast.svelte';
-  import ToastClearance from '$lib/components/ToastClearance.svelte';
-  import ToastRegion from '$lib/components/ToastRegion.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import type { StatusVariant } from '$lib/components/classes';
-  import { getToaster } from '$lib/components/toast-context';
-  import { createToaster } from '$lib/components/toaster.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import Toast from '$lib/ui/components/Toast.svelte';
+  import ToastClearance from '$lib/ui/components/ToastClearance.svelte';
+  import ToastRegion from '$lib/ui/components/ToastRegion.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import type { StatusVariant } from '$lib/ui/components/classes';
+  import { getToaster } from '$lib/ui/components/toast-context';
+  import { createToaster } from '$lib/ui/components/toaster.svelte';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly StatusVariant[] = ['info', 'success', 'warning', 'danger'];

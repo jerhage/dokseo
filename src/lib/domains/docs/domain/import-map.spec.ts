@@ -84,7 +84,7 @@ describe('the import map', () => {
   });
 
   it('refuses the base components everything above them', () => {
-    expect(importVerdict('src/lib/components/Button.svelte', 'src/lib/shared/ids.ts')).toEqual({
+    expect(importVerdict('src/lib/ui/components/Button.svelte', 'src/lib/shared/ids.ts')).toEqual({
       kind: 'forbidden',
       rules: ['base-components-know-no-app'],
     });

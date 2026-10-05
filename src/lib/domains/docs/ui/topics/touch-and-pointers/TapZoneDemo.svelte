@@ -1,6 +1,6 @@
 <script lang="ts">
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
   import type { ReadingDirection } from '$lib/shared/layout-kind';
   import type { TouchTurns } from '$lib/shared/page-turn';
   import { SAMPLE_PAGE_SIZE } from '../../../domain/ocr-sample';

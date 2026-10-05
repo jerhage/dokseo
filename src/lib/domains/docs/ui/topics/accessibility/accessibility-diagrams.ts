@@ -1,4 +1,4 @@
-import type { DiagramBox, DiagramTone } from '$lib/components/diagram';
+import type { DiagramBox, DiagramTone } from '$lib/ui/components/diagram';
 import type { DiagramSpec } from '../storage/storage-diagrams';
 
 function box(

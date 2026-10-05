@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { match } from 'ts-pattern';
-  import Button from '$lib/components/Button.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import MarqueeSelection from '$lib/components/MarqueeSelection.svelte';
-  import Toggle from '$lib/components/Toggle.svelte';
-  import { TOUCH_SLOP_PX } from '$lib/components/gesture';
-  import type { GestureInput, GestureSample } from '$lib/components/gesture';
-  import { GestureFeed } from '$lib/components/gesture-feed';
-  import type { MarqueeEnd, MarqueeRect } from '$lib/components/marquee-selection';
+  import Button from '$lib/ui/components/Button.svelte';
+  import Card from '$lib/ui/components/Card.svelte';
+  import MarqueeSelection from '$lib/ui/components/MarqueeSelection.svelte';
+  import Toggle from '$lib/ui/components/Toggle.svelte';
+  import { TOUCH_SLOP_PX } from '$lib/ui/components/gesture';
+  import type { GestureInput, GestureSample } from '$lib/ui/components/gesture';
+  import { GestureFeed } from '$lib/ui/components/gesture-feed';
+  import type { MarqueeEnd, MarqueeRect } from '$lib/ui/components/marquee-selection';
   import DemoSection from './DemoSection.svelte';
   import './marquee-selection-section.css';
 

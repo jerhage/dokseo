@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
-  import CommandItem from '$lib/components/CommandItem.svelte';
-  import ListGroup from '$lib/components/ListGroup.svelte';
-  import ListRow from '$lib/components/ListRow.svelte';
-  import Progress from '$lib/components/Progress.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import CommandItem from '$lib/ui/components/CommandItem.svelte';
+  import ListGroup from '$lib/ui/components/ListGroup.svelte';
+  import ListRow from '$lib/ui/components/ListRow.svelte';
+  import Progress from '$lib/ui/components/Progress.svelte';
   import DemoSection from './DemoSection.svelte';
 </script>
 

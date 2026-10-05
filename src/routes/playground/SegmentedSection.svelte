@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Card from '$lib/components/Card.svelte';
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte';
-  import type { SegmentedVariant } from '$lib/components/segmented-control';
+  import Card from '$lib/ui/components/Card.svelte';
+  import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
+  import type { SegmentedVariant } from '$lib/ui/components/segmented-control';
   import DemoSection from './DemoSection.svelte';
 
   const VARIANTS: readonly SegmentedVariant[] = ['default', 'ghost', 'outline', 'track'];

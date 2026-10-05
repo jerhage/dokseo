@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useQueryClient } from '@tanstack/svelte-query';
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
   import { writeQuery } from '$lib/shared/write-query.svelte';
   import type { UnreadableCapture } from '../../domain/capture/capture';
   import { removeUnreadableCapturesMutation } from '../../queries/capture-queries';

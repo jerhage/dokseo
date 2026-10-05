@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TAG_COLOURS as DESIGN_SYSTEM_COLOURS } from '$lib/components/classes';
+import { TAG_COLOURS as DESIGN_SYSTEM_COLOURS } from '$lib/ui/components/classes';
 import { TAG_COLOURS } from '../../domain/tag/tag-colour';
 
 describe('the tag colours', () => {

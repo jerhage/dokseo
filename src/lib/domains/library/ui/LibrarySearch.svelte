@@ -1,8 +1,8 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
   import type { ClassValue } from 'svelte/elements';
-  import Button from '$lib/components/Button.svelte';
-  import SearchField from '$lib/components/SearchField.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import SearchField from '$lib/ui/components/SearchField.svelte';
   import { filterKey, isSearching } from './library-overview';
 
   type Props = {

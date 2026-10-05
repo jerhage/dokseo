@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Diagram from '$lib/components/Diagram.svelte';
-  import Figure from '$lib/components/Figure.svelte';
-  import Table from '$lib/components/Table.svelte';
-  import TableBody from '$lib/components/TableBody.svelte';
-  import TableCell from '$lib/components/TableCell.svelte';
-  import TableHeader from '$lib/components/TableHeader.svelte';
-  import TableHeaderCell from '$lib/components/TableHeaderCell.svelte';
-  import TableRow from '$lib/components/TableRow.svelte';
+  import Diagram from '$lib/ui/components/Diagram.svelte';
+  import Figure from '$lib/ui/components/Figure.svelte';
+  import Table from '$lib/ui/components/Table.svelte';
+  import TableBody from '$lib/ui/components/TableBody.svelte';
+  import TableCell from '$lib/ui/components/TableCell.svelte';
+  import TableHeader from '$lib/ui/components/TableHeader.svelte';
+  import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
+  import TableRow from '$lib/ui/components/TableRow.svelte';
   import { PATH_RULES, UNPORTED_RULES } from '../../../domain/import-rules';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
@@ -86,7 +86,7 @@
     No rule orders those two against each other; both may import the other, as long as no file cycle forms.
   </p>
   <p>
-    <code>src/lib/components/</code>, the base UI library, sits below <code>shared/</code>: it
+    <code>src/lib/ui/components/</code>, the base UI library, sits below <code>shared/</code>: it
     imports nothing in <code>src/lib</code> but its siblings and <code>assets/</code>. The UI
     library page explains why, in <a href={UI_DIRECTION_HREF}>Dependency direction</a>. The worker
     entry points live in <code>src/workers/</code>, outside <code>src/lib</code>.

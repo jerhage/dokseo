@@ -1,4 +1,4 @@
-import type { DiagramBox, DiagramEdge, DiagramNode, DiagramTone } from '$lib/components/diagram';
+import type { DiagramBox, DiagramEdge, DiagramNode, DiagramTone } from '$lib/ui/components/diagram';
 import { match } from 'ts-pattern';
 import { areaReach } from '../../../domain/import-map';
 import type { AreaReach, AreaVerdicts, MapArea } from '../../../domain/import-map';

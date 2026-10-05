@@ -1,4 +1,9 @@
-import type { DiagramBox, DiagramEdge, DiagramGroup, DiagramNode } from '$lib/components/diagram';
+import type {
+  DiagramBox,
+  DiagramEdge,
+  DiagramGroup,
+  DiagramNode,
+} from '$lib/ui/components/diagram';
 
 type Diagram = {
   readonly label: string;

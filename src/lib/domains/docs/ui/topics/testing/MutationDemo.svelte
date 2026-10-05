@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Badge from '$lib/components/Badge.svelte';
-  import CodeBlock from '$lib/components/CodeBlock.svelte';
-  import Field from '$lib/components/Field.svelte';
-  import Select from '$lib/components/Select.svelte';
+  import Badge from '$lib/ui/components/Badge.svelte';
+  import CodeBlock from '$lib/ui/components/CodeBlock.svelte';
+  import Field from '$lib/ui/components/Field.svelte';
+  import Select from '$lib/ui/components/Select.svelte';
   import { MUTANTS, checkText } from '../../../domain/tap-zone-mutants';
   import DocsDemo from '../../DocsDemo.svelte';
   import { MutationBench } from './testing-demos.svelte';

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Checkbox from '$lib/components/Checkbox.svelte';
-  import Fieldset from '$lib/components/Fieldset.svelte';
-  import Radio from '$lib/components/Radio.svelte';
+  import Checkbox from '$lib/ui/components/Checkbox.svelte';
+  import Fieldset from '$lib/ui/components/Fieldset.svelte';
+  import Radio from '$lib/ui/components/Radio.svelte';
   import { EDGE_CLICKS_LABEL } from './edge-clicks-setting';
   import type { TouchTurns } from './page-turn';
   import { TOUCH_TURNS_CHOICES, TOUCH_TURNS_LEGEND } from './touch-turns';

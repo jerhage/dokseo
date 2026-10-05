@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import type { StatusVariant } from '$lib/components/classes';
+  import Alert from '$lib/ui/components/Alert.svelte';
+  import Button from '$lib/ui/components/Button.svelte';
+  import type { StatusVariant } from '$lib/ui/components/classes';
   import DemoSection from './DemoSection.svelte';
 
   type Dismissible = StatusVariant | 'banner';
