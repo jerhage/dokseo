@@ -1,0 +1,69 @@
+<script lang="ts">
+  import Badge from '../components/Badge.svelte';
+  import Button from '../components/Button.svelte';
+  import DropdownLabel from '../components/DropdownLabel.svelte';
+  import NavLink from '../components/NavLink.svelte';
+  import Skeleton from '../components/Skeleton.svelte';
+  import DemoSection from './DemoSection.svelte';
+
+  const THREADS = [
+    'Q3 roadmap review',
+    'Design tokens v2',
+    'Onboarding flow',
+    'Pricing experiment',
+  ];
+
+  let thread = $state('Q3 roadmap review');
+</script>
+
+<DemoSection
+  id="l-split"
+  title="Split and split view"
+  classes={[
+    'layout-split',
+    'layout-split-pane',
+    'layout-split-left',
+    'layout-split-right',
+    'layout-split-view',
+  ]}
+>
+  <div class="surface bordered rounded-container p-5">
+    <div class="layout-split">
+      <div class="layout-split-pane layout-split-right">
+        <span class="card-eyebrow">.layout-split-right, first in the DOM</span>
+        <h3>Content reads first on mobile</h3>
+        <p class="text-sm text-muted">
+          Placement classes let the visual order differ from the source order; below 40rem the panes
+          stack in DOM order.
+        </p>
+      </div>
+      <div class="layout-split-pane layout-split-left">
+        <Skeleton shape="block" />
+      </div>
+    </div>
+  </div>
+  <div class="layout-split-view">
+    <div class="layout-split-pane">
+      <DropdownLabel>Inbox</DropdownLabel>
+      {#each THREADS as name (name)}
+        <NavLink href="#l-split" current={thread === name} onclick={() => (thread = name)}
+          >{name}</NavLink
+        >
+      {/each}
+    </div>
+    <div class="layout-split-pane">
+      <div class="row items-center justify-between wrap">
+        <h3>{thread}</h3>
+        <Badge variant="info">Thread</Badge>
+      </div>
+      <p class="text-sm text-muted">
+        List and detail scroll on their own. Below 40rem of container width the detail drops beneath
+        the list.
+      </p>
+      <div class="row gap-2">
+        <Button size="sm">Reply</Button>
+        <Button size="sm" variant="ghost">Archive</Button>
+      </div>
+    </div>
+  </div>
+</DemoSection>
