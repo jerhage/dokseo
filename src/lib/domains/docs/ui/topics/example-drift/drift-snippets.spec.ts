@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { unindented } from '../../../domain/quote-drift';
 import { DECODE_LOOP } from '../ocr/ocr-snippets';
+import { checkSnippets } from '../snippet-checks';
 import { DRIFT_SECTIONS } from './drift-sections';
-import { DRIFT_SNIPPETS } from './drift-snippets';
+import * as quotes from './drift-snippets';
 import {
   DECODE_LOOP_BEFORE,
   FILE_BEFORE,
@@ -23,16 +24,7 @@ function thrownMessage(run: () => unknown): string {
   return '';
 }
 
-describe('the example drift page snippets', () => {
-  it.each(DRIFT_SNIPPETS.map((snippet) => [snippet.label, snippet] as const))(
-    'quotes %s exactly as the source file has it',
-    (_label, snippet) => {
-      const source = readFileSync(snippet.file, 'utf8');
-
-      expect(unindented(source)).toContain(unindented(snippet.code));
-    },
-  );
-});
+checkSnippets('the example drift page snippets', quotes.DRIFT_SNIPPETS, quotes);
 
 describe('the recorded failures', () => {
   it('rebuilds the quote from before the rename by changing one line of today’s quote', () => {

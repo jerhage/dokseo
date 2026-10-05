@@ -1,35 +1,14 @@
-import { readFileSync } from 'node:fs';
 import { compileModule } from 'svelte/compiler';
 import { describe, expect, it } from 'vitest';
-import {
-  CLIENT_EFFECT,
-  CLIENT_OUTPUT,
-  RUNE_MODULE,
-  SERVER_OUTPUT,
-  TESTING_SNIPPETS,
-} from './testing-snippets';
-
-function unindented(code: string): string {
-  return code
-    .split('\n')
-    .map((line) => line.trimStart())
-    .join('\n');
-}
+import { checkSnippets } from '../snippet-checks';
+import * as quotes from './testing-snippets';
+import { CLIENT_EFFECT, CLIENT_OUTPUT, RUNE_MODULE, SERVER_OUTPUT } from './testing-snippets';
 
 function compiled(generate: 'server' | 'client'): string {
   return compileModule(RUNE_MODULE, { generate, filename: 'plan.svelte.js' }).js.code;
 }
 
-describe('the testing page snippets', () => {
-  it.each(TESTING_SNIPPETS.map((snippet) => [snippet.label, snippet] as const))(
-    'quotes %s exactly as the source file has it',
-    (_label, snippet) => {
-      const source = readFileSync(snippet.file, 'utf8');
-
-      expect(unindented(source)).toContain(unindented(snippet.code));
-    },
-  );
-});
+checkSnippets('the testing page snippets', quotes.TESTING_SNIPPETS, quotes);
 
 describe('the compiled rune module', () => {
   it('drops the effect and the proxy from the server build', () => {

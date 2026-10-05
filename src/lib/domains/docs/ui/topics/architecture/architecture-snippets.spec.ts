@@ -1,30 +1,16 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { checkSnippets } from '../snippet-checks';
+import * as quotes from './architecture-snippets';
 import {
   ADDED_VARIANT,
-  ARCHITECTURE_SNIPPETS,
   RENAME_RESULT,
   STORAGE_LINE,
   WIDENED_RESULT,
 } from './architecture-snippets';
 
-function unindented(code: string): string {
-  return code
-    .split('\n')
-    .map((line) => line.trimStart())
-    .join('\n');
-}
+checkSnippets('the architecture page snippets', quotes.ARCHITECTURE_SNIPPETS, quotes);
 
-describe('the architecture page snippets', () => {
-  it.each(ARCHITECTURE_SNIPPETS.map((snippet) => [snippet.label, snippet] as const))(
-    'quotes %s exactly as the source file has it',
-    (_label, snippet) => {
-      const source = readFileSync(snippet.file, 'utf8');
-
-      expect(unindented(source)).toContain(unindented(snippet.code));
-    },
-  );
-
+describe('the widened union', () => {
   it('widens the real union by one variant above the storage line', () => {
     expect(RENAME_RESULT.code).toContain(STORAGE_LINE);
     expect(WIDENED_RESULT).toBe(
