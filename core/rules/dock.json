@@ -1,0 +1,100 @@
+{
+  "component": "dock",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "asks the app to toggle when the dock toggle is clicked",
+      "fixture": "dock/side",
+      "when": [
+        {
+          "event": "click",
+          "target": ".dock-toggle"
+        }
+      ],
+      "emits": [
+        {
+          "callback": "ontoggle"
+        }
+      ],
+      "source": "Dock.svelte",
+      "certain": true,
+      "note": "The dock does not change its own placement: the app passes the next placement (side and rail on a wide screen, sheet and peek on a narrow one), whose markup the fixtures show. The same holds for the expand and collapse button of the sheet and the peek."
+    },
+    {
+      "name": "grows the sheet to its tall height on ArrowUp on the handle",
+      "fixture": "dock/sheet",
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowUp",
+          "target": ".dock-handle"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dock-panel",
+          "style": {
+            "--dock-sheet-height": "var(--layout-sheet-height-tall)"
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Dock.svelte and dock-sheet.svelte.ts (DockSheet), dock.ts (key, dockDetentAfterKey)",
+      "certain": true,
+      "note": "ArrowDown goes back to var(--layout-sheet-height). Both keys are always prevented on the handle, even when the height is already at that end."
+    },
+    {
+      "name": "switches between the two heights on a keyboard click of the handle",
+      "fixture": "dock/sheet",
+      "when": [
+        {
+          "event": "click",
+          "target": ".dock-handle",
+          "detail": 0
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dock-panel",
+          "style": {
+            "--dock-sheet-height": "var(--layout-sheet-height-tall)"
+          }
+        }
+      ],
+      "source": "Dock.svelte and dock-sheet.svelte.ts (DockSheet), dock.ts (activate)",
+      "certain": true,
+      "note": "A pointer click switches too, unless it ends a drag that moved 12px or more."
+    },
+    {
+      "name": "follows a drag of the handle and settles at the nearest height or closes",
+      "fixture": "dock/sheet",
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".dock-handle"
+        },
+        {
+          "event": "pointermove",
+          "target": ".dock-handle",
+          "dy": -60
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dock-panel",
+          "classes": {
+            "is-dragging": true
+          },
+          "style": {
+            "--dock-sheet-height": "set"
+          }
+        }
+      ],
+      "source": "Dock.svelte and dock-sheet.svelte.ts (DockSheet), dock.ts (press, follow, release, dockSheetSettle)",
+      "certain": false,
+      "note": "While dragging, the height is written in px, clamped between 0 and the tall height. On release after moving at least 12px it settles at the nearest of closed, standard and tall, or, after a flick, at the next one in the flick direction; settling at closed calls ontoggle. The two .dock-probe elements measure the token heights."
+    }
+  ]
+}

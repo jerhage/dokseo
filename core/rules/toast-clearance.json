@@ -1,0 +1,29 @@
+{
+  "component": "toast-clearance",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "reserves its block-end space with the toaster while it is mounted",
+      "fixture": "toast-region/bottom",
+      "options": {
+        "blockEnd": 48
+      },
+      "when": [
+        {
+          "event": "mount"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast-region",
+          "style": {
+            "--toast-offset-block-end": "48px"
+          }
+        }
+      ],
+      "source": "ToastClearance.svelte and toaster.svelte.ts (reserveBlockEnd)",
+      "certain": true,
+      "note": "ToastClearance renders nothing (its fixture is empty); its effect shows on the toast region, so this rule starts from the region fixture. On unmount the reservation is released and the offset falls back to the largest remaining one, or 0px."
+    }
+  ]
+}

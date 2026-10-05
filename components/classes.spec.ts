@@ -1,7 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { filesUnder } from '../library-files';
 import {
   ALERT_VARIANTS,
   AVATAR_SHAPES,
@@ -28,11 +27,11 @@ import {
   TABLE_SIZES,
   TABS_VARIANTS,
   TAG_COLOUR_CLASSES,
-  TAG_COLOURS,
   TOAST_REGION_PLACEMENTS,
   TOAST_VARIANTS,
 } from './classes';
 import type { ClassList } from './classes';
+import { TAG_COLOURS } from '../core/tag-colours.js';
 import { fileItemView } from './file-item';
 import type { FileItemData } from './file-item';
 
@@ -43,7 +42,7 @@ const FILE_ITEMS: readonly FileItemData[] = [
   { id: 'error', name: 'a.pdf', size: 1, state: 'error', message: 'Failed' },
 ];
 
-const STYLES = new URL('../styles/', import.meta.url);
+const STYLES = new URL('../core/styles/', import.meta.url);
 const COMPONENTS = new URL('./', import.meta.url);
 
 const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
@@ -77,11 +76,7 @@ const TABLES: Readonly<Record<string, Readonly<Record<string, ClassList>>>> = {
 };
 
 function cssFiles(folder: URL): readonly string[] {
-  return readdirSync(folder, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(fileURLToPath(folder), join(entry.parentPath, entry.name)))
-    .filter((path) => path.endsWith('.css'))
-    .map((path) => readFileSync(new URL(path, folder), 'utf8'));
+  return filesUnder(folder, ['.css']).map((path) => readFileSync(new URL(path, folder), 'utf8'));
 }
 
 function definedClasses(): ReadonlySet<string> {

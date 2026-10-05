@@ -1,0 +1,110 @@
+/*
+  The same statement is inlined in the page's head, ahead of any stylesheet.
+  Layer order is fixed by the first time the browser sees each name, and a
+  component's own stylesheet (a domain file in the features layer) can load
+  before this file. Declaring the order in the page first means no import
+  order can move a layer. Repeating it here changes nothing and keeps this
+  file readable on its own.
+*/
+@layer open-props, reset, base, tokens, components, features, utilities, overrides;
+
+@import 'reset.css' layer(reset);
+
+@import 'base/fonts.css' layer(base);
+@import 'base/primitives.css' layer(base);
+@import 'base/scheme.css' layer(base);
+@import 'base/themes/base.css' layer(base);
+@import 'base/themes/ember.css' layer(base);
+@import 'base/themes/mono.css' layer(base);
+@import 'base/themes/forge.css' layer(base);
+@import 'base/themes/crayon.css' layer(base);
+@import 'base/themes/moss.css' layer(base);
+@import 'base/themes/petal.css' layer(base);
+@import 'base/themes/yorha.css' layer(base);
+@import 'base/elements.css' layer(base);
+
+@import 'tokens/colors.css' layer(tokens);
+@import 'tokens/typography.css' layer(tokens);
+@import 'tokens/spacing.css' layer(tokens);
+@import 'tokens/radius.css' layer(tokens);
+@import 'tokens/borders.css' layer(tokens);
+@import 'tokens/layout.css' layer(tokens);
+@import 'tokens/sizes.css' layer(tokens);
+@import 'tokens/motion.css' layer(tokens);
+@import 'tokens/elevation.css' layer(tokens);
+@import 'tokens/icons.css' layer(tokens);
+@import 'tokens/opacity.css' layer(tokens);
+
+@import 'components/icon.css' layer(components);
+@import 'components/btn.css' layer(components);
+@import 'components/btn-group.css' layer(components);
+@import 'components/badge.css' layer(components);
+@import 'components/tag.css' layer(components);
+@import 'components/segmented.css' layer(components);
+@import 'components/forms/field.css' layer(components);
+@import 'components/forms/fieldset.css' layer(components);
+@import 'components/forms/settings-row.css' layer(components);
+@import 'components/forms/control.css' layer(components);
+@import 'components/forms/input-group.css' layer(components);
+@import 'components/forms/search-field.css' layer(components);
+@import 'components/forms/slider.css' layer(components);
+@import 'components/forms/select.css' layer(components);
+@import 'components/forms/textarea.css' layer(components);
+@import 'components/forms/checkbox.css' layer(components);
+@import 'components/forms/radio.css' layer(components);
+@import 'components/forms/toggle.css' layer(components);
+@import 'components/forms/dropzone.css' layer(components);
+@import 'components/card.css' layer(components);
+@import 'components/close.css' layer(components);
+@import 'components/alert.css' layer(components);
+@import 'components/tabs.css' layer(components);
+@import 'components/accordion.css' layer(components);
+@import 'components/table.css' layer(components);
+@import 'components/modal/modal.css' layer(components);
+@import 'components/modal/modal-transitions.css' layer(components);
+@import 'components/toast.css' layer(components);
+@import 'components/dropdown.css' layer(components);
+@import 'components/popover.css' layer(components);
+@import 'components/command.css' layer(components);
+@import 'components/nav/nav-link.css' layer(components);
+@import 'components/nav/breadcrumb.css' layer(components);
+@import 'components/nav/pagination.css' layer(components);
+@import 'components/avatar.css' layer(components);
+@import 'components/progress.css' layer(components);
+@import 'components/file-list.css' layer(components);
+@import 'components/skeleton.css' layer(components);
+@import 'components/divider.css' layer(components);
+@import 'components/codeblock.css' layer(components);
+@import 'components/figure.css' layer(components);
+@import 'components/table-of-contents.css' layer(components);
+@import 'components/diagram.css' layer(components);
+@import 'components/step-list.css' layer(components);
+@import 'components/key-hints.css' layer(components);
+@import 'components/empty-state.css' layer(components);
+@import 'components/chrome-bar.css' layer(components);
+@import 'components/stat.css' layer(components);
+@import 'components/list-group.css' layer(components);
+@import 'components/thumbnail.css' layer(components);
+@import 'components/carousel.css' layer(components);
+@import 'components/dock.css' layer(components);
+@import 'components/zoom-surface.css' layer(components);
+@import 'components/region-box.css' layer(components);
+@import 'components/marquee-selection.css' layer(components);
+@import 'components/breakpoint-probe.css' layer(components);
+@import 'components/page-header.css' layer(components);
+@import 'components/stepper.css' layer(components);
+@import 'components/overflow-list.css' layer(components);
+
+@import 'utilities/layout.css' layer(utilities);
+@import 'utilities/layout-patterns.css' layer(utilities);
+@import 'utilities/grid.css' layer(utilities);
+@import 'utilities/flex.css' layer(utilities);
+@import 'utilities/spacing.css' layer(utilities);
+@import 'utilities/surface.css' layer(utilities);
+@import 'utilities/media.css' layer(utilities);
+@import 'utilities/state.css' layer(utilities);
+@import 'utilities/shadow.css' layer(utilities);
+@import 'utilities/text.css' layer(utilities);
+@import 'utilities/animation.css' layer(utilities);
+
+@import 'overrides/overrides.css' layer(overrides);

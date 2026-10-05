@@ -1,4 +1,4 @@
-import { TAG_COLOURS } from '../components/classes';
+import { TAG_COLOURS } from '../core/tag-colours.js';
 
 type TokenGroup = {
   readonly title: string;

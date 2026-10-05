@@ -1,0 +1,71 @@
+{
+  "component": "toast-region",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "shows itself in the top layer while it is the toaster's region for its placement",
+      "fixture": "toast-region/bottom",
+      "when": [
+        {
+          "event": "mount"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast-region",
+          "open": true
+        }
+      ],
+      "source": "ToastRegion.svelte (register, showWhileActive) and toaster.svelte.ts (regionFor)",
+      "certain": true,
+      "note": "Each region registers with its toaster on mount; the last registered region with a placement receives that placement's toasts and is shown with showPopover(); the others stay hidden and empty. The toasts render inside it."
+    },
+    {
+      "name": "lifts itself above an element that enters the top layer after it",
+      "fixture": "toast-region/bottom",
+      "given": [
+        {
+          "selector": ".toast-region",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "toggle",
+          "target": "document"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast-region",
+          "open": true
+        }
+      ],
+      "source": "ToastRegion.svelte (raise) and top-layer.ts (entersTopLayer)",
+      "certain": true,
+      "note": "On a captured toggle event whose target is another element and whose newState is \"open\", the active region calls hidePopover() and then showPopover(), so it is the last element in the top layer."
+    },
+    {
+      "name": "offsets itself above the space reserved at the block end",
+      "fixture": "toast-region/bottom",
+      "when": [
+        {
+          "event": "call",
+          "method": "reserveBlockEnd",
+          "value": 48
+        }
+      ],
+      "then": [
+        {
+          "selector": ".toast-region",
+          "style": {
+            "--toast-offset-block-end": "48px"
+          }
+        }
+      ],
+      "source": "ToastRegion.svelte (style:--toast-offset-block-end) and toaster.svelte.ts (clearance)",
+      "certain": true,
+      "note": "The offset is the largest reservation in px, 0px with none. With clearance turned off the property is not written."
+    }
+  ]
+}

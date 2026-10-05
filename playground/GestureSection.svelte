@@ -71,7 +71,7 @@
     <code>gestureStep</code> reads touch pointers into taps, double taps, long presses, pans,
     swipes, pinches and select drags. A still press becomes a long press at {LONG_PRESS_MS} ms; a finger
     that strays {TOUCH_SLOP_PX} px is no longer a tap; the middle third waits {DOUBLE_TAP_MS} ms for a
-    double tap. Touch only: a mouse and a pen are ignored, as in the readers.
+    double tap. Touch only: a mouse and a pen are ignored.
   </p>
   <div class="row wrap gap-4">
     <Toggle bind:checked={pannable}>Pannable</Toggle>

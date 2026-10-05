@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
   import { TAG_COLOUR_CLASSES } from './classes';
-  import type { TagColour } from './classes';
+  import type { TagColour } from '../core/tag-colours.js';
   import X from './icons/X.svelte';
 
   type Form =

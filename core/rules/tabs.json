@@ -1,0 +1,242 @@
+{
+  "component": "tabs",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "shows a tab when it is clicked",
+      "fixture": "tabs/underline",
+      "when": [
+        {
+          "event": "click",
+          "target": ".tab:nth-child(2)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tab:nth-child(1)",
+          "attributes": {
+            "aria-selected": "false",
+            "tabindex": "-1"
+          },
+          "classes": {
+            "is-active": false
+          }
+        },
+        {
+          "selector": ".tab:nth-child(2)",
+          "attributes": {
+            "aria-selected": "true",
+            "tabindex": "0"
+          },
+          "classes": {
+            "is-active": true
+          }
+        },
+        {
+          "selector": ".tabs > .tab-panel:nth-child(2)",
+          "attributes": {
+            "hidden": ""
+          }
+        },
+        {
+          "selector": ".tabs > .tab-panel:nth-child(3)",
+          "attributes": {
+            "hidden": null
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onselectedchange",
+          "with": "notes"
+        }
+      ],
+      "source": "Tabs.svelte (select, keydown), roving.ts (tabMove, landOn), tabs.ts (shownTab)",
+      "certain": true,
+      "note": "Only the shown panel holds its content; the others are empty and hidden."
+    },
+    {
+      "name": "shows and focuses the next tab on ArrowRight in a left-to-right layout",
+      "fixture": "tabs/underline",
+      "given": [
+        {
+          "selector": ".tab:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowRight",
+          "target": ".tab:nth-child(1)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tab:nth-child(1)",
+          "attributes": {
+            "aria-selected": "false",
+            "tabindex": "-1"
+          },
+          "classes": {
+            "is-active": false
+          }
+        },
+        {
+          "selector": ".tab:nth-child(2)",
+          "attributes": {
+            "aria-selected": "true",
+            "tabindex": "0"
+          },
+          "classes": {
+            "is-active": true
+          },
+          "focused": true
+        },
+        {
+          "selector": ".tabs > .tab-panel:nth-child(3)",
+          "attributes": {
+            "hidden": null
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onselectedchange",
+          "with": "notes"
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Tabs.svelte (select, keydown), roving.ts (tabMove, landOn), tabs.ts (shownTab)",
+      "certain": true,
+      "note": "ArrowLeft goes to the previous tab. In a right-to-left layout (computed direction of .tab-list) the two arrows swap."
+    },
+    {
+      "name": "wraps from the last tab to the first",
+      "fixture": "tabs/underline",
+      "given": [
+        {
+          "selector": ".tab:nth-child(3)",
+          "attributes": {
+            "aria-selected": "true",
+            "tabindex": "0"
+          },
+          "classes": {
+            "is-active": true
+          }
+        },
+        {
+          "selector": ".tab:nth-child(3)",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowRight",
+          "target": ".tab:nth-child(3)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tab:nth-child(1)",
+          "attributes": {
+            "aria-selected": "true",
+            "tabindex": "0"
+          },
+          "classes": {
+            "is-active": true
+          },
+          "focused": true
+        },
+        {
+          "selector": ".tab:nth-child(3)",
+          "attributes": {
+            "aria-selected": "false",
+            "tabindex": "-1"
+          },
+          "classes": {
+            "is-active": false
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Tabs.svelte (select, keydown), roving.ts (tabMove, landOn), tabs.ts (shownTab)",
+      "certain": true
+    },
+    {
+      "name": "goes to the first and the last tab on Home and End",
+      "fixture": "tabs/underline",
+      "given": [
+        {
+          "selector": ".tab:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "End",
+          "target": ".tab:nth-child(1)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tab:nth-child(3)",
+          "attributes": {
+            "aria-selected": "true",
+            "tabindex": "0"
+          },
+          "classes": {
+            "is-active": true
+          },
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Tabs.svelte (select, keydown), roving.ts (tabMove, landOn), tabs.ts (shownTab)",
+      "certain": true
+    },
+    {
+      "name": "skips a disabled tab",
+      "fixture": "tabs/disabled-tab",
+      "given": [
+        {
+          "selector": ".tab:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowRight",
+          "target": ".tab:nth-child(1)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tab:nth-child(3)",
+          "attributes": {
+            "aria-selected": "true",
+            "tabindex": "0"
+          },
+          "classes": {
+            "is-active": true
+          },
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Tabs.svelte (select, keydown), roving.ts (tabMove, landOn), tabs.ts (shownTab)",
+      "certain": true
+    }
+  ]
+}

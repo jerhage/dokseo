@@ -1,0 +1,18 @@
+{
+  "name": "kandan-ui",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "The framework-agnostic core of Kandan UI: stylesheets, fonts, icons, the appearance script, and the markup contract its framework versions are tested against.",
+  "scripts": {
+    "test": "node --test",
+    "check": "tsc --noEmit -p jsconfig.json"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^6.0.3"
+  }
+}

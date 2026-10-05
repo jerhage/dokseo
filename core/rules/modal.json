@@ -1,0 +1,256 @@
+{
+  "component": "modal",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "opens as a modal dialog and focuses the close button when asked to open",
+      "fixture": "modal/default",
+      "when": [
+        {
+          "event": "set",
+          "prop": "open",
+          "value": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true,
+          "attributes": {
+            "open": ""
+          }
+        },
+        {
+          "selector": ".modal-close",
+          "focused": true
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep)",
+      "certain": true,
+      "note": "Opens with showModal(). Focus goes to the first [autofocus] element inside the dialog when there is one, otherwise to .modal-close. It also sets the valueless attribute data-page-scrollbar on the dialog when the page shows a vertical scrollbar, and removes it when not."
+    },
+    {
+      "name": "starts leaving on Escape instead of closing at once",
+      "fixture": "modal/default",
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".modal-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep)",
+      "certain": true,
+      "note": "Escape fires cancel on the dialog; the cancel is prevented, so the dialog stays open while its closing animation runs."
+    },
+    {
+      "name": "closes once the closing animations have finished",
+      "fixture": "modal/default",
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "animationsend",
+          "target": ".modal-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "open": false,
+          "attributes": {
+            "open": null
+          },
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onclose"
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep), animations.ts (animationsSettled)",
+      "certain": true,
+      "note": "Waits for every animation on the dialog and the panel to settle, then calls dialog.close(); the close event reports the dialog closed."
+    },
+    {
+      "name": "starts leaving when the close button is clicked",
+      "fixture": "modal/default",
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".modal-close"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep)",
+      "certain": true
+    },
+    {
+      "name": "starts leaving when a press starts and ends on the backdrop",
+      "fixture": "modal/default",
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".modal-backdrop"
+        },
+        {
+          "event": "click",
+          "target": ".modal-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep)",
+      "certain": true,
+      "note": "Both events must have the dialog element itself as their target, which is the backdrop area outside .modal."
+    },
+    {
+      "name": "stays open when a press starts inside the panel and ends on the backdrop",
+      "fixture": "modal/default",
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".modal-body"
+        },
+        {
+          "event": "click",
+          "target": ".modal-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep)",
+      "certain": true
+    },
+    {
+      "name": "stops leaving and stays open when asked to open again while leaving",
+      "fixture": "modal/default",
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "set",
+          "prop": "open",
+          "value": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep)",
+      "certain": true
+    },
+    {
+      "name": "wraps Tab from the last tab stop to the first when focus wrapping is on",
+      "fixture": "modal/footer",
+      "options": {
+        "wrapFocus": true
+      },
+      "given": [
+        {
+          "selector": ".modal-backdrop",
+          "open": true
+        },
+        {
+          "selector": ".modal-footer .btn",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "Tab",
+          "target": ".modal-footer .btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".modal-close",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Modal.svelte (send, focusFirst, cancel, closed, keydown, pointerdown, click) and modal-phase.ts (modalStep), focus-wrap.ts (tabStops, wrappedStop)",
+      "certain": true,
+      "note": "Shift+Tab on the first tab stop moves to the last. Without wrapFocus the browser handles Tab. Tab stops are visible, enabled, focusable elements with a tabindex of 0 or more; an unchecked radio is skipped."
+    }
+  ]
+}

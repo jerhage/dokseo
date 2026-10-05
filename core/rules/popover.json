@@ -1,0 +1,78 @@
+{
+  "component": "popover",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "opens the popover when its trigger is clicked and places it beside the trigger",
+      "fixture": "popover/default",
+      "when": [
+        {
+          "event": "click",
+          "target": "[popovertarget]"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".popover",
+          "open": true,
+          "style": {
+            "--popover-top": "set",
+            "--popover-left": "set"
+          }
+        }
+      ],
+      "source": "Popover.svelte (toggled, place) and overlay-placement.ts",
+      "certain": true,
+      "note": "popovertarget opens it natively; on the toggle event to open, a script writes --popover-top and --popover-left in px from the trigger rectangle, the viewport and the sheet size, aligned to the start, and then follows scroll and resize. \"set\" means the property holds a pixel value."
+    },
+    {
+      "name": "closes on Escape or a click outside, as an auto popover",
+      "fixture": "popover/default",
+      "given": [
+        {
+          "selector": ".popover",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".popover"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".popover",
+          "open": false
+        }
+      ],
+      "source": "popover=\"auto\" light dismiss in the browser",
+      "certain": true
+    },
+    {
+      "name": "closes when the window loses focus",
+      "fixture": "popover/default",
+      "given": [
+        {
+          "selector": ".popover",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "blur",
+          "target": "window"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".popover",
+          "open": false
+        }
+      ],
+      "source": "Popover.svelte (left)",
+      "certain": true
+    }
+  ]
+}

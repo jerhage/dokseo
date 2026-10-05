@@ -6,7 +6,7 @@
   import Slider from '../components/Slider.svelte';
   import { CAROUSEL_REST, carouselAround } from '../components/carousel';
   import type { CarouselMotion, CarouselSide, CarouselSlide } from '../components/carousel';
-  import type { TagColour } from '../components/classes';
+  import type { TagColour } from '../core/tag-colours.js';
   import DemoSection from './DemoSection.svelte';
 
   const COLOURS: readonly TagColour[] = ['clay', 'sage', 'sky', 'plum', 'copper'];
