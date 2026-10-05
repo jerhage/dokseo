@@ -221,7 +221,7 @@ module.exports = {
 
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '^(\\.svelte-kit|build)/' },
+    exclude: { path: ['^(\\.svelte-kit|build)/', '^src/lib/ui/vitest\\.config\\.ts$'] },
 
     tsConfig: { fileName: 'tsconfig.depcruise.json' },
     tsPreCompilationDeps: true,
