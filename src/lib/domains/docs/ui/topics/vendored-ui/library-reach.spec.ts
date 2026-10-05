@@ -44,7 +44,7 @@ describe('the recorded reach of the UI library', () => {
   });
 
   it('matches what the stylesheet specs import and read today', () => {
-    const specs = filesUnder(STYLES_FOLDER).filter((path) => path.endsWith('.spec.ts'));
+    const specs = filesUnder(STYLES_FOLDER).filter((path) => path.endsWith('.test.js'));
 
     expect(reachOf(specs)).toEqual(LIBRARY_REACH.styleSpecs);
   });

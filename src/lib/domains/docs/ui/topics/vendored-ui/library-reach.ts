@@ -11,9 +11,9 @@ type LibraryReach = {
 
 const LIBRARY_FOLDER = 'src/lib/ui/components';
 
-const STYLES_FOLDER = 'src/lib/ui/styles';
+const STYLES_FOLDER = 'src/lib/ui/core/styles';
 
-const FONT_FACES_FILE = 'src/lib/ui/styles/base/fonts.css';
+const FONT_FACES_FILE = 'src/lib/ui/core/styles/base/fonts.css';
 
 const ABSOLUTE_FONT_URLS = 0;
 
@@ -21,9 +21,9 @@ const RELATIVE_FONT_URLS = 28;
 
 const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
   source: {
-    files: 166,
+    files: 164,
     aliased: 0,
-    above: 0,
+    above: 4,
     tallies: [
       { target: 'svelte/elements', kind: 'package', files: 67 },
       { target: 'svelte', kind: 'package', files: 37 },
@@ -31,12 +31,13 @@ const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
       { target: 'svelte/attachments', kind: 'package', files: 4 },
       { target: 'svelte/reactivity', kind: 'package', files: 1 },
       { target: './', kind: 'sibling', files: 110 },
+      { target: '../core/', kind: 'parent', files: 4 },
     ],
   },
   specs: {
     files: 60,
     aliased: 0,
-    above: 1,
+    above: 2,
     tallies: [
       { target: 'vitest', kind: 'package', files: 60 },
       { target: 'svelte/server', kind: 'package', files: 24 },
@@ -44,19 +45,22 @@ const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
       { target: 'node:fs', kind: 'package', files: 2 },
       { target: './', kind: 'sibling', files: 60 },
       { target: '../', kind: 'parent', files: 1 },
-      { target: '../styles/', kind: 'parent', files: 1 },
+      { target: '../../core/icons/', kind: 'parent', files: 1 },
+      { target: '../../scripts/', kind: 'parent', files: 1 },
+      { target: '../core/', kind: 'parent', files: 1 },
+      { target: '../core/styles/', kind: 'parent', files: 1 },
     ],
   },
   styleSpecs: {
-    files: 3,
+    files: 2,
     aliased: 0,
-    above: 3,
+    above: 2,
     tallies: [
-      { target: 'node:fs', kind: 'package', files: 3 },
-      { target: 'vitest', kind: 'package', files: 3 },
-      { target: './', kind: 'sibling', files: 2 },
-      { target: '../', kind: 'parent', files: 3 },
-      { target: '../components/', kind: 'parent', files: 1 },
+      { target: 'node:assert/strict', kind: 'package', files: 2 },
+      { target: 'node:fs', kind: 'package', files: 2 },
+      { target: 'node:test', kind: 'package', files: 2 },
+      { target: './', kind: 'sibling', files: 1 },
+      { target: '../', kind: 'parent', files: 2 },
     ],
   },
 };

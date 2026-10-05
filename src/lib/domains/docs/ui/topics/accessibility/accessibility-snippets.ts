@@ -142,8 +142,8 @@ const ICON_BUTTON_FACE: SourceSnippet = {
 };
 
 const VISUALLY_HIDDEN: SourceSnippet = {
-  label: 'src/lib/ui/styles/utilities/text.css',
-  file: 'src/lib/ui/styles/utilities/text.css',
+  label: 'src/lib/ui/core/styles/utilities/text.css',
+  file: 'src/lib/ui/core/styles/utilities/text.css',
   code: `.visually-hidden {
   position: absolute;
   inline-size: 1px;
@@ -245,8 +245,8 @@ const CAPTURE_STATUS: SourceSnippet = {
 };
 
 const REDUCED_MOTION_CSS: SourceSnippet = {
-  label: 'The start of the block in src/lib/ui/styles/overrides/overrides.css',
-  file: 'src/lib/ui/styles/overrides/overrides.css',
+  label: 'The start of the block in src/lib/ui/core/styles/overrides/overrides.css',
+  file: 'src/lib/ui/core/styles/overrides/overrides.css',
   code: `@media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -18,8 +18,8 @@ const ORDER_STATEMENT: SourceSnippet = {
 };
 
 const IMPORTS_FIRST: SourceSnippet = {
-  label: 'src/lib/ui/styles/index.css, its first imports',
-  file: 'src/lib/ui/styles/index.css',
+  label: 'src/lib/ui/core/styles/index.css, its first imports',
+  file: 'src/lib/ui/core/styles/index.css',
   code: `@import 'reset.css' layer(reset);
 
 @import 'base/fonts.css' layer(base);
@@ -29,8 +29,8 @@ const IMPORTS_FIRST: SourceSnippet = {
 };
 
 const IMPORTS_MIDDLE: SourceSnippet = {
-  label: 'src/lib/ui/styles/index.css, where the tokens end and the components start',
-  file: 'src/lib/ui/styles/index.css',
+  label: 'src/lib/ui/core/styles/index.css, where the tokens end and the components start',
+  file: 'src/lib/ui/core/styles/index.css',
   code: `@import 'tokens/opacity.css' layer(tokens);
 
 @import 'components/icon.css' layer(components);
@@ -38,8 +38,8 @@ const IMPORTS_MIDDLE: SourceSnippet = {
 };
 
 const IMPORTS_LAST: SourceSnippet = {
-  label: 'src/lib/ui/styles/index.css, its last imports',
-  file: 'src/lib/ui/styles/index.css',
+  label: 'src/lib/ui/core/styles/index.css, its last imports',
+  file: 'src/lib/ui/core/styles/index.css',
   code: `@import 'utilities/text.css' layer(utilities);
 @import 'utilities/animation.css' layer(utilities);
 
@@ -47,14 +47,14 @@ const IMPORTS_LAST: SourceSnippet = {
 };
 
 const BASE_PALETTE: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/themes/base.css, a palette color in its first :root rule',
-  file: 'src/lib/ui/styles/base/themes/base.css',
+  label: 'src/lib/ui/core/styles/base/themes/base.css, a palette color in its first :root rule',
+  file: 'src/lib/ui/core/styles/base/themes/base.css',
   code: `--ds-spruce-500: light-dark(oklch(0.52 0.1 195), oklch(0.74 0.11 195));`,
 };
 
 const BASE_ROLES: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/themes/base.css, the start of its second rule',
-  file: 'src/lib/ui/styles/base/themes/base.css',
+  label: 'src/lib/ui/core/styles/base/themes/base.css, the start of its second rule',
+  file: 'src/lib/ui/core/styles/base/themes/base.css',
   code: `:root,
 :root[data-theme='base'] {
   --ds-bg: var(--ds-slate-25);
@@ -68,14 +68,14 @@ const BASE_ROLES: SourceSnippet = {
 };
 
 const EMBER_PALETTE: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/themes/ember.css, a palette color in its first rule',
-  file: 'src/lib/ui/styles/base/themes/ember.css',
+  label: 'src/lib/ui/core/styles/base/themes/ember.css, a palette color in its first rule',
+  file: 'src/lib/ui/core/styles/base/themes/ember.css',
   code: `--ds-copper-500: light-dark(oklch(0.6 0.16 40), oklch(0.72 0.15 45));`,
 };
 
 const EMBER_ROLES: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/themes/ember.css, the start of its second rule',
-  file: 'src/lib/ui/styles/base/themes/ember.css',
+  label: 'src/lib/ui/core/styles/base/themes/ember.css, the start of its second rule',
+  file: 'src/lib/ui/core/styles/base/themes/ember.css',
   code: `:root[data-theme='ember'] {
   --ds-bg: light-dark(oklch(0.975 0.01 78), oklch(0.17 0.011 50));
   --ds-bg-raised: var(--ds-sand-50);
@@ -88,26 +88,26 @@ const EMBER_ROLES: SourceSnippet = {
 };
 
 const SEMANTIC_COLOR: SourceSnippet = {
-  label: 'src/lib/ui/styles/tokens/colors.css, one line',
-  file: 'src/lib/ui/styles/tokens/colors.css',
+  label: 'src/lib/ui/core/styles/tokens/colors.css, one line',
+  file: 'src/lib/ui/core/styles/tokens/colors.css',
   code: `--color-primary: var(--ds-primary);`,
 };
 
 const SEMANTIC_SPACE: SourceSnippet = {
-  label: 'src/lib/ui/styles/tokens/spacing.css, one line',
-  file: 'src/lib/ui/styles/tokens/spacing.css',
+  label: 'src/lib/ui/core/styles/tokens/spacing.css, one line',
+  file: 'src/lib/ui/core/styles/tokens/spacing.css',
   code: `--sp-4: var(--ds-space-4);`,
 };
 
 const SEMANTIC_RADIUS: SourceSnippet = {
-  label: 'src/lib/ui/styles/tokens/radius.css, one line',
-  file: 'src/lib/ui/styles/tokens/radius.css',
+  label: 'src/lib/ui/core/styles/tokens/radius.css, one line',
+  file: 'src/lib/ui/core/styles/tokens/radius.css',
   code: `--radius-control: var(--ds-radius-control);`,
 };
 
 const BUTTON_TONE: SourceSnippet = {
-  label: 'src/lib/ui/styles/components/btn.css, the start of .btn-primary',
-  file: 'src/lib/ui/styles/components/btn.css',
+  label: 'src/lib/ui/core/styles/components/btn.css, the start of .btn-primary',
+  file: 'src/lib/ui/core/styles/components/btn.css',
   code: `.btn-primary {
   --_btn-tone-fg: var(--color-text-on-primary);
   --_btn-tone-bg: var(--color-primary);
@@ -115,8 +115,8 @@ const BUTTON_TONE: SourceSnippet = {
 };
 
 const REGISTERED: SourceSnippet = {
-  label: 'src/lib/ui/styles/tokens/spacing.css, the registration',
-  file: 'src/lib/ui/styles/tokens/spacing.css',
+  label: 'src/lib/ui/core/styles/tokens/spacing.css, the registration',
+  file: 'src/lib/ui/core/styles/tokens/spacing.css',
   code: `@property --carousel-gap {
   syntax: '<length>';
   inherits: true;
@@ -125,8 +125,8 @@ const REGISTERED: SourceSnippet = {
 };
 
 const REGISTERED_VALUE: SourceSnippet = {
-  label: 'src/lib/ui/styles/tokens/spacing.css, the value, in the :root rule',
-  file: 'src/lib/ui/styles/tokens/spacing.css',
+  label: 'src/lib/ui/core/styles/tokens/spacing.css, the value, in the :root rule',
+  file: 'src/lib/ui/core/styles/tokens/spacing.css',
   code: `--carousel-gap: var(--ds-space-4);`,
 };
 
@@ -187,8 +187,8 @@ const FEATURE: SourceSnippet = {
 };
 
 const SCHEME: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/scheme.css, excerpt',
-  file: 'src/lib/ui/styles/base/scheme.css',
+  label: 'src/lib/ui/core/styles/base/scheme.css, excerpt',
+  file: 'src/lib/ui/core/styles/base/scheme.css',
   code: `:root {
   color-scheme: light dark;
 }
@@ -201,8 +201,8 @@ const SCHEME: SourceSnippet = {
 };
 
 const SCHEME_UTILITIES: SourceSnippet = {
-  label: 'src/lib/ui/styles/utilities/surface.css, excerpt',
-  file: 'src/lib/ui/styles/utilities/surface.css',
+  label: 'src/lib/ui/core/styles/utilities/surface.css, excerpt',
+  file: 'src/lib/ui/core/styles/utilities/surface.css',
   code: `.scheme-light {
   color-scheme: light;
   color: var(--color-text);
@@ -230,8 +230,8 @@ const specimen = mount(ThemeSpecimen, { target: inner.body });`,
 };
 
 const SHELL: SourceSnippet = {
-  label: 'src/lib/ui/styles/utilities/layout.css, the start of .layout-app-shell',
-  file: 'src/lib/ui/styles/utilities/layout.css',
+  label: 'src/lib/ui/core/styles/utilities/layout.css, the start of .layout-app-shell',
+  file: 'src/lib/ui/core/styles/utilities/layout.css',
   code: `.layout-app-shell {
   container: app-shell / inline-size;
   display: grid;
@@ -239,8 +239,8 @@ const SHELL: SourceSnippet = {
 };
 
 const SHELL_NARROW: SourceSnippet = {
-  label: 'src/lib/ui/styles/utilities/layout.css, the start of the narrow query',
-  file: 'src/lib/ui/styles/utilities/layout.css',
+  label: 'src/lib/ui/core/styles/utilities/layout.css, the start of the narrow query',
+  file: 'src/lib/ui/core/styles/utilities/layout.css',
   code: `@container app-shell (max-width: 48rem) {
   .layout-app-shell-nav {
     grid-column: 1 / -1;

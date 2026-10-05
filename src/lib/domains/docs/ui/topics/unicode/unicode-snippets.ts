@@ -137,8 +137,8 @@ const OCR_TEXT: SourceSnippet = {
 };
 
 const LANG_FONTS: SourceSnippet = {
-  label: 'styles/base/elements.css',
-  file: 'src/lib/ui/styles/base/elements.css',
+  label: 'ui/core/styles/base/elements.css',
+  file: 'src/lib/ui/core/styles/base/elements.css',
   code: `:where([lang]:lang(ja)) {
   --font-body: var(--font-ja);
   --font-display: var(--font-ja);

@@ -1,13 +1,21 @@
 import type { SourceSnippet } from '../ocr/ocr-snippets';
 
 const THEME_NAMES: SourceSnippet = {
-  label: 'src/lib/ui/appearance.ts, the themes and the two attributes',
-  file: 'src/lib/ui/appearance.ts',
-  code: `const THEMES = ['base', 'petal', 'yorha', 'crayon', 'ember', 'mono', 'forge', 'moss'] as const;
+  label: 'src/lib/ui/core/appearance.js, the themes and the two attributes',
+  file: 'src/lib/ui/core/appearance.js',
+  code: `const THEMES = /** @type {const} */ ([
+  'base',
+  'petal',
+  'yorha',
+  'crayon',
+  'ember',
+  'mono',
+  'forge',
+  'moss',
+]);
 
-type Theme = (typeof THEMES)[number];
-
-const COLOR_SCHEMES: readonly ColorScheme[] = ['automatic', 'light', 'dark'];
+/** @type {readonly ColorScheme[]} */
+const COLOR_SCHEMES = ['automatic', 'light', 'dark'];
 
 const THEME_ATTRIBUTE = 'data-theme';
 
@@ -15,21 +23,29 @@ const SCHEME_ATTRIBUTE = 'data-color-scheme';`,
 };
 
 const PINNED_SCHEME: SourceSnippet = {
-  label: 'The one ts-pattern call in appearance.ts',
-  file: 'src/lib/ui/appearance.ts',
-  code: `function pinnedScheme(scheme: ColorScheme): 'light' | 'dark' | undefined {
-  return match(scheme)
-    .with('automatic', () => undefined)
-    .with('light', () => 'light' as const)
-    .with('dark', () => 'dark' as const)
-    .exhaustive();
+  label: 'pinnedScheme in appearance.js, an object lookup where match was',
+  file: 'src/lib/ui/core/appearance.js',
+  code: `/** @type {Readonly<Record<ColorScheme, 'light' | 'dark' | undefined>>} */
+const PINNED_SCHEMES = { automatic: undefined, light: 'light', dark: 'dark' };
+
+/**
+ * @param {ColorScheme} scheme
+ * @returns {'light' | 'dark' | undefined}
+ */
+function pinnedScheme(scheme) {
+  return PINNED_SCHEMES[scheme];
 }`,
 };
 
 const APPLY_APPEARANCE: SourceSnippet = {
   label: 'applyAppearance writes the two attributes on any element',
-  file: 'src/lib/ui/appearance.ts',
-  code: `function applyAppearance(root: RootAttributes, appearance: Appearance): void {
+  file: 'src/lib/ui/core/appearance.js',
+  code: `/**
+ * @param {RootAttributes} root
+ * @param {Appearance} appearance
+ * @returns {void}
+ */
+function applyAppearance(root, appearance) {
   root.setAttribute(THEME_ATTRIBUTE, appearance.theme);
   const pinned = pinnedScheme(appearance.colorScheme);
   if (pinned === undefined) root.removeAttribute(SCHEME_ATTRIBUTE);
@@ -38,16 +54,17 @@ const APPLY_APPEARANCE: SourceSnippet = {
 };
 
 const THEME_BOOT_IMPORTS: SourceSnippet = {
-  label: 'src/lib/ui/theme-boot.ts imports only appearance.ts',
-  file: 'src/lib/ui/theme-boot.ts',
+  label: 'src/lib/ui/core/theme-boot.js imports only appearance.js',
+  file: 'src/lib/ui/core/theme-boot.js',
   code: `import {
   COLOR_SCHEMES,
   SCHEME_ATTRIBUTE,
   THEMES,
   THEME_ATTRIBUTE,
   pinnedScheme,
-} from './appearance';
-import type { Theme } from './appearance';`,
+} from './appearance.js';
+
+/** @typedef {import('./appearance.js').Theme} Theme */`,
 };
 
 const CHECK_ICON: SourceSnippet = {
@@ -125,8 +142,8 @@ End: 'last',`,
 };
 
 const LAYER_IMPORTS: SourceSnippet = {
-  label: 'src/lib/ui/styles/index.css, the first imports',
-  file: 'src/lib/ui/styles/index.css',
+  label: 'src/lib/ui/core/styles/index.css, the first imports',
+  file: 'src/lib/ui/core/styles/index.css',
   code: `@import 'reset.css' layer(reset);
 
 @import 'base/fonts.css' layer(base);
@@ -134,17 +151,17 @@ const LAYER_IMPORTS: SourceSnippet = {
 };
 
 const FONT_URL: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/fonts.css names a font relative to itself',
-  file: 'src/lib/ui/styles/base/fonts.css',
+  label: 'src/lib/ui/core/styles/base/fonts.css names a font relative to itself',
+  file: 'src/lib/ui/core/styles/base/fonts.css',
   code: `src: url('../../fonts/bricolage-grotesque.woff2') format('woff2');`,
 };
 
 const DESIGN_SPEC_IMPORTS: SourceSnippet = {
-  label: 'src/lib/ui/styles/design-system.spec.ts, its imports',
-  file: 'src/lib/ui/styles/design-system.spec.ts',
-  code: `import { NARROW_SCREEN_QUERY } from '../components/breakpoints';
-import { TAG_COLOURS } from '../components/classes';
-import { filesUnder } from '../library-files';`,
+  label: 'src/lib/ui/core/styles/design-system.test.js, the imports from the core',
+  file: 'src/lib/ui/core/styles/design-system.test.js',
+  code: `import { NARROW_SCREEN_QUERY } from '../breakpoints.js';
+import { filesUnder } from '../library-files.js';
+import { TAG_COLOURS } from '../tag-colours.js';`,
 };
 
 const ANY_PREFIX: SourceSnippet = {
@@ -157,18 +174,18 @@ the folder works at any prefix.`,
 const FONT_FOLDER: SourceSnippet = {
   label: "vite.config.ts, the font folder Dokseo's license plugin reads",
   file: 'vite.config.ts',
-  code: `const FONT_FOLDER = 'src/lib/ui/fonts';`,
+  code: `const FONT_FOLDER = 'src/lib/ui/core/fonts';`,
 };
 
 const LIBRARY_STYLESHEET: SourceSnippet = {
   label: "src/routes/+layout.svelte imports the library's stylesheet",
   file: 'src/routes/+layout.svelte',
-  code: `import '$lib/ui/styles/index.css';`,
+  code: `import '$lib/ui/core/styles/index.css';`,
 };
 
 const DROPZONE_FOCUS: SourceSnippet = {
-  label: 'src/lib/ui/styles/components/forms/dropzone.css styles the wrapper from its input',
-  file: 'src/lib/ui/styles/components/forms/dropzone.css',
+  label: 'src/lib/ui/core/styles/components/forms/dropzone.css styles the wrapper from its input',
+  file: 'src/lib/ui/core/styles/components/forms/dropzone.css',
   code: `.dropzone:has(.dropzone-input:focus-visible) {`,
 };
 

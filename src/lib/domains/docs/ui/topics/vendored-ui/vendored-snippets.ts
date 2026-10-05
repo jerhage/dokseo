@@ -17,8 +17,8 @@ to: {
 };
 
 const FONT_FACE: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/fonts.css, the first font',
-  file: 'src/lib/ui/styles/base/fonts.css',
+  label: 'src/lib/ui/core/styles/base/fonts.css, the first font',
+  file: 'src/lib/ui/core/styles/base/fonts.css',
   code: `@font-face {
   font-family: 'Bricolage Grotesque';
   src: url('../../fonts/bricolage-grotesque.woff2') format('woff2');`,
@@ -43,7 +43,7 @@ generateBundle() {
 const STYLESHEET_IMPORT: SourceSnippet = {
   label: 'src/routes/+layout.svelte imports the stylesheet once',
   file: 'src/routes/+layout.svelte',
-  code: `import '$lib/ui/styles/index.css';`,
+  code: `import '$lib/ui/core/styles/index.css';`,
 };
 
 const LAYER_ORDER: SourceSnippet = {
@@ -53,26 +53,41 @@ const LAYER_ORDER: SourceSnippet = {
 };
 
 const APPEARANCE: SourceSnippet = {
-  label: 'src/lib/ui/appearance.ts, the theme names and the appearance types',
-  file: 'src/lib/ui/appearance.ts',
-  code: `type ColorScheme = 'automatic' | 'light' | 'dark';
+  label: 'src/lib/ui/core/appearance.js, the appearance types and the theme names',
+  file: 'src/lib/ui/core/appearance.js',
+  code: `/** @typedef {'automatic' | 'light' | 'dark'} ColorScheme */
 
-type Appearance = {
-  readonly theme: Theme;
-  readonly colorScheme: ColorScheme;
-};
+/** @typedef {(typeof THEMES)[number]} Theme */
 
-type RootAttributes = Pick<Element, 'getAttribute' | 'setAttribute' | 'removeAttribute'>;
+/**
+ * @typedef {object} Appearance
+ * @property {Theme} theme
+ * @property {ColorScheme} colorScheme
+ */
 
-const THEMES = ['base', 'petal', 'yorha', 'crayon', 'ember', 'mono', 'forge', 'moss'] as const;
+/** @typedef {Pick<Element, 'getAttribute' | 'setAttribute' | 'removeAttribute'>} RootAttributes */
 
-type Theme = (typeof THEMES)[number];`,
+const THEMES = /** @type {const} */ ([
+  'base',
+  'petal',
+  'yorha',
+  'crayon',
+  'ember',
+  'mono',
+  'forge',
+  'moss',
+]);`,
 };
 
 const APPLY_APPEARANCE: SourceSnippet = {
   label: 'applyAppearance sets the two attributes',
-  file: 'src/lib/ui/appearance.ts',
-  code: `function applyAppearance(root: RootAttributes, appearance: Appearance): void {
+  file: 'src/lib/ui/core/appearance.js',
+  code: `/**
+ * @param {RootAttributes} root
+ * @param {Appearance} appearance
+ * @returns {void}
+ */
+function applyAppearance(root, appearance) {
   root.setAttribute(THEME_ATTRIBUTE, appearance.theme);
   const pinned = pinnedScheme(appearance.colorScheme);
   if (pinned === undefined) root.removeAttribute(SCHEME_ATTRIBUTE);
@@ -127,8 +142,8 @@ const SCRIPT_HASH: SourceSnippet = {
 };
 
 const SCHEME_RULES: SourceSnippet = {
-  label: 'src/lib/ui/styles/base/scheme.css, the scheme half of the contract',
-  file: 'src/lib/ui/styles/base/scheme.css',
+  label: 'src/lib/ui/core/styles/base/scheme.css, the scheme half of the contract',
+  file: 'src/lib/ui/core/styles/base/scheme.css',
   code: `:root {
   color-scheme: light dark;
 }
@@ -142,13 +157,13 @@ const SCHEME_RULES: SourceSnippet = {
 
 const THEME_FILE: SourceSnippet = {
   label: 'A theme file starts with its selector',
-  file: 'src/lib/ui/styles/base/themes/ember.css',
+  file: 'src/lib/ui/core/styles/base/themes/ember.css',
   code: `:root[data-theme='ember'] {`,
 };
 
 const THEME_IMPORTS: SourceSnippet = {
-  label: 'src/lib/ui/styles/index.css imports each theme',
-  file: 'src/lib/ui/styles/index.css',
+  label: 'src/lib/ui/core/styles/index.css imports each theme',
+  file: 'src/lib/ui/core/styles/index.css',
   code: `@import 'base/themes/base.css' layer(base);
 @import 'base/themes/ember.css' layer(base);`,
 };
@@ -158,16 +173,20 @@ const LIBRARY_SCRIPTS: SourceSnippet = {
   file: 'src/lib/ui/package.json',
   code: `"name": "kandan-ui-svelte",
 "private": true,
+"license": "MIT",
 "type": "module",
 "scripts": {
   "test": "vitest --run",
   "test:unit": "vitest --run --project unit",
   "test:watch": "vitest",
+  "test:browser": "vitest --run --config vitest.browser.config.ts",
+  "test:core": "node --test \\"core/**/*.test.js\\"",
+  "generate:icons": "node scripts/generate-icons.js",
   "check": "svelte-check --tsconfig ./tsconfig.json",
   "lint": "oxlint .",
   "format": "oxfmt .",
   "format:check": "oxfmt --check .",
-  "verify": "npm run check && npm run lint && npm run format:check && npm run test"
+  "verify": "npm run check && npm run lint && npm run format:check && npm run test && npm run test:core"
 },`,
 };
 
@@ -190,7 +209,7 @@ const LIBRARY_VITEST: SourceSnippet = {
       name: 'unit',
       environment: 'node',
       include: ['**/*.{test,spec}.{js,ts}'],
-      exclude: [...configDefaults.exclude, '**/*.svelte.{test,spec}.{js,ts}'],
+      exclude: [...configDefaults.exclude, 'core/**', '**/*.svelte.{test,spec}.{js,ts}'],
     },
   },
 ],`,
@@ -208,7 +227,15 @@ const NESTED_CONFIG_OFF: SourceSnippet = {
 const DEPCRUISE_EXCLUDE: SourceSnippet = {
   label: '.dependency-cruiser.cjs, the files the rules never read',
   file: '.dependency-cruiser.cjs',
-  code: String.raw`exclude: { path: ['^(\\.svelte-kit|build)/', '^src/lib/ui/vitest\\.config\\.ts$'] },`,
+  code: String.raw`exclude: {
+  path: [
+    '^(\\.svelte-kit|build)/',
+    '^src/lib/ui/vitest\\.config\\.ts$',
+    '^src/lib/ui/vitest\\.browser\\.config\\.ts$',
+    '^src/lib/ui/scripts/',
+    '^src/lib/ui/core/.*\\.test\\.js$',
+  ],
+},`,
 };
 
 const DOKSEO_UNIT_PROJECT: SourceSnippet = {
@@ -218,7 +245,7 @@ const DOKSEO_UNIT_PROJECT: SourceSnippet = {
 environment: 'node',
 setupFiles: ['src/lib/shared/testing/fresh-local-storage.ts'],
 include: ['src/**/*.{test,spec}.{js,ts}'],
-exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],`,
+exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/lib/ui/core/**'],`,
 };
 
 const DOKSEO_CHECK: SourceSnippet = {
