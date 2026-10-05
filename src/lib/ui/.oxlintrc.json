@@ -1,0 +1,70 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    "eslint/no-await-in-loop": "off",
+    "unicorn/prefer-add-event-listener": "off",
+    "unicorn/require-module-specifiers": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "import/no-unassigned-import": "off",
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+    "import/exports-last": "error",
+    "import/group-exports": "error",
+    "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }]
+  },
+  "env": {
+    "builtin": true
+  },
+  "overrides": [
+    {
+      "files": ["**/*.svelte"],
+      "rules": {
+        "import/exports-last": "off",
+        "import/group-exports": "off"
+      }
+    },
+    {
+      "files": ["**/*.spec.ts"],
+      "plugins": ["vitest"],
+      "rules": {
+        "typescript/consistent-type-assertions": "off",
+        "vitest/valid-title": [
+          "error",
+          {
+            "ignoreTypeOfTestName": true,
+            "mustMatch": {
+              "it": "^(%s|((never|still|neither) )?[a-z]+(-[a-z]+)*s\\b)",
+              "test": "^(%s|((never|still|neither) )?[a-z]+(-[a-z]+)*s\\b)"
+            },
+            "mustNotMatch": {
+              "it": "^(is|was|this|its|his|as)\\b",
+              "test": "^(is|was|this|its|his|as)\\b"
+            }
+          }
+        ],
+        "vitest/expect-expect": "off",
+        "vitest/hoisted-apis-on-top": "off",
+        "vitest/no-commented-out-tests": "off",
+        "vitest/no-conditional-expect": "off",
+        "vitest/no-conditional-tests": "off",
+        "vitest/no-disabled-tests": "off",
+        "vitest/no-focused-tests": "off",
+        "vitest/no-standalone-expect": "off",
+        "vitest/prefer-snapshot-hint": "off",
+        "vitest/require-awaited-expect-poll": "off",
+        "vitest/require-local-test-context-for-concurrent-snapshots": "off",
+        "vitest/require-mock-type-parameters": "off",
+        "vitest/require-to-throw-message": "off",
+        "vitest/valid-describe-callback": "off",
+        "vitest/valid-expect": "off",
+        "vitest/valid-expect-in-promise": "off",
+        "vitest/warn-todo": "off"
+      }
+    }
+  ]
+}

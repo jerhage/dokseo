@@ -1,0 +1,29 @@
+{
+  "name": "kandan-ui-svelte",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest --run",
+    "test:unit": "vitest --run --project unit",
+    "test:watch": "vitest",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "oxlint .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "verify": "npm run check && npm run lint && npm run format:check && npm run test"
+  },
+  "dependencies": {
+    "svelte": "^5.57.1",
+    "ts-pattern": "^5.9.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@types/node": "^26.6.1",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "svelte-check": "^4.7.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0",
+    "vitest": "^4.1.11"
+  }
+}
