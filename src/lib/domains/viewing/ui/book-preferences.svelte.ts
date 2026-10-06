@@ -11,7 +11,7 @@ import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { editBookMutation } from '../queries/viewing-queries';
 import type { BookEditRequest } from '../queries/viewing-queries';
 import { heldBook, shownBook } from './reader-opening';
-import type { ReaderBook, ReaderOpening } from './reader-opening';
+import type { FlowBook, ReaderBook, ReaderOpening } from './reader-opening';
 import type { RegionSelection } from './region-selection.svelte';
 
 type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
@@ -23,6 +23,16 @@ type EditFailure = Exclude<EditOutcome, { readonly kind: 'success' }>;
 type BookChanged = () => void;
 
 type BookHeld = (book: ReaderBook) => void;
+
+type LanguageEdit = (book: ReaderBook | FlowBook, language: Language) => BookEdit;
+
+function languageOnly(_book: ReaderBook | FlowBook, language: Language): BookEdit {
+  return { language };
+}
+
+function regroups(edit: BookEdit): boolean {
+  return edit.layoutKind !== undefined || edit.pagePairing !== undefined;
+}
 
 const LAYOUT_FAILED = 'Could not change the layout';
 
@@ -52,6 +62,7 @@ class BookPreferences {
   #generation: () => number;
   #selection: RegionSelection;
   #held: BookHeld;
+  #languageEdit: LanguageEdit;
   #editing: WriteQuery<EditOutcome, BookEditRequest<BookEdit>>;
 
   constructor(
@@ -62,12 +73,14 @@ class BookPreferences {
     selection: RegionSelection,
     held: BookHeld,
     bookChanged: BookChanged | null,
+    languageEdit: LanguageEdit,
   ) {
     this.#notify = notify;
     this.#opening = opening;
     this.#generation = generation;
     this.#selection = selection;
     this.#held = held;
+    this.#languageEdit = languageEdit;
     this.#editing = writeQuery(() => ({
       ...editBookMutation(container.library),
       onSuccess: (saved) => {
@@ -99,7 +112,9 @@ class BookPreferences {
   async setLanguage(language: Language): Promise<void> {
     const book = heldBook(this.#opening());
     if (book === null || this.saving || book.language === language) return;
-    await this.#edit(book.id, { language }, LANGUAGE_FAILED);
+    const edit = this.#languageEdit(book, language);
+    if (regroups(edit)) this.#selection.clear();
+    await this.#edit(book.id, edit, LANGUAGE_FAILED);
   }
 
   async setPageFit(fit: PageFit): Promise<void> {
@@ -141,5 +156,6 @@ export {
   LAYOUT_FAILED,
   PAIRING_FAILED,
   describeEditFailure,
+  languageOnly,
 };
-export type { BookChanged, BookHeld };
+export type { BookChanged, BookHeld, LanguageEdit };

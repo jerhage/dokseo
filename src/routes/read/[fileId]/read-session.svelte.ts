@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
+import { editInLanguage } from '$lib/domains/library/ui/reading-defaults.svelte';
 import { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
 import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
 import {
@@ -101,6 +102,7 @@ class ReadSession {
       (place) => this.mirror(place),
       (book, known) => this.#warm(book, known),
       () => this.#bookChanged(),
+      editInLanguage,
     );
     this.captures = new CaptureView(container, notify, client, listing, engine);
     this.flow = new FlowView(container, notify, client, () => this.#bookChanged());

@@ -33,6 +33,7 @@ import {
 import { SOURCE_MISSING, ReaderView } from './reader-view.svelte';
 import { heldBook, readingNotice } from './reader-opening';
 import type { ReaderBook } from './reader-opening';
+import type { LanguageEdit } from './book-preferences.svelte';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/running-write-query'));
 
@@ -866,6 +867,57 @@ describe('ReaderView', () => {
     expect(view.book?.[field]).toBe(value);
     expect(at(world.edits, 0)[field]).toBe(value);
     expect(readingNotice(view.opening)).toBeNull();
+  });
+
+  const KOREAN_EDIT: LanguageEdit = (_book, language) => ({
+    language,
+    layoutKind: 'continuous',
+    direction: 'ltr',
+    pagePairing: 'single',
+  });
+
+  it('saves a new language with what its language edit fills, as one edit', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify, null, null, null, KOREAN_EDIT);
+    await view.open(bookId('one'));
+
+    await view.preferences.setLanguage('ko');
+
+    expect(world.edits).toEqual([
+      {
+        id: bookId('one'),
+        position: undefined,
+        layoutKind: 'continuous',
+        pagePairing: 'single',
+        direction: 'ltr',
+        pageFit: undefined,
+        language: 'ko',
+      },
+    ]);
+    expect(view.book?.layoutKind).toBe('continuous');
+    expect(view.book?.direction).toBe('ltr');
+  });
+
+  it('clears the selection when a new language changes the layout', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify, null, null, null, KOREAN_EDIT);
+    await view.open(bookId('one'));
+    view.selection.select([region(0)]);
+
+    await view.preferences.setLanguage('ko');
+
+    expect(view.selection.regions).toEqual([]);
+  });
+
+  it('keeps the selection when a new language changes only the language', async () => {
+    const world = fakes();
+    const view = new ReaderView(world.container, world.notify);
+    await view.open(bookId('one'));
+    view.selection.select([region(0)]);
+
+    await view.preferences.setLanguage('ko');
+
+    expect(view.selection.regions).toEqual([region(0)]);
   });
 
   it('clears the saving flag on dispose while a setting is still saving', async () => {

@@ -62,5 +62,9 @@ function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   return edit;
 }
 
-export { bookForm, changedFields, formInLanguage, originalTitleHint };
+function languageEdit(book: Book, language: Language, defaults: LanguageDefaults): BookEdit {
+  return changedFields(book, formInLanguage(bookForm(book), language, defaults));
+}
+
+export { bookForm, changedFields, formInLanguage, languageEdit, originalTitleHint };
 export type { BookForm };

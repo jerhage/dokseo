@@ -19,8 +19,8 @@ import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { readingPosition } from '../domain/reading-position';
 import { saveReadingPlaceMutation } from '../queries/viewing-queries';
 import type { PlaceRequest } from '../queries/viewing-queries';
-import { BookPreferences, describeEditFailure } from './book-preferences.svelte';
-import type { BookChanged } from './book-preferences.svelte';
+import { BookPreferences, describeEditFailure, languageOnly } from './book-preferences.svelte';
+import type { BookChanged, LanguageEdit } from './book-preferences.svelte';
 import { PageGrouping } from './page-grouping.svelte';
 import { AT_THE_FIRST_IMAGE, PageNavigation } from './page-navigation.svelte';
 import { NOT_OPENED, OPENING, heldBook, shownBook, withBook } from './reader-opening';
@@ -94,6 +94,7 @@ class ReaderView {
     mirror: PlaceMirror | null = null,
     languageKnown: LanguageKnown | null = null,
     bookChanged: BookChanged | null = null,
+    languageEdit: LanguageEdit = languageOnly,
   ) {
     this.#container = container;
     this.#mirror = mirror;
@@ -131,6 +132,7 @@ class ReaderView {
       this.selection,
       (saved) => this.#hold(saved),
       bookChanged,
+      languageEdit,
     );
   }
 

@@ -3,6 +3,8 @@ import type { ImageLayoutKind, PagePairingChoice, ReadingDirection } from '$lib/
 import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
 import { withDefaultLanguage, withLanguageDefaults } from '../domain/book/reading-defaults';
 import type { LanguageDefaults, ReadingDefaults } from '../domain/book/reading-defaults';
+import type { Book, BookEdit } from '../domain/book/book';
+import { languageEdit } from './book-edit-form';
 import { readReadingDefaults, saveReadingDefaults } from './reading-defaults-setting';
 
 const chosen = new RememberedChoice<ReadingDefaults>(readReadingDefaults, saveReadingDefaults);
@@ -31,11 +33,16 @@ function chooseDefaultPairing(language: Language, pagePairing: PagePairingChoice
   chooseLanguageDefaults(language, { ...chosen.value.languages[language], pagePairing });
 }
 
+function editInLanguage(book: Book, language: Language): BookEdit {
+  return languageEdit(book, language, chosen.value.languages[language]);
+}
+
 export {
   chooseDefaultDirection,
   chooseDefaultLanguage,
   chooseDefaultLayout,
   chooseDefaultPairing,
   chooseLanguageDefaults,
+  editInLanguage,
   readingDefaultsChosen,
 };

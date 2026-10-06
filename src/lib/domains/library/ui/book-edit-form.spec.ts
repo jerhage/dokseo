@@ -3,7 +3,13 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import { applyEdit } from '../domain/book/book';
-import { bookForm, changedFields, formInLanguage, originalTitleHint } from './book-edit-form';
+import {
+  bookForm,
+  changedFields,
+  formInLanguage,
+  languageEdit,
+  originalTitleHint,
+} from './book-edit-form';
 
 function book(overrides: Partial<Book> = {}): Book {
   return {
@@ -103,6 +109,38 @@ describe('formInLanguage', () => {
       language: 'ko',
       layoutKind: 'continuous',
       direction: 'ltr',
+      pagePairing: 'single',
+    });
+  });
+});
+
+describe('languageEdit', () => {
+  const korean = { direction: 'ltr', layoutKind: 'continuous', pagePairing: 'single' } as const;
+
+  it("edits an image book's language, direction, layout and pairing at once", () => {
+    expect(languageEdit(book(), 'ko', korean)).toEqual({
+      language: 'ko',
+      layoutKind: 'continuous',
+      direction: 'ltr',
+      pagePairing: 'single',
+    });
+  });
+
+  it('leaves a flow book its layout', () => {
+    const subject = book({ layoutKind: 'flow', sourceKind: 'epub' });
+
+    expect(languageEdit(subject, 'ko', korean)).toEqual({
+      language: 'ko',
+      direction: 'ltr',
+      pagePairing: 'single',
+    });
+  });
+
+  it('omits what the new language fills with the value the book already holds', () => {
+    const subject = book({ direction: 'ltr' });
+
+    expect(languageEdit(subject, 'ko', { ...korean, layoutKind: 'paged' })).toEqual({
+      language: 'ko',
       pagePairing: 'single',
     });
   });
