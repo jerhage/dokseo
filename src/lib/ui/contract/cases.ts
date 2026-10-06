@@ -288,6 +288,7 @@ const CASES: readonly ContractCase[] = [
   { path: 'table-header-cell/actions', render: markup.tableHeaderCellActions },
   { path: 'table-row/default', render: markup.tableRowDefault },
   { path: 'table-of-contents/default', render: markup.tableOfContentsDefault },
+  { path: 'table-of-contents/current-entry', render: markup.tableOfContentsCurrentEntry },
   { path: 'table-of-contents/titled-h3', render: markup.tableOfContentsTitledH3 },
   { path: 'tabs/underline', render: markup.tabsUnderline },
   { path: 'tabs/pill', render: markup.tabsPill },

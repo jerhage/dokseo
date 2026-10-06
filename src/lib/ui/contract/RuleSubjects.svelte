@@ -13,11 +13,12 @@
   import Modal from '../components/Modal.svelte';
   import Popover from '../components/Popover.svelte';
   import SearchField from '../components/SearchField.svelte';
+  import TableOfContents from '../components/TableOfContents.svelte';
   import Tabs from '../components/Tabs.svelte';
   import Toast from '../components/Toast.svelte';
   import ToastRegion from '../components/ToastRegion.svelte';
   import WindowDropzone from '../components/WindowDropzone.svelte';
-  import { SLIDES, TABS, TABS_WITH_DISABLED } from './case-data';
+  import { ENTRIES, SLIDES, TABS, TABS_WITH_DISABLED } from './case-data';
   import type { RuleControls } from './rule-controls.svelte';
 
   export {
@@ -37,6 +38,7 @@
     popoverDefault,
     searchFieldClearableEmpty,
     searchFieldClearableFilled,
+    tableOfContentsDefault,
     tabsDisabledTab,
     tabsUnderline,
     toastRegionBottom,
@@ -160,6 +162,10 @@
 
 {#snippet searchFieldClearableFilled(controls: RuleControls)}
   <SearchField label="Search" clearable value="moby" onclear={controls.record('onclear')} />
+{/snippet}
+
+{#snippet tableOfContentsDefault(_controls: RuleControls)}
+  <TableOfContents entries={ENTRIES} />
 {/snippet}
 
 {#snippet tabsUnderline(controls: RuleControls)}

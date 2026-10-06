@@ -373,6 +373,7 @@
     tableHeaderCellNumeric,
     tableHeaderCellActions,
     tableRowDefault,
+    tableOfContentsCurrentEntry,
     tableOfContentsDefault,
     tableOfContentsTitledH3,
     tabsUnderline,
@@ -1303,6 +1304,11 @@
   </table>{/snippet}
 
 {#snippet tableOfContentsDefault()}<TableOfContents entries={ENTRIES} />{/snippet}
+
+{#snippet tableOfContentsCurrentEntry()}<TableOfContents
+    entries={ENTRIES}
+    current="fonts"
+  />{/snippet}
 
 {#snippet tableOfContentsTitledH3()}<TableOfContents
     entries={ENTRIES}

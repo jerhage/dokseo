@@ -249,6 +249,12 @@ state (an open menu, a drawn selection box, a leaving toast), the rules describe
 fixture shows the starting markup. Two fixtures are empty, because the component renders nothing
 until a script acts: `toast-clearance/default.html` and `window-dropzone/idle.html`.
 
+A state that a script sets and that a component also renders from its props has a fixture of its
+own. The table of contents marks the entry of the section being read with
+`aria-current="location"` on its link: a script moves it as the page scrolls, and the base fixture,
+like a server render, has no current entry; `table-of-contents/current-entry.html` is the markup
+with one, rendered from the props, and its rules describe how the script moves it.
+
 ### Running the contract spec in a framework version
 
 The framework spec renders each variant, then calls `compareMarkup(rendered, fixture)` from
@@ -285,7 +291,7 @@ the framework renders it.
 ## The behaviour rules
 
 `rules/<component>.json` describes what a component's script (or a native element) does, for
-the fifteen components that have one. A rule is a state before, an event, and a state after,
+the sixteen components that have one. A rule is a state before, an event, and a state after,
 read against a fixture:
 
 ```json
@@ -311,8 +317,13 @@ read against a fixture:
 - `when` is a list of triggers. `event` is a DOM event (`click`, `keydown` with `key`,
   `pointerdown`, `dragenter` with `files`, …), or one of: `set` (a prop or setting changes:
   `prop`, `value`), `call` (a method is called: `method`, `value`), `time` (`ms` pass), `mount`,
-  `unmount`, `animationsend` (the element's running animations finish). `target` is a selector,
-  or `window` or `document`.
+  `unmount`, `animationsend` (the element's running animations finish), `scroll` (`to`).
+  `target` is a selector, or `window` or `document`.
+- A `scroll` names, in `to`, the element it brings to the top of the area that scrolls it, as
+  `element.scrollIntoView({ block: 'start' })` does; the area then fires its own scroll events. It
+  states a place, not a distance, so the rule holds whatever layout the page gives the content
+  around the component. The element `to` names may lie outside the fixture (a heading the page
+  holds); the rule's `note` then says what the page must hold.
 - A pointer gesture is written whole: a `pointermove`, `pointerup` or `pointercancel` follows a
   `pointerdown` (or `mousedown`) earlier in the same `when`, and its `dx` and `dy` are its travel
   from that press. A lift with no press before it ends nothing.

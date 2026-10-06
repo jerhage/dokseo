@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { anchorSlug, contentsEntries } from './table-of-contents';
+import {
+  READING_LINE_SHARE,
+  anchorSlug,
+  contentsEntries,
+  currentHeading,
+  readingLine,
+  scrolledToEnd,
+} from './table-of-contents';
+import type { HeadingPlace, ReadingView } from './table-of-contents';
 
 describe('anchorSlug', () => {
   it.each([
@@ -40,5 +48,53 @@ describe('contentsEntries', () => {
       'section',
       'section-2',
     ]);
+  });
+});
+
+describe('readingLine', () => {
+  it('places the line its share of the way down the scrolling area', () => {
+    expect(readingLine(100, 800)).toBe(100 + 800 * READING_LINE_SHARE);
+  });
+});
+
+describe('scrolledToEnd', () => {
+  it('reports the end once the area shows its last pixel, within one pixel', () => {
+    expect(scrolledToEnd({ scrollTop: 1199.5, clientHeight: 800, scrollHeight: 2000 })).toBe(true);
+    expect(scrolledToEnd({ scrollTop: 1190, clientHeight: 800, scrollHeight: 2000 })).toBe(false);
+  });
+
+  it('reports no end for an area that cannot scroll', () => {
+    expect(scrolledToEnd({ scrollTop: 0, clientHeight: 800, scrollHeight: 800 })).toBe(false);
+  });
+});
+
+describe('currentHeading', () => {
+  const view: ReadingView = { readingLine: 200, areaBottom: 800, scrolledToEnd: false };
+
+  function placed(...tops: readonly number[]): readonly HeadingPlace[] {
+    return tops.map((top, index) => ({ id: `h${index + 1}`, top }));
+  }
+
+  it('returns the last heading at or above the reading line', () => {
+    expect(currentHeading(placed(-900, -40, 200, 600), view)).toBe('h3');
+  });
+
+  it('returns the first heading while none has reached the reading line', () => {
+    expect(currentHeading(placed(320, 900, 1600), view)).toBe('h1');
+  });
+
+  it('returns the last heading the area shows once it is scrolled to the end', () => {
+    const atEnd = { ...view, scrolledToEnd: true };
+
+    expect(currentHeading(placed(-900, 100, 500, 700), atEnd)).toBe('h4');
+    expect(currentHeading(placed(-900, 100, 500, 1200), atEnd)).toBe('h3');
+  });
+
+  it('returns the first heading at the end when every heading lies below the area', () => {
+    expect(currentHeading(placed(900, 1200), { ...view, scrolledToEnd: true })).toBe('h1');
+  });
+
+  it('returns nothing when no heading is on the page', () => {
+    expect(currentHeading([], view)).toBeUndefined();
   });
 });

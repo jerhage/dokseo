@@ -20,9 +20,9 @@ The folder holds:
 - `playground/`: a page that shows every component and utility, for an app to mount on a
   development route.
 - `scripts/`: `generate-icons.js`, which writes the icon components.
-- `package.json`, `vitest.config.ts`, `vitest.browser.config.ts`, `tsconfig.json`,
-  `.oxlintrc.json`, `.oxfmtrc.json`, `.gitignore` and `.github/`: the library's own tooling, used
-  in the library's repository. An app that vendors the library ignores them (see
+- `package.json`, `vite.config.ts`, `vitest.config.ts`, `vitest.browser.config.ts`,
+  `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, `.gitignore` and `.github/`: the library's
+  own tooling, used in the library's repository. An app that vendors the library ignores them (see
   [Apps ignore the library's tooling](#apps-ignore-the-librarys-tooling)).
 
 Every file reaches the others by relative path. Nothing imports an app alias such as `$lib`, so
@@ -148,6 +148,9 @@ Any package manager that reads `package.json` works the same way (`pnpm install`
 
 The scripts:
 
+- `npm run dev`: serves the playground with Vite (`vite.config.ts`, rooted at `playground/`), at
+  the address Vite prints. Its header holds a theme and a colour scheme picker, saved under the
+  placeholder keys `kandan.theme` and `kandan.color-scheme`.
 - `npm run test`: every unit spec, once. `npm run test:unit` runs the `unit` project alone, and
   `npm run test:watch` watches.
 - `npm run test:core`: the core's own specs, with `node --test`. They need no dependency.
@@ -206,6 +209,10 @@ commands in `contract/rule-input.ts`, so Chromium receives trusted input and run
 actions: a summary toggles, a dialog cancels, a popover is light dismissed, a button takes focus.
 A drag is the exception: the runner dispatches drag events it builds, so a rule that checks the
 drop effect, which only a drag the browser runs carries, is listed as a todo with that reason.
+A `scroll` in a rule brings the element its `to` names to the top of the area that scrolls it, with
+`scrollIntoView({ block: 'start' })`, so the area fires real scroll events. The table of contents
+subject places a full-height section with a heading for each entry after the component, once it has
+mounted, so its rules also cover headings that reach the page late.
 A `transitionend` in a rule finishes the target's running transitions, so Chromium fires the real
 event with its `propertyName`. A measured style value (`{ "value": 40, "unit": "px",
 "tolerance": 0.5 }`) passes when the written number is within the tolerance, since Vitest scales
@@ -259,16 +266,18 @@ looking for them:
   }
   ```
 
-- dependency-cruiser, if the app uses it. `vitest.config.ts` and `vitest.browser.config.ts`
-  import `@sveltejs/vite-plugin-svelte` and `@vitest/browser-playwright`, which a rule that keeps
-  the folder to `svelte`, `ts-pattern` and `vitest` would refuse. They are tooling, not library
-  code, so exclude them, with the generator script and the core's own specs:
+- dependency-cruiser, if the app uses it. `vite.config.ts`, `vitest.config.ts` and
+  `vitest.browser.config.ts` import `vite`, `@sveltejs/vite-plugin-svelte` and
+  `@vitest/browser-playwright`, which a rule that keeps the folder to `svelte`, `ts-pattern` and
+  `vitest` would refuse. They are tooling, not library code, so exclude them, with the generator
+  script and the core's own specs:
 
   ```js
   options: {
     exclude: {
       path: [
         '^src/lib/ui/vitest(\\.browser)?\\.config\\.ts$',
+        '^src/lib/ui/vite\\.config\\.ts$',
         '^src/lib/ui/scripts/',
         '^src/lib/ui/core/.*\\.test\\.js$',
       ],
@@ -465,6 +474,24 @@ function hashOf(script: string): string {
 }
 ```
 
+### The table of contents
+
+`TableOfContents` links each entry to the element whose id is the entry's `id`, as
+`contentsEntries` makes it, so the page gives each heading that id. As the page scrolls, the
+component marks the entry of the section being read with `aria-current="location"`:
+
+- It reads where each heading sits on every scroll (a capture-phase listener, so the scroll of an
+  inner area such as an app shell's main area counts too) and every resize, and passes the
+  positions to `currentHeading` in `components/table-of-contents.ts`. The current entry is the last
+  heading at or above a reading line a quarter of the way down the area that scrolls the headings;
+  before any heading reaches it, the first entry; once the area is scrolled to its end, the last
+  heading it shows, so a short last section is reached.
+- A heading that is not on the page yet is skipped. While any is missing, a `MutationObserver` on
+  the body waits for it and disconnects once every heading is placed. A change of `entries` starts
+  over, and unmounting removes every listener.
+- `current` is bindable: bind it to read the entry being read, or pass it to render a current entry
+  before any script runs (a server render has none otherwise).
+
 ## Adding a theme
 
 A theme is added in the core (its guide lists the steps: the stylesheet, its import in
@@ -482,6 +509,10 @@ variants, sizes and states. An app mounts it on a development route, and may pas
 - `appearanceControl`, rendered at the end of the header: the app's own theme and scheme switcher,
   which saves the choice the app's way.
 - `demos`, rendered after the library's sections: demos of the app's own components.
+
+The toast demos need a toaster from an ancestor: the app's root layout calls
+`setToaster(createToaster())` and renders `<ToastRegion />`, as `playground/DevPlayground.svelte`
+does for `npm run dev`. Without it the playground throws "No toaster in context".
 
 An example route, `src/routes/playground/+page.svelte`, with the app's switcher in
 `$lib/ThemeSwitcher.svelte`:
