@@ -45,4 +45,15 @@
       <IconButton size="sm" icon={Pencil} label="Disabled" disabled />
     </div>
   </Card>
+  <Card>
+    <span class="eyebrow text-faint weight-semibold">Library tooltip</span>
+    <p class="text-sm text-muted">
+      With hint, the tooltip is the library's, not the browser's title: it shows after a short rest
+      or at once on focus. It describes the button only when its text differs from the label.
+    </p>
+    <div class="row wrap items-center gap-3">
+      <IconButton size="sm" icon={Search} label="Search" hint />
+      <IconButton size="sm" icon={Copy} label="Copy" tooltip="Copy the recognized text" hint />
+    </div>
+  </Card>
 </DemoSection>

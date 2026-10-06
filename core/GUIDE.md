@@ -259,6 +259,30 @@ own. The table of contents marks the entry of the section being read with
 like a server render, has no current entry; `table-of-contents/current-entry.html` is the markup
 with one, rendered from the props, and its rules describe how the script moves it.
 
+### A component beside another, not inside a wrapper
+
+Some variants place a component's parts as siblings, so the markup stays valid wherever the caller
+puts it.
+
+- `icon-button/hint` and `icon-button/hint-described` are an icon button with the library tooltip
+  in place of the browser's `title`. The button has no `title`, and the tooltip
+  (`span.tooltip`, `popover="hint"`, `role="tooltip"`) is its next sibling, as in
+  `tooltip/default`. When the tooltip's text is the button's label, its accessible name, the button
+  has no `aria-describedby`, so a screen reader does not announce the name twice (`hint`). When the
+  text differs from the label, `aria-describedby` names the tooltip (`hint-described`).
+  `rules/icon-button.json` restates the tooltip's rules on these fixtures, since a rule cannot refer
+  to another file's. The `title` variants are unchanged; a framework version offers the library
+  tooltip as an option of the icon button, not as a second component.
+- `context-menu/attached` is a context menu attached to an element it does not wrap.
+  `context-menu/default` wraps its area in `div.context-menu` (`display: contents`), which cannot
+  sit where only certain children are allowed, such as between `tbody` and `tr`. Attached, the area
+  is the caller's own element (here a table row), and it gains no attribute. The menu,
+  `div.dropdown-menu` with `role="menu"` and `popover="manual"`, is rendered where a `div` is valid,
+  here after the table's wrapper: a popover inside a `table`, a `tbody` or a `tr` but outside a cell
+  is not valid HTML. The rules in `rules/context-menu.json` are the wrapped menu's, restated on this
+  fixture: the area answers the secondary click, Shift+F10 and the ContextMenu key, and the menu,
+  now outside the area, answers its own keys, focus leaving it and a secondary click inside it.
+
 ### Running the contract spec in a framework version
 
 The framework spec renders each variant, then calls `compareMarkup(rendered, fixture)` from
@@ -295,7 +319,7 @@ the framework renders it.
 ## The behaviour rules
 
 `rules/<component>.json` describes what a component's script (or a native element) does, for
-the twenty-one components that have one. A rule is a state before, an event, and a state after,
+the twenty-two components that have one. A rule is a state before, an event, and a state after,
 read against a fixture:
 
 ```json
@@ -408,7 +432,11 @@ Before any script, check in this order:
    layer.
 2. A media query or a container query, for anything that depends on the screen or the container
    size. A presentation that changes at a breakpoint is a modifier with a query, never a script that
-   watches the width and swaps components.
+   watches the width and swaps components. `.modal-sheet` is one: on the modal's
+   `<dialog class="modal-backdrop">`, below the narrow breakpoint, it docks the modal to the bottom
+   edge and slides it in from there (`fixtures/modal/sheet.html`); above it the modal stays
+   centred. Every framework version exposes such a modifier as an option of the existing
+   component, never as a second component.
 3. A native element or attribute: `<dialog>`, `popover` (`auto`, `manual`, `hint`), `<details>`,
    form controls and their states, `:has()`, `:focus-visible`, `:popover-open`.
 4. A token or a custom property with a fallback, for a value that varies.

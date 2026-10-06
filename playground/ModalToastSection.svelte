@@ -42,6 +42,7 @@
   let layered = $state(false);
   let asking = $state(false);
   let barred = $state(false);
+  let sheeted = $state(false);
   let filter = $state('');
 
   function removed(): void {
@@ -66,7 +67,15 @@
 <DemoSection
   id="modal"
   title="Modal and toast"
-  classes={['modal', 'modal-sm', 'modal-lg', 'modal-header-bar', 'modal-footer-info', 'toast']}
+  classes={[
+    'modal',
+    'modal-sm',
+    'modal-lg',
+    'modal-header-bar',
+    'modal-footer-info',
+    'modal-sheet',
+    'toast',
+  ]}
 >
   <Card>
     <span class="eyebrow text-faint weight-semibold">Modal</span>
@@ -78,6 +87,7 @@
       <Button onclick={() => (bare = true)}>Headerless</Button>
       <Button onclick={() => (asking = true)}>No close button</Button>
       <Button onclick={() => (barred = true)}>Header bar</Button>
+      <Button onclick={() => (sheeted = true)}>Sheet on a narrow screen</Button>
     </div>
     <p class="text-sm text-muted">Last closed: {closedBy}</p>
   </Card>
@@ -207,6 +217,21 @@
   <p class="px-5 py-5 text-sm text-muted">
     The header snippet sits in a compact bar that wraps: a field and its controls, no title.
   </p>
+</Modal>
+
+<Modal
+  bind:open={sheeted}
+  title="Sort the shelf"
+  sheetNarrow
+  onclose={() => (closedBy = 'the sheet modal')}
+>
+  <p>
+    Below the narrow breakpoint this modal docks to the bottom edge and slides up from it; above it,
+    it stays centred. Narrow the window to see it change, even while it is open.
+  </p>
+  {#snippet footer(close)}
+    <Button variant="primary" onclick={close}>Done</Button>
+  {/snippet}
 </Modal>
 
 <Modal bind:open={layered} title="Toasts stay on top" size="sm">

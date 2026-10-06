@@ -12,6 +12,11 @@ const TRIGGER = createRawSnippet((props: () => { 'aria-describedby': string }) =
   render: () => `<button aria-describedby="${props()['aria-describedby']}">Save</button>`,
 }));
 
+const DESCRIBED = createRawSnippet((props: () => { 'aria-describedby'?: string }) => ({
+  render: () =>
+    `<button data-described="${props()['aria-describedby'] === undefined ? 'no' : 'yes'}">Save</button>`,
+}));
+
 function markup(props: Attributes): string {
   return render(TOOLTIP, { props: { text: 'Save the changes', trigger: TRIGGER, ...props } }).body;
 }
@@ -39,5 +44,13 @@ describe('Tooltip', () => {
     const hint = /<span\s[^>]*>/u.exec(markup({ class: 'text-sm' }))?.[0] ?? '';
 
     expect(attribute(hint, 'class')).toBe('tooltip text-sm');
+  });
+
+  it('leaves aria-describedby off its trigger when told not to describe it', () => {
+    const html = render(TOOLTIP, {
+      props: { text: 'Save', trigger: DESCRIBED, describeTrigger: false },
+    }).body;
+
+    expect(html).toContain('<button data-described="no">Save</button>');
   });
 });

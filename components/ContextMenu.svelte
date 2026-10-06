@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" generics="T">
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
@@ -6,6 +6,7 @@
   import { followAnchor } from './anchor-tracking';
   import { opensMenuByKey, pointerPlacement } from './context-menu';
   import type { PointerSpot } from './context-menu';
+  import type { AreaListener, ContextMenuAreas } from './context-menu-areas';
   import { provideMenu } from './menu';
   import {
     inlineDirection,
@@ -17,17 +18,52 @@
   import { landOn, menuMove } from './roving';
   import type { Move } from './roving';
 
-  type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
+  type Wrapped = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
     label: string;
     menu: Snippet;
     children: Snippet;
+    areas?: undefined;
+    current?: undefined;
   };
+
+  type Attached = {
+    areas: ContextMenuAreas<T>;
+    label: (value: T) => string;
+    menu: Snippet<[T]>;
+    current?: T;
+    children?: undefined;
+  };
+
+  type Props = Wrapped | Attached;
 
   type Opening =
     | { readonly kind: 'pointer'; readonly spot: PointerSpot }
     | { readonly kind: 'element'; readonly element: Element };
 
-  let { label, menu: items, children, class: className, ...rest }: Props = $props();
+  type Form =
+    | {
+        readonly kind: 'wrapped';
+        readonly label: string;
+        readonly items: Snippet;
+        readonly children: Snippet;
+        readonly attributes: Omit<HTMLAttributes<HTMLDivElement>, 'children'>;
+      }
+    | {
+        readonly kind: 'attached';
+        readonly areas: ContextMenuAreas<T>;
+        readonly label: (value: T) => string;
+        readonly items: Snippet<[T]>;
+      };
+
+  let { current = $bindable(), ...props }: Props = $props();
+
+  const form: Form = $derived.by(() => {
+    if (props.areas !== undefined) {
+      return { kind: 'attached', areas: props.areas, label: props.label, items: props.menu };
+    }
+    const { label, menu: items, children, areas: _areas, ...attributes } = props;
+    return { kind: 'wrapped', label, items, children, attributes };
+  });
 
   let menu = $state<HTMLDivElement>();
   let open = $state(false);
@@ -47,9 +83,9 @@
 
   function focusBy(move: Move): void {
     const all = menuItems();
-    const current = all.findIndex((item) => item === document.activeElement);
+    const focused = all.findIndex((item) => item === document.activeElement);
     const enabled = all.map((item) => !item.matches(':disabled, [aria-disabled="true"]'));
-    const target = landOn(move, current, enabled);
+    const target = landOn(move, focused, enabled);
     if (target !== undefined) all[target]?.focus();
   }
 
@@ -105,20 +141,35 @@
   function contextmenu(event: MouseEvent): void {
     event.preventDefault();
     if (open || inMenu(event.target)) return;
+    openByPointer(event);
+  }
+
+  function keyOpening(event: KeyboardEvent): Opening | undefined {
+    if (!opensMenuByKey(event.key, event.shiftKey) || !(event.target instanceof Element)) {
+      return undefined;
+    }
+    event.preventDefault();
+    return open ? undefined : { kind: 'element', element: event.target };
+  }
+
+  async function openByKey(from: Opening): Promise<void> {
+    show(from);
+    await tick();
+    focusBy('first');
+  }
+
+  function openByPointer(event: MouseEvent): void {
     show({ kind: 'pointer', spot: { x: event.clientX, y: event.clientY } });
     menu?.focus();
   }
 
   async function keydown(event: KeyboardEvent): Promise<void> {
-    if (!inMenu(event.target)) {
-      if (!opensMenuByKey(event.key, event.shiftKey) || !(event.target instanceof Element)) return;
-      event.preventDefault();
-      if (open) return;
-      show({ kind: 'element', element: event.target });
-      await tick();
-      focusBy('first');
-      return;
-    }
+    if (inMenu(event.target)) return;
+    const from = keyOpening(event);
+    if (from !== undefined) await openByKey(from);
+  }
+
+  function menuKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
@@ -129,6 +180,28 @@
     event.preventDefault();
     focusBy(move);
   }
+
+  function menuContextmenu(event: MouseEvent): void {
+    event.preventDefault();
+  }
+
+  const areaListener: AreaListener<T> = {
+    contextmenu: async (event, value) => {
+      event.preventDefault();
+      if (open || inMenu(event.target)) return;
+      current = value;
+      await tick();
+      openByPointer(event);
+    },
+    keydown: async (event, value) => {
+      if (inMenu(event.target)) return;
+      const from = keyOpening(event);
+      if (from === undefined) return;
+      current = value;
+      await tick();
+      await openByKey(from);
+    },
+  };
 
   function focusout(event: FocusEvent): void {
     if (!open || !inMenu(event.target)) return;
@@ -148,23 +221,19 @@
     unfollow?.();
     unfollow = undefined;
   };
+
+  const listenToAreas: Attachment<HTMLDivElement> = () =>
+    form.kind === 'attached' ? form.areas.listen(areaListener) : undefined;
 </script>
 
 <svelte:document onpointerdown={outside} />
 <svelte:window onblur={left} />
 
-<div
-  {...rest}
-  class={['context-menu', className]}
-  oncontextmenu={contextmenu}
-  onkeydown={keydown}
-  onfocusout={focusout}
-  role="presentation"
->
-  {@render children()}
+{#snippet panel(label: string | undefined, contents: Snippet)}
   <div
     bind:this={menu}
     {@attach releaseOnDestroy}
+    {@attach listenToAreas}
     role="menu"
     aria-label={label}
     tabindex="-1"
@@ -173,7 +242,31 @@
     style:--menu-top={inset.top}
     style:--menu-left={inset.left}
     style:--menu-max-width={inset.maxWidth}
+    onkeydown={menuKeydown}
+    onfocusout={focusout}
+    oncontextmenu={menuContextmenu}
   >
-    {@render items()}
+    {@render contents()}
   </div>
-</div>
+{/snippet}
+
+{#snippet attachedItems()}
+  {#if form.kind === 'attached' && current !== undefined}
+    {@render form.items(current)}
+  {/if}
+{/snippet}
+
+{#if form.kind === 'wrapped'}
+  <div
+    {...form.attributes}
+    class={['context-menu', form.attributes.class]}
+    oncontextmenu={contextmenu}
+    onkeydown={keydown}
+    role="presentation"
+  >
+    {@render form.children()}
+    {@render panel(form.label, form.items)}
+  </div>
+{:else}
+  {@render panel(current === undefined ? undefined : form.label(current), attachedItems)}
+{/if}

@@ -294,6 +294,299 @@
       },
       "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
       "certain": true
+    },
+    {
+      "name": "opens the menu at the pointer on a secondary click and focuses the menu, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "when": [
+        {
+          "event": "contextmenu",
+          "target": ".table td:first-child"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": true,
+          "focused": true,
+          "style": {
+            "--menu-top": "set",
+            "--menu-left": "set"
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "Preventing the contextmenu event keeps the browser's own menu closed. The menu is a manual popover shown with showPopover(); its top-left corner is placed at the pointer (clientX, clientY) through --menu-top and --menu-left in px, moved left or up by its own size where it would cross the viewport edge less --overlay-edge, and --menu-max-width holds the viewport width less two edges. No item is focused until an arrow key moves into the menu."
+    },
+    {
+      "name": "opens the menu at the focused element on Shift+F10 and focuses the first enabled item, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "given": [
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "F10",
+          "shiftKey": true,
+          "target": ".table-actions > .btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": true
+        },
+        {
+          "selector": ".dropdown-menu",
+          "style": {
+            "--menu-top": "set",
+            "--menu-left": "set"
+          }
+        },
+        {
+          "selector": ".dropdown-menu > .dropdown-item:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "The keydown is handled on the area, the element the menu is attached to, so any focused element inside it opens the menu; the menu sits outside the area, so its own keys, focusout and contextmenu are handled on the menu. The menu is placed below the focused element, aligned to its inline start, as a dropdown menu is placed below its trigger. Preventing the keydown keeps the browser from firing its own contextmenu; a contextmenu that still arrives while the menu is open is prevented and changes nothing."
+    },
+    {
+      "name": "opens the menu at the focused element on the ContextMenu key and focuses the first enabled item, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "given": [
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ContextMenu",
+          "target": ".table-actions > .btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": true
+        },
+        {
+          "selector": ".dropdown-menu",
+          "style": {
+            "--menu-top": "set",
+            "--menu-left": "set"
+          }
+        },
+        {
+          "selector": ".dropdown-menu > .dropdown-item:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true
+    },
+    {
+      "name": "moves focus from the menu to the first enabled item on ArrowDown, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "when": [
+        {
+          "event": "contextmenu",
+          "target": ".table td:first-child"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".dropdown-menu"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu > .dropdown-item:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "ArrowUp from the menu moves to the last enabled item; Home and End go to the first and the last."
+    },
+    {
+      "name": "moves focus to the next enabled item on ArrowDown and wraps from the last to the first, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "given": [
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ContextMenu",
+          "target": ".table-actions > .btn"
+        },
+        {
+          "event": "keydown",
+          "key": "End",
+          "target": ".dropdown-menu > .dropdown-item:nth-child(1)"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".dropdown-menu > .dropdown-item-danger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu > .dropdown-item:nth-child(1)",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "ArrowUp moves to the previous enabled item and wraps from the first to the last. Items that match :disabled or [aria-disabled=\"true\"] are skipped, as in a dropdown menu."
+    },
+    {
+      "name": "closes on Escape and returns focus to the element that had it when the menu opened, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "given": [
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ContextMenu",
+          "target": ".table-actions > .btn"
+        },
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".dropdown-menu > .dropdown-item:nth-child(1)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        },
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "After a secondary click, the element that had focus is the one the press focused, or the body when it focused nothing."
+    },
+    {
+      "name": "closes when an item is chosen and returns focus to the element that had it when the menu opened, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "given": [
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ContextMenu",
+          "target": ".table-actions > .btn"
+        },
+        {
+          "event": "click",
+          "target": ".dropdown-menu > .dropdown-item-danger"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        },
+        {
+          "selector": ".table-actions > .btn",
+          "focused": true
+        }
+      ],
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "The item's own click handler runs first; if it prevents the default action the menu stays open."
+    },
+    {
+      "name": "closes on a press outside the menu, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "when": [
+        {
+          "event": "contextmenu",
+          "target": ".table td:first-child"
+        },
+        {
+          "event": "pointerdown",
+          "target": "document"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": false
+        }
+      ],
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true,
+      "note": "The pointerdown target is any node outside the menu, the area included: a secondary press on the area closes it and the contextmenu that follows opens it again at the new place. A focusout whose relatedTarget is outside the menu, and a blur of the window, close it the same way, without moving focus."
+    },
+    {
+      "name": "keeps the browser menu closed and its own menu open on a secondary click inside the open menu, attached to an element it does not wrap",
+      "fixture": "context-menu/attached",
+      "when": [
+        {
+          "event": "contextmenu",
+          "target": ".table td:first-child"
+        },
+        {
+          "event": "contextmenu",
+          "target": ".dropdown-menu > .dropdown-item:nth-child(1)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dropdown-menu",
+          "open": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "ContextMenu.svelte in kandan-ui-svelte, built to these rules, with DropdownItem.svelte, menu.ts and roving.ts",
+      "certain": true
     }
   ]
 }

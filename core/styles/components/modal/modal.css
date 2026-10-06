@@ -131,6 +131,22 @@
   .modal-fill-narrow .modal-panel-only {
     display: none;
   }
+  .modal-sheet {
+    place-items: end stretch;
+    padding: 0;
+    overflow: clip;
+  }
+  .modal-sheet > .modal {
+    align-self: end;
+    max-inline-size: none;
+    max-block-size: var(--layout-sheet-height-tall);
+    margin: 0;
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+    border-inline: none;
+    border-block-end: none;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
 }
 @media (width >= 48rem) {
   .modal-fill-narrow .modal-fill-only {
