@@ -117,6 +117,12 @@ commit and add it in the next.
 
 ## Working on the library
 
+A new component, or a change to how a component looks or what its markup is, starts in the core:
+see "Adding or changing a component, from the core to an app" in `core/GUIDE.md`. That section
+says what to try in CSS and HTML before any script, the release level, and the order of pushes and
+pulls. This library then adds only what CSS cannot do: focus, keyboard handling, measuring and
+placing overlays, timing and callbacks.
+
 A change to a component can start on either side.
 
 - In an app. Edit the vendored folder and commit there like any other change, then send the

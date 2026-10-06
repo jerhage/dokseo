@@ -394,6 +394,60 @@ The specs fail until the stylesheet, `index.css` and `THEMES` agree. A new theme
 Render the variant in a framework version, write `fixtureText(rendered)` to
 `fixtures/<component>/<variant>.html`, and add the variant to the framework version's table.
 
+## Adding or changing a component, from the core to an app
+
+The core says what a component looks like and what its markup is; a framework version says how to
+produce that markup and adds script only where the platform cannot do the work. Every change starts
+here and travels down: core, then each framework version, then the apps that vendor it.
+
+### First, ask what CSS and HTML can do
+
+Before any script, check in this order:
+
+1. A class or a modifier class (`.block`, `.block-part`, `.block-modifier`) in the `components`
+   layer.
+2. A media query or a container query, for anything that depends on the screen or the container
+   size. A presentation that changes at a breakpoint is a modifier with a query, never a script that
+   watches the width and swaps components.
+3. A native element or attribute: `<dialog>`, `popover` (`auto`, `manual`, `hint`), `<details>`,
+   form controls and their states, `:has()`, `:focus-visible`, `:popover-open`.
+4. A token or a custom property with a fallback, for a value that varies.
+
+What remains is script, in the framework version: moving focus, keyboard handling beyond the
+native element's, measuring and placing an overlay, timing, and wiring callbacks. Write that
+behaviour down as rules here, so every framework version implements the same thing.
+
+Two lessons recorded as specs: an element that holds a panel off screen uses `overflow: clip`, not
+`hidden`, because `hidden` is still a scroll container and focus can scroll it; and an anchored
+overlay is placed again when its own size changes, not only on scroll and resize.
+
+### The steps
+
+1. **Core.** Change or add the stylesheet, the fixtures and the rules; see A component and A
+   fixture below. Run `npm test` and `npm run check`. Commit, and tag the release (see Versions: a
+   new component or fixture is a minor release, a changed fixture or rule a major one, a stylesheet
+   change that keeps every fixture a patch). Push with `git push origin main --follow-tags`.
+2. **Framework version.** On its `main`, pull the tag from the remote:
+   `git subtree pull --prefix=core https://github.com/jerhage/kandan-ui <tag> --squash`. Then build
+   or change the component until its contract spec matches every fixture and its rules pass, add or
+   update its playground demo, and run the version's checks and its browser rules. Commit and push.
+3. **App.** On its `main`, pull the framework version from the remote with `git subtree pull`, as
+   its own guide says. Update anything in the app that names the changed paths or counts, run the
+   app's checks, commit and push.
+
+Pull from the remote, never from a local folder, and push in this order, so no repository refers to
+a commit its remote does not have yet. Never rebase a branch that holds a subtree merge.
+
+If a framework version finds a fixture or a rule that is wrong or cannot be built, fix it here in a
+new release and pull that, rather than bending the component or editing the vendored `core/`.
+
+### Changing an existing component
+
+Change the stylesheet, then the fixtures the change affects (regenerate them through
+`fixtureText`), then the rules if behaviour changes, and release at the level the change needs.
+Each framework version's contract spec fails until its component renders the new fixtures, which
+is the point: the change cannot reach an app until every version follows it.
+
 ## The core's own checks
 
 `npm test` runs `node --test`, which finds every `*.test.js`:

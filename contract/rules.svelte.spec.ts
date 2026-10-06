@@ -2,6 +2,7 @@ import '../core/styles/index.css';
 import { flushSync, mount, tick, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { commands, userEvent } from 'vitest/browser';
+import { animationsSettled } from '../components/animations';
 import { rulesFileProblems } from '../core/rules/schema.js';
 import type { ElementState, Measured, Rule, RulesFile, Trigger } from '../core/rules/schema.js';
 import { RuleControls } from './rule-controls.svelte';
@@ -27,6 +28,8 @@ type Run = {
 const LOADED = import.meta.glob('../core/rules/*.json', { eager: true, import: 'default' });
 
 const GRID = [0.5, 0.1, 0.3, 0.7, 0.9];
+
+const ENTERING_LIMIT_MS = 2000;
 
 const UNPRODUCIBLE_DROP_EFFECT =
   'only a drag the browser runs sets a drop effect, and the runner can dispatch a drag but not run one';
@@ -83,7 +86,7 @@ function candidates(left: number, top: number, width: number, height: number): P
   ).filter((point) => point.x < innerWidth && point.y < innerHeight);
 }
 
-function pointOn(element: Element): Pointer {
+function hittablePoint(element: Element): Pointer | null {
   const box = element.getBoundingClientRect();
   const hits = candidates(box.left, box.top, box.width, box.height).map((point) => ({
     point,
@@ -91,9 +94,42 @@ function pointOn(element: Element): Pointer {
   }));
   const own = hits.find(({ hit }) => hit === element);
   const inside = hits.find(({ hit }) => hit !== null && element.contains(hit));
-  const found = own ?? inside;
-  if (found === undefined) throw new Error(`No point on ${element.className} takes the pointer`);
-  return found.point;
+  return (own ?? inside)?.point ?? null;
+}
+
+function lineage(element: Element): Element[] {
+  const chain: Element[] = [];
+  for (let at: Element | null = element; at !== null; at = at.parentElement) chain.push(at);
+  return chain;
+}
+
+async function framesPast(ms: number): Promise<'timed-out'> {
+  const start = performance.now();
+  while (performance.now() - start < ms) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+  return 'timed-out';
+}
+
+async function pointOn(element: Element): Promise<Pointer> {
+  const now = hittablePoint(element);
+  if (now !== null) return now;
+  const waited = await Promise.race([
+    animationsSettled(lineage(element)).then(() => 'settled' as const),
+    framesPast(ENTERING_LIMIT_MS),
+  ]);
+  if (waited === 'timed-out') {
+    throw new Error(
+      `No point on ${element.className} takes the pointer, and its animations were still running after ${ENTERING_LIMIT_MS}ms`,
+    );
+  }
+  const settled = hittablePoint(element);
+  if (settled === null) {
+    throw new Error(
+      `No point on ${element.className} takes the pointer, even once its animations have finished`,
+    );
+  }
+  return settled;
 }
 
 function pointOutside(root: Element): Pointer {
@@ -105,7 +141,7 @@ function pointOutside(root: Element): Pointer {
   return found;
 }
 
-function pointFor(target: EventTarget, root: HTMLElement): Pointer {
+async function pointFor(target: EventTarget, root: HTMLElement): Promise<Pointer> {
   if (target === window || target === document || target === document.body) {
     return pointOutside(root);
   }
@@ -195,7 +231,7 @@ async function click(trigger: Trigger, run: Run): Promise<void> {
     await userEvent.keyboard('{Enter}');
     return;
   }
-  const at = pointOn(target);
+  const at = await pointOn(target);
   if (run.press !== null) {
     await release(run, at);
     return;
@@ -205,7 +241,7 @@ async function click(trigger: Trigger, run: Run): Promise<void> {
 }
 
 async function secondaryClick(trigger: Trigger, run: Run): Promise<void> {
-  const at = pointOn(elementTarget(trigger, run.root));
+  const at = await pointOn(elementTarget(trigger, run.root));
   await commands.ruleSecondaryClick({ kind: 'mouse', action: 'down', x: at.x, y: at.y });
 }
 
@@ -219,7 +255,7 @@ async function pointerAction(trigger: Trigger, run: Run): Promise<void> {
   const kind: PointerKind = trigger.pointerType === 'touch' ? 'touch' : 'mouse';
   const target = eventTarget(trigger.target, run.root);
   if (trigger.event === 'pointerdown' || trigger.event === 'mousedown') {
-    const at = pointFor(target, run.root);
+    const at = await pointFor(target, run.root);
     run.press = { kind, at };
     await pointer(kind, 'down', at);
     return;
