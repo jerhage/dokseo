@@ -1,5 +1,9 @@
 <script lang="ts">
   import Badge from '$lib/ui/components/Badge.svelte';
+  import ContextMenu from '$lib/ui/components/ContextMenu.svelte';
+  import { createContextMenuAreas } from '$lib/ui/components/context-menu-areas';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
   import Progress from '$lib/ui/components/Progress.svelte';
   import Table from '$lib/ui/components/Table.svelte';
   import TableBody from '$lib/ui/components/TableBody.svelte';
@@ -11,6 +15,7 @@
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
+  import BookActionItems from './BookActionItems.svelte';
   import BookActions from './BookActions.svelte';
   import { bookFacts } from './library-shelves';
 
@@ -24,6 +29,8 @@
   };
 
   let { books, busy, onedit, onremove, onfinish, onunread }: Props = $props();
+
+  const rows = createContextMenuAreas<Book>();
 </script>
 
 <Table size="sm" aria-label="Books">
@@ -41,7 +48,11 @@
     {#each books as book (book.id)}
       {@const progress = bookProgress(book)}
       {@const name = shownTitle(book)}
-      <TableRow class={{ 'is-busy': busy(book.id) }} aria-busy={busy(book.id)}>
+      <TableRow
+        class={{ 'is-busy': busy(book.id) }}
+        aria-busy={busy(book.id)}
+        {@attach rows.area(book)}
+      >
         <TableCell>
           <a class="weight-medium" href="/read/{book.id}" lang={book.language}>{name}</a>
         </TableCell>
@@ -74,3 +85,19 @@
     {/each}
   </TableBody>
 </Table>
+<ContextMenu areas={rows} label={(book) => `Actions for ${shownTitle(book)}`}>
+  {#snippet menu(book)}
+    <DropdownItem href="/read/{book.id}" target="_blank" rel="noopener"
+      >Open in new tab</DropdownItem
+    >
+    <DropdownSeparator />
+    <BookActionItems
+      {book}
+      busy={busy(book.id)}
+      onedit={() => onedit(book.id)}
+      onremove={() => onremove(book.id)}
+      onfinish={() => onfinish(book.id)}
+      onunread={() => onunread(book.id)}
+    />
+  {/snippet}
+</ContextMenu>
