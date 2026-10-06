@@ -56,7 +56,6 @@
       {#snippet children(control)}
         <Input
           {...control}
-          autofocus
           name="title"
           type="text"
           lang={form.language}
