@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   OVERLAY_EDGE_PROPERTY,
   OVERLAY_GAP_PROPERTY,
+  hintPlacement,
   inlineDirection,
   menuInset,
   overlayPlacement,
@@ -230,5 +231,39 @@ describe('menuInset', () => {
       undefined,
       undefined,
     ]);
+  });
+});
+
+describe('hintPlacement', () => {
+  const HINT: OverlaySize = { width: 80, height: 24 };
+
+  it('centres a hint one gap above its trigger', () => {
+    expect(hintPlacement(MIDDLE, DESKTOP, HINT, SPACING)).toEqual({ top: 72, left: 620 });
+  });
+
+  it('puts a hint below its trigger when the room above is too small and the room below larger', () => {
+    expect(hintPlacement(trigger(600, 10), DESKTOP, HINT, SPACING)).toEqual({
+      top: 46,
+      left: 576,
+    });
+  });
+
+  it('keeps a hint above when neither side has room, if the room above is the larger', () => {
+    const tall: OverlaySize = { width: 80, height: 500 };
+
+    expect(hintPlacement(trigger(600, 480), { width: 1440, height: 600 }, tall, SPACING).top).toBe(
+      8,
+    );
+  });
+
+  it('keeps a hint an edge inside the viewport where centring would cross it', () => {
+    expect(hintPlacement(trigger(0, 300), PHONE, HINT, SPACING).left).toBe(8);
+    expect(hintPlacement(trigger(370, 300), PHONE, HINT, SPACING).left).toBe(302);
+  });
+
+  it('narrows a hint wider than the viewport to the viewport less two edges', () => {
+    const wide: OverlaySize = { width: 600, height: 24 };
+
+    expect(hintPlacement(trigger(100, 300), PHONE, wide, SPACING).left).toBe(8);
   });
 });

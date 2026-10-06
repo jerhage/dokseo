@@ -204,6 +204,11 @@ async function click(trigger: Trigger, run: Run): Promise<void> {
   await userEvent.click(target, { position: { x: at.x - box.left, y: at.y - box.top } });
 }
 
+async function secondaryClick(trigger: Trigger, run: Run): Promise<void> {
+  const at = pointOn(elementTarget(trigger, run.root));
+  await commands.ruleSecondaryClick({ kind: 'mouse', action: 'down', x: at.x, y: at.y });
+}
+
 async function keydown(trigger: Trigger, run: Run): Promise<void> {
   const target = eventTarget(trigger.target, run.root);
   if (target instanceof HTMLElement && !target.contains(document.activeElement)) target.focus();
@@ -290,6 +295,9 @@ async function fire(trigger: Trigger, run: Run): Promise<void> {
     case 'keydown':
       await recorded('keydown', run, () => keydown(trigger, run));
       break;
+    case 'contextmenu':
+      await recorded('contextmenu', run, () => secondaryClick(trigger, run));
+      break;
     case 'mousedown':
     case 'pointerdown':
     case 'pointermove':
@@ -354,6 +362,11 @@ function styleHolds(element: Element, name: string, value: StyleValue): boolean 
   return withinTolerance(written, value);
 }
 
+function referenced(element: Element, attribute: string, selector: string): boolean {
+  const target = document.querySelector(selector);
+  return target !== null && target.id !== '' && element.getAttribute(attribute) === target.id;
+}
+
 function holds(state: ElementState): boolean {
   const element = document.querySelector(state.selector);
   if (element === null) return state.present === false;
@@ -370,10 +383,13 @@ function holds(state: ElementState): boolean {
   const properties = Object.entries(state.properties ?? {}).every(
     ([name, value]) => Reflect.get(element, name) === value,
   );
+  const references = Object.entries(state.references ?? {}).every(([name, selector]) =>
+    referenced(element, name, selector),
+  );
   const focused =
     state.focused === undefined || (document.activeElement === element) === state.focused;
   const open = state.open === undefined || isOpen(element) === state.open;
-  return attributes && classes && style && properties && focused && open;
+  return attributes && classes && style && properties && references && focused && open;
 }
 
 function reachFocus(state: ElementState): boolean {
@@ -435,6 +451,13 @@ function expectState(state: ElementState): void {
   }
   for (const [name, value] of Object.entries(state.properties ?? {})) {
     expect(Reflect.get(element, name), `${state.selector} .${name}`).toBe(value);
+  }
+  for (const [name, selector] of Object.entries(state.references ?? {})) {
+    const target = document.querySelector(selector);
+    expect(target?.id ?? '', `${selector} has an id`).not.toBe('');
+    expect(element.getAttribute(name), `${state.selector} [${name}] names ${selector}`).toBe(
+      target?.id,
+    );
   }
   if (state.focused !== undefined) {
     expect(document.activeElement === element, `${state.selector} focused`).toBe(state.focused);

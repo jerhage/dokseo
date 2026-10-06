@@ -29,6 +29,13 @@ describe('normalizedMarkup', () => {
     assert.equal(normalizedMarkup('<p><!-- note -->Text<!----></p>'), '<p>Text</p>');
   });
 
+  it('drops the empty comment <!> a server render writes, so no text is left behind', () => {
+    assert.equal(
+      normalizedMarkup('<select class="select"><option value="a">A</option><!></select>'),
+      '<select class="select"><option value="a">A</option></select>',
+    );
+  });
+
   it('writes an end tag for a self-closing element and none for a void element', () => {
     assert.equal(normalizedMarkup('<svg><path d="M1" /></svg>'), '<svg><path d="M1"></path></svg>');
     assert.equal(

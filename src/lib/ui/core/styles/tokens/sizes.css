@@ -43,6 +43,8 @@
   --modal-width-lg: var(--ds-size-dialog-lg);
   --toast-width: var(--ds-size-toast);
   --popover-width: var(--ds-size-popover);
+  --tooltip-max-width: var(--ds-size-tooltip);
+  --drawer-width: var(--ds-size-drawer);
   --menu-min-width: var(--ds-size-menu);
   --stat-min-width: var(--ds-size-stat);
   --field-label-width: var(--ds-size-label);

@@ -1,4 +1,5 @@
 import type { CarouselSlide } from '../components/carousel';
+import type { ComboboxOption } from '../components/combobox';
 import type { DiagramBox, DiagramEdge, DiagramGroup, DiagramNode } from '../components/diagram';
 import type { FileItemData } from '../components/file-item';
 import type { HighlightSegment } from '../components/highlight';
@@ -137,6 +138,12 @@ const HINTS: readonly KeyHint[] = [
   { keys: ['Esc'], does: 'close' },
 ];
 
+const LANGUAGES: readonly ComboboxOption[] = [
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'en', label: 'English' },
+];
+
 const NAMES: readonly string[] = ['Ada', 'Grace', 'Linus', 'Margaret', 'Ken'];
 
 const SEGMENTS: readonly HighlightSegment[] = [
@@ -151,6 +158,7 @@ export {
   ENTRIES,
   FILES,
   HINTS,
+  LANGUAGES,
   NAMES,
   NODES,
   OPTIONS,

@@ -213,6 +213,10 @@ A `scroll` in a rule brings the element its `to` names to the top of the area th
 `scrollIntoView({ block: 'start' })`, so the area fires real scroll events. The table of contents
 subject places a full-height section with a heading for each entry after the component, once it has
 mounted, so its rules also cover headings that reach the page late.
+A `contextmenu` in a rule is a real secondary click: the `ruleSecondaryClick` command in
+`contract/rule-input.ts` presses and lifts the right mouse button on the target, so Chromium fires
+its own `contextmenu` event. A `references` state passes when the attribute it names holds the id
+of the element its selector finds, which is how a rule states an `aria-activedescendant`.
 A `transitionend` in a rule finishes the target's running transitions, so Chromium fires the real
 event with its `propertyName`. A measured style value (`{ "value": 40, "unit": "px",
 "tolerance": 0.5 }`) passes when the written number is within the tolerance, since Vitest scales
@@ -516,6 +520,30 @@ component marks the entry of the section being read with `aria-current="location
   over, and unmounting removes every listener.
 - `current` is bindable: bind it to read the entry being read, or pass it to render a current entry
   before any script runs (a server render has none otherwise).
+
+### Tooltip, Drawer, Combobox and ContextMenu
+
+- `Tooltip` takes its `text` and a `trigger` snippet, and passes the snippet the props to spread on
+  the trigger: its `aria-describedby` and an attachment that listens for the pointer and focus.
+  The tooltip is a `popover="hint"`, shown with `showPopover()`, so a browser that does not know
+  `hint` treats it as `manual` and the script still shows and hides it. It shows 400 ms after the
+  pointer rests on the trigger, or at once on focus, and hides 100 ms after the pointer leaves the
+  trigger and the tooltip, at once on blur, and on Escape (`tooltip-phase.ts`). It sits above the
+  trigger, centred on it, or below when there is no room above (`hintPlacement` in
+  `overlay-placement.ts`).
+- `Drawer` is a modal dialog with the `Modal`'s lifecycle (`modal-phase.ts`): bind `open`, give a
+  `title`, and choose the `side` it slides in from (`end`, the default, `start` or `bottom`). It
+  takes a `footer` snippet, which gets a function that closes it, and `wrapFocus`, as the modal does.
+- `Combobox` takes a `label`, the `options` as `{ value, label }` pairs, and a bindable `value`, the
+  chosen option's value; `onchoose` reports a choice. The text in the field is the bindable `query`.
+  While it holds the chosen option's label every option shows; any other text keeps the options
+  whose label holds it, ignoring case. When focus leaves the field, the chosen label is put back.
+  The field never clears a choice: the caller does, by setting `value` to `undefined`.
+- `ContextMenu` wraps an area (`children`) and takes a `menu` snippet of `DropdownItem`s,
+  `DropdownSeparator`s and `DropdownLabel`s, named by `label`. A secondary click on the area opens
+  the menu at the pointer (`pointerPlacement` in `context-menu.ts`); Shift+F10 or the ContextMenu
+  key on a focused element inside it opens the menu below that element. Choosing an item or Escape
+  closes it and returns focus to the element that had it.
 
 ## Adding a theme
 

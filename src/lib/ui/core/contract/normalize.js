@@ -1,4 +1,4 @@
-const COMMENT = /<!--[\s\S]*?-->/gu;
+const COMMENT = /<!--[\s\S]*?-->|<!>/gu;
 
 const SELF_CLOSING = /<([a-zA-Z][\w-]*)([^>]*?)\s*\/>/gu;
 

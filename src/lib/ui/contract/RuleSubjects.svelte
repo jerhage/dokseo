@@ -4,7 +4,10 @@
   import Button from '../components/Button.svelte';
   import Carousel from '../components/Carousel.svelte';
   import CodeBlock from '../components/CodeBlock.svelte';
+  import Combobox from '../components/Combobox.svelte';
+  import ContextMenu from '../components/ContextMenu.svelte';
   import Dock from '../components/Dock.svelte';
+  import Drawer from '../components/Drawer.svelte';
   import Dropdown from '../components/Dropdown.svelte';
   import DropdownItem from '../components/DropdownItem.svelte';
   import DropdownLabel from '../components/DropdownLabel.svelte';
@@ -18,8 +21,9 @@
   import Tabs from '../components/Tabs.svelte';
   import Toast from '../components/Toast.svelte';
   import ToastRegion from '../components/ToastRegion.svelte';
+  import Tooltip from '../components/Tooltip.svelte';
   import WindowDropzone from '../components/WindowDropzone.svelte';
-  import { ENTRIES, SLIDES, TABS, TABS_WITH_DISABLED } from './case-data';
+  import { ENTRIES, LANGUAGES, SLIDES, TABS, TABS_WITH_DISABLED } from './case-data';
   import type { RuleControls } from './rule-controls.svelte';
 
   export {
@@ -29,8 +33,12 @@
     carouselDefault,
     carouselDriven,
     codeBlockCopy,
+    comboboxDefault,
+    comboboxSelected,
+    contextMenuDefault,
     dockSheet,
     dockSide,
+    drawerDefault,
     dropdownDefault,
     dropzoneDefault,
     dropzoneTitled,
@@ -45,6 +53,7 @@
     tabsUnderline,
     toastRegionBottom,
     toasts,
+    tooltipDefault,
     windowDropzoneIdle,
   };
 </script>
@@ -204,4 +213,40 @@
 
 {#snippet windowDropzoneIdle(controls: RuleControls)}
   <WindowDropzone onfiles={controls.record('onfiles')}>Drop to add</WindowDropzone>
+{/snippet}
+
+{#snippet tooltipDefault(_controls: RuleControls)}
+  <Tooltip text="Save the changes"
+    >{#snippet trigger(props)}<Button {...props}>Save</Button>{/snippet}</Tooltip
+  >
+{/snippet}
+
+{#snippet drawerDefault(controls: RuleControls)}
+  <Drawer
+    title="Filters"
+    bind:open={controls.open}
+    wrapFocus={controls.wrapFocus}
+    onclose={controls.record('onclose')}>Body</Drawer
+  >
+{/snippet}
+
+{#snippet comboboxDefault(controls: RuleControls)}
+  <Combobox label="Language" options={LANGUAGES} onchoose={controls.record('onchoose')} />
+{/snippet}
+
+{#snippet comboboxSelected(controls: RuleControls)}
+  <Combobox
+    label="Language"
+    options={LANGUAGES}
+    value="ko"
+    onchoose={controls.record('onchoose')}
+  />
+{/snippet}
+
+{#snippet contextMenuDefault(_controls: RuleControls)}
+  <ContextMenu label="Report actions"
+    ><Button>Report</Button>{#snippet menu()}<DropdownItem>Open</DropdownItem><DropdownItem
+        >Rename</DropdownItem
+      ><DropdownSeparator /><DropdownItem danger>Delete</DropdownItem>{/snippet}</ContextMenu
+  >
 {/snippet}

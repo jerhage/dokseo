@@ -231,7 +231,7 @@ every fixture already is in it.
 `normalizedMarkup` in `contract/normalize.js` reduces both sides to one string before they are
 compared. It ignores what differs between frameworks and does not change what the user gets:
 
-- comments (such as hydration markers);
+- comments (such as hydration markers), the empty comment `<!>` among them;
 - the self-closing form (`<path />` and `<path></path>`, `<input />` and `<input>`);
 - white space next to a tag, and any run of white space elsewhere (collapsed to one space);
 - the order of attributes, of class names and of style declarations, and the spacing inside a
@@ -295,7 +295,7 @@ the framework renders it.
 ## The behaviour rules
 
 `rules/<component>.json` describes what a component's script (or a native element) does, for
-the seventeen components that have one. A rule is a state before, an event, and a state after,
+the twenty-one components that have one. A rule is a state before, an event, and a state after,
 read against a fixture:
 
 ```json
@@ -319,10 +319,11 @@ read against a fixture:
 - `fixture` is the starting markup. `given` adds state on top of it (focus, an open popover);
   `options` names settings that change no markup (`{ "wrapFocus": true }`).
 - `when` is a list of triggers. `event` is a DOM event (`click`, `keydown` with `key`,
-  `pointerdown`, `dragenter` with `files`, …), or one of: `set` (a prop or setting changes:
-  `prop`, `value`), `call` (a method is called: `method`, `value`), `time` (`ms` pass), `mount`,
-  `unmount`, `animationsend` (the element's running animations finish), `scroll` (`to`).
-  `target` is a selector, or `window` or `document`.
+  `pointerdown`, `contextmenu`, `dragenter` with `files`, …), or one of: `set` (a prop or setting
+  changes: `prop`, `value`), `call` (a method is called: `method`, `value`), `time` (`ms` pass),
+  `mount`, `unmount`, `animationsend` (the element's running animations finish), `scroll` (`to`).
+  `target` is a selector, or `window` or `document`. A `contextmenu` is the secondary button's
+  press, as a user makes it, not a dispatched event.
 - A `scroll` names, in `to`, the element it brings to the top of the area that scrolls it, as
   `element.scrollIntoView({ block: 'start' })` does; the area then fires its own scroll events. It
   states a place, not a distance, so the rule holds whatever layout the page gives the content
@@ -334,7 +335,15 @@ read against a fixture:
 - `then` lists element states after the triggers: `attributes` (a value, or `null` for absent),
   `classes` (present or not), `style` (a custom property's value, `set` for any value, `null`, or
   a measured value), `properties` (DOM properties such as `value`), `focused`, `open` (a popover
-  or a dialog is open) and `present` (the element exists).
+  or a dialog is open), `present` (the element exists) and `references`.
+- `references` maps an attribute that holds a generated id to a selector: the attribute must hold
+  the id of the element the selector finds. It states what a value cannot, since the id differs
+  from one render to the next:
+
+  ```json
+  "references": { "aria-activedescendant": ".combobox-option:nth-child(2)" }
+  ```
+
 - A measured value states a number the component computes from the pointer or the layout, which
   a host that scales the page can move by a fraction of a pixel. It names the number, its unit and
   how far the written value may differ from it:
@@ -373,9 +382,11 @@ The specs fail until the stylesheet, `index.css` and `THEMES` agree. A new theme
 
 1. Add its stylesheet under `styles/components/` and import it in `styles/index.css` into the
    `components` layer. Every custom property it reads at runtime gets a fallback.
-2. Add one fixture per variant under `fixtures/<component>/`. Write it with the framework version
-   that implements the component first: render each variant, pass the markup through
-   `fixtureText`, and save it. Never write a fixture by hand that no component renders.
+2. Add one fixture per variant under `fixtures/<component>/`. When a framework version already
+   implements the component, render each variant, pass the markup through `fixtureText`, and save
+   it. A new component's fixtures may be written first, by hand and passed through `fixtureText`,
+   so the framework versions are built to them; before the release that adds them, each must match
+   the first framework version's render, and a fixture that does not is changed in that release.
 3. If it runs a script, add `rules/<component>.json`.
 
 ### A fixture
@@ -390,8 +401,8 @@ Render the variant in a framework version, write `fixtureText(rendered)` to
 - `appearance.test.js`, `theme-boot.test.js`: the appearance functions, the first-paint script's
   behaviour and its exact text, and that `THEMES` matches the theme stylesheets.
 - `contract/*.test.js`: the normalizer, the formatter and the comparison.
-- `fixtures/fixtures.test.js`: every fixture is at a valid path, in canonical form, balanced, uses
-  only placeholder ids, and names only classes the stylesheets define.
+- `fixtures/fixtures.test.js`: every fixture is at a valid path, in canonical form, holds no
+  comment, is balanced, uses only placeholder ids, and names only classes the stylesheets define.
 - `rules/rules.test.js`: every rules file is well formed, names a fixture that exists, starts
   from elements its fixture holds, and explains every uncertain rule.
 - `icons/icons.test.js`: every icon is one SVG root with the expected attributes and shape

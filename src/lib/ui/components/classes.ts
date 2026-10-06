@@ -33,6 +33,8 @@ type ModalSize = 'sm' | 'md' | 'lg';
 
 type ModalPlacement = 'center' | 'top';
 
+type DrawerSide = 'end' | 'start' | 'bottom';
+
 type ToastPlacement = 'bottom' | 'top';
 
 type FieldLayout = 'stacked' | 'inline';
@@ -173,6 +175,12 @@ const MODAL_PLACEMENTS: Readonly<Record<ModalPlacement, ClassList>> = {
   top: ['modal-top'],
 };
 
+const DRAWER_SIDES: Readonly<Record<DrawerSide, ClassList>> = {
+  end: [],
+  start: ['drawer-start'],
+  bottom: ['drawer-bottom'],
+};
+
 const RADIO_VARIANTS: Readonly<Record<RadioVariant, ClassList>> = {
   default: [],
   tile: ['radio-tile'],
@@ -258,6 +266,7 @@ export {
   BUTTON_VARIANTS,
   CARD_SIZES,
   CARD_VARIANTS,
+  DRAWER_SIDES,
   DROPZONE_SIZES,
   FIELD_LAYOUTS,
   MEDIA_RATIOS,
@@ -285,6 +294,7 @@ export type {
   CardVariant,
   ClassList,
   ControlSize,
+  DrawerSide,
   DropzoneSize,
   FieldLayout,
   MediaRatio,

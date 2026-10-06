@@ -10,6 +10,12 @@ html:has(.modal-backdrop[open]) {
 html:has(.modal-backdrop[open][data-page-scrollbar]) {
   scrollbar-gutter: stable;
 }
+html:has(.drawer-backdrop[open]) {
+  overflow: hidden;
+}
+html:has(.drawer-backdrop[open][data-page-scrollbar]) {
+  scrollbar-gutter: stable;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -26,7 +32,14 @@ html:has(.modal-backdrop[open][data-page-scrollbar]) {
   .modal-backdrop[open] .modal,
   .modal-backdrop.is-leaving,
   .modal-backdrop.is-leaving .modal,
+  .drawer-backdrop[open],
+  .drawer-backdrop[open] > .drawer,
+  .drawer-backdrop.is-leaving,
+  .drawer-backdrop.is-leaving > .drawer,
   .dropdown.is-open .dropdown-menu,
+  .context-menu > .dropdown-menu,
+  .tooltip,
+  .combobox-listbox,
   .file-item,
   .tab-panel,
   .accordion-body,
@@ -40,7 +53,10 @@ html:has(.modal-backdrop[open][data-page-scrollbar]) {
 @media print {
   .toast-region,
   .modal-backdrop,
+  .drawer-backdrop,
   .dropdown-menu,
+  .tooltip,
+  .combobox-listbox,
   .alert-close,
   .tag-remove,
   .file-item-remove {

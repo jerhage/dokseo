@@ -1,0 +1,124 @@
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: none;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: inherit;
+  background-color: var(--color-overlay);
+  border: none;
+}
+.drawer-backdrop::backdrop {
+  background: transparent;
+}
+.drawer-backdrop[open] {
+  display: flex;
+}
+.drawer {
+  container-type: inline-size;
+  position: relative;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  inline-size: min(var(--drawer-width), 100% - var(--control-h-touch));
+  margin-inline-start: auto;
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border-inline-start: var(--border-width) solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.drawer-start {
+  margin-inline: 0 auto;
+  border-inline-start: none;
+  border-inline-end: var(--border-width) solid var(--border-color);
+}
+.drawer-bottom {
+  align-self: flex-end;
+  inline-size: 100%;
+  max-block-size: var(--layout-sheet-height-tall);
+  margin-inline: 0;
+  padding-block-start: 0;
+  border-inline-start: none;
+  border-block-start: var(--border-width) solid var(--border-color);
+  border-start-start-radius: var(--radius-overlay);
+  border-start-end-radius: var(--radius-overlay);
+}
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-5) var(--sp-2);
+}
+.drawer-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+}
+.drawer-body {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-5) var(--sp-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--color-text-muted);
+}
+.drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  background-color: var(--color-surface-sunken);
+  border-block-start: var(--border-width) solid var(--border-color);
+}
+.drawer-backdrop[open] {
+  animation: kFadeIn var(--transition-enter) both;
+}
+.drawer-backdrop.is-leaving {
+  animation: kFadeOut var(--transition-exit) both;
+}
+.drawer-backdrop[open] > .drawer {
+  animation: kEnterFromRight var(--dur-moderate) var(--ease-out) both;
+}
+.drawer-backdrop[open] > .drawer:dir(rtl) {
+  animation-name: kEnterFromLeft;
+}
+.drawer-backdrop[open] > .drawer.drawer-start {
+  animation-name: kEnterFromLeft;
+}
+.drawer-backdrop[open] > .drawer.drawer-start:dir(rtl) {
+  animation-name: kEnterFromRight;
+}
+.drawer-backdrop[open] > .drawer.drawer-bottom {
+  animation-name: kEnterFromBottom;
+}
+.drawer-backdrop[open].is-leaving > .drawer {
+  animation: kLeaveToRight var(--transition-exit) both;
+}
+.drawer-backdrop[open].is-leaving > .drawer:dir(rtl) {
+  animation-name: kLeaveToLeft;
+}
+.drawer-backdrop[open].is-leaving > .drawer.drawer-start {
+  animation-name: kLeaveToLeft;
+}
+.drawer-backdrop[open].is-leaving > .drawer.drawer-start:dir(rtl) {
+  animation-name: kLeaveToRight;
+}
+.drawer-backdrop[open].is-leaving > .drawer.drawer-bottom {
+  animation-name: kLeaveToBottom;
+}

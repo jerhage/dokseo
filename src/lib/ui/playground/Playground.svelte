@@ -17,10 +17,13 @@
   import ChromeSection from './ChromeSection.svelte';
   import ChoicesSection from './ChoicesSection.svelte';
   import CodeBlockSection from './CodeBlockSection.svelte';
+  import ComboboxSection from './ComboboxSection.svelte';
   import CommandSection from './CommandSection.svelte';
+  import ContextMenuSection from './ContextMenuSection.svelte';
   import DiagramSection from './DiagramSection.svelte';
   import DividerSection from './DividerSection.svelte';
   import DockSection from './DockSection.svelte';
+  import DrawerSection from './DrawerSection.svelte';
   import DropdownSection from './DropdownSection.svelte';
   import EmptyStateSection from './EmptyStateSection.svelte';
   import EyebrowSection from './EyebrowSection.svelte';
@@ -66,6 +69,7 @@
   import TabsSection from './TabsSection.svelte';
   import ThumbnailSection from './ThumbnailSection.svelte';
   import ToastSection from './ToastSection.svelte';
+  import TooltipSection from './TooltipSection.svelte';
   import TokensSection from './TokensSection.svelte';
   import ZPatternSection from './ZPatternSection.svelte';
 
@@ -87,6 +91,7 @@
     FormSection,
     InputGroupSection,
     SearchFieldSection,
+    ComboboxSection,
     FileUploadSection,
     ChoicesSection,
     SegmentedSection,
@@ -99,10 +104,13 @@
     TableSection,
     ListGroupSection,
     ModalToastSection,
+    DrawerSection,
     ToastSection,
     DropdownSection,
+    ContextMenuSection,
     AppearanceSwitcherSection,
     PopoverSection,
+    TooltipSection,
     CommandSection,
     KeyHintsSection,
     KeyboardScrollingSection,
