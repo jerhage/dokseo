@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import ArrowLeft from '$lib/ui/components/icons/ArrowLeft.svelte';
 import Database from '$lib/ui/components/icons/Database.svelte';
 import File from '$lib/ui/components/icons/File.svelte';
 import HardDrive from '$lib/ui/components/icons/HardDrive.svelte';
@@ -7,7 +8,7 @@ import Info from '$lib/ui/components/icons/Info.svelte';
 import Palette from '$lib/ui/components/icons/Palette.svelte';
 import ScanText from '$lib/ui/components/icons/ScanText.svelte';
 
-type SettingsSection = 'engine' | 'storage' | 'data' | 'appearance' | 'library' | 'app';
+type SettingsSection = 'engine' | 'storage' | 'data' | 'appearance' | 'library' | 'reading' | 'app';
 
 type SectionLink = {
   readonly id: SettingsSection;
@@ -59,6 +60,14 @@ function settingsSections(root: string): readonly SectionLink[] {
       icon: File,
       href: `${root}/library`,
       pageHref: `${root}/library`,
+    },
+    {
+      id: 'reading',
+      name: 'Reading defaults',
+      summary: 'How a new book reads, per language',
+      icon: ArrowLeft,
+      href: `${root}/reading`,
+      pageHref: `${root}/reading`,
     },
     {
       id: 'app',

@@ -30,6 +30,7 @@ describe('SettingsShell', () => {
     expect(navCurrent(markup({ current: 'data' }))).toEqual(['/settings/data']);
     expect(navCurrent(markup({ current: 'appearance' }))).toEqual(['/settings/appearance']);
     expect(navCurrent(markup({ current: 'library' }))).toEqual(['/settings/library']);
+    expect(navCurrent(markup({ current: 'reading' }))).toEqual(['/settings/reading']);
     expect(navCurrent(markup({ current: 'app' }))).toEqual(['/settings/app']);
   });
 
@@ -41,6 +42,7 @@ describe('SettingsShell', () => {
     expect(html).toContain('href="/elsewhere/settings/data"');
     expect(html).toContain('href="/elsewhere/settings/appearance"');
     expect(html).toContain('href="/elsewhere/settings/library"');
+    expect(html).toContain('href="/elsewhere/settings/reading"');
     expect(html).toContain('href="/elsewhere/settings/app"');
   });
 
@@ -97,6 +99,7 @@ describe('SettingsShell', () => {
       'Export and import captures',
       'Theme and color scheme',
       'How a file finds its book',
+      'How a new book reads, per language',
       'Version and updates',
     ]);
   });
