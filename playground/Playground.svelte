@@ -4,6 +4,7 @@
   import AccordionSection from './AccordionSection.svelte';
   import AlertSection from './AlertSection.svelte';
   import AppShellSection from './AppShellSection.svelte';
+  import AppearanceSwitcherSection from './AppearanceSwitcherSection.svelte';
   import AvatarSection from './AvatarSection.svelte';
   import BadgesSection from './BadgesSection.svelte';
   import BentoSection from './BentoSection.svelte';
@@ -100,6 +101,7 @@
     ModalToastSection,
     ToastSection,
     DropdownSection,
+    AppearanceSwitcherSection,
     PopoverSection,
     CommandSection,
     KeyHintsSection,

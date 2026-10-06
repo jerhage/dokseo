@@ -1,0 +1,114 @@
+{
+  "component": "appearance-choices",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "selects a theme when its item is clicked, keeps the colour scheme, and reports the new appearance",
+      "fixture": "appearance-choices/default",
+      "when": [
+        {
+          "event": "click",
+          "target": "[role=\"group\"]:first-of-type .dropdown-item:nth-child(6)"
+        }
+      ],
+      "then": [
+        {
+          "selector": "[role=\"group\"]:first-of-type .dropdown-item:nth-child(6)",
+          "attributes": {
+            "aria-checked": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        },
+        {
+          "selector": "[role=\"group\"]:first-of-type .dropdown-item:nth-child(2)",
+          "attributes": {
+            "aria-checked": "false"
+          },
+          "classes": {
+            "is-active": false
+          }
+        },
+        {
+          "selector": "[role=\"group\"]:last-of-type .dropdown-item:nth-child(2)",
+          "attributes": {
+            "aria-checked": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onchoose",
+          "with": {
+            "theme": "ember",
+            "colorScheme": "automatic"
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "AppearanceChoices.svelte (choose), DropdownItem.svelte (chosen)",
+      "certain": true,
+      "note": "The sixth child of the theme group is Ember, after the label. The current appearance is a bindable prop: the component moves the selection itself and passes the new appearance to onchoose, where the caller applies and saves it. Inside a Dropdown the prevented default leaves the menu open."
+    },
+    {
+      "name": "selects a colour scheme when its item is clicked, keeps the theme, and reports the new appearance",
+      "fixture": "appearance-choices/default",
+      "when": [
+        {
+          "event": "click",
+          "target": "[role=\"group\"]:last-of-type .dropdown-item:nth-child(4)"
+        }
+      ],
+      "then": [
+        {
+          "selector": "[role=\"group\"]:last-of-type .dropdown-item:nth-child(4)",
+          "attributes": {
+            "aria-checked": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        },
+        {
+          "selector": "[role=\"group\"]:last-of-type .dropdown-item:nth-child(2)",
+          "attributes": {
+            "aria-checked": "false"
+          },
+          "classes": {
+            "is-active": false
+          }
+        },
+        {
+          "selector": "[role=\"group\"]:first-of-type .dropdown-item:nth-child(2)",
+          "attributes": {
+            "aria-checked": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onchoose",
+          "with": {
+            "theme": "base",
+            "colorScheme": "dark"
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "AppearanceChoices.svelte (choose), DropdownItem.svelte (chosen)",
+      "certain": true,
+      "note": "The fourth child of the colour scheme group is Dark, after the label. The current appearance is a bindable prop: the component moves the selection itself and passes the new appearance to onchoose, where the caller applies and saves it. Inside a Dropdown the prevented default leaves the menu open."
+    }
+  ]
+}

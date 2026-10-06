@@ -16,6 +16,7 @@
     { id: 'table', label: 'Table' },
     { id: 'modal', label: 'Modal and toast' },
     { id: 'dropdown', label: 'Dropdown' },
+    { id: 'appearance-switcher', label: 'Appearance switcher' },
     { id: 'popover', label: 'Popover' },
     { id: 'navigation', label: 'Breadcrumb and pagination' },
     { id: 'avatar', label: 'Avatar' },

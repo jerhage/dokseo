@@ -74,9 +74,10 @@ function selectorClasses(selector) {
 }
 
 describe('the behaviour rules', () => {
-  it('cover the sixteen components that run a script or a native behaviour', () => {
+  it('cover the seventeen components that run a script or a native behaviour', () => {
     assert.deepEqual(ruleFiles(), [
       'accordion-item.json',
+      'appearance-choices.json',
       'carousel.json',
       'code-block.json',
       'dock.json',

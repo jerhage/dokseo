@@ -18,6 +18,7 @@ type RuleSubject = {
   readonly connect?: (controls: RuleControls) => () => void;
   readonly layout?: string;
   readonly coarsePointer?: boolean;
+  readonly inMenu?: boolean;
 };
 
 const CAROUSEL_LAYOUT = '.carousel { block-size: 12rem; inline-size: 20rem; }';
@@ -128,6 +129,7 @@ function toastSubject(options: (controls: RuleControls) => ToastOptions): RuleSu
 const RULE_SUBJECTS: Readonly<Record<string, RuleSubject>> = {
   'accordion-item/closed': { render: subjects.accordionItemClosed },
   'accordion-item/open': { render: subjects.accordionItemOpen },
+  'appearance-choices/default': { render: subjects.appearanceChoicesDefault, inMenu: true },
   'carousel/default': { render: subjects.carouselDefault, layout: CAROUSEL_LAYOUT },
   'carousel/driven': { render: subjects.carouselDriven, layout: CAROUSEL_LAYOUT },
   'code-block/copy': { render: subjects.codeBlockCopy },

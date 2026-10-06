@@ -39,5 +39,5 @@ npm install
 npm run dev
 ```
 
-Open the address Vite prints (by default http://localhost:5173). The theme and colour scheme
-pickers sit in the header.
+Open the address Vite prints (by default http://localhost:5173). The appearance switcher, which
+picks the theme and the colour scheme, sits in the header.
