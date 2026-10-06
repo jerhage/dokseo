@@ -53,7 +53,7 @@
 
   function focusFirst(): void {
     const first = dialog?.querySelector('[autofocus]') ?? dialog?.querySelector('.drawer-close');
-    if (first instanceof HTMLElement) first.focus();
+    if (first instanceof HTMLElement) first.focus({ preventScroll: true });
   }
 
   async function leave(): Promise<void> {
