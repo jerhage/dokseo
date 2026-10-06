@@ -26,6 +26,7 @@
 </script>
 
 <IconButton
+  hint
   variant="ghost"
   size="sm"
   aria-haspopup="dialog"

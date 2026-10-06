@@ -219,6 +219,7 @@
     <span class="row items-center gap-0 ms-auto shrink-0">
       {#if tools.text.kind === 'shown'}
         <IconButton
+          hint
           variant="ghost"
           size="sm"
           icon={Pencil}
@@ -228,6 +229,7 @@
       {/if}
       {#if tools.note.kind !== 'none'}
         <IconButton
+          hint
           variant="ghost"
           size="sm"
           icon={NotebookPen}
@@ -236,6 +238,7 @@
         />
       {/if}
       <IconButton
+        hint
         variant="ghost"
         size="sm"
         icon={TagIcon}
@@ -246,6 +249,7 @@
       {#if tools.copies !== null}
         {@const text = tools.copies}
         <IconButton
+          hint
           variant="ghost"
           size="sm"
           icon={copied ? Check : Copy}

@@ -442,6 +442,7 @@
       {/if}
       {#if onsearch !== undefined}
         <IconButton
+          hint
           size="sm"
           class="shrink-0"
           aria-haspopup="dialog"

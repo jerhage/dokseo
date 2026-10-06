@@ -340,6 +340,7 @@
 
     {#if book !== null}
       <IconButton
+        hint
         variant={noting ? 'accent' : 'default'}
         size="sm"
         class="shrink-0"
@@ -351,6 +352,7 @@
 
       {#if layout !== null}
         <IconButton
+          hint
           variant={selecting ? 'accent' : 'default'}
           size="sm"
           class="shrink-0"
@@ -363,6 +365,7 @@
 
       {#if onsearch !== undefined}
         <IconButton
+          hint
           size="sm"
           class="shrink-0"
           aria-haspopup="dialog"

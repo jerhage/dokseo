@@ -61,6 +61,7 @@
 {#snippet turn(shown: ShownTurn | null)}
   {#if shown !== null}
     <IconButton
+      hint
       variant="ghost"
       size="sm"
       class="shrink-0"
