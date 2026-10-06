@@ -78,7 +78,7 @@
     if (listbox === undefined || unfollow !== undefined) return;
     if (!listbox.matches(':popover-open')) listbox.showPopover();
     place();
-    unfollow = followAnchor(place);
+    unfollow = followAnchor(place, listbox);
   }
 
   function dismiss(): void {

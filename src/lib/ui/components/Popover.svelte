@@ -56,7 +56,7 @@
 
   function startFollowing(): void {
     place();
-    unfollow ??= followAnchor(place);
+    unfollow ??= followAnchor(place, sheet);
   }
 
   function stopFollowing(): void {

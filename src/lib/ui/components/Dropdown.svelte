@@ -87,7 +87,7 @@
     if (unfollow !== undefined || menu === undefined) return;
     menu.showPopover();
     place();
-    unfollow = followAnchor(place);
+    unfollow = followAnchor(place, menu);
   }
 
   function conceal(): void {

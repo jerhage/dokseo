@@ -538,12 +538,24 @@ component marks the entry of the section being read with `aria-current="location
   chosen option's value; `onchoose` reports a choice. The text in the field is the bindable `query`.
   While it holds the chosen option's label every option shows; any other text keeps the options
   whose label holds it, ignoring case. When focus leaves the field, the chosen label is put back.
-  The field never clears a choice: the caller does, by setting `value` to `undefined`.
+  The field never clears a choice: the caller does, by setting `value` to `undefined`. The list
+  opens below the field, or above it when it does not fit below and there is more room above
+  (`overlayPlacement` in `overlay-placement.ts`). It is placed again on scroll, on resize, and
+  whenever its own size changes as typing shrinks or grows the shown options (`followAnchor` in
+  `anchor-tracking.ts` watches it with a `ResizeObserver`), so a list above the field keeps its
+  bottom one gap above the field, and goes back below once it fits there.
 - `ContextMenu` wraps an area (`children`) and takes a `menu` snippet of `DropdownItem`s,
   `DropdownSeparator`s and `DropdownLabel`s, named by `label`. A secondary click on the area opens
   the menu at the pointer (`pointerPlacement` in `context-menu.ts`); Shift+F10 or the ContextMenu
   key on a focused element inside it opens the menu below that element. Choosing an item or Escape
   closes it and returns focus to the element that had it.
+
+Every anchored overlay (the `Popover`, the `Dropdown` and `ContextMenu` menus, the `Tooltip` and the
+`Combobox` list) is placed again while it is open on scroll, on resize, and whenever its own size
+changes: `followAnchor` in `anchor-tracking.ts` takes the overlay and watches it with a
+`ResizeObserver`. So an overlay above its anchor keeps its bottom one gap above the anchor as its
+content, items, text or shown options grow or shrink, and moves to the other side once the
+placement rule puts it there.
 
 ## Adding a theme
 
