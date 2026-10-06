@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.10](https://github.com/jerhage/dokseo/compare/v0.9.9...v0.9.10) (2026-10-06)
+
+
+### Fixes
+
+* **library:** open the book settings without focusing the title, so no keyboard covers the dialog on a phone ([4b37432](https://github.com/jerhage/dokseo/commit/4b37432253bf4da8bdf7477d2a6f7c9fc6ef459f))
+
 ## [0.9.9](https://github.com/jerhage/dokseo/compare/v0.9.8...v0.9.9) (2026-10-06)
 
 
