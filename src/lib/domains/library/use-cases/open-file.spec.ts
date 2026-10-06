@@ -14,6 +14,7 @@ import type {
   LibraryWrite,
 } from '../domain/book/library-repository';
 import type { PageOrder } from '../domain/book/page-list';
+import type { ReadingDefaults } from '../domain/book/reading-defaults';
 import type { RemovedBook, RestoreCandidate } from '../domain/book/removed-book';
 import type { ContentDigest } from '../domain/ingest/content-hasher';
 import type { EpubInspectionAnswer } from '../domain/ingest/epub-inspection';
@@ -287,6 +288,15 @@ function inFolder(file: File, path: string): File {
   Object.defineProperty(file, 'webkitRelativePath', { value: path });
   return file;
 }
+
+const CHOSEN_DEFAULTS: ReadingDefaults = {
+  language: 'en',
+  languages: {
+    ja: { direction: 'rtl', layoutKind: 'paged', pagePairing: 'auto' },
+    ko: { direction: 'rtl', layoutKind: 'paged', pagePairing: 'double' },
+    en: { direction: 'ltr', layoutKind: 'continuous', pagePairing: 'single' },
+  },
+};
 
 const files: readonly File[] = [inFolder(new File(['bytes'], 'Yotsuba&! 1.cbz'), '')];
 
@@ -1359,5 +1369,69 @@ describe('openFile', () => {
     const repository = fakeRepository(WRITTEN, [[1, 2]]);
     const result = await openFile(deps({ repository: repository.repository }), files);
     expect(result.kind).toBe('added');
+  });
+
+  it('gives a book whose language nothing shows the default language and its reading defaults', async () => {
+    const result = await openFile(deps(), files, undefined, 'content', CHOSEN_DEFAULTS);
+
+    expect(openedBook(result).language).toBe('en');
+    expect(openedBook(result).direction).toBe('ltr');
+    expect(openedBook(result).layoutKind).toBe('continuous');
+    expect(openedBook(result).pagePairing).toBe('single');
+    expect(openedBook(result).pageFit).toBe(defaultPageFit('continuous'));
+  });
+
+  it("fills a book whose title shows its language from that language's defaults", async () => {
+    const builder = fakeBuilder(
+      built(builtSource({ suggestedTitle: '\uB098 \uD63C\uC790\uB9CC' })),
+    );
+
+    const result = await openFile(
+      deps({ builder: builder.builder }),
+      files,
+      undefined,
+      'content',
+      CHOSEN_DEFAULTS,
+    );
+
+    expect(openedBook(result).language).toBe('ko');
+    expect(openedBook(result).direction).toBe('rtl');
+    expect(openedBook(result).layoutKind).toBe('paged');
+    expect(openedBook(result).pagePairing).toBe('double');
+  });
+
+  it('keeps the language, direction and layout an EPUB declares and fills only its pairing', async () => {
+    const result = await openFile(
+      deps({
+        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'rtl', 'en-GB')).inspector,
+        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
+      }),
+      epub,
+      undefined,
+      'content',
+      CHOSEN_DEFAULTS,
+    );
+
+    expect(openedBook(result).language).toBe('en');
+    expect(openedBook(result).direction).toBe('rtl');
+    expect(openedBook(result).layoutKind).toBe('paged');
+    expect(openedBook(result).pagePairing).toBe('single');
+  });
+
+  it("keeps a reflowable EPUB a flow book whatever its language's default layout", async () => {
+    const result = await openFile(
+      deps({
+        builder: fakeBuilder(built(builtFlow({ kind: 'no-image', path: 'OEBPS/ch01.xhtml' })))
+          .builder,
+        inspectEpub: fakeInspector(inspectedEpub('reflowable', 'default', 'en')).inspector,
+      }),
+      epub,
+      undefined,
+      'content',
+      CHOSEN_DEFAULTS,
+    );
+
+    expect(openedBook(result).layoutKind).toBe('flow');
+    expect(openedBook(result).direction).toBe('ltr');
   });
 });

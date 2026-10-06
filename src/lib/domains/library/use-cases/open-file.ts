@@ -6,8 +6,10 @@ import type { LayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
 import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
-import { defaultPageFit, DEFAULT_PAGE_PAIRING } from '../domain/book/book';
+import { defaultPageFit } from '../domain/book/book';
 import type { Book } from '../domain/book/book';
+import { INITIAL_READING_DEFAULTS, newBookReading } from '../domain/book/reading-defaults';
+import type { ReadingDefaults } from '../domain/book/reading-defaults';
 import { NOTHING_TO_MERGE } from '../domain/book/book-merge';
 import type { HeldMerge, MergeInto } from '../domain/book/book-merge';
 import { bookTitle, plausibleTitle, suggestTitle } from '../domain/book/title';
@@ -69,10 +71,6 @@ type OpenFileDeps = {
   readonly now: () => number;
   readonly newId: () => string;
 };
-
-const DEFAULT_LANGUAGE: Language = 'ja';
-
-const DEFAULT_DIRECTION: ReadingDirection = 'rtl';
 
 function hashedPart(files: readonly File[]): Blob {
   const [only] = files;
@@ -214,6 +212,10 @@ function declaredLanguage(inspection: UploadInspection): Language | null {
   return languageDeclared(inspection.packageDocument.language);
 }
 
+function declaredLayout(inspection: UploadInspection, content: BookContent): LayoutKind | null {
+  return inspection.kind === 'epub' ? content.layoutKind : null;
+}
+
 function declaredTitle(inspection: UploadInspection, built: BuiltSource): string | null {
   if (inspection.kind !== 'epub') return built.metadataTitle;
 
@@ -223,8 +225,8 @@ function declaredTitle(inspection: UploadInspection, built: BuiltSource): string
 
 const EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE: ReadingDirection = 'ltr';
 
-function declaredDirection(inspection: UploadInspection): ReadingDirection {
-  if (inspection.kind !== 'epub') return DEFAULT_DIRECTION;
+function declaredDirection(inspection: UploadInspection): ReadingDirection | null {
+  if (inspection.kind !== 'epub') return null;
   if (inspection.packageDocument.direction === 'default') {
     return EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE;
   }
@@ -237,6 +239,7 @@ async function openFile(
   files: readonly File[],
   report: UploadReport = () => undefined,
   matching: BookMatching = DEFAULT_BOOK_MATCHING,
+  defaults: ReadingDefaults = INITIAL_READING_DEFAULTS,
 ): Promise<OpenFileResult> {
   await deps.requestPersistence();
 
@@ -267,10 +270,17 @@ async function openFile(
   if (read.kind !== 'success') return read;
   const content = read.content;
 
-  const layoutKind = content.layoutKind;
-
   const fileTitle = built.suggestedTitle;
   const title = bookTitle(declaredTitle(inspection, built), fileTitle);
+  const reading = newBookReading(
+    {
+      language: declaredLanguage(inspection),
+      direction: declaredDirection(inspection),
+      layoutKind: declaredLayout(inspection, content),
+    },
+    languageOfTitle(title),
+    defaults,
+  );
   report({ kind: 'titled', title });
   const restoring = restorableMatch(restorable, { ...identity, title, fileTitle });
 
@@ -280,11 +290,11 @@ async function openFile(
     alias: restoring?.alias ?? null,
     seriesId: restoring?.seriesId ?? null,
     volume: restoring?.volume ?? null,
-    language: declaredLanguage(inspection) ?? languageOfTitle(title) ?? DEFAULT_LANGUAGE,
-    layoutKind,
-    direction: declaredDirection(inspection),
-    pagePairing: DEFAULT_PAGE_PAIRING,
-    pageFit: defaultPageFit(layoutKind),
+    language: reading.language,
+    layoutKind: reading.layoutKind,
+    direction: reading.direction,
+    pagePairing: reading.pagePairing,
+    pageFit: defaultPageFit(reading.layoutKind),
     sourceKind: built.sourceKind,
     contentHash: identity.contentHash,
     fileName: identity.fileName,
