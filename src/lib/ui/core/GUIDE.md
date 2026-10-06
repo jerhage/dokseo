@@ -138,6 +138,10 @@ function chooseAppearance(appearance) {
 }
 ```
 
+The `appearance-switcher` and `appearance-choices` fixtures are the markup of a menu that picks
+both. It shows the appearance it is given and reports a choice through `onchoose`
+(`rules/appearance-choices.json`); the app saves it, as above.
+
 ### The first-paint script
 
 The saved appearance must be on the `html` element before the first paint, or the page paints
@@ -291,7 +295,7 @@ the framework renders it.
 ## The behaviour rules
 
 `rules/<component>.json` describes what a component's script (or a native element) does, for
-the sixteen components that have one. A rule is a state before, an event, and a state after,
+the seventeen components that have one. A rule is a state before, an event, and a state after,
 read against a fixture:
 
 ```json

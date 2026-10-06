@@ -1,5 +1,6 @@
 <script module lang="ts">
   import AccordionItem from '../components/AccordionItem.svelte';
+  import AppearanceChoices from '../components/AppearanceChoices.svelte';
   import Button from '../components/Button.svelte';
   import Carousel from '../components/Carousel.svelte';
   import CodeBlock from '../components/CodeBlock.svelte';
@@ -24,6 +25,7 @@
   export {
     accordionItemClosed,
     accordionItemOpen,
+    appearanceChoicesDefault,
     carouselDefault,
     carouselDriven,
     codeBlockCopy,
@@ -53,6 +55,13 @@
 
 {#snippet accordionItemOpen(_controls: RuleControls)}
   <AccordionItem title="Details" open>Body</AccordionItem>
+{/snippet}
+
+{#snippet appearanceChoicesDefault(controls: RuleControls)}
+  <AppearanceChoices
+    appearance={{ theme: 'base', colorScheme: 'automatic' }}
+    onchoose={controls.record('onchoose')}
+  />
 {/snippet}
 
 {#snippet carouselDefault(controls: RuleControls)}

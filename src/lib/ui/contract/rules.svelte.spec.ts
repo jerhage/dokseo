@@ -444,12 +444,23 @@ function expectState(state: ElementState): void {
   }
 }
 
+function isPlainObject(value: unknown): boolean {
+  if (value === null || typeof value !== 'object') return false;
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function isComparedValue(value: unknown, described: unknown): boolean {
+  if (value === null || typeof value !== 'object') return true;
+  return isPlainObject(value) && isPlainObject(described);
+}
+
 function expectEmitted(rule: Rule, controls: RuleControls): void {
   for (const expected of rule.emits ?? []) {
     const call = controls.emitted.find((emitted) => emitted.callback === expected.callback);
     expect(call, `${expected.callback} was called`).toBeDefined();
     const [first] = call?.values ?? [];
-    if (expected.with !== undefined && (first === null || typeof first !== 'object')) {
+    if (expected.with !== undefined && isComparedValue(first, expected.with)) {
       expect(first, `${expected.callback} was called with`).toEqual(expected.with);
     }
   }

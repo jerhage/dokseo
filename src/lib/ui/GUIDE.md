@@ -149,8 +149,8 @@ Any package manager that reads `package.json` works the same way (`pnpm install`
 The scripts:
 
 - `npm run dev`: serves the playground with Vite (`vite.config.ts`, rooted at `playground/`), at
-  the address Vite prints. Its header holds a theme and a colour scheme picker, saved under the
-  placeholder keys `kandan.theme` and `kandan.color-scheme`.
+  the address Vite prints. Its header holds the appearance switcher, which saves the choice under
+  the placeholder keys `kandan.theme` and `kandan.color-scheme`.
 - `npm run test`: every unit spec, once. `npm run test:unit` runs the `unit` project alone, and
   `npm run test:watch` watches.
 - `npm run test:core`: the core's own specs, with `node --test`. They need no dependency.
@@ -217,8 +217,10 @@ A `transitionend` in a rule finishes the target's running transitions, so Chromi
 event with its `propertyName`. A measured style value (`{ "value": 40, "unit": "px",
 "tolerance": 0.5 }`) passes when the written number is within the tolerance, since Vitest scales
 the test frame and a measured size can land a fraction of a pixel off. A subject can also ask for the page layout a host gives it (`layout`), a coarse pointer
-(`coarsePointer`, for a control only a touch screen shows), or wiring an app would add
-(`connect`).
+(`coarsePointer`, for a control only a touch screen shows), wiring an app would add
+(`connect`), or the menu context a dropdown item needs outside a dropdown (`inMenu`). A callback's
+first value is compared with the rule's `with` when it is not an object, or when both are plain
+objects; any other value, such as an event, or one the rule describes in words, is not compared.
 
 The browser project lives in `vitest.browser.config.ts`, not in `vitest.config.ts`, so
 `npm run test` and `npm run verify` never start a browser; run it with `npm run test:browser`.
@@ -405,6 +407,29 @@ function chooseAppearance(appearance: Appearance): void {
 
 The app's theme and scheme controls call this when a theme or a scheme is picked, and read the
 current choice with `readAppearance(document.documentElement)`.
+
+The library's `components/AppearanceSwitcher.svelte` is such a control: a dropdown whose trigger
+shows the colour scheme's icon and the theme's name, and whose menu is
+`components/AppearanceChoices.svelte`, a group of themes and a group of colour schemes. Both take
+the current appearance as a bindable `appearance` and report a choice through `onchoose`; neither
+reads or writes storage. `AppearanceChoices` can also sit in another dropdown's menu. The labels
+are in `components/appearance-labels.ts`.
+
+```svelte
+<script lang="ts">
+  import AppearanceSwitcher from '$lib/ui/components/AppearanceSwitcher.svelte';
+  import { readAppearance } from '$lib/ui/core/appearance.js';
+  import type { Appearance } from '$lib/ui/core/appearance.js';
+  import { chooseAppearance } from './appearance';
+
+  let appearance: Appearance = $state(readAppearance(document.documentElement));
+</script>
+
+<AppearanceSwitcher bind:appearance onchoose={chooseAppearance} />
+```
+
+The switcher is a ghost, small button with its menu aligned to the end; `variant`, `size` and
+`align` change that.
 
 ### What the app writes: app.html
 

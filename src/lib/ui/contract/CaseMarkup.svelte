@@ -2,6 +2,8 @@
   import Accordion from '../components/Accordion.svelte';
   import AccordionItem from '../components/AccordionItem.svelte';
   import Alert from '../components/Alert.svelte';
+  import AppearanceChoices from '../components/AppearanceChoices.svelte';
+  import AppearanceSwitcher from '../components/AppearanceSwitcher.svelte';
   import Avatar from '../components/Avatar.svelte';
   import AvatarStack from '../components/AvatarStack.svelte';
   import Badge from '../components/Badge.svelte';
@@ -109,6 +111,12 @@
     alertActions,
     alertDismissible,
     alertBanner,
+    appearanceSwitcherAutomatic,
+    appearanceSwitcherLight,
+    appearanceSwitcherDark,
+    appearanceSwitcherYorha,
+    appearanceChoicesDefault,
+    appearanceChoicesEmberDark,
     avatarDefault,
     avatarSm,
     avatarLg,
@@ -464,6 +472,30 @@
 {#snippet alertBanner()}<Alert variant="warning" banner title="Offline"
     >Changes are kept locally.</Alert
   >{/snippet}
+
+{#snippet appearanceSwitcherAutomatic()}<AppearanceSwitcher
+    appearance={{ theme: 'base', colorScheme: 'automatic' }}
+  />{/snippet}
+
+{#snippet appearanceSwitcherLight()}<AppearanceSwitcher
+    appearance={{ theme: 'base', colorScheme: 'light' }}
+  />{/snippet}
+
+{#snippet appearanceSwitcherDark()}<AppearanceSwitcher
+    appearance={{ theme: 'base', colorScheme: 'dark' }}
+  />{/snippet}
+
+{#snippet appearanceSwitcherYorha()}<AppearanceSwitcher
+    appearance={{ theme: 'yorha', colorScheme: 'automatic' }}
+  />{/snippet}
+
+{#snippet appearanceChoicesDefault()}<AppearanceChoices
+    appearance={{ theme: 'base', colorScheme: 'automatic' }}
+  />{/snippet}
+
+{#snippet appearanceChoicesEmberDark()}<AppearanceChoices
+    appearance={{ theme: 'ember', colorScheme: 'dark' }}
+  />{/snippet}
 
 {#snippet avatarDefault()}<Avatar>AL</Avatar>{/snippet}
 
