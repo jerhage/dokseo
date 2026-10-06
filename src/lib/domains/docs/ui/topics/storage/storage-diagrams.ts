@@ -45,7 +45,7 @@ const localStore = storeGroup(0, 218, 1, 'localStorage');
 
 const DATA_MAP: DiagramSpec = {
   label:
-    'IndexedDB holds three databases: reader for books and removed books, recognition for captures, tags and the model setup, flowing for EPUB reading settings. The origin private file system holds the blobs folder with book files and covers, and the partials folder with paused downloads. The Cache API holds transformers-cache with the weights and runtime, and the reader-shell cache with the app shell. localStorage holds thirteen reader keys of preferences.',
+    'IndexedDB holds three databases: reader for books and removed books, recognition for captures, tags and the model setup, flowing for EPUB reading settings. The origin private file system holds the blobs folder with book files and covers, and the partials folder with paused downloads. The Cache API holds transformers-cache with the weights and runtime, and the reader-shell cache with the app shell. localStorage holds fourteen reader keys of preferences.',
   width: 360,
   height: 306,
   nodes: [
@@ -60,7 +60,7 @@ const DATA_MAP: DiagramSpec = {
     storeBox(opfs, 1, 'partials/', 'paused downloads'),
     storeBox(cacheApi, 0, 'transformers-cache', 'weights, runtime'),
     storeBox(cacheApi, 1, 'reader-shell-…', 'the app shell'),
-    storeBox(localStore, 0, 'reader.* keys', '13 preferences'),
+    storeBox(localStore, 0, 'reader.* keys', '14 preferences'),
   ],
   edges: [],
 };

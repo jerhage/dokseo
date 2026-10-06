@@ -204,7 +204,7 @@
 
 <DocsSection title={STORAGE_SECTIONS.preferences}>
   <p>
-    Thirteen small values live in <code>localStorage</code>, the preferences and which touch guides
+    Fourteen small values live in <code>localStorage</code>, the preferences and which touch guides
     were seen, each under a key that starts with <code>reader.</code>, such as
     <code>reader.theme</code>, <code>reader.library.sort</code> and
     <code>reader.captures.sort</code>. The theme and the color scheme are why it is
