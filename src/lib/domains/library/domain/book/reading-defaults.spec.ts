@@ -10,7 +10,11 @@ import {
 } from './reading-defaults';
 import type { DeclaredReading, ReadingDefaults } from './reading-defaults';
 
-const TODAY = { direction: 'rtl', layoutKind: 'paged', pagePairing: 'auto' } as const;
+const RIGHT_TO_LEFT = { direction: 'rtl', layoutKind: 'paged', pagePairing: 'auto' } as const;
+
+const LEFT_TO_RIGHT = { direction: 'ltr', layoutKind: 'paged', pagePairing: 'auto' } as const;
+
+const INITIAL_LANGUAGES = { ja: RIGHT_TO_LEFT, ko: LEFT_TO_RIGHT, en: LEFT_TO_RIGHT } as const;
 
 const CHOSEN: ReadingDefaults = {
   language: 'ko',
@@ -24,16 +28,23 @@ const CHOSEN: ReadingDefaults = {
 const NOTHING_DECLARED: DeclaredReading = { language: null, direction: null, layoutKind: null };
 
 describe('initialLanguageDefaults', () => {
-  it.each(LANGUAGES)('gives %s right to left, pages and automatic pairing', (language) => {
-    expect(initialLanguageDefaults(language)).toEqual(TODAY);
+  it('gives Japanese right to left, pages and automatic pairing', () => {
+    expect(initialLanguageDefaults('ja')).toEqual(RIGHT_TO_LEFT);
   });
+
+  it.each(LANGUAGES.filter((language) => language !== 'ja'))(
+    'gives %s left to right, pages and automatic pairing',
+    (language) => {
+      expect(initialLanguageDefaults(language)).toEqual(LEFT_TO_RIGHT);
+    },
+  );
 });
 
 describe('INITIAL_READING_DEFAULTS', () => {
   it('falls back to Japanese and gives every language its initial defaults', () => {
     expect(INITIAL_READING_DEFAULTS).toEqual({
       language: 'ja',
-      languages: { ja: TODAY, ko: TODAY, en: TODAY },
+      languages: INITIAL_LANGUAGES,
     });
   });
 });
@@ -52,7 +63,7 @@ describe('readingDefaultsFromStored', () => {
 
     expect(readingDefaultsFromStored(stored)).toEqual({
       language: 'en',
-      languages: { ja: TODAY, ko: CHOSEN.languages.ko, en: TODAY },
+      languages: { ja: RIGHT_TO_LEFT, ko: CHOSEN.languages.ko, en: LEFT_TO_RIGHT },
     });
   });
 
@@ -61,8 +72,8 @@ describe('readingDefaultsFromStored', () => {
       language: 'zh',
       languages: {
         ja: { direction: 'up', layoutKind: 'continuous', pagePairing: 'single' },
-        ko: { direction: 'ltr', layoutKind: 'flow' },
-        en: { direction: 'ltr', layoutKind: 'paged', pagePairing: 'triple' },
+        ko: { direction: 'rtl', layoutKind: 'flow' },
+        en: { layoutKind: 'paged', pagePairing: 'triple' },
       },
     };
 
@@ -70,14 +81,18 @@ describe('readingDefaultsFromStored', () => {
       language: 'ja',
       languages: {
         ja: { direction: 'rtl', layoutKind: 'continuous', pagePairing: 'single' },
-        ko: { direction: 'ltr', layoutKind: 'paged', pagePairing: 'auto' },
+        ko: { direction: 'rtl', layoutKind: 'paged', pagePairing: 'auto' },
         en: { direction: 'ltr', layoutKind: 'paged', pagePairing: 'auto' },
       },
     });
   });
 
   it('drops a field it does not know', () => {
-    const stored = { ...CHOSEN, theme: 'paper', languages: { ...CHOSEN.languages, zh: TODAY } };
+    const stored = {
+      ...CHOSEN,
+      theme: 'paper',
+      languages: { ...CHOSEN.languages, zh: RIGHT_TO_LEFT },
+    };
 
     expect(readingDefaultsFromStored(stored)).toEqual(CHOSEN);
   });
@@ -140,7 +155,7 @@ describe('newBookReading', () => {
   it('gives a book with nothing declared or shown what a new book got before any default was chosen', () => {
     expect(newBookReading(NOTHING_DECLARED, null, INITIAL_READING_DEFAULTS)).toEqual({
       language: 'ja',
-      ...TODAY,
+      ...RIGHT_TO_LEFT,
     });
   });
 });

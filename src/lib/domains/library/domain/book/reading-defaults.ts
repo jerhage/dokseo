@@ -36,8 +36,6 @@ type NewBookReading = {
 
 const UNDETECTED_LANGUAGE: Language = 'ja';
 
-const IMAGE_BOOK_DIRECTION: ReadingDirection = 'rtl';
-
 const IMAGE_BOOK_LAYOUT: ImageLayoutKind = 'paged';
 
 const IMAGE_LAYOUT_KINDS: readonly ImageLayoutKind[] = ['paged', 'continuous'];
@@ -46,19 +44,21 @@ function isImageLayoutKind(value: unknown): value is ImageLayoutKind {
   return IMAGE_LAYOUT_KINDS.some((kind) => kind === value);
 }
 
+function initialDirection(language: Language): ReadingDirection {
+  return match(language)
+    .returnType<ReadingDirection>()
+    .with('ja', () => 'rtl')
+    .with('ko', () => 'ltr')
+    .with('en', () => 'ltr')
+    .exhaustive();
+}
+
 function initialLanguageDefaults(language: Language): LanguageDefaults {
-  const today: LanguageDefaults = {
-    direction: IMAGE_BOOK_DIRECTION,
+  return {
+    direction: initialDirection(language),
     layoutKind: IMAGE_BOOK_LAYOUT,
     pagePairing: DEFAULT_PAGE_PAIRING,
   };
-
-  return match(language)
-    .returnType<LanguageDefaults>()
-    .with('ja', () => today)
-    .with('ko', () => today)
-    .with('en', () => today)
-    .exhaustive();
 }
 
 function eachLanguage(
