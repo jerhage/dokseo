@@ -117,6 +117,7 @@
 
 {#snippet marqueeSelectionIdle(controls: RuleControls)}
   <MarqueeSelection
+    bind:this={controls.marquee}
     within={controls.surface}
     pointerTypes={['mouse', 'pen', 'touch']}
     slop={() => 4}

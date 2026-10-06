@@ -4,8 +4,16 @@ type Emitted = { readonly callback: string; readonly values: readonly unknown[] 
 
 type RuleOptions = Readonly<Record<string, unknown>>;
 
+type MarqueeHandle = {
+  readonly pointerdown: (event: PointerEvent) => void;
+  readonly pointermove: (event: PointerEvent) => void;
+  readonly pointerup: (event: PointerEvent) => void;
+  readonly pointercancel: (event: PointerEvent) => void;
+};
+
 class RuleControls {
   open = $state(false);
+  marquee = $state<MarqueeHandle>();
   readonly wrapFocus: boolean;
   readonly blockEnd: number | undefined;
   readonly surface: HTMLElement | null;
@@ -37,4 +45,4 @@ class RuleControls {
 }
 
 export { RuleControls };
-export type { Emitted, RuleOptions };
+export type { Emitted, MarqueeHandle, RuleOptions };

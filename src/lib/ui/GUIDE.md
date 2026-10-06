@@ -101,7 +101,16 @@ Because of that merge, a library update cannot travel through a pull request tha
 "Rebase and merge": a rebase drops the merge and replays the squashed tree at the root of the
 repository. Run `git subtree pull` on `main` directly and push the result. A local edit to the
 library is an ordinary commit and goes through review like any other change; send it back with
-`git subtree push` so the next `pull` does not conflict with it.
+`git subtree push` so the library has it.
+
+With `--squash`, the next `pull` compares against the last `pull`, not the last `push`. A file that
+was edited in the app, pushed, and then changed again in the library therefore conflicts on that
+`pull`, even though the app holds nothing the library lacks. Resolve each such conflict by taking
+the library's side (`git checkout --theirs -- <path>`, then `git add <path>`; `git write-tree`
+refuses while a conflict is unstaged), then check that the folder equals the
+library's tree at the pulled commit before you commit the merge:
+`git diff FETCH_HEAD $(git write-tree --prefix=<prefix>/)` prints nothing (`git subtree pull`
+leaves the pulled commit in `FETCH_HEAD`).
 
 `git subtree add` refuses a prefix that already exists. To replace a copy, remove the folder in one
 commit and add it in the next.
@@ -183,10 +192,26 @@ so a new fixture fails until a component renders it.
 `core/rules/*.json` describe what the scripted components do: a starting fixture, the state given
 on top of it, the events, and the state and callbacks that follow. `contract/rules.svelte.spec.ts`
 runs each rule against the component in Chromium: it mounts the rule's subject from
-`contract/rule-subjects.ts`, applies the given state, fires the events, and checks the result. A
+`contract/rule-subjects.ts`, reaches the given state, fires the events, and checks the result. A
 rule the core marks as not certain is listed as a todo. `contract/rule-subjects.spec.ts`, a unit
 spec, checks that every fixture a rule starts from has a subject, and that each subject renders as
 its fixture before a rule acts.
+
+The runner never writes the given state into the markup, since the component would not know of
+it: a state that already holds is left alone, focus is moved with `focus()`, and anything else is
+reached by the subject's `reach`, through the component's props or a real interaction (a click on
+a tab, on a dropdown's trigger, on a popover's invoker). Keys, clicks, hovers, typing and file
+choices go through `userEvent`, and presses, moves and lifts of a mouse or a touch through the
+commands in `contract/rule-input.ts`, so Chromium receives trusted input and runs its own default
+actions: a summary toggles, a dialog cancels, a popover is light dismissed, a button takes focus.
+A drag is the exception: the runner dispatches drag events it builds, so a rule that checks the
+drop effect, which only a drag the browser runs carries, is listed as a todo with that reason.
+A `transitionend` in a rule finishes the target's running transitions, so Chromium fires the real
+event with its `propertyName`. A measured style value (`{ "value": 40, "unit": "px",
+"tolerance": 0.5 }`) passes when the written number is within the tolerance, since Vitest scales
+the test frame and a measured size can land a fraction of a pixel off. A subject can also ask for the page layout a host gives it (`layout`), a coarse pointer
+(`coarsePointer`, for a control only a touch screen shows), or wiring an app would add
+(`connect`).
 
 The browser project lives in `vitest.browser.config.ts`, not in `vitest.config.ts`, so
 `npm run test` and `npm run verify` never start a browser; run it with `npm run test:browser`.

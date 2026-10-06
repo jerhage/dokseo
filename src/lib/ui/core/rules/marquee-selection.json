@@ -23,8 +23,16 @@
           "selector": ".marquee-selection-box",
           "present": true,
           "style": {
-            "--rect-width": "80px",
-            "--rect-height": "40px",
+            "--rect-width": {
+              "value": 80,
+              "unit": "px",
+              "tolerance": 0.5
+            },
+            "--rect-height": {
+              "value": 40,
+              "unit": "px",
+              "tolerance": 0.5
+            },
             "--rect-left": "set",
             "--rect-top": "set"
           }
@@ -43,16 +51,29 @@
         }
       ],
       "source": "MarqueeSelection.svelte (pointerdown, pointermove, pointerup), marquee-drag.svelte.ts, marquee-selection.ts",
-      "certain": false,
-      "note": "The drawn box is not in any fixture: a server render never shows it, so its markup is not machine-checked. From the source: div.marquee-selection-box.place-rect.region-box.z-raised (plus region-box-accent when accent) holding four span.marquee-selection-handle with -north/-south and -west/-east, and p.marquee-selection-label.mono.text-xs.surface-raised.rounded-control.px-2.py-1 when a label is given. The press is forwarded by the app from its surface (the within element) through the exported pointerdown(); it draws only for a primary press with button 0 on the content (not a scrollbar), from an allowed pointer type, while not suppressed. A press from another pointer type is only watched, for a click."
+      "certain": true,
+      "note": "The width and height are measured from the pointer, so they are stated with a tolerance of half a pixel: a host that scales the page moves the pointer by a fraction of a pixel. The drawn box is not in any fixture: a server render never shows it, so its markup is not machine-checked. From the source: div.marquee-selection-box.place-rect.region-box.z-raised (plus region-box-accent when accent) holding four span.marquee-selection-handle with -north/-south and -west/-east, and p.marquee-selection-label.mono.text-xs.surface-raised.rounded-control.px-2.py-1 when a label is given. The press is forwarded by the app from its surface (the within element) through the exported pointerdown(); it draws only for a primary press with button 0 on the content (not a scrollbar), from an allowed pointer type, while not suppressed. A press from another pointer type is only watched, for a click."
     },
     {
       "name": "removes the box and reports the end when the pointer lifts",
       "fixture": "marquee-selection/idle",
       "when": [
         {
+          "event": "pointerdown",
+          "target": "body",
+          "pointerType": "mouse"
+        },
+        {
+          "event": "pointermove",
+          "target": "body",
+          "dx": 80,
+          "dy": 40
+        },
+        {
           "event": "pointerup",
-          "target": "body"
+          "target": "body",
+          "dx": 80,
+          "dy": 40
         }
       ],
       "then": [
@@ -64,12 +85,12 @@
       "emits": [
         {
           "callback": "onend",
-          "with": "click, too-small or selection, with the stroke"
+          "with": "a selection end of 80 by 40, with the stroke"
         }
       ],
       "source": "MarqueeSelection.svelte (pointerdown, pointermove, pointerup), marquee-drag.svelte.ts, marquee-selection.ts (marqueeEnd)",
       "certain": true,
-      "note": "A box narrower and shorter than the slop is a click (and onclick follows); one narrower or shorter than the minimum is too-small; anything larger is a selection. A lift by another pointer than the one held reports onrefuse with pointer-mismatch."
+      "note": "The end depends on the box at the lift: one narrower and shorter than the slop is a click (and onclick follows); one narrower or shorter than the minimum is too-small; anything larger is a selection. A lift by another pointer than the one held reports onrefuse with pointer-mismatch. A drag of 80 by 40 is a selection whenever the slop and the minimum are both at most 40px."
     }
   ]
 }

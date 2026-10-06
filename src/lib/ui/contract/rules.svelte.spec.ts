@@ -1,9 +1,11 @@
 import '../core/styles/index.css';
 import { flushSync, mount, tick, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { commands, userEvent } from 'vitest/browser';
 import { rulesFileProblems } from '../core/rules/schema.js';
-import type { ElementState, Rule, RulesFile, Trigger } from '../core/rules/schema.js';
+import type { ElementState, Measured, Rule, RulesFile, Trigger } from '../core/rules/schema.js';
 import { RuleControls } from './rule-controls.svelte';
+import type { PointerAction, PointerKind } from './rule-input';
 import { RULE_SUBJECTS } from './rule-subjects';
 import type { RuleSubject } from './rule-subjects';
 import RuleHost from './RuleHost.svelte';
@@ -12,17 +14,22 @@ type Mounted = ReturnType<typeof mount>;
 
 type Pointer = { readonly x: number; readonly y: number };
 
+type Press = { readonly kind: PointerKind; readonly at: Pointer };
+
 type Run = {
   readonly controls: RuleControls;
   readonly root: HTMLElement;
   mounted: Mounted | null;
-  press: Pointer;
+  press: Press | null;
   last: Event | null;
 };
 
 const LOADED = import.meta.glob('../core/rules/*.json', { eager: true, import: 'default' });
 
-const POINTER_ID = 1;
+const GRID = [0.5, 0.1, 0.3, 0.7, 0.9];
+
+const UNPRODUCIBLE_DROP_EFFECT =
+  'only a drag the browser runs sets a drop effect, and the runner can dispatch a drag but not run one';
 
 function isRulesFile(value: unknown): value is RulesFile {
   return rulesFileProblems(value).length === 0;
@@ -41,6 +48,11 @@ function subjectFor(rule: Rule): RuleSubject {
   return subject;
 }
 
+function unproducible(rule: Rule): string | null {
+  if (rule.event?.dropEffect !== undefined) return UNPRODUCIBLE_DROP_EFFECT;
+  return null;
+}
+
 async function settle(): Promise<void> {
   flushSync();
   await tick();
@@ -57,10 +69,48 @@ function eventTarget(target: string | undefined, root: HTMLElement): EventTarget
   return found;
 }
 
-function centreOf(target: EventTarget): Pointer {
-  if (!(target instanceof Element)) return { x: 0, y: 0 };
-  const box = target.getBoundingClientRect();
-  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+function elementTarget(trigger: Trigger, root: HTMLElement): HTMLElement {
+  const target = eventTarget(trigger.target, root);
+  if (!(target instanceof HTMLElement)) {
+    throw new Error(`A ${trigger.event} needs an element, not ${trigger.target ?? 'the root'}`);
+  }
+  return target;
+}
+
+function candidates(left: number, top: number, width: number, height: number): Pointer[] {
+  return GRID.flatMap((across) =>
+    GRID.map((down) => ({ x: left + width * across, y: top + height * down })),
+  ).filter((point) => point.x < innerWidth && point.y < innerHeight);
+}
+
+function pointOn(element: Element): Pointer {
+  const box = element.getBoundingClientRect();
+  const hits = candidates(box.left, box.top, box.width, box.height).map((point) => ({
+    point,
+    hit: document.elementFromPoint(point.x, point.y),
+  }));
+  const own = hits.find(({ hit }) => hit === element);
+  const inside = hits.find(({ hit }) => hit !== null && element.contains(hit));
+  const found = own ?? inside;
+  if (found === undefined) throw new Error(`No point on ${element.className} takes the pointer`);
+  return found.point;
+}
+
+function pointOutside(root: Element): Pointer {
+  const found = candidates(0, 0, innerWidth, innerHeight).find((point) => {
+    const hit = document.elementFromPoint(point.x, point.y);
+    return hit !== null && !root.contains(hit);
+  });
+  if (found === undefined) throw new Error('No point on the page lies outside the subject');
+  return found;
+}
+
+function pointFor(target: EventTarget, root: HTMLElement): Pointer {
+  if (target === window || target === document || target === document.body) {
+    return pointOutside(root);
+  }
+  if (!(target instanceof Element)) throw new Error('A pointer needs an element to press');
+  return pointOn(target);
 }
 
 function carriedFiles(trigger: Trigger): DataTransfer {
@@ -71,23 +121,17 @@ function carriedFiles(trigger: Trigger): DataTransfer {
   return transfer;
 }
 
-function pointerAt(trigger: Trigger, run: Run, target: EventTarget): Pointer {
-  if (trigger.event === 'pointerdown') return centreOf(target);
-  return { x: run.press.x + (trigger.dx ?? 0), y: run.press.y + (trigger.dy ?? 0) };
+function dispatched(target: EventTarget, event: Event, run: Run): void {
+  run.last = event;
+  target.dispatchEvent(event);
 }
 
-function pointerEvent(trigger: Trigger, at: Pointer): PointerEvent {
-  return new PointerEvent(trigger.event, {
+function dragEvent(trigger: Trigger): DragEvent {
+  return new DragEvent(trigger.event, {
     bubbles: true,
     cancelable: true,
     composed: true,
-    pointerId: POINTER_ID,
-    pointerType: trigger.pointerType ?? 'mouse',
-    isPrimary: true,
-    button: 0,
-    buttons: trigger.event === 'pointerup' || trigger.event === 'pointercancel' ? 0 : 1,
-    clientX: at.x,
-    clientY: at.y,
+    dataTransfer: carriedFiles(trigger),
   });
 }
 
@@ -108,47 +152,93 @@ async function enterTopLayer(): Promise<void> {
   other.remove();
 }
 
-function dispatched(target: EventTarget, event: Event, run: Run): void {
-  run.last = event;
-  target.dispatchEvent(event);
+function keyText(key: string, shiftKey: boolean): string {
+  const name =
+    key === ' ' ? '[Space]' : key.length === 1 ? key.replaceAll(/[{[]/g, '$&$&') : `{${key}}`;
+  return shiftKey ? `{Shift>}${name}{/Shift}` : name;
 }
 
-function domEvent(trigger: Trigger, target: EventTarget): Event {
-  const init = { bubbles: true, cancelable: true, composed: true };
-  switch (trigger.event) {
-    case 'click':
-    case 'mousedown':
-      return new MouseEvent(trigger.event, { ...init, detail: trigger.detail ?? 1 });
-    case 'mouseenter':
-    case 'mouseleave':
-      return new MouseEvent(trigger.event, { bubbles: false, cancelable: false });
-    case 'keydown':
-      return new KeyboardEvent('keydown', {
-        ...init,
-        key: trigger.key ?? '',
-        shiftKey: trigger.shiftKey === true,
-      });
-    case 'dragenter':
-    case 'dragleave':
-    case 'dragover':
-    case 'drop':
-      return new DragEvent(trigger.event, { ...init, dataTransfer: carriedFiles(trigger) });
-    case 'focusin':
-    case 'focusout':
-      return new FocusEvent(trigger.event, { bubbles: true });
-    case 'transitionend':
-      return new TransitionEvent('transitionend', { ...init, propertyName: 'transform' });
-    case 'input':
-      if (target instanceof HTMLInputElement) target.value = String(trigger.value ?? '');
-      return new InputEvent('input', init);
-    case 'change':
-      if (target instanceof HTMLInputElement && target.type === 'file') {
-        target.files = carriedFiles({ ...trigger, files: true }).files;
-      }
-      return new Event('change', { bubbles: true });
-    default:
-      return new Event(trigger.event, init);
+async function recorded(type: string, run: Run, act: () => Promise<void>): Promise<void> {
+  const keep = (event: Event): void => {
+    run.last = event;
+  };
+  window.addEventListener(type, keep, { capture: true });
+  try {
+    await act();
+  } finally {
+    window.removeEventListener(type, keep, { capture: true });
   }
+}
+
+async function pointer(kind: PointerKind, action: PointerAction, at: Pointer): Promise<void> {
+  await commands.rulePointer({ kind, action, x: at.x, y: at.y });
+}
+
+async function release(run: Run, at: Pointer): Promise<void> {
+  const held = run.press;
+  if (held === null) throw new Error('A release needs a press before it, and the rule gives none');
+  run.press = null;
+  await pointer(held.kind, 'up', at);
+}
+
+async function click(trigger: Trigger, run: Run): Promise<void> {
+  const target = elementTarget(trigger, run.root);
+  if (trigger.detail === 0) {
+    target.focus();
+    await userEvent.keyboard('{Enter}');
+    return;
+  }
+  const at = pointOn(target);
+  if (run.press !== null) {
+    await release(run, at);
+    return;
+  }
+  const box = target.getBoundingClientRect();
+  await userEvent.click(target, { position: { x: at.x - box.left, y: at.y - box.top } });
+}
+
+async function keydown(trigger: Trigger, run: Run): Promise<void> {
+  const target = eventTarget(trigger.target, run.root);
+  if (target instanceof HTMLElement && !target.contains(document.activeElement)) target.focus();
+  await userEvent.keyboard(keyText(trigger.key ?? '', trigger.shiftKey === true));
+}
+
+async function pointerAction(trigger: Trigger, run: Run): Promise<void> {
+  const kind: PointerKind = trigger.pointerType === 'touch' ? 'touch' : 'mouse';
+  const target = eventTarget(trigger.target, run.root);
+  if (trigger.event === 'pointerdown' || trigger.event === 'mousedown') {
+    const at = pointFor(target, run.root);
+    run.press = { kind, at };
+    await pointer(kind, 'down', at);
+    return;
+  }
+  const held = run.press;
+  if (held === null) {
+    throw new Error(`A ${trigger.event} needs a press before it, and the rule gives none`);
+  }
+  const at = { x: held.at.x + (trigger.dx ?? 0), y: held.at.y + (trigger.dy ?? 0) };
+  if (trigger.event === 'pointermove') {
+    await pointer(held.kind, 'move', at);
+    return;
+  }
+  if (trigger.event === 'pointercancel' && held.kind === 'mouse') {
+    throw new Error('A mouse cannot cancel its pointer; only a touch can');
+  }
+  run.press = null;
+  await pointer(held.kind, trigger.event === 'pointercancel' ? 'cancel' : 'up', at);
+}
+
+function blurred(trigger: Trigger, run: Run): void {
+  const target = eventTarget(trigger.target, run.root);
+  if (target instanceof HTMLElement) {
+    target.blur();
+    return;
+  }
+  if (target !== window || window.parent === window) {
+    throw new Error(`Nothing takes focus away from ${trigger.target ?? 'the root'}`);
+  }
+  window.focus();
+  window.parent.focus();
 }
 
 async function fire(trigger: Trigger, run: Run): Promise<void> {
@@ -169,30 +259,61 @@ async function fire(trigger: Trigger, run: Run): Promise<void> {
       vi.advanceTimersByTime(trigger.ms ?? 0);
       break;
     case 'animationsend':
+    case 'transitionend':
       await finishAnimations(eventTarget(trigger.target, run.root));
       break;
     case 'toggle':
       await enterTopLayer();
       break;
-    case 'blur': {
-      const target = eventTarget(trigger.target, run.root);
-      if (target instanceof HTMLElement) target.blur();
+    case 'blur':
+      blurred(trigger, run);
       break;
-    }
+    case 'focusin':
+      elementTarget(trigger, run.root).focus();
+      break;
+    case 'focusout':
+      elementTarget(trigger, run.root).blur();
+      break;
+    case 'click':
+      await recorded('click', run, () => click(trigger, run));
+      break;
+    case 'keydown':
+      await recorded('keydown', run, () => keydown(trigger, run));
+      break;
+    case 'mousedown':
     case 'pointerdown':
     case 'pointermove':
     case 'pointerup':
-    case 'pointercancel': {
-      const target = eventTarget(trigger.target, run.root);
-      const at = pointerAt(trigger, run, target);
-      if (trigger.event === 'pointerdown') run.press = at;
-      dispatched(target, pointerEvent(trigger, at), run);
+    case 'pointercancel':
+      await recorded(trigger.event, run, () => pointerAction(trigger, run));
       break;
-    }
-    default: {
-      const target = eventTarget(trigger.target, run.root);
-      dispatched(target, domEvent(trigger, target), run);
-    }
+    case 'mouseenter':
+      await userEvent.hover(elementTarget(trigger, run.root));
+      break;
+    case 'mouseleave':
+      await userEvent.unhover(elementTarget(trigger, run.root));
+      break;
+    case 'input':
+      await userEvent.fill(elementTarget(trigger, run.root), String(trigger.value ?? ''));
+      break;
+    case 'change':
+      await userEvent.upload(
+        elementTarget(trigger, run.root),
+        new File(['text'], 'notes.txt', { type: 'text/plain' }),
+      );
+      break;
+    case 'dragenter':
+    case 'dragleave':
+    case 'dragover':
+    case 'drop':
+      dispatched(eventTarget(trigger.target, run.root), dragEvent(trigger), run);
+      break;
+    default:
+      dispatched(
+        eventTarget(trigger.target, run.root),
+        new Event(trigger.event, { bubbles: true, cancelable: true, composed: true }),
+        run,
+      );
   }
   await settle();
 }
@@ -204,56 +325,71 @@ function isOpen(element: Element): boolean {
   return element.matches(':popover-open');
 }
 
-function setOpen(element: Element, open: boolean): void {
-  if (isOpen(element) === open) return;
-  if (element instanceof HTMLDialogElement) {
-    if (open) element.showModal();
-    else element.close();
-  } else if (element instanceof HTMLDetailsElement) {
-    element.open = open;
-  } else if (element instanceof HTMLElement) {
-    if (open) element.showPopover();
-    else element.hidePopover();
-  }
+function styleValue(element: Element, name: string): string {
+  return element instanceof HTMLElement ? element.style.getPropertyValue(name).trim() : '';
 }
 
-function applied(state: ElementState): void {
+type StyleValue = string | null | Measured;
+
+function withinTolerance(written: string, measured: Measured): boolean {
+  if (!written.endsWith(measured.unit)) return false;
+  const amount = Number.parseFloat(written.slice(0, written.length - measured.unit.length));
+  return Number.isFinite(amount) && Math.abs(amount - measured.value) <= measured.tolerance;
+}
+
+function styleHolds(element: Element, name: string, value: StyleValue): boolean {
+  const written = styleValue(element, name);
+  if (value === 'set') return written !== '';
+  if (typeof value === 'string' || value === null) return written === (value ?? '');
+  return withinTolerance(written, value);
+}
+
+function holds(state: ElementState): boolean {
   const element = document.querySelector(state.selector);
-  if (element === null) throw new Error(`No element matches the given ${state.selector}`);
-  for (const [name, value] of Object.entries(state.attributes ?? {})) {
-    if (value === null) element.removeAttribute(name);
-    else element.setAttribute(name, value);
-  }
-  for (const [name, present] of Object.entries(state.classes ?? {})) {
-    element.classList.toggle(name, present);
-  }
-  if (element instanceof HTMLElement) {
-    for (const [name, value] of Object.entries(state.style ?? {})) {
-      if (value === null) element.style.removeProperty(name);
-      else element.style.setProperty(name, value);
-    }
-    for (const [name, value] of Object.entries(state.properties ?? {})) {
-      Reflect.set(element, name, value);
-    }
-    if (state.focused === true) element.focus();
-    if (state.focused === false) element.blur();
-  }
-  if (state.open !== undefined) setOpen(element, state.open);
+  if (element === null) return state.present === false;
+  if (state.present === false) return false;
+  const attributes = Object.entries(state.attributes ?? {}).every(
+    ([name, value]) => element.getAttribute(name) === value,
+  );
+  const classes = Object.entries(state.classes ?? {}).every(
+    ([name, present]) => element.classList.contains(name) === present,
+  );
+  const style = Object.entries(state.style ?? {}).every(([name, value]) =>
+    styleHolds(element, name, value),
+  );
+  const properties = Object.entries(state.properties ?? {}).every(
+    ([name, value]) => Reflect.get(element, name) === value,
+  );
+  const focused =
+    state.focused === undefined || (document.activeElement === element) === state.focused;
+  const open = state.open === undefined || isOpen(element) === state.open;
+  return attributes && classes && style && properties && focused && open;
+}
+
+function reachFocus(state: ElementState): boolean {
+  const onlyFocus = Object.keys(state).every((key) => key === 'selector' || key === 'focused');
+  const element = document.querySelector(state.selector);
+  if (!onlyFocus || !(element instanceof HTMLElement)) return false;
+  if (state.focused === true) element.focus();
+  else element.blur();
+  return true;
 }
 
 async function given(rule: Rule, subject: RuleSubject, run: Run): Promise<void> {
+  const reaching = {
+    controls: run.controls,
+    root: run.root,
+    settle,
+    fire: (trigger: Trigger) => fire(trigger, run),
+  };
   for (const state of rule.given ?? []) {
-    const reached =
-      subject.reach === undefined
-        ? false
-        : await subject.reach(state, { controls: run.controls, root: run.root, settle });
-    if (!reached) applied(state);
+    if (holds(state)) continue;
+    const reached = (await subject.reach?.(state, reaching)) === true || reachFocus(state);
+    if (!reached) throw new Error(`Nothing reaches the given state of ${state.selector}`);
     await settle();
+    if (!holds(state)) throw new Error(`The given state of ${state.selector} was not reached`);
   }
-}
-
-function styleValue(element: Element, name: string): string {
-  return element instanceof HTMLElement ? element.style.getPropertyValue(name).trim() : '';
+  run.last = null;
 }
 
 function expectState(state: ElementState): void {
@@ -277,7 +413,15 @@ function expectState(state: ElementState): void {
   for (const [name, value] of Object.entries(state.style ?? {})) {
     const written = styleValue(element, name);
     if (value === 'set') expect(written, `${state.selector} ${name}`).not.toBe('');
-    else expect(written, `${state.selector} ${name}`).toBe(value ?? '');
+    else if (typeof value === 'string' || value === null) {
+      expect(written, `${state.selector} ${name}`).toBe(value ?? '');
+    } else {
+      const within = `${value.value}${value.unit} within ${value.tolerance}`;
+      expect(
+        withinTolerance(written, value),
+        `${state.selector} ${name} is ${written}, not ${within}`,
+      ).toBe(true);
+    }
   }
   for (const [name, value] of Object.entries(state.properties ?? {})) {
     expect(Reflect.get(element, name), `${state.selector} .${name}`).toBe(value);
@@ -312,8 +456,19 @@ function expectEventOutcome(rule: Rule, last: Event | null): void {
   }
 }
 
+function laidOut(subject: RuleSubject): HTMLStyleElement | null {
+  if (subject.layout === undefined) return null;
+  const sheet = document.createElement('style');
+  sheet.textContent = subject.layout;
+  document.head.append(sheet);
+  return sheet;
+}
+
 async function runRule(rule: Rule): Promise<void> {
   const subject = subjectFor(rule);
+  await commands.rulePointerAway();
+  if (subject.coarsePointer === true) await commands.ruleCoarsePointer(true);
+  const layout = laidOut(subject);
   const root = document.createElement('div');
   document.body.append(root);
   const controls = new RuleControls(rule.options ?? {}, document.body);
@@ -322,19 +477,25 @@ async function runRule(rule: Rule): Promise<void> {
     controls,
     root,
     mounted: mount(RuleHost, { target: root, props: { subject, controls } }),
-    press: { x: 0, y: 0 },
+    press: null,
     last: null,
   };
+  let disconnect: (() => void) | undefined;
   try {
     await settle();
+    disconnect = subject.connect?.(controls);
     await given(rule, subject, run);
     for (const trigger of rule.when) await fire(trigger, run);
     for (const state of rule.then ?? []) expectState(state);
     expectEmitted(rule, controls);
     expectEventOutcome(rule, run.last);
   } finally {
+    if (run.press !== null) await release(run, run.press.at);
+    disconnect?.();
     if (run.mounted !== null) await unmount(run.mounted);
     root.remove();
+    layout?.remove();
+    if (subject.coarsePointer === true) await commands.ruleCoarsePointer(false);
   }
 }
 
@@ -346,18 +507,21 @@ describe.each(rulesFiles().map((file) => [file.component, file] as const))(
   'the %s rules',
   (_component, file) => {
     for (const rule of file.rules) {
+      const reason = unproducible(rule);
       if (!rule.certain) {
         it.todo(rule.name);
-        continue;
+      } else if (reason !== null) {
+        it.todo(`${rule.name} (${reason})`);
+      } else {
+        it(rule.name, async () => {
+          if (rule.when.some((trigger) => trigger.event === 'time')) {
+            vi.useFakeTimers({
+              toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+            });
+          }
+          await runRule(rule);
+        });
       }
-      it(rule.name, async () => {
-        if (rule.when.some((trigger) => trigger.event === 'time')) {
-          vi.useFakeTimers({
-            toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
-          });
-        }
-        await runRule(rule);
-      });
     }
   },
 );

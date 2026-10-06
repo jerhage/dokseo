@@ -68,7 +68,7 @@
       "note": "A pointer click switches too, unless it ends a drag that moved 12px or more."
     },
     {
-      "name": "follows a drag of the handle and settles at the nearest height or closes",
+      "name": "follows a drag of the handle with the height in px",
       "fixture": "dock/sheet",
       "when": [
         {
@@ -92,9 +92,43 @@
           }
         }
       ],
-      "source": "Dock.svelte and dock-sheet.svelte.ts (DockSheet), dock.ts (press, follow, release, dockSheetSettle)",
-      "certain": false,
-      "note": "While dragging, the height is written in px, clamped between 0 and the tall height. On release after moving at least 12px it settles at the nearest of closed, standard and tall, or, after a flick, at the next one in the flick direction; settling at closed calls ontoggle. The two .dock-probe elements measure the token heights."
+      "source": "Dock.svelte and dock-sheet.svelte.ts (DockSheet), dock.ts (press, follow, dockSheetHeight)",
+      "certain": true,
+      "note": "While dragging, the height is the panel's height at the press less the travel, written in px and clamped between 0 and the tall height, and the panel has is-dragging, which turns its height transition off. The two .dock-probe elements measure the token heights. The handle sits at the top of the drawer, which grows upward from the bottom of the dock, so the dock needs the panel's height of room above it."
+    },
+    {
+      "name": "settles at the nearest height when the drag of the handle ends",
+      "fixture": "dock/sheet",
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".dock-handle"
+        },
+        {
+          "event": "pointermove",
+          "target": ".dock-handle",
+          "dy": -200
+        },
+        {
+          "event": "pointerup",
+          "target": ".dock-handle",
+          "dy": -200
+        }
+      ],
+      "then": [
+        {
+          "selector": ".dock-panel",
+          "classes": {
+            "is-dragging": false
+          },
+          "style": {
+            "--dock-sheet-height": "var(--layout-sheet-height-tall)"
+          }
+        }
+      ],
+      "source": "Dock.svelte and dock-sheet.svelte.ts (DockSheet), dock.ts (release, dockSheetSettle)",
+      "certain": true,
+      "note": "On release after moving at least 12px the sheet settles at the nearest of closed, standard and tall, or, after a flick, at the next one in the flick direction; settling at closed calls ontoggle and leaves the standard height for the next opening. From the standard height (40dvh), a drag up by 200px ends nearest the tall height (75dvh), and a flick up ends there too, on any page from 440px to 1140px tall. The click that ends a drag of 12px or more does not switch the height."
     }
   ]
 }
