@@ -99,7 +99,7 @@ describe('SettingsShell', () => {
       'Export and import captures',
       'Theme and color scheme',
       'How a file finds its book',
-      'How a new book reads, per language',
+      'How each language reads',
       'Version and updates',
     ]);
   });

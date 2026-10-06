@@ -1,5 +1,5 @@
 import type { Component } from 'svelte';
-import ArrowLeft from '$lib/ui/components/icons/ArrowLeft.svelte';
+import BookOpen from '$lib/ui/components/icons/BookOpen.svelte';
 import Database from '$lib/ui/components/icons/Database.svelte';
 import File from '$lib/ui/components/icons/File.svelte';
 import HardDrive from '$lib/ui/components/icons/HardDrive.svelte';
@@ -64,8 +64,8 @@ function settingsSections(root: string): readonly SectionLink[] {
     {
       id: 'reading',
       name: 'Reading defaults',
-      summary: 'How a new book reads, per language',
-      icon: ArrowLeft,
+      summary: 'How each language reads',
+      icon: BookOpen,
       href: `${root}/reading`,
       pageHref: `${root}/reading`,
     },
