@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.9.9](https://github.com/jerhage/dokseo/compare/v0.9.8...v0.9.9) (2026-10-06)
+
+
+### Features
+
+* **docs-pages:** add the example drift page, with a live drift check and the recorded outputs each spec runs again, and re-measure the recorded builds ([c2e3666](https://github.com/jerhage/dokseo/commit/c2e3666e6d09ad9026dbcdb8f33f6cec0c57483f))
+* **docs-pages:** add the integration guide, the order of work and the open questions to the vendored UI library plan page ([818caaf](https://github.com/jerhage/dokseo/commit/818caaf573ea4555cd9d35d1a236eae8e4cb3414))
+* **docs-pages:** add the Kandan core plan page, with a live contract check on the real components, and re-measure the recorded builds ([f167248](https://github.com/jerhage/dokseo/commit/f167248891238475a254259e76cf0205b0738026))
+* **docs-pages:** add the markup contract normalizer that compares a component's HTML with a fixture ([7bda8d9](https://github.com/jerhage/dokseo/commit/7bda8d9f35945843e3cad3d1492216be3521ab61))
+* **docs-pages:** add the quote check the example drift page demonstrates, comparing a quote with its source with indentation ignored ([d1dbeda](https://github.com/jerhage/dokseo/commit/d1dbeda947d9b804de5a4b967d7715f4e45b36c9))
+* **docs-pages:** add the vendored UI library plan page with what vendoring means, its trade-offs and why a submodule is not vendoring ([ee39b3a](https://github.com/jerhage/dokseo/commit/ee39b3a2e9992c10da930deedf6cfa2b2592ae38))
+* **docs-pages:** count what the UI library's components and specs import, from a data file a spec recounts from the source ([a23d0d7](https://github.com/jerhage/dokseo/commit/a23d0d7c1a5b9509cb98f2e321aabdbe1ec35e82))
+* **docs-pages:** describe a copy tool with a manifest as the alternative, and the choice of git subtree, on the vendored UI library plan page ([4c68e6b](https://github.com/jerhage/dokseo/commit/4c68e6bfcd0b7e785f389136ab482f7c6744a60c))
+* **docs-pages:** describe how Dokseo takes a Kandan UI update, sends a fix back and keeps the subtree history intact ([e4665b3](https://github.com/jerhage/dokseo/commit/e4665b3227f75e3cad8b5526851a31326f8a1061))
+* **docs-pages:** describe Kandan UI in Dokseo, how Dokseo ignores the library's own tooling and how it integrates the library ([5178ffe](https://github.com/jerhage/dokseo/commit/5178ffe11e3a1f34b3f8eb27175df7f9c4cfba87))
+* **docs-pages:** explain git subtree add, pull, push and split on the vendored UI library plan page, with the history a squash pull leaves ([37cf113](https://github.com/jerhage/dokseo/commit/37cf11353ec7a679d2ee7438fe5b8232dec1e120))
+* **docs-pages:** keep the preparation of Kandan UI's extraction as a first-person lesson, and tidy the quoted git-subtree source ([5e96025](https://github.com/jerhage/dokseo/commit/5e960251a66fb808d2adb7e84ccd8a3b7c5351ba))
+* **docs-pages:** plan Dokseo's preparation for a vendored UI library: one folder, relative font URLs, no app aliases, the theme split and the specs ([19f1da6](https://github.com/jerhage/dokseo/commit/19f1da6de4c41fc959699937c0b5f5dc6f7cb822))
+* **docs-pages:** quote the UI library page's examples from real contiguous source excerpts and check them ([032d293](https://github.com/jerhage/dokseo/commit/032d2934f2314342dad07afdf854b895286aebc5))
+* **docs-pages:** record how the Kandan UI split was pushed and vendored back, and how a stray removal commit was rewritten out of the branch ([fe04f43](https://github.com/jerhage/dokseo/commit/fe04f43041fca6e48fba4c976f1184a5661e76af))
+* **docs-pages:** record the example drift page's quotes, the real failure output of a renamed line and a moved file, and its diagrams ([957c65c](https://github.com/jerhage/dokseo/commit/957c65ceb9e4f44e3398b5f7ec03b6585fb78897))
+* **docs-pages:** record the Kandan UI inventory, the contract cases, the real server renders and the nested subtree runs for the core plan ([e973457](https://github.com/jerhage/dokseo/commit/e973457bec4e6816473dc5f553716d5c2886f3ba))
+* **docs-pages:** turn the vendored UI library plan into an explainer at /docs/vendored-ui, next to the UI library ([b5c51f1](https://github.com/jerhage/dokseo/commit/b5c51f125bf05efc376df3dc198077ce8fe42697))
+* **library:** fill a book's reading from its new language's defaults ([7decb96](https://github.com/jerhage/dokseo/commit/7decb969b3e1d136239df5d8e4e9f68fe74aa13b))
+* **library:** fill a new book's reading from per-language defaults ([8bb1f3e](https://github.com/jerhage/dokseo/commit/8bb1f3e6855d5e39ea4e31525b2360026ce40665))
+* **library:** read an EPUB that declares no direction in its language's default ([740068b](https://github.com/jerhage/dokseo/commit/740068bf78a66d111356d7de275c6a708859035e))
+* **library:** read Korean and English left to right by default ([38b943e](https://github.com/jerhage/dokseo/commit/38b943edce81f4d6ad5084eaef71ff5126fcdc05))
+* **library:** remember the reading defaults and pass them to every upload ([d0a4687](https://github.com/jerhage/dokseo/commit/d0a46873412ff4e74a742385d1dddbc449803415))
+* **settings:** add a Reading defaults section ([6d7a15d](https://github.com/jerhage/dokseo/commit/6d7a15dc7ce29e70238fdd1bd824c23efeec6279))
+* **settings:** give the Reading defaults section the BookOpen icon and a summary that fits the side navigation ([7d03f2c](https://github.com/jerhage/dokseo/commit/7d03f2caf6bf0b02190bbc424480684705e30e9c))
+* **ui:** build the first-paint theme script from THEMES and an app's storage keys ([de5071d](https://github.com/jerhage/dokseo/commit/de5071d7e91274563dc30f7cdc6582aba5327fbf))
+* **ui:** ship the playground inside the library and mount it from Dokseo's dev route ([ba30b7f](https://github.com/jerhage/dokseo/commit/ba30b7fdaf6f610d6b7e7861bbd7ea605f78f40b))
+* **viewing:** fill a book's reading from its new language's defaults in the reader ([bb95c64](https://github.com/jerhage/dokseo/commit/bb95c642da7cdb01e66677d81ff7cfef09a714f3))
+
+
+### Fixes
+
+* **docs-pages:** count Lucide's license among the library files the reach demo reads ([8481ece](https://github.com/jerhage/dokseo/commit/8481ece3d2cde0051a1008a8b1ac8904b8aa174e))
+* **docs-pages:** describe the finished font move on the vendored UI library plan page ([8d18e3b](https://github.com/jerhage/dokseo/commit/8d18e3ba9e26a4e8d5509f74fe8828d0ed00460a))
+* **docs-pages:** describe the finished spec split, playground move and first-paint script on the vendored UI library plan page ([60116e4](https://github.com/jerhage/dokseo/commit/60116e4043a360c0e51fb332755472ace0086893))
+* **docs-pages:** record the UI library specs' imports now that one helper lists the tree ([fecf492](https://github.com/jerhage/dokseo/commit/fecf492173bf359288116e3ac4cd4273cea268e3))
+* **docs-pages:** stop naming a font as a file from static/ on the offline and production-builds pages ([71b3b59](https://github.com/jerhage/dokseo/commit/71b3b595ec4cd462cc4d3097f7b55480999c8f79))
+* **library:** make adding a book finishable after any interruption ([993ed73](https://github.com/jerhage/dokseo/commit/993ed7336353a6ead9b8261246385930093134e0))
+* **library:** make removing and merging a book finishable after any interruption ([6542e9a](https://github.com/jerhage/dokseo/commit/6542e9a93798445c079e276edd5e1ab311293357))
+* **settings:** truncate a section's name and summary in the settings navigation instead of scrolling it sideways ([66e39e7](https://github.com/jerhage/dokseo/commit/66e39e7a9ab889755750358175803d730d4b0d56))
+* **ui:** skip node_modules, tool output and dot folders when a spec scans the library tree ([edc826a](https://github.com/jerhage/dokseo/commit/edc826a1af6b535c09125dbc25f3de93dbc99aa0))
+
 ## [0.9.8](https://github.com/jerhage/dokseo/compare/v0.9.7...v0.9.8) (2026-10-04)
 
 
