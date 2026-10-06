@@ -30,3 +30,17 @@
   color: var(--color-text);
   text-decoration: underline;
 }
+.table-of-contents-list > li {
+  position: relative;
+}
+.table-of-contents-list > li:has(> .table-of-contents-link[aria-current='location'])::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(-1 * (var(--sp-3) + var(--border-width)));
+  inline-size: var(--border-width-strong);
+  background-color: var(--color-primary);
+}
+.table-of-contents-link[aria-current='location'] {
+  color: var(--color-text);
+}

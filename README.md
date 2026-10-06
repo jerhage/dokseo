@@ -31,3 +31,13 @@ git subtree push --prefix=src/lib/ui https://github.com/jerhage/kandan-ui-svelte
 Then import `core/styles/index.css` once in the app's root layout. The core, the stylesheet layers,
 fonts, themes, the first-paint script, the playground and the library's own checks are covered in
 [GUIDE.md](GUIDE.md).
+
+## See the playground
+
+```sh
+npm install
+npm run dev
+```
+
+Open the address Vite prints (by default http://localhost:5173). The theme and colour scheme
+pickers sit in the header.

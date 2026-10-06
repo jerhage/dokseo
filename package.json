@@ -4,6 +4,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "dev": "vite",
     "test": "vitest --run",
     "test:unit": "vitest --run --project unit",
     "test:watch": "vitest",

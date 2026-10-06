@@ -34,6 +34,7 @@
  * @property {string} [prop]
  * @property {string | number | boolean} [value]
  * @property {string} [method]
+ * @property {string} [to]
  */
 
 /**
@@ -142,6 +143,7 @@ const TRIGGER_KEYS = [
   'prop',
   'value',
   'method',
+  'to',
 ];
 
 /**
@@ -256,6 +258,12 @@ function triggerProblems(trigger, where) {
   }
   if (trigger.event === 'time' && typeof trigger.ms !== 'number') {
     problems.push(`${where}: a time names its ms`);
+  }
+  if (trigger.event === 'scroll' && (typeof trigger.to !== 'string' || trigger.to === '')) {
+    problems.push(`${where}: a scroll names the element it brings to the top`);
+  }
+  if (trigger.event !== 'scroll' && trigger.to !== undefined) {
+    problems.push(`${where}: only a scroll names an element to bring to the top`);
   }
   return problems;
 }

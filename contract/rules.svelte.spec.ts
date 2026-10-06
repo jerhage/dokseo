@@ -142,6 +142,13 @@ async function finishAnimations(target: EventTarget): Promise<void> {
   await Promise.all(running.map((animation) => animation.finished));
 }
 
+function scrolledToTop(trigger: Trigger): void {
+  const destination = document.querySelector(trigger.to ?? '');
+  if (destination === null)
+    throw new Error(`No element matches the scroll's destination ${trigger.to}`);
+  destination.scrollIntoView({ block: 'start', behavior: 'instant' });
+}
+
 async function enterTopLayer(): Promise<void> {
   const other = document.createElement('div');
   other.popover = 'manual';
@@ -264,6 +271,9 @@ async function fire(trigger: Trigger, run: Run): Promise<void> {
       break;
     case 'toggle':
       await enterTopLayer();
+      break;
+    case 'scroll':
+      scrolledToTop(trigger);
       break;
     case 'blur':
       blurred(trigger, run);

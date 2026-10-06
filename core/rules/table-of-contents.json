@@ -1,0 +1,108 @@
+{
+  "component": "table-of-contents",
+  "behaviour": "script",
+  "rules": [
+    {
+      "name": "marks the first entry as the current location before any heading is scrolled to the top",
+      "fixture": "table-of-contents/default",
+      "when": [
+        {
+          "event": "mount"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".table-of-contents-list > li:nth-child(1) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": "location"
+          }
+        },
+        {
+          "selector": ".table-of-contents-list > li:nth-child(2) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": null
+          }
+        },
+        {
+          "selector": ".table-of-contents-list > li:nth-child(3) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": null
+          }
+        }
+      ],
+      "source": "TableOfContents.svelte (refresh), table-of-contents.ts (currentHeading, scrolledToEnd)",
+      "certain": true,
+      "note": "The page holds, after the component, a heading for each entry whose id is the entry's anchor (setup, fonts, themes), in the entries' order, each followed by enough content that the page can scroll it to the top. The headings may reach the page after the component mounts. A heading is reached once its top passes a reading line in the upper part of the scrolling area; where that line lies is the framework version's choice, so no rule places a heading between the top and the line."
+    },
+    {
+      "name": "marks the entry whose heading is scrolled to the top as the current location, and no other",
+      "fixture": "table-of-contents/default",
+      "when": [
+        {
+          "event": "scroll",
+          "to": "#fonts"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".table-of-contents-list > li:nth-child(1) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": null
+          }
+        },
+        {
+          "selector": ".table-of-contents-list > li:nth-child(2) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": "location"
+          }
+        },
+        {
+          "selector": ".table-of-contents-list > li:nth-child(3) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": null
+          }
+        }
+      ],
+      "source": "TableOfContents.svelte (refresh), table-of-contents.ts (currentHeading, scrolledToEnd)",
+      "certain": true,
+      "note": "The page holds, after the component, a heading for each entry whose id is the entry's anchor (setup, fonts, themes), in the entries' order, each followed by enough content that the page can scroll it to the top. The headings may reach the page after the component mounts. A heading is reached once its top passes a reading line in the upper part of the scrolling area; where that line lies is the framework version's choice, so no rule places a heading between the top and the line."
+    },
+    {
+      "name": "moves the current location back to an earlier entry when the page scrolls back up to its heading",
+      "fixture": "table-of-contents/default",
+      "when": [
+        {
+          "event": "scroll",
+          "to": "#themes"
+        },
+        {
+          "event": "scroll",
+          "to": "#setup"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".table-of-contents-list > li:nth-child(1) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": "location"
+          }
+        },
+        {
+          "selector": ".table-of-contents-list > li:nth-child(2) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": null
+          }
+        },
+        {
+          "selector": ".table-of-contents-list > li:nth-child(3) > .table-of-contents-link",
+          "attributes": {
+            "aria-current": null
+          }
+        }
+      ],
+      "source": "TableOfContents.svelte (refresh), table-of-contents.ts (currentHeading, scrolledToEnd)",
+      "certain": true,
+      "note": "The page holds, after the component, a heading for each entry whose id is the entry's anchor (setup, fonts, themes), in the entries' order, each followed by enough content that the page can scroll it to the top. The headings may reach the page after the component mounts. A heading is reached once its top passes a reading line in the upper part of the scrolling area; where that line lies is the framework version's choice, so no rule places a heading between the top and the line."
+    }
+  ]
+}

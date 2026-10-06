@@ -25,6 +25,10 @@ const CAROUSEL_LAYOUT = '.carousel { block-size: 12rem; inline-size: 20rem; }';
 const DOCK_SHEET_LAYOUT =
   'div:has(> .dock-sheet) { display: flex; flex-direction: column; justify-content: flex-end; block-size: 100dvh; }';
 
+const CONTENTS_SECTION_LAYOUT = 'body > .rule-contents-section { block-size: 100dvh; }';
+
+const CONTENTS_HEADINGS = ['setup', 'fonts', 'themes'];
+
 const MARQUEE_POINTER_EVENTS = [
   'pointerdown',
   'pointermove',
@@ -95,6 +99,22 @@ function forwardMarqueePointers(controls: RuleControls): () => void {
   };
 }
 
+function placeContentsHeadings(): () => void {
+  const sections = CONTENTS_HEADINGS.map((id) => {
+    const section = document.createElement('section');
+    section.className = 'rule-contents-section';
+    const heading = document.createElement('h2');
+    heading.id = id;
+    heading.textContent = id;
+    section.append(heading);
+    return section;
+  });
+  document.body.append(...sections);
+  return () => {
+    for (const section of sections) section.remove();
+  };
+}
+
 function toastSubject(options: (controls: RuleControls) => ToastOptions): RuleSubject {
   return {
     render: subjects.toasts,
@@ -130,6 +150,11 @@ const RULE_SUBJECTS: Readonly<Record<string, RuleSubject>> = {
   'search-field/clearable-filled': {
     render: subjects.searchFieldClearableFilled,
     coarsePointer: true,
+  },
+  'table-of-contents/default': {
+    render: subjects.tableOfContentsDefault,
+    connect: placeContentsHeadings,
+    layout: CONTENTS_SECTION_LAYOUT,
   },
   'tabs/disabled-tab': { render: subjects.tabsDisabledTab, reach: reachSelectedTab },
   'tabs/underline': { render: subjects.tabsUnderline, reach: reachSelectedTab },
