@@ -1575,6 +1575,13 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('clips the drawer backdrop without making it a scroll container, so focus cannot scroll a drawer that is still sliding in', () => {
+    const backdrop = declarations(ruleBody(style('components/drawer.css'), '.drawer-backdrop'));
+
+    assertContains(backdrop, 'overflow: clip');
+    assert.equal(backdrop.includes('overflow: hidden'), false);
+  });
+
   it('slides a drawer in from its own edge and out to it, in either direction, and stops the slide when motion is reduced', () => {
     const drawer = style('components/drawer.css');
     const named = /** @param {string} selector */ (selector) =>

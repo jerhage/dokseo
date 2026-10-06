@@ -9,7 +9,7 @@
   max-block-size: none;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: clip;
   color: inherit;
   background-color: var(--color-overlay);
   border: none;
