@@ -1,0 +1,220 @@
+{
+  "component": "drawer",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "opens as a modal dialog and focuses the close button when asked to open",
+      "fixture": "drawer/default",
+      "when": [
+        {
+          "event": "set",
+          "prop": "open",
+          "value": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true,
+          "attributes": {
+            "open": ""
+          }
+        },
+        {
+          "selector": ".drawer-close",
+          "focused": true
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true,
+      "note": "Opens with showModal(). Focus goes to the first [autofocus] element inside the dialog when there is one, otherwise to .drawer-close. It also sets the valueless attribute data-page-scrollbar on the dialog when the page shows a vertical scrollbar, and removes it when not."
+    },
+    {
+      "name": "starts leaving on Escape instead of closing at once",
+      "fixture": "drawer/default",
+      "given": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".drawer-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true,
+      "note": "Escape fires cancel on the dialog; the cancel is prevented, so the dialog stays open while the drawer slides back to its edge."
+    },
+    {
+      "name": "closes once the closing animations have finished and returns focus",
+      "fixture": "drawer/default",
+      "given": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "animationsend",
+          "target": ".drawer-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": false,
+          "attributes": {
+            "open": null
+          },
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onclose"
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true,
+      "note": "Waits for every animation on the dialog and the drawer to settle, then calls dialog.close(); the close event reports the dialog closed. Closing a dialog opened with showModal() returns focus to the element that had it before, natively. Under reduced motion no animation runs, so it closes at once."
+    },
+    {
+      "name": "starts leaving when the close button is clicked",
+      "fixture": "drawer/default",
+      "given": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "click",
+          "target": ".drawer-close"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true
+    },
+    {
+      "name": "starts leaving when a press starts and ends on the backdrop",
+      "fixture": "drawer/default",
+      "given": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".drawer-backdrop"
+        },
+        {
+          "event": "click",
+          "target": ".drawer-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true,
+      "note": "Both events must have the dialog element itself as their target, which is the backdrop area beside the drawer."
+    },
+    {
+      "name": "stays open when a press starts inside the drawer and ends on the backdrop",
+      "fixture": "drawer/default",
+      "given": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true
+        }
+      ],
+      "when": [
+        {
+          "event": "pointerdown",
+          "target": ".drawer-body"
+        },
+        {
+          "event": "click",
+          "target": ".drawer-backdrop"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true
+    },
+    {
+      "name": "stops leaving and stays open when asked to open again while leaving",
+      "fixture": "drawer/default",
+      "given": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": true
+          }
+        }
+      ],
+      "when": [
+        {
+          "event": "set",
+          "prop": "open",
+          "value": true
+        }
+      ],
+      "then": [
+        {
+          "selector": ".drawer-backdrop",
+          "open": true,
+          "classes": {
+            "is-leaving": false
+          }
+        }
+      ],
+      "source": "Drawer.svelte in kandan-ui-svelte, built to these rules, with the phases of modal-phase.ts",
+      "certain": true
+    }
+  ]
+}

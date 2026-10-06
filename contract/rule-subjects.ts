@@ -37,16 +37,22 @@ const MARQUEE_POINTER_EVENTS = [
   'pointercancel',
 ] as const satisfies readonly (keyof MarqueeHandle)[];
 
-async function reachModal(state: ElementState, { controls, settle }: Reaching): Promise<boolean> {
-  if (state.selector !== '.modal-backdrop' || state.open !== true) return false;
-  controls.set('open', true);
-  await settle();
-  if (state.classes?.['is-leaving'] === true) {
-    controls.set('open', false);
+function reachDialog(selector: string): NonNullable<RuleSubject['reach']> {
+  return async (state, { controls, settle }) => {
+    if (state.selector !== selector || state.open !== true) return false;
+    controls.set('open', true);
     await settle();
-  }
-  return true;
+    if (state.classes?.['is-leaving'] === true) {
+      controls.set('open', false);
+      await settle();
+    }
+    return true;
+  };
 }
+
+const reachModal = reachDialog('.modal-backdrop');
+
+const reachDrawer = reachDialog('.drawer-backdrop');
 
 async function reachLeavingToast(
   state: ElementState,
@@ -133,8 +139,12 @@ const RULE_SUBJECTS: Readonly<Record<string, RuleSubject>> = {
   'carousel/default': { render: subjects.carouselDefault, layout: CAROUSEL_LAYOUT },
   'carousel/driven': { render: subjects.carouselDriven, layout: CAROUSEL_LAYOUT },
   'code-block/copy': { render: subjects.codeBlockCopy },
+  'combobox/default': { render: subjects.comboboxDefault },
+  'combobox/selected': { render: subjects.comboboxSelected },
+  'context-menu/default': { render: subjects.contextMenuDefault },
   'dock/sheet': { render: subjects.dockSheet, layout: DOCK_SHEET_LAYOUT },
   'dock/side': { render: subjects.dockSide },
+  'drawer/default': { render: subjects.drawerDefault, reach: reachDrawer },
   'dropdown/default': { render: subjects.dropdownDefault, reach: reachOpenDropdown },
   'dropzone/default': { render: subjects.dropzoneDefault, reach: reachDragOver },
   'dropzone/titled': { render: subjects.dropzoneTitled, reach: reachDragOver },
@@ -167,6 +177,7 @@ const RULE_SUBJECTS: Readonly<Record<string, RuleSubject>> = {
   })),
   'toast/info': toastSubject(() => ({ title: 'Saved', variant: 'info' })),
   'toast/timed': toastSubject(() => ({ title: 'Saved', duration: 8000 })),
+  'tooltip/default': { render: subjects.tooltipDefault },
   'window-dropzone/idle': { render: subjects.windowDropzoneIdle },
 };
 

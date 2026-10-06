@@ -74,13 +74,16 @@ function selectorClasses(selector) {
 }
 
 describe('the behaviour rules', () => {
-  it('cover the seventeen components that run a script or a native behaviour', () => {
+  it('cover the twenty-one components that run a script or a native behaviour', () => {
     assert.deepEqual(ruleFiles(), [
       'accordion-item.json',
       'appearance-choices.json',
       'carousel.json',
       'code-block.json',
+      'combobox.json',
+      'context-menu.json',
       'dock.json',
+      'drawer.json',
       'dropdown.json',
       'dropzone.json',
       'marquee-selection.json',
@@ -92,6 +95,7 @@ describe('the behaviour rules', () => {
       'toast-clearance.json',
       'toast-region.json',
       'toast.json',
+      'tooltip.json',
       'window-dropzone.json',
     ]);
   });
@@ -137,7 +141,8 @@ describe('the behaviour rules', () => {
           .flatMap((state) => selectorClasses(state.selector))
           .filter((found) => !held.has(found));
         const unknown = (rule.then ?? [])
-          .flatMap((state) => selectorClasses(state.selector))
+          .flatMap((state) => [state.selector, ...Object.values(state.references ?? {})])
+          .flatMap(selectorClasses)
           .filter((found) => !held.has(found) && !styled.includes(`.${found}`));
         return [...unheld, ...unknown].map((found) => `${name}: "${rule.name}" names .${found}`);
       }),
@@ -221,6 +226,31 @@ describe('rulesFileProblems', () => {
     const when = [{ event: 'pointerup' }, { event: 'pointerdown' }, { event: 'pointercancel' }];
 
     assert.deepEqual(problemsOf({ when }), ['rules[0].when[0]: a pointerup follows a press']);
+  });
+
+  it('accepts a reference that names the element whose id an attribute holds', () => {
+    const then = [
+      {
+        selector: '.marquee-selection',
+        references: { 'aria-activedescendant': '.marquee-selection-box' },
+      },
+    ];
+
+    assert.deepEqual(problemsOf({ then }), []);
+  });
+
+  it('rejects a reference that names no selector', () => {
+    const then = [{ selector: '.marquee-selection', references: { 'aria-activedescendant': '' } }];
+
+    assert.deepEqual(problemsOf({ then }), [
+      'rules[0].then[0]: references aria-activedescendant must name a selector',
+    ]);
+  });
+
+  it('accepts a context menu event', () => {
+    const when = [{ event: 'contextmenu', target: '.marquee-selection' }];
+
+    assert.deepEqual(problemsOf({ when }), []);
   });
 
   it('accepts a scroll that names the element it brings to the top', () => {

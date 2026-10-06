@@ -1,0 +1,22 @@
+.tooltip {
+  position: fixed;
+  inset: auto;
+  top: var(--tooltip-top, auto);
+  left: var(--tooltip-left, auto);
+  inline-size: max-content;
+  max-inline-size: min(var(--tooltip-max-width), 100% - 2 * var(--overlay-edge));
+  margin: 0;
+  padding: var(--sp-1) var(--sp-2);
+  overflow: visible;
+  font-size: var(--text-xs);
+  line-height: var(--lh-snug);
+  overflow-wrap: break-word;
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-md);
+}
+.tooltip:popover-open {
+  animation: kFadeIn var(--transition-enter) both;
+}

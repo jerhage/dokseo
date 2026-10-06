@@ -1,7 +1,12 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
-import { ruleCoarsePointer, rulePointer, rulePointerAway } from './contract/rule-input.ts';
+import {
+  ruleCoarsePointer,
+  rulePointer,
+  rulePointerAway,
+  ruleSecondaryClick,
+} from './contract/rule-input.ts';
 
 export default defineConfig({
   plugins: [
@@ -27,7 +32,7 @@ export default defineConfig({
             enabled: true,
             provider: playwright(),
             headless: true,
-            commands: { ruleCoarsePointer, rulePointer, rulePointerAway },
+            commands: { ruleCoarsePointer, rulePointer, rulePointerAway, ruleSecondaryClick },
             instances: [{ browser: 'chromium' }],
           },
         },

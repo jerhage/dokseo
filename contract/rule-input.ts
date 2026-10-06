@@ -90,6 +90,13 @@ const rulePointerAway: BrowserCommand<[]> = async (context) => {
   else throw new Error('The test frame fills the page, so the mouse has nowhere else to rest');
 };
 
+const ruleSecondaryClick: BrowserCommand<[PointerInput]> = async (context, input) => {
+  const at = await onPage(context, input);
+  await context.page.mouse.move(at.x, at.y);
+  await context.page.mouse.down({ button: 'right' });
+  await context.page.mouse.up({ button: 'right' });
+};
+
 const ruleCoarsePointer: BrowserCommand<[boolean]> = async (context, coarse) => {
   const session = await sessionOf(context.page);
   await session.send(
@@ -103,8 +110,9 @@ declare module 'vitest/browser' {
     rulePointer: (input: PointerInput) => Promise<void>;
     rulePointerAway: () => Promise<void>;
     ruleCoarsePointer: (coarse: boolean) => Promise<void>;
+    ruleSecondaryClick: (input: PointerInput) => Promise<void>;
   }
 }
 
-export { ruleCoarsePointer, rulePointer, rulePointerAway };
+export { ruleCoarsePointer, rulePointer, rulePointerAway, ruleSecondaryClick };
 export type { PointerAction, PointerInput, PointerKind };

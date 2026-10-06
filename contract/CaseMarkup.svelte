@@ -16,10 +16,13 @@
   import Checkbox from '../components/Checkbox.svelte';
   import ChromeBar from '../components/ChromeBar.svelte';
   import CodeBlock from '../components/CodeBlock.svelte';
+  import Combobox from '../components/Combobox.svelte';
   import CommandItem from '../components/CommandItem.svelte';
+  import ContextMenu from '../components/ContextMenu.svelte';
   import Diagram from '../components/Diagram.svelte';
   import Divider from '../components/Divider.svelte';
   import Dock from '../components/Dock.svelte';
+  import Drawer from '../components/Drawer.svelte';
   import Dropdown from '../components/Dropdown.svelte';
   import DropdownItem from '../components/DropdownItem.svelte';
   import DropdownLabel from '../components/DropdownLabel.svelte';
@@ -75,6 +78,7 @@
   import ToastClearance from '../components/ToastClearance.svelte';
   import ToastRegion from '../components/ToastRegion.svelte';
   import Toggle from '../components/Toggle.svelte';
+  import Tooltip from '../components/Tooltip.svelte';
   import WindowDropzone from '../components/WindowDropzone.svelte';
   import Ellipsis from '../components/icons/Ellipsis.svelte';
   import LayoutGrid from '../components/icons/LayoutGrid.svelte';
@@ -85,6 +89,7 @@
     ENTRIES,
     FILES,
     HINTS,
+    LANGUAGES,
     NAMES,
     NODES,
     OPTIONS,
@@ -200,11 +205,17 @@
     codeBlockLabelled,
     codeBlockCopy,
     codeBlockCopied,
+    comboboxDefault,
+    comboboxSelected,
+    comboboxEmpty,
+    comboboxDisabled,
+    comboboxHiddenLabel,
     commandItemButton,
     commandItemLink,
     commandItemStatic,
     commandItemSelected,
     commandItemHint,
+    contextMenuDefault,
     diagramDefault,
     diagramBoxesOnly,
     dividerDefault,
@@ -216,6 +227,10 @@
     dockRail,
     dockSheet,
     dockPeek,
+    drawerDefault,
+    drawerStart,
+    drawerBottom,
+    drawerFooter,
     dropdownDefault,
     dropdownIcon,
     dropdownIconWithoutTooltip,
@@ -434,6 +449,7 @@
     toggleDefault,
     toggleChecked,
     toggleDisabled,
+    tooltipDefault,
     windowDropzoneIdle,
   };
 </script>
@@ -1493,4 +1509,38 @@
 {#snippet toggleDisabled()}<Toggle disabled>Sync</Toggle>{/snippet}
 
 {#snippet windowDropzoneIdle()}<WindowDropzone onfiles={() => {}}>Drop to add</WindowDropzone
+  >{/snippet}
+
+{#snippet tooltipDefault()}<Tooltip text="Save the changes"
+    >{#snippet trigger(props)}<Button {...props}>Save</Button>{/snippet}</Tooltip
+  >{/snippet}
+
+{#snippet drawerDefault()}<Drawer title="Filters">Body</Drawer>{/snippet}
+
+{#snippet drawerStart()}<Drawer title="Filters" side="start">Body</Drawer>{/snippet}
+
+{#snippet drawerBottom()}<Drawer title="Filters" side="bottom">Body</Drawer>{/snippet}
+
+{#snippet drawerFooter()}<Drawer title="Filters"
+    >Body{#snippet footer()}<Button>Cancel</Button>{/snippet}</Drawer
+  >{/snippet}
+
+{#snippet comboboxDefault()}<Combobox label="Language" options={LANGUAGES} />{/snippet}
+
+{#snippet comboboxSelected()}<Combobox label="Language" options={LANGUAGES} value="ko" />{/snippet}
+
+{#snippet comboboxEmpty()}<Combobox label="Language" options={LANGUAGES} query="Latin" />{/snippet}
+
+{#snippet comboboxDisabled()}<Combobox label="Language" options={LANGUAGES} disabled />{/snippet}
+
+{#snippet comboboxHiddenLabel()}<Combobox
+    label="Language"
+    options={LANGUAGES}
+    hideLabel
+  />{/snippet}
+
+{#snippet contextMenuDefault()}<ContextMenu label="Report actions"
+    ><Button>Report</Button>{#snippet menu()}<DropdownItem>Open</DropdownItem><DropdownItem
+        >Rename</DropdownItem
+      ><DropdownSeparator /><DropdownItem danger>Delete</DropdownItem>{/snippet}</ContextMenu
   >{/snippet}

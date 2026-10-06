@@ -1,0 +1,507 @@
+{
+  "component": "combobox",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "opens the listbox and keeps only the options that match as text is typed",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "input",
+          "target": ".combobox .input",
+          "value": "ko"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": true,
+          "style": {
+            "--combobox-top": "set",
+            "--combobox-left": "set",
+            "--combobox-anchor-width": "set"
+          }
+        },
+        {
+          "selector": ".combobox .input",
+          "attributes": {
+            "aria-expanded": "true",
+            "aria-activedescendant": null
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(1)",
+          "present": true
+        },
+        {
+          "selector": ".combobox-option:nth-child(2)",
+          "present": false
+        }
+      ],
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "An option matches when its label holds the typed text, both lower-cased with toLocaleLowerCase(); \"ko\" keeps Korean alone. Typing makes no option active. The listbox is a manual popover shown with showPopover(); its place is written to --combobox-top, --combobox-left and --combobox-anchor-width in px, below the field and at least as wide as it, as a dropdown menu is placed, and follows scroll and resize. The options are given as { value, label } pairs: here ja Japanese, ko Korean, en English."
+    },
+    {
+      "name": "shows the empty message in the open listbox when no option matches",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "input",
+          "target": ".combobox .input",
+          "value": "Latin"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": true
+        },
+        {
+          "selector": ".combobox-empty",
+          "present": true
+        },
+        {
+          "selector": ".combobox-option",
+          "present": false
+        }
+      ],
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "The markup is the fixture combobox/empty. The message is a disabled option, so the listbox is never empty and the arrow keys skip it."
+    },
+    {
+      "name": "opens the listbox and makes the first option active on ArrowDown, keeping focus in the field",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": true
+        },
+        {
+          "selector": ".combobox .input",
+          "focused": true,
+          "attributes": {
+            "aria-expanded": "true"
+          },
+          "references": {
+            "aria-activedescendant": ".combobox-option:nth-child(1)"
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(1)",
+          "classes": {
+            "is-selected": true
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "Alt+ArrowDown opens the listbox without making an option active. The active option is scrolled into view with scrollIntoView({ block: \"nearest\" })."
+    },
+    {
+      "name": "opens the listbox and makes the last option active on ArrowUp",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowUp",
+          "target": ".combobox .input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": true
+        },
+        {
+          "selector": ".combobox .input",
+          "references": {
+            "aria-activedescendant": ".combobox-option:nth-child(3)"
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(3)",
+          "classes": {
+            "is-selected": true
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true
+    },
+    {
+      "name": "moves the active option down on ArrowDown and wraps from the last to the first",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox .input",
+          "references": {
+            "aria-activedescendant": ".combobox-option:nth-child(1)"
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(1)",
+          "classes": {
+            "is-selected": true
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(3)",
+          "classes": {
+            "is-selected": false
+          }
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "ArrowUp moves up and wraps from the first to the last. Home and End are left to the text field. Exactly one option carries is-selected, the one aria-activedescendant names."
+    },
+    {
+      "name": "chooses the active option on Enter, writes its label into the field and closes the listbox",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "keydown",
+          "key": "Enter",
+          "target": ".combobox .input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": false
+        },
+        {
+          "selector": ".combobox .input",
+          "attributes": {
+            "aria-expanded": "false",
+            "aria-activedescendant": null
+          }
+        },
+        {
+          "selector": ".combobox .input",
+          "properties": {
+            "value": "Korean"
+          },
+          "focused": true
+        },
+        {
+          "selector": ".combobox-option:nth-child(2)",
+          "attributes": {
+            "aria-selected": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(1)",
+          "attributes": {
+            "aria-selected": "false"
+          },
+          "classes": {
+            "is-active": false
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onchoose",
+          "with": "ko"
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "Choosing shows every option again: the filter applies only to text the user types, so the chosen markup is the fixture combobox/selected. Enter with no active option is left alone, so an enclosing form can submit."
+    },
+    {
+      "name": "chooses an option on a click and keeps focus in the field",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "click",
+          "target": ".combobox-option:nth-child(3)"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": false
+        },
+        {
+          "selector": ".combobox .input",
+          "attributes": {
+            "aria-expanded": "false",
+            "aria-activedescendant": null
+          }
+        },
+        {
+          "selector": ".combobox .input",
+          "properties": {
+            "value": "English"
+          },
+          "focused": true
+        },
+        {
+          "selector": ".combobox-option:nth-child(3)",
+          "attributes": {
+            "aria-selected": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        }
+      ],
+      "emits": [
+        {
+          "callback": "onchoose",
+          "with": "en"
+        }
+      ],
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "A pointerdown on an option is prevented, so the field never loses focus. Hovering an option does not make it active."
+    },
+    {
+      "name": "closes the listbox on Escape and keeps the text",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "input",
+          "target": ".combobox .input",
+          "value": "en"
+        },
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".combobox .input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": false
+        },
+        {
+          "selector": ".combobox .input",
+          "attributes": {
+            "aria-expanded": "false",
+            "aria-activedescendant": null
+          }
+        },
+        {
+          "selector": ".combobox .input",
+          "properties": {
+            "value": "en"
+          },
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "Escape is prevented only while the listbox is open, so an enclosing dialog stays open; with the listbox closed it is left alone."
+    },
+    {
+      "name": "closes the listbox on a press outside",
+      "fixture": "combobox/default",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "keydown",
+          "key": "ArrowDown",
+          "target": ".combobox .input"
+        },
+        {
+          "event": "pointerdown",
+          "target": "document"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": false
+        },
+        {
+          "selector": ".combobox .input",
+          "attributes": {
+            "aria-expanded": "false",
+            "aria-activedescendant": null
+          }
+        }
+      ],
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "The pointerdown target is any node outside .combobox. A focusout whose relatedTarget is outside .combobox, and a blur of the window, close it the same way."
+    },
+    {
+      "name": "puts the label of the chosen option back when focus leaves an edited field",
+      "fixture": "combobox/selected",
+      "given": [
+        {
+          "selector": ".combobox .input",
+          "focused": true
+        }
+      ],
+      "when": [
+        {
+          "event": "input",
+          "target": ".combobox .input",
+          "value": "Kor"
+        },
+        {
+          "event": "focusout",
+          "target": ".combobox .input"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".combobox-listbox",
+          "open": false
+        },
+        {
+          "selector": ".combobox .input",
+          "attributes": {
+            "aria-expanded": "false",
+            "aria-activedescendant": null
+          }
+        },
+        {
+          "selector": ".combobox .input",
+          "properties": {
+            "value": "Korean"
+          }
+        },
+        {
+          "selector": ".combobox-option:nth-child(2)",
+          "attributes": {
+            "aria-selected": "true"
+          },
+          "classes": {
+            "is-active": true
+          }
+        }
+      ],
+      "source": "Combobox.svelte in kandan-ui-svelte, built to these rules",
+      "certain": true,
+      "note": "Editing the text never changes the chosen option; only choosing one does, and the caller can set the value. With no option chosen, the field is emptied when focus leaves it with text that chooses nothing."
+    }
+  ]
+}

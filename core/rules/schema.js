@@ -17,6 +17,7 @@
  * @property {boolean} [focused]
  * @property {boolean} [open]
  * @property {boolean} [present]
+ * @property {Readonly<Record<string, string>>} [references]
  */
 
 /**
@@ -79,6 +80,7 @@ const EVENTS = [
   'call',
   'change',
   'click',
+  'contextmenu',
   'dragenter',
   'dragleave',
   'dragover',
@@ -127,6 +129,7 @@ const STATE_KEYS = [
   'focused',
   'open',
   'present',
+  'references',
 ];
 
 const TRIGGER_KEYS = [
@@ -205,6 +208,18 @@ function valueMapProblems(map, where, measurable) {
 }
 
 /**
+ * @param {unknown} map
+ * @param {string} where
+ * @returns {readonly string[]}
+ */
+function referenceProblems(map, where) {
+  if (!isRecord(map)) return [`${where} is not an object`];
+  return Object.entries(map)
+    .filter(([, selector]) => typeof selector !== 'string' || selector === '')
+    .map(([name]) => `${where} ${name} must name a selector`);
+}
+
+/**
  * @param {unknown} state
  * @param {string} where
  * @returns {readonly string[]}
@@ -221,6 +236,9 @@ function stateProblems(state, where) {
   }
   if (state.style !== undefined) {
     problems.push(...valueMapProblems(state.style, `${where}: style`, true));
+  }
+  if (state.references !== undefined) {
+    problems.push(...referenceProblems(state.references, `${where}: references`));
   }
   const classes = state.classes;
   if (classes !== undefined) {

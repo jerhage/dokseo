@@ -219,6 +219,26 @@ const CONTRACT_CLASSES = {
   modal: ['modal-backdrop', 'modal-header', 'modal-body', 'modal-footer', 'modal-close'],
   toast: ['toast-success', 'toast-warning', 'toast-danger', 'toast-info'],
   dropdown: ['dropdown-menu', 'dropdown-item', 'dropdown-separator', 'is-open'],
+  tooltip: [],
+  'context-menu': [],
+  combobox: [
+    'combobox-control',
+    'combobox-listbox',
+    'combobox-option',
+    'combobox-empty',
+    'is-active',
+    'is-selected',
+  ],
+  drawer: [
+    'drawer-backdrop',
+    'drawer-header',
+    'drawer-title',
+    'drawer-body',
+    'drawer-footer',
+    'drawer-close',
+    'drawer-start',
+    'drawer-bottom',
+  ],
   breadcrumb: ['breadcrumb-item', 'breadcrumb-separator'],
   pagination: ['pagination-item', 'is-active', 'is-disabled'],
   avatar: ['avatar-sm', 'avatar-lg', 'avatar-stack'],
@@ -311,6 +331,9 @@ const RUNTIME_INPUTS = [
   '--carousel-beside',
   '--carousel-shift',
   '--chrome-bar-lift',
+  '--combobox-anchor-width',
+  '--combobox-left',
+  '--combobox-top',
   '--diagram-width',
   '--dock-probe-height',
   '--dock-sheet-height',
@@ -338,6 +361,8 @@ const RUNTIME_INPUTS = [
   '--tabs-header-wrap',
   '--toast-offset-block-end',
   '--toast-timeout',
+  '--tooltip-left',
+  '--tooltip-top',
   '--zoom-surface-pan-x',
   '--zoom-surface-pan-y',
   '--zoom-surface-zoom',
@@ -1537,12 +1562,72 @@ describe('the design system stylesheets', () => {
     );
   });
 
+  it('locks the page and keeps its scrollbar gutter while a drawer is open, as a modal does', () => {
+    const overrides = style('overrides/overrides.css');
+
+    assertContains(
+      declarations(ruleBody(overrides, 'html:has(.drawer-backdrop[open])')),
+      'overflow: hidden',
+    );
+    assertContains(
+      declarations(ruleBody(overrides, 'html:has(.drawer-backdrop[open][data-page-scrollbar])')),
+      'scrollbar-gutter: stable',
+    );
+  });
+
+  it('slides a drawer in from its own edge and out to it, in either direction, and stops the slide when motion is reduced', () => {
+    const drawer = style('components/drawer.css');
+    const named = /** @param {string} selector */ (selector) =>
+      declarations(ruleBody(drawer, selector)).find((line) => line.startsWith('animation'));
+    const reduced = mediaBlock(
+      style('overrides/overrides.css'),
+      '(prefers-reduced-motion: reduce)',
+    );
+    const stopped = rules(reduced).find((rule) => rule.body.includes('animation: none'));
+
+    assert.deepEqual(
+      [
+        named('.drawer-backdrop[open] > .drawer'),
+        named('.drawer-backdrop[open] > .drawer:dir(rtl)'),
+        named('.drawer-backdrop[open] > .drawer.drawer-start'),
+        named('.drawer-backdrop[open] > .drawer.drawer-start:dir(rtl)'),
+        named('.drawer-backdrop[open] > .drawer.drawer-bottom'),
+        named('.drawer-backdrop[open].is-leaving > .drawer'),
+        named('.drawer-backdrop[open].is-leaving > .drawer:dir(rtl)'),
+        named('.drawer-backdrop[open].is-leaving > .drawer.drawer-start'),
+        named('.drawer-backdrop[open].is-leaving > .drawer.drawer-start:dir(rtl)'),
+        named('.drawer-backdrop[open].is-leaving > .drawer.drawer-bottom'),
+      ],
+      [
+        'animation: kEnterFromRight var(--dur-moderate) var(--ease-out) both',
+        'animation-name: kEnterFromLeft',
+        'animation-name: kEnterFromLeft',
+        'animation-name: kEnterFromRight',
+        'animation-name: kEnterFromBottom',
+        'animation: kLeaveToRight var(--transition-exit) both',
+        'animation-name: kLeaveToLeft',
+        'animation-name: kLeaveToLeft',
+        'animation-name: kLeaveToRight',
+        'animation-name: kLeaveToBottom',
+      ],
+    );
+    assertContainsAll(stopped?.selectors, [
+      '.drawer-backdrop[open]',
+      '.drawer-backdrop[open] > .drawer',
+      '.drawer-backdrop.is-leaving',
+      '.drawer-backdrop.is-leaving > .drawer',
+    ]);
+  });
+
   it('hides the transient overlays and flattens the framed surfaces when the page is printed', () => {
     const print = mediaBlock(style('overrides/overrides.css'), 'print');
     const overlays = [
       '.toast-region',
       '.modal-backdrop',
+      '.drawer-backdrop',
       '.dropdown-menu',
+      '.tooltip',
+      '.combobox-listbox',
       '.alert-close',
       '.tag-remove',
       '.file-item-remove',

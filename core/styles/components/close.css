@@ -1,5 +1,6 @@
 .alert-close,
 .modal-close,
+.drawer-close,
 .toast-close,
 .file-item-remove {
   display: inline-grid;
@@ -28,6 +29,7 @@
 }
 .alert-close:hover,
 .modal-close:hover,
+.drawer-close:hover,
 .toast-close:hover,
 .file-item-remove:hover {
   color: var(--color-text);

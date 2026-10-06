@@ -41,6 +41,11 @@ type OverlayPlacement = {
   readonly maxWidth: number;
 };
 
+type HintPlacement = {
+  readonly top: number;
+  readonly left: number;
+};
+
 type MenuInset = {
   readonly top: string | undefined;
   readonly left: string | undefined;
@@ -127,6 +132,35 @@ function blockTop(
   return clamp(top, edge, viewport.height - edge - height);
 }
 
+function aboveTop(
+  anchor: AnchorRect,
+  viewport: Viewport,
+  height: number,
+  spacing: OverlaySpacing,
+): number {
+  const { gap, edge } = spacing;
+  const above = anchor.top;
+  const below = viewport.height - anchor.bottom;
+  const flipped = height + gap + edge > above && below > above;
+  const top = flipped ? anchor.bottom + gap : anchor.top - gap - height;
+  return clamp(top, edge, viewport.height - edge - height);
+}
+
+function hintPlacement(
+  anchor: AnchorRect,
+  viewport: Viewport,
+  size: OverlaySize,
+  spacing: OverlaySpacing,
+): HintPlacement {
+  const { edge } = spacing;
+  const width = Math.min(size.width, Math.max(0, viewport.width - edge * 2));
+  const centred = (anchor.left + anchor.right) / 2 - width / 2;
+  return {
+    top: aboveTop(anchor, viewport, size.height, spacing),
+    left: clamp(centred, edge, viewport.width - edge - width),
+  };
+}
+
 function overlayPlacement(
   anchor: AnchorRect,
   viewport: Viewport,
@@ -167,6 +201,7 @@ function menuInset(placement: OverlayPlacement | undefined): MenuInset {
 export {
   OVERLAY_EDGE_PROPERTY,
   OVERLAY_GAP_PROPERTY,
+  hintPlacement,
   inlineDirection,
   menuInset,
   overlayPlacement,
@@ -174,6 +209,7 @@ export {
 };
 export type {
   AnchorRect,
+  HintPlacement,
   InlineDirection,
   MenuInset,
   OverlayPlacement,

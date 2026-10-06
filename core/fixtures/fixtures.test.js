@@ -100,6 +100,12 @@ describe('the fixtures', () => {
     assert.deepEqual(drifted, []);
   });
 
+  it('hold no comment and no text left behind by one, such as the !> of an empty comment', () => {
+    const offenders = fixturePaths().filter((path) => /<!|!>/u.test(fixture(path)));
+
+    assert.deepEqual(offenders, []);
+  });
+
   it('parse as balanced markup: every element is closed in order and no void element is', () => {
     const problems = fixturePaths().flatMap((path) =>
       balanceProblems(fixture(path)).map((problem) => `${path}: ${problem}`),
