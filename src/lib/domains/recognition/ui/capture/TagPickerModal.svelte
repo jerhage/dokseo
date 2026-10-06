@@ -67,6 +67,7 @@
   size="sm"
   placement="top"
   flushBody
+  sheetNarrow
   class="tag-picker"
   closeLabel="Done"
   onclose={() => onclose()}

@@ -103,7 +103,7 @@
   );
 </script>
 
-<Modal bind:open title="Reading settings" size="sm">
+<Modal bind:open title="Reading settings" size="sm" sheetNarrow>
   <div class="col gap-5">
     <Fieldset legend={LANGUAGE_LEGEND} disabled={saving}>
       <div class="col gap-2">

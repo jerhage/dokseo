@@ -50,7 +50,7 @@
   }
 </script>
 
-<Modal bind:open={() => open, requestOpen} title="Book settings" size="sm" {onclose}>
+<Modal bind:open={() => open, requestOpen} title="Book settings" size="sm" sheetNarrow {onclose}>
   <form id={formId} class="stack-md" onsubmit={submit}>
     <Field label="Title" hint={originalTitleHint(book)}>
       {#snippet children(control)}

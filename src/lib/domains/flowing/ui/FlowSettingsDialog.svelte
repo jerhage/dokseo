@@ -78,7 +78,7 @@
   }
 </script>
 
-<Modal bind:open title={TEXT_SETTINGS_HEADING} size="sm">
+<Modal bind:open title={TEXT_SETTINGS_HEADING} size="sm" sheetNarrow>
   <div class="col gap-5">
     <Fieldset legend={LANGUAGE_LEGEND} disabled={saving}>
       <div class="col gap-2">
