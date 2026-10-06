@@ -244,10 +244,13 @@ const COMPONENTS = [
   'Checkbox',
   'ChromeBar',
   'CodeBlock',
+  'Combobox',
   'CommandItem',
+  'ContextMenu',
   'Diagram',
   'Divider',
   'Dock',
+  'Drawer',
   'Dropdown',
   'DropdownItem',
   'DropdownLabel',
@@ -303,18 +306,19 @@ const COMPONENTS = [
   'ToastClearance',
   'ToastRegion',
   'Toggle',
+  'Tooltip',
   'WindowDropzone',
 ] as const;
 
 const ICON_COUNT = 37;
 
-const SERVER_RENDER_SPEC_COUNT = 24;
+const SERVER_RENDER_SPEC_COUNT = 26;
 
-const FIXTURE_COUNT = 336;
+const FIXTURE_COUNT = 347;
 
-const RULE_FILE_COUNT = 17;
+const RULE_FILE_COUNT = 21;
 
-const RULE_COUNT = 66;
+const RULE_COUNT = 99;
 
 const UNCERTAIN_RULE_COUNT = 0;
 
@@ -402,6 +406,21 @@ const BEHAVIOURS: readonly BehaviourRow[] = [
     note: 'A Dropdown whose trigger shows the scheme icon and the theme, holding the appearance choices.',
   },
   {
+    component: 'Combobox',
+    behaviour: 'native-script',
+    note: 'A text field with a popover="manual" listbox; script filters the options, moves the active option with the arrow keys and chooses one on Enter or a click.',
+  },
+  {
+    component: 'ContextMenu',
+    behaviour: 'native-script',
+    note: 'A popover="manual" menu of dropdown items; script opens it at the pointer on a secondary click, or at the focused element on Shift+F10, and returns focus on close.',
+  },
+  {
+    component: 'Drawer',
+    behaviour: 'native-script',
+    note: '<dialog> with showModal() that slides in from an edge; script focuses the close button and waits for the closing animation, as the modal does.',
+  },
+  {
     component: 'Dropdown',
     behaviour: 'native-script',
     note: 'A popover menu; script places it and moves focus between items with the arrow keys.',
@@ -415,6 +434,11 @@ const BEHAVIOURS: readonly BehaviourRow[] = [
     component: 'WindowDropzone',
     behaviour: 'native-script',
     note: 'A popover overlay; script follows drag events on the window.',
+  },
+  {
+    component: 'Tooltip',
+    behaviour: 'native-script',
+    note: 'popover="hint" with role="tooltip"; script shows it after a hover delay or at once on focus, places it above its trigger and hides it on Escape, leave and blur.',
   },
   {
     component: 'Tabs',
