@@ -310,7 +310,7 @@ const COMPONENTS = [
   'WindowDropzone',
 ] as const;
 
-const ICON_COUNT = 37;
+const ICON_COUNT = 38;
 
 const SERVER_RENDER_SPEC_COUNT = 26;
 
