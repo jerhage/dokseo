@@ -1,6 +1,6 @@
 import { COLOR_SCHEMES, THEMES } from '$lib/ui/core/appearance.js';
 import type { ColorScheme, Theme } from '$lib/ui/core/appearance.js';
-import { SCHEME_LABELS, THEME_LABELS } from '$lib/shared/appearance-labels';
+import { SCHEME_LABELS, THEME_LABELS } from '$lib/ui/components/appearance-labels';
 
 type ThemeOption = { readonly theme: Theme; readonly label: string };
 

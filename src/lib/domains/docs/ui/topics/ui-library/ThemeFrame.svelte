@@ -5,7 +5,7 @@
   import Select from '$lib/ui/components/Select.svelte';
   import { COLOR_SCHEMES, THEMES, applyAppearance } from '$lib/ui/core/appearance.js';
   import type { Appearance, ColorScheme } from '$lib/ui/core/appearance.js';
-  import { SCHEME_LABELS, THEME_LABELS } from '$lib/shared/appearance-labels';
+  import { SCHEME_LABELS, THEME_LABELS } from '$lib/ui/components/appearance-labels';
   import DocsDemo from '../../DocsDemo.svelte';
   import ThemeSpecimen from './ThemeSpecimen.svelte';
 

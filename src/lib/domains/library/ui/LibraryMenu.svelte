@@ -1,11 +1,12 @@
 <script lang="ts">
+  import AppearanceChoices from '$lib/ui/components/AppearanceChoices.svelte';
   import Dropdown from '$lib/ui/components/Dropdown.svelte';
   import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
   import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
   import Menu from '$lib/ui/components/icons/Menu.svelte';
   import { readAppearance } from '$lib/ui/core/appearance.js';
   import type { Appearance } from '$lib/ui/core/appearance.js';
-  import AppearanceChoices from '$lib/shared/AppearanceChoices.svelte';
+  import { chooseAppearance } from '$lib/shared/saved-appearance';
   import { LIBRARY_SECTIONS } from './library-sections';
 
   type Props = {
@@ -26,5 +27,8 @@
     <DropdownItem onclick={onsearcheverything}>Search everything</DropdownItem>
   {/if}
   <DropdownSeparator />
-  <AppearanceChoices bind:appearance />
+  <AppearanceChoices
+    bind:appearance
+    onchoose={(next) => chooseAppearance(document.documentElement, next)}
+  />
 </Dropdown>
