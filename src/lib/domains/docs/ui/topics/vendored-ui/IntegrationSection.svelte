@@ -131,6 +131,13 @@
     script reads as "no pinned scheme". Another app stores the choice its own way, under its own
     keys.
   </p>
+  <p>
+    The library's <code>AppearanceSwitcher</code> and <code>AppearanceChoices</code> take a bindable
+    <code>appearance</code> and an <code>onchoose</code> callback, and save nothing themselves.
+    Dokseo's <code>shared/AppearanceSwitcher.svelte</code> reads the starting appearance with
+    <code>readAppearance</code> and passes <code>chooseAppearance</code> as
+    <code>onchoose</code>; the library menu does the same with <code>AppearanceChoices</code>.
+  </p>
 </DocsSection>
 
 <DocsSection title={VENDORED_SECTIONS.firstPaint}>

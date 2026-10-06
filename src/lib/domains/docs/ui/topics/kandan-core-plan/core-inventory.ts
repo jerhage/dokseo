@@ -230,6 +230,8 @@ const COMPONENTS = [
   'Accordion',
   'AccordionItem',
   'Alert',
+  'AppearanceChoices',
+  'AppearanceSwitcher',
   'Avatar',
   'AvatarStack',
   'Badge',
@@ -308,11 +310,11 @@ const ICON_COUNT = 37;
 
 const SERVER_RENDER_SPEC_COUNT = 24;
 
-const FIXTURE_COUNT = 330;
+const FIXTURE_COUNT = 336;
 
-const RULE_FILE_COUNT = 16;
+const RULE_FILE_COUNT = 17;
 
-const RULE_COUNT = 64;
+const RULE_COUNT = 66;
 
 const UNCERTAIN_RULE_COUNT = 0;
 
@@ -360,9 +362,7 @@ const DOKSEO_FILES_NAMING_CORE_PATHS = [
   'src/lib/domains/recognition/ui/capture/SearchDialog.svelte',
   'src/lib/domains/recognition/ui/capture/tag-colours.spec.ts',
   'src/lib/domains/viewing/ui/viewer-drag.svelte.spec.ts',
-  'src/lib/shared/AppearanceChoices.svelte',
   'src/lib/shared/AppearanceSwitcher.svelte',
-  'src/lib/shared/appearance-labels.ts',
   'src/lib/shared/saved-appearance.spec.ts',
   'src/lib/shared/saved-appearance.ts',
   'src/lib/shared/toast-top-layer.svelte.spec.ts',

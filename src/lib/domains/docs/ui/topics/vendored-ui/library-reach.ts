@@ -21,17 +21,17 @@ const RELATIVE_FONT_URLS = 28;
 
 const LIBRARY_REACH: Readonly<Record<LibraryFiles, LibraryReach>> = {
   source: {
-    files: 164,
+    files: 167,
     aliased: 0,
-    above: 4,
+    above: 7,
     tallies: [
       { target: 'svelte/elements', kind: 'package', files: 67 },
-      { target: 'svelte', kind: 'package', files: 37 },
+      { target: 'svelte', kind: 'package', files: 38 },
       { target: 'ts-pattern', kind: 'package', files: 24 },
       { target: 'svelte/attachments', kind: 'package', files: 4 },
       { target: 'svelte/reactivity', kind: 'package', files: 1 },
-      { target: './', kind: 'sibling', files: 110 },
-      { target: '../core/', kind: 'parent', files: 4 },
+      { target: './', kind: 'sibling', files: 112 },
+      { target: '../core/', kind: 'parent', files: 7 },
     ],
   },
   specs: {

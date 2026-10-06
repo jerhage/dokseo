@@ -68,7 +68,8 @@
   <ul class="col gap-2">
     <li>
       The layer order and the first-paint script, inline in <code>src/app.html</code>, and
-      <code>saved-appearance.ts</code> in <code>src/lib/shared/</code>.
+      <code>saved-appearance.ts</code> in <code>src/lib/shared/</code>, with
+      <code>AppearanceSwitcher.svelte</code> beside it, which saves the library switcher's choice.
     </li>
     <li>
       The plugin that publishes the font licenses, <code>fontLicensesPublished</code> in
