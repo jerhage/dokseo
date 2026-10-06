@@ -1,10 +1,9 @@
 <script lang="ts">
   import Dropdown from '$lib/ui/components/Dropdown.svelte';
-  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
   import Ellipsis from '$lib/ui/components/icons/Ellipsis.svelte';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { Book } from '../domain/book/book';
-  import { readingState } from './library-shelves';
+  import BookActionItems from './BookActionItems.svelte';
 
   type Props = {
     readonly book: Book;
@@ -16,8 +15,6 @@
   };
 
   let { book, busy, onedit, onremove, onfinish, onunread }: Props = $props();
-
-  const reading = $derived(readingState(book));
 </script>
 
 <Dropdown
@@ -27,12 +24,5 @@
   icon={Ellipsis}
   label="Actions for {shownTitle(book)}"
 >
-  {#if reading !== 'finished'}
-    <DropdownItem disabled={busy} onclick={onfinish}>Mark as finished</DropdownItem>
-  {/if}
-  {#if reading !== 'unread'}
-    <DropdownItem disabled={busy} onclick={onunread}>Mark as unread</DropdownItem>
-  {/if}
-  <DropdownItem disabled={busy} onclick={onedit}>Book settings…</DropdownItem>
-  <DropdownItem danger disabled={busy} onclick={onremove}>Remove…</DropdownItem>
+  <BookActionItems {book} {busy} {onedit} {onremove} {onfinish} {onunread} />
 </Dropdown>
