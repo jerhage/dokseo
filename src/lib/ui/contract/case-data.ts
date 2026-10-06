@@ -146,6 +146,10 @@ const LANGUAGES: readonly ComboboxOption[] = [
 
 const NAMES: readonly string[] = ['Ada', 'Grace', 'Linus', 'Margaret', 'Ken'];
 
+type ShelfBook = { readonly title: string; readonly pages: number };
+
+const SHELF_BOOK: ShelfBook = { title: 'Moby Dick', pages: 635 };
+
 const SEGMENTS: readonly HighlightSegment[] = [
   { text: 'The ', matched: false },
   { text: 'quick', matched: true },
@@ -165,9 +169,11 @@ export {
   OPTIONS_WITH_DISABLED,
   REGION_TOASTER,
   SEGMENTS,
+  SHELF_BOOK,
   SLIDES,
   SOURCE,
   TABS,
   TABS_WITH_DISABLED,
   TOASTS,
 };
+export type { ShelfBook };

@@ -1,5 +1,10 @@
 type IconButtonTooltip = string | false;
 
+type IconButtonTip =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'title'; readonly text: string }
+  | { readonly kind: 'hint'; readonly text: string; readonly describes: boolean };
+
 function iconButtonTitle(
   label: string,
   tooltip: IconButtonTooltip | undefined,
@@ -8,5 +13,16 @@ function iconButtonTitle(
   return tooltip ?? label;
 }
 
-export { iconButtonTitle };
-export type { IconButtonTooltip };
+function iconButtonTip(
+  label: string,
+  tooltip: IconButtonTooltip | undefined,
+  hint: boolean,
+): IconButtonTip {
+  const text = iconButtonTitle(label, tooltip);
+  if (text === undefined) return { kind: 'none' };
+  if (!hint) return { kind: 'title', text };
+  return { kind: 'hint', text, describes: text !== label };
+}
+
+export { iconButtonTip, iconButtonTitle };
+export type { IconButtonTip, IconButtonTooltip };

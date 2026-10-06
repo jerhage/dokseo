@@ -216,7 +216,14 @@ const CONTRACT_CLASSES = {
   tabs: ['tab-list', 'tab', 'tab-panel', 'is-active'],
   accordion: ['accordion-item', 'accordion-trigger', 'accordion-body'],
   table: [],
-  modal: ['modal-backdrop', 'modal-header', 'modal-body', 'modal-footer', 'modal-close'],
+  modal: [
+    'modal-backdrop',
+    'modal-header',
+    'modal-body',
+    'modal-footer',
+    'modal-close',
+    'modal-sheet',
+  ],
   toast: ['toast-success', 'toast-warning', 'toast-danger', 'toast-info'],
   dropdown: ['dropdown-menu', 'dropdown-item', 'dropdown-separator', 'is-open'],
   tooltip: [],
@@ -321,6 +328,7 @@ const BREAKPOINT_SCALE = ['24rem', '26rem', '34rem', '40rem', '44rem'];
 /** @type {Readonly<Record<string, number>>} */
 const NARROW_QUERIES = {
   'styles/components/modal/modal.css': 2,
+  'styles/components/modal/modal-transitions.css': 1,
   'styles/components/toast.css': 1,
   'styles/utilities/layout.css': 4,
 };
@@ -1843,6 +1851,80 @@ describe('the design system stylesheets', () => {
       declarations(ruleBody(narrow, '.modal-fill-narrow .modal-body')),
       'overscroll-behavior: contain',
     );
+  });
+
+  it('docks a sheet modal to the bottom edge on a narrow screen, at the bottom drawer\'s cap and with its top corners rounded', () => {
+    const narrow = mediaBlock(style('components/modal/modal.css'), '(width < 48rem)');
+    const backdrop = declarations(ruleBody(narrow, '.modal-sheet'));
+    const panel = declarations(ruleBody(narrow, '.modal-sheet > .modal'));
+    const bottomDrawer = declarations(ruleBody(style('components/drawer.css'), '.drawer-bottom'));
+
+    assertContainsAll(backdrop, ['place-items: end stretch', 'padding: 0', 'overflow: clip']);
+    assert.equal(backdrop.includes('overflow: hidden'), false);
+    assertContainsAll(panel, [
+      'align-self: end',
+      'max-inline-size: none',
+      'max-block-size: var(--layout-sheet-height-tall)',
+      'margin: 0',
+      'border-end-start-radius: 0',
+      'border-end-end-radius: 0',
+    ]);
+    assertContains(bottomDrawer, 'max-block-size: var(--layout-sheet-height-tall)');
+    assertContains(
+      declarations(ruleBody(style('components/modal/modal.css'), '.modal')),
+      'border-radius: var(--radius-overlay)',
+    );
+  });
+
+  it('styles a sheet modal only inside the narrow query, so a wide screen keeps the centred modal', () => {
+    const narrowQuery = '@media (width < 48rem)';
+    for (const path of ['components/modal/modal.css', 'components/modal/modal-transitions.css']) {
+      const sheet = style(path);
+      const narrow = atRuleBlock(sheet, narrowQuery);
+      const outside = sheet.replace(narrow, '');
+
+      assert.equal(NARROW_SCREEN_QUERY, narrowQuery.replace('@media ', ''));
+      assert.equal(narrow.includes('.modal-sheet'), true, path);
+      assert.equal(outside.includes('.modal-sheet'), false, path);
+    }
+  });
+
+  it('slides a sheet modal in from the bottom and out to it while its backdrop keeps fading, and stops the slide when motion is reduced', () => {
+    const transitions = style('components/modal/modal-transitions.css');
+    const narrow = mediaBlock(transitions, '(width < 48rem)');
+    const reduced = mediaBlock(
+      style('overrides/overrides.css'),
+      '(prefers-reduced-motion: reduce)',
+    );
+    const stopped = rules(reduced).find((rule) => rule.body.includes('animation: none'));
+
+    assert.deepEqual(
+      [
+        declarations(ruleBody(narrow, '.modal-sheet[open] > .modal')),
+        declarations(ruleBody(narrow, '.modal-sheet.is-leaving > .modal')),
+      ],
+      [
+        ['animation: kEnterFromBottom var(--dur-moderate) var(--ease-out) both'],
+        ['animation: kLeaveToBottom var(--transition-exit) both'],
+      ],
+    );
+    assert.equal(
+      transitions.indexOf('.modal-sheet[open] > .modal') >
+        transitions.indexOf('.modal-backdrop.is-leaving .modal'),
+      true,
+    );
+    assert.equal(
+      transitions.indexOf('.modal-sheet.is-leaving > .modal') >
+        transitions.indexOf('.modal-sheet[open] > .modal'),
+      true,
+    );
+    assert.equal(rules(narrow).some((rule) => rule.body.includes('kFade')), false);
+    assertContainsAll(stopped?.selectors, [
+      '.modal-backdrop[open]',
+      '.modal-backdrop[open] .modal',
+      '.modal-backdrop.is-leaving',
+      '.modal-backdrop.is-leaving .modal',
+    ]);
   });
 
   it('shows fill-only content only while a modal fills the screen, and hides panel-only content then', () => {

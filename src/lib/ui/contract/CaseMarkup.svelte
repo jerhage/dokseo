@@ -18,6 +18,7 @@
   import CodeBlock from '../components/CodeBlock.svelte';
   import Combobox from '../components/Combobox.svelte';
   import CommandItem from '../components/CommandItem.svelte';
+  import { createContextMenuAreas } from '../components/context-menu-areas';
   import ContextMenu from '../components/ContextMenu.svelte';
   import Diagram from '../components/Diagram.svelte';
   import Divider from '../components/Divider.svelte';
@@ -96,12 +97,14 @@
     OPTIONS_WITH_DISABLED,
     REGION_TOASTER,
     SEGMENTS,
+    SHELF_BOOK,
     SLIDES,
     SOURCE,
     TABS,
     TABS_WITH_DISABLED,
     TOASTS,
   } from './case-data';
+  import type { ShelfBook } from './case-data';
 
   export {
     accordionDefault,
@@ -216,6 +219,7 @@
     commandItemSelected,
     commandItemHint,
     contextMenuDefault,
+    contextMenuAttached,
     diagramDefault,
     diagramBoxesOnly,
     dividerDefault,
@@ -276,6 +280,8 @@
     highlightDefault,
     iconButtonDefault,
     iconButtonTooltip,
+    iconButtonHint,
+    iconButtonHintDescribed,
     iconButtonWithoutTooltip,
     iconButtonGhostSm,
     iconButtonLink,
@@ -309,6 +315,7 @@
     modalLg,
     modalTop,
     modalFillNarrow,
+    modalSheet,
     modalFlushBody,
     modalFooter,
     modalInfoFooter,
@@ -945,6 +952,15 @@
     tooltip="Search the library"
   />{/snippet}
 
+{#snippet iconButtonHint()}<IconButton icon={Search} label="Search" hint />{/snippet}
+
+{#snippet iconButtonHintDescribed()}<IconButton
+    icon={Search}
+    label="Search"
+    tooltip="Search the library"
+    hint
+  />{/snippet}
+
 {#snippet iconButtonWithoutTooltip()}<IconButton
     icon={Search}
     label="Search"
@@ -1043,6 +1059,8 @@
 {#snippet modalTop()}<Modal title="Rename" placement="top">Body</Modal>{/snippet}
 
 {#snippet modalFillNarrow()}<Modal title="Rename" fillNarrow>Body</Modal>{/snippet}
+
+{#snippet modalSheet()}<Modal title="Rename" sheetNarrow>Body</Modal>{/snippet}
 
 {#snippet modalFlushBody()}<Modal title="Rename" flushBody>Body</Modal>{/snippet}
 
@@ -1542,5 +1560,17 @@
 {#snippet contextMenuDefault()}<ContextMenu label="Report actions"
     ><Button>Report</Button>{#snippet menu()}<DropdownItem>Open</DropdownItem><DropdownItem
         >Rename</DropdownItem
+      ><DropdownSeparator /><DropdownItem danger>Delete</DropdownItem>{/snippet}</ContextMenu
+  >{/snippet}
+
+{#snippet contextMenuAttached()}{@const rows = createContextMenuAreas<ShelfBook>()}<Table
+    ><TableBody
+      ><TableRow {@attach rows.area(SHELF_BOOK)}
+        ><TableCell>{SHELF_BOOK.title}</TableCell><TableCell numeric>{SHELF_BOOK.pages}</TableCell
+        ><TableCell actions><Button size="sm">Open</Button></TableCell></TableRow
+      ></TableBody
+    ></Table
+  ><ContextMenu areas={rows} label={(book) => `${book.title} actions`} current={SHELF_BOOK}
+    >{#snippet menu()}<DropdownItem>Open</DropdownItem><DropdownItem>Rename</DropdownItem
       ><DropdownSeparator /><DropdownItem danger>Delete</DropdownItem>{/snippet}</ContextMenu
   >{/snippet}

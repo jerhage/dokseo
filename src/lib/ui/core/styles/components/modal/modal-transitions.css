@@ -12,3 +12,11 @@
   animation: var(--transition-exit) both;
   animation-name: var(--motion-overlay-out);
 }
+@media (width < 48rem) {
+  .modal-sheet[open] > .modal {
+    animation: kEnterFromBottom var(--dur-moderate) var(--ease-out) both;
+  }
+  .modal-sheet.is-leaving > .modal {
+    animation: kLeaveToBottom var(--transition-exit) both;
+  }
+}

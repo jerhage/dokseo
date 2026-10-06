@@ -15,16 +15,17 @@
   import type { TooltipEvent, TooltipPhase } from './tooltip-phase';
 
   type TooltipTrigger = {
-    readonly 'aria-describedby': string;
+    readonly 'aria-describedby'?: string;
     readonly [attach: symbol]: Attachment<HTMLElement>;
   };
 
   type Props = Omit<HTMLAttributes<HTMLSpanElement>, 'children' | 'role' | 'popover'> & {
     text: string;
     trigger: Snippet<[TooltipTrigger]>;
+    describeTrigger?: boolean;
   };
 
-  let { text, trigger, class: className, ...rest }: Props = $props();
+  let { text, trigger, describeTrigger = true, class: className, ...rest }: Props = $props();
 
   const uid = $props.id();
   const tooltipId = `${uid}-tooltip`;
@@ -95,23 +96,28 @@
   const focus = (): void => send('focus');
   const blur = (): void => send('blur');
 
-  const triggerProps: TooltipTrigger = {
-    'aria-describedby': tooltipId,
-    [createAttachmentKey()]: (element: HTMLElement) => {
-      anchor = element;
-      element.addEventListener('mouseenter', enter);
-      element.addEventListener('mouseleave', leave);
-      element.addEventListener('focusin', focus);
-      element.addEventListener('focusout', blur);
-      return () => {
-        element.removeEventListener('mouseenter', enter);
-        element.removeEventListener('mouseleave', leave);
-        element.removeEventListener('focusin', focus);
-        element.removeEventListener('focusout', blur);
-        if (anchor === element) anchor = undefined;
-      };
-    },
-  };
+  const attachKey = createAttachmentKey();
+
+  function attachTrigger(element: HTMLElement): () => void {
+    anchor = element;
+    element.addEventListener('mouseenter', enter);
+    element.addEventListener('mouseleave', leave);
+    element.addEventListener('focusin', focus);
+    element.addEventListener('focusout', blur);
+    return () => {
+      element.removeEventListener('mouseenter', enter);
+      element.removeEventListener('mouseleave', leave);
+      element.removeEventListener('focusin', focus);
+      element.removeEventListener('focusout', blur);
+      if (anchor === element) anchor = undefined;
+    };
+  }
+
+  const triggerProps: TooltipTrigger = $derived(
+    describeTrigger
+      ? { 'aria-describedby': tooltipId, [attachKey]: attachTrigger }
+      : { [attachKey]: attachTrigger },
+  );
 
   const releaseOnDestroy: Attachment<HTMLSpanElement> = () => conceal;
 </script>

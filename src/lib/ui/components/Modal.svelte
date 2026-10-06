@@ -36,6 +36,7 @@
       size?: ModalSize;
       placement?: ModalPlacement;
       fillNarrow?: boolean;
+      sheetNarrow?: boolean;
       flushBody?: boolean;
       closeLabel?: string;
       footer?: Snippet<[() => void]>;
@@ -51,6 +52,7 @@
     size = 'md',
     placement = 'center',
     fillNarrow = false,
+    sheetNarrow = false,
     flushBody = false,
     closeLabel = 'Close',
     footer,
@@ -71,6 +73,7 @@
   let dialog = $state<HTMLDialogElement>();
   let panel = $state<HTMLDivElement>();
   let phase = $state<ModalPhase>('closed');
+  const leaving = $derived(phase === 'leaving');
   let pressedBackdrop = false;
 
   function hide(): void {
@@ -151,7 +154,11 @@
   aria-labelledby={modalLabelledBy(heading, titleId, labelledBy)}
   class={[
     'modal-backdrop',
-    { 'modal-fill-narrow': fillNarrow, 'is-leaving': phase === 'leaving' },
+    {
+      'modal-fill-narrow': fillNarrow,
+      'modal-sheet': sheetNarrow,
+      'is-leaving': leaving,
+    },
     className,
   ]}
   oncancel={cancel}

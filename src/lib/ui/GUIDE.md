@@ -527,6 +527,26 @@ component marks the entry of the section being read with `aria-current="location
 - `current` is bindable: bind it to read the entry being read, or pass it to render a current entry
   before any script runs (a server render has none otherwise).
 
+### Modal and IconButton options
+
+- `Modal` takes `sheetNarrow`, which adds the core's `.modal-sheet` modifier to its
+  `<dialog class="modal-backdrop">`. Below the narrow breakpoint the stylesheet docks the modal to
+  the bottom edge and slides it in from there; above it the modal stays centred. The change is a
+  media query alone: no script watches the width, so crossing the breakpoint never remounts an
+  open dialog.
+- `IconButton` takes `hint`, which shows the library `Tooltip` in place of the browser's `title`.
+  `tooltip` still holds the text (the label when it is absent) and `false` still turns the tooltip
+  off, so `hint` only changes its form. The tooltip is the button's next sibling, as in
+  `icon-button/hint`. When its text is the label, the button's accessible name, the button has no
+  `aria-describedby`, so a screen reader does not announce the name twice; when it differs, the
+  tooltip describes the button (`icon-button/hint-described`). `iconButtonTip` in
+  `components/icon-button.ts` makes that choice.
+
+  ```svelte
+  <IconButton icon={Search} label="Search" hint />
+  <IconButton icon={Copy} label="Copy" tooltip="Copy the recognized text" hint />
+  ```
+
 ### Tooltip, Drawer, Combobox and ContextMenu
 
 - `Tooltip` takes its `text` and a `trigger` snippet, and passes the snippet the props to spread on
@@ -536,7 +556,8 @@ component marks the entry of the section being read with `aria-current="location
   pointer rests on the trigger, or at once on focus, and hides 100 ms after the pointer leaves the
   trigger and the tooltip, at once on blur, and on Escape (`tooltip-phase.ts`). It sits above the
   trigger, centred on it, or below when there is no room above (`hintPlacement` in
-  `overlay-placement.ts`).
+  `overlay-placement.ts`). `describeTrigger={false}` leaves `aria-describedby` off the trigger,
+  for a tooltip whose text is already the trigger's accessible name.
 - `Drawer` is a modal dialog with the `Modal`'s lifecycle (`modal-phase.ts`): bind `open`, give a
   `title`, and choose the `side` it slides in from (`end`, the default, `start` or `bottom`). It
   takes a `footer` snippet, which gets a function that closes it, and `wrapFocus`, as the modal does.
@@ -555,6 +576,36 @@ component marks the entry of the section being read with `aria-current="location
   the menu at the pointer (`pointerPlacement` in `context-menu.ts`); Shift+F10 or the ContextMenu
   key on a focused element inside it opens the menu below that element. Choosing an item or Escape
   closes it and returns focus to the element that had it.
+- `ContextMenu` also attaches to elements it does not wrap, where a wrapper `div` is not valid,
+  such as table rows. Make the areas with `createContextMenuAreas<T>()` from
+  `components/context-menu-areas.ts`, attach `areas.area(value)` to each element, and pass `areas`
+  to a `ContextMenu` without children. Its `label` and `menu` snippet then take the value of the
+  area the menu opened on, so one menu serves every row and its items can depend on the row. The
+  menu renders where the component sits, so place it where a `div` is valid, such as after the
+  table. The area gains no attribute; it answers the secondary click, Shift+F10 and the ContextMenu
+  key as a wrapped area does. `current` is bindable: it holds the value the menu last opened on, and
+  passing one renders the menu's items before any opening (a server render has none otherwise).
+
+  ```svelte
+  <script lang="ts">
+    const rows = createContextMenuAreas<Book>();
+  </script>
+
+  <Table>
+    <TableBody>
+      {#each books as book (book.id)}
+        <TableRow {@attach rows.area(book)}>
+          <TableCell>{book.title}</TableCell>
+        </TableRow>
+      {/each}
+    </TableBody>
+  </Table>
+  <ContextMenu areas={rows} label={(book) => `${book.title} actions`}>
+    {#snippet menu(book)}
+      <DropdownItem onclick={() => open(book)}>Open</DropdownItem>
+    {/snippet}
+  </ContextMenu>
+  ```
 
 Every anchored overlay (the `Popover`, the `Dropdown` and `ContextMenu` menus, the `Tooltip` and the
 `Combobox` list) is placed again while it is open on scroll, on resize, and whenever its own size

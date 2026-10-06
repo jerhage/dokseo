@@ -1,0 +1,239 @@
+{
+  "component": "icon-button",
+  "behaviour": "native-script",
+  "rules": [
+    {
+      "name": "shows the tooltip beside its trigger once the pointer has rested on the trigger for 400 ms",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "mouseenter",
+          "target": ".btn"
+        },
+        {
+          "event": "time",
+          "ms": 400
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": true,
+          "style": {
+            "--tooltip-top": "set",
+            "--tooltip-left": "set"
+          }
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "The tooltip is shown with showPopover(). popover=\"hint\" keeps it from closing an open auto popover; a browser that does not know hint reads the attribute as manual, its invalid value default, and the script shows and hides it the same way. Its place is written to --tooltip-top and --tooltip-left in px: above the trigger, --overlay-gap away, centred on it along the inline axis, below it when the room above is smaller than its height plus the gap and the edge and the room below is larger, and kept --overlay-edge inside the viewport. It follows scroll and resize while shown."
+    },
+    {
+      "name": "keeps the tooltip hidden while the pointer has rested on the trigger for less than 400 ms",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "mouseenter",
+          "target": ".btn"
+        },
+        {
+          "event": "time",
+          "ms": 300
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": false
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true
+    },
+    {
+      "name": "shows the tooltip at once when its trigger takes focus",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "focusin",
+          "target": ".btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": true,
+          "style": {
+            "--tooltip-top": "set",
+            "--tooltip-left": "set"
+          }
+        },
+        {
+          "selector": ".btn",
+          "focused": true,
+          "attributes": {
+            "aria-describedby": null,
+            "title": null
+          }
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "The tooltip repeats the button's accessible name, its visually hidden label, so the button is not described by it and a screen reader announces the name once. The button has no title, so the browser shows no tooltip of its own."
+    },
+    {
+      "name": "shows a tooltip whose text differs from the label at once when its trigger takes focus, and describes the trigger by it",
+      "fixture": "icon-button/hint-described",
+      "when": [
+        {
+          "event": "focusin",
+          "target": ".btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": true,
+          "style": {
+            "--tooltip-top": "set",
+            "--tooltip-left": "set"
+          }
+        },
+        {
+          "selector": ".btn",
+          "focused": true,
+          "attributes": {
+            "title": null
+          },
+          "references": {
+            "aria-describedby": ".tooltip"
+          }
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "A tooltip text that differs from the label adds to the accessible name, so the button is described by the tooltip. Every other rule of this file holds for this fixture as for icon-button/hint."
+    },
+    {
+      "name": "hides the tooltip on Escape without moving focus",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "focusin",
+          "target": ".btn"
+        },
+        {
+          "event": "keydown",
+          "key": "Escape",
+          "target": ".btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": false
+        },
+        {
+          "selector": ".btn",
+          "focused": true
+        }
+      ],
+      "event": {
+        "defaultPrevented": true
+      },
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "Escape is listened for on the document, so it hides a tooltip shown by hover wherever focus is. It is prevented only while a tooltip is shown, so an enclosing dialog does not close with it; with no tooltip shown it is left alone. A hidden tooltip shows again only when the pointer enters the trigger again or the trigger takes focus again."
+    },
+    {
+      "name": "hides the tooltip 100 ms after the pointer leaves its trigger",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "mouseenter",
+          "target": ".btn"
+        },
+        {
+          "event": "time",
+          "ms": 400
+        },
+        {
+          "event": "mouseleave",
+          "target": ".btn"
+        },
+        {
+          "event": "time",
+          "ms": 100
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": false
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "A pointer that leaves before the tooltip shows cancels the wait, and it does not show."
+    },
+    {
+      "name": "keeps the tooltip shown while the pointer moves from its trigger onto it",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "mouseenter",
+          "target": ".btn"
+        },
+        {
+          "event": "time",
+          "ms": 400
+        },
+        {
+          "event": "mouseleave",
+          "target": ".btn"
+        },
+        {
+          "event": "mouseenter",
+          "target": ".tooltip"
+        },
+        {
+          "event": "time",
+          "ms": 100
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": true
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "The pointer can rest on the tooltip, so its text can be read and selected. Leaving the tooltip hides it 100 ms later, unless the pointer enters the trigger again."
+    },
+    {
+      "name": "hides the tooltip at once when its trigger loses focus",
+      "fixture": "icon-button/hint",
+      "when": [
+        {
+          "event": "focusin",
+          "target": ".btn"
+        },
+        {
+          "event": "focusout",
+          "target": ".btn"
+        }
+      ],
+      "then": [
+        {
+          "selector": ".tooltip",
+          "open": false
+        }
+      ],
+      "source": "IconButton.svelte in kandan-ui-svelte, built to these rules, with Tooltip.svelte",
+      "certain": true,
+      "note": "A blur of the window hides it the same way."
+    }
+  ]
+}
