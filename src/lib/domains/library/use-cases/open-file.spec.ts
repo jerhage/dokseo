@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex, seriesId } from '$lib/shared/ids';
 import type { ContentHash } from '$lib/shared/ids';
+import type { ReadingDirection } from '$lib/shared/layout-kind';
 import { imagePlace } from '$lib/shared/reading-place';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
@@ -1219,17 +1220,53 @@ describe('openFile', () => {
     expect(openedBook(result).direction).toBe('ltr');
   });
 
-  it('reads an EPUB that declares no direction left to right, as the format says', async () => {
-    const result = await openFile(
-      deps({
-        inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'default')).inspector,
-        builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
-      }),
-      epub,
-    );
+  const UNDECLARED_DIRECTIONS: readonly (readonly [string, ReadingDirection])[] = [
+    ['ja', 'rtl'],
+    ['en-GB', 'ltr'],
+  ];
 
-    expect(openedBook(result).direction).toBe('ltr');
-  });
+  it.each(UNDECLARED_DIRECTIONS)(
+    "reads an EPUB that declares no direction in its language's default direction: %s reads %s",
+    async (declaredLanguage, direction) => {
+      const result = await openFile(
+        deps({
+          inspectEpub: fakeInspector(inspectedEpub('pre-paginated', 'default', declaredLanguage))
+            .inspector,
+          builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
+        }),
+        epub,
+        undefined,
+        'content',
+        CHOSEN_DEFAULTS,
+      );
+
+      expect(openedBook(result).direction).toBe(direction);
+    },
+  );
+
+  const DECLARED_DIRECTIONS: readonly (readonly [ReadingDirection, string])[] = [
+    ['rtl', 'en-GB'],
+    ['ltr', 'ja'],
+  ];
+
+  it.each(DECLARED_DIRECTIONS)(
+    "keeps the direction an EPUB declares over its language's default: %s in %s",
+    async (direction, declaredLanguage) => {
+      const result = await openFile(
+        deps({
+          inspectEpub: fakeInspector(inspectedEpub('pre-paginated', direction, declaredLanguage))
+            .inspector,
+          builder: fakeBuilder(built(builtSource({ sourceKind: 'epub' }))).builder,
+        }),
+        epub,
+        undefined,
+        'content',
+        CHOSEN_DEFAULTS,
+      );
+
+      expect(openedBook(result).direction).toBe(direction);
+    },
+  );
 
   it('imports an EPUB declaring reflowable whose pages are not images as a flow book', async () => {
     const repository = fakeRepository();

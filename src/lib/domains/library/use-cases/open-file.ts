@@ -223,13 +223,9 @@ function declaredTitle(inspection: UploadInspection, built: BuiltSource): string
   return declared === null ? null : plausibleTitle(declared);
 }
 
-const EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE: ReadingDirection = 'ltr';
-
 function declaredDirection(inspection: UploadInspection): ReadingDirection | null {
   if (inspection.kind !== 'epub') return null;
-  if (inspection.packageDocument.direction === 'default') {
-    return EPUB_READS_LEFT_TO_RIGHT_UNLESS_IT_SAYS_OTHERWISE;
-  }
+  if (inspection.packageDocument.direction === 'default') return null;
 
   return inspection.packageDocument.direction;
 }
