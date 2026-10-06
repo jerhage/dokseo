@@ -9,8 +9,8 @@
   import DocsSection from '../../DocsSection.svelte';
   import {
     ADDED,
-    COMPONENTS,
     DOKSEO_FILES_NAMING_CORE_PATHS,
+    FIRST_COMPONENT_COUNT,
     FIRST_FIXTURE_COUNT,
     INVENTORY,
     LIBRARY_ROOT,
@@ -219,7 +219,7 @@
     the server through a module hook, rendered every variant with <code>render</code> from
     <code>svelte/server</code>, passed the HTML through <code>fixtureText</code>, and wrote it to
     <code>fixtures/&lt;component&gt;/&lt;variant&gt;.html</code>: {FIRST_FIXTURE_COUNT} fixtures for all
-    {COMPONENTS.length}
+    {FIRST_COMPONENT_COUNT}
     components. The real fixtures showed what the planned normalizer missed: void elements such as
     <code>img</code>, empty <code>class</code> and <code>style</code> attributes, inline style
     declarations, an id inside an SVG <code>url(#…)</code>, and unquoted values. Each became a step

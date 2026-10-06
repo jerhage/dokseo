@@ -318,6 +318,8 @@ const RULE_COUNT = 66;
 
 const UNCERTAIN_RULE_COUNT = 0;
 
+const FIRST_COMPONENT_COUNT = 75;
+
 const FIRST_FIXTURE_COUNT = 329;
 
 const FIRST_RULE_FILE_COUNT = 15;
@@ -388,6 +390,16 @@ const BEHAVIOURS: readonly BehaviourRow[] = [
     component: 'Popover',
     behaviour: 'native-script',
     note: 'popover="auto" with a popovertarget trigger; script places the sheet beside its anchor and follows it.',
+  },
+  {
+    component: 'AppearanceChoices',
+    behaviour: 'script',
+    note: 'A choice moves the selection and reports the new appearance through onchoose; the default is prevented so the menu stays open.',
+  },
+  {
+    component: 'AppearanceSwitcher',
+    behaviour: 'native-script',
+    note: 'A Dropdown whose trigger shows the scheme icon and the theme, holding the appearance choices.',
   },
   {
     component: 'Dropdown',
@@ -497,6 +509,7 @@ export {
   RULE_FILE_COUNT,
   SERVER_RENDER_SPEC_COUNT,
   UNCERTAIN_RULE_COUNT,
+  FIRST_COMPONENT_COUNT,
   FIRST_FIXTURE_COUNT,
   FIRST_RULE_FILE_COUNT,
   FIRST_RULE_COUNT,
