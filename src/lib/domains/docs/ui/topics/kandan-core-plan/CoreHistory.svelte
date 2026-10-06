@@ -15,10 +15,10 @@
     INVENTORY,
     LIBRARY_ROOT,
     PLANNED_DOKSEO_FILE_COUNT,
-    RULE_COUNT,
+    FIRST_RULE_COUNT,
     RULE_FILE_COUNT,
     SERVER_RENDER_SPEC_COUNT,
-    UNCERTAIN_RULE_COUNT,
+    FIRST_UNCERTAIN_RULE_COUNT,
     fateCount,
     fateLabel,
   } from './core-inventory';
@@ -225,10 +225,12 @@
     of the core's normalizer.
   </p>
   <p>
-    The rules came next: {RULE_COUNT} of them in {RULE_FILE_COUNT} files, one file for each component
+    The rules came next: {FIRST_RULE_COUNT} of them in {RULE_FILE_COUNT} files, one file for each component
     whose behavior is more than markup. Each rule names, in its <code>source</code> field, the
-    Svelte code it describes. {UNCERTAIN_RULE_COUNT} could not be stated exactly from that code, so they
-    are marked not certain, each with a note saying why.
+    Svelte code it describes. {FIRST_UNCERTAIN_RULE_COUNT} could not be stated exactly from that code,
+    so they were marked not certain, each with a note saying why. The first browser run of the rules,
+    in v0.2.0, made all of them certain: a press before each lift, a tolerance for a measured size, and
+    a dock subject placed at the bottom of the page.
   </p>
   <p>
     Last, the first-paint script. I compared <code>themeBootScript</code>'s output with the old

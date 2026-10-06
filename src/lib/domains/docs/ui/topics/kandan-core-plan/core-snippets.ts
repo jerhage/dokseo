@@ -307,18 +307,20 @@ const TAB_RULE: SourceSnippet = {
 };
 
 const UNCERTAIN_TODO: SourceSnippet = {
-  label: 'src/lib/ui/contract/rules.svelte.spec.ts, a rule that is not certain',
+  label: 'src/lib/ui/contract/rules.svelte.spec.ts, the rules listed as todos',
   file: 'src/lib/ui/contract/rules.svelte.spec.ts',
-  code: `if (!rule.certain) {
+  code: `const reason = unproducible(rule);
+if (!rule.certain) {
   it.todo(rule.name);
-  continue;
-}`,
+} else if (reason !== null) {
+  it.todo(\`\${rule.name} (\${reason})\`);
+} else {`,
 };
 
 const LIBRARY_CI: SourceSnippet = {
   label: "src/lib/ui/.github/workflows/ci.yml, the library's CI steps",
   file: 'src/lib/ui/.github/workflows/ci.yml',
-  code: `- run: npm install
+  code: `- run: npm ci
 
 - run: npm run verify
 

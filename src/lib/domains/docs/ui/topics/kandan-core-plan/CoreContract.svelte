@@ -293,8 +293,10 @@
     them itself: it holds no components. In <code>kandan-ui-svelte</code>,
     <code>contract/rules.svelte.spec.ts</code> mounts a subject for the rule's starting fixture as a
     real component in Chromium, applies the given state, fires the events, and checks what follows.
-    A rule the core marks as not certain, because it could not be stated exactly from the code,
-    becomes a todo ({UNCERTAIN_RULE_COUNT} of the {RULE_COUNT}):
+    Keys, clicks and pointer presses reach Chromium as trusted input, so the browser runs its own
+    default actions. A rule the core marks as not certain becomes a todo ({UNCERTAIN_RULE_COUNT}
+    of the {RULE_COUNT} today), and so does a rule the runner cannot produce honestly, such as the drop
+    effect of a drag the browser itself runs:
   </p>
   <DocsCode label={UNCERTAIN_TODO.label} code={UNCERTAIN_TODO.code} />
   <p>

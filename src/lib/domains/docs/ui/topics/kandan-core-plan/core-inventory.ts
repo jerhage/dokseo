@@ -148,7 +148,7 @@ const INVENTORY: readonly InventoryRow[] = [
   {
     path: 'package.json',
     fate: 'svelte',
-    now: ['package.json', 'core/package.json', 'core/package-lock.json'],
+    now: ['package.json', 'package-lock.json', 'core/package.json', 'core/package-lock.json'],
     note: 'Declares svelte, ts-pattern and the Svelte tooling. The core has its own, smaller one.',
   },
   {
@@ -308,9 +308,13 @@ const FIXTURE_COUNT = 329;
 
 const RULE_FILE_COUNT = 15;
 
-const RULE_COUNT = 60;
+const RULE_COUNT = 61;
 
-const UNCERTAIN_RULE_COUNT = 5;
+const UNCERTAIN_RULE_COUNT = 0;
+
+const FIRST_RULE_COUNT = 60;
+
+const FIRST_UNCERTAIN_RULE_COUNT = 5;
 
 const PLANNED_DOKSEO_FILE_COUNT = 20;
 
@@ -485,6 +489,8 @@ export {
   RULE_FILE_COUNT,
   SERVER_RENDER_SPEC_COUNT,
   UNCERTAIN_RULE_COUNT,
+  FIRST_RULE_COUNT,
+  FIRST_UNCERTAIN_RULE_COUNT,
   behaviourCount,
   behaviourLabel,
   behaviourOf,
