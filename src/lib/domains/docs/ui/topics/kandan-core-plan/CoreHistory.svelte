@@ -11,12 +11,12 @@
     ADDED,
     COMPONENTS,
     DOKSEO_FILES_NAMING_CORE_PATHS,
-    FIXTURE_COUNT,
+    FIRST_FIXTURE_COUNT,
     INVENTORY,
     LIBRARY_ROOT,
     PLANNED_DOKSEO_FILE_COUNT,
     FIRST_RULE_COUNT,
-    RULE_FILE_COUNT,
+    FIRST_RULE_FILE_COUNT,
     SERVER_RENDER_SPEC_COUNT,
     FIRST_UNCERTAIN_RULE_COUNT,
     fateCount,
@@ -203,8 +203,8 @@
     The contract spec was less new than it sounded. {SERVER_RENDER_SPEC_COUNT} spec files in
     <code>components/</code> already rendered components to a string with <code>render</code> from
     <code>svelte/server</code>, in Node, in the same unit project as every other spec. The contract
-    spec uses the same call for each of the core's {FIXTURE_COUNT} fixtures and compares the whole string
-    with the fixture instead of picking out one attribute.
+    spec uses the same call for each of the core's {FIRST_FIXTURE_COUNT} fixtures and compares the whole
+    string with the fixture instead of picking out one attribute.
   </p>
 </DocsSection>
 
@@ -218,16 +218,17 @@
     I did not write the fixtures by hand. A throwaway Node script compiled each Svelte component for
     the server through a module hook, rendered every variant with <code>render</code> from
     <code>svelte/server</code>, passed the HTML through <code>fixtureText</code>, and wrote it to
-    <code>fixtures/&lt;component&gt;/&lt;variant&gt;.html</code>: {FIXTURE_COUNT} fixtures for all {COMPONENTS.length}
+    <code>fixtures/&lt;component&gt;/&lt;variant&gt;.html</code>: {FIRST_FIXTURE_COUNT} fixtures for all
+    {COMPONENTS.length}
     components. The real fixtures showed what the planned normalizer missed: void elements such as
     <code>img</code>, empty <code>class</code> and <code>style</code> attributes, inline style
     declarations, an id inside an SVG <code>url(#…)</code>, and unquoted values. Each became a step
     of the core's normalizer.
   </p>
   <p>
-    The rules came next: {FIRST_RULE_COUNT} of them in {RULE_FILE_COUNT} files, one file for each component
-    whose behavior is more than markup. Each rule names, in its <code>source</code> field, the
-    Svelte code it describes. {FIRST_UNCERTAIN_RULE_COUNT} could not be stated exactly from that code,
+    The rules came next: {FIRST_RULE_COUNT} of them in {FIRST_RULE_FILE_COUNT} files, one file for each
+    component whose behavior is more than markup. Each rule names, in its <code>source</code> field,
+    the Svelte code it describes. {FIRST_UNCERTAIN_RULE_COUNT} could not be stated exactly from that code,
     so they were marked not certain, each with a note saying why. The first browser run of the rules,
     in v0.2.0, made all of them certain: a press before each lift, a tolerance for a measured size, and
     a dock subject placed at the bottom of the page.

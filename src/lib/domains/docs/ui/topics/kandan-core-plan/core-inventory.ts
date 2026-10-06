@@ -213,6 +213,10 @@ const ADDED: readonly AddedRow[] = [
     note: 'The browser project that runs the behavior rules, kept out of test and verify.',
   },
   {
+    path: 'vite.config.ts',
+    note: 'The dev server that renders only the playground (npm run dev); Vitest keeps reading vitest.config.ts.',
+  },
+  {
     path: '.github/',
     note: 'The library’s CI workflow.',
   },
@@ -304,13 +308,17 @@ const ICON_COUNT = 37;
 
 const SERVER_RENDER_SPEC_COUNT = 24;
 
-const FIXTURE_COUNT = 329;
+const FIXTURE_COUNT = 330;
 
-const RULE_FILE_COUNT = 15;
+const RULE_FILE_COUNT = 16;
 
-const RULE_COUNT = 61;
+const RULE_COUNT = 64;
 
 const UNCERTAIN_RULE_COUNT = 0;
+
+const FIRST_FIXTURE_COUNT = 329;
+
+const FIRST_RULE_FILE_COUNT = 15;
 
 const FIRST_RULE_COUNT = 60;
 
@@ -489,6 +497,8 @@ export {
   RULE_FILE_COUNT,
   SERVER_RENDER_SPEC_COUNT,
   UNCERTAIN_RULE_COUNT,
+  FIRST_FIXTURE_COUNT,
+  FIRST_RULE_FILE_COUNT,
   FIRST_RULE_COUNT,
   FIRST_UNCERTAIN_RULE_COUNT,
   behaviourCount,

@@ -224,6 +224,7 @@ module.exports = {
     exclude: {
       path: [
         '^(\\.svelte-kit|build)/',
+        '^src/lib/ui/vite\\.config\\.ts$',
         '^src/lib/ui/vitest\\.config\\.ts$',
         '^src/lib/ui/vitest\\.browser\\.config\\.ts$',
         '^src/lib/ui/scripts/',
