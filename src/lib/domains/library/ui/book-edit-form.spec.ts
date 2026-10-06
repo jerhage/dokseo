@@ -3,7 +3,7 @@ import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import { applyEdit } from '../domain/book/book';
-import { bookForm, changedFields, originalTitleHint } from './book-edit-form';
+import { bookForm, changedFields, formInLanguage, originalTitleHint } from './book-edit-form';
 
 function book(overrides: Partial<Book> = {}): Book {
   return {
@@ -71,6 +71,39 @@ describe('bookForm, for a flow book', () => {
       layoutKind: null,
       direction: 'ltr',
       pagePairing: 'double',
+    });
+  });
+});
+
+describe('formInLanguage', () => {
+  const korean = { direction: 'ltr', layoutKind: 'continuous', pagePairing: 'single' } as const;
+
+  it('fills direction, layout and pairing from the new language and keeps the title', () => {
+    const form = { ...bookForm(book()), title: 'Moonlight Diner' };
+
+    expect(formInLanguage(form, 'ko', korean)).toEqual({
+      title: 'Moonlight Diner',
+      language: 'ko',
+      layoutKind: 'continuous',
+      direction: 'ltr',
+      pagePairing: 'single',
+    });
+  });
+
+  it('leaves a flow book without a layout', () => {
+    const form = bookForm(book({ layoutKind: 'flow', sourceKind: 'epub' }));
+
+    expect(formInLanguage(form, 'ko', korean).layoutKind).toBeNull();
+  });
+
+  it('saves the filled fields as an edit of the book', () => {
+    const subject = book();
+
+    expect(changedFields(subject, formInLanguage(bookForm(subject), 'ko', korean))).toEqual({
+      language: 'ko',
+      layoutKind: 'continuous',
+      direction: 'ltr',
+      pagePairing: 'single',
     });
   });
 });

@@ -3,6 +3,7 @@ import type { Language } from '$lib/shared/language';
 import { aliasFor, shownTitle } from '$lib/shared/shown-title';
 import type { ImageLayoutKind, PagePairingChoice, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Book, BookEdit } from '../domain/book/book';
+import type { LanguageDefaults } from '../domain/book/reading-defaults';
 
 type BookForm = {
   title: string;
@@ -19,6 +20,20 @@ function bookForm(book: Book): BookForm {
     layoutKind: imageLayoutKind(book.layoutKind),
     direction: book.direction,
     pagePairing: book.pagePairing,
+  };
+}
+
+function formInLanguage(
+  form: Readonly<BookForm>,
+  language: Language,
+  defaults: LanguageDefaults,
+): BookForm {
+  return {
+    ...form,
+    language,
+    layoutKind: form.layoutKind === null ? null : defaults.layoutKind,
+    direction: defaults.direction,
+    pagePairing: defaults.pagePairing,
   };
 }
 
@@ -47,5 +62,5 @@ function changedFields(book: Book, form: Readonly<BookForm>): BookEdit {
   return edit;
 }
 
-export { bookForm, changedFields, originalTitleHint };
+export { bookForm, changedFields, formInLanguage, originalTitleHint };
 export type { BookForm };

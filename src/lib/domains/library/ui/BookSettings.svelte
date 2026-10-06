@@ -12,8 +12,10 @@
     READING_DIRECTION_CHOICES,
     READING_DIRECTION_LEGEND,
   } from '$lib/shared/layout-choices';
+  import type { Language } from '$lib/shared/language';
   import type { Book, BookEdit } from '../domain/book/book';
-  import { bookForm, changedFields, originalTitleHint } from './book-edit-form';
+  import { bookForm, changedFields, formInLanguage, originalTitleHint } from './book-edit-form';
+  import { readingDefaultsChosen } from './reading-defaults.svelte';
 
   type Props = {
     readonly book: Book;
@@ -35,6 +37,10 @@
   function requestOpen(next: boolean): void {
     if (saving) return;
     open = next;
+  }
+
+  function chooseLanguage(language: Language): void {
+    form = formInLanguage(form, language, readingDefaultsChosen().languages[language]);
   }
 
   function submit(event: SubmitEvent): void {
@@ -64,9 +70,24 @@
 
     <Fieldset legend="Language" disabled={saving}>
       <div class="row wrap gap-4">
-        <Radio name="{uid}-language" value="ja" bind:group={form.language}>Japanese</Radio>
-        <Radio name="{uid}-language" value="ko" bind:group={form.language}>Korean</Radio>
-        <Radio name="{uid}-language" value="en" bind:group={form.language}>English</Radio>
+        <Radio
+          name="{uid}-language"
+          value="ja"
+          group={form.language}
+          onchange={() => chooseLanguage('ja')}>Japanese</Radio
+        >
+        <Radio
+          name="{uid}-language"
+          value="ko"
+          group={form.language}
+          onchange={() => chooseLanguage('ko')}>Korean</Radio
+        >
+        <Radio
+          name="{uid}-language"
+          value="en"
+          group={form.language}
+          onchange={() => chooseLanguage('en')}>English</Radio
+        >
       </div>
     </Fieldset>
 
