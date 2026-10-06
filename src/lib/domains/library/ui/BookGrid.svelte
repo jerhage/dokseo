@@ -2,6 +2,8 @@
   import Badge from '$lib/ui/components/Badge.svelte';
   import Card from '$lib/ui/components/Card.svelte';
   import ContextMenu from '$lib/ui/components/ContextMenu.svelte';
+  import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
+  import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
   import Progress from '$lib/ui/components/Progress.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import { shownTitle } from '$lib/shared/shown-title';
@@ -33,6 +35,10 @@
     <li class={['col gap-2', { 'is-busy': busy(book.id) }]} aria-busy={busy(book.id)}>
       <ContextMenu label="Actions for {name}">
         {#snippet menu()}
+          <DropdownItem href="/read/{book.id}" target="_blank" rel="noopener"
+            >Open in new tab</DropdownItem
+          >
+          <DropdownSeparator />
           <BookActionItems
             {book}
             busy={busy(book.id)}
