@@ -154,3 +154,70 @@ describe('the behaviour rules', () => {
     assert.deepEqual(silent, []);
   });
 });
+
+describe('rulesFileProblems', () => {
+  /**
+   * @param {Record<string, unknown>} rule
+   * @returns {readonly string[]}
+   */
+  function problemsOf(rule) {
+    return rulesFileProblems({
+      component: 'marquee-selection',
+      behaviour: 'script',
+      rules: [
+        {
+          name: 'draws a box',
+          fixture: 'marquee-selection/idle',
+          when: [{ event: 'pointerdown' }, { event: 'pointermove', dx: 80, dy: 40 }],
+          then: [{ selector: '.marquee-selection-box', present: true }],
+          source: 'MarqueeSelection',
+          certain: true,
+          ...rule,
+        },
+      ],
+    });
+  }
+
+  it('accepts a style stated as a measured value with a unit and a tolerance', () => {
+    const then = [
+      {
+        selector: '.marquee-selection-box',
+        style: { '--rect-height': { value: 40, unit: 'px', tolerance: 0.5 } },
+      },
+    ];
+
+    assert.deepEqual(problemsOf({ then }), []);
+  });
+
+  it('rejects a measured value without a tolerance, or with a negative one', () => {
+    const measured = (/** @type {Record<string, unknown>} */ value) => [
+      { selector: '.marquee-selection-box', style: { '--rect-height': value } },
+    ];
+
+    assert.deepEqual(problemsOf({ then: measured({ value: 40, unit: 'px' }) }), [
+      'rules[0].then[0]: style --rect-height: a measured value has a tolerance of zero or more',
+    ]);
+    assert.deepEqual(problemsOf({ then: measured({ value: 40, unit: 'px', tolerance: -1 }) }), [
+      'rules[0].then[0]: style --rect-height: a measured value has a tolerance of zero or more',
+    ]);
+  });
+
+  it('rejects a measured value in attributes', () => {
+    const then = [
+      {
+        selector: '.marquee-selection-box',
+        attributes: { width: { value: 40, unit: 'px', tolerance: 0.5 } },
+      },
+    ];
+
+    assert.deepEqual(problemsOf({ then }), [
+      'rules[0].then[0]: attributes values must be strings or null',
+    ]);
+  });
+
+  it('rejects a lift, a move or a cancel that no press comes before', () => {
+    const when = [{ event: 'pointerup' }, { event: 'pointerdown' }, { event: 'pointercancel' }];
+
+    assert.deepEqual(problemsOf({ when }), ['rules[0].when[0]: a pointerup follows a press']);
+  });
+});

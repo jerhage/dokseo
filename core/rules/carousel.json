@@ -34,6 +34,16 @@
       "fixture": "carousel/default",
       "when": [
         {
+          "event": "pointerdown",
+          "target": ".carousel",
+          "pointerType": "touch"
+        },
+        {
+          "event": "pointermove",
+          "target": ".carousel",
+          "dx": -120
+        },
+        {
           "event": "pointerup",
           "target": ".carousel",
           "dx": -120
@@ -61,29 +71,46 @@
         }
       ],
       "source": "Carousel.svelte (onpointerup, settled, finish) and carousel.ts (swipeRelease, isFlick)",
-      "certain": false,
-      "note": "A release reveals a side when the travel is at least 25% of the carousel width or is a flick (at least 24px at 0.4px/ms or faster). While settling every slot has is-settling and its shift animates; the transform transitionend on a slot (or a fallback timer from its transition duration plus 220ms) finishes it. The side is +1 or -1 in screen terms adjusted for dir. The app is expected to replace the slides on onsettled."
+      "certain": true,
+      "note": "A release reveals a side when the travel is at least 25% of the carousel width or is a flick (at least 24px at 0.4px/ms or faster); a travel of 120px is at least 25% of any carousel up to 480px wide. While settling every slot has is-settling and its shift animates toward the neighbour; the transform transitionend on a slot (or a fallback timer from its transition duration plus 220ms) finishes it. The side is +1 or -1 in screen terms adjusted for dir. The app is expected to replace the slides on onsettled."
     },
     {
       "name": "settles back without reporting after a short drag or a cancelled pointer",
       "fixture": "carousel/default",
       "when": [
         {
+          "event": "pointerdown",
+          "target": ".carousel",
+          "pointerType": "touch"
+        },
+        {
+          "event": "pointermove",
+          "target": ".carousel",
+          "dx": -40
+        },
+        {
           "event": "pointercancel",
           "target": ".carousel"
+        },
+        {
+          "event": "transitionend",
+          "target": ".carousel-slot"
         }
       ],
       "then": [
         {
           "selector": ".carousel-slot:nth-child(2)",
+          "classes": {
+            "is-settling": false
+          },
           "style": {
             "--carousel-shift": "0px"
           }
         }
       ],
-      "source": "Carousel.svelte (onpointercancel) and carousel.ts",
-      "certain": false,
-      "note": "Animated through is-settling like a settle toward a side."
+      "source": "Carousel.svelte (onpointercancel, onpointerup, settled, finish) and carousel.ts (carouselStep, settleFrom)",
+      "certain": true,
+      "note": "A cancelled pointer settles back whatever its travel, and so does a release that is neither far nor a flick. The shift animates back to 0px through is-settling like a settle toward a side, and onsettled is not called."
     },
     {
       "name": "ignores the pointer when it is driven",

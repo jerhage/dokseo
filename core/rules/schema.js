@@ -1,11 +1,18 @@
 /** @typedef {'native' | 'native-script' | 'script'} Behaviour */
 
 /**
+ * @typedef {object} Measured
+ * @property {number} value
+ * @property {string} unit
+ * @property {number} tolerance
+ */
+
+/**
  * @typedef {object} ElementState
  * @property {string} selector
  * @property {Readonly<Record<string, string | null>>} [attributes]
  * @property {Readonly<Record<string, boolean>>} [classes]
- * @property {Readonly<Record<string, string | null>>} [style]
+ * @property {Readonly<Record<string, string | null | Measured>>} [style]
  * @property {Readonly<Record<string, string | number | boolean>>} [properties]
  * @property {boolean} [focused]
  * @property {boolean} [open]
@@ -158,6 +165,44 @@ function unknownKeys(value, allowed, where) {
 }
 
 /**
+ * @param {Record<string, unknown>} value
+ * @param {string} where
+ * @returns {readonly string[]}
+ */
+function measuredProblems(value, where) {
+  const problems = [...unknownKeys(value, ['value', 'unit', 'tolerance'], where)];
+  if (typeof value.value !== 'number' || !Number.isFinite(value.value)) {
+    problems.push(`${where}: a measured value is a finite number`);
+  }
+  if (typeof value.unit !== 'string') problems.push(`${where}: a measured value names its unit`);
+  if (
+    typeof value.tolerance !== 'number' ||
+    !Number.isFinite(value.tolerance) ||
+    value.tolerance < 0
+  ) {
+    problems.push(`${where}: a measured value has a tolerance of zero or more`);
+  }
+  return problems;
+}
+
+/**
+ * @param {unknown} map
+ * @param {string} where
+ * @param {boolean} measurable
+ * @returns {readonly string[]}
+ */
+function valueMapProblems(map, where, measurable) {
+  if (!isRecord(map)) return [`${where} is not an object`];
+  return Object.entries(map).flatMap(([name, value]) => {
+    if (typeof value === 'string' || value === null) return [];
+    if (measurable && isRecord(value)) return measuredProblems(value, `${where} ${name}`);
+    return measurable
+      ? [`${where} ${name} must be a string, null or a measured value`]
+      : [`${where} values must be strings or null`];
+  });
+}
+
+/**
  * @param {unknown} state
  * @param {string} where
  * @returns {readonly string[]}
@@ -169,13 +214,11 @@ function stateProblems(state, where) {
     problems.push(`${where}: selector missing`);
   }
   if (Object.keys(state).length < 2) problems.push(`${where}: names no state`);
-  for (const key of ['attributes', 'style']) {
-    const map = state[key];
-    if (map === undefined) continue;
-    if (!isRecord(map)) problems.push(`${where}: ${key} is not an object`);
-    else if (Object.values(map).some((value) => typeof value !== 'string' && value !== null)) {
-      problems.push(`${where}: ${key} values must be strings or null`);
-    }
+  if (state.attributes !== undefined) {
+    problems.push(...new Set(valueMapProblems(state.attributes, `${where}: attributes`, false)));
+  }
+  if (state.style !== undefined) {
+    problems.push(...valueMapProblems(state.style, `${where}: style`, true));
   }
   const classes = state.classes;
   if (classes !== undefined) {
@@ -260,6 +303,25 @@ function outcomeProblems(outcome, where) {
   return problems;
 }
 
+const PRESSES = ['pointerdown', 'mousedown'];
+
+const AFTER_A_PRESS = ['pointermove', 'pointerup', 'pointercancel'];
+
+/**
+ * @param {readonly unknown[]} triggers
+ * @param {string} where
+ * @returns {readonly string[]}
+ */
+function unpressedProblems(triggers, where) {
+  const events = triggers.map((trigger) => (isRecord(trigger) ? String(trigger.event) : ''));
+  const firstPress = events.findIndex((event) => PRESSES.includes(event));
+  return events.flatMap((event, index) => {
+    if (!AFTER_A_PRESS.includes(event)) return [];
+    if (firstPress !== -1 && firstPress < index) return [];
+    return [`${where}[${index}]: a ${event} follows a press`];
+  });
+}
+
 /**
  * @param {unknown} rule
  * @param {string} where
@@ -284,6 +346,7 @@ function ruleProblems(rule, where) {
   problems.push(
     ...listProblems(rule.given, `${where}.given`, stateProblems, false),
     ...listProblems(rule.when, `${where}.when`, triggerProblems, true),
+    ...(Array.isArray(rule.when) ? unpressedProblems(rule.when, `${where}.when`) : []),
     ...listProblems(rule.then, `${where}.then`, stateProblems, !observed),
     ...listProblems(rule.emits, `${where}.emits`, emittedProblems, false),
   );

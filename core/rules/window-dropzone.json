@@ -32,7 +32,7 @@
         }
       ],
       "source": "WindowDropzone.svelte (enter, leave, hover, drop) and window-drag.ts",
-      "certain": false,
+      "certain": true,
       "note": "The overlay is not in any fixture: a server render never shows it, so its markup is not machine-checked. From the source: div.window-dropzone[popover=manual][aria-hidden=true] > div.window-dropzone-panel > (span.window-dropzone-icon-frame > upload icon with class window-dropzone-icon) + span.window-dropzone-title holding the children. A drag counts as carrying files when dataTransfer.types holds \"Files\". Nothing shows while disabled."
     },
     {

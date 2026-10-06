@@ -313,10 +313,24 @@ read against a fixture:
   `prop`, `value`), `call` (a method is called: `method`, `value`), `time` (`ms` pass), `mount`,
   `unmount`, `animationsend` (the element's running animations finish). `target` is a selector,
   or `window` or `document`.
+- A pointer gesture is written whole: a `pointermove`, `pointerup` or `pointercancel` follows a
+  `pointerdown` (or `mousedown`) earlier in the same `when`, and its `dx` and `dy` are its travel
+  from that press. A lift with no press before it ends nothing.
 - `then` lists element states after the triggers: `attributes` (a value, or `null` for absent),
-  `classes` (present or not), `style` (a custom property's value, `set` for any value, or
-  `null`), `properties` (DOM properties such as `value`), `focused`, `open` (a popover or a
-  dialog is open) and `present` (the element exists).
+  `classes` (present or not), `style` (a custom property's value, `set` for any value, `null`, or
+  a measured value), `properties` (DOM properties such as `value`), `focused`, `open` (a popover
+  or a dialog is open) and `present` (the element exists).
+- A measured value states a number the component computes from the pointer or the layout, which
+  a host that scales the page can move by a fraction of a pixel. It names the number, its unit and
+  how far the written value may differ from it:
+
+  ```json
+  "style": { "--rect-height": { "value": 40, "unit": "px", "tolerance": 0.5 } }
+  ```
+
+  The written value must end in the unit, and the number before it must lie within the tolerance
+  of `value`. Use it only for a measured value; a value the component writes from a token or a
+  constant is stated exactly.
 - `emits` lists the callbacks the component calls; `event` states what happens to the triggering
   event (`defaultPrevented`, `dropEffect`).
 - `source` names where the behaviour lives in the reference implementation. `certain` is false
