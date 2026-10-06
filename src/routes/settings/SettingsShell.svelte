@@ -46,13 +46,13 @@
     aria-label="Settings"
   >
     {#each sections as section (section.id)}
-      <NavLink href={section.href} current={section.id === current} class="py-2">
+      <NavLink href={section.href} current={section.id === current} class="py-2 w-full">
         {#snippet icon()}
           <Avatar shape="square" size="sm"><section.icon class="avatar-icon" /></Avatar>
         {/snippet}
-        <span class="col gap-0">
-          <span>{section.name}</span>
-          <span class="layout-app-shell-nav-detail text-xs text-faint weight-normal">
+        <span class="col gap-0 min-w-0">
+          <span class="truncate">{section.name}</span>
+          <span class="layout-app-shell-nav-detail truncate text-xs text-faint weight-normal">
             {section.summary}
           </span>
         </span>

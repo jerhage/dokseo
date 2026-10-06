@@ -38,9 +38,9 @@ describe('SettingsSectionList', () => {
     expect(links.some((link) => link.includes('aria-current'))).toBe(false);
   });
 
-  it('keeps each summary faint beneath its name', () => {
+  it('keeps each summary faint beneath its name, both cut short with an ellipsis', () => {
     expect(markup()).toMatch(
-      /<span>Your data<\/span>\s*<span class="text-xs text-faint weight-normal">Export and import captures<\/span>/u,
+      /<span class="truncate">Your data<\/span>\s*<span class="truncate text-xs text-faint weight-normal">Export and import captures<\/span>/u,
     );
   });
 });

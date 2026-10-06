@@ -26,8 +26,8 @@
               <Avatar shape="square" size="sm"><section.icon class="avatar-icon" /></Avatar>
             {/snippet}
             <span class="col gap-0 min-w-0">
-              <span>{section.name}</span>
-              <span class="text-xs text-faint weight-normal">{section.summary}</span>
+              <span class="truncate">{section.name}</span>
+              <span class="truncate text-xs text-faint weight-normal">{section.summary}</span>
             </span>
             <ChevronRight class="ms-auto text-faint" aria-hidden="true" />
           </NavLink>
