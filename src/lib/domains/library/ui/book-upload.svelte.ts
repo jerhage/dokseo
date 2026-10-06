@@ -20,6 +20,7 @@ import type { UploadBatch, UploadEvent, UploadStage } from '../domain/ingest/upl
 import type { OpenedUpload, OpenFileFailure, OpenFileResult } from '../use-cases/open-file';
 import { ACCEPTED_SUMMARY } from './accepted-formats';
 import { bookMatchingChosen } from './book-matching.svelte';
+import { readingDefaultsChosen } from './reading-defaults.svelte';
 import { describePageObstacle } from '../domain/ingest/epub-obstacle-text';
 import { describeEpubRefusal } from './epub-refusal-text';
 import { describeLibraryRefusal } from '../queries/library-error-text';
@@ -207,6 +208,7 @@ class BookUpload {
       return;
     }
     const matching = bookMatchingChosen();
+    const defaults = readingDefaultsChosen();
     const opened: OpenedUpload[] = [];
     const failed: FailedBook[] = [];
     let lastBookOpened = false;
@@ -218,6 +220,7 @@ class BookUpload {
           .run({
             files: book.files,
             matching,
+            defaults,
             report: (event) => {
               this.#state = uploadReported(this.#state, event);
             },

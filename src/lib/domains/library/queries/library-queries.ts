@@ -4,6 +4,7 @@ import type { BookId } from '$lib/shared/ids';
 import type { Book, BookEdit } from '../domain/book/book';
 import type { BookMatching } from '../domain/book/book-matching';
 import type { BookMerge } from '../domain/book/book-merge';
+import type { ReadingDefaults } from '../domain/book/reading-defaults';
 import type {
   CapturesDeletion,
   RemovalWithCaptures,
@@ -33,6 +34,7 @@ type LibraryWrites = {
   readonly openFile: (
     files: readonly File[],
     matching: BookMatching,
+    defaults: ReadingDefaults,
     report?: UploadReport,
   ) => Promise<OpenFileResult>;
   readonly removeBook: (id: BookId) => Promise<RemoveBookResult>;
@@ -49,6 +51,7 @@ type BookMark = 'finished' | 'unread';
 type UploadRequest = {
   readonly files: readonly File[];
   readonly matching: BookMatching;
+  readonly defaults: ReadingDefaults;
   readonly report: UploadReport;
 };
 
@@ -147,8 +150,8 @@ function removedBooksQuery(library: Pick<LibraryReads, 'listRemovedBooks'>) {
 
 function openFileMutation(library: Pick<LibraryWrites, 'openFile'>) {
   return mutationOptions({
-    mutationFn: ({ files, matching, report }: UploadRequest) =>
-      library.openFile(files, matching, report),
+    mutationFn: ({ files, matching, defaults, report }: UploadRequest) =>
+      library.openFile(files, matching, defaults, report),
   });
 }
 

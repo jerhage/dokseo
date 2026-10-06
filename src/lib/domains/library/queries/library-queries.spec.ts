@@ -8,6 +8,7 @@ import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { observedRead } from '$lib/shared/testing/observed-read';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import type { Book } from '../domain/book/book';
+import { INITIAL_READING_DEFAULTS } from '../domain/book/reading-defaults';
 import { libraryKeys } from './library-keys';
 import {
   bookQuery,
@@ -306,7 +307,7 @@ describe('library mutations', () => {
     await expect(marking.mutate({ id: bookId('one'), mark: 'unread' })).resolves.toBe(unread);
   });
 
-  it('resolves a refused upload as an answer, passing the files, matching and report on', async () => {
+  it('resolves a refused upload as an answer, passing the files, matching, defaults and report on', async () => {
     const client = createTestQueryClient();
     const refused = { kind: 'source', failure: { kind: 'empty' } } as const;
     const files = [new File(['x'], 'one.cbz')];
@@ -322,7 +323,9 @@ describe('library mutations', () => {
       }),
     );
 
-    await expect(opening.mutate({ files, matching: 'file-name', report })).resolves.toBe(refused);
-    expect(received).toEqual([[files, 'file-name', report]]);
+    await expect(
+      opening.mutate({ files, matching: 'file-name', defaults: INITIAL_READING_DEFAULTS, report }),
+    ).resolves.toBe(refused);
+    expect(received).toEqual([[files, 'file-name', INITIAL_READING_DEFAULTS, report]]);
   });
 });

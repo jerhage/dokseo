@@ -14,6 +14,7 @@ import type { BookEdit } from '../domains/library/domain/book/book';
 import type { MergeInto } from '../domains/library/domain/book/book-merge';
 import type { BookMatching } from '../domains/library/domain/book/book-matching';
 import type { LibraryRepository } from '../domains/library/domain/book/library-repository';
+import type { ReadingDefaults } from '../domains/library/domain/book/reading-defaults';
 import type { UploadReport } from '../domains/library/domain/ingest/upload-progress';
 import { editBook } from '../domains/library/use-cases/edit-book';
 import type { EditBookResult } from '../domains/library/use-cases/edit-book';
@@ -46,6 +47,7 @@ type LibraryUseCases = {
   readonly openFile: (
     files: readonly File[],
     matching: BookMatching,
+    defaults: ReadingDefaults,
     report?: UploadReport,
   ) => Promise<OpenFileResult>;
   readonly openForReading: (id: BookId) => Promise<OpenForReadingResult>;
@@ -78,8 +80,12 @@ function buildLibrary(repository: LibraryRepository, mergeInto: MergeInto): Libr
   };
 
   return {
-    openFile: (files: readonly File[], matching: BookMatching, report?: UploadReport) =>
-      openFile(openFileDeps, files, report, matching),
+    openFile: (
+      files: readonly File[],
+      matching: BookMatching,
+      defaults: ReadingDefaults,
+      report?: UploadReport,
+    ) => openFile(openFileDeps, files, report, matching, defaults),
     openForReading: (id: BookId) =>
       openForReading(
         {

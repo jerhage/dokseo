@@ -97,9 +97,7 @@ function readingDefaultsFromStored(stored: unknown): ReadingDefaults {
 
   return {
     language: isLanguage(language) ? language : INITIAL_READING_DEFAULTS.language,
-    languages: eachLanguage((each) =>
-      languageDefaultsFromStored(fieldOf(languages, each), each),
-    ),
+    languages: eachLanguage((each) => languageDefaultsFromStored(fieldOf(languages, each), each)),
   };
 }
 
