@@ -80,7 +80,7 @@
     open = true;
     if (!menu.matches(':popover-open')) menu.showPopover();
     place();
-    unfollow ??= followAnchor(place);
+    unfollow ??= followAnchor(place, menu);
   }
 
   function dismiss(): void {

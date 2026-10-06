@@ -64,7 +64,7 @@
     if (hint === undefined) return;
     if (!hint.matches(':popover-open')) hint.showPopover();
     place();
-    unfollow ??= followAnchor(place);
+    unfollow ??= followAnchor(place, hint);
   }
 
   function conceal(): void {
