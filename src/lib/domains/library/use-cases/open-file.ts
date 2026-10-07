@@ -237,7 +237,7 @@ async function openFile(
   matching: BookMatching = DEFAULT_BOOK_MATCHING,
   defaults: ReadingDefaults = INITIAL_READING_DEFAULTS,
 ): Promise<OpenFileResult> {
-  await deps.requestPersistence();
+  void deps.requestPersistence().catch(() => undefined);
 
   const listed = await deps.repository.list();
   if (listed.kind !== 'success') return listed;

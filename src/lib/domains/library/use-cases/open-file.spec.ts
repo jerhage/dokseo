@@ -576,6 +576,32 @@ describe('openFile', () => {
     expect(repository.added).toHaveLength(1);
   });
 
+  it('completes the upload while the persistence prompt is still unanswered', async () => {
+    const repository = fakeRepository();
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        requestPersistence: () => new Promise<boolean>(() => undefined),
+      }),
+      files,
+    );
+    expect(result.kind).toBe('added');
+    expect(repository.added).toHaveLength(1);
+  });
+
+  it('completes the upload when the persistence request rejects', async () => {
+    const repository = fakeRepository();
+    const result = await openFile(
+      deps({
+        repository: repository.repository,
+        requestPersistence: () => Promise.reject(new Error('persist failed')),
+      }),
+      files,
+    );
+    expect(result.kind).toBe('added');
+    expect(repository.added).toHaveLength(1);
+  });
+
   const BUILD_FAILURES: readonly SourceBuild[] = [{ kind: 'nothing-usable' }, { kind: 'empty' }];
 
   it.each(BUILD_FAILURES)(

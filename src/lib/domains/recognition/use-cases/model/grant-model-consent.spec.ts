@@ -115,6 +115,28 @@ describe('grantModelConsent', () => {
     });
   });
 
+  it('records the grant while the persistence prompt is still unanswered', async () => {
+    const fakes = world();
+
+    const recorded = await grantModelConsent(
+      { ...fakes, requestPersistence: () => new Promise<boolean>(() => undefined) },
+      'ja',
+    );
+
+    expect(recorded).toEqual({ kind: 'success' });
+  });
+
+  it('records the grant when the persistence request rejects', async () => {
+    const fakes = world();
+
+    const recorded = await grantModelConsent(
+      { ...fakes, requestPersistence: () => Promise.reject(new Error('persist failed')) },
+      'ja',
+    );
+
+    expect(recorded).toEqual({ kind: 'success' });
+  });
+
   it('reports a blocked store after it has already requested persistence', async () => {
     const fakes = world({ failed: true });
 

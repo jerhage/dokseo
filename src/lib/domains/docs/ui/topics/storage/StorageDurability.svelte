@@ -25,9 +25,10 @@
   </p>
   <DocsCode label={CONSENT_ASKS.label} code={CONSENT_ASKS.code} />
   <p>
-    The result changes nothing in either flow. A <code>false</code> is not a failure: the book is
-    still added and the model still downloads, and the platform function turns every way the call
-    can fail into
+    The result changes nothing in either flow, so neither waits for it. Firefox resolves
+    <code>persist()</code> only once its prompt is answered, and an upload that waited would stall
+    until then. A <code>false</code> is not a failure: the book is still added and the model still
+    downloads, and the platform function turns every way the call can fail into
     <code>false</code>.
   </p>
   <DocsCode label={PERSISTENCE_REQUEST.label} code={PERSISTENCE_REQUEST.code} />

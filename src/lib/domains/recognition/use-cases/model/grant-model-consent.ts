@@ -19,7 +19,7 @@ async function grantModelConsent(
   const record = await deps.setups.read(language);
   const chosen = storedChoice(language, record);
 
-  await deps.requestPersistence();
+  void deps.requestPersistence().catch(() => undefined);
   const recorded = await deps.consent.recordGrant(language, chosen.model);
   return recorded;
 }
