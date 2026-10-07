@@ -1,0 +1,6 @@
+# The vendored Kandan UI library. It changes only through `git subtree pull`
+# from github.com/jerhage/kandan-ui-svelte; every other change goes to that repo.
+/src/lib/ui/ @jerhage
+
+# The rules that protect the line above, and the release and deploy workflows.
+/.github/ @jerhage
