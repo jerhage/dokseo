@@ -11,7 +11,12 @@ import {
 } from './flow-surface';
 import type { Drawable, FlowTarget } from './flow-surface';
 import type { Spine } from './flow-spine';
-import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
+import {
+  arrivedAtTheCfi,
+  foundByItsText,
+  foundForACollapsedCfi,
+  THE_PASSAGE_IS_LOST,
+} from './flow-quote';
 import { Overlayer } from 'foliate-js/overlayer.js';
 import type { HighlightOptions } from 'foliate-js/overlayer.js';
 import { NOTHING_ARRIVED_AT, PASSAGE_HIGHLIGHT_COLOUR, passageMark } from './flow-highlight';
@@ -424,7 +429,7 @@ describe('goToPassage', () => {
     }
   });
 
-  it('re-finds the passage by its text when the stored cfi lands but is collapsed', async () => {
+  it('finds the passage by its text, as a collapsed cfi rather than a moved one, when the stored cfi lands but is collapsed', async () => {
     const collapsed = 'epubcfi(/6/12!/4,/522,/522)';
     const view = stage();
     const asked: TextQuote[] = [];
@@ -439,8 +444,23 @@ describe('goToPassage', () => {
       { cfi: collapsed, quote: QUOTE },
     );
 
-    expect(arrival).toEqual(foundByItsText(REFOUND));
+    expect(arrival).toEqual(foundForACollapsedCfi(REFOUND));
     expect(asked).toEqual([QUOTE]);
+    expect(view.targets).toEqual([collapsed, REFOUND]);
+  });
+
+  it('finds a collapsed cfi by its text without calling it moved when the stored cfi does not lay out', async () => {
+    const collapsed = 'epubcfi(/6/12!/4,/522,/522)';
+    const view = stage({ refuses: [collapsed] });
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      () => Promise.resolve(REFOUND),
+      { cfi: collapsed, quote: QUOTE },
+    );
+
+    expect(arrival).toEqual(foundForACollapsedCfi(REFOUND));
     expect(view.targets).toEqual([collapsed, REFOUND]);
   });
 

@@ -176,8 +176,9 @@
     <p class="prose">
       Captures already stored keep their CFI. <code>collapsedCfi</code> finds one whose start equals its
       end, and Go to passage then searches for the quote even when the CFI lands. When the book opens,
-      each collapsed capture's quote is searched once, and the highlight is drawn at the CFI found. Because
-      the passage was found by its quote, Go to passage shows the notice that it moved since it was captured.
+      each collapsed capture's quote is searched once, and the highlight is drawn at the CFI found. Go
+      to passage shows no notice for it: the passage did not move, so the arrival is a collapsed CFI found
+      by its quote, not a passage that moved since it was captured.
     </p>
     <DocsCode label={COLLAPSED_CFI.label} code={COLLAPSED_CFI.code} />
     <DocsCode label={STORED_CFI_FIRST.label} code={STORED_CFI_FIRST.code} />

@@ -15,6 +15,7 @@ import type { ContentsEntry } from './flow-contents';
 import {
   arrivedAtTheCfi,
   foundByItsText,
+  foundForACollapsedCfi,
   MOVED_SINCE_IT_WAS_CAPTURED,
   NOT_IN_THE_BOOK_ANY_MORE,
   THE_PASSAGE_IS_LOST,
@@ -1033,6 +1034,20 @@ describe('FlowView jumpToPassage', () => {
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
 
     expect(view.arrivals.notice).toBe(notice);
+  });
+
+  it('says nothing and marks the passage when a collapsed cfi was found by its text', async () => {
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.arrival = foundForACollapsedCfi(REFOUND);
+    const view = new FlowView(world.container, world.notify, createTestQueryClient());
+    await view.open(novel(world.place), world.stored, surfaces.show);
+    surfaces.openings[0]?.moved(relocated(A_PAGE));
+
+    await view.arrivals.jumpToPassage('epubcfi(/6/12!/4,/522,/522)', QUOTE);
+
+    expect(view.arrivals.notice).toBeNull();
+    expect(surfaces.arrivals.at(-1)).toEqual({ kind: 'arrived', cfi: REFOUND, place: A_PAGE });
   });
 
   it('takes its message away when the reader hides it', async () => {

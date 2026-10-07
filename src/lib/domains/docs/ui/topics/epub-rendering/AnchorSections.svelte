@@ -65,13 +65,14 @@
     </StepItem>
     <StepItem title="Go to the fresh CFI">
       The range it found gets a new CFI from <code>getCFI</code>, and the reader goes there and says
-      that the passage moved.
+      that the passage moved. A collapsed stored CFI never moved, so it arrives as
+      <code>collapsed-cfi</code> and the reader says nothing.
     </StepItem>
   </StepList>
   <DocsCode label={LOCATE_QUOTE.label} code={LOCATE_QUOTE.code} />
   <p>
-    The outcome is a union of three, <code>cfi</code>, <code>quote</code> and <code>lost</code>, and
-    the last two each have a notice:
+    The outcome is a union of four, <code>cfi</code>, <code>quote</code>, <code>collapsed-cfi</code>
+    and <code>lost</code>, and only <code>quote</code> and <code>lost</code> have a notice:
   </p>
   <DocsCode label={ARRIVAL_NOTICES.label} code={ARRIVAL_NOTICES.code} />
   <ReanchorDemo {kit} />

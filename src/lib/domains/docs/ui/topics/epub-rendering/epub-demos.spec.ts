@@ -134,10 +134,11 @@ describe('arrivalSummary and arrivalTone', () => {
     const arrivals = [
       { kind: 'cfi' as const, cfi: 'a' },
       { kind: 'quote' as const, cfi: 'b' },
+      { kind: 'collapsed-cfi' as const, cfi: 'c' },
       { kind: 'lost' as const },
     ];
 
-    expect(arrivals.map(arrivalTone)).toEqual(['info', 'warning', 'danger']);
-    expect(new Set(arrivals.map(arrivalSummary)).size).toBe(3);
+    expect(arrivals.map(arrivalTone)).toEqual(['info', 'warning', 'info', 'danger']);
+    expect(new Set(arrivals.map(arrivalSummary)).size).toBe(4);
   });
 });

@@ -106,6 +106,7 @@ function passageMark(arrival: PassageArrival, place: string | null): PassageMark
   return match(arrival)
     .with({ kind: 'cfi' }, (at) => arrivedAt(at.cfi, place))
     .with({ kind: 'quote' }, (at) => arrivedAt(at.cfi, place))
+    .with({ kind: 'collapsed-cfi' }, (at) => arrivedAt(at.cfi, place))
     .with({ kind: 'lost' }, () => NOTHING_ARRIVED_AT)
     .exhaustive();
 }

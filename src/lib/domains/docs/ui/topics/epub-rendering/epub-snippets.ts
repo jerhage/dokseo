@@ -138,7 +138,9 @@ const GO_TO_PASSAGE: SourceSnippet = {
   if (fresh === null) return THE_PASSAGE_IS_LOST;
 
   const refound = await navigate(view, spine, fresh);
-  return reached(refound) ? foundByItsText(fresh) : THE_PASSAGE_IS_LOST;`,
+  if (!reached(refound)) return THE_PASSAGE_IS_LOST;
+
+  return collapsedCfi(passage.cfi) ? foundForACollapsedCfi(fresh) : foundByItsText(fresh);`,
 };
 
 const OPEN_SURFACE: SourceSnippet = {

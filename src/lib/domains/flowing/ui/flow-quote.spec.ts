@@ -3,6 +3,7 @@ import type { TextQuote } from '$lib/shared/anchor';
 import {
   arrivedAtTheCfi,
   foundByItsText,
+  foundForACollapsedCfi,
   MOVED_SINCE_IT_WAS_CAPTURED,
   NOT_IN_THE_BOOK_ANY_MORE,
   THE_PASSAGE_IS_LOST,
@@ -107,6 +108,10 @@ describe('passageNotice', () => {
 
   it('says the passage moved when its text found it instead', () => {
     expect(passageNotice(foundByItsText(SOMEWHERE))).toBe(MOVED_SINCE_IT_WAS_CAPTURED);
+  });
+
+  it('says nothing when the text found the passage a collapsed cfi could not reach', () => {
+    expect(passageNotice(foundForACollapsedCfi(SOMEWHERE))).toBeNull();
   });
 
   it('says the passage is gone when neither found it', () => {

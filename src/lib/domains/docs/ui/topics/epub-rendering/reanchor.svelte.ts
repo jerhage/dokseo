@@ -44,6 +44,11 @@ function arrivalSummary(arrival: DemoArrival): string {
       { kind: 'quote' },
       () => 'The stored CFI failed, and the quote found the passage under a fresh CFI.',
     )
+    .with(
+      { kind: 'collapsed-cfi' },
+      () =>
+        'The stored CFI was collapsed and selected no text, so the quote found the passage under a fresh CFI, with no notice.',
+    )
     .with({ kind: 'lost' }, () => 'Neither the CFI nor the quote found the passage.')
     .exhaustive();
 }
@@ -52,6 +57,7 @@ function arrivalTone(arrival: DemoArrival): 'info' | 'warning' | 'danger' {
   return match(arrival)
     .with({ kind: 'cfi' }, () => 'info' as const)
     .with({ kind: 'quote' }, () => 'warning' as const)
+    .with({ kind: 'collapsed-cfi' }, () => 'info' as const)
     .with({ kind: 'lost' }, () => 'danger' as const)
     .exhaustive();
 }

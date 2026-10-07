@@ -49,6 +49,7 @@ type DemoPaging =
 type DemoArrival =
   | { readonly kind: 'cfi'; readonly cfi: string }
   | { readonly kind: 'quote'; readonly cfi: string }
+  | { readonly kind: 'collapsed-cfi'; readonly cfi: string }
   | { readonly kind: 'lost' };
 
 type DemoMark =

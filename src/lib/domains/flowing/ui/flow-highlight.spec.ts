@@ -23,7 +23,12 @@ import {
 import type { LineRect } from './flow-highlight';
 import type { FoundPassage, PassageMark, PassageWeight } from './flow-highlight';
 import { REFLOWED, TRAVELLED } from './flow-move';
-import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
+import {
+  arrivedAtTheCfi,
+  foundByItsText,
+  foundForACollapsedCfi,
+  THE_PASSAGE_IS_LOST,
+} from './flow-quote';
 
 const FIRST = 'epubcfi(/6/14!/4/2/14/1:0)';
 
@@ -154,6 +159,14 @@ describe('passageMark', () => {
 
   it('marks the fresh cfi when the passage was found by its text instead', () => {
     expect(passageMark(foundByItsText(SECOND), A_PAGE)).toEqual({
+      kind: 'arrived',
+      cfi: SECOND,
+      place: A_PAGE,
+    });
+  });
+
+  it('marks the fresh cfi when a collapsed cfi was found by its text', () => {
+    expect(passageMark(foundForACollapsedCfi(SECOND), A_PAGE)).toEqual({
       kind: 'arrived',
       cfi: SECOND,
       place: A_PAGE,

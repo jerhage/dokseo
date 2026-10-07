@@ -26,7 +26,12 @@ import { collapsedCfi } from './flow-cfi';
 import { quoteRange } from './flow-passage';
 import type { ChapterCfis, ChapterTitles } from './flow-passage';
 import { match } from 'ts-pattern';
-import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
+import {
+  arrivedAtTheCfi,
+  foundByItsText,
+  foundForACollapsedCfi,
+  THE_PASSAGE_IS_LOST,
+} from './flow-quote';
 import type { PassageArrival } from './flow-quote';
 import type { PageTurner } from './flow-turn';
 import { bookPaging, pagingWritingMode } from './flow-writing-mode';
@@ -197,7 +202,9 @@ async function goToPassage(
   if (fresh === null) return THE_PASSAGE_IS_LOST;
 
   const refound = await navigate(view, spine, fresh);
-  return reached(refound) ? foundByItsText(fresh) : THE_PASSAGE_IS_LOST;
+  if (!reached(refound)) return THE_PASSAGE_IS_LOST;
+
+  return collapsedCfi(passage.cfi) ? foundForACollapsedCfi(fresh) : foundByItsText(fresh);
 }
 
 function drawn(view: Annotatable, annotation: Annotation): void {
