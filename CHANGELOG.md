@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/jerhage/dokseo/compare/v1.1.1...v1.1.2) (2026-10-07)
+
+
+### Fixes
+
+* **flowing:** show no moved notice for a collapsed cfi found by its quote ([a1d09fd](https://github.com/jerhage/dokseo/commit/a1d09fd14f40667f805de74315c446b75b262a3d))
+* **library:** request persistence without waiting for the answer ([08b6052](https://github.com/jerhage/dokseo/commit/08b605236c62126b573ab850fced8416c9c68e62))
+
 ## [1.1.1](https://github.com/jerhage/dokseo/compare/v1.1.0...v1.1.1) (2026-10-07)
 
 
