@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/jerhage/dokseo/compare/v0.9.10...v1.0.0) (2026-10-07)
+
+
+### Chores
+
+* release 1.0.0 ([97acb0b](https://github.com/jerhage/dokseo/commit/97acb0ba344f3e3a1e63a690fe4c55386af94b6c))
+
 ## [0.9.10](https://github.com/jerhage/dokseo/compare/v0.9.9...v0.9.10) (2026-10-06)
 
 
