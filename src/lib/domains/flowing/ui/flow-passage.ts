@@ -3,7 +3,8 @@ import type { TextQuote } from '$lib/shared/anchor';
 import { liftsAnything, passageQuote } from './flow-lift';
 import type { LiftRect, LiftedPassage } from './flow-lift';
 import { reportedChapter } from './flow-progress';
-import { locateQuote, pointIn } from './flow-quote';
+import { locateQuote, pointIn, startPointIn } from './flow-quote';
+import { textEdges } from './flow-range-edges';
 
 type ChapterCfis = {
   getCFI(index: number, range: Range): string;
@@ -67,20 +68,38 @@ function passageChapter(titles: ChapterTitles, index: number, range: Range): str
   }
 }
 
+function rangeOnText(doc: Document, range: Range): Range | null {
+  const edges = textEdges(range);
+  if (edges === null) return null;
+
+  const onText = doc.createRange();
+  onText.setStart(edges.start.node, edges.start.offset);
+  onText.setEnd(edges.end.node, edges.end.offset);
+
+  return onText.collapsed || !liftsAnything(textIn(onText)) ? null : onText;
+}
+
 function selectedPassage(
   doc: Document,
   index: number,
   cfis: ChapterCfis,
   titles: ChapterTitles,
 ): LiftedPassage | null {
-  const range = selectedRange(doc);
+  const range = selectedRange(doc)?.cloneRange() ?? null;
   if (range === null) return null;
 
   try {
     const quote = quoteAround(doc, range);
     if (!liftsAnything(quote.exact)) return null;
 
-    return { cfi: cfis.getCFI(index, range), quote, chapter: passageChapter(titles, index, range) };
+    const lifted = rangeOnText(doc, range) ?? quoteRange(doc, quote);
+    if (lifted === null) return null;
+
+    return {
+      cfi: cfis.getCFI(index, lifted),
+      quote,
+      chapter: passageChapter(titles, index, lifted),
+    };
   } catch {
     return null;
   }
@@ -114,7 +133,7 @@ function quoteRange(doc: Document, quote: TextQuote): Range | null {
   const hit = locateQuote(parts.map((part) => part.nodeValue ?? '').join(''), quote);
   if (hit === null) return null;
 
-  const from = pointIn(lengths, hit.start);
+  const from = startPointIn(lengths, hit.start);
   const to = pointIn(lengths, hit.end);
   if (from === null || to === null) return null;
 

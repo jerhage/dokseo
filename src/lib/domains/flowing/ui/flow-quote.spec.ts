@@ -9,6 +9,7 @@ import {
   locateQuote,
   passageNotice,
   pointIn,
+  startPointIn,
 } from './flow-quote';
 
 const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
@@ -110,5 +111,26 @@ describe('passageNotice', () => {
 
   it('says the passage is gone when neither found it', () => {
     expect(passageNotice(THE_PASSAGE_IS_LOST)).toBe(NOT_IN_THE_BOOK_ANY_MORE);
+  });
+});
+
+describe('startPointIn', () => {
+  it('starts at the beginning of the later part on a boundary, inside the text it starts', () => {
+    expect(startPointIn([1, 11], 1)).toEqual({ part: 1, offset: 0 });
+  });
+
+  it('lands in the part that holds the offset', () => {
+    expect(startPointIn([4, 6, 5], 7)).toEqual({ part: 1, offset: 3 });
+  });
+
+  it('lands at the very end of the last part', () => {
+    expect(startPointIn([4, 6], 10)).toEqual({ part: 1, offset: 6 });
+  });
+
+  it.each([
+    [[4, 6], 11],
+    [[4, 6], -1],
+  ])('reports nothing outside texts %j, at offset %i', (lengths, offset) => {
+    expect(startPointIn(lengths, offset)).toBeNull();
   });
 });

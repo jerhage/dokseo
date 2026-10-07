@@ -87,6 +87,19 @@ function pointIn(lengths: readonly number[], offset: number): QuotePoint | null 
   return null;
 }
 
+function startPointIn(lengths: readonly number[], offset: number): QuotePoint | null {
+  if (offset < 0) return null;
+
+  let seen = 0;
+  for (const [part, length] of lengths.entries()) {
+    if (offset < seen + length) return { part, offset: offset - seen };
+
+    seen += length;
+  }
+
+  return pointIn(lengths, offset);
+}
+
 function passageNotice(arrival: PassageArrival): string | null {
   return match(arrival)
     .with({ kind: 'cfi' }, () => null)
@@ -106,5 +119,6 @@ export {
   locateQuote,
   passageNotice,
   pointIn,
+  startPointIn,
 };
 export type { PassageArrival, QuoteHit, QuotePoint };
