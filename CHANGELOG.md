@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0](https://github.com/jerhage/dokseo/compare/v1.0.0...v1.1.0) (2026-10-07)
+
+
+### Features
+
+* **library:** offer Open in new tab first in a book card's context menu ([3b200ed](https://github.com/jerhage/dokseo/commit/3b200ed611340a426d48897d31efa38b7e2f3a0d))
+* **library:** open a book card's actions from a right-click or Shift+F10 ([71a4e4c](https://github.com/jerhage/dokseo/commit/71a4e4c278012123368e7cb4a442ad397406bec3))
+* **library:** open a book row's actions from a right-click or Shift+F10 in the list view ([51522ea](https://github.com/jerhage/dokseo/commit/51522ea27fb48f7344e90a1bfd636995ca9b0ed7))
+* **settings:** dock the settings, tags and contents dialogs to the bottom edge on narrow screens ([a901289](https://github.com/jerhage/dokseo/commit/a901289de74f962a2e2a3ca25c8d3414fd947f0d))
+* **ui:** show the library tooltip on icon-only buttons instead of the browser's title ([d023523](https://github.com/jerhage/dokseo/commit/d02352368c21c66cd5358d4213091574e4bec8cb))
+
 ## [1.0.0](https://github.com/jerhage/dokseo/compare/v0.9.10...v1.0.0) (2026-10-07)
 
 
