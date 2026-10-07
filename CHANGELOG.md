@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/jerhage/dokseo/compare/v1.1.0...v1.1.1) (2026-10-07)
+
+
+### Fixes
+
+* **flowing:** build a capture's cfi from a range whose edges lie in text ([295e6c4](https://github.com/jerhage/dokseo/commit/295e6c43c4dc9e60fadf9d3752125dabc9f1708c))
+* **flowing:** find a capture with a collapsed cfi by its quote ([d13d031](https://github.com/jerhage/dokseo/commit/d13d03168b509d2988c8ccb742c56d6029a12b1e))
+
 ## [1.1.0](https://github.com/jerhage/dokseo/compare/v1.0.0...v1.1.0) (2026-10-07)
 
 
