@@ -26,6 +26,7 @@ import * as storage from './storage/storage-sections';
 import * as storedFormat from './stored-format/stored-format-sections';
 import * as testing from './testing/testing-sections';
 import * as touchAndPointers from './touch-and-pointers/sections';
+import * as tripleClick from './triple-click-selection/triple-click-sections';
 import * as uiLibrary from './ui-library/sections';
 import * as typescriptTypes from './typescript-types/type-sections';
 import * as unicode from './unicode/unicode-sections';
@@ -47,6 +48,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   storage: storage.STORAGE_SECTIONS,
   'stored-format': storedFormat.STORED_FORMAT_SECTIONS,
   'epub-rendering': epubRendering.EPUB_SECTIONS,
+  'triple-click-selection': tripleClick.TRIPLE_CLICK_SECTIONS,
   'book-identity': bookIdentity.IDENTITY_SECTIONS,
   'export-import': exportImport.EXPORT_IMPORT_SECTIONS,
   'touch-and-pointers': touchAndPointers.TOUCH_SECTIONS,
@@ -93,6 +95,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'stored-format/stored-format-sections.ts': storedFormat,
   'testing/testing-sections.ts': testing,
   'touch-and-pointers/sections.ts': touchAndPointers,
+  'triple-click-selection/triple-click-sections.ts': tripleClick,
   'ui-library/sections.ts': uiLibrary,
   'typescript-types/type-sections.ts': typescriptTypes,
   'unicode/unicode-sections.ts': unicode,

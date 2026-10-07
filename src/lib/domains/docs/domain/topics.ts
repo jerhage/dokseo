@@ -90,6 +90,14 @@ const DOCS_TOPICS = [
     kind: 'explainer',
   },
   {
+    slug: 'triple-click-selection',
+    title: 'Triple-click selections across browsers',
+    summary:
+      'Where Firefox, Chrome and Safari put the edges of a triple-clicked paragraph, why Firefox’s range became a collapsed CFI in Dokseo, and how Dokseo moves selection edges into text.',
+    status: 'published',
+    kind: 'explainer',
+  },
+  {
     slug: 'book-identity',
     title: 'Book identity and recovery',
     summary:
