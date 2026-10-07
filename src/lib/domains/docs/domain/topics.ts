@@ -146,6 +146,14 @@ const DOCS_TOPICS = [
     kind: 'explainer',
   },
   {
+    slug: 'contributing',
+    title: 'Contributing and releasing',
+    summary:
+      'The three repositories and the rules between them, commit types and the version they cause, and the commands for a core change, each subtree pull and a Dokseo release.',
+    status: 'published',
+    kind: 'explainer',
+  },
+  {
     slug: 'testing',
     title: 'Testing strategy',
     summary:

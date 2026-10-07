@@ -55,13 +55,13 @@ const GROUP_FOLDERS: Readonly<Record<OutputGroupName, string>> = {
 };
 
 const BUILD_WITH_PLUGIN: RecordedBuild = {
-  bytes: 6_799_903,
-  files: 216,
-  precache: 192,
-  precacheBytes: 6_701_551,
+  bytes: 6_800_362,
+  files: 217,
+  precache: 193,
+  precacheBytes: 6_701_969,
   preloaded: 36,
-  preloadedBytes: 436_769,
-  stubNodes: 31,
+  preloadedBytes: 436_941,
+  stubNodes: 32,
   guardNodes: 3,
   groups: [
     {
@@ -69,21 +69,21 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.entry,
       holds: "SvelteKit's start script and the app",
       files: 2,
-      bytes: 13_624,
+      bytes: 13_768,
     },
     {
       name: 'nodes',
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
-      files: 48,
-      bytes: 449_002,
+      files: 49,
+      bytes: 449_271,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
       files: 101,
-      bytes: 1_602_453,
+      bytes: 1_602_457,
     },
     {
       name: 'assets',
@@ -125,18 +125,18 @@ const BUILD_WITH_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 20_342,
+      bytes: 20_384,
     },
   ],
 };
 
 const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
-  bytes: 9_073_680,
-  files: 377,
-  precache: 353,
-  precacheBytes: 8_968_937,
+  bytes: 9_089_526,
+  files: 380,
+  precache: 356,
+  precacheBytes: 8_984_664,
   preloaded: 75,
-  preloadedBytes: 452_792,
+  preloadedBytes: 453_188,
   stubNodes: 0,
   guardNodes: 0,
   groups: [
@@ -145,21 +145,21 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.entry,
       holds: "SvelteKit's start script and the app",
       files: 2,
-      bytes: 23_628,
+      bytes: 24_000,
     },
     {
       name: 'nodes',
       folder: GROUP_FOLDERS.nodes,
       holds: 'one node per route and layout',
-      files: 48,
-      bytes: 2_372_329,
+      files: 49,
+      bytes: 2_383_712,
     },
     {
       name: 'chunks',
       folder: GROUP_FOLDERS.chunks,
       holds: 'shared modules and code loaded on demand',
-      files: 247,
-      bytes: 1_877_337,
+      files: 249,
+      bytes: 1_881_309,
     },
     {
       name: 'assets',
@@ -201,7 +201,7 @@ const BUILD_WITHOUT_PLUGIN: RecordedBuild = {
       folder: GROUP_FOLDERS.shell,
       holds: 'the fallback document and the service worker',
       files: 2,
-      bytes: 29_502,
+      bytes: 29_621,
     },
   ],
 };
@@ -238,8 +238,8 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'pdf.js, modern build',
   },
   {
-    path: '_app/immutable/nodes/37.6dbPqqc0.js',
-    bytes: 251_420,
+    path: '_app/immutable/nodes/38.CKiwHLsP.js',
+    bytes: 251_567,
     holds: 'the reader route',
   },
   {
@@ -253,8 +253,8 @@ const LARGEST_FILES: readonly LargeFile[] = [
     holds: 'zip.js, for archives and EPUBs',
   },
   {
-    path: '_app/immutable/nodes/0.Dtdw70bF.js',
-    bytes: 74_664,
+    path: '_app/immutable/nodes/0.8vop6jGN.js',
+    bytes: 74_688,
     holds: 'the root layout',
   },
 ];

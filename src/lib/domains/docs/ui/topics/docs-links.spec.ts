@@ -8,6 +8,7 @@ import * as accessibility from './accessibility/accessibility-sections';
 import * as architecture from './architecture/architecture-sections';
 import * as asyncCorrectness from './async-correctness/async-sections';
 import * as bookIdentity from './book-identity/sections';
+import * as contributing from './contributing/contributing-sections';
 import * as epubRendering from './epub-rendering/epub-sections';
 import * as exampleDrift from './example-drift/drift-sections';
 import * as exportImport from './export-import/export-import-sections';
@@ -55,6 +56,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   architecture: architecture.ARCHITECTURE_SECTIONS,
   'rendering-pages': renderingPages.RENDERING_SECTIONS,
   'releases-and-ci': releasesAndCi.RELEASE_SECTIONS,
+  contributing: contributing.CONTRIBUTING_SECTIONS,
   testing: testing.TESTING_SECTIONS,
   'example-drift': exampleDrift.DRIFT_SECTIONS,
   'sql-set-theory': sqlSetTheory.SQL_SET_SECTIONS,
@@ -77,6 +79,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'architecture/architecture-sections.ts': architecture,
   'async-correctness/async-sections.ts': asyncCorrectness,
   'book-identity/sections.ts': bookIdentity,
+  'contributing/contributing-sections.ts': contributing,
   'epub-rendering/epub-sections.ts': epubRendering,
   'example-drift/drift-sections.ts': exampleDrift,
   'export-import/export-import-sections.ts': exportImport,
