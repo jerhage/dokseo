@@ -52,7 +52,9 @@
   <DocsCode label={GO_TO_PASSAGE.label} code={GO_TO_PASSAGE.code} />
   <StepList>
     <StepItem title="Try the stored CFI">
-      If foliate-js resolves it and lands, that is the answer, and the reader shows no notice.
+      If foliate-js resolves it and lands, that is the answer, and the reader shows no notice. A
+      collapsed CFI, whose range starts and ends at the same point, selects no text, so it goes on
+      to the quote even when it lands.
     </StepItem>
     <StepItem title="Search for the quote">
       Otherwise <code>passageCfi</code> walks every chapter. It parses the chapter, runs the same

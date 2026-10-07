@@ -131,7 +131,7 @@ const GO_TO_PASSAGE: SourceSnippet = {
   passage: SoughtPassage,
 ): Promise<PassageArrival> {
   const stored = await navigate(view, spine, passage.cfi);
-  if (reached(stored)) return arrivedAtTheCfi(passage.cfi);
+  if (reached(stored) && !collapsedCfi(passage.cfi)) return arrivedAtTheCfi(passage.cfi);
   if (passage.quote === null) return THE_PASSAGE_IS_LOST;
 
   const fresh = await find(passage.quote);

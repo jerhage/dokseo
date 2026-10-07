@@ -11,13 +11,17 @@ import {
   markAfterMove,
   NOTHING_ARRIVED_AT,
   PASSAGE_HIGHLIGHT_COLOUR,
-  passageCfis,
+  askedPassages,
+  drawnCfis,
+  foundAt,
   passageColour,
+  passagesToFind,
+  SEEKING,
   passageMark,
   passageWeight,
 } from './flow-highlight';
 import type { LineRect } from './flow-highlight';
-import type { PassageMark, PassageWeight } from './flow-highlight';
+import type { FoundPassage, PassageMark, PassageWeight } from './flow-highlight';
 import { REFLOWED, TRAVELLED } from './flow-move';
 import { arrivedAtTheCfi, foundByItsText, THE_PASSAGE_IS_LOST } from './flow-quote';
 
@@ -52,21 +56,57 @@ function onAPage(): Anchor {
   ]);
 }
 
-describe('passageCfis', () => {
+describe('askedPassages', () => {
   it('draws one highlight for each passage lifted from the book', () => {
-    expect(passageCfis([lifted(FIRST), lifted(SECOND)])).toEqual([FIRST, SECOND]);
+    expect(askedPassages([lifted(FIRST), lifted(SECOND)])).toEqual([
+      { cfi: FIRST, quote: QUOTE },
+      { cfi: SECOND, quote: QUOTE },
+    ]);
   });
 
   it('draws nothing for a capture anchored to a region of a page image', () => {
-    expect(passageCfis([onAPage(), lifted(FIRST)])).toEqual([FIRST]);
+    expect(askedPassages([onAPage(), lifted(FIRST)])).toEqual([{ cfi: FIRST, quote: QUOTE }]);
   });
 
   it('draws one highlight when two captures quote the same passage', () => {
-    expect(passageCfis([lifted(FIRST), lifted(FIRST)])).toEqual([FIRST]);
+    expect(askedPassages([lifted(FIRST), lifted(FIRST)])).toEqual([{ cfi: FIRST, quote: QUOTE }]);
   });
 
   it('draws nothing for a passage whose cfi was never recorded', () => {
-    expect(passageCfis([lifted('')])).toEqual([]);
+    expect(askedPassages([lifted('')])).toEqual([]);
+  });
+});
+
+describe('drawnCfis', () => {
+  const COLLAPSED = 'epubcfi(/6/12!/4,/522,/522)';
+
+  const REFOUND = 'epubcfi(/6/12!/4/522,/1:0,/1:44)';
+
+  function found(entries: Readonly<Record<string, FoundPassage>>): Map<string, FoundPassage> {
+    return new Map(Object.entries(entries));
+  }
+
+  it('draws a stored cfi that selects text as it is', () => {
+    expect(drawnCfis([{ cfi: FIRST, quote: QUOTE }], found({}))).toEqual([FIRST]);
+  });
+
+  it('draws a collapsed cfi at the place its quote was found, and nowhere while it is sought or lost', () => {
+    const asked = [{ cfi: COLLAPSED, quote: QUOTE }];
+
+    expect(drawnCfis(asked, found({}))).toEqual([]);
+    expect(drawnCfis(asked, found({ [COLLAPSED]: SEEKING }))).toEqual([]);
+    expect(drawnCfis(asked, found({ [COLLAPSED]: foundAt(null) }))).toEqual([]);
+    expect(drawnCfis(asked, found({ [COLLAPSED]: foundAt(REFOUND) }))).toEqual([REFOUND]);
+  });
+
+  it('seeks only the collapsed cfis not already sought', () => {
+    const asked = [
+      { cfi: FIRST, quote: QUOTE },
+      { cfi: COLLAPSED, quote: QUOTE },
+    ];
+
+    expect(passagesToFind(asked, found({}))).toEqual([{ cfi: COLLAPSED, quote: QUOTE }]);
+    expect(passagesToFind(asked, found({ [COLLAPSED]: SEEKING }))).toEqual([]);
   });
 });
 

@@ -32,7 +32,7 @@
   import type { ReadingSettings } from '../domain/reading-settings';
   import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';
-  import { NO_ANCHORS, passageCfis } from './flow-highlight';
+  import { askedPassages, NO_ANCHORS } from './flow-highlight';
   import { FlowGestures } from './flow-gestures';
   import { keyTarget } from './flow-keys';
   import { flowGuideKind, flowInput, flowSwipeLesson, offersFlowGuide } from './flow-hint';
@@ -127,7 +127,7 @@
   const meta = $derived(flowMeta(view.navigation.chapter, book.language));
   const turning = $derived(view.navigation.direction);
   const marks = $derived(tickOffsets(view.navigation.ticks, turning));
-  const passages = $derived(passageCfis(anchors));
+  const passages = $derived(askedPassages(anchors));
   const readerFrame = new ReaderFrameView(FOCUSED_OR_OPEN, () => dialogOpen);
   const narrow = $derived(readerFrame.narrow);
   const turns = $derived(

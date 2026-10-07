@@ -20,7 +20,7 @@ import {
   THE_PASSAGE_IS_LOST,
 } from './flow-quote';
 import { NOTHING_ARRIVED_AT } from './flow-highlight';
-import type { PassageMark } from './flow-highlight';
+import type { AskedPassage, PassageMark } from './flow-highlight';
 import { REFLOWED, TRAVELLED } from './flow-move';
 import type { FlowRelocation } from './flow-move';
 import type { BookPaging } from './flow-writing-mode';
@@ -44,6 +44,12 @@ const SOMEWHERE = 'epubcfi(/6/14!/4/2/14/1:0)';
 const FURTHER_ON = 'epubcfi(/6/16!/4/2/2/1:0)';
 
 const LATER_STILL = 'epubcfi(/6/18!/4/2/8/1:0)';
+
+const LIFTED_QUOTE: TextQuote = { exact: '厳重に鍵', prefix: '', suffix: '' };
+
+function liftedAt(cfi: string): AskedPassage {
+  return { cfi, quote: LIFTED_QUOTE };
+}
 
 type Reads = Awaited<ReturnType<Container['library']['readSource']>>;
 
@@ -156,6 +162,8 @@ type Shown = {
   readonly restyled: ReadingSettings[];
   readonly inked: PageInk[];
   readonly passages: SoughtPassage[];
+  readonly soughtQuotes: TextQuote[];
+  found: string | null;
   readonly marked: (readonly string[])[];
   readonly arrivals: PassageMark[];
   arrival: PassageArrival;
@@ -176,6 +184,7 @@ function shows(): Shown {
   const restyled: ReadingSettings[] = [];
   const inked: PageInk[] = [];
   const passages: SoughtPassage[] = [];
+  const soughtQuotes: TextQuote[] = [];
   const marked: (readonly string[])[] = [];
   const arrivals: PassageMark[] = [];
 
@@ -188,6 +197,8 @@ function shows(): Shown {
     restyled,
     inked,
     passages,
+    soughtQuotes,
+    found: null as string | null,
     marked,
     arrivals,
     arrival: arrivedAtTheCfi(SOMEWHERE) as PassageArrival,
@@ -229,6 +240,10 @@ function shows(): Shown {
       goToPassage: (passage: SoughtPassage) => {
         passages.push(passage);
         return Promise.resolve(world.arrival);
+      },
+      findPassage: (quote: TextQuote) => {
+        soughtQuotes.push(quote);
+        return Promise.resolve(world.found);
       },
       restyle: (settings: ReadingSettings, ink: PageInk) => {
         restyled.push(settings);
@@ -1117,7 +1132,7 @@ describe('FlowView jumpToPassage', () => {
     const world = shelf();
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
-    view.arrivals.markPassages([SOMEWHERE]);
+    view.arrivals.markPassages([liftedAt(SOMEWHERE)]);
     await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(A_PAGE));
     await view.arrivals.jumpToPassage(SOMEWHERE, QUOTE);
@@ -1140,7 +1155,7 @@ describe('FlowView markPassages', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    view.arrivals.markPassages([SOMEWHERE]);
+    view.arrivals.markPassages([liftedAt(SOMEWHERE)]);
     await view.open(novel(world.place), world.stored, surfaces.show);
 
     expect(surfaces.marked).toEqual([[SOMEWHERE]]);
@@ -1152,9 +1167,43 @@ describe('FlowView markPassages', () => {
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
     await view.open(novel(world.place), world.stored, surfaces.show);
 
-    view.arrivals.markPassages([SOMEWHERE, ANOTHER]);
+    view.arrivals.markPassages([liftedAt(SOMEWHERE), liftedAt(ANOTHER)]);
 
     expect(surfaces.marked).toEqual([[], [SOMEWHERE, ANOTHER]]);
+  });
+
+  it('draws a capture whose stored cfi is collapsed at the place its quote is found', async () => {
+    const collapsed = 'epubcfi(/6/12!/4,/522,/522)';
+    const refound = 'epubcfi(/6/12!/4/522,/1:0,/1:44)';
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.found = refound;
+    const view = new FlowView(world.container, world.notify, createTestQueryClient());
+    await view.open(novel(world.place), world.stored, surfaces.show);
+
+    view.arrivals.markPassages([liftedAt(SOMEWHERE), liftedAt(collapsed)]);
+    await settled();
+
+    expect(surfaces.soughtQuotes).toEqual([LIFTED_QUOTE]);
+    expect(surfaces.marked.at(-1)).toEqual([SOMEWHERE, refound]);
+    expect(surfaces.marked.flat()).not.toContain(collapsed);
+  });
+
+  it('seeks a collapsed cfi once while the book stays open', async () => {
+    const collapsed = 'epubcfi(/6/12!/4,/538,/538)';
+    const world = shelf();
+    const surfaces = shows();
+    surfaces.found = ANOTHER;
+    const view = new FlowView(world.container, world.notify, createTestQueryClient());
+    await view.open(novel(world.place), world.stored, surfaces.show);
+
+    view.arrivals.markPassages([liftedAt(collapsed)]);
+    await settled();
+    view.arrivals.markPassages([liftedAt(collapsed), liftedAt(SOMEWHERE)]);
+    await settled();
+
+    expect(surfaces.soughtQuotes).toEqual([LIFTED_QUOTE]);
+    expect(surfaces.marked.at(-1)).toEqual([ANOTHER, SOMEWHERE]);
   });
 });
 

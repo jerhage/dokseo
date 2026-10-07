@@ -1,11 +1,22 @@
 import { match } from 'ts-pattern';
 import { pixelLength } from '$lib/ui/components/css-length';
 import type { StyleSource } from '$lib/ui/components/css-length';
-import type { Anchor } from '$lib/shared/anchor';
+import type { Anchor, TextQuote } from '$lib/shared/anchor';
+import { collapsedCfi } from './flow-cfi';
 import type { MoveCause } from './flow-move';
 import type { PassageArrival } from './flow-quote';
 
 type PassageWeight = 'ordinary' | 'arrived';
+
+type AskedPassage = {
+  readonly cfi: string;
+  readonly quote: TextQuote;
+};
+
+type FoundPassage =
+  | { readonly kind: 'seeking' }
+  | { readonly kind: 'found'; readonly cfi: string }
+  | { readonly kind: 'lost' };
 
 type PassageMark =
   | { readonly kind: 'none' }
@@ -27,6 +38,12 @@ const ARRIVED_BORDER_WIDTH_PROPERTY = '--border-width';
 
 const NO_PASSAGES: readonly string[] = [];
 
+const NO_ASKED_PASSAGES: readonly AskedPassage[] = [];
+
+const SEEKING: FoundPassage = { kind: 'seeking' };
+
+const LOST: FoundPassage = { kind: 'lost' };
+
 const NO_ANCHORS: readonly Anchor[] = [];
 
 const NOTHING_ARRIVED_AT: PassageMark = { kind: 'none' };
@@ -35,16 +52,50 @@ function arrivedBorderWidth(style: StyleSource): number {
   return pixelLength(style, ARRIVED_BORDER_WIDTH_PROPERTY);
 }
 
-function passageCfis(anchors: readonly Anchor[]): readonly string[] {
-  const wanted = new Set<string>();
+function askedPassages(anchors: readonly Anchor[]): readonly AskedPassage[] {
+  const wanted = new Map<string, AskedPassage>();
   for (const anchor of anchors) {
     if (anchor.kind !== 'text') continue;
     if (anchor.cfi.length === 0) continue;
+    if (wanted.has(anchor.cfi)) continue;
 
-    wanted.add(anchor.cfi);
+    wanted.set(anchor.cfi, { cfi: anchor.cfi, quote: anchor.quote });
   }
 
-  return [...wanted];
+  return [...wanted.values()];
+}
+
+function foundCfi(found: FoundPassage | undefined): string | null {
+  if (found === undefined) return null;
+
+  return match(found)
+    .with({ kind: 'found' }, (at) => at.cfi)
+    .with({ kind: 'seeking' }, { kind: 'lost' }, () => null)
+    .exhaustive();
+}
+
+function drawnCfis(
+  asked: readonly AskedPassage[],
+  found: ReadonlyMap<string, FoundPassage>,
+): readonly string[] {
+  const drawn = new Set<string>();
+  for (const passage of asked) {
+    const cfi = collapsedCfi(passage.cfi) ? foundCfi(found.get(passage.cfi)) : passage.cfi;
+    if (cfi !== null) drawn.add(cfi);
+  }
+
+  return [...drawn];
+}
+
+function passagesToFind(
+  asked: readonly AskedPassage[],
+  found: ReadonlyMap<string, FoundPassage>,
+): readonly AskedPassage[] {
+  return asked.filter((passage) => collapsedCfi(passage.cfi) && !found.has(passage.cfi));
+}
+
+function foundAt(cfi: string | null): FoundPassage {
+  return cfi === null ? LOST : { kind: 'found', cfi };
 }
 
 function arrivedAt(cfi: string, place: string | null): PassageMark {
@@ -161,7 +212,12 @@ function highlightChange(
 
 export {
   ARRIVED_BORDER_WIDTH_PROPERTY,
+  NO_ASKED_PASSAGES,
+  SEEKING,
   arrivedAt,
+  askedPassages,
+  drawnCfis,
+  foundAt,
   arrivedBorderWidth,
   joinedLines,
   NO_ANCHORS,
@@ -170,10 +226,18 @@ export {
   PASSAGE_HIGHLIGHT_COLOUR,
   highlightChange,
   markAfterMove,
-  passageCfis,
   passageColour,
+  passagesToFind,
   passageMark,
   passageWeight,
   wantedPassages,
 };
-export type { DrawnPassage, HighlightChange, LineRect, PassageMark, PassageWeight };
+export type {
+  AskedPassage,
+  DrawnPassage,
+  FoundPassage,
+  HighlightChange,
+  LineRect,
+  PassageMark,
+  PassageWeight,
+};

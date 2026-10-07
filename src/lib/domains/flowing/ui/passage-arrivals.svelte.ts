@@ -8,8 +8,18 @@ import {
   standingHolds,
 } from './flow-arrival';
 import type { ArrivalStanding, Arriving } from './flow-arrival';
-import { markAfterMove, NO_PASSAGES, NOTHING_ARRIVED_AT, passageMark } from './flow-highlight';
-import type { PassageMark } from './flow-highlight';
+import {
+  drawnCfis,
+  foundAt,
+  markAfterMove,
+  NO_ASKED_PASSAGES,
+  NO_PASSAGES,
+  NOTHING_ARRIVED_AT,
+  passageMark,
+  passagesToFind,
+  SEEKING,
+} from './flow-highlight';
+import type { AskedPassage, FoundPassage, PassageMark } from './flow-highlight';
 import type { MoveCause } from './flow-move';
 import { passageNotice } from './flow-quote';
 import type { PassageArrival } from './flow-quote';
@@ -25,6 +35,8 @@ class PassageArrivals {
 
   #surface: () => FlowSurface | null;
   #here: () => string | null;
+  #wanted: readonly AskedPassage[] = NO_ASKED_PASSAGES;
+  #found = new Map<string, FoundPassage>();
   #passages: readonly string[] = NO_PASSAGES;
   #marked: PassageMark = NOTHING_ARRIVED_AT;
   #arrivedBy: string | null = null;
@@ -74,9 +86,14 @@ class PassageArrivals {
     this.#arrive(passage);
   }
 
-  markPassages(passages: readonly string[]): void {
-    this.#passages = passages;
-    this.#surface()?.mark(passages, this.#marked);
+  markPassages(passages: readonly AskedPassage[]): void {
+    this.#wanted = passages;
+    this.#passages = drawnCfis(passages, this.#found);
+    const surface = this.#surface();
+    if (surface === null) return;
+
+    surface.mark(this.#passages, this.#marked);
+    this.#findOn(surface);
   }
 
   dismissNotice(): void {
@@ -98,6 +115,7 @@ class PassageArrivals {
 
   markOn(surface: FlowSurface): void {
     surface.mark(this.#passages, this.#marked);
+    this.#findOn(surface);
   }
 
   shown(book: BookId): void {
@@ -119,6 +137,8 @@ class PassageArrivals {
   }
 
   close(): void {
+    this.#found = new Map();
+    this.#passages = drawnCfis(this.#wanted, this.#found);
     this.#marked = NOTHING_ARRIVED_AT;
     this.#arrivedBy = null;
     this.#standing = NOT_STANDING;
@@ -133,6 +153,30 @@ class PassageArrivals {
     const arriving = arrivingAt(passage.cfi);
     this.#standing = arriving;
     void this.jumpToPassage(passage.cfi, passage.quote).then(() => this.#landed(arriving));
+  }
+
+  #findOn(surface: FlowSurface): void {
+    const found = this.#found;
+    for (const passage of passagesToFind(this.#wanted, found)) {
+      found.set(passage.cfi, SEEKING);
+      void surface.findPassage(passage.quote).then(
+        (cfi) => this.#foundOn(surface, found, passage.cfi, foundAt(cfi)),
+        () => this.#foundOn(surface, found, passage.cfi, foundAt(null)),
+      );
+    }
+  }
+
+  #foundOn(
+    surface: FlowSurface,
+    found: Map<string, FoundPassage>,
+    cfi: string,
+    passage: FoundPassage,
+  ): void {
+    if (found !== this.#found || surface !== this.#surface()) return;
+
+    found.set(cfi, passage);
+    this.#passages = drawnCfis(this.#wanted, found);
+    surface.mark(this.#passages, this.#marked);
   }
 
   #landed(arriving: Arriving): void {

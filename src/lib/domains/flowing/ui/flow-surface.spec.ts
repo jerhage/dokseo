@@ -424,6 +424,26 @@ describe('goToPassage', () => {
     }
   });
 
+  it('re-finds the passage by its text when the stored cfi lands but is collapsed', async () => {
+    const collapsed = 'epubcfi(/6/12!/4,/522,/522)';
+    const view = stage();
+    const asked: TextQuote[] = [];
+
+    const arrival = await goToPassage(
+      view,
+      everySectionHasABody(3),
+      (quote) => {
+        asked.push(quote);
+        return Promise.resolve(REFOUND);
+      },
+      { cfi: collapsed, quote: QUOTE },
+    );
+
+    expect(arrival).toEqual(foundByItsText(REFOUND));
+    expect(asked).toEqual([QUOTE]);
+    expect(view.targets).toEqual([collapsed, REFOUND]);
+  });
+
   it('reports the passage lost when the re-found cfi will not lay out either', async () => {
     const view = stage({ refuses: [SOMEWHERE, REFOUND] });
 

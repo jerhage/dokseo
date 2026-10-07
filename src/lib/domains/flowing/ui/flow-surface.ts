@@ -22,6 +22,7 @@ import type { PageInk } from './flow-styles';
 import type { ReadingSettings } from '../domain/reading-settings';
 import type { ReadingDirection } from '$lib/shared/layout-kind';
 import type { SoughtPassage, TextQuote } from '$lib/shared/anchor';
+import { collapsedCfi } from './flow-cfi';
 import { quoteRange } from './flow-passage';
 import type { ChapterCfis, ChapterTitles } from './flow-passage';
 import { match } from 'ts-pattern';
@@ -41,6 +42,7 @@ type FlowSurface = {
   seek(fraction: number): void;
   jump(href: string): void;
   goToPassage(passage: SoughtPassage): Promise<PassageArrival>;
+  findPassage(quote: TextQuote): Promise<string | null>;
   mark(passages: readonly string[], arrived: PassageMark): void;
   restyle(settings: ReadingSettings, ink: PageInk): void;
   destroy(): void;
@@ -188,7 +190,7 @@ async function goToPassage(
   passage: SoughtPassage,
 ): Promise<PassageArrival> {
   const stored = await navigate(view, spine, passage.cfi);
-  if (reached(stored)) return arrivedAtTheCfi(passage.cfi);
+  if (reached(stored) && !collapsedCfi(passage.cfi)) return arrivedAtTheCfi(passage.cfi);
   if (passage.quote === null) return THE_PASSAGE_IS_LOST;
 
   const fresh = await find(passage.quote);
@@ -341,6 +343,7 @@ async function openFlowSurface(
     },
     goToPassage: (passage: SoughtPassage) =>
       goToPassage(view, spine, (quote) => passageCfi(book, view, sanitiseChapter, quote), passage),
+    findPassage: (quote: TextQuote) => passageCfi(book, view, sanitiseChapter, quote),
     restyle: (settings: ReadingSettings, ink: PageInk) => {
       view.renderer.setStyles(flowStyles(settings, ink, mode));
     },
