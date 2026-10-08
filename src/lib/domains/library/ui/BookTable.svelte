@@ -16,8 +16,8 @@
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
   import BookActionItems from './BookActionItems.svelte';
-  import BookActions from './BookActions.svelte';
   import { bookFacts } from './library-shelves';
+  import { openClick } from './open-click';
 
   type Props = {
     readonly books: readonly Book[];
@@ -26,9 +26,10 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
+    readonly ondetails: (id: BookId) => void;
   };
 
-  let { books, busy, onedit, onremove, onfinish, onunread }: Props = $props();
+  let { books, busy, onedit, onremove, onfinish, onunread, ondetails }: Props = $props();
 
   const rows = createContextMenuAreas<Book>();
 </script>
@@ -39,9 +40,6 @@
       <TableHeaderCell scope="col">Title</TableHeaderCell>
       <TableHeaderCell scope="col">Position</TableHeaderCell>
       <TableHeaderCell scope="col">Details</TableHeaderCell>
-      <TableHeaderCell scope="col" actions>
-        <span class="visually-hidden">Actions</span>
-      </TableHeaderCell>
     </TableRow>
   </TableHeader>
   <TableBody>
@@ -52,9 +50,19 @@
         class={{ 'is-busy': busy(book.id) }}
         aria-busy={busy(book.id)}
         {@attach rows.area(book)}
+        {@attach openClick(() => ondetails(book.id))}
       >
         <TableCell>
-          <a class="weight-medium" href="/read/{book.id}" lang={book.language}>{name}</a>
+          <a
+            class="weight-medium"
+            href="/read/{book.id}"
+            lang={book.language}
+            onclick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              ondetails(book.id);
+            }}>{name}</a
+          >
         </TableCell>
         <TableCell>
           {#if book.finishedAt !== null}
@@ -71,16 +79,6 @@
           {/if}
         </TableCell>
         <TableCell class="text-xs text-muted">{bookFacts(book)}</TableCell>
-        <TableCell actions>
-          <BookActions
-            {book}
-            busy={busy(book.id)}
-            onedit={() => onedit(book.id)}
-            onremove={() => onremove(book.id)}
-            onfinish={() => onfinish(book.id)}
-            onunread={() => onunread(book.id)}
-          />
-        </TableCell>
       </TableRow>
     {/each}
   </TableBody>

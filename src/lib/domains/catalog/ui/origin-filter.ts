@@ -40,6 +40,10 @@ function filterOptions(catalogs: readonly Catalog[]): readonly OriginFilterOptio
   ];
 }
 
+function sourceText(catalog: string | null): string {
+  return catalog === null ? FILES_LABEL : `Downloaded from ${catalog}`;
+}
+
 function parsedFilter(value: string, catalogs: readonly Catalog[]): OriginFilter {
   if (value === filterValue(FILES_FILTER)) return FILES_FILTER;
   const catalog = catalogs.find(
@@ -70,5 +74,6 @@ export {
   matchesFilter,
   parsedFilter,
   shownFilter,
+  sourceText,
 };
 export type { OriginFilter, OriginFilterOption };

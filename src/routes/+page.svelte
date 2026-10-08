@@ -12,6 +12,7 @@
   import { CatalogTabsView } from '$lib/domains/catalog/ui/catalog-tabs.svelte';
   import LibraryTabs from '$lib/domains/catalog/ui/LibraryTabs.svelte';
   import OriginBadge from '$lib/domains/catalog/ui/OriginBadge.svelte';
+  import OriginSource from '$lib/domains/catalog/ui/OriginSource.svelte';
   import OriginFilter from '$lib/domains/catalog/ui/OriginFilter.svelte';
   import { OriginFilterView } from '$lib/domains/catalog/ui/origin-filter.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
@@ -88,6 +89,10 @@
   <OriginBadge view={origins} {id} />
 {/snippet}
 
+{#snippet originSource(id: BookId)}
+  <OriginSource view={origins} {id} />
+{/snippet}
+
 {#snippet originControls()}
   <OriginFilter view={origins} />
 {/snippet}
@@ -101,6 +106,7 @@
       onsearcheverything={() => search?.searchEverything()}
       tabbed={catalogs.visible ? withCatalogs : undefined}
       bookBadge={origins.visible ? originBadge : undefined}
+      bookSource={origins.visible ? originSource : undefined}
       bookFilter={origins.visible ? (id) => origins.matches(id) : undefined}
       filterControls={origins.visible ? originControls : undefined}
       headerSearch={catalogSearch.field}
