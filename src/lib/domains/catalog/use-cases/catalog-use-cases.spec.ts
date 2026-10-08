@@ -6,6 +6,7 @@ import type { BookOrigin } from '../domain/book-origin';
 import type { Catalog } from '../domain/catalog';
 import type { CatalogRepository } from '../domain/catalog-repository';
 import type { OriginRepository } from '../domain/origin-repository';
+import { fakePasswords } from './fake-passwords';
 import { addCatalog } from './add-catalog';
 import { editCatalog } from './edit-catalog';
 import { findOrigin } from './find-origin';
@@ -13,6 +14,7 @@ import { listCatalogOrigins } from './list-catalog-origins';
 import { listCatalogs } from './list-catalogs';
 import { recordOrigin } from './record-origin';
 import { removeCatalog } from './remove-catalog';
+import { unlockCatalog } from './unlock-catalog';
 
 type Fault = 'none' | 'unavailable' | 'unreadable';
 
@@ -218,7 +220,7 @@ describe('removeCatalog', () => {
     catalogRows.set(OTHER, catalog(OTHER));
     originRows.push(origin('book-1', CALIBRE, 'a'), origin('book-2', OTHER, 'a'));
 
-    const removed = await removeCatalog({ catalogs, origins }, CALIBRE);
+    const removed = await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE);
 
     expect(removed).toEqual({ kind: 'success' });
     expect(log).toEqual(['clear calibre', 'remove calibre']);
@@ -229,24 +231,30 @@ describe('removeCatalog', () => {
   it('reports not-found and deletes nothing for an id nothing holds', async () => {
     const { catalogs, origins, log } = fakes();
 
-    expect(await removeCatalog({ catalogs, origins }, CALIBRE)).toEqual({
-      kind: 'not-found',
-      id: CALIBRE,
-    });
+    expect(await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE)).toEqual(
+      {
+        kind: 'not-found',
+        id: CALIBRE,
+      },
+    );
     expect(log).toEqual([]);
   });
 
   it('removes a damaged catalog so it can be cleared', async () => {
     const { catalogs, origins, log } = fakes('unreadable');
 
-    expect(await removeCatalog({ catalogs, origins }, CALIBRE)).toEqual({ kind: 'success' });
+    expect(await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE)).toEqual(
+      { kind: 'success' },
+    );
     expect(log).toEqual(['clear calibre', 'remove calibre']);
   });
 
   it('passes storage unavailable on', async () => {
     const { catalogs, origins } = fakes('unavailable');
 
-    expect(await removeCatalog({ catalogs, origins }, CALIBRE)).toEqual(STORAGE_UNAVAILABLE);
+    expect(await removeCatalog({ catalogs, origins, passwords: fakePasswords() }, CALIBRE)).toEqual(
+      STORAGE_UNAVAILABLE,
+    );
   });
 });
 
@@ -311,5 +319,20 @@ describe('findOrigin', () => {
 
     expect(found.kind === 'success' && found.origin?.bookId).toBe('book-1');
     expect(missing).toEqual({ kind: 'success', origin: null });
+  });
+});
+
+describe('unlockCatalog', () => {
+  it('holds the password for the session and removeCatalog forgets it', async () => {
+    const { catalogs, origins, catalogRows } = fakes();
+    catalogRows.set(CALIBRE, catalog(CALIBRE));
+    const passwords = fakePasswords();
+
+    expect(unlockCatalog({ passwords }, CALIBRE, 'secret')).toEqual({ kind: 'success' });
+    expect(passwords.get(CALIBRE)).toBe('secret');
+
+    await removeCatalog({ catalogs, origins, passwords }, CALIBRE);
+
+    expect(passwords.get(CALIBRE)).toBeNull();
   });
 });
