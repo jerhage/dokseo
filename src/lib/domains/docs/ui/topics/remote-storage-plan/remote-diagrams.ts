@@ -71,7 +71,7 @@ const fetchFile = box(
   'primary',
 );
 const openFile = box(0, 84, 360, 'openFile', 'identity, deduplication, OPFS, the atomic add');
-const added = box(0, 168, HALF_WIDTH, 'added', 'a new book');
+const added = box(0, 168, HALF_WIDTH, 'added or restored', 'a new or removed book');
 const alreadyHeld = box(RIGHT_COLUMN, 168, HALF_WIDTH, 'already-held', 'same contentHash');
 const writeOrigin = box(
   0,

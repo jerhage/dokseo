@@ -27,12 +27,13 @@ const shown = path.map((step) => step.title).join(' › ');`;
     </StepItem>
     <StepItem title="Open it like any upload">
       The <code>File</code> goes to <code>openFile</code>, which answers <code>added</code> for a
-      new book or <code>already-held</code> when a book with the same <code>contentHash</code> is already
-      on the device.
+      new book, <code>restored</code> when the file belongs to a book under Removed books, or
+      <code>already-held</code> when a book with the same <code>contentHash</code> is already on the device.
     </StepItem>
     <StepItem title="Write the origin">
-      On either answer the app writes the <code>BookOrigin</code> for that <code>bookId</code>. A
-      book the reader added by hand and later downloads is linked to the catalog, not duplicated.
+      On any of the three answers the app writes the <code>BookOrigin</code> for that
+      <code>bookId</code>. A book the reader added by hand and later downloads is linked to the
+      catalog, not duplicated.
     </StepItem>
   </StepList>
   <Figure>
