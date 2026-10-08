@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import IconButton from '$lib/ui/components/IconButton.svelte';
   import Dropdown from '$lib/ui/components/Dropdown.svelte';
   import DropdownItem from '$lib/ui/components/DropdownItem.svelte';
@@ -34,6 +35,7 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
+    readonly bookBadge?: Snippet<[BookId]> | undefined;
     shelf?: Shelf;
     order?: SortOrder;
     layout?: CollectionView;
@@ -49,6 +51,7 @@
     onremove,
     onfinish,
     onunread,
+    bookBadge,
     shelf = $bindable('all'),
     order = $bindable('added'),
     layout = $bindable('grid'),
@@ -114,7 +117,16 @@
       {#if shown.length === 0}
         <EmptyState class="py-4" message={emptyShelfText(shelf, searching)} />
       {:else if layout === 'grid'}
-        <BookGrid books={shown} {covers} {busy} {onedit} {onremove} {onfinish} {onunread} />
+        <BookGrid
+          books={shown}
+          {covers}
+          {busy}
+          {onedit}
+          {onremove}
+          {onfinish}
+          {onunread}
+          {bookBadge}
+        />
       {:else}
         <BookTable books={shown} {busy} {onedit} {onremove} {onfinish} {onunread} />
       {/if}

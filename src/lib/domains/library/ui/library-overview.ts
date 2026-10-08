@@ -3,6 +3,7 @@ import { isComposingKey } from '$lib/shared/composing-key';
 import { shownTitle } from '$lib/shared/shown-title';
 import type { KeyHint } from '$lib/ui/components/key-hints';
 import type { ComposingSignals } from '$lib/shared/composing-key';
+import type { BookId } from '$lib/shared/ids';
 import type { Book } from '../domain/book/book';
 import { describeLibraryContents, libraryContents } from '../domain/book/book-contents';
 
@@ -59,6 +60,13 @@ function titledBooks(books: readonly Book[], query: string): readonly Book[] {
   return isSearching(query) ? books.filter((book) => matchesQuery(shownTitle(book), query)) : books;
 }
 
+function narrowedBooks(
+  books: readonly Book[],
+  filter: ((id: BookId) => boolean) | undefined,
+): readonly Book[] {
+  return filter === undefined ? books : books.filter((book) => filter(book.id));
+}
+
 function matchedText(count: number): string {
   return `${count} ${count === 1 ? 'title' : 'titles'}`;
 }
@@ -84,6 +92,7 @@ export {
   isSearching,
   librarySummary,
   matchedText,
+  narrowedBooks,
   storageText,
   titledBooks,
 };
