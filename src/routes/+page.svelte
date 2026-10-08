@@ -3,7 +3,7 @@
   import { onDestroy } from 'svelte';
   import type { Snippet } from 'svelte';
   import { useQueryClient } from '@tanstack/svelte-query';
-  import { afterNavigate, goto, replaceState } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
@@ -66,6 +66,8 @@
     capture: () => scroll.capture(),
     restore: (top) => scroll.restore(top),
   };
+
+  beforeNavigate(() => catalogs.leave());
 
   afterNavigate((navigation) => {
     scroll.arrive(navigation.type, navigation.from?.route.id ?? null);

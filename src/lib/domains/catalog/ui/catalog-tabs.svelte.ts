@@ -89,6 +89,11 @@ class CatalogTabsView {
     return created;
   }
 
+  leave(): void {
+    const catalog = this.catalogFor(this.selected);
+    if (catalog !== null) this.#browsing.get(catalog.id)?.leave();
+  }
+
   dispose(): void {
     for (const view of this.#browsing.values()) view.dispose();
     this.#browsing.clear();

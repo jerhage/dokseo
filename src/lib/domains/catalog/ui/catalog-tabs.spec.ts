@@ -132,3 +132,28 @@ describe('CatalogTabsView', () => {
     expect(refreshed).toHaveLength(1);
   });
 });
+
+describe('CatalogTabsView.leave', () => {
+  it('keeps the scroll position of the selected catalog only', async () => {
+    const { view, session } = setup(TWO);
+    await view.load();
+    view.browsing(HOME).bindScroller({ read: () => 300, scrollTo: () => undefined });
+    view.browsing(ARCHIVE).bindScroller({ read: () => 700, scrollTo: () => undefined });
+    view.select(ARCHIVE.id);
+
+    view.leave();
+
+    expect(session.takeScroll(ARCHIVE.id)).toBe(700);
+    expect(session.takeScroll(HOME.id)).toBe(0);
+  });
+
+  it('keeps nothing while the device tab is selected', async () => {
+    const { view, session } = setup(TWO);
+    await view.load();
+    view.browsing(HOME).bindScroller({ read: () => 300, scrollTo: () => undefined });
+
+    view.leave();
+
+    expect(session.takeScroll(HOME.id)).toBe(0);
+  });
+});
