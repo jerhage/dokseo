@@ -30,6 +30,7 @@
     titledBooks,
   } from './library-overview';
   import type { HeaderSearch } from './library-overview';
+  import BookDetails from './BookDetails.svelte';
   import BookSettings from './BookSettings.svelte';
   import { arrivedFiles } from './chosen-files';
   import ContinueReading from './ContinueReading.svelte';
@@ -60,6 +61,7 @@
     readonly onsearcheverything?: (() => void) | undefined;
     readonly tabbed?: Snippet<[Snippet]> | undefined;
     readonly bookBadge?: Snippet<[BookId]> | undefined;
+    readonly bookSource?: Snippet<[BookId]> | undefined;
     readonly bookFilter?: ((id: BookId) => boolean) | undefined;
     readonly filterControls?: Snippet | undefined;
     readonly headerSearch?: HeaderSearch | undefined;
@@ -73,6 +75,7 @@
     onsearcheverything,
     tabbed,
     bookBadge,
+    bookSource,
     bookFilter,
     filterControls,
     headerSearch,
@@ -102,6 +105,14 @@
     if (outcome !== 'failed') openSettingsFor = null;
   }
 
+  function finish(id: BookId): void {
+    void view.changes.markFinished(id, arrangement.shelf.value, shelfRead.books);
+  }
+
+  function unread(id: BookId): void {
+    void view.changes.markUnread(id, arrangement.shelf.value, shelfRead.books);
+  }
+
   function openBook(id: BookId): void {
     void goto(`/read/${encodeURIComponent(id)}`);
   }
@@ -115,7 +126,10 @@
       .with('keep-captures', () => view.changes.remove(id))
       .with('delete-captures', () => view.changes.removeWithCaptures(id))
       .exhaustive();
-    if (outcome !== 'failed') removeFor = null;
+    if (outcome !== 'failed') {
+      removeFor = null;
+      view.details.close();
+    }
   }
 
   async function deleteRemovedCaptures(id: BookId): Promise<void> {
@@ -199,11 +213,27 @@
           busy={(id) => view.changes.removing === id || view.changes.editing === id}
           onedit={(id) => (openSettingsFor = id)}
           onremove={(id) => (removeFor = id)}
-          onfinish={(id) =>
-            void view.changes.markFinished(id, arrangement.shelf.value, shelfRead.books)}
-          onunread={(id) =>
-            void view.changes.markUnread(id, arrangement.shelf.value, shelfRead.books)}
+          onfinish={finish}
+          onunread={unread}
+          ondetails={(id) => view.details.open(id)}
         />
+
+        {@const opened = view.details.opened(shelfRead.books)}
+        {#if opened !== null}
+          <BookDetails
+            book={opened.book}
+            details={opened.details}
+            cover={library.covers.get(opened.book.id) ?? null}
+            busy={view.changes.removing === opened.book.id ||
+              view.changes.editing === opened.book.id}
+            onedit={(id) => (openSettingsFor = id)}
+            onremove={(id) => (removeFor = id)}
+            onfinish={finish}
+            onunread={unread}
+            onclose={() => view.details.close()}
+            {bookSource}
+          />
+        {/if}
       {/if}
 
       <div hidden={searching}>

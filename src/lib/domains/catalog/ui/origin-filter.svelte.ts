@@ -9,6 +9,7 @@ import {
   matchesFilter,
   parsedFilter,
   shownFilter,
+  sourceText,
 } from './origin-filter';
 import type { OriginFilterOption } from './origin-filter';
 
@@ -48,6 +49,10 @@ class OriginFilterView {
   badgeFor(id: BookId): string | null {
     const owner = this.#ownerOf(id);
     return this.catalogs.find((catalog) => catalog.id === owner)?.title ?? null;
+  }
+
+  sourceFor(id: BookId): string {
+    return sourceText(this.badgeFor(id));
   }
 
   matches(id: BookId): boolean {

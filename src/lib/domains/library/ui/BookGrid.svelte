@@ -12,7 +12,6 @@
   import type { Book } from '../domain/book/book';
   import { bookProgress } from '../domain/book/book-progress';
   import BookActionItems from './BookActionItems.svelte';
-  import BookActions from './BookActions.svelte';
   import { bookFacts } from './library-shelves';
 
   type Props = {
@@ -23,10 +22,12 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
+    readonly ondetails: (id: BookId) => void;
     readonly bookBadge?: Snippet<[BookId]> | undefined;
   };
 
-  let { books, covers, busy, onedit, onremove, onfinish, onunread, bookBadge }: Props = $props();
+  let { books, covers, busy, onedit, onremove, onfinish, onunread, ondetails, bookBadge }: Props =
+    $props();
 </script>
 
 <ul class="grid-auto grid-auto-sm p-0" aria-label="Books">
@@ -51,10 +52,10 @@
           />
         {/snippet}
         <Card
-          href="/read/{book.id}"
           mediaRatio="portrait"
-          aria-label="Read {name}"
+          aria-label={name}
           tooltip={bookFacts(book)}
+          onclick={() => ondetails(book.id)}
         >
           {#snippet media()}
             <Thumbnail src={cover} fill />
@@ -74,14 +75,6 @@
               {progress.kind === 'known' ? progress.label : bookFacts(book)}
             </p>
           </div>
-          <BookActions
-            {book}
-            busy={busy(book.id)}
-            onedit={() => onedit(book.id)}
-            onremove={() => onremove(book.id)}
-            onfinish={() => onfinish(book.id)}
-            onunread={() => onunread(book.id)}
-          />
         </div>
         {@render bookBadge?.(book.id)}
       </ContextMenu>

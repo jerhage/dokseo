@@ -95,6 +95,13 @@ describe('OriginFilterView', () => {
     expect(view.badgeFor(FILE)).toBeNull();
   });
 
+  it('words the source of a book as downloaded from its catalog or added from files', async () => {
+    const { view } = setup(TWO, DOWNLOADS);
+    await view.load();
+    expect(view.sourceFor(FROM_HOME)).toBe('Downloaded from Home');
+    expect(view.sourceFor(FILE)).toBe('Added from files');
+  });
+
   it('keeps every book while the filter is All', async () => {
     const { view } = setup(TWO, DOWNLOADS);
     await view.load();

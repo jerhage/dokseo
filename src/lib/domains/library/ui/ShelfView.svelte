@@ -35,6 +35,7 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
+    readonly ondetails: (id: BookId) => void;
     readonly bookBadge?: Snippet<[BookId]> | undefined;
     shelf?: Shelf;
     order?: SortOrder;
@@ -51,6 +52,7 @@
     onremove,
     onfinish,
     onunread,
+    ondetails,
     bookBadge,
     shelf = $bindable('all'),
     order = $bindable('added'),
@@ -125,10 +127,11 @@
           {onremove}
           {onfinish}
           {onunread}
+          {ondetails}
           {bookBadge}
         />
       {:else}
-        <BookTable books={shown} {busy} {onedit} {onremove} {onfinish} {onunread} />
+        <BookTable books={shown} {busy} {onedit} {onremove} {onfinish} {onunread} {ondetails} />
       {/if}
     {/snippet}
   </Tabs>
