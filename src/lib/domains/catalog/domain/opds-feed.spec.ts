@@ -30,10 +30,22 @@ function acquisition(xml: string, url = `${SERVER}/opds/navcatalog/x`): Acquisit
   return reading.feed;
 }
 
+describe('readOpdsFeed feed id', () => {
+  it('reads the id of an acquisition feed', () => {
+    expect(acquisition(CALIBRE_SERIES).id).toBe('calibre-series:星の旅');
+  });
+
+  it('answers an empty id when the feed has none', () => {
+    const withoutId = CALIBRE_ROOT.replace(/<id>urn:calibre:main<\/id>/u, '');
+    expect(navigation(withoutId).id).toBe('');
+  });
+});
+
 describe('readOpdsFeed on a Calibre root', () => {
   it('reads links without a rel, resolving them against the feed url', () => {
     const feed = navigation(CALIBRE_ROOT);
 
+    expect(feed.id).toBe('urn:calibre:main');
     expect(feed.title).toBe('Sample Library');
     expect(feed.links).toEqual([
       {

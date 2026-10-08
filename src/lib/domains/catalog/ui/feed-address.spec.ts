@@ -3,6 +3,7 @@ import {
   ROOT_POSITION,
   atDepth,
   crumbs,
+  identified,
   opened,
   paged,
   searched,
@@ -14,7 +15,11 @@ import type { FeedPosition } from './feed-address';
 const SERIES = { title: 'By Series', href: 'https://x.test/series' };
 const ONE = { title: '星の旅', href: 'https://x.test/series/one' };
 
-const DEEP: FeedPosition = { path: [SERIES, ONE], url: 'https://x.test/series/one?offset=30' };
+const DEEP: FeedPosition = {
+  path: [SERIES, ONE],
+  url: 'https://x.test/series/one?offset=30',
+  ids: ['root', 'series', 'one'],
+};
 
 describe('searchUrl', () => {
   it('encodes the query into the template', () => {
@@ -46,32 +51,79 @@ describe('searchStep', () => {
 describe('searched', () => {
   it('replaces the path with the search step alone', () => {
     const step = { title: 'Search: moon', href: 'https://x.test/s/moon' };
-    expect(searched(step)).toEqual({ path: [step], url: step.href });
+    expect(searched(DEEP, step)).toEqual({ path: [step], url: step.href, ids: ['root', ''] });
   });
 });
 
 describe('positions', () => {
   it('opens a step by appending it and showing its feed', () => {
-    expect(opened(ROOT_POSITION, SERIES)).toEqual({ path: [SERIES], url: SERIES.href });
+    expect(opened(ROOT_POSITION, SERIES)).toEqual({
+      path: [SERIES],
+      url: SERIES.href,
+      ids: ['', ''],
+    });
   });
 
   it('pages without changing the path', () => {
     expect(paged(DEEP, 'https://x.test/p3')).toEqual({
       path: [SERIES, ONE],
       url: 'https://x.test/p3',
+      ids: ['root', 'series', 'one'],
     });
   });
 
   it('goes back to the feed of an earlier step', () => {
-    expect(atDepth(DEEP, 1)).toEqual({ path: [SERIES], url: SERIES.href });
+    expect(atDepth(DEEP, 1)).toEqual({ path: [SERIES], url: SERIES.href, ids: ['root', 'series'] });
   });
 
   it('goes back to the root at depth 0', () => {
-    expect(atDepth(DEEP, 0)).toEqual(ROOT_POSITION);
+    expect(atDepth(DEEP, 0)).toEqual({ path: [], url: null, ids: ['root'] });
   });
 
   it('keeps the whole path at its own depth, on its first page', () => {
-    expect(atDepth(DEEP, 2)).toEqual({ path: [SERIES, ONE], url: ONE.href });
+    expect(atDepth(DEEP, 2)).toEqual({
+      path: [SERIES, ONE],
+      url: ONE.href,
+      ids: ['root', 'series', 'one'],
+    });
+  });
+});
+
+describe('identified', () => {
+  const OPENED: FeedPosition = {
+    path: [SERIES],
+    url: 'https://x.test/opds?library_id=calibre',
+    ids: ['root', ''],
+  };
+
+  it('records the id of a feed it has not seen', () => {
+    expect(identified(OPENED, 'series')).toEqual({ ...OPENED, ids: ['root', 'series'] });
+  });
+
+  it('truncates to the root when the loaded feed is the root again', () => {
+    expect(identified(OPENED, 'root')).toEqual({
+      path: [],
+      url: 'https://x.test/opds?library_id=calibre',
+      ids: ['root'],
+    });
+  });
+
+  it('truncates to an earlier step and points it at the new address', () => {
+    const position: FeedPosition = {
+      path: [SERIES, ONE],
+      url: 'https://x.test/series?again',
+      ids: ['root', 'series', ''],
+    };
+    expect(identified(position, 'series')).toEqual({
+      path: [{ title: SERIES.title, href: 'https://x.test/series?again' }],
+      url: 'https://x.test/series?again',
+      ids: ['root', 'series'],
+    });
+  });
+
+  it('never matches an empty id', () => {
+    const position: FeedPosition = { path: [SERIES], url: SERIES.href, ids: ['', ''] };
+    expect(identified(position, '')).toEqual(position);
   });
 });
 

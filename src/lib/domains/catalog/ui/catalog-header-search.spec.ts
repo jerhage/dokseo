@@ -24,7 +24,8 @@ function setup() {
       browseCatalog: (id, url, path) => {
         urls.push(url);
         const xml = id === HOME.id ? CALIBRE_ROOT : WITHOUT_SEARCH;
-        const reading = readOpdsFeed(xml, url ?? 'https://home.test/opds', id, path);
+        const own = url === null ? xml : xml.replace('urn:calibre:main', 'urn:calibre:results');
+        const reading = readOpdsFeed(own, url ?? 'https://home.test/opds', id, path);
         if (reading.kind === 'not-a-feed') throw new Error('fixture is not a feed');
         const answer: BrowseCatalogResult = { kind: 'success', reading, held: new Map() };
         return Promise.resolve(answer);
