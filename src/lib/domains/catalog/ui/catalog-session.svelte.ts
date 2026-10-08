@@ -2,9 +2,12 @@ import type { CatalogId } from '$lib/shared/ids';
 import { DEVICE_TAB } from './library-tabs';
 import { ROOT_POSITION } from './feed-address';
 import type { FeedPosition } from './feed-address';
+import { ALL_FILTER } from './origin-filter';
+import type { OriginFilter } from './origin-filter';
 
 class CatalogSession {
   selected = $state<string>(DEVICE_TAB);
+  originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   #positions = new Map<CatalogId, FeedPosition>();
 
   positionOf(id: CatalogId): FeedPosition {

@@ -12,6 +12,7 @@ import { editCatalog } from './edit-catalog';
 import { findOrigin } from './find-origin';
 import { listCatalogOrigins } from './list-catalog-origins';
 import { listCatalogs } from './list-catalogs';
+import { listOrigins } from './list-origins';
 import { recordOrigin } from './record-origin';
 import { removeCatalog } from './remove-catalog';
 import { unlockCatalog } from './unlock-catalog';
@@ -304,6 +305,20 @@ describe('listCatalogOrigins', () => {
     const listed = await listCatalogOrigins({ origins }, OTHER);
 
     expect(listed.kind === 'success' && listed.origins.map((found) => found.bookId)).toEqual([
+      'book-2',
+    ]);
+  });
+});
+
+describe('listOrigins', () => {
+  it('lists the origins of every catalog', async () => {
+    const { origins, originRows } = fakes();
+    originRows.push(origin('book-1', CALIBRE, 'a'), origin('book-2', OTHER, 'a'));
+
+    const listed = await listOrigins({ origins });
+
+    expect(listed.kind === 'success' && listed.origins.map((found) => found.bookId)).toEqual([
+      'book-1',
       'book-2',
     ]);
   });
