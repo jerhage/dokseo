@@ -58,8 +58,9 @@ type LocalItem = { readonly book: Book; readonly origins: readonly CatalogBadge[
     <code>Book</code> does not change. It means a held book, with its file in OPFS, and every field
     of it assumes the file is there. A remote book is a separate type, so nothing that reads a
     <code>Book</code> meets one with no file. The <code>reader</code> database and its stored format
-    stay as they are. Catalogs and origins live in a new database called <code>catalogs</code>, so
-    the change is additive.
+    stay as they are. The list of catalogs and the origins live in a new IndexedDB database called
+    <code>catalog-origins</code>, so the change is additive. A catalog is a remote server; the
+    database holds no copy of its contents.
   </p>
   <p>
     A <code>Catalog</code> is a configured server. Its <code>auth</code> names how to sign in, and

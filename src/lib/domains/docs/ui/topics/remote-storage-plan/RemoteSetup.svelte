@@ -83,8 +83,8 @@
   <p>Settled:</p>
   <ul class="col gap-2">
     <li>
-      Books and the <code>reader</code> database stay unchanged. Catalogs and origins go in a new
-      <code>catalogs</code> database, in a new non-leaf domain.
+      Books and the <code>reader</code> database stay unchanged. The list of catalogs and the
+      origins go in a new <code>catalog-origins</code> IndexedDB database, in a new non-leaf domain.
     </li>
     <li>
       No streaming. OPDS-PSE links, the extension that serves comic pages one by one, are ignored.
