@@ -1,3 +1,4 @@
+import type { Catalog } from '../domain/catalog';
 import type { CatalogSession } from './catalog-session.svelte';
 import type { CatalogTabsView } from './catalog-tabs.svelte';
 import { searchAvailability, searchPlaceholder } from './catalog-search';
@@ -14,7 +15,10 @@ class CatalogHeaderSearch {
 
   get field(): HeaderField | undefined {
     const catalog = this.#tabs.catalogFor(this.#tabs.selected);
-    if (catalog === null) return undefined;
+    return catalog === null ? undefined : this.fieldFor(catalog);
+  }
+
+  fieldFor(catalog: Catalog): HeaderField {
     const browse = this.#tabs.browsing(catalog);
     const availability = searchAvailability(browse.state.kind !== 'loading', browse.searchTemplate);
     return {

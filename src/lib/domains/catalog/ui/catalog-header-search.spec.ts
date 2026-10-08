@@ -10,7 +10,7 @@ import { CatalogSession } from './catalog-session.svelte';
 import { CatalogTabsView } from './catalog-tabs.svelte';
 import { ARCHIVE, HOME } from './catalog-ui-fixtures';
 import { DEVICE_TAB } from './library-tabs';
-import { searchAvailability, searchPlaceholder } from './catalog-search';
+import { searchAvailability, searchFieldKey, searchPlaceholder } from './catalog-search';
 
 const WITHOUT_SEARCH = CALIBRE_ROOT.replace(/<link title="Search"[^>]*\/>/u, '');
 
@@ -112,5 +112,74 @@ describe('CatalogHeaderSearch', () => {
     await tabs.load();
     tabs.select(ARCHIVE.id);
     expect(search.field).toMatchObject({ placeholder: 'Search Archive', disabled: false });
+  });
+});
+
+describe('CatalogHeaderSearch.fieldFor', () => {
+  it('answers the field of a catalog that is not the selected tab', async () => {
+    const { search, tabs } = setup();
+    await tabs.load();
+    tabs.select(HOME.id);
+
+    expect(search.fieldFor(ARCHIVE)).toMatchObject({ placeholder: 'Search Archive' });
+  });
+
+  it('shares the query with the header field of the same catalog', async () => {
+    const { search, tabs } = setup();
+    await tabs.load();
+    tabs.select(HOME.id);
+
+    search.fieldFor(HOME).oninput('lantern');
+
+    expect(search.field?.value).toBe('lantern');
+    expect(search.fieldFor(ARCHIVE).value).toBe('');
+  });
+
+  it('searches the catalog it was asked for, on submit', async () => {
+    const { search, tabs, urls } = setup();
+    await tabs.load();
+    tabs.select(HOME.id);
+    tabs.browsing(HOME);
+    await tabs.browsing(HOME).start();
+
+    search.fieldFor(HOME).onsubmit('lantern');
+
+    expect(urls.at(-1)).toContain('lantern');
+  });
+
+  it('disables the field of a catalog whose feed offers no search once it is read', async () => {
+    const { search, tabs } = setup();
+    await tabs.load();
+    await tabs.browsing(ARCHIVE).start();
+
+    expect(search.fieldFor(ARCHIVE)).toMatchObject({
+      disabled: true,
+      placeholder: 'Archive has no search',
+    });
+  });
+});
+
+describe('searchFieldKey', () => {
+  const press = (key: string, composing = false) => ({
+    key,
+    isComposing: composing,
+    keyCode: composing ? 229 : 0,
+  });
+
+  it('submits on Enter', () => {
+    expect(searchFieldKey(press('Enter'), 'lantern')).toBe('submit');
+  });
+
+  it('clears on Escape while the field holds text', () => {
+    expect(searchFieldKey(press('Escape'), 'lantern')).toBe('clear');
+  });
+
+  it('ignores Escape on an empty field and any other key', () => {
+    expect(searchFieldKey(press('Escape'), '')).toBe('ignore');
+    expect(searchFieldKey(press('a'), 'lantern')).toBe('ignore');
+  });
+
+  it('ignores Enter while an input method is composing', () => {
+    expect(searchFieldKey(press('Enter', true), 'ランタン')).toBe('ignore');
   });
 });
