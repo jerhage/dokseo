@@ -27,6 +27,8 @@ import { forgetOrigin } from '../domains/catalog/use-cases/forget-origin';
 import type { ForgetOriginResult } from '../domains/catalog/use-cases/forget-origin';
 import { listCatalogOrigins } from '../domains/catalog/use-cases/list-catalog-origins';
 import type { ListCatalogOriginsResult } from '../domains/catalog/use-cases/list-catalog-origins';
+import { listOrigins } from '../domains/catalog/use-cases/list-origins';
+import type { ListOriginsResult } from '../domains/catalog/use-cases/list-origins';
 import { listCatalogs } from '../domains/catalog/use-cases/list-catalogs';
 import type { ListCatalogsResult } from '../domains/catalog/use-cases/list-catalogs';
 import { readCatalogCover } from '../domains/catalog/use-cases/read-catalog-cover';
@@ -47,6 +49,7 @@ type CatalogUseCases = {
   readonly listCatalogs: () => Promise<ListCatalogsResult>;
   readonly recordOrigin: (origin: BookOrigin) => Promise<RecordOriginResult>;
   readonly listCatalogOrigins: (id: CatalogId) => Promise<ListCatalogOriginsResult>;
+  readonly listOrigins: () => Promise<ListOriginsResult>;
   readonly findOrigin: (id: CatalogId, entryId: string) => Promise<FindOriginResult>;
   readonly testCatalogConnection: (
     draft: CatalogDraft,
@@ -96,6 +99,7 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     listCatalogs: () => listCatalogs({ catalogs }),
     recordOrigin: (origin: BookOrigin) => recordOrigin({ origins }, origin),
     listCatalogOrigins: (id: CatalogId) => listCatalogOrigins({ origins }, id),
+    listOrigins: () => listOrigins({ origins }),
     findOrigin: (id: CatalogId, entryId: string) => findOrigin({ origins }, id, entryId),
     testCatalogConnection: (draft, password, signal) =>
       testCatalogConnection({ client }, draft, password, signal),
