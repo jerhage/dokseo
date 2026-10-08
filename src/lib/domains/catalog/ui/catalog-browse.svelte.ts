@@ -18,6 +18,7 @@ import type { SearchCatalogResult } from '../use-cases/search-catalog';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { CatalogCovers } from './catalog-covers.svelte';
 import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
+import type { Sought } from './catalog-session.svelte';
 import { CatalogSelection } from './catalog-selection.svelte';
 import type { BrowseFailure } from './catalog-texts';
 import {
@@ -30,6 +31,8 @@ import {
   searched,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
+import { NO_HISTORY } from './library-history';
+import type { HistoryMode, HistoryRecorder } from './library-history';
 import { publicationFacts, summaryLines } from './publication-facts';
 import type { PublicationFact } from './publication-facts';
 import type { Scroller } from './scroll-memory';
@@ -54,6 +57,9 @@ type BrowseUseCases = {
 type PositionStore = {
   readonly positionOf: (id: CatalogId) => FeedPosition;
   readonly move: (id: CatalogId, position: FeedPosition) => void;
+  readonly advance: (id: CatalogId) => void;
+  readonly seek: (id: CatalogId, index: number) => Sought | null;
+  readonly type: (id: CatalogId, query: string) => void;
   readonly pagesOf: (id: CatalogId) => readonly string[];
   readonly appendPage: (id: CatalogId, url: string) => void;
   readonly selectionOf: (id: CatalogId) => ReadonlySet<string>;
@@ -71,6 +77,8 @@ type BrowseState =
   | { readonly kind: 'acquisition'; readonly feed: AcquisitionFeed }
   | { readonly kind: 'unlock'; readonly refused: boolean }
   | { readonly kind: 'failed'; readonly failure: BrowseFailure };
+
+type ShowMode = HistoryMode | 'none';
 
 type BrowseCrumb = { readonly label: string; readonly onselect: () => void };
 
@@ -134,6 +142,7 @@ class CatalogBrowseView {
   #openedFrom: FocusReturn | null = null;
   #scroller: Scroller | null = null;
   #searchedQuery: string | null = null;
+  #history: HistoryRecorder;
 
   constructor(
     catalog: Catalog,
@@ -141,7 +150,9 @@ class CatalogBrowseView {
     store: PositionStore,
     downloads: CatalogDownloads,
     covers: CatalogCovers,
+    history: HistoryRecorder = NO_HISTORY,
   ) {
+    this.#history = history;
     this.catalog = catalog;
     this.downloads = downloads;
     this.covers = covers;
@@ -215,12 +226,19 @@ class CatalogBrowseView {
   openDetails(entryId: string, from: FocusReturn | null = null): void {
     this.#openedId = entryId;
     this.#openedFrom = from;
+    this.#history.detailOpened(this.catalog.id, entryId);
   }
 
   closeDetails(): void {
-    this.#openedId = null;
-    returnFocus(this.#openedFrom);
-    this.#openedFrom = null;
+    this.#hideDetails();
+    this.#history.detailClosed();
+  }
+
+  restoreDetail(entryId: string | null): void {
+    if (entryId === null) this.#hideDetails();
+    else if (this.entries.some(({ publication }) => publication.entryId === entryId)) {
+      this.#openedId = entryId;
+    }
   }
 
   downloadOpened(): void {
@@ -248,7 +266,7 @@ class CatalogBrowseView {
     const saved = this.#store.pagesOf(this.catalog.id);
     const chosen = this.#store.selectionOf(this.catalog.id);
     const top = this.#store.takeScroll(this.catalog.id);
-    await this.#show(this.position);
+    await this.#show(this.position, 'none');
     this.selection.restore(chosen);
     const shown = this.#pending;
     for (const url of saved) {
@@ -273,13 +291,13 @@ class CatalogBrowseView {
   openLink(link: NavigationLink): Promise<void> {
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
-    return this.#show(opened(this.position, { title: link.title, href: link.href }));
+    return this.#show(opened(this.position, { title: link.title, href: link.href }), 'push');
   }
 
   goToDepth(depth: number): Promise<void> {
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
-    return this.#show(atDepth(this.position, depth));
+    return this.#show(atDepth(this.position, depth), 'replace');
   }
 
   async loadMore(): Promise<void> {
@@ -296,10 +314,9 @@ class CatalogBrowseView {
       return Promise.resolve();
     }
     this.#searchedQuery = query.trim();
-    if (this.#store.searchOriginOf(this.catalog.id) === null) {
-      this.#store.keepSearchOrigin(this.catalog.id, this.position);
-    }
-    return this.#show(searched(this.position, { search, query }));
+    const entering = this.#store.searchOriginOf(this.catalog.id) === null;
+    if (entering) this.#store.keepSearchOrigin(this.catalog.id, this.position);
+    return this.#show(searched(this.position, { search, query }), entering ? 'push' : 'replace');
   }
 
   async unlock(password: string): Promise<void> {
@@ -330,7 +347,25 @@ class CatalogBrowseView {
     if (origin === null) return Promise.resolve();
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
-    return this.#show(origin);
+    return this.#show(origin, 'replace');
+  }
+
+  restoreFeed(index: number): Promise<void> {
+    const sought = this.#store.seek(this.catalog.id, index);
+    if (sought === null) return Promise.resolve();
+    const { position, before } = sought;
+    const { lookup } = position;
+    this.#searchedQuery = lookup === null ? null : lookup.query.trim();
+    if (lookup === null) this.#store.dropSearchOrigin(this.catalog.id);
+    else this.#store.keepSearchOrigin(this.catalog.id, before ?? ROOT_POSITION);
+    this.#store.type(this.catalog.id, lookup === null ? '' : lookup.query);
+    return this.#show(position, 'none');
+  }
+
+  #hideDetails(): void {
+    this.#openedId = null;
+    returnFocus(this.#openedFrom);
+    this.#openedFrom = null;
   }
 
   #openedEntry(): QueuedDownload | undefined {
@@ -343,7 +378,7 @@ class CatalogBrowseView {
     this.#scroller?.scrollTo(top);
   }
 
-  async #show(position: FeedPosition): Promise<void> {
+  async #show(position: FeedPosition, mode: ShowMode): Promise<void> {
     this.#pending?.abort();
     this.#loadingMore?.abort();
     this.#loadingMore = null;
@@ -354,7 +389,9 @@ class CatalogBrowseView {
     this.#openedId = null;
     this.more = { kind: 'idle' };
     this.position = position;
+    if (mode === 'push') this.#store.advance(this.catalog.id);
     this.#store.move(this.catalog.id, position);
+    if (mode !== 'none') this.#history.moved(this.catalog.id, mode);
     this.covers.clear();
     this.state = { kind: 'loading' };
 

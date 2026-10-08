@@ -5,11 +5,17 @@ import type { FeedPosition } from './feed-address';
 import { ALL_FILTER } from './origin-filter';
 import type { OriginFilter } from './origin-filter';
 
+type Trail = { readonly positions: readonly FeedPosition[]; readonly at: number };
+
+type Sought = { readonly position: FeedPosition; readonly before: FeedPosition | null };
+
+const START_OF_TRAIL: Trail = { positions: [ROOT_POSITION], at: 0 };
+
 class CatalogSession {
   selected = $state<string>(DEVICE_TAB);
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
-  #positions = new Map<CatalogId, FeedPosition>();
+  #trails = new Map<CatalogId, Trail>();
   #pages = new Map<CatalogId, readonly string[]>();
   #selections = new Map<CatalogId, ReadonlySet<string>>();
   #scrolls = new Map<CatalogId, number>();
@@ -24,11 +30,33 @@ class CatalogSession {
   }
 
   positionOf(id: CatalogId): FeedPosition {
-    return this.#positions.get(id) ?? ROOT_POSITION;
+    const { positions, at } = this.#trailOf(id);
+    return positions[at] ?? ROOT_POSITION;
+  }
+
+  trailIndexOf(id: CatalogId): number {
+    return this.#trailOf(id).at;
+  }
+
+  advance(id: CatalogId): void {
+    const { positions, at } = this.#trailOf(id);
+    const here = positions[at] ?? ROOT_POSITION;
+    this.#trails.set(id, { positions: [...positions.slice(0, at + 1), here], at: at + 1 });
+  }
+
+  seek(id: CatalogId, index: number): Sought | null {
+    const { positions } = this.#trailOf(id);
+    const position = positions[index];
+    if (position === undefined) return null;
+    this.#trails.set(id, { positions, at: index });
+    return { position, before: positions[index - 1] ?? null };
   }
 
   move(id: CatalogId, position: FeedPosition): void {
-    this.#positions.set(id, position);
+    const { positions, at } = this.#trailOf(id);
+    const next = [...positions];
+    next[at] = position;
+    this.#trails.set(id, { positions: next, at });
     this.#pages.delete(id);
     this.#selections.delete(id);
     this.#scrolls.delete(id);
@@ -71,8 +99,13 @@ class CatalogSession {
   appendPage(id: CatalogId, url: string): void {
     this.#pages.set(id, [...this.pagesOf(id), url]);
   }
+
+  #trailOf(id: CatalogId): Trail {
+    return this.#trails.get(id) ?? START_OF_TRAIL;
+  }
 }
 
 const catalogSession = new CatalogSession();
 
 export { CatalogSession, catalogSession };
+export type { Sought };

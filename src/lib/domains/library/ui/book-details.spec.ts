@@ -125,6 +125,28 @@ describe('BookDetailsView', () => {
     expect(calls).toEqual([{ focusVisible: false }]);
   });
 
+  it('tells its hooks about a user opening and closing, but not about a restore', () => {
+    const told: string[] = [];
+    const view = new BookDetailsView({
+      opened: (id) => told.push(`opened ${id}`),
+      closed: () => told.push('closed'),
+    });
+    view.open(one.id);
+    view.close();
+    view.show(two.id);
+    view.hide();
+
+    expect(told).toEqual(['opened one', 'closed']);
+    expect(view.openId).toBeNull();
+  });
+
+  it('shows the book a restore names', () => {
+    const view = new BookDetailsView();
+    view.show(two.id);
+
+    expect(view.openId).toBe(two.id);
+  });
+
   it('shows nothing once the opened book is removed from the shelf', () => {
     const view = new BookDetailsView();
     view.open(one.id);

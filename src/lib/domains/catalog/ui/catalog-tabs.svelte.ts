@@ -15,6 +15,8 @@ import { CatalogDownloads } from './catalog-downloads.svelte';
 import type { DownloadsChoices, DownloadsUseCases } from './catalog-downloads.svelte';
 import type { CatalogSession } from './catalog-session.svelte';
 import type { DescribeOpenFile } from './catalog-texts';
+import { NO_HISTORY } from './library-history';
+import type { HistoryRecorder } from './library-history';
 import { catalogTabs } from './library-tabs';
 
 type CatalogTabsUseCases = BrowseUseCases &
@@ -34,6 +36,7 @@ type CatalogTabsDeps = DownloadsChoices & {
   readonly openBook: (id: BookId) => void;
   readonly refreshLibrary: () => Promise<void>;
   readonly objectUrls?: ObjectUrls | undefined;
+  readonly history?: HistoryRecorder | undefined;
 };
 
 class CatalogTabsView {
@@ -42,11 +45,13 @@ class CatalogTabsView {
   #reached = $state.raw<ReadonlySet<string>>(new Set());
   #session: CatalogSession;
   #deps: CatalogTabsDeps;
+  #history: HistoryRecorder;
   #browsing = new Map<Catalog['id'], CatalogBrowseView>();
 
   constructor(session: CatalogSession, deps: CatalogTabsDeps) {
     this.#session = session;
     this.#deps = deps;
+    this.#history = deps.history ?? NO_HISTORY;
   }
 
   get visible(): boolean {
@@ -62,8 +67,27 @@ class CatalogTabsView {
   }
 
   select(id: string): void {
+    this.restoreTab(id);
+    this.#history.moved(id, 'replace');
+  }
+
+  restoreTab(id: string): void {
     this.#reached = new Set(this.#reached).add(this.selected);
     this.#session.selected = id;
+  }
+
+  feedIndex(tabId: string): number {
+    const catalog = this.catalogFor(tabId);
+    return catalog === null ? 0 : this.#session.trailIndexOf(catalog.id);
+  }
+
+  restoreFeed(tabId: string, index: number): void {
+    const catalog = this.catalogFor(tabId);
+    if (catalog !== null) void this.browsing(catalog).restoreFeed(index);
+  }
+
+  restoreDetail(tabId: string, entryId: string | null): void {
+    for (const [id, view] of this.#browsing) view.restoreDetail(id === tabId ? entryId : null);
   }
 
   hasBeenShown(tabId: string): boolean {
@@ -114,7 +138,7 @@ class CatalogTabsView {
       (url, signal) => cases.readCatalogCover(catalog.id, url, signal),
       this.#deps.objectUrls,
     );
-    return new CatalogBrowseView(catalog, cases, this.#session, downloads, covers);
+    return new CatalogBrowseView(catalog, cases, this.#session, downloads, covers, this.#history);
   }
 
   #announce(verb: 'Added' | 'Updated', publication: RemotePublication, bookId: BookId): void {
