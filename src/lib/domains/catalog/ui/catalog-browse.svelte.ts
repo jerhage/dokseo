@@ -9,15 +9,7 @@ import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { CatalogCovers } from './catalog-covers.svelte';
 import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
 import type { BrowseFailure } from './catalog-texts';
-import {
-  ROOT_POSITION,
-  atDepth,
-  crumbs,
-  opened,
-  paged,
-  searchStep,
-  searched,
-} from './feed-address';
+import { ROOT_POSITION, atDepth, crumbs, opened, searchStep, searched } from './feed-address';
 import type { FeedPosition } from './feed-address';
 
 type BrowseUseCases = {
@@ -33,6 +25,8 @@ type BrowseUseCases = {
 type PositionStore = {
   readonly positionOf: (id: CatalogId) => FeedPosition;
   readonly move: (id: CatalogId, position: FeedPosition) => void;
+  readonly pagesOf: (id: CatalogId) => readonly string[];
+  readonly appendPage: (id: CatalogId, url: string) => void;
 };
 
 type BrowseState =
@@ -46,6 +40,23 @@ type BrowseCrumb = { readonly label: string; readonly onselect: () => void };
 
 type Paging = { readonly previous: string | null; readonly next: string | null };
 
+type FeedReading = Extract<BrowseCatalogResult, { readonly kind: 'success' }>['reading'];
+
+type MoreState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'failed'; readonly failure: BrowseFailure };
+
+type MoreOutcome =
+  | {
+      readonly kind: 'appended';
+      readonly reading: FeedReading;
+      readonly held: ReadonlyMap<string, BookOriginLink>;
+    }
+  | { readonly kind: 'unlock'; readonly refused: boolean }
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'failed'; readonly failure: BrowseFailure };
+
 const NO_PAGING: Paging = { previous: null, next: null };
 
 class CatalogBrowseView {
@@ -53,6 +64,7 @@ class CatalogBrowseView {
   position = $state.raw<FeedPosition>(ROOT_POSITION);
   prompting = $state(true);
   unlocking = $state(false);
+  more = $state.raw<MoreState>({ kind: 'idle' });
 
   readonly catalog: Catalog;
   readonly downloads: CatalogDownloads;
@@ -61,7 +73,9 @@ class CatalogBrowseView {
   #cases: BrowseUseCases;
   #store: PositionStore;
   #rootSearch = $state<string | null>(null);
+  #appended = $state.raw<readonly FeedReading[]>([]);
   #pending: AbortController | null = null;
+  #loadingMore: AbortController | null = null;
   #started = false;
 
   constructor(
@@ -87,6 +101,8 @@ class CatalogBrowseView {
   }
 
   get paging(): Paging {
+    const last = this.#appended.at(-1);
+    if (last !== undefined) return last.feed.paging;
     return match(this.state)
       .returnType<Paging>()
       .with({ kind: 'navigation' }, ({ feed }) => feed.paging)
@@ -105,12 +121,16 @@ class CatalogBrowseView {
     return own ?? this.#rootSearch;
   }
 
+  get links(): readonly NavigationLink[] {
+    return [this.state, ...this.#appended].flatMap((page) =>
+      page.kind === 'navigation' ? page.feed.links : [],
+    );
+  }
+
   get entries(): readonly QueuedDownload[] {
-    if (this.state.kind !== 'acquisition') return [];
-    return this.state.feed.publications.map((publication, index) => ({
-      publication,
-      feedPosition: index,
-    }));
+    return [this.state, ...this.#appended]
+      .flatMap((page) => (page.kind === 'acquisition' ? page.feed.publications : []))
+      .map((publication, index) => ({ publication, feedPosition: index }));
   }
 
   start(): Promise<void> {
@@ -119,8 +139,14 @@ class CatalogBrowseView {
     return this.load();
   }
 
-  load(): Promise<void> {
-    return this.#show(this.position);
+  async load(): Promise<void> {
+    const saved = this.#store.pagesOf(this.catalog.id);
+    await this.#show(this.position);
+    const shown = this.#pending;
+    for (const url of saved) {
+      if (this.#pending !== shown) return;
+      if (!(await this.#appendPage(url))) return;
+    }
   }
 
   openLink(link: NavigationLink): Promise<void> {
@@ -131,14 +157,10 @@ class CatalogBrowseView {
     return this.#show(atDepth(this.position, depth));
   }
 
-  next(): Promise<void> {
+  async loadMore(): Promise<void> {
     const url = this.paging.next;
-    return url === null ? Promise.resolve() : this.#show(paged(this.position, url));
-  }
-
-  previous(): Promise<void> {
-    const url = this.paging.previous;
-    return url === null ? Promise.resolve() : this.#show(paged(this.position, url));
+    if (url === null) return;
+    await this.#appendPage(url);
   }
 
   search(query: string): Promise<void> {
@@ -165,14 +187,19 @@ class CatalogBrowseView {
 
   dispose(): void {
     this.#pending?.abort();
+    this.#loadingMore?.abort();
     this.covers.clear();
     this.downloads.dispose();
   }
 
   async #show(position: FeedPosition): Promise<void> {
     this.#pending?.abort();
+    this.#loadingMore?.abort();
+    this.#loadingMore = null;
     const pending = new AbortController();
     this.#pending = pending;
+    this.#appended = [];
+    this.more = { kind: 'idle' };
     this.position = position;
     this.#store.move(this.catalog.id, position);
     this.covers.clear();
@@ -211,6 +238,73 @@ class CatalogBrowseView {
     this.#shown(result.held);
   }
 
+  async #appendPage(url: string): Promise<boolean> {
+    const first = this.state.kind;
+    if (first !== 'navigation' && first !== 'acquisition') return false;
+    if (this.more.kind === 'loading') return false;
+    this.more = { kind: 'loading' };
+    const loading = new AbortController();
+    this.#loadingMore = loading;
+
+    const result = await this.#cases.browseCatalog(
+      this.catalog.id,
+      url,
+      this.position.path,
+      loading.signal,
+    );
+    if (this.#loadingMore !== loading) return false;
+    this.#loadingMore = null;
+
+    const outcome = match(result)
+      .returnType<MoreOutcome>()
+      .with({ kind: 'success' }, ({ reading, held }) =>
+        reading.kind === first
+          ? { kind: 'appended', reading, held }
+          : { kind: 'failed', failure: { kind: 'not-opds' } },
+      )
+      .with({ kind: 'locked' }, () => ({ kind: 'unlock', refused: false }))
+      .with({ kind: 'unauthorized' }, () => ({ kind: 'unlock', refused: true }))
+      .with({ kind: 'aborted' }, () => ({ kind: 'idle' }))
+      .with(
+        { kind: 'not-opds' },
+        { kind: 'not-found' },
+        { kind: 'server-error' },
+        { kind: 'blocked' },
+        { kind: 'offline' },
+        { kind: 'unknown-catalog' },
+        { kind: 'unreadable-catalog' },
+        { kind: 'storage-unavailable' },
+        (failure) => ({ kind: 'failed', failure }),
+      )
+      .exhaustive();
+
+    return match(outcome)
+      .returnType<boolean>()
+      .with({ kind: 'appended' }, ({ reading, held }) => {
+        this.#appended = [...this.#appended, reading];
+        this.more = { kind: 'idle' };
+        this.#store.appendPage(this.catalog.id, url);
+        this.downloads.addHeld(held);
+        if (reading.kind === 'acquisition') void this.covers.add(reading.feed.publications);
+        return true;
+      })
+      .with({ kind: 'unlock' }, ({ refused }) => {
+        this.more = { kind: 'idle' };
+        this.state = { kind: 'unlock', refused };
+        this.prompting = true;
+        return false;
+      })
+      .with({ kind: 'idle' }, () => {
+        this.more = { kind: 'idle' };
+        return false;
+      })
+      .with({ kind: 'failed' }, ({ failure }) => {
+        this.more = { kind: 'failed', failure };
+        return false;
+      })
+      .exhaustive();
+  }
+
   #shown(held: ReadonlyMap<string, BookOriginLink>): void {
     this.downloads.setHeld(held);
     if (this.state.kind !== 'acquisition') return;
@@ -219,4 +313,4 @@ class CatalogBrowseView {
 }
 
 export { CatalogBrowseView };
-export type { BrowseCrumb, BrowseState, BrowseUseCases, Paging, PositionStore };
+export type { BrowseCrumb, BrowseState, BrowseUseCases, MoreState, Paging, PositionStore };

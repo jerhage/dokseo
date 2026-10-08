@@ -74,6 +74,10 @@ class CatalogDownloads {
     this.#held = held;
   }
 
+  addHeld(held: ReadonlyMap<string, BookOriginLink>): void {
+    this.#held = new Map([...this.#held, ...held]);
+  }
+
   itemFor(publication: RemotePublication): RemoteItem {
     return remoteItem(
       publication,

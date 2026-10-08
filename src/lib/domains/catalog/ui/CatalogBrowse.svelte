@@ -9,6 +9,7 @@
   import type { CatalogBrowseView } from './catalog-browse.svelte';
   import { browseFailureText } from './catalog-texts';
   import CatalogFeedLinks from './CatalogFeedLinks.svelte';
+  import CatalogMore from './CatalogMore.svelte';
   import CatalogPasswordModal from './CatalogPasswordModal.svelte';
   import CatalogPublications from './CatalogPublications.svelte';
 
@@ -30,7 +31,11 @@
   {#if view.state.kind === 'loading'}
     <EmptyState live message="Reading the catalog…" />
   {:else if view.state.kind === 'navigation'}
-    <CatalogFeedLinks feed={view.state.feed} onopen={(link) => void view.openLink(link)} />
+    <CatalogFeedLinks
+      label={view.state.feed.title}
+      links={view.links}
+      onopen={(link) => void view.openLink(link)}
+    />
   {:else if view.state.kind === 'acquisition'}
     <CatalogPublications {view} publications={view.entries} {readerHref} />
   {:else if view.state.kind === 'unlock'}
@@ -54,19 +59,6 @@
   {/if}
 
   {#if view.state.kind === 'navigation' || view.state.kind === 'acquisition'}
-    {#if view.paging.previous !== null || view.paging.next !== null}
-      <div class="row items-center gap-2">
-        <Button
-          size="sm"
-          disabled={view.paging.previous === null}
-          onclick={() => void view.previous()}
-        >
-          Previous
-        </Button>
-        <Button size="sm" disabled={view.paging.next === null} onclick={() => void view.next()}>
-          Next
-        </Button>
-      </div>
-    {/if}
+    <CatalogMore {view} />
   {/if}
 </div>

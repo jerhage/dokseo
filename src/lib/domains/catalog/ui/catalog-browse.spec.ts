@@ -109,24 +109,6 @@ describe('CatalogBrowseView', () => {
     expect(calls.at(-1)).toMatchObject({ url: null, path: [] });
   });
 
-  it('pages with next and previous without changing the path', async () => {
-    const { view, calls } = setup(byUrl);
-    await view.start();
-    await view.openLink(SERIES_LINK);
-    await view.next();
-    expect(calls.at(-1)?.url).toContain('offset=30');
-    expect(calls.at(-1)?.path).toHaveLength(1);
-    await view.previous();
-    expect(calls.at(-1)?.url).toContain('offset=0');
-  });
-
-  it('does nothing for next on a feed without one', async () => {
-    const { view, calls } = setup(byUrl);
-    await view.start();
-    await view.next();
-    expect(calls).toHaveLength(1);
-  });
-
   it('opens a search result as a feed with a Search step', async () => {
     const { view, calls } = setup(byUrl);
     await view.start();
