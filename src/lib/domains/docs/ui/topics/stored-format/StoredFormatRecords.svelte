@@ -42,7 +42,7 @@
 
 <DocsSection title={STORED_FORMAT_SECTIONS.databases}>
   <p>
-    Dokseo opens three IndexedDB databases, each owned by one part of the app. The table below is
+    Dokseo opens four IndexedDB databases, each owned by one part of the app. The table below is
     built from the same literals the pinning specs compare against the real <code>upgrade</code>
     functions, so it lists exactly the stores and indexes a 1.x build creates. The layout is part of the
     format: a new store or a new index is a version change, as the <code>tagIds</code> index was
