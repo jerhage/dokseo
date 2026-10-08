@@ -133,15 +133,19 @@ class CatalogDownloads {
     this.#controllers.get(entryId)?.abort();
   }
 
-  async downloadAll(wanted: readonly QueuedDownload[]): Promise<void> {
+  async downloadAll(
+    wanted: readonly QueuedDownload[],
+    started?: (publication: RemotePublication) => void,
+  ): Promise<void> {
     if (this.#queue !== null) return;
-    const pending = wanted.filter(({ publication }) => this.itemFor(publication).kind === 'remote');
+    const pending = wanted.filter(({ publication }) => this.#queueable(publication));
     if (pending.length === 0) return;
     this.#queueStopped = false;
     for (const [index, download] of pending.entries()) {
       if (this.#queueStopped) break;
       this.#queue = { position: index + 1, total: pending.length };
-      if (this.itemFor(download.publication).kind !== 'remote') continue;
+      if (!this.#queueable(download.publication)) continue;
+      started?.(download.publication);
       const outcome = await this.start(download.publication, download.feedPosition);
       if (outcome === 'stop') break;
     }
@@ -155,6 +159,11 @@ class CatalogDownloads {
 
   dispose(): void {
     this.cancelAll();
+  }
+
+  #queueable(publication: RemotePublication): boolean {
+    const kind = this.itemFor(publication).kind;
+    return kind === 'remote' || kind === 'download-failed';
   }
 
   #setState(entryId: string, state: DownloadState): void {
