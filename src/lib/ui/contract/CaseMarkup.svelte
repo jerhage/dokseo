@@ -191,6 +191,8 @@
     cardHeadingH2,
     cardFull,
     cardLink,
+    cardButton,
+    cardOverlay,
     cardCover,
     cardMediaPortrait,
     carouselDefault,
@@ -689,6 +691,17 @@
 {#snippet cardLink()}<Card href="/guide" tooltip="Open the guide"
     >{#snippet title()}Getting started{/snippet}</Card
   >{/snippet}
+
+{#snippet cardButton()}<Card onclick={() => undefined}
+    >{#snippet title()}Getting started{/snippet}{#snippet description()}Read the guide.{/snippet}</Card
+  >{/snippet}
+
+{#snippet cardOverlay()}<div class="relative">
+    <Card onclick={() => undefined}
+      >{#snippet media()}<img src="/cover.png" alt="" />{/snippet}{#snippet title()}Getting started{/snippet}</Card
+    >
+    <div class="card-overlay"><Checkbox>Select</Checkbox></div>
+  </div>{/snippet}
 
 {#snippet cardCover()}<Card mediaRatio="square"
     >{#snippet media()}<img src="/cover.png" alt="Cover" />{/snippet}</Card
