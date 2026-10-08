@@ -6,6 +6,7 @@ import { catalogFromStored, catalogsFromStored, storedCatalogRow } from './store
 const CATALOG: Catalog = {
   id: catalogId('calibre'),
   title: 'Calibre',
+  protocol: 'opds1' as const,
   rootUrl: 'https://books.example/opds',
   auth: { kind: 'basic', username: 'reader' },
 };
@@ -37,6 +38,9 @@ describe('catalogFromStored', () => {
   it.each([
     ['a missing title', { ...ROW, title: undefined }],
     ['an empty root url', { ...ROW, rootUrl: '' }],
+    ['a missing protocol', { ...ROW, protocol: undefined }],
+    ['an unknown protocol', { ...ROW, protocol: 'opds3' }],
+    ['a protocol that is not text', { ...ROW, protocol: 1 }],
     ['an id that is not a flat key', { ...ROW, id: 'a/b' }],
     ['an unknown auth kind', { ...ROW, auth: { kind: 'bearer' } }],
     ['basic auth without a username', { ...ROW, auth: { kind: 'basic' } }],

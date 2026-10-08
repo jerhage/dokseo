@@ -5,6 +5,7 @@ import type { RemotePublication } from '../domain/remote-publication';
 const HOME: Catalog = {
   id: catalogId('home'),
   title: 'Home',
+  protocol: 'opds1',
   rootUrl: 'https://home.test/opds',
   auth: { kind: 'none' },
 };
@@ -12,6 +13,7 @@ const HOME: Catalog = {
 const ARCHIVE: Catalog = {
   id: catalogId('archive'),
   title: 'Archive',
+  protocol: 'opds1',
   rootUrl: 'https://archive.test/opds',
   auth: { kind: 'none' },
 };

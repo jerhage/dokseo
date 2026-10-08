@@ -94,6 +94,7 @@ function catalog(id: string, auth: Catalog['auth'] = { kind: 'none' }): Catalog 
   return {
     id: catalogId(id),
     title: `Title ${id}`,
+    protocol: 'opds1' as const,
     rootUrl: `https://${id}.example/opds`,
     auth,
   };

@@ -73,7 +73,12 @@ describe('fieldRefusal', () => {
 });
 
 describe('catalogDescription', () => {
-  const base = { id: catalogId('c'), title: 'T', rootUrl: 'https://shelf.example:8080/opds' };
+  const base = {
+    id: catalogId('c'),
+    title: 'T',
+    protocol: 'opds1' as const,
+    rootUrl: 'https://shelf.example:8080/opds',
+  };
 
   it('shows only the host for a catalog without sign-in', () => {
     const catalog: Catalog = { ...base, auth: { kind: 'none' } };

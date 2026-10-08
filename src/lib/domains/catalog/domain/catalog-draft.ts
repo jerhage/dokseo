@@ -1,7 +1,9 @@
 import type { CatalogAuth } from './catalog';
+import type { CatalogProtocol } from './catalog-protocol';
 
 type CatalogDraft = {
   readonly title: string;
+  readonly protocol: CatalogProtocol;
   readonly rootUrl: string;
   readonly auth: CatalogAuth;
 };
@@ -45,12 +47,22 @@ function checkedDraft(draft: CatalogDraft): DraftCheck {
     if (username.length === 0) return { kind: 'missing-username' };
     return {
       kind: 'valid',
-      draft: { title, rootUrl: new URL(rootUrl).href, auth: { kind: 'basic', username } },
+      draft: {
+        title,
+        protocol: draft.protocol,
+        rootUrl: new URL(rootUrl).href,
+        auth: { kind: 'basic', username },
+      },
     };
   }
   return {
     kind: 'valid',
-    draft: { title, rootUrl: new URL(rootUrl).href, auth: { kind: 'none' } },
+    draft: {
+      title,
+      protocol: draft.protocol,
+      rootUrl: new URL(rootUrl).href,
+      auth: { kind: 'none' },
+    },
   };
 }
 
