@@ -73,7 +73,8 @@
       database: 'catalog-origins v1',
       store: 'catalogs',
       key: 'id',
-      holds: 'The catalogs the reader added: title, root URL and sign-in kind, never a password',
+      holds:
+        'The catalogs the reader added: title, protocol, root URL and sign-in kind, never a password',
     },
     {
       database: 'catalog-origins v1',
