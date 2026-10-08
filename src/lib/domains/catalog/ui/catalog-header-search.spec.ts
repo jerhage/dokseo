@@ -10,14 +10,37 @@ import {
   withoutSearch,
 } from '../domain/catalog-feed-fixtures';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
-import { CatalogHeaderSearch } from './catalog-header-search.svelte';
+import { CatalogHeaderSearch, SEARCH_DEBOUNCE_MS } from './catalog-header-search.svelte';
+import type { SearchClock } from './catalog-header-search.svelte';
 import { CatalogSession } from './catalog-session.svelte';
 import { CatalogTabsView } from './catalog-tabs.svelte';
 import { ARCHIVE, HOME } from './catalog-ui-fixtures';
 import { DEVICE_TAB } from './library-tabs';
 import { searchAvailability, searchFieldKey, searchPlaceholder } from './catalog-search';
 
+class ManualClock implements SearchClock {
+  now = 0;
+  #timers = new Map<number, { at: number; run: () => void }>();
+  #next = 0;
+
+  after = (ms: number, run: () => void): (() => void) => {
+    const id = this.#next++;
+    this.#timers.set(id, { at: this.now + ms, run });
+    return () => void this.#timers.delete(id);
+  };
+
+  advance(ms: number): void {
+    this.now += ms;
+    for (const [id, timer] of this.#timers) {
+      if (timer.at > this.now) continue;
+      this.#timers.delete(id);
+      timer.run();
+    }
+  }
+}
+
 function setup() {
+  const clock = new ManualClock();
   const urls: Array<string | null> = [];
   const searches: Array<{ handle: string; query: string }> = [];
   const session = new CatalogSession();
@@ -56,7 +79,7 @@ function setup() {
     openBook: () => undefined,
     refreshLibrary: () => Promise.resolve(),
   });
-  return { search: new CatalogHeaderSearch(tabs, session), tabs, urls, searches };
+  return { search: new CatalogHeaderSearch(tabs, session, clock), tabs, urls, searches, clock };
 }
 
 describe('searchPlaceholder', () => {
@@ -170,6 +193,73 @@ describe('CatalogHeaderSearch.fieldFor', () => {
       disabled: true,
       placeholder: 'Archive has no search',
     });
+  });
+});
+
+describe('CatalogHeaderSearch typing', () => {
+  async function ready() {
+    const made = setup();
+    await made.tabs.load();
+    made.tabs.select(HOME.id);
+    await made.tabs.browsing(HOME).start();
+    return made;
+  }
+
+  it('sends one search after rapid typing pauses', async () => {
+    const { search, searches, clock } = await ready();
+    for (const typed of ['m', 'mo', 'moo', 'moon']) {
+      search.field?.oninput(typed);
+      clock.advance(SEARCH_DEBOUNCE_MS - 100);
+    }
+    expect(searches).toEqual([]);
+    clock.advance(100);
+    expect(searches).toEqual([{ handle: HOME_SEARCH.handle, query: 'moon' }]);
+  });
+
+  it('searches at once on Enter and drops the pending timer', async () => {
+    const { search, searches, clock } = await ready();
+    search.field?.oninput('moon');
+    search.field?.onsubmit('moon');
+    expect(searches).toHaveLength(1);
+    clock.advance(SEARCH_DEBOUNCE_MS);
+    expect(searches).toHaveLength(1);
+  });
+
+  it('sends no search when the tab changed before the pause ended', async () => {
+    const { search, tabs, searches, clock } = await ready();
+    search.field?.oninput('moon');
+    tabs.select(ARCHIVE.id);
+    clock.advance(SEARCH_DEBOUNCE_MS);
+    expect(searches).toEqual([]);
+  });
+
+  it('sends no search once disposed', async () => {
+    const { search, searches, clock } = await ready();
+    search.field?.oninput('moon');
+    search.dispose();
+    clock.advance(SEARCH_DEBOUNCE_MS);
+    expect(searches).toEqual([]);
+  });
+
+  it('returns to the feed the search began on when the field empties', async () => {
+    const { search, urls, clock } = await ready();
+    search.field?.oninput('moon');
+    clock.advance(SEARCH_DEBOUNCE_MS);
+    await Promise.resolve();
+    search.field?.oninput('');
+    const before = urls.length;
+    clock.advance(SEARCH_DEBOUNCE_MS);
+    expect(urls).toHaveLength(before + 1);
+    expect(urls.at(-1)).toBeNull();
+  });
+
+  it('sends nothing when the field empties and no search is shown', async () => {
+    const { search, searches, urls, clock } = await ready();
+    const before = urls.length;
+    search.field?.oninput('');
+    clock.advance(SEARCH_DEBOUNCE_MS);
+    expect(searches).toEqual([]);
+    expect(urls).toHaveLength(before);
   });
 });
 

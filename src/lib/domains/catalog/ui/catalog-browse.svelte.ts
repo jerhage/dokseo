@@ -56,6 +56,9 @@ type PositionStore = {
   readonly appendPage: (id: CatalogId, url: string) => void;
   readonly selectionOf: (id: CatalogId) => ReadonlySet<string>;
   readonly keepSelection: (id: CatalogId, entryIds: ReadonlySet<string>) => void;
+  readonly searchOriginOf: (id: CatalogId) => FeedPosition | null;
+  readonly keepSearchOrigin: (id: CatalogId, position: FeedPosition) => void;
+  readonly dropSearchOrigin: (id: CatalogId) => void;
   readonly keepScroll: (id: CatalogId, top: number) => void;
   readonly takeScroll: (id: CatalogId) => number;
 };
@@ -127,6 +130,7 @@ class CatalogBrowseView {
   #started = false;
   #openedId = $state<string | null>(null);
   #scroller: Scroller | null = null;
+  #searchedQuery: string | null = null;
 
   constructor(
     catalog: Catalog,
@@ -261,10 +265,14 @@ class CatalogBrowseView {
   }
 
   openLink(link: NavigationLink): Promise<void> {
+    this.#store.dropSearchOrigin(this.catalog.id);
+    this.#searchedQuery = null;
     return this.#show(opened(this.position, { title: link.title, href: link.href }));
   }
 
   goToDepth(depth: number): Promise<void> {
+    this.#store.dropSearchOrigin(this.catalog.id);
+    this.#searchedQuery = null;
     return this.#show(atDepth(this.position, depth));
   }
 
@@ -276,7 +284,15 @@ class CatalogBrowseView {
 
   search(query: string): Promise<void> {
     const search = this.feedSearch;
-    if (search === null || query.trim() === '') return Promise.resolve();
+    if (query.trim() === '') return this.#leaveSearch();
+    if (search === null) return Promise.resolve();
+    if (this.#searchedQuery === query.trim() && this.state.kind !== 'failed') {
+      return Promise.resolve();
+    }
+    this.#searchedQuery = query.trim();
+    if (this.#store.searchOriginOf(this.catalog.id) === null) {
+      this.#store.keepSearchOrigin(this.catalog.id, this.position);
+    }
     return this.#show(searched(this.position, { search, query }));
   }
 
@@ -301,6 +317,14 @@ class CatalogBrowseView {
     this.#loadingMore?.abort();
     this.covers.clear();
     this.downloads.dispose();
+  }
+
+  #leaveSearch(): Promise<void> {
+    const origin = this.#store.searchOriginOf(this.catalog.id);
+    if (origin === null) return Promise.resolve();
+    this.#store.dropSearchOrigin(this.catalog.id);
+    this.#searchedQuery = null;
+    return this.#show(origin);
   }
 
   #openedEntry(): QueuedDownload | undefined {

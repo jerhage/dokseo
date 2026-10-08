@@ -189,6 +189,82 @@ describe('CatalogBrowseView', () => {
     expect(searches).toEqual([]);
   });
 
+  it('returns to the feed the search began on when an empty query is submitted', async () => {
+    const { view, calls, session } = setup(byUrl);
+    await view.start();
+    await view.openLink(SERIES_LINK);
+    await view.search('moon');
+    await view.search('  ');
+    expect(calls.at(-1)).toMatchObject({
+      url: SERIES_LINK.href,
+      path: [{ title: 'By Series', href: SERIES_LINK.href }],
+    });
+    expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'By Series']);
+    expect(session.searchOriginOf(HOME.id)).toBeNull();
+  });
+
+  it('keeps the first feed as the origin across repeated searches', async () => {
+    const { view, calls } = setup(byUrl);
+    await view.start();
+    await view.openLink(SERIES_LINK);
+    await view.search('moon');
+    await view.search('sun');
+    await view.search('');
+    expect(calls.at(-1)?.url).toBe(SERIES_LINK.href);
+  });
+
+  it('returns to the root when the search began there', async () => {
+    const { view, calls } = setup(byUrl);
+    await view.start();
+    await view.search('moon');
+    await view.search('');
+    expect(calls.at(-1)).toMatchObject({ url: null, path: [] });
+    expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home']);
+  });
+
+  it('makes no request for an empty query when no search is shown', async () => {
+    const { view, calls, searches } = setup(byUrl);
+    await view.start();
+    await view.openLink(SERIES_LINK);
+    await view.search('');
+    expect(calls).toHaveLength(2);
+    expect(searches).toEqual([]);
+  });
+
+  it('makes no new request for the query already shown', async () => {
+    const { view, searches } = setup(byUrl);
+    await view.start();
+    await view.search('moon');
+    await view.search(' moon ');
+    expect(searches).toHaveLength(1);
+  });
+
+  it('aborts the older search and ignores its late answer', async () => {
+    const resolvers: Array<(answer: BrowseCatalogResult) => void> = [];
+    const { view } = setup(byUrl, () => new Promise((resolve) => resolvers.push(resolve)));
+    await view.start();
+    const first = view.search('moon');
+    const second = view.search('sun');
+    resolvers[0]?.(feedAnswer(HOME_SERIES_FEED, 'https://home.test/stale', []));
+    await first;
+    expect(view.state.kind).toBe('loading');
+    resolvers[1]?.(feedAnswer(HOME_SERIES_FEED, SEARCH_ADDRESS, []));
+    await second;
+    expect(view.state.kind).toBe('acquisition');
+    expect(view.position.url).toBe(SEARCH_ADDRESS);
+  });
+
+  it('forgets the search origin once the reader leaves the result by a crumb', async () => {
+    const { view, calls } = setup(byUrl);
+    await view.start();
+    await view.openLink(SERIES_LINK);
+    await view.search('moon');
+    await view.goToDepth(0);
+    const requests = calls.length;
+    await view.search('');
+    expect(calls).toHaveLength(requests);
+  });
+
   it('searches again when a failed search is retried', async () => {
     let failing = true;
     const { view, searches } = setup(byUrl, (call) =>
