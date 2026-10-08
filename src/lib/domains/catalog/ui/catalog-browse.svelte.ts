@@ -58,6 +58,7 @@ type PositionStore = {
   readonly positionOf: (id: CatalogId) => FeedPosition;
   readonly move: (id: CatalogId, position: FeedPosition) => void;
   readonly advance: (id: CatalogId) => void;
+  readonly ancestorIndexOf: (id: CatalogId, ancestor: FeedPosition) => number | null;
   readonly seek: (id: CatalogId, index: number) => Sought | null;
   readonly type: (id: CatalogId, query: string) => void;
   readonly pagesOf: (id: CatalogId) => readonly string[];
@@ -297,7 +298,9 @@ class CatalogBrowseView {
   goToDepth(depth: number): Promise<void> {
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
-    return this.#show(atDepth(this.position, depth), 'replace');
+    const ancestor = atDepth(this.position, depth);
+    if (this.#walkedBackTo(ancestor)) return Promise.resolve();
+    return this.#show(ancestor, 'replace');
   }
 
   async loadMore(): Promise<void> {
@@ -347,7 +350,13 @@ class CatalogBrowseView {
     if (origin === null) return Promise.resolve();
     this.#store.dropSearchOrigin(this.catalog.id);
     this.#searchedQuery = null;
+    if (this.#walkedBackTo(origin)) return Promise.resolve();
     return this.#show(origin, 'replace');
+  }
+
+  #walkedBackTo(ancestor: FeedPosition): boolean {
+    const index = this.#store.ancestorIndexOf(this.catalog.id, ancestor);
+    return index !== null && this.#history.walkedBack(this.catalog.id, index);
   }
 
   restoreFeed(index: number): Promise<void> {

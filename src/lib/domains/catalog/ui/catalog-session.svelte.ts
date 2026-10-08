@@ -44,6 +44,22 @@ class CatalogSession {
     this.#trails.set(id, { positions: [...positions.slice(0, at + 1), here], at: at + 1 });
   }
 
+  ancestorIndexOf(id: CatalogId, ancestor: FeedPosition): number | null {
+    const { positions, at } = this.#trailOf(id);
+    for (let index = at - 1; index >= 0; index -= 1) {
+      const position = positions[index];
+      if (
+        position !== undefined &&
+        position.lookup === null &&
+        position.path.length === ancestor.path.length &&
+        position.url === ancestor.url
+      ) {
+        return index;
+      }
+    }
+    return null;
+  }
+
   seek(id: CatalogId, index: number): Sought | null {
     const { positions } = this.#trailOf(id);
     const position = positions[index];
