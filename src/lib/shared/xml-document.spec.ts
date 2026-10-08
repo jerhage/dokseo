@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attributeOf, descendantsNamed, firstNamed, parseXml } from './xml-document';
+import { LINE_BREAK, attributeOf, descendantsNamed, firstNamed, parseXml } from './xml-document';
 import type { XmlElement } from './xml-document';
 
 const LIMIT = 4_000_000;
@@ -112,5 +112,25 @@ describe('parseXml against a document longer than the limit it is given', () => 
     const padding = '\u3042'.repeat(LIMIT - '<p></p>'.length + 1);
 
     expect(parseXml(`<p>${padding}</p>`, LIMIT)).toBeNull();
+  });
+});
+
+describe('parseXml reading line breaks', () => {
+  it('marks a br inside the text of its parent at the place it stands', () => {
+    const root = parseXml('<div>one<br/>two</div>', LIMIT, { lineBreaks: true });
+    expect(root?.text).toBe(`${LINE_BREAK}one${LINE_BREAK}two`);
+  });
+
+  it('opens the text of a block element with a break', () => {
+    const root = parseXml('<div><p>one</p><p>two</p></div>', LIMIT, { lineBreaks: true });
+    const [first, second] = root?.children ?? [];
+    expect(first?.text).toBe(`${LINE_BREAK}one`);
+    expect(second?.text).toBe(`${LINE_BREAK}two`);
+  });
+
+  it('marks nothing unless asked to', () => {
+    const root = parseXml('<div><p>one</p>a<br/>b</div>', LIMIT);
+    expect(root?.text).toBe('ab');
+    expect(root?.children[0]?.text).toBe('one');
   });
 });

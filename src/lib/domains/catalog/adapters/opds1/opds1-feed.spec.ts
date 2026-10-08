@@ -105,7 +105,7 @@ describe('readOpdsFeed on a Calibre series feed', () => {
       title: '星の旅 2',
       authors: ['山田 太郎'],
       language: 'ja',
-      summary: 'SERIES: 星の旅 [2]The second voyage begins.',
+      summary: 'SERIES: 星の旅 [2]\nThe second voyage begins.',
       updated: '2026-08-15T12:30:00+00:00',
       cover: { href: `${SERVER}/get/cover/720/calibre`, mediaType: 'image/jpeg' },
       acquisition: {
@@ -164,6 +164,25 @@ describe('readOpdsFeed on spec-conforming feeds', () => {
       length: 2048,
     });
     expect(book?.summary).toBe('A short summary.');
+  });
+});
+
+describe('readOpdsFeed on a summary with breaks', () => {
+  function summaryOf(content: string): string | undefined {
+    const xml = `<feed xmlns="http://www.w3.org/2005/Atom"><id>x</id><title>t</title><entry><title>b</title><id>b</id><content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">${content}</div></content><link rel="http://opds-spec.org/acquisition" type="application/epub+zip" href="/b.epub"/></entry></feed>`;
+    return acquisition(xml, `${SERVER}/opds`).publications[0]?.summary;
+  }
+
+  it('keeps a br as a line break and collapses the spaces inside a line', () => {
+    expect(summaryOf('one  two<br/>three')).toBe('one two\nthree');
+  });
+
+  it('keeps paragraphs on their own lines', () => {
+    expect(summaryOf('<p>one</p><p>two</p>')).toBe('one\ntwo');
+  });
+
+  it('trims breaks at the ends and caps a run of them at one blank line', () => {
+    expect(summaryOf('<br/>one<br/><br/><br/><br/>two<br/>')).toBe('one\n\ntwo');
   });
 });
 

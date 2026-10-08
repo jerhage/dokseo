@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatFileSize } from '$lib/ui/components/file-selection';
 import { publication } from './catalog-ui-fixtures';
-import { publicationFacts } from './publication-facts';
+import { publicationFacts, summaryLines } from './publication-facts';
 
 const FULL = publication('full', {
   authors: ['Jane Roe', 'John Doe'],
@@ -66,5 +66,19 @@ describe('publicationFacts', () => {
   it('leaves out a date that does not parse', () => {
     const odd = publication('odd', { updated: 'yesterday' });
     expect(publicationFacts(odd).map((fact) => fact.label)).toEqual(['Format']);
+  });
+});
+
+describe('summaryLines', () => {
+  it('splits a summary at its line breaks and drops a blank line', () => {
+    expect(summaryLines('SERIES: Star [2]\nTale\n\nMore')).toEqual([
+      'SERIES: Star [2]',
+      'Tale',
+      'More',
+    ]);
+  });
+
+  it('returns no lines for an empty summary', () => {
+    expect(summaryLines('')).toEqual([]);
   });
 });

@@ -41,6 +41,27 @@ const NAMED_REFERENCES: ReadonlyMap<string, string> = new Map([
 
 const HIGHEST_CODE_POINT = 0x10_ff_ff;
 
+const LINE_BREAK = '\u2028';
+
+const BLOCK_ELEMENTS: ReadonlySet<string> = new Set([
+  'p',
+  'div',
+  'li',
+  'ul',
+  'ol',
+  'blockquote',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+]);
+
+type XmlReading = { readonly lineBreaks: boolean };
+
+const PLAIN_READING: XmlReading = { lineBreaks: false };
+
 function isSpace(character: string): boolean {
   return character === ' ' || character === '\t' || character === '\n' || character === '\r';
 }
@@ -180,7 +201,17 @@ function sealed(draft: Draft): XmlElement {
   };
 }
 
-function parseXml(source: string, maxLength: number): XmlElement | null {
+function markBreak(parent: Draft | undefined, draft: Draft): void {
+  const name = localNameOf(draft.name).toLowerCase();
+  if (name === 'br') parent?.text.push(LINE_BREAK);
+  else if (BLOCK_ELEMENTS.has(name)) draft.text.push(LINE_BREAK);
+}
+
+function parseXml(
+  source: string,
+  maxLength: number,
+  reading: XmlReading = PLAIN_READING,
+): XmlElement | null {
   if (source.length > maxLength) return null;
   const open: Draft[] = [];
   let root: XmlElement | null = null;
@@ -243,6 +274,7 @@ function parseXml(source: string, maxLength: number): XmlElement | null {
       children: [],
       text: [],
     };
+    if (reading.lineBreaks) markBreak(open.at(-1), draft);
     if (opened.selfClosing) close(draft);
     else open.push(draft);
   }
@@ -284,5 +316,5 @@ function firstNamed(element: XmlElement, localName: string): XmlElement | null {
   return first ?? null;
 }
 
-export { attributeOf, descendantsNamed, firstNamed, parseXml };
-export type { XmlElement };
+export { LINE_BREAK, attributeOf, descendantsNamed, firstNamed, parseXml };
+export type { XmlElement, XmlReading };

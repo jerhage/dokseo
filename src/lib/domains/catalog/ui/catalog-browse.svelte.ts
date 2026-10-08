@@ -28,7 +28,7 @@ import {
   searched,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
-import { publicationFacts } from './publication-facts';
+import { publicationFacts, summaryLines } from './publication-facts';
 import type { PublicationFact } from './publication-facts';
 import type { Scroller } from './scroll-memory';
 
@@ -91,6 +91,7 @@ type OpenedPublication = {
   readonly item: RemoteItem;
   readonly cover: string | null;
   readonly facts: readonly PublicationFact[];
+  readonly summary: readonly string[];
 };
 
 const NO_PAGING: Paging = { previous: null, next: null };
@@ -200,6 +201,7 @@ class CatalogBrowseView {
       item: this.downloads.itemFor(publication),
       cover: this.covers.urlOf(publication.entryId),
       facts: publicationFacts(publication),
+      summary: summaryLines(publication.summary),
     };
   }
 
