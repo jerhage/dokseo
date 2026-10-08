@@ -12,14 +12,13 @@ import type { BrowseFailure } from './catalog-texts';
 import {
   ROOT_POSITION,
   atDepth,
-  crumbDepth,
   crumbs,
   opened,
   paged,
   searchStep,
   searched,
 } from './feed-address';
-import type { Crumb, FeedPosition } from './feed-address';
+import type { FeedPosition } from './feed-address';
 
 type BrowseUseCases = {
   readonly browseCatalog: (
@@ -42,6 +41,8 @@ type BrowseState =
   | { readonly kind: 'acquisition'; readonly feed: AcquisitionFeed }
   | { readonly kind: 'unlock'; readonly refused: boolean }
   | { readonly kind: 'failed'; readonly failure: BrowseFailure };
+
+type BrowseCrumb = { readonly label: string; readonly onselect: () => void };
 
 type Paging = { readonly previous: string | null; readonly next: string | null };
 
@@ -78,8 +79,11 @@ class CatalogBrowseView {
     this.position = store.positionOf(catalog.id);
   }
 
-  get crumbs(): readonly Crumb[] {
-    return crumbs(this.catalog.title, this.position.path);
+  get crumbs(): readonly BrowseCrumb[] {
+    return crumbs(this.catalog.title, this.position.path).map(({ label, depth }) => ({
+      label,
+      onselect: () => void this.goToDepth(depth),
+    }));
   }
 
   get paging(): Paging {
@@ -117,13 +121,6 @@ class CatalogBrowseView {
 
   load(): Promise<void> {
     return this.#show(this.position);
-  }
-
-  followCrumb(href: string): boolean {
-    const depth = crumbDepth(href);
-    if (depth === null) return false;
-    void this.goToDepth(depth);
-    return true;
   }
 
   openLink(link: NavigationLink): Promise<void> {
@@ -222,4 +219,4 @@ class CatalogBrowseView {
 }
 
 export { CatalogBrowseView };
-export type { BrowseState, BrowseUseCases, Paging, PositionStore };
+export type { BrowseCrumb, BrowseState, BrowseUseCases, Paging, PositionStore };

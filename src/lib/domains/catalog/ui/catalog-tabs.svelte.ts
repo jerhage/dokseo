@@ -39,6 +39,7 @@ type CatalogTabsDeps = DownloadsChoices & {
 class CatalogTabsView {
   catalogs = $state.raw<readonly Catalog[]>([]);
 
+  #reached = $state.raw<ReadonlySet<string>>(new Set());
   #session: CatalogSession;
   #deps: CatalogTabsDeps;
   #browsing = new Map<Catalog['id'], CatalogBrowseView>();
@@ -61,7 +62,12 @@ class CatalogTabsView {
   }
 
   select(id: string): void {
+    this.#reached = new Set(this.#reached).add(this.selected);
     this.#session.selected = id;
+  }
+
+  hasBeenShown(tabId: string): boolean {
+    return tabId === this.selected || this.#reached.has(tabId);
   }
 
   async load(): Promise<void> {

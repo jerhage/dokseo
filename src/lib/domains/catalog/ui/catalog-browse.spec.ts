@@ -104,15 +104,9 @@ describe('CatalogBrowseView', () => {
     const { view, calls } = setup(byUrl);
     await view.start();
     await view.openLink(SERIES_LINK);
-    expect(view.followCrumb(view.crumbs[0]?.href ?? '')).toBe(true);
+    view.crumbs[0]?.onselect();
     await Promise.resolve();
     expect(calls.at(-1)).toMatchObject({ url: null, path: [] });
-  });
-
-  it('ignores a link that is not a crumb', async () => {
-    const { view } = setup(byUrl);
-    await view.start();
-    expect(view.followCrumb('/somewhere')).toBe(false);
   });
 
   it('pages with next and previous without changing the path', async () => {

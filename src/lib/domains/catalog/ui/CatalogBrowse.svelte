@@ -22,16 +22,10 @@
   onMount(() => {
     void view.start();
   });
-
-  function followCrumb(event: MouseEvent): void {
-    const link = event.target instanceof Element ? event.target.closest('a') : null;
-    if (link === null) return;
-    if (view.followCrumb(link.getAttribute('href') ?? '')) event.preventDefault();
-  }
 </script>
 
 <div class="col gap-4">
-  <Breadcrumb items={view.crumbs} label="Catalog path" onclick={followCrumb} />
+  <Breadcrumb items={view.crumbs} label="Catalog path" />
 
   {#if view.state.kind === 'loading'}
     <EmptyState live message="Reading the catalog…" />
