@@ -3,6 +3,7 @@
   import Figure from '$lib/ui/components/Figure.svelte';
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
+  import { CATALOG_PORT_HREF } from '../architecture/architecture-sections';
   import { VIEWS } from './remote-diagrams';
   import { REMOTE_SECTIONS, remoteHref } from './remote-sections';
 
@@ -64,8 +65,12 @@ type LocalItem = { readonly book: Book; readonly origins: readonly CatalogBadge[
     database holds no copy of its contents.
   </p>
   <p>
-    A <code>Catalog</code> is a configured server. Its <code>auth</code> names how to sign in, and
-    never holds a password (<a href={remoteHref('credentials')}>Credentials</a>).
+    A <code>Catalog</code> is a configured server. Its <code>protocol</code> names the feed format
+    it speaks, which picks the adapter that reads it (<a href={CATALOG_PORT_HREF}
+      >Catalog protocols behind one port</a
+    >). Its <code>auth</code> names how to sign in, and never holds a password (<a
+      href={remoteHref('credentials')}>Credentials</a
+    >).
   </p>
   <DocsCode label="Catalog" code={CATALOG_TYPES} />
   <p>
