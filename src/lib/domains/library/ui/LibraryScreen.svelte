@@ -33,6 +33,7 @@
   import BookSettings from './BookSettings.svelte';
   import { arrivedFiles } from './chosen-files';
   import ContinueReading from './ContinueReading.svelte';
+  import DeviceFilterField from './DeviceFilterField.svelte';
   import DeleteRemovedCaptures from './DeleteRemovedCaptures.svelte';
   import ImportStatus from './ImportStatus.svelte';
   import LibraryBooksData from './LibraryBooksData.svelte';
@@ -171,6 +172,10 @@
     onretry={shelfRead.reload}
   >
     {#snippet children(library)}
+      {#if library.books.length > 0}
+        <DeviceFilterField bind:query />
+      {/if}
+
       {#if resumable.length > 0}
         <ContinueReading books={resumable} covers={library.covers} />
       {/if}
