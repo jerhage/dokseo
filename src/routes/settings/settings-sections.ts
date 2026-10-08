@@ -5,10 +5,19 @@ import File from '$lib/ui/components/icons/File.svelte';
 import HardDrive from '$lib/ui/components/icons/HardDrive.svelte';
 import type { IconProps } from '$lib/ui/components/icons/icon';
 import Info from '$lib/ui/components/icons/Info.svelte';
+import LayoutGrid from '$lib/ui/components/icons/LayoutGrid.svelte';
 import Palette from '$lib/ui/components/icons/Palette.svelte';
 import ScanText from '$lib/ui/components/icons/ScanText.svelte';
 
-type SettingsSection = 'engine' | 'storage' | 'data' | 'appearance' | 'library' | 'reading' | 'app';
+type SettingsSection =
+  | 'engine'
+  | 'storage'
+  | 'data'
+  | 'appearance'
+  | 'library'
+  | 'catalogs'
+  | 'reading'
+  | 'app';
 
 type SectionLink = {
   readonly id: SettingsSection;
@@ -60,6 +69,14 @@ function settingsSections(root: string): readonly SectionLink[] {
       icon: File,
       href: `${root}/library`,
       pageHref: `${root}/library`,
+    },
+    {
+      id: 'catalogs',
+      name: 'Catalogs',
+      summary: 'OPDS servers to download from',
+      icon: LayoutGrid,
+      href: `${root}/catalogs`,
+      pageHref: `${root}/catalogs`,
     },
     {
       id: 'reading',
