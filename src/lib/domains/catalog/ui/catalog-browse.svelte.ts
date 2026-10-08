@@ -1,5 +1,7 @@
 import { tick } from 'svelte';
 import { match } from 'ts-pattern';
+import { returnFocus } from '$lib/shared/focus-return';
+import type { FocusReturn } from '$lib/shared/focus-return';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Catalog } from '../domain/catalog';
 import type {
@@ -129,6 +131,7 @@ class CatalogBrowseView {
   #loadingMore: AbortController | null = null;
   #started = false;
   #openedId = $state<string | null>(null);
+  #openedFrom: FocusReturn | null = null;
   #scroller: Scroller | null = null;
   #searchedQuery: string | null = null;
 
@@ -209,12 +212,15 @@ class CatalogBrowseView {
     };
   }
 
-  openDetails(entryId: string): void {
+  openDetails(entryId: string, from: FocusReturn | null = null): void {
     this.#openedId = entryId;
+    this.#openedFrom = from;
   }
 
   closeDetails(): void {
     this.#openedId = null;
+    returnFocus(this.#openedFrom);
+    this.#openedFrom = null;
   }
 
   downloadOpened(): void {

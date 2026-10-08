@@ -7,6 +7,8 @@
   import DropdownSeparator from '$lib/ui/components/DropdownSeparator.svelte';
   import Progress from '$lib/ui/components/Progress.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
+  import { focusReturnFor } from '$lib/shared/focus-return';
+  import type { FocusReturn } from '$lib/shared/focus-return';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -22,7 +24,7 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
-    readonly ondetails: (id: BookId) => void;
+    readonly ondetails: (id: BookId, from: FocusReturn | null) => void;
     readonly bookBadge?: Snippet<[BookId]> | undefined;
   };
 
@@ -55,7 +57,7 @@
           mediaRatio="portrait"
           aria-label={name}
           tooltip={bookFacts(book)}
-          onclick={() => ondetails(book.id)}
+          onclick={(event) => ondetails(book.id, focusReturnFor(event.currentTarget, event.detail))}
         >
           {#snippet media()}
             <Thumbnail src={cover} fill />

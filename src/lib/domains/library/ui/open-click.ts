@@ -2,7 +2,7 @@ import type { Attachment } from 'svelte/attachments';
 
 const OWN_CONTROLS = 'a, button, input, label, select, textarea';
 
-function openClick(onclick: () => void): Attachment<HTMLElement> {
+function openClick(onclick: (event: MouseEvent) => void): Attachment<HTMLElement> {
   return (element) => {
     const listener = (event: MouseEvent): void => {
       const target = event.target;
@@ -10,7 +10,7 @@ function openClick(onclick: () => void): Attachment<HTMLElement> {
         const control = target.closest(OWN_CONTROLS);
         if (control !== null && element.contains(control)) return;
       }
-      onclick();
+      onclick(event);
     };
     element.addEventListener('click', listener);
     return () => element.removeEventListener('click', listener);

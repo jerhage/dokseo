@@ -10,6 +10,7 @@
   import SegmentedControl from '$lib/ui/components/SegmentedControl.svelte';
   import type { SegmentOption } from '$lib/ui/components/segmented-control';
   import Tabs from '$lib/ui/components/Tabs.svelte';
+  import type { FocusReturn } from '$lib/shared/focus-return';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
   import BookGrid from './BookGrid.svelte';
@@ -35,7 +36,7 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
-    readonly ondetails: (id: BookId) => void;
+    readonly ondetails: (id: BookId, from: FocusReturn | null) => void;
     readonly bookBadge?: Snippet<[BookId]> | undefined;
     shelf?: Shelf;
     order?: SortOrder;

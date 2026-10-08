@@ -215,7 +215,7 @@
           onremove={(id) => (removeFor = id)}
           onfinish={finish}
           onunread={unread}
-          ondetails={(id) => view.details.open(id)}
+          ondetails={(id, from) => view.details.open(id, from)}
         />
 
         {@const opened = view.details.opened(shelfRead.books)}

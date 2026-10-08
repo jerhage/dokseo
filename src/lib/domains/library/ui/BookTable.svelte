@@ -11,6 +11,8 @@
   import TableHeader from '$lib/ui/components/TableHeader.svelte';
   import TableHeaderCell from '$lib/ui/components/TableHeaderCell.svelte';
   import TableRow from '$lib/ui/components/TableRow.svelte';
+  import { focusReturnFor } from '$lib/shared/focus-return';
+  import type { FocusReturn } from '$lib/shared/focus-return';
   import { shownTitle } from '$lib/shared/shown-title';
   import type { BookId } from '$lib/shared/ids';
   import type { Book } from '../domain/book/book';
@@ -26,7 +28,7 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
-    readonly ondetails: (id: BookId) => void;
+    readonly ondetails: (id: BookId, from: FocusReturn | null) => void;
   };
 
   let { books, busy, onedit, onremove, onfinish, onunread, ondetails }: Props = $props();
@@ -50,7 +52,9 @@
         class={{ 'is-busy': busy(book.id) }}
         aria-busy={busy(book.id)}
         {@attach rows.area(book)}
-        {@attach openClick(() => ondetails(book.id))}
+        {@attach openClick((event) =>
+          ondetails(book.id, focusReturnFor(event.currentTarget, event.detail)),
+        )}
       >
         <TableCell>
           <a
@@ -60,7 +64,7 @@
             onclick={(event) => {
               if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
               event.preventDefault();
-              ondetails(book.id);
+              ondetails(book.id, focusReturnFor(event.currentTarget, event.detail));
             }}>{name}</a
           >
         </TableCell>
