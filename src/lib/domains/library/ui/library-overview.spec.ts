@@ -8,6 +8,7 @@ import {
   isSearching,
   librarySummary,
   matchedText,
+  narrowedBooks,
   storageText,
   titledBooks,
 } from './library-overview';
@@ -81,6 +82,20 @@ describe('titledBooks', () => {
 
     expect(titledBooks(renamed, 'clov').map((kept) => kept.title)).toEqual(['Yotsuba']);
     expect(titledBooks(renamed, 'yotsu')).toEqual([]);
+  });
+});
+
+describe('narrowedBooks', () => {
+  const books = [book('Yotsuba'), book('Berserk')];
+
+  it('keeps every book when there is no filter', () => {
+    expect(narrowedBooks(books, undefined)).toBe(books);
+  });
+
+  it('keeps only the books the filter accepts', () => {
+    expect(narrowedBooks(books, (id) => id === 'Berserk').map((kept) => kept.title)).toEqual([
+      'Berserk',
+    ]);
   });
 });
 

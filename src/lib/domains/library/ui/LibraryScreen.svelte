@@ -25,6 +25,7 @@
     isSearching,
     librarySummary,
     matchedText,
+    narrowedBooks,
     storageText,
     titledBooks,
   } from './library-overview';
@@ -56,6 +57,9 @@
     readonly scroll: LibraryScrollView;
     readonly onsearcheverything?: (() => void) | undefined;
     readonly tabbed?: Snippet<[Snippet]> | undefined;
+    readonly bookBadge?: Snippet<[BookId]> | undefined;
+    readonly bookFilter?: ((id: BookId) => boolean) | undefined;
+    readonly filterControls?: Snippet | undefined;
     query?: string;
   };
 
@@ -65,6 +69,9 @@
     scroll,
     onsearcheverything,
     tabbed,
+    bookBadge,
+    bookFilter,
+    filterControls,
     query = $bindable(''),
   }: Props = $props();
 
@@ -113,7 +120,9 @@
   }
 
   const searching = $derived(isSearching(query));
-  const titled = $derived(titledBooks(shelfRead.books, query));
+  const queried = $derived(titledBooks(shelfRead.books, query));
+  const titled = $derived(narrowedBooks(queried, bookFilter));
+  const narrowing = $derived(titled.length < queried.length);
   const space = $derived(storageText(shelfRead.storedBytes));
   const summary = $derived(librarySummary(shelfRead.books, shelfRead.storedBytes));
   const body = $derived(libraryBody(shelfRead.state, view.upload.pending !== null));
@@ -163,12 +172,19 @@
         <ContinueReading books={resumable} covers={library.covers} />
       {/if}
 
+      {#if library.books.length > 0 && filterControls !== undefined}
+        <div class="row wrap items-center gap-2 pt-4">
+          {@render filterControls()}
+        </div>
+      {/if}
+
       {#if library.books.length > 0}
         <ShelfView
           books={titled}
           {shown}
           covers={library.covers}
-          {searching}
+          searching={searching || narrowing}
+          {bookBadge}
           bind:shelf={() => arrangement.shelf.value, (next) => arrangement.shelf.choose(next)}
           bind:order={() => arrangement.order.value, (next) => arrangement.order.choose(next)}
           bind:layout={() => arrangement.layout.value, (next) => arrangement.layout.choose(next)}

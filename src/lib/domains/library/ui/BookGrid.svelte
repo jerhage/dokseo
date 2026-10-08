@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import Badge from '$lib/ui/components/Badge.svelte';
   import Card from '$lib/ui/components/Card.svelte';
   import ContextMenu from '$lib/ui/components/ContextMenu.svelte';
@@ -22,9 +23,10 @@
     readonly onremove: (id: BookId) => void;
     readonly onfinish: (id: BookId) => void;
     readonly onunread: (id: BookId) => void;
+    readonly bookBadge?: Snippet<[BookId]> | undefined;
   };
 
-  let { books, covers, busy, onedit, onremove, onfinish, onunread }: Props = $props();
+  let { books, covers, busy, onedit, onremove, onfinish, onunread, bookBadge }: Props = $props();
 </script>
 
 <ul class="grid-auto grid-auto-sm p-0" aria-label="Books">
@@ -81,6 +83,7 @@
             onunread={() => onunread(book.id)}
           />
         </div>
+        {@render bookBadge?.(book.id)}
       </ContextMenu>
     </li>
   {/each}
