@@ -101,7 +101,8 @@ class CatalogTabsView {
       { matching: this.#deps.matching, defaults: this.#deps.defaults },
       {
         describeOpenFile: this.#deps.describeOpenFile,
-        downloaded: (publication, bookId) => this.#announce(publication, bookId),
+        downloaded: (publication, bookId) => this.#announce('Added', publication, bookId),
+        updated: (publication, bookId) => this.#announce('Updated', publication, bookId),
       },
     );
     const covers = new CatalogCovers(
@@ -111,10 +112,10 @@ class CatalogTabsView {
     return new CatalogBrowseView(catalog, cases, this.#session, downloads, covers);
   }
 
-  #announce(publication: RemotePublication, bookId: BookId): void {
+  #announce(verb: 'Added' | 'Updated', publication: RemotePublication, bookId: BookId): void {
     this.#deps.notify({
       tone: 'success',
-      title: `Added ${publication.title}`,
+      title: `${verb} ${publication.title}`,
       action: { label: 'Open', run: () => this.#deps.openBook(bookId) },
       duration: ACTION_NOTICE_MS,
     });

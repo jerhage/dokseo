@@ -13,13 +13,14 @@ function setup(ids: readonly string[], unsupported: readonly string[] = []) {
   const finishers: ((result: DownloadPublicationResult) => void)[] = [];
   const downloads = new CatalogDownloads(
     {
+      updatePublication: () => Promise.resolve({ kind: 'aborted' }),
       downloadPublication: (item) => {
         started.push(item.entryId);
         return new Promise<DownloadPublicationResult>((resolve) => finishers.push(resolve));
       },
     },
     { matching: () => DEFAULT_BOOK_MATCHING, defaults: () => INITIAL_READING_DEFAULTS },
-    { describeOpenFile: () => '', downloaded: () => undefined },
+    { describeOpenFile: () => '', downloaded: () => undefined, updated: () => undefined },
   );
   const entries: QueuedDownload[] = ids.map((id, index) => ({
     publication: publication(id, unsupported.includes(id) ? { acquisition: null } : {}),

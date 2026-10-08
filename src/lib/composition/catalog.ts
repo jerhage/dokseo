@@ -15,6 +15,11 @@ import type { AddCatalogResult } from '../domains/catalog/use-cases/add-catalog'
 import { browseCatalog } from '../domains/catalog/use-cases/browse-catalog';
 import type { BrowseCatalogResult, ReadBook } from '../domains/catalog/use-cases/browse-catalog';
 import { downloadPublication } from '../domains/catalog/use-cases/download-publication';
+import { updatePublication } from '../domains/catalog/use-cases/update-publication';
+import type {
+  ReplaceFile,
+  UpdatePublicationResult,
+} from '../domains/catalog/use-cases/update-publication';
 import type {
   DownloadPublicationResult,
   OpenFile,
@@ -76,10 +81,21 @@ type CatalogUseCases = {
     onProgress: DownloadProgress,
     signal?: AbortSignal,
   ) => Promise<DownloadPublicationResult>;
+  readonly updatePublication: (
+    publication: RemotePublication,
+    bookId: BookId,
+    feedPosition: number,
+    onProgress: DownloadProgress,
+    signal?: AbortSignal,
+  ) => Promise<UpdatePublicationResult>;
   readonly forgetOrigin: (bookId: BookId) => Promise<ForgetOriginResult>;
 };
 
-type CatalogLibrary = { readonly openFile: OpenFile; readonly readBook: ReadBook };
+type CatalogLibrary = {
+  readonly openFile: OpenFile;
+  readonly replaceBookFile: ReplaceFile;
+  readonly readBook: ReadBook;
+};
 
 function buildCatalog(library: CatalogLibrary): CatalogUseCases {
   const repository = createCatalogOriginsRepository();
@@ -120,6 +136,15 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
         feedPosition,
         matching,
         defaults,
+        onProgress,
+        signal,
+      ),
+    updatePublication: (publication, bookId, feedPosition, onProgress, signal) =>
+      updatePublication(
+        { ...access, client, origins, replaceBookFile: library.replaceBookFile, now: Date.now },
+        publication,
+        bookId,
+        feedPosition,
         onProgress,
         signal,
       ),

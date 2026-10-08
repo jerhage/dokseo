@@ -16,6 +16,8 @@ import { downloadPublication } from './download-publication';
 import type { OpenFile } from './download-publication';
 import { forgetOrigin } from './forget-origin';
 import { readCatalogCover } from './read-catalog-cover';
+import { updatePublication } from './update-publication';
+import type { ReplaceFile } from './update-publication';
 
 const OPEN = catalogId('open');
 const PRIVATE = catalogId('private');
@@ -387,6 +389,131 @@ describe('downloadPublication', () => {
     );
 
     expect(JSON.stringify([...world.rows.values()])).not.toContain('secret');
+  });
+});
+
+function updating(world: ReturnType<typeof setup>, replaced: Awaited<ReturnType<ReplaceFile>>) {
+  const replaceCalls: { id: BookId; files: readonly File[] }[] = [];
+  const replaceBookFile: ReplaceFile = (id, files) => {
+    replaceCalls.push({ id, files });
+    return Promise.resolve(replaced);
+  };
+  const deps = { ...world, replaceBookFile, now: () => 5678 };
+  const result = updatePublication(deps, PUBLICATION, bookId('held-book'), 7, PROGRESS);
+  return { result, replaceCalls };
+}
+
+describe('updatePublication', () => {
+  const book = { id: bookId('held-book') } as never;
+
+  it.each([
+    { kind: 'replaced', book },
+    { kind: 'same-file', book },
+  ] as const)(
+    'records the origin with the new entry when the library answers $kind',
+    async (answer) => {
+      const world = setup();
+      world.rows.set(bookId('held-book'), origin(bookId('held-book'), ENTRY));
+
+      const { result, replaceCalls } = updating(world, answer);
+
+      expect(await result).toEqual({ kind: 'success', bookId: bookId('held-book') });
+      expect(replaceCalls.map((call) => call.id)).toEqual([bookId('held-book')]);
+      expect(world.rows.get(bookId('held-book'))).toEqual({
+        bookId: bookId('held-book'),
+        catalogId: OPEN,
+        entryId: ENTRY,
+        acquisition: ACQUISITION,
+        updated: '2026-07-01T00:00:00Z',
+        feedPath: PUBLICATION.feedPath,
+        feedPosition: 7,
+        downloadedAt: 5678,
+      });
+    },
+  );
+
+  it('hands the downloaded file to the library under the held book', async () => {
+    const world = setup();
+
+    const { result, replaceCalls } = updating(world, { kind: 'replaced', book });
+    await result;
+
+    expect(world.requests).toEqual([
+      'download https://example.org/files/42.cbz as The Lantern Maker.cbz',
+    ]);
+    expect(replaceCalls.map((call) => call.files.map((file) => file.name))).toEqual([['x.cbz']]);
+  });
+
+  it('answers book-missing when the library no longer holds the book, and writes no origin', async () => {
+    const world = setup();
+
+    const { result } = updating(world, { kind: 'not-found', id: bookId('held-book') });
+
+    expect(await result).toEqual({ kind: 'book-missing', bookId: bookId('held-book') });
+    expect(world.rows.size).toBe(0);
+  });
+
+  it('answers already-held with the other book, and writes no origin', async () => {
+    const world = setup();
+
+    const { result } = updating(world, {
+      kind: 'already-held',
+      book: { id: bookId('twin') } as never,
+    });
+
+    expect(await result).toEqual({ kind: 'already-held', bookId: bookId('twin') });
+    expect(world.rows.size).toBe(0);
+  });
+
+  it('passes any other library answer on and writes no origin', async () => {
+    const world = setup();
+    const refused = { kind: 'fingerprint', cause: 'bad' } as const;
+
+    expect(await updating(world, refused).result).toEqual(refused);
+    expect(await updating(world, STORAGE_UNAVAILABLE).result).toEqual(STORAGE_UNAVAILABLE);
+    expect(world.rows.size).toBe(0);
+  });
+
+  it('answers client outcomes without calling the library', async () => {
+    const world = setup();
+    world.answerDownload({ kind: 'blocked' });
+
+    const { result, replaceCalls } = updating(world, { kind: 'replaced', book });
+
+    expect(await result).toEqual({ kind: 'blocked' });
+    expect(replaceCalls).toEqual([]);
+  });
+
+  it('answers unsupported without a request when the entry has no acquisition', async () => {
+    const world = setup();
+    const replaceBookFile: ReplaceFile = () => Promise.reject(new Error('never'));
+
+    const result = await updatePublication(
+      { ...world, replaceBookFile, now: () => 1 },
+      { ...PUBLICATION, acquisition: null },
+      bookId('held-book'),
+      0,
+      PROGRESS,
+    );
+
+    expect(result).toEqual({ kind: 'unsupported' });
+    expect(world.requests).toEqual([]);
+  });
+
+  it('answers locked without a request for a basic catalog with no password', async () => {
+    const world = setup();
+    const replaceBookFile: ReplaceFile = () => Promise.reject(new Error('never'));
+
+    const result = await updatePublication(
+      { ...world, replaceBookFile, now: () => 1 },
+      { ...PUBLICATION, catalogId: PRIVATE },
+      bookId('held-book'),
+      0,
+      PROGRESS,
+    );
+
+    expect(result).toEqual({ kind: 'locked', id: PRIVATE });
+    expect(world.requests).toEqual([]);
   });
 });
 

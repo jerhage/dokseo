@@ -6,6 +6,7 @@ import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/readi
 import type { DownloadProgress } from '../domain/opds-client';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
+import type { UpdatePublicationResult } from '../use-cases/update-publication';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import { publication } from './catalog-ui-fixtures';
 
@@ -16,12 +17,24 @@ type Pending = {
   readonly finish: (result: DownloadPublicationResult) => void;
 };
 
+type PendingUpdate = {
+  readonly entryId: string;
+  readonly bookId: BookId;
+  readonly finish: (result: UpdatePublicationResult) => void;
+};
+
 function setup() {
   const pending: Pending[] = [];
+  const updating: PendingUpdate[] = [];
+  const updated: { entryId: string; bookId: BookId }[] = [];
   const calls: string[] = [];
   const downloaded: { entryId: string; bookId: BookId }[] = [];
   const downloads = new CatalogDownloads(
     {
+      updatePublication: (item, heldBook) =>
+        new Promise<UpdatePublicationResult>((resolve) => {
+          updating.push({ entryId: item.entryId, bookId: heldBook, finish: resolve });
+        }),
       downloadPublication: (item, _position, _matching, _defaults, report, signal) => {
         calls.push(item.entryId);
         return new Promise<DownloadPublicationResult>((resolve) => {
@@ -34,6 +47,7 @@ function setup() {
     {
       describeOpenFile: () => 'could not open',
       downloaded: (item, id) => downloaded.push({ entryId: item.entryId, bookId: id }),
+      updated: (item, id) => updated.push({ entryId: item.entryId, bookId: id }),
     },
   );
   const next = (): Pending => {
@@ -41,7 +55,7 @@ function setup() {
     if (first === undefined) throw new Error('no download is waiting');
     return first;
   };
-  return { downloads, pending, calls, downloaded, next };
+  return { downloads, pending, calls, downloaded, updating, updated, next };
 }
 
 function queued(...ids: string[]) {
@@ -229,5 +243,99 @@ describe('CatalogDownloads queue', () => {
     expect(calls).toEqual(['a']);
     next().finish({ kind: 'success', bookId: bookId('1') });
     await first;
+  });
+});
+
+const STALE_LINK = { bookId: bookId('held-1'), updated: '2026-07-01T00:00:00Z' };
+
+function setupStale() {
+  const world = setup();
+  world.downloads.setHeld(new Map([['a', STALE_LINK]]));
+  return world;
+}
+
+describe('CatalogDownloads replacing a held book', () => {
+  it('reports an entry newer than its origin as held-older', () => {
+    const { downloads } = setupStale();
+    expect(downloads.itemFor(publication('a')).kind).toBe('held-older');
+  });
+
+  it('reports an entry as held while its origin is as new', () => {
+    const { downloads } = setup();
+    downloads.setHeld(
+      new Map([['a', { bookId: bookId('held-1'), updated: '2026-08-01T00:00:00Z' }]]),
+    );
+    expect(downloads.itemFor(publication('a')).kind).toBe('held');
+  });
+
+  it('asks once and updates nothing until the reader confirms', () => {
+    const { downloads, updating } = setupStale();
+    downloads.askToReplace(publication('a'), 4);
+    expect(downloads.replacement).toEqual({
+      publication: publication('a'),
+      bookId: bookId('held-1'),
+      feedPosition: 4,
+    });
+    expect(updating).toEqual([]);
+    expect(downloads.itemFor(publication('a')).kind).toBe('held-older');
+  });
+
+  it('asks nothing for an entry that is not held or not newer', () => {
+    const { downloads } = setup();
+    downloads.askToReplace(publication('a'), 0);
+    expect(downloads.replacement).toBeNull();
+  });
+
+  it('forgets the question when the reader declines', () => {
+    const { downloads, updating } = setupStale();
+    downloads.askToReplace(publication('a'), 0);
+    downloads.dismissReplacement();
+    expect(downloads.replacement).toBeNull();
+    expect(updating).toEqual([]);
+  });
+
+  it('updates the held book on confirming, shows progress and then reports it held', async () => {
+    const { downloads, updating, updated, calls } = setupStale();
+    downloads.askToReplace(publication('a'), 0);
+
+    const running = downloads.confirmReplacement();
+
+    expect(downloads.replacement).toBeNull();
+    expect(downloads.itemFor(publication('a')).kind).toBe('downloading');
+    expect(updating.map((call) => [call.entryId, call.bookId])).toEqual([['a', 'held-1']]);
+    updating[0]?.finish({ kind: 'success', bookId: bookId('held-1') });
+    await running;
+
+    expect(downloads.itemFor(publication('a'))).toMatchObject({ kind: 'held' });
+    expect(updated).toEqual([{ entryId: 'a', bookId: bookId('held-1') }]);
+    expect(calls).toEqual([]);
+  });
+
+  it('shows the failure and updates again, never downloads a second book, on a retry', async () => {
+    const { downloads, updating, calls } = setupStale();
+    downloads.askToReplace(publication('a'), 0);
+    const first = downloads.confirmReplacement();
+    updating[0]?.finish({ kind: 'already-held', bookId: bookId('other') });
+    await first;
+
+    expect(downloads.itemFor(publication('a'))).toMatchObject({
+      kind: 'download-failed',
+      reason: 'Another book on this device already has the newer file.',
+    });
+
+    void downloads.start(publication('a'), 0);
+    expect(updating).toHaveLength(2);
+    expect(calls).toEqual([]);
+  });
+
+  it('returns to held-older when the update is cancelled', async () => {
+    const { downloads, updating } = setupStale();
+    downloads.askToReplace(publication('a'), 0);
+    const running = downloads.confirmReplacement();
+    downloads.cancel('a');
+    updating[0]?.finish({ kind: 'aborted' });
+    await running;
+
+    expect(downloads.itemFor(publication('a')).kind).toBe('held-older');
   });
 });

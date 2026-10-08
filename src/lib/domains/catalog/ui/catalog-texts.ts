@@ -6,6 +6,7 @@ import type { OpenFileFailure } from '$lib/domains/library/use-cases/open-file';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
+import type { UpdatePublicationResult } from '../use-cases/update-publication';
 
 type ConnectionOutcome = {
   readonly variant: StatusVariant;
@@ -103,6 +104,8 @@ type BrowseFailure = Exclude<
 
 type DownloadFailure = Exclude<DownloadPublicationResult, { readonly kind: 'success' }>;
 
+type UpdateFailure = Exclude<UpdatePublicationResult, { readonly kind: 'success' }>;
+
 type DescribeOpenFile = (failure: OpenFileFailure) => string;
 
 const STORAGE_BLOCKED_TEXT = 'This browser blocks local storage, so catalogs cannot be kept.';
@@ -151,6 +154,16 @@ function downloadFailureText(failure: DownloadFailure, describeOpenFile: Describ
     .exhaustive();
 }
 
+const BOOK_MISSING_TEXT = 'That book is no longer on this device.';
+
+const FILE_HELD_TEXT = 'Another book on this device already has the newer file.';
+
+function updateFailureText(failure: UpdateFailure, describeOpenFile: DescribeOpenFile): string {
+  if (failure.kind === 'book-missing') return BOOK_MISSING_TEXT;
+  if (failure.kind === 'already-held') return FILE_HELD_TEXT;
+  return downloadFailureText(failure, describeOpenFile);
+}
+
 function catalogHost(rootUrl: string): string {
   return URL.canParse(rootUrl) ? new URL(rootUrl).host : rootUrl;
 }
@@ -169,6 +182,7 @@ export {
   UNSUPPORTED_TEXT,
   browseFailureText,
   downloadFailureText,
+  updateFailureText,
   FIX_FIELDS_TEXT,
   PASSWORD_ASKED_EACH_SESSION,
   catalogDescription,
@@ -184,4 +198,5 @@ export type {
   DownloadFailure,
   FieldRefusal,
   FormField,
+  UpdateFailure,
 };
