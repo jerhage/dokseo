@@ -44,12 +44,12 @@ const FROM_HOME = bookId('from-home');
 const FROM_ARCHIVE = bookId('from-archive');
 
 describe('filterOptions', () => {
-  it('lists All, Added from files, then one option per catalog by name', () => {
+  it('lists All, Added from files, then one Downloaded from option per catalog', () => {
     expect(filterOptions([HOME, ARCHIVE]).map((option) => option.label)).toEqual([
       'All',
       'Added from files',
-      'Home',
-      'Archive',
+      'Downloaded from Home',
+      'Downloaded from Archive',
     ]);
   });
 });
