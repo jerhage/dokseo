@@ -61,6 +61,7 @@ const MAP_AREAS: readonly MapArea[] = [
   layerArea('container', 'container.ts', 'src/lib/container.ts'),
   layerArea('composition', 'composition/', 'src/lib/composition/sample.ts'),
   domainArea('storage', ['adapters', 'domain', 'queries', 'ui', 'use-cases']),
+  domainArea('catalog', ['domain']),
   domainArea('docs', ['domain', 'ui']),
   domainArea('library', ['adapters', 'domain', 'queries', 'ui', 'use-cases']),
   domainArea('viewing', ['domain', 'queries', 'ui']),
