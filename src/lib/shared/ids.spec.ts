@@ -1,5 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { bookId, contentHash, parsedBookId, parsedContentHash } from './ids';
+import {
+  bookId,
+  catalogId,
+  contentHash,
+  newCatalogId,
+  parsedBookId,
+  parsedCatalogId,
+  parsedContentHash,
+} from './ids';
+
+describe('newCatalogId', () => {
+  it('mints a distinct UUID each time', () => {
+    const first = newCatalogId();
+    const second = newCatalogId();
+
+    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u);
+    expect(second).not.toBe(first);
+  });
+});
+
+describe('parsedCatalogId', () => {
+  it('passes the id a new catalog is given', () => {
+    const id = newCatalogId();
+
+    expect(parsedCatalogId(id)).toBe(catalogId(id));
+  });
+
+  it.each([
+    ['the empty string', ''],
+    ['a name holding a forward slash', 'a/b'],
+    ['a name holding a backslash', 'a\\b'],
+    ['a name holding two dots in a row', 'a..b'],
+  ])('rejects %s', (_name, id) => {
+    expect(parsedCatalogId(id)).toBeNull();
+  });
+});
 
 describe('parsedBookId', () => {
   it.each([
