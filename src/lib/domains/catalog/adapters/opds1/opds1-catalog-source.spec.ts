@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { catalogId } from '$lib/shared/ids';
-import { CALIBRE_ROOT, HTML_PAGE } from '../domain/opds-fixtures';
-import type { FeedPlacement } from '../domain/catalog-source';
-import { HttpCatalogClient } from './http-catalog-client';
-import { OpdsCatalogSource, searchAddress } from './opds-catalog-source';
+import { CALIBRE_ROOT, HTML_PAGE } from './opds1-fixtures';
+import type { FeedPlacement } from '../../domain/catalog-source';
+import { HttpCatalogClient } from '../http-catalog-client';
+import { Opds1CatalogSource, searchAddress } from './opds1-catalog-source';
 
 const PLACEMENT: FeedPlacement = { catalogId: catalogId('home'), path: [] };
 const NONE = { kind: 'none' } as const;
@@ -17,7 +17,7 @@ function sourceAnswering(text: string) {
     },
     () => true,
   );
-  return { source: new OpdsCatalogSource(http), requests };
+  return { source: new Opds1CatalogSource(http), requests };
 }
 
 describe('searchAddress', () => {
@@ -46,7 +46,7 @@ describe('searchAddress', () => {
   });
 });
 
-describe('OpdsCatalogSource', () => {
+describe('Opds1CatalogSource', () => {
   it('reads a feed from the address it is given', async () => {
     const { source, requests } = sourceAnswering(CALIBRE_ROOT);
 

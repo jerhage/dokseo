@@ -3,9 +3,14 @@ import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { attributeOf, parseXml } from '$lib/shared/xml-document';
 import type { XmlElement } from '$lib/shared/xml-document';
-import type { CatalogFeed, FeedPaging, NavigationLink } from './catalog-feed';
-import { formatOfMediaType } from './remote-publication';
-import type { Acquisition, FeedPath, RemoteImage, RemotePublication } from './remote-publication';
+import type { CatalogFeed, FeedPaging, NavigationLink } from '../../domain/catalog-feed';
+import { formatOfMediaType } from '../../domain/remote-publication';
+import type {
+  Acquisition,
+  FeedPath,
+  RemoteImage,
+  RemotePublication,
+} from '../../domain/remote-publication';
 
 type OpdsFeedReading = CatalogFeed | { readonly kind: 'not-a-feed' };
 

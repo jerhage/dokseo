@@ -1,4 +1,4 @@
-import type { FeedSearch } from '../domain/catalog-feed';
+import type { FeedSearch } from '../../domain/catalog-feed';
 import type {
   CatalogCredentials,
   CatalogSource,
@@ -7,16 +7,16 @@ import type {
   FeedPlacement,
   ReadFeedResult,
   ReadImageResult,
-} from '../domain/catalog-source';
-import { SEARCH_PLACEHOLDER, readOpdsFeed } from '../domain/opds-feed';
-import type { Acquisition } from '../domain/remote-publication';
-import type { HttpCatalogClient } from './http-catalog-client';
+} from '../../domain/catalog-source';
+import { SEARCH_PLACEHOLDER, readOpdsFeed } from './opds1-feed';
+import type { Acquisition } from '../../domain/remote-publication';
+import type { HttpCatalogClient } from '../http-catalog-client';
 
 function searchAddress(search: FeedSearch, query: string): string {
   return search.handle.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim()));
 }
 
-class OpdsCatalogSource implements CatalogSource {
+class Opds1CatalogSource implements CatalogSource {
   readonly #http: HttpCatalogClient;
 
   constructor(http: HttpCatalogClient) {
@@ -65,4 +65,4 @@ class OpdsCatalogSource implements CatalogSource {
   }
 }
 
-export { OpdsCatalogSource, searchAddress };
+export { Opds1CatalogSource, searchAddress };
