@@ -7,6 +7,7 @@
   import { page } from '$app/state';
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
+  import { CatalogHeaderSearch } from '$lib/domains/catalog/ui/catalog-header-search.svelte';
   import { catalogSession } from '$lib/domains/catalog/ui/catalog-session.svelte';
   import { CatalogTabsView } from '$lib/domains/catalog/ui/catalog-tabs.svelte';
   import LibraryTabs from '$lib/domains/catalog/ui/LibraryTabs.svelte';
@@ -55,6 +56,7 @@
     },
   });
   void catalogs.load();
+  const catalogSearch = new CatalogHeaderSearch(catalogs, catalogSession);
   onDestroy(() => catalogs.dispose());
 
   let query = $state('');
@@ -99,6 +101,7 @@
       bookBadge={origins.visible ? originBadge : undefined}
       bookFilter={origins.visible ? (id) => origins.matches(id) : undefined}
       filterControls={origins.visible ? originControls : undefined}
+      headerSearch={catalogSearch.field}
       bind:query
     />
 
