@@ -35,7 +35,7 @@ function filterOptions(catalogs: readonly Catalog[]): readonly OriginFilterOptio
     { value: filterValue(FILES_FILTER), label: FILES_LABEL },
     ...catalogs.map((catalog) => ({
       value: filterValue({ kind: 'catalog', catalogId: catalog.id }),
-      label: catalog.title,
+      label: `Downloaded from ${catalog.title}`,
     })),
   ];
 }
