@@ -70,6 +70,7 @@ const BUILD_CONTAINER: SourceSnippet = {
 
   return {
     beginTrace,
+    catalog: buildCatalog(),
     library: {
       ...buildLibrary(repository, removedBooks.mergeIntoBook),
       ...removedBooks,

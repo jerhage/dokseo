@@ -102,6 +102,7 @@ function containerOf(store: Store): Container {
 
   return {
     beginTrace: () => quiet,
+    catalog: {} as Container['catalog'],
     library: {
       openFile: unused,
       openForReading: unused,
