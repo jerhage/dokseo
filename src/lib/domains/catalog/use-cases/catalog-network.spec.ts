@@ -118,7 +118,11 @@ function setup(feed: ReadFeedResult = { kind: 'success', reading: SHELF_FICTION_
     },
   };
 
-  const sourceFor: CatalogSourceFor = () => Promise.resolve(source);
+  const protocols: string[] = [];
+  const sourceFor: CatalogSourceFor = (protocol) => {
+    protocols.push(protocol);
+    return Promise.resolve(source);
+  };
 
   const catalogs: CatalogRepository = {
     list: () =>
@@ -161,6 +165,7 @@ function setup(feed: ReadFeedResult = { kind: 'success', reading: SHELF_FICTION_
 
   return {
     sourceFor,
+    protocols,
     catalogs,
     origins,
     passwords,
@@ -184,6 +189,22 @@ describe('browseCatalog', () => {
 
     expect(browsed.kind === 'success' && browsed.reading.kind).toBe('navigation');
     expect(world.requests).toEqual(['feed https://example.org/opds']);
+  });
+
+  it('asks for the source of the protocol the catalog speaks', async () => {
+    const world = setup();
+
+    await browseCatalog(world, OPEN, null, []);
+
+    expect(world.protocols).toEqual(['opds1']);
+  });
+
+  it('asks for no source when the catalog is locked', async () => {
+    const world = setup();
+
+    await browseCatalog(world, PRIVATE, null, []);
+
+    expect(world.protocols).toEqual([]);
   });
 
   it('answers client outcomes unchanged', async () => {
