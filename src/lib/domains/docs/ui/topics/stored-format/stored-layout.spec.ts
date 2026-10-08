@@ -12,6 +12,18 @@ describe('the stored layout on the page', () => {
       'recognition v5 recognizer-setup',
       'recognition v5 tags',
       'flowing v1 reading-settings',
+      'catalog-origins v1 catalogs',
+      'catalog-origins v1 origins',
+    ]);
+  });
+
+  it('names a compound index by both of its key paths and marks it unique', () => {
+    const origins = STORE_ROWS.find((row) => row.store === 'origins');
+
+    expect(origins?.keyPath).toBe('bookId');
+    expect(origins?.indexes).toEqual([
+      'catalogId on catalogId',
+      'entry on catalogId + entryId, unique',
     ]);
   });
 

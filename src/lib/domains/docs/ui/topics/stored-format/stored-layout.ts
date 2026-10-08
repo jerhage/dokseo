@@ -2,6 +2,7 @@ import { readCapturesFile } from '$lib/domains/storage/use-cases/read-captures-f
 import { isStoredFields, isText } from '$lib/shared/corrupt-row';
 import GOLDEN_FILE from '$lib/shared/testing/stored-format/captures-v1.golden.json';
 import {
+  CATALOG_ORIGINS_DATABASE,
   READER_DATABASE,
   RECOGNITION_DATABASE,
 } from '$lib/shared/testing/stored-format/database-layout';
@@ -43,8 +44,13 @@ function keyPathOf(options: unknown): string {
 
 function indexText(name: string, keyPath: unknown, options: unknown): string {
   const many = isStoredFields(options) && options.multiEntry === true;
-  const path = isText(keyPath) ? keyPath : '';
-  return `${name} on ${path}${many ? ', multiEntry' : ''}`;
+  const unique = isStoredFields(options) && options.unique === true;
+  const path = Array.isArray(keyPath)
+    ? keyPath.filter(isText).join(' + ')
+    : isText(keyPath)
+      ? keyPath
+      : '';
+  return `${name} on ${path}${many ? ', multiEntry' : ''}${unique ? ', unique' : ''}`;
 }
 
 function storeRows(layout: DatabaseLayout): readonly StoreRow[] {
@@ -64,6 +70,7 @@ const STORE_ROWS: readonly StoreRow[] = [
   ...storeRows(READER_DATABASE),
   ...storeRows(RECOGNITION_DATABASE),
   FLOWING_STORE,
+  ...storeRows(CATALOG_ORIGINS_DATABASE),
 ];
 
 function goldenCounts(text: string): readonly GoldenCount[] {
