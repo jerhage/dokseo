@@ -15,6 +15,7 @@
     onselectedchange?: (id: string) => void;
     panel: Snippet<[TabItem]>;
     actions?: Snippet;
+    keepMounted?: boolean;
   };
 
   let {
@@ -25,6 +26,7 @@
     onselectedchange,
     panel,
     actions,
+    keepMounted = false,
     class: className,
     ...rest
   }: Props = $props();
@@ -96,7 +98,7 @@
       tabindex="0"
       hidden={tab.id !== shown}
     >
-      {#if tab.id === shown}
+      {#if keepMounted || tab.id === shown}
         {@render panel(tab)}
       {/if}
     </div>

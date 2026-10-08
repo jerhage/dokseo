@@ -2,7 +2,11 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import ChevronRight from './icons/ChevronRight.svelte';
 
-  type Crumb = { readonly label: string; readonly href?: string | undefined };
+  type Crumb = {
+    readonly label: string;
+    readonly href?: string | undefined;
+    readonly onselect?: (() => void) | undefined;
+  };
 
   type Props = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
     items: readonly Crumb[];
@@ -21,10 +25,14 @@
         </li>
       {/if}
       <li class="breadcrumb-item">
-        {#if index === items.length - 1 || item.href === undefined}
-          <span aria-current={index === items.length - 1 ? 'page' : undefined}>{item.label}</span>
-        {:else}
+        {#if index === items.length - 1}
+          <span aria-current="page">{item.label}</span>
+        {:else if item.href !== undefined}
           <a href={item.href}>{item.label}</a>
+        {:else if item.onselect !== undefined}
+          <button type="button" onclick={item.onselect}>{item.label}</button>
+        {:else}
+          <span>{item.label}</span>
         {/if}
       </li>
     {/each}
