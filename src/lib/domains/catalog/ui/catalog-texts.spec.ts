@@ -17,13 +17,16 @@ import {
 describe('connectionOutcome', () => {
   it('names the feed title on success', () => {
     expect(
-      connectionOutcome({ kind: 'success', feedTitle: 'Sample Library', feedKind: 'navigation' }),
+      connectionOutcome(
+        { kind: 'success', feedTitle: 'Sample Library', feedKind: 'navigation' },
+        'opds1',
+      ),
     ).toEqual({ variant: 'success', text: 'Connected: Sample Library.' });
   });
 
   it('words each outcome on its own', () => {
     const results: readonly TestCatalogConnectionResult[] = [
-      { kind: 'not-opds' },
+      { kind: 'not-a-catalog' },
       { kind: 'locked' },
       { kind: 'unauthorized' },
       { kind: 'not-found' },
@@ -32,7 +35,7 @@ describe('connectionOutcome', () => {
       { kind: 'offline' },
       { kind: 'aborted' },
     ];
-    const texts = results.map((result) => connectionOutcome(result).text);
+    const texts = results.map((result) => connectionOutcome(result, 'opds1').text);
     expect(new Set(texts).size).toBe(texts.length);
     expect(texts).toContain('The server refused the username or password.');
     expect(texts).toContain('This address answers, but not with an OPDS catalog.');
@@ -41,15 +44,15 @@ describe('connectionOutcome', () => {
 
   it('sends the three draft refusals to the fields with one shared text', () => {
     const texts = [
-      connectionOutcome({ kind: 'empty-title' }).text,
-      connectionOutcome({ kind: 'invalid-url', problem: 'insecure' }).text,
-      connectionOutcome({ kind: 'missing-username' }).text,
+      connectionOutcome({ kind: 'empty-title' }, 'opds1').text,
+      connectionOutcome({ kind: 'invalid-url', problem: 'insecure' }, 'opds1').text,
+      connectionOutcome({ kind: 'missing-username' }, 'opds1').text,
     ];
     expect(new Set(texts).size).toBe(1);
   });
 
   it('explains the blocked causes in plain words', () => {
-    const { text } = connectionOutcome({ kind: 'blocked' });
+    const { text } = connectionOutcome({ kind: 'blocked' }, 'opds1');
     expect(text).toBe(BLOCKED_TEXT);
     expect(text).toContain('CORS');
     expect(text).toContain('local network access');
@@ -99,26 +102,26 @@ describe('catalogDescription', () => {
 
 describe('browseFailureText', () => {
   it('tells an offline reader the catalog needs a connection and downloads stay readable', () => {
-    expect(browseFailureText({ kind: 'offline' })).toBe(OFFLINE_CATALOG_TEXT);
+    expect(browseFailureText({ kind: 'offline' }, 'opds1')).toBe(OFFLINE_CATALOG_TEXT);
     expect(OFFLINE_CATALOG_TEXT).toContain('downloaded');
   });
 
   it('reuses the blocked text of the connection test', () => {
-    expect(browseFailureText({ kind: 'blocked' })).toBe(BLOCKED_TEXT);
+    expect(browseFailureText({ kind: 'blocked' }, 'opds1')).toBe(BLOCKED_TEXT);
   });
 
   it('names the status of a server error', () => {
-    expect(browseFailureText({ kind: 'server-error', status: 503 })).toContain('503');
+    expect(browseFailureText({ kind: 'server-error', status: 503 }, 'opds1')).toContain('503');
   });
 
   it('words each failure on its own', () => {
     const texts = [
-      browseFailureText({ kind: 'not-opds' }),
-      browseFailureText({ kind: 'not-found' }),
-      browseFailureText({ kind: 'offline' }),
-      browseFailureText({ kind: 'unknown-catalog', id: catalogId('c') }),
-      browseFailureText({ kind: 'unreadable-catalog', id: catalogId('c') }),
-      browseFailureText({ kind: 'storage-unavailable' }),
+      browseFailureText({ kind: 'not-a-catalog' }, 'opds1'),
+      browseFailureText({ kind: 'not-found' }, 'opds1'),
+      browseFailureText({ kind: 'offline' }, 'opds1'),
+      browseFailureText({ kind: 'unknown-catalog', id: catalogId('c') }, 'opds1'),
+      browseFailureText({ kind: 'unreadable-catalog', id: catalogId('c') }, 'opds1'),
+      browseFailureText({ kind: 'storage-unavailable' }, 'opds1'),
     ];
     expect(new Set(texts).size).toBe(texts.length);
   });

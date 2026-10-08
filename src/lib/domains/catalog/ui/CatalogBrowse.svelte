@@ -54,7 +54,7 @@
     {/if}
   {:else if view.state.kind === 'failed'}
     <Alert variant="warning" title="This catalog could not be read.">
-      {browseFailureText(view.state.failure)}
+      {browseFailureText(view.state.failure, view.catalog.protocol)}
       {#snippet actions()}
         <Button size="sm" onclick={() => void view.load()}>Try again</Button>
       {/snippet}

@@ -1,5 +1,6 @@
 import { isComposingKey } from '$lib/shared/composing-key';
 import type { ComposingSignals } from '$lib/shared/composing-key';
+import type { FeedSearch } from '../domain/catalog-feed';
 
 type HeaderField = {
   readonly placeholder: string;
@@ -11,8 +12,8 @@ type HeaderField = {
 
 type SearchAvailability = 'unknown' | 'offered' | 'absent';
 
-function searchAvailability(settled: boolean, template: string | null): SearchAvailability {
-  if (template !== null) return 'offered';
+function searchAvailability(settled: boolean, offered: FeedSearch | null): SearchAvailability {
+  if (offered !== null) return 'offered';
   return settled ? 'absent' : 'unknown';
 }
 

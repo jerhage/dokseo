@@ -1,7 +1,7 @@
 import type { BookId } from '$lib/shared/ids';
 import type { ReplaceBookFileResult } from '$lib/domains/library/use-cases/replace-book-file';
 import { bookOriginOf } from '../domain/book-origin';
-import type { ClientFailure, DownloadProgress } from '../domain/opds-client';
+import type { ClientFailure, DownloadProgress } from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { CatalogAccessFailure } from './catalog-access';

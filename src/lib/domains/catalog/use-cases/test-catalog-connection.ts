@@ -1,19 +1,18 @@
 import { catalogId } from '$lib/shared/ids';
 import { checkedDraft } from '../domain/catalog-draft';
 import type { CatalogDraft, DraftRefusal } from '../domain/catalog-draft';
-import type { CatalogCredentials, ClientFailure, OpdsClient } from '../domain/opds-client';
-import { readOpdsFeed } from '../domain/opds-feed';
+import type { CatalogCredentials, CatalogSourceFor, ClientFailure } from '../domain/catalog-source';
 
 type TestedFeedKind = 'navigation' | 'acquisition';
 
 type TestCatalogConnectionResult =
   | { readonly kind: 'success'; readonly feedTitle: string; readonly feedKind: TestedFeedKind }
-  | { readonly kind: 'not-opds' }
+  | { readonly kind: 'not-a-catalog' }
   | { readonly kind: 'locked' }
   | DraftRefusal
   | ClientFailure;
 
-type TestCatalogConnectionDeps = { readonly client: OpdsClient };
+type TestCatalogConnectionDeps = { readonly sourceFor: CatalogSourceFor };
 
 const TESTED_CATALOG = catalogId('connection-test');
 const TESTED_TITLE = 'connection test';
@@ -34,12 +33,16 @@ async function testCatalogConnection(
     credentials = { kind: 'basic', username: auth.username, password };
   }
 
-  const rootUrl = checked.draft.rootUrl;
-  const fetched = await deps.client.readFeed(rootUrl, credentials, signal);
+  const source = await deps.sourceFor(checked.draft.protocol);
+  const fetched = await source.readFeed(
+    checked.draft.rootUrl,
+    { catalogId: TESTED_CATALOG, path: [] },
+    credentials,
+    signal,
+  );
   if (fetched.kind !== 'success') return fetched;
 
-  const reading = readOpdsFeed(fetched.text, rootUrl, TESTED_CATALOG, []);
-  if (reading.kind === 'not-a-feed') return { kind: 'not-opds' };
+  const reading = fetched.reading;
   return { kind: 'success', feedTitle: reading.feed.title, feedKind: reading.kind };
 }
 

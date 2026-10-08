@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ROOT_POSITION,
+  addressed,
   atDepth,
   crumbs,
   identified,
@@ -8,7 +9,6 @@ import {
   paged,
   searched,
   searchStep,
-  searchUrl,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
 
@@ -19,39 +19,36 @@ const DEEP: FeedPosition = {
   path: [SERIES, ONE],
   url: 'https://x.test/series/one?offset=30',
   ids: ['root', 'series', 'one'],
+  lookup: null,
 };
 
-describe('searchUrl', () => {
-  it('encodes the query into the template', () => {
-    expect(searchUrl('https://x.test/search/{searchTerms}?lib=a', 'star & voyage')).toBe(
-      'https://x.test/search/star%20%26%20voyage?lib=a',
-    );
-  });
-
-  it('encodes a non-ASCII query', () => {
-    expect(searchUrl('https://x.test/s/{searchTerms}', '星')).toBe('https://x.test/s/%E6%98%9F');
-  });
-
-  it('fills the placeholder wherever it appears', () => {
-    expect(searchUrl('https://x.test/s?q={searchTerms}&t={searchTerms}', 'a b')).toBe(
-      'https://x.test/s?q=a%20b&t=a%20b',
-    );
-  });
-});
-
 describe('searchStep', () => {
-  it('names the step by the trimmed query', () => {
-    expect(searchStep('https://x.test/s/{searchTerms}', '  moon ')).toEqual({
-      title: 'Search: moon',
-      href: 'https://x.test/s/moon',
-    });
+  it('names the step by the trimmed query and leaves its address for the result', () => {
+    expect(searchStep('  moon ')).toEqual({ title: 'Search: moon', href: '' });
   });
 });
 
 describe('searched', () => {
-  it('replaces the path with the search step alone', () => {
-    const step = { title: 'Search: moon', href: 'https://x.test/s/moon' };
-    expect(searched(DEEP, step)).toEqual({ path: [step], url: step.href, ids: ['root', ''] });
+  it('replaces the path with the search step alone and keeps the lookup', () => {
+    const lookup = { search: { handle: 'h' }, query: 'moon' };
+    expect(searched(DEEP, lookup)).toEqual({
+      path: [{ title: 'Search: moon', href: '' }],
+      url: null,
+      ids: ['root', ''],
+      lookup,
+    });
+  });
+});
+
+describe('addressed', () => {
+  it('points the last step and the position at the address a search was read from', () => {
+    const lookup = { search: { handle: 'h' }, query: 'moon' };
+    expect(addressed(searched(DEEP, lookup), 'https://x.test/s/moon')).toEqual({
+      path: [{ title: 'Search: moon', href: 'https://x.test/s/moon' }],
+      url: 'https://x.test/s/moon',
+      ids: ['root', ''],
+      lookup: null,
+    });
   });
 });
 
@@ -61,6 +58,7 @@ describe('positions', () => {
       path: [SERIES],
       url: SERIES.href,
       ids: ['', ''],
+      lookup: null,
     });
   });
 
@@ -69,15 +67,21 @@ describe('positions', () => {
       path: [SERIES, ONE],
       url: 'https://x.test/p3',
       ids: ['root', 'series', 'one'],
+      lookup: null,
     });
   });
 
   it('goes back to the feed of an earlier step', () => {
-    expect(atDepth(DEEP, 1)).toEqual({ path: [SERIES], url: SERIES.href, ids: ['root', 'series'] });
+    expect(atDepth(DEEP, 1)).toEqual({
+      path: [SERIES],
+      url: SERIES.href,
+      ids: ['root', 'series'],
+      lookup: null,
+    });
   });
 
   it('goes back to the root at depth 0', () => {
-    expect(atDepth(DEEP, 0)).toEqual({ path: [], url: null, ids: ['root'] });
+    expect(atDepth(DEEP, 0)).toEqual({ path: [], url: null, ids: ['root'], lookup: null });
   });
 
   it('keeps the whole path at its own depth, on its first page', () => {
@@ -85,6 +89,7 @@ describe('positions', () => {
       path: [SERIES, ONE],
       url: ONE.href,
       ids: ['root', 'series', 'one'],
+      lookup: null,
     });
   });
 });
@@ -94,6 +99,7 @@ describe('identified', () => {
     path: [SERIES],
     url: 'https://x.test/opds?library_id=calibre',
     ids: ['root', ''],
+    lookup: null,
   };
 
   it('records the id of a feed it has not seen', () => {
@@ -105,6 +111,7 @@ describe('identified', () => {
       path: [],
       url: 'https://x.test/opds?library_id=calibre',
       ids: ['root'],
+      lookup: null,
     });
   });
 
@@ -113,16 +120,23 @@ describe('identified', () => {
       path: [SERIES, ONE],
       url: 'https://x.test/series?again',
       ids: ['root', 'series', ''],
+      lookup: null,
     };
     expect(identified(position, 'series')).toEqual({
       path: [{ title: SERIES.title, href: 'https://x.test/series?again' }],
       url: 'https://x.test/series?again',
       ids: ['root', 'series'],
+      lookup: null,
     });
   });
 
   it('never matches an empty id', () => {
-    const position: FeedPosition = { path: [SERIES], url: SERIES.href, ids: ['', ''] };
+    const position: FeedPosition = {
+      path: [SERIES],
+      url: SERIES.href,
+      ids: ['', ''],
+      lookup: null,
+    };
     expect(identified(position, '')).toEqual(position);
   });
 });

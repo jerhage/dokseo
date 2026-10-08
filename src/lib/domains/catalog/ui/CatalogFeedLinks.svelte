@@ -3,7 +3,7 @@
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import ListGroup from '$lib/ui/components/ListGroup.svelte';
   import ListRow from '$lib/ui/components/ListRow.svelte';
-  import type { NavigationLink } from '../domain/opds-feed';
+  import type { NavigationLink } from '../domain/catalog-feed';
 
   type Props = {
     readonly label: string;

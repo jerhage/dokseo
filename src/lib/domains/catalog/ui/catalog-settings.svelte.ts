@@ -145,10 +145,11 @@ class CatalogSettingsView {
     const generation = ++this.#generation;
     this.refusal = null;
     this.connection = { kind: 'testing' };
-    const result = await this.#cases.testCatalogConnection(this.#draft(), this.#typedPassword());
+    const draft = this.#draft();
+    const result = await this.#cases.testCatalogConnection(draft, this.#typedPassword());
     if (generation !== this.#generation) return;
 
-    this.connection = { kind: 'done', outcome: connectionOutcome(result) };
+    this.connection = { kind: 'done', outcome: connectionOutcome(result, draft.protocol) };
     if (result.kind === 'success' && this.title.trim().length === 0) {
       this.title = result.feedTitle;
     }

@@ -11,7 +11,7 @@ import {
   UNKNOWN_MEDIA_TYPE,
 } from './opds-fixtures';
 import { MAX_FEED_CHARACTERS, readOpdsFeed } from './opds-feed';
-import type { AcquisitionFeed, NavigationFeed } from './opds-feed';
+import type { AcquisitionFeed, NavigationFeed } from './catalog-feed';
 import type { FeedPath } from './remote-publication';
 
 const ID = catalogId('c1');
@@ -41,6 +41,15 @@ describe('readOpdsFeed feed id', () => {
   });
 });
 
+describe('readOpdsFeed feed address', () => {
+  it('reports the address the feed was read from', () => {
+    expect(navigation(CALIBRE_ROOT, `${SERVER}/opds?page=2`).address).toBe(`${SERVER}/opds?page=2`);
+    expect(acquisition(CALIBRE_SERIES, `${SERVER}/opds/series`).address).toBe(
+      `${SERVER}/opds/series`,
+    );
+  });
+});
+
 describe('readOpdsFeed on a Calibre root', () => {
   it('reads links without a rel, resolving them against the feed url', () => {
     const feed = navigation(CALIBRE_ROOT);
@@ -62,9 +71,9 @@ describe('readOpdsFeed on a Calibre root', () => {
   });
 
   it('keeps the search placeholder literal', () => {
-    expect(navigation(CALIBRE_ROOT).searchTemplate).toBe(
-      `${SERVER}/opds/search/{searchTerms}?library_id=calibre`,
-    );
+    expect(navigation(CALIBRE_ROOT).search).toEqual({
+      handle: `${SERVER}/opds/search/{searchTerms}?library_id=calibre`,
+    });
   });
 
   it('reports no paging when the feed has none', () => {
@@ -123,9 +132,9 @@ describe('readOpdsFeed on a Calibre series feed', () => {
   });
 
   it('keeps the search template of the feed', () => {
-    expect(acquisition(CALIBRE_SERIES).searchTemplate).toBe(
-      `${SERVER}/opds/search/{searchTerms}?library_id=calibre`,
-    );
+    expect(acquisition(CALIBRE_SERIES).search).toEqual({
+      handle: `${SERVER}/opds/search/{searchTerms}?library_id=calibre`,
+    });
   });
 });
 

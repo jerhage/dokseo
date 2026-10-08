@@ -4,7 +4,7 @@ import type { BookMatching } from '$lib/domains/library/domain/book/book-matchin
 import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-defaults';
 import { isLater, remoteItem } from '../domain/remote-item';
 import type { BookOriginLink, DownloadState, RemoteItem } from '../domain/remote-item';
-import type { DownloadProgress } from '../domain/opds-client';
+import type { DownloadProgress } from '../domain/catalog-source';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { UpdatePublicationResult } from '../use-cases/update-publication';

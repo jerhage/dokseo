@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import { CALIBRE_ROOT } from '../domain/opds-fixtures';
-import { readOpdsFeed } from '../domain/opds-feed';
+import {
+  HOME_ROOT_FEED,
+  HOME_SEARCH,
+  identifiedAs,
+  placed,
+  withoutSearch,
+} from '../domain/catalog-feed-fixtures';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import { CatalogHeaderSearch } from './catalog-header-search.svelte';
 import { CatalogSession } from './catalog-session.svelte';
@@ -12,10 +17,9 @@ import { ARCHIVE, HOME } from './catalog-ui-fixtures';
 import { DEVICE_TAB } from './library-tabs';
 import { searchAvailability, searchFieldKey, searchPlaceholder } from './catalog-search';
 
-const WITHOUT_SEARCH = CALIBRE_ROOT.replace(/<link title="Search"[^>]*\/>/u, '');
-
 function setup() {
   const urls: Array<string | null> = [];
+  const searches: Array<{ handle: string; query: string }> = [];
   const session = new CatalogSession();
   const tabs = new CatalogTabsView(session, {
     cases: {
@@ -23,10 +27,20 @@ function setup() {
         Promise.resolve({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
       browseCatalog: (id, url, path) => {
         urls.push(url);
-        const xml = id === HOME.id ? CALIBRE_ROOT : WITHOUT_SEARCH;
-        const own = url === null ? xml : xml.replace('urn:calibre:main', 'urn:calibre:results');
-        const reading = readOpdsFeed(own, url ?? 'https://home.test/opds', id, path);
-        if (reading.kind === 'not-a-feed') throw new Error('fixture is not a feed');
+        const root = id === HOME.id ? HOME_ROOT_FEED : withoutSearch(HOME_ROOT_FEED);
+        const own = url === null ? root : identifiedAs(root, 'urn:calibre:results');
+        const reading = placed(own, url ?? 'https://home.test/opds', path, id);
+        const answer: BrowseCatalogResult = { kind: 'success', reading, held: new Map() };
+        return Promise.resolve(answer);
+      },
+      searchCatalog: (id, search, query, path) => {
+        searches.push({ handle: search.handle, query });
+        const reading = placed(
+          identifiedAs(HOME_ROOT_FEED, 'urn:calibre:results'),
+          'https://home.test/opds/search',
+          path,
+          id,
+        );
         const answer: BrowseCatalogResult = { kind: 'success', reading, held: new Map() };
         return Promise.resolve(answer);
       },
@@ -42,7 +56,7 @@ function setup() {
     openBook: () => undefined,
     refreshLibrary: () => Promise.resolve(),
   });
-  return { search: new CatalogHeaderSearch(tabs, session), tabs, urls };
+  return { search: new CatalogHeaderSearch(tabs, session), tabs, urls, searches };
 }
 
 describe('searchPlaceholder', () => {
@@ -57,7 +71,7 @@ describe('searchAvailability', () => {
   it('reports absent only once the feed is read and offers no template', () => {
     expect(searchAvailability(false, null)).toBe('unknown');
     expect(searchAvailability(true, null)).toBe('absent');
-    expect(searchAvailability(true, '/s/{searchTerms}')).toBe('offered');
+    expect(searchAvailability(true, HOME_SEARCH)).toBe('offered');
   });
 });
 
@@ -89,13 +103,13 @@ describe('CatalogHeaderSearch', () => {
   });
 
   it('searches the selected catalog on submit', async () => {
-    const { search, tabs, urls } = setup();
+    const { search, tabs, searches } = setup();
     await tabs.load();
     tabs.select(HOME.id);
     await tabs.browsing(HOME).start();
     search.field?.onsubmit('moon');
     await Promise.resolve();
-    expect(urls.at(-1)).toContain('/opds/search/moon');
+    expect(searches.at(-1)).toEqual({ handle: HOME_SEARCH.handle, query: 'moon' });
     expect(tabs.browsing(HOME).crumbs.at(-1)?.label).toBe('Search: moon');
   });
 
@@ -136,7 +150,7 @@ describe('CatalogHeaderSearch.fieldFor', () => {
   });
 
   it('searches the catalog it was asked for, on submit', async () => {
-    const { search, tabs, urls } = setup();
+    const { search, tabs, searches } = setup();
     await tabs.load();
     tabs.select(HOME.id);
     tabs.browsing(HOME);
@@ -144,7 +158,7 @@ describe('CatalogHeaderSearch.fieldFor', () => {
 
     search.fieldFor(HOME).onsubmit('lantern');
 
-    expect(urls.at(-1)).toContain('lantern');
+    expect(searches.at(-1)?.query).toBe('lantern');
   });
 
   it('disables the field of a catalog whose feed offers no search once it is read', async () => {

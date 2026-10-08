@@ -15,7 +15,7 @@
 {#if view.paging.next !== null}
   {#if more.kind === 'failed'}
     <Alert variant="warning" title="More books could not be loaded.">
-      {browseFailureText(more.failure)}
+      {browseFailureText(more.failure, view.catalog.protocol)}
       {#snippet actions()}
         <Button size="sm" onclick={() => void view.loadMore()}>Try again</Button>
       {/snippet}

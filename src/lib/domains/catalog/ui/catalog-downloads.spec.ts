@@ -3,7 +3,7 @@ import { bookId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import type { DownloadProgress } from '../domain/opds-client';
+import type { DownloadProgress } from '../domain/catalog-source';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
 import type { UpdatePublicationResult } from '../use-cases/update-publication';
