@@ -29,6 +29,7 @@
     storageText,
     titledBooks,
   } from './library-overview';
+  import type { HeaderSearch } from './library-overview';
   import BookSettings from './BookSettings.svelte';
   import { arrivedFiles } from './chosen-files';
   import ContinueReading from './ContinueReading.svelte';
@@ -60,6 +61,7 @@
     readonly bookBadge?: Snippet<[BookId]> | undefined;
     readonly bookFilter?: ((id: BookId) => boolean) | undefined;
     readonly filterControls?: Snippet | undefined;
+    readonly headerSearch?: HeaderSearch | undefined;
     query?: string;
   };
 
@@ -72,6 +74,7 @@
     bookBadge,
     bookFilter,
     filterControls,
+    headerSearch,
     query = $bindable(''),
   }: Props = $props();
 
@@ -258,7 +261,7 @@
     <div
       class="row wrap items-center gap-3 flex-fill justify-end layout-app-shell-narrow-nowrap layout-app-shell-narrow-fit"
     >
-      <LibrarySearch bind:query {matched} class="layout-app-shell-wide-only" />
+      <LibrarySearch bind:query {matched} {headerSearch} class="layout-app-shell-wide-only" />
       <KeyHints
         hints={SEARCH_EVERYTHING_HINTS}
         variant="inline"
