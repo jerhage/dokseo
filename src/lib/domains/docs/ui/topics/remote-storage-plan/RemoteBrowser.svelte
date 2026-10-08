@@ -85,8 +85,10 @@
     <a href={SECURITY_DIRECTIVES_HREF}>Dokseo's policy, directive by directive</a> explains each directive.
   </p>
   <p>
-    A last item is on the list to look at, not decided: Chromium's Local Network Access, which adds
-    a permission step when a public page calls a private address. The
-    <a href={remoteHref('proxy')}>proxy section</a> says what the probe has to confirm.
+    Chromium's Local Network Access adds a permission step when a public page calls a private
+    address, and a Tailscale address counts as one. The <a href={remoteHref('proxy')}
+      >proxy section</a
+    >
+    gives what the probe found.
   </p>
 </DocsSection>

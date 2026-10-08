@@ -3,27 +3,33 @@
   import DocsSection from '../../DocsSection.svelte';
   import { REMOTE_SECTIONS, remoteHref } from './remote-sections';
 
-  const TAILSCALE_COMMAND = `tailscale serve --bg 8081`;
+  const TAILSCALE_COMMAND = `tailscale serve --bg http://127.0.0.1:8081`;
 
-  const CADDYFILE = `http://127.0.0.1:8081 {
-	header {
-		Access-Control-Allow-Origin "https://reader.gongbu.me"
-		Access-Control-Allow-Headers "Authorization, Range"
-		Access-Control-Allow-Methods "GET, OPTIONS"
-	}
+  const CADDYFILE = `:8081 {
+	bind 127.0.0.1
+
+	@allowed header_regexp Origin ^https://(reader\\.gongbu\\.me|localhost:5173)$
+	header @allowed Access-Control-Allow-Origin {http.request.header.Origin}
+	header @allowed Access-Control-Allow-Headers "Authorization, Range"
+	header @allowed Access-Control-Expose-Headers "Content-Length, Content-Disposition"
+	header Vary Origin
+
 	@preflight method OPTIONS
 	respond @preflight 204
+
 	reverse_proxy 127.0.0.1:8080
 }`;
 
   const CADDY_ALONE = `calibre.example.com {
-	header {
-		Access-Control-Allow-Origin "https://reader.gongbu.me"
-		Access-Control-Allow-Headers "Authorization, Range"
-		Access-Control-Allow-Methods "GET, OPTIONS"
-	}
+	@allowed header_regexp Origin ^https://reader\\.gongbu\\.me$
+	header @allowed Access-Control-Allow-Origin {http.request.header.Origin}
+	header @allowed Access-Control-Allow-Headers "Authorization, Range"
+	header @allowed Access-Control-Expose-Headers "Content-Length, Content-Disposition"
+	header Vary Origin
+
 	@preflight method OPTIONS
 	respond @preflight 204
+
 	reverse_proxy 127.0.0.1:8080
 }`;
 </script>
@@ -56,14 +62,20 @@
     <code>tailscale funnel</code> is for access from outside the tailnet. It makes the address reachable
     from the public internet, which makes the catalog's own password matter again.
   </p>
-  <p>The probe has to confirm three things:</p>
+  <p>What the probe against a real Calibre 9.15 behind Tailscale found:</p>
   <ul class="col gap-2">
-    <li>that Calibre sends no CORS headers;</li>
     <li>
-      how Chromium treats a public page calling a <code>ts.net</code> address, which resolves to
-      <code>100.64.0.0/10</code> (Private Network Access and Local Network Access);
+      Calibre sends no CORS headers. Without Caddy the browser blocks every response; with the
+      Caddyfile above each feed and download carries <code>Access-Control-Allow-Origin</code>.
     </li>
-    <li>that a phone needs Tailscale running to reach the catalog.</li>
+    <li>
+      Chromium 153 blocks a call from <code>https://reader.gongbu.me</code> to the
+      <code>ts.net</code> address, which resolves to a Tailscale <code>100.x</code> address:
+      "Permission was denied for this request to access the <code>local</code> address space". With the
+      Local Network Access permission granted the same call returns 200. In Chrome this is a one-time
+      permission prompt for the site.
+    </li>
+    <li>A phone still needs Tailscale running to reach the catalog; downloaded books do not.</li>
   </ul>
 </DocsSection>
 
