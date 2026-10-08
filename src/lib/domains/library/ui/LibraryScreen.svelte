@@ -1,5 +1,6 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
+  import type { Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import Button from '$lib/ui/components/Button.svelte';
   import IconButton from '$lib/ui/components/IconButton.svelte';
@@ -54,10 +55,18 @@
     readonly shelfRead: ShelfRead;
     readonly scroll: LibraryScrollView;
     readonly onsearcheverything?: (() => void) | undefined;
+    readonly tabbed?: Snippet<[Snippet]> | undefined;
     query?: string;
   };
 
-  let { view, shelfRead, scroll, onsearcheverything, query = $bindable('') }: Props = $props();
+  let {
+    view,
+    shelfRead,
+    scroll,
+    onsearcheverything,
+    tabbed,
+    query = $bindable(''),
+  }: Props = $props();
 
   let main = $state<HTMLElement | null>(null);
 
@@ -117,6 +126,101 @@
     if (top !== null && main !== null) main.scrollTop = top;
   });
 </script>
+
+{#snippet deviceContent()}
+  <div class="col gap-1 layout-app-shell-narrow-visually-hidden">
+    <h1 class="text-lg">Your uploads</h1>
+    <p class="text-xs text-muted">{summary}</p>
+  </div>
+
+  {#if view.upload.pending !== null}
+    <ImportStatus
+      title={view.upload.pending}
+      language="ja"
+      stage={view.upload.progress}
+      batch={view.upload.batch}
+    />
+  {/if}
+
+  {#if shelfRead.unreadable.length > 0}
+    <UnreadableBooks
+      books={shelfRead.unreadable}
+      shelf={shelfRead.books}
+      busy={view.changes.removing !== null || view.changes.merging !== null}
+      onremove={(id) => void view.changes.remove(id)}
+      onmerge={(id, into) => void view.changes.merge(id, into)}
+      onremoveall={() => void view.changes.removeEach(shelfRead.unreadable.map((book) => book.id))}
+    />
+  {/if}
+
+  <LibraryBooksData
+    state={shelfRead.state}
+    importing={view.upload.pending !== null}
+    onretry={shelfRead.reload}
+  >
+    {#snippet children(library)}
+      {#if resumable.length > 0}
+        <ContinueReading books={resumable} covers={library.covers} />
+      {/if}
+
+      {#if library.books.length > 0}
+        <ShelfView
+          books={titled}
+          {shown}
+          covers={library.covers}
+          {searching}
+          bind:shelf={() => arrangement.shelf.value, (next) => arrangement.shelf.choose(next)}
+          bind:order={() => arrangement.order.value, (next) => arrangement.order.choose(next)}
+          bind:layout={() => arrangement.layout.value, (next) => arrangement.layout.choose(next)}
+          busy={(id) => view.changes.removing === id || view.changes.editing === id}
+          onedit={(id) => (openSettingsFor = id)}
+          onremove={(id) => (removeFor = id)}
+          onfinish={(id) =>
+            void view.changes.markFinished(id, arrangement.shelf.value, shelfRead.books)}
+          onunread={(id) =>
+            void view.changes.markUnread(id, arrangement.shelf.value, shelfRead.books)}
+        />
+      {/if}
+
+      <div hidden={searching}>
+        <UploadStrip
+          bind:this={strip}
+          busy={view.upload.busy}
+          compact={library.books.length > 0}
+          onfiles={(selection) => upload(arrivedFiles(selection))}
+        />
+      </div>
+    {/snippet}
+  </LibraryBooksData>
+
+  {#if shelfRead.removed.length > 0 || shelfRead.unreadableRemoved.length > 0}
+    <RemovedBooks
+      books={shelfRead.removed}
+      unreadable={shelfRead.unreadableRemoved}
+      busy={view.removed.deleting !== null}
+      ondelete={(id) => (deleteCapturesFor = id)}
+    />
+  {/if}
+
+  <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
+    {#if view.upload.pending !== null}
+      <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.upload.batch)}</span>
+    {/if}
+    <span class="ms-auto">{space}</span>
+    <a
+      class="row items-center text-muted"
+      href={SOURCE_URL}
+      target="_blank"
+      rel="noreferrer"
+      title={SOURCE_LABEL}
+    >
+      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true">
+        <path d={GITHUB_MARK} />
+      </svg>
+      <span class="visually-hidden">{SOURCE_LABEL}</span>
+    </a>
+  </footer>
+{/snippet}
 
 <div class="layout-app-shell">
   <header
@@ -194,100 +298,11 @@
     onscroll={(event) => scroll.track(event.currentTarget.scrollTop)}
     {@attach keyboardScrolling}
   >
-    <div class="col gap-1 layout-app-shell-narrow-visually-hidden">
-      <h1 class="text-lg">Your uploads</h1>
-      <p class="text-xs text-muted">{summary}</p>
-    </div>
-
-    {#if view.upload.pending !== null}
-      <ImportStatus
-        title={view.upload.pending}
-        language="ja"
-        stage={view.upload.progress}
-        batch={view.upload.batch}
-      />
+    {#if tabbed !== undefined}
+      {@render tabbed(deviceContent)}
+    {:else}
+      {@render deviceContent()}
     {/if}
-
-    {#if shelfRead.unreadable.length > 0}
-      <UnreadableBooks
-        books={shelfRead.unreadable}
-        shelf={shelfRead.books}
-        busy={view.changes.removing !== null || view.changes.merging !== null}
-        onremove={(id) => void view.changes.remove(id)}
-        onmerge={(id, into) => void view.changes.merge(id, into)}
-        onremoveall={() =>
-          void view.changes.removeEach(shelfRead.unreadable.map((book) => book.id))}
-      />
-    {/if}
-
-    <LibraryBooksData
-      state={shelfRead.state}
-      importing={view.upload.pending !== null}
-      onretry={shelfRead.reload}
-    >
-      {#snippet children(library)}
-        {#if resumable.length > 0}
-          <ContinueReading books={resumable} covers={library.covers} />
-        {/if}
-
-        {#if library.books.length > 0}
-          <ShelfView
-            books={titled}
-            {shown}
-            covers={library.covers}
-            {searching}
-            bind:shelf={() => arrangement.shelf.value, (next) => arrangement.shelf.choose(next)}
-            bind:order={() => arrangement.order.value, (next) => arrangement.order.choose(next)}
-            bind:layout={() => arrangement.layout.value, (next) => arrangement.layout.choose(next)}
-            busy={(id) => view.changes.removing === id || view.changes.editing === id}
-            onedit={(id) => (openSettingsFor = id)}
-            onremove={(id) => (removeFor = id)}
-            onfinish={(id) =>
-              void view.changes.markFinished(id, arrangement.shelf.value, shelfRead.books)}
-            onunread={(id) =>
-              void view.changes.markUnread(id, arrangement.shelf.value, shelfRead.books)}
-          />
-        {/if}
-
-        <div hidden={searching}>
-          <UploadStrip
-            bind:this={strip}
-            busy={view.upload.busy}
-            compact={library.books.length > 0}
-            onfiles={(selection) => upload(arrivedFiles(selection))}
-          />
-        </div>
-      {/snippet}
-    </LibraryBooksData>
-
-    {#if shelfRead.removed.length > 0 || shelfRead.unreadableRemoved.length > 0}
-      <RemovedBooks
-        books={shelfRead.removed}
-        unreadable={shelfRead.unreadableRemoved}
-        busy={view.removed.deleting !== null}
-        ondelete={(id) => (deleteCapturesFor = id)}
-      />
-    {/if}
-
-    <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
-      {#if view.upload.pending !== null}
-        <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.upload.batch)}</span
-        >
-      {/if}
-      <span class="ms-auto">{space}</span>
-      <a
-        class="row items-center text-muted"
-        href={SOURCE_URL}
-        target="_blank"
-        rel="noreferrer"
-        title={SOURCE_LABEL}
-      >
-        <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true">
-          <path d={GITHUB_MARK} />
-        </svg>
-        <span class="visually-hidden">{SOURCE_LABEL}</span>
-      </a>
-    </footer>
   </main>
 </div>
 
