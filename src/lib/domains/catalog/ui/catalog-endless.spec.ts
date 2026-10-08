@@ -252,4 +252,12 @@ describe('CatalogBrowseView endless paging', () => {
     expect(view.selection.count).toBe(0);
     expect(session.selectionOf(HOME.id).size).toBe(0);
   });
+
+  it('lists an entry once when a later page repeats it', async () => {
+    const repeating = answering(() => acquisitionPage(0));
+    const { view } = setup((url) => Promise.resolve(repeating(url)));
+    await view.start();
+    await view.loadMore();
+    expect(ids(view)).toEqual(['p0-0', 'p0-1', 'p0-2']);
+  });
 });
