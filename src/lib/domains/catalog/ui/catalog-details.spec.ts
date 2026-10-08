@@ -12,7 +12,7 @@ import { CatalogCovers } from './catalog-covers.svelte';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import { CatalogSession } from './catalog-session.svelte';
 import { HOME } from './catalog-ui-fixtures';
-import { publicationFacts } from './publication-facts';
+import { publicationFacts, summaryLines } from './publication-facts';
 
 const ROOT_URL = 'https://home.test/opds';
 const FIRST = 'urn:uuid:11111111-2222-3333-4444-555555555555';
@@ -100,6 +100,16 @@ describe('CatalogBrowseView details', () => {
     expect(publication).toBeDefined();
     if (publication === undefined) return;
     expect(view.opened?.facts).toEqual(publicationFacts(publication));
+  });
+
+  it('carries the summary of the opened publication as lines', async () => {
+    const { view } = setup();
+    await view.start();
+    view.openDetails(FIRST);
+    const publication = view.opened?.publication;
+    expect(publication).toBeDefined();
+    if (publication === undefined) return;
+    expect(view.opened?.summary).toEqual(summaryLines(publication.summary));
   });
 
   it('carries the cover url the card uses', async () => {

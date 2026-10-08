@@ -1,7 +1,7 @@
 import type { CatalogId } from '$lib/shared/ids';
 import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
-import { attributeOf, parseXml } from '$lib/shared/xml-document';
+import { LINE_BREAK, attributeOf, parseXml } from '$lib/shared/xml-document';
 import type { XmlElement } from '$lib/shared/xml-document';
 import type { CatalogFeed, FeedPaging, NavigationLink } from '../../domain/catalog-feed';
 import { formatOfMediaType } from '../../domain/remote-publication';
@@ -45,6 +45,15 @@ function allText(element: XmlElement): string {
 
 function collapsed(text: string): string {
   return text.replace(/\s+/gu, ' ').trim();
+}
+
+function withBreaks(text: string): string {
+  return text
+    .split(LINE_BREAK)
+    .map(collapsed)
+    .join('\n')
+    .replace(/\n{3,}/gu, '\n\n')
+    .trim();
 }
 
 function resolved(href: string, base: string): string | null {
@@ -98,7 +107,7 @@ function hasAcquisition(entry: XmlElement): boolean {
 
 function summaryOf(entry: XmlElement): string {
   const body = childrenNamed(entry, 'content')[0] ?? childrenNamed(entry, 'summary')[0];
-  return body === undefined ? '' : collapsed(allText(body));
+  return body === undefined ? '' : withBreaks(allText(body));
 }
 
 function navigationLinkOf(entry: XmlElement, base: string): NavigationLink | null {
@@ -175,7 +184,7 @@ function readOpdsFeed(
   catalogId: CatalogId,
   path: FeedPath,
 ): OpdsFeedReading {
-  const root = parseXml(xml, MAX_FEED_CHARACTERS);
+  const root = parseXml(xml, MAX_FEED_CHARACTERS, { lineBreaks: true });
   if (root === null || root.localName !== 'feed') return { kind: 'not-a-feed' };
   const entries = childrenNamed(root, 'entry');
   const id = childText(root, 'id');

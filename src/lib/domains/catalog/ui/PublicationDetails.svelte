@@ -39,8 +39,12 @@
           {/each}
         </dl>
       {/if}
-      {#if opened.publication.summary !== ''}
-        <p class="text-sm">{opened.publication.summary}</p>
+      {#if opened.summary.length > 0}
+        <div class="stack-sm text-sm">
+          {#each opened.summary as line, at (at)}
+            <p>{line}</p>
+          {/each}
+        </div>
       {/if}
       <RemoteActions
         item={opened.item}

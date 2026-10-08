@@ -25,5 +25,9 @@ function publicationFacts(publication: RemotePublication): readonly PublicationF
   return facts.filter((fact) => fact !== null);
 }
 
-export { publicationFacts };
+function summaryLines(summary: string): readonly string[] {
+  return summary.split('\n').filter((line) => line !== '');
+}
+
+export { publicationFacts, summaryLines };
 export type { PublicationFact };
