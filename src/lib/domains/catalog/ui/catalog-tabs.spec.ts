@@ -83,6 +83,19 @@ describe('CatalogTabsView', () => {
     expect(view.selected).toBe(HOME.id);
   });
 
+  it('counts a tab as shown only once it has been selected', async () => {
+    const { view } = setup(TWO);
+    await view.load();
+    expect(view.hasBeenShown(DEVICE_TAB)).toBe(true);
+    expect(view.hasBeenShown(HOME.id)).toBe(false);
+    view.select(HOME.id);
+    expect(view.hasBeenShown(HOME.id)).toBe(true);
+    view.select(ARCHIVE.id);
+    expect(view.hasBeenShown(HOME.id)).toBe(true);
+    view.select(DEVICE_TAB);
+    expect(view.hasBeenShown(ARCHIVE.id)).toBe(true);
+  });
+
   it('falls back to the device tab when the chosen catalog is gone', async () => {
     const { view, session } = setup({ kind: 'success', catalogs: [ARCHIVE], unreadable: [] });
     session.selected = HOME.id;

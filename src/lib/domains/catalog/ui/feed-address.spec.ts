@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ROOT_POSITION,
   atDepth,
-  crumbDepth,
   crumbs,
   opened,
   paged,
@@ -86,18 +85,6 @@ describe('crumbs', () => {
   });
 
   it('gives each crumb the depth it returns to', () => {
-    const depths = crumbs('Home', [SERIES, ONE]).map((crumb) => crumbDepth(crumb.href));
-    expect(depths).toEqual([0, 1, 2]);
-  });
-});
-
-describe('crumbDepth', () => {
-  it('reads the depth from a resolved link', () => {
-    expect(crumbDepth('http://localhost/#depth-3')).toBe(3);
-  });
-
-  it('rejects a link that is not a crumb', () => {
-    expect(crumbDepth('/read/abc')).toBeNull();
-    expect(crumbDepth('#depth-x')).toBeNull();
+    expect(crumbs('Home', [SERIES, ONE]).map((crumb) => crumb.depth)).toEqual([0, 1, 2]);
   });
 });

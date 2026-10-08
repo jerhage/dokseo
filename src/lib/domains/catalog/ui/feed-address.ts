@@ -2,13 +2,11 @@ import type { FeedPath, FeedStep } from '../domain/remote-publication';
 
 type FeedPosition = { readonly path: FeedPath; readonly url: string | null };
 
-type Crumb = { readonly label: string; readonly href: string };
+type Crumb = { readonly label: string; readonly depth: number };
 
 const ROOT_POSITION: FeedPosition = { path: [], url: null };
 
 const SEARCH_PLACEHOLDER = '{searchTerms}';
-
-const CRUMB_PREFIX = '#depth-';
 
 function searchUrl(template: string, query: string): string {
   return template.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim()));
@@ -36,29 +34,9 @@ function atDepth(position: FeedPosition, depth: number): FeedPosition {
 }
 
 function crumbs(rootName: string, path: FeedPath): readonly Crumb[] {
-  const steps = path.map((step, index) => ({
-    label: step.title,
-    href: `${CRUMB_PREFIX}${index + 1}`,
-  }));
-  return [{ label: rootName, href: `${CRUMB_PREFIX}0` }, ...steps];
+  const steps = path.map((step, index) => ({ label: step.title, depth: index + 1 }));
+  return [{ label: rootName, depth: 0 }, ...steps];
 }
 
-function crumbDepth(href: string): number | null {
-  const hash = href.includes('#') ? href.slice(href.indexOf('#')) : href;
-  if (!hash.startsWith(CRUMB_PREFIX)) return null;
-  const digits = hash.slice(CRUMB_PREFIX.length);
-  return /^\d+$/u.test(digits) ? Number.parseInt(digits, 10) : null;
-}
-
-export {
-  ROOT_POSITION,
-  atDepth,
-  crumbDepth,
-  crumbs,
-  opened,
-  paged,
-  searchStep,
-  searchUrl,
-  searched,
-};
+export { ROOT_POSITION, atDepth, crumbs, opened, paged, searchStep, searchUrl, searched };
 export type { Crumb, FeedPosition };

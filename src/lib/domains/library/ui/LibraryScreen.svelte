@@ -176,7 +176,7 @@
       {/if}
 
       {#if library.books.length > 0 && filterControls !== undefined}
-        <div class="row wrap items-center gap-2 pt-4">
+        <div class="row wrap items-center gap-2">
           {@render filterControls()}
         </div>
       {/if}
