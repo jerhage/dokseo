@@ -96,6 +96,8 @@ const CASES: readonly ContractCase[] = [
   { path: 'card/heading-h2', render: markup.cardHeadingH2 },
   { path: 'card/full', render: markup.cardFull },
   { path: 'card/link', render: markup.cardLink },
+  { path: 'card/button', render: markup.cardButton },
+  { path: 'card/overlay', render: markup.cardOverlay },
   { path: 'card/cover', render: markup.cardCover },
   { path: 'card/media-portrait', render: markup.cardMediaPortrait },
   { path: 'carousel/default', render: markup.carouselDefault },
