@@ -3,13 +3,15 @@
   import { onDestroy } from 'svelte';
   import type { Snippet } from 'svelte';
   import { useQueryClient } from '@tanstack/svelte-query';
-  import { afterNavigate, beforeNavigate, goto, replaceState } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, goto, pushState, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import { CatalogHeaderSearch } from '$lib/domains/catalog/ui/catalog-header-search.svelte';
   import { catalogSession } from '$lib/domains/catalog/ui/catalog-session.svelte';
   import { CatalogTabsView } from '$lib/domains/catalog/ui/catalog-tabs.svelte';
+  import { LibraryHistory } from '$lib/domains/catalog/ui/library-history';
+  import { DEVICE_TAB } from '$lib/domains/catalog/ui/library-tabs';
   import LibraryTabs from '$lib/domains/catalog/ui/LibraryTabs.svelte';
   import OriginBadge from '$lib/domains/catalog/ui/OriginBadge.svelte';
   import OriginSource from '$lib/domains/catalog/ui/OriginSource.svelte';
@@ -20,6 +22,7 @@
   import { describeOpenFileError } from '$lib/domains/library/ui/book-upload.svelte';
   import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
   import { readingDefaultsChosen } from '$lib/domains/library/ui/reading-defaults.svelte';
+  import { bookId } from '$lib/shared/ids';
   import type { BookId } from '$lib/shared/ids';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
@@ -34,7 +37,28 @@
 
   const container = useContainer();
   const notify = toastNotify(getToaster());
-  const view = new LibraryView(container.library, notify);
+  const libraryHistory = new LibraryHistory(
+    {
+      push: (state) => pushState('', { library: state }),
+      replace: (state) => replaceState('', { library: state }),
+      back: () => history.back(),
+    },
+    {
+      selected: () => catalogs.selected,
+      feedIndex: (tab) => catalogs.feedIndex(tab),
+      restoreTab: (tab) => catalogs.restoreTab(tab),
+      restoreFeed: (tab, feed) => catalogs.restoreFeed(tab, feed),
+      restoreDetail: (tab, detail) => {
+        catalogs.restoreDetail(tab, detail);
+        if (tab === DEVICE_TAB && detail !== null) view.details.show(bookId(detail));
+        else view.details.hide();
+      },
+    },
+  );
+  const view = new LibraryView(container.library, notify, {
+    opened: (id) => libraryHistory.detailOpened(DEVICE_TAB, id),
+    closed: () => libraryHistory.detailClosed(),
+  });
   const scroll = new LibraryScrollView();
   const queryClient = useQueryClient();
 
@@ -45,7 +69,7 @@
   const origins = new OriginFilterView(catalogSession, container.catalog);
   void origins.load();
 
-  const catalogs = new CatalogTabsView(catalogSession, {
+  const catalogs: CatalogTabsView = new CatalogTabsView(catalogSession, {
     cases: container.catalog,
     notify,
     matching: bookMatchingChosen,
@@ -55,6 +79,7 @@
     refreshLibrary: async () => {
       await Promise.all([origins.load(), refreshLibrary(queryClient)]);
     },
+    history: libraryHistory,
   });
   void catalogs.load();
   const catalogSearch = new CatalogHeaderSearch(catalogs, catalogSession);
@@ -73,7 +98,10 @@
 
   beforeNavigate(() => catalogs.leave());
 
+  $effect(() => libraryHistory.observe(page.state.library));
+
   afterNavigate((navigation) => {
+    libraryHistory.arrive();
     scroll.arrive(navigation.type, navigation.from?.route.id ?? null);
     const missing = missingBookArrival(page.url);
     if (missing === null) return;
