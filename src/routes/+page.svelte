@@ -42,6 +42,7 @@
       push: (state) => pushState('', { library: state }),
       replace: (state) => replaceState('', { library: state }),
       back: () => history.back(),
+      go: (delta) => history.go(delta),
     },
     {
       selected: () => catalogs.selected,
