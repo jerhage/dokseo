@@ -36,9 +36,12 @@ function setup(answer: (call: Call) => Promise<BrowseCatalogResult>) {
   const revoked: string[] = [];
   const session = new CatalogSession();
   const downloads = new CatalogDownloads(
-    { downloadPublication: () => Promise.resolve({ kind: 'aborted' }) },
+    {
+      downloadPublication: () => Promise.resolve({ kind: 'aborted' }),
+      updatePublication: () => Promise.resolve({ kind: 'aborted' }),
+    },
     { matching: () => DEFAULT_BOOK_MATCHING, defaults: () => INITIAL_READING_DEFAULTS },
-    { describeOpenFile: () => '', downloaded: () => undefined },
+    { describeOpenFile: () => '', downloaded: () => undefined, updated: () => undefined },
   );
   const covers = new CatalogCovers(
     () => Promise.resolve({ kind: 'success', image: new Blob(['x']) }),

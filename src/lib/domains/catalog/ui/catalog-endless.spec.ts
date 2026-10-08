@@ -57,9 +57,12 @@ type Answer = (url: string | null) => Promise<BrowseCatalogResult>;
 function setup(answer: Answer, session = new CatalogSession()) {
   const calls: (string | null)[] = [];
   const downloads = new CatalogDownloads(
-    { downloadPublication: () => Promise.resolve({ kind: 'aborted' }) },
+    {
+      downloadPublication: () => Promise.resolve({ kind: 'aborted' }),
+      updatePublication: () => Promise.resolve({ kind: 'aborted' }),
+    },
     { matching: () => DEFAULT_BOOK_MATCHING, defaults: () => INITIAL_READING_DEFAULTS },
-    { describeOpenFile: () => '', downloaded: () => undefined },
+    { describeOpenFile: () => '', downloaded: () => undefined, updated: () => undefined },
   );
   const covers = new CatalogCovers(
     () => Promise.resolve({ kind: 'success', image: new Blob(['x']) }),

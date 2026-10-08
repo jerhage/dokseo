@@ -1,6 +1,6 @@
 import type { BookId, CatalogId } from '$lib/shared/ids';
 import type { BookOriginLink } from './remote-item';
-import type { Acquisition, FeedPath } from './remote-publication';
+import type { Acquisition, FeedPath, RemotePublication } from './remote-publication';
 
 type BookOrigin = {
   readonly bookId: BookId;
@@ -17,5 +17,24 @@ function originLink(origin: BookOrigin): BookOriginLink {
   return { bookId: origin.bookId, updated: origin.updated };
 }
 
-export { originLink };
+function bookOriginOf(
+  publication: RemotePublication,
+  acquisition: Acquisition,
+  bookId: BookId,
+  feedPosition: number,
+  downloadedAt: number,
+): BookOrigin {
+  return {
+    bookId,
+    catalogId: publication.catalogId,
+    entryId: publication.entryId,
+    acquisition,
+    updated: publication.updated,
+    feedPath: publication.feedPath,
+    feedPosition,
+    downloadedAt,
+  };
+}
+
+export { bookOriginOf, originLink };
 export type { BookOrigin };

@@ -2,13 +2,14 @@ import type { BookId } from '$lib/shared/ids';
 import { failureMessage } from '$lib/shared/query-failure';
 import type { BookMatching } from '$lib/domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-defaults';
-import { remoteItem } from '../domain/remote-item';
+import { isLater, remoteItem } from '../domain/remote-item';
 import type { BookOriginLink, DownloadState, RemoteItem } from '../domain/remote-item';
 import type { DownloadProgress } from '../domain/opds-client';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
-import { downloadFailureText } from './catalog-texts';
-import type { DescribeOpenFile, DownloadFailure } from './catalog-texts';
+import type { UpdatePublicationResult } from '../use-cases/update-publication';
+import { downloadFailureText, updateFailureText } from './catalog-texts';
+import type { DescribeOpenFile, DownloadFailure, UpdateFailure } from './catalog-texts';
 
 type DownloadsUseCases = {
   readonly downloadPublication: (
@@ -19,6 +20,13 @@ type DownloadsUseCases = {
     onProgress: DownloadProgress,
     signal?: AbortSignal,
   ) => Promise<DownloadPublicationResult>;
+  readonly updatePublication: (
+    publication: RemotePublication,
+    bookId: BookId,
+    feedPosition: number,
+    onProgress: DownloadProgress,
+    signal?: AbortSignal,
+  ) => Promise<UpdatePublicationResult>;
 };
 
 type DownloadsChoices = {
@@ -29,7 +37,23 @@ type DownloadsChoices = {
 type DownloadsHooks = {
   readonly describeOpenFile: DescribeOpenFile;
   readonly downloaded: (publication: RemotePublication, bookId: BookId) => void;
+  readonly updated: (publication: RemotePublication, bookId: BookId) => void;
 };
+
+type ReplaceRequest = {
+  readonly publication: RemotePublication;
+  readonly bookId: BookId;
+  readonly feedPosition: number;
+};
+
+type Settled =
+  | { readonly kind: 'success'; readonly bookId: BookId }
+  | { readonly kind: 'aborted' }
+  | { readonly kind: 'failed'; readonly reason: string; readonly queueEnds: boolean };
+
+type Attempt = (report: DownloadProgress, signal: AbortSignal) => Promise<Settled | string>;
+
+type Finish = (publication: RemotePublication, bookId: BookId) => void;
 
 type QueuedDownload = { readonly publication: RemotePublication; readonly feedPosition: number };
 
@@ -41,7 +65,7 @@ const IDLE: DownloadState = { kind: 'idle' };
 
 const NO_HELD: ReadonlyMap<string, BookOriginLink> = new Map();
 
-function endsQueue(failure: DownloadFailure): boolean {
+function endsQueue(failure: DownloadFailure | UpdateFailure): boolean {
   return (
     failure.kind === 'offline' ||
     failure.kind === 'unauthorized' ||
@@ -54,6 +78,7 @@ class CatalogDownloads {
   #states = $state.raw<ReadonlyMap<string, DownloadState>>(new Map());
   #held = $state.raw<ReadonlyMap<string, BookOriginLink>>(NO_HELD);
   #queue = $state.raw<QueueProgress | null>(null);
+  #replacement = $state.raw<ReplaceRequest | null>(null);
   #controllers = new Map<string, AbortController>();
   #cases: DownloadsUseCases;
   #choices: DownloadsChoices;
@@ -86,47 +111,38 @@ class CatalogDownloads {
     );
   }
 
+  get replacement(): ReplaceRequest | null {
+    return this.#replacement;
+  }
+
+  askToReplace(publication: RemotePublication, feedPosition: number): void {
+    const bookId = this.#staleBook(publication);
+    if (bookId === null) return;
+    this.#replacement = { publication, bookId, feedPosition };
+  }
+
+  dismissReplacement(): void {
+    this.#replacement = null;
+  }
+
+  async confirmReplacement(): Promise<RunOutcome> {
+    const request = this.#replacement;
+    this.#replacement = null;
+    if (request === null) return 'done';
+    return this.#run(request.publication, this.#updating(request), this.#hooks.updated);
+  }
+
   async start(publication: RemotePublication, feedPosition: number): Promise<RunOutcome> {
-    const entryId = publication.entryId;
-    if (this.#controllers.has(entryId)) return 'done';
-    const controller = new AbortController();
-    this.#controllers.set(entryId, controller);
-    this.#setState(entryId, { kind: 'running', progress: null });
-
-    const result = await this.#cases
-      .downloadPublication(
+    const bookId = this.#staleBook(publication);
+    if (bookId === null) {
+      return this.#run(
         publication,
-        feedPosition,
-        this.#choices.matching(),
-        this.#choices.defaults(),
-        (fraction) => this.#setState(entryId, { kind: 'running', progress: fraction }),
-        controller.signal,
-      )
-      .catch((cause: unknown) => failureMessage(cause));
-    this.#controllers.delete(entryId);
-
-    if (typeof result === 'string') {
-      this.#setState(entryId, { kind: 'failed', reason: result });
-      return 'stop';
+        this.#downloading(publication, feedPosition),
+        this.#hooks.downloaded,
+      );
     }
-    if (result.kind === 'success') {
-      this.#held = new Map(this.#held).set(entryId, {
-        bookId: result.bookId,
-        updated: publication.updated,
-      });
-      this.#setState(entryId, IDLE);
-      this.#hooks.downloaded(publication, result.bookId);
-      return 'done';
-    }
-    if (result.kind === 'aborted') {
-      this.#setState(entryId, IDLE);
-      return this.#queueStopped ? 'stop' : 'done';
-    }
-    this.#setState(entryId, {
-      kind: 'failed',
-      reason: downloadFailureText(result, this.#hooks.describeOpenFile),
-    });
-    return endsQueue(result) ? 'stop' : 'done';
+    const request = { publication, bookId, feedPosition };
+    return this.#run(publication, this.#updating(request), this.#hooks.updated);
   }
 
   cancel(entryId: string): void {
@@ -161,6 +177,93 @@ class CatalogDownloads {
     this.cancelAll();
   }
 
+  async #run(
+    publication: RemotePublication,
+    attempt: Attempt,
+    finished: Finish,
+  ): Promise<RunOutcome> {
+    const entryId = publication.entryId;
+    if (this.#controllers.has(entryId)) return 'done';
+    const controller = new AbortController();
+    this.#controllers.set(entryId, controller);
+    this.#setState(entryId, { kind: 'running', progress: null });
+
+    const settled = await attempt(
+      (fraction) => this.#setState(entryId, { kind: 'running', progress: fraction }),
+      controller.signal,
+    );
+    this.#controllers.delete(entryId);
+
+    if (typeof settled === 'string') {
+      this.#setState(entryId, { kind: 'failed', reason: settled });
+      return 'stop';
+    }
+    if (settled.kind === 'success') {
+      this.#held = new Map(this.#held).set(entryId, {
+        bookId: settled.bookId,
+        updated: publication.updated,
+      });
+      this.#setState(entryId, IDLE);
+      finished(publication, settled.bookId);
+      return 'done';
+    }
+    if (settled.kind === 'aborted') {
+      this.#setState(entryId, IDLE);
+      return this.#queueStopped ? 'stop' : 'done';
+    }
+    this.#setState(entryId, { kind: 'failed', reason: settled.reason });
+    return settled.queueEnds ? 'stop' : 'done';
+  }
+
+  #downloading(publication: RemotePublication, feedPosition: number): Attempt {
+    return async (report, signal) => {
+      const result = await this.#cases
+        .downloadPublication(
+          publication,
+          feedPosition,
+          this.#choices.matching(),
+          this.#choices.defaults(),
+          report,
+          signal,
+        )
+        .catch((cause: unknown) => failureMessage(cause));
+      if (typeof result === 'string') return result;
+      if (result.kind === 'success' || result.kind === 'aborted') return result;
+      return {
+        kind: 'failed',
+        reason: downloadFailureText(result, this.#hooks.describeOpenFile),
+        queueEnds: endsQueue(result),
+      };
+    };
+  }
+
+  #updating(request: ReplaceRequest): Attempt {
+    return async (report, signal) => {
+      const result = await this.#cases
+        .updatePublication(
+          request.publication,
+          request.bookId,
+          request.feedPosition,
+          report,
+          signal,
+        )
+        .catch((cause: unknown) => failureMessage(cause));
+      if (typeof result === 'string') return result;
+      if (result.kind === 'success' || result.kind === 'aborted') return result;
+      return {
+        kind: 'failed',
+        reason: updateFailureText(result, this.#hooks.describeOpenFile),
+        queueEnds: endsQueue(result),
+      };
+    };
+  }
+
+  #staleBook(publication: RemotePublication): BookId | null {
+    const link = this.#held.get(publication.entryId);
+    if (link === undefined) return null;
+    return isLater(publication.updated, link.updated) ? link.bookId : null;
+  }
+
   #queueable(publication: RemotePublication): boolean {
     const kind = this.itemFor(publication).kind;
     return kind === 'remote' || kind === 'download-failed';
@@ -175,4 +278,11 @@ class CatalogDownloads {
 }
 
 export { CatalogDownloads };
-export type { DownloadsChoices, DownloadsHooks, DownloadsUseCases, QueuedDownload, QueueProgress };
+export type {
+  DownloadsChoices,
+  DownloadsHooks,
+  DownloadsUseCases,
+  QueuedDownload,
+  QueueProgress,
+  ReplaceRequest,
+};

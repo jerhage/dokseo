@@ -68,5 +68,5 @@ function remoteItem(
     .exhaustive();
 }
 
-export { remoteItem };
+export { isLater, remoteItem };
 export type { BookOriginLink, DownloadState, RemoteItem };

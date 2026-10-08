@@ -19,6 +19,7 @@ function setup(list: ListCatalogsResult) {
     browseCatalog: () => Promise.resolve({ kind: 'offline' }),
     unlockCatalog: () => ({ kind: 'success' }),
     readCatalogCover: () => Promise.resolve({ kind: 'not-found' }),
+    updatePublication: () => Promise.resolve({ kind: 'aborted' }),
     downloadPublication: () => Promise.resolve({ kind: 'success', bookId: bookId('new') }),
   };
   const session = new CatalogSession();

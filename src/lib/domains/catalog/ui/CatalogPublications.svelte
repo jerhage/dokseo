@@ -4,6 +4,7 @@
   import type { BookId } from '$lib/shared/ids';
   import type { CatalogBrowseView } from './catalog-browse.svelte';
   import RemoteCard from './RemoteCard.svelte';
+  import ReplaceBookModal from './ReplaceBookModal.svelte';
 
   type Props = {
     readonly view: CatalogBrowseView;
@@ -53,8 +54,13 @@
         {readerHref}
         ondownload={() => void view.downloads.start(publication, feedPosition)}
         oncancel={() => view.downloads.cancel(publication.entryId)}
+        onreplace={() => view.downloads.askToReplace(publication, feedPosition)}
         ontoggle={() => selection.toggle(publication.entryId)}
       />
     {/each}
   </ul>
+{/if}
+
+{#if view.downloads.replacement !== null}
+  <ReplaceBookModal downloads={view.downloads} />
 {/if}

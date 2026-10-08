@@ -20,10 +20,12 @@
     readonly readerHref: (id: BookId) => string;
     readonly ondownload: () => void;
     readonly oncancel: () => void;
+    readonly onreplace: () => void;
     readonly ontoggle: () => void;
   };
 
-  let { item, cover, selected, readerHref, ondownload, oncancel, ontoggle }: Props = $props();
+  let { item, cover, selected, readerHref, ondownload, oncancel, onreplace, ontoggle }: Props =
+    $props();
 
   const publication = $derived(item.publication);
   const authors = $derived(publication.authors.join(', '));
@@ -96,6 +98,7 @@
   {:else if item.kind === 'held-older'}
     <div class="row items-center gap-2 wrap">
       <Button size="sm" href={readerHref(item.bookId)}>Open</Button>
+      <Button size="sm" onclick={onreplace}>Replace with newer version</Button>
       <Badge variant="info">Newer on server</Badge>
     </div>
   {:else if item.kind === 'unsupported'}
