@@ -3,16 +3,19 @@ import { SECTIONS as SECURITY_SECTIONS } from '../security-headers/sections';
 import { SERIES_PLAN_SECTIONS } from '../series-plan/series-sections';
 
 const REMOTE_SECTIONS = {
-  goal: 'The goal',
+  goal: 'What a catalog adds',
   opds: 'OPDS 1.2 in brief',
+  calibre: "Where Calibre's feeds differ",
   browser: 'What the browser requires',
   contract: 'Books, publications and origins',
-  views: 'The views',
+  views: 'Tabs, browsing and cards',
+  search: 'Searching a catalog',
   download: 'A download, step by step',
-  series: 'Series: flat first',
-  credentials: 'Credentials',
+  update: 'Replacing a held book',
+  series: 'Series: flat for now',
+  credentials: 'Passwords',
   proxy: 'Setting up a proxy',
-  decisions: 'Decisions and what is open',
+  open: 'What is not built',
 } as const;
 
 type RemoteSectionKey = keyof typeof REMOTE_SECTIONS;

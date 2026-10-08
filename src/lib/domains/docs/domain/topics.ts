@@ -261,12 +261,11 @@ const DOCS_TOPICS = [
   },
   {
     slug: 'remote-storage-plan',
-    title: 'Plan: books from OPDS catalogs',
+    title: 'Reading books from OPDS catalogs',
     summary:
-      'OPDS 1.2 feeds, what the browser requires of a static app calling another server, the records that join a catalog entry to a held book, downloads into OPFS, credentials and a proxy setup.',
+      'OPDS 1.2 feeds, what the browser requires of a static app calling another server, the records that join a catalog entry to a held book, browsing and downloads into OPFS, replacing a held book, passwords and a proxy setup.',
     status: 'published',
-    kind: 'plan',
-    buildsAfter: '1.0',
+    kind: 'explainer',
   },
 ] as const satisfies readonly DocsTopic[];
 

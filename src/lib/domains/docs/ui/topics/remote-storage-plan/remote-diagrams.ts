@@ -26,8 +26,8 @@ const deviceFilters = box(
   180,
   34,
   172,
-  'Origin badges and filters',
-  'from a catalog, or Added from files',
+  'Source badges and filter',
+  'Downloaded from, Added from files',
 );
 
 const catalogGroup = group(120, 224, 'One tab per catalog: a RemoteItem for each entry', 'neutral');
@@ -40,7 +40,7 @@ const heldOlderItem = box(180, 282, 172, 'held-older', 'the server has a newer u
 
 const VIEWS: DiagramSpec = {
   label:
-    'The library screen has one tab called On this device and one tab for each catalog. On this device lists every held book, with origin badges and the filters from a catalog and Added from files. A catalog tab lists its entries as RemoteItem values: remote, unsupported, downloading, download-failed, held and held-older. A remote item becomes downloading, which ends as held or as download-failed.',
+    'The library screen has one tab called On this device and one tab for each catalog. On this device lists every held book, with a source badge and a Source filter whose choices are All, Added from files and Downloaded from each catalog. A catalog tab lists its entries as RemoteItem values: remote, unsupported, downloading, download-failed, held and held-older. A remote item becomes downloading, which ends as held or as download-failed.',
   width: 360,
   height: 344,
   nodes: [
