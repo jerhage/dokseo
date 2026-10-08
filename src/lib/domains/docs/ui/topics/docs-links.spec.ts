@@ -18,6 +18,7 @@ import * as ocr from './ocr/ocr-sections';
 import * as productionBuilds from './production-builds/build-sections';
 import * as offline from './offline/sections';
 import * as releasesAndCi from './releases-and-ci/sections';
+import * as remoteStoragePlan from './remote-storage-plan/remote-sections';
 import * as renderingPages from './rendering-pages/rendering-sections';
 import * as securityHeaders from './security-headers/sections';
 import * as seriesPlan from './series-plan/series-sections';
@@ -72,6 +73,7 @@ const SECTIONS: Record<DocsTopicSlug, Readonly<Record<string, string>>> = {
   'series-plan': seriesPlan.SERIES_PLAN_SECTIONS,
   'vendored-ui': vendoredUi.VENDORED_SECTIONS,
   'kandan-core-plan': kandanCorePlan.KANDAN_CORE_SECTIONS,
+  'remote-storage-plan': remoteStoragePlan.REMOTE_SECTIONS,
 };
 
 const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
@@ -89,6 +91,7 @@ const SECTION_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>
   'offline/sections.ts': offline,
   'production-builds/build-sections.ts': productionBuilds,
   'releases-and-ci/sections.ts': releasesAndCi,
+  'remote-storage-plan/remote-sections.ts': remoteStoragePlan,
   'rendering-pages/rendering-sections.ts': renderingPages,
   'security-headers/sections.ts': securityHeaders,
   'series-plan/series-sections.ts': seriesPlan,

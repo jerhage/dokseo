@@ -259,6 +259,15 @@ const DOCS_TOPICS = [
     kind: 'plan',
     buildsAfter: '1.0',
   },
+  {
+    slug: 'remote-storage-plan',
+    title: 'Plan: books from OPDS catalogs',
+    summary:
+      'OPDS 1.2 feeds, what the browser requires of a static app calling another server, the records that join a catalog entry to a held book, downloads into OPFS, credentials and a proxy setup.',
+    status: 'published',
+    kind: 'plan',
+    buildsAfter: '1.0',
+  },
 ] as const satisfies readonly DocsTopic[];
 
 type DocsTopicSlug = (typeof DOCS_TOPICS)[number]['slug'];
