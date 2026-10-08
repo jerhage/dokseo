@@ -3,6 +3,7 @@
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { CatalogBrowseView } from './catalog-browse.svelte';
+  import PublicationDetails from './PublicationDetails.svelte';
   import RemoteCard from './RemoteCard.svelte';
   import ReplaceBookModal from './ReplaceBookModal.svelte';
 
@@ -56,9 +57,14 @@
         oncancel={() => view.downloads.cancel(publication.entryId)}
         onreplace={() => view.downloads.askToReplace(publication, feedPosition)}
         ontoggle={() => selection.toggle(publication.entryId)}
+        ondetails={() => view.openDetails(publication.entryId)}
       />
     {/each}
   </ul>
+{/if}
+
+{#if view.opened !== null}
+  <PublicationDetails {view} {readerHref} />
 {/if}
 
 {#if view.downloads.replacement !== null}
