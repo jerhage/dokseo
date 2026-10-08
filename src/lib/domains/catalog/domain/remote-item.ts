@@ -6,7 +6,7 @@ type BookOriginLink = { readonly bookId: BookId; readonly updated: string };
 
 type DownloadState =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'running'; readonly progress: number }
+  | { readonly kind: 'running'; readonly progress: number | null }
   | { readonly kind: 'failed'; readonly reason: string };
 
 type RemoteItem =
@@ -15,7 +15,7 @@ type RemoteItem =
   | {
       readonly kind: 'downloading';
       readonly publication: RemotePublication;
-      readonly progress: number;
+      readonly progress: number | null;
     }
   | {
       readonly kind: 'download-failed';

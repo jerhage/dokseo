@@ -93,4 +93,11 @@ describe('remoteItem', () => {
   ])('never counts an unparsable %s as newer', (_name, subject, originUpdated) => {
     expect(remoteItem(subject, origin(originUpdated), IDLE).kind).toBe('held');
   });
+
+  it('keeps an unknown fraction while a download runs', () => {
+    expect(remoteItem(publication(), null, { kind: 'running', progress: null })).toMatchObject({
+      kind: 'downloading',
+      progress: null,
+    });
+  });
 });
