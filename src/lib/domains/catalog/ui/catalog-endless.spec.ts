@@ -232,4 +232,24 @@ describe('CatalogBrowseView endless paging', () => {
     ]);
     expect(view.paging.next).toBe(pageUrl(2));
   });
+
+  it('restores the selection with the pages after a return', async () => {
+    const first = setup((url) => Promise.resolve(acquisition(url)));
+    await first.view.start();
+    await first.view.loadMore();
+    first.view.selection.toggle('p1-1');
+    const resumed = setup((url) => Promise.resolve(acquisition(url)), first.session);
+    await resumed.view.start();
+    expect(resumed.view.selection.has('p1-1')).toBe(true);
+    expect(resumed.view.selection.count).toBe(1);
+  });
+
+  it('clears the selection when another feed opens', async () => {
+    const { view, session } = setup((url) => Promise.resolve(acquisition(url)));
+    await view.start();
+    view.selection.toggle('p0-1');
+    await view.goToDepth(0);
+    expect(view.selection.count).toBe(0);
+    expect(session.selectionOf(HOME.id).size).toBe(0);
+  });
 });

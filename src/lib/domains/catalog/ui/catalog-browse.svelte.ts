@@ -8,6 +8,7 @@ import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { CatalogCovers } from './catalog-covers.svelte';
 import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
+import { CatalogSelection } from './catalog-selection.svelte';
 import type { BrowseFailure } from './catalog-texts';
 import { ROOT_POSITION, atDepth, crumbs, opened, searchStep, searched } from './feed-address';
 import type { FeedPosition } from './feed-address';
@@ -27,6 +28,8 @@ type PositionStore = {
   readonly move: (id: CatalogId, position: FeedPosition) => void;
   readonly pagesOf: (id: CatalogId) => readonly string[];
   readonly appendPage: (id: CatalogId, url: string) => void;
+  readonly selectionOf: (id: CatalogId) => ReadonlySet<string>;
+  readonly keepSelection: (id: CatalogId, entryIds: ReadonlySet<string>) => void;
 };
 
 type BrowseState =
@@ -69,6 +72,7 @@ class CatalogBrowseView {
   readonly catalog: Catalog;
   readonly downloads: CatalogDownloads;
   readonly covers: CatalogCovers;
+  readonly selection: CatalogSelection;
 
   #cases: BrowseUseCases;
   #store: PositionStore;
@@ -88,6 +92,11 @@ class CatalogBrowseView {
     this.catalog = catalog;
     this.downloads = downloads;
     this.covers = covers;
+    this.selection = new CatalogSelection(
+      downloads,
+      () => this.entries,
+      (entryIds) => store.keepSelection(catalog.id, entryIds),
+    );
     this.#cases = cases;
     this.#store = store;
     this.position = store.positionOf(catalog.id);
@@ -141,7 +150,9 @@ class CatalogBrowseView {
 
   async load(): Promise<void> {
     const saved = this.#store.pagesOf(this.catalog.id);
+    const chosen = this.#store.selectionOf(this.catalog.id);
     await this.#show(this.position);
+    this.selection.restore(chosen);
     const shown = this.#pending;
     for (const url of saved) {
       if (this.#pending !== shown) return;
@@ -199,6 +210,7 @@ class CatalogBrowseView {
     const pending = new AbortController();
     this.#pending = pending;
     this.#appended = [];
+    this.selection.reset();
     this.more = { kind: 'idle' };
     this.position = position;
     this.#store.move(this.catalog.id, position);

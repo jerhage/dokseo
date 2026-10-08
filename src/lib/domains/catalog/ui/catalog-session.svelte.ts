@@ -11,6 +11,7 @@ class CatalogSession {
   queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
   #positions = new Map<CatalogId, FeedPosition>();
   #pages = new Map<CatalogId, readonly string[]>();
+  #selections = new Map<CatalogId, ReadonlySet<string>>();
 
   queryOf(id: CatalogId): string {
     return this.queries.get(id) ?? '';
@@ -27,6 +28,15 @@ class CatalogSession {
   move(id: CatalogId, position: FeedPosition): void {
     this.#positions.set(id, position);
     this.#pages.delete(id);
+    this.#selections.delete(id);
+  }
+
+  selectionOf(id: CatalogId): ReadonlySet<string> {
+    return this.#selections.get(id) ?? new Set();
+  }
+
+  keepSelection(id: CatalogId, entryIds: ReadonlySet<string>): void {
+    this.#selections.set(id, entryIds);
   }
 
   pagesOf(id: CatalogId): readonly string[] {
