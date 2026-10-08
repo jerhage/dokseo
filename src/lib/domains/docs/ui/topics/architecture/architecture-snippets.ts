@@ -67,12 +67,13 @@ const BUILD_CONTAINER: SourceSnippet = {
   const captures = createCaptureRepository();
   const removedBooks = buildRemovedBooks(repository, captures);
   const bookExports = buildBookCapturesExports(repository, captures);
+  const library = buildLibrary(repository, removedBooks.mergeIntoBook);
 
   return {
     beginTrace,
-    catalog: buildCatalog(),
+    catalog: buildCatalog(library),
     library: {
-      ...buildLibrary(repository, removedBooks.mergeIntoBook),
+      ...library,
       ...removedBooks,
       ...bookExports,
     },

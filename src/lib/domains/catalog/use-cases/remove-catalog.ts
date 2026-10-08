@@ -1,5 +1,6 @@
 import type { CatalogId } from '$lib/shared/ids';
 import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
+import type { CatalogPasswords } from '../domain/catalog-passwords';
 import type { CatalogRepository } from '../domain/catalog-repository';
 import type { OriginRepository } from '../domain/origin-repository';
 
@@ -11,6 +12,7 @@ type RemoveCatalogResult =
 type RemoveCatalogDeps = {
   readonly catalogs: CatalogRepository;
   readonly origins: OriginRepository;
+  readonly passwords: CatalogPasswords;
 };
 
 async function removeCatalog(deps: RemoveCatalogDeps, id: CatalogId): Promise<RemoveCatalogResult> {
@@ -24,6 +26,7 @@ async function removeCatalog(deps: RemoveCatalogDeps, id: CatalogId): Promise<Re
   const removed = await deps.catalogs.remove(id);
   if (removed.kind !== 'success') return removed;
 
+  deps.passwords.forget(id);
   return { kind: 'success' };
 }
 
