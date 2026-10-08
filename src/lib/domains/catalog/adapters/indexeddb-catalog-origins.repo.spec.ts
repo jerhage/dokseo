@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { layoutOf } from '$lib/shared/testing/stored-format/database-layout';
+import {
+  CATALOG_ORIGINS_DATABASE,
+  layoutOf,
+} from '$lib/shared/testing/stored-format/database-layout';
 import type { OpenedDatabase, Upgrade } from '$lib/shared/testing/stored-format/database-layout';
 import { bookId, catalogId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
@@ -274,22 +277,6 @@ describe('createCatalogOriginsRepository', () => {
     await fresh.createCatalogOriginsRepository().list();
 
     const [opened] = fake.opened;
-    expect(opened && layoutOf(opened)).toEqual({
-      name: 'catalog-origins',
-      version: 1,
-      stores: {
-        catalogs: { options: { keyPath: 'id' }, indexes: {} },
-        origins: {
-          options: { keyPath: 'bookId' },
-          indexes: {
-            catalogId: { keyPath: 'catalogId', options: { unique: false } },
-            entry: {
-              keyPath: ['catalogId', 'entryId'],
-              options: { unique: true },
-            },
-          },
-        },
-      },
-    });
+    expect(opened && layoutOf(opened)).toEqual(CATALOG_ORIGINS_DATABASE);
   });
 });
