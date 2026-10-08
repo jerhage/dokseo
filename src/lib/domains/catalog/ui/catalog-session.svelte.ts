@@ -10,6 +10,7 @@ class CatalogSession {
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
   #positions = new Map<CatalogId, FeedPosition>();
+  #pages = new Map<CatalogId, readonly string[]>();
 
   queryOf(id: CatalogId): string {
     return this.queries.get(id) ?? '';
@@ -25,6 +26,15 @@ class CatalogSession {
 
   move(id: CatalogId, position: FeedPosition): void {
     this.#positions.set(id, position);
+    this.#pages.delete(id);
+  }
+
+  pagesOf(id: CatalogId): readonly string[] {
+    return this.#pages.get(id) ?? [];
+  }
+
+  appendPage(id: CatalogId, url: string): void {
+    this.#pages.set(id, [...this.pagesOf(id), url]);
   }
 }
 

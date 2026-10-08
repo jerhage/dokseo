@@ -30,7 +30,11 @@ class CatalogCovers {
 
   show(publications: readonly RemotePublication[]): Promise<void> {
     this.clear();
-    const loading = new AbortController();
+    return this.add(publications);
+  }
+
+  add(publications: readonly RemotePublication[]): Promise<void> {
+    const loading = this.#loading ?? new AbortController();
     this.#loading = loading;
     return Promise.all(publications.map((publication) => this.#load(publication, loading))).then(
       () => undefined,
