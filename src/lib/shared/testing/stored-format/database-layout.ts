@@ -86,5 +86,20 @@ const RECOGNITION_DATABASE: DatabaseLayout = {
   },
 };
 
-export { READER_DATABASE, RECOGNITION_DATABASE, layoutOf };
+const CATALOG_ORIGINS_DATABASE: DatabaseLayout = {
+  name: 'catalog-origins',
+  version: 1,
+  stores: {
+    catalogs: { options: { keyPath: 'id' }, indexes: {} },
+    origins: {
+      options: { keyPath: 'bookId' },
+      indexes: {
+        catalogId: { keyPath: 'catalogId', options: { unique: false } },
+        entry: { keyPath: ['catalogId', 'entryId'], options: { unique: true } },
+      },
+    },
+  },
+};
+
+export { CATALOG_ORIGINS_DATABASE, READER_DATABASE, RECOGNITION_DATABASE, layoutOf };
 export type { DatabaseLayout, OpenedDatabase, Upgrade };
