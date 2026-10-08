@@ -31,7 +31,8 @@
     'manifest-src': 'The web app manifest, so Dokseo can be installed.',
     'font-src': "Dokseo's self-hosted fonts, and fonts embedded in books as blob: or data: URLs.",
     'media-src': 'Audio and video inside EPUB books, as blob: URLs.',
-    'connect-src': 'The model and runtime hosts. See the section on model downloads.',
+    'connect-src':
+      'The model and runtime hosts, and any HTTPS origin, for catalog servers. See the section on model downloads.',
   };
 
   const rows = Object.entries(CONTENT_SECURITY_POLICY).map(([name, sources]) => ({

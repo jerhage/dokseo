@@ -98,9 +98,9 @@
 
 <DocsSection title={INDEXEDDB_SECTIONS.databases}>
   <p>
-    Dokseo keeps its records in three databases, one per domain that stores records, so a change to
+    Dokseo keeps its records in four databases, one per domain that stores records, so a change to
     one domain's layout never bumps another's version.
-    <a href={STORAGE_DATABASES_HREF}>Dokseo's three databases</a> says what each store holds; this table
+    <a href={STORAGE_DATABASES_HREF}>Dokseo's four databases</a> says what each store holds; this table
     shows how each one is keyed and indexed.
   </p>
   <Table size="sm" caption="Every store and index, as the upgrade functions create them">
@@ -133,14 +133,17 @@
     device.
   </p>
   <p>
-    There are two indexes in the whole app, both on <code>captures</code>, because two queries read
-    by a field other than the key: a book's captures through <code>bookId</code>, and a tag's
-    captures through <code>tagIds</code>, a <code>multiEntry</code> index with one entry per id in
-    the array. An index added to a store that already exists needs that store from the upgrade's own
-    transaction, which is why <code>upgrade</code> receives it. Each database's name, version, store
-    names and upgrade live in one place: the library repository itself for
-    <code>reader</code>, and <code>recognition-database.ts</code> and
-    <code>flowing-database.ts</code> for the other two, which several adapters share.
+    <code>captures</code> has two indexes, because two queries read by a field other than the key: a
+    book's captures through <code>bookId</code>, and a tag's captures through <code>tagIds</code>, a
+    <code>multiEntry</code> index with one entry per id in the array. <code>origins</code> has two
+    more,
+    <code>catalogId</code> and <code>entry</code>. An index added to a store that already exists
+    needs that store from the upgrade's own transaction, which is why <code>upgrade</code> receives
+    it. Each database's name, version, store names and upgrade live in one place: the library
+    repository itself for
+    <code>reader</code>, and <code>recognition-database.ts</code>,
+    <code>flowing-database.ts</code> and <code>catalog-origins-database.ts</code> for the other three,
+    which several adapters share.
   </p>
   <DocsCode label={RECOGNITION_UPGRADE.label} code={RECOGNITION_UPGRADE.code} />
 </DocsSection>
@@ -242,7 +245,7 @@
   <p>
     Dokseo can be open in more than one tab, and after a release one tab can run the new build while
     another still runs the old one. The steps of that case are in
-    <a href={STORAGE_DATABASES_HREF}>Dokseo's three databases</a>. The two halves in
+    <a href={STORAGE_DATABASES_HREF}>Dokseo's four databases</a>. The two halves in
     <code>connection.ts</code>
     are short. The holding side closes its connection on <code>versionchange</code> and marks it retired,
     so the next helper call opens a fresh connection:
