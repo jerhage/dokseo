@@ -14,6 +14,7 @@
   import CatalogPasswordModal from './CatalogPasswordModal.svelte';
   import CatalogPublications from './CatalogPublications.svelte';
   import CatalogSearchField from './CatalogSearchField.svelte';
+  import { scrollMemory } from './scroll-memory';
 
   type Props = {
     readonly view: CatalogBrowseView;
@@ -28,7 +29,7 @@
   });
 </script>
 
-<div class="col gap-4">
+<div class="col gap-4" {@attach scrollMemory((scroller) => view.bindScroller(scroller))}>
   <CatalogSearchField field={search} />
   <Breadcrumb items={view.crumbs} label="Catalog path" />
 

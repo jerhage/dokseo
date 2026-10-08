@@ -12,6 +12,7 @@ class CatalogSession {
   #positions = new Map<CatalogId, FeedPosition>();
   #pages = new Map<CatalogId, readonly string[]>();
   #selections = new Map<CatalogId, ReadonlySet<string>>();
+  #scrolls = new Map<CatalogId, number>();
 
   queryOf(id: CatalogId): string {
     return this.queries.get(id) ?? '';
@@ -29,6 +30,7 @@ class CatalogSession {
     this.#positions.set(id, position);
     this.#pages.delete(id);
     this.#selections.delete(id);
+    this.#scrolls.delete(id);
   }
 
   selectionOf(id: CatalogId): ReadonlySet<string> {
@@ -37,6 +39,16 @@ class CatalogSession {
 
   keepSelection(id: CatalogId, entryIds: ReadonlySet<string>): void {
     this.#selections.set(id, entryIds);
+  }
+
+  keepScroll(id: CatalogId, top: number): void {
+    this.#scrolls.set(id, top);
+  }
+
+  takeScroll(id: CatalogId): number {
+    const top = this.#scrolls.get(id) ?? 0;
+    this.#scrolls.delete(id);
+    return top;
   }
 
   pagesOf(id: CatalogId): readonly string[] {

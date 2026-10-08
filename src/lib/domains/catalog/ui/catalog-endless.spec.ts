@@ -8,6 +8,7 @@ import { CatalogCovers } from './catalog-covers.svelte';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import { CatalogSession } from './catalog-session.svelte';
 import { HOME } from './catalog-ui-fixtures';
+import { ROOT_POSITION } from './feed-address';
 
 const PAGE_SIZE = 3;
 const PAGE_COUNT = 3;
@@ -262,5 +263,95 @@ describe('CatalogBrowseView endless paging', () => {
     await view.start();
     await view.loadMore();
     expect(ids(view)).toEqual(['p0-0', 'p0-1', 'p0-2']);
+  });
+});
+
+function scrollerAt(top: number, scrolled: [number, number][], view: () => CatalogBrowseView) {
+  return {
+    read: () => top,
+    scrollTo: (to: number) => scrolled.push([to, view().entries.length]),
+  };
+}
+
+describe('CatalogBrowseView scroll memory', () => {
+  const acquisition = answering(acquisitionPage);
+  const answer = (url: string | null) => Promise.resolve(acquisition(url));
+
+  function resumed(top: number) {
+    const session = new CatalogSession();
+    session.appendPage(HOME.id, pageUrl(1) ?? '');
+    session.appendPage(HOME.id, pageUrl(2) ?? '');
+    session.keepScroll(HOME.id, top);
+    const world = setup(answer, session);
+    const scrolled: [number, number][] = [];
+    world.view.bindScroller(scrollerAt(0, scrolled, () => world.view));
+    return { ...world, scrolled };
+  }
+
+  it('scrolls to the saved position once every saved page has loaded', async () => {
+    const { view, scrolled } = resumed(1200);
+    await view.start();
+    expect(scrolled).toEqual([[1200, PAGE_SIZE * PAGE_COUNT]]);
+  });
+
+  it('does not scroll when no position was saved', async () => {
+    const { view, scrolled } = resumed(0);
+    await view.start();
+    expect(scrolled).toEqual([]);
+  });
+
+  it('scrolls once, so a later load starts from where the reader is', async () => {
+    const { view, scrolled } = resumed(1200);
+    await view.start();
+    await view.load();
+    expect(scrolled).toHaveLength(1);
+  });
+
+  it('scrolls to the saved position after a saved page fails, over the pages that loaded', async () => {
+    const session = new CatalogSession();
+    session.appendPage(HOME.id, pageUrl(1) ?? '');
+    session.keepScroll(HOME.id, 900);
+    const scrolled: [number, number][] = [];
+    const { view } = setup(
+      (url) =>
+        url === pageUrl(1)
+          ? Promise.resolve({ kind: 'offline' })
+          : Promise.resolve(acquisition(url)),
+      session,
+    );
+    view.bindScroller(scrollerAt(0, scrolled, () => view));
+    await view.start();
+    expect(scrolled).toEqual([[900, PAGE_SIZE]]);
+  });
+
+  it('scrolls nowhere once the scroller is released', async () => {
+    const { view, scrolled } = resumed(1200);
+    const release = view.bindScroller(scrollerAt(0, scrolled, () => view));
+    release();
+    await view.start();
+    expect(scrolled).toEqual([]);
+  });
+
+  it('keeps the scroll position of the scroller on leave', () => {
+    const session = new CatalogSession();
+    const { view } = setup(answer, session);
+    view.bindScroller({ read: () => 640, scrollTo: () => undefined });
+    view.leave();
+    expect(session.takeScroll(HOME.id)).toBe(640);
+    expect(session.takeScroll(HOME.id)).toBe(0);
+  });
+
+  it('keeps nothing on leave while no scroller is bound', () => {
+    const session = new CatalogSession();
+    const { view } = setup(answer, session);
+    view.leave();
+    expect(session.takeScroll(HOME.id)).toBe(0);
+  });
+
+  it('forgets the scroll position when another feed opens', () => {
+    const session = new CatalogSession();
+    session.keepScroll(HOME.id, 640);
+    session.move(HOME.id, ROOT_POSITION);
+    expect(session.takeScroll(HOME.id)).toBe(0);
   });
 });

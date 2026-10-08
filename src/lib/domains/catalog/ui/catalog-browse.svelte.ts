@@ -1,3 +1,4 @@
+import { tick } from 'svelte';
 import { match } from 'ts-pattern';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Catalog } from '../domain/catalog';
@@ -20,6 +21,7 @@ import {
   searched,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
+import type { Scroller } from './scroll-memory';
 
 type BrowseUseCases = {
   readonly browseCatalog: (
@@ -38,6 +40,8 @@ type PositionStore = {
   readonly appendPage: (id: CatalogId, url: string) => void;
   readonly selectionOf: (id: CatalogId) => ReadonlySet<string>;
   readonly keepSelection: (id: CatalogId, entryIds: ReadonlySet<string>) => void;
+  readonly keepScroll: (id: CatalogId, top: number) => void;
+  readonly takeScroll: (id: CatalogId) => number;
 };
 
 type BrowseState =
@@ -99,6 +103,7 @@ class CatalogBrowseView {
   #pending: AbortController | null = null;
   #loadingMore: AbortController | null = null;
   #started = false;
+  #scroller: Scroller | null = null;
 
   constructor(
     catalog: Catalog,
@@ -173,13 +178,27 @@ class CatalogBrowseView {
   async load(): Promise<void> {
     const saved = this.#store.pagesOf(this.catalog.id);
     const chosen = this.#store.selectionOf(this.catalog.id);
+    const top = this.#store.takeScroll(this.catalog.id);
     await this.#show(this.position);
     this.selection.restore(chosen);
     const shown = this.#pending;
     for (const url of saved) {
       if (this.#pending !== shown) return;
-      if (!(await this.#appendPage(url))) return;
+      if (!(await this.#appendPage(url))) break;
     }
+    if (this.#pending === shown) await this.#scrollBack(top);
+  }
+
+  bindScroller(scroller: Scroller): () => void {
+    this.#scroller = scroller;
+    return () => {
+      if (this.#scroller === scroller) this.#scroller = null;
+    };
+  }
+
+  leave(): void {
+    if (this.#scroller === null) return;
+    this.#store.keepScroll(this.catalog.id, this.#scroller.read());
   }
 
   openLink(link: NavigationLink): Promise<void> {
@@ -223,6 +242,12 @@ class CatalogBrowseView {
     this.#loadingMore?.abort();
     this.covers.clear();
     this.downloads.dispose();
+  }
+
+  async #scrollBack(top: number): Promise<void> {
+    if (top <= 0) return;
+    await tick();
+    this.#scroller?.scrollTo(top);
   }
 
   async #show(position: FeedPosition): Promise<void> {
