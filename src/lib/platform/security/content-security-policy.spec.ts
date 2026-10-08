@@ -59,7 +59,11 @@ describe('CONTENT_SECURITY_POLICY', () => {
     const hosts = sources('connect-src').filter((source) => source !== 'self');
 
     expect(hosts.length).toBeGreaterThan(0);
-    for (const host of hosts) expect(host.startsWith('https://')).toBe(true);
+    for (const host of hosts) expect(host.startsWith('https:')).toBe(true);
+  });
+
+  it('admits any https origin in connect-src, so a catalog server can be reached', () => {
+    expect(sources('connect-src')).toContain('https:');
   });
 
   it('admits the web app manifest from its own origin, so the app installs', () => {

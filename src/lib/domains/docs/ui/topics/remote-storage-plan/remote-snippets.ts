@@ -9,6 +9,7 @@ const CONNECT_SOURCES: SourceSnippet = {
     'https://*.hf.co',
     'https://*.huggingface.co',
     'https://cdn.jsdelivr.net',
+    'https:',
   ],`,
 };
 

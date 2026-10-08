@@ -21,6 +21,7 @@ const CONTENT_SECURITY_POLICY: ContentSecurityPolicy = {
     'https://*.hf.co',
     'https://*.huggingface.co',
     'https://cdn.jsdelivr.net',
+    'https:',
   ],
 };
 
