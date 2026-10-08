@@ -57,6 +57,13 @@ interface LibraryRepository {
     order: PageOrder,
     report: SourceWriteReport,
   ): Promise<LibraryWrite>;
+  replaceFile(
+    book: Book,
+    source: Blob,
+    cover: Blob | null,
+    order: PageOrder,
+    report: SourceWriteReport,
+  ): Promise<LibraryWrite>;
   readPageList(id: BookId): Promise<PageListLookup>;
   savePageList(id: BookId, names: readonly string[]): Promise<LibraryWrite>;
   remove(id: BookId, removedAt: number): Promise<LibraryWrite>;

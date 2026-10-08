@@ -84,7 +84,10 @@ async function hashWith(hash: ContentHasher, upload: Blob): Promise<Hashed> {
   return { kind: 'success', hash: contentHash(hashed.digest) };
 }
 
-async function uploadIdentity(deps: OpenFileDeps, files: readonly File[]): Promise<Identified> {
+async function uploadIdentity(
+  deps: Pick<OpenFileDeps, 'partialMd5'>,
+  files: readonly File[],
+): Promise<Identified> {
   const hashed = await hashWith(deps.partialMd5, hashedPart(fingerprintedFiles(files)));
   if (hashed.kind !== 'success') return hashed;
   return {
@@ -151,7 +154,7 @@ type UploadInspection =
 const NOT_AN_EPUB: UploadInspection = { kind: 'not-an-epub' };
 
 async function inspectUpload(
-  deps: OpenFileDeps,
+  deps: InspectionDeps,
   files: readonly File[],
 ): Promise<UploadInspection> {
   const epub = epubUpload(files);
@@ -230,6 +233,36 @@ function declaredDirection(inspection: UploadInspection): ReadingDirection | nul
   return inspection.packageDocument.direction;
 }
 
+type InspectedUpload = {
+  readonly inspection: UploadInspection;
+  readonly built: BuiltSource;
+  readonly content: BookContent;
+};
+
+type InspectionRead =
+  | { readonly kind: 'success'; readonly upload: InspectedUpload }
+  | OpenFileFailure;
+
+type InspectionDeps = Pick<OpenFileDeps, 'builder' | 'inspectEpub'>;
+
+async function inspectedUpload(
+  deps: InspectionDeps,
+  files: readonly File[],
+  report: UploadReport,
+): Promise<InspectionRead> {
+  const inspection = await inspectUpload(deps, files);
+  if (inspection.kind === 'refused') return { kind: 'epub', failure: inspection.refusal };
+
+  const building = await deps.builder.build(files, report);
+  if (building.kind !== 'success') return { kind: 'source', failure: building };
+  const built = building.source;
+
+  const read = contentOf(inspection, built.pages);
+  if (read.kind !== 'success') return read;
+
+  return { kind: 'success', upload: { inspection, built, content: read.content } };
+}
+
 async function openFile(
   deps: OpenFileDeps,
   files: readonly File[],
@@ -255,16 +288,9 @@ async function openFile(
   const restorable = await deps.repository.listRestorable();
   if (restorable.kind !== 'success') return restorable;
 
-  const inspection = await inspectUpload(deps, files);
-  if (inspection.kind === 'refused') return { kind: 'epub', failure: inspection.refusal };
-
-  const building = await deps.builder.build(files, report);
-  if (building.kind !== 'success') return { kind: 'source', failure: building };
-  const built = building.source;
-
-  const read = contentOf(inspection, built.pages);
-  if (read.kind !== 'success') return read;
-  const content = read.content;
+  const inspected = await inspectedUpload(deps, files, report);
+  if (inspected.kind !== 'success') return inspected;
+  const { inspection, built, content } = inspected.upload;
 
   const fileTitle = built.suggestedTitle;
   const title = bookTitle(declaredTitle(inspection, built), fileTitle);
@@ -322,5 +348,13 @@ async function openFile(
   return restoring === null ? { kind: 'added', book } : { kind: 'restored', book };
 }
 
-export { openFile };
-export type { OpenFileDeps, OpenFileFailure, OpenFileResult, OpenedUpload };
+export { inspectedUpload, openFile, uploadIdentity };
+export type {
+  BookContent,
+  InspectedUpload,
+  InspectionRead,
+  OpenFileDeps,
+  OpenFileFailure,
+  OpenFileResult,
+  OpenedUpload,
+};

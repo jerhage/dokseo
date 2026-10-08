@@ -106,6 +106,7 @@ class SimulatedDevice {
           ...this.#holdings,
           removedBooks: upserted(this.#holdings.removedBooks, book),
         }),
+      replaceFile: notInTheDemo,
       forgetRemoved: notInTheDemo,
       erase: notInTheDemo,
       update: notInTheDemo,

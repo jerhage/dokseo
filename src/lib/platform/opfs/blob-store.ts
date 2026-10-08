@@ -5,6 +5,8 @@ import type { BytesWritten } from './worker-blob-writer';
 
 const DIRECTORY = 'blobs';
 
+const UNSUPPORTED_MOVE = 'This browser cannot move a file in the origin private file system';
+
 function startWriterWorker(): Worker {
   return new Worker(new URL('$workers/opfs-writer.worker.ts', import.meta.url), {
     type: 'module',
@@ -37,6 +39,17 @@ async function get(key: string): Promise<Blob | null> {
   }
 }
 
+type MovableHandle = FileSystemFileHandle & {
+  move?: (parent: FileSystemDirectoryHandle, name: string) => Promise<void>;
+};
+
+async function replace(stagedKey: string, key: string): Promise<void> {
+  const parent = await directory();
+  const handle: MovableHandle = await parent.getFileHandle(flatName(stagedKey));
+  if (handle.move === undefined) throw new Error(UNSUPPORTED_MOVE);
+  await handle.move(parent, flatName(key));
+}
+
 async function totalBytes(): Promise<number> {
   const parent = await directory();
   let total = 0;
@@ -66,5 +79,5 @@ async function remove(key: string): Promise<void> {
   }
 }
 
-export { isAvailable, put, get, totalBytes, keys, remove };
+export { isAvailable, put, get, replace, totalBytes, keys, remove };
 export type { BytesWritten };

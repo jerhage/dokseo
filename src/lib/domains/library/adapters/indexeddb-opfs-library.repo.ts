@@ -139,6 +139,10 @@ function removeFiles(keys: BlobKeys): Promise<LibraryWrite> {
   });
 }
 
+function stagedKeys(keys: BlobKeys): BlobKeys {
+  return { source: `${keys.source}.next`, cover: `${keys.cover}.next` };
+}
+
 async function discard(keys: BlobKeys): Promise<void> {
   await blobs.remove(keys.source).catch(() => undefined);
   await blobs.remove(keys.cover).catch(() => undefined);
@@ -191,6 +195,27 @@ function createLibraryRepository(): LibraryRepository {
       return WRITTEN;
     } catch (cause) {
       await discard(keys);
+      if (isPrivateWindowRefusal(cause)) return STORAGE_UNAVAILABLE;
+      throw cause;
+    }
+  };
+
+  const swapBlobs = async (
+    keys: BlobKeys,
+    source: Blob,
+    cover: Blob | null,
+    report: SourceWriteReport,
+  ): Promise<LibraryWrite> => {
+    const staged = stagedKeys(keys);
+    try {
+      await blobs.put(staged.source, source, report);
+      if (cover !== null) await blobs.put(staged.cover, cover);
+      await blobs.replace(staged.source, keys.source);
+      if (cover === null) await blobs.remove(keys.cover);
+      else await blobs.replace(staged.cover, keys.cover);
+      return WRITTEN;
+    } catch (cause) {
+      await discard(staged);
       if (isPrivateWindowRefusal(cause)) return STORAGE_UNAVAILABLE;
       throw cause;
     }
@@ -263,6 +288,22 @@ function createLibraryRepository(): LibraryRepository {
       );
       if (added.kind === 'success') await reclaimStrayFiles().catch(() => undefined);
       return added;
+    },
+
+    async replaceFile(
+      book: Book,
+      source: Blob,
+      cover: Blob | null,
+      order: PageOrder,
+      report: SourceWriteReport = () => undefined,
+    ): Promise<LibraryWrite> {
+      if (!recordsAvailable() || !blobs.isAvailable()) return STORAGE_UNAVAILABLE;
+      return holdingLock(fileLock(book.id), async () => {
+        const swapped = await swapBlobs(blobKeys(book.id), source, cover, report);
+        if (swapped.kind !== 'success') return swapped;
+        await writeRecords(await database(), additionWrites(book, order));
+        return WRITTEN;
+      });
     },
 
     async remove(id: BookId, removedAt: number): Promise<LibraryWrite> {

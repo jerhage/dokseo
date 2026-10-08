@@ -43,6 +43,7 @@ function libraryRepository(
     list: notUsed,
     get: notUsed,
     add: notUsed,
+    replaceFile: notUsed,
     readPageList: notUsed,
     savePageList: notUsed,
     listRemoved: notUsed,

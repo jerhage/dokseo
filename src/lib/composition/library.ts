@@ -40,6 +40,8 @@ import { readSource } from '../domains/library/use-cases/read-source';
 import type { ReadSourceResult } from '../domains/library/use-cases/read-source';
 import { removeBook } from '../domains/library/use-cases/remove-book';
 import type { RemoveBookResult } from '../domains/library/use-cases/remove-book';
+import { replaceBookFile } from '../domains/library/use-cases/replace-book-file';
+import type { ReplaceBookFileResult } from '../domains/library/use-cases/replace-book-file';
 import { saveReadingPlace } from '../domains/library/use-cases/save-reading-place';
 import type { SaveReadingPlaceResult } from '../domains/library/use-cases/save-reading-place';
 
@@ -50,6 +52,7 @@ type LibraryUseCases = {
     defaults: ReadingDefaults,
     report?: UploadReport,
   ) => Promise<OpenFileResult>;
+  readonly replaceBookFile: (id: BookId, files: readonly File[]) => Promise<ReplaceBookFileResult>;
   readonly openForReading: (id: BookId) => Promise<OpenForReadingResult>;
   readonly listBooks: () => Promise<ListBooksResult>;
   readonly readBook: (id: BookId) => Promise<ReadBookResult>;
@@ -86,6 +89,8 @@ function buildLibrary(repository: LibraryRepository, mergeInto: MergeInto): Libr
       defaults: ReadingDefaults,
       report?: UploadReport,
     ) => openFile(openFileDeps, files, report, matching, defaults),
+    replaceBookFile: (id: BookId, files: readonly File[]) =>
+      replaceBookFile(openFileDeps, id, files),
     openForReading: (id: BookId) =>
       openForReading(
         {

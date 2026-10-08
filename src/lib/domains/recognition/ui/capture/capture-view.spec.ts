@@ -138,6 +138,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
     catalog: {} as Container['catalog'],
     library: {
       openFile: unused,
+      replaceBookFile: unused,
       openForReading: unused,
       listBooks: unused,
       readBook: unused,
