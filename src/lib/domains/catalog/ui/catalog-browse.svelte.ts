@@ -70,6 +70,16 @@ type MoreOutcome =
 
 const NO_PAGING: Paging = { previous: null, next: null };
 
+function firstOfEach<T>(items: readonly T[], keyOf: (item: T) => string): readonly T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = keyOf(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 class CatalogBrowseView {
   state = $state.raw<BrowseState>({ kind: 'loading' });
   position = $state.raw<FeedPosition>(ROOT_POSITION);
@@ -139,15 +149,19 @@ class CatalogBrowseView {
   }
 
   get links(): readonly NavigationLink[] {
-    return [this.state, ...this.#appended].flatMap((page) =>
+    const links = [this.state, ...this.#appended].flatMap((page) =>
       page.kind === 'navigation' ? page.feed.links : [],
     );
+    return firstOfEach(links, (link) => link.href);
   }
 
   get entries(): readonly QueuedDownload[] {
-    return [this.state, ...this.#appended]
-      .flatMap((page) => (page.kind === 'acquisition' ? page.feed.publications : []))
-      .map((publication, index) => ({ publication, feedPosition: index }));
+    const publications = [this.state, ...this.#appended].flatMap((page) =>
+      page.kind === 'acquisition' ? page.feed.publications : [],
+    );
+    return firstOfEach(publications, (publication) => publication.entryId).map(
+      (publication, index) => ({ publication, feedPosition: index }),
+    );
   }
 
   start(): Promise<void> {
