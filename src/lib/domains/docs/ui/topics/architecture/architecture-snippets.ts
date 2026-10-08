@@ -342,6 +342,80 @@ function logitsOf(output: unknown): DecoderLogits {
 }`,
 };
 
+const CATALOG_SOURCE_PORT: SourceSnippet = {
+  label: 'The catalog source port',
+  file: 'src/lib/domains/catalog/domain/catalog-source.ts',
+  code: `interface CatalogSource {
+  readFeed(
+    address: string,
+    placement: FeedPlacement,
+    credentials: CatalogCredentials,
+    signal?: AbortSignal,
+  ): Promise<ReadFeedResult>;
+  search(
+    search: FeedSearch,
+    query: string,
+    placement: FeedPlacement,
+    credentials: CatalogCredentials,
+    signal?: AbortSignal,
+  ): Promise<ReadFeedResult>;
+  readImage(
+    address: string,
+    credentials: CatalogCredentials,
+    signal?: AbortSignal,
+  ): Promise<ReadImageResult>;
+  download(
+    acquisition: Acquisition,
+    credentials: CatalogCredentials,
+    fallbackName: string,
+    onProgress: DownloadProgress,
+    signal?: AbortSignal,
+  ): Promise<DownloadResult>;
+}`,
+};
+
+const FEED_SEARCH: SourceSnippet = {
+  label: 'The opaque search handle',
+  file: 'src/lib/domains/catalog/domain/catalog-feed.ts',
+  code: `type FeedSearch = { readonly handle: string };`,
+};
+
+const SEARCH_ADDRESS: SourceSnippet = {
+  label: 'Filling the template, in the opds1 adapter',
+  file: 'src/lib/domains/catalog/adapters/opds1/opds1-catalog-source.ts',
+  code: `function searchAddress(search: FeedSearch, query: string): string {
+  return search.handle.replaceAll(SEARCH_PLACEHOLDER, encodeURIComponent(query.trim()));
+}`,
+};
+
+const CATALOG_SOURCE_FOR: SourceSnippet = {
+  label: 'Choosing an adapter by protocol, in composition/catalog-sources.ts',
+  file: 'src/lib/composition/catalog-sources.ts',
+  code: `function catalogSourceFor(protocol: CatalogProtocol): Promise<CatalogSource> {
+  const held = sources.get(protocol);
+  if (held !== undefined) return held;
+
+  const loading = match(protocol)
+    .with('opds1', () => loadOpds1Source())
+    .exhaustive()
+    .catch((cause: unknown): never => {
+      sources.delete(protocol);
+      throw cause;
+    });
+
+  sources.set(protocol, loading);
+  return loading;
+}`,
+};
+
+const CATALOG_PROTOCOLS_LIST: SourceSnippet = {
+  label: 'The protocols a catalog can speak',
+  file: 'src/lib/domains/catalog/domain/catalog-protocol.ts',
+  code: `const CATALOG_PROTOCOLS = ['opds1'] as const;
+
+type CatalogProtocol = (typeof CATALOG_PROTOCOLS)[number];`,
+};
+
 const ADDED_VARIANT = `  | { readonly kind: 'name-too-long'; readonly limit: number }`;
 
 const STORAGE_LINE = '  | StorageUnavailable;';
@@ -382,6 +456,11 @@ const ARCHITECTURE_SNIPPETS: readonly SourceSnippet[] = [
   STORAGE_DATA,
   READ_STATE,
   LOAD_MANGA_OCR,
+  CATALOG_PROTOCOLS_LIST,
+  CATALOG_SOURCE_PORT,
+  FEED_SEARCH,
+  SEARCH_ADDRESS,
+  CATALOG_SOURCE_FOR,
   LEAF_LIST,
   LEAF_RULE,
   BRAND,
@@ -394,6 +473,10 @@ export {
   BRAND,
   BUILD_CONTAINER,
   BUILD_TAGS,
+  CATALOG_PROTOCOLS_LIST,
+  CATALOG_SOURCE_FOR,
+  CATALOG_SOURCE_PORT,
+  FEED_SEARCH,
   IF_CHAIN,
   LEAF_LIST,
   LEAF_RULE,
@@ -408,6 +491,7 @@ export {
   RENAME_RESULT,
   RENAME_TEXTS,
   RENAME_USE_CASE,
+  SEARCH_ADDRESS,
   STORAGE_DATA,
   STORAGE_LINE,
   STORAGE_QUERY,

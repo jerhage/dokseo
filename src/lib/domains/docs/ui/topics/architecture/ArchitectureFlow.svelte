@@ -6,16 +6,21 @@
   import DocsCode from '../../DocsCode.svelte';
   import DocsSection from '../../DocsSection.svelte';
   import { RECOGNIZER_FOR } from '../ocr/ocr-snippets';
-  import { REQUEST_PATH } from './architecture-diagrams';
+  import { CATALOG_SOURCE, REQUEST_PATH } from './architecture-diagrams';
   import { ARCHITECTURE_SECTIONS, OCR_PORT_HREF, architectureHref } from './architecture-sections';
   import {
     BRAND,
+    CATALOG_PROTOCOLS_LIST,
+    CATALOG_SOURCE_FOR,
+    CATALOG_SOURCE_PORT,
+    FEED_SEARCH,
     LOAD_MANGA_OCR,
     QUERY_CLIENT,
     READ_STATE,
     RENAME_METHOD,
     RENAME_MUTATION,
     RENAME_TEXTS,
+    SEARCH_ADDRESS,
     STORAGE_DATA,
     STORAGE_QUERY,
     TAG_ADAPTER,
@@ -24,6 +29,19 @@
     WORKER_BOUNDARY,
   } from './architecture-snippets';
   import RenameDemo from './RenameDemo.svelte';
+
+  const OPDS2_SKETCH = `const CATALOG_PROTOCOLS = ['opds1', 'opds2'] as const;
+
+const loading = match(protocol)
+  .with('opds1', () => loadOpds1Source())
+  .with('opds2', () => loadOpds2Source())
+  .exhaustive()
+
+adapters/opds2/opds2-catalog-source.ts
+  class Opds2CatalogSource implements CatalogSource
+    readFeed: fetch the text with HttpCatalogClient.readText,
+              JSON.parse it, build a CatalogFeed
+    search, readImage, download: the same four methods`;
 </script>
 
 <DocsSection title={ARCHITECTURE_SECTIONS.rehearsal}>
@@ -161,6 +179,73 @@
     a static one still compiles and passes every rule, and only the bundle grows. The OCR page
     covers
     <a href={OCR_PORT_HREF}>the port and both adapters</a>.
+  </p>
+</DocsSection>
+
+<DocsSection title={ARCHITECTURE_SECTIONS.catalogs}>
+  <p>
+    Dokseo can list and download books from a catalog, a server such as Calibre that publishes its
+    books as feeds. The one format it reads today is OPDS 1.x, an Atom XML format. Only one folder
+    of the catalog domain, <code>adapters/opds1/</code>, knows that. Everything above it uses a port
+    named for the need, <code>CatalogSource</code>: read a feed, search, read an image, download a
+    file.
+  </p>
+  <DocsCode label={CATALOG_SOURCE_PORT.label} code={CATALOG_SOURCE_PORT.code} />
+  <p>
+    A feed comes back already parsed, as a <code>CatalogFeed</code> in the domain: either a
+    navigation feed, a list of links to other feeds, or an acquisition feed, a list of publications.
+    A response that is not a catalog at all returns <code>not-a-catalog</code>, and the network
+    failures are named variants of the same union. The use cases and the browse screen handle no
+    XML, no OPDS link relations and no URL templates.
+  </p>
+  <p>
+    Search shows how far that goes. OPDS 1 describes search as a URL template with a
+    <code>&#123;searchTerms&#125;</code> placeholder. A feed that supports search carries a
+    <code>FeedSearch</code>, and the port's <code>search</code> takes that value with the query:
+  </p>
+  <DocsCode label={FEED_SEARCH.label} code={FEED_SEARCH.code} />
+  <p>
+    The use cases and the screen test it for <code>null</code>, to decide whether to show a search
+    field, and pass it back with the text. For OPDS 1 the handle is the template, and only the
+    adapter fills it in:
+  </p>
+  <DocsCode label={SEARCH_ADDRESS.label} code={SEARCH_ADDRESS.code} />
+  <Figure>
+    <Diagram {...CATALOG_SOURCE} />
+    {#snippet caption()}
+      One port, one adapter. The arrows are imports. The box marked not built is a place a second
+      adapter would go, and nothing in the code names it yet.
+    {/snippet}
+  </Figure>
+  <p>
+    Each catalog records the protocol it speaks, so the adapter follows the catalog and not a global
+    setting. The protocols are a union, and the composition root picks the adapter with the same
+    pattern as <a href={architectureHref('languages')}>the recognizers</a>:
+  </p>
+  <DocsCode label={CATALOG_PROTOCOLS_LIST.label} code={CATALOG_PROTOCOLS_LIST.code} />
+  <DocsCode label={CATALOG_SOURCE_FOR.label} code={CATALOG_SOURCE_FOR.code} />
+  <p>
+    <code>catalogSourceFor</code> loads the adapter and the HTTP client it uses through a dynamic
+    <code>import()</code> the first time a catalog of that protocol is used, and holds the promise
+    so each adapter is built once. A failed load is dropped, so the next call tries again. The use
+    cases receive this function as <code>sourceFor</code> in their dependencies and never import an adapter.
+  </p>
+  <p>
+    The <code>match(...).exhaustive()</code> is what makes a new protocol visible. Adding a member
+    to <code>CATALOG_PROTOCOLS</code> makes this <code>match</code> fail to compile until it has an
+    arm for the new protocol. The same holds for the other <code>match</code> over
+    <code>CatalogProtocol</code>, the one in the catalog screens' texts that words the "not a
+    catalog" message. Nothing is left to find by running the app.
+  </p>
+  <p>
+    No second protocol exists. This sketch, which is not code from the repository, shows where an
+    OPDS 2.0 adapter, a JSON format, would go: one more protocol, one more arm, and one more adapter
+    folder that reuses the HTTP client and parses JSON into the same <code>CatalogFeed</code>.
+  </p>
+  <DocsCode label="Sketch, not real code: a JSON adapter" code={OPDS2_SKETCH} />
+  <p>
+    The use cases, the view models and the screens would not change, because the port returns the
+    same <code>CatalogFeed</code> whichever format the server speaks.
   </p>
 </DocsSection>
 
