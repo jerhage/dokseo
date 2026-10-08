@@ -1,16 +1,15 @@
 import { newCatalogId } from '$lib/shared/ids';
 import type { CatalogId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { HttpCatalogClient } from '../domains/catalog/adapters/http-catalog-client';
-import { Opds1CatalogSource } from '../domains/catalog/adapters/opds1/opds1-catalog-source';
 import { SessionCatalogPasswords } from '../domains/catalog/adapters/session-catalog-passwords';
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
+import { catalogSourceFor } from './catalog-sources';
 import type { BookOrigin } from '../domains/catalog/domain/book-origin';
 import type { FeedSearch } from '../domains/catalog/domain/catalog-feed';
 import type { CatalogDraft } from '../domains/catalog/domain/catalog-draft';
 import type { BookMatching } from '../domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '../domains/library/domain/book/reading-defaults';
-import type { CatalogSourceFor, DownloadProgress } from '../domains/catalog/domain/catalog-source';
+import type { DownloadProgress } from '../domains/catalog/domain/catalog-source';
 import type { FeedPath, RemotePublication } from '../domains/catalog/domain/remote-publication';
 import { addCatalog } from '../domains/catalog/use-cases/add-catalog';
 import type { AddCatalogResult } from '../domains/catalog/use-cases/add-catalog';
@@ -113,12 +112,7 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
   const catalogs = repository;
   const origins = repository;
   const passwords = new SessionCatalogPasswords();
-  const http = new HttpCatalogClient(
-    (url, init) => globalThis.fetch(url, init),
-    () => navigator.onLine,
-  );
-  const source = new Opds1CatalogSource(http);
-  const sourceFor: CatalogSourceFor = () => Promise.resolve(source);
+  const sourceFor = catalogSourceFor;
   const access = { catalogs, passwords, sourceFor };
 
   return {
