@@ -1,0 +1,6 @@
+# The vendored Kandan UI core. It changes only through `git subtree pull`
+# from github.com/jerhage/kandan-ui; every other change goes to that repo.
+/core/ @jerhage
+
+# The rules that protect the line above, and the CI workflow.
+/.github/ @jerhage

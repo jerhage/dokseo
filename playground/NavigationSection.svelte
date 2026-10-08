@@ -12,6 +12,15 @@
     { label: 'Northwind redesign' },
   ];
 
+  let depth = $state(2);
+  const FEED_CRUMBS = $derived(
+    ['Feeds', 'Tech', 'Reviews']
+      .slice(0, depth + 1)
+      .map((label, index) =>
+        index < depth ? { label, onselect: () => (depth = index) } : { label },
+      ),
+  );
+
   let page = $state(1);
   let short = $state(2);
 </script>
@@ -23,6 +32,7 @@
 >
   <Card>
     <Breadcrumb items={CRUMBS} />
+    <Breadcrumb label="Feed path" items={FEED_CRUMBS} />
     <Divider />
     <Pagination total={12} bind:page />
     <p class="text-sm text-muted">Page {page} of 12</p>

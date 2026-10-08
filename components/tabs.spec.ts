@@ -51,4 +51,25 @@ describe('Tabs', () => {
     expect(html).toMatch(/class="tabs narrow-row"/u);
     expect(html).toMatch(/class="tabs-header"/u);
   });
+
+  it('renders only the shown panel unless keepMounted is set', () => {
+    const panel = createRawSnippet<[{ id: string }]>((tab) => ({
+      render: () => `<i>${tab().id}</i>`,
+    }));
+    const tabs = [
+      { id: 'one', label: 'One' },
+      { id: 'two', label: 'Two' },
+    ];
+
+    const only = render(TABS_COMPONENT, { props: { tabs, label: 'T', panel } }).body;
+    const kept = render(TABS_COMPONENT, {
+      props: { tabs, label: 'T', panel, keepMounted: true },
+    }).body;
+
+    expect(only).toContain('<i>one</i>');
+    expect(only).not.toContain('<i>two</i>');
+    expect(kept).toContain('<i>one</i>');
+    expect(kept).toContain('<i>two</i>');
+    expect(kept.match(/hidden/gu)).toHaveLength(1);
+  });
 });

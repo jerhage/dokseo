@@ -64,6 +64,7 @@ const CASES: readonly ContractCase[] = [
   { path: 'badge/color-violet', render: markup.badgeColorViolet },
   { path: 'badge/color-magenta', render: markup.badgeColorMagenta },
   { path: 'badge/color-stone', render: markup.badgeColorStone },
+  { path: 'breadcrumb/actions', render: markup.breadcrumbActions },
   { path: 'breadcrumb/default', render: markup.breadcrumbDefault },
   { path: 'breadcrumb/labelled', render: markup.breadcrumbLabelled },
   { path: 'breakpoint-probe/default', render: markup.breakpointProbeDefault },

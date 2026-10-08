@@ -159,6 +159,7 @@
     badgeColorViolet,
     badgeColorMagenta,
     badgeColorStone,
+    breadcrumbActions,
     breadcrumbDefault,
     breadcrumbLabelled,
     breakpointProbeDefault,
@@ -591,6 +592,14 @@
 {#snippet badgeColorMagenta()}<Badge color="magenta">Read</Badge>{/snippet}
 
 {#snippet badgeColorStone()}<Badge color="stone">Read</Badge>{/snippet}
+
+{#snippet breadcrumbActions()}<Breadcrumb
+    items={[
+      { label: 'Home', onselect: () => undefined },
+      { label: 'Library', onselect: () => undefined },
+      { label: 'Settings' },
+    ]}
+  />{/snippet}
 
 {#snippet breadcrumbDefault()}<Breadcrumb
     items={[
