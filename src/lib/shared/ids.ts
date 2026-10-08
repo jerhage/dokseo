@@ -4,6 +4,8 @@ type Branded<T, B extends string> = T & { readonly [brand]: B };
 
 type BookId = Branded<string, 'BookId'>;
 
+type CatalogId = Branded<string, 'CatalogId'>;
+
 type CaptureId = Branded<string, 'CaptureId'>;
 
 type TagId = Branded<string, 'TagId'>;
@@ -21,6 +23,19 @@ function bookId(value: string): BookId {
 function parsedBookId(raw: string): BookId | null {
   const flat = raw.length > 0 && !raw.includes('/') && !raw.includes('\\') && !raw.includes('..');
   return flat ? bookId(raw) : null;
+}
+
+function catalogId(value: string): CatalogId {
+  return value as CatalogId;
+}
+
+function newCatalogId(): CatalogId {
+  return catalogId(crypto.randomUUID());
+}
+
+function parsedCatalogId(raw: string): CatalogId | null {
+  const flat = raw.length > 0 && !raw.includes('/') && !raw.includes('\\') && !raw.includes('..');
+  return flat ? catalogId(raw) : null;
 }
 
 function captureId(value: string): CaptureId {
@@ -52,6 +67,9 @@ function parsedContentHash(raw: string): ContentHash | null {
 export {
   bookId,
   parsedBookId,
+  catalogId,
+  newCatalogId,
+  parsedCatalogId,
   captureId,
   tagId,
   seriesId,
@@ -59,4 +77,4 @@ export {
   contentHash,
   parsedContentHash,
 };
-export type { BookId, CaptureId, TagId, SeriesId, ImageIndex, ContentHash };
+export type { BookId, CatalogId, CaptureId, TagId, SeriesId, ImageIndex, ContentHash };
