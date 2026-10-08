@@ -38,16 +38,16 @@ function storeBox(group: DiagramGroup, row: number, label: string, detail: strin
   };
 }
 
-const indexedDb = storeGroup(0, 0, 3, 'IndexedDB');
+const indexedDb = storeGroup(0, 0, 4, 'IndexedDB');
 const opfs = storeGroup(1, 0, 2, 'OPFS');
 const cacheApi = storeGroup(1, 160, 2, 'Cache API');
-const localStore = storeGroup(0, 218, 1, 'localStorage');
+const localStore = storeGroup(0, 276, 1, 'localStorage');
 
 const DATA_MAP: DiagramSpec = {
   label:
-    'IndexedDB holds three databases: reader for books and removed books, recognition for captures, tags and the model setup, flowing for EPUB reading settings. The origin private file system holds the blobs folder with book files and covers, and the partials folder with paused downloads. The Cache API holds transformers-cache with the weights and runtime, and the reader-shell cache with the app shell. localStorage holds fourteen reader keys of preferences.',
+    'IndexedDB holds four databases: reader for books and removed books, recognition for captures, tags and the model setup, flowing for EPUB reading settings, catalog-origins for the catalogs added and where each downloaded book came from. The origin private file system holds the blobs folder with book files and covers, and the partials folder with paused downloads. The Cache API holds transformers-cache with the weights and runtime, and the reader-shell cache with the app shell. localStorage holds fourteen reader keys of preferences.',
   width: 360,
-  height: 306,
+  height: 364,
   nodes: [
     indexedDb,
     opfs,
@@ -56,6 +56,7 @@ const DATA_MAP: DiagramSpec = {
     { ...storeBox(indexedDb, 0, 'reader', 'books, removed books'), tone: 'primary' },
     { ...storeBox(indexedDb, 1, 'recognition', 'captures, tags, model'), tone: 'primary' },
     storeBox(indexedDb, 2, 'flowing', 'EPUB reading settings'),
+    storeBox(indexedDb, 3, 'catalog-origins', 'catalogs, book origins'),
     { ...storeBox(opfs, 0, 'blobs/', 'book files, covers'), tone: 'primary' },
     storeBox(opfs, 1, 'partials/', 'paused downloads'),
     storeBox(cacheApi, 0, 'transformers-cache', 'weights, runtime'),

@@ -73,13 +73,13 @@
     </li>
   </ul>
   <p>
-    Today <code>connect-src</code> allows the app itself and the model hosts, and no app code fetches
-    another origin:
+    <code>connect-src</code> allows the app itself, the model hosts and any HTTPS origin, and the catalog
+    client fetches catalog origins:
   </p>
   <DocsCode label={CONNECT_SOURCES.label} code={CONNECT_SOURCES.code} />
   <p>
-    The plan widens it to <code>https:</code>, so any HTTPS catalog works. Covers and pages are
-    fetched with <code>fetch()</code> and shown as <code>blob:</code> URLs, which leaves
+    Because <code>https:</code> is listed, any HTTPS catalog works. Covers and pages are fetched
+    with <code>fetch()</code> and shown as <code>blob:</code> URLs, which leaves
     <code>img-src</code> closed and needs no cross-origin resource policy header under COEP. The
     section on
     <a href={SECURITY_DIRECTIVES_HREF}>Dokseo's policy, directive by directive</a> explains each directive.

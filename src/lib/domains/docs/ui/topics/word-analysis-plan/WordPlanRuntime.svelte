@@ -159,11 +159,10 @@ const files = await loadDictionaryFiles("ipadic");`;
     its dictionaries as GitHub release files, and when I requested one with an
     <code>Origin</code> header, neither the redirect from <code>github.com</code> nor the file
     response carried <code>Access-Control-Allow-Origin</code>, so a page cannot read them with
-    <code>fetch</code>. Fetching from another host would also need that host in
-    <code>connect-src</code> (<a href={SECURITY_DIRECTIVES_HREF}
-      >Dokseo's policy, directive by directive</a
-    >) and a CORS response to pass COEP (<a href={SECURITY_DOWNLOADS_HREF}
-      >Model downloads under COEP</a
+    <code>fetch</code>. Fetching from another host would need a CORS response to pass COEP (<a
+      href={SECURITY_DOWNLOADS_HREF}>Model downloads under COEP</a
+    >), since <code>connect-src</code> already allows any HTTPS origin (<a
+      href={SECURITY_DIRECTIVES_HREF}>Dokseo's policy, directive by directive</a
     >). A file on Dokseo's own origin needs neither. The policy already allows
     <code>'wasm-unsafe-eval'</code>, which ONNX Runtime needs and Lindera's WebAssembly needs too.
   </p>

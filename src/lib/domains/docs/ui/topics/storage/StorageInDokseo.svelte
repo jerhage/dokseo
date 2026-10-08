@@ -69,6 +69,19 @@
       key: 'reader',
       holds: "The EPUB reader's text size, line spacing and reading aids, in one row",
     },
+    {
+      database: 'catalog-origins v1',
+      store: 'catalogs',
+      key: 'id',
+      holds: 'The catalogs the reader added: title, root URL and sign-in kind, never a password',
+    },
+    {
+      database: 'catalog-origins v1',
+      store: 'origins',
+      key: 'bookId, indexed by catalogId and by catalog and entry',
+      holds:
+        "Where a downloaded book came from, one row per book. A catalog's feeds are never copied here",
+    },
   ] as const;
 
   const patienceSeconds = BLOCKED_PATIENCE_MS / 1000;

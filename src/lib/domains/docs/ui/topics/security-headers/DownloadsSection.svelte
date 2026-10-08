@@ -101,7 +101,9 @@ function runtimeServedFromCdn(): Plugin {
     The policy still lists <code>huggingface.co</code>, <code>*.hf.co</code>,
     <code>*.huggingface.co</code> and <code>cdn.jsdelivr.net</code>. I kept them because the page's
     allowed hosts should not depend on which thread a fetch happens to run in, and because a model
-    fetch moved to the main thread would otherwise fail with nothing but a console line.
+    fetch moved to the main thread would otherwise fail with nothing but a console line. The policy
+    also lists <code>https:</code> for catalog servers, so any HTTPS host passes anyway, and the named
+    hosts document which ones the app needs.
   </p>
   <p>
     The runtime files raised one build problem. ONNX Runtime refers to its own

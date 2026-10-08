@@ -1,7 +1,7 @@
 import type { SourceSnippet } from '../ocr/ocr-snippets';
 
 const CONNECT_SOURCES: SourceSnippet = {
-  label: 'The connect-src sources today',
+  label: 'The connect-src sources',
   file: 'src/lib/platform/security/content-security-policy.ts',
   code: `'connect-src': [
     'self',
