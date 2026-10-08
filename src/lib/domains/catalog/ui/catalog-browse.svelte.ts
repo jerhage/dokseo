@@ -10,7 +10,15 @@ import type { CatalogCovers } from './catalog-covers.svelte';
 import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
 import { CatalogSelection } from './catalog-selection.svelte';
 import type { BrowseFailure } from './catalog-texts';
-import { ROOT_POSITION, atDepth, crumbs, opened, searchStep, searched } from './feed-address';
+import {
+  ROOT_POSITION,
+  atDepth,
+  crumbs,
+  identified,
+  opened,
+  searchStep,
+  searched,
+} from './feed-address';
 import type { FeedPosition } from './feed-address';
 
 type BrowseUseCases = {
@@ -177,7 +185,7 @@ class CatalogBrowseView {
   search(query: string): Promise<void> {
     const template = this.searchTemplate;
     if (template === null || query.trim() === '') return Promise.resolve();
-    return this.#show(searched(searchStep(template, query)));
+    return this.#show(searched(this.position, searchStep(template, query)));
   }
 
   async unlock(password: string): Promise<void> {
@@ -246,6 +254,9 @@ class CatalogBrowseView {
 
     if (this.state.kind === 'unlock') this.prompting = true;
     if (result.kind !== 'success') return;
+    const identity = identified(position, result.reading.feed.id);
+    this.position = identity;
+    this.#store.move(this.catalog.id, identity);
     if (position.url === null) this.#rootSearch = result.reading.feed.searchTemplate;
     this.#shown(result.held);
   }

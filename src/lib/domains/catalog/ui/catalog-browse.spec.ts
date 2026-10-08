@@ -100,6 +100,24 @@ describe('CatalogBrowseView', () => {
     expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home', 'By Series']);
   });
 
+  it('returns to the root instead of adding a step when a link loads the root feed again', async () => {
+    const { view } = setup((call) =>
+      Promise.resolve(feedAnswer(CALIBRE_ROOT, call.url ?? ROOT_URL, call.path)),
+    );
+    await view.start();
+    await view.openLink({ ...SERIES_LINK, title: 'Library: calibre' });
+    expect(view.crumbs.map((crumb) => crumb.label)).toEqual(['Home']);
+    expect(view.position.url).toBe(SERIES_LINK.href);
+  });
+
+  it('appends a step when the loaded feed has an id the path lacks', async () => {
+    const { view, session } = setup(byUrl);
+    await view.start();
+    await view.openLink(SERIES_LINK);
+    expect(view.position.ids).toEqual(['urn:calibre:main', 'calibre-series:星の旅']);
+    expect(session.positionOf(HOME.id).ids).toEqual(view.position.ids);
+  });
+
   it('goes back to an earlier feed by its crumb', async () => {
     const { view, calls } = setup(byUrl);
     await view.start();

@@ -20,6 +20,7 @@ type NavigationLink = {
 };
 
 type NavigationFeed = {
+  readonly id: string;
   readonly title: string;
   readonly paging: FeedPaging;
   readonly searchTemplate: string | null;
@@ -27,6 +28,7 @@ type NavigationFeed = {
 };
 
 type AcquisitionFeed = {
+  readonly id: string;
   readonly title: string;
   readonly paging: FeedPaging;
   readonly searchTemplate: string | null;
@@ -202,15 +204,16 @@ function readOpdsFeed(
   const root = parseXml(xml, MAX_FEED_CHARACTERS);
   if (root === null || root.localName !== 'feed') return { kind: 'not-a-feed' };
   const entries = childrenNamed(root, 'entry');
+  const id = childText(root, 'id');
   const title = childText(root, 'title');
   const paging = pagingOf(root, feedUrl);
   const searchTemplate = searchTemplateOf(root, feedUrl);
   if (entries.some(hasAcquisition)) {
     const publications = entries.map((entry) => publicationOf(entry, feedUrl, catalogId, path));
-    return { kind: 'acquisition', feed: { title, paging, searchTemplate, publications } };
+    return { kind: 'acquisition', feed: { id, title, paging, searchTemplate, publications } };
   }
   const links = entries.flatMap((entry) => navigationLinkOf(entry, feedUrl) ?? []);
-  return { kind: 'navigation', feed: { title, paging, searchTemplate, links } };
+  return { kind: 'navigation', feed: { id, title, paging, searchTemplate, links } };
 }
 
 export { MAX_FEED_CHARACTERS, readOpdsFeed };
