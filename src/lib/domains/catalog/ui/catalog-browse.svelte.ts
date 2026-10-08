@@ -9,8 +9,8 @@ import type {
   NavigationFeed,
   NavigationLink,
 } from '../domain/catalog-feed';
-import type { BookOriginLink } from '../domain/remote-item';
-import type { FeedPath } from '../domain/remote-publication';
+import type { BookOriginLink, RemoteItem } from '../domain/remote-item';
+import type { FeedPath, RemotePublication } from '../domain/remote-publication';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import type { SearchCatalogResult } from '../use-cases/search-catalog';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
@@ -28,6 +28,8 @@ import {
   searched,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
+import { publicationFacts } from './publication-facts';
+import type { PublicationFact } from './publication-facts';
 import type { Scroller } from './scroll-memory';
 
 type BrowseUseCases = {
@@ -84,6 +86,13 @@ type MoreOutcome =
   | { readonly kind: 'idle' }
   | { readonly kind: 'failed'; readonly failure: BrowseFailure };
 
+type OpenedPublication = {
+  readonly publication: RemotePublication;
+  readonly item: RemoteItem;
+  readonly cover: string | null;
+  readonly facts: readonly PublicationFact[];
+};
+
 const NO_PAGING: Paging = { previous: null, next: null };
 
 function firstOfEach<T>(items: readonly T[], keyOf: (item: T) => string): readonly T[] {
@@ -115,6 +124,7 @@ class CatalogBrowseView {
   #pending: AbortController | null = null;
   #loadingMore: AbortController | null = null;
   #started = false;
+  #openedId = $state<string | null>(null);
   #scroller: Scroller | null = null;
 
   constructor(
@@ -179,6 +189,41 @@ class CatalogBrowseView {
     return firstOfEach(publications, (publication) => publication.entryId).map(
       (publication, index) => ({ publication, feedPosition: index }),
     );
+  }
+
+  get opened(): OpenedPublication | null {
+    const entry = this.#openedEntry();
+    if (entry === undefined) return null;
+    const { publication } = entry;
+    return {
+      publication,
+      item: this.downloads.itemFor(publication),
+      cover: this.covers.urlOf(publication.entryId),
+      facts: publicationFacts(publication),
+    };
+  }
+
+  openDetails(entryId: string): void {
+    this.#openedId = entryId;
+  }
+
+  closeDetails(): void {
+    this.#openedId = null;
+  }
+
+  downloadOpened(): void {
+    const entry = this.#openedEntry();
+    if (entry !== undefined) void this.downloads.start(entry.publication, entry.feedPosition);
+  }
+
+  cancelOpened(): void {
+    const entry = this.#openedEntry();
+    if (entry !== undefined) this.downloads.cancel(entry.publication.entryId);
+  }
+
+  replaceOpened(): void {
+    const entry = this.#openedEntry();
+    if (entry !== undefined) this.downloads.askToReplace(entry.publication, entry.feedPosition);
   }
 
   start(): Promise<void> {
@@ -256,6 +301,10 @@ class CatalogBrowseView {
     this.downloads.dispose();
   }
 
+  #openedEntry(): QueuedDownload | undefined {
+    return this.entries.find(({ publication }) => publication.entryId === this.#openedId);
+  }
+
   async #scrollBack(top: number): Promise<void> {
     if (top <= 0) return;
     await tick();
@@ -270,6 +319,7 @@ class CatalogBrowseView {
     this.#pending = pending;
     this.#appended = [];
     this.selection.reset();
+    this.#openedId = null;
     this.more = { kind: 'idle' };
     this.position = position;
     this.#store.move(this.catalog.id, position);
@@ -398,4 +448,12 @@ class CatalogBrowseView {
 }
 
 export { CatalogBrowseView };
-export type { BrowseCrumb, BrowseState, BrowseUseCases, MoreState, Paging, PositionStore };
+export type {
+  BrowseCrumb,
+  BrowseState,
+  BrowseUseCases,
+  MoreState,
+  OpenedPublication,
+  Paging,
+  PositionStore,
+};
