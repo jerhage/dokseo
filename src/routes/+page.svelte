@@ -1,10 +1,21 @@
 <script lang="ts">
   import type { Snapshot } from '@sveltejs/kit';
-  import { afterNavigate, replaceState } from '$app/navigation';
+  import { onDestroy } from 'svelte';
+  import type { Snippet } from 'svelte';
+  import { useQueryClient } from '@tanstack/svelte-query';
+  import { afterNavigate, goto, replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
+  import { catalogSession } from '$lib/domains/catalog/ui/catalog-session.svelte';
+  import { CatalogTabsView } from '$lib/domains/catalog/ui/catalog-tabs.svelte';
+  import LibraryTabs from '$lib/domains/catalog/ui/LibraryTabs.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
+  import { bookMatchingChosen } from '$lib/domains/library/ui/book-matching.svelte';
+  import { describeOpenFileError } from '$lib/domains/library/ui/book-upload.svelte';
+  import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
+  import { readingDefaultsChosen } from '$lib/domains/library/ui/reading-defaults.svelte';
+  import type { BookId } from '$lib/shared/ids';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
   import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
@@ -20,6 +31,23 @@
   const notify = toastNotify(getToaster());
   const view = new LibraryView(container.library, notify);
   const scroll = new LibraryScrollView();
+  const queryClient = useQueryClient();
+
+  function readerHref(id: BookId): string {
+    return `/read/${encodeURIComponent(id)}`;
+  }
+
+  const catalogs = new CatalogTabsView(catalogSession, {
+    cases: container.catalog,
+    notify,
+    matching: bookMatchingChosen,
+    defaults: readingDefaultsChosen,
+    describeOpenFile: describeOpenFileError,
+    openBook: (id) => void goto(readerHref(id)),
+    refreshLibrary: () => refreshLibrary(queryClient),
+  });
+  void catalogs.load();
+  onDestroy(() => catalogs.dispose());
 
   let query = $state('');
   let search = $state<ReturnType<typeof SearchDialog> | null>();
@@ -40,6 +68,10 @@
 
 <PageTitle screen="Library" />
 
+{#snippet withCatalogs(device: Snippet)}
+  <LibraryTabs view={catalogs} {readerHref} {device} />
+{/snippet}
+
 <LibraryShelfData library={container.library}>
   {#snippet children(shelf)}
     <LibraryScreen
@@ -47,6 +79,7 @@
       shelfRead={shelf}
       {scroll}
       onsearcheverything={() => search?.searchEverything()}
+      tabbed={catalogs.visible ? withCatalogs : undefined}
       bind:query
     />
 
