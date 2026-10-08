@@ -26,6 +26,7 @@ const PRIVATE = catalogId('private');
 const OPEN_CATALOG: Catalog = {
   id: OPEN,
   title: 'Home',
+  protocol: 'opds1' as const,
   rootUrl: 'https://home.example/opds',
   auth: { kind: 'none' },
 };
@@ -33,6 +34,7 @@ const OPEN_CATALOG: Catalog = {
 const PRIVATE_CATALOG: Catalog = {
   id: PRIVATE,
   title: 'Shared',
+  protocol: 'opds1' as const,
   rootUrl: 'https://shared.example/opds',
   auth: { kind: 'basic', username: 'jo' },
 };

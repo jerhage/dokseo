@@ -6,11 +6,13 @@ import { testCatalogConnection } from './test-catalog-connection';
 
 const OPEN: CatalogDraft = {
   title: '',
+  protocol: 'opds1' as const,
   rootUrl: 'https://example.org/opds',
   auth: { kind: 'none' },
 };
 const PRIVATE: CatalogDraft = {
   title: '',
+  protocol: 'opds1' as const,
   rootUrl: 'https://example.org/opds',
   auth: { kind: 'basic', username: 'jo' },
 };

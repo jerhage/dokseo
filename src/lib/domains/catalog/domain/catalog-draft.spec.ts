@@ -4,7 +4,7 @@ import { checkedDraft } from './catalog-draft';
 const NONE = { kind: 'none' } as const;
 
 function draftAt(rootUrl: string) {
-  return { title: 'Calibre', rootUrl, auth: NONE };
+  return { title: 'Calibre', protocol: 'opds1' as const, rootUrl, auth: NONE };
 }
 
 describe('checkedDraft', () => {
@@ -18,13 +18,19 @@ describe('checkedDraft', () => {
   it('trims the title and the root url and normalises the url', () => {
     const checked = checkedDraft({
       title: '  Calibre  ',
+      protocol: 'opds1' as const,
       rootUrl: '  https://books.example  ',
       auth: NONE,
     });
 
     expect(checked).toEqual({
       kind: 'valid',
-      draft: { title: 'Calibre', rootUrl: 'https://books.example/', auth: NONE },
+      draft: {
+        title: 'Calibre',
+        protocol: 'opds1' as const,
+        rootUrl: 'https://books.example/',
+        auth: NONE,
+      },
     });
   });
 

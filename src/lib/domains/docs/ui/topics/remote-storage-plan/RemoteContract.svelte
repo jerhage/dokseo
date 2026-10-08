@@ -9,6 +9,7 @@
   const CATALOG_TYPES = `type Catalog = {
   readonly id: CatalogId;
   readonly title: string;
+  readonly protocol: 'opds1';
   readonly rootUrl: string;
   readonly auth: { readonly kind: 'none' } | { readonly kind: 'basic'; readonly username: string };
 };`;

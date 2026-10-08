@@ -2,6 +2,7 @@ import { CorruptRow, isStoredFields, isText, knownStoredValue } from '$lib/share
 import { catalogId, parsedCatalogId } from '$lib/shared/ids';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Catalog, CatalogAuth } from './catalog';
+import { isCatalogProtocol } from './catalog-protocol';
 
 type StoredCatalog = { readonly [Field in keyof Catalog]?: unknown };
 
@@ -46,6 +47,7 @@ function catalogFromStored(stored: StoredCatalog): Catalog {
   return {
     id: storedId(stored.id),
     title: catalogField('title', stored.title, isKey),
+    protocol: catalogField('protocol', stored.protocol, isCatalogProtocol),
     rootUrl: catalogField('root url', stored.rootUrl, isKey),
     auth: storedAuth(stored.auth),
   };
@@ -77,6 +79,7 @@ function storedCatalogRow(catalog: Catalog): StoredCatalog {
   return {
     id: catalog.id,
     title: catalog.title,
+    protocol: catalog.protocol,
     rootUrl: catalog.rootUrl,
     auth,
   };

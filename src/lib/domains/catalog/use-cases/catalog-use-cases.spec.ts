@@ -25,7 +25,13 @@ const CALIBRE = catalogId('calibre');
 const OTHER = catalogId('other');
 
 function catalog(id: CatalogId): Catalog {
-  return { id, title: `Title ${id}`, rootUrl: `https://${id}.example/opds`, auth: NONE };
+  return {
+    id,
+    title: `Title ${id}`,
+    protocol: 'opds1' as const,
+    rootUrl: `https://${id}.example/opds`,
+    auth: NONE,
+  };
 }
 
 function origin(book: string, owner: CatalogId, entry: string): BookOrigin {
@@ -102,7 +108,12 @@ function fakes(fault: Fault = 'none') {
   return { catalogs, origins, catalogRows, originRows, log };
 }
 
-const DRAFT = { title: ' Calibre ', rootUrl: 'https://books.example/opds', auth: NONE };
+const DRAFT = {
+  title: ' Calibre ',
+  protocol: 'opds1' as const,
+  rootUrl: 'https://books.example/opds',
+  auth: NONE,
+};
 
 describe('addCatalog', () => {
   it('saves the trimmed catalog under a minted id', async () => {
@@ -113,6 +124,7 @@ describe('addCatalog', () => {
     expect(added.kind === 'success' && added.catalog).toEqual({
       id: CALIBRE,
       title: 'Calibre',
+      protocol: 'opds1' as const,
       rootUrl: 'https://books.example/opds',
       auth: NONE,
     });
@@ -173,6 +185,7 @@ describe('editCatalog', () => {
     expect(edited.kind === 'success' && edited.catalog).toEqual({
       id: CALIBRE,
       title: 'Library',
+      protocol: 'opds1' as const,
       rootUrl: 'https://books.example/opds',
       auth: { kind: 'basic', username: 'reader' },
     });

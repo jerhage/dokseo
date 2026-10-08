@@ -45,12 +45,22 @@ const PUBLICATION: RemotePublication = {
 };
 
 const CATALOGS: ReadonlyMap<string, Catalog> = new Map([
-  [OPEN, { id: OPEN, title: 'Open', rootUrl: 'https://example.org/opds', auth: { kind: 'none' } }],
+  [
+    OPEN,
+    {
+      id: OPEN,
+      title: 'Open',
+      protocol: 'opds1' as const,
+      rootUrl: 'https://example.org/opds',
+      auth: { kind: 'none' },
+    },
+  ],
   [
     PRIVATE,
     {
       id: PRIVATE,
       title: 'Private',
+      protocol: 'opds1' as const,
       rootUrl: 'https://private.example/opds',
       auth: { kind: 'basic', username: 'jo' },
     },

@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import type { Catalog } from '../domain/catalog';
+import { DEFAULT_CATALOG_PROTOCOL } from '../domain/catalog-protocol';
 import type { CatalogDraft, DraftRefusal } from '../domain/catalog-draft';
 import type { AddCatalogResult } from '../use-cases/add-catalog';
 import type { EditCatalogResult } from '../use-cases/edit-catalog';
@@ -266,7 +267,12 @@ class CatalogSettingsView {
       this.authChoice === 'basic'
         ? { kind: 'basic' as const, username: this.username }
         : { kind: 'none' as const };
-    return { title: this.title, rootUrl: this.rootUrl, auth };
+    return {
+      title: this.title,
+      protocol: DEFAULT_CATALOG_PROTOCOL,
+      rootUrl: this.rootUrl,
+      auth,
+    };
   }
 
   #typedPassword(): string | null {
