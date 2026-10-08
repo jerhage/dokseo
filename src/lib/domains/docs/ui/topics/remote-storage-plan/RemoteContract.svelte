@@ -39,7 +39,7 @@
   const ITEM_TYPES = `type RemoteItem =
   | { readonly kind: 'remote'; readonly publication: RemotePublication }
   | { readonly kind: 'unsupported'; readonly publication: RemotePublication }
-  | { readonly kind: 'downloading'; readonly publication: RemotePublication; readonly progress: number }
+  | { readonly kind: 'downloading'; readonly publication: RemotePublication; readonly progress: number | null }
   | { readonly kind: 'download-failed'; readonly publication: RemotePublication; readonly reason: string }
   | { readonly kind: 'held'; readonly publication: RemotePublication; readonly book: Book }
   | { readonly kind: 'held-older'; readonly publication: RemotePublication; readonly book: Book };
