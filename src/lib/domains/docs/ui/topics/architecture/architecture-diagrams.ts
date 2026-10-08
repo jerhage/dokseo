@@ -97,6 +97,24 @@ const PORT_AND_ADAPTERS: DiagramSpec = {
   ],
 };
 
+const catalogUseCases = box(110, 0, 140, 'Catalog use cases', 'browse, search, download');
+const catalogPort = box(110, 80, 140, 'CatalogSource', 'port', 'primary');
+const opds1Adapter = box(0, 170, 170, 'Opds1CatalogSource', 'HTTP client + Atom XML', 'accent');
+const secondAdapter = box(190, 170, 170, 'A second adapter', 'not built');
+
+const CATALOG_SOURCE: DiagramSpec = {
+  label:
+    'The catalog use cases call the CatalogSource port. One adapter exists and implements it: Opds1CatalogSource, which uses an HTTP client and reads Atom XML. A second adapter, not built, would implement the same port.',
+  width: 360,
+  height: 214,
+  nodes: [catalogUseCases, catalogPort, opds1Adapter, secondAdapter],
+  edges: [
+    { from: catalogUseCases, to: catalogPort, label: 'calls' },
+    { from: opds1Adapter, to: catalogPort, label: 'implements' },
+    { from: secondAdapter, to: catalogPort, label: 'would implement' },
+  ],
+};
+
 const libraryX = box(10, 40, 150, 'domain/x.ts');
 const libraryW = box(10, 110, 150, 'domain/w.ts');
 const recognitionY = box(200, 40, 150, 'domain/y.ts');
@@ -223,6 +241,7 @@ function importMapDiagram(chosen: MapArea, verdicts: readonly AreaVerdicts[]): D
 }
 
 export {
+  CATALOG_SOURCE,
   DOMAIN_CYCLE,
   DOMAIN_GRAPH,
   LAYERS,

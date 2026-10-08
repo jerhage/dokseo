@@ -25,6 +25,7 @@ const ARCHITECTURE_SECTIONS = {
   path: 'From a tap to IndexedDB and back',
   queries: 'Reads and writes through TanStack Query',
   languages: 'Recognizers loaded per language',
+  catalogs: 'Catalog protocols behind one port',
   viewModels: 'View models in .svelte.ts files',
   casts: 'No as casts, with two exceptions',
   limits: 'What the rules do not reach',
@@ -47,10 +48,13 @@ const STORAGE_ACCOUNT_HREF = `/docs/storage#${anchorSlug(STORAGE_SECTIONS.accoun
 
 const EPUB_FLOWING_HREF = `/docs/epub-rendering#${anchorSlug(EPUB_SECTIONS.flowing)}`;
 
+const CATALOG_PORT_HREF = `/docs/architecture#${anchorSlug(ARCHITECTURE_SECTIONS.catalogs)}`;
+
 const IMPORT_PLAN_HREF = `/docs/export-import#${anchorSlug(EXPORT_IMPORT_SECTIONS.plan)}`;
 
 export {
   ARCHITECTURE_SECTIONS,
+  CATALOG_PORT_HREF,
   EPUB_FLOWING_HREF,
   IMPORT_PLAN_HREF,
   OCR_PORT_HREF,
