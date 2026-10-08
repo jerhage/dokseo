@@ -1,4 +1,5 @@
-import { attributeOf, descendantsNamed, parseXml } from './xml-document';
+import { MAX_MARKUP_BYTES } from './ingest-limits';
+import { attributeOf, descendantsNamed, parseXml } from '$lib/shared/xml-document';
 
 const CONTAINER_ENTRY = 'META-INF/container.xml';
 
@@ -11,7 +12,7 @@ function entryPath(raw: string): string {
 }
 
 function packagePathFromContainer(xml: string): string | null {
-  const root = parseXml(xml);
+  const root = parseXml(xml, MAX_MARKUP_BYTES);
   if (root === null) return null;
   for (const rootfile of descendantsNamed(root, 'rootfile')) {
     const mediaType = attributeOf(rootfile, 'media-type');

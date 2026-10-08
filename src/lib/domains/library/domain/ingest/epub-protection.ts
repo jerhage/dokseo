@@ -1,5 +1,6 @@
+import { MAX_MARKUP_BYTES } from './ingest-limits';
 import { match } from 'ts-pattern';
-import { attributeOf, descendantsNamed, parseXml } from './xml-document';
+import { attributeOf, descendantsNamed, parseXml } from '$lib/shared/xml-document';
 
 type BookProtection =
   | { readonly kind: 'unprotected' }
@@ -27,7 +28,7 @@ function holds(names: readonly string[], entry: string): boolean {
 }
 
 function encryptionAlgorithms(xml: string): readonly string[] {
-  const root = parseXml(xml);
+  const root = parseXml(xml, MAX_MARKUP_BYTES);
   if (root === null) return [];
   const algorithms: string[] = [];
   for (const method of descendantsNamed(root, 'EncryptionMethod')) {

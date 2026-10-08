@@ -1,6 +1,7 @@
+import { MAX_MARKUP_BYTES } from './ingest-limits';
 import { resolveHref } from './epub-href';
-import { attributeOf, descendantsNamed, firstNamed, parseXml } from './xml-document';
-import type { XmlElement } from './xml-document';
+import { attributeOf, descendantsNamed, firstNamed, parseXml } from '$lib/shared/xml-document';
+import type { XmlElement } from '$lib/shared/xml-document';
 
 type EpubSpine =
   | { readonly kind: 'spine'; readonly paths: readonly string[] }
@@ -26,7 +27,7 @@ function manifestPaths(root: XmlElement, packagePath: string): ReadonlyMap<strin
 }
 
 function readEpubSpine(xml: string, packagePath: string): EpubSpine {
-  const root = parseXml(xml);
+  const root = parseXml(xml, MAX_MARKUP_BYTES);
   if (root === null || root.localName !== PACKAGE_ELEMENT) return { kind: 'unreadable' };
 
   const spine = firstNamed(root, 'spine');

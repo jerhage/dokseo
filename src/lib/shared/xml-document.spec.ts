@@ -1,18 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_MARKUP_BYTES } from './ingest-limits';
 import { attributeOf, descendantsNamed, firstNamed, parseXml } from './xml-document';
 import type { XmlElement } from './xml-document';
 
+const LIMIT = 4_000_000;
+
 function parsed(xml: string): XmlElement {
-  const root = parseXml(xml);
+  const root = parseXml(xml, LIMIT);
   if (root === null) throw new Error(`no element in ${xml}`);
   return root;
 }
 
 describe('parseXml', () => {
   it('returns null for text holding no element', () => {
-    expect(parseXml('   ')).toBe(null);
-    expect(parseXml('<?xml version="1.0"?>')).toBe(null);
+    expect(parseXml('   ', LIMIT)).toBe(null);
+    expect(parseXml('<?xml version="1.0"?>', LIMIT)).toBe(null);
   });
 
   it('reads the root element under both its qualified and its local name', () => {
@@ -91,25 +92,25 @@ describe('descendantsNamed against a deeply nested document', () => {
 
   it('reads a document nested deeper than the call stack, because a reader chose the file', () => {
     const source = `<root>${'<a>'.repeat(DEPTH)}<needle/>${'</a>'.repeat(DEPTH)}</root>`;
-    const document = parseXml(source);
+    const document = parseXml(source, LIMIT);
 
     expect(document).not.toBeNull();
     expect(document === null ? 0 : descendantsNamed(document, 'needle').length).toBe(1);
   });
 });
 
-describe('parseXml against a document longer than the markup limit', () => {
-  it('reads a document whose length sits exactly on the limit', () => {
-    const padding = '\u3042'.repeat(MAX_MARKUP_BYTES - '<p></p>'.length);
+describe('parseXml against a document longer than the limit it is given', () => {
+  it('parses a source exactly at the limit', () => {
+    const padding = '\u3042'.repeat(LIMIT - '<p></p>'.length);
     const source = `<p>${padding}</p>`;
 
-    expect(source.length).toBe(MAX_MARKUP_BYTES);
-    expect(parseXml(source)?.localName).toBe('p');
+    expect(source.length).toBe(LIMIT);
+    expect(parseXml(source, LIMIT)?.localName).toBe('p');
   });
 
-  it('refuses a document one character over the limit, before scanning it', () => {
-    const padding = '\u3042'.repeat(MAX_MARKUP_BYTES - '<p></p>'.length + 1);
+  it('returns null for a source longer than the limit it is given', () => {
+    const padding = '\u3042'.repeat(LIMIT - '<p></p>'.length + 1);
 
-    expect(parseXml(`<p>${padding}</p>`)).toBeNull();
+    expect(parseXml(`<p>${padding}</p>`, LIMIT)).toBeNull();
   });
 });

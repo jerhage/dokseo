@@ -1,6 +1,7 @@
+import { MAX_MARKUP_BYTES } from './ingest-limits';
 import { resolveHref } from './epub-href';
-import { attributeOf, descendantsNamed, parseXml } from './xml-document';
-import type { XmlElement } from './xml-document';
+import { attributeOf, descendantsNamed, parseXml } from '$lib/shared/xml-document';
+import type { XmlElement } from '$lib/shared/xml-document';
 
 type PageContent =
   | { readonly kind: 'one-image'; readonly path: string }
@@ -57,7 +58,7 @@ function excerptOf(text: string): string {
 }
 
 function readPageContent(xml: string, pagePath: string): PageContent {
-  const root = parseXml(xml);
+  const root = parseXml(xml, MAX_MARKUP_BYTES);
   if (root === null) return { kind: 'no-image' };
 
   const sources = imageSources(root, pagePath);

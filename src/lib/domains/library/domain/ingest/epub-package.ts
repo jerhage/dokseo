@@ -1,5 +1,6 @@
-import { attributeOf, descendantsNamed, firstNamed, parseXml } from './xml-document';
-import type { XmlElement } from './xml-document';
+import { MAX_MARKUP_BYTES } from './ingest-limits';
+import { attributeOf, descendantsNamed, firstNamed, parseXml } from '$lib/shared/xml-document';
+import type { XmlElement } from '$lib/shared/xml-document';
 
 type EpubLayout = 'pre-paginated' | 'reflowable';
 
@@ -44,7 +45,7 @@ function textNamed(metadata: XmlElement, localName: string): string | null {
 }
 
 function readEpubPackage(xml: string): EpubPackage | null {
-  const root = parseXml(xml);
+  const root = parseXml(xml, MAX_MARKUP_BYTES);
   if (root === null || root.localName !== PACKAGE_ELEMENT) return null;
   const metadata = firstNamed(root, 'metadata') ?? root;
   return {
