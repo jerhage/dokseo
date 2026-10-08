@@ -2,7 +2,7 @@ import { newCatalogId } from '$lib/shared/ids';
 import type { CatalogId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { HttpCatalogClient } from '../domains/catalog/adapters/http-catalog-client';
-import { OpdsCatalogSource } from '../domains/catalog/adapters/opds-catalog-source';
+import { Opds1CatalogSource } from '../domains/catalog/adapters/opds1/opds1-catalog-source';
 import { SessionCatalogPasswords } from '../domains/catalog/adapters/session-catalog-passwords';
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
 import type { BookOrigin } from '../domains/catalog/domain/book-origin';
@@ -117,7 +117,7 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     (url, init) => globalThis.fetch(url, init),
     () => navigator.onLine,
   );
-  const source = new OpdsCatalogSource(http);
+  const source = new Opds1CatalogSource(http);
   const sourceFor: CatalogSourceFor = () => Promise.resolve(source);
   const access = { catalogs, passwords, sourceFor };
 

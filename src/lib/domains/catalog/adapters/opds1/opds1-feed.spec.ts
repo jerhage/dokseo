@@ -9,10 +9,10 @@ import {
   SPEC_CONFORMING_ACQUISITION,
   SPEC_CONFORMING_NAVIGATION,
   UNKNOWN_MEDIA_TYPE,
-} from './opds-fixtures';
-import { MAX_FEED_CHARACTERS, readOpdsFeed } from './opds-feed';
-import type { AcquisitionFeed, NavigationFeed } from './catalog-feed';
-import type { FeedPath } from './remote-publication';
+} from './opds1-fixtures';
+import { MAX_FEED_CHARACTERS, readOpdsFeed } from './opds1-feed';
+import type { AcquisitionFeed, NavigationFeed } from '../../domain/catalog-feed';
+import type { FeedPath } from '../../domain/remote-publication';
 
 const ID = catalogId('c1');
 const SERVER = 'http://calibre.local:8080';
