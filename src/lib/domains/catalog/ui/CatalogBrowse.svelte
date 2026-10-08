@@ -6,19 +6,22 @@
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import { unreachable } from '$lib/shared/unreachable';
   import type { BookId } from '$lib/shared/ids';
+  import type { HeaderField } from './catalog-search';
   import type { CatalogBrowseView } from './catalog-browse.svelte';
   import { browseFailureText } from './catalog-texts';
   import CatalogFeedLinks from './CatalogFeedLinks.svelte';
   import CatalogMore from './CatalogMore.svelte';
   import CatalogPasswordModal from './CatalogPasswordModal.svelte';
   import CatalogPublications from './CatalogPublications.svelte';
+  import CatalogSearchField from './CatalogSearchField.svelte';
 
   type Props = {
     readonly view: CatalogBrowseView;
+    readonly search: HeaderField;
     readonly readerHref: (id: BookId) => string;
   };
 
-  let { view, readerHref }: Props = $props();
+  let { view, search, readerHref }: Props = $props();
 
   onMount(() => {
     void view.start();
@@ -26,6 +29,7 @@
 </script>
 
 <div class="col gap-4">
+  <CatalogSearchField field={search} />
   <Breadcrumb items={view.crumbs} label="Catalog path" />
 
   {#if view.state.kind === 'loading'}

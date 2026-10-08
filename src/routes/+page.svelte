@@ -79,7 +79,7 @@
 <PageTitle screen="Library" />
 
 {#snippet withCatalogs(device: Snippet)}
-  <LibraryTabs view={catalogs} {readerHref} {device} />
+  <LibraryTabs view={catalogs} search={catalogSearch} {readerHref} {device} />
 {/snippet}
 
 {#snippet originBadge(id: BookId)}

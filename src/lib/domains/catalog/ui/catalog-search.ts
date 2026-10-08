@@ -1,3 +1,6 @@
+import { isComposingKey } from '$lib/shared/composing-key';
+import type { ComposingSignals } from '$lib/shared/composing-key';
+
 type HeaderField = {
   readonly placeholder: string;
   readonly disabled: boolean;
@@ -17,5 +20,15 @@ function searchPlaceholder(catalogName: string, availability: SearchAvailability
   return availability === 'absent' ? `${catalogName} has no search` : `Search ${catalogName}`;
 }
 
-export { searchAvailability, searchPlaceholder };
-export type { HeaderField, SearchAvailability };
+type SearchFieldKey = 'submit' | 'clear' | 'ignore';
+
+type SearchFieldPress = ComposingSignals & { readonly key: string };
+
+function searchFieldKey(press: SearchFieldPress, value: string): SearchFieldKey {
+  if (isComposingKey(press)) return 'ignore';
+  if (press.key === 'Enter') return 'submit';
+  return press.key === 'Escape' && value.length > 0 ? 'clear' : 'ignore';
+}
+
+export { searchAvailability, searchFieldKey, searchPlaceholder };
+export type { HeaderField, SearchAvailability, SearchFieldKey, SearchFieldPress };
