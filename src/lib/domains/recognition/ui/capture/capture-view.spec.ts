@@ -135,6 +135,7 @@ function fakes(granted: readonly Language[] = ['ja']): Fakes {
         ended.push(label);
       },
     }),
+    catalog: {} as Container['catalog'],
     library: {
       openFile: unused,
       openForReading: unused,

@@ -210,6 +210,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
 
   world.container = {
     beginTrace: noTrace,
+    catalog: {} as Container['catalog'],
     library: {
       openFile: () => Promise.reject(new Error('not used')),
       openForReading: () => {

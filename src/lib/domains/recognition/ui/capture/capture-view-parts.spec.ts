@@ -60,6 +60,7 @@ function fakes(): Fakes {
       image: (): void => undefined,
       end: (): void => undefined,
     }),
+    catalog: {} as Container['catalog'],
     library: {
       openFile: unused,
       openForReading: unused,

@@ -1,5 +1,7 @@
 import { beginTrace } from '$lib/platform/trace/pipeline-trace';
 import type { TraceFactory } from '$lib/platform/trace/pipeline-trace';
+import { buildCatalog } from './composition/catalog';
+import type { CatalogUseCases } from './composition/catalog';
 import { buildFlowing } from './composition/flowing';
 import type { FlowingUseCases } from './composition/flowing';
 import { buildLibrary } from './composition/library';
@@ -32,6 +34,7 @@ import { createCaptureRepository } from './domains/recognition/adapters/capture/
 
 type Container = {
   readonly beginTrace: TraceFactory;
+  readonly catalog: CatalogUseCases;
   readonly library: LibraryUseCases & RemovedBooks & BookCapturesExports;
   readonly flowing: FlowingUseCases;
   readonly recognition: RecognitionUseCases & BookCapturesExports & UnreadableRowsExports;
@@ -46,6 +49,7 @@ function buildContainer(): Container {
 
   return {
     beginTrace,
+    catalog: buildCatalog(),
     library: {
       ...buildLibrary(repository, removedBooks.mergeIntoBook),
       ...removedBooks,
