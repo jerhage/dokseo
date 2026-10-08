@@ -8,7 +8,16 @@ import type { OriginFilter } from './origin-filter';
 class CatalogSession {
   selected = $state<string>(DEVICE_TAB);
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
+  queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
   #positions = new Map<CatalogId, FeedPosition>();
+
+  queryOf(id: CatalogId): string {
+    return this.queries.get(id) ?? '';
+  }
+
+  type(id: CatalogId, query: string): void {
+    this.queries = new Map(this.queries).set(id, query);
+  }
 
   positionOf(id: CatalogId): FeedPosition {
     return this.#positions.get(id) ?? ROOT_POSITION;

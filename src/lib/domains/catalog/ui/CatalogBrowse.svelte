@@ -4,7 +4,6 @@
   import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
   import Button from '$lib/ui/components/Button.svelte';
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
-  import SearchField from '$lib/ui/components/SearchField.svelte';
   import { unreachable } from '$lib/shared/unreachable';
   import type { BookId } from '$lib/shared/ids';
   import type { CatalogBrowseView } from './catalog-browse.svelte';
@@ -20,8 +19,6 @@
 
   let { view, readerHref }: Props = $props();
 
-  let query = $state('');
-
   onMount(() => {
     void view.start();
   });
@@ -31,29 +28,10 @@
     if (link === null) return;
     if (view.followCrumb(link.getAttribute('href') ?? '')) event.preventDefault();
   }
-
-  function submitSearch(event: SubmitEvent): void {
-    event.preventDefault();
-    void view.search(query);
-  }
 </script>
 
 <div class="col gap-4">
-  <div class="row wrap items-center justify-between gap-3">
-    <Breadcrumb items={view.crumbs} label="Catalog path" onclick={followCrumb} />
-    {#if view.searchTemplate !== null}
-      <form class="row items-center gap-2" onsubmit={submitSearch}>
-        <SearchField
-          label="Search this catalog"
-          placeholder="Search this catalog"
-          hideLabel
-          clearable
-          bind:value={query}
-        />
-        <Button type="submit" size="sm">Search</Button>
-      </form>
-    {/if}
-  </div>
+  <Breadcrumb items={view.crumbs} label="Catalog path" onclick={followCrumb} />
 
   {#if view.state.kind === 'loading'}
     <EmptyState live message="Reading the catalog…" />
