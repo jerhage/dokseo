@@ -13,6 +13,7 @@ class CatalogSession {
   #pages = new Map<CatalogId, readonly string[]>();
   #selections = new Map<CatalogId, ReadonlySet<string>>();
   #scrolls = new Map<CatalogId, number>();
+  #searchOrigins = new Map<CatalogId, FeedPosition>();
 
   queryOf(id: CatalogId): string {
     return this.queries.get(id) ?? '';
@@ -31,6 +32,18 @@ class CatalogSession {
     this.#pages.delete(id);
     this.#selections.delete(id);
     this.#scrolls.delete(id);
+  }
+
+  searchOriginOf(id: CatalogId): FeedPosition | null {
+    return this.#searchOrigins.get(id) ?? null;
+  }
+
+  keepSearchOrigin(id: CatalogId, position: FeedPosition): void {
+    this.#searchOrigins.set(id, position);
+  }
+
+  dropSearchOrigin(id: CatalogId): void {
+    this.#searchOrigins.delete(id);
   }
 
   selectionOf(id: CatalogId): ReadonlySet<string> {

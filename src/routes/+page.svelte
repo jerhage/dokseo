@@ -58,7 +58,10 @@
   });
   void catalogs.load();
   const catalogSearch = new CatalogHeaderSearch(catalogs, catalogSession);
-  onDestroy(() => catalogs.dispose());
+  onDestroy(() => {
+    catalogSearch.dispose();
+    catalogs.dispose();
+  });
 
   let query = $state('');
   let search = $state<ReturnType<typeof SearchDialog> | null>();
