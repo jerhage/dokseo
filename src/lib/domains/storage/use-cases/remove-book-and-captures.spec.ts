@@ -54,6 +54,7 @@ function world(outcomes: Outcomes = {}) {
     listRemoved: notUsed,
     listRestorable: notUsed,
     addRemoved: () => Promise.reject(new Error('not used')),
+    replaceFile: notUsed,
     forgetRemoved: (id) => {
       steps.push(`forgot ${id}`);
       return Promise.resolve(outcomes.forgetting ?? WRITTEN);
@@ -152,6 +153,7 @@ function storedOrigin(stopAt: number, stop: Stop) {
     list: notUsed,
     get: notUsed,
     add: notUsed,
+    replaceFile: notUsed,
     readPageList: notUsed,
     savePageList: notUsed,
     remove: (id) =>

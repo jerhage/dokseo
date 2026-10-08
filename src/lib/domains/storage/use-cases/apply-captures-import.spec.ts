@@ -138,6 +138,7 @@ function repositories(into: World) {
       into.removed.set(book.id, book);
       return Promise.resolve({ kind: 'success' });
     },
+    replaceFile: notUsed,
     forgetRemoved: (id) => {
       into.deleted.push(id);
       return notUsed();

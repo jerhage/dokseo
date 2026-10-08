@@ -42,6 +42,7 @@ function deps(refusal: Refusal = 'none'): PreviewCapturesImportDeps {
           : { kind: 'success', removed: [], unreadable: [] },
       ),
     addRemoved: notUsed,
+    replaceFile: notUsed,
     forgetRemoved: notUsed,
     erase: notUsed,
     update: notUsed,

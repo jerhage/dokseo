@@ -67,6 +67,7 @@ vi.mock('./domains/library/adapters/indexeddb-opfs-library.repo', () => ({
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [GONE], unreadable: [] }),
     listRestorable: notUsed,
     addRemoved: () => Promise.reject(new Error('not used')),
+    replaceFile: notUsed,
     forgetRemoved: (id: BookId) => {
       held.forgotten.push(id);
       return Promise.resolve({ kind: 'success' });

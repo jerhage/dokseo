@@ -49,6 +49,7 @@ function fakeRepository(outcome: BookLookup) {
     listRemoved: () => Promise.resolve({ kind: 'success', removed: [], unreadable: [] }),
     listRestorable: () => Promise.resolve({ kind: 'success', removed: [], unreadable: [] }),
     addRemoved: () => Promise.reject(new Error('not used')),
+    replaceFile: () => Promise.reject(new Error('not used')),
     forgetRemoved: () => Promise.resolve({ kind: 'success' }),
     erase: () => Promise.resolve({ kind: 'success' }),
   };

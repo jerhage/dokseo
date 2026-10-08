@@ -105,6 +105,7 @@ function containerOf(store: Store): Container {
     catalog: {} as Container['catalog'],
     library: {
       openFile: unused,
+      replaceBookFile: unused,
       openForReading: unused,
       listBooks: unused,
       readBook: unused,

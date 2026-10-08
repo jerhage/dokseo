@@ -109,6 +109,13 @@ vi.mock('$lib/platform/opfs/blob-store', () => ({
     held.blobs.set(key, blob);
     return Promise.resolve();
   },
+  replace: (stagedKey: string, key: string) => {
+    const staged = held.blobs.get(stagedKey);
+    if (staged === undefined) return Promise.reject(new Error(`Key "${stagedKey}" is missing`));
+    held.blobs.set(key, staged);
+    held.blobs.delete(stagedKey);
+    return Promise.resolve();
+  },
   keys: () => Promise.resolve([...held.blobs.keys()]),
   remove: (key: string) => {
     if (held.failingBlob?.key === key) return Promise.reject(held.failingBlob.error);
@@ -834,5 +841,91 @@ describe('an add stopped part way', () => {
     await expect(add()).rejects.toThrow('books');
 
     expect([...held.blobs.keys()]).toEqual(['stray-1.src']);
+  });
+});
+
+describe('replaceFile', () => {
+  const HELD = bookFromStored({ ...GOOD, id: 'held-1' });
+
+  const REPLACED = { ...HELD, contentHash: contentHash('0123456789abcdef0123456789abcdef') };
+
+  const OLD_SOURCE = new Blob(['old source']);
+
+  const OLD_COVER = new Blob(['old cover']);
+
+  const NEW_SOURCE = new Blob(['new source']);
+
+  const NEW_COVER = new Blob(['new cover']);
+
+  const LISTED: PageOrder = { kind: 'listed', names: ['a.jpg', 'b.jpg'] };
+
+  function shelve(): void {
+    store('books').set('held-1', HELD);
+    held.blobs.set('held-1.src', OLD_SOURCE);
+    held.blobs.set('held-1.cover', OLD_COVER);
+  }
+
+  function replace(cover: Blob | null = NEW_COVER, repository = createLibraryRepository()) {
+    return repository.replaceFile(REPLACED, NEW_SOURCE, cover, LISTED, () => undefined);
+  }
+
+  function expectUntouched(): void {
+    expect(store('books').get('held-1')).toEqual(HELD);
+    expect(held.blobs.get('held-1.src')).toBe(OLD_SOURCE);
+    expect(held.blobs.get('held-1.cover')).toBe(OLD_COVER);
+    expect([...held.blobs.keys()].toSorted()).toEqual(['held-1.cover', 'held-1.src']);
+  }
+
+  it('swaps the files in and writes the row and the page list in one transaction', async () => {
+    shelve();
+
+    const replaced = await replace();
+
+    expect(replaced).toEqual({ kind: 'success' });
+    expect(held.transactions).toBe(1);
+    expect(store('books').get('held-1')).toEqual(REPLACED);
+    expect(store('page-lists').get('held-1')).toEqual({ id: 'held-1', names: ['a.jpg', 'b.jpg'] });
+    expect(held.blobs.get('held-1.src')).toBe(NEW_SOURCE);
+    expect(held.blobs.get('held-1.cover')).toBe(NEW_COVER);
+    expect([...held.blobs.keys()].toSorted()).toEqual(['held-1.cover', 'held-1.src']);
+  });
+
+  it('removes the old cover when the new file has none', async () => {
+    shelve();
+
+    await replace(null);
+
+    expect([...held.blobs.keys()]).toEqual(['held-1.src']);
+  });
+
+  it('holds the lock of the book files while it writes them', async () => {
+    shelve();
+
+    await replace();
+
+    expect(new Set(held.lockedDuringPut)).toEqual(new Set(['book-files:held-1']));
+    expect(held.locks.size).toBe(0);
+  });
+
+  it('keeps the old files and the row when the browser refuses to write the new file', async () => {
+    shelve();
+    held.failingPut = { key: 'held-1.src.next', error: new Error(PRIVATE_WINDOW) };
+
+    const refused = await replace();
+
+    expect(refused).toEqual(STORAGE_UNAVAILABLE);
+    expectUntouched();
+  });
+
+  it('keeps the old files and discards the staged ones when the new cover cannot be written', async () => {
+    shelve();
+    held.failingPut = {
+      key: 'held-1.cover.next',
+      error: new Error('Key "held-1.cover.next" is locked'),
+    };
+
+    await expect(replace()).rejects.toThrow('locked');
+
+    expectUntouched();
   });
 });

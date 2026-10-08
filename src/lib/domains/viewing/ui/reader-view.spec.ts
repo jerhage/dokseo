@@ -213,6 +213,7 @@ function fakes(overrides: Partial<ReaderBook> = {}): Fakes {
     catalog: {} as Container['catalog'],
     library: {
       openFile: () => Promise.reject(new Error('not used')),
+      replaceBookFile: () => Promise.reject(new Error('not used')),
       openForReading: () => {
         if (world.opening === 'missing') {
           return Promise.resolve({ kind: 'not-found', id: bookId('one') } as const);
