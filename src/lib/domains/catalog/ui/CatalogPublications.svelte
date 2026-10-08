@@ -57,7 +57,7 @@
         oncancel={() => view.downloads.cancel(publication.entryId)}
         onreplace={() => view.downloads.askToReplace(publication, feedPosition)}
         ontoggle={() => selection.toggle(publication.entryId)}
-        ondetails={() => view.openDetails(publication.entryId)}
+        ondetails={(from) => view.openDetails(publication.entryId, from)}
       />
     {/each}
   </ul>

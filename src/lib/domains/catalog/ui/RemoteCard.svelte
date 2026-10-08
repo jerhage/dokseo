@@ -2,6 +2,8 @@
   import Card from '$lib/ui/components/Card.svelte';
   import Checkbox from '$lib/ui/components/Checkbox.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
+  import { focusReturnFor } from '$lib/shared/focus-return';
+  import type { FocusReturn } from '$lib/shared/focus-return';
   import type { BookId } from '$lib/shared/ids';
   import type { RemoteItem } from '../domain/remote-item';
   import { isSelectable } from './catalog-selection.svelte';
@@ -16,7 +18,7 @@
     readonly oncancel: () => void;
     readonly onreplace: () => void;
     readonly ontoggle: () => void;
-    readonly ondetails: () => void;
+    readonly ondetails: (from: FocusReturn | null) => void;
   };
 
   let {
@@ -43,7 +45,7 @@
       mediaRatio="portrait"
       aria-label={publication.title}
       variant={selected ? 'feature' : 'default'}
-      onclick={ondetails}
+      onclick={(event) => ondetails(focusReturnFor(event.currentTarget, event.detail))}
     >
       {#snippet media()}
         <Thumbnail src={cover} fill />

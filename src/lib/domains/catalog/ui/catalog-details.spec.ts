@@ -77,6 +77,20 @@ describe('CatalogBrowseView details', () => {
     expect(view.opened).toBeNull();
   });
 
+  it('returns focus to the card that opened the details once they close', async () => {
+    const { view } = setup();
+    await view.start();
+    const calls: (FocusOptions | undefined)[] = [];
+    const target = {
+      isConnected: true,
+      focus: (options?: FocusOptions) => void calls.push(options),
+    };
+    view.openDetails(FIRST, { target, pointer: false });
+    view.closeDetails();
+    view.closeDetails();
+    expect(calls).toEqual([undefined]);
+  });
+
   it('closes the details when another feed opens', async () => {
     const { view } = setup();
     await view.start();

@@ -111,6 +111,20 @@ describe('BookDetailsView', () => {
     expect(view.openId).toBeNull();
   });
 
+  it('returns focus to the card that opened the details once they close', () => {
+    const calls: (FocusOptions | undefined)[] = [];
+    const target = {
+      isConnected: true,
+      focus: (options?: FocusOptions) => void calls.push(options),
+    };
+    const view = new BookDetailsView();
+    view.open(one.id, { target, pointer: true });
+    view.close();
+    view.close();
+
+    expect(calls).toEqual([{ focusVisible: false }]);
+  });
+
   it('shows nothing once the opened book is removed from the shelf', () => {
     const view = new BookDetailsView();
     view.open(one.id);
