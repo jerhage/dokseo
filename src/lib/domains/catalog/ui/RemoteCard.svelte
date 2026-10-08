@@ -50,7 +50,7 @@
     aria-label={publication.title}
     href={openHref}
     variant={selected ? 'feature' : 'default'}
-    class="relative"
+    class={['relative', { 'card-interactive': selectable }]}
   >
     {#snippet media()}
       <Thumbnail src={cover} fill />
