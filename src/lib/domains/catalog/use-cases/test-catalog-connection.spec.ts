@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogDraft } from '../domain/catalog-draft';
-import { CALIBRE_ROOT, HTML_PAGE, SPEC_CONFORMING_ACQUISITION } from '../domain/opds-fixtures';
-import type { CatalogCredentials, OpdsClient, ReadFeedResult } from '../domain/opds-client';
+import { HOME_ROOT_FEED, SHELF_FICTION_FEED } from '../domain/catalog-feed-fixtures';
+import type { CatalogCredentials, CatalogSource, ReadFeedResult } from '../domain/catalog-source';
 import { testCatalogConnection } from './test-catalog-connection';
 
 const OPEN: CatalogDraft = {
@@ -19,20 +19,21 @@ const PRIVATE: CatalogDraft = {
 
 function setup(answer: ReadFeedResult) {
   const requests: { url: string; credentials: CatalogCredentials }[] = [];
-  const client: OpdsClient = {
-    readFeed: (url, credentials) => {
+  const source: CatalogSource = {
+    readFeed: (url, _placement, credentials) => {
       requests.push({ url, credentials });
       return Promise.resolve(answer);
     },
+    search: () => Promise.reject(new Error('unused')),
     readImage: () => Promise.reject(new Error('unused')),
     download: () => Promise.reject(new Error('unused')),
   };
-  return { requests, deps: { client } };
+  return { requests, deps: { sourceFor: () => Promise.resolve(source) } };
 }
 
 describe('testCatalogConnection', () => {
   it('reports the title of a navigation root feed without needing a name', async () => {
-    const { deps, requests } = setup({ kind: 'success', text: CALIBRE_ROOT });
+    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
     const result = await testCatalogConnection(deps, OPEN, null);
     expect(result).toEqual({
       kind: 'success',
@@ -43,27 +44,27 @@ describe('testCatalogConnection', () => {
   });
 
   it('reports the title of an acquisition root feed', async () => {
-    const { deps } = setup({ kind: 'success', text: SPEC_CONFORMING_ACQUISITION });
+    const { deps } = setup({ kind: 'success', reading: SHELF_FICTION_FEED });
     const result = await testCatalogConnection(deps, OPEN, null);
     expect(result.kind).toBe('success');
     if (result.kind === 'success') expect(result.feedKind).toBe('acquisition');
   });
 
   it('sends the typed password with the username', async () => {
-    const { deps, requests } = setup({ kind: 'success', text: CALIBRE_ROOT });
+    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
     await testCatalogConnection(deps, PRIVATE, 'secret');
     expect(requests[0]?.credentials).toEqual({ kind: 'basic', username: 'jo', password: 'secret' });
   });
 
   it('answers locked and sends nothing when basic has no password', async () => {
-    const { deps, requests } = setup({ kind: 'success', text: CALIBRE_ROOT });
+    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
     expect(await testCatalogConnection(deps, PRIVATE, null)).toEqual({ kind: 'locked' });
     expect(requests).toEqual([]);
   });
 
-  it('answers not-opds for a page that is no feed', async () => {
-    const { deps } = setup({ kind: 'success', text: HTML_PAGE });
-    expect(await testCatalogConnection(deps, OPEN, null)).toEqual({ kind: 'not-opds' });
+  it('answers not-a-catalog for a page that is no feed', async () => {
+    const { deps } = setup({ kind: 'not-a-catalog' });
+    expect(await testCatalogConnection(deps, OPEN, null)).toEqual({ kind: 'not-a-catalog' });
   });
 
   it('passes each client failure through', async () => {
@@ -82,7 +83,7 @@ describe('testCatalogConnection', () => {
   });
 
   it('refuses a draft with an unusable address without a request', async () => {
-    const { deps, requests } = setup({ kind: 'success', text: CALIBRE_ROOT });
+    const { deps, requests } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
     const draft: CatalogDraft = { ...OPEN, rootUrl: 'http://example.org/opds' };
     expect(await testCatalogConnection(deps, draft, null)).toEqual({
       kind: 'invalid-url',
@@ -92,7 +93,7 @@ describe('testCatalogConnection', () => {
   });
 
   it('refuses basic without a username', async () => {
-    const { deps } = setup({ kind: 'success', text: CALIBRE_ROOT });
+    const { deps } = setup({ kind: 'success', reading: HOME_ROOT_FEED });
     const draft: CatalogDraft = { ...PRIVATE, auth: { kind: 'basic', username: ' ' } };
     expect(await testCatalogConnection(deps, draft, 'x')).toEqual({ kind: 'missing-username' });
   });

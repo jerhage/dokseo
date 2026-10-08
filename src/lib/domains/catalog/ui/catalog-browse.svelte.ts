@@ -2,10 +2,17 @@ import { tick } from 'svelte';
 import { match } from 'ts-pattern';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Catalog } from '../domain/catalog';
-import type { AcquisitionFeed, NavigationFeed, NavigationLink } from '../domain/opds-feed';
+import type {
+  AcquisitionFeed,
+  CatalogFeed,
+  FeedSearch,
+  NavigationFeed,
+  NavigationLink,
+} from '../domain/catalog-feed';
 import type { BookOriginLink } from '../domain/remote-item';
 import type { FeedPath } from '../domain/remote-publication';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
+import type { SearchCatalogResult } from '../use-cases/search-catalog';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { CatalogCovers } from './catalog-covers.svelte';
 import type { CatalogDownloads, QueuedDownload } from './catalog-downloads.svelte';
@@ -13,11 +20,11 @@ import { CatalogSelection } from './catalog-selection.svelte';
 import type { BrowseFailure } from './catalog-texts';
 import {
   ROOT_POSITION,
+  addressed,
   atDepth,
   crumbs,
   identified,
   opened,
-  searchStep,
   searched,
 } from './feed-address';
 import type { FeedPosition } from './feed-address';
@@ -30,6 +37,13 @@ type BrowseUseCases = {
     path: FeedPath,
     signal?: AbortSignal,
   ) => Promise<BrowseCatalogResult>;
+  readonly searchCatalog: (
+    id: CatalogId,
+    search: FeedSearch,
+    query: string,
+    path: FeedPath,
+    signal?: AbortSignal,
+  ) => Promise<SearchCatalogResult>;
   readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
 };
 
@@ -55,8 +69,6 @@ type BrowseCrumb = { readonly label: string; readonly onselect: () => void };
 
 type Paging = { readonly previous: string | null; readonly next: string | null };
 
-type FeedReading = Extract<BrowseCatalogResult, { readonly kind: 'success' }>['reading'];
-
 type MoreState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'loading' }
@@ -65,7 +77,7 @@ type MoreState =
 type MoreOutcome =
   | {
       readonly kind: 'appended';
-      readonly reading: FeedReading;
+      readonly reading: CatalogFeed;
       readonly held: ReadonlyMap<string, BookOriginLink>;
     }
   | { readonly kind: 'unlock'; readonly refused: boolean }
@@ -98,8 +110,8 @@ class CatalogBrowseView {
 
   #cases: BrowseUseCases;
   #store: PositionStore;
-  #rootSearch = $state<string | null>(null);
-  #appended = $state.raw<readonly FeedReading[]>([]);
+  #rootSearch = $state<FeedSearch | null>(null);
+  #appended = $state.raw<readonly CatalogFeed[]>([]);
   #pending: AbortController | null = null;
   #loadingMore: AbortController | null = null;
   #started = false;
@@ -143,11 +155,11 @@ class CatalogBrowseView {
       .exhaustive();
   }
 
-  get searchTemplate(): string | null {
+  get feedSearch(): FeedSearch | null {
     const own = match(this.state)
-      .returnType<string | null>()
-      .with({ kind: 'navigation' }, ({ feed }) => feed.searchTemplate)
-      .with({ kind: 'acquisition' }, ({ feed }) => feed.searchTemplate)
+      .returnType<FeedSearch | null>()
+      .with({ kind: 'navigation' }, ({ feed }) => feed.search)
+      .with({ kind: 'acquisition' }, ({ feed }) => feed.search)
       .with({ kind: 'loading' }, { kind: 'unlock' }, { kind: 'failed' }, () => null)
       .exhaustive();
     return own ?? this.#rootSearch;
@@ -216,9 +228,9 @@ class CatalogBrowseView {
   }
 
   search(query: string): Promise<void> {
-    const template = this.searchTemplate;
-    if (template === null || query.trim() === '') return Promise.resolve();
-    return this.#show(searched(this.position, searchStep(template, query)));
+    const search = this.feedSearch;
+    if (search === null || query.trim() === '') return Promise.resolve();
+    return this.#show(searched(this.position, { search, query }));
   }
 
   async unlock(password: string): Promise<void> {
@@ -264,12 +276,22 @@ class CatalogBrowseView {
     this.covers.clear();
     this.state = { kind: 'loading' };
 
-    const result = await this.#cases.browseCatalog(
-      this.catalog.id,
-      position.url,
-      position.path,
-      pending.signal,
-    );
+    const { lookup } = position;
+    const result =
+      lookup === null
+        ? await this.#cases.browseCatalog(
+            this.catalog.id,
+            position.url,
+            position.path,
+            pending.signal,
+          )
+        : await this.#cases.searchCatalog(
+            this.catalog.id,
+            lookup.search,
+            lookup.query,
+            position.path,
+            pending.signal,
+          );
     if (this.#pending !== pending) return;
 
     this.state = match(result)
@@ -279,7 +301,7 @@ class CatalogBrowseView {
       .with({ kind: 'unauthorized' }, () => ({ kind: 'unlock', refused: true }))
       .with({ kind: 'aborted' }, () => ({ kind: 'loading' }))
       .with(
-        { kind: 'not-opds' },
+        { kind: 'not-a-catalog' },
         { kind: 'not-found' },
         { kind: 'server-error' },
         { kind: 'blocked' },
@@ -293,10 +315,11 @@ class CatalogBrowseView {
 
     if (this.state.kind === 'unlock') this.prompting = true;
     if (result.kind !== 'success') return;
-    const identity = identified(position, result.reading.feed.id);
+    const settled = lookup === null ? position : addressed(position, result.reading.feed.address);
+    const identity = identified(settled, result.reading.feed.id);
     this.position = identity;
     this.#store.move(this.catalog.id, identity);
-    if (position.url === null) this.#rootSearch = result.reading.feed.searchTemplate;
+    if (position.url === null && lookup === null) this.#rootSearch = result.reading.feed.search;
     this.#shown(result.held);
   }
 
@@ -322,13 +345,13 @@ class CatalogBrowseView {
       .with({ kind: 'success' }, ({ reading, held }) =>
         reading.kind === first
           ? { kind: 'appended', reading, held }
-          : { kind: 'failed', failure: { kind: 'not-opds' } },
+          : { kind: 'failed', failure: { kind: 'not-a-catalog' } },
       )
       .with({ kind: 'locked' }, () => ({ kind: 'unlock', refused: false }))
       .with({ kind: 'unauthorized' }, () => ({ kind: 'unlock', refused: true }))
       .with({ kind: 'aborted' }, () => ({ kind: 'idle' }))
       .with(
-        { kind: 'not-opds' },
+        { kind: 'not-a-catalog' },
         { kind: 'not-found' },
         { kind: 'server-error' },
         { kind: 'blocked' },

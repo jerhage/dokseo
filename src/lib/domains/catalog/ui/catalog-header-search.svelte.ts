@@ -20,7 +20,7 @@ class CatalogHeaderSearch {
 
   fieldFor(catalog: Catalog): HeaderField {
     const browse = this.#tabs.browsing(catalog);
-    const availability = searchAvailability(browse.state.kind !== 'loading', browse.searchTemplate);
+    const availability = searchAvailability(browse.state.kind !== 'loading', browse.feedSearch);
     return {
       placeholder: searchPlaceholder(catalog.title, availability),
       disabled: availability === 'absent',

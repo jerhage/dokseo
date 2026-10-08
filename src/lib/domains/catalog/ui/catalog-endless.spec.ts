@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
-import { readOpdsFeed } from '../domain/opds-feed';
+import type { CatalogFeed } from '../domain/catalog-feed';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import { CatalogBrowseView } from './catalog-browse.svelte';
 import { CatalogCovers } from './catalog-covers.svelte';
 import { CatalogDownloads } from './catalog-downloads.svelte';
 import { CatalogSession } from './catalog-session.svelte';
-import { HOME } from './catalog-ui-fixtures';
+import { HOME, publication as publicationOf } from './catalog-ui-fixtures';
 import { ROOT_POSITION } from './feed-address';
 
 const PAGE_SIZE = 3;
@@ -18,39 +18,55 @@ function pageUrl(page: number): string | null {
   return page === 0 ? null : `${ROOT_URL}?page=${page}`;
 }
 
-function nextLink(page: number): string {
-  return page + 1 < PAGE_COUNT ? `<link rel="next" href="${pageUrl(page + 1)}"/>` : '';
+function pagingOf(page: number) {
+  const next = page + 1 < PAGE_COUNT ? pageUrl(page + 1) : null;
+  return { next, previous: null, first: null, last: null };
 }
 
-function acquisitionPage(page: number): string {
-  const entries = Array.from({ length: PAGE_SIZE }, (_, index) => {
-    const id = `p${page}-${index}`;
-    return `<entry><title>Book ${id}</title><id>${id}</id><updated>2026-08-01T00:00:00Z</updated>
-      <link rel="http://opds-spec.org/acquisition" type="application/epub+zip" href="/get/${id}"/>
-      <link rel="http://opds-spec.org/image" type="image/png" href="/cover/${id}"/></entry>`;
-  }).join('');
-  return `<feed xmlns="http://www.w3.org/2005/Atom"><title>Books</title><id>books</id>${nextLink(page)}${entries}</feed>`;
+function entryIds(page: number): string[] {
+  return Array.from({ length: PAGE_SIZE }, (_, index) => `p${page}-${index}`);
 }
 
-function navigationPage(page: number): string {
-  const entries = Array.from({ length: PAGE_SIZE }, (_, index) => {
-    const id = `p${page}-${index}`;
-    return `<entry><title>Author ${id}</title><id>${id}</id>
-      <link type="application/atom+xml;profile=opds-catalog" href="/opds/author/${id}"/></entry>`;
-  }).join('');
-  return `<feed xmlns="http://www.w3.org/2005/Atom"><title>Authors</title><id>authors</id>${nextLink(page)}${entries}</feed>`;
+function acquisitionPage(page: number): CatalogFeed {
+  const publications = entryIds(page).map((id) => publicationOf(id));
+  const feed = {
+    id: 'books',
+    title: 'Books',
+    address: pageUrl(page) ?? ROOT_URL,
+    paging: pagingOf(page),
+    search: null,
+    publications,
+  };
+  return { kind: 'acquisition', feed };
+}
+
+function navigationPage(page: number): CatalogFeed {
+  const links = entryIds(page).map((id) => ({
+    title: `Author ${id}`,
+    href: `https://home.test/opds/author/${id}`,
+    summary: '',
+  }));
+  const feed = {
+    id: 'authors',
+    title: 'Authors',
+    address: pageUrl(page) ?? ROOT_URL,
+    paging: pagingOf(page),
+    search: null,
+    links,
+  };
+  return { kind: 'navigation', feed };
 }
 
 function pageOf(url: string | null): number {
   return url === null ? 0 : Number(new URL(url).searchParams.get('page'));
 }
 
-function answering(xmlOf: (page: number) => string) {
-  return (url: string | null): BrowseCatalogResult => {
-    const reading = readOpdsFeed(xmlOf(pageOf(url)), url ?? ROOT_URL, HOME.id, []);
-    if (reading.kind === 'not-a-feed') throw new Error('fixture is not a feed');
-    return { kind: 'success', reading, held: new Map() };
-  };
+function answering(feedOf: (page: number) => CatalogFeed) {
+  return (url: string | null): BrowseCatalogResult => ({
+    kind: 'success',
+    reading: feedOf(pageOf(url)),
+    held: new Map(),
+  });
 }
 
 type Answer = (url: string | null) => Promise<BrowseCatalogResult>;
@@ -76,6 +92,7 @@ function setup(answer: Answer, session = new CatalogSession()) {
         calls.push(url);
         return answer(url);
       },
+      searchCatalog: () => Promise.resolve({ kind: 'aborted' }),
       unlockCatalog: () => ({ kind: 'success' }),
     },
     session,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { CatalogCredentials } from '../domain/opds-client';
+import type { CatalogCredentials } from '../domain/catalog-source';
 import type { Acquisition } from '../domain/remote-publication';
-import { FetchOpdsClient } from './fetch-opds-client';
-import type { FetchFunction } from './fetch-opds-client';
+import { HttpCatalogClient } from './http-catalog-client';
+import type { FetchFunction } from './http-catalog-client';
 
 const NONE: CatalogCredentials = { kind: 'none' };
 const URL_OF_FEED = 'https://books.example/opds';
@@ -22,7 +22,7 @@ function clientAnswering(answer: () => Promise<Response>, onLine = true) {
     requests.push({ url, init });
     return answer();
   };
-  return { client: new FetchOpdsClient(fetchFunction, () => onLine), requests };
+  return { client: new HttpCatalogClient(fetchFunction, () => onLine), requests };
 }
 
 function respond(response: Response) {
@@ -45,11 +45,11 @@ function bytes(length: number): Uint8Array<ArrayBuffer> {
   return new Uint8Array(length).fill(7);
 }
 
-describe('FetchOpdsClient.readFeed', () => {
+describe('HttpCatalogClient.readText', () => {
   it('answers the text of a successful response and omits cookies', async () => {
     const { client, requests } = respond(new Response('<feed/>'));
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'success', text: '<feed/>' });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'success', text: '<feed/>' });
     expect(requests[0]?.url).toBe(URL_OF_FEED);
     expect(requests[0]?.init.credentials).toBe('omit');
   });
@@ -57,7 +57,7 @@ describe('FetchOpdsClient.readFeed', () => {
   it('sends no Authorization header for a catalog without credentials', async () => {
     const { client, requests } = respond(new Response('x'));
 
-    await client.readFeed(URL_OF_FEED, NONE);
+    await client.readText(URL_OF_FEED, NONE);
 
     expect(new Headers(requests[0]?.init.headers).has('Authorization')).toBe(false);
   });
@@ -65,7 +65,7 @@ describe('FetchOpdsClient.readFeed', () => {
   it('sends Basic credentials with a non-ASCII password encoded as UTF-8', async () => {
     const { client, requests } = respond(new Response('x'));
 
-    await client.readFeed(URL_OF_FEED, { kind: 'basic', username: 'jo', password: 'pä' });
+    await client.readText(URL_OF_FEED, { kind: 'basic', username: 'jo', password: 'pä' });
 
     const expected = Buffer.from('jo:pä', 'utf8').toString('base64');
     expect(new Headers(requests[0]?.init.headers).get('Authorization')).toBe(`Basic ${expected}`);
@@ -74,25 +74,25 @@ describe('FetchOpdsClient.readFeed', () => {
   it.each([401, 403])('answers unauthorized for %i', async (status) => {
     const { client } = respond(new Response('', { status }));
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'unauthorized' });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'unauthorized' });
   });
 
   it('answers not-found for 404', async () => {
     const { client } = respond(new Response('', { status: 404 }));
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'not-found' });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'not-found' });
   });
 
   it('answers server-error with the status for any other failure', async () => {
     const { client } = respond(new Response('', { status: 500 }));
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'server-error', status: 500 });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'server-error', status: 500 });
   });
 
   it('answers blocked when fetch rejects with a TypeError while online', async () => {
     const { client } = clientAnswering(() => Promise.reject(new TypeError('Failed to fetch')));
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'blocked' });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'blocked' });
   });
 
   it('answers offline when fetch rejects with a TypeError while offline', async () => {
@@ -101,7 +101,7 @@ describe('FetchOpdsClient.readFeed', () => {
       false,
     );
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'offline' });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'offline' });
   });
 
   it('answers aborted when the signal is aborted', async () => {
@@ -109,7 +109,7 @@ describe('FetchOpdsClient.readFeed', () => {
     const { client } = clientAnswering(() => Promise.reject(controller.signal.reason));
     controller.abort();
 
-    expect(await client.readFeed(URL_OF_FEED, NONE, controller.signal)).toEqual({
+    expect(await client.readText(URL_OF_FEED, NONE, controller.signal)).toEqual({
       kind: 'aborted',
     });
   });
@@ -119,17 +119,17 @@ describe('FetchOpdsClient.readFeed', () => {
       Promise.reject(new DOMException('stop', 'AbortError')),
     );
 
-    expect(await client.readFeed(URL_OF_FEED, NONE)).toEqual({ kind: 'aborted' });
+    expect(await client.readText(URL_OF_FEED, NONE)).toEqual({ kind: 'aborted' });
   });
 
   it('rethrows a failure that is not a network error', async () => {
     const { client } = clientAnswering(() => Promise.reject(new RangeError('bug')));
 
-    await expect(client.readFeed(URL_OF_FEED, NONE)).rejects.toThrow('bug');
+    await expect(client.readText(URL_OF_FEED, NONE)).rejects.toThrow('bug');
   });
 });
 
-describe('FetchOpdsClient.readImage', () => {
+describe('HttpCatalogClient.readImage', () => {
   it('answers the body as a blob', async () => {
     const { client } = respond(
       new Response(bytes(3), { headers: { 'Content-Type': 'image/png' } }),
@@ -149,7 +149,7 @@ describe('FetchOpdsClient.readImage', () => {
   });
 });
 
-describe('FetchOpdsClient.download', () => {
+describe('HttpCatalogClient.download', () => {
   it('names the file from filename*, types it as the acquisition and reports progress', async () => {
     const body = streamOf([bytes(40), bytes(60)]);
     const { client } = respond(

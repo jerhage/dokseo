@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import type { StatusVariant } from '$lib/ui/components/classes';
 import type { Catalog } from '../domain/catalog';
 import type { DraftRefusal, RootUrlProblem } from '../domain/catalog-draft';
+import type { CatalogProtocol } from '../domain/catalog-protocol';
 import type { OpenFileFailure } from '$lib/domains/library/use-cases/open-file';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import type { DownloadPublicationResult } from '../use-cases/download-publication';
@@ -63,16 +64,19 @@ function serverErrorText(status: number): string {
   return `The server answered with an error (status ${status}).`;
 }
 
-function connectionOutcome(result: TestCatalogConnectionResult): ConnectionOutcome {
+function connectionOutcome(
+  result: TestCatalogConnectionResult,
+  protocol: CatalogProtocol,
+): ConnectionOutcome {
   return match(result)
     .returnType<ConnectionOutcome>()
     .with({ kind: 'success' }, ({ feedTitle }) => ({
       variant: 'success',
       text: `Connected: ${feedTitle}.`,
     }))
-    .with({ kind: 'not-opds' }, () => ({
+    .with({ kind: 'not-a-catalog' }, () => ({
       variant: 'warning',
-      text: NOT_OPDS_TEXT,
+      text: notACatalogText(protocol),
     }))
     .with({ kind: 'locked' }, () => ({
       variant: 'info',
@@ -115,12 +119,16 @@ const UNKNOWN_CATALOG_TEXT = 'That catalog no longer exists.';
 const UNREADABLE_CATALOG_TEXT =
   'That catalog could not be read. Remove it in Settings, then add it again.';
 
-const NOT_OPDS_TEXT = 'This address answers, but not with an OPDS catalog.';
+function notACatalogText(protocol: CatalogProtocol): string {
+  return match(protocol)
+    .with('opds1', () => 'This address answers, but not with an OPDS catalog.')
+    .exhaustive();
+}
 
-function browseFailureText(failure: BrowseFailure): string {
+function browseFailureText(failure: BrowseFailure, protocol: CatalogProtocol): string {
   return match(failure)
     .returnType<string>()
-    .with({ kind: 'not-opds' }, () => NOT_OPDS_TEXT)
+    .with({ kind: 'not-a-catalog' }, () => notACatalogText(protocol))
     .with({ kind: 'not-found' }, () => NOT_FOUND_TEXT)
     .with({ kind: 'server-error' }, ({ status }) => serverErrorText(status))
     .with({ kind: 'blocked' }, () => BLOCKED_TEXT)

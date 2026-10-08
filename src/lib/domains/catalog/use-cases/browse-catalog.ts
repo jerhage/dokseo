@@ -3,9 +3,8 @@ import type { StorageUnavailable } from '$lib/shared/storage-unavailable';
 import type { ReadBookResult } from '$lib/domains/library/use-cases/read-book';
 import { originLink } from '../domain/book-origin';
 import type { BookOrigin } from '../domain/book-origin';
-import { readOpdsFeed } from '../domain/opds-feed';
-import type { OpdsFeedReading } from '../domain/opds-feed';
-import type { ClientFailure, OpdsClient } from '../domain/opds-client';
+import type { CatalogFeed } from '../domain/catalog-feed';
+import type { ClientFailure } from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
 import type { BookOriginLink } from '../domain/remote-item';
 import type { FeedPath } from '../domain/remote-publication';
@@ -14,20 +13,17 @@ import type { CatalogAccessDeps, CatalogAccessFailure } from './catalog-access';
 
 type ReadBook = (id: BookId) => Promise<ReadBookResult>;
 
-type FeedReading = Exclude<OpdsFeedReading, { readonly kind: 'not-a-feed' }>;
-
 type BrowseCatalogResult =
   | {
       readonly kind: 'success';
-      readonly reading: FeedReading;
+      readonly reading: CatalogFeed;
       readonly held: ReadonlyMap<string, BookOriginLink>;
     }
-  | { readonly kind: 'not-opds' }
+  | { readonly kind: 'not-a-catalog' }
   | ClientFailure
   | CatalogAccessFailure;
 
 type BrowseCatalogDeps = CatalogAccessDeps & {
-  readonly client: OpdsClient;
   readonly origins: OriginRepository;
   readonly readBook: ReadBook;
 };
@@ -67,6 +63,19 @@ async function keptOrigin(
   return { kind: 'success', held: false };
 }
 
+async function heldReading(
+  deps: BrowseCatalogDeps,
+  catalogId: CatalogId,
+  reading: CatalogFeed,
+): Promise<BrowseCatalogResult> {
+  if (reading.kind === 'navigation') return { kind: 'success', reading, held: new Map() };
+
+  const entryIds = new Set(reading.feed.publications.map((publication) => publication.entryId));
+  const checked = await heldEntries(deps, catalogId, entryIds);
+  if (checked.kind !== 'success') return checked;
+  return { kind: 'success', reading, held: checked.held };
+}
+
 async function browseCatalog(
   deps: BrowseCatalogDeps,
   catalogId: CatalogId,
@@ -77,19 +86,17 @@ async function browseCatalog(
   const access = await catalogAccess(deps, catalogId);
   if (access.kind !== 'success') return access;
 
-  const feedUrl = url ?? access.catalog.rootUrl;
-  const fetched = await deps.client.readFeed(feedUrl, access.credentials, signal);
+  const address = url ?? access.catalog.rootUrl;
+  const fetched = await access.source.readFeed(
+    address,
+    { catalogId, path },
+    access.credentials,
+    signal,
+  );
   if (fetched.kind !== 'success') return fetched;
 
-  const reading = readOpdsFeed(fetched.text, feedUrl, catalogId, path);
-  if (reading.kind === 'not-a-feed') return { kind: 'not-opds' };
-  if (reading.kind === 'navigation') return { kind: 'success', reading, held: new Map() };
-
-  const entryIds = new Set(reading.feed.publications.map((publication) => publication.entryId));
-  const checked = await heldEntries(deps, catalogId, entryIds);
-  if (checked.kind !== 'success') return checked;
-  return { kind: 'success', reading, held: checked.held };
+  return heldReading(deps, catalogId, fetched.reading);
 }
 
-export { browseCatalog };
+export { browseCatalog, heldReading };
 export type { BrowseCatalogDeps, BrowseCatalogResult, ReadBook };

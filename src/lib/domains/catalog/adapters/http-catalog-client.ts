@@ -5,11 +5,11 @@ import type {
   ClientFailure,
   DownloadProgress,
   DownloadResult,
-  OpdsClient,
-  ReadFeedResult,
   ReadImageResult,
-} from '../domain/opds-client';
+} from '../domain/catalog-source';
 import type { Acquisition } from '../domain/remote-publication';
+
+type ReadTextResult = { readonly kind: 'success'; readonly text: string } | ClientFailure;
 
 type FetchFunction = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -59,7 +59,7 @@ async function collectBody(
   return chunks;
 }
 
-class FetchOpdsClient implements OpdsClient {
+class HttpCatalogClient {
   readonly #fetch: FetchFunction;
   readonly #onLine: () => boolean;
 
@@ -68,11 +68,11 @@ class FetchOpdsClient implements OpdsClient {
     this.#onLine = onLine;
   }
 
-  async readFeed(
+  async readText(
     url: string,
     credentials: CatalogCredentials,
     signal?: AbortSignal,
-  ): Promise<ReadFeedResult> {
+  ): Promise<ReadTextResult> {
     const fetched = await this.#fetched(url, credentials, signal);
     if (fetched.kind !== 'response') return fetched;
     const text = await this.#settle(fetched.response.text(), signal);
@@ -143,5 +143,5 @@ class FetchOpdsClient implements OpdsClient {
   }
 }
 
-export { FetchOpdsClient };
-export type { FetchFunction };
+export { HttpCatalogClient };
+export type { FetchFunction, ReadTextResult };

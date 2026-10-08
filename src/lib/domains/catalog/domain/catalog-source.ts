@@ -1,4 +1,7 @@
-import type { Acquisition } from './remote-publication';
+import type { CatalogId } from '$lib/shared/ids';
+import type { CatalogFeed, FeedSearch } from './catalog-feed';
+import type { CatalogProtocol } from './catalog-protocol';
+import type { Acquisition, FeedPath } from './remote-publication';
 
 type CatalogCredentials =
   | { readonly kind: 'none' }
@@ -12,7 +15,12 @@ type ClientFailure =
   | { readonly kind: 'offline' }
   | { readonly kind: 'aborted' };
 
-type ReadFeedResult = { readonly kind: 'success'; readonly text: string } | ClientFailure;
+type FeedPlacement = { readonly catalogId: CatalogId; readonly path: FeedPath };
+
+type ReadFeedResult =
+  | { readonly kind: 'success'; readonly reading: CatalogFeed }
+  | { readonly kind: 'not-a-catalog' }
+  | ClientFailure;
 
 type ReadImageResult = { readonly kind: 'success'; readonly image: Blob } | ClientFailure;
 
@@ -20,14 +28,22 @@ type DownloadResult = { readonly kind: 'success'; readonly file: File } | Client
 
 type DownloadProgress = (fraction: number | null) => void;
 
-interface OpdsClient {
+interface CatalogSource {
   readFeed(
-    url: string,
+    address: string,
+    placement: FeedPlacement,
+    credentials: CatalogCredentials,
+    signal?: AbortSignal,
+  ): Promise<ReadFeedResult>;
+  search(
+    search: FeedSearch,
+    query: string,
+    placement: FeedPlacement,
     credentials: CatalogCredentials,
     signal?: AbortSignal,
   ): Promise<ReadFeedResult>;
   readImage(
-    url: string,
+    address: string,
     credentials: CatalogCredentials,
     signal?: AbortSignal,
   ): Promise<ReadImageResult>;
@@ -40,12 +56,16 @@ interface OpdsClient {
   ): Promise<DownloadResult>;
 }
 
+type CatalogSourceFor = (protocol: CatalogProtocol) => Promise<CatalogSource>;
+
 export type {
   CatalogCredentials,
+  CatalogSource,
+  CatalogSourceFor,
   ClientFailure,
   DownloadProgress,
   DownloadResult,
-  OpdsClient,
+  FeedPlacement,
   ReadFeedResult,
   ReadImageResult,
 };

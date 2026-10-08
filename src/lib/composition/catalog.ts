@@ -1,14 +1,16 @@
 import { newCatalogId } from '$lib/shared/ids';
 import type { CatalogId } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
-import { FetchOpdsClient } from '../domains/catalog/adapters/fetch-opds-client';
+import { HttpCatalogClient } from '../domains/catalog/adapters/http-catalog-client';
+import { OpdsCatalogSource } from '../domains/catalog/adapters/opds-catalog-source';
 import { SessionCatalogPasswords } from '../domains/catalog/adapters/session-catalog-passwords';
 import { createCatalogOriginsRepository } from '../domains/catalog/adapters/indexeddb-catalog-origins.repo';
 import type { BookOrigin } from '../domains/catalog/domain/book-origin';
+import type { FeedSearch } from '../domains/catalog/domain/catalog-feed';
 import type { CatalogDraft } from '../domains/catalog/domain/catalog-draft';
 import type { BookMatching } from '../domains/library/domain/book/book-matching';
 import type { ReadingDefaults } from '../domains/library/domain/book/reading-defaults';
-import type { DownloadProgress } from '../domains/catalog/domain/opds-client';
+import type { CatalogSourceFor, DownloadProgress } from '../domains/catalog/domain/catalog-source';
 import type { FeedPath, RemotePublication } from '../domains/catalog/domain/remote-publication';
 import { addCatalog } from '../domains/catalog/use-cases/add-catalog';
 import type { AddCatalogResult } from '../domains/catalog/use-cases/add-catalog';
@@ -44,6 +46,8 @@ import { removeCatalog } from '../domains/catalog/use-cases/remove-catalog';
 import type { RemoveCatalogResult } from '../domains/catalog/use-cases/remove-catalog';
 import { testCatalogConnection } from '../domains/catalog/use-cases/test-catalog-connection';
 import type { TestCatalogConnectionResult } from '../domains/catalog/use-cases/test-catalog-connection';
+import { searchCatalog } from '../domains/catalog/use-cases/search-catalog';
+import type { SearchCatalogResult } from '../domains/catalog/use-cases/search-catalog';
 import { unlockCatalog } from '../domains/catalog/use-cases/unlock-catalog';
 import type { UnlockCatalogResult } from '../domains/catalog/use-cases/unlock-catalog';
 
@@ -68,6 +72,13 @@ type CatalogUseCases = {
     path: FeedPath,
     signal?: AbortSignal,
   ) => Promise<BrowseCatalogResult>;
+  readonly searchCatalog: (
+    id: CatalogId,
+    search: FeedSearch,
+    query: string,
+    path: FeedPath,
+    signal?: AbortSignal,
+  ) => Promise<SearchCatalogResult>;
   readonly readCatalogCover: (
     id: CatalogId,
     url: string,
@@ -102,11 +113,13 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
   const catalogs = repository;
   const origins = repository;
   const passwords = new SessionCatalogPasswords();
-  const client = new FetchOpdsClient(
+  const http = new HttpCatalogClient(
     (url, init) => globalThis.fetch(url, init),
     () => navigator.onLine,
   );
-  const access = { catalogs, passwords };
+  const source = new OpdsCatalogSource(http);
+  const sourceFor: CatalogSourceFor = () => Promise.resolve(source);
+  const access = { catalogs, passwords, sourceFor };
 
   return {
     addCatalog: (draft: CatalogDraft) => addCatalog({ catalogs, newId: newCatalogId }, draft),
@@ -118,20 +131,23 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
     listOrigins: () => listOrigins({ origins }),
     findOrigin: (id: CatalogId, entryId: string) => findOrigin({ origins }, id, entryId),
     testCatalogConnection: (draft, password, signal) =>
-      testCatalogConnection({ client }, draft, password, signal),
+      testCatalogConnection({ sourceFor }, draft, password, signal),
     unlockCatalog: (id: CatalogId, password: string) => unlockCatalog({ passwords }, id, password),
     browseCatalog: (id, url, path, signal) =>
-      browseCatalog(
-        { ...access, client, origins, readBook: library.readBook },
+      browseCatalog({ ...access, origins, readBook: library.readBook }, id, url, path, signal),
+    searchCatalog: (id, search, query, path, signal) =>
+      searchCatalog(
+        { ...access, origins, readBook: library.readBook },
         id,
-        url,
+        search,
+        query,
         path,
         signal,
       ),
-    readCatalogCover: (id, url, signal) => readCatalogCover({ ...access, client }, id, url, signal),
+    readCatalogCover: (id, url, signal) => readCatalogCover(access, id, url, signal),
     downloadPublication: (publication, feedPosition, matching, defaults, onProgress, signal) =>
       downloadPublication(
-        { ...access, client, origins, openFile: library.openFile, now: Date.now },
+        { ...access, origins, openFile: library.openFile, now: Date.now },
         publication,
         feedPosition,
         matching,
@@ -141,7 +157,7 @@ function buildCatalog(library: CatalogLibrary): CatalogUseCases {
       ),
     updatePublication: (publication, bookId, feedPosition, onProgress, signal) =>
       updatePublication(
-        { ...access, client, origins, replaceBookFile: library.replaceBookFile, now: Date.now },
+        { ...access, origins, replaceBookFile: library.replaceBookFile, now: Date.now },
         publication,
         bookId,
         feedPosition,

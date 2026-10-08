@@ -1,5 +1,5 @@
 import { fallbackFileName } from '../domain/download-file-name';
-import type { ClientFailure, DownloadProgress, OpdsClient } from '../domain/opds-client';
+import type { ClientFailure, DownloadProgress } from '../domain/catalog-source';
 import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import { catalogAccess } from './catalog-access';
 import type { CatalogAccessDeps, CatalogAccessFailure } from './catalog-access';
@@ -14,7 +14,7 @@ type AcquisitionDownload =
   | ClientFailure
   | CatalogAccessFailure;
 
-type DownloadAcquisitionDeps = CatalogAccessDeps & { readonly client: OpdsClient };
+type DownloadAcquisitionDeps = CatalogAccessDeps;
 
 async function downloadAcquisition(
   deps: DownloadAcquisitionDeps,
@@ -28,7 +28,7 @@ async function downloadAcquisition(
   const access = await catalogAccess(deps, publication.catalogId);
   if (access.kind !== 'success') return access;
 
-  const downloaded = await deps.client.download(
+  const downloaded = await access.source.download(
     acquisition,
     access.credentials,
     fallbackFileName(publication.title, acquisition.format),

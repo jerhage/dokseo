@@ -1,5 +1,5 @@
 import type { CatalogId } from '$lib/shared/ids';
-import type { ClientFailure, OpdsClient } from '../domain/opds-client';
+import type { ClientFailure } from '../domain/catalog-source';
 import { catalogAccess } from './catalog-access';
 import type { CatalogAccessDeps, CatalogAccessFailure } from './catalog-access';
 
@@ -8,7 +8,7 @@ type ReadCatalogCoverResult =
   | ClientFailure
   | CatalogAccessFailure;
 
-type ReadCatalogCoverDeps = CatalogAccessDeps & { readonly client: OpdsClient };
+type ReadCatalogCoverDeps = CatalogAccessDeps;
 
 async function readCatalogCover(
   deps: ReadCatalogCoverDeps,
@@ -18,7 +18,7 @@ async function readCatalogCover(
 ): Promise<ReadCatalogCoverResult> {
   const access = await catalogAccess(deps, catalogId);
   if (access.kind !== 'success') return access;
-  return deps.client.readImage(url, access.credentials, signal);
+  return access.source.readImage(url, access.credentials, signal);
 }
 
 export { readCatalogCover };

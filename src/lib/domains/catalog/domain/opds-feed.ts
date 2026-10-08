@@ -3,42 +3,11 @@ import { LANGUAGES } from '$lib/shared/language';
 import type { Language } from '$lib/shared/language';
 import { attributeOf, parseXml } from '$lib/shared/xml-document';
 import type { XmlElement } from '$lib/shared/xml-document';
+import type { CatalogFeed, FeedPaging, NavigationLink } from './catalog-feed';
 import { formatOfMediaType } from './remote-publication';
 import type { Acquisition, FeedPath, RemoteImage, RemotePublication } from './remote-publication';
 
-type FeedPaging = {
-  readonly next: string | null;
-  readonly previous: string | null;
-  readonly first: string | null;
-  readonly last: string | null;
-};
-
-type NavigationLink = {
-  readonly title: string;
-  readonly href: string;
-  readonly summary: string;
-};
-
-type NavigationFeed = {
-  readonly id: string;
-  readonly title: string;
-  readonly paging: FeedPaging;
-  readonly searchTemplate: string | null;
-  readonly links: readonly NavigationLink[];
-};
-
-type AcquisitionFeed = {
-  readonly id: string;
-  readonly title: string;
-  readonly paging: FeedPaging;
-  readonly searchTemplate: string | null;
-  readonly publications: readonly RemotePublication[];
-};
-
-type OpdsFeedReading =
-  | { readonly kind: 'navigation'; readonly feed: NavigationFeed }
-  | { readonly kind: 'acquisition'; readonly feed: AcquisitionFeed }
-  | { readonly kind: 'not-a-feed' };
+type OpdsFeedReading = CatalogFeed | { readonly kind: 'not-a-feed' };
 
 const MAX_FEED_CHARACTERS = 2_000_000;
 
@@ -207,14 +176,18 @@ function readOpdsFeed(
   const id = childText(root, 'id');
   const title = childText(root, 'title');
   const paging = pagingOf(root, feedUrl);
-  const searchTemplate = searchTemplateOf(root, feedUrl);
+  const template = searchTemplateOf(root, feedUrl);
+  const search = template === null ? null : { handle: template };
   if (entries.some(hasAcquisition)) {
     const publications = entries.map((entry) => publicationOf(entry, feedUrl, catalogId, path));
-    return { kind: 'acquisition', feed: { id, title, paging, searchTemplate, publications } };
+    return {
+      kind: 'acquisition',
+      feed: { id, title, address: feedUrl, paging, search, publications },
+    };
   }
   const links = entries.flatMap((entry) => navigationLinkOf(entry, feedUrl) ?? []);
-  return { kind: 'navigation', feed: { id, title, paging, searchTemplate, links } };
+  return { kind: 'navigation', feed: { id, title, address: feedUrl, paging, search, links } };
 }
 
-export { MAX_FEED_CHARACTERS, readOpdsFeed };
-export type { AcquisitionFeed, FeedPaging, NavigationFeed, NavigationLink, OpdsFeedReading };
+export { MAX_FEED_CHARACTERS, SEARCH_PLACEHOLDER, readOpdsFeed };
+export type { OpdsFeedReading };

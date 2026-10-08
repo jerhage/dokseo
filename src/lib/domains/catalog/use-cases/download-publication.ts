@@ -3,7 +3,7 @@ import type { BookMatching } from '$lib/domains/library/domain/book/book-matchin
 import type { ReadingDefaults } from '$lib/domains/library/domain/book/reading-defaults';
 import type { OpenFileFailure, OpenFileResult } from '$lib/domains/library/use-cases/open-file';
 import { bookOriginOf } from '../domain/book-origin';
-import type { ClientFailure, DownloadProgress } from '../domain/opds-client';
+import type { ClientFailure, DownloadProgress } from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
 import type { RemotePublication } from '../domain/remote-publication';
 import type { CatalogAccessFailure } from './catalog-access';

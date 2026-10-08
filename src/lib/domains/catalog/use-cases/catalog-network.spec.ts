@@ -6,8 +6,13 @@ import { fakePasswords } from './fake-passwords';
 import type { BookOrigin } from '../domain/book-origin';
 import type { Catalog } from '../domain/catalog';
 import type { CatalogRepository } from '../domain/catalog-repository';
-import { CALIBRE_ROOT, HTML_PAGE, SPEC_CONFORMING_ACQUISITION } from '../domain/opds-fixtures';
-import type { DownloadResult, OpdsClient, ReadFeedResult } from '../domain/opds-client';
+import { HOME_ROOT_FEED, HOME_SEARCH, SHELF_FICTION_FEED } from '../domain/catalog-feed-fixtures';
+import type {
+  CatalogSource,
+  CatalogSourceFor,
+  DownloadResult,
+  ReadFeedResult,
+} from '../domain/catalog-source';
 import type { OriginRepository } from '../domain/origin-repository';
 import type { Acquisition, RemotePublication } from '../domain/remote-publication';
 import { browseCatalog } from './browse-catalog';
@@ -16,6 +21,7 @@ import { downloadPublication } from './download-publication';
 import type { OpenFile } from './download-publication';
 import { forgetOrigin } from './forget-origin';
 import { readCatalogCover } from './read-catalog-cover';
+import { searchCatalog } from './search-catalog';
 import { updatePublication } from './update-publication';
 import type { ReplaceFile } from './update-publication';
 
@@ -80,7 +86,7 @@ function origin(book: BookId, entry: string): BookOrigin {
   };
 }
 
-function setup(feed: ReadFeedResult = { kind: 'success', text: SPEC_CONFORMING_ACQUISITION }) {
+function setup(feed: ReadFeedResult = { kind: 'success', reading: SHELF_FICTION_FEED }) {
   const requests: string[] = [];
   const credentialsSeen: unknown[] = [];
   let downloadAnswer: DownloadResult = {
@@ -88,9 +94,14 @@ function setup(feed: ReadFeedResult = { kind: 'success', text: SPEC_CONFORMING_A
     file: new File(['x'], 'x.cbz'),
   };
 
-  const client: OpdsClient = {
-    readFeed: (url, credentials) => {
-      requests.push(`feed ${url}`);
+  const source: CatalogSource = {
+    readFeed: (address, _placement, credentials) => {
+      requests.push(`feed ${address}`);
+      credentialsSeen.push(credentials);
+      return Promise.resolve(feed);
+    },
+    search: (search, query, _placement, credentials) => {
+      requests.push(`search ${search.handle} for ${query}`);
       credentialsSeen.push(credentials);
       return Promise.resolve(feed);
     },
@@ -106,6 +117,8 @@ function setup(feed: ReadFeedResult = { kind: 'success', text: SPEC_CONFORMING_A
       return Promise.resolve(downloadAnswer);
     },
   };
+
+  const sourceFor: CatalogSourceFor = () => Promise.resolve(source);
 
   const catalogs: CatalogRepository = {
     list: () =>
@@ -147,7 +160,7 @@ function setup(feed: ReadFeedResult = { kind: 'success', text: SPEC_CONFORMING_A
     );
 
   return {
-    client,
+    sourceFor,
     catalogs,
     origins,
     passwords,
@@ -165,7 +178,7 @@ function setup(feed: ReadFeedResult = { kind: 'success', text: SPEC_CONFORMING_A
 
 describe('browseCatalog', () => {
   it('reads the root url of the catalog when no url is given', async () => {
-    const world = setup({ kind: 'success', text: CALIBRE_ROOT });
+    const world = setup({ kind: 'success', reading: HOME_ROOT_FEED });
 
     const browsed = await browseCatalog(world, OPEN, null, []);
 
@@ -182,10 +195,10 @@ describe('browseCatalog', () => {
     });
   });
 
-  it('answers not-opds for a response that is not a feed', async () => {
-    const world = setup({ kind: 'success', text: HTML_PAGE });
+  it('answers not-a-catalog when the source cannot read the response as a catalog', async () => {
+    const world = setup({ kind: 'not-a-catalog' });
 
-    expect(await browseCatalog(world, OPEN, null, [])).toEqual({ kind: 'not-opds' });
+    expect(await browseCatalog(world, OPEN, null, [])).toEqual({ kind: 'not-a-catalog' });
   });
 
   it('answers unknown-catalog for an id nothing holds', async () => {
@@ -262,6 +275,38 @@ describe('browseCatalog', () => {
     expect(await browseCatalog({ ...world, readBook: unavailable }, OPEN, null, [])).toEqual(
       STORAGE_UNAVAILABLE,
     );
+  });
+});
+
+describe('searchCatalog', () => {
+  it('hands the opaque search and the query to the source and checks the held entries', async () => {
+    const world = setup();
+    const book = bookId('b1');
+    world.liveBooks.add(book);
+    world.rows.set(book, origin(book, ENTRY));
+
+    const searched = await searchCatalog(world, OPEN, HOME_SEARCH, 'lantern', []);
+
+    expect(world.requests).toEqual([`search ${HOME_SEARCH.handle} for lantern`]);
+    expect(searched.kind === 'success' && [...searched.held.keys()]).toEqual([ENTRY]);
+  });
+
+  it('answers locked without a request when a basic catalog has no password', async () => {
+    const world = setup();
+
+    expect(await searchCatalog(world, PRIVATE, HOME_SEARCH, 'lantern', [])).toEqual({
+      kind: 'locked',
+      id: PRIVATE,
+    });
+    expect(world.requests).toEqual([]);
+  });
+
+  it('answers the source outcomes unchanged', async () => {
+    const world = setup({ kind: 'not-a-catalog' });
+
+    expect(await searchCatalog(world, OPEN, HOME_SEARCH, 'lantern', [])).toEqual({
+      kind: 'not-a-catalog',
+    });
   });
 });
 
