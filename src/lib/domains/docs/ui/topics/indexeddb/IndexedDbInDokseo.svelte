@@ -65,6 +65,20 @@
       key: "keyPath 'reader'",
       index: '',
     },
+    {
+      database: 'catalog-origins',
+      version: 1,
+      store: 'catalogs',
+      key: "keyPath 'id'",
+      index: '',
+    },
+    {
+      database: 'catalog-origins',
+      version: 1,
+      store: 'origins',
+      key: "keyPath 'bookId'",
+      index: "catalogId on 'catalogId', not unique; entry on 'catalogId' and 'entryId', unique",
+    },
   ] as const;
 
   const HISTORY = [
@@ -75,6 +89,10 @@
         '1 model-consent · 2 captures and its bookId index · 3 recognizer-setup · 4 tags · 5 the tagIds index',
     },
     { database: 'flowing', steps: '1 reading-settings' },
+    {
+      database: 'catalog-origins',
+      steps: '1 catalogs · origins and its catalogId and entry indexes',
+    },
   ] as const;
 </script>
 
