@@ -49,15 +49,13 @@ function readPagedQuery<
   const state = $derived(pagedReadStateOf<Item, Cursor, Failure, P>(query, totalOf));
   const announcements = settings.announcements;
 
-  if (announcements !== undefined) {
-    const announcer = new PagedAnnouncer<Item, Failure>(
-      { showing: announcements.showing ?? showingText, failed: announcements.failed },
-      announcements.say,
-    );
-    $effect(() => {
-      announcer.observe(state);
-    });
-  }
+  const announcer =
+    announcements === undefined
+      ? null
+      : new PagedAnnouncer<Item, Failure>(
+          { showing: announcements.showing ?? showingText, failed: announcements.failed },
+          announcements.say,
+        );
 
   return {
     get state() {
@@ -70,7 +68,9 @@ function readPagedQuery<
       const current = state;
       if (current.kind !== 'ready') return;
       if (current.more.kind !== 'more' && current.more.kind !== 'failed') return;
-      void query.fetchNextPage({ cancelRefetch: false });
+      void query.fetchNextPage({ cancelRefetch: false }).then((settled) => {
+        announcer?.observe(pagedReadStateOf<Item, Cursor, Failure, P>(settled, totalOf));
+      });
     },
     refresh() {
       void query.refetch();

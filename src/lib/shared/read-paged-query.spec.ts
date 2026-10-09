@@ -185,6 +185,43 @@ describe('readPagedQuery', () => {
     );
   });
 
+  it('says the loaded count once the next page of loadMore arrives, and nothing for the first page', async () => {
+    const said: string[] = [];
+    const query = observePaged({
+      totalOf: () => knownTotal(5),
+      announcements: { say: (text) => said.push(text), failed: (problem) => problem.kind },
+    });
+    query.read(0).answer(more(['a'], 1));
+    await query.settled(() => expect(moreKind(query.paged)).toBe('more'));
+    expect(said).toEqual([]);
+
+    query.paged.loadMore();
+    await query.settled(() => expect(query.reads).toHaveLength(2));
+    query.read(1).answer(last(['b']));
+
+    await query.settled(() => expect(said).toEqual(['Showing 2 of 5']));
+  });
+
+  it('says the failure text when the next page of loadMore fails, once for a repeated failure', async () => {
+    const said: string[] = [];
+    const query = observePaged({
+      announcements: { say: (text) => said.push(text), failed: (problem) => problem.kind },
+    });
+    query.read(0).answer(more(['a'], 1));
+    await query.settled(() => expect(moreKind(query.paged)).toBe('more'));
+    query.paged.loadMore();
+    await query.settled(() => expect(query.reads).toHaveLength(2));
+    query.read(1).refuse(new PagedFailure<Missing>(OFFLINE));
+    await query.settled(() => expect(said).toEqual(['offline']));
+
+    query.paged.loadMore();
+    await query.settled(() => expect(query.reads).toHaveLength(3));
+    query.read(2).refuse(new PagedFailure<Missing>(OFFLINE));
+    await query.settled(() => expect(moreKind(query.paged)).toBe('failed'));
+
+    expect(said).toEqual(['offline']);
+  });
+
   it('reads the total from the loaded pages through the supplied function', async () => {
     const query = observePaged({ totalOf: () => knownTotal(7) });
     query.read(0).answer(last(['a']));
