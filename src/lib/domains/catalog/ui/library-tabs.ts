@@ -14,4 +14,8 @@ function catalogTabs(catalogs: readonly Catalog[]): readonly TabItem[] {
   ];
 }
 
-export { DEVICE_TAB, DEVICE_TAB_LABEL, TABS_LABEL, catalogTabs };
+function effectiveTab(chosen: string, catalogs: readonly Catalog[]): string {
+  return catalogs.some((catalog) => catalog.id === chosen) ? chosen : DEVICE_TAB;
+}
+
+export { DEVICE_TAB, DEVICE_TAB_LABEL, TABS_LABEL, catalogTabs, effectiveTab };
