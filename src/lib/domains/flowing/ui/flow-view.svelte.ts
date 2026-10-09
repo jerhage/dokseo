@@ -12,7 +12,8 @@ import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { ReadingSettings } from '../domain/reading-settings';
 import { saveReadingPlaceMutation } from '../queries/flowing-queries';
 import type { PlaceRequest } from '../queries/flowing-queries';
-import { FlowAppearance } from './flow-appearance.svelte';
+import { createFlowAppearance } from './flow-appearance.svelte';
+import type { FlowAppearanceHook } from './flow-appearance.svelte';
 import type { ContentsEntry } from './flow-contents';
 import type { FlowRelocation } from './flow-move';
 import { flowProgress, scrubbedFraction } from './flow-progress';
@@ -25,6 +26,7 @@ import { curtainFor, describePlaceFailure, describeSourceFailure } from './flow-
 import type { FlowCurtain, FlowState, PlaceOutcome, SourceOutcome } from './flow-view-rules';
 import { createPassageArrivals } from './passage-arrivals.svelte';
 import type { PassageArrivalsHook } from './passage-arrivals.svelte';
+import { ReadingSettingsSaving } from './reading-settings-saving.svelte';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
@@ -44,7 +46,7 @@ class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
   readonly navigation: FlowReadingHook;
   readonly arrivals: PassageArrivalsHook;
-  readonly appearance: FlowAppearance;
+  readonly appearance: FlowAppearanceHook;
 
   #container: Container;
   #placing: WriteQuery<PlaceOutcome, PlaceRequest>;
@@ -68,7 +70,8 @@ class FlowView {
     const surface = (): FlowSurface | null => this.#surface;
     this.navigation = createFlowReading();
     this.arrivals = createPassageArrivals(surface, () => this.navigation.location?.cfi ?? null);
-    this.appearance = new FlowAppearance(container, notify, client, surface);
+    const saving = new ReadingSettingsSaving(container, notify, client);
+    this.appearance = createFlowAppearance(surface, (settings) => saving.save(settings));
     this.#places = new PlaceKeeper({
       save: (id, place) => this.#savePlace(id, place),
       notify,
@@ -136,7 +139,7 @@ class FlowView {
     const at = resumedCfi(book.position);
     this.#places.assumeStored(book.position);
 
-    this.appearance.settings = settings;
+    this.appearance.set(settings);
 
     const inked = this.appearance.ink;
     let surface: FlowSurface;
