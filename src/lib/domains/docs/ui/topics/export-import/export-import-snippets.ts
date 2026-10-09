@@ -211,7 +211,7 @@ const PREPARED_ON_TICK: SourceSnippet = {
 const RAW_STATE: SourceSnippet = {
   label: 'The import state, held raw',
   file: 'src/lib/domains/storage/ui/captures-import.svelte.ts',
-  code: `class CapturesImportView {
+  code: `class CapturesImport {
   #state = $state.raw<CapturesImportState>(IDLE);`,
 };
 

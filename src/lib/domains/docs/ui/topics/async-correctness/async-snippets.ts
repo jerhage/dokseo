@@ -199,12 +199,11 @@ async function animationsSettled(elements: readonly Animated[]): Promise<void> {
 };
 
 const IMPORT_NOW: SourceSnippet = {
-  label: 'importNow in CapturesImportView',
+  label: 'importNow in CapturesImport',
   file: 'src/lib/domains/storage/ui/captures-import.svelte.ts',
-  code: `async importNow(): Promise<void> {
+  code: `async importNow(resolution: ConflictResolution): Promise<void> {
   const state = this.#state;
-  if (state.kind !== 'preview' && state.kind !== 'reviewing') return;
-  const resolution = resolutionOf(state);
+  if (state.kind !== 'preview') return;
   this.#state = IMPORTING;
   try {
     const result = await this.#importing.applyCapturesImport(state.plan, resolution);

@@ -12,7 +12,7 @@ function minted(): () => string {
 
 function plannedState(view: TwoDevicesView) {
   const state = view.importing?.state;
-  if (state?.kind !== 'preview' && state?.kind !== 'reviewing') {
+  if (state?.kind !== 'preview') {
     throw new Error(`no plan: ${state?.kind}`);
   }
   return state;
@@ -39,7 +39,7 @@ describe('TwoDevicesView', () => {
     const view = new TwoDevicesView(minted());
 
     await view.send('phone');
-    await view.importing?.importNow();
+    await view.importNow();
 
     expect(view.importing?.state).toEqual({
       kind: 'imported',
@@ -56,12 +56,12 @@ describe('TwoDevicesView', () => {
   it('writes nothing when the same file is imported a second time', async () => {
     const view = new TwoDevicesView(minted());
     await view.send('phone');
-    await view.importing?.importNow();
+    await view.importNow();
     const after = view.laptop.holdings;
 
     await view.importAgain();
     expect(plannedState(view).plan.summary).toMatchObject({ added: 0, newTags: 0, identical: 3 });
-    await view.importing?.importNow();
+    await view.importNow();
 
     expect(view.writesThisImport).toBe(0);
     expect(view.laptop.holdings).toEqual(after);
@@ -74,7 +74,7 @@ describe('TwoDevicesView', () => {
 
     await view.send('phone');
     expect(plannedState(view).plan.summary.conflicts).toBe(1);
-    await view.importing?.importNow();
+    await view.importNow();
 
     expect(captureOf(view.laptop.holdings, HARBOR_FIRST.id)?.text).toBe('港のあかり');
   });
@@ -86,7 +86,7 @@ describe('TwoDevicesView', () => {
     view.edit('phone', HARBOR_FIRST.id, '港の明かり');
 
     await view.send('laptop');
-    await view.importing?.importNow();
+    await view.importNow();
 
     expect(captureOf(view.phone.holdings, HARBOR_FIRST.id)?.text).toBe('港の明かり');
   });
@@ -97,9 +97,9 @@ describe('TwoDevicesView', () => {
     view.edit('phone', HARBOR_FIRST.id, '港の明かり');
 
     await view.send('laptop');
-    view.importing?.pickStrategy('review');
-    view.importing?.pick(HARBOR_FIRST.id, 'file');
-    await view.importing?.importNow();
+    view.review.pickStrategy('review');
+    view.review.pick(HARBOR_FIRST.id, 'file');
+    await view.importNow();
 
     expect(captureOf(view.phone.holdings, HARBOR_FIRST.id)?.text).toBe('港のあかり');
   });
@@ -108,7 +108,7 @@ describe('TwoDevicesView', () => {
     const view = new TwoDevicesView(minted());
 
     await view.send('laptop');
-    await view.importing?.importNow();
+    await view.importNow();
 
     expect(captureOf(view.phone.holdings, LAPTOP_ONLY.id)?.text).toBe(LAPTOP_ONLY.text);
   });

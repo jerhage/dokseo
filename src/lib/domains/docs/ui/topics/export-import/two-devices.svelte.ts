@@ -7,8 +7,10 @@ import { applyCapturesImport } from '$lib/domains/storage/use-cases/apply-captur
 import { buildCapturesFile } from '$lib/domains/storage/use-cases/build-captures-file';
 import { capturesFileName } from '$lib/domains/storage/use-cases/export-captures';
 import { previewCapturesImport } from '$lib/domains/storage/use-cases/preview-captures-import';
-import { CapturesImportView } from '$lib/domains/storage/ui/captures-import.svelte';
+import { resolutionOf } from '$lib/domains/storage/ui/captures-import-rules';
+import { CapturesImport } from '$lib/domains/storage/ui/captures-import.svelte';
 import type { ImportFile } from '$lib/domains/storage/ui/captures-import.svelte';
+import { createConflictReview } from '$lib/domains/storage/ui/conflict-review.svelte';
 import {
   HARBOR,
   HARBOR_FIRST,
@@ -83,10 +85,11 @@ function importFile(transfer: Transfer): ImportFile {
 class TwoDevicesView {
   readonly phone = new SimulatedDevice('phone', PHONE_START);
   readonly laptop = new SimulatedDevice('laptop', LAPTOP_START);
+  readonly review = createConflictReview();
   #minute = $state(FIRST_MINUTE);
   #frozen = $state(false);
   #transfer = $state.raw<Transfer | null>(null);
-  #importing = $state.raw<CapturesImportView | null>(null);
+  #importing = $state.raw<CapturesImport | null>(null);
   #writesBefore = $state(0);
   #newId: () => string;
 
@@ -102,7 +105,7 @@ class TwoDevicesView {
     return this.#transfer;
   }
 
-  get importing(): CapturesImportView | null {
+  get importing(): CapturesImport | null {
     return this.#importing;
   }
 
@@ -145,6 +148,15 @@ class TwoDevicesView {
     await this.#open();
   }
 
+  async importNow(): Promise<void> {
+    await this.#importing?.importNow(resolutionOf(this.review.strategy, this.review.choices));
+  }
+
+  cancel(): void {
+    this.review.reset();
+    this.#importing?.cancel();
+  }
+
   async importAgain(): Promise<void> {
     if (this.#transfer === null) return;
     await this.#open();
@@ -155,7 +167,7 @@ class TwoDevicesView {
     if (transfer === null) return;
     const target = this.device(transfer.to);
     const now = () => this.now();
-    const view = new CapturesImportView(
+    const view = new CapturesImport(
       {
         previewCapturesImport: (text) =>
           previewCapturesImport(target.previewDeps({ newId: this.#newId, now }), text),
@@ -164,6 +176,7 @@ class TwoDevicesView {
       },
       () => Promise.resolve(),
     );
+    this.review.reset();
     this.#importing = view;
     this.#writesBefore = target.writes;
     await view.choose({ accepted: [importFile(transfer)], rejected: [], arrived: [] });

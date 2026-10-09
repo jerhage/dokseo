@@ -7,23 +7,22 @@
   import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
   import type { Language } from '$lib/shared/language';
   import { shownTitle } from '$lib/shared/shown-title';
-  import { conflictsOf, noteOf, sideOf } from './captures-import.svelte';
-  import type { CapturesImportState, CapturesImportView } from './captures-import.svelte';
+  import { conflictsOf, noteOf, sideOf } from './captures-import-rules';
   import { versionLabel } from './captures-import-text';
+  import type { ConflictReviewHook } from './conflict-review.svelte';
+  import type { CapturesImportPlan } from '../use-cases/captures-import-plan';
 
-  type Review = Extract<CapturesImportState, { readonly kind: 'reviewing' }>;
+  type Props = { readonly plan: CapturesImportPlan; readonly review: ConflictReviewHook };
 
-  type Props = { readonly view: CapturesImportView; readonly review: Review };
-
-  let { view, review }: Props = $props();
+  let { plan, review }: Props = $props();
 
   const uid = $props.id();
   const dates = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-  const conflicts = $derived(conflictsOf(review.plan));
+  const conflicts = $derived(conflictsOf(plan));
 
   function save(event: SubmitEvent): void {
     event.preventDefault();
-    view.saveDraft();
+    review.saveDraft();
   }
 </script>
 
@@ -57,7 +56,7 @@
                   rows={3}
                   lang={language}
                   value={review.draft?.text}
-                  oninput={(event) => view.draftText(event.currentTarget.value)}
+                  oninput={(event) => review.draftText(event.currentTarget.value)}
                 />
               {/snippet}
             </Field>
@@ -68,13 +67,13 @@
                     {...control}
                     rows={2}
                     value={review.draft?.note}
-                    oninput={(event) => view.draftNote(event.currentTarget.value)}
+                    oninput={(event) => review.draftNote(event.currentTarget.value)}
                   />
                 {/snippet}
               </Field>
             {/if}
             <div class="row wrap justify-end gap-2">
-              <Button size="sm" variant="ghost" onclick={() => view.cancelDraft()}>Cancel</Button>
+              <Button size="sm" variant="ghost" onclick={() => review.cancelDraft()}>Cancel</Button>
               <Button size="sm" variant="primary" type="submit">Save</Button>
             </div>
           </form>
@@ -87,7 +86,7 @@
                 group={side}
                 variant="tile"
                 class="bordered"
-                onchange={() => view.pick(conflict.id, 'device')}
+                onchange={() => review.pick(conflict.id, 'device')}
               >
                 {@render version('This device', conflict.device, language)}
               </Radio>
@@ -97,7 +96,7 @@
                 group={side}
                 variant="tile"
                 class="bordered"
-                onchange={() => view.pick(conflict.id, 'file')}
+                onchange={() => review.pick(conflict.id, 'file')}
               >
                 {@render version('File', conflict.file, language)}
               </Radio>
@@ -118,7 +117,7 @@
               {/if}
             </div>
             <div class="row">
-              <Button size="sm" variant="ghost" onclick={() => view.edit(conflict.id)}>Edit</Button>
+              <Button size="sm" variant="ghost" onclick={() => review.edit(conflict)}>Edit</Button>
             </div>
           </Fieldset>
         {/if}

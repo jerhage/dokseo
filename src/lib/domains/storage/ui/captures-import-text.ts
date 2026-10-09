@@ -4,7 +4,7 @@ import type { Capture } from '$lib/domains/recognition/domain/capture/capture';
 import type { CapturesImportCounts } from '../use-cases/apply-captures-import';
 import type { CapturesImportSummary } from '../use-cases/captures-import-plan';
 import type { FileSection, UnreadableEntry } from '../use-cases/read-captures-file';
-import type { CapturesImportState, ConflictStrategy } from './captures-import.svelte';
+import type { CapturesImportState, ConflictStrategy } from './captures-import-rules';
 
 type ImportStatus = {
   readonly variant: StatusVariant;
@@ -143,7 +143,6 @@ function importStatus(state: CapturesImportState): ImportStatus | null {
       { kind: 'idle' },
       { kind: 'reading' },
       { kind: 'preview' },
-      { kind: 'reviewing' },
       { kind: 'importing' },
       () => null,
     )

@@ -7,8 +7,10 @@
   import ListGroup from '$lib/ui/components/ListGroup.svelte';
   import ListRow from '$lib/ui/components/ListRow.svelte';
   import Radio from '$lib/ui/components/Radio.svelte';
-  import { CapturesImportView } from './captures-import.svelte';
-  import type { CapturesImporting } from './captures-import.svelte';
+  import type { FileSelection } from '$lib/ui/components/file-selection';
+  import { resolutionOf } from './captures-import-rules';
+  import { CapturesImport } from './captures-import.svelte';
+  import type { CapturesImporting, ImportFile } from './captures-import.svelte';
   import {
     STRATEGY_OPTIONS,
     importStatus,
@@ -16,6 +18,7 @@
     previewRows,
     unreadableLines,
   } from './captures-import-text';
+  import { createConflictReview } from './conflict-review.svelte';
   import ConflictReview from './ConflictReview.svelte';
 
   type Props = { readonly data: CapturesImporting };
@@ -24,7 +27,7 @@
 
   const uid = $props.id();
   const client = useQueryClient();
-  const view = new CapturesImportView(
+  const write = new CapturesImport(
     {
       previewCapturesImport: (text) => data.previewCapturesImport(text),
       applyCapturesImport: (plan, resolution) => data.applyCapturesImport(plan, resolution),
@@ -32,12 +35,26 @@
     () => client.invalidateQueries(),
   );
 
-  const status = $derived(importStatus(view.state));
-  const planned = $derived(
-    view.state.kind === 'preview' || view.state.kind === 'reviewing' ? view.state : null,
-  );
-  const busy = $derived(view.state.kind === 'reading' || view.state.kind === 'importing');
-  const editing = $derived(view.state.kind === 'reviewing' && view.state.draft !== null);
+  const review = createConflictReview();
+
+  const status = $derived(importStatus(write.state));
+  const planned = $derived(write.state.kind === 'preview' ? write.state : null);
+  const busy = $derived(write.state.kind === 'reading' || write.state.kind === 'importing');
+  const editing = $derived(review.draft !== null);
+
+  async function choose(selection: FileSelection<ImportFile>): Promise<void> {
+    review.reset();
+    await write.choose(selection);
+  }
+
+  function cancel(): void {
+    review.reset();
+    write.cancel();
+  }
+
+  async function importNow(): Promise<void> {
+    await write.importNow(resolutionOf(review.strategy, review.choices));
+  }
 </script>
 
 <ListGroup title="Import">
@@ -51,12 +68,12 @@
         accept="application/json,.json"
         disabled={busy}
         hint="A file from Export all captures"
-        onfiles={(selection) => view.choose(selection)}
+        onfiles={(selection) => choose(selection)}
       >
         {#snippet title()}
-          {#if view.state.kind === 'reading'}
+          {#if write.state.kind === 'reading'}
             Reading…
-          {:else if view.state.kind === 'importing'}
+          {:else if write.state.kind === 'importing'}
             Importing…
           {:else}
             Drop a captures file here or <span class="dropzone-action">browse</span>
@@ -103,7 +120,7 @@
   {#if nothingToWrite(summary)}
     <Alert variant="info" title="Everything in this file is already here.">
       {#snippet actions()}
-        <Button size="sm" variant="outline" onclick={() => view.cancel()}>Close</Button>
+        <Button size="sm" variant="outline" onclick={cancel}>Close</Button>
       {/snippet}
     </Alert>
   {:else}
@@ -114,9 +131,9 @@
             <Radio
               name="{uid}-strategy"
               value={option.strategy}
-              group={view.strategy}
+              group={review.strategy}
               hint={option.hint}
-              onchange={() => view.pickStrategy(option.strategy)}
+              onchange={() => review.pickStrategy(option.strategy)}
             >
               {option.label}
             </Radio>
@@ -125,15 +142,13 @@
       </Fieldset>
     {/if}
 
-    {#if planned.kind === 'reviewing'}
-      <ConflictReview {view} review={planned} />
+    {#if review.strategy === 'review'}
+      <ConflictReview plan={planned.plan} {review} />
     {/if}
 
     <div class="row wrap justify-end gap-2">
-      <Button size="sm" variant="ghost" onclick={() => view.cancel()}>Cancel</Button>
-      <Button size="sm" variant="primary" disabled={editing} onclick={() => view.importNow()}>
-        Import
-      </Button>
+      <Button size="sm" variant="ghost" onclick={cancel}>Cancel</Button>
+      <Button size="sm" variant="primary" disabled={editing} onclick={importNow}>Import</Button>
     </div>
   {/if}
 {/if}

@@ -26,10 +26,8 @@
   const importing = $derived(view.importing);
   const phase = $derived(importing?.state ?? null);
   const status = $derived(phase === null ? null : importStatus(phase));
-  const planned = $derived(
-    phase !== null && (phase.kind === 'preview' || phase.kind === 'reviewing') ? phase : null,
-  );
-  const editing = $derived(phase?.kind === 'reviewing' && phase.draft !== null);
+  const planned = $derived(phase !== null && phase.kind === 'preview' ? phase : null);
+  const editing = $derived(view.review.draft !== null);
   const deviceNames = { phone: 'Phone', laptop: 'Laptop' } as const;
 </script>
 
@@ -121,8 +119,8 @@
             Dokseo offers only Close here. The demo also lets you apply the plan, to count its
             writes.
             {#snippet actions()}
-              <Button size="sm" variant="ghost" onclick={() => importing.cancel()}>Close</Button>
-              <Button size="sm" variant="outline" onclick={() => void importing.importNow()}>
+              <Button size="sm" variant="ghost" onclick={() => view.cancel()}>Close</Button>
+              <Button size="sm" variant="outline" onclick={() => void view.importNow()}>
                 Apply anyway
               </Button>
             {/snippet}
@@ -135,9 +133,9 @@
                   <Radio
                     name="{uid}-strategy"
                     value={option.strategy}
-                    group={importing.strategy}
+                    group={view.review.strategy}
                     hint={option.hint}
-                    onchange={() => importing.pickStrategy(option.strategy)}
+                    onchange={() => view.review.pickStrategy(option.strategy)}
                   >
                     {option.label}
                   </Radio>
@@ -146,17 +144,17 @@
             </Fieldset>
           {/if}
 
-          {#if planned.kind === 'reviewing'}
-            <ConflictReview view={importing} review={planned} />
+          {#if view.review.strategy === 'review'}
+            <ConflictReview plan={planned.plan} review={view.review} />
           {/if}
 
           <div class="row wrap justify-end gap-2">
-            <Button size="sm" variant="ghost" onclick={() => importing.cancel()}>Cancel</Button>
+            <Button size="sm" variant="ghost" onclick={() => view.cancel()}>Cancel</Button>
             <Button
               size="sm"
               variant="primary"
               disabled={editing}
-              onclick={() => void importing.importNow()}
+              onclick={() => void view.importNow()}
             >
               Import
             </Button>
