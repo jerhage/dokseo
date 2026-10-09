@@ -141,10 +141,9 @@
     one of its tests.
   </p>
   <p>
-    One naming detail follows from the projects. A view model <code>tag-picker.svelte.ts</code> is
-    tested by <code>tag-picker.spec.ts</code>. Naming the spec
-    <code>tag-picker.svelte.spec.ts</code> would not mark it as a test of a Svelte file; it would move
-    it into the browser project.
+    One naming detail follows from the projects. A hook <code>tag-picker.svelte.ts</code> is tested
+    by <code>tag-picker-hook.spec.ts</code>. Naming the spec <code>tag-picker.svelte.spec.ts</code>
+    would not mark it as a test of a Svelte file; it would move it into the browser project.
   </p>
 </DocsSection>
 
