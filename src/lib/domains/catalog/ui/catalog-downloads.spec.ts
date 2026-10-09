@@ -172,16 +172,16 @@ describe('CatalogDownloads queue', () => {
     expect(calls).toEqual(['a', 'b', 'c']);
     next().finish({ kind: 'success', bookId: bookId('3') });
     await all;
-    expect(downloads.queue).toBeNull();
+    expect(downloads.queue).toEqual({ kind: 'idle' });
   });
 
   it('counts the place in the queue', async () => {
     const { downloads, next } = setup();
     const all = downloads.downloadAll(queued('a', 'b'));
-    expect(downloads.queue).toEqual({ position: 1, total: 2 });
+    expect(downloads.queue).toEqual({ kind: 'running', position: 1, total: 2 });
     next().finish({ kind: 'success', bookId: bookId('1') });
     await settle();
-    expect(downloads.queue).toEqual({ position: 2, total: 2 });
+    expect(downloads.queue).toEqual({ kind: 'running', position: 2, total: 2 });
     next().finish({ kind: 'success', bookId: bookId('2') });
     await all;
   });
@@ -204,11 +204,20 @@ describe('CatalogDownloads queue', () => {
     const all = downloads.downloadAll(queued('a', 'b', 'c'));
     const waiting = next();
     downloads.cancelAll();
+    expect(downloads.queue).toEqual({ kind: 'stopping', position: 1, total: 3 });
     await all;
     expect(waiting.signal?.aborted).toBe(true);
     expect(calls).toEqual(['a']);
-    expect(downloads.queue).toBeNull();
+    expect(downloads.queue).toEqual({ kind: 'idle' });
     expect(stateOf(downloads, publication('b'))).toBe('remote');
+  });
+
+  it('stays idle when cancel all finds no queue', () => {
+    const { downloads } = setup();
+
+    downloads.cancelAll();
+
+    expect(downloads.queue).toEqual({ kind: 'idle' });
   });
 
   it('goes on to the next entry after a failure of one file', async () => {
@@ -276,9 +285,8 @@ describe('CatalogDownloads replacing a held book', () => {
     const { downloads, updating } = setupStale();
     downloads.askToReplace(publication('a'), 4);
     expect(downloads.replacement).toEqual({
-      publication: publication('a'),
-      bookId: bookId('held-1'),
-      feedPosition: 4,
+      kind: 'asked',
+      request: { publication: publication('a'), bookId: bookId('held-1'), feedPosition: 4 },
     });
     expect(updating).toEqual([]);
     expect(downloads.itemFor(publication('a')).kind).toBe('held-older');
@@ -287,14 +295,14 @@ describe('CatalogDownloads replacing a held book', () => {
   it('asks nothing for an entry that is not held or not newer', () => {
     const { downloads } = setup();
     downloads.askToReplace(publication('a'), 0);
-    expect(downloads.replacement).toBeNull();
+    expect(downloads.replacement).toEqual({ kind: 'none' });
   });
 
   it('forgets the question when the reader declines', () => {
     const { downloads, updating } = setupStale();
     downloads.askToReplace(publication('a'), 0);
     downloads.dismissReplacement();
-    expect(downloads.replacement).toBeNull();
+    expect(downloads.replacement).toEqual({ kind: 'none' });
     expect(updating).toEqual([]);
   });
 
@@ -304,7 +312,7 @@ describe('CatalogDownloads replacing a held book', () => {
 
     const running = downloads.confirmReplacement();
 
-    expect(downloads.replacement).toBeNull();
+    expect(downloads.replacement).toEqual({ kind: 'none' });
     expect(downloads.itemFor(publication('a')).kind).toBe('downloading');
     expect(updating.map((call) => [call.entryId, call.bookId])).toEqual([['a', 'held-1']]);
     updating[0]?.finish({ kind: 'success', bookId: bookId('held-1') });

@@ -46,10 +46,12 @@ type ReplaceRequest = {
   readonly feedPosition: number;
 };
 
+type QueueEffect = 'ends-queue' | 'keeps-queue';
+
 type Settled =
   | { readonly kind: 'success'; readonly bookId: BookId }
   | { readonly kind: 'aborted' }
-  | { readonly kind: 'failed'; readonly reason: string; readonly queueEnds: boolean };
+  | { readonly kind: 'failed'; readonly reason: string; readonly queueEffect: QueueEffect };
 
 type Attempt = (report: DownloadProgress, signal: AbortSignal) => Promise<Settled | string>;
 
@@ -57,34 +59,44 @@ type Finish = (publication: RemotePublication, bookId: BookId) => void;
 
 type QueuedDownload = { readonly publication: RemotePublication; readonly feedPosition: number };
 
-type QueueProgress = { readonly position: number; readonly total: number };
+type QueueState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'running'; readonly position: number; readonly total: number }
+  | { readonly kind: 'stopping'; readonly position: number; readonly total: number };
+
+type ReplacementState =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'asked'; readonly request: ReplaceRequest };
 
 type RunOutcome = 'done' | 'stop';
 
 const IDLE: DownloadState = { kind: 'idle' };
 
+const QUEUE_IDLE: QueueState = { kind: 'idle' };
+
+const NO_REPLACEMENT: ReplacementState = { kind: 'none' };
+
 const NO_HELD: ReadonlyMap<string, BookOriginLink> = new Map();
 
-function endsQueue(failure: DownloadFailure | UpdateFailure): boolean {
-  return (
-    failure.kind === 'offline' ||
+function queueEffectOf(failure: DownloadFailure | UpdateFailure): QueueEffect {
+  return failure.kind === 'offline' ||
     failure.kind === 'unauthorized' ||
     failure.kind === 'locked' ||
     failure.kind === 'storage-unavailable'
-  );
+    ? 'ends-queue'
+    : 'keeps-queue';
 }
 
 class CatalogDownloads {
   #states = $state.raw<ReadonlyMap<string, DownloadState>>(new Map());
   #downloaded = $state.raw<ReadonlyMap<string, BookOriginLink>>(NO_HELD);
-  #queue = $state.raw<QueueProgress | null>(null);
-  #replacement = $state.raw<ReplaceRequest | null>(null);
+  #queue = $state.raw<QueueState>(QUEUE_IDLE);
+  #replacement = $state.raw<ReplacementState>(NO_REPLACEMENT);
   #controllers = new Map<string, AbortController>();
   #cases: DownloadsUseCases;
   #choices: DownloadsChoices;
   #hooks: DownloadsHooks;
   #held: () => ReadonlyMap<string, BookOriginLink>;
-  #queueStopped = false;
 
   constructor(
     cases: DownloadsUseCases,
@@ -98,7 +110,7 @@ class CatalogDownloads {
     this.#held = held;
   }
 
-  get queue(): QueueProgress | null {
+  get queue(): QueueState {
     return this.#queue;
   }
 
@@ -110,24 +122,25 @@ class CatalogDownloads {
     );
   }
 
-  get replacement(): ReplaceRequest | null {
+  get replacement(): ReplacementState {
     return this.#replacement;
   }
 
   askToReplace(publication: RemotePublication, feedPosition: number): void {
     const bookId = this.#staleBook(publication);
     if (bookId === null) return;
-    this.#replacement = { publication, bookId, feedPosition };
+    this.#replacement = { kind: 'asked', request: { publication, bookId, feedPosition } };
   }
 
   dismissReplacement(): void {
-    this.#replacement = null;
+    this.#replacement = NO_REPLACEMENT;
   }
 
   async confirmReplacement(): Promise<RunOutcome> {
-    const request = this.#replacement;
-    this.#replacement = null;
-    if (request === null) return 'done';
+    const asked = this.#replacement;
+    this.#replacement = NO_REPLACEMENT;
+    if (asked.kind === 'none') return 'done';
+    const { request } = asked;
     return this.#run(request.publication, this.#updating(request), this.#hooks.updated);
   }
 
@@ -152,23 +165,23 @@ class CatalogDownloads {
     wanted: readonly QueuedDownload[],
     started?: (publication: RemotePublication) => void,
   ): Promise<void> {
-    if (this.#queue !== null) return;
+    if (this.#queue.kind !== 'idle') return;
     const pending = wanted.filter(({ publication }) => this.#queueable(publication));
     if (pending.length === 0) return;
-    this.#queueStopped = false;
     for (const [index, download] of pending.entries()) {
-      if (this.#queueStopped) break;
-      this.#queue = { position: index + 1, total: pending.length };
+      if (this.#isStopping()) break;
+      this.#queue = { kind: 'running', position: index + 1, total: pending.length };
       if (!this.#queueable(download.publication)) continue;
       started?.(download.publication);
       const outcome = await this.start(download.publication, download.feedPosition);
       if (outcome === 'stop') break;
     }
-    this.#queue = null;
+    this.#queue = QUEUE_IDLE;
   }
 
   cancelAll(): void {
-    this.#queueStopped = true;
+    const queue = this.#queue;
+    if (queue.kind === 'running') this.#queue = { ...queue, kind: 'stopping' };
     for (const controller of this.#controllers.values()) controller.abort();
   }
 
@@ -208,10 +221,10 @@ class CatalogDownloads {
     }
     if (settled.kind === 'aborted') {
       this.#setState(entryId, IDLE);
-      return this.#queueStopped ? 'stop' : 'done';
+      return this.#isStopping() ? 'stop' : 'done';
     }
     this.#setState(entryId, { kind: 'failed', reason: settled.reason });
-    return settled.queueEnds ? 'stop' : 'done';
+    return settled.queueEffect === 'ends-queue' ? 'stop' : 'done';
   }
 
   #downloading(publication: RemotePublication, feedPosition: number): Attempt {
@@ -231,7 +244,7 @@ class CatalogDownloads {
       return {
         kind: 'failed',
         reason: downloadFailureText(result, this.#hooks.describeOpenFile),
-        queueEnds: endsQueue(result),
+        queueEffect: queueEffectOf(result),
       };
     };
   }
@@ -252,9 +265,13 @@ class CatalogDownloads {
       return {
         kind: 'failed',
         reason: updateFailureText(result, this.#hooks.describeOpenFile),
-        queueEnds: endsQueue(result),
+        queueEffect: queueEffectOf(result),
       };
     };
+  }
+
+  #isStopping(): boolean {
+    return this.#queue.kind === 'stopping';
   }
 
   #staleBook(publication: RemotePublication): BookId | null {
@@ -286,6 +303,8 @@ export type {
   DownloadsHooks,
   DownloadsUseCases,
   QueuedDownload,
-  QueueProgress,
+  QueueEffect,
+  QueueState,
   ReplaceRequest,
+  ReplacementState,
 };

@@ -66,7 +66,7 @@
 {#if publications.length === 0}
   <EmptyState message="No books here." />
 {:else}
-  {#if selectable.length > 0 || queue !== null}
+  {#if selectable.length > 0 || queue.kind !== 'idle'}
     <div class="row wrap items-center gap-2">
       {#if selectable.length > 0}
         <Button size="sm" onclick={() => selection.selectAll(entryIdsOf(selectable))}>
@@ -78,13 +78,13 @@
         <Button
           size="sm"
           variant="primary"
-          disabled={chosen.length === 0 || queue !== null}
+          disabled={chosen.length === 0 || queue.kind !== 'idle'}
           onclick={download}
         >
           Download selected ({chosen.length})
         </Button>
       {/if}
-      {#if queue !== null}
+      {#if queue.kind !== 'idle'}
         <span class="text-sm text-muted" aria-live="polite"
           >Downloading {queue.position} of {queue.total}</span
         >
@@ -133,6 +133,6 @@
   />
 {/if}
 
-{#if downloads.replacement !== null}
+{#if downloads.replacement.kind === 'asked'}
   <ReplaceBookModal {downloads} />
 {/if}
