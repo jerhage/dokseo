@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captureId } from '$lib/shared/ids';
-import type { FocusTarget } from './card-editing.svelte';
-import { CardDrafts } from './card-drafts.svelte';
+import { CardDraftsSession } from './card-drafts-session.svelte';
+import type { FocusTarget } from './focus-target';
 import type { WriteOutcome } from './storage-failure';
 
 const CARD = captureId('c1');
@@ -21,9 +21,9 @@ function keeping(
   };
 }
 
-describe('CardDrafts', () => {
+describe('CardDraftsSession', () => {
   it('opens a draft holding the current words of the field', () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.open('note', CARD, 'old note', null);
 
     expect([drafts.holds('note', CARD), drafts.holds('text', CARD)]).toEqual([true, false]);
@@ -31,7 +31,7 @@ describe('CardDrafts', () => {
   });
 
   it('keeps editors on two cards open at once, each with its own words', () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.open('note', CARD, '', null);
     drafts.open('text', OTHER, 'ねこ', null);
     drafts.write('note', CARD, 'unsaved');
@@ -40,7 +40,7 @@ describe('CardDrafts', () => {
   });
 
   it('keeps what was typed when the same editor is asked to open again', () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.open('note', CARD, 'saved', null);
     drafts.write('note', CARD, 'typing');
     drafts.open('note', CARD, 'saved', null);
@@ -49,7 +49,7 @@ describe('CardDrafts', () => {
   });
 
   it('saves what was typed, hands back its trigger and closes only that editor', async () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     const trigger = button();
     const kept: string[] = [];
     drafts.open('text', CARD, 'ねこ', trigger);
@@ -65,7 +65,7 @@ describe('CardDrafts', () => {
   });
 
   it('keeps the editor open with what was typed when the save fails', async () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.open('note', CARD, 'old note', null);
     drafts.write('note', CARD, 'new note');
 
@@ -75,7 +75,7 @@ describe('CardDrafts', () => {
   });
 
   it('keeps the editor open while the save is running', async () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     let finish: (outcome: WriteOutcome) => void = () => undefined;
     drafts.open('text', CARD, 'ねこ', null);
 
@@ -92,7 +92,7 @@ describe('CardDrafts', () => {
   });
 
   it('keeps the editor open when more was typed while the save ran', async () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     let finish: (outcome: WriteOutcome) => void = () => undefined;
     drafts.open('text', CARD, 'ねこ', null);
 
@@ -109,7 +109,7 @@ describe('CardDrafts', () => {
   });
 
   it('starts no second save of an editor whose save is running', async () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     const kept: string[] = [];
     let finish: (outcome: WriteOutcome) => void = () => undefined;
     drafts.open('text', CARD, 'ねこ', null);
@@ -127,7 +127,7 @@ describe('CardDrafts', () => {
   });
 
   it('hands back the trigger on abandon and saves nothing afterwards', async () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     const trigger = button();
     const kept: string[] = [];
     drafts.open('note', CARD, '', trigger);
@@ -138,14 +138,14 @@ describe('CardDrafts', () => {
   });
 
   it('ignores writing into an editor that is not open', () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.write('note', CARD, 'lost');
 
     expect(drafts.holds('note', CARD)).toBe(false);
   });
 
   it('closes every editor of a removed capture and leaves the others', () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.open('note', CARD, '', null);
     drafts.open('text', CARD, '', null);
     drafts.open('note', OTHER, '', null);
@@ -159,7 +159,7 @@ describe('CardDrafts', () => {
   });
 
   it('closes every open draft when cleared', () => {
-    const drafts = new CardDrafts();
+    const drafts = new CardDraftsSession();
     drafts.open('note', CARD, '', null);
     drafts.open('text', OTHER, 'ねこ', null);
     drafts.clear();

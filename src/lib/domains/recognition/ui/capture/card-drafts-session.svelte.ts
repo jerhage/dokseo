@@ -1,5 +1,5 @@
 import type { CaptureId } from '$lib/shared/ids';
-import type { FocusTarget } from './card-editing.svelte';
+import type { FocusTarget } from './focus-target';
 import type { WriteOutcome } from './storage-failure';
 
 type DraftField = 'text' | 'note';
@@ -24,7 +24,7 @@ function keyOf(field: DraftField, capture: CaptureId): string {
   return `${field}:${capture}`;
 }
 
-class CardDrafts {
+class CardDraftsSession {
   #open = $state.raw<ReadonlyMap<string, OpenDraft>>(new Map());
   #saving = new Set<string>();
 
@@ -95,5 +95,5 @@ class CardDrafts {
   }
 }
 
-export { CardDrafts };
+export { CardDraftsSession };
 export type { DraftField, DraftSave, OpenDraft };

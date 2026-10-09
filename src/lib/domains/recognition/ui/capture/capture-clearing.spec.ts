@@ -10,7 +10,7 @@ import type { CaptureWrites } from '../../queries/capture-queries';
 import { CaptureCache } from './capture-cache';
 import { CaptureList } from './capture-list.svelte';
 import { READ } from './capture-read';
-import { ClearAll } from './clear-all.svelte';
+import { CaptureClearing } from './capture-clearing.svelte';
 import type { PanelCapture } from './panel-capture';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unrun-write-query'));
@@ -31,7 +31,7 @@ function written(id: string): PanelCapture {
   };
 }
 
-function opened(asked: BookId[] = []): { list: CaptureList; clearing: ClearAll } {
+function opened(asked: BookId[] = []): { list: CaptureList; clearing: CaptureClearing } {
   const list = new CaptureList(() => ({
     state: READ,
     captures: [],
@@ -40,7 +40,7 @@ function opened(asked: BookId[] = []): { list: CaptureList; clearing: ClearAll }
     reload: () => undefined,
   }));
   list.open(ONE);
-  const clearing = new ClearAll(
+  const clearing = new CaptureClearing(
     {
       exportBookCaptures: (id: BookId) => {
         asked.push(id);
@@ -54,56 +54,21 @@ function opened(asked: BookId[] = []): { list: CaptureList; clearing: ClearAll }
   return { list, clearing };
 }
 
-describe('ClearAll', () => {
-  it('asks for no confirmation while the list holds no capture', () => {
-    const { clearing } = opened();
-
-    clearing.ask();
-
-    expect(clearing.confirming).toBe(false);
-  });
-
-  it('asks for a confirmation of the notes it would delete, and drops it on dismiss', () => {
+describe('CaptureClearing', () => {
+  it('reports the notes it would delete as the scope of the clear', () => {
     const { list, clearing } = opened();
     list.unsaved.put(written('one'));
 
-    clearing.ask();
-
-    expect(clearing.confirming).toBe(true);
     expect(clearing.scope).toEqual({ kind: 'notes', notes: 1 });
-
-    clearing.dismiss();
-
-    expect(clearing.confirming).toBe(false);
   });
 
-  it('prepares the export of the open book when it asks for a confirmation', () => {
-    const asked: BookId[] = [];
-    const { list, clearing } = opened(asked);
-    list.unsaved.put(written('one'));
-
-    clearing.ask();
-
-    expect(asked).toEqual([ONE]);
-    expect(clearing.capturesExport.state).toEqual({ kind: 'preparing' });
-  });
-
-  it('prepares no export while the list holds no capture', () => {
+  it('prepares the export of the open book', () => {
     const asked: BookId[] = [];
     const { clearing } = opened(asked);
 
-    clearing.ask();
+    clearing.prepareExport();
 
-    expect(asked).toEqual([]);
-  });
-
-  it('closes the confirmation as the clear starts', () => {
-    const { list, clearing } = opened();
-    list.unsaved.put(written('one'));
-    clearing.ask();
-
-    void clearing.clear();
-
-    expect(clearing.confirming).toBe(false);
+    expect(asked).toEqual([ONE]);
+    expect(clearing.capturesExport.state).toEqual({ kind: 'preparing' });
   });
 });

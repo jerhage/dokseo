@@ -1,9 +1,6 @@
 import type { CaptureId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
-
-type FocusTarget = {
-  readonly focus: () => void;
-};
+import type { FocusTarget } from './focus-target';
 
 type CardField =
   | { readonly kind: 'capture'; readonly language: Language | null }
@@ -40,4 +37,4 @@ class CardEditing {
 }
 
 export { CardEditing };
-export type { CardField, FocusTarget };
+export type { CardField };

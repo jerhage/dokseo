@@ -1,6 +1,7 @@
 import type { CaptureId, TagId } from '$lib/shared/ids';
-import { TagPicker } from './tag-picker.svelte';
-import type { PickerRow, PickerTags } from './tag-picker.svelte';
+import type { FocusTarget } from './focus-target';
+import type { PickerRow } from './tag-picker-rules';
+import { createTagPicker } from './tag-picker.svelte';
 
 type TagWriting = {
   readonly tagsOn: (capture: CaptureId) => readonly TagId[];
@@ -10,51 +11,48 @@ type TagWriting = {
   readonly create: (capture: CaptureId, name: string) => Promise<void>;
 };
 
-class TagSelection {
-  #writing: TagWriting;
-  #picker: TagPicker;
-  #countsAsked = false;
+function createTagSelection() {
+  const picker = createTagPicker();
+  let countsAsked = false;
+  let opener: FocusTarget | null = null;
 
-  constructor(writing: TagWriting, tags: () => PickerTags) {
-    this.#writing = writing;
-    this.#picker = new TagPicker(tags);
-  }
+  return {
+    get picker() {
+      return picker;
+    },
+    opened(capture: CaptureId): boolean {
+      return picker.capture === capture;
+    },
+    open(capture: CaptureId, writing: TagWriting, from: FocusTarget | null): void {
+      if (!countsAsked) {
+        countsAsked = true;
+        writing.loadCounts();
+      }
 
-  get picker(): TagPicker {
-    return this.#picker;
-  }
+      opener = from;
+      picker.open(capture, writing.tagsOn(capture));
+    },
+    close(): FocusTarget | null {
+      if (picker.capture === null) return null;
 
-  opened(capture: CaptureId): boolean {
-    return this.#picker.capture === capture;
-  }
+      picker.close();
+      const from = opener;
+      opener = null;
+      return from;
+    },
+    async choose(row: PickerRow, writing: TagWriting): Promise<void> {
+      const capture = picker.capture;
+      if (capture === null) return;
 
-  open(capture: CaptureId): void {
-    if (!this.#countsAsked) {
-      this.#countsAsked = true;
-      this.#writing.loadCounts();
-    }
+      if (row.kind === 'create') await writing.create(capture, row.name);
+      else await writing.add(capture, row.tag.id);
 
-    this.#picker.open(capture, this.#writing.tagsOn(capture));
-  }
-
-  close(): void {
-    this.#picker.close();
-  }
-
-  async choose(row: PickerRow): Promise<void> {
-    const capture = this.#picker.capture;
-    if (capture === null) return;
-
-    if (row.kind === 'create') await this.#writing.create(capture, row.name);
-    else await this.#writing.add(capture, row.tag.id);
-
-    if (this.#picker.capture === capture) this.#picker.open(capture, this.#writing.tagsOn(capture));
-  }
-
-  async drop(capture: CaptureId, tag: TagId): Promise<void> {
-    await this.#writing.remove(capture, tag);
-  }
+      if (picker.capture === capture) picker.open(capture, writing.tagsOn(capture));
+    },
+  };
 }
 
-export { TagSelection };
-export type { TagWriting };
+type TagSelectionHook = ReturnType<typeof createTagSelection>;
+
+export { createTagSelection };
+export type { TagSelectionHook, TagWriting };

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { StringStore } from '$lib/platform/storage/remembered-string';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
 import type { Container } from '$lib/container';
 import { regionAnchor, textAnchor } from '$lib/shared/anchor';
@@ -19,12 +18,16 @@ import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import type { WriteCaptureNoteResult } from '../../use-cases/capture/write-capture-note';
 import { JAPANESE_OCR_MODEL } from '../../domain/model/model-footprint';
-import type { FocusTarget } from './card-editing.svelte';
+import { cardsOf, orderedCaptures, searchHits } from './capture-card-rules';
 import { CapturePanelView, writtenIn } from './capture-panel.svelte';
 import type { PanelSource } from './capture-panel.svelte';
+import type { Card } from './capture-card-projection';
 import { READ } from './capture-read';
 import { CaptureView } from './capture-view.svelte';
+import type { CaptureSort } from './capture-sort';
+import type { FocusTarget } from './focus-target';
 import type { PanelCapture } from './panel-capture';
+import { rowsFor } from './tag-picker-rules';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unrun-write-query'));
 
@@ -44,22 +47,6 @@ type World = {
   readonly panel: CapturePanelView;
   readonly source: { current: Omit<PanelSource, 'view'> };
 };
-
-class FakeStore implements StringStore {
-  #items = new Map<string, string>();
-
-  getItem(key: string): string | null {
-    return this.#items.get(key) ?? null;
-  }
-
-  setItem(key: string, value: string): void {
-    this.#items.set(key, value);
-  }
-
-  removeItem(key: string): void {
-    this.#items.delete(key);
-  }
-}
 
 const ONE = bookId('book-one');
 
@@ -206,7 +193,6 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
     copied: [],
   };
   const notices: Notice[] = [];
-  const sorts = new FakeStore();
   const view: CaptureView = new CaptureView(
     containerOf(store),
     (notice) => {
@@ -246,11 +232,17 @@ async function opened(rows: readonly Capture[] = [], tags: readonly Tag[] = []):
     (notice) => {
       notices.push(notice);
     },
-    () => sorts,
   );
   view.list.open(ONE);
 
   return { store, notices, view, panel, source };
+}
+
+function shownCards(world: World, sort: CaptureSort = 'book', query = ''): readonly Card[] {
+  const held = world.panel.cardSource;
+  const ordered = orderedCaptures(held, sort);
+  const wanted = query.trim();
+  return cardsOf(held, ordered, searchHits(ordered, wanted), wanted);
 }
 
 const LOADING_HALF = {
@@ -308,7 +300,7 @@ describe('writtenIn', () => {
     const world = await opened(rows);
     for (const card of unsaved) world.view.list.unsaved.put(card);
 
-    expect(writtenIn(field, at(world.panel.cards.cards, 0))).toBe(written);
+    expect(writtenIn(field, at(shownCards(world), 0))).toBe(written);
   });
 });
 
@@ -319,18 +311,18 @@ describe('CapturePanelView', () => {
       anchor: textAnchor('/6/4', { exact: '先生', prefix: '', suffix: '' }, '第一章'),
     };
     const world = await opened([lifted]);
-    expect(at(world.panel.cards.cards, 0).passage).toBeNull();
-    expect(at(world.panel.cards.cards, 0).placeLanguage).toBe('ja');
+    expect(at(shownCards(world), 0).passage).toBeNull();
+    expect(at(shownCards(world), 0).placeLanguage).toBe('ja');
 
     world.source.current = { ...world.source.current, seekable: true, language: 'ko' };
 
-    expect(at(world.panel.cards.cards, 0).passage).not.toBeNull();
-    expect(at(world.panel.cards.cards, 0).placeLanguage).toBe('ko');
+    expect(at(shownCards(world), 0).passage).not.toBeNull();
+    expect(at(shownCards(world), 0).placeLanguage).toBe('ko');
   });
 
   it('opens a draft seeded with the written text of its field', async () => {
     const world = await opened([storedRow('a', '先生', 1, 'teacher')]);
-    const card = at(world.panel.cards.cards, 0);
+    const card = at(shownCards(world), 0);
 
     world.panel.openDraft('note', card, null);
     world.panel.openDraft('text', card, null);
@@ -346,7 +338,7 @@ describe('CapturePanelView', () => {
     'saves a %s draft through %s and answers the opener',
     async (field, _write, written, from) => {
       const world = await opened([storedRow('a', '先生', 1)]);
-      const card = at(world.panel.cards.cards, 0);
+      const card = at(shownCards(world), 0);
       world.panel.openDraft(field, card, from);
       world.view.drafts.write(field, card.id, written);
       const edit = vi.spyOn(world.view.edits, 'edit').mockResolvedValue('saved');
@@ -363,7 +355,7 @@ describe('CapturePanelView', () => {
 
   it('answers the opener of an abandoned draft and closes it', async () => {
     const world = await opened([storedRow('a', '先生', 1)]);
-    const card = at(world.panel.cards.cards, 0);
+    const card = at(shownCards(world), 0);
     const from = target();
     world.panel.openDraft('text', card, from);
 
@@ -371,31 +363,20 @@ describe('CapturePanelView', () => {
     expect(world.view.drafts.holds('text', card.id)).toBe(false);
   });
 
-  it('closes the tag picker on the removed capture and forgets its drafts', async () => {
+  it('forgets the drafts of a removed capture', async () => {
     const world = await opened([storedRow('a', '先生', 1), storedRow('b', '後', 2)]);
-    const card = at(world.panel.cards.cards, 0);
+    const card = at(shownCards(world), 0);
     world.panel.openDraft('note', card, null);
-    world.panel.openTags(card.id, target());
     vi.spyOn(world.view.removal, 'remove').mockResolvedValue('saved');
 
     await world.panel.remove(card.id);
 
-    expect(world.panel.selection.picker.capture).toBeNull();
     expect(world.view.drafts.holds('note', card.id)).toBe(false);
-  });
-
-  it('keeps the tag picker open on another capture through a removal', async () => {
-    const world = await opened([storedRow('a', '先生', 1), storedRow('b', '後', 2)]);
-    world.panel.openTags(captureId('b'), target());
-
-    await world.panel.remove(captureId('a'));
-
-    expect(world.panel.selection.picker.capture).toBe(captureId('b'));
   });
 
   it('keeps the drafts of a capture whose removal is refused', async () => {
     const world = await opened([storedRow('a', '先生', 1)]);
-    const card = at(world.panel.cards.cards, 0);
+    const card = at(shownCards(world), 0);
     world.panel.openDraft('note', card, null);
     vi.spyOn(world.view.removal, 'remove').mockResolvedValue('failed');
 
@@ -404,80 +385,27 @@ describe('CapturePanelView', () => {
     expect(world.view.drafts.holds('note', card.id)).toBe(true);
   });
 
-  it('answers the tag opener once when the picker closes', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    const from = target();
-    world.panel.openTags(captureId('a'), from);
-
-    expect(world.panel.closeTags()).toBe(from);
-    expect(world.panel.selection.picker.capture).toBeNull();
-    expect(world.panel.closeTags()).toBeNull();
-  });
-
-  it('answers no opener after a removal closed the picker', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    world.panel.openTags(captureId('a'), target());
-    await world.panel.remove(captureId('a'));
-
-    expect(world.panel.closeTags()).toBeNull();
-  });
-
-  it('answers the card the tag picker is open on', async () => {
-    const world = await opened([storedRow('a', '先生', 1), storedRow('b', '後', 2)]);
-
-    expect(world.panel.tagging).toBeNull();
-    world.panel.openTags(captureId('b'), target());
-
-    expect(world.panel.tagging?.id).toBe(captureId('b'));
-  });
-
-  it('steps from the cursor of the current search', async () => {
-    const world = await opened([storedRow('a', '先生', 1), storedRow('b', '先', 2)]);
-    world.panel.cards.query = '先';
-
-    expect(world.panel.stepBy(1).kind).toBe('fresh');
-    expect(world.panel.cards.cursor).toBe(0);
-    expect(world.panel.stepBy(1).kind).toBe('replacing');
-    expect(world.panel.cards.cursor).toBe(1);
-    expect(world.panel.stepBy(1).kind).toBe('nowhere');
-  });
-
-  it('counts the search steps against every capture in the book', async () => {
-    const world = await opened([
-      storedRow('a', '先生', 1),
-      storedRow('b', '先', 2),
-      storedRow('c', '後', 3),
-    ]);
-    world.panel.cards.query = '先';
-
-    expect(world.panel.steps).toEqual({ tally: '2 of 3 matched', previous: false, next: true });
-
-    world.panel.stepBy(1);
-
-    expect(world.panel.steps).toEqual({ tally: 'match 1 of 2', previous: false, next: true });
-  });
-
   it('notes the model load on a capture still being read', async () => {
     const world = await opened();
     world.view.list.unsaved.put(pending('new'));
-    expect(at(world.panel.cards.cards, 0).note).toBeNull();
+    expect(at(shownCards(world), 0).note).toBeNull();
 
     world.view.warmup.progress = LOADING_HALF;
 
-    expect(at(world.panel.cards.cards, 0).note).not.toBeNull();
+    expect(at(shownCards(world), 0).note).not.toBeNull();
     expect(world.panel.announcement).toContain('50 percent');
   });
 
   it('orders the captures of one page by the reading direction', async () => {
     const world = await opened([placedRow('left', 0, 1), placedRow('right', 200, 2)]);
-    expect(world.panel.cards.cards.map((card) => card.id)).toEqual([
+    expect(shownCards(world).map((card) => card.id)).toEqual([
       captureId('right'),
       captureId('left'),
     ]);
 
     world.source.current = { ...world.source.current, direction: 'ltr' };
 
-    expect(world.panel.cards.cards.map((card) => card.id)).toEqual([
+    expect(shownCards(world).map((card) => card.id)).toEqual([
       captureId('left'),
       captureId('right'),
     ]);
@@ -485,14 +413,14 @@ describe('CapturePanelView', () => {
 
   it('orders the passages by the passage order it is given', async () => {
     const world = await opened([passageRow('first', '/6/2', 1), passageRow('second', '/6/4', 2)]);
-    expect(world.panel.cards.cards.map((card) => card.id)).toEqual([
+    expect(shownCards(world).map((card) => card.id)).toEqual([
       captureId('first'),
       captureId('second'),
     ]);
 
     world.source.current = { ...world.source.current, passages: (a, b) => byCfi(b, a) };
 
-    expect(world.panel.cards.cards.map((card) => card.id)).toEqual([
+    expect(shownCards(world).map((card) => card.id)).toEqual([
       captureId('second'),
       captureId('first'),
     ]);
@@ -501,9 +429,7 @@ describe('CapturePanelView', () => {
   it('lists the newest capture first when sorted by newest', async () => {
     const world = await opened([storedRow('a', '先生', 1), storedRow('b', '後', 2)]);
 
-    world.panel.cards.sortBy('newest');
-
-    expect(world.panel.cards.cards.map((card) => card.id)).toEqual([
+    expect(shownCards(world, 'newest').map((card) => card.id)).toEqual([
       captureId('b'),
       captureId('a'),
     ]);
@@ -512,15 +438,7 @@ describe('CapturePanelView', () => {
   it('chips the tags a capture carries by their catalogue names', async () => {
     const world = await opened([taggedCapture(storedRow('a', '先生', 1), CROWN)], [CROWN_TAG]);
 
-    expect(at(world.panel.cards.cards, 0).tags.map((chip) => chip.name)).toEqual(['crown']);
-  });
-
-  it('opens the picker with the tags the capture carries', async () => {
-    const world = await opened([taggedCapture(storedRow('a', '先生', 1), CROWN)], [CROWN_TAG]);
-
-    world.panel.openTags(captureId('a'), target());
-
-    expect(world.panel.selection.picker.carried).toEqual([CROWN]);
+    expect(at(shownCards(world), 0).tags.map((chip) => chip.name)).toEqual(['crown']);
   });
 
   it('offers the catalogue tags with their library counts', async () => {
@@ -530,19 +448,14 @@ describe('CapturePanelView', () => {
       taggedCapture({ ...storedRow('x', '別', 7), bookId: bookId('book-two') }, CROWN),
     ];
 
-    world.panel.openTags(captureId('a'), target());
+    world.panel.counting.ask();
     await Promise.resolve();
     await Promise.resolve();
+    const held = { tags: world.view.tagging.tags, counts: world.panel.counting.counts() };
 
-    expect(world.panel.selection.picker.rows).toEqual([{ kind: 'tag', tag: CROWN_TAG, count: 1 }]);
-  });
-
-  it('reveals the latest capture only while the panel shows', async () => {
-    const world = await opened();
-    world.view.list.unsaved.put(pending('new'));
-
-    expect(world.panel.reveals(captureId('new'), false)).toBe(false);
-    expect(world.panel.reveals(captureId('new'), true)).toBe(true);
+    expect(rowsFor(held, captureId('a'), [], '')).toEqual([
+      { kind: 'tag', tag: CROWN_TAG, count: 1 },
+    ]);
   });
 
   it('announces the model load only while a capture waits', async () => {
@@ -567,23 +480,5 @@ describe('CapturePanelView', () => {
 
     world.source.current = { ...world.source.current, language: 'ko' };
     expect(world.panel.mismatch).toContain('Korean');
-  });
-
-  it('warns about clearing only while the clear is being confirmed', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-    expect(world.panel.warning).toBeNull();
-
-    world.view.clearAll.ask();
-
-    expect(world.panel.warning).toBe('Delete 1 reading? You can read them again.');
-  });
-
-  it('copies through the clipboard write it was given', async () => {
-    const world = await opened([storedRow('a', '先生', 1)]);
-
-    await world.panel.copying.copy(captureId('a'), '先生');
-
-    expect(world.store.copied).toEqual(['先生']);
-    expect(world.panel.copying.copied).toBe(captureId('a'));
   });
 });

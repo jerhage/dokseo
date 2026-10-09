@@ -20,9 +20,9 @@
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
   import type { BadgeVariant } from '$lib/ui/components/classes';
-  import type { FocusTarget } from './card-editing.svelte';
+  import type { FocusTarget } from './focus-target';
   import type { Card } from './capture-card-projection';
-  import type { CardDrafts, DraftField } from './card-drafts.svelte';
+  import type { CardDraftsSession, DraftField } from './card-drafts-session.svelte';
   import { cardTools } from './card-tools';
   import { GO_TO_PASSAGE } from './capture-place';
   import InlineEditor from './InlineEditor.svelte';
@@ -33,7 +33,7 @@
     readonly card: Card;
     readonly language: Language | null;
     readonly current: boolean;
-    readonly drafts: CardDrafts;
+    readonly drafts: CardDraftsSession;
     readonly copied: boolean;
     readonly onseek: ((passage: TextAnchor) => void) | undefined;
     readonly onfollow: (event: MouseEvent) => void;

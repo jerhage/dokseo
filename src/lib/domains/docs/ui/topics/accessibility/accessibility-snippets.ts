@@ -241,7 +241,7 @@ const CAPTURE_STATUS: SourceSnippet = {
   label: 'CapturePanel.svelte',
   file: 'src/lib/domains/recognition/ui/capture/CapturePanel.svelte',
   code: `<p class="visually-hidden" role="status">{panel.announcement}</p>
-<p class="visually-hidden" role="status">{panel.copying.told}</p>`,
+<p class="visually-hidden" role="status">{copying.told}</p>`,
 };
 
 const REDUCED_MOTION_CSS: SourceSnippet = {

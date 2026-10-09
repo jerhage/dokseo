@@ -20,8 +20,19 @@
   import type { Tag } from '../../domain/tag/tag';
   import type { CaptureFindRead } from './capture-find';
   import { CAPTURES_UNREAD_MESSAGE, PALETTE_KEYS, resultCount } from './search-copy';
+  import { searchKey } from './search-keys';
+  import type { SearchKeyPress } from './search-keys';
   import { openerOf } from './search-opener';
-  import { SearchPalette } from './search-palette.svelte';
+  import { createSearchPalette } from './search-palette.svelte';
+  import {
+    paletteCursor,
+    paletteInvite,
+    paletteNote,
+    paletteResults,
+    rowAtCursor,
+  } from './search-palette-rules';
+  import type { PaletteQuery, PaletteSource } from './search-palette-rules';
+  import { effectiveScope } from './search-rows';
   import type { SearchRow, SearchScope } from './search-rows';
   import SearchResult from './SearchResult.svelte';
 
@@ -58,7 +69,9 @@
     notice,
   }: Props = $props();
 
-  const palette = new SearchPalette(() => ({
+  const palette = createSearchPalette();
+
+  const source = $derived<PaletteSource>({
     book,
     books,
     covers,
@@ -68,16 +81,24 @@
     passages,
     read: find.state,
     room: narrowScreen.current ? 'narrow' : 'wide',
-  }));
+  });
+  const scoped = $derived(effectiveScope(book, palette.scope));
+  const asked = $derived<PaletteQuery>({
+    present: palette.present,
+    query: palette.query,
+    scope: scoped,
+    filter: palette.filter,
+  });
 
   let list = $state<(HTMLElement | null | undefined)[]>([]);
   let field = $state<HTMLInputElement | null>();
   let lastPressed: HTMLElement | null = null;
   let opener: HTMLElement | null = null;
 
-  const results = $derived(palette.results);
-  const cursor = $derived(palette.cursor);
-  const note = $derived(palette.note);
+  const results = $derived(paletteResults(source, asked));
+  const cursor = $derived(paletteCursor(palette.at, results.rows.length));
+  const note = $derived(paletteNote(source, asked, results.rows.length));
+  const invite = $derived(paletteInvite(source, asked));
 
   function remember(event: PointerEvent): void {
     const control = event.target instanceof Element ? event.target.closest('button, a') : null;
@@ -113,7 +134,7 @@
   }
 
   function moveBy(by: number): void {
-    list[palette.moveBy(by)]?.scrollIntoView({ block: 'nearest' });
+    list[palette.moveBy(by, results.rows.length)]?.scrollIntoView({ block: 'nearest' });
   }
 
   function open(row: SearchRow, newTab: boolean): void {
@@ -130,17 +151,21 @@
   }
 
   function openAtCursor(event: KeyboardEvent, newTab: boolean): void {
-    const row = palette.rowAtCursor();
+    const row = rowAtCursor(results.rows, cursor);
     if (row === undefined) return;
 
     event.preventDefault();
     open(row, newTab);
   }
 
+  function keyFor(press: SearchKeyPress) {
+    return searchKey(press, { shown: palette.shown, scope: palette.scope, hasBook: book !== null });
+  }
+
   function shortcuts(event: KeyboardEvent): void {
     lastPressed = null;
 
-    match(palette.keyFor(event))
+    match(keyFor(event))
       .with({ kind: 'ignore' }, () => {})
       .with({ kind: 'open' }, ({ newTab }) => openAtCursor(event, newTab))
       .with({ kind: 'reveal' }, ({ scope: chosen }) => {
@@ -185,7 +210,7 @@
 <svelte:window onkeydown={shortcuts} onpointerdowncapture={remember} />
 
 <Modal
-  bind:open={palette.shown}
+  bind:open={() => palette.shown, (next) => palette.setShown(next)}
   aria-label="Find in captures"
   size="lg"
   placement="top"
@@ -197,7 +222,7 @@
 >
   {#snippet header()}
     <SearchField
-      bind:value={palette.query}
+      bind:value={() => palette.query, (typed) => palette.setQuery(typed)}
       bind:ref={field}
       label="Find in captures"
       hideLabel
@@ -206,7 +231,7 @@
       class="flex-fill"
       enterkeyhint="search"
       autofocus
-      placeholder={palette.invite}
+      placeholder={invite}
       oninput={() => palette.restart()}
     />
     <Button variant="ghost" class="modal-fill-only" onclick={() => palette.hide()}>Cancel</Button>

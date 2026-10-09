@@ -10,14 +10,17 @@
   import Tag from '$lib/ui/components/Tag.svelte';
   import type { TagId } from '$lib/shared/ids';
   import type { TagChip } from './tag-chip';
-  import type { PickerRow, TagPicker } from './tag-picker.svelte';
+  import { chosenRow, highlightedRow } from './tag-picker-rules';
+  import type { PickerRow } from './tag-picker-rules';
+  import type { TagPickerHook } from './tag-picker.svelte';
   import { pickerOffers } from './picker-offers';
   import { pickerKey } from './editor-keys';
   import './tag-picker.css';
 
   type Props = {
     readonly open: boolean;
-    readonly picker: TagPicker;
+    readonly picker: TagPickerHook;
+    readonly rows: readonly PickerRow[];
     readonly place: string;
     readonly chips: readonly TagChip[];
     readonly onchoose: (row: PickerRow) => void;
@@ -26,7 +29,7 @@
     readonly notice?: Snippet | undefined;
   };
 
-  let { open, picker, place, chips, onchoose, onuntag, onclose, notice }: Props = $props();
+  let { open, picker, rows, place, chips, onchoose, onuntag, onclose, notice }: Props = $props();
 
   const PICKER_KEYS: readonly KeyHint[] = [
     { keys: ['↑↓'], does: 'move' },
@@ -38,7 +41,8 @@
 
   let filter = $state<HTMLInputElement | null>();
 
-  const offers = $derived(pickerOffers(picker.rows, picker.highlighted, uid));
+  const highlighted = $derived(highlightedRow(picker.cursor, rows.length));
+  const offers = $derived(pickerOffers(rows, highlighted, uid));
 
   function take(row: PickerRow | null): void {
     if (row === null) return;
@@ -53,9 +57,9 @@
 
     event.preventDefault();
     match(key)
-      .with('down', () => picker.moveBy(1))
-      .with('up', () => picker.moveBy(-1))
-      .with('choose', () => take(picker.chosen))
+      .with('down', () => picker.moveBy(1, rows.length))
+      .with('up', () => picker.moveBy(-1, rows.length))
+      .with('choose', () => take(chosenRow(picker.cursor, rows)))
       .with('close', () => onclose())
       .exhaustive();
   }
@@ -96,7 +100,7 @@
 
     <SearchField
       bind:ref={filter}
-      bind:value={picker.query}
+      bind:value={() => picker.query, (next) => picker.setQuery(next)}
       label="Filter or create a tag"
       hideLabel
       type="text"

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captureId } from '$lib/shared/ids';
 import { CardEditing } from './card-editing.svelte';
-import type { FocusTarget } from './card-editing.svelte';
+import type { FocusTarget } from './focus-target';
 
 const CARD = captureId('c1');
 

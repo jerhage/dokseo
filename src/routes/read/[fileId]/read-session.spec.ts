@@ -2,6 +2,9 @@ import { SvelteURL } from 'svelte/reactivity';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
 import type { FlowSurface } from '$lib/domains/flowing/ui/flow-surface';
+import type { Card } from '$lib/domains/recognition/ui/capture/capture-card-projection';
+import { cardsOf, orderedCaptures } from '$lib/domains/recognition/ui/capture/capture-card-rules';
+import type { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
@@ -25,6 +28,11 @@ type World = {
   readonly notices: string[];
   shown: string;
 };
+
+function cardsOfPanel(panel: CapturePanelView): readonly Card[] {
+  const held = panel.cardSource;
+  return cardsOf(held, orderedCaptures(held, 'book'), null, '');
+}
 
 function flowBook(id: BookId): unknown {
   return { id, title: 'Kokoro', language: 'ja', layoutKind: 'flow', imageCount: 0 };
@@ -375,8 +383,10 @@ describe('ReadSession', () => {
       status: 'pending',
     } as never);
 
-    expect(held.session.flowPanel.cards.cards.map((card) => card.passage !== null)).toEqual([true]);
-    expect(held.session.imagePanel.cards.cards.map((card) => card.passage !== null)).toEqual([
+    expect(cardsOfPanel(held.session.flowPanel).map((card) => card.passage !== null)).toEqual([
+      true,
+    ]);
+    expect(cardsOfPanel(held.session.imagePanel).map((card) => card.passage !== null)).toEqual([
       false,
     ]);
   });
@@ -386,7 +396,7 @@ describe('ReadSession', () => {
     held.session.navigate();
     await settled();
 
-    await held.session.imagePanel.copying.copy(captureId('a'), '海');
+    await held.session.imagePanel.write('海');
 
     expect(held.copied).toEqual(['海']);
   });
@@ -410,7 +420,8 @@ describe('ReadSession', () => {
       () => undefined,
     );
 
-    await refusing.flowPanel.copying.copy(captureId('a'), '海');
+    await expect(refusing.flowPanel.write('海')).rejects.toThrow('the clipboard is locked');
+    refusing.flowPanel.notify({ tone: 'danger', title: 'The text could not be copied' });
 
     expect(held.notices).toEqual(['The text could not be copied']);
   });
@@ -434,12 +445,12 @@ describe('ReadSession', () => {
       } as never);
     }
     held.session.flow.navigation.learn(surfaceReading('ltr'));
-    const flowingRight = held.session.flowPanel.cards.cards.map((card) => card.id);
+    const flowingRight = cardsOfPanel(held.session.flowPanel).map((card) => card.id);
     held.session.flow.navigation.learn(surfaceReading('rtl'));
 
-    expect(held.session.imagePanel.cards.cards.map((card) => card.id)).toEqual(['left', 'right']);
+    expect(cardsOfPanel(held.session.imagePanel).map((card) => card.id)).toEqual(['left', 'right']);
     expect(flowingRight).toEqual(['left', 'right']);
-    expect(held.session.flowPanel.cards.cards.map((card) => card.id)).toEqual(['right', 'left']);
+    expect(cardsOfPanel(held.session.flowPanel).map((card) => card.id)).toEqual(['right', 'left']);
   });
 
   it('marks a chapter place in both panels with the language of the open book', async () => {
@@ -460,7 +471,7 @@ describe('ReadSession', () => {
       status: 'pending',
     } as never);
 
-    expect(held.session.imagePanel.cards.cards.map((card) => card.placeLanguage)).toEqual(['ja']);
-    expect(held.session.flowPanel.cards.cards.map((card) => card.placeLanguage)).toEqual(['ja']);
+    expect(cardsOfPanel(held.session.imagePanel).map((card) => card.placeLanguage)).toEqual(['ja']);
+    expect(cardsOfPanel(held.session.flowPanel).map((card) => card.placeLanguage)).toEqual(['ja']);
   });
 });

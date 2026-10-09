@@ -23,12 +23,11 @@ type Emptied = {
   readonly unsaved: readonly PanelCapture[];
 };
 
-class ClearAll {
+class CaptureClearing {
   readonly capturesExport: BookCapturesExport;
   #notify: Notify;
   #list: CaptureList;
   #cache: CaptureCache;
-  #confirming = $state(false);
   #clearing: WriteQuery<ClearCapturesResult, BookId>;
 
   constructor(
@@ -60,28 +59,17 @@ class ClearAll {
     }));
   }
 
-  get confirming(): boolean {
-    return this.#confirming;
-  }
-
   get scope(): ClearScope {
     return clearScope(this.#list.captures);
   }
 
-  ask(): void {
-    if (this.#list.count === 0) return;
-    this.#confirming = true;
+  prepareExport(): void {
     const book = this.#list.book;
     if (book !== null) void this.capturesExport.prepare(book);
   }
 
-  dismiss(): void {
-    this.#confirming = false;
-  }
-
   async clear(): Promise<void> {
     const book = this.#list.book;
-    this.#confirming = false;
     if (book === null) return;
 
     await this.#clearing.run(book).catch(() => null);
@@ -93,5 +81,5 @@ class ClearAll {
   }
 }
 
-export { CLEAR_FAILED, ClearAll };
+export { CLEAR_FAILED, CaptureClearing };
 export type { Emptied };

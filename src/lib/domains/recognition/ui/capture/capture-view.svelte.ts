@@ -8,14 +8,14 @@ import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import { CaptureCache } from './capture-cache';
-import { CardDrafts } from './card-drafts.svelte';
+import { CardDraftsSession } from './card-drafts-session.svelte';
 import { CaptureEdits } from './capture-edits.svelte';
 import { CaptureList } from './capture-list.svelte';
 import type { CaptureListing } from './capture-read';
 import { CaptureRecording } from './capture-recording.svelte';
 import { CaptureRemoval } from './capture-removal.svelte';
 import { CaptureTags } from './capture-tags.svelte';
-import { ClearAll } from './clear-all.svelte';
+import { CaptureClearing } from './capture-clearing.svelte';
 import type { Settled } from './panel-capture';
 import { settlementOf } from './recognition-settlement';
 import { ConsentGate } from '../engine/consent-gate.svelte';
@@ -26,14 +26,14 @@ import type { PendingRecognition } from '../engine/engine-warmth';
 
 class CaptureView {
   readonly list: CaptureList;
-  readonly clearAll: ClearAll;
+  readonly clearAll: CaptureClearing;
   readonly removal: CaptureRemoval;
   readonly edits: CaptureEdits;
   readonly tagging: CaptureTags;
   readonly recording: CaptureRecording;
   readonly consent: ConsentGate;
   readonly warmup: EngineWarmup;
-  readonly drafts = new CardDrafts();
+  readonly drafts = new CardDraftsSession();
   #container: Container;
   #visits = 0;
 
@@ -49,7 +49,7 @@ class CaptureView {
     const reading: EngineSource = (language) => readingFor(engine(), language);
     this.#container = container;
     this.list = new CaptureList(listing);
-    this.clearAll = new ClearAll(recognition, notify, this.list, cache);
+    this.clearAll = new CaptureClearing(recognition, notify, this.list, cache);
     this.removal = new CaptureRemoval(recognition, notify, this.list, cache);
     this.edits = new CaptureEdits(recognition, notify, this.list, cache);
     this.tagging = new CaptureTags(recognition, notify, this.list, cache);

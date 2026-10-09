@@ -3,14 +3,13 @@ import { captureId, tagId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import { TagSelection } from './tag-selection.svelte';
+import type { FocusTarget } from './focus-target';
+import { createTagSelection } from './tag-selection.svelte';
 import type { TagWriting } from './tag-selection.svelte';
 
 const CARD = captureId('c1');
 
 const SPEECH: Tag = namedTag(tagId('tag-1'), 'speech', 'copper', 1);
-
-const SIGN: Tag = namedTag(tagId('tag-2'), 'sign', 'sage', 2);
 
 type Written = {
   readonly calls: string[];
@@ -26,7 +25,6 @@ function written(): Written {
     tagsOn: (capture) => carried.get(capture) ?? [],
     loadCounts: () => {
       calls.push('counts');
-      return Promise.resolve();
     },
     add: (capture, tag) => {
       calls.push(`add ${capture} ${tag}`);
@@ -46,46 +44,46 @@ function written(): Written {
   return { calls, carried, writing };
 }
 
-function selectionOver(held: Written, tags: readonly Tag[]): TagSelection {
-  return new TagSelection(held.writing, () => ({ tags, counts: new Map() }));
+function button(): FocusTarget {
+  return { focus: (): void => undefined };
 }
 
-describe('tag selection', () => {
+describe('createTagSelection', () => {
   it('opens the picker on one capture at a time', () => {
     const held = written();
-    const selection = selectionOver(held, [SPEECH]);
-    selection.open(CARD);
+    const selection = createTagSelection();
+    selection.open(CARD, held.writing, null);
 
     expect([selection.opened(CARD), selection.opened(captureId('c2'))]).toEqual([true, false]);
   });
 
-  it('offers the tags the capture does not carry', () => {
+  it('opens the picker on the tags the capture carries', () => {
     const held = written();
     held.carried.set(CARD, [SPEECH.id]);
-    const selection = selectionOver(held, [SPEECH, SIGN]);
-    selection.open(CARD);
+    const selection = createTagSelection();
+    selection.open(CARD, held.writing, null);
 
-    expect(selection.picker.rows).toEqual([{ kind: 'tag', tag: SIGN, count: 0 }]);
+    expect(selection.picker.carried).toEqual([SPEECH.id]);
   });
 
   it('asks for the tag counts once however often the picker opens', () => {
     const held = written();
-    const selection = selectionOver(held, [SPEECH]);
-    selection.open(CARD);
+    const selection = createTagSelection();
+    selection.open(CARD, held.writing, null);
     selection.close();
 
     expect(selection.opened(CARD)).toBe(false);
 
-    selection.open(CARD);
+    selection.open(CARD, held.writing, null);
 
     expect(held.calls).toEqual(['counts']);
   });
 
   it('adds a chosen tag and reopens on the tags now carried', async () => {
     const held = written();
-    const selection = selectionOver(held, [SPEECH, SIGN]);
-    selection.open(CARD);
-    await selection.choose({ kind: 'tag', tag: SPEECH, count: 0 });
+    const selection = createTagSelection();
+    selection.open(CARD, held.writing, null);
+    await selection.choose({ kind: 'tag', tag: SPEECH, count: 0 }, held.writing);
 
     expect([held.calls, selection.picker.carried]).toEqual([
       ['counts', `add ${CARD} ${SPEECH.id}`],
@@ -95,26 +93,29 @@ describe('tag selection', () => {
 
   it('creates a tag from a create row', async () => {
     const held = written();
-    const selection = selectionOver(held, []);
-    selection.open(CARD);
-    await selection.choose({ kind: 'create', name: 'mood' });
+    const selection = createTagSelection();
+    selection.open(CARD, held.writing, null);
+    await selection.choose({ kind: 'create', name: 'mood' }, held.writing);
 
     expect(held.calls).toEqual(['counts', `create ${CARD} mood`]);
   });
 
   it('chooses nothing while the picker is closed', async () => {
     const held = written();
-    const selection = selectionOver(held, [SPEECH]);
-    await selection.choose({ kind: 'tag', tag: SPEECH, count: 0 });
+    const selection = createTagSelection();
+    await selection.choose({ kind: 'tag', tag: SPEECH, count: 0 }, held.writing);
 
     expect(held.calls).toEqual([]);
   });
 
-  it('drops a tag from the capture', async () => {
+  it('answers the opener once when the picker closes', () => {
     const held = written();
-    const selection = selectionOver(held, [SPEECH]);
-    await selection.drop(CARD, SPEECH.id);
+    const selection = createTagSelection();
+    const from = button();
+    selection.open(CARD, held.writing, from);
 
-    expect(held.calls).toEqual([`remove ${CARD} ${SPEECH.id}`]);
+    expect(selection.close()).toBe(from);
+    expect(selection.picker.capture).toBeNull();
+    expect(selection.close()).toBeNull();
   });
 });

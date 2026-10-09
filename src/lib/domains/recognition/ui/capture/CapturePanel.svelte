@@ -21,18 +21,29 @@
   import { isComposingKey } from '$lib/shared/composing-key';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
-  import type { FocusTarget } from './card-editing.svelte';
-  import type { CardJump } from './capture-cards.svelte';
+  import { createCaptureSearch } from './capture-search.svelte';
+  import { cardsOf, cursorOf, jumpAt, orderedCaptures, searchHits } from './capture-card-rules';
+  import type { CardJump } from './capture-card-rules';
   import type { CapturePanelView } from './capture-panel.svelte';
   import type { CaptureView } from './capture-view.svelte';
+  import { createCaptureSort } from './capture-sort-choice.svelte';
   import { CAPTURE_SORTS, CAPTURE_SORT_LABEL, captureSortName } from './capture-sort';
+  import { createCardReveal } from './card-reveal';
+  import { clearWarning } from './clearing';
+  import { createClearConfirm } from './clear-confirm.svelte';
   import { emptyPanelText } from './empty-panel';
   import type { CaptureSource } from './empty-panel';
   import CaptureCard from './CaptureCard.svelte';
   import CaptureListData from './CaptureListData.svelte';
-  import type { DraftField } from './card-drafts.svelte';
+  import type { DraftField } from './card-drafts-session.svelte';
   import DocumentTags from './DocumentTags.svelte';
+  import type { FocusTarget } from './focus-target';
+  import { searchSteps } from './panel-search';
+  import { rowsFor } from './tag-picker-rules';
+  import { createTagSelection } from './tag-selection.svelte';
+  import type { TagWriting } from './tag-selection.svelte';
   import TagPickerModal from './TagPickerModal.svelte';
+  import { createTextCopy } from './text-copy.svelte';
 
   type Props = {
     readonly view: CaptureView;
@@ -51,16 +62,49 @@
 
   const drafts = $derived(view.drafts);
 
+  const search = createCaptureSearch();
+  const sorting = createCaptureSort();
+  const reveal = createCardReveal();
+  const selection = createTagSelection();
+  const copying = createTextCopy(
+    (text) => panel.write(text),
+    (message) => panel.notify(message),
+  );
+  const confirm = createClearConfirm();
+
+  const writing: TagWriting = {
+    tagsOn: (id) => view.list.captures.find((capture) => capture.id === id)?.tagIds ?? [],
+    loadCounts: () => panel.counting.ask(),
+    add: (id, tag) => view.tagging.addTag(id, tag),
+    remove: (id, tag) => view.tagging.removeTag(id, tag),
+    create: (id, name) => view.tagging.createTag(id, name),
+  };
+
   let list = $state<HTMLElement | null>();
 
-  const cards = $derived(panel.cards.cards);
-  const searching = $derived(panel.cards.searching);
+  const cardSource = $derived(panel.cardSource);
+  const ordered = $derived(orderedCaptures(cardSource, sorting.sort));
+  const hits = $derived(searchHits(ordered, search.wanted));
+  const cards = $derived(cardsOf(cardSource, ordered, hits, search.wanted));
+  const cursor = $derived(cursorOf(search.stepped, search.wanted));
+  const searching = $derived(search.searching);
+  const steps = $derived(searchSteps(cursor, cards.length, view.list.count));
+  const warning = $derived(confirm.confirming ? clearWarning(view.clearAll.scope) : null);
+  const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
+  const pickerRows = $derived(
+    rowsFor(
+      { tags: view.tagging.tags, counts: panel.counting.counts() },
+      selection.picker.capture,
+      selection.picker.carried,
+      selection.picker.query,
+    ),
+  );
   const stepping = $derived<StepperSteps | null>(
     searching
       ? {
-          previous: panel.steps.previous ? () => stepBy(-1) : null,
-          next: panel.steps.next ? () => stepBy(1) : null,
-          count: panel.steps.tally,
+          previous: steps.previous ? () => stepBy(-1) : null,
+          next: steps.next ? () => stepBy(1) : null,
+          count: steps.tally,
         }
       : null,
   );
@@ -77,10 +121,16 @@
       .exhaustive();
   }
 
+  function jumpTo(at: number): CardJump {
+    const jump = jumpAt(cards, at, cursor);
+    if (jump.kind !== 'nowhere') search.stepTo(at);
+    return jump;
+  }
+
   function follow(event: MouseEvent, at: number): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-    const jump = panel.cards.jumpTo(at);
+    const jump = jumpTo(at);
     if (jump.kind === 'nowhere') return;
 
     event.preventDefault();
@@ -88,7 +138,7 @@
   }
 
   function stepBy(by: number): void {
-    navigate(panel.stepBy(by));
+    navigate(jumpTo(cursor + by));
   }
 
   function stepOnEnter(event: KeyboardEvent): void {
@@ -110,6 +160,7 @@
   }
 
   async function remove(capture: CaptureId): Promise<void> {
+    if (selection.opened(capture)) selection.close();
     const removed = panel.remove(capture);
     await tick();
     list?.focus({ preventScroll: true });
@@ -118,8 +169,20 @@
 
   function revealIfLatest(id: CaptureId): Attachment<HTMLElement> {
     return (node) => {
-      if (panel.reveals(id, visible)) node.scrollIntoView({ block: 'nearest' });
+      if (reveal.reveals(id, view.list.latest, visible)) node.scrollIntoView({ block: 'nearest' });
     };
+  }
+
+  function askToClear(): void {
+    if (view.list.count === 0) return;
+
+    confirm.ask();
+    view.clearAll.prepareExport();
+  }
+
+  async function clearAll(): Promise<void> {
+    confirm.dismiss();
+    await view.clearAll.clear();
   }
 </script>
 
@@ -139,10 +202,7 @@
       label={CAPTURE_SORT_LABEL}
     >
       {#each CAPTURE_SORTS as choice (choice)}
-        <DropdownItem
-          selected={panel.cards.sort === choice}
-          onclick={() => panel.cards.sortBy(choice)}
-        >
+        <DropdownItem selected={sorting.sort === choice} onclick={() => sorting.sortBy(choice)}>
           {captureSortName(choice)}
         </DropdownItem>
       {/each}
@@ -156,14 +216,14 @@
       icon={Ellipsis}
       label="Captures menu"
     >
-      <DropdownItem danger disabled={view.list.count === 0} onclick={() => view.clearAll.ask()}>
+      <DropdownItem danger disabled={view.list.count === 0} onclick={askToClear}>
         Delete every capture…
       </DropdownItem>
     </Dropdown>
   </header>
 
   <p class="visually-hidden" role="status">{panel.announcement}</p>
-  <p class="visually-hidden" role="status">{panel.copying.told}</p>
+  <p class="visually-hidden" role="status">{copying.told}</p>
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <CaptureListData
@@ -184,7 +244,7 @@
             class="gap-1"
           >
             <SearchField
-              bind:value={panel.cards.query}
+              bind:value={() => search.query, (next) => search.setQuery(next)}
               label="Search this book's captures and notes"
               hideLabel
               class="flex-fill min-w-0"
@@ -209,16 +269,16 @@
               <CaptureCard
                 {card}
                 {language}
-                current={searching && order === panel.cards.cursor}
+                current={searching && order === cursor}
                 {drafts}
-                copied={panel.copying.copied === card.id}
+                copied={copying.copied === card.id}
                 onseek={onSeek}
                 onfollow={(event) => follow(event, order)}
                 onwrite={(field, from) => panel.openDraft(field, card, from)}
                 onsave={(field) => void save(field, card.id)}
                 onabandon={(field) => void restore(panel.abandon(field, card.id))}
-                ontag={(from) => panel.openTags(card.id, from)}
-                oncopy={(text) => void panel.copying.copy(card.id, text)}
+                ontag={(from) => selection.open(card.id, writing, from)}
+                oncopy={(text) => void copying.copy(card.id, text)}
                 onremove={(capture) => void remove(capture)}
               />
             </li>
@@ -229,31 +289,32 @@
   </div>
 </section>
 
-{#if panel.tagging !== null}
-  {@const held = panel.tagging}
+{#if tagging !== null}
+  {@const held = tagging}
   <TagPickerModal
     open
-    picker={panel.selection.picker}
+    picker={selection.picker}
+    rows={pickerRows}
     place={held.place}
     chips={held.tags}
-    onchoose={(row) => void panel.selection.choose(row)}
-    onuntag={(tag) => void panel.selection.drop(held.id, tag)}
-    onclose={() => void restore(panel.closeTags())}
+    onchoose={(row) => void selection.choose(row, writing)}
+    onuntag={(tag) => void view.tagging.removeTag(held.id, tag)}
+    onclose={() => void restore(selection.close())}
     notice={tagNotice}
   />
 {/if}
 
 <Modal
-  open={panel.warning !== null}
+  open={warning !== null}
   title="Delete every capture"
   size="sm"
-  onclose={() => view.clearAll.dismiss()}
+  onclose={() => confirm.dismiss()}
 >
-  <p class="m-0">{panel.warning}</p>
+  <p class="m-0">{warning}</p>
   <BookCapturesExportButton view={view.clearAll.capturesExport} />
   {#snippet footer(close)}
     <Button variant="ghost" onclick={close}>Keep them</Button>
-    <Button variant="danger" onclick={() => void view.clearAll.clear()}>
+    <Button variant="danger" onclick={() => void clearAll()}>
       <Trash class="btn-icon" />
       Delete
     </Button>
