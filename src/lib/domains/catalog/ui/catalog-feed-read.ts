@@ -20,7 +20,6 @@ type FeedActions = {
 type CatalogFeedRead = FeedActions & {
   readonly state: FeedState;
   readonly head: FeedHead | null;
-  readonly held: ReadonlyMap<string, BookOriginLink>;
   readonly covers: ReadonlyMap<string, Blob>;
 };
 
@@ -30,6 +29,7 @@ type ReadyFeed = FeedActions & {
   readonly total: Total;
   readonly more: MoreState<FeedProblem>;
   readonly refreshing: boolean;
+  readonly covers: ReadonlyMap<string, Blob>;
 };
 
 type FeedLock = { readonly refused: boolean };
@@ -44,14 +44,11 @@ const NOTHING_TO_DO = (): void => undefined;
 const LOADING_FEED: CatalogFeedRead = {
   state: { kind: 'loading' },
   head: null,
-  held: new Map(),
   covers: new Map(),
   loadMore: NOTHING_TO_DO,
   refresh: NOTHING_TO_DO,
   reload: NOTHING_TO_DO,
 };
-
-const NO_LISTING: FeedListing = { links: [], publications: [] };
 
 const NO_HELD: ReadonlyMap<string, BookOriginLink> = new Map();
 
@@ -113,6 +110,7 @@ function readyFeedOf(read: CatalogFeedRead): ReadyFeed | null {
     total: state.total,
     more: state.more,
     refreshing: state.refreshing,
+    covers: read.covers,
     loadMore: () => read.loadMore(),
     refresh: () => read.refresh(),
     reload: () => read.reload(),
@@ -138,16 +136,7 @@ function listingOf(entries: readonly FeedEntry[]): FeedListing {
   };
 }
 
-export {
-  LOADING_FEED,
-  NO_LISTING,
-  coverBlobsOf,
-  coverTargetsOf,
-  heldOf,
-  listingOf,
-  lockOf,
-  readyFeedOf,
-};
+export { LOADING_FEED, coverBlobsOf, coverTargetsOf, heldOf, listingOf, lockOf, readyFeedOf };
 export type {
   CatalogFeedRead,
   CoverTarget,

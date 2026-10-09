@@ -6,7 +6,7 @@
   import type { FocusReturn } from '$lib/shared/focus-return';
   import type { BookId } from '$lib/shared/ids';
   import type { RemoteItem } from '../domain/remote-item';
-  import { isSelectable } from './catalog-selection.svelte';
+  import { isSelectable } from './selection-rules';
   import RemoteActions from './RemoteActions.svelte';
 
   type Props = {

@@ -1,22 +1,27 @@
 <script lang="ts">
   import Button from '$lib/ui/components/Button.svelte';
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
-  import type { CatalogBrowseView } from './catalog-browse.svelte';
+  import type { Catalog } from '../domain/catalog';
   import CatalogPasswordModal from './CatalogPasswordModal.svelte';
   import { PASSWORD_NEEDED_TEXT } from './catalog-texts';
+  import { createUnlock } from './unlock.svelte';
 
-  type Props = { readonly view: CatalogBrowseView; readonly refused: boolean };
+  type Props = {
+    readonly catalog: Catalog;
+    readonly refused: boolean;
+    readonly onunlock: (password: string) => void;
+  };
 
-  let { view, refused }: Props = $props();
+  let { catalog, refused, onunlock }: Props = $props();
 
-  let asking = $state(true);
+  const unlock = createUnlock();
 </script>
 
 <EmptyState message={PASSWORD_NEEDED_TEXT}>
   {#snippet action()}
-    <Button variant="primary" onclick={() => (asking = true)}>Enter password</Button>
+    <Button variant="primary" onclick={() => unlock.ask()}>Enter password</Button>
   {/snippet}
 </EmptyState>
-{#if asking}
-  <CatalogPasswordModal {view} {refused} ondismiss={() => (asking = false)} />
+{#if unlock.prompt.kind === 'asking'}
+  <CatalogPasswordModal {catalog} {refused} {onunlock} ondismiss={() => unlock.dismiss()} />
 {/if}

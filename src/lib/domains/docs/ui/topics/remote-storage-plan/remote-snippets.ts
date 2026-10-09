@@ -173,7 +173,7 @@ const OPFS_MOVE: SourceSnippet = {
 
 const SEARCH_DEBOUNCE: SourceSnippet = {
   label: 'The search delay',
-  file: 'src/lib/domains/catalog/ui/catalog-header-search.svelte.ts',
+  file: 'src/lib/domains/catalog/ui/feed-search.svelte.ts',
   code: `const SEARCH_DEBOUNCE_MS = 400;`,
 };
 

@@ -1,125 +1,58 @@
-import type { CatalogId } from '$lib/shared/ids';
-import { sameFeedAddress } from '../domain/catalog-feed';
+import type { FeedSearch } from '../domain/catalog-feed';
 import { DEVICE_TAB } from './library-tabs';
-import { ROOT_POSITION } from './feed-address';
-import type { FeedPosition } from './feed-address';
+import { browserId, started } from './navigation';
+import type { Navigation, NewId, PlaceId } from './navigation';
 import { ALL_FILTER } from './origin-filter';
 import type { OriginFilter } from './origin-filter';
 
-type Trail = { readonly positions: readonly FeedPosition[]; readonly at: number };
-
-type Sought = { readonly position: FeedPosition; readonly before: FeedPosition | null };
-
-const START_OF_TRAIL: Trail = { positions: [ROOT_POSITION], at: 0 };
+type FeedReading =
+  | { readonly kind: 'failed' }
+  | { readonly kind: 'ready'; readonly search: FeedSearch | null };
 
 class CatalogSession {
-  selected = $state<string>(DEVICE_TAB);
+  navigation = $state.raw<Navigation>(started(DEVICE_TAB, browserId));
+  readings = $state.raw<ReadonlyMap<PlaceId, FeedReading>>(new Map());
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
-  queries = $state.raw<ReadonlyMap<CatalogId, string>>(new Map());
-  #trails = new Map<CatalogId, Trail>();
-  #selections = new Map<CatalogId, ReadonlySet<string>>();
-  #scrolls = new Map<CatalogId, number>();
-  #searchOrigins = new Map<CatalogId, FeedPosition>();
+  #selections = new Map<PlaceId, ReadonlySet<string>>();
+  #scrolls = new Map<PlaceId, number>();
 
-  queryOf(id: CatalogId): string {
-    return this.queries.get(id) ?? '';
+  restart(tab: string, newId: NewId = browserId): void {
+    this.navigation = started(tab, newId);
+    this.readings = new Map();
+    this.#selections = new Map();
+    this.#scrolls = new Map();
   }
 
-  type(id: CatalogId, query: string): void {
-    this.queries = new Map(this.queries).set(id, query);
+  keepReading(place: PlaceId, reading: FeedReading): void {
+    this.readings = new Map(this.readings).set(place, reading);
   }
 
-  positionOf(id: CatalogId): FeedPosition {
-    const { positions, at } = this.#trailOf(id);
-    return positions[at] ?? ROOT_POSITION;
+  selectionOf(place: PlaceId): ReadonlySet<string> {
+    return this.#selections.get(place) ?? new Set();
   }
 
-  trailIndexOf(id: CatalogId): number {
-    return this.#trailOf(id).at;
+  keepSelection(place: PlaceId, entryIds: ReadonlySet<string>): void {
+    this.#selections.set(place, entryIds);
   }
 
-  advance(id: CatalogId): void {
-    const { positions, at } = this.#trailOf(id);
-    const here = positions[at] ?? ROOT_POSITION;
-    this.#trails.set(id, { positions: [...positions.slice(0, at + 1), here], at: at + 1 });
+  scrollOf(place: PlaceId): number {
+    return this.#scrolls.get(place) ?? 0;
   }
 
-  ancestorIndexOf(id: CatalogId, ancestor: FeedPosition): number | null {
-    const { positions, at } = this.#trailOf(id);
-    for (let index = at - 1; index >= 0; index -= 1) {
-      const position = positions[index];
-      if (
-        position !== undefined &&
-        position.lookup === null &&
-        position.path.length === ancestor.path.length &&
-        sameFeedAddress(position.address, ancestor.address)
-      ) {
-        return index;
-      }
-    }
-    return null;
+  keepScroll(place: PlaceId, top: number): void {
+    this.#scrolls.set(place, top);
   }
 
-  seek(id: CatalogId, index: number): Sought | null {
-    const { positions } = this.#trailOf(id);
-    const position = positions[index];
-    if (position === undefined) return null;
-    this.#trails.set(id, { positions, at: index });
-    return { position, before: positions[index - 1] ?? null };
-  }
-
-  move(id: CatalogId, position: FeedPosition): void {
-    const { positions, at } = this.#trailOf(id);
-    const next = [...positions];
-    next[at] = position;
-    this.#trails.set(id, { positions: next, at });
-    this.#selections.delete(id);
-    this.#scrolls.delete(id);
-  }
-
-  settle(id: CatalogId, position: FeedPosition): void {
-    const { positions, at } = this.#trailOf(id);
-    const next = [...positions];
-    next[at] = position;
-    this.#trails.set(id, { positions: next, at });
-  }
-
-  searchOriginOf(id: CatalogId): FeedPosition | null {
-    return this.#searchOrigins.get(id) ?? null;
-  }
-
-  keepSearchOrigin(id: CatalogId, position: FeedPosition): void {
-    this.#searchOrigins.set(id, position);
-  }
-
-  dropSearchOrigin(id: CatalogId): void {
-    this.#searchOrigins.delete(id);
-  }
-
-  selectionOf(id: CatalogId): ReadonlySet<string> {
-    return this.#selections.get(id) ?? new Set();
-  }
-
-  keepSelection(id: CatalogId, entryIds: ReadonlySet<string>): void {
-    this.#selections.set(id, entryIds);
-  }
-
-  keepScroll(id: CatalogId, top: number): void {
-    this.#scrolls.set(id, top);
-  }
-
-  takeScroll(id: CatalogId): number {
-    const top = this.#scrolls.get(id) ?? 0;
-    this.#scrolls.delete(id);
-    return top;
-  }
-
-  #trailOf(id: CatalogId): Trail {
-    return this.#trails.get(id) ?? START_OF_TRAIL;
+  forgetPlace(place: PlaceId): void {
+    this.#selections.delete(place);
+    this.#scrolls.delete(place);
+    const next = new Map(this.readings);
+    next.delete(place);
+    this.readings = next;
   }
 }
 
 const catalogSession = new CatalogSession();
 
 export { CatalogSession, catalogSession };
-export type { Sought };
+export type { FeedReading };

@@ -1,103 +1,50 @@
 import { describe, expect, it } from 'vitest';
-import { catalogId } from '$lib/shared/ids';
-import { feedAddress } from '../domain/catalog-feed-fixtures';
 import { CatalogSession } from './catalog-session.svelte';
-import { ROOT_POSITION, opened } from './feed-address';
+import { DEVICE_TAB } from './library-tabs';
 
-const ID = catalogId('home');
-const DEEP = opened(ROOT_POSITION, {
-  title: 'By Series',
-  address: feedAddress('https://home.test/series'),
-});
-const DEEPER = opened(DEEP, { title: 'Star', address: feedAddress('https://home.test/star') });
-
-describe('CatalogSession feed trail', () => {
-  it('starts at the root with the first trail index', () => {
+describe('CatalogSession', () => {
+  it('starts at the root of the device tab', () => {
     const session = new CatalogSession();
-    expect(session.positionOf(ID)).toBe(ROOT_POSITION);
-    expect(session.trailIndexOf(ID)).toBe(0);
+
+    expect(session.navigation.current.tab).toBe(DEVICE_TAB);
   });
 
-  it('moves the current entry in place', () => {
+  it('remembers a selection and a scroll position for each place', () => {
     const session = new CatalogSession();
-    session.move(ID, DEEP);
-    expect(session.positionOf(ID)).toBe(DEEP);
-    expect(session.trailIndexOf(ID)).toBe(0);
+
+    session.keepSelection('p1', new Set(['a']));
+    session.keepScroll('p1', 320);
+
+    expect([...session.selectionOf('p1')]).toEqual(['a']);
+    expect(session.scrollOf('p1')).toBe(320);
+    expect(session.selectionOf('p2').size).toBe(0);
+    expect(session.scrollOf('p2')).toBe(0);
   });
 
-  it('keeps the position left behind when it advances', () => {
+  it('forgets what it kept for one place and leaves the others', () => {
     const session = new CatalogSession();
-    session.advance(ID);
-    session.move(ID, DEEP);
-    expect(session.trailIndexOf(ID)).toBe(1);
-    expect(session.seek(ID, 0)?.position).toBe(ROOT_POSITION);
+    session.keepSelection('p1', new Set(['a']));
+    session.keepScroll('p1', 320);
+    session.keepSelection('p2', new Set(['b']));
+    session.keepReading('p1', { kind: 'failed' });
+
+    session.forgetPlace('p1');
+
+    expect(session.selectionOf('p1').size).toBe(0);
+    expect(session.scrollOf('p1')).toBe(0);
+    expect(session.readings.has('p1')).toBe(false);
+    expect([...session.selectionOf('p2')]).toEqual(['b']);
   });
 
-  it('seeks an earlier entry and reports the one before it', () => {
+  it('forgets everything it kept when it restarts', () => {
     const session = new CatalogSession();
-    session.advance(ID);
-    session.move(ID, DEEP);
-    session.advance(ID);
-    session.move(ID, DEEPER);
-    expect(session.seek(ID, 1)).toEqual({ position: DEEP, before: ROOT_POSITION });
-    expect(session.positionOf(ID)).toBe(DEEP);
-    expect(session.trailIndexOf(ID)).toBe(1);
-  });
+    session.keepSelection('p1', new Set(['a']));
+    session.keepReading('p1', { kind: 'failed' });
 
-  it('seeks a later entry after seeking an earlier one', () => {
-    const session = new CatalogSession();
-    session.advance(ID);
-    session.move(ID, DEEP);
-    session.seek(ID, 0);
-    expect(session.seek(ID, 1)?.position).toBe(DEEP);
-  });
+    session.restart('home');
 
-  it('drops the entries after the current one when it advances', () => {
-    const session = new CatalogSession();
-    session.advance(ID);
-    session.move(ID, DEEP);
-    session.seek(ID, 0);
-    session.advance(ID);
-    expect(session.seek(ID, 2)).toBeNull();
-    expect(session.trailIndexOf(ID)).toBe(1);
-  });
-
-  it('seeks nothing outside the trail and stays where it is', () => {
-    const session = new CatalogSession();
-    session.move(ID, DEEP);
-    expect(session.seek(ID, 3)).toBeNull();
-    expect(session.seek(ID, -1)).toBeNull();
-    expect(session.positionOf(ID)).toBe(DEEP);
-  });
-  it('forgets the selection and the scroll position when another feed opens', () => {
-    const session = new CatalogSession();
-    session.keepSelection(ID, new Set(['a']));
-    session.keepScroll(ID, 640);
-
-    session.move(ID, DEEP);
-
-    expect(session.selectionOf(ID).size).toBe(0);
-    expect(session.takeScroll(ID)).toBe(0);
-  });
-
-  it('keeps the selection and the scroll position when a loaded feed settles its position', () => {
-    const session = new CatalogSession();
-    session.keepSelection(ID, new Set(['a']));
-    session.keepScroll(ID, 640);
-
-    session.settle(ID, DEEP);
-
-    expect(session.positionOf(ID)).toBe(DEEP);
-    expect(session.trailIndexOf(ID)).toBe(0);
-    expect(session.selectionOf(ID).has('a')).toBe(true);
-    expect(session.takeScroll(ID)).toBe(640);
-  });
-
-  it('gives the scroll position once', () => {
-    const session = new CatalogSession();
-    session.keepScroll(ID, 640);
-
-    expect(session.takeScroll(ID)).toBe(640);
-    expect(session.takeScroll(ID)).toBe(0);
+    expect(session.navigation.current.tab).toBe('home');
+    expect(session.selectionOf('p1').size).toBe(0);
+    expect(session.readings.size).toBe(0);
   });
 });

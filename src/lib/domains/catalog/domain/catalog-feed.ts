@@ -42,11 +42,6 @@ function addressKey(address: FeedAddress): string {
   return address.handle;
 }
 
-function sameFeedAddress(left: FeedAddress | null, right: FeedAddress | null): boolean {
-  if (left === null || right === null) return left === right;
-  return addressKey(left) === addressKey(right);
-}
-
 function linksOf(entries: readonly FeedEntry[]): readonly NavigationLink[] {
   return entries.flatMap((entry) => (entry.kind === 'link' ? [entry.link] : []));
 }
@@ -55,7 +50,7 @@ function publicationsOf(entries: readonly FeedEntry[]): readonly RemotePublicati
   return entries.flatMap((entry) => (entry.kind === 'publication' ? [entry.publication] : []));
 }
 
-export { ROOT_LOCATION, addressKey, linksOf, publicationsOf, sameFeedAddress };
+export { ROOT_LOCATION, addressKey, linksOf, publicationsOf };
 export type {
   FeedAddress,
   FeedEntry,

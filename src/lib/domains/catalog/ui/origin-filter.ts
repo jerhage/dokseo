@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
-import type { CatalogId } from '$lib/shared/ids';
+import type { BookId, CatalogId } from '$lib/shared/ids';
 import type { Catalog } from '../domain/catalog';
+import type { OriginsListed } from './catalog-list';
 
 type OriginFilter =
   | { readonly kind: 'all' }
@@ -65,8 +66,26 @@ function matchesFilter(filter: OriginFilter, owner: CatalogId | null): boolean {
     .exhaustive();
 }
 
+function ownerOf(listed: OriginsListed, id: BookId): CatalogId | null {
+  const owner = listed.owners.get(id);
+  if (owner === undefined) return null;
+  return listed.catalogs.some((catalog) => catalog.id === owner) ? owner : null;
+}
+
+function badgeFor(listed: OriginsListed, id: BookId): string | null {
+  const owner = ownerOf(listed, id);
+  return listed.catalogs.find((catalog) => catalog.id === owner)?.title ?? null;
+}
+
+function matches(filter: OriginFilter, listed: OriginsListed, id: BookId): boolean {
+  return matchesFilter(shownFilter(filter, listed.catalogs), ownerOf(listed, id));
+}
+
 export {
   ALL_FILTER,
+  badgeFor,
+  matches,
+  ownerOf,
   FILES_LABEL,
   FILTER_LABEL,
   filterOptions,

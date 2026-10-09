@@ -1,10 +1,6 @@
 import { catalogId } from '$lib/shared/ids';
-import { unknownTotal } from '$lib/shared/read-paged-state';
 import type { Catalog } from '../domain/catalog';
-import type { FeedPage } from '../domain/catalog-feed';
 import type { RemotePublication } from '../domain/remote-publication';
-import { LOADING_FEED } from './catalog-feed-read';
-import type { CatalogFeedRead } from './catalog-feed-read';
 
 const HOME: Catalog = {
   id: catalogId('home'),
@@ -46,19 +42,4 @@ function publication(
   };
 }
 
-function readyRead(page: FeedPage, overrides: Partial<CatalogFeedRead> = {}): CatalogFeedRead {
-  return {
-    ...LOADING_FEED,
-    state: {
-      kind: 'ready',
-      items: page.items,
-      total: unknownTotal(),
-      refreshing: false,
-      more: { kind: 'end' },
-    },
-    head: page,
-    ...overrides,
-  };
-}
-
-export { ARCHIVE, HOME, publication, readyRead };
+export { ARCHIVE, HOME, publication };

@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
-import { LOADING, readReady } from '$lib/shared/read-state';
-import type { ReadState } from '$lib/shared/read-state';
+import { readReady } from '$lib/shared/read-state';
 import type { BookOrigin } from '../domain/book-origin';
 import type { ListCatalogsResult } from '../use-cases/list-catalogs';
 import type { ListOriginsResult } from '../use-cases/list-origins';
-import { CatalogSession } from './catalog-session.svelte';
+import { listedOrigins } from './catalog-list';
 import { ARCHIVE, HOME } from './catalog-ui-fixtures';
-import { OriginFilterView } from './origin-filter.svelte';
-import { filterOptions, parsedFilter, shownFilter } from './origin-filter';
+import { createOriginFilter } from './origin-filter.svelte';
+import {
+  ALL_FILTER,
+  badgeFor,
+  filterOptions,
+  matches,
+  parsedFilter,
+  shownFilter,
+  sourceText,
+} from './origin-filter';
 
 function origin(book: string, owner: BookOrigin['catalogId']): BookOrigin {
   return {
@@ -23,11 +30,8 @@ function origin(book: string, owner: BookOrigin['catalogId']): BookOrigin {
   };
 }
 
-function setup(catalogs: ListCatalogsResult, origins: ListOriginsResult) {
-  const answers = { catalogs, origins };
-  const session = new CatalogSession();
-  const view = new OriginFilterView(session, () => readReady(answers));
-  return { view, session, answers };
+function listing(catalogs: ListCatalogsResult, origins: ListOriginsResult) {
+  return listedOrigins(readReady({ catalogs, origins }));
 }
 
 const TWO: ListCatalogsResult = { kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] };
@@ -72,97 +76,95 @@ describe('shownFilter', () => {
   });
 });
 
-describe('OriginFilterView', () => {
-  it('stays hidden while the lists are being read', () => {
-    const loading: ReadState<never> = LOADING;
-    const view = new OriginFilterView(new CatalogSession(), () => loading);
-    expect(view.visible).toBe(false);
-    expect(view.badgeFor(FROM_HOME)).toBeNull();
+describe('badgeFor', () => {
+  it('names the catalog a downloaded book came from and nothing for a file', () => {
+    const listed = listing(TWO, DOWNLOADS);
+
+    expect(badgeFor(listed, FROM_HOME)).toBe('Home');
+    expect(badgeFor(listed, FILE)).toBeNull();
   });
 
-  it('stays hidden while there are no catalogs', async () => {
-    const { view } = setup({ kind: 'success', catalogs: [], unreadable: [] }, DOWNLOADS);
-    expect(view.visible).toBe(false);
+  it('ignores an origin whose catalog is gone', () => {
+    const listed = listing({ kind: 'success', catalogs: [ARCHIVE], unreadable: [] }, DOWNLOADS);
+
+    expect(badgeFor(listed, FROM_HOME)).toBeNull();
+    expect(sourceText(badgeFor(listed, FROM_HOME))).toBe('Added from files');
   });
 
-  it('stays hidden when nothing can be listed', async () => {
-    const { view } = setup({ kind: 'storage-unavailable' }, { kind: 'storage-unavailable' });
-    expect(view.visible).toBe(false);
+  it('words the source of a book as downloaded from its catalog or added from files', () => {
+    expect(sourceText('Home')).toBe('Downloaded from Home');
+    expect(sourceText(null)).toBe('Added from files');
+  });
+});
+
+describe('matches', () => {
+  const listed = listing(TWO, DOWNLOADS);
+
+  it('keeps every book while the filter is All', () => {
+    for (const id of [FILE, FROM_HOME, FROM_ARCHIVE]) {
+      expect(matches(ALL_FILTER, listed, id)).toBe(true);
+    }
   });
 
-  it('names the catalog a downloaded book came from and nothing for a file', async () => {
-    const { view } = setup(TWO, DOWNLOADS);
-    expect(view.visible).toBe(true);
-    expect(view.badgeFor(FROM_HOME)).toBe('Home');
-    expect(view.badgeFor(FROM_ARCHIVE)).toBe('Archive');
-    expect(view.badgeFor(FILE)).toBeNull();
+  it('keeps only the books added from files', () => {
+    const files = { kind: 'files' } as const;
+
+    expect(matches(files, listed, FILE)).toBe(true);
+    expect(matches(files, listed, FROM_HOME)).toBe(false);
   });
 
-  it('words the source of a book as downloaded from its catalog or added from files', async () => {
-    const { view } = setup(TWO, DOWNLOADS);
-    expect(view.sourceFor(FROM_HOME)).toBe('Downloaded from Home');
-    expect(view.sourceFor(FILE)).toBe('Added from files');
+  it('keeps only the books of the chosen catalog', () => {
+    const home = { kind: 'catalog', catalogId: HOME.id } as const;
+
+    expect(matches(home, listed, FROM_HOME)).toBe(true);
+    expect(matches(home, listed, FROM_ARCHIVE)).toBe(false);
+    expect(matches(home, listed, FILE)).toBe(false);
   });
 
-  it('keeps every book while the filter is All', async () => {
-    const { view } = setup(TWO, DOWNLOADS);
-    expect([FILE, FROM_HOME, FROM_ARCHIVE].map((id) => view.matches(id))).toEqual([
-      true,
-      true,
-      true,
-    ]);
-  });
-
-  it('keeps only the books added from files', async () => {
-    const { view } = setup(TWO, DOWNLOADS);
-    view.choose('files');
-    expect(view.value).toBe('files');
-    expect([FILE, FROM_HOME, FROM_ARCHIVE].map((id) => view.matches(id))).toEqual([
-      true,
-      false,
-      false,
-    ]);
-  });
-
-  it('keeps only the books of the chosen catalog', async () => {
-    const { view } = setup(TWO, DOWNLOADS);
-    view.choose(filterOptions([HOME, ARCHIVE])[3]?.value ?? '');
-    expect([FILE, FROM_HOME, FROM_ARCHIVE].map((id) => view.matches(id))).toEqual([
-      false,
-      false,
-      true,
-    ]);
-  });
-
-  it('ignores an origin whose catalog is gone and counts its book as added from files', async () => {
-    const { view } = setup({ kind: 'success', catalogs: [HOME], unreadable: [] }, DOWNLOADS);
-    expect(view.badgeFor(FROM_ARCHIVE)).toBeNull();
-    view.choose('files');
-    expect(view.matches(FROM_ARCHIVE)).toBe(true);
-    expect(view.matches(FROM_HOME)).toBe(false);
-  });
-
-  it('shows all again when the chosen catalog is removed', async () => {
-    const { view, answers } = setup(TWO, DOWNLOADS);
-    view.choose(filterOptions([HOME, ARCHIVE])[3]?.value ?? '');
-    answers.catalogs = { kind: 'success', catalogs: [HOME], unreadable: [] };
-    expect(view.value).toBe('all');
-    expect(view.matches(FILE)).toBe(true);
-  });
-
-  it('picks up a new download after a refresh', async () => {
-    const { view, answers } = setup(TWO, { kind: 'success', origins: [], unreadable: [] });
-    expect(view.badgeFor(FROM_HOME)).toBeNull();
-    answers.origins = DOWNLOADS;
-    expect(view.badgeFor(FROM_HOME)).toBe('Home');
-  });
-
-  it('keeps the chosen filter across views of one session', async () => {
-    const { view, session } = setup(TWO, DOWNLOADS);
-    view.choose('files');
-    const next = new OriginFilterView(session, () =>
-      readReady({ catalogs: TWO, origins: DOWNLOADS }),
+  it('counts the book of a removed catalog as added from files', () => {
+    const afterRemoval = listing(
+      { kind: 'success', catalogs: [ARCHIVE], unreadable: [] },
+      DOWNLOADS,
     );
-    expect(next.value).toBe('files');
+
+    expect(matches({ kind: 'files' }, afterRemoval, FROM_HOME)).toBe(true);
+  });
+
+  it('shows all again when the chosen catalog is removed', () => {
+    const afterRemoval = listing(
+      { kind: 'success', catalogs: [ARCHIVE], unreadable: [] },
+      DOWNLOADS,
+    );
+
+    expect(matches({ kind: 'catalog', catalogId: HOME.id }, afterRemoval, FILE)).toBe(true);
+  });
+
+  it('keeps every book while nothing could be listed', () => {
+    const nothing = listing({ kind: 'storage-unavailable' }, { kind: 'storage-unavailable' });
+
+    expect(matches(ALL_FILTER, nothing, FILE)).toBe(true);
+  });
+});
+
+describe('createOriginFilter', () => {
+  it('starts on All', () => {
+    expect(createOriginFilter().chosen).toEqual({ kind: 'all' });
+  });
+
+  it('keeps the raw choice and hands it to the one that remembers it', () => {
+    const kept: unknown[] = [];
+    const filter = createOriginFilter(undefined, (chosen) => kept.push(chosen));
+    const [, , home] = filterOptions([HOME]);
+
+    filter.choose(home?.value ?? '', [HOME]);
+
+    expect(filter.chosen).toEqual({ kind: 'catalog', catalogId: HOME.id });
+    expect(kept).toEqual([{ kind: 'catalog', catalogId: HOME.id }]);
+  });
+
+  it('starts from a remembered choice', () => {
+    const filter = createOriginFilter({ kind: 'files' });
+
+    expect(filter.chosen).toEqual({ kind: 'files' });
   });
 });

@@ -4,16 +4,17 @@
   import Field from '$lib/ui/components/Field.svelte';
   import Input from '$lib/ui/components/Input.svelte';
   import Modal from '$lib/ui/components/Modal.svelte';
-  import type { CatalogBrowseView } from './catalog-browse.svelte';
+  import type { Catalog } from '../domain/catalog';
   import { UNAUTHORIZED_TEXT } from './catalog-texts';
 
   type Props = {
-    readonly view: CatalogBrowseView;
+    readonly catalog: Catalog;
     readonly refused: boolean;
+    readonly onunlock: (password: string) => void;
     readonly ondismiss: () => void;
   };
 
-  let { view, refused, ondismiss }: Props = $props();
+  let { catalog, refused, onunlock, ondismiss }: Props = $props();
 
   const uid = $props.id();
   const formId = `${uid}-form`;
@@ -24,17 +25,11 @@
   function submit(event: SubmitEvent): void {
     event.preventDefault();
     if (password === '') return;
-    view.unlock(password);
+    onunlock(password);
   }
 </script>
 
-<Modal
-  bind:open
-  title="Password for {view.catalog.title}"
-  size="sm"
-  sheetNarrow
-  onclose={ondismiss}
->
+<Modal bind:open title="Password for {catalog.title}" size="sm" sheetNarrow onclose={ondismiss}>
   <form id={formId} class="stack-md" onsubmit={submit}>
     {#if refused}
       <Alert variant="warning" aria-live="polite">{UNAUTHORIZED_TEXT}</Alert>

@@ -1,7 +1,7 @@
 declare global {
   namespace App {
     interface PageState {
-      library?: import('$lib/domains/catalog/ui/library-history').LibraryHistoryState;
+      library?: import('$lib/domains/catalog/ui/navigation').HistoryState;
     }
   }
 

@@ -1,16 +1,17 @@
 <script lang="ts">
   import Badge from '$lib/ui/components/Badge.svelte';
   import type { BookId } from '$lib/shared/ids';
-  import type { OriginFilterView } from './origin-filter.svelte';
+  import type { OriginsListed } from './catalog-list';
+  import { badgeFor } from './origin-filter';
 
   type Props = {
-    readonly view: OriginFilterView;
+    readonly listed: OriginsListed;
     readonly id: BookId;
   };
 
-  let { view, id }: Props = $props();
+  let { listed, id }: Props = $props();
 
-  const catalog = $derived(view.badgeFor(id));
+  const catalog = $derived(badgeFor(listed, id));
 </script>
 
 {#if catalog !== null}

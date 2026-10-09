@@ -1,64 +1,58 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import Breadcrumb from '$lib/ui/components/Breadcrumb.svelte';
-  import type { BookId } from '$lib/shared/ids';
-  import type { CoverReads, FeedReads, HeldReads } from '../queries/catalog-feed-queries';
-  import type { HeaderField } from './catalog-search';
-  import type { CatalogBrowseView } from './catalog-browse.svelte';
-  import { LOADING_FEED } from './catalog-feed-read';
-  import CatalogFeedData from './CatalogFeedData.svelte';
-  import CatalogFeedLinks from './CatalogFeedLinks.svelte';
-  import CatalogMore from './CatalogMore.svelte';
-  import CatalogPublications from './CatalogPublications.svelte';
+  import type { Catalog } from '../domain/catalog';
+  import type { BookOriginLink } from '../domain/remote-item';
+  import { useCatalogDeps } from './catalog-context';
+  import { CatalogDownloads } from './catalog-downloads.svelte';
+  import { searchFieldFor } from './catalog-search-field';
+  import CatalogPlace from './CatalogPlace.svelte';
   import CatalogSearchField from './CatalogSearchField.svelte';
-  import CatalogUnlock from './CatalogUnlock.svelte';
-  import { scrollMemory } from './scroll-memory';
+  import { forgetDangling } from './dangling-origins';
 
   type Props = {
-    readonly view: CatalogBrowseView;
-    readonly feeds: FeedReads & CoverReads & HeldReads;
-    readonly search: HeaderField;
-    readonly readerHref: (id: BookId) => string;
+    readonly catalog: Catalog;
+    readonly held: ReadonlyMap<string, BookOriginLink> | null;
   };
 
-  let { view, feeds, search, readerHref }: Props = $props();
+  let { catalog, held }: Props = $props();
 
-  let feedData = $state<ReturnType<typeof CatalogFeedData> | null>(null);
+  const deps = useCatalogDeps();
+
+  const downloads = new CatalogDownloads(
+    deps.cases,
+    deps.choices,
+    {
+      describeOpenFile: deps.describeOpenFile,
+      downloaded: deps.downloaded,
+      updated: deps.updated,
+    },
+    () => held ?? new Map(),
+  );
+
+  const place = $derived(deps.navigation.placeOf(catalog.id));
+  const crumbs = $derived(
+    deps.navigation.crumbs(catalog.id, catalog.title).map(({ label, place: target }) => ({
+      label,
+      onselect: () => deps.navigation.goTo(target),
+    })),
+  );
+  const field = $derived(searchFieldFor(catalog, deps));
 
   onMount(() => {
-    view.start();
-    return view.bindFeed(() => feedData?.read() ?? LOADING_FEED);
+    void forgetDangling(deps.cases, catalog.id, deps.refreshOrigins);
   });
+
+  onDestroy(() => downloads.dispose());
 </script>
 
-<div class="col gap-4" {@attach scrollMemory((scroller) => view.bindScroller(scroller))}>
-  <CatalogSearchField field={search} />
-  <Breadcrumb items={view.crumbs} label="Catalog path" />
+<div class="col gap-4">
+  <CatalogSearchField {field} />
+  <Breadcrumb items={crumbs} label="Catalog path" />
 
-  {#key view.readingKey}
-    <CatalogFeedData
-      bind:this={feedData}
-      catalog={view.catalog}
-      cases={feeds}
-      location={view.reading}
-      path={view.position.path}
-      onhead={(head) => view.headLoaded(head)}
-    >
-      {#snippet locked(lock)}
-        <CatalogUnlock {view} refused={lock.refused} />
-      {/snippet}
-      {#snippet children(feed)}
-        {#if feed.head.kind === 'navigation'}
-          <CatalogFeedLinks
-            label={feed.head.title}
-            links={view.links}
-            onopen={(link) => view.openLink(link)}
-          />
-        {:else}
-          <CatalogPublications {view} publications={view.entries} {readerHref} />
-        {/if}
-        <CatalogMore more={feed.more} protocol={view.catalog.protocol} onmore={feed.loadMore} />
-      {/snippet}
-    </CatalogFeedData>
-  {/key}
+  {#if place !== null}
+    {#key `${place.id}:${JSON.stringify(place.location)}`}
+      <CatalogPlace {catalog} placeId={place.id} {downloads} {held} />
+    {/key}
+  {/if}
 </div>

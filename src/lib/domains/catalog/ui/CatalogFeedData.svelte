@@ -5,8 +5,8 @@
   import Button from '$lib/ui/components/Button.svelte';
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import { readPagedQuery } from '$lib/shared/read-paged-query.svelte';
-  import { readQuery } from '$lib/shared/read-query.svelte';
   import type { Catalog } from '../domain/catalog';
+  import type { BookOriginLink } from '../domain/remote-item';
   import { publicationsOf } from '../domain/catalog-feed';
   import type {
     FeedEntry,
@@ -18,7 +18,6 @@
   import {
     catalogCoverQuery,
     catalogFeedQuery,
-    heldOriginsQuery,
     totalOfPages,
   } from '../queries/catalog-feed-queries';
   import type {
@@ -27,23 +26,24 @@
     FeedPageParam,
     FeedProblem,
     FeedReads,
-    HeldReads,
   } from '../queries/catalog-feed-queries';
   import { feedProblemText } from './catalog-texts';
-  import { coverBlobsOf, coverTargetsOf, heldOf, lockOf, readyFeedOf } from './catalog-feed-read';
+  import { coverBlobsOf, coverTargetsOf, lockOf, readyFeedOf } from './catalog-feed-read';
   import type { CatalogFeedRead, FeedLock, ReadyFeed } from './catalog-feed-read';
+  import type { FeedReport } from './feed-report';
 
   type Props = {
     readonly catalog: Catalog;
-    readonly cases: FeedReads & CoverReads & HeldReads;
+    readonly cases: FeedReads & CoverReads;
     readonly location: FeedLocation;
     readonly path: readonly TrailStep[];
-    readonly onhead: (head: FeedHead) => void;
-    readonly locked: Snippet<[FeedLock]>;
+    readonly held: ReadonlyMap<string, BookOriginLink> | null;
+    readonly onreport: (report: FeedReport) => void;
+    readonly locked: Snippet<[FeedLock, () => void]>;
     readonly children: Snippet<[ReadyFeed]>;
   };
 
-  let { catalog, cases, location, path, onhead, locked, children }: Props = $props();
+  let { catalog, cases, location, path, held, onreport, locked, children }: Props = $props();
 
   let announcement = $state('');
 
@@ -59,7 +59,6 @@
       },
     },
   );
-  const held = readQuery(() => heldOriginsQuery(cases, catalog.id));
   const first = $derived(feed.pages[0] ?? null);
   const publications = $derived(
     feed.state.kind === 'ready' ? publicationsOf(feed.state.items) : [],
@@ -72,30 +71,26 @@
   const current: CatalogFeedRead = $derived({
     state: feed.state,
     head: first,
-    held: heldOf(held.state),
     covers: coverBlobsOf(publications, targets, coverReads),
     loadMore: () => feed.loadMore(),
     refresh: () => feed.refresh(),
     reload: () => feed.reload(),
   });
   const lock = $derived(lockOf(feed.state));
-  const ready = $derived(held.state.kind === 'loading' ? null : readyFeedOf(current));
+  const ready = $derived(held === null ? null : readyFeedOf(current));
 
-  let reported: FeedHead | null = null;
+  let reported: FeedHead | 'failed' | null = null;
 
   $effect(() => {
-    if (first === null || first === reported) return;
-    reported = first;
-    onhead(first);
+    const next = first ?? (feed.state.kind === 'failed' ? 'failed' : null);
+    if (next === null || next === reported) return;
+    reported = next;
+    onreport(next === 'failed' ? { kind: 'failed' } : { kind: 'ready', head: next });
   });
-
-  export function read(): CatalogFeedRead {
-    return current;
-  }
 </script>
 
 {#if lock !== null}
-  {@render locked(lock)}
+  {@render locked(lock, () => feed.reload())}
 {:else if feed.state.kind === 'failed'}
   <Alert variant="warning" title="This catalog could not be read.">
     {feedProblemText(feed.state.failure, catalog.protocol)}
