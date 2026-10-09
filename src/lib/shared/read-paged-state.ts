@@ -34,9 +34,9 @@ type PagedFlags = {
   readonly hasNextPage: boolean;
 };
 
-type PagedData<Item, Cursor> = { readonly pages: readonly Page<Item, Cursor>[] };
+type PagedData<P> = { readonly pages: readonly P[] };
 
-type PagedSnapshot<Item, Cursor> = PagedFlags &
+type PagedSnapshot<Item, Cursor, P extends Page<Item, Cursor> = Page<Item, Cursor>> = PagedFlags &
   (
     | { readonly status: 'pending' }
     | { readonly status: 'error'; readonly isLoadingError: true; readonly error: unknown }
@@ -44,12 +44,14 @@ type PagedSnapshot<Item, Cursor> = PagedFlags &
         readonly status: 'error';
         readonly isLoadingError: false;
         readonly error: unknown;
-        readonly data: PagedData<Item, Cursor>;
+        readonly data: PagedData<P>;
       }
-    | { readonly status: 'success'; readonly data: PagedData<Item, Cursor> }
+    | { readonly status: 'success'; readonly data: PagedData<P> }
   );
 
-type TotalOf<Item, Cursor> = (pages: readonly Page<Item, Cursor>[]) => Total;
+type TotalOf<Item, Cursor, P extends Page<Item, Cursor> = Page<Item, Cursor>> = (
+  pages: readonly P[],
+) => Total;
 
 type PagedTexts<Failure> = {
   showing(shown: number, total: Total): string;
@@ -88,24 +90,24 @@ function moreOf<Failure>(flags: PagedFlags, error: unknown): MoreState<Failure> 
     .exhaustive();
 }
 
-function readyOf<Item, Cursor, Failure>(
+function readyOf<Item, Cursor, Failure, P extends Page<Item, Cursor>>(
   flags: PagedFlags,
-  data: PagedData<Item, Cursor>,
+  data: PagedData<P>,
   error: unknown,
-  totalOf: TotalOf<Item, Cursor>,
+  totalOf: TotalOf<Item, Cursor, P>,
 ): PagedReadState<Item, Failure> {
   return {
     kind: 'ready',
-    items: itemsOf(data.pages),
+    items: itemsOf<Item, Cursor>(data.pages),
     total: totalOf(data.pages),
     refreshing: flags.isFetching && !flags.isFetchingNextPage,
     more: moreOf<Failure>(flags, error),
   };
 }
 
-function pagedReadStateOf<Item, Cursor, Failure>(
-  snapshot: PagedSnapshot<Item, Cursor>,
-  totalOf: TotalOf<Item, Cursor> = unknownTotal,
+function pagedReadStateOf<Item, Cursor, Failure, P extends Page<Item, Cursor> = Page<Item, Cursor>>(
+  snapshot: PagedSnapshot<Item, Cursor, P>,
+  totalOf: TotalOf<Item, Cursor, P> = unknownTotal,
 ): PagedReadState<Item, Failure> {
   return match(snapshot)
     .returnType<PagedReadState<Item, Failure>>()
@@ -115,10 +117,10 @@ function pagedReadStateOf<Item, Cursor, Failure>(
       failure: problemOf<Failure>(error),
     }))
     .with({ status: 'error', isLoadingError: false }, ({ data, error }) =>
-      readyOf<Item, Cursor, Failure>(snapshot, data, error, totalOf),
+      readyOf<Item, Cursor, Failure, P>(snapshot, data, error, totalOf),
     )
     .with({ status: 'success' }, ({ data }) =>
-      readyOf<Item, Cursor, Failure>(snapshot, data, undefined, totalOf),
+      readyOf<Item, Cursor, Failure, P>(snapshot, data, undefined, totalOf),
     )
     .exhaustive();
 }

@@ -193,4 +193,21 @@ describe('readPagedQuery', () => {
       expect(query.paged.state).toMatchObject({ total: { kind: 'known', count: 7 } }),
     );
   });
+  it('keeps the extra fields of a page and lets the total read them', async () => {
+    type Headed = Page<string, number> & { readonly heading: string; readonly count: number };
+    const client = createTestQueryClient();
+    const paged = readPagedQuery<string, number, Missing, Headed>(
+      () => ({
+        queryKey: ['headed'],
+        initialPageParam: 0,
+        getNextPageParam: (page) => page.next,
+        queryFn: () => Promise.resolve({ items: ['a'], next: null, heading: 'Books', count: 9 }),
+      }),
+      { totalOf: (pages) => knownTotal(pages[0]?.count ?? 0) },
+      () => client,
+    );
+
+    await vi.waitFor(() => expect(paged.pages.map((page) => page.heading)).toEqual(['Books']));
+    expect(paged.state).toMatchObject({ total: { kind: 'known', count: 9 } });
+  });
 });

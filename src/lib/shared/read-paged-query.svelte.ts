@@ -18,34 +18,35 @@ type PagedAnnouncements<Failure> = {
   showing?(shown: number, total: Total): string;
 };
 
-type PagedSettings<Item, Cursor, Failure> = {
-  readonly totalOf?: TotalOf<Item, Cursor>;
+type PagedSettings<Item, Cursor, Failure, P extends Page<Item, Cursor> = Page<Item, Cursor>> = {
+  readonly totalOf?: TotalOf<Item, Cursor, P>;
   readonly announcements?: PagedAnnouncements<Failure>;
 };
 
-interface ReadPagedQuery<Item, Failure> {
+interface ReadPagedQuery<Item, Failure, P = Page<Item, unknown>> {
   readonly state: PagedReadState<Item, Failure>;
+  readonly pages: readonly P[];
   loadMore(): void;
   refresh(): void;
   reload(): void;
 }
 
-function readPagedQuery<Item, Cursor, Failure, K extends QueryKey = QueryKey>(
+function readPagedQuery<
+  Item,
+  Cursor,
+  Failure,
+  P extends Page<Item, Cursor> = Page<Item, Cursor>,
+  K extends QueryKey = QueryKey,
+>(
   options: Accessor<
-    CreateInfiniteQueryOptions<
-      Page<Item, Cursor>,
-      DefaultError,
-      InfiniteData<Page<Item, Cursor>, Cursor>,
-      K,
-      Cursor
-    >
+    CreateInfiniteQueryOptions<P, DefaultError, InfiniteData<P, Cursor>, K, Cursor>
   >,
-  settings: PagedSettings<Item, Cursor, Failure> = {},
+  settings: PagedSettings<Item, Cursor, Failure, P> = {},
   client?: Accessor<QueryClient>,
-): ReadPagedQuery<Item, Failure> {
+): ReadPagedQuery<Item, Failure, P> {
   const query = createInfiniteQuery(options, client);
   const totalOf = settings.totalOf ?? unknownTotal;
-  const state = $derived(pagedReadStateOf<Item, Cursor, Failure>(query, totalOf));
+  const state = $derived(pagedReadStateOf<Item, Cursor, Failure, P>(query, totalOf));
   const announcements = settings.announcements;
 
   if (announcements !== undefined) {
@@ -61,6 +62,9 @@ function readPagedQuery<Item, Cursor, Failure, K extends QueryKey = QueryKey>(
   return {
     get state() {
       return state;
+    },
+    get pages() {
+      return query.data?.pages ?? [];
     },
     loadMore() {
       const current = state;
