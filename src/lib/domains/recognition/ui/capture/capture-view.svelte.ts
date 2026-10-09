@@ -1,5 +1,4 @@
 import type { QueryClient } from '@tanstack/svelte-query';
-import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
@@ -10,7 +9,6 @@ import type { Notify } from '$lib/shared/notice';
 import type { PageSource } from '$lib/shared/page-source';
 import { CaptureCache } from './capture-cache';
 import { CardDrafts } from './card-drafts.svelte';
-import { NOTHING_READ } from './nothing-read';
 import { CaptureEdits } from './capture-edits.svelte';
 import { CaptureList } from './capture-list.svelte';
 import type { CaptureListing } from './capture-read';
@@ -19,54 +17,12 @@ import { CaptureRemoval } from './capture-removal.svelte';
 import { CaptureTags } from './capture-tags.svelte';
 import { ClearAll } from './clear-all.svelte';
 import type { Settled } from './panel-capture';
+import { settlementOf } from './recognition-settlement';
 import { ConsentGate } from '../engine/consent-gate.svelte';
 import { readingFor } from '../engine/engine-gate';
 import type { EngineGateRead, EngineSource } from '../engine/engine-gate';
 import { EngineWarmup } from '../engine/engine-warmup.svelte';
-import type { PendingRecognition } from '../engine/engine-warmup.svelte';
-import type { CropError } from '../../domain/engine/region-cropper';
-import type { RecognitionError } from '../../domain/engine/text-recognizer';
-import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
-
-function describeCropFailure(error: CropError): string {
-  return match(error)
-    .with(
-      { kind: 'nothing-selected' },
-      () => 'That box covered no part of a page, so there was nothing to crop.',
-    )
-    .with(
-      { kind: 'unreadable' },
-      (unreadable) => `That page could not be cropped: ${unreadable.cause}`,
-    )
-    .exhaustive();
-}
-
-function describeRecognitionFailure(error: RecognitionError): string {
-  return match(error)
-    .with({ kind: 'no-text' }, () => NOTHING_READ)
-    .with(
-      { kind: 'model-unavailable' },
-      (unavailable) => `The recognition model could not be loaded: ${unavailable.cause}`,
-    )
-    .with({ kind: 'recognition-failed' }, (failed) => `The recognizer failed: ${failed.cause}`)
-    .exhaustive();
-}
-
-function settlementOf(read: RecognizeRegionResult): Settled {
-  return match(read)
-    .returnType<Settled>()
-    .with({ kind: 'success' }, ({ text }) => ({ status: 'done', text, edited: false }))
-    .with({ kind: 'no-text' }, () => ({ status: 'empty' }))
-    .with({ kind: 'nothing-selected' }, { kind: 'unreadable' }, (failure) => ({
-      status: 'failed',
-      message: describeCropFailure(failure),
-    }))
-    .with({ kind: 'model-unavailable' }, { kind: 'recognition-failed' }, (failure) => ({
-      status: 'failed',
-      message: describeRecognitionFailure(failure),
-    }))
-    .exhaustive();
-}
+import type { PendingRecognition } from '../engine/engine-warmth';
 
 class CaptureView {
   readonly list: CaptureList;

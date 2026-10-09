@@ -1,4 +1,3 @@
-import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { releasePicture } from '$lib/platform/image/bitmap';
 import { describeCause } from '$lib/shared/cause';
@@ -7,7 +6,7 @@ import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import { effectiveDirection, imageLayoutKind } from '$lib/shared/layout-kind';
 import type { ImageLayoutKind, ReadingDirection } from '$lib/shared/layout-kind';
-import type { PagePicture, PageSource, PageSourceError } from '$lib/shared/page-source';
+import type { PagePicture, PageSource } from '$lib/shared/page-source';
 import { openingPlace } from '$lib/shared/reader-location';
 import type { ShownPlace } from '$lib/shared/reader-location';
 import { PLACE_KEPT, PlaceKeeper } from '$lib/shared/place-keeper';
@@ -25,53 +24,14 @@ import { PageGrouping } from './page-grouping.svelte';
 import { AT_THE_FIRST_IMAGE, PageNavigation } from './page-navigation.svelte';
 import { NOT_OPENED, OPENING, heldBook, shownBook, withBook } from './reader-opening';
 import type { OpenOutcome, ReaderBook, ReaderOpening } from './reader-opening';
+import { describeOpenFailure, lostBook } from './reader-failure-text';
 import { RegionSelection } from './region-selection.svelte';
-
-type OpenFailure = Exclude<OpenOutcome, { readonly kind: 'images' | 'flow' }>;
 
 type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
 
 type PlaceMirror = (place: ShownPlace) => void;
 
 type LanguageKnown = (book: BookId, language: Language) => void;
-
-const SOURCE_MISSING =
-  'The file of this book is missing from this device. Remove the book and add it again.';
-
-const UNREADABLE_BOOK =
-  'This book was stored in a shape this version cannot read. Upload the same file again in the library to repair it.';
-
-function describeSourceFailure(error: PageSourceError): string {
-  return match(error)
-    .with(
-      { kind: 'out-of-range' },
-      (range) => `This book holds ${range.count} images, so page ${range.index + 1} is not there.`,
-    )
-    .with(
-      { kind: 'page-unreadable' },
-      (failed) => `A page could not be read from that book: ${failed.cause}`,
-    )
-    .with({ kind: 'decode-failed' }, (failed) => `A page could not be decoded: ${failed.cause}`)
-    .with({ kind: 'render-failed' }, (failed) => `A page could not be rendered: ${failed.cause}`)
-    .with(
-      { kind: 'source-unreadable' },
-      (unreadable) => `That book could not be read: ${unreadable.cause}`,
-    )
-    .exhaustive();
-}
-
-function lostBook(error: OpenFailure): boolean {
-  return error.kind === 'not-found';
-}
-
-function describeOpenFailure(error: OpenFailure): string {
-  return match(error)
-    .with({ kind: 'unreadable' }, (failed) => describeSourceFailure(failed.failure))
-    .with({ kind: 'not-found' }, { kind: 'storage-unavailable' }, describeEditFailure)
-    .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
-    .with({ kind: 'unreadable-book' }, () => UNREADABLE_BOOK)
-    .exhaustive();
-}
 
 class ReaderView {
   opening = $state.raw<ReaderOpening>(NOT_OPENED);
@@ -306,5 +266,5 @@ class ReaderView {
   }
 }
 
-export { SOURCE_MISSING, ReaderView };
+export { ReaderView };
 export type { LanguageKnown, PlaceMirror };

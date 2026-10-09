@@ -22,7 +22,7 @@
     partialFigure,
     resumeLabel,
     storedFigure,
-  } from './engine-settings.svelte';
+  } from './engine-figures';
   import type { EngineSettingsView } from './engine-settings.svelte';
   import { REMOVAL_WARNING } from './model-removal.svelte';
   import { isModelStored, isResumable } from './model-storage';

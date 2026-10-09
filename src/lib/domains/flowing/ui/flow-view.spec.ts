@@ -31,7 +31,8 @@ import type { PageInk } from './flow-styles';
 import type { FlowOpening, FlowSurface } from './flow-surface';
 import { PLACE_FAILED, PLACE_SAVE_DELAY_MS } from '$lib/shared/place-keeper';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
-import { FlowView, SOURCE_MISSING } from './flow-view.svelte';
+import { FlowView } from './flow-view.svelte';
+import { SOURCE_MISSING } from './flow-view-rules';
 import type { FlowBook, ShowFlowBook } from './flow-view.svelte';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/running-write-query'));

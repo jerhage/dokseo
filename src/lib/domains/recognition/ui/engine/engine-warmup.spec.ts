@@ -15,8 +15,8 @@ import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { PrepareRecognizerResult } from '../../use-cases/engine/prepare-recognizer';
 import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
 import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-import { engineStateOf, EngineWarmup, warmthOf } from './engine-warmup.svelte';
-import type { EngineWarmth, PendingRecognition } from './engine-warmup.svelte';
+import { EngineWarmup } from './engine-warmup.svelte';
+import type { PendingRecognition } from './engine-warmth';
 
 const REQUIRED_WEIGHTS = JAPANESE_OCR_MODEL.weightFiles;
 
@@ -190,52 +190,6 @@ async function started(calls: readonly Call[], index: number): Promise<Call> {
   }
   return at(calls, index);
 }
-
-describe('warmthOf', () => {
-  const cases: readonly (readonly [string, ModelStorageSnapshot | null, EngineWarmth])[] = [
-    ['an unread storage as unchecked', null, { kind: 'unchecked' }],
-    [
-      'every required weight on disk as stored',
-      snapshot('m', REQUIRED_WEIGHTS.length, 0),
-      { kind: 'stored' },
-    ],
-    ['some cached weights as partial', snapshot('m', 1, 0), { kind: 'partial' }],
-    ['a part-downloaded file as partial', snapshot('m', 0, 10), { kind: 'partial' }],
-    ['nothing on disk as missing', snapshot('m', 0, 0), { kind: 'missing' }],
-  ];
-
-  it.each(cases)('reports %s', (_name, storage, warmth) => {
-    expect(warmthOf(storage)).toEqual(warmth);
-  });
-});
-
-describe('engineStateOf', () => {
-  const cases: readonly (readonly [EngineWarmth, Partial<ReturnType<typeof engineStateOf>>])[] = [
-    [{ kind: 'unchecked' }, {}],
-    [{ kind: 'missing' }, {}],
-    [{ kind: 'partial' }, { partlyDownloaded: true }],
-    [{ kind: 'stored' }, { stored: true }],
-    [{ kind: 'opening' }, { stored: true, opening: true }],
-    [
-      { kind: 'failed', cause: 'gone' },
-      { stored: true, failure: 'gone' },
-    ],
-  ];
-
-  it.each(cases)('maps %o to the engine state the pill reads', (warmth, fields) => {
-    expect(engineStateOf(warmth, LOAD, OPENED_SESSION)).toEqual({
-      stored: false,
-      opening: false,
-      load: LOAD,
-      session: OPENED_SESSION,
-      failure: null,
-      paused: false,
-      cancelled: false,
-      partlyDownloaded: false,
-      ...fields,
-    });
-  });
-});
 
 describe('EngineWarmup', () => {
   it('opens a stored model, joins the consent, and ends stored with its session', async () => {

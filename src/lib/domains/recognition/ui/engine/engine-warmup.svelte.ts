@@ -1,73 +1,16 @@
 import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { Trace } from '$lib/platform/trace/pipeline-trace';
-import type { Arrangement } from '$lib/shared/arrangement';
 import { describeCause } from '$lib/shared/cause';
-import type { ImageRegion } from '$lib/shared/image-region';
 import type { Language } from '$lib/shared/language';
-import type { PageSource } from '$lib/shared/page-source';
-import { isPartlyStored, isStored } from '../../domain/model/model-cache';
 import type { ModelLoad } from '../../domain/model/model-load';
-import { isPartlyDownloaded } from '../../domain/model/model-partial';
 import type { EngineState } from '../../domain/engine/ocr-engine';
 import type { RecognizerSession } from '../../domain/engine/recognizer-session';
 import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-region';
-import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
 import { warmStep } from './engine-gate';
 import type { EngineSource, WarmStep } from './engine-gate';
-
-type PendingRecognition = {
-  readonly source: PageSource;
-  readonly language: Language;
-  readonly regions: readonly ImageRegion[];
-  readonly arrangement: Arrangement;
-};
-
-type EngineWarmth =
-  | { readonly kind: 'unchecked' }
-  | { readonly kind: 'missing' }
-  | { readonly kind: 'partial' }
-  | { readonly kind: 'stored' }
-  | { readonly kind: 'opening' }
-  | { readonly kind: 'failed'; readonly cause: string };
-
-const UNCHECKED: EngineWarmth = { kind: 'unchecked' };
-
-const STORED: EngineWarmth = { kind: 'stored' };
-
-function warmthOf(snapshot: ModelStorageSnapshot | null): EngineWarmth {
-  if (snapshot === null) return UNCHECKED;
-  if (isStored(snapshot.report)) return STORED;
-  if (isPartlyStored(snapshot.report) || isPartlyDownloaded(snapshot.partial)) {
-    return { kind: 'partial' };
-  }
-  return { kind: 'missing' };
-}
-
-function engineStateOf(
-  warmth: EngineWarmth,
-  load: ModelLoad | null,
-  session: RecognizerSession | null,
-): EngineState {
-  const quiet = {
-    stored: false,
-    opening: false,
-    load,
-    session,
-    failure: null,
-    paused: false,
-    cancelled: false,
-    partlyDownloaded: false,
-  };
-
-  return match(warmth)
-    .with({ kind: 'unchecked' }, { kind: 'missing' }, () => quiet)
-    .with({ kind: 'partial' }, () => ({ ...quiet, partlyDownloaded: true }))
-    .with({ kind: 'stored' }, () => ({ ...quiet, stored: true }))
-    .with({ kind: 'opening' }, () => ({ ...quiet, stored: true, opening: true }))
-    .with({ kind: 'failed' }, (failed) => ({ ...quiet, stored: true, failure: failed.cause }))
-    .exhaustive();
-}
+import { STORED, UNCHECKED, engineStateOf, warmthOf } from './engine-warmth';
+import type { EngineWarmth, PendingRecognition } from './engine-warmth';
 
 type WarmedFor = {
   readonly generation: number;
@@ -272,5 +215,5 @@ class EngineWarmup {
   }
 }
 
-export { warmthOf, engineStateOf, EngineWarmup };
-export type { PendingRecognition, EngineWarmth, WarmupJoins };
+export { EngineWarmup };
+export type { WarmupJoins };

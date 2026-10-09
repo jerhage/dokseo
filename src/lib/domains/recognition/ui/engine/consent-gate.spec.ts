@@ -20,7 +20,7 @@ import {
   RECOGNITION_UNSTARTED,
   TURN_ON,
 } from './consent-gate.svelte';
-import type { PendingRecognition } from './engine-warmup.svelte';
+import type { PendingRecognition } from './engine-warmth';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unrun-write-query'));
 

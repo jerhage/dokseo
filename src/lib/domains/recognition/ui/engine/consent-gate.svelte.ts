@@ -15,7 +15,7 @@ import { recognitionKeys } from '../../queries/recognition-keys';
 import type { GrantModelConsentResult } from '../../use-cases/model/grant-model-consent';
 import { consentStep } from './engine-gate';
 import type { EngineSource } from './engine-gate';
-import type { PendingRecognition } from './engine-warmup.svelte';
+import type { PendingRecognition } from './engine-warmth';
 
 const RECOGNITION_OFF = 'Text recognition is off';
 

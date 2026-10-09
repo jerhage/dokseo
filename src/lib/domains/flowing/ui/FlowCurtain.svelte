@@ -2,7 +2,7 @@
   import Button from '$lib/ui/components/Button.svelte';
   import EmptyState from '$lib/ui/components/EmptyState.svelte';
   import { unreachable } from '$lib/shared/unreachable';
-  import type { FlowCurtain } from './flow-view.svelte';
+  import type { FlowCurtain } from './flow-view-rules';
 
   type Props = {
     readonly curtain: FlowCurtain;

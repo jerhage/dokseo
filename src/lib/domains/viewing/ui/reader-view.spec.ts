@@ -30,7 +30,8 @@ import {
   LAYOUT_FAILED,
   PAIRING_FAILED,
 } from './book-preferences.svelte';
-import { SOURCE_MISSING, ReaderView } from './reader-view.svelte';
+import { SOURCE_MISSING } from './reader-failure-text';
+import { ReaderView } from './reader-view.svelte';
 import { heldBook, readingNotice } from './reader-opening';
 import type { ReaderBook } from './reader-opening';
 import type { LanguageEdit } from './book-preferences.svelte';

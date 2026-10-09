@@ -1,5 +1,4 @@
 import type { QueryClient } from '@tanstack/svelte-query';
-import { match } from 'ts-pattern';
 import { describeCause } from '$lib/shared/cause';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
@@ -17,76 +16,23 @@ import { FlowAppearance } from './flow-appearance.svelte';
 import type { FlowRelocation } from './flow-move';
 import { FlowNavigation } from './flow-navigation.svelte';
 import type { FlowOpening, FlowSurface } from './flow-surface';
+import { curtainFor, describePlaceFailure, describeSourceFailure } from './flow-view-rules';
+import type { FlowCurtain, FlowState, PlaceOutcome, SourceOutcome } from './flow-view-rules';
 import { PassageArrivals } from './passage-arrivals.svelte';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
 type FlowBook = Extract<OpenOutcome, { readonly kind: 'flow' }>['book'];
 
-type SourceOutcome = Awaited<ReturnType<Container['library']['readSource']>>;
-
-type SourceFailure = Exclude<SourceOutcome, { readonly kind: 'success' }>;
-
-type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
-
-type LibraryFailure = Exclude<PlaceOutcome, { readonly kind: 'success' }>;
-
 type BookChanged = () => void;
 
 type ShowFlowBook = (opening: FlowOpening) => Promise<FlowSurface>;
-
-type FlowState =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'opening' }
-  | { readonly kind: 'ready' }
-  | { readonly kind: 'failed'; readonly message: string };
-
-type FlowCurtain =
-  | { readonly kind: 'none' }
-  | { readonly kind: 'opening' }
-  | { readonly kind: 'notice'; readonly message: string };
 
 const NOT_OPENED: FlowState = { kind: 'idle' };
 
 const OPENING: FlowState = { kind: 'opening' };
 
 const SHOWING_THE_BOOK: FlowState = { kind: 'ready' };
-
-const NOTHING_OVER_THE_BOOK: FlowCurtain = { kind: 'none' };
-
-const WAITING_FOR_THE_BOOK: FlowCurtain = { kind: 'opening' };
-
-const SOURCE_MISSING =
-  'The file of this book is missing from this device. Remove the book and add it again.';
-
-function describeSourceFailure(error: SourceFailure): string {
-  return match(error)
-    .with({ kind: 'source-missing' }, () => SOURCE_MISSING)
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so that book cannot be read.',
-    )
-    .exhaustive();
-}
-
-function describePlaceFailure(error: LibraryFailure): string {
-  return match(error)
-    .with({ kind: 'not-found' }, () => 'That book is no longer stored on this device.')
-    .with(
-      { kind: 'storage-unavailable' },
-      () => 'This browser blocks local storage, so your place cannot be kept.',
-    )
-    .exhaustive();
-}
-
-function curtainFor(state: FlowState): FlowCurtain {
-  return match(state)
-    .with({ kind: 'idle' }, () => NOTHING_OVER_THE_BOOK)
-    .with({ kind: 'opening' }, () => WAITING_FOR_THE_BOOK)
-    .with({ kind: 'ready' }, () => NOTHING_OVER_THE_BOOK)
-    .with({ kind: 'failed' }, (stopped) => ({ kind: 'notice' as const, message: stopped.message }))
-    .exhaustive();
-}
 
 class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
@@ -236,5 +182,5 @@ class FlowView {
   }
 }
 
-export { FlowView, SOURCE_MISSING };
-export type { BookChanged, FlowBook, FlowCurtain, FlowState, ShowFlowBook };
+export { FlowView };
+export type { BookChanged, FlowBook, ShowFlowBook };
