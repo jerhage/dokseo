@@ -18,8 +18,7 @@ import type { TagRecolour, TagRename, TagWrites } from '../../queries/tag-querie
 import type { DeleteTagResult } from '../../use-cases/tag/delete-tag';
 import type { RecolourTagResult } from '../../use-cases/tag/recolour-tag';
 import type { RenameTagResult } from '../../use-cases/tag/rename-tag';
-
-const NAMELESS = 'A tag needs a name.';
+import type { RecolourOutcome, RemoveOutcome, RenameOutcome } from './manage-tags-rules';
 
 const RENAME_FAILED = 'Could not rename that tag';
 
@@ -29,12 +28,9 @@ const REMOVE_FAILED = 'Could not delete that tag';
 
 const TAGS_UNCHANGEABLE = 'This browser blocks local storage, so tags cannot be changed.';
 
-class ManageTagsView {
-  renaming = $state.raw<TagId | null>(null);
-  draft = $state('');
-  confirming = $state.raw<TagId | null>(null);
-  invalid = $state.raw<string | null>(null);
+const UNCHANGED = { kind: 'unchanged' } as const;
 
+class ManageTags {
   #notify: Notify;
   #generation = 0;
   #renaming: WriteQuery<RenameTagResult, TagRename>;
@@ -69,89 +65,56 @@ class ManageTagsView {
     }));
   }
 
-  startRename(tag: Tag): void {
-    this.renaming = tag.id;
-    this.draft = tag.name;
-    this.confirming = null;
-    this.invalid = null;
-  }
-
-  abandonRename(): void {
-    this.renaming = null;
-    this.draft = '';
-    this.invalid = null;
-  }
-
-  askRemove(tag: Tag): void {
-    this.confirming = tag.id;
-    this.renaming = null;
-    this.draft = '';
-    this.invalid = null;
-  }
-
-  dismissRemove(): void {
-    this.confirming = null;
-  }
-
-  async rename(tag: Tag): Promise<void> {
-    if (tagName(this.draft).length === 0) {
-      this.invalid = NAMELESS;
-      return;
-    }
+  async rename(tag: Tag, name: string): Promise<RenameOutcome> {
+    if (tagName(name).length === 0) return { kind: 'nameless' };
 
     const generation = ++this.#generation;
-    const written = await this.#renaming.run({ tag, name: this.draft }).catch(() => null);
+    const written = await this.#renaming.run({ tag, name }).catch(() => null);
 
-    if (generation !== this.#generation) return;
+    if (generation !== this.#generation) return UNCHANGED;
 
-    if (written === null) return;
+    if (written === null) return UNCHANGED;
 
-    match(written)
-      .with({ kind: 'success' }, () => {
-        this.renaming = null;
-        this.draft = '';
-        this.invalid = null;
-      })
-      .with({ kind: 'name-taken' }, (taken) => {
-        this.invalid = `${taken.tag.name} already holds that name.`;
-      })
+    return match<RenameTagResult, RenameOutcome>(written)
+      .with({ kind: 'success' }, () => ({ kind: 'renamed' }))
+      .with({ kind: 'name-taken' }, (taken) => ({ kind: 'name-taken', holder: taken.tag.name }))
       .with({ kind: 'storage-unavailable' }, () => {
         this.#fail(RENAME_FAILED, TAGS_UNCHANGEABLE);
+        return UNCHANGED;
       })
       .exhaustive();
   }
 
-  async recolour(tag: Tag, colour: TagColour): Promise<void> {
+  async recolour(tag: Tag, colour: TagColour): Promise<RecolourOutcome> {
     const generation = ++this.#generation;
     const written = await this.#recolouring.run({ tag, colour }).catch(() => null);
 
-    if (generation !== this.#generation) return;
+    if (generation !== this.#generation) return UNCHANGED;
 
-    if (written === null) return;
+    if (written === null) return UNCHANGED;
 
     if (written.kind !== 'success') {
       this.#fail(RECOLOUR_FAILED, TAGS_UNCHANGEABLE);
-      return;
+      return UNCHANGED;
     }
 
-    this.invalid = null;
+    return { kind: 'recoloured' };
   }
 
-  async remove(tag: Tag): Promise<void> {
+  async remove(tag: Tag): Promise<RemoveOutcome> {
     const generation = ++this.#generation;
     const stripped = await this.#removing.run(tag.id).catch(() => null);
 
-    if (generation !== this.#generation) return;
+    if (generation !== this.#generation) return UNCHANGED;
 
-    if (stripped === null) return;
+    if (stripped === null) return UNCHANGED;
 
     if (stripped.kind !== 'success') {
       this.#fail(REMOVE_FAILED, TAGS_UNCHANGEABLE);
-      return;
+      return UNCHANGED;
     }
 
-    this.confirming = null;
-    this.invalid = null;
+    return { kind: 'removed' };
   }
 
   #fail(title: string, message: string): void {
@@ -159,11 +122,4 @@ class ManageTagsView {
   }
 }
 
-export {
-  ManageTagsView,
-  NAMELESS,
-  RENAME_FAILED,
-  RECOLOUR_FAILED,
-  REMOVE_FAILED,
-  TAGS_UNCHANGEABLE,
-};
+export { ManageTags, RECOLOUR_FAILED, REMOVE_FAILED, RENAME_FAILED, TAGS_UNCHANGEABLE };

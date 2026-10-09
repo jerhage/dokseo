@@ -13,7 +13,10 @@
   import Tag from '$lib/ui/components/Tag.svelte';
   import Thumbnail from '$lib/ui/components/Thumbnail.svelte';
   import type { BookId, TagId } from '$lib/shared/ids';
+  import type { ReadState } from '$lib/shared/read-state';
   import { tagsHref } from '$lib/shared/tag-location';
+  import type { PassageOrder } from '../../domain/capture/capture-order';
+  import type { SearchedBook } from '../../domain/capture/capture-results';
   import { clampedIndex, NO_MATCH } from '../../domain/capture/match-stepping';
   import { CHIPS_ON_A_CARD } from '../capture/chip-line';
   import {
@@ -26,11 +29,15 @@
     taggedShelves,
     walkKey,
   } from './tag-screen';
-  import type { TagView } from './tag-view.svelte';
+  import { tagViewOf, taggedGroupsOf } from './tag-view-rules';
+  import type { TaggedCaptures } from './tag-view-rules';
   import TagsShell from './TagsShell.svelte';
 
   type Props = {
-    readonly view: TagView;
+    readonly tagged: ReadState<TaggedCaptures>;
+    readonly books: readonly SearchedBook[];
+    readonly wanted: string | null;
+    readonly passages: PassageOrder;
     readonly covers: ReadonlyMap<BookId, string>;
     readonly libraryFailure: string | null;
     readonly onretrylibrary: () => void;
@@ -45,42 +52,47 @@
     { keys: ['⌘↵'], does: 'new tab' },
   ];
 
-  let { view, covers, libraryFailure, onretrylibrary, notice }: Props = $props();
+  let { tagged, books, wanted, passages, covers, libraryFailure, onretrylibrary, notice }: Props =
+    $props();
 
+  let filter = $state('');
   let walk = $state.raw<Walk | null>(null);
   let anchors = $state<(HTMLElement | null | undefined)[]>([]);
 
+  const read = $derived(tagViewOf({ books, wanted, tagged }, filter));
+  const groups = $derived(taggedGroupsOf(read, books, passages));
+
   const stage = $derived(
     tagStage({
-      tag: view.chosen === null ? undefined : view.tagsById.get(view.chosen),
-      summary: view.summary,
-      tags: view.tags.length,
-      status: view.status,
+      tag: read.chosen === null ? undefined : read.tagsById.get(read.chosen),
+      summary: read.summary,
+      tags: read.tags.length,
+      status: read.status,
       libraryFailed: libraryFailure !== null,
     }),
   );
 
   const shelves = $derived(
     taggedShelves({
-      groups: view.groups,
+      groups: groups,
       covers,
-      chosen: view.chosen,
-      tags: view.tags,
+      chosen: read.chosen,
+      tags: read.tags,
       now: Date.now(),
     }),
   );
 
   const rows = $derived(shelvedRows(shelves));
 
-  const neighbours = $derived(neighboursOf(view.also, view.tagsById));
+  const neighbours = $derived(neighboursOf(read.also, read.tagsById));
 
-  const cursor = $derived(walk !== null && walk.tag === view.chosen ? walk.at : NO_MATCH);
+  const cursor = $derived(walk !== null && walk.tag === read.chosen ? walk.at : NO_MATCH);
 
   function moveBy(by: number): void {
     const at = clampedIndex(cursor, by, rows.length);
     if (at === NO_MATCH) return;
 
-    walk = { tag: view.chosen, at };
+    walk = { tag: read.chosen, at };
     anchors[at]?.scrollIntoView({ block: 'nearest' });
     anchors[at]?.focus({ preventScroll: true });
   }
@@ -113,9 +125,9 @@
 
 <svelte:window onkeydown={keys} />
 
-<TagsShell {view} current="tags">
+<TagsShell {read} current="tags" bind:filter>
   {#snippet children(showList)}
-    {#if view.status === 'failed'}
+    {#if read.status === 'failed'}
       <Alert variant="danger" role="alert">Your tags could not be read.</Alert>
     {/if}
 
@@ -207,7 +219,7 @@
                       href={row.href}
                       selected={row.order === cursor}
                       class="items-start"
-                      onfocus={() => (walk = { tag: view.chosen, at: row.order })}
+                      onfocus={() => (walk = { tag: read.chosen, at: row.order })}
                     >
                       <span class="col gap-1 flex-1">
                         <span class="text-base" lang={shelf.language}>{row.text}</span>

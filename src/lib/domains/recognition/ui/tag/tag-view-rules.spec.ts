@@ -11,8 +11,8 @@ import type { Capture } from '../../domain/capture/capture';
 import type { SearchedBook } from '../../domain/capture/capture-results';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
-import { heldTagged, TagView, tagViewStatus } from './tag-view.svelte';
-import type { TaggedCaptures } from './tag-view.svelte';
+import { heldTagged, tagViewOf, tagViewStatus, taggedGroupsOf } from './tag-view-rules';
+import type { TaggedCaptures } from './tag-view-rules';
 
 const SFX: Tag = namedTag(tagId('sfx'), 'sfx', 'slate', 1);
 
@@ -75,7 +75,8 @@ function world(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRARY
   } = { books: [], wanted: null, tagged: null };
 
   return {
-    view: new TagView(() => source, byPassageOrder),
+    view: (filter = '') => tagViewOf(source, filter),
+    groups: () => taggedGroupsOf(tagViewOf(source, ''), source.books, byPassageOrder),
     store,
     source,
     load: () => {
@@ -94,22 +95,22 @@ function loaded(captures: readonly Capture[] = [], tags: readonly Tag[] = LIBRAR
   return made;
 }
 
-describe('TagView', () => {
+describe('tagViewOf', () => {
   it('holds every tag and every capture once the load settles', () => {
     const { view } = loaded([capture('first', 'one', [SFX.id])]);
 
-    expect(view.tags).toEqual(LIBRARY);
-    expect(view.captures).toHaveLength(1);
-    expect(view.status).toBe('ready');
+    expect(view().tags).toEqual(LIBRARY);
+    expect(view().captures).toHaveLength(1);
+    expect(view().status).toBe('ready');
   });
 
   it('reports a failed read with nothing held', () => {
     const { view, source } = world([capture('first', 'one', [SFX.id])]);
     source.tagged = readFailed('locked');
 
-    expect(view.status).toBe('failed');
-    expect(view.tags).toEqual([]);
-    expect(view.captures).toEqual([]);
+    expect(view().status).toBe('failed');
+    expect(view().tags).toEqual([]);
+    expect(view().captures).toEqual([]);
   });
 
   it('orders the column by count descending and then by name', () => {
@@ -119,27 +120,25 @@ describe('TagView', () => {
       capture('third', 'one', [KEIGO.id]),
     ]);
 
-    expect(view.column.map((option) => option.tag.name)).toEqual(['sfx', 'keigo', 'slang']);
+    expect(view().column.map((option) => option.tag.name)).toEqual(['sfx', 'keigo', 'slang']);
   });
 
   it('keeps only the tags whose name matches the filter', () => {
     const { view } = loaded([capture('first', 'one', [SFX.id])]);
-    view.filter = 'la';
 
-    expect(view.column.map((option) => option.tag.name)).toEqual(['slang']);
+    expect(view('la').column.map((option) => option.tag.name)).toEqual(['slang']);
   });
 
   it('offers every tag again when the filter is only spaces', () => {
     const { view } = loaded();
-    view.filter = '   ';
 
-    expect(view.column).toHaveLength(LIBRARY.length);
+    expect(view('   ').column).toHaveLength(LIBRARY.length);
   });
 
   it('names a tag by its id for a chip or a co-occurrent row', () => {
     const { view } = loaded();
 
-    expect(view.tagsById.get(KEIGO.id)).toEqual(KEIGO);
+    expect(view().tagsById.get(KEIGO.id)).toEqual(KEIGO);
   });
 
   it('summarizes the chosen tag across the library', () => {
@@ -150,46 +149,46 @@ describe('TagView', () => {
     ]);
     source.wanted = SFX.name;
 
-    expect(view.summary).toEqual({ captures: 2, documents: 2, lastAdded: 40 });
+    expect(view().summary).toEqual({ captures: 2, documents: 2, lastAdded: 40 });
   });
 
   it('reports no summary, no co-occurrent tag and no group while nothing is chosen', () => {
-    const { view } = loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
+    const { groups, view } = loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
 
-    expect(view.summary).toBeNull();
-    expect(view.also).toEqual([]);
-    expect(view.groups).toEqual([]);
+    expect(view().summary).toBeNull();
+    expect(view().also).toEqual([]);
+    expect(groups()).toEqual([]);
   });
 
   it('reports the tags sharing a capture with the chosen one', () => {
     const { view, source } = loaded([capture('first', 'one', [SFX.id, KEIGO.id])]);
     source.wanted = SFX.name;
 
-    expect(view.also).toEqual([{ id: KEIGO.id, count: 1 }]);
+    expect(view().also).toEqual([{ id: KEIGO.id, count: 1 }]);
   });
 
   it('groups the chosen tag under the books it was given, in book order', () => {
-    const { view, source } = loaded([
+    const { groups, source } = loaded([
       capture('left', 'one', [SFX.id], 0, 20),
       capture('right', 'one', [SFX.id], 0, 600),
       capture('elsewhere', 'two', [KEIGO.id]),
     ]);
     source.wanted = SFX.name;
 
-    const grouped = view.groups;
+    const grouped = groups();
     expect(grouped).toHaveLength(1);
     expect(at(grouped, 0).captures.map((one) => one.text)).toEqual(['right', 'left']);
   });
 
   it('groups the passages of a chosen tag in the passage order it is given', () => {
-    const { view, source } = loaded([
+    const { groups, source } = loaded([
       passage('closing', 'one', [SFX.id], '/6/22!/2:0'),
       passage('opening', 'one', [SFX.id], '/6/4!/2:0'),
       passage('middle', 'one', [SFX.id], '/6/14!/2:0'),
     ]);
     source.wanted = SFX.name;
 
-    expect(at(view.groups, 0).captures.map((one) => one.text)).toEqual([
+    expect(at(groups(), 0).captures.map((one) => one.text)).toEqual([
       'opening',
       'middle',
       'closing',
@@ -197,7 +196,7 @@ describe('TagView', () => {
   });
 });
 
-describe('TagView and a book the library no longer holds', () => {
+describe('tagViewOf and a book the library no longer holds', () => {
   it('counts each tag across the books the library holds, and no capture of one it no longer holds', () => {
     const { view, source } = loaded([
       capture('kept', 'one', [SFX.id]),
@@ -207,20 +206,20 @@ describe('TagView and a book the library no longer holds', () => {
     source.books = [book('one'), book('two')];
     source.wanted = SFX.name;
 
-    expect(view.counts.get(SFX.id)).toBe(2);
-    expect(view.counts.get(KEIGO.id)).toBe(1);
+    expect(view().counts.get(SFX.id)).toBe(2);
+    expect(view().counts.get(KEIGO.id)).toBe(1);
   });
 
   it('reports the same number of documents as it renders groups', () => {
-    const { view, source } = loaded([
+    const { groups, source, view } = loaded([
       capture('kept', 'one', [SFX.id]),
       capture('orphan', 'gone', [SFX.id]),
     ]);
     source.books = [book('one')];
     source.wanted = SFX.name;
 
-    expect(view.summary?.documents).toBe(view.groups.length);
-    expect(view.summary?.captures).toBe(1);
+    expect(view().summary?.documents).toBe(groups().length);
+    expect(view().summary?.captures).toBe(1);
   });
 
   it('leaves a co-occurrent tag of an orphaned capture out of the tally', () => {
@@ -231,11 +230,11 @@ describe('TagView and a book the library no longer holds', () => {
     source.books = [book('one')];
     source.wanted = SFX.name;
 
-    expect(view.also).toEqual([]);
+    expect(view().also).toEqual([]);
   });
 });
 
-describe('TagView chosen by name', () => {
+describe('tagViewOf chosen by name', () => {
   it.each([
     ['as it is spelled', SFX.name],
     ['spelled in another case', SFX.name.toUpperCase()],
@@ -244,21 +243,21 @@ describe('TagView chosen by name', () => {
     const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = wanted;
 
-    expect(view.chosen).toBe(SFX.id);
+    expect(view().chosen).toBe(SFX.id);
   });
 
   it('chooses nothing while the tags are still to arrive', () => {
     const { view, source } = world([], LIBRARY);
     source.wanted = SFX.name;
 
-    expect(view.chosen).toBeNull();
+    expect(view().chosen).toBeNull();
   });
 
   it('chooses nothing for a name no tag answers to', () => {
     const { view, source } = loaded([capture('first', 'one', [SFX.id])]);
     source.wanted = 'a name nobody made';
 
-    expect(view.chosen).toBeNull();
+    expect(view().chosen).toBeNull();
   });
 });
 

@@ -15,12 +15,18 @@
   } from '../../queries/store-read';
   import { tagsQuery } from '../../queries/tag-queries';
   import type { TagReads } from '../../queries/tag-queries';
-  import { taggedCapturesOf } from './tag-view.svelte';
-  import type { TaggedCaptures } from './tag-view.svelte';
+  import { taggedCapturesOf } from './tag-view-rules';
+  import type { TaggedCaptures } from './tag-view-rules';
+
+  type TagPageRead = {
+    readonly tagged: ReadState<TaggedCaptures>;
+    readonly unreadableCaptures: readonly UnreadableCapture[];
+    readonly unreadableTags: readonly UnreadableTag[];
+  };
 
   type Props = {
     readonly recognition: CaptureReads & TagReads;
-    readonly children: Snippet;
+    readonly children: Snippet<[TagPageRead]>;
   };
 
   let { recognition, children }: Props = $props();
@@ -31,20 +37,11 @@
     readBoth(storedTags(tagList.state), storedCaptures(everyCapture.state), taggedCapturesOf),
   );
 
-  const unreadable = $derived(unreadableCaptures(everyCapture.state));
-  const unreadableTagRows = $derived(unreadableTags(tagList.state));
-
-  export function read(): ReadState<TaggedCaptures> {
-    return tagged;
-  }
-
-  export function unreadableRows(): readonly UnreadableCapture[] {
-    return unreadable;
-  }
-
-  export function unreadableTagList(): readonly UnreadableTag[] {
-    return unreadableTagRows;
-  }
+  const read = $derived<TagPageRead>({
+    tagged,
+    unreadableCaptures: unreadableCaptures(everyCapture.state),
+    unreadableTags: unreadableTags(tagList.state),
+  });
 </script>
 
-{@render children()}
+{@render children(read)}

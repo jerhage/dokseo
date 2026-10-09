@@ -3,7 +3,7 @@ import type { TagId } from '$lib/shared/ids';
 import type { Tag } from '../../domain/tag/tag';
 import type { TagOption } from '../../domain/tag/tag-match';
 import { removalWarning, tagRemoval } from './tag-removal';
-import type { TagViewStatus } from './tag-view.svelte';
+import type { TagViewStatus } from './tag-view-rules';
 
 type ManageRow = {
   readonly id: TagId;

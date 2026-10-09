@@ -11,7 +11,7 @@ import { captureLink } from '../capture/capture-link';
 import { capturedLabel, placeLabel, placeLanguage } from '../capture/capture-place';
 import { chipsOf } from '../capture/tag-chip';
 import type { TagChip } from '../capture/tag-chip';
-import type { TagViewStatus } from './tag-view.svelte';
+import type { TagViewStatus } from './tag-view-rules';
 
 type TagStage =
   | { readonly kind: 'loading' }

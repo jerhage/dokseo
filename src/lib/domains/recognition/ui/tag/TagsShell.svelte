@@ -13,15 +13,16 @@
   import { tagsHref } from '$lib/shared/tag-location';
   import { tagsCrumbs } from './tags-crumbs';
   import type { TagsPlace } from './tags-crumbs';
-  import type { TagView } from './tag-view.svelte';
+  import type { TagViewRead } from './tag-view-rules';
 
   type Props = {
-    readonly view: TagView;
+    readonly read: TagViewRead;
     readonly current: TagsPlace;
     readonly children: Snippet<[() => void]>;
+    filter?: string;
   };
 
-  let { view, current, children }: Props = $props();
+  let { read, current, children, filter = $bindable('') }: Props = $props();
 
   let listing = $state(false);
 
@@ -36,17 +37,17 @@
   {#if where === 'nav'}
     <div class="row items-center justify-between gap-2 px-3">
       <h2 class="text-sm weight-semibold">Tags</h2>
-      <Badge>{view.tags.length}</Badge>
+      <Badge>{read.tags.length}</Badge>
     </div>
   {/if}
-  <SearchField label="Filter tags" hideLabel placeholder="Filter tags" bind:value={view.filter} />
+  <SearchField label="Filter tags" hideLabel placeholder="Filter tags" bind:value={filter} />
   <ul class="list-reset col gap-1">
-    {#each view.column as option (option.tag.id)}
+    {#each read.column as option (option.tag.id)}
       <li>
         <NavLink
           href={tagsHref(option.tag.name)}
           title={option.tag.name}
-          current={current === 'tags' && option.tag.id === view.chosen}
+          current={current === 'tags' && option.tag.id === read.chosen}
           onclick={() => (listing = false)}
         >
           {#snippet icon()}

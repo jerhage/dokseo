@@ -7,42 +7,37 @@
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import UnreadableTags from '$lib/domains/recognition/ui/tag/UnreadableTags.svelte';
   import TagScreen from '$lib/domains/recognition/ui/tag/TagScreen.svelte';
-  import { TagView } from '$lib/domains/recognition/ui/tag/tag-view.svelte';
   import PageTitle from '$lib/shared/PageTitle.svelte';
   import { readTagName, TAG_PARAMETER } from '$lib/shared/tag-location';
 
   const container = useContainer();
-  let shelf = $state<ReturnType<typeof LibraryShelfData> | null>(null);
-  let tagged = $state<ReturnType<typeof TagPageData> | null>(null);
   const wanted = $derived(readTagName(page.url.searchParams.get(TAG_PARAMETER)));
-  const view = new TagView(
-    () => ({ books: shelf?.read().searched ?? [], wanted, tagged: tagged?.read() ?? null }),
-    comparePassages,
-  );
 </script>
 
 <PageTitle screen="Tags" section={wanted} />
 
-<LibraryShelfData bind:this={shelf} library={container.library}>
+<LibraryShelfData library={container.library}>
   {#snippet children(read)}
-    <TagPageData bind:this={tagged} recognition={container.recognition}>
-      <TagScreen
-        {view}
-        covers={read.covers}
-        libraryFailure={read.failure}
-        onretrylibrary={read.reload}
-      >
-        {#snippet notice()}
-          <UnreadableCaptures
-            captures={tagged?.unreadableRows() ?? []}
-            recognition={container.recognition}
-          />
-          <UnreadableTags
-            tags={tagged?.unreadableTagList() ?? []}
-            recognition={container.recognition}
-          />
-        {/snippet}
-      </TagScreen>
+    <TagPageData recognition={container.recognition}>
+      {#snippet children(tags)}
+        <TagScreen
+          tagged={tags.tagged}
+          books={read.searched}
+          {wanted}
+          passages={comparePassages}
+          covers={read.covers}
+          libraryFailure={read.failure}
+          onretrylibrary={read.reload}
+        >
+          {#snippet notice()}
+            <UnreadableCaptures
+              captures={tags.unreadableCaptures}
+              recognition={container.recognition}
+            />
+            <UnreadableTags tags={tags.unreadableTags} recognition={container.recognition} />
+          {/snippet}
+        </TagScreen>
+      {/snippet}
     </TagPageData>
   {/snippet}
 </LibraryShelfData>

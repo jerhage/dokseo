@@ -8,26 +8,37 @@
   import Field from '$lib/ui/components/Field.svelte';
   import Input from '$lib/ui/components/Input.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
+  import type { ReadState } from '$lib/shared/read-state';
   import { tagsHref } from '$lib/shared/tag-location';
+  import type { SearchedBook } from '../../domain/capture/capture-results';
   import type { Tag } from '../../domain/tag/tag';
   import { TAG_COLOURS } from '../../domain/tag/tag-colour';
+  import type { TagColour } from '../../domain/tag/tag-colour';
   import { captureCount, manageNotice, manageRows } from './manage-rows';
-  import type { ManageTagsView } from './manage-tags.svelte';
-  import type { TagView } from './tag-view.svelte';
+  import type { ManageTags } from './manage-tags.svelte';
+  import { rejectionOf } from './manage-tags-rules';
+  import { createTagEditing } from './tag-editing.svelte';
+  import { tagViewOf } from './tag-view-rules';
+  import type { TaggedCaptures } from './tag-view-rules';
   import TagsShell from './TagsShell.svelte';
 
   type Props = {
-    readonly view: TagView;
-    readonly manage: ManageTagsView;
+    readonly tagged: ReadState<TaggedCaptures>;
+    readonly books: readonly SearchedBook[];
+    readonly manage: ManageTags;
   };
 
-  let { view, manage }: Props = $props();
+  let { tagged, books, manage }: Props = $props();
 
   const uid = $props.id();
 
-  const rows = $derived(manageRows(view.column));
+  const editing = createTagEditing();
+  let filter = $state('');
 
-  const notice = $derived(manageNotice(rows.length, view.status));
+  const read = $derived(tagViewOf({ books, wanted: null, tagged }, filter));
+  const rows = $derived(manageRows(read.column));
+
+  const notice = $derived(manageNotice(rows.length, read.status));
 
   function takeFocus(node: HTMLInputElement): void {
     node.focus();
@@ -39,24 +50,41 @@
     if (event.key !== 'Escape') return;
 
     event.preventDefault();
-    manage.abandonRename();
+    editing.abandonRename();
+  }
+
+  async function rename(tag: Tag): Promise<void> {
+    const outcome = await manage.rename(tag, editing.draft);
+    if (outcome.kind === 'renamed') editing.renamed();
+    const rejection = rejectionOf(outcome);
+    if (rejection !== null) editing.rejected(rejection);
+  }
+
+  async function recolour(tag: Tag, colour: TagColour): Promise<void> {
+    const outcome = await manage.recolour(tag, colour);
+    if (outcome.kind === 'recoloured') editing.recoloured();
+  }
+
+  async function remove(tag: Tag): Promise<void> {
+    const outcome = await manage.remove(tag);
+    if (outcome.kind === 'removed') editing.removed();
   }
 
   function submit(event: SubmitEvent, tag: Tag): void {
     event.preventDefault();
-    void manage.rename(tag);
+    void rename(tag);
   }
 </script>
 
-<TagsShell {view} current="manage">
+<TagsShell {read} current="manage" bind:filter>
   {#snippet children()}
     <header class="row wrap items-center gap-3">
       <h1 class="text-lg">Manage tags</h1>
-      <Badge>{view.tags.length}</Badge>
+      <Badge>{read.tags.length}</Badge>
       <Button href={tagsHref(null)} variant="ghost" size="sm" class="ms-auto">Back to tags</Button>
     </header>
 
-    {#if view.status === 'failed'}
+    {#if read.status === 'failed'}
       <Alert variant="danger" role="alert">Your tags could not be read.</Alert>
     {/if}
 
@@ -68,7 +96,7 @@
           <li class="row wrap items-center gap-3 p-3 surface bordered rounded-container">
             <div class="row items-center gap-3 flex-fill">
               <Badge color={row.tag.colour} emphasis="quiet" dot aria-hidden="true" />
-              {#if manage.renaming === row.id}
+              {#if editing.renaming === row.id}
                 <form
                   class="col gap-1 flex-1"
                   id="{uid}-rename-{row.id}"
@@ -77,7 +105,7 @@
                   <Field
                     label="Rename {row.tag.name}"
                     hideLabel
-                    error={manage.invalid ?? undefined}
+                    error={editing.invalid ?? undefined}
                     announceError
                     class="gap-1"
                   >
@@ -85,7 +113,7 @@
                       <Input
                         {...control}
                         type="text"
-                        bind:value={manage.draft}
+                        bind:value={() => editing.draft, (next) => editing.setDraft(next)}
                         onkeydown={abandon}
                         {@attach takeFocus}
                       />
@@ -98,7 +126,7 @@
             </div>
             <div class="row items-center gap-2 ms-auto">
               <span class="shrink-0 text-xs mono text-muted">{captureCount(row.count)}</span>
-              {#if manage.confirming !== row.id}
+              {#if editing.confirming !== row.id}
                 <Dropdown size="sm" variant="ghost">
                   {#snippet trigger()}
                     <Badge color={row.tag.colour} emphasis="quiet" dot>{row.tag.colour}</Badge>
@@ -108,27 +136,27 @@
                     <DropdownItem
                       selected={colour === row.tag.colour}
                       aria-label="Make {row.tag.name} {colour}"
-                      onclick={() => void manage.recolour(row.tag, colour)}
+                      onclick={() => void recolour(row.tag, colour)}
                     >
                       <Badge color={colour} emphasis="quiet" dot>{colour}</Badge>
                     </DropdownItem>
                   {/each}
                 </Dropdown>
-                {#if manage.renaming === row.id}
+                {#if editing.renaming === row.id}
                   <Button size="sm" variant="primary" type="submit" form="{uid}-rename-{row.id}">
                     Save
                   </Button>
                 {:else}
-                  <Button size="sm" variant="ghost" onclick={() => manage.startRename(row.tag)}>
+                  <Button size="sm" variant="ghost" onclick={() => editing.startRename(row.tag)}>
                     Rename
                   </Button>
                 {/if}
-                <Button size="sm" variant="ghost-danger" onclick={() => manage.askRemove(row.tag)}>
+                <Button size="sm" variant="ghost-danger" onclick={() => editing.askRemove(row.tag)}>
                   Delete
                 </Button>
               {/if}
             </div>
-            {#if manage.confirming === row.id}
+            {#if editing.confirming === row.id}
               <Alert
                 variant="warning"
                 role="alertdialog"
@@ -137,8 +165,8 @@
               >
                 {row.warning}
                 {#snippet actions()}
-                  <Button size="sm" onclick={() => manage.dismissRemove()}>Keep it</Button>
-                  <Button size="sm" variant="danger" onclick={() => void manage.remove(row.tag)}>
+                  <Button size="sm" onclick={() => editing.dismissRemove()}>Keep it</Button>
+                  <Button size="sm" variant="danger" onclick={() => void remove(row.tag)}>
                     Delete
                   </Button>
                 {/snippet}

@@ -122,7 +122,7 @@ const USE_CONTAINER: SourceSnippet = {
 const MANAGE_ROUTE: SourceSnippet = {
   label: 'src/routes/tags/manage/+page.svelte builds the view model',
   file: 'src/routes/tags/manage/+page.svelte',
-  code: `const manage = new ManageTagsView(container.recognition, notify);`,
+  code: `const manage = new ManageTags(container.recognition, notify);`,
 };
 
 const RENAME_MUTATION: SourceSnippet = {
@@ -138,30 +138,22 @@ const RENAME_MUTATION: SourceSnippet = {
 const RENAME_METHOD: SourceSnippet = {
   label: 'ManageTagsView.rename',
   file: 'src/lib/domains/recognition/ui/tag/manage-tags.svelte.ts',
-  code: `async rename(tag: Tag): Promise<void> {
-  if (tagName(this.draft).length === 0) {
-    this.invalid = NAMELESS;
-    return;
-  }
+  code: `async rename(tag: Tag, name: string): Promise<RenameOutcome> {
+  if (tagName(name).length === 0) return { kind: 'nameless' };
 
   const generation = ++this.#generation;
-  const written = await this.#renaming.run({ tag, name: this.draft }).catch(() => null);
+  const written = await this.#renaming.run({ tag, name }).catch(() => null);
 
-  if (generation !== this.#generation) return;
+  if (generation !== this.#generation) return UNCHANGED;
 
-  if (written === null) return;
+  if (written === null) return UNCHANGED;
 
-  match(written)
-    .with({ kind: 'success' }, () => {
-      this.renaming = null;
-      this.draft = '';
-      this.invalid = null;
-    })
-    .with({ kind: 'name-taken' }, (taken) => {
-      this.invalid = \`\${taken.tag.name} already holds that name.\`;
-    })
+  return match<RenameTagResult, RenameOutcome>(written)
+    .with({ kind: 'success' }, () => ({ kind: 'renamed' }))
+    .with({ kind: 'name-taken' }, (taken) => ({ kind: 'name-taken', holder: taken.tag.name }))
     .with({ kind: 'storage-unavailable' }, () => {
       this.#fail(RENAME_FAILED, TAGS_UNCHANGEABLE);
+      return UNCHANGED;
     })
     .exhaustive();
 }`,
@@ -173,32 +165,24 @@ const RENAME_ARMS: Readonly<Record<RenameArm, SourceSnippet>> = {
   nameless: {
     label: 'The view model stops before the use case',
     file: MANAGE_FILE,
-    code: `if (tagName(this.draft).length === 0) {
-  this.invalid = NAMELESS;
-  return;
-}`,
+    code: `if (tagName(name).length === 0) return { kind: 'nameless' };`,
   },
   success: {
     label: 'The success arm',
     file: MANAGE_FILE,
-    code: `.with({ kind: 'success' }, () => {
-  this.renaming = null;
-  this.draft = '';
-  this.invalid = null;
-})`,
+    code: `.with({ kind: 'success' }, () => ({ kind: 'renamed' }))`,
   },
   'name-taken': {
     label: 'The name-taken arm',
     file: MANAGE_FILE,
-    code: `.with({ kind: 'name-taken' }, (taken) => {
-  this.invalid = \`\${taken.tag.name} already holds that name.\`;
-})`,
+    code: `.with({ kind: 'name-taken' }, (taken) => ({ kind: 'name-taken', holder: taken.tag.name }))`,
   },
   'storage-unavailable': {
     label: 'The storage-unavailable arm',
     file: MANAGE_FILE,
     code: `.with({ kind: 'storage-unavailable' }, () => {
   this.#fail(RENAME_FAILED, TAGS_UNCHANGEABLE);
+  return UNCHANGED;
 })`,
   },
   thrown: {
@@ -211,9 +195,7 @@ const RENAME_ARMS: Readonly<Record<RenameArm, SourceSnippet>> = {
 const RENAME_TEXTS: SourceSnippet = {
   label: 'The texts the view model shows',
   file: MANAGE_FILE,
-  code: `const NAMELESS = 'A tag needs a name.';
-
-const RENAME_FAILED = 'Could not rename that tag';`,
+  code: `const RENAME_FAILED = 'Could not rename that tag';`,
 };
 
 const UNCHANGEABLE_TEXT: SourceSnippet = {
@@ -225,14 +207,13 @@ const UNCHANGEABLE_TEXT: SourceSnippet = {
 const VIEW_MODEL_SPEC: SourceSnippet = {
   label: 'A view model test that runs in Node',
   file: 'src/lib/domains/recognition/ui/tag/manage-tags.spec.ts',
-  code: `it('refuses a draft that is only whitespace, so a tag never loses its name', async () => {
-  const manage = managing();
-  manage.startRename(SFX);
-  manage.draft = '   ';
-  await manage.rename(SFX);
+  code: `it('refuses a name that is only whitespace, so a tag never loses its name', async () => {
+  const manage = new ManageTags(
+    { renameTag: unused, recolourTag: unused, deleteTag: unused },
+    () => undefined,
+  );
 
-  expect(manage.invalid).toBe('A tag needs a name.');
-  expect(manage.renaming).toBe(SFX.id);
+  expect(await manage.rename(SFX, '   ')).toEqual({ kind: 'nameless' });
 });`,
 };
 
