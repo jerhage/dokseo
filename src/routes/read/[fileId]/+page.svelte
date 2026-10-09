@@ -113,7 +113,7 @@
               captures.recording.lift(captures.book, passage.cfi, passage.quote, passage.chapter)}
             onsearch={() => search?.searchThisBook()}
             saving={reader.preferences.saving}
-            onlanguage={(chosen) => void reader.preferences.setLanguage(chosen)}
+            onlanguage={(chosen) => void reader.setLanguage(chosen)}
           >
             {#snippet arrival()}
               {#if id !== null && session.passageStepping !== null && session.finding !== null && flow.arrivals.arrivalHolds}

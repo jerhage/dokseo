@@ -5,6 +5,7 @@ import type { Container } from '$lib/container';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace } from '$lib/shared/reading-place';
 import type { ReaderBook, ReaderOpening } from './reader-opening';
+import { unmeasured } from './page-grouping-rules';
 import { ReaderView } from './reader-view.svelte';
 import ReaderScreen from './ReaderScreen.svelte';
 
@@ -36,7 +37,7 @@ const BOOK: ReaderBook = {
 function markup(opening: ReaderOpening): string {
   const view = new ReaderView({} as Container, () => undefined);
   view.opening = opening;
-  view.grouping.groups = [[imageIndex(0), imageIndex(1)]];
+  view.sizes.set(unmeasured(BOOK.imageCount));
   return render(SCREEN, { props: { view } }).body;
 }
 

@@ -178,10 +178,7 @@ class ReadSession {
         this.close();
         this.#open(book, image);
       })
-      .with(
-        { kind: 'go-to-image' },
-        ({ book, image }) => void this.reader.navigation.goToImage(book, image),
-      )
+      .with({ kind: 'go-to-image' }, ({ book, image }) => void this.reader.goToImage(book, image))
       .with({ kind: 'stay' }, () => undefined)
       .exhaustive();
   }

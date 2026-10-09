@@ -64,9 +64,9 @@ const READER_OPEN: SourceSnippet = {
   const generation = ++this.#generation;
   this.#release();
   this.opening = OPENING;
-  this.grouping.reset();
+  this.sizes.reset();
   this.selection.clear();
-  this.navigation.position = AT_THE_FIRST_IMAGE;
+  this.#position.set(AT_THE_FIRST_IMAGE);
   this.#places.restart();
 
   let opened: OpenOutcome;

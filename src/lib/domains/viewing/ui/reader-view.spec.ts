@@ -66,6 +66,10 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
   };
 }
 
+function regrouped(view: ReaderView): void {
+  view.keepShownThroughCurrent(view.groups);
+}
+
 function drawnWidth(picture: PagePicture | null): number | null {
   return picture !== null && picture.kind === 'drawn' ? picture.bitmap.width : null;
 }
@@ -360,8 +364,8 @@ describe('ReaderView', () => {
 
     expect(view.opening.kind).toBe('images');
     expect(view.book?.title).toBe('Blame!');
-    expect(view.grouping.groups).toHaveLength(3);
-    expect(view.navigation.visiblePages).toEqual([0, 1]);
+    expect(view.groups).toHaveLength(3);
+    expect(view.visiblePages).toEqual([0, 1]);
     expect(readingNotice(view.opening)).toBeNull();
   });
 
@@ -413,7 +417,7 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.preferences.setDirection('ltr');
+    await view.setDirection('ltr');
 
     expect(view.opening).toMatchObject({ kind: 'empty', book: { direction: 'ltr' } });
   });
@@ -430,7 +434,7 @@ describe('ReaderView', () => {
       message: 'That book could not be read: bad zip',
     });
     expect(view.book).toBeNull();
-    expect(view.grouping.groups).toEqual([]);
+    expect(view.groups).toEqual([]);
   });
 
   it('moves to the next group and back', async () => {
@@ -438,13 +442,13 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.next();
-    expect(view.navigation.group).toBe(1);
-    expect(view.navigation.visiblePages).toEqual([2, 3]);
+    await view.next();
+    expect(view.group).toBe(1);
+    expect(view.visiblePages).toEqual([2, 3]);
 
-    await view.navigation.previous();
-    expect(view.navigation.group).toBe(0);
-    expect(view.navigation.visiblePages).toEqual([0, 1]);
+    await view.previous();
+    expect(view.group).toBe(0);
+    expect(view.visiblePages).toEqual([0, 1]);
   });
 
   it('offers the groups on either side of the current one, and none past either end', async () => {
@@ -452,13 +456,13 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    expect(view.navigation.besidePages).toEqual({ decrement: null, increment: [2, 3] });
+    expect(view.besidePages).toEqual({ decrement: null, increment: [2, 3] });
 
-    await view.navigation.next();
-    expect(view.navigation.besidePages).toEqual({ decrement: [0, 1], increment: [4, 5] });
+    await view.next();
+    expect(view.besidePages).toEqual({ decrement: [0, 1], increment: [4, 5] });
 
-    await view.navigation.next();
-    expect(view.navigation.besidePages).toEqual({ decrement: [2, 3], increment: null });
+    await view.next();
+    expect(view.besidePages).toEqual({ decrement: [2, 3], increment: null });
   });
 
   it('refuses to move past either end', async () => {
@@ -466,14 +470,14 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.previous();
-    expect(view.navigation.group).toBe(0);
+    await view.previous();
+    expect(view.group).toBe(0);
 
-    await view.navigation.goToGroup(2);
-    await view.navigation.next();
+    await view.goToGroup(2);
+    await view.next();
 
-    expect(view.navigation.group).toBe(2);
-    expect(view.navigation.visiblePages).toEqual([4, 5]);
+    expect(view.group).toBe(2);
+    expect(view.visiblePages).toEqual([4, 5]);
     expect(world.edits.map((edit) => edit.position)).toEqual([
       imagePlace(imageIndex(4), imageIndex(5)),
     ]);
@@ -497,13 +501,13 @@ describe('ReaderView', () => {
     world.pages.sizes.set(0, LANDSCAPE);
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    expect(view.grouping.groups).toHaveLength(3);
+    expect(view.groups).toHaveLength(3);
 
     const drawn = await view.pictureAt(imageIndex(0));
 
     expect(drawnWidth(drawn)).toBe(2400);
-    expect(at(view.grouping.sizes, 0)).toEqual(LANDSCAPE);
-    expect(view.grouping.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+    expect(at(view.sizes.sizes, 0)).toEqual(LANDSCAPE);
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
   });
 
   it('keeps the reader on the same image when a discovered wide page re-phases the groups', async () => {
@@ -511,13 +515,13 @@ describe('ReaderView', () => {
     world.pages.sizes.set(2, LANDSCAPE);
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    expect(view.navigation.group).toBe(1);
+    expect(view.group).toBe(1);
 
     await view.pictureAt(imageIndex(2));
 
-    expect(view.navigation.position.index).toBe(3);
-    expect(view.navigation.group).toBe(2);
-    expect(view.navigation.visiblePages).toEqual([3, 4]);
+    expect(view.position.index).toBe(3);
+    expect(view.group).toBe(2);
+    expect(view.visiblePages).toEqual([3, 4]);
   });
 
   it('persists the position when the group changes', async () => {
@@ -526,7 +530,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     expect(world.edits).toHaveLength(0);
 
-    await view.navigation.next();
+    await view.next();
 
     expect(world.edits).toEqual([
       { id: 'one', position: imagePlace(imageIndex(2), imageIndex(3)) },
@@ -555,7 +559,7 @@ describe('ReaderView', () => {
     const shown = await view.pictureAt(imageIndex(0));
 
     expect(shown).toEqual({ kind: 'encoded', url: 'blob:page-0' });
-    expect(at(view.grouping.sizes, 0)).toBeNull();
+    expect(at(view.sizes.sizes, 0)).toBeNull();
   });
 
   it('releases an encoded picture that arrives after the reader has moved on', async () => {
@@ -587,9 +591,9 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
-    await vi.waitFor(() => expect(at(view.grouping.sizes, 0)).toEqual(LANDSCAPE));
+    await vi.waitFor(() => expect(at(view.sizes.sizes, 0)).toEqual(LANDSCAPE));
 
-    expect(view.grouping.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
     expect(world.pages.asked).toEqual([]);
   });
 
@@ -603,11 +607,11 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.grouping.measure(imageIndex(0), LANDSCAPE);
+    view.measure(imageIndex(0), LANDSCAPE);
     arrive();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(at(view.grouping.sizes, 0)).toEqual(LANDSCAPE);
+    expect(at(view.sizes.sizes, 0)).toEqual(LANDSCAPE);
   });
 
   it('lets a later measurement replace a size read at open', async () => {
@@ -615,12 +619,12 @@ describe('ReaderView', () => {
     world.pages.headers.set(0, PORTRAIT);
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    await vi.waitFor(() => expect(at(view.grouping.sizes, 0)).toEqual(PORTRAIT));
+    await vi.waitFor(() => expect(at(view.sizes.sizes, 0)).toEqual(PORTRAIT));
 
-    view.grouping.measure(imageIndex(0), LANDSCAPE);
+    view.measure(imageIndex(0), LANDSCAPE);
 
-    expect(at(view.grouping.sizes, 0)).toEqual(LANDSCAPE);
-    expect(view.grouping.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
+    expect(at(view.sizes.sizes, 0)).toEqual(LANDSCAPE);
+    expect(view.groups).toEqual([[0], [1, 2], [3, 4], [5]]);
   });
 
   it('drops sizes read for a book the reader has already left', async () => {
@@ -639,7 +643,7 @@ describe('ReaderView', () => {
     arrive();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(at(view.grouping.sizes, 0)).toBeNull();
+    expect(at(view.sizes.sizes, 0)).toBeNull();
   });
 
   it('keeps the assumed sizes when they cannot be read at open', async () => {
@@ -651,7 +655,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(at(view.grouping.sizes, 0)).toBeNull();
+    expect(at(view.sizes.sizes, 0)).toBeNull();
     expect(view.opening.kind).toBe('images');
     expect(world.notices).toEqual([]);
   });
@@ -660,12 +664,12 @@ describe('ReaderView', () => {
     const world = fakes();
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    expect(view.grouping.groups).toHaveLength(3);
+    expect(view.groups).toHaveLength(3);
 
-    await view.preferences.setPairing('single');
+    await view.setPairing('single');
 
     expect(view.book?.pagePairing).toBe('single');
-    expect(view.grouping.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
     expect(at(world.edits, 0).pagePairing).toBe('single');
     expect(view.preferences.saving).toBe(false);
   });
@@ -674,39 +678,39 @@ describe('ReaderView', () => {
     const world = fakes({ pagePairing: 'auto' });
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    const wide = view.grouping.groups;
+    const wide = view.groups;
 
-    view.grouping.fitScreen('narrow');
-    const narrow = view.grouping.groups;
-    view.grouping.fitScreen('wide');
+    view.fitScreen('narrow');
+    const narrow = view.groups;
+    view.fitScreen('wide');
 
     expect(wide).toEqual([[0], [1, 2], [3, 4], [5]]);
     expect(narrow).toEqual([[0], [1], [2], [3], [4], [5]]);
-    expect(view.grouping.groups).toEqual(wide);
+    expect(view.groups).toEqual(wide);
     expect(world.edits).toEqual([]);
   });
 
   it('opens an automatic book one page at a time when the screen was already narrow', async () => {
     const world = fakes({ pagePairing: 'auto' });
     const view = new ReaderView(world.container, world.notify);
-    view.grouping.fitScreen('narrow');
+    view.fitScreen('narrow');
 
     await view.open(bookId('one'));
 
-    expect(view.grouping.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
   });
 
   it('keeps a chosen pairing on a narrow screen', async () => {
     const world = fakes({ pagePairing: 'double-after-cover' });
     const view = new ReaderView(world.container, world.notify);
-    view.grouping.fitScreen('narrow');
+    view.fitScreen('narrow');
 
     await view.open(bookId('one'));
-    const chosen = view.grouping.groups;
-    await view.preferences.setPairing('double');
+    const chosen = view.groups;
+    await view.setPairing('double');
 
     expect(chosen).toEqual([[0], [1, 2], [3, 4], [5]]);
-    expect(view.grouping.groups).toEqual([
+    expect(view.groups).toEqual([
       [0, 1],
       [2, 3],
       [4, 5],
@@ -719,7 +723,7 @@ describe('ReaderView', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.grouping.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
     expect(view.direction).toBe('ltr');
     expect(view.book?.pagePairing).toBe('double');
   });
@@ -736,7 +740,7 @@ describe('ReaderView', () => {
     [
       'the pairing changes',
       { position: imagePlace(imageIndex(3)) },
-      (view) => view.preferences.setPairing('double-after-cover'),
+      (view) => view.setPairing('double-after-cover'),
       1,
       [2, 3],
       2,
@@ -745,7 +749,7 @@ describe('ReaderView', () => {
     [
       'the layout changes',
       { position: imagePlace(imageIndex(3)) },
-      (view) => view.preferences.setLayoutKind('continuous'),
+      (view) => view.setLayoutKind('continuous'),
       1,
       [2, 3],
       3,
@@ -754,7 +758,7 @@ describe('ReaderView', () => {
     [
       'the layout returns to pages',
       { layoutKind: 'continuous', position: imagePlace(imageIndex(3)) },
-      (view) => view.preferences.setLayoutKind('paged'),
+      (view) => view.setLayoutKind('paged'),
       3,
       [3],
       1,
@@ -768,14 +772,14 @@ describe('ReaderView', () => {
       const world = fakes(overrides);
       const view = new ReaderView(world.container, world.notify);
       await view.open(bookId('one'));
-      expect(view.navigation.group).toBe(groupBefore);
-      expect(view.navigation.visiblePages).toEqual(shownBefore);
+      expect(view.group).toBe(groupBefore);
+      expect(view.visiblePages).toEqual(shownBefore);
 
       await change(view);
 
-      expect(view.navigation.position.index).toBe(3);
-      expect(view.navigation.group).toBe(groupAfter);
-      expect(view.navigation.visiblePages).toEqual(shownAfter);
+      expect(view.position.index).toBe(3);
+      expect(view.group).toBe(groupAfter);
+      expect(view.visiblePages).toEqual(shownAfter);
     },
   );
 
@@ -783,13 +787,13 @@ describe('ReaderView', () => {
     const world = fakes();
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    expect(view.grouping.groups).toHaveLength(3);
+    expect(view.groups).toHaveLength(3);
 
-    await view.preferences.setLayoutKind('continuous');
+    await view.setLayoutKind('continuous');
 
     expect(view.book?.layoutKind).toBe('continuous');
     expect(view.book?.pagePairing).toBe('double');
-    expect(view.grouping.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
+    expect(view.groups).toEqual([[0], [1], [2], [3], [4], [5]]);
     expect(at(world.edits, 0).layoutKind).toBe('continuous');
     expect(view.preferences.saving).toBe(false);
   });
@@ -800,17 +804,17 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     view.selection.select([region(0)]);
 
-    await view.preferences.setLayoutKind('continuous');
+    await view.setLayoutKind('continuous');
 
     expect(view.selection.regions).toEqual([]);
   });
 
   const IN_FORCE: readonly (readonly [string, Change])[] = [
-    ['layout', (view) => view.preferences.setLayoutKind('paged')],
-    ['language', (view) => view.preferences.setLanguage('ja')],
-    ['pairing', (view) => view.preferences.setPairing('double')],
-    ['direction', (view) => view.preferences.setDirection('rtl')],
-    ['page fit', (view) => view.preferences.setPageFit('height')],
+    ['layout', (view) => view.setLayoutKind('paged')],
+    ['language', (view) => view.setLanguage('ja')],
+    ['pairing', (view) => view.setPairing('double')],
+    ['direction', (view) => view.setDirection('rtl')],
+    ['page fit', (view) => view.setPageFit('height')],
   ];
 
   it.each(IN_FORCE)('ignores a %s already in force', async (_setting, change) => {
@@ -824,9 +828,9 @@ describe('ReaderView', () => {
   });
 
   const IN_FLIGHT: readonly (readonly [string, Change, SettingField, unknown])[] = [
-    ['layout', (view) => view.preferences.setLayoutKind('continuous'), 'layoutKind', 'paged'],
-    ['language', (view) => view.preferences.setLanguage('ko'), 'language', 'ja'],
-    ['direction', (view) => view.preferences.setDirection('ltr'), 'direction', 'rtl'],
+    ['layout', (view) => view.setLayoutKind('continuous'), 'layoutKind', 'paged'],
+    ['language', (view) => view.setLanguage('ko'), 'language', 'ja'],
+    ['direction', (view) => view.setDirection('ltr'), 'direction', 'rtl'],
   ];
 
   it.each(IN_FLIGHT)(
@@ -841,7 +845,7 @@ describe('ReaderView', () => {
         release = resolve;
       });
 
-      const first = view.preferences.setPairing('single');
+      const first = view.setPairing('single');
       await change(view);
       expect(world.edits).toHaveLength(1);
 
@@ -855,9 +859,9 @@ describe('ReaderView', () => {
   );
 
   const SETS: readonly (readonly [string, Change, SettingField, unknown])[] = [
-    ['the direction', (view) => view.preferences.setDirection('ltr'), 'direction', 'ltr'],
-    ['a new language', (view) => view.preferences.setLanguage('ko'), 'language', 'ko'],
-    ['the page fit', (view) => view.preferences.setPageFit('width'), 'pageFit', 'width'],
+    ['the direction', (view) => view.setDirection('ltr'), 'direction', 'ltr'],
+    ['a new language', (view) => view.setLanguage('ko'), 'language', 'ko'],
+    ['the page fit', (view) => view.setPageFit('width'), 'pageFit', 'width'],
   ];
 
   it.each(SETS)('saves %s', async (_setting, change, field, value) => {
@@ -884,7 +888,7 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify, null, null, null, KOREAN_EDIT);
     await view.open(bookId('one'));
 
-    await view.preferences.setLanguage('ko');
+    await view.setLanguage('ko');
 
     expect(world.edits).toEqual([
       {
@@ -907,7 +911,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     view.selection.select([region(0)]);
 
-    await view.preferences.setLanguage('ko');
+    await view.setLanguage('ko');
 
     expect(view.selection.regions).toEqual([]);
   });
@@ -918,7 +922,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     view.selection.select([region(0)]);
 
-    await view.preferences.setLanguage('ko');
+    await view.setLanguage('ko');
 
     expect(view.selection.regions).toEqual([region(0)]);
   });
@@ -929,7 +933,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     world.gate = new Promise<void>(() => undefined);
 
-    void view.preferences.setDirection('ltr');
+    void view.setDirection('ltr');
     expect(view.preferences.saving).toBe(true);
     view.dispose();
 
@@ -945,7 +949,7 @@ describe('ReaderView', () => {
       release = resolve;
     });
 
-    const changing = view.preferences.setLanguage('ko');
+    const changing = view.setLanguage('ko');
     await view.open(bookId('one'));
     release();
     await changing;
@@ -963,7 +967,7 @@ describe('ReaderView', () => {
     });
     world.editing = 'failed';
 
-    const changing = view.preferences.setDirection('ltr');
+    const changing = view.setDirection('ltr');
     await view.open(bookId('one'));
     release();
     await changing;
@@ -972,29 +976,11 @@ describe('ReaderView', () => {
   });
 
   const FAILURES: readonly (readonly [string, Change, string, SettingField, unknown])[] = [
-    [
-      'layout',
-      (view) => view.preferences.setLayoutKind('continuous'),
-      LAYOUT_FAILED,
-      'layoutKind',
-      'paged',
-    ],
-    [
-      'pairing',
-      (view) => view.preferences.setPairing('single'),
-      PAIRING_FAILED,
-      'pagePairing',
-      'double',
-    ],
-    [
-      'direction',
-      (view) => view.preferences.setDirection('ltr'),
-      DIRECTION_FAILED,
-      'direction',
-      'rtl',
-    ],
-    ['language', (view) => view.preferences.setLanguage('en'), LANGUAGE_FAILED, 'language', 'ja'],
-    ['page fit', (view) => view.preferences.setPageFit('width'), FIT_FAILED, 'pageFit', 'height'],
+    ['layout', (view) => view.setLayoutKind('continuous'), LAYOUT_FAILED, 'layoutKind', 'paged'],
+    ['pairing', (view) => view.setPairing('single'), PAIRING_FAILED, 'pagePairing', 'double'],
+    ['direction', (view) => view.setDirection('ltr'), DIRECTION_FAILED, 'direction', 'rtl'],
+    ['language', (view) => view.setLanguage('en'), LANGUAGE_FAILED, 'language', 'ja'],
+    ['page fit', (view) => view.setPageFit('width'), FIT_FAILED, 'pageFit', 'height'],
   ];
 
   it.each(FAILURES)(
@@ -1016,7 +1002,7 @@ describe('ReaderView', () => {
       ]);
       expect(readingNotice(view.opening)).toBeNull();
       expect(view.book?.[field]).toBe(kept);
-      expect(view.grouping.groups).toHaveLength(3);
+      expect(view.groups).toHaveLength(3);
       expect(view.preferences.saving).toBe(false);
     },
   );
@@ -1027,7 +1013,7 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     view.selection.select([region(0)]);
 
-    await view.preferences.setPageFit('width');
+    await view.setPageFit('width');
 
     expect(view.selection.regions).toEqual([region(0)]);
   });
@@ -1042,8 +1028,8 @@ describe('ReaderView', () => {
       release = resolve;
     });
 
-    const first = view.preferences.setPairing('single');
-    const second = view.preferences.setPageFit('width');
+    const first = view.setPairing('single');
+    const second = view.setPageFit('width');
 
     release();
     await Promise.all([first, second]);
@@ -1058,9 +1044,9 @@ describe('ReaderView', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.next();
+    await view.next();
 
-    expect(view.navigation.group).toBe(1);
+    expect(view.group).toBe(1);
     expect(world.notices).toEqual([
       {
         tone: 'danger',
@@ -1079,7 +1065,7 @@ describe('ReaderView', () => {
     });
     await view.open(bookId('one'));
 
-    await view.preferences.setDirection('ltr');
+    await view.setDirection('ltr');
 
     expect(changed).toBe(1);
   });
@@ -1092,7 +1078,7 @@ describe('ReaderView', () => {
     });
     await view.open(bookId('one'));
 
-    await view.navigation.next();
+    await view.next();
 
     expect(changed).toBe(1);
   });
@@ -1106,8 +1092,8 @@ describe('ReaderView', () => {
     });
     await view.open(bookId('one'));
 
-    await view.navigation.next();
-    await view.preferences.setDirection('ltr');
+    await view.next();
+    await view.setDirection('ltr');
 
     expect(changed).toBe(0);
   });
@@ -1122,7 +1108,7 @@ describe('ReaderView', () => {
     });
     world.editing = 'failed';
 
-    const turning = view.navigation.next();
+    const turning = view.next();
     await view.open(bookId('one'));
     release();
     await turning;
@@ -1137,9 +1123,9 @@ describe('ReaderView', () => {
     await view.open(bookId('one'));
     view.selection.select([region(0)]);
 
-    await view.navigation.next();
+    await view.next();
 
-    expect(view.navigation.group).toBe(1);
+    expect(view.group).toBe(1);
     expect(view.selection.regions).toEqual([]);
   });
 
@@ -1170,9 +1156,9 @@ describe('the reading place of a continuous strip', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(3), 0.5));
+    view.moveTo(readingPosition(imageIndex(3), 0.5));
 
-    expect(view.navigation.position).toEqual({ index: 3, offset: 0.5 });
+    expect(view.position).toEqual({ index: 3, offset: 0.5 });
     expect(world.edits).toEqual([]);
   });
 
@@ -1181,9 +1167,9 @@ describe('the reading place of a continuous strip', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(1), 0.25));
-    view.navigation.moveTo(readingPosition(imageIndex(2), 0.75));
-    view.navigation.moveTo(readingPosition(imageIndex(4), 0));
+    view.moveTo(readingPosition(imageIndex(1), 0.25));
+    view.moveTo(readingPosition(imageIndex(2), 0.75));
+    view.moveTo(readingPosition(imageIndex(4), 0));
 
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
@@ -1194,7 +1180,7 @@ describe('the reading place of a continuous strip', () => {
     const world = fakes({ layoutKind: 'continuous', pagePairing: 'single', direction: 'ltr' });
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    view.navigation.moveTo(readingPosition(imageIndex(5), 0.5));
+    view.moveTo(readingPosition(imageIndex(5), 0.5));
     expect(world.edits).toEqual([]);
 
     view.dispose();
@@ -1215,8 +1201,8 @@ describe('the reading place of a continuous strip', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(2), 0.4), imageIndex(2));
-    view.navigation.moveTo(readingPosition(imageIndex(2), 0.5), imageIndex(2));
+    view.moveTo(readingPosition(imageIndex(2), 0.4), imageIndex(2));
+    view.moveTo(readingPosition(imageIndex(2), 0.5), imageIndex(2));
     expect(world.edits).toEqual([]);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
@@ -1236,7 +1222,7 @@ describe('the reading place of a continuous strip', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.navigation.position).toEqual({ index: 3, offset: 0.4 });
+    expect(view.position).toEqual({ index: 3, offset: 0.4 });
   });
 
   it('opens at the top of a slice the url names that is not the one the reader left', async () => {
@@ -1250,7 +1236,7 @@ describe('the reading place of a continuous strip', () => {
 
     await view.open(bookId('one'), imageIndex(1));
 
-    expect(view.navigation.position).toEqual({ index: 1, offset: 0 });
+    expect(view.position).toEqual({ index: 1, offset: 0 });
   });
 
   it('saves nothing when the strip reports the fraction it opened at', async () => {
@@ -1263,7 +1249,7 @@ describe('the reading place of a continuous strip', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(3));
+    view.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(3));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits).toEqual([]);
@@ -1274,7 +1260,7 @@ describe('the reading place of a continuous strip', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(0), 0));
+    view.moveTo(readingPosition(imageIndex(0), 0));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits).toEqual([]);
@@ -1293,7 +1279,7 @@ describe('reading to the end', () => {
   async function stopAt(world: Fakes, groupsBeforeTheEnd: number): Promise<ReaderView> {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    await view.navigation.goToGroup(view.grouping.groups.length - 1 - groupsBeforeTheEnd);
+    await view.goToGroup(view.groups.length - 1 - groupsBeforeTheEnd);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
     return view;
   }
@@ -1342,8 +1328,8 @@ describe('reading to the end', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.navigation.position.index).toBe(3);
-    expect(view.navigation.visiblePages).toEqual([3, 4]);
+    expect(view.position.index).toBe(3);
+    expect(view.visiblePages).toEqual([3, 4]);
     expect(world.edits).toEqual([]);
   });
 
@@ -1403,9 +1389,10 @@ describe('reading to the end', () => {
     await view.open(bookId('one'));
 
     await view.pictureAt(imageIndex(3));
+    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(view.navigation.visiblePages).toEqual([2]);
+    expect(view.visiblePages).toEqual([2]);
     expect(world.stored.position).toEqual(imagePlace(imageIndex(2)));
   });
 
@@ -1414,7 +1401,8 @@ describe('reading to the end', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.preferences.setPairing('double');
+    await view.setPairing('double');
+    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.stored.position).toEqual(imagePlace(imageIndex(4), imageIndex(5)));
@@ -1426,9 +1414,10 @@ describe('reading to the end', () => {
     world.pages.sizes.set(3, LANDSCAPE);
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
-    await view.navigation.next();
+    await view.next();
 
     await view.pictureAt(imageIndex(3));
+    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.stored.position).toEqual(imagePlace(imageIndex(2)));
@@ -1440,9 +1429,11 @@ describe('reading to the end', () => {
     const view = new ReaderView(world.container, world.notify);
 
     await view.open(bookId('one'));
+    await vi.advanceTimersByTimeAsync(0);
+    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
-    expect(view.grouping.groups).toEqual([[0], [1]]);
+    expect(view.groups).toEqual([[0], [1]]);
     expect(world.stored.position).toEqual(imagePlace(imageIndex(0)));
   });
 
@@ -1451,7 +1442,8 @@ describe('reading to the end', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.preferences.setPairing('double');
+    await view.setPairing('double');
+    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits.filter((edit) => edit.position !== undefined)).toEqual([]);
@@ -1462,7 +1454,7 @@ describe('reading to the end', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(3), 0.6), imageIndex(4));
+    view.moveTo(readingPosition(imageIndex(3), 0.6), imageIndex(4));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.stored.position).toEqual(imagePlace(imageIndex(3), imageIndex(4), 0.6));
@@ -1474,7 +1466,7 @@ describe('reading to the end', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    view.navigation.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(3));
+    view.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(3));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(showsTheEnd(world.stored.position, 5)).toBe(false);
@@ -1496,8 +1488,8 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'), imageIndex(4));
 
-    expect(view.navigation.position.index).toBe(4);
-    expect(view.navigation.visiblePages).toEqual([4, 5]);
+    expect(view.position.index).toBe(4);
+    expect(view.visiblePages).toEqual([4, 5]);
   });
 
   it('overwrites the saved place with the one the url asked for', async () => {
@@ -1517,7 +1509,7 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'), imageIndex(4));
 
-    expect(view.navigation.position.index).toBe(4);
+    expect(view.position.index).toBe(4);
     expect(world.edits).toEqual([]);
   });
 
@@ -1539,7 +1531,7 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'));
 
-    expect(view.navigation.position.index).toBe(2);
+    expect(view.position.index).toBe(2);
     expect(world.edits).toEqual([]);
   });
 
@@ -1549,7 +1541,7 @@ describe('the reading place in the url', () => {
 
     await view.open(bookId('one'), imageIndex(99));
 
-    expect(view.navigation.position.index).toBe(5);
+    expect(view.position.index).toBe(5);
     expect(readingNotice(view.opening)).toBe(
       'This book holds 6 images, so it opened at the last one.',
     );
@@ -1569,7 +1561,7 @@ describe('the reading place in the url', () => {
 
       await view.open(bookId('one'), imageIndex(named));
 
-      expect(view.navigation.visiblePages).toEqual(shown);
+      expect(view.visiblePages).toEqual(shown);
       expect(mirrored).toEqual([{ kind: 'arrived', index: named }]);
     },
   );
@@ -1581,8 +1573,8 @@ describe('the reading place in the url', () => {
     await view.open(bookId('one'));
     mirrored.length = 0;
 
-    await view.navigation.next();
-    await view.navigation.next();
+    await view.next();
+    await view.next();
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(mirrored).toEqual([{ kind: 'moved', index: 4, group: [4, 5] }]);
@@ -1599,7 +1591,7 @@ describe('the reading place in the url', () => {
     await view.open(bookId('one'));
     mirrored.length = 0;
 
-    await view.navigation.goToImage(bookId('one'), imageIndex(3));
+    await view.goToImage(bookId('one'), imageIndex(3));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(mirrored).toEqual([{ kind: 'moved', index: 2, group: [2, 3] }]);
@@ -1612,7 +1604,7 @@ describe('the reading place in the url', () => {
     await view.open(bookId('one'));
     mirrored.length = 0;
 
-    view.navigation.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(4));
+    view.moveTo(readingPosition(imageIndex(3), 0.4), imageIndex(4));
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(mirrored).toEqual([{ kind: 'moved', index: 3, group: [3] }]);
@@ -1623,10 +1615,10 @@ describe('the reading place in the url', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.goToImage(bookId('one'), imageIndex(4));
+    await view.goToImage(bookId('one'), imageIndex(4));
 
-    expect(view.navigation.position.index).toBe(4);
-    expect(view.navigation.visiblePages).toEqual([4, 5]);
+    expect(view.position.index).toBe(4);
+    expect(view.visiblePages).toEqual([4, 5]);
   });
 
   it('clamps a jump past the end to the last image', async () => {
@@ -1634,9 +1626,9 @@ describe('the reading place in the url', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.goToImage(bookId('one'), imageIndex(99));
+    await view.goToImage(bookId('one'), imageIndex(99));
 
-    expect(view.navigation.position.index).toBe(4);
+    expect(view.position.index).toBe(4);
   });
 
   it('holds the place a jump asked for in a continuous book', async () => {
@@ -1644,9 +1636,9 @@ describe('the reading place in the url', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.goToImage(bookId('one'), imageIndex(3));
+    await view.goToImage(bookId('one'), imageIndex(3));
 
-    expect(view.navigation.position.index).toBe(3);
+    expect(view.position.index).toBe(3);
   });
 
   it('ignores a jump aimed at a book it is not showing', async () => {
@@ -1654,9 +1646,9 @@ describe('the reading place in the url', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.goToImage(bookId('another'), imageIndex(4));
+    await view.goToImage(bookId('another'), imageIndex(4));
 
-    expect(view.navigation.position.index).toBe(0);
+    expect(view.position.index).toBe(0);
   });
 
   it('saves nothing for a jump to the place it already holds', async () => {
@@ -1664,7 +1656,7 @@ describe('the reading place in the url', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.navigation.goToImage(bookId('one'), imageIndex(0));
+    await view.goToImage(bookId('one'), imageIndex(0));
 
     expect(world.edits).toEqual([]);
   });
@@ -1704,7 +1696,7 @@ describe('the reading place in the url', () => {
     const view = new ReaderView(world.container, world.notify);
     await view.open(bookId('one'));
 
-    await view.preferences.setLanguage('ko');
+    await view.setLanguage('ko');
 
     expect(at(world.edits, 0).language).toBe('ko');
     expect(heldBook(view.opening)?.language).toBe('ko');
@@ -1815,7 +1807,7 @@ describe('ReaderView language hook', () => {
     const { view, known } = watched(fakes());
     await view.open(bookId('one'));
 
-    await view.preferences.setLanguage('ko');
+    await view.setLanguage('ko');
 
     expect(known).toEqual([
       { book: bookId('one'), language: 'ja' },
@@ -1827,7 +1819,7 @@ describe('ReaderView language hook', () => {
     const { view, known } = watched(fakes());
     await view.open(bookId('one'));
 
-    await view.preferences.setPairing('single');
+    await view.setPairing('single');
 
     expect(known).toHaveLength(1);
   });
@@ -1838,7 +1830,7 @@ describe('ReaderView language hook', () => {
     const { view, known } = watched(world);
     await view.open(bookId('one'));
 
-    await view.preferences.setLanguage('en');
+    await view.setLanguage('en');
 
     expect(known).toHaveLength(1);
   });

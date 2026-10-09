@@ -2,17 +2,13 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import type { BookId } from '$lib/shared/ids';
 import type { Language } from '$lib/shared/language';
-import type { ImageLayoutKind, PagePairingChoice, ReadingDirection } from '$lib/shared/layout-kind';
 import type { Notify } from '$lib/shared/notice';
-import type { PageFit } from '$lib/shared/page-fit';
 import { unexpectedMessage } from '$lib/shared/unexpected-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import { editBookMutation } from '../queries/viewing-queries';
 import type { BookEditRequest } from '../queries/viewing-queries';
-import { heldBook, shownBook } from './reader-opening';
-import type { FlowBook, ReaderBook, ReaderOpening } from './reader-opening';
-import type { RegionSelectionHook } from './region-selection.svelte';
+import type { FlowBook, ReaderBook } from './reader-opening';
 
 type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
 
@@ -58,29 +54,20 @@ class BookPreferences {
   saving = $state(false);
 
   #notify: Notify;
-  #opening: () => ReaderOpening;
   #generation: () => number;
-  #selection: RegionSelectionHook;
   #held: BookHeld;
-  #languageEdit: LanguageEdit;
   #editing: WriteQuery<EditOutcome, BookEditRequest<BookEdit>>;
 
   constructor(
     container: Container,
     notify: Notify,
-    opening: () => ReaderOpening,
     generation: () => number,
-    selection: RegionSelectionHook,
     held: BookHeld,
     bookChanged: BookChanged | null,
-    languageEdit: LanguageEdit,
   ) {
     this.#notify = notify;
-    this.#opening = opening;
     this.#generation = generation;
-    this.#selection = selection;
     this.#held = held;
-    this.#languageEdit = languageEdit;
     this.#editing = writeQuery(() => ({
       ...editBookMutation(container.library),
       onSuccess: (saved) => {
@@ -89,41 +76,7 @@ class BookPreferences {
     }));
   }
 
-  async setLayoutKind(kind: ImageLayoutKind): Promise<void> {
-    const book = shownBook(this.#opening());
-    if (book === null || this.saving || book.layoutKind === kind) return;
-    this.#selection.clear();
-    await this.#edit(book.id, { layoutKind: kind }, LAYOUT_FAILED);
-  }
-
-  async setPairing(pairing: PagePairingChoice): Promise<void> {
-    const book = shownBook(this.#opening());
-    if (book === null || this.saving || book.pagePairing === pairing) return;
-    this.#selection.clear();
-    await this.#edit(book.id, { pagePairing: pairing }, PAIRING_FAILED);
-  }
-
-  async setDirection(direction: ReadingDirection): Promise<void> {
-    const book = shownBook(this.#opening());
-    if (book === null || this.saving || book.direction === direction) return;
-    await this.#edit(book.id, { direction }, DIRECTION_FAILED);
-  }
-
-  async setLanguage(language: Language): Promise<void> {
-    const book = heldBook(this.#opening());
-    if (book === null || this.saving || book.language === language) return;
-    const edit = this.#languageEdit(book, language);
-    if (regroups(edit)) this.#selection.clear();
-    await this.#edit(book.id, edit, LANGUAGE_FAILED);
-  }
-
-  async setPageFit(fit: PageFit): Promise<void> {
-    const book = shownBook(this.#opening());
-    if (book === null || book.pageFit === fit) return;
-    await this.#edit(book.id, { pageFit: fit }, FIT_FAILED);
-  }
-
-  async #edit(id: BookId, edit: BookEdit, failed: string): Promise<void> {
+  async edit(id: BookId, edit: BookEdit, failed: string): Promise<void> {
     const generation = this.#generation();
     this.saving = true;
 
@@ -157,5 +110,6 @@ export {
   PAIRING_FAILED,
   describeEditFailure,
   languageOnly,
+  regroups,
 };
-export type { BookChanged, BookHeld, LanguageEdit };
+export type { BookChanged, BookEdit, BookHeld, LanguageEdit };

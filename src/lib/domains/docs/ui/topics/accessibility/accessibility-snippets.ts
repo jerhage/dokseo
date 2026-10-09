@@ -102,8 +102,8 @@ const READER_ARROWS: SourceSnippet = {
   if (handlesOwnKeys(event.target)) return;
 
   event.preventDefault();
-  if (event.key === forwardKey) void view.navigation.next();
-  else void view.navigation.previous();
+  if (event.key === forwardKey) void view.next();
+  else void view.previous();
 }`,
 };
 
