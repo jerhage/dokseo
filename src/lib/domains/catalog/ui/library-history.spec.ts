@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
+import { readReady } from '$lib/shared/read-state';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
 import { HOME_ROOT_FEED, HOME_SERIES_FEED, placed } from '../domain/catalog-feed-fixtures';
@@ -165,8 +166,6 @@ describe('the library history across the tabs and the feeds', () => {
     const browser = new FakeBrowser();
     const session = new CatalogSession();
     const cases: CatalogTabsUseCases = {
-      listCatalogs: () =>
-        Promise.resolve({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
       browseCatalog: (_id, url, path): Promise<BrowseCatalogResult> => {
         const middle: CatalogFeed =
           HOME_ROOT_FEED.kind === 'navigation'
@@ -194,6 +193,7 @@ describe('the library history across the tabs and the feeds', () => {
     const deviceDetail: (string | null)[] = [];
     const tabs: CatalogTabsView = new CatalogTabsView(session, {
       cases,
+      catalogs: () => readReady({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
       notify: () => undefined,
       matching: () => DEFAULT_BOOK_MATCHING,
       defaults: () => INITIAL_READING_DEFAULTS,
@@ -223,7 +223,6 @@ describe('the library history across the tabs and the feeds', () => {
 
   async function atHome() {
     const setup = library();
-    await setup.tabs.load();
     setup.history.arrive();
     setup.tabs.select(HOME.id);
     const home = setup.tabs.browsing(HOME);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
+import { readReady } from '$lib/shared/read-state';
 import { DEFAULT_BOOK_MATCHING } from '$lib/domains/library/domain/book/book-matching';
 import { INITIAL_READING_DEFAULTS } from '$lib/domains/library/domain/book/reading-defaults';
 import {
@@ -45,9 +46,8 @@ function setup() {
   const searches: Array<{ handle: string; query: string }> = [];
   const session = new CatalogSession();
   const tabs = new CatalogTabsView(session, {
+    catalogs: () => readReady({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
     cases: {
-      listCatalogs: () =>
-        Promise.resolve({ kind: 'success', catalogs: [HOME, ARCHIVE], unreadable: [] }),
       browseCatalog: (id, url, path) => {
         urls.push(url);
         const root = id === HOME.id ? HOME_ROOT_FEED : withoutSearch(HOME_ROOT_FEED);
@@ -101,21 +101,18 @@ describe('searchAvailability', () => {
 describe('CatalogHeaderSearch', () => {
   it('offers no field while the device tab is selected', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     expect(tabs.selected).toBe(DEVICE_TAB);
     expect(search.field).toBeUndefined();
   });
 
   it('names the selected catalog in the placeholder', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     tabs.select(HOME.id);
     expect(search.field).toMatchObject({ placeholder: 'Search Home', disabled: false });
   });
 
   it('keeps each catalog its own query', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     tabs.select(HOME.id);
     search.field?.oninput('moon');
     tabs.select(ARCHIVE.id);
@@ -127,7 +124,6 @@ describe('CatalogHeaderSearch', () => {
 
   it('searches the selected catalog on submit', async () => {
     const { search, tabs, searches } = setup();
-    await tabs.load();
     tabs.select(HOME.id);
     await tabs.browsing(HOME).start();
     search.field?.onsubmit('moon');
@@ -138,7 +134,6 @@ describe('CatalogHeaderSearch', () => {
 
   it('disables the field for a catalog whose feeds offer no search', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     tabs.select(ARCHIVE.id);
     await tabs.browsing(ARCHIVE).start();
     expect(search.field).toMatchObject({ placeholder: 'Archive has no search', disabled: true });
@@ -146,7 +141,6 @@ describe('CatalogHeaderSearch', () => {
 
   it('keeps the field enabled while the feed is still being read', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     tabs.select(ARCHIVE.id);
     expect(search.field).toMatchObject({ placeholder: 'Search Archive', disabled: false });
   });
@@ -155,7 +149,6 @@ describe('CatalogHeaderSearch', () => {
 describe('CatalogHeaderSearch.fieldFor', () => {
   it('answers the field of a catalog that is not the selected tab', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     tabs.select(HOME.id);
 
     expect(search.fieldFor(ARCHIVE)).toMatchObject({ placeholder: 'Search Archive' });
@@ -163,7 +156,6 @@ describe('CatalogHeaderSearch.fieldFor', () => {
 
   it('shares the query with the header field of the same catalog', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     tabs.select(HOME.id);
 
     search.fieldFor(HOME).oninput('lantern');
@@ -174,7 +166,6 @@ describe('CatalogHeaderSearch.fieldFor', () => {
 
   it('searches the catalog it was asked for, on submit', async () => {
     const { search, tabs, searches } = setup();
-    await tabs.load();
     tabs.select(HOME.id);
     tabs.browsing(HOME);
     await tabs.browsing(HOME).start();
@@ -186,7 +177,6 @@ describe('CatalogHeaderSearch.fieldFor', () => {
 
   it('disables the field of a catalog whose feed offers no search once it is read', async () => {
     const { search, tabs } = setup();
-    await tabs.load();
     await tabs.browsing(ARCHIVE).start();
 
     expect(search.fieldFor(ARCHIVE)).toMatchObject({
@@ -199,7 +189,6 @@ describe('CatalogHeaderSearch.fieldFor', () => {
 describe('CatalogHeaderSearch typing', () => {
   async function ready() {
     const made = setup();
-    await made.tabs.load();
     made.tabs.select(HOME.id);
     await made.tabs.browsing(HOME).start();
     return made;

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookId } from '$lib/shared/ids';
+import { LOADING, readReady } from '$lib/shared/read-state';
+import type { ReadState } from '$lib/shared/read-state';
 import type { BookOrigin } from '../domain/book-origin';
 import type { ListCatalogsResult } from '../use-cases/list-catalogs';
 import type { ListOriginsResult } from '../use-cases/list-origins';
@@ -24,10 +26,7 @@ function origin(book: string, owner: BookOrigin['catalogId']): BookOrigin {
 function setup(catalogs: ListCatalogsResult, origins: ListOriginsResult) {
   const answers = { catalogs, origins };
   const session = new CatalogSession();
-  const view = new OriginFilterView(session, {
-    listCatalogs: () => Promise.resolve(answers.catalogs),
-    listOrigins: () => Promise.resolve(answers.origins),
-  });
+  const view = new OriginFilterView(session, () => readReady(answers));
   return { view, session, answers };
 }
 
@@ -74,21 +73,25 @@ describe('shownFilter', () => {
 });
 
 describe('OriginFilterView', () => {
+  it('stays hidden while the lists are being read', () => {
+    const loading: ReadState<never> = LOADING;
+    const view = new OriginFilterView(new CatalogSession(), () => loading);
+    expect(view.visible).toBe(false);
+    expect(view.badgeFor(FROM_HOME)).toBeNull();
+  });
+
   it('stays hidden while there are no catalogs', async () => {
     const { view } = setup({ kind: 'success', catalogs: [], unreadable: [] }, DOWNLOADS);
-    await view.load();
     expect(view.visible).toBe(false);
   });
 
   it('stays hidden when nothing can be listed', async () => {
     const { view } = setup({ kind: 'storage-unavailable' }, { kind: 'storage-unavailable' });
-    await view.load();
     expect(view.visible).toBe(false);
   });
 
   it('names the catalog a downloaded book came from and nothing for a file', async () => {
     const { view } = setup(TWO, DOWNLOADS);
-    await view.load();
     expect(view.visible).toBe(true);
     expect(view.badgeFor(FROM_HOME)).toBe('Home');
     expect(view.badgeFor(FROM_ARCHIVE)).toBe('Archive');
@@ -97,14 +100,12 @@ describe('OriginFilterView', () => {
 
   it('words the source of a book as downloaded from its catalog or added from files', async () => {
     const { view } = setup(TWO, DOWNLOADS);
-    await view.load();
     expect(view.sourceFor(FROM_HOME)).toBe('Downloaded from Home');
     expect(view.sourceFor(FILE)).toBe('Added from files');
   });
 
   it('keeps every book while the filter is All', async () => {
     const { view } = setup(TWO, DOWNLOADS);
-    await view.load();
     expect([FILE, FROM_HOME, FROM_ARCHIVE].map((id) => view.matches(id))).toEqual([
       true,
       true,
@@ -114,7 +115,6 @@ describe('OriginFilterView', () => {
 
   it('keeps only the books added from files', async () => {
     const { view } = setup(TWO, DOWNLOADS);
-    await view.load();
     view.choose('files');
     expect(view.value).toBe('files');
     expect([FILE, FROM_HOME, FROM_ARCHIVE].map((id) => view.matches(id))).toEqual([
@@ -126,7 +126,6 @@ describe('OriginFilterView', () => {
 
   it('keeps only the books of the chosen catalog', async () => {
     const { view } = setup(TWO, DOWNLOADS);
-    await view.load();
     view.choose(filterOptions([HOME, ARCHIVE])[3]?.value ?? '');
     expect([FILE, FROM_HOME, FROM_ARCHIVE].map((id) => view.matches(id))).toEqual([
       false,
@@ -137,7 +136,6 @@ describe('OriginFilterView', () => {
 
   it('ignores an origin whose catalog is gone and counts its book as added from files', async () => {
     const { view } = setup({ kind: 'success', catalogs: [HOME], unreadable: [] }, DOWNLOADS);
-    await view.load();
     expect(view.badgeFor(FROM_ARCHIVE)).toBeNull();
     view.choose('files');
     expect(view.matches(FROM_ARCHIVE)).toBe(true);
@@ -146,32 +144,25 @@ describe('OriginFilterView', () => {
 
   it('shows all again when the chosen catalog is removed', async () => {
     const { view, answers } = setup(TWO, DOWNLOADS);
-    await view.load();
     view.choose(filterOptions([HOME, ARCHIVE])[3]?.value ?? '');
     answers.catalogs = { kind: 'success', catalogs: [HOME], unreadable: [] };
-    await view.load();
     expect(view.value).toBe('all');
     expect(view.matches(FILE)).toBe(true);
   });
 
   it('picks up a new download after a refresh', async () => {
     const { view, answers } = setup(TWO, { kind: 'success', origins: [], unreadable: [] });
-    await view.load();
     expect(view.badgeFor(FROM_HOME)).toBeNull();
     answers.origins = DOWNLOADS;
-    await view.load();
     expect(view.badgeFor(FROM_HOME)).toBe('Home');
   });
 
   it('keeps the chosen filter across views of one session', async () => {
     const { view, session } = setup(TWO, DOWNLOADS);
-    await view.load();
     view.choose('files');
-    const next = new OriginFilterView(session, {
-      listCatalogs: () => Promise.resolve(TWO),
-      listOrigins: () => Promise.resolve(DOWNLOADS),
-    });
-    await next.load();
+    const next = new OriginFilterView(session, () =>
+      readReady({ catalogs: TWO, origins: DOWNLOADS }),
+    );
     expect(next.value).toBe('files');
   });
 });

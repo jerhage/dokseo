@@ -8,14 +8,17 @@
   import { getToaster } from '$lib/ui/components/toast-context';
   import { useContainer } from '$lib/context';
   import { CatalogHeaderSearch } from '$lib/domains/catalog/ui/catalog-header-search.svelte';
+  import { refreshOrigins } from '$lib/domains/catalog/ui/catalog-refresh';
   import { catalogSession } from '$lib/domains/catalog/ui/catalog-session.svelte';
   import { CatalogTabsView } from '$lib/domains/catalog/ui/catalog-tabs.svelte';
   import { LibraryHistory } from '$lib/domains/catalog/ui/library-history';
   import { DEVICE_TAB } from '$lib/domains/catalog/ui/library-tabs';
+  import CatalogsData from '$lib/domains/catalog/ui/CatalogsData.svelte';
   import LibraryTabs from '$lib/domains/catalog/ui/LibraryTabs.svelte';
   import OriginBadge from '$lib/domains/catalog/ui/OriginBadge.svelte';
   import OriginSource from '$lib/domains/catalog/ui/OriginSource.svelte';
   import OriginFilter from '$lib/domains/catalog/ui/OriginFilter.svelte';
+  import OriginsData from '$lib/domains/catalog/ui/OriginsData.svelte';
   import { OriginFilterView } from '$lib/domains/catalog/ui/origin-filter.svelte';
   import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
   import { bookMatchingChosen } from '$lib/domains/library/ui/book-matching.svelte';
@@ -32,6 +35,7 @@
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import PageTitle from '$lib/shared/PageTitle.svelte';
+  import { LOADING } from '$lib/shared/read-state';
   import { missingBookArrival } from '$lib/shared/reader-location';
   import { toastNotify } from '$lib/shared/notice-toast';
 
@@ -67,22 +71,24 @@
     return `/read/${encodeURIComponent(id)}`;
   }
 
-  const origins = new OriginFilterView(catalogSession, container.catalog);
-  void origins.load();
+  let catalogsData = $state<ReturnType<typeof CatalogsData> | null>(null);
+  let originsData = $state<ReturnType<typeof OriginsData> | null>(null);
+
+  const origins = new OriginFilterView(catalogSession, () => originsData?.read() ?? LOADING);
 
   const catalogs: CatalogTabsView = new CatalogTabsView(catalogSession, {
     cases: container.catalog,
+    catalogs: () => catalogsData?.read() ?? LOADING,
     notify,
     matching: bookMatchingChosen,
     defaults: readingDefaultsChosen,
     describeOpenFile: describeOpenFileError,
     openBook: (id) => void goto(readerHref(id)),
     refreshLibrary: async () => {
-      await Promise.all([origins.load(), refreshLibrary(queryClient)]);
+      await Promise.all([refreshOrigins(queryClient), refreshLibrary(queryClient)]);
     },
     history: libraryHistory,
   });
-  void catalogs.load();
   const catalogSearch = new CatalogHeaderSearch(catalogs, catalogSession);
   onDestroy(() => {
     catalogSearch.dispose();
@@ -128,6 +134,10 @@
 {#snippet originControls()}
   <OriginFilter view={origins} />
 {/snippet}
+
+<CatalogsData bind:this={catalogsData} catalog={container.catalog} />
+
+<OriginsData bind:this={originsData} catalog={container.catalog} />
 
 <LibraryShelfData library={container.library}>
   {#snippet children(shelf)}

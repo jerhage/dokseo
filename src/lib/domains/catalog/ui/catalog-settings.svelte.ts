@@ -1,40 +1,33 @@
+import { useQueryClient } from '@tanstack/svelte-query';
 import { match } from 'ts-pattern';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
+import { writeQuery } from '$lib/shared/write-query.svelte';
+import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { Catalog } from '../domain/catalog';
 import { DEFAULT_CATALOG_PROTOCOL } from '../domain/catalog-protocol';
 import type { CatalogDraft, DraftRefusal } from '../domain/catalog-draft';
+import { catalogKeys } from '../queries/catalog-keys';
+import {
+  addCatalogMutation,
+  editCatalogMutation,
+  removeCatalogMutation,
+  testConnectionMutation,
+} from '../queries/catalog-queries';
+import type { CatalogEdit, CatalogWrites, ConnectionRequest } from '../queries/catalog-queries';
 import type { AddCatalogResult } from '../use-cases/add-catalog';
 import type { EditCatalogResult } from '../use-cases/edit-catalog';
-import type { ListCatalogsResult } from '../use-cases/list-catalogs';
 import type { RemoveCatalogResult } from '../use-cases/remove-catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
 import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import { connectionOutcome, fieldRefusal } from './catalog-texts';
 import type { ConnectionOutcome, FormField } from './catalog-texts';
 
-type CatalogSettingsUseCases = {
-  readonly listCatalogs: () => Promise<ListCatalogsResult>;
-  readonly addCatalog: (draft: CatalogDraft) => Promise<AddCatalogResult>;
-  readonly editCatalog: (id: CatalogId, draft: CatalogDraft) => Promise<EditCatalogResult>;
-  readonly removeCatalog: (id: CatalogId) => Promise<RemoveCatalogResult>;
+type CatalogSettingsUseCases = CatalogWrites & {
   readonly unlockCatalog: (id: CatalogId, password: string) => UnlockCatalogResult;
-  readonly testCatalogConnection: (
-    draft: CatalogDraft,
-    password: string | null,
-  ) => Promise<TestCatalogConnectionResult>;
 };
 
 type AuthChoice = 'none' | 'basic';
-
-type CatalogListState =
-  | { readonly kind: 'loading' }
-  | {
-      readonly kind: 'ready';
-      readonly catalogs: readonly Catalog[];
-      readonly unreadable: readonly CatalogId[];
-    }
-  | { readonly kind: 'storage-unavailable' };
 
 type FormTarget = { readonly kind: 'add' } | { readonly kind: 'edit'; readonly id: CatalogId };
 
@@ -64,7 +57,6 @@ const GONE = 'That catalog no longer exists.';
 const UNREADABLE = 'That catalog could not be read, so it cannot be changed. Remove it instead.';
 
 class CatalogSettingsView {
-  list = $state.raw<CatalogListState>({ kind: 'loading' });
   target = $state.raw<FormTarget | null>(null);
   title = $state('');
   rootUrl = $state('');
@@ -80,10 +72,32 @@ class CatalogSettingsView {
   #cases: CatalogSettingsUseCases;
   #notify: Notify;
   #generation = 0;
+  #adding: WriteQuery<AddCatalogResult, CatalogDraft>;
+  #editing: WriteQuery<EditCatalogResult, CatalogEdit>;
+  #removal: WriteQuery<RemoveCatalogResult, CatalogId>;
+  #testing: WriteQuery<TestCatalogConnectionResult, ConnectionRequest>;
 
   constructor(cases: CatalogSettingsUseCases, notify: Notify) {
+    const client = useQueryClient();
     this.#cases = cases;
     this.#notify = notify;
+    this.#adding = writeQuery(() => ({
+      ...addCatalogMutation(cases),
+      onSettled: () => client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
+    }));
+    this.#editing = writeQuery(() => ({
+      ...editCatalogMutation(cases),
+      onSettled: () => client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
+    }));
+    this.#removal = writeQuery(() => ({
+      ...removeCatalogMutation(cases),
+      onSettled: () =>
+        Promise.all([
+          client.invalidateQueries({ queryKey: catalogKeys.catalogs() }),
+          client.invalidateQueries({ queryKey: catalogKeys.origins() }),
+        ]),
+    }));
+    this.#testing = writeQuery(() => testConnectionMutation(cases));
   }
 
   get titleError(): string | undefined {
@@ -96,19 +110,6 @@ class CatalogSettingsView {
 
   get usernameError(): string | undefined {
     return this.#errorAt('username');
-  }
-
-  async load(): Promise<void> {
-    const listed = await this.#cases.listCatalogs();
-    this.list = match(listed)
-      .returnType<CatalogListState>()
-      .with({ kind: 'success' }, ({ catalogs, unreadable }) => ({
-        kind: 'ready',
-        catalogs,
-        unreadable: unreadable.map((row) => row.id),
-      }))
-      .with({ kind: 'storage-unavailable' }, () => ({ kind: 'storage-unavailable' }))
-      .exhaustive();
   }
 
   startAdd(): void {
@@ -146,7 +147,10 @@ class CatalogSettingsView {
     this.refusal = null;
     this.connection = { kind: 'testing' };
     const draft = this.#draft();
-    const result = await this.#cases.testCatalogConnection(draft, this.#typedPassword());
+    const result = await this.#testing.run({
+      draft,
+      password: this.#typedPassword(),
+    });
     if (generation !== this.#generation) return;
 
     this.connection = { kind: 'done', outcome: connectionOutcome(result, draft.protocol) };
@@ -172,9 +176,9 @@ class CatalogSettingsView {
       const draft = this.#draft();
       const result =
         target.kind === 'add'
-          ? await this.#cases.addCatalog(draft)
-          : await this.#cases.editCatalog(target.id, draft);
-      await this.#saved(result);
+          ? await this.#adding.run(draft)
+          : await this.#editing.run({ id: target.id, draft });
+      this.#saved(result);
     } finally {
       this.saving = false;
     }
@@ -198,26 +202,24 @@ class CatalogSettingsView {
 
     this.removeBusy = true;
     try {
-      const result = await this.#cases.removeCatalog(removing.id);
+      const result = await this.#removal.run(removing.id);
       if (result.kind === 'storage-unavailable') {
         this.#notify({ tone: 'danger', title: REMOVE_FAILED, message: STORAGE_BLOCKED });
         return;
       }
       this.removing = null;
-      await this.load();
     } finally {
       this.removeBusy = false;
     }
   }
 
-  async #saved(result: SavedResult): Promise<void> {
-    await match(result)
-      .with({ kind: 'success' }, async ({ catalog }) => {
+  #saved(result: SavedResult): void {
+    match(result)
+      .with({ kind: 'success' }, ({ catalog }) => {
         if (catalog.auth.kind === 'basic' && this.password.length > 0) {
           this.#cases.unlockCatalog(catalog.id, this.password);
         }
         this.closeForm();
-        await this.load();
       })
       .with(
         { kind: 'empty-title' },
@@ -230,10 +232,9 @@ class CatalogSettingsView {
       .with({ kind: 'storage-unavailable' }, () => {
         this.#notify({ tone: 'danger', title: SAVE_FAILED, message: STORAGE_BLOCKED });
       })
-      .with({ kind: 'not-found' }, async () => {
+      .with({ kind: 'not-found' }, () => {
         this.#notify({ tone: 'warning', title: SAVE_FAILED, message: GONE });
         this.closeForm();
-        await this.load();
       })
       .with({ kind: 'unreadable' }, () => {
         this.#notify({ tone: 'warning', title: SAVE_FAILED, message: UNREADABLE });
@@ -287,11 +288,4 @@ class CatalogSettingsView {
 }
 
 export { CatalogSettingsView, GONE, REMOVE_FAILED, SAVE_FAILED, STORAGE_BLOCKED, UNREADABLE };
-export type {
-  AuthChoice,
-  CatalogListState,
-  CatalogSettingsUseCases,
-  ConnectionTest,
-  FormTarget,
-  RemovalTarget,
-};
+export type { AuthChoice, CatalogSettingsUseCases, ConnectionTest, FormTarget, RemovalTarget };

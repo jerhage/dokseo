@@ -1,7 +1,8 @@
 import type { BookId, CatalogId } from '$lib/shared/ids';
+import type { ReadState } from '$lib/shared/read-state';
 import type { Catalog } from '../domain/catalog';
-import type { ListCatalogsResult } from '../use-cases/list-catalogs';
-import type { ListOriginsResult } from '../use-cases/list-origins';
+import { listedOrigins } from './catalog-list';
+import type { OriginsListed, OriginsListing } from './catalog-list';
 import type { CatalogSession } from './catalog-session.svelte';
 import {
   filterOptions,
@@ -13,21 +14,19 @@ import {
 } from './origin-filter';
 import type { OriginFilterOption } from './origin-filter';
 
-type OriginFilterUseCases = {
-  readonly listCatalogs: () => Promise<ListCatalogsResult>;
-  readonly listOrigins: () => Promise<ListOriginsResult>;
-};
+type OriginFilterListing = () => ReadState<OriginsListing>;
 
 class OriginFilterView {
-  catalogs = $state.raw<readonly Catalog[]>([]);
-  origins = $state.raw<ReadonlyMap<BookId, CatalogId>>(new Map());
-
   #session: CatalogSession;
-  #cases: OriginFilterUseCases;
+  #listed: OriginsListed;
 
-  constructor(session: CatalogSession, cases: OriginFilterUseCases) {
+  constructor(session: CatalogSession, listing: OriginFilterListing) {
     this.#session = session;
-    this.#cases = cases;
+    this.#listed = $derived(listedOrigins(listing()));
+  }
+
+  get catalogs(): readonly Catalog[] {
+    return this.#listed.catalogs;
   }
 
   get visible(): boolean {
@@ -60,25 +59,12 @@ class OriginFilterView {
     return matchesFilter(filter, this.#ownerOf(id));
   }
 
-  async load(): Promise<void> {
-    const [catalogs, origins] = await Promise.all([
-      this.#cases.listCatalogs(),
-      this.#cases.listOrigins(),
-    ]);
-    this.catalogs = catalogs.kind === 'success' ? catalogs.catalogs : [];
-    this.origins = new Map(
-      origins.kind === 'success'
-        ? origins.origins.map((origin) => [origin.bookId, origin.catalogId])
-        : [],
-    );
-  }
-
   #ownerOf(id: BookId): CatalogId | null {
-    const owner = this.origins.get(id);
+    const owner = this.#listed.owners.get(id);
     if (owner === undefined) return null;
     return this.catalogs.some((catalog) => catalog.id === owner) ? owner : null;
   }
 }
 
 export { OriginFilterView };
-export type { OriginFilterUseCases };
+export type { OriginFilterListing };

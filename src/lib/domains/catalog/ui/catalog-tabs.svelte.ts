@@ -1,6 +1,7 @@
 import type { BookId } from '$lib/shared/ids';
 import { ACTION_NOTICE_MS } from '$lib/shared/notice';
 import type { Notify } from '$lib/shared/notice';
+import type { ReadState } from '$lib/shared/read-state';
 import type { TabItem } from '$lib/ui/components/tabs';
 import { shownTab } from '$lib/ui/components/tabs';
 import type { Catalog } from '../domain/catalog';
@@ -15,13 +16,13 @@ import { CatalogDownloads } from './catalog-downloads.svelte';
 import type { DownloadsChoices, DownloadsUseCases } from './catalog-downloads.svelte';
 import type { CatalogSession } from './catalog-session.svelte';
 import type { DescribeOpenFile } from './catalog-texts';
+import { listedCatalogs } from './catalog-list';
 import { NO_HISTORY } from './library-history';
 import type { HistoryRecorder } from './library-history';
 import { catalogTabs } from './library-tabs';
 
 type CatalogTabsUseCases = BrowseUseCases &
   DownloadsUseCases & {
-    readonly listCatalogs: () => Promise<ListCatalogsResult>;
     readonly readCatalogCover: (
       id: Catalog['id'],
       url: string,
@@ -31,6 +32,7 @@ type CatalogTabsUseCases = BrowseUseCases &
 
 type CatalogTabsDeps = DownloadsChoices & {
   readonly cases: CatalogTabsUseCases;
+  readonly catalogs: () => ReadState<ListCatalogsResult>;
   readonly notify: Notify;
   readonly describeOpenFile: DescribeOpenFile;
   readonly openBook: (id: BookId) => void;
@@ -40,18 +42,22 @@ type CatalogTabsDeps = DownloadsChoices & {
 };
 
 class CatalogTabsView {
-  catalogs = $state.raw<readonly Catalog[]>([]);
-
   #reached = $state.raw<ReadonlySet<string>>(new Set());
   #session: CatalogSession;
   #deps: CatalogTabsDeps;
   #history: HistoryRecorder;
   #browsing = new Map<Catalog['id'], CatalogBrowseView>();
+  #listed: readonly Catalog[];
 
   constructor(session: CatalogSession, deps: CatalogTabsDeps) {
     this.#session = session;
     this.#deps = deps;
+    this.#listed = $derived(listedCatalogs(deps.catalogs()));
     this.#history = deps.history ?? NO_HISTORY;
+  }
+
+  get catalogs(): readonly Catalog[] {
+    return this.#listed;
   }
 
   get visible(): boolean {
@@ -92,13 +98,6 @@ class CatalogTabsView {
 
   hasBeenShown(tabId: string): boolean {
     return tabId === this.selected || this.#reached.has(tabId);
-  }
-
-  async load(): Promise<void> {
-    const listed = await this.#deps.cases.listCatalogs();
-    const catalogs = listed.kind === 'success' ? listed.catalogs : [];
-    for (const catalog of catalogs) this.browsing(catalog);
-    this.catalogs = catalogs;
   }
 
   catalogFor(tabId: string): Catalog | null {

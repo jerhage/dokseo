@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { catalogId } from '$lib/shared/ids';
 import type { CatalogId } from '$lib/shared/ids';
 import type { Notice } from '$lib/shared/notice';
@@ -7,7 +7,6 @@ import type { Catalog } from '../domain/catalog';
 import type { CatalogDraft } from '../domain/catalog-draft';
 import type { AddCatalogResult } from '../use-cases/add-catalog';
 import type { EditCatalogResult } from '../use-cases/edit-catalog';
-import type { ListCatalogsResult } from '../use-cases/list-catalogs';
 import type { RemoveCatalogResult } from '../use-cases/remove-catalog';
 import type { TestCatalogConnectionResult } from '../use-cases/test-catalog-connection';
 import {
@@ -19,6 +18,20 @@ import {
   UNREADABLE,
 } from './catalog-settings.svelte';
 import type { CatalogSettingsUseCases } from './catalog-settings.svelte';
+
+const log = vi.hoisted(() => ({ calls: [] as string[] }));
+
+vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/running-write-query'));
+
+vi.mock('@tanstack/svelte-query', async (original) => ({
+  ...(await original<object>()),
+  useQueryClient: () => ({
+    invalidateQueries: ({ queryKey }: { queryKey: readonly string[] }) => {
+      log.calls.push(`invalidate ${queryKey.join('/')}`);
+      return Promise.resolve();
+    },
+  }),
+}));
 
 const OPEN = catalogId('open');
 const PRIVATE = catalogId('private');
@@ -40,7 +53,6 @@ const PRIVATE_CATALOG: Catalog = {
 };
 
 type Answers = {
-  list: ListCatalogsResult;
   add: (draft: CatalogDraft) => AddCatalogResult;
   edit: (id: CatalogId, draft: CatalogDraft) => EditCatalogResult;
   remove: RemoveCatalogResult;
@@ -49,11 +61,10 @@ type Answers = {
 
 function setup(overrides: Partial<Answers> = {}) {
   const notices: Notice[] = [];
-  const calls: string[] = [];
+  const calls: string[] = (log.calls = []);
   const unlocked: { id: CatalogId; password: string }[] = [];
   const tested: { draft: CatalogDraft; password: string | null }[] = [];
   const answers: Answers = {
-    list: { kind: 'success', catalogs: [OPEN_CATALOG], unreadable: [] },
     add: (draft) => ({ kind: 'success', catalog: { id: PRIVATE, ...draft } }),
     edit: (id, draft) => ({ kind: 'success', catalog: { id, ...draft } }),
     remove: { kind: 'success' },
@@ -61,10 +72,6 @@ function setup(overrides: Partial<Answers> = {}) {
     ...overrides,
   };
   const cases: CatalogSettingsUseCases = {
-    listCatalogs: () => {
-      calls.push('list');
-      return Promise.resolve(answers.list);
-    },
     addCatalog: (draft) => {
       calls.push('add');
       return Promise.resolve(answers.add(draft));
@@ -94,27 +101,6 @@ function fill(view: CatalogSettingsView, title: string, rootUrl: string): void {
   view.title = title;
   view.rootUrl = rootUrl;
 }
-
-describe('CatalogSettingsView list', () => {
-  it('loads the catalogs and the ids of unreadable rows', async () => {
-    const { view } = setup({
-      list: {
-        kind: 'success',
-        catalogs: [OPEN_CATALOG],
-        unreadable: [{ id: PRIVATE, stored: {} }],
-      },
-    });
-    expect(view.list).toEqual({ kind: 'loading' });
-    await view.load();
-    expect(view.list).toEqual({ kind: 'ready', catalogs: [OPEN_CATALOG], unreadable: [PRIVATE] });
-  });
-
-  it('reports unavailable storage', async () => {
-    const { view } = setup({ list: STORAGE_UNAVAILABLE });
-    await view.load();
-    expect(view.list).toEqual({ kind: 'storage-unavailable' });
-  });
-});
 
 describe('CatalogSettingsView test connection', () => {
   it('prefills an empty name from the feed title', async () => {
@@ -194,12 +180,12 @@ describe('CatalogSettingsView test connection', () => {
 });
 
 describe('CatalogSettingsView save', () => {
-  it('adds a catalog, closes the form and reloads', async () => {
+  it('adds a catalog, closes the form and invalidates the list', async () => {
     const { view, calls } = setup();
     view.startAdd();
     fill(view, 'Mine', 'https://x.example/opds');
     await view.save();
-    expect(calls).toEqual(['add', 'list']);
+    expect(calls).toEqual(['add', 'invalidate catalog/catalogs']);
     expect(view.target).toBeNull();
   });
 
@@ -240,7 +226,7 @@ describe('CatalogSettingsView save', () => {
     await view.save();
     expect(view.target).toEqual({ kind: 'add' });
     expect(view.titleError).toBe('A catalog needs a name.');
-    expect(calls).toEqual(['add']);
+    expect(calls).toEqual(['add', 'invalidate catalog/catalogs']);
   });
 
   it('marks the username field for a missing username', async () => {
@@ -273,17 +259,17 @@ describe('CatalogSettingsView save', () => {
     expect(view.username).toBe('jo');
     view.title = 'Renamed';
     await view.save();
-    expect(calls).toEqual(['edit', 'list']);
+    expect(calls).toEqual(['edit', 'invalidate catalog/catalogs']);
     expect(view.target).toBeNull();
   });
 
-  it('closes the form and reloads when the edited catalog is gone', async () => {
+  it('closes the form and invalidates the list when the edited catalog is gone', async () => {
     const { view, notices, calls } = setup({ edit: (id) => ({ kind: 'not-found', id }) });
     view.startEdit(OPEN_CATALOG);
     await view.save();
     expect(notices).toEqual([{ tone: 'warning', title: SAVE_FAILED, message: GONE }]);
     expect(view.target).toBeNull();
-    expect(calls).toEqual(['edit', 'list']);
+    expect(calls).toEqual(['edit', 'invalidate catalog/catalogs']);
   });
 
   it('tells the reader to remove an unreadable catalog', async () => {
@@ -308,12 +294,12 @@ describe('CatalogSettingsView save', () => {
 });
 
 describe('CatalogSettingsView remove', () => {
-  it('removes after confirmation and reloads', async () => {
+  it('removes after confirmation and invalidates the list', async () => {
     const { view, calls } = setup();
     view.askRemove(OPEN_CATALOG);
     expect(view.removing).toEqual({ id: OPEN, name: 'Home' });
     await view.confirmRemove();
-    expect(calls).toEqual(['remove', 'list']);
+    expect(calls).toEqual(['remove', 'invalidate catalog/catalogs', 'invalidate catalog/origins']);
     expect(view.removing).toBeNull();
   });
 
@@ -329,7 +315,7 @@ describe('CatalogSettingsView remove', () => {
     const { view, calls } = setup();
     view.askRemoveUnreadable(PRIVATE);
     await view.confirmRemove();
-    expect(calls).toEqual(['remove', 'list']);
+    expect(calls).toEqual(['remove', 'invalidate catalog/catalogs', 'invalidate catalog/origins']);
   });
 
   it('notifies and keeps the confirmation when storage is unavailable', async () => {
