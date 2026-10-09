@@ -3,8 +3,9 @@
   import type { ClassValue } from 'svelte/elements';
   import Button from '$lib/ui/components/Button.svelte';
   import SearchField from '$lib/ui/components/SearchField.svelte';
-  import { filterKey, headerFieldKey, isSearching } from './library-overview';
-  import type { HeaderSearch } from './library-overview';
+  import { pressHeaderField } from '$lib/shared/header-search';
+  import type { HeaderSearch } from '$lib/shared/header-search';
+  import { filterKey, isSearching } from './library-overview';
 
   type Props = {
     query?: string;
@@ -24,20 +25,6 @@
   function abandon(): void {
     query = '';
     field?.focus();
-  }
-
-  function headerKeys(event: KeyboardEvent, header: HeaderSearch): void {
-    match(headerFieldKey(event, header.value))
-      .with('submit', () => {
-        event.preventDefault();
-        header.onsubmit(header.value);
-      })
-      .with('clear', () => {
-        event.preventDefault();
-        header.oninput('');
-      })
-      .with('ignore', () => {})
-      .exhaustive();
   }
 
   function keys(event: KeyboardEvent): void {
@@ -60,7 +47,7 @@
       class="flex-1"
       placeholder={headerSearch.placeholder}
       disabled={headerSearch.disabled}
-      onkeydown={(event) => headerKeys(event, headerSearch)}
+      onkeydown={(event) => pressHeaderField(event, headerSearch)}
     />
   {:else}
     <SearchField

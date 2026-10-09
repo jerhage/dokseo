@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { HeaderSearch } from '$lib/shared/header-search';
   import { match } from 'ts-pattern';
   import type { Snippet } from 'svelte';
   import { goto } from '$app/navigation';
@@ -29,7 +30,6 @@
     storageText,
     titledBooks,
   } from './library-overview';
-  import type { HeaderSearch } from './library-overview';
   import BookDetails from './BookDetails.svelte';
   import BookSettings from './BookSettings.svelte';
   import { arrivedFiles } from './chosen-files';

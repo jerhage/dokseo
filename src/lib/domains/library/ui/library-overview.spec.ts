@@ -5,7 +5,6 @@ import type { Book } from '../domain/book/book';
 import {
   filterKey,
   formatBytes,
-  headerFieldKey,
   isSearching,
   librarySummary,
   matchedText,
@@ -143,30 +142,5 @@ describe('filterKey', () => {
     { signal: 'the IME process key code 229 that Safari sends', held: { keyCode: 229 } },
   ])('ignores an Escape carrying $signal', ({ held }) => {
     expect(filterKey(press('Escape', held), 'yotsuba')).toBe('ignore');
-  });
-});
-
-describe('headerFieldKey', () => {
-  function press(key: string, held: { isComposing?: boolean; keyCode?: number } = {}) {
-    return { key, isComposing: false, keyCode: 0, ...held };
-  }
-
-  it('submits on Enter', () => {
-    expect(headerFieldKey(press('Enter'), 'moon')).toBe('submit');
-  });
-
-  it('clears on Escape while the field holds text', () => {
-    expect(headerFieldKey(press('Escape'), 'moon')).toBe('clear');
-  });
-
-  it('ignores Escape on an empty field and every other key', () => {
-    expect([headerFieldKey(press('Escape'), ''), headerFieldKey(press('a'), 'moon')]).toEqual([
-      'ignore',
-      'ignore',
-    ]);
-  });
-
-  it('ignores Enter that confirms an input method composition', () => {
-    expect(headerFieldKey(press('Enter', { isComposing: true }), 'つき')).toBe('ignore');
   });
 });

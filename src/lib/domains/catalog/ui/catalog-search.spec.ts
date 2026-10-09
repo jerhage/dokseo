@@ -4,7 +4,6 @@ import type { Place } from './navigation';
 import {
   fieldValue,
   searchAvailability,
-  searchFieldKey,
   searchMove,
   searchOffer,
   searchPlaceholder,
@@ -104,30 +103,5 @@ describe('fieldValue', () => {
   it('shows nothing for a feed the typed text no longer belongs to', () => {
     expect(fieldValue({ text: 'moon', entry: 'e2' }, 'e1', ROOT)).toBe('');
     expect(fieldValue(null, 'e1', ROOT)).toBe('');
-  });
-});
-
-describe('searchFieldKey', () => {
-  const press = (key: string, composing = false) => ({
-    key,
-    isComposing: composing,
-    keyCode: composing ? 229 : 0,
-  });
-
-  it('submits on Enter', () => {
-    expect(searchFieldKey(press('Enter'), 'lantern')).toBe('submit');
-  });
-
-  it('clears on Escape while the field holds text', () => {
-    expect(searchFieldKey(press('Escape'), 'lantern')).toBe('clear');
-  });
-
-  it('ignores Escape on an empty field and any other key', () => {
-    expect(searchFieldKey(press('Escape'), '')).toBe('ignore');
-    expect(searchFieldKey(press('a'), 'lantern')).toBe('ignore');
-  });
-
-  it('ignores Enter while an input method is composing', () => {
-    expect(searchFieldKey(press('Enter', true), 'ランタン')).toBe('ignore');
   });
 });

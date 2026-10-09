@@ -1,26 +1,11 @@
 <script lang="ts">
-  import { match } from 'ts-pattern';
+  import { pressHeaderField } from '$lib/shared/header-search';
+  import type { HeaderSearch } from '$lib/shared/header-search';
   import SearchField from '$lib/ui/components/SearchField.svelte';
-  import { searchFieldKey } from './catalog-search';
-  import type { HeaderField } from './catalog-search';
 
-  type Props = { readonly field: HeaderField };
+  type Props = { readonly field: HeaderSearch };
 
   let { field }: Props = $props();
-
-  function keys(event: KeyboardEvent): void {
-    match(searchFieldKey(event, field.value))
-      .with('submit', () => {
-        event.preventDefault();
-        field.onsubmit(field.value);
-      })
-      .with('clear', () => {
-        event.preventDefault();
-        field.oninput('');
-      })
-      .with('ignore', () => {})
-      .exhaustive();
-  }
 </script>
 
 <div class="row items-center layout-app-shell-narrow-only" role="search">
@@ -31,6 +16,6 @@
     class="flex-1"
     placeholder={field.placeholder}
     disabled={field.disabled}
-    onkeydown={keys}
+    onkeydown={(event) => pressHeaderField(event, field)}
   />
 </div>

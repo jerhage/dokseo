@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { HeaderSearch } from '$lib/shared/header-search';
 import type { Catalog } from '../domain/catalog';
 import {
   fieldValue,
@@ -7,7 +8,6 @@ import {
   searchOffer,
   searchPlaceholder,
 } from './catalog-search';
-import type { HeaderField } from './catalog-search';
 import type { CatalogDeps } from './catalog-deps';
 import type { EntryId } from './navigation';
 
@@ -34,7 +34,7 @@ function runSearch(catalog: Catalog, deps: SearchDeps, text: string): EntryId {
     .exhaustive();
 }
 
-function searchFieldFor(catalog: Catalog, deps: SearchDeps): HeaderField {
+function searchFieldFor(catalog: Catalog, deps: SearchDeps): HeaderSearch {
   const { navigation, search } = deps;
   const found = offerOf(catalog, deps);
   const availability = searchAvailability(

@@ -13,16 +13,6 @@ type FilterPress = ComposingSignals & {
   readonly key: string;
 };
 
-type HeaderFieldKey = 'submit' | 'clear' | 'ignore';
-
-type HeaderSearch = {
-  readonly placeholder: string;
-  readonly disabled: boolean;
-  readonly value: string;
-  readonly oninput: (value: string) => void;
-  readonly onsubmit: (value: string) => void;
-};
-
 const SOURCE_URL = 'https://github.com/jerhage/dokseo';
 
 const SOURCE_LABEL = 'The source of this app, on GitHub';
@@ -91,12 +81,6 @@ function filterKey(press: FilterPress, query: string): FilterKey {
   return clearsSearch(press.key, query) ? 'clear' : 'ignore';
 }
 
-function headerFieldKey(press: FilterPress, value: string): HeaderFieldKey {
-  if (isComposingKey(press)) return 'ignore';
-  if (press.key === 'Enter') return 'submit';
-  return clearsSearch(press.key, value) ? 'clear' : 'ignore';
-}
-
 export {
   GITHUB_MARK,
   SEARCH_EVERYTHING_HINTS,
@@ -105,7 +89,6 @@ export {
   clearsSearch,
   filterKey,
   formatBytes,
-  headerFieldKey,
   isSearching,
   librarySummary,
   matchedText,
@@ -113,4 +96,4 @@ export {
   storageText,
   titledBooks,
 };
-export type { FilterKey, FilterPress, HeaderFieldKey, HeaderSearch };
+export type { FilterKey, FilterPress };
