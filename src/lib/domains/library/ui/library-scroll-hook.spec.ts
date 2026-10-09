@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { READER_ROUTE } from './library-scroll';
-import { LibraryScrollView } from './library-scroll-view.svelte';
-import type { ScrollMemory } from './library-scroll-view.svelte';
+import { createLibraryScroll } from './library-scroll-view.svelte';
+import type { LibraryScrollHook, ScrollMemory } from './library-scroll-view.svelte';
 
-function fresh(): { readonly memory: ScrollMemory; readonly view: LibraryScrollView } {
+function fresh(): { readonly memory: ScrollMemory; readonly view: LibraryScrollHook } {
   const memory: ScrollMemory = { top: null };
-  return { memory, view: new LibraryScrollView(memory) };
+  return { memory, view: createLibraryScroll(memory) };
 }
 
-describe('LibraryScrollView', () => {
+describe('createLibraryScroll', () => {
   it('captures the last tracked offset and remembers it for the tab', () => {
     const { memory, view } = fresh();
     view.track(120);
@@ -28,10 +28,10 @@ describe('LibraryScrollView', () => {
   });
 
   it.each([
-    { snapshot: 'a string snapshot', arrive: (view: LibraryScrollView) => view.restore('640') },
+    { snapshot: 'a string snapshot', arrive: (view: LibraryScrollHook) => view.restore('640') },
     {
       snapshot: 'a link from the reader with nothing remembered',
-      arrive: (view: LibraryScrollView) => view.arrive('link', READER_ROUTE),
+      arrive: (view: LibraryScrollHook) => view.arrive('link', READER_ROUTE),
     },
   ])('ignores $snapshot, which is not an offset, and starts at the top', ({ arrive }) => {
     const { view } = fresh();

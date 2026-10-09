@@ -8,51 +8,48 @@ type ScrollMemory = { top: number | null };
 
 const TAB_MEMORY: ScrollMemory = { top: null };
 
-class LibraryScrollView {
-  readonly #memory: ScrollMemory;
-  #pending = $state<number | null>(null);
-  #top = 0;
+function createLibraryScroll(memory: ScrollMemory = TAB_MEMORY) {
+  let pending = $state<number | null>(null);
+  let top = 0;
 
-  constructor(memory: ScrollMemory = TAB_MEMORY) {
-    this.#memory = memory;
+  function restore(value: unknown): void {
+    const restored = scrollTopFrom(value);
+    if (restored !== null) pending = restored;
   }
 
-  track(top: number): void {
-    this.#top = top;
+  function finish(next: number | null): number | null {
+    pending = null;
+    return next;
   }
 
-  capture(): number {
-    this.#memory.top = this.#top;
-    return this.#top;
-  }
-
-  restore(value: unknown): void {
-    const top = scrollTopFrom(value);
-    if (top !== null) this.#pending = top;
-  }
-
-  arrive(navigation: string, from: string | null): void {
-    if (returnsFromReader(navigation, from)) this.restore(this.#memory.top);
-  }
-
-  settle(body: LibraryBody): number | null {
-    const step = scrollStep(this.#pending, body);
-    return untrack(() => this.#consume(step));
-  }
-
-  #consume(step: ScrollStep): number | null {
+  function consume(step: ScrollStep): number | null {
     return match(step)
       .with({ kind: 'wait' }, () => null)
-      .with({ kind: 'scroll' }, ({ top }) => this.#finish(top))
-      .with({ kind: 'none' }, () => this.#finish(null))
+      .with({ kind: 'scroll' }, (scroll) => finish(scroll.top))
+      .with({ kind: 'none' }, () => finish(null))
       .exhaustive();
   }
 
-  #finish(top: number | null): number | null {
-    this.#pending = null;
-    return top;
-  }
+  return {
+    track(next: number): void {
+      top = next;
+    },
+    capture(): number {
+      memory.top = top;
+      return top;
+    },
+    restore,
+    arrive(navigation: string, from: string | null): void {
+      if (returnsFromReader(navigation, from)) restore(memory.top);
+    },
+    settle(body: LibraryBody): number | null {
+      const step = scrollStep(pending, body);
+      return untrack(() => consume(step));
+    },
+  };
 }
 
-export { LibraryScrollView };
-export type { ScrollMemory };
+type LibraryScrollHook = ReturnType<typeof createLibraryScroll>;
+
+export { createLibraryScroll };
+export type { LibraryScrollHook, ScrollMemory };

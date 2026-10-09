@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { BookId } from '$lib/shared/ids';
 import { effectiveDirection } from '$lib/shared/layout-kind';
 import { readingStarted, showsTheEnd } from '$lib/shared/reading-place';
 import { shownTitle } from '$lib/shared/shown-title';
@@ -92,6 +93,14 @@ function sortBooks(books: readonly Book[], order: SortOrder): readonly Book[] {
     .exhaustive();
 }
 
+function arrangeBooks(books: readonly Book[], shelf: Shelf, order: SortOrder): readonly Book[] {
+  return sortBooks(shelfBooks(books, shelf), order);
+}
+
+function bookById(books: readonly Book[], id: BookId | null): Book | null {
+  return books.find((book) => book.id === id) ?? null;
+}
+
 function lastTouched(book: Book): number {
   return book.lastReadAt ?? book.addedAt;
 }
@@ -140,6 +149,8 @@ export {
   CONTINUE_LIMIT,
   SHELVES,
   SORT_ORDERS,
+  arrangeBooks,
+  bookById,
   bookFacts,
   continueReading,
   emptyShelfText,

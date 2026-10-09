@@ -14,10 +14,16 @@
   import WindowDropzone from '$lib/ui/components/WindowDropzone.svelte';
   import { filesFromDataTransfer } from '$lib/platform/files/dropped-files';
   import AppearanceSwitcher from '$lib/shared/AppearanceSwitcher.svelte';
+  import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
   import type { BookId } from '$lib/shared/ids';
   import type { BookEdit } from '../domain/book/book';
-  import type { LibraryScrollView } from './library-scroll-view.svelte';
-  import type { LibraryView } from './library-view.svelte';
+  import { openedBook } from './book-details';
+  import type { BookDetailsHook } from './book-details.svelte';
+  import type { BookChanges } from './book-changes.svelte';
+  import { createBookDialogs } from './book-dialogs.svelte';
+  import type { BookUpload } from './book-upload.svelte';
+  import type { LibraryScrollHook } from './library-scroll-view.svelte';
+  import type { RemovedBookDeletion } from './removed-book-deletion.svelte';
   import {
     GITHUB_MARK,
     SEARCH_EVERYTHING_HINTS,
@@ -51,13 +57,17 @@
   import UnreadableBooks from './UnreadableBooks.svelte';
   import UploadStrip from './UploadStrip.svelte';
   import { uploadsInProgressText } from './upload-progress-text';
-  import { continueReading } from './library-shelves';
-  import { ShelfArrangement } from './shelf-arrangement.svelte';
+  import { arrangeBooks, bookById, continueReading } from './library-shelves';
+  import { createShelfArrangement } from './shelf-arrangement.svelte';
 
   type Props = {
-    readonly view: LibraryView;
+    readonly uploads: BookUpload;
+    readonly changes: BookChanges;
+    readonly removed: RemovedBookDeletion;
+    readonly exporting: BookCapturesExporting;
+    readonly details: BookDetailsHook;
     readonly shelfRead: ShelfRead;
-    readonly scroll: LibraryScrollView;
+    readonly scroll: LibraryScrollHook;
     readonly onsearcheverything?: (() => void) | undefined;
     readonly tabbed?: Snippet<[Snippet]> | undefined;
     readonly bookBadge?: Snippet<[BookId]> | undefined;
@@ -69,7 +79,11 @@
   };
 
   let {
-    view,
+    uploads,
+    changes,
+    removed,
+    exporting,
+    details,
     shelfRead,
     scroll,
     onsearcheverything,
@@ -85,32 +99,28 @@
   let main = $state<HTMLElement | null>(null);
 
   let strip = $state<ReturnType<typeof UploadStrip> | null>(null);
-  let openSettingsFor = $state<BookId | null>(null);
-  let removeFor = $state<BookId | null>(null);
-  let deleteCapturesFor = $state<BookId | null>(null);
-  const arrangement = new ShelfArrangement();
+  const arrangement = createShelfArrangement();
+  const dialogs = createBookDialogs();
 
-  const settingsBook = $derived(
-    shelfRead.books.find((book) => book.id === openSettingsFor) ?? null,
-  );
-  const removeBook = $derived(shelfRead.books.find((book) => book.id === removeFor) ?? null);
+  const settingsBook = $derived(bookById(shelfRead.books, dialogs.settingsFor));
+  const removeBook = $derived(bookById(shelfRead.books, dialogs.removeFor));
   const deleteCaptures = $derived(
-    deleteCapturesFor === null
+    dialogs.deleteCapturesFor === null
       ? null
-      : removedEntryFor(deleteCapturesFor, shelfRead.removed, shelfRead.unreadableRemoved),
+      : removedEntryFor(dialogs.deleteCapturesFor, shelfRead.removed, shelfRead.unreadableRemoved),
   );
 
   async function save(id: BookId, edit: BookEdit): Promise<void> {
-    const outcome = await view.changes.edit(id, edit);
-    if (outcome !== 'failed') openSettingsFor = null;
+    const outcome = await changes.edit(id, edit);
+    if (outcome !== 'failed') dialogs.closeSettings();
   }
 
   function finish(id: BookId): void {
-    void view.changes.markFinished(id, arrangement.shelf.value, shelfRead.books);
+    void changes.markFinished(id, arrangement.shelf, shelfRead.books);
   }
 
   function unread(id: BookId): void {
-    void view.changes.markUnread(id, arrangement.shelf.value, shelfRead.books);
+    void changes.markUnread(id, arrangement.shelf, shelfRead.books);
   }
 
   function openBook(id: BookId): void {
@@ -118,23 +128,23 @@
   }
 
   function upload(files: readonly File[]): void {
-    void view.upload.add(files, openBook);
+    void uploads.add(files, openBook);
   }
 
   async function remove(id: BookId, removal: BookRemoval): Promise<void> {
     const outcome = await match(removal)
-      .with('keep-captures', () => view.changes.remove(id))
-      .with('delete-captures', () => view.changes.removeWithCaptures(id))
+      .with('keep-captures', () => changes.remove(id))
+      .with('delete-captures', () => changes.removeWithCaptures(id))
       .exhaustive();
     if (outcome !== 'failed') {
-      removeFor = null;
-      view.details.close();
+      dialogs.closeRemove();
+      details.close();
     }
   }
 
   async function deleteRemovedCaptures(id: BookId): Promise<void> {
-    const outcome = await view.removed.delete(id);
-    if (outcome !== 'failed') deleteCapturesFor = null;
+    const outcome = await removed.delete(id);
+    if (outcome !== 'failed') dialogs.closeDeleteCaptures();
   }
 
   const searching = $derived(isSearching(query));
@@ -143,8 +153,8 @@
   const narrowing = $derived(titled.length < queried.length);
   const space = $derived(storageText(shelfRead.storedBytes));
   const summary = $derived(librarySummary(shelfRead.books, shelfRead.storedBytes));
-  const body = $derived(libraryBody(shelfRead.state, view.upload.pending !== null));
-  const shown = $derived(arrangement.arrange(titled));
+  const body = $derived(libraryBody(shelfRead.state, uploads.pending !== null));
+  const shown = $derived(arrangeBooks(titled, arrangement.shelf, arrangement.order));
   const matched = $derived(matchedText(shown.length));
   const resumable = $derived(searching ? [] : continueReading(shelfRead.books));
 
@@ -160,12 +170,12 @@
     <p class="text-xs text-muted">{summary}</p>
   </div>
 
-  {#if view.upload.pending !== null}
+  {#if uploads.pending !== null}
     <ImportStatus
-      title={view.upload.pending}
+      title={uploads.pending}
       language="ja"
-      stage={view.upload.progress}
-      batch={view.upload.batch}
+      stage={uploads.progress}
+      batch={uploads.batch}
     />
   {/if}
 
@@ -173,16 +183,16 @@
     <UnreadableBooks
       books={shelfRead.unreadable}
       shelf={shelfRead.books}
-      busy={view.changes.removing !== null || view.changes.merging !== null}
-      onremove={(id) => void view.changes.remove(id)}
-      onmerge={(id, into) => void view.changes.merge(id, into)}
-      onremoveall={() => void view.changes.removeEach(shelfRead.unreadable.map((book) => book.id))}
+      busy={changes.removing !== null || changes.merging !== null}
+      onremove={(id) => void changes.remove(id)}
+      onmerge={(id, into) => void changes.merge(id, into)}
+      onremoveall={() => void changes.removeEach(shelfRead.unreadable.map((book) => book.id))}
     />
   {/if}
 
   <LibraryBooksData
     state={shelfRead.state}
-    importing={view.upload.pending !== null}
+    importing={uploads.pending !== null}
     onretry={shelfRead.reload}
   >
     {#snippet children(library)}
@@ -207,30 +217,29 @@
           covers={library.covers}
           searching={searching || narrowing}
           {bookBadge}
-          bind:shelf={() => arrangement.shelf.value, (next) => arrangement.shelf.choose(next)}
-          bind:order={() => arrangement.order.value, (next) => arrangement.order.choose(next)}
-          bind:layout={() => arrangement.layout.value, (next) => arrangement.layout.choose(next)}
-          busy={(id) => view.changes.removing === id || view.changes.editing === id}
-          onedit={(id) => (openSettingsFor = id)}
-          onremove={(id) => (removeFor = id)}
+          bind:shelf={() => arrangement.shelf, (next) => arrangement.chooseShelf(next)}
+          bind:order={() => arrangement.order, (next) => arrangement.chooseOrder(next)}
+          bind:layout={() => arrangement.layout, (next) => arrangement.chooseLayout(next)}
+          busy={(id) => changes.removing === id || changes.editing === id}
+          onedit={(id) => dialogs.openSettings(id)}
+          onremove={(id) => dialogs.openRemove(id)}
           onfinish={finish}
           onunread={unread}
-          ondetails={(id, from) => view.details.open(id, from)}
+          ondetails={(id, from) => details.open(id, from)}
         />
 
-        {@const opened = view.details.opened(shelfRead.books)}
+        {@const opened = openedBook(shelfRead.books, details.openId)}
         {#if opened !== null}
           <BookDetails
             book={opened.book}
             details={opened.details}
             cover={library.covers.get(opened.book.id) ?? null}
-            busy={view.changes.removing === opened.book.id ||
-              view.changes.editing === opened.book.id}
-            onedit={(id) => (openSettingsFor = id)}
-            onremove={(id) => (removeFor = id)}
+            busy={changes.removing === opened.book.id || changes.editing === opened.book.id}
+            onedit={(id) => dialogs.openSettings(id)}
+            onremove={(id) => dialogs.openRemove(id)}
             onfinish={finish}
             onunread={unread}
-            onclose={() => view.details.close()}
+            onclose={() => details.close()}
             {bookSource}
           />
         {/if}
@@ -239,7 +248,7 @@
       <div hidden={searching}>
         <UploadStrip
           bind:this={strip}
-          busy={view.upload.busy}
+          busy={uploads.busy}
           compact={library.books.length > 0}
           onfiles={(selection) => upload(arrivedFiles(selection))}
         />
@@ -251,14 +260,14 @@
     <RemovedBooks
       books={shelfRead.removed}
       unreadable={shelfRead.unreadableRemoved}
-      busy={view.removed.deleting !== null}
-      ondelete={(id) => (deleteCapturesFor = id)}
+      busy={removed.deleting !== null}
+      ondelete={(id) => dialogs.openDeleteCaptures(id)}
     />
   {/if}
 
   <footer class="row wrap items-center gap-4 pt-4 text-xs text-faint">
-    {#if view.upload.pending !== null}
-      <span class="text-muted" aria-live="polite">{uploadsInProgressText(view.upload.batch)}</span>
+    {#if uploads.pending !== null}
+      <span class="text-muted" aria-live="polite">{uploadsInProgressText(uploads.batch)}</span>
     {/if}
     <span class="ms-auto">{space}</span>
     <a
@@ -306,10 +315,10 @@
       <Button
         variant="primary"
         class="layout-app-shell-wide-only"
-        disabled={view.upload.busy || strip === null}
+        disabled={uploads.busy || strip === null}
         onclick={() => strip?.choose()}
       >
-        {view.upload.busy ? 'Adding…' : 'Upload'}
+        {uploads.busy ? 'Adding…' : 'Upload'}
       </Button>
       <div class="row layout-app-shell-wide-only">
         <AppearanceSwitcher />
@@ -327,9 +336,9 @@
         <IconButton
           variant="primary"
           icon={UploadIcon}
-          label={view.upload.busy ? 'Adding…' : 'Upload'}
+          label={uploads.busy ? 'Adding…' : 'Upload'}
           tooltip={false}
-          disabled={view.upload.busy || strip === null}
+          disabled={uploads.busy || strip === null}
           onclick={() => strip?.choose()}
         />
         <LibraryMenu {onsearcheverything} />
@@ -361,10 +370,7 @@
 </div>
 
 <WindowDropzone
-  disabled={view.upload.busy ||
-    settingsBook !== null ||
-    removeBook !== null ||
-    deleteCaptures !== null}
+  disabled={uploads.busy || settingsBook !== null || removeBook !== null || deleteCaptures !== null}
   readDrop={filesFromDataTransfer}
   onfiles={(selection) => upload(arrivedFiles(selection))}
 >
@@ -374,28 +380,28 @@
 {#if settingsBook !== null}
   <BookSettings
     book={settingsBook}
-    saving={view.changes.editing === settingsBook.id}
+    saving={changes.editing === settingsBook.id}
     onsave={(edit) => void save(settingsBook.id, edit)}
-    onclose={() => (openSettingsFor = null)}
+    onclose={() => dialogs.closeSettings()}
   />
 {/if}
 
 {#if removeBook !== null}
   <RemoveBook
     book={removeBook}
-    removing={view.changes.removing === removeBook.id}
-    exporting={view.exporting}
+    removing={changes.removing === removeBook.id}
+    {exporting}
     onremove={(removal) => void remove(removeBook.id, removal)}
-    onclose={() => (removeFor = null)}
+    onclose={() => dialogs.closeRemove()}
   />
 {/if}
 
 {#if deleteCaptures !== null}
   <DeleteRemovedCaptures
     book={deleteCaptures}
-    deleting={view.removed.deleting === deleteCaptures.id}
-    exporting={view.exporting}
+    deleting={removed.deleting === deleteCaptures.id}
+    {exporting}
     ondelete={() => void deleteRemovedCaptures(deleteCaptures.id)}
-    onclose={() => (deleteCapturesFor = null)}
+    onclose={() => dialogs.closeDeleteCaptures()}
   />
 {/if}

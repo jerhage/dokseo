@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bookId, contentHash, imageIndex } from '$lib/shared/ids';
 import { imagePlace, START_OF_THE_TEXT } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
-import { BookDetailsView } from './book-details.svelte';
-import { bookActions, bookDetails } from './book-details';
+import { bookActions, bookDetails, openedBook } from './book-details';
 import { bookFacts } from './library-shelves';
 
 function book(overrides: Partial<Book> = {}): Book {
@@ -86,71 +85,20 @@ describe('bookActions', () => {
   });
 });
 
-describe('BookDetailsView', () => {
+describe('openedBook', () => {
   const one = book();
   const two = book({ id: bookId('two'), title: 'Two' });
 
   it('shows nothing until a book is opened', () => {
-    expect(new BookDetailsView().opened([one, two])).toBeNull();
+    expect(openedBook([one, two], null)).toBeNull();
   });
 
   it('opens the details of the chosen book', () => {
-    const view = new BookDetailsView();
-    view.open(two.id);
-
-    expect(view.opened([one, two])?.book).toBe(two);
-    expect(view.opened([one, two])?.details.title).toBe('Two');
-  });
-
-  it('closes on request', () => {
-    const view = new BookDetailsView();
-    view.open(one.id);
-    view.close();
-
-    expect(view.opened([one, two])).toBeNull();
-    expect(view.openId).toBeNull();
-  });
-
-  it('returns focus to the card that opened the details once they close', () => {
-    const calls: (FocusOptions | undefined)[] = [];
-    const target = {
-      isConnected: true,
-      focus: (options?: FocusOptions) => void calls.push(options),
-    };
-    const view = new BookDetailsView();
-    view.open(one.id, { target, pointer: true });
-    view.close();
-    view.close();
-
-    expect(calls).toEqual([{ focusVisible: false }]);
-  });
-
-  it('tells its hooks about a user opening and closing, but not about a restore', () => {
-    const told: string[] = [];
-    const view = new BookDetailsView({
-      opened: (id) => told.push(`opened ${id}`),
-      closed: () => told.push('closed'),
-    });
-    view.open(one.id);
-    view.close();
-    view.show(two.id);
-    view.hide();
-
-    expect(told).toEqual(['opened one', 'closed']);
-    expect(view.openId).toBeNull();
-  });
-
-  it('shows the book a restore names', () => {
-    const view = new BookDetailsView();
-    view.show(two.id);
-
-    expect(view.openId).toBe(two.id);
+    expect(openedBook([one, two], two.id)?.book).toBe(two);
+    expect(openedBook([one, two], two.id)?.details.title).toBe('Two');
   });
 
   it('shows nothing once the opened book is removed from the shelf', () => {
-    const view = new BookDetailsView();
-    view.open(one.id);
-
-    expect(view.opened([two])).toBeNull();
+    expect(openedBook([two], one.id)).toBeNull();
   });
 });

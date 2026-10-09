@@ -5,6 +5,7 @@ import type { ReadingPlace } from '$lib/shared/reading-place';
 import type { Book } from '../domain/book/book';
 import {
   CONTINUE_LIMIT,
+  arrangeBooks,
   bookFacts,
   continueReading,
   emptyShelfText,
@@ -153,6 +154,14 @@ describe('sortBooks', () => {
     sortBooks(books, 'title');
 
     expect(titles(books)).toEqual(['Vol 10', 'vol 2', 'Akira']);
+  });
+});
+
+describe('arrangeBooks', () => {
+  it('keeps only the books on the chosen shelf, in the chosen order', () => {
+    const books = [comic('c', 3), comic('a', 5), comic('b', 0)];
+
+    expect(arrangeBooks(books, 'reading', 'title').map((book) => book.title)).toEqual(['a', 'c']);
   });
 });
 

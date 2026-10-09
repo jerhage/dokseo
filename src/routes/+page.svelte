@@ -10,8 +10,11 @@
   import { CATALOG_NEEDS } from '$lib/domains/library/ui/catalog-needs';
   import LibraryScreen from '$lib/domains/library/ui/LibraryScreen.svelte';
   import LibraryShelfData from '$lib/domains/library/ui/LibraryShelfData.svelte';
-  import { LibraryScrollView } from '$lib/domains/library/ui/library-scroll-view.svelte';
-  import { LibraryView } from '$lib/domains/library/ui/library-view.svelte';
+  import { BookChanges } from '$lib/domains/library/ui/book-changes.svelte';
+  import { createBookDetails } from '$lib/domains/library/ui/book-details.svelte';
+  import { BookUpload } from '$lib/domains/library/ui/book-upload.svelte';
+  import { createLibraryScroll } from '$lib/domains/library/ui/library-scroll-view.svelte';
+  import { RemovedBookDeletion } from '$lib/domains/library/ui/removed-book-deletion.svelte';
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
@@ -22,8 +25,11 @@
   const container = useContainer();
   const notify = toastNotify(getToaster());
   const deviceDetails = createDeviceDetails();
-  const view = new LibraryView(container.library, notify, deviceDetails.hooks);
-  const scroll = new LibraryScrollView();
+  const details = createBookDetails(deviceDetails.hooks);
+  const uploads = new BookUpload(container.library, notify);
+  const changes = new BookChanges(container.library, notify, () => uploads.busy);
+  const removed = new RemovedBookDeletion(container.library, notify);
+  const scroll = createLibraryScroll();
 
   let query = $state('');
   let search = $state<ReturnType<typeof SearchDialog> | null>();
@@ -44,17 +50,16 @@
 
 <PageTitle screen="Library" />
 
-<LibraryWithCatalogs
-  catalog={container.catalog}
-  needs={CATALOG_NEEDS}
-  {deviceDetails}
-  details={view.details}
->
+<LibraryWithCatalogs catalog={container.catalog} needs={CATALOG_NEEDS} {deviceDetails} {details}>
   {#snippet content(extras)}
     <LibraryShelfData library={container.library}>
       {#snippet children(shelf)}
         <LibraryScreen
-          {view}
+          {uploads}
+          {changes}
+          {removed}
+          exporting={container.library}
+          {details}
           shelfRead={shelf}
           {scroll}
           onsearcheverything={() => search?.searchEverything()}

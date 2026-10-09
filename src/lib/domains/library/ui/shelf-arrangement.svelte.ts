@@ -1,39 +1,48 @@
 import type { LocateStore } from '$lib/platform/storage/remembered-string';
 import { RememberedChoice } from '$lib/shared/remembered-choice.svelte';
-import type { Book } from '../domain/book/book';
 import {
   readArrangement,
   saveCollectionView,
   saveShelf,
   saveSortOrder,
 } from './library-arrangement';
-import { shelfBooks, sortBooks } from './library-shelves';
 import type { CollectionView, Shelf, SortOrder } from './library-shelves';
 
-class ShelfArrangement {
-  readonly shelf: RememberedChoice<Shelf>;
-  readonly order: RememberedChoice<SortOrder>;
-  readonly layout: RememberedChoice<CollectionView>;
+function createShelfArrangement(locate?: LocateStore) {
+  const stored = readArrangement(locate);
+  const shelf = new RememberedChoice<Shelf>(
+    () => stored.shelf,
+    (next) => saveShelf(next, locate),
+  );
+  const order = new RememberedChoice<SortOrder>(
+    () => stored.order,
+    (next) => saveSortOrder(next, locate),
+  );
+  const layout = new RememberedChoice<CollectionView>(
+    () => stored.layout,
+    (next) => saveCollectionView(next, locate),
+  );
 
-  constructor(locate?: LocateStore) {
-    const stored = readArrangement(locate);
-    this.shelf = new RememberedChoice(
-      () => stored.shelf,
-      (shelf) => saveShelf(shelf, locate),
-    );
-    this.order = new RememberedChoice(
-      () => stored.order,
-      (order) => saveSortOrder(order, locate),
-    );
-    this.layout = new RememberedChoice(
-      () => stored.layout,
-      (layout) => saveCollectionView(layout, locate),
-    );
-  }
-
-  arrange(books: readonly Book[]): readonly Book[] {
-    return sortBooks(shelfBooks(books, this.shelf.value), this.order.value);
-  }
+  return {
+    get shelf(): Shelf {
+      return shelf.value;
+    },
+    get order(): SortOrder {
+      return order.value;
+    },
+    get layout(): CollectionView {
+      return layout.value;
+    },
+    chooseShelf(next: Shelf): void {
+      shelf.choose(next);
+    },
+    chooseOrder(next: SortOrder): void {
+      order.choose(next);
+    },
+    chooseLayout(next: CollectionView): void {
+      layout.choose(next);
+    },
+  };
 }
 
-export { ShelfArrangement };
+export { createShelfArrangement };
