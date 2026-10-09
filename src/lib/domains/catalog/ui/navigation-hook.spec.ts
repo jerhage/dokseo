@@ -49,6 +49,11 @@ class FakeBrowser {
     this.deliver(this.entries[target] ?? undefined);
   }
 
+  followLink(): void {
+    this.entries = [...this.entries.slice(0, this.at + 1), null];
+    this.at += 1;
+  }
+
   get state(): HistoryState | undefined {
     return this.entries[this.at] ?? undefined;
   }
@@ -98,6 +103,72 @@ describe('createNavigation arrival', () => {
 
     expect(navigation.tab).toBe(HOME);
     expect(crumbs(navigation)).toEqual(['Home']);
+  });
+});
+
+describe('createNavigation arrival by a link', () => {
+  function deep() {
+    const world = setup();
+    const { navigation } = world;
+    navigation.select(HOME);
+    navigation.open(HOME, SERIES);
+    navigation.open(HOME, VOYAGE);
+    navigation.select(ARCHIVE);
+    navigation.open(ARCHIVE, SERIES);
+    world.browser.followLink();
+    return world;
+  }
+
+  it('shows each tab at its last place and stamps the arrival entry with it', () => {
+    const { browser, navigation } = deep();
+
+    navigation.arrive(undefined);
+
+    expect(navigation.tab).toBe(ARCHIVE);
+    expect(crumbs(navigation, ARCHIVE)).toEqual(['Home', 'By Series']);
+    expect(crumbs(navigation, HOME)).toEqual(['Home', 'By Series', 'Star Voyage']);
+    expect(browser.calls.at(-1)).toBe('replace');
+    expect(browser.state).toEqual({ tab: ARCHIVE, entryId: navigation.current.id });
+  });
+
+  it('pushes the target of a crumb whose place has no entry in this arrival', () => {
+    const { browser, navigation } = deep();
+    navigation.arrive(undefined);
+    const entries = browser.entries.length;
+    const root = navigation.crumbs(ARCHIVE, 'Home')[0]!;
+
+    navigation.ascend(root.place);
+
+    expect(browser.calls.at(-1)).toBe('push');
+    expect(browser.entries).toHaveLength(entries + 1);
+    expect(crumbs(navigation, ARCHIVE)).toEqual(['Home']);
+  });
+
+  it('never shows the same feed twice in a row when Back follows such a crumb', () => {
+    const { browser, navigation } = deep();
+    navigation.arrive(undefined);
+    const root = navigation.crumbs(ARCHIVE, 'Home')[0]!;
+    navigation.ascend(root.place);
+
+    const shown = [navigation.placeOf(ARCHIVE)!.id];
+    browser.travel(-1);
+    shown.push(navigation.placeOf(ARCHIVE)!.id);
+
+    expect(new Set(shown).size).toBe(2);
+    expect(crumbs(navigation, ARCHIVE)).toEqual(['Home', 'By Series']);
+  });
+
+  it('still goes back by entries for places opened after the arrival', () => {
+    const { browser, navigation } = deep();
+    navigation.arrive(undefined);
+    const arrival = browser.at;
+    navigation.open(ARCHIVE, VOYAGE);
+    const series = navigation.crumbs(ARCHIVE, 'Home')[1]!;
+
+    navigation.ascend(series.place);
+
+    expect(browser.calls.at(-1)).toBe('go -1');
+    expect(browser.at).toBe(arrival);
   });
 });
 

@@ -149,6 +149,31 @@ function pushedPlace(
   return appended(navigation, locationEntry(newId(), place), withPlace(navigation, place));
 }
 
+function pushedExisting(navigation: Navigation, placeId: PlaceId, newId: NewId): Navigation {
+  const place = placeById(navigation, placeId);
+  if (place === null) return navigation;
+  return appended(navigation, locationEntry(newId(), place));
+}
+
+function arrived(navigation: Navigation, newId: NewId): Navigation {
+  const tab = navigation.current.tab;
+  const shown = placeOfTab(navigation, tab);
+  if (shown === null) return started(tab, newId);
+  const parked = new Map<string, PlaceId>();
+  for (const place of navigation.places.values()) {
+    if (place.parent !== null || place.tab === tab) continue;
+    const last = placeOfTab(navigation, place.tab);
+    if (last !== null) parked.set(place.tab, last.id);
+  }
+  return {
+    places: navigation.places,
+    parked,
+    before: [],
+    current: locationEntry(newId(), shown),
+    after: [],
+  };
+}
+
 function pushedDetails(navigation: Navigation, entryId: string, newId: NewId): Navigation {
   const { current } = navigation;
   return appended(navigation, {
@@ -299,6 +324,7 @@ function browserId(): string {
 
 export {
   ancestorsOf,
+  arrived,
   browserId,
   crumbsOf,
   detailsOf,
@@ -311,6 +337,7 @@ export {
   placeById,
   placeOfTab,
   pushedDetails,
+  pushedExisting,
   pushedPlace,
   replacedLocation,
   sameFeedAncestor,

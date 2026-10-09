@@ -34,7 +34,7 @@
   const crumbs = $derived(
     deps.navigation.crumbs(catalog.id, catalog.title).map(({ label, place: target }) => ({
       label,
-      onselect: () => deps.navigation.goTo(target),
+      onselect: () => deps.navigation.ascend(target),
     })),
   );
   const field = $derived(searchFieldFor(catalog, deps));

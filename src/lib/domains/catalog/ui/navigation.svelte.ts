@@ -2,6 +2,7 @@ import type { FeedSearch, NavigationLink } from '../domain/catalog-feed';
 import type { CatalogSession } from './catalog-session.svelte';
 import {
   ancestorsOf,
+  arrived,
   browserId,
   crumbsOf,
   detailsOf,
@@ -13,6 +14,7 @@ import {
   placeById,
   placeOfTab,
   pushedDetails,
+  pushedExisting,
   pushedPlace,
   replacedLocation,
   sameFeedAncestor,
@@ -44,6 +46,13 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
     if (steps === null) return false;
     port.go(-steps);
     return true;
+  }
+
+  function ascend(place: PlaceId): void {
+    const { current } = session.navigation;
+    if (current.kind === 'location' && current.place === place) return;
+    if (goTo(place)) return;
+    pushTo(pushedExisting(session.navigation, place, newId));
   }
 
   return {
@@ -80,7 +89,8 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
         keep(found);
         return;
       }
-      session.restart(session.navigation.current.tab, newId);
+      if (state === undefined) keep(arrived(session.navigation, newId));
+      else session.restart(session.navigation.current.tab, newId);
       port.replace(stateOf(session.navigation.current));
     },
     observe(state: HistoryState | undefined): void {
@@ -115,9 +125,10 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
     leaveSearch(tab: string): void {
       const place = placeOfTab(session.navigation, tab);
       if (place === null || place.location.kind !== 'search' || place.parent === null) return;
-      goTo(place.parent);
+      ascend(place.parent);
     },
     goTo,
+    ascend,
     openDetails(entryId: string): void {
       if (session.navigation.current.kind !== 'location') return;
       pushTo(pushedDetails(session.navigation, entryId, newId));
