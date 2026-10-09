@@ -2,7 +2,7 @@ import type { TagId } from '$lib/shared/ids';
 import type { ReadState } from '$lib/shared/read-state';
 import type { Capture, UnreadableCapture } from '../../domain/capture/capture';
 import type { Tag } from '../../domain/tag/tag';
-import type { TagCounting } from './capture-panel.svelte';
+import type { TagCounting } from './capture-panel-rules';
 
 type CaptureFind = ReadState<readonly Capture[]>;
 

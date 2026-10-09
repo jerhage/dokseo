@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { tagId } from '$lib/shared/ids';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { namedTag } from '../../domain/tag/tag';
-import { tagOutcome } from './capture-tags.svelte';
+import { tagOutcome } from './capture-tag-rules';
 
 const CROWN_TAG = namedTag(tagId('tag-crown'), 'crown', 'slate', 1);
 

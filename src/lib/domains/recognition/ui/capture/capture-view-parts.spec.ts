@@ -15,9 +15,11 @@ import type { Tag } from '../../domain/tag/tag';
 import { recognizedText } from '../../domain/engine/recognized-text';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { arrivalFrom, passageFrom } from './capture-arrivals';
+import { anchorsOf, panelCapturesOf, readOf } from './capture-list-rules';
 import { READ } from './capture-read';
+import type { CaptureListing } from './capture-read';
 import { CaptureView } from './capture-view.svelte';
-import type { Settled } from './panel-capture';
+import type { PanelCapture, Settled } from './panel-capture';
 
 vi.mock('$lib/shared/write-query.svelte', () => import('$lib/shared/testing/unrun-write-query'));
 
@@ -188,26 +190,38 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
   };
 }
 
+const worlds = new WeakMap<CaptureView, Fakes>();
+
+function listingOfView(view: CaptureView): CaptureListing {
+  const world = worlds.get(view);
+  if (world === undefined) throw new Error('The view was not made by viewOf');
+  return {
+    state: READ,
+    captures: world.store.rows.filter((row) => row.bookId === view.book),
+    tags: world.store.tags,
+    unreadable: [],
+    reload: () => undefined,
+  };
+}
+
+function listedOf(view: CaptureView): readonly PanelCapture[] {
+  return panelCapturesOf(listingOfView(view), view.recording.unsaved.cards);
+}
+
 function panelTexts(view: CaptureView): readonly string[] {
-  return view.list.captures.map((capture) =>
+  return listedOf(view).map((capture) =>
     capture.status === 'done' ? capture.text.text : capture.status,
   );
 }
 
 function viewOf(world: Fakes): CaptureView {
-  const view: CaptureView = new CaptureView(
+  const view = new CaptureView(
     world.container,
     world.notify,
     createTestQueryClient(),
-    () => ({
-      state: READ,
-      captures: world.store.rows.filter((row) => row.bookId === view.list.book),
-      tags: world.store.tags,
-      unreadable: [],
-      reload: () => undefined,
-    }),
     () => undefined,
   );
+  worlds.set(view, world);
   return view;
 }
 
@@ -222,7 +236,7 @@ describe('CaptureView parts', () => {
     world.store.rows.push(storedRow('other', TWO, '別', 3));
     const view = viewOf(world);
 
-    view.list.open(ONE);
+    view.open(ONE);
 
     expect(panelTexts(view)).toEqual(['先', '後']);
   });
@@ -230,9 +244,10 @@ describe('CaptureView parts', () => {
   it('settles the pending card the recognition returns', async () => {
     const world = fakes();
     const view = viewOf(world);
-    view.list.open(ONE);
+    view.open(ONE);
 
     await view.recording.recognizing(
+      view.book,
       regions(),
       settles({ status: 'done', text: recognizedText('読', null), edited: false }),
     );
@@ -244,9 +259,9 @@ describe('CaptureView parts', () => {
     const world = fakes();
     const view = viewOf(world);
 
-    view.recording.note(regions());
+    view.recording.note(view.book, regions());
 
-    expect(view.list.captures).toEqual([]);
+    expect(listedOf(view)).toEqual([]);
     expect(world.steps.map((step) => step.detail.guard)).toEqual(['no-open-book']);
   });
 });
@@ -280,10 +295,10 @@ describe('CaptureView arrivals', () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 0.1003333), storedAt('two', 0.1066666)];
     const view = viewOf(world);
-    view.list.open(ONE);
+    view.open(ONE);
 
     const arrival = arrivalFrom(
-      view.list.read,
+      readOf(listedOf(view), listingOfView(view)),
       {
         kind: 'image',
         index: imageIndex(4),
@@ -301,11 +316,11 @@ describe('CaptureView arrivals', () => {
     const world = fakes();
     world.store.rows = [storedAt('one', 0.1), storedAt('two', 0.01)];
     const view = viewOf(world);
-    view.list.open(ONE);
+    view.open(ONE);
 
     expect(
       arrivalFrom(
-        view.list.read,
+        readOf(listedOf(view), listingOfView(view)),
         { kind: 'image', index: imageIndex(4), region: null, query: null },
         'rtl',
         byCfi,
@@ -313,7 +328,7 @@ describe('CaptureView arrivals', () => {
     ).toBeNull();
     expect(
       arrivalFrom(
-        view.list.read,
+        readOf(listedOf(view), listingOfView(view)),
         { kind: 'image', index: imageIndex(4), region: null, query: '1' },
         'rtl',
         byCfi,
@@ -325,21 +340,30 @@ describe('CaptureView arrivals', () => {
     const world = fakes();
     world.store.rows = [storedRow('one', ONE, '先', 1)];
     const view = viewOf(world);
-    view.list.open(ONE);
+    view.open(ONE);
 
     expect(
-      arrivalFrom(view.list.read, { kind: 'passage', cfi: CFI, query: null }, 'rtl', byCfi),
+      arrivalFrom(
+        readOf(listedOf(view), listingOfView(view)),
+        { kind: 'passage', cfi: CFI, query: null },
+        'rtl',
+        byCfi,
+      ),
     ).toBeNull();
-    expect(arrivalFrom(view.list.read, { kind: 'none' }, 'rtl', byCfi)).toBeNull();
+    expect(
+      arrivalFrom(readOf(listedOf(view), listingOfView(view)), { kind: 'none' }, 'rtl', byCfi),
+    ).toBeNull();
   });
 
   it('seeks the cfi a url names, with the quote of the passage lifted there', async () => {
     const world = fakes();
     world.store.rows = [lifted('here', CFI)];
     const view = viewOf(world);
-    view.list.open(ONE);
+    view.open(ONE);
 
-    expect(passageFrom(view.list.anchors, { kind: 'passage', cfi: CFI, query: '灯' })).toEqual({
+    expect(
+      passageFrom(anchorsOf(listedOf(view)), { kind: 'passage', cfi: CFI, query: '灯' }),
+    ).toEqual({
       cfi: CFI,
       quote: QUOTE,
     });
@@ -349,9 +373,11 @@ describe('CaptureView arrivals', () => {
     const world = fakes();
     world.store.rows = [lifted('elsewhere', 'epubcfi(/6/2)')];
     const view = viewOf(world);
-    view.list.open(ONE);
+    view.open(ONE);
 
-    expect(passageFrom(view.list.anchors, { kind: 'passage', cfi: CFI, query: null })).toEqual({
+    expect(
+      passageFrom(anchorsOf(listedOf(view)), { kind: 'passage', cfi: CFI, query: null }),
+    ).toEqual({
       cfi: CFI,
       quote: null,
     });
@@ -362,7 +388,7 @@ describe('CaptureView arrivals', () => {
     const view = viewOf(world);
 
     expect(
-      passageFrom(view.list.anchors, {
+      passageFrom(anchorsOf(listedOf(view)), {
         kind: 'image',
         index: imageIndex(0),
         region: null,

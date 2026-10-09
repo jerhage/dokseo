@@ -10,7 +10,7 @@ import type { CaptureWrites, NoteEdit, TextEdit } from '../../queries/capture-qu
 import type { CaptureCache } from './capture-cache';
 import type { EditCaptureTextResult } from '../../use-cases/capture/edit-capture-text';
 import type { WriteCaptureNoteResult } from '../../use-cases/capture/write-capture-note';
-import type { CaptureList } from './capture-list.svelte';
+import type { CaptureLookup } from './capture-list-rules';
 import { NOT_STORED, refuse } from './storage-failure';
 import type { WriteOutcome } from './storage-failure';
 
@@ -20,13 +20,11 @@ const NOTE_NOT_SAVED = 'The note could not be saved';
 
 class CaptureEdits {
   #notify: Notify;
-  #list: CaptureList;
   #editing: WriteQuery<EditCaptureTextResult, TextEdit>;
   #noting: WriteQuery<WriteCaptureNoteResult<NotableCapture>, NoteEdit>;
 
-  constructor(recognition: CaptureWrites, notify: Notify, list: CaptureList, cache: CaptureCache) {
+  constructor(recognition: CaptureWrites, notify: Notify, cache: CaptureCache) {
     this.#notify = notify;
-    this.#list = list;
     this.#editing = writeQuery(() => ({
       ...editTextMutation(recognition),
       onSuccess: (written) => {
@@ -45,24 +43,24 @@ class CaptureEdits {
     }));
   }
 
-  async edit(id: CaptureId, text: string): Promise<WriteOutcome> {
-    const card = this.#list.captures.find((capture) => capture.id === id);
+  async edit(id: CaptureId, text: string, lookup: CaptureLookup): Promise<WriteOutcome> {
+    const card = lookup.cards.find((capture) => capture.id === id);
     if (card === undefined || card.status !== 'done') return 'saved';
 
     const settled = editedText(card.text.text, text, card.origin);
     if (settled === card.text.text) return 'saved';
 
-    const stored = this.#list.stored(id);
+    const stored = lookup.stored(id);
     if (stored === undefined) return refuse(this.#notify, TEXT_NOT_SAVED, NOT_STORED);
 
     const written = await this.#editing.run({ capture: stored, text: settled }).catch(() => null);
     return this.#outcome(TEXT_NOT_SAVED, written);
   }
 
-  async annotate(id: CaptureId, note: string): Promise<WriteOutcome> {
-    const stored = this.#list.stored(id);
+  async annotate(id: CaptureId, note: string, lookup: CaptureLookup): Promise<WriteOutcome> {
+    const stored = lookup.stored(id);
     if (stored?.origin === 'written') return 'saved';
-    if (!this.#list.captures.some((capture) => capture.id === id)) return 'saved';
+    if (!lookup.cards.some((capture) => capture.id === id)) return 'saved';
     if (stored === undefined) return refuse(this.#notify, NOTE_NOT_SAVED, NOT_STORED);
 
     const written = await this.#noting.run({ capture: stored, note }).catch(() => null);

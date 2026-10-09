@@ -15,9 +15,10 @@ import type { NoteRequest } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
 import type { SaveCaptureResult } from '../../use-cases/capture/save-capture';
 import type { WriteNoteResult } from '../../use-cases/capture/write-note';
-import type { CaptureList } from './capture-list.svelte';
+import { liftStart, noteStart } from './capture-recording-rules';
 import type { Settled } from './panel-capture';
 import { describeStorageFailure } from './storage-failure';
+import { UnsavedCards } from './unsaved-cards.svelte';
 
 const CAPTURE_NOT_SAVED = 'The capture could not be saved';
 
@@ -29,25 +30,19 @@ type NoteEditors = {
 };
 
 class CaptureRecording {
+  readonly unsaved = new UnsavedCards();
+
   #container: Container;
   #notify: Notify;
-  #list: CaptureList;
   #cache: CaptureCache;
   #editors: NoteEditors;
   #saving: WriteQuery<SaveCaptureResult, CaptureDraft>;
   #writing: WriteQuery<WriteNoteResult, NoteRequest>;
 
-  constructor(
-    container: Container,
-    notify: Notify,
-    list: CaptureList,
-    cache: CaptureCache,
-    editors: NoteEditors,
-  ) {
+  constructor(container: Container, notify: Notify, cache: CaptureCache, editors: NoteEditors) {
     const recognition = container.recognition;
     this.#container = container;
     this.#notify = notify;
-    this.#list = list;
     this.#cache = cache;
     this.#editors = editors;
     this.#saving = writeQuery(() => ({
@@ -70,43 +65,33 @@ class CaptureRecording {
     }));
   }
 
-  note(regions: readonly ImageRegion[]): void {
-    const book = this.#list.book;
+  note(book: BookId | null, regions: readonly ImageRegion[]): void {
     const trace = this.#container.beginTrace('note');
     try {
-      if (regions.length === 0) {
-        trace.step('stopped', { guard: 'no-regions' });
-        return;
-      }
-
-      if (book === null) {
-        trace.step('stopped', { guard: 'no-open-book' });
+      const start = noteStart(regions, book);
+      if (start.kind === 'stopped') {
+        trace.step('stopped', { guard: start.guard });
         return;
       }
 
       trace.step('dispatched', { regions: regions.length });
-      void this.write(book, regions);
+      void this.write(start.book, regions);
     } finally {
       trace.end();
     }
   }
 
-  lift(cfi: string, quote: TextQuote, chapter: string | null): void {
-    const book = this.#list.book;
+  lift(book: BookId | null, cfi: string, quote: TextQuote, chapter: string | null): void {
     const trace = this.#container.beginTrace('lift');
     try {
-      if (quote.exact.trim().length === 0) {
-        trace.step('stopped', { guard: 'nothing-selected' });
-        return;
-      }
-
-      if (book === null) {
-        trace.step('stopped', { guard: 'no-open-book' });
+      const start = liftStart(quote, book);
+      if (start.kind === 'stopped') {
+        trace.step('stopped', { guard: start.guard });
         return;
       }
 
       trace.step('dispatched', { characters: quote.exact.length });
-      void this.keepLifted(book, cfi, quote, chapter);
+      void this.keepLifted(start.book, cfi, quote, chapter);
     } finally {
       trace.end();
     }
@@ -121,7 +106,7 @@ class CaptureRecording {
     const id = captureId(crypto.randomUUID());
     const anchor = textAnchor(cfi, quote, chapter);
     const text = recognizedText(quote.exact, null);
-    this.#list.unsaved.put({
+    this.unsaved.put({
       id,
       anchor,
       origin: 'lifted',
@@ -138,7 +123,7 @@ class CaptureRecording {
   async write(book: BookId, regions: readonly ImageRegion[]): Promise<void> {
     const id = captureId(crypto.randomUUID());
     const anchor = regionAnchor(regions);
-    this.#list.unsaved.put({
+    this.unsaved.put({
       id,
       anchor,
       origin: 'written',
@@ -153,13 +138,13 @@ class CaptureRecording {
   }
 
   async recognizing(
+    book: BookId | null,
     regions: readonly ImageRegion[],
     reading: () => Promise<Settled>,
   ): Promise<void> {
-    const book = this.#list.book;
     const id = captureId(crypto.randomUUID());
     const anchor = regionAnchor(regions);
-    this.#list.unsaved.put({
+    this.unsaved.put({
       id,
       anchor,
       origin: 'recognized',
@@ -170,7 +155,7 @@ class CaptureRecording {
 
     const settled = await reading();
 
-    this.#list.unsaved.settle(id, settled);
+    this.unsaved.settle(id, settled);
     if (book === null || settled.status !== 'done') return;
 
     await this.#keep({
@@ -189,20 +174,20 @@ class CaptureRecording {
 
   #stored(capture: Capture): void {
     this.#cache.put(capture);
-    if (this.#cache.holds(capture)) this.#list.unsaved.drop(capture.id);
+    if (this.#cache.holds(capture)) this.unsaved.drop(capture.id);
   }
 
   #noteUnsaved(id: CaptureId, reason: string): void {
-    if (!this.#list.unsaved.holds(id)) return;
+    if (!this.unsaved.holds(id)) return;
 
     this.#editors.close(id);
     this.#unsaved(id, NOTE_NOT_WRITTEN, reason);
   }
 
   #unsaved(id: CaptureId, title: string, reason: string): void {
-    if (!this.#list.unsaved.holds(id)) return;
+    if (!this.unsaved.holds(id)) return;
 
-    this.#list.unsaved.settle(id, { status: 'failed', message: `Not saved. ${reason}` });
+    this.unsaved.settle(id, { status: 'failed', message: `Not saved. ${reason}` });
     this.#notify({ tone: 'danger', title, message: reason });
   }
 }

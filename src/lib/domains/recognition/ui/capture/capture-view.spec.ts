@@ -15,6 +15,7 @@ import { LOADING, readFailed, readReady } from '$lib/shared/read-state';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { at } from '$lib/shared/testing/at';
 import type { Capture } from '../../domain/capture/capture';
+import { tagCounts } from '../../domain/tag/capture-tags';
 import { namedTag } from '../../domain/tag/tag';
 import type { Tag } from '../../domain/tag/tag';
 import { JAPANESE_OCR_MODEL, modelFootprint } from '../../domain/model/model-footprint';
@@ -24,6 +25,9 @@ import type { RecognizeRegionResult } from '../../use-cases/engine/recognize-reg
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
 import { askedWrites } from '$lib/shared/testing/unrun-write-query';
 import type { EngineGateRead } from '../engine/engine-gate';
+import type { PanelCapture } from './panel-capture';
+import { newestFirstOf, panelCapturesOf, readOf, storedIn } from './capture-list-rules';
+import type { CaptureLookup } from './capture-list-rules';
 import { READ } from './capture-read';
 import type { CaptureListing } from './capture-read';
 import { CaptureView } from './capture-view.svelte';
@@ -260,13 +264,13 @@ function storedRow(id: string, book: BookId, text: string, createdAt: number): C
 }
 
 function panelTexts(view: CaptureView): readonly string[] {
-  return view.list.captures.map((capture) =>
+  return listedOf(view).map((capture) =>
     capture.status === 'done' ? capture.text.text : capture.status,
   );
 }
 
 function editedFlags(view: CaptureView): readonly boolean[] {
-  return view.list.captures.map((capture) => capture.status === 'done' && capture.edited);
+  return listedOf(view).map((capture) => capture.status === 'done' && capture.edited);
 }
 
 const source = {} as PageSource;
@@ -344,15 +348,33 @@ function gateOf(world: Fakes): EngineGateRead {
   };
 }
 
+const worlds = new WeakMap<CaptureView, Fakes>();
+
 function viewOf(world: Fakes): CaptureView {
-  const view: CaptureView = new CaptureView(
-    world.container,
-    world.notify,
-    createTestQueryClient(),
-    () => listingOf(world, view.list.book),
-    () => gateOf(world),
+  const view = new CaptureView(world.container, world.notify, createTestQueryClient(), () =>
+    gateOf(world),
   );
+  worlds.set(view, world);
   return view;
+}
+
+function listingOfView(view: CaptureView): CaptureListing {
+  const world = worlds.get(view);
+  if (world === undefined) throw new Error('The view was not made by viewOf');
+  return listingOf(world, view.book);
+}
+
+function listedOf(view: CaptureView): readonly PanelCapture[] {
+  return panelCapturesOf(listingOfView(view), view.recording.unsaved.cards);
+}
+
+function lookupOf(view: CaptureView): CaptureLookup {
+  return {
+    get cards() {
+      return listedOf(view);
+    },
+    stored: (id) => storedIn(listingOfView(view), id),
+  };
 }
 
 async function started(world: Fakes, index: number): Promise<Call> {
@@ -369,14 +391,14 @@ describe('CaptureView', () => {
 
     const running = read(view);
     const call = await started(world, 0);
-    expect(view.list.captures.map((capture) => capture.status)).toEqual(['pending']);
-    expect(at(view.list.captures, 0).anchor).toEqual(regionAnchor(regions()));
+    expect(listedOf(view).map((capture) => capture.status)).toEqual(['pending']);
+    expect(at(listedOf(view), 0).anchor).toEqual(regionAnchor(regions()));
 
     call.settle({ kind: 'success', text: recognizedText('どうしたんだ') });
     await running;
 
-    const settled = at(view.list.captures, 0);
-    expect(view.list.captures).toHaveLength(1);
+    const settled = at(listedOf(view), 0);
+    expect(listedOf(view)).toHaveLength(1);
     expect(settled.status).toBe('done');
     expect(settled.status === 'done' ? settled.text.text : null).toBe('どうしたんだ');
   });
@@ -393,7 +415,7 @@ describe('CaptureView', () => {
     (await started(world, 0)).settle({ kind: 'success', text: recognizedText('first') });
     await first;
 
-    const texts = view.list.captures.map((capture) =>
+    const texts = listedOf(view).map((capture) =>
       capture.status === 'done' ? capture.text.text : capture.status,
     );
     expect(texts).toEqual(['first', 'second']);
@@ -427,7 +449,7 @@ describe('CaptureView', () => {
       (await started(world, index)).settle(failure);
       await running;
 
-      const capture = at(view.list.captures, index);
+      const capture = at(listedOf(view), index);
       expect(capture.status).toBe('failed');
       expect(capture.status === 'failed' ? capture.message : null).toBe(sentence);
     }
@@ -441,7 +463,7 @@ describe('CaptureView', () => {
     (await started(world, 0)).settle({ kind: 'no-text' });
     await running;
 
-    expect(at(view.list.captures, 0).status).toBe('empty');
+    expect(at(listedOf(view), 0).status).toBe('empty');
   });
 
   it('forgets the session when the reader opens another book', async () => {
@@ -469,7 +491,7 @@ describe('CaptureView', () => {
     await view.recognize(source, 'ja', [], 'row');
 
     expect(world.calls).toEqual([]);
-    expect(view.list.captures).toEqual([]);
+    expect(listedOf(view)).toEqual([]);
   });
 
   it('orders the newest capture first for the panel', async () => {
@@ -484,7 +506,7 @@ describe('CaptureView', () => {
     (await started(world, 1)).settle({ kind: 'success', text: recognizedText('newer') });
     await second;
 
-    const shown = view.list.newestFirst.map((capture) =>
+    const shown = newestFirstOf(listedOf(view)).map((capture) =>
       capture.status === 'done' ? capture.text.text : capture.status,
     );
     expect(shown).toEqual(['newer', 'older']);
@@ -505,7 +527,7 @@ describe('CaptureView', () => {
       await view.recognize(source, language, regions(), arrangement);
 
       expect(world.calls).toEqual([]);
-      expect(view.list.captures).toEqual([]);
+      expect(listedOf(view)).toEqual([]);
       expect(view.consent.request?.language).toBe(language);
       expect(view.consent.request?.footprint).toEqual(modelFootprint(language));
     },
@@ -527,7 +549,7 @@ describe('CaptureView', () => {
 
     expect(view.consent.request).toBeNull();
     expect(askedWrites).toContain('ja');
-    expect(at(view.list.captures, 0).anchor).toEqual(regionAnchor(regions(7)));
+    expect(at(listedOf(view), 0).anchor).toEqual(regionAnchor(regions(7)));
   });
 
   it('drops the consent request when the reader opens another book', async () => {
@@ -552,7 +574,7 @@ describe('CaptureView', () => {
     (await started(world, 0)).settle({ kind: 'success', text: recognizedText('read anyway') });
     await running;
 
-    expect(at(view.list.captures, 0).status).toBe('done');
+    expect(at(listedOf(view), 0).status).toBe('done');
   });
 
   it('names the gate that admitted each capture', async () => {
@@ -625,7 +647,7 @@ describe('CaptureView', () => {
       (await started(world, 0)).settle(reading);
       await running;
 
-      expect(at(view.list.captures, 0).status).toBe(status);
+      expect(at(listedOf(view), 0).status).toBe(status);
       expect(askedWrites).toEqual([]);
     },
   );
@@ -641,7 +663,7 @@ describe('CaptureView', () => {
 
     expect(askedWrites).toEqual([
       {
-        id: at(view.list.captures, 0).id,
+        id: at(listedOf(view), 0).id,
         bookId: ONE,
         anchor: regionAnchor(regions()),
         text: 'これは保存される',
@@ -659,7 +681,7 @@ describe('CaptureView', () => {
     (await started(world, 0)).settle({ kind: 'success', text: recognizedText('どこにも') });
     await running;
 
-    expect(at(view.list.captures, 0).status).toBe('done');
+    expect(at(listedOf(view), 0).status).toBe('done');
     expect(askedWrites).toEqual([]);
   });
 
@@ -686,7 +708,7 @@ describe('CaptureView', () => {
       const view = viewOf(world);
       view.open(ONE);
 
-      expect(await view.edits.edit(captureId('a'), typed)).toBe('saved');
+      expect(await view.edits.edit(captureId('a'), typed, lookupOf(view))).toBe('saved');
       expect(panelTexts(view)).toEqual(['model reading']);
       expect(editedFlags(view)).toEqual([false]);
       expect(askedWrites).toEqual([]);
@@ -702,13 +724,13 @@ describe('CaptureView', () => {
     (await started(world, 0)).settle({ kind: 'no-text' });
     await running;
 
-    expect(await view.edits.edit(at(view.list.captures, 0).id, 'typed over a blank card')).toBe(
-      'saved',
-    );
-    expect(at(view.list.captures, 0).status).toBe('empty');
+    expect(
+      await view.edits.edit(at(listedOf(view), 0).id, 'typed over a blank card', lookupOf(view)),
+    ).toBe('saved');
+    expect(at(listedOf(view), 0).status).toBe('empty');
   });
 
-  it('drops a capture the store never held from the list', async () => {
+  it('removes nothing from the store for a capture the store never held', async () => {
     const world = fakes();
     const view = viewOf(world);
     view.open(ONE);
@@ -717,9 +739,11 @@ describe('CaptureView', () => {
     (await started(world, 0)).settle({ kind: 'success', text: recognizedText('保存できなかった') });
     await running;
 
-    await view.removal.remove(at(view.list.captures, 0).id);
+    const asked = askedWrites.length;
 
-    expect(view.list.captures).toEqual([]);
+    expect(await view.removal.remove(at(listedOf(view), 0).id, lookupOf(view))).toBe('saved');
+
+    expect(askedWrites).toHaveLength(asked);
   });
 });
 
@@ -825,7 +849,7 @@ describe('CaptureView.warm', () => {
     view.open(ONE);
 
     const warming = view.warm(ONE, 'ja');
-    void view.clearAll.clear();
+    void view.clearAll.clear(view.book);
     await warming;
 
     expect(view.warmup.session).toEqual(OPENED_SESSION);
@@ -834,6 +858,31 @@ describe('CaptureView.warm', () => {
 });
 
 describe('CaptureView.close', () => {
+  it('forgets the book and the unsaved cards when the reader leaves', async () => {
+    const world = fakes();
+    const view = viewOf(world);
+    view.open(ONE);
+    await view.recording.write(ONE, regions(5));
+
+    view.close();
+
+    expect(view.book).toBeNull();
+    expect(listedOf(view)).toEqual([]);
+    expect(view.recording.unsaved.latest).toBeNull();
+  });
+
+  it('starts each book with no unsaved card', async () => {
+    const world = fakes();
+    const view = viewOf(world);
+    view.open(ONE);
+    await view.recording.write(ONE, regions(5));
+
+    view.open(TWO);
+
+    expect(listedOf(view)).toEqual([]);
+    expect(view.book).toBe(TWO);
+  });
+
   it('closes the engine it opened when the reader leaves the book', async () => {
     const world = fakes();
     world.engine.files = 9;
@@ -896,7 +945,7 @@ describe('CaptureView.close', () => {
     await view.agree();
 
     expect(world.calls).toEqual([]);
-    expect(view.list.captures).toEqual([]);
+    expect(listedOf(view)).toEqual([]);
   });
 });
 
@@ -908,7 +957,7 @@ describe('CaptureView notes', () => {
 
     await view.recording.write(ONE, regions(5));
 
-    const card = at(view.list.captures, 0);
+    const card = at(listedOf(view), 0);
     expect(card.origin).toBe('written');
     expect(card.status === 'done' ? card.text.text : null).toBe('');
     expect(card.anchor).toEqual(regionAnchor(regions(5)));
@@ -921,9 +970,9 @@ describe('CaptureView notes', () => {
     const view = viewOf(world);
     view.open(ONE);
 
-    view.recording.note([]);
+    view.recording.note(view.book, []);
 
-    expect(view.list.captures).toEqual([]);
+    expect(listedOf(view)).toEqual([]);
     expect(askedWrites).toEqual([]);
   });
 
@@ -932,18 +981,15 @@ describe('CaptureView notes', () => {
     const view = viewOf(world);
     view.open(ONE);
 
-    view.recording.note(regions());
+    view.recording.note(view.book, regions());
     await view.recording.write(ONE, regions(5));
 
-    const written = at(view.list.captures, 0).id;
+    const written = at(listedOf(view), 0).id;
     expect([view.drafts.holds('text', written), view.drafts.draft('text', written)]).toEqual([
       true,
       '',
     ]);
-    expect(view.list.captures.map((card) => view.drafts.holds('text', card.id))).toEqual([
-      true,
-      true,
-    ]);
+    expect(listedOf(view).map((card) => view.drafts.holds('text', card.id))).toEqual([true, true]);
   });
 
   it('closes the drafts of the book it leaves', async () => {
@@ -951,7 +997,7 @@ describe('CaptureView notes', () => {
     const view = viewOf(world);
     view.open(ONE);
     await view.recording.write(ONE, regions());
-    const written = at(view.list.captures, 0).id;
+    const written = at(listedOf(view), 0).id;
 
     view.open(TWO);
 
@@ -968,7 +1014,10 @@ describe('CaptureView notes', () => {
     await running;
     await view.recording.write(ONE, regions(2));
 
-    expect(view.list.read.map((capture) => capture.origin)).toEqual(['recognized', 'written']);
+    expect(readOf(listedOf(view), listingOfView(view)).map((capture) => capture.origin)).toEqual([
+      'recognized',
+      'written',
+    ]);
   });
 });
 
@@ -993,7 +1042,7 @@ async function tagging(world: Fakes, carried: readonly TagId[] = []): Promise<Ca
 }
 
 function carriedBy(view: CaptureView): readonly TagId[] {
-  return at(view.list.captures, 0).tagIds;
+  return at(listedOf(view), 0).tagIds;
 }
 
 describe('CaptureView lifted passages', () => {
@@ -1012,7 +1061,7 @@ describe('CaptureView lifted passages', () => {
 
     await view.recording.keepLifted(ONE, CFI, QUOTE, '第一章');
 
-    const card = at(view.list.captures, 0);
+    const card = at(listedOf(view), 0);
     expect(card.origin).toBe('lifted');
     expect(card.status === 'done' ? card.text.text : null).toBe('こっちに来て');
     expect(card.anchor).toEqual(textAnchor(CFI, QUOTE, '第一章'));
@@ -1033,27 +1082,27 @@ describe('CaptureView lifted passages', () => {
     view.open(ONE);
 
     await view.recording.keepLifted(ONE, CFI, QUOTE, null);
-    const lifted = view.list.latest;
+    const lifted = view.recording.unsaved.latest;
     await view.recording.write(ONE, regions(5));
-    const written = view.list.latest;
+    const written = view.recording.unsaved.latest;
     const running = view.recognize(source, 'ja', regions(2), 'row');
     const call = await started(world, 0);
-    const reading = view.list.latest;
+    const reading = view.recording.unsaved.latest;
     call.settle({ kind: 'success', text: recognizedText('ねこ') });
     await running;
 
-    expect([lifted, written, reading]).toEqual(view.list.captures.map((capture) => capture.id));
+    expect([lifted, written, reading]).toEqual(listedOf(view).map((capture) => capture.id));
     view.open(TWO);
-    expect(view.list.latest).toBeNull();
+    expect(view.recording.unsaved.latest).toBeNull();
   });
 
   it('stores nothing when no book is open', () => {
     const world = fakes();
     const view = viewOf(world);
 
-    view.recording.lift(CFI, QUOTE, null);
+    view.recording.lift(view.book, CFI, QUOTE, null);
 
-    expect(view.list.captures).toEqual([]);
+    expect(listedOf(view)).toEqual([]);
     expect(askedWrites).toEqual([]);
   });
 
@@ -1062,9 +1111,9 @@ describe('CaptureView lifted passages', () => {
     const view = viewOf(world);
     view.open(ONE);
 
-    view.recording.lift(CFI, { exact: '  \n ', prefix: '', suffix: '' }, null);
+    view.recording.lift(view.book, CFI, { exact: '  \n ', prefix: '', suffix: '' }, null);
 
-    expect(view.list.captures).toEqual([]);
+    expect(listedOf(view)).toEqual([]);
     expect(askedWrites).toEqual([]);
   });
 });
@@ -1078,7 +1127,7 @@ describe('CaptureView tags', () => {
 
     view.open(ONE);
 
-    expect(view.tagging.tags.map((tag) => tag.name)).toEqual(['sfx']);
+    expect(listingOfView(view).tags.map((tag) => tag.name)).toEqual(['sfx']);
   });
 
   it('tags nothing and reports it when the capture was never stored', async () => {
@@ -1086,7 +1135,7 @@ describe('CaptureView tags', () => {
     world.tags.rows = [sfxTag()];
     const view = await tagging(world);
 
-    await view.tagging.addTag(captureId('never-saved'), SFX);
+    await view.tagging.addTag(captureId('never-saved'), SFX, lookupOf(view));
 
     expect(at(world.store.rows, 0).tagIds).toEqual([]);
     expect(carriedBy(view)).toEqual([]);
@@ -1111,7 +1160,7 @@ describe('CaptureView tags', () => {
 
     view.open(ONE);
 
-    expect(view.tagging.bookCounts.get(SFX)).toBe(2);
-    expect(view.tagging.bookCounts.get(KEIGO)).toBe(1);
+    expect(tagCounts(listedOf(view)).get(SFX)).toBe(2);
+    expect(tagCounts(listedOf(view)).get(KEIGO)).toBe(1);
   });
 });

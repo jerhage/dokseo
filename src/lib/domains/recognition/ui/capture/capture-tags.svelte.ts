@@ -1,21 +1,18 @@
-import { match } from 'ts-pattern';
 import { tagId } from '$lib/shared/ids';
 import type { CaptureId, TagId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
-import { tagCounts } from '../../domain/tag/capture-tags';
-import type { Tag } from '../../domain/tag/tag';
 import { addTagMutation, createTagMutation, removeTagMutation } from '../../queries/tag-queries';
 import type { CaptureTagging, NewTag, TagWrites } from '../../queries/tag-queries';
 import type { AddTagToCaptureResult } from '../../use-cases/tag/add-tag-to-capture';
 import type { CreateTagResult } from '../../use-cases/tag/create-tag';
 import type { RemoveTagFromCaptureResult } from '../../use-cases/tag/remove-tag-from-capture';
 import type { CaptureCache } from './capture-cache';
-import type { CaptureList } from './capture-list.svelte';
+import type { CaptureLookup } from './capture-list-rules';
+import { tagOutcome } from './capture-tag-rules';
 import { NOT_STORED, refuse } from './storage-failure';
-import type { StorageFailure } from './storage-failure';
 
 const TAG_NOT_ADDED = 'The tag could not be added';
 
@@ -23,23 +20,8 @@ const TAG_NOT_REMOVED = 'The tag could not be removed';
 
 const TAG_NOT_CREATED = 'The tag could not be created';
 
-type TagOutcome =
-  | { readonly kind: 'created'; readonly tag: Tag }
-  | { readonly kind: 'existing'; readonly tag: Tag }
-  | { readonly kind: 'failed'; readonly failure: StorageFailure };
-
-function tagOutcome(created: CreateTagResult): TagOutcome {
-  return match(created)
-    .returnType<TagOutcome>()
-    .with({ kind: 'success' }, ({ tag }) => ({ kind: 'created', tag }))
-    .with({ kind: 'name-taken' }, ({ tag }) => ({ kind: 'existing', tag }))
-    .with({ kind: 'storage-unavailable' }, (failure) => ({ kind: 'failed', failure }))
-    .exhaustive();
-}
-
 class CaptureTags {
   #notify: Notify;
-  #list: CaptureList;
   #cache: CaptureCache;
   #adding: WriteQuery<AddTagToCaptureResult, CaptureTagging>;
   #removing: WriteQuery<RemoveTagFromCaptureResult, CaptureTagging>;
@@ -48,11 +30,9 @@ class CaptureTags {
   constructor(
     recognition: Pick<TagWrites, 'addTagToCapture' | 'removeTagFromCapture' | 'createTag'>,
     notify: Notify,
-    list: CaptureList,
     cache: CaptureCache,
   ) {
     this.#notify = notify;
-    this.#list = list;
     this.#cache = cache;
     this.#adding = writeQuery(() => ({
       ...addTagMutation(recognition),
@@ -79,16 +59,8 @@ class CaptureTags {
     }));
   }
 
-  get tags(): readonly Tag[] {
-    return this.#list.tags;
-  }
-
-  get bookCounts(): ReadonlyMap<TagId, number> {
-    return tagCounts(this.#list.captures);
-  }
-
-  async addTag(id: CaptureId, tag: TagId): Promise<void> {
-    const stored = this.#list.stored(id);
+  async addTag(id: CaptureId, tag: TagId, lookup: CaptureLookup): Promise<void> {
+    const stored = lookup.stored(id);
     if (stored === undefined) {
       refuse(this.#notify, TAG_NOT_ADDED, NOT_STORED);
       return;
@@ -99,8 +71,8 @@ class CaptureTags {
       refuse(this.#notify, TAG_NOT_ADDED, written);
   }
 
-  async removeTag(id: CaptureId, tag: TagId): Promise<void> {
-    const stored = this.#list.stored(id);
+  async removeTag(id: CaptureId, tag: TagId, lookup: CaptureLookup): Promise<void> {
+    const stored = lookup.stored(id);
     if (stored === undefined) {
       refuse(this.#notify, TAG_NOT_REMOVED, NOT_STORED);
       return;
@@ -112,8 +84,8 @@ class CaptureTags {
     }
   }
 
-  async createTag(id: CaptureId, name: string): Promise<void> {
-    if (this.#list.stored(id) === undefined) {
+  async createTag(id: CaptureId, name: string, lookup: CaptureLookup): Promise<void> {
+    if (lookup.stored(id) === undefined) {
       refuse(this.#notify, TAG_NOT_ADDED, NOT_STORED);
       return;
     }
@@ -132,7 +104,7 @@ class CaptureTags {
     const minted = outcome.tag;
 
     this.#cache.name(minted);
-    await this.addTag(id, minted.id);
+    await this.addTag(id, minted.id, lookup);
   }
 
   #fail(title: string, cause: unknown): void {
@@ -140,5 +112,4 @@ class CaptureTags {
   }
 }
 
-export { CaptureTags, tagOutcome };
-export type { TagOutcome };
+export { CaptureTags };

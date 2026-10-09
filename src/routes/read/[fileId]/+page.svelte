@@ -9,6 +9,7 @@
   import BookCapturesData from '$lib/domains/recognition/ui/capture/BookCapturesData.svelte';
   import CaptureFindData from '$lib/domains/recognition/ui/capture/CaptureFindData.svelte';
   import { tagCountingOf } from '$lib/domains/recognition/ui/capture/capture-find';
+  import type { PanelEnvironment } from '$lib/domains/recognition/ui/capture/capture-panel-rules';
   import SearchDialog from '$lib/domains/recognition/ui/capture/SearchDialog.svelte';
   import UnreadableCaptures from '$lib/domains/recognition/ui/capture/UnreadableCaptures.svelte';
   import UnreadableTags from '$lib/domains/recognition/ui/tag/UnreadableTags.svelte';
@@ -34,10 +35,18 @@
   let engine = $state<ReturnType<typeof EngineGateData> | null>(null);
 
   const container = useContainer();
+  const notify = toastNotify(getToaster());
+  const environment: PanelEnvironment = {
+    counting: tagCountingOf(() => found?.read()),
+    write: (text) => navigator.clipboard.writeText(text),
+    notify,
+    exporting: container.recognition,
+    passages: comparePassages,
+  };
   const session = new ReadSession(
     container,
     useQueryClient(),
-    toastNotify(getToaster()),
+    notify,
     {
       fileId: () => page.params.fileId,
       requested: () => page.url,
@@ -45,8 +54,6 @@
       replace: (url) => replaceState(url, page.state),
       leave: (path) => void goto(path, { replaceState: true }),
     },
-    (text) => navigator.clipboard.writeText(text),
-    tagCountingOf(() => found?.read()),
     () => listed?.read(),
     () => engine?.read(),
   );
@@ -75,7 +82,9 @@
 {#snippet flowPanel(visible: boolean)}
   <CapturePanel
     view={captures}
-    panel={session.flowPanel}
+    listing={session.listing}
+    {environment}
+    direction={flow.navigation.direction}
     {language}
     source="text"
     {visible}
@@ -90,11 +99,7 @@
     {@const flowing = flowingBook(read)}
     <PageTitle screen={readingTitle(read)} />
     {#if flowing !== null}
-      <ReadingSettingsData
-        flowing={container.flowing}
-        panel={flowPanel}
-        panelCount={captures.list.count}
-      >
+      <ReadingSettingsData flowing={container.flowing} panel={flowPanel} panelCount={session.count}>
         {#snippet children(storedSettings)}
           <FlowViewer
             view={flow}
@@ -102,10 +107,10 @@
             {storedSettings}
             edgeClicksTurn={edgeClicksTurn()}
             panel={flowPanel}
-            panelCount={captures.list.count}
-            anchors={captures.list.anchors}
+            panelCount={session.count}
+            anchors={session.anchors}
             onLift={(passage) =>
-              captures.recording.lift(passage.cfi, passage.quote, passage.chapter)}
+              captures.recording.lift(captures.book, passage.cfi, passage.quote, passage.chapter)}
             onsearch={() => search?.searchThisBook()}
             saving={reader.preferences.saving}
             onlanguage={(chosen) => void reader.preferences.setLanguage(chosen)}
@@ -129,9 +134,9 @@
         view={reader}
         glow={session.glow}
         everyGlow={session.everyGlow}
-        panelCount={captures.list.count}
+        panelCount={session.count}
         onSelect={(regions, laidOut) => captures.capture(reader.source, language, regions, laidOut)}
-        onNote={(regions) => captures.recording.note(regions)}
+        onNote={(regions) => captures.recording.note(captures.book, regions)}
         onsearch={() => search?.searchThisBook()}
       >
         {#snippet arrival()}
@@ -145,7 +150,9 @@
         {#snippet panel(visible)}
           <CapturePanel
             view={captures}
-            panel={session.imagePanel}
+            listing={session.listing}
+            {environment}
+            direction={reader.direction}
             {language}
             source="images"
             {visible}
@@ -169,7 +176,7 @@
 <BookCapturesData
   bind:this={listed}
   recognition={container.recognition}
-  book={captures.list.book}
+  book={captures.book}
   onread={(book) => session.capturesRead(book)}
 />
 
@@ -190,7 +197,7 @@
           books={shelf.searched}
           {find}
           passages={comparePassages}
-          tags={captures.tagging.tags}
+          tags={session.listing.tags}
           covers={shelf.covers}
           counts={shelf.counts}
           onopen={shelf.reload}

@@ -17,19 +17,28 @@
   import Ellipsis from '$lib/ui/components/icons/Ellipsis.svelte';
   import Trash from '$lib/ui/components/icons/Trash.svelte';
   import type { TextAnchor } from '$lib/shared/anchor';
+  import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
   import BookCapturesExportButton from '$lib/shared/BookCapturesExportButton.svelte';
   import { isComposingKey } from '$lib/shared/composing-key';
   import type { CaptureId } from '$lib/shared/ids';
   import type { Language } from '$lib/shared/language';
+  import type { ReadingDirection } from '$lib/shared/layout-kind';
+  import { engineMismatch } from '../../domain/engine/ocr-engine';
+  import { tagCounts } from '../../domain/tag/capture-tags';
   import { createCaptureSearch } from './capture-search.svelte';
+  import type { Card } from './capture-card-projection';
   import { cardsOf, cursorOf, jumpAt, orderedCaptures, searchHits } from './capture-card-rules';
-  import type { CardJump } from './capture-card-rules';
-  import type { CapturePanelView } from './capture-panel.svelte';
+  import type { CardJump, CardSource } from './capture-card-rules';
+  import { newestFirstOf, panelCapturesOf, storedIn } from './capture-list-rules';
+  import type { CaptureLookup } from './capture-list-rules';
+  import { announcementOf, taggingCard, writtenIn } from './capture-panel-rules';
+  import type { PanelEnvironment } from './capture-panel-rules';
+  import type { CaptureListing } from './capture-read';
   import type { CaptureView } from './capture-view.svelte';
   import { createCaptureSort } from './capture-sort-choice.svelte';
   import { CAPTURE_SORTS, CAPTURE_SORT_LABEL, captureSortName } from './capture-sort';
   import { createCardReveal } from './card-reveal';
-  import { clearWarning } from './clearing';
+  import { clearScope, clearWarning } from './clearing';
   import { createClearConfirm } from './clear-confirm.svelte';
   import { emptyPanelText } from './empty-panel';
   import type { CaptureSource } from './empty-panel';
@@ -47,7 +56,9 @@
 
   type Props = {
     readonly view: CaptureView;
-    readonly panel: CapturePanelView;
+    readonly listing: CaptureListing;
+    readonly environment: PanelEnvironment;
+    readonly direction: ReadingDirection;
     readonly language: Language | null;
     readonly source: CaptureSource;
     readonly visible: boolean;
@@ -56,7 +67,18 @@
     readonly tagNotice?: Snippet;
   };
 
-  let { view, panel, language, source, visible, onSeek, notice, tagNotice }: Props = $props();
+  let {
+    view,
+    listing,
+    environment,
+    direction,
+    language,
+    source,
+    visible,
+    onSeek,
+    notice,
+    tagNotice,
+  }: Props = $props();
 
   const uid = $props.id();
 
@@ -67,33 +89,56 @@
   const reveal = createCardReveal();
   const selection = createTagSelection();
   const copying = createTextCopy(
-    (text) => panel.write(text),
-    (message) => panel.notify(message),
+    (text) => environment.write(text),
+    (message) => environment.notify(message),
   );
   const confirm = createClearConfirm();
+  const capturesExport = new BookCapturesExport({
+    exportBookCaptures: (id) => environment.exporting.exportBookCaptures(id),
+  });
+
+  const listed = $derived(panelCapturesOf(listing, view.recording.unsaved.cards));
+  const lookup: CaptureLookup = {
+    get cards() {
+      return listed;
+    },
+    stored: (id) => storedIn(listing, id),
+  };
 
   const writing: TagWriting = {
-    tagsOn: (id) => view.list.captures.find((capture) => capture.id === id)?.tagIds ?? [],
-    loadCounts: () => panel.counting.ask(),
-    add: (id, tag) => view.tagging.addTag(id, tag),
-    remove: (id, tag) => view.tagging.removeTag(id, tag),
-    create: (id, name) => view.tagging.createTag(id, name),
+    tagsOn: (id) => listed.find((capture) => capture.id === id)?.tagIds ?? [],
+    loadCounts: () => environment.counting.ask(),
+    add: (id, tag) => view.tagging.addTag(id, tag, lookup),
+    remove: (id, tag) => view.tagging.removeTag(id, tag, lookup),
+    create: (id, name) => view.tagging.createTag(id, name, lookup),
   };
 
   let list = $state<HTMLElement | null>();
 
-  const cardSource = $derived(panel.cardSource);
+  const cardSource = $derived<CardSource>({
+    captures: listed,
+    newestFirst: newestFirstOf(listed),
+    tags: listing.tags,
+    book: view.book,
+    language,
+    progress: view.warmup.progress,
+    direction,
+    passages: environment.passages,
+    seekable: source === 'text',
+  });
+  const mismatch = $derived(engineMismatch(view.warmup.session, language));
+  const announcement = $derived(announcementOf(listed, view.warmup.progress));
   const ordered = $derived(orderedCaptures(cardSource, sorting.sort));
   const hits = $derived(searchHits(ordered, search.wanted));
   const cards = $derived(cardsOf(cardSource, ordered, hits, search.wanted));
   const cursor = $derived(cursorOf(search.stepped, search.wanted));
   const searching = $derived(search.searching);
-  const steps = $derived(searchSteps(cursor, cards.length, view.list.count));
-  const warning = $derived(confirm.confirming ? clearWarning(view.clearAll.scope) : null);
-  const tagging = $derived(cards.find((card) => card.id === selection.picker.capture) ?? null);
+  const steps = $derived(searchSteps(cursor, cards.length, listed.length));
+  const warning = $derived(confirm.confirming ? clearWarning(clearScope(listed)) : null);
+  const tagging = $derived(taggingCard(cards, selection.picker.capture));
   const pickerRows = $derived(
     rowsFor(
-      { tags: view.tagging.tags, counts: panel.counting.counts() },
+      { tags: listing.tags, counts: environment.counting.counts() },
       selection.picker.capture,
       selection.picker.carried,
       selection.picker.query,
@@ -154,14 +199,29 @@
     from?.focus();
   }
 
+  function openDraft(field: DraftField, card: Card, from: FocusTarget | null): void {
+    drafts.open(field, card.id, writtenIn(field, card), from);
+  }
+
   async function save(field: DraftField, capture: CaptureId): Promise<void> {
-    const saved = await panel.save(field, capture);
+    const saved = await drafts.save(field, capture, (written) =>
+      match(field)
+        .with('text', () => view.edits.edit(capture, written, lookup))
+        .with('note', () => view.edits.annotate(capture, written, lookup))
+        .exhaustive(),
+    );
     if (saved.kind === 'closed') await restore(saved.from);
+  }
+
+  async function removeStored(capture: CaptureId): Promise<void> {
+    view.recording.unsaved.drop(capture);
+    const removed = await view.removal.remove(capture, lookup);
+    if (removed === 'saved') drafts.forget(capture);
   }
 
   async function remove(capture: CaptureId): Promise<void> {
     if (selection.opened(capture)) selection.close();
-    const removed = panel.remove(capture);
+    const removed = removeStored(capture);
     await tick();
     list?.focus({ preventScroll: true });
     await removed;
@@ -169,29 +229,30 @@
 
   function revealIfLatest(id: CaptureId): Attachment<HTMLElement> {
     return (node) => {
-      if (reveal.reveals(id, view.list.latest, visible)) node.scrollIntoView({ block: 'nearest' });
+      if (reveal.reveals(id, view.recording.unsaved.latest, visible))
+        node.scrollIntoView({ block: 'nearest' });
     };
   }
 
   function askToClear(): void {
-    if (view.list.count === 0) return;
+    if (listed.length === 0) return;
 
     confirm.ask();
-    view.clearAll.prepareExport();
+    if (view.book !== null) void capturesExport.prepare(view.book);
   }
 
   async function clearAll(): Promise<void> {
     confirm.dismiss();
-    await view.clearAll.clear();
+    await view.clearAll.clear(view.book);
   }
 </script>
 
 <section class="col gap-0 flex-1 min-h-0 min-w-0" aria-labelledby="{uid}-name">
   <header class="row items-center gap-2 px-3 py-2 border-b shrink-0">
     <h2 class="m-0 text-sm weight-semibold" id="{uid}-name">Captures</h2>
-    <Badge>{view.list.count}</Badge>
+    <Badge>{listed.length}</Badge>
     <kbd class="ms-auto" title="Find in captures">⌘K</kbd>
-    <DocumentTags tags={view.tagging.tags} counts={view.tagging.bookCounts} />
+    <DocumentTags tags={listing.tags} counts={tagCounts(listed)} />
     <Dropdown
       variant="ghost"
       size="sm"
@@ -216,24 +277,24 @@
       icon={Ellipsis}
       label="Captures menu"
     >
-      <DropdownItem danger disabled={view.list.count === 0} onclick={askToClear}>
+      <DropdownItem danger disabled={listed.length === 0} onclick={askToClear}>
         Delete every capture…
       </DropdownItem>
     </Dropdown>
   </header>
 
-  <p class="visually-hidden" role="status">{panel.announcement}</p>
+  <p class="visually-hidden" role="status">{announcement}</p>
   <p class="visually-hidden" role="status">{copying.told}</p>
 
   <div class="col gap-0 flex-1 min-h-0 overflow-y-auto relative" bind:this={list} tabindex="-1">
     <CaptureListData
-      state={view.list.listing.state}
+      state={listing.state}
       {cards}
       invitation={emptyPanelText(source, searching)}
-      onretry={() => view.list.listing.reload()}
+      onretry={() => listing.reload()}
     >
       {#snippet above()}
-        {#if view.list.count > 0}
+        {#if listed.length > 0}
           <Stepper
             steps={stepping}
             axis="block"
@@ -255,8 +316,8 @@
           </Stepper>
         {/if}
 
-        {#if panel.mismatch !== null}
-          <Alert variant="warning">{panel.mismatch}</Alert>
+        {#if mismatch !== null}
+          <Alert variant="warning">{mismatch}</Alert>
         {/if}
 
         {@render notice?.()}
@@ -274,9 +335,9 @@
                 copied={copying.copied === card.id}
                 onseek={onSeek}
                 onfollow={(event) => follow(event, order)}
-                onwrite={(field, from) => panel.openDraft(field, card, from)}
+                onwrite={(field, from) => openDraft(field, card, from)}
                 onsave={(field) => void save(field, card.id)}
-                onabandon={(field) => void restore(panel.abandon(field, card.id))}
+                onabandon={(field) => void restore(drafts.abandon(field, card.id))}
                 ontag={(from) => selection.open(card.id, writing, from)}
                 oncopy={(text) => void copying.copy(card.id, text)}
                 onremove={(capture) => void remove(capture)}
@@ -298,7 +359,7 @@
     place={held.place}
     chips={held.tags}
     onchoose={(row) => void selection.choose(row, writing)}
-    onuntag={(tag) => void view.tagging.removeTag(held.id, tag)}
+    onuntag={(tag) => void view.tagging.removeTag(held.id, tag, lookup)}
     onclose={() => void restore(selection.close())}
     notice={tagNotice}
   />
@@ -311,7 +372,7 @@
   onclose={() => confirm.dismiss()}
 >
   <p class="m-0">{warning}</p>
-  <BookCapturesExportButton view={view.clearAll.capturesExport} />
+  <BookCapturesExportButton view={capturesExport} />
   {#snippet footer(close)}
     <Button variant="ghost" onclick={close}>Keep them</Button>
     <Button variant="danger" onclick={() => void clearAll()}>

@@ -1,11 +1,7 @@
 import { SvelteURL } from 'svelte/reactivity';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
-import type { FlowSurface } from '$lib/domains/flowing/ui/flow-surface';
-import type { Card } from '$lib/domains/recognition/ui/capture/capture-card-projection';
-import { cardsOf, orderedCaptures } from '$lib/domains/recognition/ui/capture/capture-card-rules';
-import type { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
-import { bookId, captureId, imageIndex } from '$lib/shared/ids';
+import { bookId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
 import { createTestQueryClient } from '$lib/shared/testing/query-client';
@@ -24,38 +20,18 @@ type World = {
   readonly listed: () => readonly BookId[];
   readonly replaced: string[];
   readonly left: string[];
-  readonly copied: string[];
-  readonly notices: string[];
   shown: string;
 };
-
-function cardsOfPanel(panel: CapturePanelView): readonly Card[] {
-  const held = panel.cardSource;
-  return cardsOf(held, orderedCaptures(held, 'book'), null, '');
-}
 
 function flowBook(id: BookId): unknown {
   return { id, title: 'Kokoro', language: 'ja', layoutKind: 'flow', imageCount: 0 };
 }
-
-function surfaceReading(direction: 'ltr' | 'rtl'): FlowSurface {
-  return {
-    toc: null,
-    ticks: [],
-    direction,
-    paging: { axis: 'horizontal', direction },
-  } as unknown as FlowSurface;
-}
-
-const NO_COUNTING = { counts: () => new Map(), ask: () => undefined };
 
 function world(address: string): World {
   const url = new SvelteURL(`${ORIGIN}${address}`);
   const opened: BookId[] = [];
   const replaced: string[] = [];
   const left: string[] = [];
-  const copied: string[] = [];
-  const notices: string[] = [];
   const container = {
     library: {
       openForReading: (id: BookId) => {
@@ -82,11 +58,6 @@ function world(address: string): World {
         left.push(path);
       },
     },
-    (text) => {
-      copied.push(text);
-      return Promise.resolve();
-    },
-    NO_COUNTING,
     () => undefined,
     () => undefined,
   );
@@ -98,8 +69,6 @@ function world(address: string): World {
     listed: () => opens.mock.calls.map(([book]) => book),
     replaced,
     left,
-    copied,
-    notices,
     shown: `${ORIGIN}${address}`,
   };
   return held;
@@ -322,156 +291,5 @@ describe('ReadSession', () => {
 
     expect(held.session.id).toBe(bookId('one'));
     expect(held.session.finding).toBe('海');
-  });
-
-  it('gives the image panel a fresh state only on leaving an ebook', async () => {
-    const held = world('/read/gone');
-    held.session.navigate();
-    await settled();
-    const first = held.session.imagePanel;
-
-    go(held, '/read/one');
-    await settled();
-    const afterMissing = held.session.imagePanel;
-    go(held, '/read/two');
-    await settled();
-
-    expect(afterMissing).toBe(first);
-    expect(held.session.imagePanel).not.toBe(first);
-  });
-
-  it('gives the ebook panel a fresh state on every switch of book', async () => {
-    const held = world('/read/gone');
-    held.session.navigate();
-    await settled();
-    const first = held.session.flowPanel;
-
-    go(held, '/read/one');
-    await settled();
-    const second = held.session.flowPanel;
-    go(held, '/read/one?image=2');
-
-    expect(second).not.toBe(first);
-    expect(held.session.flowPanel).toBe(second);
-  });
-
-  it('keeps both panels when the address moves within the open book', async () => {
-    const held = world('/read/one');
-    held.session.navigate();
-    await settled();
-    const panels = [held.session.imagePanel, held.session.flowPanel];
-
-    go(held, '/read/one?image=2');
-    await settled();
-
-    expect([held.session.imagePanel, held.session.flowPanel]).toEqual(panels);
-  });
-
-  it('links passages from the ebook panel and not from the image panel', async () => {
-    const held = world('/read/one');
-    held.session.captures.list.unsaved.put({
-      id: captureId('lifted'),
-      anchor: {
-        kind: 'text',
-        cfi: '/6/4',
-        quote: { exact: '海', prefix: '', suffix: '' },
-        chapter: null,
-      },
-      tagIds: [],
-      origin: 'lifted',
-      note: null,
-      status: 'pending',
-    } as never);
-
-    expect(cardsOfPanel(held.session.flowPanel).map((card) => card.passage !== null)).toEqual([
-      true,
-    ]);
-    expect(cardsOfPanel(held.session.imagePanel).map((card) => card.passage !== null)).toEqual([
-      false,
-    ]);
-  });
-
-  it('copies through the clipboard write it was given', async () => {
-    const held = world('/read/one');
-    held.session.navigate();
-    await settled();
-
-    await held.session.imagePanel.write('海');
-
-    expect(held.copied).toEqual(['海']);
-  });
-
-  it('tells a refused copy through the notify it was given', async () => {
-    const held = world('/read/one');
-    const refusing = new ReadSession(
-      {} as Container,
-      createTestQueryClient(),
-      (notice) => held.notices.push(notice.title),
-      {
-        fileId: () => 'one',
-        requested: () => held.url,
-        shown: () => held.url,
-        replace: () => undefined,
-        leave: () => undefined,
-      },
-      () => Promise.reject(new Error('the clipboard is locked')),
-      NO_COUNTING,
-      () => undefined,
-      () => undefined,
-    );
-
-    await expect(refusing.flowPanel.write('海')).rejects.toThrow('the clipboard is locked');
-    refusing.flowPanel.notify({ tone: 'danger', title: 'The text could not be copied' });
-
-    expect(held.notices).toEqual(['The text could not be copied']);
-  });
-
-  it('orders each panel by the direction of its own reader', () => {
-    const held = world('/read/one');
-    for (const [id, x] of [
-      ['left', 0],
-      ['right', 200],
-    ] as const) {
-      held.session.captures.list.unsaved.put({
-        id: captureId(id),
-        anchor: {
-          kind: 'region',
-          regions: [{ index: imageIndex(3), rect: { x, y: 0, width: 40, height: 20 } }],
-        },
-        tagIds: [],
-        origin: 'recognized',
-        note: null,
-        status: 'pending',
-      } as never);
-    }
-    held.session.flow.navigation.learn(surfaceReading('ltr'));
-    const flowingRight = cardsOfPanel(held.session.flowPanel).map((card) => card.id);
-    held.session.flow.navigation.learn(surfaceReading('rtl'));
-
-    expect(cardsOfPanel(held.session.imagePanel).map((card) => card.id)).toEqual(['left', 'right']);
-    expect(flowingRight).toEqual(['left', 'right']);
-    expect(cardsOfPanel(held.session.flowPanel).map((card) => card.id)).toEqual(['right', 'left']);
-  });
-
-  it('marks a chapter place in both panels with the language of the open book', async () => {
-    const held = world('/read/one');
-    held.session.navigate();
-    await settled();
-    held.session.captures.list.unsaved.put({
-      id: captureId('lifted'),
-      anchor: {
-        kind: 'text',
-        cfi: '/6/4',
-        quote: { exact: '海', prefix: '', suffix: '' },
-        chapter: '一',
-      },
-      tagIds: [],
-      origin: 'lifted',
-      note: null,
-      status: 'pending',
-    } as never);
-
-    expect(cardsOfPanel(held.session.imagePanel).map((card) => card.placeLanguage)).toEqual(['ja']);
-    expect(cardsOfPanel(held.session.flowPanel).map((card) => card.placeLanguage)).toEqual(['ja']);
   });
 });

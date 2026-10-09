@@ -240,7 +240,7 @@ const ANNOUNCEMENT_ROLE: SourceSnippet = {
 const CAPTURE_STATUS: SourceSnippet = {
   label: 'CapturePanel.svelte',
   file: 'src/lib/domains/recognition/ui/capture/CapturePanel.svelte',
-  code: `<p class="visually-hidden" role="status">{panel.announcement}</p>
+  code: `<p class="visually-hidden" role="status">{announcement}</p>
 <p class="visually-hidden" role="status">{copying.told}</p>`,
 };
 

@@ -10,7 +10,7 @@ import type { CaptureWrites } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
 import type { RemoveCaptureResult } from '../../use-cases/capture/remove-capture';
 import type { RestoreCaptureResult } from '../../use-cases/capture/restore-capture';
-import type { CaptureList } from './capture-list.svelte';
+import type { CaptureLookup } from './capture-list-rules';
 import { refuse } from './storage-failure';
 import type { WriteOutcome } from './storage-failure';
 
@@ -22,13 +22,11 @@ const RESTORE_FAILED = 'The capture could not be restored';
 
 class CaptureRemoval {
   #notify: Notify;
-  #list: CaptureList;
   #removing: WriteQuery<RemoveCaptureResult, Capture>;
   #restoring: WriteQuery<RestoreCaptureResult, Capture>;
 
-  constructor(recognition: CaptureWrites, notify: Notify, list: CaptureList, cache: CaptureCache) {
+  constructor(recognition: CaptureWrites, notify: Notify, cache: CaptureCache) {
     this.#notify = notify;
-    this.#list = list;
     this.#removing = writeQuery(() => ({
       ...removeCaptureMutation(recognition),
       onMutate: async (capture) => {
@@ -54,9 +52,8 @@ class CaptureRemoval {
     }));
   }
 
-  async remove(id: CaptureId): Promise<WriteOutcome> {
-    const stored = this.#list.stored(id);
-    this.#list.unsaved.drop(id);
+  async remove(id: CaptureId, lookup: CaptureLookup): Promise<WriteOutcome> {
+    const stored = lookup.stored(id);
     if (stored === undefined) return 'saved';
 
     const gone = await this.#removing.run(stored).catch(() => null);

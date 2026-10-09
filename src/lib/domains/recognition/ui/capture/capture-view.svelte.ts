@@ -10,8 +10,6 @@ import type { PageSource } from '$lib/shared/page-source';
 import { CaptureCache } from './capture-cache';
 import { CardDraftsSession } from './card-drafts-session.svelte';
 import { CaptureEdits } from './capture-edits.svelte';
-import { CaptureList } from './capture-list.svelte';
-import type { CaptureListing } from './capture-read';
 import { CaptureRecording } from './capture-recording.svelte';
 import { CaptureRemoval } from './capture-removal.svelte';
 import { CaptureTags } from './capture-tags.svelte';
@@ -25,7 +23,6 @@ import { EngineWarmup } from '../engine/engine-warmup.svelte';
 import type { PendingRecognition } from '../engine/engine-warmth';
 
 class CaptureView {
-  readonly list: CaptureList;
   readonly clearAll: CaptureClearing;
   readonly removal: CaptureRemoval;
   readonly edits: CaptureEdits;
@@ -35,32 +32,41 @@ class CaptureView {
   readonly warmup: EngineWarmup;
   readonly drafts = new CardDraftsSession();
   #container: Container;
+  #book = $state.raw<BookId | null>(null);
   #visits = 0;
 
   constructor(
     container: Container,
     notify: Notify,
     client: QueryClient,
-    listing: () => CaptureListing | undefined,
     engine: () => EngineGateRead | undefined,
   ) {
     const recognition = container.recognition;
     const cache = new CaptureCache(client);
     const reading: EngineSource = (language) => readingFor(engine(), language);
     this.#container = container;
-    this.list = new CaptureList(listing);
-    this.clearAll = new CaptureClearing(recognition, notify, this.list, cache);
-    this.removal = new CaptureRemoval(recognition, notify, this.list, cache);
-    this.edits = new CaptureEdits(recognition, notify, this.list, cache);
-    this.tagging = new CaptureTags(recognition, notify, this.list, cache);
-    this.recording = new CaptureRecording(container, notify, this.list, cache, {
+    this.removal = new CaptureRemoval(recognition, notify, cache);
+    this.edits = new CaptureEdits(recognition, notify, cache);
+    this.tagging = new CaptureTags(recognition, notify, cache);
+    this.recording = new CaptureRecording(container, notify, cache, {
       open: (capture) => this.drafts.open('text', capture, '', null),
       close: (capture) => void this.drafts.abandon('text', capture),
     });
+    this.clearAll = new CaptureClearing(
+      recognition,
+      notify,
+      cache,
+      this.recording.unsaved,
+      () => this.#book,
+    );
     this.consent = new ConsentGate(container, notify, client, () => this.#visits, reading);
     this.warmup = new EngineWarmup(container, reading, () => this.#visits, {
       stored: (language) => this.consent.takeAsAgreed(language),
     });
+  }
+
+  get book(): BookId | null {
+    return this.#book;
   }
 
   open(book: BookId): void {
@@ -68,19 +74,21 @@ class CaptureView {
     this.consent.forget();
     this.warmup.forget();
     this.drafts.clear();
-    this.list.open(book);
+    this.#book = book;
+    this.recording.unsaved.forget();
   }
 
   close(): void {
     this.#visits += 1;
-    this.list.forget();
+    this.#book = null;
+    this.recording.unsaved.forget();
     this.drafts.clear();
     this.consent.forget();
     this.warmup.close();
   }
 
   async warm(book: BookId, language: Language): Promise<void> {
-    if (this.list.book !== book) return;
+    if (this.#book !== book) return;
 
     await this.warmup.warm(language);
   }
@@ -138,7 +146,7 @@ class CaptureView {
   }
 
   async #read(held: PendingRecognition): Promise<void> {
-    await this.recording.recognizing(held.regions, () => this.#settlement(held));
+    await this.recording.recognizing(this.#book, held.regions, () => this.#settlement(held));
   }
 
   async #settlement(held: PendingRecognition): Promise<Settled> {

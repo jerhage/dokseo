@@ -3,19 +3,19 @@ import { match } from 'ts-pattern';
 import type { Container } from '$lib/container';
 import { refreshLibrary } from '$lib/domains/library/ui/library-refresh';
 import { editInLanguage } from '$lib/domains/library/ui/reading-defaults.svelte';
-import { CapturePanelView } from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
 import { CaptureView } from '$lib/domains/recognition/ui/capture/capture-view.svelte';
 import {
   arrivalFrom,
   passageArrivalFrom,
   passageFrom,
 } from '$lib/domains/recognition/ui/capture/capture-arrivals';
-import type {
-  PanelSource,
-  TagCounting,
-} from '$lib/domains/recognition/ui/capture/capture-panel.svelte';
+import {
+  anchorsOf,
+  listingOf,
+  panelCapturesOf,
+  readOf,
+} from '$lib/domains/recognition/ui/capture/capture-list-rules';
 import type { CaptureListing } from '$lib/domains/recognition/ui/capture/capture-read';
-import type { ClipboardWrite } from '$lib/domains/recognition/ui/capture/text-copy.svelte';
 import { arrivalGlow, everyOtherGlow } from '$lib/domains/recognition/ui/capture/capture-glow';
 import type { EngineGateRead } from '$lib/domains/recognition/ui/engine/engine-gate';
 import { comparePassages } from '$lib/domains/flowing/ui/flow-passage-order';
@@ -54,11 +54,7 @@ class ReadSession {
 
   #client: QueryClient;
   #address: ReadAddress;
-  #notify: Notify;
-  #copyText: ClipboardWrite;
-  #counting: TagCounting;
-  #imagePanel = $state.raw(this.#imagePanelBuilt());
-  #flowPanel = $state.raw(this.#flowPanelBuilt());
+  #listing: () => CaptureListing | undefined;
   #standing = $state<ImageArrivalStanding>(IMAGE_ARRIVAL_SHOWING);
   #requested: ReaderRequest | null = null;
   #arriving: BookId | null = null;
@@ -67,16 +63,17 @@ class ReadSession {
     readImageIndex(this.#address.requested().searchParams.get(IMAGE_PARAMETER)),
   );
   #found = $derived.by(() => readArrival(this.#address.requested().searchParams));
+  #cards = $derived.by(() => panelCapturesOf(this.listing, this.captures.recording.unsaved.cards));
+  #read = $derived.by(() => readOf(this.#cards, this.listing));
+  #anchors = $derived.by(() => anchorsOf(this.#cards));
   #here = $derived.by(() =>
-    arrivalFrom(this.captures.list.read, this.#found, this.reader.direction, comparePassages),
+    arrivalFrom(this.#read, this.#found, this.reader.direction, comparePassages),
   );
   #glow = $derived(arrivalGlow(this.#here));
-  #everyGlow = $derived.by(() => everyOtherGlow(this.captures.list.read, this.#here));
-  #passage = $derived.by(() => passageFrom(this.captures.list.anchors, this.#found));
+  #everyGlow = $derived.by(() => everyOtherGlow(this.#read, this.#here));
+  #passage = $derived.by(() => passageFrom(this.#anchors, this.#found));
   #stepping = $derived(this.#here?.stepping ?? null);
-  #passageHere = $derived.by(() =>
-    passageArrivalFrom(this.captures.list.read, this.#found, comparePassages),
-  );
+  #passageHere = $derived.by(() => passageArrivalFrom(this.#read, this.#found, comparePassages));
   #passageStepping = $derived(this.#passageHere?.stepping ?? null);
   #finding = $derived(arrivalQuery(this.#found));
   #arrivalShows = $derived(imageArrivalShows(this.#standing));
@@ -86,16 +83,12 @@ class ReadSession {
     client: QueryClient,
     notify: Notify,
     address: ReadAddress,
-    copyText: ClipboardWrite,
-    counting: TagCounting,
     listing: () => CaptureListing | undefined,
     engine: () => EngineGateRead | undefined,
   ) {
     this.#client = client;
     this.#address = address;
-    this.#notify = notify;
-    this.#copyText = copyText;
-    this.#counting = counting;
+    this.#listing = listing;
     this.reader = new ReaderView(
       container,
       notify,
@@ -104,16 +97,20 @@ class ReadSession {
       () => this.#bookChanged(),
       editInLanguage,
     );
-    this.captures = new CaptureView(container, notify, client, listing, engine);
+    this.captures = new CaptureView(container, notify, client, engine);
     this.flow = new FlowView(container, notify, client, () => this.#bookChanged());
   }
 
-  get imagePanel(): CapturePanelView {
-    return this.#imagePanel;
+  get listing(): CaptureListing {
+    return listingOf(this.#listing());
   }
 
-  get flowPanel(): CapturePanelView {
-    return this.#flowPanel;
+  get count(): number {
+    return this.#cards.length;
+  }
+
+  get anchors() {
+    return this.#anchors;
   }
 
   get id(): BookId | null {
@@ -178,10 +175,7 @@ class ReadSession {
     match(next)
       .with({ kind: 'enter' }, ({ book, image }) => this.#open(book, image))
       .with({ kind: 'switch' }, ({ book, image }) => {
-        const leavingFlow = this.reader.opening.kind === 'flow';
         this.close();
-        this.#flowPanel = this.#flowPanelBuilt();
-        if (leavingFlow) this.#imagePanel = this.#imagePanelBuilt();
         this.#open(book, image);
       })
       .with(
@@ -201,35 +195,6 @@ class ReadSession {
   close(): void {
     this.reader.dispose();
     this.captures.close();
-  }
-
-  #imagePanelBuilt(): CapturePanelView {
-    return this.#panelBuilt(() => ({
-      view: this.captures,
-      language: this.language,
-      direction: this.reader.direction,
-      passages: comparePassages,
-      seekable: false,
-    }));
-  }
-
-  #flowPanelBuilt(): CapturePanelView {
-    return this.#panelBuilt(() => ({
-      view: this.captures,
-      language: this.language,
-      direction: this.flow.navigation.direction,
-      passages: comparePassages,
-      seekable: true,
-    }));
-  }
-
-  #panelBuilt(source: () => PanelSource): CapturePanelView {
-    return new CapturePanelView(
-      source,
-      { counts: () => this.#counting.counts(), ask: () => this.#counting.ask() },
-      (text) => this.#copyText(text),
-      (notice) => this.#notify(notice),
-    );
   }
 
   #bookChanged(): void {

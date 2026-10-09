@@ -1,5 +1,3 @@
-import { BookCapturesExport } from '$lib/shared/book-captures-export.svelte';
-import type { BookCapturesExporting } from '$lib/shared/book-captures-export.svelte';
 import type { BookId } from '$lib/shared/ids';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
@@ -10,11 +8,9 @@ import { clearCapturesMutation } from '../../queries/capture-queries';
 import type { CaptureWrites } from '../../queries/capture-queries';
 import type { CaptureCache } from './capture-cache';
 import type { ClearCapturesResult } from '../../use-cases/capture/clear-captures';
-import type { CaptureList } from './capture-list.svelte';
-import { clearScope } from './clearing';
-import type { ClearScope } from './clearing';
 import type { PanelCapture } from './panel-capture';
 import { refuse } from './storage-failure';
+import type { UnsavedCards } from './unsaved-cards.svelte';
 
 const CLEAR_FAILED = 'Your captures could not be deleted';
 
@@ -24,27 +20,28 @@ type Emptied = {
 };
 
 class CaptureClearing {
-  readonly capturesExport: BookCapturesExport;
   #notify: Notify;
-  #list: CaptureList;
   #cache: CaptureCache;
+  #unsaved: UnsavedCards;
+  #openBook: () => BookId | null;
   #clearing: WriteQuery<ClearCapturesResult, BookId>;
 
   constructor(
-    recognition: CaptureWrites & BookCapturesExporting,
+    recognition: CaptureWrites,
     notify: Notify,
-    list: CaptureList,
     cache: CaptureCache,
+    unsaved: UnsavedCards,
+    openBook: () => BookId | null,
   ) {
-    this.capturesExport = new BookCapturesExport(recognition);
     this.#notify = notify;
-    this.#list = list;
     this.#cache = cache;
+    this.#unsaved = unsaved;
+    this.#openBook = openBook;
     this.#clearing = writeQuery(() => ({
       ...clearCapturesMutation(recognition),
       onMutate: async (book): Promise<Emptied> => {
         await cache.cancel(book);
-        return { rows: cache.empty(book), unsaved: list.unsaved.empty() };
+        return { rows: cache.empty(book), unsaved: unsaved.empty() };
       },
       onSuccess: (cleared, book, emptied) => {
         if (cleared.kind === 'success') return;
@@ -59,17 +56,7 @@ class CaptureClearing {
     }));
   }
 
-  get scope(): ClearScope {
-    return clearScope(this.#list.captures);
-  }
-
-  prepareExport(): void {
-    const book = this.#list.book;
-    if (book !== null) void this.capturesExport.prepare(book);
-  }
-
-  async clear(): Promise<void> {
-    const book = this.#list.book;
+  async clear(book: BookId | null): Promise<void> {
     if (book === null) return;
 
     await this.#clearing.run(book).catch(() => null);
@@ -77,7 +64,7 @@ class CaptureClearing {
 
   #putBack(book: BookId, emptied: Emptied): void {
     this.#cache.restore(book, emptied.rows);
-    if (this.#list.book === book) this.#list.unsaved.restore(emptied.unsaved);
+    if (this.#openBook() === book) this.#unsaved.restore(emptied.unsaved);
   }
 }
 
