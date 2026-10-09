@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.2.0](https://github.com/jerhage/dokseo/compare/v1.1.2...v1.2.0) (2026-10-09)
+
+
+### Features
+
+* **catalog:** add the catalog browse view and the remote item cards ([245b3e4](https://github.com/jerhage/dokseo/commit/245b3e48b9f278415780da6020277aa338d0ac35))
+* **catalog:** add the catalog id, catalog and remote publication types ([e01a333](https://github.com/jerhage/dokseo/commit/e01a3335cfa4cd4bdb9f7c0cba9fbe4b381f4132))
+* **catalog:** add the catalog settings view model and its texts ([618c195](https://github.com/jerhage/dokseo/commit/618c195dcf183d09c77194ba1f56e61ab5c4c743))
+* **catalog:** add the Catalogs settings screen with add, test, edit and remove ([27107a9](https://github.com/jerhage/dokseo/commit/27107a9181ad3972dac277e28e9ce7a593361e31))
+* **catalog:** add the view models for tabs, browsing, covers and downloads ([3e0d9ee](https://github.com/jerhage/dokseo/commit/3e0d9ee0373566a9c64c0dee3a9e4353e06d8c41))
+* **catalog:** add, edit, remove and list catalogs and record the origin of a download ([8ec6477](https://github.com/jerhage/dokseo/commit/8ec6477cf3145c1ab803c32a3b9b5399125e9f27))
+* **catalog:** badge downloaded books and filter the device list by origin ([b88c471](https://github.com/jerhage/dokseo/commit/b88c471fc5fbf7efa519b7a8c50049b4ea83bcb5))
+* **catalog:** browse a catalog, read covers, download into the library and forget origins ([639af3f](https://github.com/jerhage/dokseo/commit/639af3f6e76cad680baa93d4dc6a9cb53baa2ba7))
+* **catalog:** classify a remote publication against what is held and downloading ([3f6c881](https://github.com/jerhage/dokseo/commit/3f6c881e8d2ff36d832d69883474017bd841b28f))
+* **catalog:** fetch OPDS feeds, covers and downloads with named outcomes and session passwords ([a049036](https://github.com/jerhage/dokseo/commit/a04903678ac22da753f6ff967de3ffaf4e2aa556))
+* **catalog:** give selectable catalog cards the device card hover ([915a133](https://github.com/jerhage/dokseo/commit/915a133af9aac958dc0f5f3b397a46a43b34b550))
+* **catalog:** keep the line breaks of a publication summary ([7967a0c](https://github.com/jerhage/dokseo/commit/7967a0cfdfb69b05def1dba3ecf96b4f846d0662))
+* **catalog:** let connect-src reach any https origin so a catalog server can be fetched ([3d302b4](https://github.com/jerhage/dokseo/commit/3d302b4905c77f19655a12084c4b4655f8b9c538))
+* **catalog:** list a book once when a later page repeats it ([fdee5f3](https://github.com/jerhage/dokseo/commit/fdee5f3c743d9e76f3ab649c24888a05346a9e6c))
+* **catalog:** load the next page as the reader scrolls instead of Previous and Next ([2fb84c4](https://github.com/jerhage/dokseo/commit/2fb84c4bd5a39d4d5ed0e3f3fd562c5dd7c4515a))
+* **catalog:** make swipe back go up one feed and close the details, with shallow routing ([4044a38](https://github.com/jerhage/dokseo/commit/4044a388821cd64a77000c16100fa612ac40a73e))
+* **catalog:** name each source filter entry Downloaded from the catalog ([2ec4971](https://github.com/jerhage/dokseo/commit/2ec4971404c2db7f909e0c25ce60ca3329c79390))
+* **catalog:** offer to replace a held book with the newer file ([b13ea69](https://github.com/jerhage/dokseo/commit/b13ea691de1302f2eb3711141ec5702b0f2c6543))
+* **catalog:** open a catalog card's details on a click and select only through its checkbox ([b5d6b44](https://github.com/jerhage/dokseo/commit/b5d6b4408dd667fc056663d7dca0f1961b24e31e))
+* **catalog:** open a publication's details from the browse view model ([6180d82](https://github.com/jerhage/dokseo/commit/6180d8213b0af077d01d555a9f7e2b3ad509a258))
+* **catalog:** read OPDS navigation and acquisition feeds ([029b2d6](https://github.com/jerhage/dokseo/commit/029b2d618a80400eb3e200151b87a4b342028a4b))
+* **catalog:** return focus to the card that opened the details, with no ring after a tap ([acf3730](https://github.com/jerhage/dokseo/commit/acf3730e7057ebadca1416640c565ddce3a39e17))
+* **catalog:** return to a feed already on the path instead of adding a crumb ([bd25a32](https://github.com/jerhage/dokseo/commit/bd25a32b3c9bc7e67b479a4bbeb0154f6d719b65))
+* **catalog:** scroll a catalog tab back to where it was after a return from the reader ([7b03080](https://github.com/jerhage/dokseo/commit/7b03080dfd44987c7a7f1c08a75be7f45923984a))
+* **catalog:** search the catalog as the reader types, and leave the search when the field is empty ([0bee76c](https://github.com/jerhage/dokseo/commit/0bee76c01d515e78f13238a04e63bf298eafebbf))
+* **catalog:** search the selected catalog from the header field ([6e5c149](https://github.com/jerhage/dokseo/commit/6e5c1495f01bcb33d1d035b7b97bfa5a9af69f62))
+* **catalog:** select books and download the selection ([b6a4999](https://github.com/jerhage/dokseo/commit/b6a4999edd8f81b5afbdffceb69b4d6784bcbda4))
+* **catalog:** show a search field in the browse view where the header field is hidden ([1e818e8](https://github.com/jerhage/dokseo/commit/1e818e8399e9e6e445ddb8b97c88081149831cb5))
+* **catalog:** show one library tab per catalog beside On this device ([89b5da2](https://github.com/jerhage/dokseo/commit/89b5da24e31bd495fcc9e5656af892f28f162d04))
+* **catalog:** store catalogs and book origins in the catalog-origins database ([e448cce](https://github.com/jerhage/dokseo/commit/e448ccec0bc942be88bd8be3756683536568d5be))
+* **catalog:** test a catalog connection without storing anything ([79c4442](https://github.com/jerhage/dokseo/commit/79c4442f0e8127cb9fcce2948fb714185a087764))
+* **catalog:** walk back through history when a crumb goes up, so Back never repeats a feed ([49a3d88](https://github.com/jerhage/dokseo/commit/49a3d88344166f62d95b2b7680ef81ec1f39ef51))
+* **library:** filter the device titles from a field at narrow widths ([319d43e](https://github.com/jerhage/dokseo/commit/319d43eebbc9cfe8ba8d8718b6dbf7dc25e1589f))
+* **library:** let the screen take a book badge, a book filter and filter controls ([79b8c79](https://github.com/jerhage/dokseo/commit/79b8c79b7386d570df62219448fb397053a196de))
+* **library:** let the screen take a header field that replaces the title filter ([06ce743](https://github.com/jerhage/dokseo/commit/06ce743f2d8982c62799d9f42cc75b6e5d21c32f))
+* **library:** open a device book's details on click, and drop its actions dropdown ([3728565](https://github.com/jerhage/dokseo/commit/372856512958cc802251cbdcbfbf2d4d905fadc1))
+* **library:** replace the file of a held book and keep its captures ([afbfe73](https://github.com/jerhage/dokseo/commit/afbfe739ec98e8c6f5f00af4c3375e3e93d891e6))
+
 ## [1.1.2](https://github.com/jerhage/dokseo/compare/v1.1.1...v1.1.2) (2026-10-07)
 
 
