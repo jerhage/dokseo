@@ -3,15 +3,8 @@ import type { FeedSearch } from '../domain/catalog-feed';
 import type { FeedReading } from './catalog-session.svelte';
 import type { EntryId, Location, Place } from './navigation';
 
-type SearchAvailability = 'unknown' | 'offered' | 'absent';
-
-function searchAvailability(settled: boolean, offered: FeedSearch | null): SearchAvailability {
-  if (offered !== null) return 'offered';
-  return settled ? 'absent' : 'unknown';
-}
-
-function searchPlaceholder(catalogName: string, availability: SearchAvailability): string {
-  return availability === 'absent' ? `${catalogName} has no search` : `Search ${catalogName}`;
+function searchPlaceholder(catalogName: string, offer: SearchOffer): string {
+  return offer.kind === 'absent' ? `${catalogName} has no search` : `Search ${catalogName}`;
 }
 
 type SearchMove =
@@ -21,14 +14,21 @@ type SearchMove =
 
 type SearchDraft = { readonly text: string; readonly entry: EntryId };
 
-type SearchOffer = { readonly settled: boolean; readonly search: FeedSearch | null };
+type SearchOffer =
+  | { readonly kind: 'unknown' }
+  | { readonly kind: 'offered'; readonly search: FeedSearch }
+  | { readonly kind: 'absent' };
 
-function searchMove(query: string, shown: Location, offered: FeedSearch | null): SearchMove {
+const UNKNOWN_OFFER: SearchOffer = { kind: 'unknown' };
+
+const ABSENT_OFFER: SearchOffer = { kind: 'absent' };
+
+function searchMove(query: string, shown: Location, offer: SearchOffer): SearchMove {
   const trimmed = query.trim();
   if (trimmed === '') return shown.kind === 'search' ? { kind: 'leave' } : { kind: 'ignore' };
-  if (offered === null) return { kind: 'ignore' };
+  if (offer.kind !== 'offered') return { kind: 'ignore' };
   if (shown.kind === 'search' && shown.query.trim() === trimmed) return { kind: 'ignore' };
-  return { kind: 'search', search: offered, query };
+  return { kind: 'search', search: offer.search, query };
 }
 
 function searchOffer(
@@ -41,7 +41,9 @@ function searchOffer(
   const top = root === undefined ? undefined : readings.get(root.id);
   const own = here?.kind === 'ready' ? here.search : null;
   const fallback = top?.kind === 'ready' ? top.search : null;
-  return { settled: here !== undefined, search: own ?? fallback };
+  const search = own ?? fallback;
+  if (search !== null) return { kind: 'offered', search };
+  return here === undefined ? UNKNOWN_OFFER : ABSENT_OFFER;
 }
 
 function fieldValue(draft: SearchDraft | null, entry: EntryId, shown: Location): string {
@@ -56,5 +58,5 @@ function fieldValue(draft: SearchDraft | null, entry: EntryId, shown: Location):
   return sameSearch ? draft.text : typed;
 }
 
-export { fieldValue, searchAvailability, searchMove, searchOffer, searchPlaceholder };
-export type { SearchAvailability, SearchDraft, SearchMove, SearchOffer };
+export { UNKNOWN_OFFER, fieldValue, searchMove, searchOffer, searchPlaceholder };
+export type { SearchDraft, SearchMove, SearchOffer };

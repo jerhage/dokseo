@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { HOME_SEARCH } from '../domain/catalog-feed-fixtures';
 import type { Place } from './navigation';
-import {
-  fieldValue,
-  searchAvailability,
-  searchMove,
-  searchOffer,
-  searchPlaceholder,
-} from './catalog-search';
+import { fieldValue, searchMove, searchOffer, searchPlaceholder } from './catalog-search';
 
 const ROOT = { kind: 'root' } as const;
+const OFFERED = { kind: 'offered', search: HOME_SEARCH } as const;
 const MOON = { kind: 'search', search: HOME_SEARCH, query: 'moon' } as const;
 
 function place(id: string, parent: string | null): Place {
@@ -18,23 +13,15 @@ function place(id: string, parent: string | null): Place {
 
 describe('searchPlaceholder', () => {
   it('names the catalog, and says when it has no search', () => {
-    expect(searchPlaceholder('Calibre', 'offered')).toBe('Search Calibre');
-    expect(searchPlaceholder('Calibre', 'unknown')).toBe('Search Calibre');
-    expect(searchPlaceholder('Calibre', 'absent')).toBe('Calibre has no search');
-  });
-});
-
-describe('searchAvailability', () => {
-  it('reports absent only once the feed is read and offers no template', () => {
-    expect(searchAvailability(false, null)).toBe('unknown');
-    expect(searchAvailability(true, null)).toBe('absent');
-    expect(searchAvailability(true, HOME_SEARCH)).toBe('offered');
+    expect(searchPlaceholder('Calibre', OFFERED)).toBe('Search Calibre');
+    expect(searchPlaceholder('Calibre', { kind: 'unknown' })).toBe('Search Calibre');
+    expect(searchPlaceholder('Calibre', { kind: 'absent' })).toBe('Calibre has no search');
   });
 });
 
 describe('searchMove', () => {
   it('searches the offered template for a new query', () => {
-    expect(searchMove('moon', ROOT, HOME_SEARCH)).toEqual({
+    expect(searchMove('moon', ROOT, OFFERED)).toEqual({
       kind: 'search',
       search: HOME_SEARCH,
       query: 'moon',
@@ -42,30 +29,31 @@ describe('searchMove', () => {
   });
 
   it('leaves a search when the query is empty and ignores an empty query elsewhere', () => {
-    expect(searchMove('  ', MOON, HOME_SEARCH)).toEqual({ kind: 'leave' });
-    expect(searchMove('', ROOT, HOME_SEARCH)).toEqual({ kind: 'ignore' });
+    expect(searchMove('  ', MOON, OFFERED)).toEqual({ kind: 'leave' });
+    expect(searchMove('', ROOT, OFFERED)).toEqual({ kind: 'ignore' });
   });
 
   it('ignores a query when nothing offers a search', () => {
-    expect(searchMove('moon', ROOT, null)).toEqual({ kind: 'ignore' });
+    expect(searchMove('moon', ROOT, { kind: 'absent' })).toEqual({ kind: 'ignore' });
+    expect(searchMove('moon', ROOT, { kind: 'unknown' })).toEqual({ kind: 'ignore' });
   });
 
   it('ignores the query the search already shows', () => {
-    expect(searchMove(' moon ', MOON, HOME_SEARCH)).toEqual({ kind: 'ignore' });
+    expect(searchMove(' moon ', MOON, OFFERED)).toEqual({ kind: 'ignore' });
   });
 });
 
 describe('searchOffer', () => {
   const chain = [place('feed', 'root'), place('root', null)];
 
-  it('stays unsettled until the shown feed has reported', () => {
-    expect(searchOffer(chain, new Map())).toEqual({ settled: false, search: null });
+  it('stays unknown until the shown feed has reported', () => {
+    expect(searchOffer(chain, new Map())).toEqual({ kind: 'unknown' });
   });
 
   it('takes the search of the shown feed first', () => {
     const readings = new Map([['feed', { kind: 'ready', search: HOME_SEARCH } as const]]);
 
-    expect(searchOffer(chain, readings)).toEqual({ settled: true, search: HOME_SEARCH });
+    expect(searchOffer(chain, readings)).toEqual(OFFERED);
   });
 
   it('falls back to the search of the root feed', () => {
@@ -74,7 +62,7 @@ describe('searchOffer', () => {
       ['root', { kind: 'ready', search: HOME_SEARCH } as const],
     ]);
 
-    expect(searchOffer(chain, readings)).toEqual({ settled: true, search: HOME_SEARCH });
+    expect(searchOffer(chain, readings)).toEqual(OFFERED);
   });
 
   it('counts a failed feed as settled with the root search', () => {
@@ -83,7 +71,7 @@ describe('searchOffer', () => {
       ['root', { kind: 'ready', search: null } as const],
     ]);
 
-    expect(searchOffer(chain, readings)).toEqual({ settled: true, search: null });
+    expect(searchOffer(chain, readings)).toEqual({ kind: 'absent' });
   });
 });
 

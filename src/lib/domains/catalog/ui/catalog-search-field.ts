@@ -3,10 +3,10 @@ import type { HeaderSearch } from '$lib/shared/header-search';
 import type { Catalog } from '../domain/catalog';
 import {
   fieldValue,
-  searchAvailability,
   searchMove,
   searchOffer,
   searchPlaceholder,
+  UNKNOWN_OFFER,
 } from './catalog-search';
 import type { CatalogDeps } from './catalog-deps';
 import type { EntryId } from './navigation';
@@ -23,7 +23,7 @@ function runSearch(catalog: Catalog, deps: SearchDeps, text: string): EntryId {
   const { navigation } = deps;
   const found = offerOf(catalog, deps);
   if (found === null || navigation.tab !== catalog.id) return navigation.current.id;
-  return match(searchMove(text, found.place.location, found.offer.search))
+  return match(searchMove(text, found.place.location, found.offer))
     .returnType<EntryId>()
     .with({ kind: 'ignore' }, () => navigation.current.id)
     .with({ kind: 'leave' }, () => {
@@ -37,17 +37,14 @@ function runSearch(catalog: Catalog, deps: SearchDeps, text: string): EntryId {
 function searchFieldFor(catalog: Catalog, deps: SearchDeps): HeaderSearch {
   const { navigation, search } = deps;
   const found = offerOf(catalog, deps);
-  const availability = searchAvailability(
-    found?.offer.settled ?? false,
-    found?.offer.search ?? null,
-  );
+  const offer = found?.offer ?? UNKNOWN_OFFER;
   const value =
     found === null
       ? ''
       : fieldValue(search.draftOf(catalog.id), navigation.current.id, found.place.location);
   return {
-    placeholder: searchPlaceholder(catalog.title, availability),
-    disabled: availability === 'absent',
+    placeholder: searchPlaceholder(catalog.title, offer),
+    disabled: offer.kind === 'absent',
     value,
     oninput: (text) =>
       search.type(catalog.id, text, navigation.current.id, (typed) =>
