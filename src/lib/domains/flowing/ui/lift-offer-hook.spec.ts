@@ -3,7 +3,7 @@ import type { FrameClock } from '$lib/shared/frame-clock';
 import type { LiftMetrics, LiftRect, StageRect } from './flow-lift';
 import { FRAME_NOWHERE_ON_THE_STAGE, HOST_VIEWPORT_ORIGIN } from './flow-turn';
 import type { Point } from './flow-turn';
-import { LiftOffer } from './lift-offer.svelte';
+import { createLiftOffer } from './lift-offer.svelte';
 
 type Chapter = { readonly name: string };
 
@@ -15,7 +15,7 @@ type Clock = FrameClock & {
 
 type World = {
   readonly clock: Clock;
-  readonly lift: LiftOffer<Chapter>;
+  readonly lift: ReturnType<typeof createLiftOffer<Chapter>>;
   stage: StageRect | null;
   selected: readonly LiftRect[];
   origin: Point;
@@ -67,7 +67,7 @@ function world(): World {
     selected: [SELECTION],
     origin: HOST_VIEWPORT_ORIGIN,
     asked: [],
-    lift: new LiftOffer<Chapter>(
+    lift: createLiftOffer<Chapter>(
       {
         stage: () => {
           const box = state.stage;
@@ -93,7 +93,7 @@ function offered(): World {
   return held;
 }
 
-describe('LiftOffer', () => {
+describe('createLiftOffer', () => {
   it('looks at the selection on the next frame, not at once', () => {
     const held = world();
     held.lift.show(ONE);

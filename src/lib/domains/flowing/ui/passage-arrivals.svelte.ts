@@ -30,160 +30,153 @@ type AskedArrival = {
   readonly passage: SoughtPassage;
 };
 
-class PassageArrivals {
-  notice = $state.raw<string | null>(null);
+function createPassageArrivals(surface: () => FlowSurface | null, here: () => string | null) {
+  let notice = $state.raw<string | null>(null);
+  let standing = $state.raw<ArrivalStanding>(NOT_STANDING);
+  let wanted: readonly AskedPassage[] = NO_ASKED_PASSAGES;
+  let found = new Map<string, FoundPassage>();
+  let passages: readonly string[] = NO_PASSAGES;
+  let marked: PassageMark = NOTHING_ARRIVED_AT;
+  let arrivedBy: string | null = null;
+  let asked: AskedArrival | null = null;
+  let showing: BookId | null = null;
 
-  #surface: () => FlowSurface | null;
-  #here: () => string | null;
-  #wanted: readonly AskedPassage[] = NO_ASKED_PASSAGES;
-  #found = new Map<string, FoundPassage>();
-  #passages: readonly string[] = NO_PASSAGES;
-  #marked: PassageMark = NOTHING_ARRIVED_AT;
-  #arrivedBy: string | null = null;
-  #standing = $state.raw<ArrivalStanding>(NOT_STANDING);
-  #asked: AskedArrival | null = null;
-  #showing: BookId | null = null;
+  function foundOn(
+    on: FlowSurface,
+    map: Map<string, FoundPassage>,
+    cfi: string,
+    passage: FoundPassage,
+  ): void {
+    if (map !== found || on !== surface()) return;
 
-  constructor(surface: () => FlowSurface | null, here: () => string | null) {
-    this.#surface = surface;
-    this.#here = here;
+    map.set(cfi, passage);
+    passages = drawnCfis(wanted, map);
+    on.mark(passages, marked);
   }
 
-  get arrivalHolds(): boolean {
-    return standingHolds(this.#standing);
-  }
-
-  get arrivalStanding(): boolean {
-    return this.notice !== null || this.#marked.kind === 'arrived';
-  }
-
-  async jumpToPassage(cfi: string, quote: TextQuote | null): Promise<void> {
-    const surface = this.#surface();
-    if (surface === null) return;
-
-    this.notice = null;
-
-    let arrival: PassageArrival;
-    try {
-      arrival = await surface.goToPassage({ cfi, quote });
-    } catch {
-      return;
-    }
-
-    if (surface !== this.#surface()) return;
-
-    this.notice = passageNotice(arrival);
-    this.#marked = passageMark(arrival, this.#here());
-    surface.mark(this.#passages, this.#marked);
-  }
-
-  arriveAt(book: BookId, passage: SoughtPassage): void {
-    if (this.#surface() === null || this.#showing !== book) {
-      this.#asked = { book, passage };
-      return;
-    }
-
-    this.#arrive(passage);
-  }
-
-  markPassages(passages: readonly AskedPassage[]): void {
-    this.#wanted = passages;
-    this.#passages = drawnCfis(passages, this.#found);
-    const surface = this.#surface();
-    if (surface === null) return;
-
-    surface.mark(this.#passages, this.#marked);
-    this.#findOn(surface);
-  }
-
-  dismissNotice(): void {
-    this.notice = null;
-  }
-
-  dismissArrival(): void {
-    this.notice = null;
-    if (this.#marked.kind === 'none') return;
-
-    this.#marked = NOTHING_ARRIVED_AT;
-    this.#surface()?.mark(this.#passages, NOTHING_ARRIVED_AT);
-  }
-
-  opening(book: BookId): void {
-    this.close();
-    if (this.#asked?.book !== book) this.#asked = null;
-  }
-
-  markOn(surface: FlowSurface): void {
-    surface.mark(this.#passages, this.#marked);
-    this.#findOn(surface);
-  }
-
-  shown(book: BookId): void {
-    this.#showing = book;
-    const asked = this.#asked;
-    if (asked === null) return;
-
-    this.#asked = null;
-    this.#arrive(asked.passage);
-  }
-
-  moved(place: string, cause: MoveCause): void {
-    const marked = markAfterMove(this.#marked, place, cause);
-    if (marked !== this.#marked) {
-      this.#marked = marked;
-      this.#surface()?.mark(this.#passages, marked);
-    }
-    this.#standing = standingAfterMove(this.#standing, place, cause);
-  }
-
-  close(): void {
-    this.#found = new Map();
-    this.#passages = drawnCfis(this.#wanted, this.#found);
-    this.#marked = NOTHING_ARRIVED_AT;
-    this.#arrivedBy = null;
-    this.#standing = NOT_STANDING;
-    this.#showing = null;
-    this.notice = null;
-  }
-
-  #arrive(passage: SoughtPassage): void {
-    if (this.#arrivedBy === passage.cfi) return;
-
-    this.#arrivedBy = passage.cfi;
-    const arriving = arrivingAt(passage.cfi);
-    this.#standing = arriving;
-    void this.jumpToPassage(passage.cfi, passage.quote).then(() => this.#landed(arriving));
-  }
-
-  #findOn(surface: FlowSurface): void {
-    const found = this.#found;
-    for (const passage of passagesToFind(this.#wanted, found)) {
-      found.set(passage.cfi, SEEKING);
-      void surface.findPassage(passage.quote).then(
-        (cfi) => this.#foundOn(surface, found, passage.cfi, foundAt(cfi)),
-        () => this.#foundOn(surface, found, passage.cfi, foundAt(null)),
+  function findOn(on: FlowSurface): void {
+    const map = found;
+    for (const passage of passagesToFind(wanted, map)) {
+      map.set(passage.cfi, SEEKING);
+      void on.findPassage(passage.quote).then(
+        (cfi) => foundOn(on, map, passage.cfi, foundAt(cfi)),
+        () => foundOn(on, map, passage.cfi, foundAt(null)),
       );
     }
   }
 
-  #foundOn(
-    surface: FlowSurface,
-    found: Map<string, FoundPassage>,
-    cfi: string,
-    passage: FoundPassage,
-  ): void {
-    if (found !== this.#found || surface !== this.#surface()) return;
+  function landed(arriving: Arriving): void {
+    if (standing !== arriving) return;
 
-    found.set(cfi, passage);
-    this.#passages = drawnCfis(this.#wanted, found);
-    surface.mark(this.#passages, this.#marked);
+    standing = landedAt(arriving.cfi, here());
   }
 
-  #landed(arriving: Arriving): void {
-    if (this.#standing !== arriving) return;
+  async function jumpToPassage(cfi: string, quote: TextQuote | null): Promise<void> {
+    const current = surface();
+    if (current === null) return;
 
-    this.#standing = landedAt(arriving.cfi, this.#here());
+    notice = null;
+
+    let arrival: PassageArrival;
+    try {
+      arrival = await current.goToPassage({ cfi, quote });
+    } catch {
+      return;
+    }
+
+    if (current !== surface()) return;
+
+    notice = passageNotice(arrival);
+    marked = passageMark(arrival, here());
+    current.mark(passages, marked);
   }
+
+  function arrive(passage: SoughtPassage): void {
+    if (arrivedBy === passage.cfi) return;
+
+    arrivedBy = passage.cfi;
+    const arriving = arrivingAt(passage.cfi);
+    standing = arriving;
+    void jumpToPassage(passage.cfi, passage.quote).then(() => landed(arriving));
+  }
+
+  function close(): void {
+    found = new Map();
+    passages = drawnCfis(wanted, found);
+    marked = NOTHING_ARRIVED_AT;
+    arrivedBy = null;
+    standing = NOT_STANDING;
+    showing = null;
+    notice = null;
+  }
+
+  return {
+    get notice(): string | null {
+      return notice;
+    },
+    get arrivalHolds(): boolean {
+      return standingHolds(standing);
+    },
+    get arrivalStanding(): boolean {
+      return notice !== null || marked.kind === 'arrived';
+    },
+    jumpToPassage,
+    arriveAt(book: BookId, passage: SoughtPassage): void {
+      if (surface() === null || showing !== book) {
+        asked = { book, passage };
+        return;
+      }
+
+      arrive(passage);
+    },
+    markPassages(next: readonly AskedPassage[]): void {
+      wanted = next;
+      passages = drawnCfis(next, found);
+      const current = surface();
+      if (current === null) return;
+
+      current.mark(passages, marked);
+      findOn(current);
+    },
+    dismissNotice(): void {
+      notice = null;
+    },
+    dismissArrival(): void {
+      notice = null;
+      if (marked.kind === 'none') return;
+
+      marked = NOTHING_ARRIVED_AT;
+      surface()?.mark(passages, NOTHING_ARRIVED_AT);
+    },
+    opening(book: BookId): void {
+      close();
+      if (asked?.book !== book) asked = null;
+    },
+    markOn(on: FlowSurface): void {
+      on.mark(passages, marked);
+      findOn(on);
+    },
+    shown(book: BookId): void {
+      showing = book;
+      const wantedArrival = asked;
+      if (wantedArrival === null) return;
+
+      asked = null;
+      arrive(wantedArrival.passage);
+    },
+    moved(place: string, cause: MoveCause): void {
+      const next = markAfterMove(marked, place, cause);
+      if (next !== marked) {
+        marked = next;
+        surface()?.mark(passages, next);
+      }
+      standing = standingAfterMove(standing, place, cause);
+    },
+    close,
+  };
 }
 
-export { PassageArrivals };
+type PassageArrivalsHook = ReturnType<typeof createPassageArrivals>;
+
+export { createPassageArrivals };
+export type { PassageArrivalsHook };

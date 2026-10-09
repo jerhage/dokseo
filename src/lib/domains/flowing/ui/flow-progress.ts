@@ -55,6 +55,10 @@ function flowProgress(location: FlowLocation | null): FlowProgress {
   return { kind: 'known', fraction, percent: Math.round(fraction * 100) };
 }
 
+function chapterOf(location: FlowLocation | null): string | null {
+  return location?.chapter ?? null;
+}
+
 function progressLabel(progress: FlowProgress): string {
   return progress.kind === 'unknown' ? PROGRESS_UNKNOWN_LABEL : `${progress.percent}%`;
 }
@@ -92,6 +96,7 @@ function flowMeta(chapter: string | null, language: Language): string {
 }
 
 export {
+  chapterOf,
   chapterTicks,
   flowLocation,
   flowMeta,

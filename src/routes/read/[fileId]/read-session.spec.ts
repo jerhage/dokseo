@@ -1,6 +1,7 @@
 import { SvelteURL } from 'svelte/reactivity';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from '$lib/container';
+import type { FlowSurface } from '$lib/domains/flowing/ui/flow-surface';
 import { bookId, captureId, imageIndex } from '$lib/shared/ids';
 import type { BookId } from '$lib/shared/ids';
 import { LIBRARY_AFTER_MISSING_BOOK } from '$lib/shared/reader-location';
@@ -27,6 +28,15 @@ type World = {
 
 function flowBook(id: BookId): unknown {
   return { id, title: 'Kokoro', language: 'ja', layoutKind: 'flow', imageCount: 0 };
+}
+
+function surfaceReading(direction: 'ltr' | 'rtl'): FlowSurface {
+  return {
+    toc: null,
+    ticks: [],
+    direction,
+    paging: { axis: 'horizontal', direction },
+  } as unknown as FlowSurface;
 }
 
 const NO_COUNTING = { counts: () => new Map(), ask: () => undefined };
@@ -423,9 +433,9 @@ describe('ReadSession', () => {
         status: 'pending',
       } as never);
     }
-    held.session.flow.navigation.direction = 'ltr';
+    held.session.flow.navigation.learn(surfaceReading('ltr'));
     const flowingRight = held.session.flowPanel.cards.cards.map((card) => card.id);
-    held.session.flow.navigation.direction = 'rtl';
+    held.session.flow.navigation.learn(surfaceReading('rtl'));
 
     expect(held.session.imagePanel.cards.cards.map((card) => card.id)).toEqual(['left', 'right']);
     expect(flowingRight).toEqual(['left', 'right']);

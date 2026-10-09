@@ -35,16 +35,16 @@
   import type { ShownTurnSettings } from '$lib/shared/turn-settings';
   import { TEXT_SETTINGS_LABEL } from '../domain/reading-settings';
   import type { ReadingSettings } from '../domain/reading-settings';
-  import { CONTENTS_LABEL, NO_CONTENTS_LABEL } from './flow-contents';
+  import { CONTENTS_LABEL, NO_CONTENTS_LABEL, currentEntryKey } from './flow-contents';
   import type { ContentsEntry } from './flow-contents';
   import { askedPassages, NO_ANCHORS } from './flow-highlight';
   import { FlowGestures } from './flow-gestures';
   import { keyTarget } from './flow-keys';
   import { flowGuideKind, flowInput, flowSwipeLesson, offersFlowGuide } from './flow-hint';
-  import { flowMeta, tickOffsets } from './flow-progress';
+  import { chapterOf, flowMeta, flowProgress, tickOffsets } from './flow-progress';
   import { liftMetrics } from './flow-lift';
   import type { LiftedPassage } from './flow-lift';
-  import { LiftOffer } from './lift-offer.svelte';
+  import { createLiftOffer } from './lift-offer.svelte';
   import type { LiftStage } from './lift-offer.svelte';
   import { forgetSelection, selectedPassage, shownSelection } from './flow-passage';
   import { openFlowSurface } from './flow-surface';
@@ -113,7 +113,7 @@
   let turnSettings = $state.raw<ShownTurnSettings>(presentTurnSettings());
   let gestures: FlowGestures | null = null;
   let lastPointerType = $state<string | null>(null);
-  const lift = new LiftOffer<ChapterView>({
+  const lift = createLiftOffer<ChapterView>({
     stage: liftStage,
     selection: (chapter) => shownSelection(chapter.doc),
     origin: (chapter) => frameOrigin(chapter.doc),
@@ -127,9 +127,9 @@
   const reading = $derived(view.state.kind === 'ready');
   const contents = $derived(view.navigation.contents);
   const settings = $derived(view.appearance.settings);
-  const progress = $derived(view.navigation.progress);
+  const progress = $derived(flowProgress(view.navigation.location));
   const scrub = $derived(flowScrub(progress));
-  const meta = $derived(flowMeta(view.navigation.chapter, book.language));
+  const meta = $derived(flowMeta(chapterOf(view.navigation.location), book.language));
   const turning = $derived(view.navigation.direction);
   const marks = $derived(tickOffsets(view.navigation.ticks, turning));
   const passages = $derived(askedPassages(anchors));
@@ -149,7 +149,7 @@
       icon: ICONS[slot] ?? ChevronRight,
       label: TURN_LABELS[turn],
       enabled: reading,
-      go: () => view.navigation.turn(turn),
+      go: () => view.turn(turn),
     })),
   );
 
@@ -191,7 +191,7 @@
   }
 
   function pickEntry(entry: ContentsEntry): void {
-    view.navigation.jumpTo(entry);
+    view.jumpTo(entry);
   }
 
   function chooseSettings(chosen: ReadingSettings): void {
@@ -318,7 +318,7 @@
   }
 
   function scrubTo(step: number): void {
-    view.navigation.seek(scrubbedFractionAt(step));
+    view.seek(scrubbedFractionAt(step));
   }
 
   function bind(host: HTMLElement, chapter: ChapterView): void {
@@ -514,7 +514,7 @@
     bind:open={contentsOpen}
     entries={contents.entries}
     language={book.language}
-    currentKey={view.navigation.currentKey}
+    currentKey={currentEntryKey(contents, view.navigation.reported)}
     onpick={pickEntry}
   />
 {/if}

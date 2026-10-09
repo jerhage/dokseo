@@ -11,6 +11,7 @@ import type { Notice, Notify } from '$lib/shared/notice';
 import { STORAGE_UNAVAILABLE } from '$lib/shared/storage-unavailable';
 import { DEFAULT_READING_SETTINGS } from '../domain/reading-settings';
 import type { ReadingSettings } from '../domain/reading-settings';
+import { currentEntryKey } from './flow-contents';
 import type { ContentsEntry } from './flow-contents';
 import {
   arrivedAtTheCfi,
@@ -24,6 +25,7 @@ import { NOTHING_ARRIVED_AT } from './flow-highlight';
 import type { AskedPassage, PassageMark } from './flow-highlight';
 import { REFLOWED, TRAVELLED } from './flow-move';
 import type { FlowRelocation } from './flow-move';
+import { chapterOf, flowProgress } from './flow-progress';
 import type { BookPaging } from './flow-writing-mode';
 import type { PassageArrival } from './flow-quote';
 import { INK_FOR_THE_DARK_PAGE } from './flow-styles';
@@ -295,8 +297,8 @@ describe('FlowView what the opened book reports', () => {
 
     await view.open(novel(world.place), world.stored, shows().show);
 
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
-    expect(view.navigation.chapter).toBeNull();
+    expect(flowProgress(view.navigation.location)).toEqual({ kind: 'unknown' });
+    expect(chapterOf(view.navigation.location)).toBeNull();
   });
 
   it('forgets the direction, the paging, the boundaries, the contents and the place of a book the viewer closed', async () => {
@@ -317,9 +319,9 @@ describe('FlowView what the opened book reports', () => {
     expect(view.navigation.paging).toEqual({ axis: 'horizontal', direction: 'ltr' });
     expect(view.navigation.ticks).toEqual([]);
     expect(view.navigation.contents).toEqual({ kind: 'absent' });
-    expect(view.navigation.currentKey).toBeNull();
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
-    expect(view.navigation.chapter).toBeNull();
+    expect(currentEntryKey(view.navigation.contents, view.navigation.reported)).toBeNull();
+    expect(flowProgress(view.navigation.location)).toEqual({ kind: 'unknown' });
+    expect(chapterOf(view.navigation.location)).toBeNull();
   });
 });
 
@@ -525,7 +527,7 @@ describe('the place a flow book keeps', () => {
 
     expect(heard).toBe(0);
     expect(world.edits).toEqual([]);
-    expect(view.navigation.progress).toEqual({ kind: 'unknown' });
+    expect(flowProgress(view.navigation.location)).toEqual({ kind: 'unknown' });
   });
 
   afterEach(() => {
@@ -686,8 +688,12 @@ describe('the progress a flow book reports', () => {
       relocated(SOMEWHERE, { fraction: 0.375, tocItem: { label: ' Chapter Two ' } }),
     );
 
-    expect(view.navigation.progress).toEqual({ kind: 'known', fraction: 0.375, percent: 38 });
-    expect(view.navigation.chapter).toBe('Chapter Two');
+    expect(flowProgress(view.navigation.location)).toEqual({
+      kind: 'known',
+      fraction: 0.375,
+      percent: 38,
+    });
+    expect(chapterOf(view.navigation.location)).toBe('Chapter Two');
   });
 });
 
@@ -702,8 +708,8 @@ describe('the controls a flow book offers', () => {
       const view = new FlowView(world.container, world.notify, createTestQueryClient());
       await view.open(novel(world.place), world.stored, surfaces.show);
 
-      view.navigation.turn('previous');
-      view.navigation.turn('next');
+      view.turn('previous');
+      view.turn('next');
       turned.push(surfaces.turned);
     }
 
@@ -718,10 +724,10 @@ describe('the controls a flow book offers', () => {
     const surfaces = shows();
     const view = new FlowView(world.container, world.notify, createTestQueryClient());
 
-    view.navigation.turn('next');
+    view.turn('next');
     await view.open(novel(world.place), world.stored, surfaces.show);
     view.close();
-    view.navigation.turn('next');
+    view.turn('next');
 
     expect(surfaces.turned).toEqual([]);
   });
@@ -733,7 +739,7 @@ describe('the controls a flow book offers', () => {
     await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { fraction: 0.2 }));
 
-    view.navigation.seek(0.6);
+    view.seek(0.6);
 
     expect(surfaces.sought).toEqual([0.6]);
   });
@@ -745,7 +751,7 @@ describe('the controls a flow book offers', () => {
     await view.open(novel(world.place), world.stored, surfaces.show);
     surfaces.openings[0]?.moved(relocated(SOMEWHERE));
 
-    view.navigation.seek(0.6);
+    view.seek(0.6);
 
     expect(surfaces.sought).toEqual([]);
   });
@@ -784,7 +790,7 @@ describe('the contents a flow book offers', () => {
 
     surfaces.openings[0]?.moved(relocated(SOMEWHERE, { tocItem: CHAPTER_TWO }));
 
-    expect(view.navigation.currentKey).toBe('1');
+    expect(currentEntryKey(view.navigation.contents, view.navigation.reported)).toBe('1');
   });
 
   it('jumps to the target of an entry the reader picked', async () => {
@@ -795,7 +801,7 @@ describe('the contents a flow book offers', () => {
     await view.open(novel(world.place), world.stored, surfaces.show);
 
     const [entry] = entries(view);
-    if (entry !== undefined) view.navigation.jumpTo(entry);
+    if (entry !== undefined) view.jumpTo(entry);
 
     expect(surfaces.jumped).toEqual(['ch1.xhtml']);
   });
@@ -808,7 +814,7 @@ describe('the contents a flow book offers', () => {
     await view.open(novel(world.place), world.stored, surfaces.show);
 
     const [entry] = entries(view);
-    if (entry !== undefined) view.navigation.jumpTo(entry);
+    if (entry !== undefined) view.jumpTo(entry);
 
     expect(surfaces.jumped).toEqual([]);
   });

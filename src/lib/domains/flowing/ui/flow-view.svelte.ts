@@ -13,12 +13,18 @@ import type { ReadingSettings } from '../domain/reading-settings';
 import { saveReadingPlaceMutation } from '../queries/flowing-queries';
 import type { PlaceRequest } from '../queries/flowing-queries';
 import { FlowAppearance } from './flow-appearance.svelte';
+import type { ContentsEntry } from './flow-contents';
 import type { FlowRelocation } from './flow-move';
-import { FlowNavigation } from './flow-navigation.svelte';
+import { flowProgress, scrubbedFraction } from './flow-progress';
+import { createFlowReading } from './flow-navigation.svelte';
+import type { FlowReadingHook } from './flow-navigation.svelte';
 import type { FlowOpening, FlowSurface } from './flow-surface';
+import { moveForTurn, turnPage } from './flow-turn';
+import type { FlowTurn } from './flow-turn';
 import { curtainFor, describePlaceFailure, describeSourceFailure } from './flow-view-rules';
 import type { FlowCurtain, FlowState, PlaceOutcome, SourceOutcome } from './flow-view-rules';
-import { PassageArrivals } from './passage-arrivals.svelte';
+import { createPassageArrivals } from './passage-arrivals.svelte';
+import type { PassageArrivalsHook } from './passage-arrivals.svelte';
 
 type OpenOutcome = Awaited<ReturnType<Container['library']['openForReading']>>;
 
@@ -36,8 +42,8 @@ const SHOWING_THE_BOOK: FlowState = { kind: 'ready' };
 
 class FlowView {
   state = $state.raw<FlowState>(NOT_OPENED);
-  readonly navigation: FlowNavigation;
-  readonly arrivals: PassageArrivals;
+  readonly navigation: FlowReadingHook;
+  readonly arrivals: PassageArrivalsHook;
   readonly appearance: FlowAppearance;
 
   #container: Container;
@@ -60,8 +66,8 @@ class FlowView {
       },
     }));
     const surface = (): FlowSurface | null => this.#surface;
-    this.navigation = new FlowNavigation(surface);
-    this.arrivals = new PassageArrivals(surface, () => this.navigation.location?.cfi ?? null);
+    this.navigation = createFlowReading();
+    this.arrivals = createPassageArrivals(surface, () => this.navigation.location?.cfi ?? null);
     this.appearance = new FlowAppearance(container, notify, client, surface);
     this.#places = new PlaceKeeper({
       save: (id, place) => this.#savePlace(id, place),
@@ -72,6 +78,26 @@ class FlowView {
 
   get curtain(): FlowCurtain {
     return curtainFor(this.state);
+  }
+
+  turn(turn: FlowTurn): void {
+    const surface = this.#surface;
+    if (surface === null) return;
+
+    turnPage(surface.pages, moveForTurn(turn));
+  }
+
+  jumpTo(entry: ContentsEntry): void {
+    if (entry.kind === 'heading') return;
+
+    this.#surface?.jump(entry.href);
+  }
+
+  seek(asked: number): void {
+    const target = scrubbedFraction(flowProgress(this.navigation.location), asked);
+    if (target === null) return;
+
+    this.#surface?.seek(target);
   }
 
   async open(
