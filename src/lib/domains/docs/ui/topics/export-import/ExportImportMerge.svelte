@@ -51,10 +51,10 @@
       state: 'storage-unavailable',
       shows: 'This browser blocks local storage, so captures cannot be imported.',
     },
-    { state: 'preview', shows: 'The counts, and the rule for conflicts: newer or this device.' },
     {
-      state: 'reviewing',
-      shows: 'The counts and every conflict, with a choice and an edit open or not.',
+      state: 'preview',
+      shows:
+        'The counts, and the rule for conflicts: newer, this device or Review all, which lists every conflict.',
     },
     { state: 'importing', shows: 'Importing…' },
     { state: 'imported', shows: 'Import finished, with what was added, updated, kept and held.' },
@@ -173,7 +173,7 @@
     {#snippet caption()}
       Each device is held in memory. Export runs the real <code>buildCapturesFile</code>, and import
       runs the real <code>previewCapturesImport</code> and <code>applyCapturesImport</code> through the
-      import screen's real view model and conflict review, against stand-in repositories. Nothing touches
+      import screen's real write class and conflict review, against stand-in repositories. Nothing touches
       this browser's databases.
     {/snippet}
   </DocsDemo>
@@ -181,9 +181,11 @@
 
 <DocsSection title={EXPORT_IMPORT_SECTIONS.screen}>
   <p>
-    The import lives in Settings › Your data, under Import. Its view model,
-    <code>CapturesImportView</code>, holds one named state at a time, and the screen shows what each
-    one means:
+    The import lives in Settings › Your data, under Import. Its write class,
+    <code>CapturesImport</code>, holds one named state at a time, and the screen shows what each one
+    means. The rule for conflicts, the side picked for each conflict and the edit being typed belong
+    to a separate hook, <code>createConflictReview</code>, so the state only says how far the import
+    has come:
   </p>
   <Table size="sm">
     <TableHeader>
@@ -215,7 +217,7 @@
     is open, and picking a side replaces a saved edit.
   </p>
   <p>
-    After an import, the view model invalidates the whole query cache, so the library and the
+    After an import, the write class invalidates the whole query cache, so the library and the
     capture panel show the new captures without a reload. The whole cache, rather than the library's
     and the captures' keys, because the <code>storage</code> domain may not import another domain's query
     keys, and copying the key strings by hand would let them drift apart.

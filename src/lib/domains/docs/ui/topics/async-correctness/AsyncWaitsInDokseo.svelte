@@ -96,16 +96,15 @@
 <DocsSection title={ASYNC_SECTIONS.importFinally}>
   <p>
     Importing a captures file writes to the database, and every screen reads the database through a
-    cache. <code>CapturesImportView.importNow</code> refreshes that cache in <code>finally</code>,
-    so the screens show what the database holds after the import, whether the import succeeded or
+    cache. <code>CapturesImport.importNow</code> refreshes that cache in <code>finally</code>, so
+    the screens show what the database holds after the import, whether the import succeeded or
     threw.
   </p>
   <DocsCode label={IMPORT_NOW.label} code={IMPORT_NOW.code} />
   <p>
     The first lines are the double-submit check. The method returns unless the state holds a plan to
     import,
-    <code>preview</code> or <code>reviewing</code>, and it sets the state to <code>importing</code>
-    before its first
+    <code>preview</code>, and it sets the state to <code>importing</code> before its first
     <code>await</code>, so a second call finds it busy and returns. Because the refresh is awaited
     inside <code>finally</code>, a refresh that rejects would replace the import's own error, as
     described under <a href={asyncHref('finally')}>cleaning up with finally</a>.
