@@ -16,18 +16,27 @@ type NavigationLink = {
   readonly summary: string;
 };
 
-type FeedEntry =
-  | { readonly kind: 'link'; readonly link: NavigationLink }
-  | { readonly kind: 'publication'; readonly publication: RemotePublication };
+type LinkEntry = { readonly kind: 'link'; readonly link: NavigationLink };
 
-type FeedPage = Page<FeedEntry, FeedAddress> & {
-  readonly kind: FeedKind;
+type PublicationEntry = { readonly kind: 'publication'; readonly publication: RemotePublication };
+
+type FeedEntry = LinkEntry | PublicationEntry;
+
+type FeedFields = {
   readonly id: string;
   readonly title: string;
   readonly address: FeedAddress;
   readonly search: FeedSearch | null;
   readonly total: Total;
 };
+
+type NavigationFeedPage = Page<LinkEntry, FeedAddress> &
+  FeedFields & { readonly kind: 'navigation' };
+
+type AcquisitionFeedPage = Page<PublicationEntry, FeedAddress> &
+  FeedFields & { readonly kind: 'acquisition' };
+
+type FeedPage = NavigationFeedPage | AcquisitionFeedPage;
 
 type FeedHead = Pick<FeedPage, 'kind' | 'id' | 'title' | 'address' | 'search'>;
 
@@ -52,6 +61,7 @@ function publicationsOf(entries: readonly FeedEntry[]): readonly RemotePublicati
 
 export { ROOT_LOCATION, addressKey, linksOf, publicationsOf };
 export type {
+  AcquisitionFeedPage,
   FeedAddress,
   FeedEntry,
   FeedHead,
@@ -59,6 +69,9 @@ export type {
   FeedLocation,
   FeedPage,
   FeedSearch,
+  LinkEntry,
+  NavigationFeedPage,
   NavigationLink,
+  PublicationEntry,
   TrailStep,
 };

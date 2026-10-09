@@ -6,9 +6,10 @@ import type { XmlElement } from '$lib/shared/xml-document';
 import { unknownTotal } from '$lib/shared/read-paged-state';
 import type {
   FeedAddress,
-  FeedEntry,
   FeedPage,
+  LinkEntry,
   NavigationLink,
+  PublicationEntry,
   TrailStep,
 } from '../../domain/catalog-feed';
 import { formatOfMediaType } from '../../domain/remote-publication';
@@ -210,13 +211,13 @@ function readOpdsFeed(
     total: unknownTotal(),
   };
   if (entries.some(hasAcquisition)) {
-    const items = entries.map((entry): FeedEntry => ({
+    const items = entries.map((entry): PublicationEntry => ({
       kind: 'publication',
       publication: publicationOf(entry, feedUrl, catalogId, path),
     }));
     return { kind: 'acquisition', items, ...head };
   }
-  const items = entries.flatMap((entry): FeedEntry[] => {
+  const items = entries.flatMap((entry): LinkEntry[] => {
     const link = navigationLinkOf(entry, feedUrl);
     return link === null ? [] : [{ kind: 'link', link }];
   });

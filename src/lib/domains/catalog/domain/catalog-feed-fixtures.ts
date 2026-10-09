@@ -2,10 +2,11 @@ import { catalogId } from '$lib/shared/ids';
 import { unknownTotal } from '$lib/shared/read-paged-state';
 import type {
   FeedAddress,
-  FeedEntry,
   FeedPage,
   FeedSearch,
+  LinkEntry,
   NavigationLink,
+  PublicationEntry,
   TrailStep,
 } from './catalog-feed';
 import type { RemotePublication } from './remote-publication';
@@ -18,11 +19,11 @@ function feedAddress(url: string): FeedAddress {
 
 const HOME_ID = catalogId('home');
 
-function linkEntry(link: NavigationLink): FeedEntry {
+function linkEntry(link: NavigationLink): LinkEntry {
   return { kind: 'link', link };
 }
 
-function publicationEntry(publication: RemotePublication): FeedEntry {
+function publicationEntry(publication: RemotePublication): PublicationEntry {
   return { kind: 'publication', publication };
 }
 
@@ -139,14 +140,14 @@ function placed(
   path: readonly TrailStep[],
   catalog = HOME_ID,
 ): FeedPage {
-  const items = page.items.map((entry): FeedEntry => {
-    if (entry.kind === 'link') return entry;
-    return publicationEntry({
+  if (page.kind === 'navigation') return { ...page, address };
+  const items = page.items.map((entry): PublicationEntry =>
+    publicationEntry({
       ...entry.publication,
       catalogId: catalog,
       feedPath: path.map((step) => ({ title: step.title, href: step.address?.handle ?? '' })),
-    });
-  });
+    }),
+  );
   return { ...page, address, items };
 }
 
