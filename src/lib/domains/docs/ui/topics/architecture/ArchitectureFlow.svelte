@@ -40,7 +40,7 @@ const loading = match(protocol)
 adapters/opds2/opds2-catalog-source.ts
   class Opds2CatalogSource implements CatalogSource
     readFeed: fetch the text with HttpCatalogClient.readText,
-              JSON.parse it, build a CatalogFeed
+              JSON.parse it, build a FeedPage
     search, readImage, download: the same four methods`;
 </script>
 
@@ -192,11 +192,13 @@ adapters/opds2/opds2-catalog-source.ts
   </p>
   <DocsCode label={CATALOG_SOURCE_PORT.label} code={CATALOG_SOURCE_PORT.code} />
   <p>
-    A feed comes back already parsed, as a <code>CatalogFeed</code> in the domain: either a
-    navigation feed, a list of links to other feeds, or an acquisition feed, a list of publications.
-    A response that is not a catalog at all returns <code>not-a-catalog</code>, and the network
-    failures are named variants of the same union. The use cases and the browse screen handle no
-    XML, no OPDS link relations and no URL templates.
+    A feed comes back already parsed, as a <code>FeedPage</code> in the domain: either a navigation
+    page, a list of links to other feeds, or an acquisition page, a list of publications. The two
+    are separate types in a union on <code>kind</code>, so a navigation page cannot hold a
+    publication. A page also has the address of the next one, which is how a long feed is read a
+    page at a time. A response that is not a catalog at all returns <code>not-a-catalog</code>, and
+    the network failures are named variants of the same union. The use cases and the browse screen
+    handle no XML, no OPDS link relations and no URL templates.
   </p>
   <p>
     Search shows how far that goes. OPDS 1 describes search as a URL template with a
@@ -240,12 +242,12 @@ adapters/opds2/opds2-catalog-source.ts
   <p>
     No second protocol exists. This sketch, which is not code from the repository, shows where an
     OPDS 2.0 adapter, a JSON format, would go: one more protocol, one more arm, and one more adapter
-    folder that reuses the HTTP client and parses JSON into the same <code>CatalogFeed</code>.
+    folder that reuses the HTTP client and parses JSON into the same <code>FeedPage</code>.
   </p>
   <DocsCode label="Sketch, not real code: a JSON adapter" code={OPDS2_SKETCH} />
   <p>
     The use cases, the view models and the screens would not change, because the port returns the
-    same <code>CatalogFeed</code> whichever format the server speaks.
+    same <code>FeedPage</code> whichever format the server speaks.
   </p>
 </DocsSection>
 

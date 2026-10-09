@@ -81,8 +81,9 @@
       an acquisition feed.
     </li>
     <li>
-      The root lists "Library: calibre", a link back to the root feed under another address. A feed
-      whose Atom <code>id</code> is already on the path replaces that crumb instead of adding one.
+      The root lists "Library: calibre", a link back to the root feed under another address. Dokseo
+      reads a linked feed before it opens it, and a feed whose Atom <code>id</code> is already on the
+      path goes back to that crumb instead of adding one.
     </li>
     <li>
       A download answers with <code>Content-Disposition</code> holding both a plain

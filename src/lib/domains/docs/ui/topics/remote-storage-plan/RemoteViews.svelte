@@ -5,7 +5,12 @@
   import DocsSection from '../../DocsSection.svelte';
   import { VIEWS } from './remote-diagrams';
   import { REMOTE_SECTIONS } from './remote-sections';
-  import { SEARCH_DEBOUNCE } from './remote-snippets';
+  import {
+    FEED_CACHE_TIMES,
+    FEED_PAGE_TYPE,
+    PAGED_FEED_READ,
+    SEARCH_DEBOUNCE,
+  } from './remote-snippets';
 </script>
 
 <DocsSection title={REMOTE_SECTIONS.views}>
@@ -25,20 +30,27 @@
     {/snippet}
   </Figure>
   <p>
-    The selected tab and the place inside each catalog (the feed path, the page shown, the pages
-    loaded after it, the scroll position and the selection) are session state, kept in memory while
-    Dokseo is open. Going to read a book and coming back restores them. They are not in the URL,
-    because a catalog's id is a random id local to the device and a URL never holds one, and they
-    are not stored, because a saved position would open a feed the server has since moved. A
-    selected tab whose catalog was removed falls back to "On this device".
+    The selected tab and the place inside each catalog are session state, kept in memory while
+    Dokseo is open. The breadcrumbs above a catalog are its history: opening a feed adds one browser
+    history entry, a click on a crumb goes back to that crumb's entry, and Back goes up one feed.
+    Each entry keeps its own scroll position and selection. Going to read a book and coming back
+    shows the same place, and so does a link to the library, such as the reader's "Back to your
+    library": each tab appears at the place it was left. A crumb whose entry is not in the history
+    of that visit opens its feed as a new entry, so Back returns to the deeper feed. None of this is
+    in the URL, because a catalog's id is a random id local to the device and a URL never holds one,
+    and none of it is stored, because a saved position would open a feed the server has since moved.
+    A selected tab whose catalog was removed falls back to "On this device".
   </p>
   <p>
-    A catalog tab reads its feeds fresh each visit. Offline, it says it needs a connection. Nothing
-    from a listing is stored, because stored catalog data would drift from the server's. The only
-    stored remote data is the origin record of each downloaded book. Removing a downloaded book
-    deletes its origin, so its entry shows as remote again. Removing a catalog deletes its origins
-    and keeps the books, which then count as "Added from files".
+    Feeds are cached in memory. A feed read within the last five minutes is shown without a request,
+    and an entry stays cached for 30 minutes after it was last shown. Offline, a feed that is not in
+    the cache says it needs a connection. Nothing from a listing is stored, because stored catalog
+    data would drift from the server's. The only stored remote data is the origin record of each
+    downloaded book. Removing a downloaded book deletes its origin, so its entry shows as remote
+    again. Removing a catalog deletes its origins and keeps the books, which then count as "Added
+    from files".
   </p>
+  <DocsCode label={FEED_CACHE_TIMES.label} code={FEED_CACHE_TIMES.code} />
   <p>
     A feed scrolls endlessly. Below the grid a sentinel row loads the next page when it comes within
     600 px of the end of the scrolling area, and a "Load more" button in the same row reaches it
@@ -46,6 +58,15 @@
     itself. An entry that a later page repeats is listed once, because Calibre pages by offset over
     a library that can change.
   </p>
+  <p>
+    Each feed is read through <code>readPagedQuery</code>, a small wrapper over TanStack Query's
+    <code>createInfiniteQuery</code>. It takes the query options and a page type and has no catalog
+    code. The cache holds the parsed <code>FeedPage</code> of every page loaded so far, and the
+    cursor for the next page is the last page's own <code>next</code>, a <code>FeedAddress</code>:
+    the sentinel row and the "Load more" button ask for the page at that address.
+  </p>
+  <DocsCode label={FEED_PAGE_TYPE.label} code={FEED_PAGE_TYPE.code} />
+  <DocsCode label={PAGED_FEED_READ.label} code={PAGED_FEED_READ.code} />
   <p>
     A click on a card opens that entry's details in a modal (a bottom sheet on a narrow screen):
     cover, summary, authors, language, format, size and the date it was updated, leaving out what
@@ -62,7 +83,7 @@
     feed order and shows progress, and "Cancel all" aborts the running file and drops the rest. One
     failed file does not stop the queue, but a missing connection, a refused password, a locked
     catalog or unavailable storage does, because every later file would fail the same way. The
-    selection belongs to one feed and is cleared when the feed changes.
+    selection belongs to one place in the catalog and is kept with it.
   </p>
 </DocsSection>
 

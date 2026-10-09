@@ -177,6 +177,33 @@ const SEARCH_DEBOUNCE: SourceSnippet = {
   code: `const SEARCH_DEBOUNCE_MS = 400;`,
 };
 
+const FEED_PAGE_TYPE: SourceSnippet = {
+  label: 'FeedPage',
+  file: 'src/lib/domains/catalog/domain/catalog-feed.ts',
+  code: `type NavigationFeedPage = Page<LinkEntry, FeedAddress> &
+  FeedFields & { readonly kind: 'navigation' };
+
+type AcquisitionFeedPage = Page<PublicationEntry, FeedAddress> &
+  FeedFields & { readonly kind: 'acquisition' };
+
+type FeedPage = NavigationFeedPage | AcquisitionFeedPage;`,
+};
+
+const PAGED_FEED_READ: SourceSnippet = {
+  label: 'A feed read as pages, in CatalogFeedData.svelte',
+  file: 'src/lib/domains/catalog/ui/CatalogFeedData.svelte',
+  code: `const feed = readPagedQuery<FeedEntry, FeedPageParam, FeedProblem, FeedPage, FeedKey>(
+    () => catalogFeedQuery(cases, catalog.id, location, path),`,
+};
+
+const FEED_CACHE_TIMES: SourceSnippet = {
+  label: 'How long a feed stays cached',
+  file: 'src/lib/domains/catalog/queries/catalog-feed-queries.ts',
+  code: `const FEED_STALE_MS = 5 * 60 * 1000;
+
+const FEED_GC_MS = 30 * 60 * 1000;`,
+};
+
 const REMOTE_SNIPPETS: readonly SourceSnippet[] = [
   CONNECT_SOURCES,
   CATALOG_TYPE,
@@ -192,6 +219,9 @@ const REMOTE_SNIPPETS: readonly SourceSnippet[] = [
   STAGED_SWAP,
   OPFS_MOVE,
   SEARCH_DEBOUNCE,
+  FEED_PAGE_TYPE,
+  PAGED_FEED_READ,
+  FEED_CACHE_TIMES,
 ];
 
 export {
@@ -199,10 +229,13 @@ export {
   CATALOG_TYPE,
   CONNECT_SOURCES,
   DOWNLOAD_ORIGIN,
+  FEED_CACHE_TIMES,
+  FEED_PAGE_TYPE,
   FEED_PATH_LABEL,
   FEED_PATH_TYPE,
   OPFS_MOVE,
   ORIGIN_TYPE,
+  PAGED_FEED_READ,
   PASSWORDS_PORT,
   PASSWORDS_SESSION,
   PUBLICATION_TYPE,
