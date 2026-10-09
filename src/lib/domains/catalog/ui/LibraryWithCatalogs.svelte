@@ -17,11 +17,14 @@
   import { searchFieldFor } from './catalog-search-field';
   import { listedCatalogs, listedOrigins } from './catalog-list';
   import { refreshOrigins } from './catalog-refresh';
+  import { createFeedReadings } from './feed-readings.svelte';
   import { createFeedSearch } from './feed-search.svelte';
   import type { DeviceDetailsLink } from './device-details';
   import type { DeviceDetailsView, LibraryExtras, LibraryNeeds } from './library-extras';
   import { DEVICE_TAB, effectiveTab } from './library-tabs';
-  import { linkReaderFor } from './link-resolution';
+  import { linkReaderFor, readFirstPage } from './link-resolution';
+  import type { FirstPageReader } from './link-resolution';
+  import { browserId } from './navigation';
   import { createNavigation } from './navigation.svelte';
   import type { HistoryPort } from './navigation.svelte';
   import { createOriginFilter } from './origin-filter.svelte';
@@ -53,8 +56,11 @@
     back: () => history.back(),
     go: (delta) => history.go(delta),
   };
-  const navigation = createNavigation(session, port);
+  const firstPage: FirstPageReader = (tab, location, path) =>
+    readFirstPage(queryClient, catalog, tab, location, path);
+  const navigation = createNavigation(session, port, browserId, firstPage);
   const search = createFeedSearch();
+  const readings = createFeedReadings(queryClient);
   const originFilter = createOriginFilter(session.originFilter, (chosen) => {
     session.originFilter = chosen;
   });
@@ -80,6 +86,7 @@
     session,
     navigation,
     search,
+    readings,
     linkReader: (id) => linkReaderFor(queryClient, catalog, id),
     choices: { matching: () => needs.matching(), defaults: () => needs.defaults() },
     describeOpenFile: (error) => needs.describeOpenFile(error),

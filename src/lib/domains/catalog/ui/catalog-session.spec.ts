@@ -26,25 +26,21 @@ describe('CatalogSession', () => {
     session.keepSelection('p1', new Set(['a']));
     session.keepScroll('p1', 320);
     session.keepSelection('p2', new Set(['b']));
-    session.keepReading('p1', { kind: 'failed' });
 
     session.forgetPlace('p1');
 
     expect(session.selectionOf('p1').size).toBe(0);
     expect(session.scrollOf('p1')).toBe(0);
-    expect(session.readings.has('p1')).toBe(false);
     expect([...session.selectionOf('p2')]).toEqual(['b']);
   });
 
   it('forgets everything it kept when it restarts', () => {
     const session = new CatalogSession();
     session.keepSelection('p1', new Set(['a']));
-    session.keepReading('p1', { kind: 'failed' });
 
     session.restart('home');
 
     expect(session.navigation.current.tab).toBe('home');
     expect(session.selectionOf('p1').size).toBe(0);
-    expect(session.readings.size).toBe(0);
   });
 });

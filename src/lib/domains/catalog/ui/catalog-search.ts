@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { FeedSearch } from '../domain/catalog-feed';
-import type { FeedReading } from './catalog-session.svelte';
+import type { FeedReading } from './feed-reading';
 import type { EntryId, Location, Place } from './navigation';
 
 function searchPlaceholder(catalogName: string, offer: SearchOffer): string {

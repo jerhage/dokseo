@@ -5,7 +5,7 @@ import { CatalogSession } from './catalog-session.svelte';
 import { createNavigation } from './navigation.svelte';
 import type { HistoryPort } from './navigation.svelte';
 import type { HistoryState } from './navigation';
-import type { LinkReader, ResolvedLink } from './link-resolution';
+import type { FirstPageReader, LinkReader, ResolvedLink } from './link-resolution';
 
 const SERIES: NavigationLink = {
   title: 'By Series',
@@ -60,11 +60,11 @@ class FakeBrowser {
   }
 }
 
-function setup() {
+function setup(firstPage?: FirstPageReader) {
   let n = 0;
   const browser = new FakeBrowser();
   const session = new CatalogSession();
-  const navigation = createNavigation(session, browser.port, () => `i${++n}`);
+  const navigation = createNavigation(session, browser.port, () => `i${++n}`, firstPage);
   browser.deliver = (state) => navigation.observe(state);
   navigation.arrive(undefined);
   return { browser, session, navigation };
@@ -401,6 +401,95 @@ describe('createNavigation following a link', () => {
 
     expect(reads).toEqual([]);
     expect(session.opening.kind).toBe('resolving');
+  });
+});
+
+describe('createNavigation first pages', () => {
+  const settled = () => new Promise<void>((resolve) => setTimeout(resolve));
+
+  it('identifies the root of a tab once its first page is read', async () => {
+    const { navigation } = setup(() => Promise.resolve('urn:root'));
+
+    navigation.select(HOME);
+    await settled();
+
+    expect(navigation.placeOf(HOME)?.feedId).toBe('urn:root');
+  });
+
+  it('identifies the place a followed link opens', async () => {
+    const { navigation } = setup((_tab, location) =>
+      Promise.resolve(location.kind === 'address' ? 'urn:series' : 'urn:root'),
+    );
+    navigation.select(HOME);
+    await settled();
+
+    await navigation.follow(HOME, SERIES, () => Promise.resolve({ kind: 'unreadable' }));
+    await settled();
+
+    expect(navigation.placeOf(HOME)?.feedId).toBe('urn:series');
+  });
+
+  it('goes back to an earlier place when the first page read is the feed it already shows', async () => {
+    const { browser, navigation } = setup(() => Promise.resolve('urn:root'));
+    navigation.select(HOME);
+    await settled();
+    const calls = browser.calls.length;
+
+    navigation.open(HOME, SERIES);
+    await settled();
+
+    expect(browser.calls.slice(calls)).toEqual(['push', 'go -1']);
+    expect(crumbs(navigation)).toEqual(['Home']);
+  });
+
+  it('drops the first page of a search that was replaced while it was read', async () => {
+    const releases = new Map<string, (feedId: string) => void>();
+    const { navigation } = setup((_tab, location) =>
+      location.kind === 'search'
+        ? new Promise((resolve) => releases.set(location.query, resolve))
+        : Promise.resolve('urn:root'),
+    );
+    navigation.select(HOME);
+    await settled();
+    navigation.search(HOME, HOME_SEARCH, 'moo');
+    navigation.search(HOME, HOME_SEARCH, 'moon');
+
+    releases.get('moo')?.('urn:moo');
+    await settled();
+    expect(navigation.placeOf(HOME)?.feedId).toBe('');
+    releases.get('moon')?.('urn:moon');
+    await settled();
+
+    expect(navigation.placeOf(HOME)?.feedId).toBe('urn:moon');
+  });
+
+  it('leaves a place unidentified when its first page cannot be read and reads it again on request', async () => {
+    let reads = 0;
+    const { navigation } = setup((tab) => {
+      if (tab !== HOME) return Promise.resolve(null);
+      reads += 1;
+      return Promise.resolve(reads === 1 ? null : 'urn:root');
+    });
+    navigation.select(HOME);
+    await settled();
+    expect(navigation.placeOf(HOME)?.feedId).toBe('');
+
+    await navigation.resolveFirstPage(navigation.placeOf(HOME)!.id);
+
+    expect(navigation.placeOf(HOME)?.feedId).toBe('urn:root');
+  });
+
+  it('reads a place once while its first page is on the way', async () => {
+    let reads = 0;
+    const { navigation } = setup((tab) => {
+      if (tab === HOME) reads += 1;
+      return new Promise(() => undefined);
+    });
+    navigation.select(HOME);
+
+    void navigation.resolveFirstPage(navigation.placeOf(HOME)!.id);
+
+    expect(reads).toBe(1);
   });
 });
 

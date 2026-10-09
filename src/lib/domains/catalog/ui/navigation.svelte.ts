@@ -1,13 +1,14 @@
 import type { FeedSearch, NavigationLink } from '../domain/catalog-feed';
 import { NOT_OPENING } from './catalog-session.svelte';
 import type { CatalogSession, Opening } from './catalog-session.svelte';
-import type { LinkReader, ResolvedLink } from './link-resolution';
+import type { FirstPageReader, LinkReader, ResolvedLink } from './link-resolution';
 import {
   ancestorsOf,
   arrived,
   browserId,
   crumbsOf,
   detailsOf,
+  feedLocationOf,
   hasTab,
   identified,
   locationOfLink,
@@ -25,7 +26,16 @@ import {
   stepsBack,
   switched,
 } from './navigation';
-import type { Crumb, EntryId, HistoryState, Navigation, NewId, Place, PlaceId } from './navigation';
+import type {
+  Crumb,
+  EntryId,
+  HistoryState,
+  Location,
+  Navigation,
+  NewId,
+  Place,
+  PlaceId,
+} from './navigation';
 
 type HistoryPort = {
   readonly push: (state: HistoryState) => void;
@@ -34,9 +44,48 @@ type HistoryPort = {
   readonly go: (delta: number) => void;
 };
 
-function createNavigation(session: CatalogSession, port: HistoryPort, newId: NewId = browserId) {
+const NO_FIRST_PAGE: FirstPageReader = () => Promise.resolve(null);
+
+function createNavigation(
+  session: CatalogSession,
+  port: HistoryPort,
+  newId: NewId = browserId,
+  firstPage: FirstPageReader = NO_FIRST_PAGE,
+) {
+  const resolving = new Map<PlaceId, Location>();
+
+  async function resolveFirstPage(placeId: PlaceId): Promise<void> {
+    const place = placeById(session.navigation, placeId);
+    if (place === null || place.feedId !== '' || resolving.get(place.id) === place.location) return;
+    resolving.set(place.id, place.location);
+    const feedId = await firstPage(
+      place.tab,
+      feedLocationOf(place),
+      pathOf(session.navigation, place.id),
+    );
+    if (resolving.get(place.id) === place.location) resolving.delete(place.id);
+    if (feedId === null) return;
+    const now = placeById(session.navigation, place.id);
+    if (now === null || now.location !== place.location) return;
+    identify(place.id, feedId);
+  }
+
+  function identify(place: PlaceId, feedId: string): void {
+    session.navigation = identified(session.navigation, place, feedId);
+    const { current } = session.navigation;
+    if (current.kind !== 'location' || current.place !== place) return;
+    const ancestor = sameFeedAncestor(session.navigation, place);
+    if (ancestor !== null) goTo(ancestor);
+  }
+
+  function resolveCurrent(): void {
+    const { current } = session.navigation;
+    if (current.kind === 'location') void resolveFirstPage(current.place);
+  }
+
   function keep(next: Navigation): void {
     session.navigation = next;
+    resolveCurrent();
   }
 
   function pushTo(next: Navigation): void {
@@ -107,7 +156,10 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
         return;
       }
       if (state === undefined) keep(arrived(session.navigation, newId));
-      else session.restart(session.navigation.current.tab, newId);
+      else {
+        session.restart(session.navigation.current.tab, newId);
+        resolveCurrent();
+      }
       port.replace(stateOf(session.navigation.current));
     },
     observe(state: HistoryState | undefined): void {
@@ -170,13 +222,8 @@ function createNavigation(session: CatalogSession, port: HistoryPort, newId: New
     closeDetails(): void {
       if (session.navigation.current.kind === 'details') port.back();
     },
-    identify(place: PlaceId, feedId: string): void {
-      keep(identified(session.navigation, place, feedId));
-      const { current } = session.navigation;
-      if (current.kind !== 'location' || current.place !== place) return;
-      const ancestor = sameFeedAncestor(session.navigation, place);
-      if (ancestor !== null) goTo(ancestor);
-    },
+    identify,
+    resolveFirstPage,
   };
 }
 

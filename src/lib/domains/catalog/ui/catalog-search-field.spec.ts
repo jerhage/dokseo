@@ -3,6 +3,8 @@ import { HOME_SEARCH, feedAddress } from '../domain/catalog-feed-fixtures';
 import { searchFieldFor } from './catalog-search-field';
 import { CatalogSession } from './catalog-session.svelte';
 import { ARCHIVE, HOME } from './catalog-ui-fixtures';
+import type { FeedReading } from './feed-reading';
+import type { FeedReadings } from './feed-readings.svelte';
 import { createFeedSearch } from './feed-search.svelte';
 import type { SearchClock } from './feed-search.svelte';
 import { createNavigation } from './navigation.svelte';
@@ -36,12 +38,14 @@ function setup() {
   navigation.arrive(undefined);
   navigation.select(HOME.id);
   const search = createFeedSearch(NOW);
-  const deps = { navigation, search, session };
-  return { deps, navigation, session, pushes };
+  const kept = new Map<string, FeedReading>();
+  const readings: FeedReadings = { of: (_catalog, place) => kept.get(place.id) };
+  const deps = { navigation, search, readings };
+  return { deps, navigation, kept, pushes };
 }
 
-function loaded(session: CatalogSession, place: string, withSearch = true): void {
-  session.keepReading(place, { kind: 'ready', search: withSearch ? HOME_SEARCH : null });
+function loaded(kept: Map<string, FeedReading>, place: string, withSearch = true): void {
+  kept.set(place, { kind: 'ready', search: withSearch ? HOME_SEARCH : null });
 }
 
 describe('searchFieldFor', () => {
@@ -55,8 +59,8 @@ describe('searchFieldFor', () => {
   });
 
   it('disables the field of a catalog whose feed is read and offers no search', () => {
-    const { deps, navigation, session } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id, false);
+    const { deps, navigation, kept } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id, false);
 
     const field = searchFieldFor(HOME, deps);
 
@@ -65,8 +69,8 @@ describe('searchFieldFor', () => {
   });
 
   it('searches once after typing pauses and shows the typed text', () => {
-    const { deps, navigation, session, pushes } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id);
+    const { deps, navigation, kept, pushes } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id);
     const pushed = pushes.length;
 
     searchFieldFor(HOME, deps).oninput('moon');
@@ -82,8 +86,8 @@ describe('searchFieldFor', () => {
   });
 
   it('types again over the search without a second browser entry', () => {
-    const { deps, navigation, session, pushes } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id);
+    const { deps, navigation, kept, pushes } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id);
     searchFieldFor(HOME, deps).oninput('moo');
     fire();
     const pushed = pushes.length;
@@ -99,8 +103,8 @@ describe('searchFieldFor', () => {
   });
 
   it('sends no search when the tab changed before the pause ended', () => {
-    const { deps, navigation, session } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id);
+    const { deps, navigation, kept } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id);
     searchFieldFor(HOME, deps).oninput('moon');
 
     navigation.select(ARCHIVE.id);
@@ -110,8 +114,8 @@ describe('searchFieldFor', () => {
   });
 
   it('searches at once on submit', () => {
-    const { deps, navigation, session } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id);
+    const { deps, navigation, kept } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id);
 
     searchFieldFor(HOME, deps).onsubmit('moon');
 
@@ -122,8 +126,8 @@ describe('searchFieldFor', () => {
   });
 
   it('changes nothing when the field empties and no search is shown', () => {
-    const { deps, pushes, session, navigation } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id);
+    const { deps, pushes, kept, navigation } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id);
     const pushed = pushes.length;
 
     searchFieldFor(HOME, deps).oninput('');
@@ -133,8 +137,8 @@ describe('searchFieldFor', () => {
   });
 
   it('shows no text on a feed other than the one the search was typed for', () => {
-    const { deps, navigation, session } = setup();
-    loaded(session, navigation.placeOf(HOME.id)!.id);
+    const { deps, navigation, kept } = setup();
+    loaded(kept, navigation.placeOf(HOME.id)!.id);
     searchFieldFor(HOME, deps).onsubmit('moon');
     const place = navigation.placeOf(HOME.id)!;
     expect(place.location).toEqual({ kind: 'search', search: HOME_SEARCH, query: 'moon' });

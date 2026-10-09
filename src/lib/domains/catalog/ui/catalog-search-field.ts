@@ -9,14 +9,21 @@ import {
   UNKNOWN_OFFER,
 } from './catalog-search';
 import type { CatalogDeps } from './catalog-deps';
-import type { EntryId } from './navigation';
+import type { FeedReading } from './feed-reading';
+import type { EntryId, PlaceId } from './navigation';
 
-type SearchDeps = Pick<CatalogDeps, 'navigation' | 'search' | 'session'>;
+type SearchDeps = Pick<CatalogDeps, 'navigation' | 'search' | 'readings'>;
 
 function offerOf(catalog: Catalog, deps: SearchDeps) {
   const place = deps.navigation.placeOf(catalog.id);
   if (place === null) return null;
-  return { place, offer: searchOffer(deps.navigation.chain(place.id), deps.session.readings) };
+  const chain = deps.navigation.chain(place.id);
+  const readings = new Map<PlaceId, FeedReading>();
+  for (const step of chain) {
+    const reading = deps.readings.of(catalog.id, step);
+    if (reading !== undefined) readings.set(step.id, reading);
+  }
+  return { place, offer: searchOffer(chain, readings) };
 }
 
 function runSearch(catalog: Catalog, deps: SearchDeps, text: string): EntryId {

@@ -6,6 +6,7 @@ import type { UnlockCatalogResult } from '../use-cases/unlock-catalog';
 import type { DownloadsChoices, DownloadsUseCases } from './catalog-downloads.svelte';
 import type { CatalogSession } from './catalog-session.svelte';
 import type { DescribeOpenFile } from './catalog-texts';
+import type { FeedReadings } from './feed-readings.svelte';
 import type { createFeedSearch } from './feed-search.svelte';
 import type { LinkReader } from './link-resolution';
 import type { createNavigation } from './navigation.svelte';
@@ -23,6 +24,7 @@ type CatalogDeps = {
   readonly session: CatalogSession;
   readonly navigation: ReturnType<typeof createNavigation>;
   readonly search: ReturnType<typeof createFeedSearch>;
+  readonly readings: FeedReadings;
   readonly linkReader: (id: CatalogId) => LinkReader;
   readonly choices: DownloadsChoices;
   readonly describeOpenFile: DescribeOpenFile;

@@ -8,13 +8,7 @@
   import type { Catalog } from '../domain/catalog';
   import type { BookOriginLink } from '../domain/remote-item';
   import { publicationsOf } from '../domain/catalog-feed';
-  import type {
-    FeedEntry,
-    FeedHead,
-    FeedLocation,
-    FeedPage,
-    TrailStep,
-  } from '../domain/catalog-feed';
+  import type { FeedEntry, FeedLocation, FeedPage, TrailStep } from '../domain/catalog-feed';
   import {
     catalogCoverQuery,
     catalogFeedQuery,
@@ -30,7 +24,6 @@
   import { feedProblemText } from './catalog-texts';
   import { coverBlobsOf, coverTargetsOf, lockOf, readyFeedOf } from './catalog-feed-read';
   import type { CatalogFeedRead, FeedLock, ReadyFeed } from './catalog-feed-read';
-  import type { FeedReport } from './feed-report';
 
   type Props = {
     readonly catalog: Catalog;
@@ -38,12 +31,12 @@
     readonly location: FeedLocation;
     readonly path: readonly TrailStep[];
     readonly held: ReadonlyMap<string, BookOriginLink> | null;
-    readonly onreport: (report: FeedReport) => void;
+    readonly onretry: () => void;
     readonly locked: Snippet<[FeedLock, () => void]>;
     readonly children: Snippet<[ReadyFeed]>;
   };
 
-  let { catalog, cases, location, path, held, onreport, locked, children }: Props = $props();
+  let { catalog, cases, location, path, held, onretry, locked, children }: Props = $props();
 
   let announcement = $state('');
 
@@ -79,23 +72,19 @@
   const lock = $derived(lockOf(feed.state));
   const ready = $derived(held === null ? null : readyFeedOf(current));
 
-  let reported: FeedHead | 'failed' | null = null;
-
-  $effect(() => {
-    const next = first ?? (feed.state.kind === 'failed' ? 'failed' : null);
-    if (next === null || next === reported) return;
-    reported = next;
-    onreport(next === 'failed' ? { kind: 'failed' } : { kind: 'ready', head: next });
-  });
+  function retry(): void {
+    feed.reload();
+    onretry();
+  }
 </script>
 
 {#if lock !== null}
-  {@render locked(lock, () => feed.reload())}
+  {@render locked(lock, retry)}
 {:else if feed.state.kind === 'failed'}
   <Alert variant="warning" title="This catalog could not be read.">
     {feedProblemText(feed.state.failure, catalog.protocol)}
     {#snippet actions()}
-      <Button size="sm" onclick={() => feed.reload()}>Try again</Button>
+      <Button size="sm" onclick={retry}>Try again</Button>
     {/snippet}
   </Alert>
 {:else if ready === null}

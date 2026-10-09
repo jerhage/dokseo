@@ -146,6 +146,7 @@ export {
   catalogFeedQuery,
   heldOriginsQuery,
   nextPageParamOf,
+  normalizedLocation,
   pageOrFailure,
   totalOfPages,
 };

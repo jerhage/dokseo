@@ -6,8 +6,6 @@
   import type { CatalogDownloads } from './catalog-downloads.svelte';
   import { listingOf } from './catalog-feed-read';
   import { createDetails } from './details-focus';
-  import type { FeedReport } from './feed-report';
-  import { readingOf } from './feed-report';
   import { feedLocationOf } from './navigation';
   import type { PlaceId } from './navigation';
   import { resolvingKeyOf } from './link-resolution';
@@ -44,12 +42,6 @@
     tick,
   );
 
-  function report(next: FeedReport): void {
-    session.keepReading(here, readingOf(next));
-    if (next.kind === 'failed') return;
-    navigation.identify(here, next.head.id);
-  }
-
   function settle(): void {
     void restore.settled();
   }
@@ -63,7 +55,7 @@
       location={feedLocationOf(place)}
       path={navigation.pathOf(here)}
       {held}
-      onreport={report}
+      onretry={() => void navigation.resolveFirstPage(here)}
     >
       {#snippet locked(lock, retry)}
         <CatalogUnlock

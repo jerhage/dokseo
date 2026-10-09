@@ -6,7 +6,8 @@ import type { NavigationLink } from '../domain/catalog-feed';
 import type { BrowseCatalogResult } from '../use-cases/browse-catalog';
 import { catalogFeedQuery } from '../queries/catalog-feed-queries';
 import type { FeedReads } from '../queries/catalog-feed-queries';
-import { linkReaderFor, resolvingKeyOf } from './link-resolution';
+import { DEVICE_TAB } from './library-tabs';
+import { linkReaderFor, readFirstPage, resolvingKeyOf } from './link-resolution';
 
 const HOME = catalogId('home');
 
@@ -27,6 +28,42 @@ function feedsAnswering(result: BrowseCatalogResult) {
   };
   return { feeds, reads: () => reads };
 }
+
+describe('readFirstPage', () => {
+  it('reports the id of the first page and leaves it in the cache', async () => {
+    const { feeds, reads } = feedsAnswering({ kind: 'success', page: HOME_ROOT_FEED });
+    const client = createTestQueryClient();
+
+    const id = await readFirstPage(client, feeds, HOME, { kind: 'root' }, []);
+    await client.fetchInfiniteQuery(catalogFeedQuery(feeds, HOME, { kind: 'root' }, []));
+
+    expect(id).toBe(HOME_ROOT_FEED.id);
+    expect(reads()).toBe(1);
+  });
+
+  it('reports no id for a feed that cannot be read', async () => {
+    const { feeds } = feedsAnswering({ kind: 'offline' });
+
+    const id = await readFirstPage(createTestQueryClient(), feeds, HOME, { kind: 'root' }, []);
+
+    expect(id).toBeNull();
+  });
+
+  it('reads nothing for the device tab', async () => {
+    const { feeds, reads } = feedsAnswering({ kind: 'success', page: HOME_ROOT_FEED });
+
+    const id = await readFirstPage(
+      createTestQueryClient(),
+      feeds,
+      DEVICE_TAB,
+      { kind: 'root' },
+      [],
+    );
+
+    expect(id).toBeNull();
+    expect(reads()).toBe(0);
+  });
+});
 
 describe('linkReaderFor', () => {
   it('reports the id of the first page of the linked feed', async () => {

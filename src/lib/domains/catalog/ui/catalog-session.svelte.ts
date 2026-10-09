@@ -1,13 +1,9 @@
-import type { FeedSearch, NavigationLink } from '../domain/catalog-feed';
+import type { NavigationLink } from '../domain/catalog-feed';
 import { DEVICE_TAB } from './library-tabs';
 import { browserId, started } from './navigation';
 import type { Navigation, NewId, PlaceId } from './navigation';
 import { ALL_FILTER } from './origin-filter';
 import type { OriginFilter } from './origin-filter';
-
-type FeedReading =
-  | { readonly kind: 'failed' }
-  | { readonly kind: 'ready'; readonly search: FeedSearch | null };
 
 type Opening =
   | { readonly kind: 'idle' }
@@ -17,7 +13,6 @@ const NOT_OPENING: Opening = { kind: 'idle' };
 
 class CatalogSession {
   navigation = $state.raw<Navigation>(started(DEVICE_TAB, browserId));
-  readings = $state.raw<ReadonlyMap<PlaceId, FeedReading>>(new Map());
   opening = $state.raw<Opening>(NOT_OPENING);
   originFilter = $state.raw<OriginFilter>(ALL_FILTER);
   #selections = new Map<PlaceId, ReadonlySet<string>>();
@@ -25,14 +20,9 @@ class CatalogSession {
 
   restart(tab: string, newId: NewId = browserId): void {
     this.navigation = started(tab, newId);
-    this.readings = new Map();
     this.opening = NOT_OPENING;
     this.#selections = new Map();
     this.#scrolls = new Map();
-  }
-
-  keepReading(place: PlaceId, reading: FeedReading): void {
-    this.readings = new Map(this.readings).set(place, reading);
   }
 
   selectionOf(place: PlaceId): ReadonlySet<string> {
@@ -54,13 +44,10 @@ class CatalogSession {
   forgetPlace(place: PlaceId): void {
     this.#selections.delete(place);
     this.#scrolls.delete(place);
-    const next = new Map(this.readings);
-    next.delete(place);
-    this.readings = next;
   }
 }
 
 const catalogSession = new CatalogSession();
 
 export { CatalogSession, NOT_OPENING, catalogSession };
-export type { FeedReading, Opening };
+export type { Opening };

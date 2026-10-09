@@ -8,6 +8,7 @@ const catalogKeys = {
   catalogs: () => [...ALL, 'catalogs'] as const,
   origins: () => [...ALL, 'origins'] as const,
   held: (catalogId: CatalogId) => [...ALL, 'origins', catalogId] as const,
+  anyFeed: () => [...ALL, 'feed'] as const,
   feeds: (catalogId: CatalogId) => [...ALL, 'feed', catalogId] as const,
   feed: (catalogId: CatalogId, location: FeedLocation) =>
     [...ALL, 'feed', catalogId, location] as const,
