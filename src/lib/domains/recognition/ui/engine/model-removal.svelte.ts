@@ -21,7 +21,6 @@ type RemovalJoins = {
 
 class ModelRemoval {
   removing = $state(false);
-  confirming = $state(false);
   message = $state.raw<string | null>(null);
 
   #notify: Notify;
@@ -46,22 +45,8 @@ class ModelRemoval {
     }));
   }
 
-  ask(stored: boolean): void {
-    if (!stored) return;
-    this.confirming = true;
-  }
-
-  dismiss(): void {
-    this.confirming = false;
-  }
-
   clearMessage(): void {
     this.message = null;
-  }
-
-  forget(): void {
-    this.message = null;
-    this.confirming = false;
   }
 
   async remove(language: Language, modelId: string, generation: number): Promise<void> {

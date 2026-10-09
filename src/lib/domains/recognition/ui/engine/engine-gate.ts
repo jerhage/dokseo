@@ -27,6 +27,22 @@ type ConsentStep =
   | { readonly kind: 'granted' }
   | { readonly kind: 'undecided'; readonly footprint: ModelFootprint };
 
+type ConsentMemory = {
+  readonly agreed: ReadonlySet<Language>;
+  readonly declined: ReadonlySet<Language>;
+  readonly toldDeclined: ReadonlySet<Language>;
+};
+
+type Admission =
+  | { readonly kind: 'no-regions' }
+  | { readonly kind: 'agreed' }
+  | { readonly kind: 'waiting' }
+  | { readonly kind: 'failed'; readonly message: string; readonly reload: () => void }
+  | { readonly kind: 'nothing-to-download' }
+  | { readonly kind: 'granted' }
+  | { readonly kind: 'declined'; readonly footprint: ModelFootprint; readonly told: boolean }
+  | { readonly kind: 'ask'; readonly footprint: ModelFootprint };
+
 type WarmStep =
   | { readonly kind: 'waiting' }
   | { readonly kind: 'failed'; readonly message: string }
@@ -83,6 +99,34 @@ function consentStep(reading: EngineReading): ConsentStep {
     .exhaustive();
 }
 
+function admission(
+  language: Language,
+  regions: number,
+  memory: ConsentMemory,
+  reading: () => EngineReading,
+): Admission {
+  if (regions === 0) return { kind: 'no-regions' };
+  if (memory.agreed.has(language)) return { kind: 'agreed' };
+
+  const read = reading();
+  return match(consentStep(read))
+    .returnType<Admission>()
+    .with({ kind: 'waiting' }, () => WAITING)
+    .with({ kind: 'failed' }, ({ message }) => ({
+      kind: 'failed',
+      message,
+      reload: () => read.reload(),
+    }))
+    .with({ kind: 'nothing-to-download' }, () => ({ kind: 'nothing-to-download' }))
+    .with({ kind: 'granted' }, () => ({ kind: 'granted' }))
+    .with({ kind: 'undecided' }, ({ footprint }) =>
+      memory.declined.has(language)
+        ? { kind: 'declined', footprint, told: memory.toldDeclined.has(language) }
+        : { kind: 'ask', footprint },
+    )
+    .exhaustive();
+}
+
 function storageFor(modelId: string, storage: ReadState<ReadModelStorageResult>): WarmStep {
   return match(storage)
     .returnType<WarmStep>()
@@ -113,5 +157,13 @@ function warmStep(reading: EngineReading): WarmStep {
     .exhaustive();
 }
 
-export { NOT_READ, consentStep, readingFor, readsSettled, warmStep };
-export type { ConsentStep, EngineGateRead, EngineReading, EngineSource, WarmStep };
+export { NOT_READ, admission, consentStep, readingFor, readsSettled, warmStep };
+export type {
+  Admission,
+  ConsentMemory,
+  ConsentStep,
+  EngineGateRead,
+  EngineReading,
+  EngineSource,
+  WarmStep,
+};

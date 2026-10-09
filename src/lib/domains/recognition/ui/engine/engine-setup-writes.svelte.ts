@@ -1,19 +1,15 @@
 import type { QueryClient } from '@tanstack/svelte-query';
 import type { Container } from '$lib/container';
-import type { Language } from '$lib/shared/language';
 import type { Notify } from '$lib/shared/notice';
 import { failureMessage } from '$lib/shared/query-failure';
 import { writeQuery } from '$lib/shared/write-query.svelte';
 import type { WriteQuery } from '$lib/shared/write-query.svelte';
 import type { ComputeChoice } from '../../domain/engine/compute-choice';
-import type { EngineState } from '../../domain/engine/ocr-engine';
 import { saveSetupMutation } from '../../queries/engine-queries';
 import type { LanguageSetup, LanguageSetupRead, SetupChange } from '../../queries/engine-queries';
 import { recognitionKeys } from '../../queries/recognition-keys';
 import type { SaveRecognizerSetupResult } from '../../use-cases/engine/save-recognizer-setup';
-import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-import { engineStateOf } from './engine-figures';
-import { firstEngineLanguage, shownModel } from './engine-setup';
+import { shownModel } from './engine-setup';
 import { ModelDownload } from './model-download.svelte';
 import { ModelRemoval } from './model-removal.svelte';
 import { OperationClock } from './operation-clock';
@@ -22,10 +18,9 @@ const SETUP_FAILED = 'Could not save the engine choice';
 
 const SETUP_UNKEPT = 'This browser blocks local storage, so the choice was not kept.';
 
-class EngineSettingsView {
+class EngineSetup {
   readonly download: ModelDownload;
   readonly removal: ModelRemoval;
-  language = $state.raw<Language>(firstEngineLanguage());
 
   #notify: Notify;
   #clock = new OperationClock();
@@ -57,17 +52,10 @@ class EngineSettingsView {
     }));
   }
 
-  engine(storage: ModelStorageSnapshot | null): EngineState {
-    return engineStateOf(this.download.state, this.download.session, storage);
-  }
-
-  chooseLanguage(language: Language): void {
-    if (this.language === language) return;
-
-    this.language = language;
+  languageChosen(): void {
     this.#clock.next();
     this.download.reset();
-    this.removal.forget();
+    this.removal.clearMessage();
   }
 
   dispose(): void {
@@ -108,7 +96,6 @@ class EngineSettingsView {
   }
 
   async remove(choice: LanguageSetup): Promise<void> {
-    this.removal.dismiss();
     if (this.removal.removing) return;
 
     const generation = this.#clock.next();
@@ -135,4 +122,4 @@ class EngineSettingsView {
   }
 }
 
-export { SETUP_FAILED, SETUP_UNKEPT, EngineSettingsView };
+export { SETUP_FAILED, SETUP_UNKEPT, EngineSetup };

@@ -17,9 +17,11 @@ import type {
   ModelStorageSnapshot,
   ReadModelStorageResult,
 } from '../../use-cases/model/read-model-storage';
-import { EngineSettingsView } from './engine-settings.svelte';
+import { createEngineLanguage } from './engine-language.svelte';
+import { EngineSetup } from './engine-setup-writes.svelte';
 import EngineAside from './EngineAside.svelte';
 import EngineSettingsScreen from './EngineSettingsScreen.svelte';
+import { createRemovalConfirm } from './removal-confirm.svelte';
 
 const reads = vi.hoisted(() => ({ answers: new Map<string, unknown>() }));
 
@@ -108,27 +110,33 @@ function storageOf(fake: Fake): ReadState<ReadModelStorageResult> {
   return fake.storage === null ? LOADING : readReady({ kind: 'success', snapshot: fake.storage });
 }
 
-function viewOf(over: Partial<Fake>): EngineSettingsView {
+function propsOf(over: Partial<Fake>) {
   const fake = { ...BASE, ...over };
   reads.answers.set('setup', setupOf(fake));
   reads.answers.set('compute', readReady(GPU_UNDETECTED));
   reads.answers.set('model-storage', storageOf(fake));
 
-  const view = new EngineSettingsView({} as Container, () => undefined, createTestQueryClient());
+  const view = new EngineSetup({} as Container, () => undefined, createTestQueryClient());
   view.download.state = fake.download;
   view.download.session = fake.session;
   view.removal.removing = fake.removing;
-  view.removal.confirming = fake.confirmingRemoval;
   view.removal.message = fake.message;
-  return view;
+  const removalConfirm = createRemovalConfirm();
+  if (fake.confirmingRemoval) removalConfirm.ask(true);
+  return {
+    recognition: {},
+    view,
+    languageChoice: createEngineLanguage(() => undefined),
+    removalConfirm,
+  };
 }
 
 function screen(over: Partial<Fake>): string {
-  return render(SCREEN, { props: { recognition: {}, view: viewOf(over) } }).body;
+  return render(SCREEN, { props: propsOf(over) }).body;
 }
 
 function aside(over: Partial<Fake>): string {
-  return render(ASIDE, { props: { recognition: {}, view: viewOf(over) } }).body;
+  return render(ASIDE, { props: propsOf(over) }).body;
 }
 
 describe('EngineSettingsScreen', () => {
@@ -264,7 +272,7 @@ describe('EngineSettingsScreen', () => {
   it('links to the storage section it is given', () => {
     expect(screen({})).toContain('href="/settings/storage"');
     const html = render(SCREEN, {
-      props: { recognition: {}, view: viewOf({}), storageHref: '/elsewhere/storage' },
+      props: { ...propsOf({}), storageHref: '/elsewhere/storage' },
     }).body;
     expect(html).toContain('href="/elsewhere/storage"');
   });

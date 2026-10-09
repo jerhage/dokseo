@@ -18,14 +18,17 @@
   import { deviceName } from '../../domain/engine/recognizer-session';
   import {
     cancelHint,
+    engineStateOf,
     loadFigure,
     partialFigure,
     resumeLabel,
     storedFigure,
   } from './engine-figures';
-  import type { EngineSettingsView } from './engine-settings.svelte';
+  import type { EngineLanguageHook } from './engine-language.svelte';
+  import type { EngineSetup } from './engine-setup-writes.svelte';
   import { REMOVAL_WARNING } from './model-removal.svelte';
   import { isModelStored, isResumable } from './model-storage';
+  import type { RemovalConfirmHook } from './removal-confirm.svelte';
   import { engineLanguages, shownModel } from './engine-setup';
   import EngineSetupData from './EngineSetupData.svelte';
   import ModelStorageData from './ModelStorageData.svelte';
@@ -43,11 +46,19 @@
 
   type Props = {
     readonly recognition: EngineReads;
-    readonly view: EngineSettingsView;
+    readonly view: EngineSetup;
+    readonly languageChoice: EngineLanguageHook;
+    readonly removalConfirm: RemovalConfirmHook;
     readonly storageHref?: string;
   };
 
-  let { recognition, view, storageHref = '/settings/storage' }: Props = $props();
+  let {
+    recognition,
+    view,
+    languageChoice,
+    removalConfirm,
+    storageHref = '/settings/storage',
+  }: Props = $props();
 
   const uid = $props.id();
 
@@ -79,7 +90,7 @@
 </header>
 
 <div class="col gap-4 px-responsive pt-4 pb-6">
-  <EngineSetupData {recognition} language={view.language}>
+  <EngineSetupData {recognition} language={languageChoice.language}>
     {#snippet children(choice)}
       {@const model = shownModel(choice)}
       {@const gpuWarning = computeGpuWarning(choice.compute)}
@@ -88,13 +99,13 @@
         {#snippet children(shown)}
           {@const storage = shown.snapshot}
           {@const stored = isModelStored(storage)}
-          {@const state = engineStatus(view.engine(storage))}
+          {@const state = engineStatus(engineStateOf(download, session, storage))}
           {@const partial = partialFigure(storage?.partial ?? null, stored)}
           {@const action = engineActionOf({
             loading,
             stored,
             resumable: isResumable(storage),
-            confirmingRemoval: view.removal.confirming,
+            confirmingRemoval: removalConfirm.confirming,
           })}
           <section
             class="surface bordered rounded-container overflow-hidden"
@@ -147,7 +158,7 @@
                   class="grid-3 grid-auto-sm"
                   options={languageOptions}
                   value={choice.language}
-                  onvaluechange={(offered) => view.chooseLanguage(offered)}
+                  onvaluechange={(offered) => languageChoice.choose(offered)}
                 />
                 <p class={caption} id="{uid}-model">Model</p>
                 <ul class="list-reset col gap-2" aria-labelledby="{uid}-model">
@@ -232,7 +243,7 @@
                       variant="ghost-danger"
                       size="sm"
                       disabled={view.removal.removing}
-                      onclick={() => view.removal.ask(stored)}
+                      onclick={() => removalConfirm.ask(stored)}
                     >
                       {view.removal.removing ? 'Deleting…' : 'Delete the model'}
                     </Button>
@@ -240,12 +251,19 @@
                 </div>
               {/if}
 
-              {#if view.removal.confirming}
+              {#if removalConfirm.confirming}
                 <Alert variant="warning" role={undefined}>
                   Delete about {removalMb(storage, model)} MB of weights? {REMOVAL_WARNING}
                   {#snippet actions()}
-                    <Button size="sm" onclick={() => view.removal.dismiss()}>Keep it</Button>
-                    <Button variant="danger" size="sm" onclick={() => void view.remove(choice)}>
+                    <Button size="sm" onclick={() => removalConfirm.dismiss()}>Keep it</Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onclick={() => {
+                        removalConfirm.dismiss();
+                        void view.remove(choice);
+                      }}
+                    >
                       Delete the model
                     </Button>
                   {/snippet}

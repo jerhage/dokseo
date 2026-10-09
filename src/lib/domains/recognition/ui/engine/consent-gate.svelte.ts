@@ -13,7 +13,7 @@ import type { ModelFootprint } from '../../domain/model/model-footprint';
 import { grantConsentMutation } from '../../queries/engine-queries';
 import { recognitionKeys } from '../../queries/recognition-keys';
 import type { GrantModelConsentResult } from '../../use-cases/model/grant-model-consent';
-import { consentStep } from './engine-gate';
+import { admission } from './engine-gate';
 import type { EngineSource } from './engine-gate';
 import type { PendingRecognition } from './engine-warmth';
 
@@ -88,27 +88,31 @@ class ConsentGate {
 
   #admits(trace: Trace, held: PendingRecognition): boolean {
     const language = held.language;
-    if (held.regions.length === 0) {
-      trace.step('stopped', { guard: 'no-regions' });
-      return false;
-    }
+    const outcome = admission(
+      language,
+      held.regions.length,
+      { agreed: this.#agreed, declined: this.#declined, toldDeclined: this.#toldDeclined },
+      () => this.#engine(language),
+    );
 
-    if (this.#agreed.has(language)) {
-      trace.step('reading', { gate: 'agreed-this-session', language });
-      return true;
-    }
-
-    const reading = this.#engine(language);
-    return match(consentStep(reading))
+    return match(outcome)
+      .with({ kind: 'no-regions' }, () => {
+        trace.step('stopped', { guard: 'no-regions' });
+        return false;
+      })
+      .with({ kind: 'agreed' }, () => {
+        trace.step('reading', { gate: 'agreed-this-session', language });
+        return true;
+      })
       .with({ kind: 'waiting' }, () => {
         this.#waiting = { held, generation: this.#generation() };
         trace.step('waiting', { gate: 'engine-reads', language });
         return false;
       })
-      .with({ kind: 'failed' }, ({ message }) => {
+      .with({ kind: 'failed' }, ({ message, reload }) => {
         trace.step('stopped', { guard: 'engine-reads-failed', language });
         this.#notify({ tone: 'danger', title: RECOGNITION_UNSTARTED, message });
-        reading.reload();
+        reload();
         return false;
       })
       .with({ kind: 'nothing-to-download' }, () => {
@@ -120,26 +124,25 @@ class ConsentGate {
         trace.step('reading', { gate: 'consent-stored', language });
         return true;
       })
-      .with({ kind: 'undecided' }, ({ footprint }) => this.#ask(trace, held, footprint))
+      .with({ kind: 'declined' }, ({ footprint, told }) => {
+        trace.step('stopped', { guard: 'declined-this-session', language });
+        if (!told) this.#tellDeclined(held, footprint);
+        return false;
+      })
+      .with({ kind: 'ask' }, ({ footprint }) => {
+        this.#pendingRecognition = held;
+        this.request = { language, footprint };
+        trace.step('asking', {
+          gate: 'consent-dialog',
+          language,
+          downloadMb: downloadMb(footprint),
+        });
+        return false;
+      })
       .exhaustive();
   }
 
-  #ask(trace: Trace, held: PendingRecognition, footprint: ModelFootprint): boolean {
-    const language = held.language;
-    if (this.#declined.has(language)) {
-      trace.step('stopped', { guard: 'declined-this-session', language });
-      this.#tellDeclined(held, footprint);
-      return false;
-    }
-
-    this.#pendingRecognition = held;
-    this.request = { language, footprint };
-    trace.step('asking', { gate: 'consent-dialog', language, downloadMb: downloadMb(footprint) });
-    return false;
-  }
-
   #tellDeclined(held: PendingRecognition, footprint: ModelFootprint): void {
-    if (this.#toldDeclined.has(held.language)) return;
     this.#toldDeclined.add(held.language);
 
     const generation = this.#generation();

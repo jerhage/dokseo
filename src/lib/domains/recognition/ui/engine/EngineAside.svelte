@@ -5,16 +5,22 @@
   import { computeQuery, recognizerSetupQuery, setupState } from '../../queries/engine-queries';
   import type { EngineReads } from '../../queries/engine-queries';
   import type { ModelStorageSnapshot } from '../../use-cases/model/read-model-storage';
-  import type { EngineSettingsView } from './engine-settings.svelte';
+  import { engineStateOf } from './engine-figures';
+  import type { EngineLanguageHook } from './engine-language.svelte';
+  import type { EngineSetup } from './engine-setup-writes.svelte';
   import { activeDevice, activeEngine } from './engine-screen';
   import { engineChoiceOf, shownModel } from './engine-setup';
   import ModelStorageData from './ModelStorageData.svelte';
 
-  type Props = { readonly recognition: EngineReads; readonly view: EngineSettingsView };
+  type Props = {
+    readonly recognition: EngineReads;
+    readonly view: EngineSetup;
+    readonly languageChoice: EngineLanguageHook;
+  };
 
-  let { recognition, view }: Props = $props();
+  let { recognition, view, languageChoice }: Props = $props();
 
-  const setup = readQuery(() => recognizerSetupQuery(recognition, view.language));
+  const setup = readQuery(() => recognizerSetupQuery(recognition, languageChoice.language));
   const compute = readQuery(() => computeQuery(recognition));
   const choice = $derived(readBoth(setupState(setup.state), compute.state, engineChoiceOf));
   const model = $derived(choice.kind === 'ready' ? shownModel(choice.value) : null);
@@ -22,7 +28,10 @@
 
 {#snippet device(storage: ModelStorageSnapshot | null)}
   <p class="text-xs text-muted">
-    {activeDevice(view.download.session, engineStatus(view.engine(storage)))}
+    {activeDevice(
+      view.download.session,
+      engineStatus(engineStateOf(view.download.state, view.download.session, storage)),
+    )}
   </p>
 {/snippet}
 
