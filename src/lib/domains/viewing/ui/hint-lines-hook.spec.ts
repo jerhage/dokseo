@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GestureHint, HintScene, ReaderGesture } from './gesture-hint';
-import { HintLines } from './hint-lines.svelte';
+import { createHintLines } from './hint-lines.svelte';
 import type { HintLearning, HintSource } from './hint-lines.svelte';
 
 type Held = {
@@ -28,17 +28,17 @@ function held(overrides: Partial<Held> = {}): Held {
   return { scene: POINTER_PAGED, chromeShown: true, learned: [], wanted: true, ...overrides };
 }
 
-function hintLines(state: Held): HintLines {
+function hintLines(state: Held): ReturnType<typeof createHintLines> {
   const source = (): HintSource => ({ scene: state.scene, chromeShown: state.chromeShown });
   const learning: HintLearning = { learned: () => state.learned, wanted: () => state.wanted };
-  return new HintLines(source, learning);
+  return createHintLines(source, learning);
 }
 
 function keys(hints: readonly GestureHint[]): readonly string[] {
   return hints.map((hint) => hint.keys.join(' '));
 }
 
-describe('HintLines', () => {
+describe('createHintLines', () => {
   it('shows the unlearned hints of the scene with the recall line for a pointer', () => {
     const lines = hintLines(held());
 

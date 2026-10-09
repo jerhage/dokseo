@@ -24,14 +24,14 @@
   import type { Point } from '../domain/selection';
   import type { ViewportFit } from '../domain/viewport';
   import { inputKind } from './gesture-hint';
-  import { GrabPan } from './grab-pan.svelte';
-  import { HintLines } from './hint-lines.svelte';
+  import { createGrabPan } from './grab-pan.svelte';
+  import { createHintLines } from './hint-lines.svelte';
   import { handlesOwnKeys, handlesOwnSpace } from './keyboard';
   import { learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
   import { pageClick } from './page-click';
   import type { PageMove } from './page-moves';
-  import { PagedViewport } from './paged-viewport.svelte';
+  import { createPagedViewport } from './paged-viewport.svelte';
   import { moveOf, slideInput, slidePanes, slideTravel } from './page-slide';
   import type { Neighbours, SlidePane } from './page-slide';
   import { centreZoneWaits, touchAction, touchLesson } from './touch-action';
@@ -91,8 +91,8 @@
   let lastPointerType = $state<string | null>(null);
 
   const gestures = new GestureFeed(feed);
-  const pan = new GrabPan(() => frame);
-  const view = new PagedViewport(
+  const pan = createGrabPan(() => frame);
+  const view = createPagedViewport(
     {
       boxes: () => {
         const outer = frame;
@@ -115,7 +115,7 @@
 
   const pointing = $derived(inputKind(lastPointerType, coarse));
 
-  const hints = new HintLines(() => ({
+  const hints = createHintLines(() => ({
     scene: { input: pointing, layoutKind: 'paged', pannable: view.pannable, turns },
     chromeShown,
   }));

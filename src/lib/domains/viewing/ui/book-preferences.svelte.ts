@@ -12,7 +12,7 @@ import { editBookMutation } from '../queries/viewing-queries';
 import type { BookEditRequest } from '../queries/viewing-queries';
 import { heldBook, shownBook } from './reader-opening';
 import type { FlowBook, ReaderBook, ReaderOpening } from './reader-opening';
-import type { RegionSelection } from './region-selection.svelte';
+import type { RegionSelectionHook } from './region-selection.svelte';
 
 type EditOutcome = Awaited<ReturnType<Container['library']['editBook']>>;
 
@@ -60,7 +60,7 @@ class BookPreferences {
   #notify: Notify;
   #opening: () => ReaderOpening;
   #generation: () => number;
-  #selection: RegionSelection;
+  #selection: RegionSelectionHook;
   #held: BookHeld;
   #languageEdit: LanguageEdit;
   #editing: WriteQuery<EditOutcome, BookEditRequest<BookEdit>>;
@@ -70,7 +70,7 @@ class BookPreferences {
     notify: Notify,
     opening: () => ReaderOpening,
     generation: () => number,
-    selection: RegionSelection,
+    selection: RegionSelectionHook,
     held: BookHeld,
     bookChanged: BookChanged | null,
     languageEdit: LanguageEdit,

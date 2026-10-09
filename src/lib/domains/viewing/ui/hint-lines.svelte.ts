@@ -14,48 +14,40 @@ type HintLearning = {
 
 const REMEMBERED_LEARNING: HintLearning = { learned: learnedGestures, wanted: hintsWanted };
 
-class HintLines {
-  #source: () => HintSource;
-  #learning: HintLearning;
-  #recall = $state<HintRecall>('earned');
-  #held: readonly GestureHint[] = [];
+function createHintLines(source: () => HintSource, learning: HintLearning = REMEMBERED_LEARNING) {
+  let recall = $state<HintRecall>('earned');
+  let held: readonly GestureHint[] = [];
 
-  #pending = $derived.by<readonly GestureHint[]>(() => {
-    const held = this.#source();
-    return hintsToShow(readerHints(held.scene), this.#learning.learned(), {
-      chromeShown: held.chromeShown,
-      wanted: this.#learning.wanted(),
-      recall: this.#recall,
-      input: held.scene.input,
+  const pending = $derived.by<readonly GestureHint[]>(() => {
+    const current = source();
+    return hintsToShow(readerHints(current.scene), learning.learned(), {
+      chromeShown: current.chromeShown,
+      wanted: learning.wanted(),
+      recall,
+      input: current.scene.input,
     });
   });
 
-  #lines = $derived.by<readonly GestureHint[]>(() => {
-    this.#held = heldHints(this.#held, this.#pending);
-    return this.#held;
+  const lines = $derived.by<readonly GestureHint[]>(() => {
+    held = heldHints(held, pending);
+    return held;
   });
 
-  constructor(source: () => HintSource, learning: HintLearning = REMEMBERED_LEARNING) {
-    this.#source = source;
-    this.#learning = learning;
-  }
-
-  get pending(): readonly GestureHint[] {
-    return this.#pending;
-  }
-
-  get lines(): readonly GestureHint[] {
-    return this.#lines;
-  }
-
-  get hushed(): boolean {
-    return this.#pending.length === 0;
-  }
-
-  pressRecall(): void {
-    this.#recall = recallAfterPress(this.#pending);
-  }
+  return {
+    get pending(): readonly GestureHint[] {
+      return pending;
+    },
+    get lines(): readonly GestureHint[] {
+      return lines;
+    },
+    get hushed(): boolean {
+      return pending.length === 0;
+    },
+    pressRecall(): void {
+      recall = recallAfterPress(pending);
+    },
+  };
 }
 
-export { HintLines };
+export { createHintLines };
 export type { HintLearning, HintSource };

@@ -3,7 +3,7 @@ import { MAX_ZOOM, ZOOM_STEP } from '$lib/ui/components/pan-zoom';
 import type { Size } from '$lib/shared/geometry';
 import { imageIndex } from '$lib/shared/ids';
 import type { ReadingPosition } from '../domain/reading-position';
-import { FIT_WIDTH_ZOOM, StripZoom } from './strip-zoom.svelte';
+import { FIT_WIDTH_ZOOM, createStripZoom } from './strip-zoom.svelte';
 
 type Held = { sizes: readonly (Size | null)[]; frameWidth: number };
 
@@ -15,11 +15,13 @@ const SIZES: readonly Size[] = [
 
 const START: ReadingPosition = { index: imageIndex(0), offset: 0 };
 
-function strip(held: Held = { sizes: SIZES, frameWidth: 400 }): StripZoom {
-  return new StripZoom(() => held, START);
+type StripZoomHook = ReturnType<typeof createStripZoom>;
+
+function strip(held: Held = { sizes: SIZES, frameWidth: 400 }): StripZoomHook {
+  return createStripZoom(() => held, START);
 }
 
-describe('StripZoom', () => {
+describe('createStripZoom', () => {
   it('starts at fit width, holding the start and reading nothing', () => {
     const zoom = strip();
 
@@ -124,7 +126,7 @@ describe('StripZoom', () => {
 
   it.each<{
     readonly how: string;
-    readonly act: (zoom: StripZoom) => void;
+    readonly act: (zoom: StripZoomHook) => void;
     readonly target: { readonly top: number; readonly left: number };
   }>([
     {

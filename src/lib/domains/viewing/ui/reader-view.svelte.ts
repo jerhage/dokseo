@@ -25,7 +25,8 @@ import { AT_THE_FIRST_IMAGE, PageNavigation } from './page-navigation.svelte';
 import { NOT_OPENED, OPENING, heldBook, shownBook, withBook } from './reader-opening';
 import type { OpenOutcome, ReaderBook, ReaderOpening } from './reader-opening';
 import { describeOpenFailure, lostBook } from './reader-failure-text';
-import { RegionSelection } from './region-selection.svelte';
+import { createRegionSelection } from './region-selection.svelte';
+import type { RegionSelectionHook } from './region-selection.svelte';
 
 type PlaceOutcome = Awaited<ReturnType<Container['library']['saveReadingPlace']>>;
 
@@ -35,7 +36,7 @@ type LanguageKnown = (book: BookId, language: Language) => void;
 
 class ReaderView {
   opening = $state.raw<ReaderOpening>(NOT_OPENED);
-  readonly selection: RegionSelection;
+  readonly selection: RegionSelectionHook;
   readonly grouping: PageGrouping;
   readonly navigation: PageNavigation;
   readonly preferences: BookPreferences;
@@ -79,7 +80,7 @@ class ReaderView {
           group: this.grouping.groupHolding(place.index),
         }),
     });
-    this.selection = new RegionSelection();
+    this.selection = createRegionSelection();
     this.grouping = new PageGrouping(container, book, generation, (regrouped) =>
       this.#keepShownThroughCurrent(regrouped),
     );

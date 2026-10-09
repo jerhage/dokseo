@@ -42,146 +42,21 @@ type ViewportPane = {
 
 const FITTED: Viewport = { zoom: FIT_HEIGHT_ZOOM, panX: 0, panY: 0 };
 
-class PagedViewport {
-  #frame: ViewportFrame;
-  #pageFit: () => PageFit;
-  #learn: (gesture: ReaderGesture) => void;
-  #viewport = $state.raw<Viewport>(FITTED);
-  #fit: ViewportFit;
-  #pannable = $state(false);
-  #frameSize = $state.raw<Size | null>(null);
-  #contents = new SvelteMap<ImageIndex, Size>();
-  #panOrigin: Viewport = FITTED;
+function createPagedViewport(
+  frame: ViewportFrame,
+  pageFit: () => PageFit,
+  learn: (gesture: ReaderGesture) => void = learnGesture,
+) {
+  let viewport = $state.raw<Viewport>(FITTED);
+  let fit = $state.raw<ViewportFit>(pageFit());
+  let pannable = $state(false);
+  let frameSize = $state.raw<Size | null>(null);
+  const contents = new SvelteMap<ImageIndex, Size>();
+  let panOrigin: Viewport = FITTED;
 
-  constructor(
-    frame: ViewportFrame,
-    pageFit: () => PageFit,
-    learn: (gesture: ReaderGesture) => void = learnGesture,
-  ) {
-    this.#frame = frame;
-    this.#pageFit = pageFit;
-    this.#learn = learn;
-    this.#fit = $state.raw(pageFit());
-  }
-
-  get viewport(): Viewport {
-    return this.#viewport;
-  }
-
-  get fit(): ViewportFit {
-    return this.#fit;
-  }
-
-  get pannable(): boolean {
-    return this.#pannable;
-  }
-
-  framed(size: Size): void {
-    this.#frameSize = size;
-  }
-
-  measured(key: ImageIndex, size: Size): void {
-    this.#contents.set(key, size);
-  }
-
-  forget(key: ImageIndex): void {
-    this.#contents.delete(key);
-  }
-
-  paneViewport(pane: ViewportPane): Viewport {
-    return pane.beside === 0
-      ? this.#viewport
-      : arrivalViewport(this.#fit, this.#viewport, this.#framingOf(pane.key));
-  }
-
-  arrive(key: ImageIndex | undefined): void {
-    const sizes = this.#framingOf(key) ?? this.#framesNow();
-    this.#commit(arrivalViewport(this.#fit, this.#viewport, sizes), sizes);
-  }
-
-  fitHeight(): void {
-    this.#fit = 'height';
-    this.#recentre(FIT_HEIGHT_ZOOM);
-  }
-
-  fitWidth(): void {
-    const sizes = this.#framesNow();
-    this.#fit = 'width';
-    if (sizes === null) return;
-    this.#recentre(fitZoom(sizes.content, sizes.frame, 'width'));
-  }
-
-  refit(): void {
-    match(this.#fit)
-      .with('height', () => this.fitHeight())
-      .with('width', () => this.fitWidth())
-      .with('free', () => this.#settle(this.#viewport))
-      .exhaustive();
-  }
-
-  panBy(dx: number, dy: number): void {
-    this.#settle(panBy(this.#viewport, dx, dy));
-  }
-
-  zoomAt(factor: number, x: number, y: number): void {
-    this.#zoomed(zoomAt(this.#viewport, factor, x, y));
-  }
-
-  stepZoom(factor: number): void {
-    const sizes = this.#framesNow();
-    if (sizes === null) return;
-
-    this.zoomAt(factor, sizes.frame.width / 2, sizes.frame.height / 2);
-  }
-
-  pinch(pinch: Pinch): void {
-    const sizes = this.#framesNow();
-    const centre = this.#framePoint(pinch.cx, pinch.cy);
-    if (sizes === null || centre === null) return;
-
-    this.#zoomed(
-      pinchStep(
-        this.#viewport,
-        { ...pinch, cx: centre.x, cy: centre.y },
-        {
-          content: sizes.content,
-          frame: sizes.frame,
-          floor: pageFitZoom(this.#pageFit(), sizes),
-        },
-      ),
-    );
-  }
-
-  doubleTap(at: ZoomPoint): void {
-    const sizes = this.#framesNow();
-    const point = this.#framePoint(at.x, at.y);
-    if (sizes === null || point === null) return;
-
-    const pageFit = this.#pageFit();
-    const target = doubleTapTarget(this.#viewport, pageFitZoom(pageFit, sizes), point);
-    if (target.kind === 'zoom') {
-      this.#zoomed(target.viewport);
-      return;
-    }
-
-    this.#fit = pageFit;
-    this.#settle(target.viewport);
-  }
-
-  holdPanOrigin(): void {
-    this.#panOrigin = this.#viewport;
-  }
-
-  panReach(): PanReach | null {
-    const sizes = this.#framesNow();
-    return sizes === null
-      ? null
-      : { origin: this.#panOrigin, content: sizes.content, frame: sizes.frame };
-  }
-
-  #framesNow(): Framing | null {
-    const zoom = this.#viewport.zoom;
-    const boxes = this.#frame.boxes();
+  function framesNow(): Framing | null {
+    const zoom = viewport.zoom;
+    const boxes = frame.boxes();
     if (boxes === null) return null;
     if (!Number.isFinite(zoom) || zoom <= 0) return null;
 
@@ -191,41 +66,145 @@ class PagedViewport {
     };
   }
 
-  #framingOf(key: ImageIndex | undefined): Framing | null {
-    const content = key === undefined ? undefined : this.#contents.get(key);
-    const outer = this.#frameSize;
+  function framingOf(key: ImageIndex | undefined): Framing | null {
+    const content = key === undefined ? undefined : contents.get(key);
+    const outer = frameSize;
     return content === undefined || outer === null ? null : { content, frame: outer };
   }
 
-  #framePoint(x: number, y: number): ZoomPoint | null {
-    const offset = this.#frame.offset();
+  function framePoint(x: number, y: number): ZoomPoint | null {
+    const offset = frame.offset();
     if (offset === null) return null;
 
     return { x: x - offset.left, y: y - offset.top };
   }
 
-  #commit(next: Viewport, sizes: Framing | null): void {
-    this.#viewport = next;
-    if (sizes !== null) this.#pannable = canPan(sizes.content, sizes.frame, next.zoom);
+  function commit(next: Viewport, sizes: Framing | null): void {
+    viewport = next;
+    if (sizes !== null) pannable = canPan(sizes.content, sizes.frame, next.zoom);
   }
 
-  #settle(next: Viewport): void {
-    const sizes = this.#framesNow();
-    this.#commit(sizes === null ? next : clampPan(next, sizes.content, sizes.frame), sizes);
+  function settle(next: Viewport): void {
+    const sizes = framesNow();
+    commit(sizes === null ? next : clampPan(next, sizes.content, sizes.frame), sizes);
   }
 
-  #recentre(zoom: number): void {
-    const sizes = this.#framesNow();
-    const next: Viewport = { zoom, panX: this.#viewport.panX, panY: this.#viewport.panY };
-    this.#commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
+  function recentre(zoom: number): void {
+    const sizes = framesNow();
+    const next: Viewport = { zoom, panX: viewport.panX, panY: viewport.panY };
+    commit(sizes === null ? next : centrePan(next, sizes.content, sizes.frame), sizes);
   }
 
-  #zoomed(next: Viewport): void {
-    this.#fit = 'free';
-    this.#settle(next);
-    if (this.#pannable) this.#learn('zoom-to-pan');
+  function zoomed(next: Viewport): void {
+    fit = 'free';
+    settle(next);
+    if (pannable) learn('zoom-to-pan');
   }
+
+  function fitHeight(): void {
+    fit = 'height';
+    recentre(FIT_HEIGHT_ZOOM);
+  }
+
+  function fitWidth(): void {
+    const sizes = framesNow();
+    fit = 'width';
+    if (sizes === null) return;
+    recentre(fitZoom(sizes.content, sizes.frame, 'width'));
+  }
+
+  function zoomAtPoint(factor: number, x: number, y: number): void {
+    zoomed(zoomAt(viewport, factor, x, y));
+  }
+
+  return {
+    get viewport(): Viewport {
+      return viewport;
+    },
+    get fit(): ViewportFit {
+      return fit;
+    },
+    get pannable(): boolean {
+      return pannable;
+    },
+    framed(size: Size): void {
+      frameSize = size;
+    },
+    measured(key: ImageIndex, size: Size): void {
+      contents.set(key, size);
+    },
+    forget(key: ImageIndex): void {
+      contents.delete(key);
+    },
+    paneViewport(pane: ViewportPane): Viewport {
+      return pane.beside === 0 ? viewport : arrivalViewport(fit, viewport, framingOf(pane.key));
+    },
+    arrive(key: ImageIndex | undefined): void {
+      const sizes = framingOf(key) ?? framesNow();
+      commit(arrivalViewport(fit, viewport, sizes), sizes);
+    },
+    fitHeight,
+    fitWidth,
+    refit(): void {
+      match(fit)
+        .with('height', () => fitHeight())
+        .with('width', () => fitWidth())
+        .with('free', () => settle(viewport))
+        .exhaustive();
+    },
+    panBy(dx: number, dy: number): void {
+      settle(panBy(viewport, dx, dy));
+    },
+    zoomAt: zoomAtPoint,
+    stepZoom(factor: number): void {
+      const sizes = framesNow();
+      if (sizes === null) return;
+
+      zoomAtPoint(factor, sizes.frame.width / 2, sizes.frame.height / 2);
+    },
+    pinch(pinch: Pinch): void {
+      const sizes = framesNow();
+      const centre = framePoint(pinch.cx, pinch.cy);
+      if (sizes === null || centre === null) return;
+
+      zoomed(
+        pinchStep(
+          viewport,
+          { ...pinch, cx: centre.x, cy: centre.y },
+          {
+            content: sizes.content,
+            frame: sizes.frame,
+            floor: pageFitZoom(pageFit(), sizes),
+          },
+        ),
+      );
+    },
+    doubleTap(at: ZoomPoint): void {
+      const sizes = framesNow();
+      const point = framePoint(at.x, at.y);
+      if (sizes === null || point === null) return;
+
+      const wanted = pageFit();
+      const target = doubleTapTarget(viewport, pageFitZoom(wanted, sizes), point);
+      if (target.kind === 'zoom') {
+        zoomed(target.viewport);
+        return;
+      }
+
+      fit = wanted;
+      settle(target.viewport);
+    },
+    holdPanOrigin(): void {
+      panOrigin = viewport;
+    },
+    panReach(): PanReach | null {
+      const sizes = framesNow();
+      return sizes === null
+        ? null
+        : { origin: panOrigin, content: sizes.content, frame: sizes.frame };
+    },
+  };
 }
 
-export { PagedViewport };
+export { createPagedViewport };
 export type { FrameBoxes, FrameOffset, ViewportFrame, ViewportPane };

@@ -14,11 +14,11 @@ import { imageIndex } from '$lib/shared/ids';
 import type { PageFit } from '$lib/shared/page-fit';
 import { FIT_HEIGHT_ZOOM, arrivalViewport } from '../domain/viewport';
 import type { ReaderGesture } from './gesture-hint';
-import { PagedViewport } from './paged-viewport.svelte';
+import { createPagedViewport } from './paged-viewport.svelte';
 import type { FrameOffset } from './paged-viewport.svelte';
 
 type World = {
-  readonly view: PagedViewport;
+  readonly view: ReturnType<typeof createPagedViewport>;
   readonly learned: ReaderGesture[];
   frame: Size | null;
   content: Size;
@@ -38,7 +38,7 @@ function world(pageFit: PageFit = 'height'): World {
     frame: FRAME,
     content: PAGE,
     offset: { left: 20, top: 40 },
-    view: new PagedViewport(
+    view: createPagedViewport(
       {
         boxes: () => {
           const frame = state.frame;
@@ -62,7 +62,7 @@ function centred(zoom: number): Viewport {
   return centrePan({ zoom, panX: 0, panY: 0 }, PAGE, FRAME);
 }
 
-describe('PagedViewport', () => {
+describe('createPagedViewport', () => {
   it('starts fitted to the height under the fit the book asks for, and cannot pan', () => {
     const { view } = world('width');
 

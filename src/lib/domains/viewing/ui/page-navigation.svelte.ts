@@ -11,7 +11,7 @@ import { NO_PAGES } from './page-grouping.svelte';
 import type { PageGrouping } from './page-grouping.svelte';
 import type { PageMove } from './page-moves';
 import type { ReaderBook } from './reader-opening';
-import type { RegionSelection } from './region-selection.svelte';
+import type { RegionSelectionHook } from './region-selection.svelte';
 
 const AT_THE_FIRST_IMAGE: ReadingPosition = readingPosition(imageIndex(0), 0);
 
@@ -21,13 +21,13 @@ class PageNavigation {
   #book: () => ReaderBook | null;
   #grouping: PageGrouping;
   #places: PlaceKeeper<ImagePlace>;
-  #selection: RegionSelection;
+  #selection: RegionSelectionHook;
 
   constructor(
     book: () => ReaderBook | null,
     grouping: PageGrouping,
     places: PlaceKeeper<ImagePlace>,
-    selection: RegionSelection,
+    selection: RegionSelectionHook,
   ) {
     this.#book = book;
     this.#grouping = grouping;

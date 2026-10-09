@@ -29,7 +29,7 @@
   import type { Point } from '../domain/selection';
   import { EdgeScroll } from './edge-scroll-loop';
   import { inputKind } from './gesture-hint';
-  import { HintLines } from './hint-lines.svelte';
+  import { createHintLines } from './hint-lines.svelte';
   import { handlesOwnKeys } from './keyboard';
   import { learnGesture } from './learned-gestures.svelte';
   import { glowOn } from './page-glow';
@@ -37,7 +37,7 @@
   import { scrollMotion } from './scroll-motion';
   import SelectionLayer from './SelectionLayer.svelte';
   import { holdsTheScroll, stripTouchAction } from './strip-touch';
-  import { StripZoom } from './strip-zoom.svelte';
+  import { createStripZoom } from './strip-zoom.svelte';
   import { STRIP_GUIDE, STRIP_GUIDE_KIND, offersTouchGuide } from './touch-guide';
   import type { StripTouchAction } from './strip-touch';
   import './continuous-viewer.css';
@@ -99,7 +99,7 @@
     dragging: () => selection?.dragging() ?? false,
   });
 
-  const strip = new StripZoom(
+  const strip = createStripZoom(
     () => ({ sizes, frameWidth }),
     untrack(() => start),
   );
@@ -121,7 +121,7 @@
   );
   const spacers = $derived(spacersFor(layout, range, snapToDevicePixels));
   const pointing = $derived(inputKind(lastPointerType, coarse));
-  const hints = new HintLines(() => ({
+  const hints = createHintLines(() => ({
     scene: { input: pointing, layoutKind: 'continuous', pannable: false, turns: 'swipe-only' },
     chromeShown,
   }));

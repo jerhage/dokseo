@@ -1,15 +1,22 @@
 import type { ImageRegion } from '$lib/shared/image-region';
 
-class RegionSelection {
-  regions = $state.raw<readonly ImageRegion[]>([]);
+function createRegionSelection() {
+  let regions = $state.raw<readonly ImageRegion[]>([]);
 
-  select(regions: readonly ImageRegion[]): void {
-    this.regions = regions;
-  }
-
-  clear(): void {
-    if (this.regions.length > 0) this.regions = [];
-  }
+  return {
+    get regions(): readonly ImageRegion[] {
+      return regions;
+    },
+    select(next: readonly ImageRegion[]): void {
+      regions = next;
+    },
+    clear(): void {
+      if (regions.length > 0) regions = [];
+    },
+  };
 }
 
-export { RegionSelection };
+type RegionSelectionHook = ReturnType<typeof createRegionSelection>;
+
+export { createRegionSelection };
+export type { RegionSelectionHook };
