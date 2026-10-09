@@ -66,10 +66,6 @@ function book(overrides: Partial<ReaderBook> = {}): ReaderBook {
   };
 }
 
-function regrouped(view: ReaderView): void {
-  view.keepShownThroughCurrent(view.groups);
-}
-
 function drawnWidth(picture: PagePicture | null): number | null {
   return picture !== null && picture.kind === 'drawn' ? picture.bitmap.width : null;
 }
@@ -1389,7 +1385,6 @@ describe('reading to the end', () => {
     await view.open(bookId('one'));
 
     await view.pictureAt(imageIndex(3));
-    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(view.visiblePages).toEqual([2]);
@@ -1402,7 +1397,6 @@ describe('reading to the end', () => {
     await view.open(bookId('one'));
 
     await view.setPairing('double');
-    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.stored.position).toEqual(imagePlace(imageIndex(4), imageIndex(5)));
@@ -1417,7 +1411,6 @@ describe('reading to the end', () => {
     await view.next();
 
     await view.pictureAt(imageIndex(3));
-    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.stored.position).toEqual(imagePlace(imageIndex(2)));
@@ -1430,7 +1423,6 @@ describe('reading to the end', () => {
 
     await view.open(bookId('one'));
     await vi.advanceTimersByTimeAsync(0);
-    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(view.groups).toEqual([[0], [1]]);
@@ -1443,7 +1435,6 @@ describe('reading to the end', () => {
     await view.open(bookId('one'));
 
     await view.setPairing('double');
-    regrouped(view);
     await vi.advanceTimersByTimeAsync(PLACE_SAVE_DELAY_MS);
 
     expect(world.edits.filter((edit) => edit.position !== undefined)).toEqual([]);

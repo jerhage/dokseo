@@ -79,6 +79,7 @@ class ReaderView {
   #generation = 0;
   #places: PlaceKeeper<ImagePlace>;
   #position = createPagePosition();
+  #placedGroups: readonly PageGroup[] | null = null;
   #screen = $state<ScreenWidth>('wide');
   #pairing = $derived(pairingOf(this.book, this.#screen));
   readonly groups = $derived(groupsOf(this.book, this.sizes.sizes, this.#pairing));
@@ -155,14 +156,20 @@ class ReaderView {
 
   fitScreen(screen: ScreenWidth): void {
     this.#screen = screen;
+    this.#placeAfterRegroup();
   }
 
   measure(index: ImageIndex, size: Size): void {
     if (this.book === null) return;
     this.sizes.measure(index, size);
+    this.#placeAfterRegroup();
   }
 
-  keepShownThroughCurrent(groups: readonly PageGroup[]): void {
+  #placeAfterRegroup(): void {
+    const groups = this.groups;
+    if (groups === this.#placedGroups) return;
+    this.#placedGroups = groups;
+
     const book = this.book;
     if (book === null) return;
 
@@ -313,6 +320,7 @@ class ReaderView {
       void this.#places.persist(book.id, showing);
     }
     this.#mirror?.({ kind: 'arrived', index: place.index });
+    this.#placeAfterRegroup();
   }
 
   async pictureAt(index: ImageIndex): Promise<PagePicture | null> {
@@ -363,6 +371,7 @@ class ReaderView {
     if (generation !== this.#generation || this.book === null || read.kind !== 'success') return;
 
     this.sizes.set(mergedSizes(this.sizes.sizes, read.sizes));
+    this.#placeAfterRegroup();
   }
 
   async #savePlace(id: BookId, place: ImagePlace): Promise<PlaceSaved> {
@@ -381,6 +390,7 @@ class ReaderView {
     if (this.opening.kind !== 'flow' && saved.language !== before) {
       this.#languageKnown?.(saved.id, saved.language);
     }
+    this.#placeAfterRegroup();
   }
 
   #release(): void {

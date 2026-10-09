@@ -14,6 +14,7 @@
     readonly class: string;
     readonly pageClass: string;
     readonly onfocuschange?: (() => void) | undefined;
+    readonly onmeasure?: ((bodyWidth: number, compactWidth: number) => void) | undefined;
     readonly notice?: Snippet;
     readonly page: Snippet;
     readonly header: Snippet;
@@ -33,6 +34,7 @@
     class: className,
     pageClass,
     onfocuschange,
+    onmeasure,
     notice,
     page,
     header,
@@ -51,6 +53,16 @@
   let topHeight = $state(0);
   let bottomHeight = $state(0);
   let sheetCover = $state(0);
+
+  function watchWidths(body: HTMLElement): () => void {
+    const probe = body.querySelector<HTMLElement>('.breakpoint-probe');
+    const observer = new ResizeObserver(() =>
+      onmeasure?.(body.clientWidth, probe?.clientWidth ?? 0),
+    );
+    observer.observe(body);
+    if (probe !== null) observer.observe(probe);
+    return () => observer.disconnect();
+  }
 
   const narrow = $derived(isNarrow(bodyWidth, compactWidth));
   const docked = $derived(dockState(narrow, dock.asked));
@@ -73,6 +85,7 @@
     class={['relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
     bind:clientWidth={bodyWidth}
     bind:clientHeight={bodyHeight}
+    {@attach watchWidths}
   >
     <BreakpointProbe breakpoint="--breakpoint-compact" bind:width={compactWidth} />
 

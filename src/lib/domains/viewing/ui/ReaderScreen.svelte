@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount } from 'svelte';
   import type { Component, Snippet } from 'svelte';
   import { match } from 'ts-pattern';
   import Alert from '$lib/ui/components/Alert.svelte';
@@ -112,15 +112,14 @@
   const shown = $derived(bars.shown);
   const makes = $derived(dragOrigin(noting));
   const narrow = $derived(isNarrow(bodyWidth, compactWidth));
-  const screen = $derived(reportedScreen(bodyWidth, compactWidth));
 
-  $effect(() => {
-    if (screen !== null) untrack(() => view.fitScreen(screen));
-  });
-  $effect(() => {
-    const groups = view.groups;
-    untrack(() => view.keepShownThroughCurrent(groups));
-  });
+  function measured(body: number, compact: number): void {
+    bodyWidth = body;
+    compactWidth = compact;
+    const screen = reportedScreen(body, compact);
+    if (screen !== null) view.fitScreen(screen);
+  }
+
   const lit = $derived(shownGlow(glow, everyGlow, allCapturesWanted()));
   const touchGuide = $derived(paged?.offersGuide() ?? strip?.offersGuide() ?? false);
 
@@ -282,8 +281,7 @@
   {dock}
   {shown}
   onfocuschange={bars.refresh}
-  bind:bodyWidth
-  bind:compactWidth
+  onmeasure={measured}
   bind:topBar
   bind:bottomBar
   class="reader-screen"
