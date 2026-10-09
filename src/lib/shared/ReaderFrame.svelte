@@ -54,13 +54,14 @@
   let bottomHeight = $state(0);
   let sheetCover = $state(0);
 
-  function watchWidths(body: HTMLElement): () => void {
-    const probe = body.querySelector<HTMLElement>('.breakpoint-probe');
+  let probe = $state<HTMLDivElement | null>(null);
+
+  function watchWidths(body: HTMLElement, measured: HTMLDivElement | null): () => void {
     const observer = new ResizeObserver(() =>
-      onmeasure?.(body.clientWidth, probe?.clientWidth ?? 0),
+      onmeasure?.(body.clientWidth, measured?.clientWidth ?? 0),
     );
     observer.observe(body);
-    if (probe !== null) observer.observe(probe);
+    if (measured !== null) observer.observe(measured);
     return () => observer.disconnect();
   }
 
@@ -85,9 +86,9 @@
     class={['relative gap-0 flex-1 min-h-0 overflow-hidden', narrow ? 'col' : 'row']}
     bind:clientWidth={bodyWidth}
     bind:clientHeight={bodyHeight}
-    {@attach watchWidths}
+    {@attach (body) => watchWidths(body, probe)}
   >
-    <BreakpointProbe breakpoint="--breakpoint-compact" bind:width={compactWidth} />
+    <BreakpointProbe breakpoint="--breakpoint-compact" bind:width={compactWidth} bind:ref={probe} />
 
     <div
       class={['relative flex-1 min-h-0 overflow-hidden', pageClass]}
